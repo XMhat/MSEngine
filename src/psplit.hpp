@@ -1,0 +1,187 @@
+/* == PSPLIT.HPP =========================================================== */
+/* ######################################################################### */
+/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
+/* ######################################################################### */
+/* ## This is a simple C++ wrapper for splitting components of a path     ## */
+/* ## name.                                                               ## */
+/* ######################################################################### */
+/* ## UNIX PATH LAYOUT                                                    ## */
+/* ######################################################################### */
+/* ## Path      ## MAX_PATH   #### \Directory\SubDirectory\File.Extension ## */
+/* ## Directory ## MAX_DIR    #### ^^^^^^^^^^^^^^^^^^^^^^^^-------------- ## */
+/* ## FileMap   ## MAX_FNAME  #### ------------------------^^^^---------- ## */
+/* ## Extension ## MAX_EXT    #### ----------------------------^^^^^^^^^^ ## */
+/* ######################################################################### */
+/* ## WIN32 PATH LAYOUT                                                   ## */
+/* ######################################################################### */
+/* ## Path      ## _MAX_PATH  ## C:\Directory\SubDirectory\File.Extension ## */
+/* ## Drive     ## _MAX_DRIVE ## ^^-------------------------------------- ## */
+/* ## Directory ## _MAX_DIR   ## --^^^^^^^^^^^^^^^^^^^^^^^^-------------- ## */
+/* ## FileMap   ## _MAX_FNAME ## --------------------------^^^^---------- ## */
+/* ## Extension ## _MAX_EXT   ## ------------------------------^^^^^^^^^^ ## */
+/* ######################################################################### */
+/* ========================================================================= */
+#pragma once                           // Only one incursion allowed
+/* -- Module namespace ----------------------------------------------------- */
+namespace IfPSplit {                   // Keep declarations neatly categorised
+/* -- Includes ------------------------------------------------------------- */
+using namespace IfUtf;                 // Using utf interface
+using namespace IfString;              // Using string interface
+/* -- Convert back slashes to forward slashes ------------------------------ */
+static string &PSplitBackToForwardSlashes(string &strText)
+  { return Replace(strText, '\\', '/'); }
+static const string PSplitBackToForwardSlashes(const string &strIn)
+  { string strOut{ strIn }; return PSplitBackToForwardSlashes(strOut); }
+#ifdef _WIN32
+static string PSplitBackToForwardSlashes(const wstring &wstrName)
+  { return PSplitBackToForwardSlashes(WS16toUTF(wstrName)); }
+#endif
+/* -- FileParts class ------------------------------------------------------ */
+class FileParts                        // Contains parts of a filename
+{ /* -- Variables -------------------------------------------------- */ public:
+  const string     strDrive;           // Drive part of path
+  const string     strDir;             // Directory part of path
+  const string     strFile;            // Filename part of path
+  const string     strExt;             // Extension part of path
+  const string     strFileExt;         // Filename plus extension
+  const string     strFull;            // Full path name
+  const string     strLoc;             // Drive+path name without file name
+  /* -- Initialise constructor --------------------------------------------- */
+  FileParts(string &&strDriveNew, string &&strDirNew, string &&strFileNew,
+    string &&strExtNew, string &&strFullNew) :
+    /* -- Initialisation of members ---------------------------------------- */
+    strDrive{ move(strDriveNew) },
+    strDir{ move(strDirNew) },
+    strFile{ move(strFileNew) },
+    strExt{ strExtNew },
+    strFileExt{ strFile+strExt },
+    strFull{ move(strFullNew) },
+    strLoc{ strDrive+strDir }
+    /* -- No code ---------------------------------------------------------- */
+    { }
+  /* -- MOVE assign constructor on class creation -------------------------- */
+  FileParts(FileParts &&pspOther) :
+    /* -- Initialisation of members ---------------------------------------- */
+    strDrive{ move(pspOther.strDrive) },
+    strDir{ move(pspOther.strDir) },
+    strFile{ move(pspOther.strFile) },
+    strExt{ move(pspOther.strExt) },
+    strFileExt{ move(pspOther.strFileExt) },
+    strFull{ move(pspOther.strFull) },
+    strLoc{ move(pspOther.strLoc) }
+    /* -- No code ---------------------------------------------------------- */
+    { }
+  /* ----------------------------------------------------------------------- */
+  DELETECOPYCTORS(FileParts);          // Disable copy constructor and operator
+};/* -- PathSplit class ---------------------------------------------------- */
+class PathSplit :
+  /* -- Base classes ------------------------------------------------------- */
+  public FileParts                     // File parts
+{ /* -- Constructors ---------------------------------------------- */ private:
+  FileParts Init(const string &strSrc, const bool bUseFullPath) const
+  { // Windows?
+#ifdef _WIN32
+    // Wide strings for wide request functions
+    wstring wstrDrive; wstrDrive.resize(_MAX_DRIVE);
+    wstring wstrDir; wstrDir.resize(_MAX_DIR);
+    wstring wstrFile; wstrFile.resize(_MAX_FNAME);
+    wstring wstrExt; wstrExt.resize(_MAX_EXT);
+    wstring wstrFull; wstrFull.resize(_MAX_PATH);
+    wstring wstrSrc{ UTFtoS16(strSrc) };
+    // Build full path name and use requested pathname if not wanted or failed?
+    if(!bUseFullPath || !_wfullpath(const_cast<wchar_t*>(wstrFull.data()),
+      wstrSrc.c_str(), wstrFull.length()))
+        wstrFull = move(wstrSrc);
+    // Split the executable path name into bits and if failed?
+    _wsplitpath_s(const_cast<wchar_t*>(wstrFull.data()),
+                  const_cast<wchar_t*>(wstrDrive.data()), wstrDrive.length(),
+                  const_cast<wchar_t*>(wstrDir.data()), wstrDir.length(),
+                  const_cast<wchar_t*>(wstrFile.data()), wstrFile.length(),
+                  const_cast<wchar_t*>(wstrExt.data()), wstrExt.length());
+    // Finalise strings and replace backslashes with forward slashes
+    return { PSplitBackToForwardSlashes(wstrDrive),
+             PSplitBackToForwardSlashes(wstrDir),
+             PSplitBackToForwardSlashes(wstrFile),
+             PSplitBackToForwardSlashes(wstrExt),
+             PSplitBackToForwardSlashes(wstrFull) };
+    // Unix?
+#else
+    // Create buffers for filename parts
+    string strDir; strDir.resize(_MAX_DIR);
+    string strFull; strFull.resize(_MAX_PATH);
+    string strExt; strExt.resize(_MAX_EXT);
+    string strFile; strFile.resize(_MAX_FNAME);
+    // If a full path name build is requested? Set original string
+    if(!bUseFullPath || !realpath(const_cast<char*>(strSrc.c_str()),
+      const_cast<char*>(strFull.data())))
+        strFull.assign(strSrc);
+    // Succeeded? Resize the string
+    else strFull.resize(strlen(strFull.data()));
+    // This is the final full path string so compact it
+    strFull.shrink_to_fit();
+    // Copy string and grab the directory part because linux version of
+    // dirname() MODIFIES the original argument. We use memcpy because we
+    // Don't want to resize the string. Also let us be careful of how many
+    // bytes we should copy. Copy the lowest allocated string
+    strncpy(const_cast<char*>(strDir.data()), strFull.c_str(),
+      strDir.capacity() < strFull.capacity() ?
+        strDir.capacity() : strFull.capacity());
+    if(const char*const cpDir = dirname(const_cast<char*>(strDir.c_str())))
+    { // If the pointer is not the same as our string? Copy it.
+      if(cpDir != strDir.c_str()) strDir.assign(cpDir);
+      // Finalise the size of the original directory name
+      else strDir.resize(strlen(strDir.c_str()));
+      // Finalise directory and append slash if there is not one to match how
+      // Win32's splitpath works which is better really.
+      if(strDir.back() != '/') strDir.append("/");
+    } // Fiailed so clear the directory name
+    else strDir.clear();
+    // This is the final directory string so compact it
+    strDir.shrink_to_fit();
+    // Prepare filename. Again basename() can modify the argument on linux.
+    strncpy(const_cast<char*>(strFile.data()), strFull.c_str(),
+      strFile.capacity() < strFull.capacity() ?
+        strFile.capacity() : strFull.capacity());
+    if(const char*const cpFile = basename(const_cast<char*>(strFull.c_str())))
+    { // If the pointer is not the same as our string? Copy it.
+      if(cpFile != strFile.c_str()) strFile.assign(cpFile);
+      // Finalise the size of the original file name
+      else strFile.resize(strlen(strFile.c_str()));
+    } // Failed so clear the filename
+    else strFile.clear();
+    // Prepare extension and save extension and if found?
+    const size_t stSlashPos = strFile.find_last_of('/'),
+    stDotPos = FindCharBackwards(strFile, strFile.length() - 1,
+      stSlashPos != string::npos ? (stSlashPos + 1) : 0, '.');
+    if(stDotPos != string::npos)
+    { // Update filename
+      strExt.assign(strFile.substr(stDotPos));
+      strFile.assign(strFile.substr(stSlashPos != string::npos ?
+        stSlashPos : 0, stDotPos));
+    } // No extension so clear memory
+    else strExt.clear();
+    // This is the final file and extension string so compact them
+    strFile.shrink_to_fit();
+    strExt.shrink_to_fit();
+    // Return parts. There is no drive on unix systems
+    return { {},           move(strDir), move(strFile),
+             move(strExt), move(strFull) };
+#endif
+  }
+  /* -- Constructors with initialisation --------------------------- */ public:
+  explicit PathSplit(const string &strSrc, const bool bUseFullPath=false) :
+    /* -- Initialisation of members ---------------------------------------- */
+    FileParts{ Init(strSrc, bUseFullPath) }
+    /* -- No code ---------------------------------------------------------- */
+    { }
+  /* -- MOVE assign constructor on class creation -------------------------- */
+  PathSplit(PathSplit &&psOther) :
+    /* -- Initialisation of members ---------------------------------------- */
+    FileParts{ move(psOther) }
+    /* -- No code ---------------------------------------------------------- */
+    { }
+  /* ----------------------------------------------------------------------- */
+  DELETECOPYCTORS(PathSplit);          // Disable copy constructor and operator
+};/* -- End of module namespace -------------------------------------------- */
+};                                     // End of interface
+/* == EoF =========================================================== EoF == */
