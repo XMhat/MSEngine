@@ -1,4 +1,8 @@
 # MS-Engine
+![Code Quality](https://img.shields.io/codefactor/grade/github/xmhat/msengine?label=Quality&logo=github)
+![Code Size](https://img.shields.io/github/languages/code-size/xmhat/msengine?label=Code&logo=github)
+![Downloads Count](https://img.shields.io/github/downloads/xmhat/msengine/total?label=Downloads&logo=github)
+![Activity This Month](https://img.shields.io/github/commit-activity/4w/xmhat/msengine?label=Activity&logo=github)
 
 ## About…
 MS-Engine (*Mhat'S Engine*) attempts to be a safe, simple and fast [cross-platform](https://en.wikipedia.org/wiki/Cross-platform_software) [2-D](https://en.wikipedia.org/wiki/2D_computer_graphics) [multimedia](https://en.wikipedia.org/wiki/Multimedia) [engine](https://en.wikipedia.org/wiki/Game_engine) written in [C++20](https://en.wikipedia.org/wiki/C%2B%2B20) for [Visual C++](https://en.wikipedia.org/wiki/Microsoft_Visual_C%2B%2B), [C-Lang](https://en.wikipedia.org/wiki/Clang) and [GNU C++](https://en.wikipedia.org/wiki/GNU_Compiler_Collection) Compilers. MS-Engine brings together many [open-source](https://en.wikipedia.org/wiki/Open_source) [libraries](https://en.wikipedia.org/wiki/Library_(computing)) into one easy-to-use environment controlled by the [LUA interpreter](https://en.wikipedia.org/wiki/Lua_(programming_language)). Right now MS-Engine aims to operate on [Windows XP](https://en.wikipedia.org/wiki/Windows_XP) and [better](https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions) (x86 plus [x86-64](https://en.wikipedia.org/wiki/Windows_XP_Professional_x64_Edition)), [MacOS](https://en.wikipedia.org/wiki/MacOS) ([x86-64](https://en.wikipedia.org/wiki/OS_X_Mountain_Lion) plus [Arm64](https://en.wikipedia.org/wiki/MacOS_Big_Sur)) and [Linux](https://en.wikipedia.org/wiki/Linux) ([Ubuntu](https://en.wikipedia.org/wiki/Ubuntu) x86-64).
@@ -9,18 +13,19 @@ There are so many multimedia engines out there and most of them are probably bet
 You might wonder why I decided to write this software using a 3-D sound and rendering API? The reason is because these API's seemed more simple to use for me than SDL at the time I was writing this for Windows in 2006 and I was able to get them to compile just fine the way I wanted. I remember I originally had problems with compiling SDL statically on Windows which also seemed kind of bloated as well compared to the 3-D API's. Nowadays, it may be more feasible to use SDL as the issues I was experiencing seem to be resolved now but that would be a major effort to do now. Nevertheless, I do think that I would possibly like to someday extend the operability to a 3-D engine too which is not far from difficult since the systems to do so are already in place!
 
 ## Features…
+* Scaleable to limits of your hardware and operating system.
+* Good portability and cross-platform.
+* Use of LUA interpreter with configurability and infinite-loop timeout.
+* Full and safe error reporting via extensive use of C++ exceptions.
 * Choice of Unix NCurses, Win32 console or OpenGL 2-D interface.
+* Asynchronous image format loading (such as TGA, PNG, JPG, GIF and DDS).
+* Support for transparent framebuffers and windows.
+* Optional global 8-bit colour palette system for retro applications.
+* Asynchronous audio format loading (such as WAV, CAF, MP3 and OGG).
+* Full support for Theora (OGV) video with basic keying using GLSL.
 * OpenAL audio with samples, streams and sources interfaces.
 * Asynchronous basic HTTP/HTTPS client and SSL socket functionality.
-* Asynchronous image format loading (such as TGA, PNG, JPG, GIF and DDS).
-* Asynchronous audio format loading (such as WAV, CAF and OGG).
-* Full support for Theora (OGV) video with basic keying using GLSL.
-* Support for transparent framebuffers and windows.
-* Use of LUA interpreter with configurability and infinite-loop timeout.
-* Good portability and cross-platform!
 * Optional encryption of your non-volatile data with cvars system.
-* Scaleable to limits of your hardware and operating system.
-* Full error reporting via use of C++ exceptions.
 * Safe directory, memory and file manipulation functions.
 * SqLite database support optimised for speed.
 * (De)Compression supporting ZIP, LZMA, RAW and AES encryption.
@@ -54,20 +59,20 @@ A remake of the classic Amiga and DOS game [Diggers](diggers) was made with this
 ## Credits…
 This engine makes use of the following open-source and commercially distributable components that are always updated to the latest versions...
 
-| Library | Version | Author | Usage |
+| Library | Version | Author | Purpose |
 | --- | --- | --- | --- |
+| [7-Zip](https://7-zip.org/sdk.html) | 22 | Igor Pavlov | LZMA (De/En)coder and support .7Z archives. |
 | [FreeType](https://github.com/freetype/freetype) | 2.13 | © The FreeType Project | Load and render TTF fonts. |
-| [GLFW](https://github.com/glfw) | 3.3 | © Marcus Geelnard & Camilla Löwy | Interface to Window, OpenGL and input. |
+| [GLFW](https://github.com/glfw/glfw) | 3.3 | © Marcus Geelnard & Camilla Löwy | Interface to Window, OpenGL and input. |
 | [LibJPEGTurbo](https://github.com/libjpeg-turbo/libjpeg-turbo) | 2.1 | © IJG/Contributing authors | (De/En)code JPEG's. |
-| [LibNSGif](https://www.netsurf-browser.org/projects/libnsgif/) | 0.2 | © Richard Wilson & Sean Fox | Decode GIF's. |
-| [LibPNG](https://github.com/glennrp/libpng) | 1.6 | © Contributing authors. | (De/En)code PNG's. |
+| [LibNSGif](https://github.com/netsurf-browser/libnsgif) | 0.2 | © Richard Wilson & Sean Fox | Decode GIF's. |
+| [LibPNG](https://github.com/glennrp/libpng) | 1.6 | © Contributing authors | (De/En)code PNG's. |
 | [LUA](https://github.com/lua/lua) | 5.4 | © Lua.org, PUC-Rio | User code interpreter. |
-| [LZMA](https://7-zip.org/sdk.html) | 22 | Igor Pavlov | LZMA (De/En)coder and support .7Z archives. |
-| [MiniMP3](https://www.pschatzmann.ch/home/2022/05/14/the-minimp3-codec-on-an-esp32/) | 1.0 | Martin Fiedler. | Decode .MP3 files. |
-| [NCurses](https://linux.die.net/man/3/ncurses) | 5.7 | © Free Software Foundation. | Unix and MacOS text mode support. |
+| [MiniMP3](https://www.pschatzmann.ch/home/2022/05/14/the-minimp3-codec-on-an-esp32/) | 1.0 | Martin Fiedler | Decode .MP3 files. |
+| [NCurses](https://linux.die.net/man/3/ncurses) | 5.7 | © Free Software Foundation | Unix and MacOS text mode support. |
 | [Ogg](https://github.com/xiph/ogg) | 1.3 | Xiph.Org | Read .OGG files. |
-| [OpenALSoft](https://github.com/kcat/openal-soft) | 1.23 | Chris Robinson. | 3-D audio API. |
-| [OpenSSL](https://github.com/openssl/openssl) | 3.0 | OpenSSL Software Foundation | Basic SSL networking and (de/en)cryption. |
+| [OpenALSoft](https://github.com/kcat/openal-soft) | 1.23 | Chris Robinson | 3-D audio API. |
+| [OpenSSL](https://github.com/openssl/openssl) | 3.1 | OpenSSL Software Foundation | Basic SSL networking and (de/en)cryption. |
 | [RapidJson](https://github.com/Tencent/rapidjson) | 1.1 | © THL A29 Ltd., Tencent co. & Milo Yip | Read/write JSON objects. |
 | [SQLite](https://github.com/sqlite/sqlite) | 3.41 | Contributing authors | Store user non-volatile data. |
 | [Theora](https://github.com/xiph/theora) | 3.2 | Xiph.Org | Read and render .OGV full-motion movies. |

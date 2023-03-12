@@ -7,14 +7,14 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfSystem {                   // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfSysUtil {                  // Start of module namespace
 /* ------------------------------------------------------------------------- */
 using namespace Library::GlFW;         // Using GlFW library functions
-using namespace IfUtf;                 // Using utf interface
-using namespace IfString;              // Using string interface
+using namespace IfUtf;                 // Using utf namespace
+using namespace IfString;              // Using string namespace
 /* -- Includes ------------------------------------------------------------- */
-#if defined(_WIN32)                    // Using windows?
+#if defined(WINDOWS)                   // Using windows?
 /* -- System error formatter with specified error code --------------------- */
 static const string SysError(const int iError)
 { // Convert int to DWORD as we use the same function type across platforms
@@ -74,7 +74,7 @@ static void SysSetThreadName(const char*const cpName)
   __except(EXCEPTION_CONTINUE_EXECUTION) { }
 }
 /* ------------------------------------------------------------------------- */
-#elif defined(__APPLE__)               // Using mac?
+#elif defined(MACOS)                   // Using mac?
 /* -- System error code ---------------------------------------------------- */
 template<typename IntType=int>static IntType SysErrorCode(void)
   { return static_cast<IntType>(GetErrNo()); }
@@ -84,7 +84,7 @@ static const string SysError(const int iError) { return LocalError(iError); }
 static const string SysError(void) { return LocalError(SysErrorCode()); }
 /* -- Actual interface to show a message box ----------------------------- */
 static unsigned int SysMessage(void*const, const string &strTitle,
-  const string &strMessage, const unsigned int)
+  const string &strMessage, const unsigned int uiFlags)
 { // Make an autorelease ptr for Apple strings. Not sure if Apple provides a
   // non-pointer based CStringRef so we'll just remove it instead!
   typedef unique_ptr<const void, function<decltype(CFRelease)>> CFAutoRelPtr;
@@ -96,30 +96,42 @@ static unsigned int SysMessage(void*const, const string &strTitle,
     if(const CFAutoRelPtr csrMessage{
       CFStringCreateWithCString(kCFAllocatorDefault, strMessage.c_str(),
         kCFStringEncodingUTF8), CFRelease })
-    { // Setup keys for dictionary
-      array<const void*,2>
-        vpKeys{ kCFUserNotificationAlertHeaderKey,
-                kCFUserNotificationAlertMessageKey },
-        // Setup values for dictionary
-        vpVals{ csrTitle.get(),
-                csrMessage.get() };
-      // Create dictionary
-      if(const CFAutoRelPtr cfdrDict{
-        CFDictionaryCreate(nullptr, vpKeys.data(), vpVals.data(),
-          vpKeys.size(), &kCFTypeDictionaryKeyCallBacks,
-          &kCFTypeDictionaryValueCallBacks),
-          CFRelease })
-      { // Holds the result
-        SInt32 nRes = 0;
-        // Dispatch the message box and return result if successful
-        if(const CFAutoRelPtr pDlg{
-          CFUserNotificationCreate(kCFAllocatorDefault, 0,
-            kCFUserNotificationPlainAlertLevel, &nRes,
-            reinterpret_cast<CFDictionaryRef>(cfdrDict.get())),
+      // Setup button text string with autorelease and if succeeded?
+      if(const CFAutoRelPtr csrButton{
+        CFStringCreateWithCString(kCFAllocatorDefault, "Quit Application",
+          kCFStringEncodingUTF8), CFRelease })
+      { // Setup keys for dictionary
+        array<const void*,3>
+          vpKeys{ kCFUserNotificationAlertHeaderKey,
+                  kCFUserNotificationAlertMessageKey,
+                  kCFUserNotificationDefaultButtonTitleKey },
+          // Setup values for dictionary
+          vpVals{ csrTitle.get(),
+                  csrMessage.get(),
+                  csrButton.get() };
+        // Create dictionary
+        if(const CFAutoRelPtr cfdrDict{
+          CFDictionaryCreate(nullptr, vpKeys.data(), vpVals.data(),
+            vpKeys.size(), &kCFTypeDictionaryKeyCallBacks,
+            &kCFTypeDictionaryValueCallBacks),
             CFRelease })
-          return static_cast<unsigned int>(nRes);
+        { // Holds the result
+          SInt32 nRes = 0;
+          // Dispatch the message box and return result if successful
+          if(const CFAutoRelPtr pDlg{
+            CFUserNotificationCreate(kCFAllocatorDefault, 0,
+              uiFlags & MB_ICONSTOP ?
+                kCFUserNotificationStopAlertLevel
+            :(uiFlags & MB_ICONEXCLAMATION ?
+                kCFUserNotificationCautionAlertLevel
+            :(uiFlags & MB_ICONINFORMATION ?
+                kCFUserNotificationPlainAlertLevel
+            : kCFUserNotificationNoteAlertLevel)), &nRes,
+              reinterpret_cast<CFDictionaryRef>(cfdrDict.get())),
+              CFRelease })
+            return static_cast<unsigned int>(nRes);
+        }
       }
-    }
   // Didn't work so put in stdout
   fwprintf(stderr, L"%ls: %ls\n", Decoder{ strTitle }.Wide().c_str(),
                                   Decoder{ strMessage }.Wide().c_str());
@@ -131,9 +143,9 @@ static void SysSetThreadName(const char*const) { }
 /* ------------------------------------------------------------------------- */
 #else                                  // Using linux?
 /* -- Compatibility with X11 ----------------------------------------------- */
-#ifdef Bool                            // Undefine 'Bool' set by X11
-# undef Bool                           // To prevent problems with other apis
-#endif                                 // Done checking for 'Bool'
+# if defined(Bool)                     // Undefine 'Bool' set by X11
+#  undef Bool                          // To prevent problems with other apis
+# endif                                // Done checking for 'Bool'
 /* -- System error code ---------------------------------------------------- */
 template<typename IntType=int>static IntType SysErrorCode(void)
   { return static_cast<IntType>(GetErrNo()); }
@@ -155,10 +167,10 @@ static void SysSetThreadName(const char*const) { }
 /* ------------------------------------------------------------------------- */
 #endif                                 // Done checking OS
 /* ------------------------------------------------------------------------- */
-class SysErrorPlugin
+struct SysErrorPlugin final
 { /* -- Exception class helper macro for system errors --------------------- */
-  #define XCS(r,...) throw Error<SysErrorPlugin>(r, ## __VA_ARGS__)
-  /* -- Constructor to add system error code ----------------------- */ public:
+#define XCS(r,...) throw Error<SysErrorPlugin>(r, ## __VA_ARGS__)
+  /* -- Constructor to add system error code ------------------------------- */
   explicit SysErrorPlugin(ostringstream &osS)
   { // Get system error code and add system formatted parameter
     const int iCode = SysErrorCode();
@@ -167,13 +179,13 @@ class SysErrorPlugin
 };/* ----------------------------------------------------------------------- */
 static bool SysIsErrorCode(const int iCode=0)
   { return SysErrorCode() == iCode; }
-static bool SysIsNotErrorCode(const int iCode=0)
+[[maybe_unused]] static bool SysIsNotErrorCode(const int iCode=0)
   { return !SysIsErrorCode(iCode); }
 /* -- System message without a handle -------------------------------------- */
 static unsigned int SysMessage(const string &strTitle,
   const string &strMessage, const unsigned int uiFlags)
     { return SysMessage(nullptr, strTitle, strMessage,
         MB_SYSTEMMODAL|uiFlags); }
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

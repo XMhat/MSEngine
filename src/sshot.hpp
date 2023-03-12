@@ -6,21 +6,20 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfSShot {                    // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfSShot {                    // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfThread;              // Using thread interface
-using namespace IfImage;               // Using image interface
-using namespace IfFboMain;             // Using fbomain interface
-/* == Core fbo wrapper class =============================================== */
-static class SShot :
+using namespace IfThread;              // Using thread namespace
+using namespace IfImage;               // Using image namespace
+using namespace IfFboMain;             // Using fbomain namespace
+/* -- Core fbo wrapper class ----------------------------------------------- */
+static class SShot final :             // Members initially private
   /* -- Base classes ------------------------------------------------------- */
   public Thread,                       // Process in background
-  public Image,                        // Image data class
-  public string                        // Filename to save to
-{ /* -- Screenshot thread ------------------------------------------ */ public:
-  size_t           stScreenShotId;     // Screenshot id to use
-  /* == Fbo dumper thread callback ========================================= */
+  public Image                         // Image data class
+{ /* -- Screenshot thread -------------------------------------------------- */
+  size_t           stFormatId;         // Screenshot id to use
+  /* -- Fbo dumper thread callback ----------------------------------------- */
   int DumpThread(const Thread &)
   { // Code to return
     int iReturn;
@@ -29,35 +28,36 @@ static class SShot :
     { // Reverse pixels or they will be upside down
       ReversePixels();
       // Save the image to disk
-      SaveFile(data(), 0, stScreenShotId);
+      SaveFile(Image::IdentGet(), 0, stFormatId);
       // Success
       iReturn = 1;
     } // exception occured?
     catch(const exception &E)
     { // Report error
-      LW(LH_ERROR, "(SCREENSHOT WRITER THREAD EXCEPTION) $", E.what());
+      cLog->LogErrorExSafe("(SCREENSHOT WRITER THREAD EXCEPTION) $", E.what());
       // Errored return code
       iReturn = -1;
     } // Free the memory created with the bitmap
-    ClearData();
+    clear();
     // Return the code specified
     return iReturn;
   }
-  /* -- Capture screenshot from FBO ---------------------------------------- */
+  /* -- Capture screenshot from FBO -------------------------------- */ public:
   bool DumpFBO(const Fbo &fboRef, const string &strFN={})
   { // Cancel if thread is still running
     if(ThreadIsRunning()) return false;
     // DeInit old thread, we need to reuse it
     ThreadDeInit();
     // Log procedure
-    LW(LH_DEBUG, "SShot '$' grabbing back buffer to write to screenshot...",
+    cLog->LogDebugExSafe(
+      "SShot '$' grabbing back buffer to write to screenshot...",
       fboRef.IdentGet());
     // Allocate storage (Writing as RGB 24-bit).
-    const unsigned int uiBitsPerPixel = 24;
+    const BitDepth bdBPP = BD_RGB;
     const GLenum eMode = GL_RGB;
-    const size_t stBytesPerPixel = uiBitsPerPixel / 8;
-    Memory aOut{ static_cast<size_t>(fboRef.stFBOWidth * fboRef.stFBOHeight) *
-      stBytesPerPixel };
+    const size_t stBytesPerPixel = BD_RGB / 8;
+    Memory mBuffer{ fboRef.DimGetWidth<size_t>() *
+      fboRef.DimGetHeight<size_t>() * stBytesPerPixel };
     // Bind the fbo
     GL(cOgl->BindFBO(fboRef.uiFBO),
       "Failed to bind FBO to dump!",
@@ -67,19 +67,21 @@ static class SShot :
       "Failed to bind FBO texture to dump!",
       "Identifier", fboRef.IdentGet(), "Id", fboRef.uiFBOtex);
     // Read into buffer
-    GL(cOgl->ReadTexture(eMode, aOut.Ptr<GLvoid>()),
+    GL(cOgl->ReadTexture(eMode, mBuffer.Ptr<GLvoid>()),
       "Failed to read FBO pixel data!",
       "Identifier", fboRef.IdentGet(), "Mode", eMode);
     // Get new filename or original filename
-    assign(strFN.empty() ? Append(cCVars->GetInternalStrSafe(APP_SHORTNAME),
-      cmSys.FormatTime("-%Y%m%d-%H%M%S")) : strFN);
+    Image::IdentSet(strFN.empty() ?
+      Append(cCVars->GetInternalStrSafe(APP_SHORTNAME),
+        cmSys.FormatTime("-%Y%m%d-%H%M%S")) : strFN);
     // Log status
-    LW(LH_DEBUG, "SShot '$' screen capture to '$' ($x$x$)...",
-      fboRef.IdentGet(), data(), fboRef.stFBOWidth, fboRef.stFBOHeight,
-      uiBitsPerPixel);
+    cLog->LogDebugExSafe("SShot '$' screen capture to '$' ($x$x$)...",
+      fboRef.IdentGet(), Image::IdentGet(), fboRef.DimGetWidth(),
+      fboRef.DimGetHeight(), bdBPP);
     // Setup raw image
-    InitRaw(c_str(), move(aOut), static_cast<unsigned int>(fboRef.stFBOWidth),
-      static_cast<unsigned int>(fboRef.stFBOHeight), uiBitsPerPixel, eMode);
+    InitRaw(Image::IdentGet(), std::move(mBuffer),
+      fboRef.DimGetWidth<unsigned int>(), fboRef.DimGetHeight<unsigned int>(),
+      bdBPP, eMode);
     // Launch thread to write the screenshot to disk in the background
     ThreadStart();
     // Success
@@ -87,23 +89,22 @@ static class SShot :
   }
   /* -- Dump main fbo ------------------------------------------------------ */
   void DumpMain(void) { DumpFBO(cFboMain->fboMain); }
-  /* -- Initialise fbos using a different constructor ---------------------- */
-  SShot(void) :
+  /* -- Default constructor ------------------------------------------------ */
+  SShot(void) :                        // No parameters
     /* -- Initialisation of members ---------------------------------------- */
     Thread{ "sshot",                   // Prepare screenshot thread
       bind(&SShot::DumpThread,         // Dump thread entry function
         this, _1) },                   // Send this class pointer
-    stScreenShotId(0)                  // Start screenshot id from zero
+    stFormatId(0)                      // Not truly initialised yet
     /* -- No code ---------------------------------------------------------- */
     { }
+  /* -- Set image format type ---------------------------------------------- */
+  CVarReturn SetScreenShotType(const size_t stId)
+    { return CVarSimpleSetIntNGE(stFormatId, stId, cImageFmts->size()); }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(SShot);              // Supress copy constructor for safety
-  /* -- FboCore::End ------------------------------------------------------- */
+  /* ----------------------------------------------------------------------- */
 } *cSShot = nullptr;                   // Pointer to static class
-/* == Set image format type ================================================ */
-static CVarReturn SetScreenShotType(const size_t stId)
-  { return CVarSimpleSetIntNGE(cSShot->stScreenShotId, stId,
-      cImageFmts->size()); }
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

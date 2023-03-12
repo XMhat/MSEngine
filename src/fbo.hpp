@@ -9,10 +9,10 @@
 /* ##       can't override the built in shaders.                          ## */
 /* ######################################################################### */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfFbo {                      // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfFbo {                      // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfFboBase;             // Using fbobase interface
+using namespace IfFboBase;             // Using fbobase namespace
 /* == Fbo collector class for collector data and custom variables ========== */
 BEGIN_COLLECTOREX2(Fbos, Fbo, CLHelperUnsafe, // Build 'Fbos' collector/child
 /* -- Fbo collector variables ---------------------------------------------- */
@@ -22,10 +22,10 @@ struct OrderItem :                     /* Order item structure              */\
 { /* -- Variables --------------------------------------------------------- */\
   Fbo             *fboDest;            /* Reference to fbo to draw to       */\
   GLsizei          stVertices;         /* No. of vertices in fbo gtlData.   */\
-  size_t           stCommands;         /* No. of commands in fbo gclData.   */\
+  ssize_t          stCommands;         /* No. of commands in fbo gclData.   */\
   /* -- Init constructor --------------------------------------------------- */
   OrderItem(const FboRenderItem &friOther, Fbo*const fboNDest,
-    const GLsizei stNVertices, const size_t stNCommands) : \
+    const GLsizei stNVertices, const ssize_t stNCommands) : \
     /* -- Initialisation of members ---------------------------------------- */
     FboRenderItem{ friOther },         fboDest(fboNDest), \
     stVertices(stNVertices),           stCommands(stNCommands) \
@@ -150,7 +150,7 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
   { // Select our FBO as render target
     cOgl->BindFBO(oiRef.uiFBO);
     // Set the viewport of the framebuffer to the total visible pixels
-    cOgl->SetViewportWH(oiRef.stFBOWidth, oiRef.stFBOHeight);
+    cOgl->SetViewportWH(oiRef.DimGetWidth(), oiRef.DimGetHeight());
     // Set blending mode
     cOgl->SetBlendIfChanged(oiRef);
     // Clear the fbo if requested
@@ -159,13 +159,12 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
     if(!oiRef.stVertices) return;
     // For each 2D shader...
     for(Shader &shBuiltIn : cFboBase->sh2DBuiltIns)
-      shBuiltIn.UpdateOrtho(oiRef.GetCoLeft(), oiRef.GetCoTop(),
-                            oiRef.GetCoRight(), oiRef.GetCoBottom());
+      shBuiltIn.UpdateOrtho(oiRef);
     // Buffer the new vertex data
     cOgl->BufferStaticData(oiRef.stVertices, ftlActive.data());
     // For each command in this order
     for(auto fclIt{ fclActive.cbegin() },
-             fclItEnd{ next(fclIt, static_cast<ssize_t>(oiRef.stCommands)) };
+             fclItEnd{ next(fclIt, oiRef.stCommands) };
              fclIt < fclItEnd;
            ++fclIt)
     { // Get command data
@@ -215,7 +214,7 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
     // Add current count to fbo rendering queue
     cParent.ovActive.push_back({ *this, this,
       static_cast<GLsizei>(stTrianglesFrame * sizeof(FboTri)),
-      stCommandsFrame });
+      IntOrMax<ssize_t>(stCommandsFrame) });
     // Incrememnt number of times this fbo is referenced in the active list,
     // this is so when the reference counter is reduced the zero, the triangles
     // and command lists are permitted to clear on FboRender().
@@ -276,9 +275,11 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
   void CommitWrap(void)
   { // Select our fbo and texture
     BindAndTexture();
-    // Procedures to perform
+    // Structure of the wrapping types
     struct Procedure { const GLenum eWrap; const char cWrap; };
-    static const array<const Procedure,3> sProcedures{{
+    typedef std::array<const Procedure, 3> Procedures;
+    // Procedures to perform
+    static const Procedures sProcedures{{
       { GL_TEXTURE_WRAP_S, 'S' },
       { GL_TEXTURE_WRAP_T, 'T' },
       { GL_TEXTURE_WRAP_R, 'R' }
@@ -303,11 +304,13 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
     BindAndTexture();
     // Set filtering
     GL(cOgl->SetTexParam(GL_TEXTURE_MIN_FILTER, iMinFilter),
-      "Failed to set minification filter!", "Identifier", IdentGet(),
-      "MinFilter",  iMinFilter,             "MagFilter",  iMagFilter);
+      "Failed to set minification filter!",
+      "Identifier", IdentGet(), "MinFilter", iMinFilter,
+      "MagFilter",  iMagFilter);
     GL(cOgl->SetTexParam(GL_TEXTURE_MAG_FILTER, iMagFilter),
-      "Failed to set magnification filter!", "Identifier", IdentGet(),
-      "MinFilter",  iMinFilter,              "MagFilter",  iMagFilter);
+      "Failed to set magnification filter!",
+      "Identifier", IdentGet(), "MinFilter", iMinFilter,
+      "MagFilter",  iMagFilter);
   }
   /* -- Set filtering by ID and commit ------------------------------------- */
   void SetFilterCommit(const size_t stId)
@@ -319,8 +322,10 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
   /* -- Set backbuffer blending mode --------------------------------------- */
   void SetBlend(const size_t stSFactorRGB, const size_t stDFactorRGB,
     const size_t stSFactorA, const size_t stDFactorA)
-  {  // OpenGL blending flags
-    static const array<const GLenum, OB_MAX> aBlends
+  { // Structure of the data to lookup
+    typedef std::array<const GLenum, OB_MAX> BlendFunctions;
+    // OpenGL blending flags
+    static const BlendFunctions aBlends
     { // ## RGB & Alpha Blend Factors StringId
       GL_ZERO,                         // 00 (0,0,0)            0      Z
       GL_ONE,                          // 01 (1,1,1)            1      O
@@ -374,7 +379,7 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
   bool Reserve(const size_t stTri, const size_t stCmd)
     { return ReserveCommands(stCmd) && ReserveTriangles(stTri); }
   /* -- ReInitialise ------------------------------------------------------- */
-  void ReInit(void) { Init(IdentGet(), stFBOWidth, stFBOHeight); }
+  void ReInit(void) { Init(IdentGet(), DimGetWidth(), DimGetHeight()); }
   /* -- DeInitialise ------------------------------------------------------- */
   void DeInit(void)
   { // Remove as active fbo if set
@@ -386,7 +391,7 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
     { // Mark texture for deletion (explanation at top)
       cOgl->SetDeleteTexture(uiFBOtex);
       // Log the de-initialised
-      LW(LH_DEBUG, "Fbo '$' at $ removed texture $.",
+      cLog->LogDebugExSafe("Fbo '$' at $ removed texture $.",
         IdentGet(), uiFBO, uiFBOtex);
       // Done with this texture handle
       uiFBOtex = 0;
@@ -395,7 +400,7 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
     { // Mark fbo for deletion (explanation at top)
       cOgl->SetDeleteFbo(uiFBO);
       // Log the de-initialised
-      LW(LH_DEBUG, "Fbo '$' removed from $.", IdentGet(), uiFBO);
+      cLog->LogDebugExSafe("Fbo '$' removed from $.", IdentGet(), uiFBO);
       // Done with this fbo handle
       uiFBO = 0;
     } // Return if fbo is not in the fbo order list
@@ -415,15 +420,17 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
   { // De-initialise old FBO first.
     DeInit();
     // Set identifier.
-    IdentSet(move(strID));
+    IdentSet(std::move(strID));
     // Say we're initialising the frame buffer.
-    LW(LH_DEBUG, "Fbo initialising a $x$ object '$'...", stW, stH, IdentGet());
+    cLog->LogDebugExSafe("Fbo initialising a $x$ object '$'...",
+      stW, stH, IdentGet());
     // Record dimensions and clamp texture size to maximum supported size.
-    stFBOWidth = Minimum(cOgl->MaxTexSize<GLsizei>(), stW);
-    stFBOHeight = Minimum(cOgl->MaxTexSize<GLsizei>(), stH);
+    DimSet(Minimum(cOgl->MaxTexSize<GLsizei>(), stW),
+           Minimum(cOgl->MaxTexSize<GLsizei>(), stH));
     // If dimensions are different we need to tell the user that
-    if(stFBOWidth != stW || stFBOHeight != stH)
-      LW(LH_WARNING, "Fbo '$' dimensions exceed renderer limit ($x$ > $^2)!",
+    if(DimGetWidth() != stW || DimGetHeight() != stH)
+      cLog->LogWarningExSafe(
+        "Fbo '$' dimensions exceed renderer limit ($x$ > $^2)!",
         IdentGet(), stW, stH, cOgl->MaxTexSize());
     // Generate framebuffer and throw error if failed.
     GL(cOgl->CreateFBO(&uiFBO), "Failed to create framebuffer!",
@@ -440,10 +447,11 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
     // Bind the texture so we can set it up
     BindTexture();
     // nullptr means reserve texture memory but to not copy any data to it
-    GL(cOgl->UploadTexture(0, stFBOWidth, stFBOHeight, iPixFormat, GL_BGR,
-      nullptr), "Failed to allocate video memory for framebuffer texture!",
+    GL(cOgl->UploadTexture(0, DimGetWidth(), DimGetHeight(), iPixFormat,
+      GL_BGR, nullptr),
+        "Failed to allocate video memory for framebuffer texture!",
         "Identifier",  IdentGet(),    "Texture", uiFBOtex,
-        "Width",       stFBOWidth, "Height",  stFBOHeight,
+        "Width",       DimGetWidth(), "Height",  DimGetHeight(),
         "PixelFormat", iPixFormat);
     // Attach 2D texture to this FBO
     GL(cOgl->AttachTexFBO(uiFBOtex),
@@ -461,25 +469,27 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
     CommitFilter();
     CommitWrap();
     // Say we've initialised the frame buffer
-    LW(LH_DEBUG, "Fbo initialised '$' at $ (S=$x$;A=$;T=$).", IdentGet(),
-      uiFBO, stFBOWidth, stFBOHeight, ToRatio(GetCoRight(), GetCoBottom()),
-      uiFBOtex);
+    cLog->LogDebugExSafe("Fbo initialised '$' at $ (S=$x$;A=$;T=$).",
+      IdentGet(), uiFBO, DimGetWidth(), DimGetHeight(), ToRatio(GetCoRight(),
+      GetCoBottom()), uiFBOtex);
   }
   /* -- Constructor -------------------------------------------------------- */
   Fbo(void) :                          // No parameters
-    /* --------------------------------------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperFbo{ *cFbos, this },       // Initially registered
+    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     Lockable{ false },                 // Freeable by Lua GC
     FboVariables{ GL_RGBA8 }           // Has alpha channel
-    /* --------------------------------------------------------------------- */
+    /* -- Code ------------------------------------------------------------- */
     { }                                // Do nothing else
   /* -- Constructor WITHOUT registration (used for core Fbos)--------------- */
   explicit Fbo(const GLint iPF) :      // Pixel format requested
-    /* --------------------------------------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperFbo{ *cFbos },             // Initially unregistered
+    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     Lockable{ true },                  // Not freeable by Lua GC
     FboVariables{ iPF }                // Creator chooses if has alpha channel
-    /* --------------------------------------------------------------------- */
+    /* -- Code ------------------------------------------------------------- */
     { }                                // Do nothing else
   /* -- Destructor --------------------------------------------------------- */
   ~Fbo(void) { DeInit(); }
@@ -504,24 +514,24 @@ static void FboReInit(void)
 { // Ignore if no fbos
   if(cFbos->empty()) return;
   // Re-init all fbos and log pre/post operation.
-  LW(LH_DEBUG, "Fbos re-initialising $ objects...", cFbos->size());
+  cLog->LogDebugExSafe("Fbos re-initialising $ objects...", cFbos->size());
   for(Fbo*const fCptr : *cFbos) fCptr->ReInit();
-  LW(LH_INFO, "Fbos re-initialised $ objects.", cFbos->size());
+  cLog->LogInfoExSafe("Fbos re-initialised $ objects.", cFbos->size());
 }
 /* ========================================================================= */
 static void FboDeInit(void)
 { // Ignore if no fbos
   if(cFbos->empty()) return;
   // De-init all fbos (NOT destroy them!) and log pre/post operation.
-  LW(LH_DEBUG, "Fbos de-initialising $ objects...", cFbos->size());
+  cLog->LogDebugExSafe("Fbos de-initialising $ objects...", cFbos->size());
   for(Fbo*const fCptr : *cFbos) fCptr->DeInit();
-  LW(LH_INFO, "Fbos de-initialised $ objects.", cFbos->size());
+  cLog->LogInfoExSafe("Fbos de-initialised $ objects.", cFbos->size());
 }
 /* -- Set fbo render order reserve ----------------------------------------- */
 static CVarReturn FboSetOrderReserve(const size_t stCount)
   { return BoolToCVarReturn(ReserveList(cFbos->ovActive, stCount)); }
 /* -- Get active FBO ------------------------------------------------------- */
 static Fbo *FboActive(void) { return cFbos->fboActive; }
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

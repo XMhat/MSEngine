@@ -6,18 +6,18 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfAudio {                    // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfAudio {                    // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfSample;              // Using sample interface
-using namespace IfVideo;               // Using video interface
+using namespace IfSample;              // Using sample namespace
+using namespace IfVideo;               // Using video namespace
 /* == Typedefs ============================================================= */
 BUILD_FLAGS(Audio,                     // Audio flags classes
   /* ----------------------------------------------------------------------- */
   // No settings?                      Audio system is resetting?
   AF_NONE                {0x00000000}, AF_REINIT              {0x00000001}
 );/* ======================================================================= */
-static class Audio :                   // Audio manager class
+static class Audio final :             // Audio manager class
   /* -- Base classes ------------------------------------------------------- */
   private IHelper,                     // Initialisation helper class
   public AudioFlags                    // Audio flags
@@ -34,7 +34,7 @@ static class Audio :                   // Audio manager class
   { // Capture exceptions
     try
     { // Log status
-      LW(LH_DEBUG, "Audio class re-initialising...");
+      cLog->LogDebugSafe("Audio class re-initialising...");
       // De-Init thread
       ThreadDeInit();
       // Unload all buffers for streams and samples and destroy all sources
@@ -57,11 +57,11 @@ static class Audio :                   // Audio manager class
       // Init monitoring thread
       InitThread();
       // Log status
-      LW(LH_INFO, "Audio class re-initialised successfully.");
+      cLog->LogInfoSafe("Audio class re-initialised successfully.");
     } // We don't want LUA to hard break really.
     catch(const exception &E)
     { // Log the exception first
-      LW(LH_ERROR, "Audio re-init exception: $", E.what());
+      cLog->LogErrorExSafe("Audio re-init exception: $", E.what());
       // Reset next thread check time
       ResetCheckTime();
     } // Remove re-initialisation flag
@@ -91,7 +91,7 @@ static class Audio :                   // Audio manager class
   } // exception occured in this thread
   catch(const exception &E)
   { // Report error
-    LW(LH_ERROR, "(AUDIO THREAD EXCEPTION) $", E.what());
+    cLog->LogErrorExSafe("(AUDIO THREAD EXCEPTION) $", E.what());
     // Restart the thread
     return 0;
   }
@@ -113,14 +113,14 @@ static class Audio :                   // Audio manager class
         if(stIndex >= dlPBDevices.size())
         { // Log warning and add to discreprency list
           ++stDiscreprencies;
-          LW(LH_WARNING, "Audio thread discreprency $: ",
+          cLog->LogWarningExSafe("Audio thread discreprency $: "
             "Device index $ over limit of $!",
               stDiscreprencies, stIndex, dlPBDevices.size());
         } // Is the device name the same
         else if(dlPBDevices[stIndex] != cpList)
         { // Log warning and add to discreprency list
           ++stDiscreprencies;
-          LW(LH_WARNING, "Audio thread discreprency $: "
+          cLog->LogWarningExSafe("Audio thread discreprency $: "
             "Expected device '$' at $, not '$'!",
               stDiscreprencies, dlPBDevices[stIndex], stIndex, cpList);
         }
@@ -131,7 +131,7 @@ static class Audio :                   // Audio manager class
       if(stIndex != dlPBDevices.size())
       { // Log warning and add to discreprency list
         ++stDiscreprencies;
-        LW(LH_WARNING, "Audio thread discreprency $: "
+        cLog->LogWarningExSafe("Audio thread discreprency $: "
           "Detected $ devices and had $ before!",
             stDiscreprencies, stIndex, stIndex != dlPBDevices.size());
       }
@@ -139,13 +139,13 @@ static class Audio :                   // Audio manager class
     else if(dlPBDevices.size())
     { // Log warning and add to discreprency list
       ++stDiscreprencies;
-      LW(LH_WARNING, "Audio thread discreprency $: "
+      cLog->LogWarningExSafe("Audio thread discreprency $: "
         "$ new devices detected!", stDiscreprencies, dlPBDevices.size());
     } // If there are discreprencies, then we need to restart the subsystem.
     if(stDiscreprencies)
     { // Send message to log
-      LW(LH_WARNING, "Audio thread detected $ hardware discreprencies!",
-        stDiscreprencies);
+      cLog->LogWarningExSafe(
+        "Audio thread detected $ hardware discreprencies!", stDiscreprencies);
       // Send event to reset audio
       cEvtMain->Add(EMC_AUD_REINIT);
       // Terminate this thread
@@ -158,23 +158,23 @@ static class Audio :                   // Audio manager class
   /* -- DeInit thread ------------------------------------------------------ */
   void ThreadDeInit(void)
   { // Stop and de-init the thread and log progress
-    LW(LH_DEBUG, "Audio monitoring thread de-initialising...");
+    cLog->LogDebugSafe("Audio monitoring thread de-initialising...");
     tThread.ThreadDeInit();
-    LW(LH_INFO, "Audio monitoring thread de-initialised.");
+    cLog->LogInfoSafe("Audio monitoring thread de-initialised.");
   }
   /* -- Init thread -------------------------------------------------------- */
   void InitThread(void)
   { // Initialise and start thread and log progress
-    LW(LH_DEBUG, "Audio monitoring thread initialising...");
+    cLog->LogDebugSafe("Audio monitoring thread initialising...");
     tThread.ThreadStart(this);
-    LW(LH_INFO, "Audio monitoring thread initialised (D:$;C:$)!",
+    cLog->LogInfoExSafe("Audio monitoring thread initialised (D:$;C:$)!",
       ToShortDuration(ClockDurationToDouble(cdThreadDelay)),
       ToShortDuration(ClockDurationToDouble(cdCheckRate)));
   }
   /* -- Init context ------------------------------------------------------- */
   void InitContext(void)
   { // Log that we are initialising
-    LW(LH_DEBUG, "Audio subsystem initialising...");
+    cLog->LogDebugSafe("Audio subsystem initialising...");
     // Enumerate devices
     EnumeratePlaybackDevices();
     EnumerateCaptureDevices();
@@ -187,7 +187,8 @@ static class Audio :                   // Audio manager class
     { // Invalid device? Use default device!
       if(stDevice >= dlPBDevices.size())
       { // Log that the device id is invalid
-        LW(LH_WARNING, "Audio device #$ invalid so using default!", stDevice);
+        cLog->LogWarningExSafe("Audio device #$ invalid so using default!",
+          stDevice);
         // Set to default device
         stDevice = 0;
       } // Set device
@@ -197,7 +198,7 @@ static class Audio :                   // Audio manager class
       const char*const cpDevice =
         strDevice.empty() ? nullptr : strDevice.c_str();
       // Say device being used
-      LW(LH_DEBUG, "Audio trying to initialise device '$'...",
+      cLog->LogDebugExSafe("Audio trying to initialise device '$'...",
         cpDevice ? cpDevice : "<Default>");
       // Open the device
       if(!cOal->InitDevice(cpDevice))
@@ -237,7 +238,7 @@ static class Audio :                   // Audio manager class
   /* -- Enumerate capture devices ------------------------------------------ */
   void EnumerateCaptureDevices(void)
   { // Log enumerations
-    LW(LH_DEBUG, "Audio enumerating capture devices...");
+    cLog->LogDebugSafe("Audio enumerating capture devices...");
     // Storage for list of devices
     const char *cpList = nullptr;
     // Clear recording devices list
@@ -248,30 +249,31 @@ static class Audio :                   // Audio manager class
       cpList = cOal->GetNCString(ALC_CAPTURE_DEVICE_SPECIFIER);
       if(cpList) break;
       // Report that the attempt failed
-      LW(LH_WARNING,
-        "Audio attempt $ failed on capture device enumeration (0x$$), "
-        "retrying...", stIndex+1, hex, cOal->GetError());
+      cLog->LogWarningExSafe("Audio attempt $ failed on capture device "
+        "enumeration (0x$$), retrying...", stIndex+1, hex, cOal->GetError());
     } // Capture devices found?
     if(cpList)
     { // For each capture device
       while(*cpList)
       { // Print device
-        LW(LH_DEBUG, "- $: $.", GetNumCaptureDevices(), cpList);
+        cLog->LogDebugExSafe("- $: $.", GetNumCaptureDevices(), cpList);
         // Push to list
         dlCTDevices.emplace_back(cpList);
         // Jump to next item
         cpList += strlen(cpList) + 1;
       } // Until no more devices
     } // Problems, problems
-    else LW(LH_ERROR, "Audio couldn't access capture devices list (0x$$).",
-        hex, cOal->GetError());
+    else cLog->LogErrorExSafe(
+      "Audio couldn't access capture devices list (0x$$).",
+      hex, cOal->GetError());
     // Log enumerations
-    LW(LH_INFO, "Audio found $ capture devices.", GetNumCaptureDevices());
+    cLog->LogInfoExSafe("Audio found $ capture devices.",
+      GetNumCaptureDevices());
   }
   /* -- Enumerate playback devices ----------------------------------------- */
   void EnumeratePlaybackDevices(void)
   { // Log enumerations
-    LW(LH_DEBUG, "Audio enumerating playback devices...");
+    cLog->LogDebugSafe("Audio enumerating playback devices...");
     // Clear playback devices list
     dlPBDevices.clear();
     // Detect if we have extended or standard query
@@ -285,22 +287,21 @@ static class Audio :                   // Audio manager class
       { // For each playback device
         while(*cpList)
         { // Print device
-          LW(LH_DEBUG, "- $: $.", GetNumPlaybackDevices(), cpList);
+          cLog->LogDebugExSafe("- $: $.", GetNumPlaybackDevices(), cpList);
           // Push to list
           dlPBDevices.emplace_back(cpList);
           // Jump to next item
           cpList += strlen(cpList) + 1;
           // Until no more devices
         } // Log enumerations and return
-        LW(LH_INFO, "Audio found $ playback devices.",
+        cLog->LogInfoExSafe("Audio found $ playback devices.",
           GetNumPlaybackDevices());
         return;
       } // Report that the attempt failed
-      LW(LH_WARNING,
-        "Audio attempt $ failed on playback device enumeration (0x$$), "
-        "retrying...", stIndex+1, hex, cOal->GetError());
+      cLog->LogWarningExSafe("Audio attempt $ failed on playback device "
+        "enumeration (0x$$), retrying...", stIndex+1, hex, cOal->GetError());
     } // Problems, problems
-    LW(LH_ERROR, "Audio couldn't access playback devices list.");
+    cLog->LogErrorSafe("Audio couldn't access playback devices list.");
   }
   /* --------------------------------------------------------------- */ public:
   CVarReturn SetAudCheckRate(const unsigned int uiTime)
@@ -391,13 +392,13 @@ static class Audio :                   // Audio manager class
   { // Class initialised
     IHInitialise();
     // Log subsystem
-    LW(LH_DEBUG, "Audio class starting up...");
+    cLog->LogDebugSafe("Audio class starting up...");
     // Init context
     InitContext();
     // Init thread
     InitThread();
     // Log status
-    LW(LH_INFO, "Audio class started successfully.");
+    cLog->LogInfoSafe("Audio class started successfully.");
   }
   /* -- Stop all sounds ---------------------------------------------------- */
   void Stop(void)
@@ -411,7 +412,7 @@ static class Audio :                   // Audio manager class
   { // Ignore if class already de-initialised
     if(IHNotDeInitialise()) return;
     // Log subsystem
-    LW(LH_DEBUG, "Audio class shutting down...");
+    cLog->LogDebugSafe("Audio class shutting down...");
     // DeInit thread
     ThreadDeInit();
     // Unload all Stream, Sample and Source classes
@@ -425,7 +426,7 @@ static class Audio :                   // Audio manager class
     dlPBDevices.clear();
     dlCTDevices.clear();
     // Report error code
-    LW(LH_INFO, "Audio class shutdown finished.");
+    cLog->LogInfoSafe("Audio class shutdown finished.");
   }
   /* -- Default constructor ------------------------------------------------ */
   Audio(void) :                        // No parameters
@@ -444,6 +445,6 @@ static class Audio :                   // Audio manager class
   DELETECOPYCTORS(Audio);              // Omit copy constructor for safety
   /* -- End ---------------------------------------------------------------- */
 } *cAudio = nullptr;                   // Pointer to static class
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

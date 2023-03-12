@@ -12,10 +12,10 @@
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfLuaLib {                   // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfLuaLib {                   // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfLuaUtil;             // Using luautil interface
+using namespace IfLuaUtil;             // Using luautil namespace
 /* == Macros to simplify param checking ==================================== */
 #define LCPUSHBOOL(a)                  PushBoolean(lS, a)
 #define LCPUSHNUM(a)                   PushNumber(lS, a)
@@ -25,7 +25,8 @@ using namespace IfLuaUtil;             // Using luautil interface
 #define LCPUSHXSTR(a)                  PushCppString(lS, a)
 /* ------------------------------------------------------------------------- */
 #define LCTOTABLE(...)                 ToTable(lS, __VA_ARGS__)
-#define LCGETFLAGS(t,a,l,ge,n)         GetFlags<t>(lS, a, l, ge, n)
+#define LCGETFLAGS(t,a,m,n)            GetFlags<t>(lS, a, m, n)
+#define LCGETINTLEG(t,a,l,ge,n)        GetIntLEG<t>(lS, a, l, ge, n)
 #define LCGETINTLGE(t,a,l,ge,n)        GetIntLGE<t>(lS, a, l, ge, n)
 #define LCGETINTLG(t,a,l,g,n)          GetIntLG<t>(lS, a, l, g, n)
 #define LCGETINT(t,a,n)                GetInt<t>(lS, a, n)
@@ -105,6 +106,7 @@ using namespace IfLuaUtil;             // Using luautil interface
 #include "llstat.hpp"                  // Stat namespace and methods
 #include "llstream.hpp"                // Stream namespace and methods
 #include "lltexture.hpp"               // Texture namespace and methods
+#include "llpalette.hpp"               // Palette namespace and methods
 #include "llutil.hpp"                  // Util namespace and methods
 #include "llvideo.hpp"                 // Video namespace and methods
 /* ========================================================================= */
@@ -152,6 +154,7 @@ using namespace IfLuaUtil;             // Using luautil interface
 #undef LCCLASSCREATE
 #undef LCCLASSDESTROY
 #undef LCGETINTNUM
+#undef LCGETINTLEG
 #undef LCGETINTLGE
 #undef LCGETINTLG
 #undef LCGETINT
@@ -211,11 +214,12 @@ const LuaLibStatic luaLibList[] =
   LLSMX(Ftf,     TEXT_NOAUDIO),        LLSMC(Image,   TEXT_NOAUDIO),
   LLSXX(Info,    TEXT_NOAUDIO),        LLSXC(Input,   GRAPHICS),
   LLSMX(Json,    TEXT_NOAUDIO),        LLSMX(Mask,    TEXT_NOAUDIO),
-  LLSMC(Pcm,     TEXT_NOAUDIO),        LLSMX(Sample,  TEXT_AUDIO),
-  LLSMX(Stat,    TEXT_NOAUDIO),        LLSMC(Socket,  TEXT_NOAUDIO),
-  LLSMX(Source,  TEXT_AUDIO),          LLSXC(Sql,     TEXT_NOAUDIO),
-  LLSMC(Stream,  TEXT_AUDIO),          LLSMX(Texture, GRAPHICS),
-  LLSXX(Util,    TEXT_NOAUDIO),        LLSMX(Video,   GRAPHICS),
+  LLSMX(Palette, GRAPHICS),            LLSMC(Pcm,     TEXT_NOAUDIO),
+  LLSMX(Sample,  TEXT_AUDIO),          LLSMX(Stat,    TEXT_NOAUDIO),
+  LLSMC(Socket,  TEXT_NOAUDIO),        LLSMX(Source,  TEXT_AUDIO),
+  LLSXC(Sql,     TEXT_NOAUDIO),        LLSMC(Stream,  TEXT_AUDIO),
+  LLSMX(Texture, GRAPHICS),            LLSXX(Util,    TEXT_NOAUDIO),
+  LLSMC(Video,   GRAPHICS),
   /* -- Last item, do not delete ------------------------------------------- */
   { nullptr, GM_HIGHEST, LLNOCONSTS(), LLNOMETHODS(), LLNOCONSTS() }
 };/* ----------------------------------------------------------------------- */
@@ -234,5 +238,5 @@ const LuaLibStatic luaLibList[] =
 #undef LLPTRLENEX
 #undef ARRAYLEN
 /* ========================================================================= */
-};                                     // End of interface
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

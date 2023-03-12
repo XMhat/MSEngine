@@ -45,8 +45,8 @@ local function Init(iLId, aActivePlayer, aOpponentPlayer, sMusic, iEndTexId,
     PlayMusic(aResources[2].H);
     -- Load texture
     local texEnd = aResources[1].H;
-    texEnd:TrimTList(4);
-    local tileBar<const> = texEnd:CreateTile(0, 488, 304, 512);
+    texEnd:TileSTC(4);
+    local tileBar<const> = texEnd:TileA(0, 488, 304, 512);
     -- Get cost of capital
     aGlobalData.gCapitalCarried = GetCapitalValue();
     -- Get cost of digger deaths
@@ -121,7 +121,7 @@ local function Init(iLId, aActivePlayer, aOpponentPlayer, sMusic, iEndTexId,
       -- Draw ending graphic
       texEnd:BlitSLT(iEndTexId, 80, 73);
       -- Set font colour and draw lines
-      fontLarge:SetRGBA(1, 1, 1, 1);
+      fontLarge:SetCRGBA(1, 1, 1, 1);
       for iLine = 1, #topLines do
         fontLarge:PrintC(160, -4 + (iLine * 16), topLines[iLine]) end;
       for iLine = 1, #bottomLines do
@@ -143,7 +143,7 @@ local function Init(iLId, aActivePlayer, aOpponentPlayer, sMusic, iEndTexId,
           -- Fade backdrop
           RenderFade(0.5);
           -- Draw centre tiles
-          fontLarge:SetRGBA(1, 1, 1, 1);
+          fontLarge:SetCRGBA(1, 1, 1, 1);
           for iLine = 1, #centreLines do
             fontLarge:PrintC(160, 64 + (iLine * 16), centreLines[iLine]) end;
         end
@@ -185,7 +185,7 @@ local function Init(iLId, aActivePlayer, aOpponentPlayer, sMusic, iEndTexId,
               RenderObjects();
               -- Render post mortem banner and text
               texEnd:BlitSLT(tileBar, 8, 208);
-              fontSpeech:SetRGB(0, 0, 0.25);
+              fontSpeech:SetCRGB(0, 0, 0.25);
               fontSpeech:PrintC(160, 215, barMessage);
             end
             -- Process horizontal move?

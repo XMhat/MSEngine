@@ -16,7 +16,7 @@
 /* ========================================================================= */
 LLNAMESPACEBEGIN(Console)              // Console namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfConsole;             // Using console interface
+using namespace IfConsole;             // Using console namespace
 /* ========================================================================= */
 /* ######################################################################### */
 /* ========================================================================= */
@@ -35,7 +35,7 @@ LLFUNCEND
 // ? to colour of text.
 /* ------------------------------------------------------------------------- */
 LLFUNC(Write,
-  cConsole->AddLine(LCGETCPPSTRING(1, "Text"), COLOUR_CYAN));
+  cConsole->AddLine(LCGETCPPSTRING(1, "String"), COLOUR_CYAN));
 /* ========================================================================= */
 // $ Console.WriteEx
 // > Text:string=Text to write to console.
@@ -43,7 +43,7 @@ LLFUNC(Write,
 // ? Writes the specified line of text directly to the console with the
 // ? specified text colour.
 /* ------------------------------------------------------------------------- */
-LLFUNC(WriteEx, cConsole->AddLine(LCGETCPPSTRINGNE(1, "Text"),
+LLFUNC(WriteEx, cConsole->AddLine(LCGETCPPSTRINGNE(1, "String"),
   LCGETINTLGE(Colour, 2, COLOUR_BLACK, COLOUR_MAX, "Colour")));
 /* ========================================================================= */
 // $ Console.Register
@@ -70,7 +70,7 @@ LLFUNCEX(Exists, 1,
 // ? input into the input bar. Useful for customised stats. It will update
 // ? every second.
 /* ------------------------------------------------------------------------- */
-LLFUNC(StatusLeft, cConsole->SetStatusLeft(LCGETCPPSTRING(1, "Text")));
+LLFUNC(StatusLeft, cConsole->SetStatusLeft(LCGETCPPSTRING(1, "String")));
 /* ========================================================================= */
 // $ Console.StatusRight
 // > Text:string=Console status text
@@ -79,7 +79,7 @@ LLFUNC(StatusLeft, cConsole->SetStatusLeft(LCGETCPPSTRING(1, "Text")));
 // ? every second.
 /* ------------------------------------------------------------------------- */
 LLFUNC(StatusRight,
-  cConsole->SetStatusRight(LCGETCPPSTRING(1, "Text")));
+  cConsole->SetStatusRight(LCGETCPPSTRING(1, "String")));
 /* ========================================================================= */
 // $ Console.ScrollDown
 // ? Scrolls the console up one line

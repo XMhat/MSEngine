@@ -7,12 +7,12 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfEvtWin {                   // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfEvtWin {                   // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfGlFW;                // Using glfw interface
-using namespace IfLog;                 // Using log interface
-using namespace IfThread;              // Using thread interface
+using namespace IfGlFW;                // Using glfw namespace
+using namespace IfLog;                 // Using log namespace
+using namespace IfThread;              // Using thread namespace
 /* -- Available engine commands -------------------------------------------- */
 enum EvtWinCmd                         // Render thread event commands
 { /* -- Main events -------------------------------------------------------- */
@@ -29,7 +29,7 @@ enum EvtWinCmd                         // Render thread event commands
   /* ----------------------------------------------------------------------- */
   EWC_MAX = EWC_NOLOG,                 // 08: Below are just codes
 };/* ----------------------------------------------------------------------- */
-static class EvtWin :                  // Event list for window thread
+static class EvtWin final :            // Event list for window thread
   /* -- Dependencies ------------------------------------------------------- */
   public IfEvtCore::EvtCore            // Events common class
    <EvtWinCmd,                         // The enum list of events supported
@@ -41,7 +41,7 @@ static class EvtWin :                  // Event list for window thread
   { // Prepare parameters list and add a new event
     Add(ewcCmd, vVars...);
     // Unblock the window thread
-    cGlFW->ForceEventHack();
+    GlFWForceEventHack();
   }
   /* -- Destructor --------------------------------------------------------- */
   DTORHELPER(~EvtWin);
@@ -55,6 +55,6 @@ static class EvtWin :                  // Event list for window thread
   DELETECOPYCTORS(EvtWin);             // Delete copy constructor and operator
   /* -- End ---------------------------------------------------------------- */
 } *cEvtWin = nullptr;                  // Pointer to static class
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

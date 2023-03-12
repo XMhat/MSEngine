@@ -19,7 +19,7 @@
 /* ========================================================================= */
 LLNAMESPACEBEGIN(Mask)                 // Mask namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfMask;                // Using mask interface
+using namespace IfMask;                // Using mask namespace
 /* ========================================================================= */
 /* ######################################################################### */
 /* ========================================================================= */
@@ -113,9 +113,9 @@ LLFUNCEND
 LLFUNCBEGIN(Merge)
   Mask &mDst = *LCGETPTR(1, Mask), &mSrc = *LCGETPTR(2, Mask);
   mDst.Merge(mSrc,
-    LCGETINTLGE(size_t, 3, 0, mDst.size(),  "Index"),
-    LCGETINTLG (int,    4, 0, mDst.iWidth,  "X"),
-    LCGETINTLG (int,    5, 0, mDst.iHeight, "Y"));
+    LCGETINTLGE(size_t, 3, 0, mDst.size(),         "Index"),
+    LCGETINTLG (int,    4, 0, mDst.DimGetWidth(),  "X"),
+    LCGETINTLG (int,    5, 0, mDst.DimGetHeight(), "Y"));
 LLFUNCEND
 /* ========================================================================= */
 // $ Mask:Copy
@@ -129,9 +129,9 @@ LLFUNCEND
 LLFUNCBEGIN(Copy)
   Mask &mDst = *LCGETPTR(1, Mask), &mSrc = *LCGETPTR(2, Mask);
   mDst.Copy(0, mSrc,
-    LCGETINTLGE(size_t, 3, 0, mSrc.size(),  "Index"),
-    LCGETINTLG (int,    4, 0, mDst.iWidth,  "X"),
-    LCGETINTLG (int,    5, 0, mDst.iHeight, "Y"));
+    LCGETINTLGE(size_t, 3, 0, mSrc.size(),         "Index"),
+    LCGETINTLG (int,    4, 0, mDst.DimGetWidth(),  "X"),
+    LCGETINTLG (int,    5, 0, mDst.DimGetHeight(), "Y"));
 LLFUNCEND
 /* ========================================================================= */
 // $ Mask:Erase
@@ -154,10 +154,10 @@ LLFUNCEND
 LLFUNCBEGIN(Fill)
   Mask &mDst = *LCGETPTR(1, Mask);
   mDst.Fill(
-    LCGETINTLG(int, 2, 0, mDst.iWidth,  "X"),
-    LCGETINTLG(int, 3, 0, mDst.iHeight, "Y"),
-    LCGETINTLG(int, 4, 0, mDst.iWidth,  "Width"),
-    LCGETINTLG(int, 5, 0, mDst.iHeight, "Height"));
+    LCGETINTLG(int, 2, 0, mDst.DimGetWidth(),  "X"),
+    LCGETINTLG(int, 3, 0, mDst.DimGetHeight(), "Y"),
+    LCGETINTLG(int, 4, 0, mDst.DimGetWidth(),  "Width"),
+    LCGETINTLG(int, 5, 0, mDst.DimGetHeight(), "Height"));
 LLFUNCEND
 /* ========================================================================= */
 // $ Mask:Clear
@@ -170,10 +170,10 @@ LLFUNCEND
 LLFUNCBEGIN(Clear)
   Mask &mDst = *LCGETPTR(1, Mask);
   mDst.Fill(
-    LCGETINTLG(int, 2, 0, mDst.iWidth,  "X"),
-    LCGETINTLG(int, 3, 0, mDst.iHeight, "Y"),
-    LCGETINTLG(int, 4, 0, mDst.iWidth,  "Width"),
-    LCGETINTLG(int, 5, 0, mDst.iHeight, "Height"));
+    LCGETINTLG(int, 2, 0, mDst.DimGetWidth(),  "X"),
+    LCGETINTLG(int, 3, 0, mDst.DimGetHeight(), "Y"),
+    LCGETINTLG(int, 4, 0, mDst.DimGetWidth(),  "Width"),
+    LCGETINTLG(int, 5, 0, mDst.DimGetHeight(), "Height"));
 LLFUNCEND
 /* ========================================================================= */
 // $ Mask:Name
@@ -193,13 +193,13 @@ LLFUNCEX(Count, 1, LCPUSHINT(LCGETPTR(1, Mask)->size()));
 // < Width:integer=Width of each tile in sub-masks.
 // ? Returns the width of each sub-mask in the mask.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Width, 1, LCPUSHINT(LCGETPTR(1, Mask)->iWidth));
+LLFUNCEX(Width, 1, LCPUSHINT(LCGETPTR(1, Mask)->DimGetWidth()));
 /* ========================================================================= */
 // $ Mask:Height
 // < Height:integer=Height of each tile in sub-masks.
 // ? Returns the height of each sub-mask in the mask.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Height, 1, LCPUSHINT(LCGETPTR(1, Mask)->iHeight));
+LLFUNCEX(Height, 1, LCPUSHINT(LCGETPTR(1, Mask)->DimGetHeight()));
 /* ========================================================================= */
 // $ Mask:Destroy
 // ? destroys the mask and frees all the memory associated with it. The object

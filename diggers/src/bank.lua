@@ -52,10 +52,10 @@ local function InitBank(aActiveObject)
     -- Load texture. We only have 12 animations, discard all the other tiles
     -- as we're using the same bitmap for other sized textures.
     local texBank = aResources[1].H;
-    texBank:TrimTList(12);
+    texBank:TileSTC(12);
     -- Cache background and speech bubble co-ordinates
-    local tileBG<const> = texBank:CreateTile(208, 312, 512, 512);
-    local tileSpeech<const> = texBank:CreateTile(0, 488, 112, 512);
+    local tileBG<const> = texBank:TileA(208, 312, 512, 512);
+    local tileSpeech<const> = texBank:TileA(0, 488, 112, 512);
     -- Get treasure value modifier
     local iTreasureValueModifier<const> = floor(GetGameTicks()/18000);
     -- Banker data
@@ -93,7 +93,7 @@ local function InitBank(aActiveObject)
     -- No speech bubbles, reset win notification and set empty tip
     local iSpeechTimer, strTip = 0, "";
     -- Set colour of speech text
-    fontSpeech:SetRGB(0, 0, 0.25);
+    fontSpeech:SetCRGB(0, 0, 0.25);
     -- Speech render data and message
     local strBankerSpeech, iBankerId, iBankerTexId, iBankerX, iBankerY,
       iSpeechBubbleX, iSpeechBubbleY, iSpeechTextX, iSpeechTextY;

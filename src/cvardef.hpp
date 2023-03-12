@@ -7,11 +7,11 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfCVarDef {                  // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfCVarDef {                  // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfString;              // Using string interface
-using namespace IfFlags;               // Using flags interface
+using namespace IfString;              // Using string namespace
+using namespace IfFlags;               // Using flags namespace
 /* -- Constraints ---------------------------------------------------------- */
 #define CVAR_MIN_LENGTH              5 // Minimum length of a cvar name
 #define CVAR_MAX_LENGTH            255 // Maximum length of a cvar name
@@ -25,6 +25,8 @@ enum CVarReturn                        // Callback return values
 };/* == Convert bool result cvar accept or deny ============================ */
 static CVarReturn BoolToCVarReturn(const bool bState)
   { return bState ? ACCEPT : DENY; }
+static bool CVarToBoolReturn(const CVarReturn cvState)
+  { return cvState != DENY; }
 /* -- Helper function to just set a value and return accept ---------------- */
 template<typename AnyToType, typename AnyFromType>
   static CVarReturn CVarSimpleSetInt(AnyToType &atTo,
@@ -119,16 +121,19 @@ BUILD_FLAGS(CVar,
   // All perms granted to modify       // Any source
   PANY{ PBOOT|PSYSTEM|PUSR },          SANY{ SENGINE|SCMDLINE|SAPPCFG|SUDB },
   // Registration mask bits            Only alphanumeric characeters
-  CVREGMASK{ COMMIT|SANY },            CALPHANUMERIC{ CALPHA|CNUMERIC }
+  CVREGMASK{ COMMIT|SANY },            CALPHANUMERIC{ CALPHA|CNUMERIC },
+  /* -- Allowed bits ------------------------------------------------------- */
+  MASK{ TSTRING|TINTEGER|TFLOAT|TBOOLEAN|CALPHA|CNUMERIC|CSAVEABLE|CPROTECTED|
+        CDEFLATE|CNOTEMPTY|CUNSIGNED|CPOW2|CPOW2Z|CFILENAME|MTRIM|OSAVEFORCE };
 );/* -- Prototypes --------------------------------------------------------- */
 class Item;                            // (Prototype) Cvar callback data
 typedef CVarReturn (*CbFunc)(Item&, const string&); // Callback return type
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == CVar library namespace =============================================== */
 namespace IfCVarLib {                  // Beginning of CVar library namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfCVarDef;             // Using cvardef interface
+using namespace IfCVarDef;             // Using cvardef namespace
 /* ========================================================================= */
 /* ######################################################################### */
 /* ## BASE ENGINE CVARS LIST                                              ## */
@@ -149,12 +154,12 @@ enum CVarEnums : size_t
   APP_CLEARMUTEX,   ERR_INSTANCE,
   /* -- Object cvars ------------------------------------------------------- */
   OBJ_CMDMAX,       OBJ_CVARMAX,         OBJ_CVARIMAX,        OBJ_ARCHIVEMAX,
-  OBJ_ASSETMAX,     OBJ_BINMAX,          OBJ_CURSORMAX,       OBJ_DYLIBMAX,
-  OBJ_FBOMAX,       OBJ_FONTMAX,         OBJ_FILEMAX,         OBJ_FTFMAX,
-  OBJ_FUNCMAX,      OBJ_IMGMAX,          OBJ_IMGFMTMAX,       OBJ_JSONMAX,
-  OBJ_MASKMAX,      OBJ_PCMMAX,          OBJ_PCMFMTMAX,       OBJ_SAMPLEMAX,
-  OBJ_SHADERMAX,    OBJ_SOCKETMAX,       OBJ_SOURCEMAX,       OBJ_STATMAX,
-  OBJ_STREAMMAX,    OBJ_TEXTUREMAX,      OBJ_THREADMAX,       OBJ_VIDEOMAX,
+  OBJ_ASSETMAX,     OBJ_BINMAX,          OBJ_CURSORMAX,       OBJ_FBOMAX,
+  OBJ_FONTMAX,      OBJ_FILEMAX,         OBJ_FTFMAX,          OBJ_FUNCMAX,
+  OBJ_IMGMAX,       OBJ_IMGFMTMAX,       OBJ_JSONMAX,         OBJ_MASKMAX,
+  OBJ_PCMMAX,       OBJ_PCMFMTMAX,       OBJ_SAMPLEMAX,       OBJ_SHADERMAX,
+  OBJ_SOCKETMAX,    OBJ_SOURCEMAX,       OBJ_STATMAX,         OBJ_STREAMMAX,
+  OBJ_TEXTUREMAX,   OBJ_THREADMAX,       OBJ_VIDEOMAX,
   /* -- Base cvars --------------------------------------------------------- */
   APP_SHORTNAME,    APP_DESCRIPTION,     APP_VERSION,         APP_ICON,
   APP_AUTHOR,       APP_COPYRIGHT,       APP_WEBSITE,         APP_TICKRATE,
@@ -270,7 +275,7 @@ static const CVarKeyValueStaticList cvKeyValueStaticList{ {
 // ? archives with files. This is makes it easier to update and mod resource
 // ? if true. It is by default disabled on release builds and enabled on
 // ? all other builds.
-#ifdef RELEASE                         // Default disabled in release builds
+#if defined(RELEASE)                   // Default disabled in release builds
 { "ast_fsoverride", "0" },
 #else                                  // Default enabled in other builds
 { "ast_fsoverride", "1" },
@@ -381,7 +386,7 @@ static const CVarKeyValueStaticList cvKeyValueStaticList{ {
 // ? engine can startup. You only need to do this if the engine crashes. On
 // ? Windows the mutex is freed on process termination so there is never any
 // ? need to use this on Windows.
-#if !defined(_WIN32) && defined(ALPHA)
+#if !defined(WINDOWS) && defined(ALPHA)
 { "app_clearmutex", "1" },
 #else
 { "app_clearmutex", "0" },
@@ -442,12 +447,6 @@ static const CVarKeyValueStaticList cvKeyValueStaticList{ {
 // ? the engine. An exception is generated if more cvars than this are
 // ? allocated.
 { "obj_cursormax", "1000" },
-/* ------------------------------------------------------------------------- */
-// ! OBJ_DYLIBMAX
-// ? Specifies the maximum number of dylib objects allowed to be registered by
-// ? the engine. An exception is generated if more cvars than this are
-// ? allocated.
-{ "obj_dylibmax", "1000" },
 /* ------------------------------------------------------------------------- */
 // ! OBJ_FBOMAX
 // ? Specifies the maximum number of framebuffer objects allowed to be
@@ -657,7 +656,7 @@ static const CVarKeyValueStaticList cvKeyValueStaticList{ {
 // ? applies on Windows executables only as Linux executable does not have a
 // ? checksum and MacOS uses code signing externally. The default value is 1
 // ? on release executable else 0 on beta executable.
-#ifdef RELEASE
+#if defined(RELEASE)
 { "err_checksum", "1" },
 #else
 { "err_checksum", "0" },
@@ -666,7 +665,7 @@ static const CVarKeyValueStaticList cvKeyValueStaticList{ {
 // ! ERR_DEBUGGER
 // ? Throws an error if a debugger is running at start-up. The default value
 // ? is 1 on release executable else 0 on beta executable.
-#ifdef RELEASE
+#if defined(RELEASE)
 { "err_debugger", "1" },
 #else
 { "err_debugger", "0" },
@@ -679,7 +678,7 @@ static const CVarKeyValueStaticList cvKeyValueStaticList{ {
 // ? 2 (LEM_SHOW)     = Open console and show error.
 // ? 3 (LEM_CRITICAL) = Terminate engine with error.
 // ? The default value is 3 for release executable and 2 for beta executable.
-#ifdef RELEASE
+#if defined(RELEASE)
 { "err_luamode", "3" },
 #else
 { "err_luamode", "2" },
@@ -690,7 +689,7 @@ static const CVarKeyValueStaticList cvKeyValueStaticList{ {
 // ? errors that are allowed before an error after this is treated as a
 // ? critical error. The default value for release executable is 1000 and
 // ? 10 for beta executable.
-#ifdef RELEASE
+#if defined(RELEASE)
 { "err_lmresetlimit", "1000" },
 #else
 { "err_lmresetlimit", "10" },
@@ -870,7 +869,7 @@ static const CVarKeyValueStaticList cvKeyValueStaticList{ {
 /* ------------------------------------------------------------------------- */
 // ! CON_DISABLED
 // ? Specifies wether the console is permanantly disabled or not.
-#ifdef RELEASE
+#if defined(RELEASE)
 { "con_disabled", "1" },
 #else
 { "con_disabled", "0" },
@@ -925,7 +924,7 @@ static const CVarKeyValueStaticList cvKeyValueStaticList{ {
 /* ------------------------------------------------------------------------- */
 // ! CON_FONTPCMAX
 // ? Specifies the maximum character code to end precaching at
-{ "con_fontpcmax", "255" },
+{ "con_fontpcmax", "256" },
 /* ------------------------------------------------------------------------- */
 // ! CON_FONTSCALE
 // ? Specifies the scale adjust of the font. A value not equal to one will
@@ -1103,7 +1102,7 @@ static const CVarKeyValueStaticList cvKeyValueStaticList{ {
 // ? system. Anything >= -1 means exclusive full-screen mode and -1 makes the
 // ? engine use the current desktop resolution (default on Mac for now). Use -2
 // ? to make the engine use borderless full-screen mode (default on Win/Linux).
-#ifdef __APPLE__
+#if defined(MACOS)
 { "vid_fsmode", "-1" },
 #else
 { "vid_fsmode", "-2" },
@@ -1127,7 +1126,7 @@ static const CVarKeyValueStaticList cvKeyValueStaticList{ {
 /* ------------------------------------------------------------------------- */
 // ! VID_BPP
 // ? Not explained yet.
-#ifdef _WIN32
+#if defined(WINDOWS)
 { "vid_bpp", "0" },                    // Win32 doesn't need forcing depth
 #else
 { "vid_bpp", "16" },                   // For better bit-depth quality
@@ -1298,10 +1297,10 @@ static const CVarKeyValueStaticList cvKeyValueStaticList{ {
 // ? be upstream issues on both Wayland and MacOS. This can only be changed at
 // ? the in the application configuration file and not saved to the persistence
 // ? database.
-#ifndef _WIN32
-{ "win_thread", "0" },                 // Fix temporary bug in GLFW
-#else
+#if defined(WINDOWS)
 { "win_thread", "1" },
+#else
+{ "win_thread", "0" },                 // Fix temporary bug in GLFW
 #endif
 /* ------------------------------------------------------------------------- */
 // ! WIN_WIDTH
@@ -1328,5 +1327,5 @@ static const CVarKeyValueStaticList cvKeyValueStaticList{ {
 /* ------------------------------------------------------------------------- */
 } };                                   // End of cvar defaults list
 /* ========================================================================= */
-};                                     // End of interface
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

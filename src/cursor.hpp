@@ -6,11 +6,11 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfCursor {                   // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfCursor {                   // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfAsset;               // Using asset interface
-using namespace IfGlFW;                // Using glfw interface
+using namespace IfAsset;               // Using asset namespace
+using namespace IfGlFW;                // Using glfw namespace
 /* == Cursor collector class for collector data and custom variables ======= */
 BEGIN_COLLECTOR(Cursors, Cursor, CLHelperUnsafe);
 /* == Cursor class ========================================================= */
@@ -21,7 +21,7 @@ BEGIN_MEMBERCLASS(Cursors, Cursor, ICHelperUnsafe),
   GLFWcursor      *pCursor;            // Pointer to glfw cursor resource
   int              iInternal;          // Is a standard cursor?
   /* -- Activate the cursor graphic -------------------------------- */ public:
-  void Activate(void) { cGlFW->SetCursorGraphic(pCursor); }
+  void Activate(void) { cGlFW->WinSetCursorGraphic(pCursor); }
   /* -- Initialise --------------------------------------------------------- */
   void InitStandard(const int iId)
   { // De-init if initialised
@@ -32,8 +32,8 @@ BEGIN_MEMBERCLASS(Cursors, Cursor, ICHelperUnsafe),
     // Set assigned cursor
     iInternal = iId;
     // Log created cursor
-    LW(LH_DEBUG,
-      "Cursor created standard cursor using id $$.", hex, iId);
+    cLog->LogDebugExSafe("Cursor created standard cursor using id $$.",
+      hex, iId);
   }
   /* -- ReInitialise ------------------------------------------------------- */
   void ReInit(void)
@@ -55,6 +55,7 @@ BEGIN_MEMBERCLASS(Cursors, Cursor, ICHelperUnsafe),
   Cursor(void) :
     /* -- Initialisation of members ---------------------------------------- */
     ICHelperCursor{ *cCursors, this }, // Register cursor in list
+    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     pCursor(nullptr),                  // Default character
     iInternal(0)                       // Default id
     /* -- No code ---------------------------------------------------------- */
@@ -70,25 +71,27 @@ BEGIN_MEMBERCLASS(Cursors, Cursor, ICHelperUnsafe),
 };/* ----------------------------------------------------------------------- */
 END_COLLECTOR(Cursors);
 /* == Reset cursor graphic ================================================= */
-static void CursorReset(void) { cGlFW->SetCursorGraphic(nullptr); }
+static void CursorReset(void) { cGlFW->WinSetCursorGraphic(nullptr); }
 /* == De-initialise all ==================================================== */
 static void CursorDeInit(void)
 { // Ignore if no fbos
   if(cCursors->empty()) return;
   // Enumerate each created fbo and deinitialise it (NOT destroy it)
-  LW(LH_DEBUG, "Cursors de-initialising $ objects...", cCursors->size());
+  cLog->LogDebugExSafe("Cursors de-initialising $ objects...",
+    cCursors->size());
   for(Cursor*const cCptr : *cCursors) cCptr->DeInit();
-  LW(LH_INFO, "Cursors de-initialised $ objects.", cCursors->size());
+  cLog->LogInfoExSafe("Cursors de-initialised $ objects.", cCursors->size());
 }
 /* == Re-initialise all cursors ============================================ */
 static void CursorReInit(void)
 { // Ignore if no fbos
   if(cCursors->empty()) return;
   // Enumerate each created fbo and reinitialise it
-  LW(LH_DEBUG, "Cursors re-initialising $ objects...", cCursors->size());
+  cLog->LogDebugExSafe("Cursors re-initialising $ objects...",
+    cCursors->size());
   for(Cursor*const cCptr : *cCursors) cCptr->ReInit();
-  LW(LH_INFO, "Cursors re-initialised $ objects.", cCursors->size());
+  cLog->LogInfoExSafe("Cursors re-initialised $ objects.", cCursors->size());
 }
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

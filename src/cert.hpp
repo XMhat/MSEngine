@@ -6,11 +6,11 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfCert {                     // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfCert {                     // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfAsset;               // Using asset interface
-using namespace IfCVar;                // Using cvar interface
+using namespace IfAsset;               // Using asset namespace
+using namespace IfCVar;                // Using cvar namespace
 /* ------------------------------------------------------------------------- */
 class Certs                            // Certificates store
 { /* -- Typedefs --------------------------------------------------- */ public:
@@ -23,7 +23,7 @@ class Certs                            // Certificates store
     const size_t     stBank;           // Override bank index (qCertBypass)
     const uint64_t   qFlag;            // Flag required to ignore this error
   };/* --------------------------------------------------------------------- */
-  typedef map<const ssize_t, const X509ErrInfo> X509Err;
+  typedef map<const size_t, const X509ErrInfo> X509Err;
   typedef array<SafeUInt64, 2> SafeDoubleUInt64; // Two atomic double uint64's
   /* -- Class to serialise load of certificates ---------------------------- */
   struct LoadSerialised                // Serialised certificate installation
@@ -71,13 +71,13 @@ class Certs                            // Certificates store
         if(X509_check_purpose(caCert.get(),
           X509_PURPOSE_get_id(x509p), 1) != 1)
         { // Log it as rejected
-          LW(LH_WARNING,
+          cLog->LogWarningExSafe(
             "Certs rejected '$' as not a server CA certificate!",
-              fC.IdentGet());
+            fC.IdentGet());
         } // Valid server CA certificate. Add to CA store and if failed?
         else if(!X509_STORE_add_cert(xsCerts, caCert.get()))
         { // Log the problem
-          LW(LH_WARNING, "Certs failed to add '$' to SSL context!",
+          cLog->LogWarningExSafe("Certs failed to add '$' to SSL context!",
             fC.IdentGet());
         } // Loaded successfully?
         else
@@ -92,14 +92,15 @@ class Certs                            // Certificates store
       } // Failed to get purpose?
       else
       { // Log the rejection
-        LW(LH_WARNING, "Certs rejected '$' as unable to get purpose!",
+        cLog->LogWarningExSafe("Certs rejected '$' as unable to get purpose!",
           fC.IdentGet());
       }
     }
   } // In the rare occurence that an exception occurs we should skip the cert
   catch(const exception &e)
   { // Show the exception and try the next certificate
-    LW(LH_ERROR, "Certs rejected certificate '$/$' due to exception: $",
+    cLog->LogErrorExSafe(
+      "Certs rejected certificate '$/$' due to exception: $",
       strD, strF, e.what());
   }
   /* -- Unload open ssl certificate store ---------------------------------- */
@@ -109,12 +110,12 @@ class Certs                            // Certificates store
     // Return if ssl store is not available
     if(!scStore) return;
     // Log that were unloading the certificate store
-    LW(LH_DEBUG, "Certs unloading certificate store...");
+    cLog->LogDebugSafe("Certs unloading certificate store...");
     // Unload context that holds the certificate store
     SSL_CTX_free(scStore);
     scStore = nullptr;
     // Log that we unloaded the certificate store
-    LW(LH_INFO, "Certs unloaded certificate store.");
+    cLog->LogInfoSafe("Certs unloaded certificate store.");
   }
   /* -- Unload entire certificate store ------------------------------------ */
   void CertsEmpty(void)
@@ -123,7 +124,7 @@ class Certs                            // Certificates store
     // Ignore if no ceritificates loaded
     if(lCAStore.empty()) return;
     // Now deleting certificate store
-    LW(LH_DEBUG, "Certs de-initialising $ certificates...",
+    cLog->LogDebugExSafe("Certs de-initialising $ certificates...",
       lCAStore.size());
     // Counters
     size_t stFreed = 0;
@@ -138,15 +139,15 @@ class Certs                            // Certificates store
     } // Free memory
     lCAStore.shrink_to_fit();
     // Finished
-    LW(LH_INFO, "Certs de-initialised $ certificates.", stFreed);
+    cLog->LogInfoExSafe("Certs de-initialised $ certificates.", stFreed);
   }
-  /* -- Load certificates from a list of files ------------------------------ */
+  /* -- Load certificates from a list of files ----------------------------- */
   void CertsLoadList(const string &strD, const AssetList &aList)
   { // Unload existing certificates
     CertsEmpty();
     // Now initialising certificate store
-    LW(LH_DEBUG, "Certs found $ files, initialising certificate store...",
-      aList.size());
+    cLog->LogDebugExSafe(
+      "Certs found $ files, initialising certificate store...", aList.size());
     // Create certificate store context
     scStore = SSL_CTX_new(TLS_client_method());
     if(!scStore) XC("Failed to create context for cert store cache!");
@@ -156,10 +157,10 @@ class Certs                            // Certificates store
     // Allocate memory for list (assuming all certs are valid)
     lCAStore.reserve(aList.size());
     // Log that we're loading certificates in parallel
-    LW(LH_DEBUG, "Certs store initialised. Loading $ certificates...",
+    cLog->LogDebugExSafe("Certs store initialised. Loading $ certificates...",
       aList.size());
     // Apple compiler does not support std::execution yet :(.
-#ifdef __APPLE__
+#if defined(MACOS)
     // Create sync method class
     LoadSerialised ccaSync;
     // Now initialising certificate store
@@ -179,12 +180,12 @@ class Certs                            // Certificates store
     // If we loaded all the certificates?
     if(lCAStore.size() == aList.size())
     { // Log that we loaded all the certificates
-      LW(LH_INFO, "Certs validated all $ certificates.",
+      cLog->LogInfoExSafe("Certs validated all $ certificates.",
         lCAStore.size(), aList.size());
     } // If we didn't load all the certificates?
     else
     { // Log a warning that we did not load all the certificates
-      LW(LH_WARNING, "Certs could only validate $ of $ certificates!",
+      cLog->LogWarningExSafe("Certs could only validate $ of $ certificates!",
         lCAStore.size(), aList.size());
     }
   }
@@ -214,10 +215,10 @@ class Certs                            // Certificates store
   { // Empty string is ok, treat as no CA store
     if(strD.empty())
     { // Log that we are not using a store and return success
-      LW(LH_WARNING, "Certs using no root CA store!");
+      cLog->LogWarningSafe("Certs using no root CA store!");
       return ACCEPT;
     } // Now initialising certificate store
-    LW(LH_DEBUG, "Certs searching '$' for certificates...", strD);
+    cLog->LogDebugExSafe("Certs searching '$' for certificates...", strD);
     // Get certificates in ca subdirectory and return if nothing found
     if(const AssetList aList{ strD, strExtension, false })
     { // Reload new certificates list
@@ -225,7 +226,7 @@ class Certs                            // Certificates store
       // Clear error stack
       ERR_clear_error();
     } // No certificates to load so log it
-    else LW(LH_WARNING, "Certs found no matching files!", strD);
+    else cLog->LogWarningSafe("Certs found no matching files!");
     // Return success regardless
     return ACCEPT;
   }
@@ -320,13 +321,13 @@ class Certs                            // Certificates store
   DELETECOPYCTORS(Certs);              // Disable copy constructor and operator
 }; /* ---------------------------------------------------------------------- */
 /* ========================================================================= */
-static STDTIMET CertGetTime(const ASN1_TIME &atD)
+static StdTimeT CertGetTime(const ASN1_TIME &atD)
 { // Get expiry string
   const char*const cpStr = reinterpret_cast<const char*>(atD.data);
   // String position
   size_t stPos = 0;
   // Time structure
-  struct tm tD;
+  StdTMStruct tD;
   // Get time type
   switch(atD.type)
   { // Two digit year?
@@ -364,7 +365,7 @@ static STDTIMET CertGetTime(const ASN1_TIME &atD)
 /* ========================================================================= */
 static bool CertIsExpired(const X509*const x509)
 { // Get current time
-  const STDTIMET tTime = cmSys.GetTimeS();
+  const StdTimeT tTime = cmSys.GetTimeS();
   // Check expired begin and end date
   return tTime < CertGetTime(*X509_get0_notBefore(x509)) ||
          tTime > CertGetTime(*X509_get0_notAfter(x509));
@@ -383,6 +384,6 @@ static const string CertGetSubject(const Certs::X509Pair &caPair)
   // Return string
   return strD;
 }
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

@@ -6,14 +6,14 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfUuId {                     // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfUuId {                     // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfString;              // Using string interface
-using namespace IfCrypt;               // Using string interface
+using namespace IfString;              // Using string namespace
+using namespace IfCrypt;               // Using string namespace
 /* == Universally unique identifier helper ================================= */
-class UuId                             // The UUIDv4 class
-{ /* -- Typedefs --------------------------------------------------- */ public:
+struct UuId                            // Members initially public
+{ /* -- Typedefs ----------------------------------------------------------- */
   const union Struct                   // UUIDv4 structure
   { /* --------------------------------------------------------------------- */
     struct Parts                       // Access to parts
@@ -118,5 +118,5 @@ class UuId                             // The UUIDv4 class
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* -- End of module namespace -------------------------------------------- */
-};                                     // End of interface
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

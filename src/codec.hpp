@@ -7,11 +7,11 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfCodec {                    // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfCodec {                    // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace Library::ZLib;         // Using z-lib library functions
-using namespace IfCrypt;               // Using crypt interface
+using namespace IfCrypt;               // Using crypt namespace
 /* ------------------------------------------------------------------------- */
 enum EncMode                           // Encoding flags (DONT REORDER!!!)
 { /* ----------------------------------------------------------------------- */
@@ -163,8 +163,8 @@ static void CodecDecodeAES(const DataConst &dIn, Memory &aOut,
 /* -- Stringify a 7zip error code ------------------------------------------ */
 static const char *CodecGetLzmaErrString(const int iCode)
 { // Helpful temporary defines
-  #define SZERR "SZ_ERROR_"
-  #define CASE(n) case SZ_ERROR_ ## n: return SZERR STR(n)
+#define SZERR "SZ_ERROR_"
+#define CASE(n) case SZ_ERROR_ ## n: return SZERR STR(n)
   // Which code
   switch(iCode)
   { CASE(DATA);        CASE(MEM);        CASE(CRC);
@@ -175,14 +175,14 @@ static const char *CodecGetLzmaErrString(const int iCode)
   } // Unknown error
   return SZERR "UNKNOWN";
   // Done with these defines
-  #undef CASE
-  #undef SZERR
+#undef CASE
+#undef SZERR
 }
 /* -- Stringify zlib error code -------------------------------------------- */
 static const char *CodecGetZLIBErrString(const int iCode)
 { // Helpful temporary defines
-  #define ZERR "Z_"
-  #define CASE(n) case Z_ ## n: return ZERR STR(n)
+#define ZERR "Z_"
+#define CASE(n) case Z_ ## n: return ZERR STR(n)
   // Check zlib code
   switch(iCode)
   { CASE(OK);        CASE(STREAM_END);   CASE(NEED_DICT);
@@ -191,8 +191,8 @@ static const char *CodecGetZLIBErrString(const int iCode)
   } // Unknown error
   return ZERR "UNKNOWN";
   // Done with these defines
-  #undef CASE
-  #undef ZERR
+#undef CASE
+#undef ZERR
 }
 /* ------------------------------------------------------------------------- */
 static const EncData CodecEncodeAESCompressed(const EncMode eOverrideMode,
@@ -208,7 +208,7 @@ static const EncData CodecEncodeAESCompressed(const EncMode eOverrideMode,
   aOut.WriteIntLE<uint32_t>
     (static_cast<uint32_t>(encCompressedData.GetUncompressed()));
   // Discord compressed block and replace with encrypted block (dirty but meh)
-  const Memory aCompressed{ move(aOut) };
+  const Memory aCompressed{ std::move(aOut) };
   // Resize the output block with enough memory for encrypting
   aOut.Resize(ENCHDR_SIZE + aCompressed.Size() + CodecGetAES256CBCSize());
   // Encrypt data and get result
@@ -339,7 +339,7 @@ static void CodecDecodeAESZLIB(const DataConst &dIn, Memory &aOut,
   const size_t stUncompressed =
     static_cast<size_t>(aOut.ReadIntLE<uint32_t>());
   // Move memory
-  const Memory mIn{ move(aOut) };
+  const Memory mIn{ std::move(aOut) };
   // Decompress the block now from the start
   CodecDecodeZLIB(mIn, aOut, sizeof(uint32_t),
     dIn.Size()-sizeof(uint32_t), stUncompressed);
@@ -376,7 +376,7 @@ static void CodecDecodeAESLZMA(const DataConst &dIn, Memory &aOut,
   const size_t stUncompressed =
     static_cast<size_t>(aOut.ReadIntLE<uint32_t>());
   // Move memory
-  const Memory mIn{ move(aOut) };
+  const Memory mIn{ std::move(aOut) };
   // Decompress the block now from the start
   CodecDecodeLZMA(mIn, aOut, sizeof(uint32_t),
     dIn.Size()-sizeof(uint32_t), stUncompressed, stExtra);
@@ -543,7 +543,7 @@ CODEC_PLUGINEX(RAW, 0);
 #undef CODEC_PLUGIN                    // Done need this anymore
 #undef CODEC_HELPER                    // Done need this anymore
 /* == Main interface class ================================================= */
-template<class EncoderType>class Block : public EncoderType
+template<class EncoderType>class Block final : public EncoderType
 { /* -- Initialise by data array ----------------------------------- */ public:
   explicit Block(const DataConst &dIn, const size_t stUser=string::npos) :
     /* -- Initialisation of members ---------------------------------------- */
@@ -553,12 +553,11 @@ template<class EncoderType>class Block : public EncoderType
   /* -- Initialise by string ----------------------------------------------- */
   explicit Block(const string &strIn, const size_t stUser=string::npos) :
     /* -- Initialisation of members ---------------------------------------- */
-    EncoderType{ move(DataConst(strIn)), stUser }
+    EncoderType{ std::move(DataConst(strIn)), stUser }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Block);              // Omit copy constructor for safety
-};/* ----------------------------------------------------------------------- */
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+};/* -- End of class ------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

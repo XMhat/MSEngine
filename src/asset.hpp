@@ -7,12 +7,12 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfAsset {                    // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfAsset {                    // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfArchive;             // Using archive interface
+using namespace IfArchive;             // Using archive namespace
 /* -- Typedefs ------------------------------------------------------------- */
-BUILD_FLAGS(Asset,
+BUILD_FLAGS(Asset,                     // Asset loading flags
   /* -- Commands ----------------------------------------------------------- */
   // Leave the file loaded as is?      Decode the specified block?
   CD_NONE                {0x00000000}, CD_DECODE              {0x00000001},
@@ -30,8 +30,8 @@ BUILD_FLAGS(Asset,
   // Maximum compression (more mem)?
   CD_LEVEL_SLOWEST       {0x80000000},
   /* -- All options -------------------------------------------------------- */
-  CD_MASK{ CD_DECODE|CD_ENCODE_RAW|CD_ENCODE_AES|CD_ENCODE_ZLIB|
-           CD_ENCODE_LZMA|CD_ENCODE_ZLIBAES|CD_LEVEL_FASTEST|CD_LEVEL_FAST|
+  CD_MASK{ CD_DECODE|CD_ENCODE_RAW|CD_ENCODE_AES|CD_ENCODE_ZLIB|CD_ENCODE_LZMA|
+           CD_ENCODE_ZLIBAES|CD_ENCODE_LZMAAES|CD_LEVEL_FASTEST|CD_LEVEL_FAST|
            CD_LEVEL_MODERATE|CD_LEVEL_SLOW|CD_LEVEL_SLOWEST }
 );/* == Asset collector class for collector and custom variables =========== */
 BEGIN_ASYNCCOLLECTOREX(Assets, Asset, CLHelperUnsafe,
@@ -44,7 +44,8 @@ FileMap AssetLoadFromDisk(const string &strFile)
 { // Open it and sending full-load flag and if succeeded?
   if(FileMap fmFile{ strFile })
   { // Put in the log that we loaded the file successfully
-    LW(LH_DEBUG, "Assets mapped resource '$'[$]!", strFile, fmFile.Size());
+    cLog->LogDebugExSafe("Assets mapped resource '$'[$]!",
+      strFile, fmFile.Size());
     // Return file class to caller
     return fmFile;
   } // Failed so throw exception
@@ -81,7 +82,7 @@ BEGIN_MEMBERCLASS(Assets, Asset, ICHelperUnsafe),
   void SwapAsset(Asset &aOther)
   { // Swap settings flags
     FlagSwap(aOther);
-    SwapMemory(move(aOther));
+    SwapMemory(std::move(aOther));
     LockSwap(aOther);
     IdentSwap(aOther);
     CollectorSwapRegistration(aOther);
@@ -97,7 +98,7 @@ BEGIN_MEMBERCLASS(Assets, Asset, ICHelperUnsafe),
                           (FlagIsSet(CD_LEVEL_SLOW)     ? 7 :
                           (FlagIsSet(CD_LEVEL_SLOWEST)  ? 9 : 1))))); }
   /* -- Load asset from memory ------------------------------------- */ public:
-  void LoadData(FileMap &fC)
+  void AsyncReady(FileMap &fC)
   { // Guest wants data put into a raw magic block (no user flags)
     if(FlagIsSet(CD_ENCODE_RAW)) CodecExec<RAWEncoder>(fC);
     // Guest wants data encrypted into a magic block (no user flags)
@@ -122,12 +123,12 @@ BEGIN_MEMBERCLASS(Assets, Asset, ICHelperUnsafe),
     // Check and get parameters
     const string strName{ GetCppStringNE(lS, 1, "Identifier") };
     Memory mData{ GetMBfromLString(lS, 2, "String") };
-    FlagReset(GetFlags(lS, 3, CD_NONE, CD_MASK, "Flags"));
+    FlagReset(GetFlags(lS, 3, CD_MASK, "Flags"));
     CheckFunction(lS, 4, "ErrorFunc");
     CheckFunction(lS, 5, "ProgressFunc");
     CheckFunction(lS, 6, "SuccessFunc");
     // Init the specified string as an array asynchronously
-    AsyncInitArray(lS, strName, "assetstring", move(mData));
+    AsyncInitArray(lS, strName, "assetstring", std::move(mData));
   }
   /* -- Load data from array asynchronously -------------------------------- */
   void InitAsyncArray(lua_State*const lS)
@@ -136,12 +137,12 @@ BEGIN_MEMBERCLASS(Assets, Asset, ICHelperUnsafe),
     // Check and get parameters
     const string strName{ GetCppStringNE(lS, 1, "Identifier") };
     Asset &aData = *GetPtr<Asset>(lS, 2, "Asset");
-    FlagReset(GetFlags(lS, 3, CD_NONE, CD_MASK, "Flags"));
+    FlagReset(GetFlags(lS, 3, CD_MASK, "Flags"));
     CheckFunction(lS, 4, "ErrorFunc");
     CheckFunction(lS, 5, "ProgressFunc");
     CheckFunction(lS, 6, "SuccessFunc");
     // Init the specified string as an array asynchronously
-    AsyncInitArray(lS, strName, "assetdata", move(aData));
+    AsyncInitArray(lS, strName, "assetdata", std::move(aData));
   }
   /* -- Load asset from file asynchronously -------------------------------- */
   void InitAsyncFile(lua_State*const lS)
@@ -149,7 +150,7 @@ BEGIN_MEMBERCLASS(Assets, Asset, ICHelperUnsafe),
     CheckParams(lS, 6);
     // Get and check parameters
     const string strName{ GetCppFileName(lS, 1, "File") };
-    FlagReset(GetFlags(lS, 2, CD_NONE, CD_MASK, "Flags"));
+    FlagReset(GetFlags(lS, 2, CD_MASK, "Flags"));
     CheckFunction(lS, 3, "ErrorFunc");
     CheckFunction(lS, 4, "ProgressFunc");
     CheckFunction(lS, 5, "SuccessFunc");
@@ -162,7 +163,7 @@ BEGIN_MEMBERCLASS(Assets, Asset, ICHelperUnsafe),
     CheckParams(lS, 6);
     // Get and check parameters
     const string strCmdLine{ GetCppStringNE(lS, 1, "CmdLine") };
-    FlagReset(GetFlags(lS, 2, CD_NONE, CD_MASK, "Flags"));
+    FlagReset(GetFlags(lS, 2, CD_MASK, "Flags"));
     CheckFunction(lS, 3, "ErrorFunc");
     CheckFunction(lS, 4, "ProgressFunc");
     CheckFunction(lS, 5, "SuccessFunc");
@@ -176,7 +177,7 @@ BEGIN_MEMBERCLASS(Assets, Asset, ICHelperUnsafe),
     CheckParams(lS, 7);
     // Get and check parameters
     const string strCmdLine{ GetCppStringNE(lS, 1, "CmdLine") };
-    FlagReset(GetFlags(lS, 2, CD_NONE, CD_MASK, "Flags"));
+    FlagReset(GetFlags(lS, 2, CD_MASK, "Flags"));
     Asset &aInput = *GetPtr<Asset>(lS, 3, "Asset");
     CheckFunction(lS, 4, "ErrorFunc");
     CheckFunction(lS, 5, "ProgressFunc");
@@ -205,7 +206,7 @@ BEGIN_MEMBERCLASS(Assets, Asset, ICHelperUnsafe),
   { // Set load flags
     FlagReset(lfS);
     // Set filename and flags
-    SyncInitArray(strN, move(aSrc));
+    SyncInitArray(strN, std::move(aSrc));
   }
   /* -- Move assignment ---------------------------------------------------- */
   Asset& operator=(Asset &&aOther) { SwapAsset(aOther); return *this; }
@@ -215,6 +216,7 @@ BEGIN_MEMBERCLASS(Assets, Asset, ICHelperUnsafe),
   Asset(void) :
     /* -- Initialisation of members ---------------------------------------- */
     ICHelperAsset{ *cAssets },         // Initially unregistered
+    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     AsyncLoader<Asset>{ this,          // Initialise async class with this
       EMC_MP_ASSET },                  // ...and the event id for it.
     AssetFlags{ CD_NONE }              // Np asset load flags initially
@@ -238,15 +240,15 @@ struct AssetList :
   /* -- Return files in directories ---------------------------------------- */
   AssetList(const string &strDir, const bool bOnlyDirs) :
     /* -- Initialisers ----------------------------------------------------- */
-    StrSet{ bOnlyDirs ? move(Dir{ strDir }.DirsToSet()) :
-                        move(Dir{ strDir }.FilesToSet()) }
+    StrSet{ bOnlyDirs ? std::move(Dir{ strDir }.DirsToSet()) :
+                        std::move(Dir{ strDir }.FilesToSet()) }
     /* -- Add archive files to list ---------------------------------------- */
     { ArchiveEnumerate(strDir, strBlank, bOnlyDirs, *this); }
   /* -- Return files in directories with extension matching ---------------- */
   AssetList(const string &strDir, const string &strExt, const bool bOnlyDirs) :
     /* -- Initialisers ----------------------------------------------------- */
-    StrSet{ bOnlyDirs ? move(Dir{ strDir, strExt }.DirsToSet()) :
-                        move(Dir{ strDir, strExt }.FilesToSet()) }
+    StrSet{ bOnlyDirs ? std::move(Dir{ strDir, strExt }.DirsToSet()) :
+                        std::move(Dir{ strDir, strExt }.FilesToSet()) }
     /* -- Add archive files to list ---------------------------------------- */
     { ArchiveEnumerate(strDir, strExt, bOnlyDirs, *this); }
 };/* ----------------------------------------------------------------------- */
@@ -262,6 +264,6 @@ static CVarReturn AssetSetPipeBufferSize(const size_t stSize)
       static_cast<size_t>(1), static_cast<size_t>(4096)); }
 /* -- Set pipe buffer size ------------------------------------------------- */
 static size_t AssetGetPipeBufferSize(void) { return cAssets->stPipeBufSize; }
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

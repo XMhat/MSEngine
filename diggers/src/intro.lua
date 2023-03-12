@@ -11,27 +11,109 @@
 -- ========================================================================= --
 -- Core function aliases --------------------------------------------------- --
 -- M-Engine function aliases ----------------------------------------------- --
-local UtilBlank<const>, InfoTime<const> = Util.Blank, Info.Time;
+local insert, UtilBlank<const>, InfoTime<const> =
+  table.insert, Util.Blank, Info.Time;
 -- Diggers function and data aliases --------------------------------------- --
 local LoadResources, GetCallbacks, SetCallbacks, VideoPlay, VideoStop, Fade,
-  IsButtonPressed, InitTitle, texSpr, InitSetup, RegisterFBUCallback;
+  IsButtonPressed, InitTitle, texSpr, InitSetup, RegisterFBUCallback,
+  fontLittle, RenderShadow, RenderFade;
 -- Intro initialisation function ------------------------------------------- --
 local function InitIntro(bAndSetup)
   -- When intro resources have loaded?
   local function OnLoaded(aResources)
+    -- Subtitle position
+    local iStageST = 0;
     -- Register framebuffer update
     local iStageW, iStageH, iStageL, iStageT, iStageR, iStageB;
     local function OnFrameBufferUpdate(...)
       iStageW, iStageH, iStageL, iStageT, iStageR, iStageB = ...;
+      iStageST = iStageL + (iStageW / 2);
     end
     RegisterFBUCallback("intro", OnFrameBufferUpdate);
     -- Get the texture handle that was loaded
     local tTiles, tTitle = aResources[1].H, aResources[2].H;
-    tTitle:SetTile(0, 0, 0, 512, 240);
-    tTitle:CreateTile(227, 240, 285, 448);
+    tTitle:TileS(0, 0, 0, 512, 240);
+    tTitle:TileA(227, 240, 285, 448);
     -- Load and play intro video
     local vVideo = aResources[3].H;
     vVideo:SetFilter(false);
+    -- Subtitles list
+    local iSubTitle, iFrameEnd, aSubTitles<const> = 1, math.maxinteger, {
+      {  380,  440, { "This is no ordinary day on the planet Zarg." } },
+      {  450,  510, { "Today is the glorious four-hundred and twelfth." } },
+      {  520,  640, { "The day that each year, signals the commencement",
+                      "of one months frenzied digging." } },
+      {  650,  770, { "Four races of diggers, are tunneling their way",
+                      "to the Zargon Mineral Trading Centre." } },
+      {  780,  810, { "They each have an ambition..." } },
+      {  820,  930, { "That requires them to mine as much of the",
+                      "planets mineral wealth, as possible." } },
+      { 1150, 1280, { "Observing the quarrelsome diggers from afar,",
+                      "is a mysterious stranger." } },
+      { 1290, 1410, { "Each of the races are hoping that this 'stranger'",
+                      "will control their mining operations." } },
+      { 1420, 1550, { "His expertese, will be vital, in guiding",
+                      "them along the long, dangerous path..." } },
+      { 1560, 1620, { "...that leads them to their ultimate goal." } },
+      { 1630, 1790, { "His first step, is to register, at the",
+                      "Zargon mineral trading centre." } },
+      { 1900, 2040, { "As the diggers wait nervously, the stranger",
+                      "heads towards the trading centre." } },
+      { 2050, 2180, { "For him, the ultimate test. The greatest",
+                      "challenge of his life lies ahead." } },
+      { 2200, 2290, { "The rewards for success,",
+                      "will be wealth unlimited." } },
+      { 2310, 2440, { "The results of failure,",
+                      "are unthinkable!" } },
+    };
+    -- Get font size
+    local iFWidth<const>, iFHeight<const>, iPadding<const> =
+      fontLittle:GetWidth(), fontLittle:GetHeight(), 5;
+    -- For each credit
+    for iI = 1, #aSubTitles do
+      -- Get subtitle item and we must have at least 3 leans
+      local aSubTitle<const> = aSubTitles[iI];
+      -- Check parameter count
+      if #aSubTitle < 3 then error("Not enough items on "..iI.."!") end;
+      if #aSubTitle > 4 then error("Too many items on "..iI.."!") end;
+      -- Verify frame start
+      local iFrStart<const> = aSubTitle[1];
+      if type(iFrStart) ~= "number" or iFrStart < 0 then
+        error("Invalid start '"..tostring(iFrStart).."' on "..iI.."!") end;
+      -- Verify frame end
+      local iFrEnd<const> = aSubTitle[1];
+      if type(iFrEnd) ~= "number" or iFrEnd < 0 then
+        error("Invalid end '"..tostring(iFrEnd).."' on "..iI.."!") end;
+      -- Get subtitles
+      local aSubTitleTexts<const> = aSubTitle[3];
+      local sSubTitle1<const> = aSubTitleTexts[1];
+      local sSubTitle2<const> = aSubTitleTexts[2];
+      -- Calculate length of first subtitle and if we have 2nd subtitle?
+      local iWidth = #sSubTitle1 * iFWidth;
+      if sSubTitle2 then
+        -- Which subtitle is longest?
+        iWidth = math.max(iWidth, #sSubTitle2 * iFWidth);
+        -- Insert first and second subtitle Y position
+        insert(aSubTitle, 200); -- Index 4
+        insert(aSubTitle, 210); -- Index 5
+      else
+        -- Insert first and second (n/a) subtitle Y position
+        insert(aSubTitle, 206); -- Index 4
+        insert(aSubTitle, 206); -- Index 5
+      end
+      -- Insert half width of subtitle box plus padding
+      insert(aSubTitle, (iWidth / 2) + iPadding); -- Index 6
+      -- Insert top position of subtitle box minus padding
+      insert(aSubTitle, aSubTitle[4] - iPadding); -- Index 7
+      -- Insert bottom position of subtitle box plus font height plus padding
+      insert(aSubTitle, aSubTitle[5] + iFHeight + iPadding); -- Index 8
+    end
+    -- Set first active subtitle to wait for
+    local aSubTitle = aSubTitles[iSubTitle];
+    -- Background fade bounds and current subtitles being displayed
+    local iFadeX, iFadeY1, iFadeY2, sSubTitle1, sSubTitle2;;
+    -- Sub-title Y positions
+    local iSubTitle1, iSubTitle2;
     -- Playing procedure()
     local function PlayingProc()
       -- If we're not in widescreen?
@@ -54,10 +136,42 @@ local function InitIntro(bAndSetup)
       vVideo:SetVertex(0, 0, 320, 240);
       vVideo:Blit();
       -- Draw transparent tiles over the top of the widescreen border
-      tTiles:SetRGBA(1, 1, 1, 0.5);
+      tTiles:SetCRGBA(1, 1, 1, 0.5);
       for iY = 0, 240, 16 do
         for iX = -16, iStageL-16, -16 do tTiles:BlitSLT(3, iX, iY) end;
         for iX = 320, iStageR, 16 do tTiles:BlitSLT(3, iX, iY) end;
+      end
+      -- Get frame number
+      local iFrame<const> = vVideo:GetFrame();
+      -- Have subtitle?
+      if sSubTitle1 then
+        -- Calculate X position of rectangle
+        local iFadeX1<const> = iStageST - iFadeX;
+        local iFadeX2<const> = iStageST + iFadeX;
+        -- Draw subtitle background and shadow
+        RenderFade(0.75, iFadeX1, iFadeY1, iFadeX2, iFadeY2);
+        RenderShadow(iFadeX1, iFadeY1, iFadeX2, iFadeY2);
+        -- Draw subtitle
+        fontLittle:PrintC(iStageST, iSubTitle1, sSubTitle1);
+        -- If we have subtitle two
+        if sSubTitle2 then
+          fontLittle:PrintC(iStageST, iSubTitle2, sSubTitle2);
+        end
+        -- Hide subtitle if timed out
+        if iFrame >= iFrameEnd then sSubTitle1, sSubTitle2 = nil, nil end;
+      end
+      -- Get next subtitle data (fontLittle:PrintC(iStageST, 170, iFrame);)
+      if iFrame >= aSubTitle[1] then
+        -- Grab new fade bounds
+        iFadeX, iFadeY1, iFadeY2 = aSubTitle[6], aSubTitle[7], aSubTitle[8];
+        -- Set subtitle position
+        iSubTitle1, iSubTitle2 = aSubTitle[4], aSubTitle[5];
+        -- Set new subtile, ending time and next id
+        sSubTitle1, sSubTitle2, iFrameEnd =
+          aSubTitle[3][1], aSubTitle[3][2], aSubTitle[2];
+        -- Set next sub-title to monitor
+        iSubTitle = iSubTitle + 1;
+        aSubTitle = aSubTitles[iSubTitle] or { math.maxinteger };
       end
       -- Draw shadow
       texSpr:BlitSLTRB(1017, -16, iStageT,   0, iStageB);
@@ -66,7 +180,7 @@ local function InitIntro(bAndSetup)
     -- Not playing procedure
     local function NotPlayingProc()
       -- Draw sidebar scrolling logo's
-      tTitle:SetRGBA(1, 1, 1, 1);
+      tTitle:SetCRGBA(1, 1, 1, 1);
       tTitle:BlitLT(-96, 0);
       if iStageL == 0 then return end;
       local Width<const> = -iStageL-4;
@@ -75,7 +189,7 @@ local function InitIntro(bAndSetup)
       local LX = (InfoTime()*100)%240;
       local LY = -LX;
       local X<const> = iStageL+4;
-      tTitle:SetAlpha(0.25);
+      tTitle:SetCA(0.25);
       tTitle:BlitSLTRB(1,         X, -240+LX,    X+Width,-240+Height+LX);
       tTitle:BlitSLTRB(1,         X,      LX,    X+Width,     Height+LX);
       tTitle:BlitSLTRB(1,         X,  240+LX,    X+Width, 240+Height+LX);
@@ -114,16 +228,18 @@ local function InitIntro(bAndSetup)
     end
     -- Play video and setup event
     local function PlayVideo()
+      -- Get video events list and id's
+      local aEvents<const> = Video.Events;
+      local iStop<const>, iPause<const>, iPlay<const>, iFinish<const> =
+        aEvents.STOP, aEvents.PAUSE, aEvents.PLAY, aEvents.FINISH;
       -- A video event occured?
       local function OnEvent(iEvent)
         -- Playing?
-        if iEvent == 0 then
+        if iEvent == iPlay then
           -- If we were in our render loop? Transition to title screen
           if fcbRender == NotPlayingProc then fcbRender = PlayingProc end;
-        -- Looping? (unused)
-        elseif iEvent == 1 then
-        -- Stopped?
-        elseif iEvent == 2 then
+        -- Paused, stopped or finished?
+        elseif iEvent == iPause or iEvent == iStop or iEvent == iFinish then
           -- We someone took our render callback (i.e. setup) then we need to
           -- to switch render proc
           local _, CBRender = GetCallbacks();
@@ -162,11 +278,12 @@ end
 return { A = { InitIntro = InitIntro }, F = function(GetAPI)
   -- Imports --------------------------------------------------------------- --
   LoadResources, GetCallbacks, SetCallbacks, VideoPlay, VideoStop, Fade,
-  IsButtonPressed, InitTitle, texSpr, InitSetup, RegisterFBUCallback
+  IsButtonPressed, InitTitle, texSpr, InitSetup, RegisterFBUCallback,
+  fontLittle, RenderShadow, RenderFade
   = -- --------------------------------------------------------------------- --
   GetAPI("LoadResources", "GetCallbacks", "SetCallbacks", "VideoPlay",
     "VideoStop", "Fade", "IsButtonPressed", "InitTitle", "texSpr", "InitSetup",
-    "RegisterFBUCallback");
+    "RegisterFBUCallback", "fontLittle", "RenderShadow", "RenderFade");
   -- ----------------------------------------------------------------------- --
 end };
 -- End-of-File ============================================================= --

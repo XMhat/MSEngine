@@ -35,9 +35,9 @@ local function InitScore()
     PlayMusic(aResources[2].H);
     -- Setup lobby texture
     local texTitle = aResources[1].H;
-    texTitle:TrimTList(1);
-    texTitle:SetTile(0, 0, 0, 512, 240);
-    texTitle:CreateTile(227, 240, 285, 448);
+    texTitle:TileSTC(1);
+    texTitle:TileS(0, 0, 0, 512, 240);
+    texTitle:TileA(227, 240, 285, 448);
     -- Calculate totals
     local iTotalId, iTotalScore, aTotals = 0, 0, { };
     local iScoreItem = 0;
@@ -115,7 +115,7 @@ local function InitScore()
       local LX = (InfoTime()*100)%240;
       local LY = -LX;
       local X = iStageL+4;
-      texTitle:SetAlpha(0.25);
+      texTitle:SetCA(0.25);
       texTitle:BlitSLTRB(1,         X, -240+LX,    X+Width,-240+Height+LX);
       texTitle:BlitSLTRB(1,         X,      LX,    X+Width,     Height+LX);
       texTitle:BlitSLTRB(1,         X,  240+LX,    X+Width, 240+Height+LX);
@@ -123,7 +123,7 @@ local function InitScore()
       texTitle:BlitSLTRB(1, 320+Width,  240+Height+LY, 320, 240+LY);
       texTitle:BlitSLTRB(1, 320+Width,  480+Height+LY, 320, 480+LY);
       -- Reset texlobby colour
-      texTitle:SetRGBA(1, 1, 1, 1);
+      texTitle:SetCRGBA(1, 1, 1, 1);
     end
     -- Bars position
     local iBarY = 0;
@@ -160,7 +160,7 @@ local function InitScore()
       -- Render score
       local function RenderScore()
         -- Draw background
-        texTitle:SetRGBA(1, 1, 1, 1);
+        texTitle:SetCRGBA(1, 1, 1, 1);
         texTitle:BlitLT(-96, 0);
         -- Draw logos
         DrawLogos();
@@ -170,35 +170,35 @@ local function InitScore()
           local aData<const> = aTotals[iI];
           -- This is our bar id?
           if iTotalId == iI then
-            texSpr:SetRGB(0, 0.5, 0);
+            texSpr:SetCRGB(0, 0.5, 0);
             RenderFade(1, 8, aData[8]-2, 312, aData[8]+10, 1022);
-            fontLittle:SetRGBA(1, 1, 1, 1);
+            fontLittle:SetCRGBA(1, 1, 1, 1);
             fontLittle:Print(aData[7]+16, aData[8], aData[6]);
-            fontTiny:SetRGBA(1, 1, 1, 1);
+            fontTiny:SetCRGBA(1, 1, 1, 1);
             fontTiny:PrintR(aData[7]+160, aData[8]+1, floor(aData[2]));
-            fontTiny:SetRGBA(1, 1, 1, 1);
+            fontTiny:SetCRGBA(1, 1, 1, 1);
             fontTiny:Print(aData[7]+160, aData[8]+1, "x"..aData[5]);
-            fontLittle:SetRGBA(1, 1, 1, 1);
+            fontLittle:SetCRGBA(1, 1, 1, 1);
             fontLittle:PrintR(aData[7]+304, aData[8], floor(aData[9]));
           else
-            if iTotalId > iI then texSpr:SetRGB(0, 0, 0.5);
-                             else texSpr:SetRGB(0.5, 0, 0) end;
+            if iTotalId > iI then texSpr:SetCRGB(0, 0, 0.5);
+                             else texSpr:SetCRGB(0.5, 0, 0) end;
             local nVal = InfoTime()+iI/4;
             RenderFade(sin(nVal)*cos(nVal)+0.75,
               aData[7]+8, aData[8]-2, aData[7]+312, aData[8]+10, 1022);
-            fontLittle:SetRGBA(0.75, 0.75, 0.75, 1);
+            fontLittle:SetCRGBA(0.75, 0.75, 0.75, 1);
             fontLittle:Print(aData[7]+16, aData[8], aData[6]);
-            fontTiny:SetRGBA(0, 1, 0, 1);
+            fontTiny:SetCRGBA(0, 1, 0, 1);
             fontTiny:PrintR(aData[7]+160, aData[8]+1, aData[2]);
-            fontTiny:SetRGBA(1, 0.5, 0, 1);
+            fontTiny:SetCRGBA(1, 0.5, 0, 1);
             fontTiny:Print(aData[7]+160, aData[8]+1, "x"..aData[5]);
-            fontLittle:SetRGBA(1, 0, 1, 1);
+            fontLittle:SetCRGBA(1, 0, 1, 1);
             fontLittle:PrintR(aData[7]+304, aData[8], aData[9]);
           end
         end
         -- Set text colour
-        fontLittle:SetRGBAInt(0xFFFFFFFF);
-        texSpr:SetRGBAInt(0x7F0000FF);
+        fontLittle:SetCRGBAI(0xFFFFFFFF);
+        texSpr:SetCRGBAI(0x7F0000FF);
         -- Finished tallying?
         if iTotalId > #aTotals then
           -- Starting X position
@@ -223,7 +223,7 @@ local function InitScore()
           -- Draw pulsating score
           fontLittle:SetSize(3);
           local nVal = InfoTime();
-          fontLittle:SetAlpha(sin(nVal) * cos(nVal) + 0.75);
+          fontLittle:SetCA(sin(nVal) * cos(nVal) + 0.75);
           fontLittle:PrintR(304, 213, strScore);
           -- Draw rank
           fontLittle:SetSize(1);
@@ -261,9 +261,9 @@ local function InitScore()
           fontLittle:Print(16, 220+(24-iBarY), strScoreC);
         end
         -- Reset sprites and font colour this for mouse cursor
-        texSpr:SetRGBAInt(0xFFFFFFFF);
-        fontLittle:SetRGBAInt(0xFFFFFFFF);
-        fontTiny:SetRGBAInt(0xFFFFFFFF);
+        texSpr:SetCRGBAI(0xFFFFFFFF);
+        fontLittle:SetCRGBAI(0xFFFFFFFF);
+        fontTiny:SetCRGBAI(0xFFFFFFFF);
       end
       -- Tick procedure
       local function ProcScore()

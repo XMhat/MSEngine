@@ -16,7 +16,7 @@
 /* ========================================================================= */
 LLNAMESPACEBEGIN(Cursor)               // Cursor namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfCursor;              // Using cursor interface
+using namespace IfCursor;              // Using cursor namespace
 /* ========================================================================= */
 /* ######################################################################### */
 /* ========================================================================= */
@@ -79,10 +79,10 @@ LLRSKTITEMEX(GLFW_,CROSSHAIR,_CURSOR), // Crosshair cursor
 LLRSKTITEMEX(GLFW_,HAND,_CURSOR),      // Hand cursor
 LLRSKTITEMEX(GLFW_,HRESIZE,_CURSOR),   // Horizontal resize cursor
 LLRSKTITEMEX(GLFW_,VRESIZE,_CURSOR),   // Vertical resize cursor
-//LLRSKTITEMEX(GLFW_,RESIZE_NWSE,_CURSOR),// NW to SE direction resize cursor
-//LLRSKTITEMEX(GLFW_,RESIZE_NESW,_CURSOR),// NE to SW direction resize cursor
-//LLRSKTITEMEX(GLFW_,RESIZE_ALL,_CURSOR), // All direction resize cursor
-//LLRSKTITEMEX(GLFW_,NOT_ALLOWED,_CURSOR),// Not allowed cursor
+// LLRSKTITEMEX(GLFW_,RESIZE_NWSE,_CURSOR),// NW to SE direction resize cursor
+// LLRSKTITEMEX(GLFW_,RESIZE_NESW,_CURSOR),// NE to SW direction resize cursor
+// LLRSKTITEMEX(GLFW_,RESIZE_ALL,_CURSOR), // All direction resize cursor
+// LLRSKTITEMEX(GLFW_,NOT_ALLOWED,_CURSOR),// Not allowed cursor
 LLRSKTEND                              // End of cursor codes
 /* ========================================================================= */
 LLRSCONSTBEGIN                         // Cursor.* namespace consts begin

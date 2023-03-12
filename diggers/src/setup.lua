@@ -49,7 +49,14 @@ local InitSetup, aButtonData, aCursorIdData, aSfxData, GetCallbacks, SetCallback
   RenderShadow, IsScrollingLeft, IsScrollingRight, IsFading;
 -- Frame-limiter types ----------------------------------------------------- --
 local aFrameLimiterLabels<const> = {
-  "Disabled", "Hardware Only", "Software Only", "Software and Hardware"
+  "Adaptive VSync",                    -- VSync = -1; Delay = 0
+  "None",                              -- VSync =  0; Delay = 0
+  "VSync Only",                        -- VSync =  1; Delay = 0
+  "Double VSync",                      -- VSync =  2; Delay = 0
+  "Adaptive VSync & Suspend",          -- VSync = -1; Delay = 1
+  "Suspend Only",                      -- VSync =  0; Delay = 1
+  "VSync & Suspend",                   -- VSync =  1; Delay = 1
+  "Double VSync & Suspend",            -- VSync =  2; Delay = 1
 };
 -- Window types ------------------------------------------------------------ --
 local aWindowLabels<const> = {
@@ -72,9 +79,9 @@ local iOColour, aColours<const> = 1, {-- Colour transition animations
 local sTitle, sStatusLine1, sStatusLine2;
 local nButtonIntensity, nButtonIntensityIncrement;
 local iWindowId, iWindowIdOriginal, iSelectedOption, iSelectedButton;
-local iFullScreenState, iFrameLimiter, iAudioDeviceId, iMonitorId;
+local iFullScreenState, iAudioDeviceId, iMonitorId;
 local iFullScreenMode, iFullScreenModeOriginal;
-local iFullScreenStateOriginal, iFrameLimiterOriginal, iAudioDeviceIdOriginal;
+local iFullScreenStateOriginal, iAudioDeviceIdOriginal;
 local iMonitorIdOriginal;
 local iCursorId, fcbTick, fcbRender, fcbInput;
 local aReadmeData, aReadmeVisibleLines, aReadmeColourData = { }, { }, { };
@@ -175,14 +182,39 @@ local function WSizeUp()
   if iWindowId > #aWindowSizes then iWindowId = #aWindowSizes end;
 end
 -- ------------------------------------------------------------------------- --
+local function LimiterSet(iFrameLimiter)
+  -- Set frame limiter options
+  local iVSync, iDelay;
+  if iFrameLimiter >= 4 then iVSync, iDelay = -1 + (iFrameLimiter % 4), 1;
+  else iVSync, iDelay = -1 + iFrameLimiter, 0 end;
+  CVarsSet("vid_vsync", iVSync);
+  CVarsSet("app_delay", iDelay);
+end
+-- ------------------------------------------------------------------------- --
+local function LimiterGet()
+  -- Get vsync value, thread delay and kernel tick rate
+  local iFrameLimiter = 1 + tonumber(CVarsGet("vid_vsync"));
+  -- Check for delay and if set? Set software category too
+  local iAddedDelay<const> = tonumber(CVarsGet("app_delay"));
+  if iAddedDelay > 0 then iFrameLimiter = iFrameLimiter + 4 end;
+  -- Return value
+  return iFrameLimiter;
+end
+-- ------------------------------------------------------------------------- --
 local function LimiterUpdate()
-  return aFrameLimiterLabels[iFrameLimiter+1] or aFrameLimiterLabels[2]
+  -- Get vsync value, thread delay and kernel tick rate
+  local iFrameLimiter = 1 + tonumber(CVarsGet("vid_vsync"));
+  -- Check for delay and if set? Set software category too
+  local iAddedDelay<const> = tonumber(CVarsGet("app_delay"));
+  if iAddedDelay > 0 then iFrameLimiter = iFrameLimiter + 4 end;
+  -- Set original value
+  return aFrameLimiterLabels[LimiterGet()+1];
 end
 local function LimiterDown()
-  iFrameLimiter = UtilClampInt(iFrameLimiter-1, 0, #aFrameLimiterLabels-1);
+  LimiterSet(UtilClampInt(LimiterGet()-1, 0, #aFrameLimiterLabels-1));
 end
 local function LimiterUp()
-  iFrameLimiter = UtilClampInt(iFrameLimiter+1, 0, #aFrameLimiterLabels-1);
+  LimiterSet(UtilClampInt(LimiterGet()+1, 0, #aFrameLimiterLabels-1));
 end
 -- ------------------------------------------------------------------------- --
 local function FilterUpdate()
@@ -255,13 +287,13 @@ local function VFMVUp()
 end
 -- ------------------------------------------------------------------------- --
 local function FlickerColour1()
-  fontLarge:SetRGBA(1, 1, 1, 1);
-  fontTiny:SetRGBA(0.75, 0.75, 0.5, 1);
+  fontLarge:SetCRGBA(1, 1, 1, 1);
+  fontTiny:SetCRGBA(0.75, 0.75, 0.5, 1);
 end
 -- ------------------------------------------------------------------------- --
 local function FlickerColour2()
-  fontLarge:SetRGBA(0.75, 0.75, 0.75, 1);
-  fontTiny:SetRGBA(1, 1, 0.75, 1);
+  fontLarge:SetCRGBA(0.75, 0.75, 0.75, 1);
+  fontTiny:SetCRGBA(1, 1, 0.75, 1);
 end
 -- ------------------------------------------------------------------------- --
 local function FlickerColours(cbCol1, cbCol2)
@@ -294,22 +326,22 @@ local function RenderBackgroundStart(nId)
     for iX = iStageL+6, iStageR, 16 do
       local nVal = (nTime*2) - (iX+iY);
       nVal = (0.5+((cos(nVal)*sin(nVal)))) * 1;
-      texSpr:SetAlpha(nVal*0.5);
+      texSpr:SetCA(nVal*0.5);
       local nVal2<const> = nVal * 16;
       texSpr:BlitSLTRBA(1023, iX, iY, iX + nVal2, iY + nVal2, nVal);
     end
   end
   -- Draw background for text
-  texSpr:SetRGB(0.2, 0.1, 0.1);
+  texSpr:SetCRGB(0.2, 0.1, 0.1);
   RenderFade(0.75, 4, 28, 316, 212, 1022);
   -- Draw title and status fades
-  texSpr:SetRGB(0.4, 0.2, 0.2);
+  texSpr:SetCRGB(0.4, 0.2, 0.2);
   RenderFade(0.75, 4, 212, 316, 236, 1022);
   RenderFade(0.75, 4, 4, 316, 28, 1022);
   -- Draw shadow around window
   RenderShadow(4, 4, 316, 236);
   -- Print title
-  texSpr:SetRGBA(1, 1, 1, 1);
+  texSpr:SetCRGBA(1, 1, 1, 1);
   -- Set alternatig colour for title
   FlickerColours(FlickerColour1, FlickerColour2);
   fontLarge:PrintC(160, 8, ColouriseText(sTitle));
@@ -401,16 +433,6 @@ local function Refresh()
     -- Record original id
     iWindowIdOriginal = iWindowId;
   end
-  -- Refresh frame limiter setting
-  local function RefreshFrameLimiterSettings()
-    -- Get vsync value, thread delay and kernel tick rate
-    iFrameLimiter = tonumber(CVarsGet("vid_vsync"));
-    -- Check for delay and if set? Set software category too
-    local iAddedDelay<const> = tonumber(CVarsGet("app_delay"));
-    if iAddedDelay > 0 then iFrameLimiter = iFrameLimiter + 2 end;
-    -- Set original value
-    iFrameLimiterOriginal = iFrameLimiter;
-  end;
   -- Refresh audio settings
   local function RefreshAudioSettings()
     iAudioDeviceId = tonumber(CVarsGet("aud_interface"));
@@ -419,7 +441,6 @@ local function Refresh()
   -- Perform refreshes
   RefreshMonitorSettings();
   RefreshWindowSettings();
-  RefreshFrameLimiterSettings();
   RefreshAudioSettings();
   -- Update labels
   UpdateLabels();
@@ -443,18 +464,11 @@ local function ApplySettings()
   else CVarsSet("vid_fsmode", iFullScreenMode) end;
   CVarsSet("vid_monitor", iMonitorId);
   CVarsSet("aud_interface", iAudioDeviceId);
-  -- Set frame limiter options
-  local iVSync, iDelay;
-  if iFrameLimiter > 1 then iVSync, iDelay = iFrameLimiter % 2, 1;
-  else iVSync, iDelay = iFrameLimiter, 0 end;
-  CVarsSet("vid_vsync", iVSync);
-  CVarsSet("app_delay", iDelay);
   -- Reset audio subsystem if interface changed
   if iAudioDeviceIdOriginal ~= iAudioDeviceId then AudioReset() end;
   -- If GPU related parameters changed from original then reset video
   if iFullScreenMode ~= iFullScreenModeOriginal or
      iFullScreenStateOriginal ~= iFullScreenState or
-     iFrameLimiterOriginal ~= iFrameLimiter or
      iMonitorIdOriginal ~= iMonitorId then DisplayVReset();
   -- If window parameters changed then just reset window
   elseif iFullScreenState == 0 and iWindowId ~= iWindowIdOriginal then
@@ -469,9 +483,10 @@ local function SetDefaults()
   iFullScreenMode = -3;
   iMonitorId = -1;
   iAudioDeviceId = -1;
-  iFrameLimiter = 1;
   iWindowId = 1;
   -- Other options
+  CVarsReset("app_delay");
+  CVarsReset("vid_vsync");
   CVarsReset("vid_texfilter");
   -- Reset volumes
   CVarsReset("aud_vol");
@@ -517,13 +532,13 @@ local function RenderReadme()
     local nIntensity<const> =
       0.75 + (((iIndex / #aReadmeVisibleLines) + nTime) % 0.25);
     -- Set colour
-    fontTiny:SetRGB(nIntensity, nIntensity, nIntensity);
+    fontTiny:SetCRGB(nIntensity, nIntensity, nIntensity);
     -- Print line
     fontTiny:Print(aData[1], aData[2], aData[3]);
   end
   -- Set alternating title colour based on current time
-  if nTime % 0.43 < 0.215 then fontTiny:SetRGBA(0.5, 0.5, 0.5, 1);
-                          else fontTiny:SetRGBA(0.75, 0.75, 0.75, 1) end;
+  if nTime % 0.43 < 0.215 then fontTiny:SetCRGBA(0.5, 0.5, 0.5, 1);
+                          else fontTiny:SetCRGBA(0.75, 0.75, 0.75, 1) end;
 end
 -- ------------------------------------------------------------------------- --
 local function UpdateReadmeLines()
@@ -661,11 +676,11 @@ local function RenderSetup()
   RenderBackgroundStart(771);
   -- Draw selected item
   if iSelectedOption > 0 then
-    texSpr:SetRGB(0, 0, 0);
+    texSpr:SetCRGB(0, 0, 0);
     RenderFade(nButtonIntensity, 4,
        28 + ((iSelectedOption-1) * iCatSize),
      316, 28 + iCatSize + ((iSelectedOption-1) * iCatSize), 1022);
-    texSpr:SetRGB(1, 1, 1);
+    texSpr:SetCRGB(1, 1, 1);
     -- Set tip
     SetTip(iSelectedOption, aOptionData[iSelectedOption][6]);
   -- No selected option so remove tip if a button isn't selected
@@ -673,23 +688,23 @@ local function RenderSetup()
   -- For each category
   for I, D in pairs(aOptionData) do
     local nIntensity;
-    if iSelectedOption == I then fontLittle:SetRGB(1, 1, 1);
+    if iSelectedOption == I then fontLittle:SetCRGB(1, 1, 1);
     else
       nIntensity = 0.5 + (((I/#aOptionData) + nTime) % 0.5);
-      fontLittle:SetRGB(0, 0, nIntensity);
+      fontLittle:SetCRGB(0, 0, nIntensity);
     end
     fontLittle:Print(8, 17+(I*iCatSize), D[1]);
-    if iSelectedOption == I then fontLittle:SetRGB(1, 1, 1);
+    if iSelectedOption == I then fontLittle:SetCRGB(1, 1, 1);
     else
       nIntensity = 0.5 + (((I/#aOptionData) + -nTime) % 0.5);
-      fontLittle:SetRGB(0, nIntensity, 0);
+      fontLittle:SetCRGB(0, nIntensity, 0);
     end
     fontLittle:PrintR(312, 17+(I*iCatSize), D[2]);
   end
   -- No selected button
   iSelectedButton = 0;
   -- For each button
-  texSpr:SetRGB(0, 0, 0);
+  texSpr:SetCRGB(0, 0, 0);
   for N, D in pairs(aButtonData) do
     -- Mouse in bounds?
     if IsMouseInBounds(D[1], D[2], D[3], D[4]) then
@@ -698,23 +713,23 @@ local function RenderSetup()
       -- Set button
       iSelectedButton = D[7];
       -- Set glowing colour
-      texSpr:SetRGB(nButtonIntensity, nButtonIntensity, nButtonIntensity);
+      texSpr:SetCRGB(nButtonIntensity, nButtonIntensity, nButtonIntensity);
       -- Draw background
       RenderFade(1-nButtonIntensity, D[1], D[2], D[3], D[4], 1022);
     -- Mouse not in bounds? Just draw black background
     else RenderFade(0.5, D[1], D[2], D[3], D[4], 1023) end;
     -- Set button text colour and print the text
-    fontLittle:SetRGB(1, 1, 1);
+    fontLittle:SetCRGB(1, 1, 1);
     fontLittle:PrintC(D[1]+39, D[2]+6, N);
   end
   -- Remove tip if an option isn't selected
   if iSelectedButton == 0 and iSelectedOption == 0 then
     SetTip(0, sStatusLineSave) end;
   -- Print generic info
-  if nTime % 0.43 < 0.215 then fontTiny:SetRGBA(0.5, 0.5, 0.5, 1);
-                          else fontTiny:SetRGBA(0.75, 0.75, 0.75, 1) end;
+  if nTime % 0.43 < 0.215 then fontTiny:SetCRGBA(0.5, 0.5, 0.5, 1);
+                          else fontTiny:SetCRGBA(0.75, 0.75, 0.75, 1) end;
   -- Reset sprites colour because we changed it
-  texSpr:SetRGBA(1, 1, 1, 1);
+  texSpr:SetCRGBA(1, 1, 1, 1);
 end
 -- ------------------------------------------------------------------------- --
 local function LastOne(Index)
@@ -802,7 +817,7 @@ local function InitConfig()
   local AT, AV, AMAV, AMIV, ABV, ARV, _, _, ATA = InfoEngine();
   sStatusLine1 = format("%s %s on %s %u.%u.%u.%u (%s)",
     CVarsGet("app_longname"), CVarsGet("app_version"),
-    AT, AMAV, AMIV, ARV, ABV, ATA):upper();
+    AT, AMAV, AMIV, ABV, ARV, ATA):upper();
   sStatusLine2 = "MS-DESIGN PROUDLY PRESENTS DIGGERS! A REMAKE FOR MODERN "..
     "OPERATING SYSTEMS AND HARDWARE FROM THE CLASSIC CD32 AND DOS DAYS. "..
     "THIS IS THE CONFIGURATION SCREEN. PRESS ESCAPE OR THE 'DONE' BUTTON "..
@@ -958,9 +973,11 @@ return { A = { InitSetup = InitSetup }, F = function(GetAPI)
       "MODE. PRESS APPLY WHEN YOU ARE HAPPY WITH THE SELECTION TO ACTIVATE "..
       "IT" },
     { "Frame Limiter",   "", LimiterUpdate, LimiterDown, LimiterUp,
-      "ALLOWS YOU TO SET A FRAME-LIMITER USING THE HARDWARE (VSYNC) AND/OR "..
-      "BY USING A CPU WAIT FUNCTION TO CONSERVE POWER. PRESS APPLY WHEN YOU "..
-      "ARE HAPPY WITH THE SELECTION TO ACTIVATE IT" },
+      "ALLOWS YOU TO CHOOSE FROM A RANGE OF FRAME-LIMITING OPTIONS TO "..
+      "BALANCE THE PERFORMANCE VERSUS POWER USAGE OF RENDERING. SOME VALUES "..
+      "MAY BE INEFFECTIVE WHEN THE VSYNC VALUE IS BEING OVERRIDDEN IN YOUR "..
+      "VIDEO ADAPTER SETTINGS OR WHEN YOUR SYSTEM IS UNDERPERFORMING. THE "..
+      "CHANGE IS INSTANTLY APPLIED" },
     { "Texture Filter",  "", FilterUpdate,  FilterSwap,  FilterSwap,
       "APPLY A BILINEAR UPSCALE FILTER TO THE MAIN FRAMEBUFFER. THE GAME IS "..
       "RENDERED IN 320x240. THE CHANGE OF OPTION IS INSTANTLY APPLIED" },

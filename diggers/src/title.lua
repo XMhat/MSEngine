@@ -30,12 +30,12 @@ local function InitTitle()
     local iStageL, iStageR;
     -- Load texture and credit tiles
     local texTitle = aResources[1].H;
-    texTitle:SetRGBA(1, 1, 1, 1);
-    texTitle:TrimTList(1);
-    texTitle:CreateTile(  0, 240, 162, 281);
-    texTitle:CreateTile(  0, 344, 150, 512);
-    texTitle:CreateTile(344, 344, 512, 512);
-    local tileCredits<const> = texTitle:CreateTile(0, 0, 512, 240);
+    texTitle:SetCRGBA(1, 1, 1, 1);
+    texTitle:TileSTC(1);
+    texTitle:TileA(  0, 240, 162, 281);
+    texTitle:TileA(  0, 344, 150, 512);
+    texTitle:TileA(344, 344, 512, 512);
+    local tileCredits<const> = texTitle:TileA(0, 0, 512, 240);
     -- Set version
     local strVersion<const> = CVarsGet("app_version").." ";
     local strSubTitle;
@@ -66,7 +66,7 @@ local function InitTitle()
           texTitle:BlitSLT(2, iStageL-n1, 72);
           texTitle:BlitSLT(3, (iStageR-168)+n2, 72);
           -- Render status text
-          fontTiny:SetRGB(1, 0.9, 0);
+          fontTiny:SetCRGB(1, 0.9, 0);
           fontTiny:PrintC(160, 58-n1, strSubTitle);
           fontTiny:PrintC(160, 206+n1, strCredits);
           -- Move components in
@@ -83,7 +83,7 @@ local function InitTitle()
             texTitle:BlitSLT(2, iStageL, 72);
             texTitle:BlitSLT(3, iStageR-168, 72);
             -- Render status text
-            fontTiny:SetRGB(1, 0.9, 0);
+            fontTiny:SetCRGB(1, 0.9, 0);
             fontTiny:PrintC(160, 58, strSubTitle);
             fontTiny:PrintC(160, 206, strCredits);
           end
@@ -109,7 +109,7 @@ local function InitTitle()
           texTitle:BlitSLT(2, iStageL-168+n1, 72);
           texTitle:BlitSLT(3, iStageR-n2, 72);
           -- Render status text
-          fontTiny:SetRGB(1, 0.9, 0);
+          fontTiny:SetCRGB(1, 0.9, 0);
           fontTiny:PrintC(160, 58-n1, strSubTitle);
           fontTiny:PrintC(160, 370-n1, strCredits);
           -- Move components in
@@ -217,8 +217,8 @@ local function InitTitle()
           -- Render credits proc
           local function RenderCredits()
             -- Set text colour
-            fontLittle:SetRGB(1, 0.7, 1);
-            fontLarge:SetRGB(1, 1, 1);
+            fontLittle:SetCRGB(1, 0.7, 1);
+            fontLarge:SetCRGB(1, 1, 1);
             -- Blit background
             texTitle:BlitSLT(tileCredits, -96, 0);
             -- Display text compared to amount of time passed

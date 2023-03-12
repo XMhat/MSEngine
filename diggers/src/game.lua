@@ -1425,8 +1425,8 @@ end
 -- Render terrain ---------------------------------------------------------- --
 local function RenderTerrain()
   -- Render the backdrop
-  texBg:BlitLT(-TotalLevelWidth+((TotalLevelWidth-iPosX)/TotalLevelWidth*64),
-    -64+((TotalLevelHeight-iPosY)/TotalLevelHeight*64));
+  texLev:BlitSLT(texBg, -TotalLevelWidth+((TotalLevelWidth-iPosX)/TotalLevelWidth*64),
+    -32+((TotalLevelHeight-iPosY)/TotalLevelHeight*32));
   -- Calculate the X pixel position to draw at
   local iXdraw<const> = iStageL + PosPXC;
   -- For each screen row to draw tile at
@@ -1592,7 +1592,7 @@ local function RenderInterface()
   texSpr:BlitSLT(T, 120, 216);
   -- Draw money
   fontLittle:Print(15, 220, sMoney);
-  fontLittle:SetRGB(1, 1, 1);
+  fontLittle:SetCRGB(1, 1, 1);
   -- Draw utility button
   texSpr:BlitSLT(814, 232, 216);
   -- If a tip was set? Draw it
@@ -1647,7 +1647,7 @@ local function RenderInterface()
           fontLittle:Print(132, iDigIndex*32+28,
             "---%    -----    ----     ---%");
         end
-        fontTiny:SetRGB(0, 0.75, 1);
+        fontTiny:SetCRGB(0, 0.75, 1);
         fontTiny:Print(162, iDigIndex*32+29, "DUG          GEMS       EFFI%");
       end
       -- Draw on button
@@ -1669,7 +1669,7 @@ local function RenderInterface()
         -- Draw colour key of digger
         texSpr:BlitSLT(858+I, 31, I*32+11);
         -- Draw X and Y letters
-        fontTiny:SetRGB(0, 0.75, 1);
+        fontTiny:SetCRGB(0, 0.75, 1);
         fontTiny:Print(64, I*32+8, "X:       Y:");
         -- Draw health bar background
         texSpr:BlitSLTRB(1023, 24, I*32+30, 124, I*32+32);
@@ -1698,8 +1698,8 @@ local function RenderInterface()
     else texSpr:BlitSLT(817, 264, 216) end;
     if iInfoScreen == 3 then
       -- Set font colours
-      fontLarge:SetRGB(1, 1, 1);
-      fontLittle:SetRGB(1, 1, 1);
+      fontLarge:SetCRGB(1, 1, 1);
+      fontLittle:SetCRGB(1, 1, 1);
       -- Draw frame and title
       DrawInfoFrameAndTitle("ZONE STATUS");
       -- Score
@@ -1803,7 +1803,7 @@ local function RenderInterface()
   -- Object has inventory selected?
   if aActiveObject.IS then
     -- Set white font
-    fontTiny:SetRGBAInt(0xFFFFFFFF);
+    fontTiny:SetCRGBAI(0xFFFFFFFF);
     -- Drop menu is open
     if aActiveMenu == aMenuData[MNU.DROP] then
       -- Blit active item
@@ -2927,7 +2927,7 @@ local function GameProc()
         -- Decrement it
         Money = Money - ceil((Money - aActivePlayer.M) * 0.1);
         -- Red colour
-        fontLittle:SetRGB(1, 0.75, 0.75);
+        fontLittle:SetCRGB(1, 0.75, 0.75);
         -- Update displayed money
         sMoney = format("%04u", min(9999, Money));
       -- Animated money under actual money? Increment
@@ -2935,14 +2935,14 @@ local function GameProc()
         -- Increment it
         Money = Money + ceil((aActivePlayer.M - Money) * 0.1);
         -- Green colour
-        fontLittle:SetRGB(0.75, 1, 0.75);
+        fontLittle:SetCRGB(0.75, 1, 0.75);
         -- Update displayed money
         sMoney = format("%04u", min(9999, Money));
       end
     -- Animated money/actual money is synced, display blue if > 9999
-    elseif aActivePlayer.M > 9999 then fontLittle:SetRGB(0.75, 0.75, 1);
+    elseif aActivePlayer.M > 9999 then fontLittle:SetCRGB(0.75, 0.75, 1);
     -- Normal display
-    else fontLittle:SetRGB(1, 1, 1) end;
+    else fontLittle:SetCRGB(1, 1, 1) end;
   end
   -- OTHER LOGIC ----------------------------------------------------------- --
   iGameTicks = iGameTicks + 1;
@@ -3280,11 +3280,11 @@ local function ProcInput()
         RenderFade(0.5);
         -- Write text informations
         DrawInfoFrameAndTitle("GAME PAUSED");
-        fontLittle:SetRGBA(0, 1, 0, 1);
+        fontLittle:SetCRGBA(0, 1, 0, 1);
         fontLittle:PrintC(iPauseX, iInstructionY, sInstruction);
-        fontTiny:SetRGBA(0.5, 0.5, 0.5, 1);
+        fontTiny:SetCRGBA(0.5, 0.5, 0.5, 1);
         fontTiny:PrintC(iPauseX, iSmallTipsY, sSmallTips);
-        fontLittle:SetRGBA(1, 1, 1, 1);
+        fontLittle:SetCRGBA(1, 1, 1, 1);
         -- Get and print local time
         SetBottomRightTip(strPause);
       end
@@ -3422,8 +3422,7 @@ local function LoadLevel(Id, Music, P1R, P1AI, P2R, P2AI, TP, TR, TI)
   local aToLoad<const> = {
     {T=5,F="lvl/"..sLevelFile..".dat",P={ }},
     {T=5,F="lvl/"..sLevelFile..".dao",P={ }},
-    {T=2,F=sLevelTexture.."bg",     P={0}},
-    {T=1,F=sLevelTexture,           P={16,16,0,0,0}},
+    {T=1,F=sLevelTexture,             P={16,16,0,0,0}},
   }
   -- Add game music to load list?
   if Music then insert(aToLoad, {T=7,F=Music,P={}}) end
@@ -3434,16 +3433,20 @@ local function LoadLevel(Id, Music, P1R, P1AI, P2R, P2AI, TP, TR, TI)
     -- Set level objects handle
     local aLevelObj<const> = aRes[2].H;
     -- Set textures and masks
-    texBg, texLev = aRes[3].H, aRes[4].H;
+    texLev = aRes[3].H;
     -- Makes sure we have the same number of terrain masks as texture tiles
     local iMaskLev<const>, iMaskLevExpect<const> =
-      maskLev:Count(), texLev:GetTileCount();
-    if iMaskLev ~= iMaskLevExpect then
+      maskLev:Count(), texLev:TileGTC();
+    if iMaskLev < iMaskLevExpect then
       error("Got only "..iMaskLev.." of "..iMaskLevExpect.." level masks!");
     end
+    -- Each level supports 480 tiles right now (512 on texture)
+    texLev:TileSTC(480);
+    -- Grab the background part
+    texBg = texLev:TileA(0, 256, 512, 512);
     -- Makes sure we have the same number of sprite masks as sprite tiles
     local iMaskSpr<const>, iMaskSprExpect<const> =
-      maskSpr:Count(), texSpr:GetTileCount();
+      maskSpr:Count(), texSpr:TileGTC();
     if iMaskSpr ~= iMaskSprExpect then
       error("Got only "..iMaskSpr.." of "..iMaskSprExpect.." sprite masks!");
     end
@@ -3549,7 +3552,7 @@ local function LoadLevel(Id, Music, P1R, P1AI, P2R, P2AI, TP, TR, TI)
     for iId = 1, #aDigTileData do insert(aGemsAvailable,
       aDigTileData[1 + ((iGemStart + iId) % #aDigTileData)]) end;
     -- Play in-game music if requested
-    if Music then PlayMusic(aRes[5].H, 0) end;
+    if Music then PlayMusic(aRes[4].H, 0) end;
     -- Now we want to hear sounds if humanplayer set
     if P1AI == false then PlaySoundAtObject = DoPlaySoundAtObject end;
     -- Computer is main player?

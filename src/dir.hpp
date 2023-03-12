@@ -6,12 +6,12 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfDir {                      // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfDir {                      // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfPSplit;              // Using psplit interface
-using namespace IfError;               // Using error interface
-using namespace IfToken;               // Using token interface
+using namespace IfPSplit;              // Using psplit namespace
+using namespace IfError;               // Using error namespace
+using namespace IfToken;               // Using token namespace
 /* ------------------------------------------------------------------------- */
 enum ValidResult                       // Return values for ValidName()
 { /* ----------------------------------------------------------------------- */
@@ -83,7 +83,7 @@ static ValidResult DirValidName(const string &strName,
   // Failed if the length is longer than the maximum allowed path.
   if(strName.length() > _MAX_PATH) return VR_TOOLONG;
   // If using windows
-#ifdef WIN32
+#if defined(WINDOWS)
   // Failed if the first or last character is a space
   if(strName.front() <= 32) return VR_NOLEADWS;
   if(strName.back() <= 32) return VR_NOTRAILWS;
@@ -164,9 +164,9 @@ class DirFile                          // Files container class
 { /* -- Public typedefs -------------------------------------------- */ public:
   struct Item                          // File information structure
   { /* --------------------------------------------------------------------- */
-    STDTIMET       tCreate;            // File creation time
-    STDTIMET       tAccess;            // File access time
-    STDTIMET       tWrite;             // File modification time
+    StdTimeT       tCreate;            // File creation time
+    StdTimeT       tAccess;            // File access time
+    StdTimeT       tWrite;             // File modification time
     uint64_t       qSize;              // File size
     uint64_t       qFlags;             // Attributes (OS specific)
   };/* --------------------------------------------------------------------- */
@@ -178,7 +178,7 @@ class DirFile                          // Files container class
   const StrSet Export(const EntMap &dSrc) const
   { // Write entries into a single set list and return it
     StrSet ssFiles;
-    for(const auto &dFile : dSrc) ssFiles.emplace(move(dFile.first));
+    for(const auto &dFile : dSrc) ssFiles.emplace(std::move(dFile.first));
     return ssFiles;
   }
   /* -- Convert to set ----------------------------------------------------- */
@@ -189,15 +189,15 @@ class DirFile                          // Files container class
   /* -- Move constructor --------------------------------------------------- */
   DirFile(EntMap &&dD, EntMap &&dF) :
     /* -- Initialisation of members ---------------------------------------- */
-    dDirs{ move(dD) },
-    dFiles{ move(dF) }
+    dDirs{ std::move(dD) },
+    dFiles{ std::move(dF) }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Move constructor --------------------------------------------------- */
   DirFile(DirFile &&dflOther) :
     /* -- Initialisation of members ---------------------------------------- */
-    dDirs{ move(dflOther.dDirs) },
-    dFiles{ move(dflOther.dFiles) }
+    dDirs{ std::move(dflOther.dDirs) },
+    dFiles{ std::move(dflOther.dFiles) }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
@@ -209,7 +209,7 @@ class DirCore                          // System specific implementation
   DirFile::Item    dItem;              // Current item information
   bool             bIsDir;             // Current item is a directory
   /* -- Setup implementation for WIN32 ------------------------------------- */
-#if defined(_WIN32)                    // WIN32 implementation
+#if defined(WINDOWS)                   // WIN32 implementation
   /* -- Variables for WIN32 system -------------------------------- */ private:
   _wfinddata64_t   wfData;             // Data returned
   const intptr_t   iH;                 // Context handle
@@ -249,7 +249,7 @@ class DirCore                          // System specific implementation
   /* -- Destructor for WIN32 system ---------------------------------------- */
   ~DirCore(void) { if(iH != -1) _findclose(iH); }
   /* ----------------------------------------------------------------------- */
-#elif defined(__APPLE__)               // Must use readdir_r on OSX
+#elif defined(MACOS)                   // Must use readdir_r on OSX
   /* -- Private typedefs ------------------------------------------ */ private:
   // This handle will be cleaned up by closedir() when it goes out of scope!
   typedef unique_ptr<DIR, function<decltype(closedir)>> DirUPtr;
@@ -381,17 +381,17 @@ class Dir :                            // Directory information class
       do
       { // Add directory if is a directory
         if(dfcInterface.bIsDir)
-          dliDirs.insert({ move(dfcInterface.strFile),
-                           move(dfcInterface.dItem) });
+          dliDirs.insert({ std::move(dfcInterface.strFile),
+                           std::move(dfcInterface.dItem) });
         // Insert into files list
-        else dliFiles.insert({ move(dfcInterface.strFile),
-                               move(dfcInterface.dItem) });
+        else dliFiles.insert({ std::move(dfcInterface.strFile),
+                               std::move(dfcInterface.dItem) });
         // ...until no more entries
       } while(dfcInterface.GetNextFile());
       // Remove '.' and '..' entries
       RemoveParentAndCurrentDirectory(dliDirs);
     } // Return list of files and directories
-    return { move(dliDirs), move(dliFiles) };
+    return { std::move(dliDirs), std::move(dliFiles) };
   }
   /* -- Scan with match checking ------------------------------------------- */
   static DirFile ScanDirExt(const string &strDir, const string &strExt)
@@ -404,45 +404,24 @@ class Dir :                            // Directory information class
       do
       { // Add directory if is a directory
         if(dfcInterface.bIsDir)
-          dliDirs.insert({ move(dfcInterface.strFile),
-                           move(dfcInterface.dItem) });
+          dliDirs.insert({ std::move(dfcInterface.strFile),
+                           std::move(dfcInterface.dItem) });
         // Is a file and extension doesn't match? Ignore it
         else if(PathSplit(dfcInterface.strFile).strExt != strExt) continue;
         // Insert into files list
-        else dliFiles.insert({ move(dfcInterface.strFile),
-                               move(dfcInterface.dItem) });
+        else dliFiles.insert({ std::move(dfcInterface.strFile),
+                               std::move(dfcInterface.dItem) });
         // ...until no more entries
       } while(dfcInterface.GetNextFile());
       // Remove '.' and '..' entries
       RemoveParentAndCurrentDirectory(dliDirs);
     } // Return list of files and directories
-    return { move(dliDirs), move(dliFiles) };
+    return { std::move(dliDirs), std::move(dliFiles) };
   }
-  /* -- Check if safe flag and valid filename ------------------------------ */
-  static bool IsSafeAndValidName(const string &strDir)
-  { // Check if sanboxing required and directory is valid
-    if(DirValidName(strDir) != VR_OK) { SetErrNo(ENOTDIR); return false; }
-    // Success
-    return true;
-  }
-  /* -- Scan with match checking -------------------------------- */ protected:
-  static DirFile ScanSafeDir(const string &strDir)
-  { // Check if the specified directory is safe
-    if(!IsSafeAndValidName(strDir)) return {};
-    // Return result of scan
-    return ScanDir(strDir);
-  }
-  /* -- Scan with match checking ------------------------------------------- */
-  static DirFile ScanSafeDirExt(const string &strDir, const string &strExt)
-  { // Check if the specified directory is safe
-    if(!IsSafeAndValidName(strDir)) return {};
-    // Return result of scan with filter
-    return ScanDirExt(strDir, strExt);
-  }
-  /* -- Constructor of current directory without safety -------------------- */
+  /* -- Constructor of current directory without safety --------- */ protected:
   explicit Dir(DirFile &&dfList) :
     /* -- Initialisation of members ---------------------------------------- */
-    DirFile{ move(dfList) }
+    DirFile{ std::move(dfList) }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor of current directory without safety ------------ */ public:
@@ -465,21 +444,8 @@ class Dir :                            // Directory information class
     { }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Dir);                // Disable copy constructor and operator
-};/* == DirSafe Class ====================================================== */
-class DirSafe :                        // Safe directory information class
-  /* -- Base classes ------------------------------------------------------- */
-  public Dir                           // Directory scanning class
-{ /* -- Constructor with safety and file matching ------------------ */ public:
-  DirSafe(const string &strDir, const string &strExt):
-    /* -- Initialisation of members ---------------------------------------- */
-    Dir{ ScanSafeDirExt(strDir, strExt) }
-    /* -- No code ---------------------------------------------------------- */
-    { }
-  /* -- Constructor with safety -------------------------------------------- */
-  explicit DirSafe(const string &strDir) : Dir(ScanSafeDir(strDir)) { }
-  /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(DirSafe);            // Disable copy constructor and operator
-};/* == Class to break apart urls ========================================== */
+};/* ----------------------------------------------------------------------- */
+/* == Class to break apart urls ============================================ */
 class Url
 { /* -- Public typedefs -------------------------------------------- */ public:
   enum Result                          // Result codes
@@ -582,7 +548,7 @@ class Url
 /* -- Get current directory ------------------------------------------------ */
 static const string DirGetCWD(void)
 { // On windows, we need to use unicode
-#ifdef WIN32
+#if defined(WINDOWS)
   // Storage of filename and initialise it to maximum path length
   wstring wstrDir; wstrDir.resize(_MAX_PATH);
   // Get current directory and store it in string, throw exception if error
@@ -610,7 +576,7 @@ static bool DirSetCWD(const string &strDirectory)
 { // Ignore if empty
   if(strDirectory.empty()) return false;
   // Process is different on win32 with having drive letters
-#ifdef WIN32
+#if defined(WINDOWS)
   // Get first character because it needs casting
   const unsigned char &ucD = strDirectory.front();
   // Set drive first if specified
@@ -625,9 +591,9 @@ static bool DirSetCWD(const string &strDirectory)
 #endif
 }
 /* -- Make a directory ----------------------------------------------------- */
-static bool DirMkDir(const string &strD) { return !STDMKDIR(strD); }
+static bool DirMkDir(const string &strD) { return !StdMkDir(strD); }
 /* -- Remove a directory --------------------------------------------------- */
-static bool DirRmDir(const string &strD) { return !STDRMDIR(strD); }
+static bool DirRmDir(const string &strD) { return !StdRmDir(strD); }
 /* -- Make a directory and all it's interim components --------------------- */
 static bool DirMkDirEx(const string &strDir)
 { // Break apart directory parts
@@ -645,7 +611,7 @@ static bool DirMkDirEx(const string &strDir)
     // directory doesn't already exist
     if(!DirMkDir(strFirst) && IsNotErrNo(EEXIST)) return false;
     // Move first item. It will be empty if directory started with a slash
-    osS << move(strFirst);
+    osS << std::move(strFirst);
   } // If there are more directories?
   if(tParts.size() >= 2)
   { // Create all the other directories
@@ -653,26 +619,12 @@ static bool DirMkDirEx(const string &strDir)
                          svI != tParts.cend();
                        ++svI)
     { // Append next directory
-      osS << '/' << move(*svI);
+      osS << '/' << std::move(*svI);
       // Make the directory and if failed and it doesn't exist return error
       if(!DirMkDir(osS.str()) && IsNotErrNo(EEXIST)) return false;
     }
   } // Success
   return true;
-}
-/* -- Safe makedir --------------------------------------------------------- */
-static int DirSafeMkDir(const string &strDirectory)
-{ // Return ENOTDIR if trying to circumvent the sandbox
-  if(DirValidName(strDirectory) != VR_OK) return ENOTDIR;
-  // Return result (-1 on failure (errno returned), 0 on success)
-  return DirMkDir(strDirectory) ? 0 : GetErrNo();
-}
-/* -- Safe makedir with interim directories -------------------------------- */
-static int DirSafeMkDirEx(const string &strDirectory)
-{ // Return ENOTDIR if trying to circumvent the sandbox
-  if(DirValidName(strDirectory) != VR_OK) return ENOTDIR;
-  // Return result (-1 on failure (errno returned), 0 on success)
-  return DirMkDirEx(strDirectory) ? 0 : GetErrNo();
 }
 /* -- Remove a directory and all it's interim components ------------------- */
 static bool DirRmDirEx(const string &strDir)
@@ -702,43 +654,16 @@ static bool DirRmDirEx(const string &strDir)
   } // Success
   return true;
 }
-/* -- Safe makedir --------------------------------------------------------- */
-static int DirSafeRmDir(const string &strDirectory)
-{ // Return ENOTDIR if trying to circumvent the sandbox
-  if(DirValidName(strDirectory) != VR_OK) return ENOTDIR;
-  // Return result (-1 on failure (errno returned), 0 on success)
-  return DirRmDir(strDirectory) ? 0 : GetErrNo();
-}
-/* -- Safe rmdir with interim directories ---------------------------------- */
-static int DirSafeRmDirEx(const string &strDirectory)
-{ // Return ENOTDIR if trying to circumvent the sandbox
-  if(DirValidName(strDirectory) != VR_OK) return ENOTDIR;
-  // Return result (-1 on failure (errno returned), 0 on success)
-  return DirRmDirEx(strDirectory) ? 0 : GetErrNo();
-}
 /* -- Delete a file -------------------------------------------------------- */
-static bool DirFileUnlink(const string &strF) { return !STDUNLINK(strF); }
-/* -- Safe unlink ---------------------------------------------------------- */
-static int DirSafeFileUnlink(const string &strFileName)
-{ // Return ENOTDIR if trying to circumvent the sandbox
-  if(DirValidName(strFileName) != VR_OK) return ENOTDIR;
-  // Return result (-1 on failure (errno returned), 0 on success)
-  return DirFileUnlink(strFileName) ? 0 : GetErrNo();
-}
+static bool DirFileUnlink(const string &strF) { return !StdUnlink(strF); }
 /* -- Get file size - ------------------------------------------------------ */
-static int DirFileSize(const string &strF, STDFSTATSTRUCT &sData)
-  { return STDFSTAT(strF, &sData) ? GetErrNo() : 0; }
-static int DirSafeFileSize(const string &strF, STDFSTATSTRUCT &sData)
-{ // Return ENOTDIR if trying to circumvent the sandbox
-  if(DirValidName(strF) != VR_OK) return ENOTDIR;
-  // Return result (-1 on failure (errno returned), 0 on success)
-  return DirFileSize(strF, sData);
-}
+static int DirFileSize(const string &strF, StdFStatStruct &sData)
+  { return StdFStat(strF, &sData) ? GetErrNo() : 0; }
 /* -- True if specified file has the specified mode ------------------------ */
 static bool DirFileHasMode(const string &strF, const int iMode,
   const int iNegate)
 { // Get file information and and if succeeded?
-  STDFSTATSTRUCT sData;
+  StdFStatStruct sData;
   if(!DirFileSize(strF, sData))
   { // If file attributes have specified mode then success
     if((sData.st_mode ^ iNegate) & iMode) return true;
@@ -755,43 +680,25 @@ static bool DirLocalFileExists(const string &strF)
   { return DirFileHasMode(strF, _S_IFDIR, -1); }
 /* -- Readable or writable? ------- Check if file is readable or writable -- */
 static bool DirCheckFileAccess(const string &strF, const int iFlag)
-  { return !STDACCESS(strF, iFlag); }
+  { return !StdAccess(strF, iFlag); }
+/* -- True if specified file exists and is readable ------------------------ */
+static bool DirIsFileReadable(const string &strF)
+  { return DirCheckFileAccess(strF, R_OK); }
+/* -- True if specified file exists and is readable and writable ----------- */
+static bool DirIsFileReadWriteable(const string &strF)
+  { return DirCheckFileAccess(strF, R_OK|W_OK); }
+/* -- True if specified file exists and is writable ------------------------ */
+static bool DirIsFileWritable(const string &strF)
+  { return DirCheckFileAccess(strF, W_OK); }
 /* -- True if specified file exists and is executable ---------------------- */
 static bool DirIsFileExecutable(const string &strF)
-  { return DirCheckFileAccess(strF, X_OK|R_OK); }
+  { return DirCheckFileAccess(strF, X_OK); }
 /* -- True if specified file or directory exists --------------------------- */
 static bool DirLocalResourceExists(const string &strF)
    { return DirCheckFileAccess(strF, F_OK); }
-/* -- True if specified file or directory is valid and exists -------------- */
-static bool DirSafeLocalResourceExists(const string &strR)
-  { return DirValidName(strR) == VR_OK && DirLocalResourceExists(strR); }
-/* -- True if specified file is valid and writable ------------------------- */
-static bool DirSafeFileWritable(const string &strF)
-  { return DirValidName(strF) == VR_OK && DirCheckFileAccess(strF, W_OK); }
-/* -- True if specified file is valid and readable ------------------------- */
-static bool DirSafeFileReadable(const string &strF)
-  { return DirValidName(strF) == VR_OK && DirCheckFileAccess(strF, R_OK); }
-/* -- True if specified file is valid, readable and writable --------------- */
-static bool DirSafeFileReadWriteable(const string &strF)
-  { return DirValidName(strF) == VR_OK &&
-           DirCheckFileAccess(strF, W_OK|R_OK); }
-/* -- True if specified file is valid and actually a directory ------------- */
-static bool DirSafeLocalDirExists(const string &strF)
-   { return DirValidName(strF) == VR_OK && DirLocalDirExists(strF); }
-/* -- True if specified file is valid and actually a file ------------------ */
-static bool DirSafeLocalFileExists(const string &strF)
-   { return DirValidName(strF) == VR_OK && DirLocalFileExists(strF); }
 /* -- Rename file ---------------------------------------------------------- */
 static bool DirFileRename(const string &strS, const string &strD)
-  { return !STDRENAME(strS, strD); }
-/* -- Safe rename ---------------------------------------------------------- */
-static int DirSafeFileRename(const string &strSrc, const string &strDst)
-{ // Return ENOTDIR if trying to circumvent the sandbox
-  if(DirValidName(strSrc) != VR_OK || DirValidName(strDst) != VR_OK) return
-    ENOTDIR;
-  // Return result (-1 on failure (errno returned), 0 on success)
-  return DirFileRename(strSrc, strDst) ? 0 : GetErrNo();
-}
+  { return !StdRename(strS, strD); }
 /* -- Check that filename is valid and throw on error ---------------------- */
 static void DirVerifyFileNameIsValid(const string &strFilename)
 { // Throw error if invalid name
@@ -823,5 +730,5 @@ class DirSaver
     { DirSetCWD(strCWD); }
 };/* ----------------------------------------------------------------------- */
 /* ------------------------------------------------------------------------- */
-};                                     // End of interface
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

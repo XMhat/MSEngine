@@ -10,10 +10,10 @@
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* == Version information subclass ========================================= */
-class SysModule :
+struct SysModule :
   /* -- Base classes ------------------------------------------------------- */
   public SysModuleData                 // System module data
-{ /* -- Manual data (i.e. for executable) -------------------------- */ public:
+{ /* -- Manual data (i.e. for executable) ---------------------------------- */
   explicit SysModule(const string &strModule) :
     /* -- Initialisation of members ---------------------------------------- */
     SysModuleData{ strModule }
@@ -22,25 +22,26 @@ class SysModule :
   /* -- Manual data (i.e. for executable) ---------------------------------- */
   explicit SysModule(string &&strModule) :
     /* -- Initialisation of members ---------------------------------------- */
-    SysModuleData{ move(strModule) }
+    SysModuleData{ std::move(strModule) }
     /* -- No code ---------------------------------------------------------- */
     { }
    /* -- Return data (move filename) --------------------------------------- */
   explicit SysModule(string &&strModule, const unsigned int uiMa,
-    const unsigned int uiMi, const unsigned int uiRe, const unsigned int uiBu,
+    const unsigned int uiMi, const unsigned int uiBu, const unsigned int uiRe,
     string &&strVen, string &&strDe, string &&strCo, string &&strVer) :
     /* -- Initialisation of members ---------------------------------------- */
-    SysModuleData{ move(strModule), uiMa, uiMi, uiRe, uiBu, move(strVen),
-      move(strDe), move(strCo), move(strVer) }
+    SysModuleData{ std::move(strModule), uiMa, uiMi, uiBu, uiRe,
+      std::move(strVen), std::move(strDe), std::move(strCo),
+      std::move(strVer) }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Return data (copy filename) ---------------------------------------- */
   explicit SysModule(const string &strModule, const unsigned int uiMa,
-    const unsigned int uiMi, const unsigned int uiRe, const unsigned int uiBu,
+    const unsigned int uiMi, const unsigned int uiBu, const unsigned int uiRe,
     string &&strVen, string &&strDe, string &&strCo, string &&strVer) :
     /* -- Initialisation of members ---------------------------------------- */
-    SysModuleData{ strModule, uiMa, uiMi, uiRe, uiBu, move(strVen),
-      move(strDe), move(strCo), move(strVer) }
+    SysModuleData{ strModule, uiMa, uiMi, uiBu, uiRe, std::move(strVen),
+      std::move(strDe), std::move(strCo), std::move(strVer) }
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* -- End ---------------------------------------------------------------- */

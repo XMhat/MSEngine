@@ -17,7 +17,7 @@
 /* ========================================================================= */
 LLNAMESPACEBEGIN(Bin)                  // Bin namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfBin;                 // Using bin interface
+using namespace IfBin;                 // Using bin namespace
 /* ========================================================================= */
 /* ######################################################################### */
 /* ========================================================================= */
@@ -35,8 +35,8 @@ LLFUNCBEGIN(Insert)
   const Pack<int>::Rect &rData = LCGETPTR(1, Bin)->Insert(
     LCGETINTLGE(unsigned int, 2, 0, numeric_limits<int>::max(), "Width"),
     LCGETINTLGE(unsigned int, 3, 0, numeric_limits<int>::max(), "Height"));
-  LCPUSHINT(rData.iX);                 LCPUSHINT(rData.iY);
-  LCPUSHINT(rData.iW);                 LCPUSHINT(rData.iH);
+  LCPUSHINT(rData.CoordGetX());        LCPUSHINT(rData.CoordGetY());
+  LCPUSHINT(rData.DimGetWidth());      LCPUSHINT(rData.DimGetHeight());
 LLFUNCENDEX(4)
 /* ========================================================================= */
 // $ Bin:Test
@@ -53,8 +53,8 @@ LLFUNCBEGIN(Test)
   const Pack<int>::Rect &rData = LCGETPTR(1, Bin)->Test(
     LCGETINTLGE(unsigned int, 2, 0, numeric_limits<int>::max(), "Width"),
     LCGETINTLGE(unsigned int, 3, 0, numeric_limits<int>::max(), "Height"));
-  LCPUSHINT(rData.iX);                 LCPUSHINT(rData.iY);
-  LCPUSHINT(rData.iW);                 LCPUSHINT(rData.iH);
+  LCPUSHINT(rData.CoordGetX());        LCPUSHINT(rData.CoordGetY());
+  LCPUSHINT(rData.DimGetWidth());      LCPUSHINT(rData.DimGetHeight());
 LLFUNCENDEX(4)
 /* ========================================================================= */
 // $ Bin:Enlarge
@@ -73,13 +73,13 @@ LLFUNCEX(Enlarge, 1, LCPUSHBOOL(LCGETPTR(1, Bin)->Resize(
 // < Width:integer=The width of the bin in units
 // ? Returns the width of the bin in units.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Width, 1, LCPUSHINT(LCGETPTR(1, Bin)->Width()));
+LLFUNCEX(Width, 1, LCPUSHINT(LCGETPTR(1, Bin)->DimGetWidth()));
 /* ========================================================================= */
 // $ Bin:Height
 // < Height:integer=The height of the bin in units
 // ? Returns the height of the bin in units.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Height, 1, LCPUSHINT(LCGETPTR(1, Bin)->Height()));
+LLFUNCEX(Height, 1, LCPUSHINT(LCGETPTR(1, Bin)->DimGetHeight()));
 /* ========================================================================= */
 // $ Bin:Occupancy
 // < Height:integer=The height of the bin in units

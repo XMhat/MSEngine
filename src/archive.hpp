@@ -7,24 +7,12 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfArchive {                  // Keep declarations neatly categorised
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfASync;               // Using async interface
-using namespace IfCodec;               // Using codec interface
-using namespace IfCrypt;               // Using cryptographic interface
-/* -- Macros --------------------------------------------------------------- */
-#ifndef _WIN32
-/* -- Setup macros that make P7Zip compilable ------------------------------ */
-#define LZMAOpen(s,f)                  InFile_Open(s, f)
-#define LZMAGetHandle(s)               (s).file.fd
-/* -- Using original lzma api? --------------------------------------------- */
-#else                                  // Using vanilla LZMA?
-/* -- Setup macros that make the LZMA api compilable ----------------------- */
-#define LZMAOpen(s,f)                  InFile_OpenW(s, UTFtoS16(f))
-#define LZMAGetHandle(s)               (s).file.handle
 /* ------------------------------------------------------------------------- */
-#endif                                 // Operating system check
+namespace IfArchive {                  // Start of module namespace
+/* -- Includes ------------------------------------------------------------- */
+using namespace IfASync;               // Using async namespace
+using namespace IfCodec;               // Using codec namespace
+using namespace IfCrypt;               // Using cryptographic namespace
 /* == Archive collector with extract buffer size =========================== */
 BEGIN_ASYNCCOLLECTOREX(Archives, Archive, CLHelperSafe,
   /* ----------------------------------------------------------------------- */
@@ -49,7 +37,15 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
   public AsyncLoader<Archive>,         // Async manager for off-thread loading
   public Lockable,                     // Lua garbage collect instruction
   public ArchiveFlags                  // Archive initialisation flags
-{ /* -- Private Variables ----------------------------------------- */ private:
+{ /* -- Private macros ----------------------------------------------------- */
+#if !defined(WINDOWS)                  // Not using Windows?
+# define LZMAOpen(s,f)                 InFile_Open(s, f)
+# define LZMAGetHandle(s)              (s).file.fd
+#else                                  // Using Windows?
+# define LZMAOpen(s,f)                 InFile_OpenW(s, UTFtoS16(f))
+# define LZMAGetHandle(s)              (s).file.handle
+#endif                                 // Operating system check
+  /* -- Private Variables -------------------------------------------------- */
   condition_variable cvExtract;        // Waiting for async ops to complete
   mutex            mExtract;           // mutex for condition variable
   SafeSizeT        stInUse;            // API in use reference count
@@ -96,7 +92,7 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
           GetCreatedTime(uiSrcId),
           GetModifiedTime(uiSrcId) };
         // Log progress
-        LW(LH_INFO, "Archive extracted empty '$' from '$'.",
+        cLog->LogInfoExSafe("Archive extracted empty '$' from '$'.",
           strFile, IdentGet());
         // Return file
         return fmFile;
@@ -109,8 +105,8 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
           { stUncompressed, reinterpret_cast<void*>(ucpData) },
           GetCreatedTime(uiSrcId), GetModifiedTime(uiSrcId) };
         // Log progress
-        LW(LH_INFO, "Archive extracted '$'[$]<$> from '$'.", strFile,
-          uiBlockIndex, stUncompressed, IdentGet());
+        cLog->LogInfoExSafe("Archive extracted '$'[$]<$> from '$'.",
+          strFile, uiBlockIndex, stUncompressed, IdentGet());
         // Return file
         return fmFile;
       }
@@ -122,11 +118,11 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
       // Free the data that was allocated by LZMA as we had to copy it
       cParent.isaData.Free(nullptr, reinterpret_cast<void*>(ucpData));
       // Return newly added item
-      FileMap fmFile{ strFile, move(mData), GetCreatedTime(uiSrcId),
+      FileMap fmFile{ strFile, std::move(mData), GetCreatedTime(uiSrcId),
         GetModifiedTime(uiSrcId) };
       // Log progress
-      LW(LH_INFO, "Archive extracted '$'[$]{$>$} from '$'.", strFile,
-        uiBlockIndex, stUncompressed, stCompressed, IdentGet());
+      cLog->LogInfoExSafe("Archive extracted '$'[$]{$>$} from '$'.",
+        strFile, uiBlockIndex, stUncompressed, stCompressed, IdentGet());
       // Return class
       return fmFile;
     } // Exception occured
@@ -164,15 +160,15 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
   const StrUIntMap &GetFileList(void) const { return lFiles; }
   const StrUIntMap &GetDirList(void) const { return lDirs; }
   /* -- Returns modified time of specified file ---------------------------- */
-  STDTIMET GetModifiedTime(const size_t stId) const
-    { return static_cast<STDTIMET>(SzBitWithVals_Check(&csaeData.MTime, stId) ?
+  StdTimeT GetModifiedTime(const size_t stId) const
+    { return static_cast<StdTimeT>(SzBitWithVals_Check(&csaeData.MTime, stId) ?
         BruteCast<uint64_t>(csaeData.MTime.Vals[stId]) / 100000000 :
-        numeric_limits<STDTIMET>::max()); }
+        numeric_limits<StdTimeT>::max()); }
   /* -- Returns creation time of specified file ---------------------------- */
-  STDTIMET GetCreatedTime(const size_t stId) const
-    { return static_cast<STDTIMET>(SzBitWithVals_Check(&csaeData.CTime, stId) ?
+  StdTimeT GetCreatedTime(const size_t stId) const
+    { return static_cast<StdTimeT>(SzBitWithVals_Check(&csaeData.CTime, stId) ?
         BruteCast<uint64_t>(csaeData.CTime.Vals[stId]) / 100000000 :
-        numeric_limits<STDTIMET>::max()); }
+        numeric_limits<StdTimeT>::max()); }
   /* -- Returns uncompressed size of file by id ---------------------------- */
   uint64_t GetSize(const size_t stId) const
     { return static_cast<uint64_t>(SzArEx_GetFileSize(&csaeData, stId)); }
@@ -250,8 +246,8 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
         SzArEx_Free(&csaeData2, &cParent.isaData);
         // Close archive
         if(File_Close(&cfisData2.file))
-          LW(LH_WARNING, "Archive failed to close archive '$': $!", IdentGet(),
-            SysError());
+          cLog->LogWarningExSafe("Archive failed to close archive '$': $!",
+            IdentGet(), SysError());
         // Done
         return fData;
       } // exception occured
@@ -262,8 +258,8 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
         SzArEx_Free(&csaeData2, &cParent.isaData);
         // Close archive
         if(File_Close(&cfisData2.file))
-          LW(LH_WARNING, "Archive failed to close archive '$': $!", IdentGet(),
-            SysError());
+          cLog->LogWarningExSafe("Archive failed to close archive '$': $!",
+            IdentGet(), SysError());
         // Show new exception for plain error message
         throw;
       } // Extract block
@@ -282,7 +278,7 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
   bool FileExists(const string &strFile) const
     { return GetFileIterator(strFile) != lFiles.cend(); }
   /* -- Loads the specified archive ---------------------------------------- */
-  void LoadData(FileMap &)
+  void AsyncReady(FileMap &)
   { // Open archive and throw and show errno if it failed
     if(const int iCode = LZMAOpen(&cfisData.file, IdentGetCStr()))
       XCS("Error opening archive!", "Archive", IdentGet(), "Code", iCode);
@@ -290,13 +286,14 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
     // Custom start position specified?
     if(qwArchPos > 0)
     { // Log position setting
-      LW(LH_DEBUG, "Archive loading '$' from position $...",
+      cLog->LogDebugExSafe("Archive loading '$' from position $...",
         IdentGet(), qwArchPos);
       // Seek to overlay in executable + 1 and if failed? Log the warning
       if(cSystem->SeekFile(LZMAGetHandle(cfisData), qwArchPos) != qwArchPos)
-        LW(LH_WARNING, "Archive '$' seek error! [$].", IdentGet(), SysError());
+        cLog->LogWarningExSafe("Archive '$' seek error! [$].",
+          IdentGet(), SysError());
     } // Load from beginning? Log that we're loading from beginning
-    else LW(LH_DEBUG, "Archive loading '$'...", IdentGet());
+    else cLog->LogDebugExSafe("Archive loading '$'...", IdentGet());
     // Setup look to read structs
     SetupLookToRead(cfisData, cltrData);
     FlagSet(AE_SETUPL2R);
@@ -307,7 +304,7 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
     if(const int iCode = SzArEx_Open(&csaeData, &cltrData.vt,
       &cParent.isaData, &cParent.isaData))
     { // Log warning and return
-      LW(LH_WARNING, "Archive '$' not opened with code $ ($)!",
+      cLog->LogWarningExSafe("Archive '$' not opened with code $ ($)!",
         IdentGet(), iCode, CodecGetLzmaErrString(iCode));
       return;
     }
@@ -352,7 +349,7 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
     vFiles.shrink_to_fit();
     vDirs.shrink_to_fit();
     // Log progress
-    LW(LH_INFO, "Archive loaded '$' (F:$;D:$).",
+    cLog->LogInfoExSafe("Archive loaded '$' (F:$;D:$).",
       IdentGet(), lFiles.size(), lDirs.size());
   }
   /* -- Loads archive asynchronously --------------------------------------- */
@@ -390,6 +387,7 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
   Archive(void) :
     /* -- Initialisers ----------------------------------------------------- */
     ICHelperArchive{ *cArchives },     // Initialise collector with this obj
+    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     AsyncLoader<Archive>{ this,        // Initialise async collector
       EMC_MP_ARCHIVE },                // " our archive async event
     ArchiveFlags{ AE_STANDBY },        // Set default archive flags
@@ -409,11 +407,11 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
     // Done if a archive file handle is not opened.
     if(FlagIsClear(AE_FILEOPENED)) return;
     // Unloading archive in log
-    LW(LH_DEBUG, "Archive unloading '$'...", IdentGet());
+    cLog->LogDebugExSafe("Archive unloading '$'...", IdentGet());
     // If decompression is being executed across threads?
     if(stInUse > 0)
     { // Then we need to wait until they finish.
-      LW(LH_INFO, "Archive '$' waiting for $ async ops to complete...",
+      cLog->LogInfoExSafe("Archive '$' waiting for $ async ops to complete...",
         IdentGet(), static_cast<size_t>(stInUse));
       // Wait for base and spawned file operations to finish
       UniqueLock uLock{ mExtract };
@@ -424,13 +422,17 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
     if(FlagIsSet(AE_SETUPL2R)) CleanupLookToRead(cltrData);
     // Close archive handle
     if(File_Close(&cfisData.file))
-      LW(LH_WARNING, "Archive failed to close archive '$': $!", IdentGet(),
-        SysError());
+      cLog->LogWarningExSafe("Archive failed to close archive '$': $!",
+        IdentGet(), SysError());
     // Log shutdown
-    LW(LH_INFO, "Archive unloaded '$' successfully.", IdentGet());
+    cLog->LogInfoExSafe("Archive unloaded '$' successfully.", IdentGet());
   }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Archive);            // Supress copy constructor for safety
+  /* -- Done with these defines -------------------------------------------- */
+#undef LZMAGetHandle                   // Done with this macro
+#undef LZMAOpen                        // Done with this macro
+#undef ISzAllocPtr                     // Done with this macro
 };/* ----------------------------------------------------------------------- */
 END_ASYNCCOLLECTOR(Archives, Archive, ARCHIVE,
   stExtractBufSize(0),
@@ -485,22 +487,22 @@ static CVarReturn ArchiveInit(const string &strFileMask, string&)
 { // Ignore if file mask not specified
   if(strFileMask.empty()) return ACCEPT;
   // Build directory listing and log how many files we found
-  LW(LH_DEBUG, "Archives scanning for '$' files...", strFileMask);
+  cLog->LogDebugExSafe("Archives scanning for '$' files...", strFileMask);
   const Dir dList{ strBlank, strFileMask };
   // Return if no files found (rare but not impossible)
   if(dList.dFiles.empty())
   { // Log no files and return success
-    LW(LH_WARNING, "Archives matched no potential archive filenames!");
+    cLog->LogWarningExSafe("Archives matched no potential archive filenames!");
     return ACCEPT;
   } // Start processing filenames
-  LW(LH_DEBUG, "Archives loading $ files in working directory...",
+  cLog->LogDebugExSafe("Archives loading $ files in working directory...",
     dList.dFiles.size());
   // Counters
   size_t stFound = 0, stFiles = 0, stDirs = 0;
   // For each archive file
   for(const auto &dI : dList.dFiles)
   { // Log archive info
-    LW(LH_DEBUG, "- #$: '$' (S:$;A:0x$$;C:0x$;M:0x$).",
+    cLog->LogDebugExSafe("- #$: '$' (S:$;A:0x$$;C:0x$;M:0x$).",
       ++stFound, dI.first, ToBytesStr(dI.second.qSize), hex,
       dI.second.qFlags, dI.second.tCreate, dI.second.tWrite);
     // Dynamically create the archive. The pointer is recorded in the parent
@@ -511,7 +513,7 @@ static CVarReturn ArchiveInit(const string &strFileMask, string&)
       stDirs += aCptr->GetDirList().size();
     }
   } // Log init
-  LW(LH_INFO, "Archives loaded $ of $ archives (F:$;D:$).",
+  cLog->LogInfoExSafe("Archives loaded $ of $ archives (F:$;D:$).",
     cArchives->CollectorCount(), dList.dFiles.size(), stFiles, stDirs);
   // Ok
   return ACCEPT;
@@ -529,7 +531,7 @@ static void ArchiveEnumFiles(const string &strDir, const StrUIntMap &suimList,
     // Lock access to archives list
     const LockGuard lgLock{ mLock };
     // Split path parts, lock mutex, and move into list
-    ssFiles.emplace(move(psFile.strFileExt));
+    ssFiles.emplace(std::move(psFile.strFileExt));
   });
 }
 /* -- Return files in directories and archives with empty check ------------ */
@@ -565,7 +567,7 @@ static const StrSet &ArchiveEnumerate(const string &strDir,
         if(psParts.strExt != strExt) return;
         // Lock the mutex and insert into list
         const LockGuard lgLock{ mLock };
-        ssFiles.emplace(move(psParts.strFileExt));
+        ssFiles.emplace(std::move(psParts.strFileExt));
       });
     });
   } // Return file list
@@ -611,10 +613,6 @@ static const string ArchiveGetNames(void)
   // Return string
   return osS.str();
 }
-/* -- Done with these defines ---------------------------------------------- */
-#undef LZMAGetHandle                   // Done with this define
-#undef LZMAOpen                        // Done with this define
-#undef ISzAllocPtr                     // Done with this define
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

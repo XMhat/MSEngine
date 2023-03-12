@@ -7,19 +7,20 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfLuaFunc {                   // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfLuaFunc {                   // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfLuaUtil;             // Using luautil interface
-using namespace IfLog;                 // Using log interface
-using namespace IfLuaRef;              // Using luaref interface
+using namespace IfLuaUtil;             // Using luautil namespace
+using namespace IfLog;                 // Using log namespace
+using namespace IfLuaRef;              // Using luaref namespace
+using namespace IfCollector;           // Using collector namespace
 /* -- LuaFunc ollector class for collector data and custom variables ------- */
 BEGIN_COLLECTOREX(LuaFuncs, LuaFunc, CLHelperSafe, /**/,/**/,public LuaRef<1>);
 /* -- LuaFunc class -------------------------------------------------------- */
 BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
   public Ident                         // Object name
-{ /* -- Private variables ----------------------------------------- */ private:
+{ /* -- Private variables -------------------------------------------------- */
   int              iRef;               // The reference
   int              iRefS;              // The reference (when lua is paused)
   /* -- Public typedefs -------------------------------------------- */ public:
@@ -41,26 +42,27 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
   /* -- Save reference and set main reference to empty function if set ----- */
   void LuaFuncDisable(void)
     { if(iRefS == LUA_REFNIL) { iRefS = iRef; iRef = cParent.LuaRefGetId(); } }
-  /* ----------------------------------------------------------------------- */
-  bool LuaFuncIsSet(void) const { return iRef != cParent.LuaRefGetId(); }
+  /* -- Returns the reference to this function ----------------------------- */
   int LuaFuncGet(void) const { return iRef; }
+  /* -- Returns the saved reference to this function ----------------------- */
   int LuaFuncGetSaved(void) const { return iRefS; }
-  /* ----------------------------------------------------------------------- */
-  void LuaFuncParams(int&) { }
-  /* ----------------------------------------------------------------------- */
+  /* -- Check to see if we can add the specified number of parameters ------ */
   bool LuaFuncCheckAddParams(const size_t stParams, const char*const cpType)
   { // Return if value is valid
     if(StackHasCapacity(cParent.LuaRefGetState(), stParams)) return true;
     // Write warning to log
-    LW(LH_WARNING, "LuaFunc cannot add $ more $ parameters for "
+    cLog->LogWarningExSafe("LuaFunc cannot add $ more $ parameters for "
       "calling '$' due to integer or potential stack overflow!",
       stParams, cpType, IdentGet());
     // Failed
     return false;
   }
-  /* ----------------------------------------------------------------------- */
+  /* -- Send nothing ------------------------------------------------------- */
+  void LuaFuncParams(int&) { }
+  /* -- Send string vector ------------------------------------------------- */
   template<typename... Vars>
-    void LuaFuncParams(int &iParams, const StrVector &svList, Vars... vVars)
+    void LuaFuncParams(int &iParams, const StrVector &svList,
+      const Vars... vVars)
   { // If we have items
     if(!svList.empty())
     { // Make sure the number of parameters would not overflow
@@ -75,7 +77,8 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
   }
   /* ----------------------------------------------------------------------- */
   template<typename... Vars>
-    void LuaFuncParams(int &iParams, const string &strVal, Vars... vVars)
+    void LuaFuncParams(int &iParams, const string &strVal,
+      const Vars... vVars)
   { // Make sure the number of parameters would not overflow
     if(!LuaFuncCheckAddParams(1, "string")) return;
     // Copy string to stack
@@ -84,13 +87,16 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
     LuaFuncParams(++iParams, vVars...);
   }
   /* -- Helper function to make LUAREFDISPATCH parameters ------------------ */
-  #define MP(t,s,f) template<typename... Vars> \
-    void LuaFunc ## Params(int &iParams, const t tValue, Vars... vVars) { \
-      if(!LuaFuncCheckAddParams(1, s)) return; \
-      f(cParent.LuaRefGetState(), tValue); \
-      LuaFunc ## Params(++iParams, vVars...); \
-    }
-  /* ----------------------------------------------------------------------- */
+#define MP(t,s,f) \
+  template<typename... Vars> \
+    void LuaFunc ## Params(int &iParams, const t tValue, \
+      const Vars... vVars) \
+  { \
+    if(!LuaFuncCheckAddParams(1, s)) return; \
+    f(cParent.LuaRefGetState(), tValue); \
+    LuaFunc ## Params(++iParams, vVars...); \
+  }
+  /* -- A function for each type ------------------------------------------- */
   MP(signed long long,   "int64",  PushInteger);
   MP(unsigned long long, "uint64", PushInteger);
   MP(signed int,         "int",    PushInteger);
@@ -99,18 +105,18 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
   MP(double,             "double", PushNumber);
   MP(bool,               "bool",   PushBoolean);
   /* -- Done with helper function ------------------------------------------ */
-  #undef MP
-  /* ----------------------------------------------------------------------- */
+#undef MP
+  /* -- Send a function ---------------------------------------------------- */
   void LuaFuncPushFunc(void) const
-  { /// Get referenced function and return if succeeded
+  { // Get referenced function and return if succeeded
     if(GetReferencedFunction(cParent.LuaRefGetState(), iRef)) return;
     // Failed so throw error
     XC("Pushed function is not a valid function!",
        "Name",  IdentGet(), "Value", iRef,
        "Stack", GetVarStack(cParent.LuaRefGetState()));
   }
-  /* ----------------------------------------------------------------------- */
-  template<typename... Vars>void LuaFuncDispatch(Vars... vArgs)
+  /* -- Dispatch the requested variables ----------------------------------- */
+  template<typename... Vars>void LuaFuncDispatch(const Vars... vArgs)
   { // Push the call back function
     LuaFuncPushFunc();
     // Number of parameters written. This cannot be optimised with sizeof...()
@@ -121,9 +127,9 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
     // Do the call
     CallFuncEx(cParent.LuaRefGetState(), iParams);
   }
-  /* ----------------------------------------------------------------------- */
+  /* -- Dispatch the requested variables safely ---------------------------- */
   template<typename... Vars>
-    void LuaFuncProtectedDispatch(const int iReturns, Vars... vArgs)
+    void LuaFuncProtectedDispatch(const int iReturns, const Vars... vArgs)
   { // Save stack position so we can restore it on error
     const int iStack = GetStackCount(cParent.LuaRefGetState()),
     // Push generic error function. This needs to be cleaned up after PCall
@@ -146,14 +152,14 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
       throw;
     }
   }
-  /* ----------------------------------------------------------------------- */
+  /* -- Push function and call it ------------------------------------------ */
   void LuaFuncPushAndCall(void) const
   { // Push function onto stack
     LuaFuncPushFunc();
     // Do the call with no params nor returns
     CallFunc(cParent.LuaRefGetState());
   }
-  /* ----------------------------------------------------------------------- */
+  /* -- De-initialise saved function --------------------------------------- */
   void LuaFuncDeInit(void)
   { // Reset user set function if it isn't the empty function
     if(iRef != cParent.LuaRefGetId())
@@ -171,14 +177,15 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
       if(iRef != cParent.LuaRefGetId() && iRef != LUA_REFNIL &&
         !SafeDeleteReference(cParent.LuaRefGetState(), iRef,
           cParent.LuaRefGetId()))
-            LW(LH_ERROR, "LuaFunc couldn't delete old ref for C function!");
+            cLog->LogErrorSafe(
+              "LuaFunc couldn't delete old ref for C function!");
       // Set reference to C function
       if(!InitReference(cParent.LuaRefGetState(), iRef))
         XC("Failed to create refid to C function!",
            "Name",  IdentGet(), "Value", iRef,
            "Stack", GetVarStack(cParent.LuaRefGetState()));
       // Succeeded so put in log
-      LW(LH_DEBUG, "LuaFunc allocated refid #$ for C function '$'.",
+      cLog->LogDebugExSafe("LuaFunc allocated refid #$ for C function '$'.",
         iRef, IdentGet());
     } // If last item on stack is a regular function?
     else if(lua_isfunction(cParent.LuaRefGetState(), -1))
@@ -186,14 +193,15 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
       if(iRef != cParent.LuaRefGetId() && iRef != LUA_REFNIL &&
         !SafeDeleteReference(cParent.LuaRefGetState(),
           iRef, cParent.LuaRefGetId()))
-            LW(LH_ERROR, "LuaFunc couldn't delete old ref for function!");
+            cLog->LogErrorExSafe(
+              "LuaFunc couldn't delete old ref for function!");
       // Set reference to regular function
       if(!InitReference(cParent.LuaRefGetState(), iRef))
         XC("Failed to create refid to function!",
            "Name",  IdentGet(), "Value", iRef,
            "Stack", GetVarStack(cParent.LuaRefGetState()));
       // Succeeded so fut in log
-      LW(LH_DEBUG, "LuaFunc allocated refid #$ for function '$'.",
+      cLog->LogDebugExSafe("LuaFunc allocated refid #$ for function '$'.",
         iRef, IdentGet());
     } // Don't know what this was?
     else XC("Expected C or regular function type on stack!",
@@ -208,7 +216,8 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
     /* -- Initialisation of members ---------------------------------------- */
     ICHelperLuaFunc{ *cLuaFuncs,       // Set name in collector
       this },                          // Supply parent class to collector
-    Ident{ move(lfOther) },            // Move name
+    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
+    Ident{ std::move(lfOther) },            // Move name
     iRef(lfOther.iRef),                // Copy other reference
     iRefS(lfOther.iRefS)               // Copy other saved reference
     /* -- Code ------------------------------------------------------------- */
@@ -221,6 +230,7 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
   explicit LuaFunc(void) :
     /* -- Initialisation of members ---------------------------------------- */
     ICHelperLuaFunc{ *cLuaFuncs },     // Set parent for collector
+    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     iRef(LUA_REFNIL),                  // Reference not initialised
     iRefS(LUA_REFNIL)                  // Saved reference not initialised
     /* -- No code ---------------------------------------------------------- */
@@ -230,6 +240,7 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
     /* -- Initialisation of members ---------------------------------------- */
     ICHelperLuaFunc{                   // Register in collector
       *cLuaFuncs, this },              // Collector and this object
+    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     Ident{ strN },                     // Copy name
     iRef(LUA_REFNIL),                  // Reference not initialised
     iRefS(LUA_REFNIL)                  // Saved reference not initialised
@@ -240,7 +251,8 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
     /* -- Initialisation of members ---------------------------------------- */
     ICHelperLuaFunc{                   // Register in collector
       *cLuaFuncs, this },              // Collector and this object
-    Ident{ move(strN) },               // Move name
+    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
+    Ident{ std::move(strN) },               // Move name
     iRef(LUA_REFNIL),                  // Reference not initialised
     iRefS(LUA_REFNIL)                  // Saved reference not initialised
     /* -- Set if requested ------------------------------------------------- */
@@ -255,23 +267,21 @@ static void LuaFuncDeInitRef(void)
 { // Ignore if no state or function
   if(!cLuaFuncs->LuaRefStateIsSet()) return;
   // Write to log that we're deinitialising
-  LW(LH_DEBUG, "LuaFuncs de-initialising...");
+  cLog->LogDebugSafe("LuaFuncs de-initialising...");
   // If there are references?
   if(!cLuaFuncs->empty())
   { // DeInit all references
-     LW(LH_DEBUG, "LuaFuncs de-initialising $ engine event refids...",
+     cLog->LogDebugExSafe("LuaFuncs de-initialising $ engine event refids...",
        cLuaFuncs->size());
      for(LuaFunc*const lCptr : *cLuaFuncs) lCptr->LuaFuncDeInit();
-     LW(LH_INFO, "LuaFuncs de-initialised $ engine event refids.",
+     cLog->LogInfoExSafe("LuaFuncs de-initialised $ engine event refids.",
        cLuaFuncs->size());
-  } // De-initialise the empty function and state and if succeeded?
-  if(cLuaFuncs->LuaRefDeInit())
-  { // Log succession
-    LW(LH_DEBUG, "LuaFuncs de-initialised empty function refid.");
-  } // Log failure
-  else LW(LH_WARNING, "LuaFuncs failed to de-init empty function refid.");
+  } // De-initialise the empty function and log the result
+  cLog->LogDebugSafe(cLuaFuncs->LuaRefDeInit() ?
+    "LuaFuncs de-initialised empty function refid." :
+    "LuaFuncs failed to de-init empty function refid.");
   // Write to log that we're deinitialising
-  LW(LH_INFO, "LuaFuncs de-initialised.");
+  cLog->LogInfoSafe("LuaFuncs de-initialised.");
 }
 /* -- Empty function ------------------------------------------------------- */
 static int LuaFuncEmptyCFunction(lua_State*const) { return 0; }
@@ -280,44 +290,45 @@ static void LuaFuncInitRef(lua_State*const lS)
 { // DeInit current lua refs
   LuaFuncDeInitRef();
   // Write to log that we're deinitialising
-  LW(LH_DEBUG, "LuaFuncs manager initialising...");
+  cLog->LogDebugSafe("LuaFuncs manager initialising...");
   // Push empty function and reference it into the lua stack
   PushCFunction(lS, LuaFuncEmptyCFunction);
   cLuaFuncs->LuaRefInit(lS);
   // Log result
-  LW(LH_DEBUG, "LuaFunc allocated refid #$ for empty function.",
+  cLog->LogDebugExSafe("LuaFunc allocated refid #$ for empty function.",
     cLuaFuncs->LuaRefGetId());
    // If there are references?
   if(!cLuaFuncs->empty())
   { // Init all references to the empty function
-     LW(LH_DEBUG, "LuaFuncs initialising $ engine event refids...",
+     cLog->LogDebugExSafe("LuaFuncs initialising $ engine event refids...",
        cLuaFuncs->size());
      for(LuaFunc*const lCptr : *cLuaFuncs) lCptr->LuaFuncSetEmptyFunc();
-     LW(LH_DEBUG, "LuaFuncs initialised $ engine event refids.",
+     cLog->LogDebugExSafe("LuaFuncs initialised $ engine event refids.",
        cLuaFuncs->size());
   } // Write to log that we're deinitialising
-  LW(LH_INFO, "LuaFuncs manager initialised!");
+  cLog->LogInfoSafe("LuaFuncs manager initialised!");
 }
 /* -- Disable all references and add to errors if it didn't work ----------- */
 static void LuaFuncDisableAllRefs(void)
 { // Return if no refs to disable
   if(cLuaFuncs->empty()) return;
   // Disable all references and add to errors if it didn't work
-  LW(LH_DEBUG, "LuaFuncs disabling $ references...", cLuaFuncs->size());
+  cLog->LogDebugExSafe("LuaFuncs disabling $ references...",
+    cLuaFuncs->size());
   for(LuaFunc*const lCptr : *cLuaFuncs) lCptr->LuaFuncDisable();
-  LW(LH_INFO, "LuaFuncs disabled $ references...", cLuaFuncs->size());
+  cLog->LogInfoExSafe("LuaFuncs disabled $ references...", cLuaFuncs->size());
 }
 /* -- Mass enable all references ------------------------------------------- */
 static void LuaFuncEnableAllRefs(void)
 { // Return if no refs to enable
   if(cLuaFuncs->empty()) return;
   // Enable all references and add to errors if it didn't work
-  LW(LH_DEBUG, "LuaFuncs enabling $ references...", cLuaFuncs->size());
+  cLog->LogDebugExSafe("LuaFuncs enabling $ references...", cLuaFuncs->size());
   for(LuaFunc*const lCptr : *cLuaFuncs) lCptr->LuaFuncEnable();
-  LW(LH_INFO, "LuaFuncs enabled $ references...", cLuaFuncs->size());
+  cLog->LogInfoExSafe("LuaFuncs enabled $ references...", cLuaFuncs->size());
 }
 /* ------------------------------------------------------------------------- */
 END_COLLECTOREX(LuaFuncs,,LuaFuncDeInitRef(),);
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

@@ -7,12 +7,12 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfSql {                      // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfSql {                      // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace Library::Sqlite;       // Using sqlite library functions
-using namespace IfAsset;               // Using asset interface
-using namespace IfTimer;               // Using timer interface
+using namespace IfAsset;               // Using asset namespace
+using namespace IfTimer;               // Using timer namespace
 /* -- Sql cvar data types -------------------------------------------------- */
 BUILD_FLAGS(SqlCVarData,
   /* -- (Note: Don't ever change these around) ----------------------------- */
@@ -26,7 +26,7 @@ BUILD_FLAGS(Sql,                       // Sql flags classes
   // Delete empty databases?           Debug sql executions?
   SF_DELETEEMPTYDB       {0x00000002}
 );/* -- Sql manager class -------------------------------------------------- */
-static class Sql :
+static class Sql final :
   /* -- Base classes ------------------------------------------------------- */
   public Ident,                        // Sql database filename
   private SqlFlags                     // Sql flags
@@ -152,18 +152,18 @@ static class Sql :
     int       iT;                              // Type of memory in block
     /* -- Move assignment operator ----------------------------------------- */
     DataListItem &operator=(DataListItem &&dlOther)
-      { SwapMemory(move(dlOther)); iT = dlOther.iT; return *this; }
+      { SwapMemory(std::move(dlOther)); iT = dlOther.iT; return *this; }
     /* -- Initialise with rvalue memory and type --------------------------- */
     DataListItem(Memory &&memInit, const int iType) :
       /* -- Initialisers --------------------------------------------------- */
-      Memory{ move(memInit) },         // Move other memory block other
+      Memory{ std::move(memInit) },         // Move other memory block other
       iT(iType)                        // Copy other type over
       /* -- No code -------------------------------------------------------- */
       { }
     /* -- Move constructor ------------------------------------------------- */
     DataListItem(DataListItem &&dlOther) :
       /* -- Initialisers --------------------------------------------------- */
-      DataListItem{ move(dlOther), dlOther.iT }
+      DataListItem{ std::move(dlOther), dlOther.iT }
       /* -- No code -------------------------------------------------------- */
       { }
     /* --------------------------------------------------------------------- */
@@ -220,7 +220,7 @@ static class Sql :
     } // Database handle no longer valid
     sqlDB = nullptr;
     // Say we closed the database
-    LW(uiRetries > 0 ? LH_WARNING : LH_INFO,
+    cLog->LogExSafe(uiRetries > 0 ? LH_WARNING : LH_INFO,
       "Sql database '$' closed successfully ($ retries).",
         IdentGet(), uiRetries);
   }
@@ -230,22 +230,24 @@ static class Sql :
   { // Generate the memory block with the specified data.
     Memory mData{ stSize, vpPtr };
     // Generate the pair value and move the memory into it.
-    DataListItem dliItem{ move(mData), iType };
+    DataListItem dliItem{ std::move(mData), iType };
     // Insert a new pair moving key and value across.
-    smbData.emplace(make_pair(cpKey, move(dliItem)));
+    smbData.emplace(make_pair(cpKey, std::move(dliItem)));
   }
   /* -- Build a new node from an integral value ---------------------------- */
   template<typename T>void DoPair(Records &smbData, const int iType,
     const char*const cpKey, const T tVal)
       { DoPair(smbData, iType, cpKey, &tVal, sizeof(tVal)); }
+  /* -- Set error code ----------------------------------------------------- */
+  void SetError(const int iCode) { iError = iCode; }
   /* -- Compile the sql command and store output rows ---------------------- */
   void DoStep(sqlite3_stmt*const stmtData)
   { // Until we're done with all the data
-    for(iError = sqlite3_step(stmtData);
-        iError != SQLITE_DONE;
-        iError = sqlite3_step(stmtData))
-    { // Return if error
-      if(iError != SQLITE_ROW) return;
+    for(SetError(sqlite3_step(stmtData));
+        IsErrorNotEqual(SQLITE_DONE);
+        SetError(sqlite3_step(stmtData)))
+    { // Return if an error in the row
+      if(IsErrorNotEqual(SQLITE_ROW)) return;
       // Create key/memblock map and reserve entries
       Records smbData;
       // For each column, add to string/memblock map
@@ -283,9 +285,9 @@ static class Sql :
           default: continue;
         }
       } // Move key/values into records list if there were keys inserted
-      if(!smbData.empty()) vKeys.emplace_back(move(smbData));
+      if(!smbData.empty()) vKeys.emplace_back(std::move(smbData));
     } // Set error code to OK because it's set to SQLITE_DONE
-    iError = SQLITE_OK;
+    SetError(SQLITE_OK);
   }
   /* -- Can database be deleted, no point keeping if it's empty! ----------- */
   ADResult CanDatabaseBeDeleted(void)
@@ -315,6 +317,70 @@ static class Sql :
       // More than one table? Do not delete
       default: return ADR_ERR_TABLES_EXIST;
     } // Call should not continue after this switch statement
+  }
+  /* -- Send command to sql in raw format ---------------------------------- */
+  void DoExecute(const string &strC, const CellList &vIn={})
+  { // Reset previous results
+    Reset();
+    // Set query start time
+    const ClockInterval<> tpStart;
+    // Statement preparation
+    sqlite3_stmt *stmtData = nullptr;
+    SetError(sqlite3_prepare_v2(sqlDB, strC.c_str(),
+      IntOrMax<int>(strC.length()), &stmtData, nullptr));
+    // If succeeded then start parsing the input and ouput
+    if(IsNoError())
+    { // Free the statement context incase of exception
+      typedef unique_ptr<sqlite3_stmt,
+        function<decltype(sqlite3_finalize)>> SqliteStatementPtr;
+      const SqliteStatementPtr sspPtr{ stmtData, sqlite3_finalize };
+      // How many bind parameters per record?
+      const int iMax = sqlite3_bind_parameter_count(stmtData);
+      // Column id
+      int iCol = 1;
+      // Commit the statement
+      bool bCommit = false;
+      // For each memblock
+      for(const Cell &mbIn : vIn)
+      { // Commit the last statement? We can't put this at the end of the loop
+        // because we don't want to call sqlite3_step twice in a row.
+        if(bCommit)
+        { // Compile the record
+          DoStep(stmtData);
+          if(IsError()) return;
+          // Reset bindings so we can insert another
+          SetError(sqlite3_reset(stmtData));
+          if(IsError()) return;
+          // Done commit
+          bCommit = false;
+        } // What is the data type
+        switch(mbIn.iT)
+        { // 64-bit integer?
+          case SQLITE_INTEGER: SetError(sqlite3_bind_int64(stmtData,
+            iCol, mbIn.qV)); break;
+          // 64-bit IEEE float?
+          case SQLITE_FLOAT: SetError(sqlite3_bind_double(stmtData,
+            iCol, mbIn.fdV)); break;
+          // Raw data?
+          case SQLITE_BLOB: SetError(sqlite3_bind_blob(stmtData,
+            iCol, mbIn.cpD, mbIn.iS, SQLITE_TRANSIENT)); break;
+          // Text?
+          case SQLITE_TEXT: SetError(sqlite3_bind_text(stmtData,
+            iCol, mbIn.cpD, mbIn.iS, SQLITE_TRANSIENT)); break;
+          // SQLITE_NULL or unknown data type? Treat as null
+          default: SetError(sqlite3_bind_null(stmtData, iCol)); break;
+        } // Return if bind failed
+        if(IsError()) return;
+        // If we still have columns to bind reloop and bind the next parameter
+        if(iCol != iMax) ++iCol;
+        // Commit the record on the next iteration, we don't do it now because
+        // this might be the last parameter the user supplied and we don't want
+        // to insert the same record twice.
+        else { bCommit = true; iCol = 1; }
+      } // Make sure we process the last record
+      DoStep(stmtData);
+    } // Get end query time to get total execution duration
+    duQuery = tpStart.CIDelta();
   }
   /* -- Is sqlite database opened? --------------------------------- */ public:
   bool IsOpened(void) { return !!sqlDB; }
@@ -469,7 +535,7 @@ static class Sql :
     } // Initialise the db and if succeeded?
     if(Init(strV))
     { // Set full path name of the database
-      SQLINITOK: strV = move(PathSplit{ strV, true }.strFull);
+      SQLINITOK: strV = std::move(PathSplit{ strV, true }.strFull);
       // Success
       return ACCEPT_HANDLED;
     } // If we have a persistant directory?
@@ -486,93 +552,26 @@ static class Sql :
   /* -- Reset last sql result ---------------------------------------------- */
   void Reset(void)
   { // Clear error
-    iError = SQLITE_OK;
+    SetError(SQLITE_OK);
     // Clear last result data
     vKeys.clear();
     // Reset query time
     duQuery = seconds(0);
   }
-  /* -- Send command to sql in raw format ---------------------------------- */
-  void DoExecute(sqlite3_stmt *stmtData, const CellList &vIn)
-  { // Ignore if empty statement
-    if(!stmtData) { iError = SQLITE_ERROR; return; }
-    // How many bind parameters per record?
-    const int iMax = sqlite3_bind_parameter_count(stmtData);
-    // Column id
-    int iCol = 1;
-    // Commit the statement
-    bool bCommit = false;
-    // For each memblock
-    for(const Cell &mbIn : vIn)
-    { // Commit the last statement? We can't put this at the end of the loop
-      // because we don't want to call sqlite3_step twice in a row.
-      if(bCommit)
-      { // Compile the record
-        DoStep(stmtData);
-        if(iError != SQLITE_OK) return;
-        // Reset bindings so we can insert another
-        iError = sqlite3_reset(stmtData);
-        if(iError != SQLITE_OK) return;
-        // Done commit
-        bCommit = false;
-      } // What is the data type
-      switch(mbIn.iT)
-      { // 64-bit integer?
-        case SQLITE_INTEGER: iError = sqlite3_bind_int64(stmtData,
-          iCol, mbIn.qV); break;
-        // 64-bit IEEE float?
-        case SQLITE_FLOAT: iError = sqlite3_bind_double(stmtData,
-          iCol, mbIn.fdV); break;
-        // Raw data?
-        case SQLITE_BLOB: iError = sqlite3_bind_blob(stmtData,
-          iCol, mbIn.cpD, mbIn.iS, SQLITE_TRANSIENT); break;
-        // Text?
-        case SQLITE_TEXT: iError = sqlite3_bind_text(stmtData,
-          iCol, mbIn.cpD, mbIn.iS, SQLITE_TRANSIENT); break;
-        // SQLITE_NULL or unknown data type? Treat as null
-        default: iError = sqlite3_bind_null(stmtData, iCol); break;
-      } // Return if bind failed
-      if(iError != SQLITE_OK) return;
-      // If we still have columns to bind reloop and bind the next parameter
-      if(iCol != iMax) ++iCol;
-      // Commit the record on the next iteration, we don't do it now because
-      // this might be the last parameter the user supplied and we don't want
-      // to insert the same record twice.
-      else { bCommit = true; iCol = 1; }
-    } // Make sure we process the last record
-    DoStep(stmtData);
-  }
-  /* -- Dispatch stored transaction ---------------------------------------- */
+  /* -- Dispatch stored transaction with logging --------------------------- */
   int Execute(const string &strC, const CellList &vIn={})
   { // Ignore if nothing to dispatch
     if(strC.empty()) return SQLITE_ERROR;
-    // Reset previous results
-    Reset();
-    // Statement preparation
-    sqlite3_stmt *stmtHandle = nullptr;
-    iError = sqlite3_prepare_v2(sqlDB, strC.c_str(),
-      IntOrMax<int>(strC.length()), &stmtHandle, nullptr);
-    // Set query start time
-    const ClockInterval<> tpStart;
-    // If succeeded then start parsing the input and ouput
-    if(iError == SQLITE_OK)
-    { // Free the statement context incase of exception
-      typedef unique_ptr<sqlite3_stmt, function<decltype(sqlite3_finalize)>>
-        SqliteStatementPtr;
-      const SqliteStatementPtr sspPtr{ stmtHandle, sqlite3_finalize };
-      DoExecute(stmtHandle, vIn);
-    } // Get end query time to get total execution duration
-    duQuery = tpStart.CIDelta();
+    // Do execution
+    DoExecute(strC, vIn);
     // If log is in debug mode?
     if(cLog->HasLevel(LH_DEBUG))
-    { // Decide level to use
-      const LHLevel lhLevel = GetError() != SQLITE_OK ? LH_WARNING : LH_DEBUG;
-      // Write string
-      cLog->WriteStringSafe(lhLevel,
-        Format("Sql executed '$'<$>.\n- Args: $; Code: $<$>; RTT: $ sec.",
+    { // Write string
+      cLog->LogNLCDebugExSafe(
+        "Sql executed '$'<$>.\n"
+        "- Args: $; Code: $<$>; RTT: $ sec.",
           strC, strC.length(), vIn.size(), ResultToString(GetError()),
-          GetError(),
-          IfClock::ToShortDuration(ClockDurationToDouble(duQuery), 6)));
+          GetError(), TimeStr());
       // Write parameters
       for(size_t stIndex = 0; stIndex < vIn.size(); ++stIndex)
       { // Get cell data
@@ -580,57 +579,62 @@ static class Sql :
         // Get type
         switch(cItem.iT)
         { // Type is an integer?
-          case SQLITE_INTEGER: cLog->WriteStringSafe(lhLevel,
-            Format("- Arg #$<Int> = $ <$0x$>.",
-              stIndex, cItem.qV, hex, cItem.qV)); break;
+          case SQLITE_INTEGER:
+            cLog->LogNLCDebugExSafe("- Arg #$<Int> = $ <$0x$>.",
+              stIndex, cItem.qV, hex, cItem.qV); break;
           // Type is a float?
-          case SQLITE_FLOAT: cLog->WriteStringSafe(lhLevel,
-            Format("- Arg #$<Float> = $.",
-              stIndex, cItem.fdV)); break;
+          case SQLITE_FLOAT:
+            cLog->LogNLCDebugExSafe("- Arg #$<Float> = $.",
+              stIndex, cItem.fdV); break;
           // Type is text?
-          case SQLITE_TEXT: cLog->WriteStringSafe(lhLevel,
-            Format("- Arg #$<Text> = \"$\" ($ bytes).",
-              stIndex, cItem.cpD, cItem.iS)); break;
+          case SQLITE_TEXT:
+            cLog->LogNLCDebugExSafe("- Arg #$<Text> = \"$\" ($ bytes).",
+              stIndex, cItem.cpD, cItem.iS); break;
           // Type is data?
-          case SQLITE_BLOB: cLog->WriteStringSafe(lhLevel,
-            Format("- Arg #$<Blob> = $ bytes.",
-              stIndex, cItem.iS)); break;
+          case SQLITE_BLOB:
+            cLog->LogNLCDebugExSafe("- Arg #$<Blob> = $ bytes.",
+              stIndex, cItem.iS); break;
           // Unknown type?
-          default: cLog->WriteStringSafe(lhLevel,
-            Format("- Param $<Unknown:$> = $ bytes.",
-              stIndex, cItem.iT, cItem.iS)); break;
+          default:
+            cLog->LogNLCDebugExSafe("- Param $<Unknown:$> = $ bytes.",
+              stIndex, cItem.iT, cItem.iS); break;
         }
       }
     } // Return error status
     return iError;
   }
+  /* -- Dispatch stored transaction with logging but return success bool -- */
+  bool ExecuteAndSuccess(const string &strC, const CellList &vIn={})
+    { return Execute(strC, vIn) == SQLITE_OK; }
   /* -- Check integrity ---------------------------------------------------- */
   bool CheckIntegrity(void)
   { // Do check (We need a result so dont use Pragma())
     if(Execute("PRAGMA integrity_check(1)"))
     { // Log and return failure
-      LW(LH_ERROR, "Sql failed integrity check failed because $ ($<$>)!",
+      cLog->LogErrorExSafe(
+        "Sql failed integrity check failed because $ ($<$>)!",
         GetErrorStr(), GetErrorAsIdString(), GetError());
       return false;
     } // This should never be true but just incase
     if(vKeys.empty())
     { // Log and return failure
-      LW(LH_ERROR, "Sql integrity check failed to return result row.");
+      cLog->LogErrorSafe("Sql integrity check failed to return result row.");
       return false;
     } // Get reference to the map of memory blocks. It shouldn't be empty
     const Records &mbMap = *vKeys.cbegin();
     if(mbMap.empty())
     { // Log and return failure
-      LW(LH_ERROR, "Sql integrity check failed to return result columns.");
+      cLog->LogErrorSafe(
+        "Sql integrity check failed to return result columns.");
       return false;
     } // Get result string. It should say 'ok' if everything went ok
     const string strResult{ mbMap.cbegin()->second.ToString() };
     if(strResult != "ok")
     { // Log and return failure
-      LW(LH_ERROR, "Sql database corrupted: $", strResult);
+      cLog->LogErrorExSafe("Sql database corrupted: $", strResult);
       return false;
     } // Passed so return success
-    LW(LH_INFO, "Sql integrity check passed.");
+    cLog->LogInfoSafe("Sql integrity check passed.");
     return true;
   }
   /* -- Set a pragma ------------------------------------------------------- */
@@ -638,11 +642,11 @@ static class Sql :
   { // Execute without value
     if(Execute(Append("PRAGMA ", strVar)))
     { // Log and return failure
-      LW(LH_ERROR, "Sql pragma '$' failed because $ ($<$>)!",
+      cLog->LogErrorExSafe("Sql pragma '$' failed because $ ($<$>)!",
         strVar, GetErrorStr(), GetErrorAsIdString(), GetError());
       return false;
     } // Log and return success
-    LW(LH_DEBUG, "Sql pragma '$' succeeded.", strVar);
+    cLog->LogDebugExSafe("Sql pragma '$' succeeded.", strVar);
     return true;
   }
   /* -- Set a pragma on or off --------------------------------------------- */
@@ -657,11 +661,13 @@ static class Sql :
     // Execute with value
     if(Execute(Format("PRAGMA $=$", strVar, strVal)))
     { // Log and return failure
-      LW(LH_ERROR, "Sql set pragma '$' to '$' failed because $ ($<$>)!",
+      cLog->LogErrorExSafe(
+        "Sql set pragma '$' to '$' failed because $ ($<$>)!",
         strVar, strVal, GetErrorStr(), GetErrorAsIdString(), GetError());
       return false;
     } // Log and return success
-    LW(LH_DEBUG, "Sql set pragma '$' to '$' succeeded.", strVar, strVal);
+    cLog->LogDebugExSafe("Sql set pragma '$' to '$' succeeded.",
+      strVar, strVal);
     return true;
   }
   /* -- Get size of database ----------------------------------------------- */
@@ -699,10 +705,16 @@ static class Sql :
   const char *GetErrorStr(void) const { return sqlite3_errmsg(sqlDB); }
   /* -- Return error code -------------------------------------------------- */
   int GetError(void) const { return iError; }
-  bool IsReadOnlyError(void) const { return GetError() & SQLITE_READONLY; }
+  bool IsErrorEqual(const int iWhat) const { return GetError() == iWhat; };
+  bool IsErrorNotEqual(const int iWhat) const { return !IsErrorEqual(iWhat); };
+  bool IsError(void) const { return IsErrorNotEqual(SQLITE_OK); }
+  bool IsNoError(void) const { return !IsError(); }
+  bool IsReadOnlyError(void) const { return IsErrorEqual(SQLITE_READONLY); }
   const string &GetErrorAsIdString(void) { return ResultToString(iError); }
   /* -- Return duration of last query -------------------------------------- */
   double Time(void) const { return ClockDurationToDouble(duQuery); }
+  /* -- Return formatted query time ---------------------------------------- */
+  const string TimeStr(void) const { return ToShortDuration(Time()); }
   /* -- Returns if sql is in a transaction --------------------------------- */
   bool Active(void) const { return !sqlite3_get_autocommit(sqlDB); }
   /* -- Return string map of records --------------------------------------- */
@@ -760,11 +772,12 @@ static class Sql :
   { // Read all variable names and if failed?
     if(Execute("SELECT K from C"))
     { // Put in log and return nothing loaded
-      LW(LH_WARNING, "CVars failed to fetch cvar key names because $ ($)!",
+      cLog->LogWarningExSafe(
+        "CVars failed to fetch cvar key names because $ ($)!",
         GetErrorStr(), GetError());
       return false;
     } // Write number of records read and return success
-    LW(LH_DEBUG, "Sql read $ key names from CVars table.",
+    cLog->LogDebugExSafe("Sql read $ key names from CVars table.",
       GetRecords().size());
     return true;
   }
@@ -773,11 +786,11 @@ static class Sql :
   { // Read all variables and if failed?
     if(Execute("SELECT K,F,V from C"))
     { // Put in log and return nothing loaded
-      LW(LH_WARNING, "Sql failed to read CVars table because $ ($)!",
+      cLog->LogWarningExSafe("Sql failed to read CVars table because $ ($)!",
         GetErrorStr(), GetError());
       return false;
     } // Write number of records read and return success
-    LW(LH_DEBUG, "Sql read $ records from CVars table.",
+    cLog->LogDebugExSafe("Sql read $ records from CVars table.",
       GetRecords().size());
     return true;
   }
@@ -788,11 +801,12 @@ static class Sql :
     // Drop the SQL table and if failed?
     if(DropTable("C"))
     { // Write error in console and return failure
-      LW(LH_WARNING, "Sql failed to destroy CVars table because $ ($)!",
+      cLog->LogWarningExSafe(
+        "Sql failed to destroy CVars table because $ ($)!",
         GetErrorStr(), GetError());
       return CTR_FAIL;
     } // Write success in console and return success
-    LW(LH_DEBUG, "Sql destroyed CVars table successfully.");
+    cLog->LogDebugExSafe("Sql destroyed CVars table successfully.");
     return CTR_OK;
   }
   /* ----------------------------------------------------------------------- */
@@ -805,11 +819,11 @@ static class Sql :
        "F INTEGER DEFAULT 0,"          // Value flags (crypt,comp,etc.)
        "V TEXT)"))                     // Value (any type allowed)
     { // Write error in console and return failure
-      LW(LH_WARNING, "Sql failed to create CVars table because $ ($)!",
+      cLog->LogWarningExSafe("Sql failed to create CVars table because $ ($)!",
         GetErrorStr(), GetError());
       return CTR_FAIL;
     } // Write success in console and return success
-    LW(LH_DEBUG, "Sql created CVars table successfully.");
+    cLog->LogDebugExSafe("Sql created CVars table successfully.");
     return CTR_OK;
   }
   /* ----------------------------------------------------------------------- */
@@ -819,11 +833,12 @@ static class Sql :
     // Drop the SQL table and if failed?
     if(DropTable("L"))
     { // Write error in console and return failure
-      LW(LH_WARNING, "Sql failed to destroy cache table because $ ($)!",
+      cLog->LogWarningExSafe(
+        "Sql failed to destroy cache table because $ ($)!",
         GetErrorStr(), GetError());
       return CTR_FAIL;
     } // Write success in console and return success
-    LW(LH_DEBUG, "Sql destroyed cache table successfully.");
+    cLog->LogDebugExSafe("Sql destroyed cache table successfully.");
     return CTR_OK;
   }
   /* ----------------------------------------------------------------------- */
@@ -837,11 +852,11 @@ static class Sql :
        "R TEXT UNIQUE NOT NULL,"       // Code eference
        "D TEXT NOT NULL)"))            // Code binary
     { // Write error in console and return failure
-      LW(LH_WARNING, "Sql failed to create cache table because $ ($)!",
+      cLog->LogWarningExSafe("Sql failed to create cache table because $ ($)!",
         GetErrorStr(), GetError());
       return CTR_FAIL;
     } // Write success in console and return success
-    LW(LH_DEBUG, "Sql created cache table successfully.");
+    cLog->LogDebugExSafe("Sql created cache table successfully.");
     return CTR_OK;
   }
   /* ----------------------------------------------------------------------- */
@@ -854,12 +869,12 @@ static class Sql :
       Cell{ cpData, IntOrMax<int>(stLength), iType }
     }))
     { // Log the warning and return failure
-      LW(LH_WARNING, "Sql failed to commit CVar '$' "
+      cLog->LogWarningExSafe("Sql failed to commit CVar '$' "
                      "(T:$;ST:$;B:$) because $ ($)!",
         strVar, lfType.FlagGet(), iType, stLength, GetErrorStr(), GetError());
       return false;
     } // Report and return success
-    LW(LH_DEBUG, "Sql commited CVar '$' (T:$;ST:$;B:$).",
+    cLog->LogDebugExSafe("Sql commited CVar '$' (T:$;ST:$;B:$).",
       strVar, lfType.FlagGet(), iType, stLength);
     return true;
   }
@@ -877,13 +892,13 @@ static class Sql :
     if(Execute("DELETE from C WHERE K=?",
       { Cell{ IntOrMax<int>(stKey), cpKey } }))
     { // Log the warning and return failure
-      LW(LH_WARNING, "Sql failed to purge CVar '$' because $ ($)!",
+      cLog->LogWarningExSafe("Sql failed to purge CVar '$' because $ ($)!",
         cpKey, GetErrorStr(), GetError());
       return PR_FAIL;
     } // Just return if no records were affected
     if(!Affected()) return PR_OK_NC;
     // Report and return success
-    LW(LH_DEBUG, "Sql purged CVar '$' from database.", cpKey);
+    cLog->LogDebugExSafe("Sql purged CVar '$' from database.", cpKey);
     return PR_OK;
   }
   /* ----------------------------------------------------------------------- */
@@ -894,36 +909,38 @@ static class Sql :
   { // Ignore if no handle to deinit
     if(!sqlDB) return;
     // Log deinitialisation
-    LW(LH_DEBUG, "Sql database '$' is closing...", IdentGet());
+    cLog->LogDebugExSafe("Sql database '$' is closing...", IdentGet());
     // Finalise statements and if we found orphans
     if(const size_t stOrphans = Finalise())
     { // Report how many statements unfinished
-      LW(LH_WARNING, "Sql finalised $ orphan statements.", stOrphans);
+      cLog->LogWarningExSafe("Sql finalised $ orphan statements.", stOrphans);
     } // Check if database should be deleted, if it should'nt?
     switch(const ADResult adrResult = CanDatabaseBeDeleted())
     { // Deletion is ok?
       case ADR_OK_NO_TABLES:
       case ADR_OK_NO_RECORDS:
         // Print the result
-        LW(LH_DEBUG, "Sql will delete empty database because $ ($).",
+        cLog->LogDebugExSafe("Sql will delete empty database because $ ($).",
           ADResultToString(adrResult), adrResult);
         // Close the database
         DoClose();
         // Try to delete it and if we could not delete it?
         if(!DirFileUnlink(IdentGet()))
         { // Log the reason as a warning
-          LW(LH_WARNING, "Sql empty database file '$' could not be deleted! $",
+          cLog->LogWarningExSafe(
+            "Sql empty database file '$' could not be deleted! $",
             IdentGet(), LocalError());
         } // We deleted it all right?
         else
         { // Log that we deleted the file
-          LW(LH_DEBUG, "Sql empty database file '$' deleted.", IdentGet());
+          cLog->LogDebugExSafe("Sql empty database file '$' deleted.",
+            IdentGet());
         } // Done
         break;
       // Deletion is not ok?
       default:
         // Print the result
-        LW(LH_DEBUG, "Sql won't delete database because $ ($).",
+        cLog->LogDebugExSafe("Sql won't delete database because $ ($).",
           ADResultToString(adrResult), adrResult);
         // Sqlite docs recommend us to optimise before closing.
         Pragma("optimize");
@@ -946,13 +963,13 @@ static class Sql :
     cCrypt->ResetPrivateKey();
     // Try to drop the original private key table
     if(DropTable("K"))
-      LW(LH_WARNING, "Sql failed to drop key table because $ ($<$>)!",
+      cLog->LogWarningExSafe("Sql failed to drop key table because $ ($<$>)!",
         GetErrorStr(), GetErrorAsIdString(), GetError());
     // Now try to create the table that holds the private key and if failed?
     if(Execute("CREATE table K(I INTEGER NOT NULL,"
                               "K INTEGER NOT NULL)"))
     { // Log failure and return
-      LW(LH_ERROR, "Sql failed to create key table because $ ($<$>)!",
+      cLog->LogErrorExSafe("Sql failed to create key table because $ ($<$>)!",
         GetErrorStr(), GetErrorAsIdString(), GetError());
       return false;
     } // Prepare statement to insert values into sql
@@ -965,12 +982,14 @@ static class Sql :
       if(Execute(strInsert,
           { Cell{ static_cast<sqlite3_int64>(stIndex) }, Cell{ qVal } }))
       { // Log failure and return failure
-        LW(LH_ERROR, "Sql failed to write key table at $ because $ ($<$>)!",
+        cLog->LogErrorExSafe(
+          "Sql failed to write key table at $ because $ ($<$>)!",
           stIndex, GetErrorStr(), GetErrorAsIdString(), GetError());
         return false;
       }
     } // Log result and return success
-    LW(LH_DEBUG, "Sql wrote a new key table into database successfully!");
+    cLog->LogDebugExSafe(
+      "Sql wrote a new key table into database successfully!");
     return true;
   }
   /* -- Load private key --------------------------------------------------- */
@@ -980,13 +999,14 @@ static class Sql :
     { // Error reading table?
       case string::npos:
       { // Log failure and create a new private key
-        LW(LH_WARNING, "Sql failed to read key table because $ ($<$>)!",
+        cLog->LogWarningExSafe(
+          "Sql failed to read key table because $ ($<$>)!",
           GetErrorStr(), GetErrorAsIdString(), GetError());
         goto NewKey;
       } // Any other value is not allowed
       default:
       { // Log failure and create a new private key
-        LW(LH_WARNING, "Sql key table corrupt ($ != $)!",
+        cLog->LogWarningExSafe("Sql key table corrupt ($ != $)!",
           stCount, PK_TOTAL_COUNT);
         goto NewKey;
       } // Read enough entries?
@@ -994,13 +1014,15 @@ static class Sql :
       { // Read keys and if failed?
         if(Execute("SELECT K from K ORDER BY I ASC"))
         { // Log failure and create a new private key
-          LW(LH_WARNING, "Sql failed to read key table because $ ($<$>)!",
+          cLog->LogWarningExSafe(
+            "Sql failed to read key table because $ ($<$>)!",
             GetErrorStr(), GetErrorAsIdString(), GetError());
           goto NewKey;
         } // If not enough results?
         if(vKeys.size() != PK_TOTAL_COUNT)
         { // Log failure and create a new private key
-          LW(LH_WARNING, "Sql read only $ of $ key table records!",
+          cLog->LogWarningExSafe(
+            "Sql read only $ of $ key table records!",
             vKeys.size(), PK_TOTAL_COUNT);
           goto NewKey;
         } // Record index number
@@ -1011,20 +1033,23 @@ static class Sql :
           const DataListItem &dliItem = rItem.cbegin()->second;
           if(dliItem.iT != SQLITE_INTEGER)
           { // Log failure and create new private key table
-            LW(LH_ERROR, "Sql key table at column $ not correct type ($)!",
+            cLog->LogErrorExSafe(
+              "Sql key table at column $ not correct type ($)!",
               stIndex, dliItem.iT);
             goto NewKey;
           } // Read record data. It must be 8 bytes. If it isnt?
           if(dliItem.Size() != sizeof(sqlite3_int64))
           { // Log failure and create new private key table
-            LW(LH_ERROR, "Sql key table at column $ expected $ not $ bytes!",
+            cLog->LogErrorExSafe(
+              "Sql key table at column $ expected $ not $ bytes!",
               stIndex, sizeof(sqlite3_int64), dliItem.Size());
             goto NewKey;
           } // Read in the value to the private key table
           cCrypt->WritePrivateKey(stIndex++,
             static_cast<uint64_t>(dliItem.ReadInt<sqlite3_int64>()));
         } // Log result and return
-        LW(LH_DEBUG, "Sql loaded key table from database successfully!");
+        cLog->LogDebugExSafe(
+          "Sql loaded key table from database successfully!");
         return;
       }
     } // Could not read new private key so setup new private key
@@ -1035,11 +1060,11 @@ static class Sql :
   { // If named database is already opened
     if(sqlDB && _strName == IdentGet())
     { // Put in console and return failure
-      LW(LH_WARNING, "Sql skipped re-init of '$'.", _strName);
+      cLog->LogWarningExSafe("Sql skipped re-init of '$'.", _strName);
       return false;
     } // Log initialisation. Set filename using memory db name if empty
     const string &strNTmp = _strName.empty() ? strMemoryDBName : _strName;
-    LW(LH_DEBUG, "Sql initialising database '$'...", strNTmp);
+    cLog->LogDebugExSafe("Sql initialising database '$'...", strNTmp);
     // Open database with a temporary sqlite handle so if the open fails,
     // the old one stays intact
     sqlite3 *sqlDBtemp = nullptr;
@@ -1047,22 +1072,22 @@ static class Sql :
       SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX |
       SQLITE_OPEN_SHAREDCACHE, nullptr))
     { // If error log result otherwise integrity check failed
-      LW(LH_ERROR, "Sql could not open '$' because $ ($)!", strNTmp,
+      cLog->LogErrorExSafe("Sql could not open '$' because $ ($)!", strNTmp,
         GetErrorStr(), iCode);
       // Failure
       return false;
     } // Set to this database and set name
     sqlDB = sqlDBtemp;
-    IdentSet(move(strNTmp));
+    IdentSet(std::move(strNTmp));
     // Load private key
     LoadPrivateKey();
     // Initialised OK!
-    LW(LH_INFO, "Sql database '$' initialised.", IdentGet());
+    cLog->LogInfoExSafe("Sql database '$' initialised.", IdentGet());
     // Success
     return true;
   }
   /* -- Constructor -------------------------------------------------------- */
-  Sql(void) :
+  Sql(void) :                          // No parameters
     /* -- Initialisation of members ---------------------------------------- */
     SqlFlags(SF_NONE),                 // No sql flags (loaded externally)
     sqlDB(nullptr),                    // No sql database handle yet
@@ -1070,9 +1095,8 @@ static class Sql :
     strMemoryDBName{ ":memory:" }      // Create a memory database by default
     /* -- Code ------------------------------------------------------------- */
     { // Throw error if sqlite startup failed
-      if(iError != SQLITE_OK)
-        XC("Failed to initialise SQLite!",
-           "Error", GetError(), "Reason", GetErrorAsIdString());
+      if(IsError()) XC("Failed to initialise SQLite!",
+                       "Error", GetError(), "Reason", GetErrorAsIdString());
     }
   /* -- Destructor --------------------------------------------------------- */
   DTORHELPERBEGIN(~Sql) DeInit(); sqlite3_shutdown(); DTORHELPEREND(Sql);
@@ -1080,6 +1104,6 @@ static class Sql :
   DELETECOPYCTORS(Sql);                // Do not need defaults
   /* -- End ---------------------------------------------------------------- */
 } *cSql = nullptr;                     // Pointer to static class
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

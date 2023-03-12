@@ -8,8 +8,8 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfUtf {                      // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfUtf {                      // Start of module namespace
 /* == UTF classes and functions ============================================ */
 /* The following functions and classes provides some useful UTF translation  */
 /* routines which will be used sporadically througout the engine.            */
@@ -229,7 +229,7 @@ template<typename CharType>
 }
 /* -- UTF8 decoder helper class -------------------------------------------- */
 class Decoder                          // UTF8 string decoder helper
-{ /* -------------------------------------------------------------- */ private:
+{ /* ----------------------------------------------------------------------- */
   const unsigned char *ucpStr, *ucpPtr; // String and pointer to that string
   /* -- Iterator --------------------------------------------------- */ public:
   template<typename CharType=unsigned int>CharType Next(void)
@@ -441,6 +441,6 @@ static const StrVector WordWrap(const string &strText, const size_t stWidth,
   // Return list
   return dqList;
 }
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

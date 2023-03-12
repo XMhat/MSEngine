@@ -6,39 +6,18 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfOgl {                      // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfOgl {                      // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfCollector;           // Using collector interface
-using namespace IfFbo;                 // Using fbo interface
-using namespace IfGlFW;                // Using glfw interface
-using namespace IfCVar;                // Using cvar interface
-/* -- Types ---------------------------------------------------------------- */
-typedef vector<GLuint>            GLUIntVector;   // vector of GLuints
-typedef StrVector::const_iterator GLUIntVectorIt; // " const iterator
-typedef vector<GLint>             GLIntVector;    // vector of GLints
-/* -- Macros --------------------------------------------------------------- */
-#define GLLEX(ECF,EF,F,M,...) \
-  { F; const GLenum glError = EF(); \
-    if(glError != GL_NO_ERROR) \
-      LW(LH_WARNING, "GL call failed: " M " ($/$$).", ## __VA_ARGS__, \
-        ECF(glError), hex, glError); }
-#define GLEX(ECF,EF,F,M,...) \
-  { F; const GLenum glError = EF(); \
-    if(glError != GL_NO_ERROR) \
-      XC("GL call failed: " M, "Code", glError, \
-        "Reason", ECF(glError), ## __VA_ARGS__); }
-#define GLCEX(ECF,EF,M,...) \
-  { const GLenum glError = EF(); \
-    if(glError != GL_NO_ERROR) \
-      XC("GL call failed: " M, "Code", glError, \
-        "Reason", ECF(glError), ## __VA_ARGS__); }
-#define GLL(F,M,...) \
-  GLLEX(cOgl->GetGLErr, cOgl->sAPI.glGetError, F, M, ## __VA_ARGS__);
-#define GL(F,M,...) \
-  GLEX(cOgl->GetGLErr, cOgl->sAPI.glGetError, F, M, ## __VA_ARGS__);
-#define GLC(M,...) \
-  GLCEX(cOgl->GetGLErr, cOgl->sAPI.glGetError, M, ## __VA_ARGS__);
+using namespace IfCollector;           // Using collector namespace
+using namespace IfFbo;                 // Using fbo namespace
+using namespace IfGlFW;                // Using glfw namespace
+using namespace IfCVar;                // Using cvar namespace
+/* -- GL error checking wrapper macros ------------------------------------- */
+#define GLEX(EF,F,M,...)  { F; EF(M, ## __VA_ARGS__); }
+#define GLL(F,M,...)      GLEX(cOgl->CheckLogError, F, M, ## __VA_ARGS__)
+#define GL(F,M,...)       GLEX(cOgl->CheckExceptError, F, M, ## __VA_ARGS__)
+#define GLC(M,...)        GLEX(cOgl->CheckExceptError, , M, ## __VA_ARGS__)
 /* -- OpenGL flags --------------------------------------------------------- */
 BUILD_FLAGS(Ogl,
   /* ----------------------------------------------------------------------- */
@@ -46,12 +25,8 @@ BUILD_FLAGS(Ogl,
   GFL_NONE               {0x00000000}, GFL_INITIALISED        {0x00000001},
   // Either of the below commands?     Have nVidia memory information?
   GFL_HAVEMEM            {0x00000002}, GFL_HAVENVMEM          {0x00000004},
-  // Have ATI memory avail info?       VSync is enabled?
-  GFL_HAVEATIMEM         {0x00000008}, GFL_VSYNC              {0x00000010},
-  // Devices shares memory with system
-  GFL_SHARERAM           {0x00000020},
-  /* -- Mask bits ---------------------------------------------------------- */
-  GFL_MASK(GFL_INITIALISED|GFL_HAVEMEM|GFL_HAVENVMEM|GFL_HAVEATIMEM|GFL_VSYNC);
+  // Have ATI memory avail info?       Devices shares memory with system
+  GFL_HAVEATIMEM         {0x00000008}, GFL_SHARERAM           {0x00000010}
 );/* ----------------------------------------------------------------------- */
 enum OglFilterEnum                     // Available filter combinations
 { /* ----------------------------------------------------------------------- */
@@ -66,20 +41,39 @@ enum OglBlendEnum                      // Available blend combinations
   OB_S_A, OB_O_M_S_A, OB_D_A,   OB_O_M_D_A, OB_C_C, OB_O_M_C_C,
   OB_C_A, OB_O_M_C_A, OB_S_A_S, OB_MAX
 };
+/* -- Types ---------------------------------------------------------------- */
+typedef vector<GLuint> GLUIntVector;   // Vector of GLuints
 /* -- OpenGL manager class ------------------------------------------------- */
-static class Ogl :                     // OGL class for OpenGL use simplicity
+static class Ogl final :               // OGL class for OpenGL use simplicity
   /* -- Sub-classes -------------------------------------------------------- */
   private IHelper,                     // Initialisation helper
   public FboColour,                    // OpenGL colour
   public FboBlend,                     // OpenGL blend
   public FboViewport,                  // OpenGL viewport
   public OglFlags                      // OpenGL init flags
-{ /* -- Macros ---------------------------------------------------- */ private:
+{ /* -- String defines ----------------------------------------------------- */
+  const IdMap<GLenum> idPolyFaces,     // Polygon face names (log detail)
+                      idPolyModes,     // Polygon mode names (log detail)
+                      idExtensions,    // OpenGL extension names (log detail)
+                      idHintTargets,   // Hint target names (log detail)
+                      idHintModes,     // Hint mode values (log detail)
+                      idFormatModes,   // Pixel format modes (log detail)
+                      idOGLCodes;      // OpenGL codes
+  /* -- Macros ------------------------------------------------------------- */
   DELETECOPYCTORS(Ogl);                // Do not need defaults
   /* -- Defines ------------------------------------------------------------ */
-  #define IGLL(F,M,...)  GLLEX(GetGLErr, sAPI.glGetError, F, M, ## __VA_ARGS__)
-  #define IGL(F,M,...)   GLEX(GetGLErr, sAPI.glGetError, F, M, ## __VA_ARGS__)
-  #define IGLC(M,...)    GLCEX(GetGLErr, sAPI.glGetError, M, ## __VA_ARGS__)
+#define IGLL(F,M,...) GLEX(CheckLogError, F, M, ## __VA_ARGS__)
+#define IGL(F,M,...)  GLEX(CheckExceptError, F, M, ## __VA_ARGS__)
+#define IGLC(M,...)   GLEX(CheckExceptError, , M, ## __VA_ARGS__)
+  /* ----------------------------------------------------------------------- */
+  enum VSyncMode : int {               // VSync settings
+    VSYNC_MIN      = -1,               // (-1) Minimum Vertical Sync value
+    VSYNC_ON_ADAPT = VSYNC_MIN,        // (-1) Adaptive Vertical Sync enabled
+    VSYNC_OFF,                         // ( 0) Vertical Sync disable
+    VSYNC_ON,                          // ( 1) Vertical Sync enabled
+    VSYNC_ON_HALFRATE,                 // ( 2) Verfical sync enabled (half)
+    VSYNC_MAX                          // ( 3) Maximum Vertical Sync value
+  } vsSetting;                         // Storage for setting
   /* -- Bindings cache --------------------------------------------- */ public:
   GLuint           uiActiveFbo;        // Currently selected FBO name cache
   GLuint           uiActiveProgram;    // Currently active shader program
@@ -101,7 +95,6 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
   string           strRenderer;        // GL renderer string
   string           strVersion;         // GL version string
   string           strVendor;          // GL vendor string
-  const IdMap<GLenum> imOGLCodes;      // OpenGL codes
   /* -- Handles ------------------------------------------------------------ */
   GLuint           uiVAO, uiVBO;       // Default vertex array/buffer object
   /* -- Delayed destruction ------------------------------------------------ */
@@ -172,11 +165,32 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
     PFNGLTEXSUBIMAGE2DPROC             glTexSubImage2D;
     PFNGLUNIFORM1IPROC                 glUniform1i;
     PFNGLUNIFORM4FPROC                 glUniform4f;
+    PFNGLUNIFORM4FVPROC                glUniform4fv;
     PFNGLUSEPROGRAMPROC                glUseProgram;
     PFNGLVERTEXATTRIBPOINTERPROC       glVertexAttribPointer;
     PFNGLVIEWPORTPROC                  glViewport;
     /* --------------------------------------------------------------------- */
   } sAPI;                              // API functions list
+  /* -- GL error logger ---------------------------------------------------- */
+  template<typename ...Args>
+    void CheckLogError(const char*const cpFormat, const Args... vaArgs) const
+  { // While there are OpenGL errors
+    for(GLenum glError = sAPI.glGetError();
+               glError != GL_NO_ERROR;
+               glError = sAPI.glGetError())
+    cLog->LogWarningExSafe("GL call failed: $ ($/$$).",
+      Format(cpFormat, vaArgs...), GetGLErr(glError), hex, glError);
+  }
+  /* -- GL error handler --------------------------------------------------- */
+  template<typename ...Args>
+    void CheckExceptError(const char*const cpFormat,
+      const Args... vaArgs) const
+  { // If there is no error then return
+    const GLenum glError = sAPI.glGetError();
+    if(glError == GL_NO_ERROR) return;
+    // Raise exception with error details
+    XC(cpFormat, "Code", glError, "Reason", GetGLErr(glError), vaArgs...);
+  }
   /* -- Flag setter ----------------------------------------------- */ private:
   void SetFlagExt(const char*const cpName, const OglFlagsConst &glFlag)
     { FlagSetOrClear(glFlag, HaveExtension(cpName)); }
@@ -218,17 +232,16 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
   /* -- Zero index to hint helper for cvars -------------------------------- */
   static GLenum SHIndexToEnum(const size_t stIndex)
   { // Parameters available to translate
-    static const array<const GLenum, 4>
-      eCmds{ GL_TRUE, GL_DONT_CARE, GL_FASTEST, GL_NICEST };
+    typedef std::array<const GLenum, 4> Values;
+    static const Values vaCmds{ GL_TRUE, GL_DONT_CARE, GL_FASTEST, GL_NICEST };
     // Return position or invalid
-    return stIndex < eCmds.size() ? eCmds[stIndex] : GL_NONE;
+    return stIndex < vaCmds.size() ? vaCmds[stIndex] : GL_NONE;
   }
   /* -- Load GL extensions ------------------------------------------------- */
   const char *LoadFunctions(void)
   { // Helper macro
-    #define GETPTR(v,t) \
-      sAPI.v = reinterpret_cast<t>(cGlFW->GetProcAddress(#v)); \
-      if(!sAPI.v) return #v;
+#define GETPTR(v,t) sAPI.v = reinterpret_cast<t>(GlFWGetProcAddress(#v)); \
+    if(!sAPI.v) return #v;
     // Get basic ARB functions
     GETPTR(glActiveTexture, PFNGLACTIVETEXTUREPROC);
     GETPTR(glBindTexture, PFNGLBINDTEXTUREPROC);
@@ -276,6 +289,7 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
     GETPTR(glShaderSource, PFNGLSHADERSOURCEPROC);
     GETPTR(glUniform1i, PFNGLUNIFORM1IPROC);
     GETPTR(glUniform4f, PFNGLUNIFORM4FPROC);
+    GETPTR(glUniform4fv, PFNGLUNIFORM4FVPROC);
     GETPTR(glUseProgram, PFNGLUSEPROGRAMPROC);
     // Vertex Buffer Object (VBO) functions
     GETPTR(glBindBuffer, PFNGLBINDBUFFERPROC);
@@ -296,9 +310,9 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
     GETPTR(glFramebufferTexture2D, PFNGLFRAMEBUFFERTEXTURE2DPROC);
     GETPTR(glGenFramebuffers, PFNGLGENFRAMEBUFFERSPROC);
     // Done with this
-    #undef GETPTR
+#undef GETPTR
     // Log functions initialised
-    LW(LH_DEBUG, "OGL loaded $ function addresses.",
+    cLog->LogDebugExSafe("OGL loaded $ function addresses.",
       sizeof(sAPI) / sizeof(void*));
     // Return success
     return nullptr;
@@ -387,10 +401,10 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
   { // If we're already the active texture then don't set it
     if(uiActiveTUnit == uiTexUnit) return;
     // Texture unit id lookup table
-    static const array<const GLenum,3>
-      uiaTexUnit{ GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2 };
+    typedef std::array<const GLenum, 3> TexUnits;
+    static const TexUnits tuTexUnit{ GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2 };
     // Activate texture
-    sAPI.glActiveTexture(uiaTexUnit[uiTexUnit]);
+    sAPI.glActiveTexture(tuTexUnit[uiTexUnit]);
     // Update the selected texture unit
     uiActiveTUnit = uiTexUnit;
   }
@@ -495,11 +509,8 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
     const GLenum glError = GetError();
     if(glError != GL_NO_ERROR || sErrMsg.empty())
       return Format("Problem getting reason (0x$$)", hex, glError);
-    // Error message should have a carriage return/line feed so remove it
-    for(unsigned int uiCount = 0; uiCount < 2; ++uiCount)
-      if(!sErrMsg.empty()) sErrMsg.pop_back();
-    // Return the string
-    return sErrMsg;
+    // Return the string while chopping off return characters
+    return Chop(sErrMsg);
   }
   /* -- Get linker status -------------------------------------------------- */
   GLenum GetLinkStatus(const GLuint uiProgram) const
@@ -526,10 +537,8 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
     const GLenum glError = GetError();
     if(glError != GL_NO_ERROR || sErrMsg.empty())
       return Format("Problem getting reason ($$)", hex, glError);
-    // Error message should have a carriage return/line feed so remove it
-    for(int iI = 0; iI < 2 && !sErrMsg.empty(); ++iI) sErrMsg.pop_back();
-    // Return the string
-    return sErrMsg;
+    // Return the string while chopping off return characters
+    return Chop(sErrMsg);
   }
   /* ----------------------------------------------------------------------- */
   template<typename IntegerType>
@@ -583,18 +592,22 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
   /* ----------------------------------------------------------------------- */
   GLint GetUniformLocation(const GLuint uiProgram,
     const GLchar*const cpValue) const
-      { return sAPI.glGetUniformLocation(uiProgram, cpValue); }
+  { return sAPI.glGetUniformLocation(uiProgram, cpValue); }
   /* ----------------------------------------------------------------------- */
   void BindAttribLocation(const GLuint uiProgram, const GLuint uiAttrib,
     const GLchar*const cpValue) const
-      { sAPI.glBindAttribLocation(uiProgram, uiAttrib, cpValue); }
+  { sAPI.glBindAttribLocation(uiProgram, uiAttrib, cpValue); }
+  /* -- Assign a new vec4 array -------------------------------------------- */
+  void Uniform(const GLint iUniform, const GLsizei iCount,
+    const GLfloat*const fpValues) const
+  { sAPI.glUniform4fv(iUniform, iCount, fpValues); }
   /* -- Assign a integer value to a uniform -------------------------------- */
   void Uniform(const GLint iUniform, const GLint iValue) const
     { sAPI.glUniform1i(iUniform, iValue); }
   /* -- Assign four floats to a uniform ------------------------------------ */
   void Uniform(const GLint iUniform, const GLfloat fV1, const GLfloat fV2,
     const GLfloat fV3, const GLfloat fV4) const
-      { sAPI.glUniform4f(iUniform, fV1, fV2, fV3, fV4); }
+  { sAPI.glUniform4f(iUniform, fV1, fV2, fV3, fV4); }
   /* -- Create multiple vertex buffer objects ------------------------------ */
   void GenVertexBuffers(const GLsizei stCount, GLuint*const uipVbo) const
     { sAPI.glGenBuffers(stCount, uipVbo); }
@@ -706,7 +719,7 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
       { IGL(sAPI.glGetFloatv(eId, fpDest),
           "Get float array failed!", "Index", eId, "Count", stCount); }
   /* -- Get openGL float array --------------------------------------------- */
-  template<size_t stCount, class ArrayType = array<GLfloat, stCount>>
+  template<size_t stCount, class ArrayType = std::array<GLfloat, stCount>>
     const ArrayType GetFloatArray(const GLenum eId) const
   { // Create array to return
     ArrayType aData;
@@ -716,7 +729,7 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
     return aData;
   }
   /* -- Get openGL int array ----------------------------------------------- */
-  template<size_t stCount, class ArrayType = array<GLint, stCount>>
+  template<size_t stCount, class ArrayType = std::array<GLint, stCount>>
     const ArrayType GetIntegerArray(const GLenum eId) const
   { // Create array to return
     ArrayType aData;
@@ -766,20 +779,24 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
   void DisableVertexAttribArray(const GLuint uiAId) const
     { sAPI.glDisableVertexAttribArray(uiAId); }
   /* -- Enable an extension ------------------------------------------------ */
-  void EnableExtension(const GLenum eParam) const
+  void EnableExtension(const GLenum eExtension) const
   { // Ignore if already disabled
-    if(sAPI.glIsEnabled(eParam)) return;
+    if(sAPI.glIsEnabled(eExtension)) return;
     // Enable the extension and log result
-    IGL(sAPI.glEnable(eParam), "Enable extension failed!", "eParam", eParam);
-    LW(LH_DEBUG, "OGL enabled extension 0x$$.", hex, eParam);
+    IGL(sAPI.glEnable(eExtension), "Enable extension failed!",
+      "Extension", eExtension, "ExtensionId", idExtensions.Get(eExtension));
+    cLog->LogDebugExSafe("OGL enabled extension $<0x$$>.",
+      idExtensions.Get(eExtension), hex, eExtension);
   }
   /* -- Disable an extension ----------------------------------------------- */
-  void DisableExtension(const GLenum eParam) const
+  void DisableExtension(const GLenum eExtension) const
   { // Ignore if already disabled
-    if(!sAPI.glIsEnabled(eParam)) return;
+    if(!sAPI.glIsEnabled(eExtension)) return;
     // Disable the extension and log result
-    IGL(sAPI.glDisable(eParam), "Disable extension failed!", "eParam", eParam);
-    LW(LH_DEBUG, "OGL disabled extension 0x$$.", hex, eParam);
+    IGL(sAPI.glDisable(eExtension), "Disable extension failed!",
+      "Key", eExtension, "KeyId", idExtensions.Get(eExtension));
+    cLog->LogDebugExSafe("OGL disabled extension $<0x$$>.",
+      idExtensions.Get(eExtension), hex, eExtension);
   }
   /* -- Commit blending algorithms ----------------------------------------- */
   void CommitBlend(void)
@@ -791,19 +808,26 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
   /* -- Set texture parameter (No error checking needed) ------------------- */
   void SetTexParam(const GLenum eVar, const GLint iVal) const
     { sAPI.glTexParameteri(GL_TEXTURE_2D, eVar, iVal); }
+  /* -- Convert pixel mode to string --------------------------------------- */
+  const string &GetPixelFormat(const GLenum eMode) const
+    { return idFormatModes.Get(eMode); }
   /* -- Update hint -------------------------------------------------------- */
-  void SetHint(const GLenum eType, const GLenum eMode) const
+  void SetHint(const GLenum eTarget, const GLenum eMode) const
   { // Get opengl hint and throw if not failed else set hint
-    IGL(sAPI.glHint(eType, eMode), "Failed to set hint!",
-      "Target", eType, "Value", eMode);
-    LW(LH_DEBUG, "OGL set hint 0x$$ to 0x$.", hex, eType, eMode);
+    IGL(sAPI.glHint(eTarget, eMode), "Failed to set hint!",
+      "Target", idHintTargets.Get(eTarget), "TargetId", eTarget,
+      "Mode",   idHintModes.Get(eMode),     "ModeId",   eMode);
+    cLog->LogDebugExSafe("OGL set hint $<0x$$> to $<0x$>.",
+      idHintTargets.Get(eTarget), hex, eTarget, idHintModes.Get(eMode), eMode);
   }
   /* -- Update polygon rendering mode -------------------------------------- */
-  void SetPolygonMode(const GLenum eType, const GLenum eMode) const
+  void SetPolygonMode(const GLenum eFace, const GLenum eMode) const
   { // Set polygon mode and log result
-    IGL(sAPI.glPolygonMode(eType, eMode), "Failed to set polygon mode!",
-      "Buffer", eType, "Mode", eMode);
-    LW(LH_DEBUG, "OGL set polymode to 0x$$/0x$.", hex, eType, eMode);
+    IGL(sAPI.glPolygonMode(eFace, eMode), "Failed to set polygon mode!",
+      "Face", idPolyFaces.Get(eFace), "FaceId", eFace,
+      "Mode", idPolyModes.Get(eMode), "ModeId", eMode);
+    cLog->LogDebugExSafe("OGL set poly mode $<0x$$> to $<0x$>.",
+      idPolyFaces.Get(eFace), hex, eFace, idPolyModes.Get(eMode), eMode);
   }
   /* -- GL is initialised? ------------------------------------------------- */
   bool IsGLInitialised(void) const { return FlagIsSet(GFL_INITIALISED); }
@@ -818,7 +842,7 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
         // Show error
         XC("OGL is not initialised!");
       } // Log as de-initialised
-      LW(LH_INFO, "OGL set to de-initialised.");
+      cLog->LogInfoSafe("OGL set to de-initialised.");
       // Return cleared flag
       return FlagClear(GFL_INITIALISED);
     } // Initialised and already initialised? Throw error
@@ -826,51 +850,54 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
     // Detect GL capabilities
     DetectCapabilities();
     // Show change in state
-    LW(LH_INFO, "OGL set initialised with capabilities 0x$$...\n"
-                "- Renderer: $.\n"
-                "- Version: $.\n"
-                "- Vendor: $.",
+    cLog->LogInfoExSafe(
+      "OGL set initialised with capabilities 0x$$...\n"
+      "- Renderer: $.\n"
+      "- Version: $.\n"
+      "- Vendor: $.",
       hex, FlagGet(), GetRenderer(), GetVersion(), GetVendor());
     // If debug log level?
     if(cLog->HasLevel(LH_DEBUG))
     { // Get number of extensions and return if we're not interested in them?
       const GLuint uiExts = GetExtensionCount();
       // Report device selected and basic capabilities
-      cLog->WriteStringSafe(LH_DEBUG,
-        Format("- Clear colour: $,$,$,$; " "Blend: $,$,$,$.\n"
-               "- Viewport: $,$,$,$; "     "Maximum texture size: $$^2.\n"
-               "- Pack alignment: $; "     "Unpack alignment: $.\n"
-               "- Unpack row length: $; "  "Vertex attributes: $.\n"
-               "- Texture units: $; "      "Extensions count: $.",
+      cLog->LogNLCDebugExSafe(
+        "- Clear colour: $,$,$,$; " "Blend: $,$,$,$.\n"
+        "- Viewport: $,$,$,$; "     "Maximum texture size: $$^2.\n"
+        "- Pack alignment: $; "     "Unpack alignment: $.\n"
+        "- Unpack row length: $; "  "Vertex attributes: $.\n"
+        "- Texture units: $; "      "Extensions count: $.",
         GetColourRed(),     GetColourGreen(),   GetColourBlue(),
         GetColourAlpha(),   GetSrcRGB(),        GetDstRGB(),
         GetSrcAlpha(),      GetDstAlpha(),      GetCoLeft(),
         GetCoTop(),         GetCoRight(),       GetCoBottom(),
         dec,                MaxTexSize(),       PackAlign(),
         UnpackAlign(),      UnpackRowLength(),  MaxVertexAttribs(),
-        uiTexUnits,         uiExts));
+        uiTexUnits,         uiExts);
       // Build sorted list of extensions and log them all
       StrUIntMap mExts;
       for(GLuint uiI = 0; uiI < uiExts; ++uiI)
         mExts.insert({ GetExtension(uiI), uiI });
       for(const auto &mI : mExts)
-        cLog->WriteStringSafe(LH_DEBUG,
-          Format("- Have extension '$' (#$).", mI.first, mI.second));
+        cLog->LogNLCDebugExSafe("- Have extension '$' (#$).",
+          mI.first, mI.second);
     } // Show warning if not enough texture units
     if(uiTexUnits < 3)
-      LW(LH_WARNING, "Ogl detected only $ of the three texture units that "
-        "are required for video playback!");
+      cLog->LogWarningExSafe("Ogl detected only $ of the three texture units "
+        "that are required for video playback!");
     // Set the initialised flag
     FlagSet(GFL_INITIALISED);
   }
   /* -- Set texture mode by filter id -------------------------------------- */
   void SetFilterById(const size_t stId, GLint &iMin, GLint &iMag) const
   { // Filter table
-    static const array<const array<const GLint, 2>, OF_NM_MAX> tfList{
-    { // Point/Bilinear filtering options
+    typedef std::array<const GLint, 2> TwoGLints;
+    typedef std::array<const TwoGLints, OF_NM_MAX> TexFilterNMList;
+    static const TexFilterNMList tfList{{
+      // Point/Bilinear filtering options
       { GL_NEAREST, GL_NEAREST }, { GL_NEAREST, GL_LINEAR }, // 00-01
       { GL_LINEAR,  GL_NEAREST }, { GL_LINEAR,  GL_LINEAR }, // 02-03
-    } };
+    }};
     // Lookup table and set values
     iMag = tfList[stId][0];
     iMin = tfList[stId][1];
@@ -878,7 +905,9 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
   /* -- Set texture mode by filter id -------------------------------------- */
   void SetMipMapFilterById(const size_t stId, GLint &iMin, GLint &iMag) const
   { // Filter table
-    static const array<const array<const GLint, 2>, OF_MAX> tfList{
+    typedef std::array<const GLint, 2> TwoGLints;
+    typedef std::array<const TwoGLints, OF_MAX> TexFilterList;
+    static const TexFilterList tfList{
     { // Point/Bilinear filtering options
       { GL_NEAREST, GL_NEAREST }, { GL_NEAREST, GL_LINEAR }, // 00-01
       { GL_LINEAR,  GL_NEAREST }, { GL_LINEAR,  GL_LINEAR }, // 02-03
@@ -907,8 +936,6 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
   const string &GetVendor(void) const { return strVendor; }
   const string &GetRenderer(void) const { return strRenderer; }
   const string &GetVersion(void) const { return strVersion; }
-  /* ----------------------------------------------------------------------- */
-  bool IsVSyncEnabled(void) { return FlagIsSet(GFL_VSYNC); }
   /* -- Update texture destroy list size ----------------------------------- */
   CVarReturn SetTexDListReserve(const size_t stCount)
     { return BoolToCVarReturn(ReserveList(vTextures, stCount)); }
@@ -918,6 +945,16 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
   /* -- Update minimum VRAM ------------------------------------------------ */
   CVarReturn SetMinVRAM(const GLuint64 qwValue)
     { return CVarSimpleSetInt(qwMinVRAM, qwValue); }
+  /* -- Setup VSync -------------------------------------------------------- */
+  CVarReturn SetVSyncMode(const int iValue)
+  { // Deny if the value is not valid
+    if(CVarSimpleSetIntNLGE(vsSetting, static_cast<VSyncMode>(iValue),
+      VSYNC_MIN, VSYNC_MAX) == DENY) return DENY;
+    // If opengl is already initalised then update the new value immediately
+    if(IsGLInitialised()) GlFWSetVSync(vsSetting);
+    // Done
+    return ACCEPT;
+  }
   /* -- Update hints ------------------------------------------------------- */
   CVarReturn SetQCompressHint(const size_t stMode)
   { // Ignore if no context, but still succeeded
@@ -1017,8 +1054,13 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
     if(!vFbos.empty()) DeleteMarkedFboHandles();
   }
   /* -- Get available and total VRAM --------------------------------------- */
-  GLuint64 GetVRAMFree(void) { return qwFreeVRAM; }
-  GLuint64 GetVRAMTotal(void) { return qwTotalVRAM; }
+  GLuint64 GetVRAMFree(void) const { return qwFreeVRAM; }
+  GLuint64 GetVRAMTotal(void) const { return qwTotalVRAM; }
+  GLuint64 GetVRAMUsed(void) const { return GetVRAMTotal() - GetVRAMFree(); }
+  double GetVRAMFreePC(void) const {
+    return 100.0 - ((static_cast<double>(GetVRAMFree()) /
+      GetVRAMTotal()) * 100.0);
+  }
   /* -- Get free memory on nvidia cards ------------------------------------ */
   void UpdateVRAMAvailableNV(void)
   { // - OG macro name: GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX
@@ -1061,7 +1103,7 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
       // Update available VRAM
       UpdateVRAMAvailableNV();
       // Report VRAM information to log
-      LW(LH_DEBUG, "- Using NVIDIA memory functions.");
+      cLog->LogDebugSafe("- Using NVIDIA memory functions.");
     } // Have ATI memory info?
     else if(FlagIsSet(GFL_HAVEATIMEM))
     { // No total video memory on ATI cards so let UpdateVRAMAvailable set it.
@@ -1069,7 +1111,7 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
       // Update available VRAM
       UpdateVRAMAvailableATI();
       // Report VRAM information to log
-      LW(LH_DEBUG, "- Using ATI memory functions (no total available).");
+      cLog->LogDebugSafe("- Using ATI memory functions (no total available).");
     } // Device shares memory with system?
     else if(FlagIsSet(GFL_SHARERAM))
     { // Update total memory information
@@ -1077,13 +1119,13 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
       // Update memory information
       UpdateVRAMAvailableShared();
       // Report VRAM information to log
-      LW(LH_DEBUG, "- Renderer shares memory with system.");
+      cLog->LogDebugSafe("- Renderer shares memory with system.");
     } // Have no memory information command?
     else
     { // Set maximum total VRAM
       qwTotalVRAM = qwFreeVRAM = numeric_limits<GLuint64>::max();
       // Report VRAM information to log
-      LW(LH_WARNING, "- Video memory data functions not available.");
+      cLog->LogWarningSafe("- Video memory data functions not available.");
       // No need to check anything
       return;
     } // Load free VRAM and if we don't have enough free VRAM? Throw error
@@ -1094,40 +1136,35 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
          "Percent",   MakePercentage(qwFreeVRAM, qwTotalVRAM),
          "Required",  qwMinVRAM,       "Needed", qwMinVRAM - qwFreeVRAM);
     // Report VRAM information to log
-    LW(LH_INFO, "- Total VRAM: $ bytes ($).\n"
+    cLog->LogInfoExSafe("- Total VRAM: $ bytes ($).\n"
                 "- Available VRAM: $ bytes ($).",
       qwTotalVRAM, ToBytesStr(qwTotalVRAM), qwFreeVRAM,
       ToBytesStr(qwFreeVRAM));
   }
   /* --------------------------------------------------------------- */ public:
   template<typename IntType>const string &GetGLErr(const IntType itCode) const
-    { return imOGLCodes.Get(static_cast<GLenum>(itCode)); }
-  /* -- Set context -------------------------------------------------------- */
-  void SetContext(void) { cGlFW->SetContext(); }
-  /* -- Release context ---------------------------------------------------- */
-  void ReleaseContext(void) { cGlFW->ReleaseContext(); }
+    { return idOGLCodes.Get(static_cast<GLenum>(itCode)); }
   /* -- Initialise --------------------------------------------------------- */
   void Init(const int, const bool bForce=false)
   { // Class initialised
     if(!bForce) IHInitialise();
     // Log class initialising
-    LW(LH_DEBUG, "OGL subsystem initialising...");
+    cLog->LogDebugSafe("OGL subsystem initialising...");
     // Set context
-    SetContext();
+    cGlFW->WinSetContext();
     // Load GL functions
     if(const char*const cpErr = LoadFunctions())
       XCS("Failed to load OpenGL export!", "Function", cpErr);
     // Clear error that Wine or GLFW might have caused
     if(const GLenum eError = sAPI.glGetError())
-      LW(LH_DEBUG, "Ogl cleared host caused error code! ($/$$).",
+      cLog->LogDebugExSafe("Ogl cleared host caused error code! ($/$$).",
         GetGLErr(eError), hex, eError);
     // OpenGL is now initialised
     SetInitialised(true, bForce);
     // Check that there is enough VRAM available if requested
     VerifyVRAMConstraints();
     // Init vsync
-    FlagSetOrClear(GFL_VSYNC, cCVars->GetInternalSafe<bool>(VID_VSYNC));
-    cGlFW->SetVSync(IsVSyncEnabled());
+    GlFWSetVSync(vsSetting);
     // Enable extensions
     EnableExtension(GL_BLEND);
     EnableExtension(GL_DITHER);
@@ -1170,7 +1207,7 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
     IGL(BindStaticVertexBuffer(uiVBO), "Bind default VBO failed!",
       "Index", uiVBO);
     // Log class initialising
-    LW(LH_INFO, "OGL subsystem initialised.");
+    cLog->LogInfoSafe("OGL subsystem initialised.");
   }
   /* -- DeInitialise ------------------------------------------------------- */
   void DeInit(const bool bForce=false)
@@ -1179,42 +1216,43 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
     // OpenGL is now de-initialised
     SetInitialised(false, bForce);
     // Log class initialising
-    LW(LH_DEBUG, "OGL subsystem de-initialising...");
+    cLog->LogDebugSafe("OGL subsystem de-initialising...");
     // Reset all binds
     ResetBinds();
     // Have textures to delete?
     if(!vTextures.empty())
     { // Delete the texture handles
-      LW(LH_DEBUG, "OGL deleting $ marked texture handles...",
-        vTextures.size())
+      cLog->LogDebugExSafe("OGL deleting $ marked texture handles...",
+        vTextures.size());
       DeleteMarkedTextureHandles();
-      LW(LH_INFO, "OGL deleted marked texture handles.");
+      cLog->LogInfoSafe("OGL deleted marked texture handles.");
     } // Have fbos to delete?
     if(!vFbos.empty())
     { // Delete the fbo handles
-      LW(LH_DEBUG, "OGL deleting $ marked fbo handles...", vFbos.size());
+      cLog->LogDebugExSafe("OGL deleting $ marked fbo handles...",
+        vFbos.size());
       DeleteMarkedFboHandles();
-      LW(LH_INFO, "OGL deleted marked fbo handles.");
+      cLog->LogInfoSafe("OGL deleted marked fbo handles.");
     } // Vertex buffer object created?
     if(uiVBO)
     { // Delete vertex buffer object
-      LW(LH_DEBUG, "OGL deleting vertex buffer object $...", uiVBO);
+      cLog->LogDebugExSafe("OGL deleting vertex buffer object $...", uiVBO);
       IGLL(DeleteVertexBuffer(uiVBO),
         "Failed to delete vertex buffer object!", "Index", uiVBO);
-      LW(LH_INFO, "OGL deleted vertex buffer object $.", uiVBO);
+      cLog->LogInfoExSafe("OGL deleted vertex buffer object $.", uiVBO);
       // Clear value
       uiVBO = 0;
     } // Vertex array object created?
     if(uiVAO)
     { // Delete vertex array object
-      LW(LH_DEBUG, "OGL deleting vertex array object $...", uiVAO);
+      cLog->LogDebugExSafe("OGL deleting vertex array object $...", uiVAO);
       IGLL(DeleteVertexArray(uiVAO),
         "Failed to delete vertex array object!", "Index", uiVAO);
-      LW(LH_INFO, "OGL deleted vertex array object $.", uiVAO);
+      cLog->LogInfoExSafe("OGL deleted vertex array object $.", uiVAO);
       // Clear value
       uiVAO = 0;
     } // Release opengl context
-    ReleaseContext();
+    GlFWReleaseContext();
     // Init flags
     FlagReset(GFL_NONE);
     // Pack alignment and texture size and caches
@@ -1228,13 +1266,50 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
     strVersion.clear();
     strRenderer.clear();
     // Log class initialising
-    LW(LH_INFO, "OGL subsystem de-initialised.");
+    cLog->LogInfoSafe("OGL subsystem de-initialised.");
   }
   /* -- Constructor -------------------------------------------------------- */
   Ogl(void) :
     /* -- Initialisation of members ---------------------------------------- */
     IHelper{ __FUNCTION__ },           // Send name to InitHelper
     OglFlags{ GFL_NONE },              // Set no flags
+    /* -- Const members ---------------------------------------------------- */
+    idPolyFaces{{                      // Init GL polygon face names
+      IDMAPSTR(GL_FRONT),              IDMAPSTR(GL_BACK),
+      IDMAPSTR(GL_FRONT_AND_BACK),
+    }, "GL_POLYGON_FACE_UNKNOWN" },    // Unknown polygon face name
+    idPolyModes{{                      // Init GL polygon mode names
+      IDMAPSTR(GL_POINT),              IDMAPSTR(GL_LINE),
+      IDMAPSTR(GL_FILL),
+    }, "GL_POLYGON_MODE_UNKNOWN" },    // Unknown polygon mode name
+    idExtensions{{                     // Init GL extension names
+      IDMAPSTR(GL_BLEND),              IDMAPSTR(GL_DITHER),
+      IDMAPSTR(GL_POLYGON_SMOOTH),     IDMAPSTR(GL_LINE_SMOOTH),
+    }, "GL_EXT_UNKNOWN" },             // Unknown extension name
+    idHintTargets{{                    // Init hint target strings
+      IDMAPSTR(GL_FRAGMENT_SHADER_DERIVATIVE_HINT),
+      IDMAPSTR(GL_LINE_SMOOTH_HINT),   IDMAPSTR(GL_POLYGON_SMOOTH_HINT),
+      IDMAPSTR(GL_TEXTURE_COMPRESSION_HINT),
+    }, "GL_HINT_TARGET_UNKNOWN" },     // Unknown hint target name
+    idHintModes{{                      // INit hint mode strings
+      IDMAPSTR(GL_FASTEST),            IDMAPSTR(GL_NICEST),
+      IDMAPSTR(GL_DONT_CARE)
+    }, "GL_HINT_MODE_UNKNOWN"},        // Unknown hint mode name
+    idFormatModes{{                    // Pixel format modes
+      IDMAPSTR(GL_RED),                IDMAPSTR(GL_RG),
+      IDMAPSTR(GL_RGB),                IDMAPSTR(GL_BGR),
+      IDMAPSTR(GL_RGBA),               IDMAPSTR(GL_BGRA)
+    }, "GL_FORMAT_UNKNOWN"},           // Unknown pixel format mode
+    idOGLCodes{{                       // Init error codes
+      IDMAPSTR(GL_NO_ERROR),           IDMAPSTR(GL_INVALID_ENUM),
+      IDMAPSTR(GL_INVALID_VALUE),      IDMAPSTR(GL_INVALID_OPERATION),
+#if !defined(MACOS)                    // These only work on non-Apple targets
+      IDMAPSTR(GL_STACK_OVERFLOW),     IDMAPSTR(GL_STACK_UNDERFLOW),
+#endif                                 // End of Apple target check
+      IDMAPSTR(GL_OUT_OF_MEMORY),
+    }, "GL_ERROR_UNKNOWN" },           // Unknown error value
+    /* -- Initialisation of members ---------------------------------------- */
+    vsSetting{ VSYNC_OFF },            // Set no VSync
     uiActiveFbo(                       // Select back buffer
       numeric_limits<GLuint>::max()),  // Maxed so values commit properly
     uiActiveProgram(uiActiveFbo),      // No active shader programme
@@ -1251,14 +1326,6 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
     qwMinVRAM(0),                      // No minimum vram
     qwTotalVRAM(0),                    // No total vram
     qwFreeVRAM(0),                     // No free vram
-    imOGLCodes{{                       // Init error codes
-      IDMAPSTR(GL_NO_ERROR),           IDMAPSTR(GL_INVALID_ENUM),
-      IDMAPSTR(GL_INVALID_VALUE),      IDMAPSTR(GL_INVALID_OPERATION),
-#ifndef __APPLE__
-      IDMAPSTR(GL_STACK_OVERFLOW),     IDMAPSTR(GL_STACK_UNDERFLOW),
-#endif
-      IDMAPSTR(GL_OUT_OF_MEMORY)
-    }, "GL_UNKNOWN" },
     uiVAO(0),                          // No default vertex array object
     uiVBO(0)                           // No default vertex buffer object
     /* -- No code ---------------------------------------------------------- */
@@ -1266,11 +1333,11 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
   /* -- Destructor --------------------------------------------------------- */
   DTORHELPER(~Ogl, DeInit(true));
   /* -- Undefines ---------------------------------------------------------- */
-  #undef IGLC                          // This macro was only for this class
-  #undef IGL                           // This macro was only for this class
-  #undef IGLL                          // This macro was only for this class
+#undef IGLC                            // This macro was only for this class
+#undef IGL                             // This macro was only for this class
+#undef IGLL                            // This macro was only for this class
   /* ----------------------------------------------------------------------- */
 } *cOgl = nullptr;                     // Pointer to static class
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

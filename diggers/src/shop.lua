@@ -34,49 +34,49 @@ local function InitShop(aActiveObject)
     -- Set texture. We only have 25 tiles sized 65x65, discard all the other
     -- tiles as we're using the same bitmap for other sized textures.
     local texShop = aResources[1].H;
-    texShop:TrimTList(25);
+    texShop:TileSTC(25);
     -- Cache tile co-ordinates
-    local iTileBG<const> =  texShop:CreateTile(208, 312, 512, 512);
-    local iTileSpeech<const> = texShop:CreateTile(  0, 417, 112, 441);
+    local iTileBG<const> =  texShop:TileA(208, 312, 512, 512);
+    local iTileSpeech<const> = texShop:TileA(  0, 417, 112, 441);
     local iTileKeeper<const> =
-      texShop:CreateTile(  0, 264,  48, 312);
-      texShop:CreateTile( 49, 264,  97, 312);
-      texShop:CreateTile( 98, 264, 146, 312);
-      texShop:CreateTile(147, 264, 195, 312);
-    local iTileStatus<const> = texShop:CreateTile(  0, 442, 128, 512);
-    local iTileEmitter<const> = texShop:CreateTile(196, 264, 250, 303);
+      texShop:TileA(  0, 264,  48, 312);
+      texShop:TileA( 49, 264,  97, 312);
+      texShop:TileA( 98, 264, 146, 312);
+      texShop:TileA(147, 264, 195, 312);
+    local iTileStatus<const> = texShop:TileA(  0, 442, 128, 512);
+    local iTileEmitter<const> = texShop:TileA(196, 264, 250, 303);
     local iTileLights<const> =
-      texShop:CreateTile(345, 282, 400, 310);
-      texShop:CreateTile(401, 282, 456, 310);
-      texShop:CreateTile(457, 282, 512, 310);
+      texShop:TileA(345, 282, 400, 310);
+      texShop:TileA(401, 282, 456, 310);
+      texShop:TileA(457, 282, 512, 310);
     local iTileDoor<const> =
-      texShop:CreateTile(313, 220, 352, 240);
-      texShop:CreateTile(353, 220, 392, 240);
-      texShop:CreateTile(393, 220, 432, 240);
-      texShop:CreateTile(433, 220, 472, 240);
-      texShop:CreateTile(473, 220, 512, 240);
-      texShop:CreateTile(313, 241, 352, 261);
-      texShop:CreateTile(353, 241, 392, 261);
-      texShop:CreateTile(393, 241, 432, 261);
-      texShop:CreateTile(433, 241, 472, 261);
-      texShop:CreateTile(473, 241, 512, 261);
-      texShop:CreateTile(313, 262, 352, 282);
-      texShop:CreateTile(353, 262, 392, 282);
-      texShop:CreateTile(393, 262, 432, 282);
-      texShop:CreateTile(433, 262, 472, 282);
-      texShop:CreateTile(473, 262, 512, 282);
+      texShop:TileA(313, 220, 352, 240);
+      texShop:TileA(353, 220, 392, 240);
+      texShop:TileA(393, 220, 432, 240);
+      texShop:TileA(433, 220, 472, 240);
+      texShop:TileA(473, 220, 512, 240);
+      texShop:TileA(313, 241, 352, 261);
+      texShop:TileA(353, 241, 392, 261);
+      texShop:TileA(393, 241, 432, 261);
+      texShop:TileA(433, 241, 472, 261);
+      texShop:TileA(473, 241, 512, 261);
+      texShop:TileA(313, 262, 352, 282);
+      texShop:TileA(353, 262, 392, 282);
+      texShop:TileA(393, 262, 432, 282);
+      texShop:TileA(433, 262, 472, 282);
+      texShop:TileA(473, 262, 512, 282);
     local iTileFork<const> =
-      texShop:CreateTile(  0, 313,  64, 345);
-      texShop:CreateTile( 65, 313, 129, 345);
-      texShop:CreateTile(130, 313, 194, 345);
-      texShop:CreateTile(  0, 346,  64, 378);
-      texShop:CreateTile( 65, 346, 129, 378);
-      texShop:CreateTile(130, 346, 194, 378);
-      texShop:CreateTile(  0, 379,  64, 411);
-      texShop:CreateTile( 65, 379, 129, 411);
-      texShop:CreateTile(130, 379, 194, 411);
-      texShop:CreateTile(137, 412, 201, 444);
-      texShop:CreateTile(137, 445, 201, 477);
+      texShop:TileA(  0, 313,  64, 345);
+      texShop:TileA( 65, 313, 129, 345);
+      texShop:TileA(130, 313, 194, 345);
+      texShop:TileA(  0, 346,  64, 378);
+      texShop:TileA( 65, 346, 129, 378);
+      texShop:TileA(130, 346, 194, 378);
+      texShop:TileA(  0, 379,  64, 411);
+      texShop:TileA( 65, 379, 129, 411);
+      texShop:TileA(130, 379, 194, 411);
+      texShop:TileA(137, 412, 201, 444);
+      texShop:TileA(137, 445, 201, 477);
     -- Variables we'll need
     local iBuyId, aBuyObject, aBuyObjectId, iBuyHoloId, aBuyObjectName;
     local iHoloAnimTileId, iHoloAnimTileIdMod;
@@ -162,11 +162,11 @@ local function InitShop(aActiveObject)
         texShop:BlitSLT(iBuyHoloId, 197, 88);
         texShop:BlitSLT(iHoloAnimTileId, 197, 88);
         texShop:BlitSLT(iTileEmitter, 200, 168);
-        fontLittle:SetRGB(0.5, 1, 0.5);
+        fontLittle:SetCRGB(0.5, 1, 0.5);
         fontLittle:PrintC(80, 31, aBuyObject.LONGNAME);
-        fontTiny:SetRGB(0.5, 0.75, 0);
+        fontTiny:SetCRGB(0.5, 0.75, 0);
         fontTiny:PrintC(80, 43, aBuyObject.DESC);
-        fontLittle:SetRGB(1, 1, 0);
+        fontLittle:SetCRGB(1, 1, 0);
         fontLittle:PrintC(80, 63,
           format("%03uz (%u)", aBuyObject.VALUE, iCarryable));
       end
@@ -262,7 +262,7 @@ local function InitShop(aActiveObject)
       else SetTipAndCursor("SHOP", aCursorIdData.ARROW) end;
     end
     -- Set colour of speech text
-    fontSpeech:SetRGB(0, 0, 0.25);
+    fontSpeech:SetCRGB(0, 0, 0.25);
     -- Select first object
     SetObject(1);
     -- Set shop callbacks

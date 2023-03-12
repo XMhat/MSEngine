@@ -19,13 +19,14 @@
 #include <mach/kern_return.h>          // For getting process memory usage
 #include <mach/task_info.h>            // For getting process memory usage
 #include <mach/mach_time.h>            // For getting system uptime
+#include <mach-o/dyld.h>               // For enumerating shared objects
 #include <mach-o/loader.h>             // For getting mach-o header format
 #include <mach-o/fat.h>                // For getting mach-o fat header format
 /* ------------------------------------------------------------------------- */
-# include <termios.h>                  // For changing terminal settings
-# include <libproc.h>                  // For getting program executable
+#include <termios.h>                   // For changing terminal settings
+#include <libproc.h>                   // For getting program executable
 /* ------------------------------------------------------------------------- */
-# define _XOPEN_SOURCE_EXTENDED        // Unlock extended ncurses functionality
+#define _XOPEN_SOURCE_EXTENDED         // Unlock extended ncurses functionality
 typedef void (*__sighandler_t)(int);   // For signal() on OSX
 /* == Dependiencies ======================================================== */
 #include "pixbase.hpp"                 // Base system class
@@ -34,8 +35,8 @@ typedef void (*__sighandler_t)(int);   // For signal() on OSX
 #include "pixmap.hpp"                  // FileMap memory mapping class
 #include "pixpip.hpp"                  // Process pipe handling
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfGlFW;                // Using glfw interface
-using namespace IfVars;                // Using vars interface
+using namespace IfGlFW;                // Using glfw namespace
+using namespace IfVars;                // Using vars namespace
 /* == System intialisation helper ========================================== */
 /* ######################################################################### */
 /* ## Because we want to try and statically init const data as much as    ## */
@@ -162,7 +163,7 @@ class SysCore :
     if(!dladdr(vpModule, &dlData))
       XCL("Failed to read info about shared object!", "File", cpAltName);
     // Get full pathname of file
-    return move(PathSplit{ dlData.dli_fname, true }.strFull);
+    return std::move(PathSplit{ dlData.dli_fname, true }.strFull);
   }
   /* ----------------------------------------------------------------------- */
   void UpdateCPUUsageData(void)
@@ -403,27 +404,27 @@ class SysCore :
   { // Open exe file and return on error
     if(FStream fExe{ strFile, FStream::FM_R_B })
     { // Machine byte order check
-#     if defined(LITTLE_ENDIAN)
-#       define MACHO_LE32 MH_MAGIC
-#       define MACHO_LE64 MH_MAGIC_64
-#       define MACHO_BE32 MH_CIGAM
-#       define MACHO_BE64 MH_CIGAM_64
-#       define MACHO_FAT_LE32 FAT_MAGIC
-#       define MACHO_FAT_LE64 FAT_MAGIC_64
-#       define MACHO_FAT_BE32 FAT_CIGAM
-#       define MACHO_FAT_BE64 FAT_CIGAM_64
-#     elif defined(BIG_ENDIAN)
-#       define MACHO_LE32 MH_CIGAM
-#       define MACHO_LE64 MH_CIGAM_64
-#       define MACHO_BE32 MH_MAGIC
-#       define MACHO_BE64 MH_MAGIC_64
-#       define MACHO_FAT_LE32 FAT_CIGAM
-#       define MACHO_FAT_LE64 FAT_CIGAM_64
-#       define MACHO_FAT_BE32 FAT_MAGIC
-#       define MACHO_FAT_BE64 FAT_MAGIC_64
-#     else
-#       error Unknown Endianness!
-#     endif
+#if defined(LITTLE_ENDIAN)
+# define MACHO_LE32 MH_MAGIC
+# define MACHO_LE64 MH_MAGIC_64
+# define MACHO_BE32 MH_CIGAM
+# define MACHO_BE64 MH_CIGAM_64
+# define MACHO_FAT_LE32 FAT_MAGIC
+# define MACHO_FAT_LE64 FAT_MAGIC_64
+# define MACHO_FAT_BE32 FAT_CIGAM
+# define MACHO_FAT_BE64 FAT_CIGAM_64
+#elif defined(BIG_ENDIAN)
+# define MACHO_LE32 MH_CIGAM
+# define MACHO_LE64 MH_CIGAM_64
+# define MACHO_BE32 MH_MAGIC
+# define MACHO_BE64 MH_MAGIC_64
+# define MACHO_FAT_LE32 FAT_CIGAM
+# define MACHO_FAT_LE64 FAT_CIGAM_64
+# define MACHO_FAT_BE32 FAT_MAGIC
+# define MACHO_FAT_BE64 FAT_MAGIC_64
+#else
+# error Unknown Endianness!
+#endif
       // Load magic directly into integer
       unsigned int uiMagic;
       switch(const size_t stMagicBytes =
@@ -465,14 +466,14 @@ class SysCore :
                     "Requested", sizeof(uiMagic), "Actual", stMagicBytes,
                     "File", strFile);
       } // Done with these defines
-      #undef MACHO_FAT_BE64
-      #undef MACHO_FAT_BE32
-      #undef MACHO_FAT_LE64
-      #undef MACHO_FAT_LE32
-      #undef MACHO_BE32
-      #undef MACHO_BE64
-      #undef MACHO_LE32
-      #undef MACHO_LE64
+#undef MACHO_FAT_BE64
+#undef MACHO_FAT_BE32
+#undef MACHO_FAT_LE64
+#undef MACHO_FAT_LE32
+#undef MACHO_BE32
+#undef MACHO_BE64
+#undef MACHO_LE32
+#undef MACHO_LE64
     } // Failed to open mach executable
     XCL("Failed to open MACH-O executable!", "File", strFile);
   }
@@ -494,13 +495,63 @@ class SysCore :
   /* -- Enum modules ------------------------------------------------------- */
   SysModList EnumModules(void)
   { // Make verison string
-    string strVersion{ Append(sizeof(void*)*8, "-bit version") };
+    const string strVersion{ Append(sizeof(void*)*8, "-bit version") };
     // Mod list
     SysModList mlData;
     mlData.emplace(make_pair(static_cast<size_t>(0),
       SysModule{ GetExeName(), VER_MAJOR, VER_MINOR, VER_BUILD, VER_REV,
-        VER_AUTHOR, VER_NAME, move(strVersion), VER_STR }));
-    // Module list which includes the executable module
+        VER_AUTHOR, VER_NAME, string(strVersion), VER_STR }));
+    // Now walk through all the dylibs loaded. Skip the first entry which is
+    // always the executable. We already added it!
+    for(uint32_t ulIndex = 1, ulEnd = _dyld_image_count();
+                 ulIndex < ulEnd; ++ulIndex)
+    { // Version to use
+      unsigned int uiMajor, uiMinor, uiBuild;
+      // Get full path name and id to use. Do not 'const' as we will be moving
+      // it into the returned structure. I don't believe this will ever be
+      // nullptr but we will check just incase.
+      const char*const cpFullPath = _dyld_get_image_name(ulIndex);
+      if(!IsCStringValid(cpFullPath)) continue;
+      string strFullPath{ cpFullPath };
+      // Get filename. Again, this should never be null but just incase
+      const char*const cpBaseName = basename(const_cast<char*>(cpFullPath));
+      if(!IsCStringValid(cpBaseName)) continue;
+      const string strBaseName{ cpBaseName };
+      // Id name to lookup and add to to the returned structure
+      string strPathName;
+      // Find dot and ignore if not found? It's a frame work so the full name
+      // will be the id.
+      const size_t stDot = strBaseName.find_last_of('.');
+      if(stDot == string::npos) strPathName = std::move(strBaseName);
+      // Have extension? If it ends in 'dylib' and it starts with 'lib'? Grab
+      // first part before dot and after the lib part
+      else if(ToLower(strBaseName.substr(stDot+1)) == "dylib" &&
+              ToLower(strBaseName.substr(0, 3)) == "lib")
+        strPathName = strBaseName.substr(3, stDot-3);
+      // Unknown extension
+      else continue;
+      // Now we can get the version and if we got it?
+      unsigned int uiVer = static_cast<unsigned int>
+        (NSVersionOfLinkTimeLibrary(strPathName.c_str()));
+      // Try another function if failed
+      if(uiVer == numeric_limits<unsigned int>::max())
+        uiVer = static_cast<unsigned int>
+          (NSVersionOfRunTimeLibrary(strPathName.c_str()));
+      // Worked this time?
+      if(uiVer != numeric_limits<unsigned int>::max())
+      { // Fill in the bkanks
+        uiMajor = (uiVer & 0xFFFF0000) >> 16;
+        uiMinor = (uiVer & 0x0000FF00) >> 8;
+        uiBuild =  uiVer & 0x000000FF;
+      } // No version information
+      else uiMajor = uiMinor = uiBuild = 0;
+      // Add it to mods list
+      mlData.emplace(make_pair(static_cast<size_t>(ulIndex),
+        SysModule{ std::move(strFullPath), uiMajor, uiMinor, uiBuild,
+          0, strPathName.c_str(), strPathName.c_str(),
+          string(strVersion), string(Format("$.$.$.0",
+            uiMajor, uiMinor, uiBuild)) }));
+    } // Module list which includes the executable module
     return mlData;
   }
   /* ----------------------------------------------------------------------- */
@@ -520,7 +571,7 @@ class SysCore :
       // Major, minor and service pack of OS which applies to this label
       const unsigned int uiHi, uiLo;
       // Expiry date
-      const STDTIMET ttExp;
+      const StdTimeT ttExp;
     };
     // Handy converter at https://www.unixtimestamp.com/ and OS list data at...
     // https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions.
@@ -549,7 +600,7 @@ class SysCore :
       //   cpLevel       uiHi  uiLo  uiBl  uiSp  ttExp           Note
     } };
     // Operating system expiry time
-    STDTIMET ttExpiry;
+    StdTimeT ttExpiry;
     // Iterate through the versions and try to find a match for the
     // versions above. 'Unknown' is caught if none are found.
     for(const OSListItem &osItem : osList)
@@ -589,12 +640,12 @@ class SysCore :
     // Return operating system info
     return {
       osS.str(),                       // Version string
-      move(strExtra),                  // Extra version string
+      std::move(strExtra),                  // Extra version string
       uiMajor,                         // Major OS version
       uiMinor,                         // Minor OS version
       uiBuild,                         // OS build version
       sizeof(void*)*8,                 // 32 or 64 OS arch
-      move(strCode),                   // Get locale
+      std::move(strCode),                   // Get locale
       DetectElevation(),               // Elevated?
       false,                           // Wine or Old OS?
       ttExpiry,                        // OS expiry
@@ -616,7 +667,7 @@ class SysCore :
   { // Get processor information
     const size_t stCpuCount = thread::hardware_concurrency();
     // Using arm cpu?
-#ifdef __arm64__
+#if defined(RISC)
     const unsigned int
       ulFeatureSet = GetSysCTLInfoNum<unsigned int>("hw.cpufamily"),
       ulPlatformId = GetSysCTLInfoNum<unsigned int>("hw.cputype");
@@ -645,7 +696,8 @@ class SysCore :
       static_cast<unsigned int>
         (GetSysCTLInfoNum<uint64_t>("hw.tbfrequency")/10000) :
       smListIt->second[1];
-#else
+    // Using INTEL processor?
+#elif defined(CISC)
     const unsigned int
       uiSpeed = GetSysCTLInfoNum<uint64_t>("hw.cpufrequency")/1000000,
       ulFeatureSet = GetSysCTLInfoNum<uint64_t>("machdep.cpu.feature_bits"),
@@ -660,8 +712,8 @@ class SysCore :
        strVendorId{ GetSysCTLInfoString("machdep.cpu.vendor") };
 #endif
     // Return default data we could not read
-    return { move(strVendorId),        move(strProcessorName),
-             move(strIdentifier),      stCpuCount,
+    return { std::move(strVendorId),        std::move(strProcessorName),
+             std::move(strIdentifier),      stCpuCount,
              uiSpeed,                  ulFeatureSet,
              ulPlatformId };
   }

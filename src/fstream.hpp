@@ -6,12 +6,12 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfFStream {                  // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfFStream {                  // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfCmdLine;             // Using cmdline interface
-using namespace IfMemory;              // Using memory interface
-using namespace IfIdent;               // Using ident interface
+using namespace IfCmdLine;             // Using cmdline namespace
+using namespace IfMemory;              // Using memory namespace
+using namespace IfIdent;               // Using ident namespace
 /* -- FStream Class -------------------------------------------------------- */
 class FStream :
   /* -- Base classes ------------------------------------------------------- */
@@ -56,7 +56,7 @@ class FStream :
   /* -- Open a file -------------------------------------------------------- */
   bool FStreamDoOpen(const string &strFile, const Mode mMode)
   { // Obviously Windows has to be different from everyone else!
-#ifdef _WIN32                          // Using windows?
+#if defined(WINDOWS)                   // Using windows?
     // The mode supported (in unicode)
     static const array<const wchar_t*const,FM_MAX>cplModes{
       L"rt", L"wt", L"at", L"r+t", L"w+t", L"a+t",
@@ -100,14 +100,14 @@ class FStream :
   bool FStreamClosed(void) const { return !FStreamGetHandle(); }
   /* -- Return handle to stream -------------------------------------------- */
   int FStreamGetID(void) const
-    { return FStreamOpened() ? STDFILENO(FStreamGetHandle()) : 0; }
+    { return FStreamOpened() ? StdFileNo(FStreamGetHandle()) : 0; }
   /* -- Set current file position ------------------------------------------ */
   bool FStreamSetPosition(const int64_t lPos, const int iMode) const
     { return FStreamOpened() ?
-        !STDFSEEK(FStreamGetHandle(), lPos, iMode) : false; }
+        !StdFSeek(FStreamGetHandle(), lPos, iMode) : false; }
   /* -- Return current file position --------------------------------------- */
   int64_t FStreamGetPosition(void) const
-    { return FStreamOpened() ? STDFTELL(FStreamGetHandle()) : EOF; }
+    { return FStreamOpened() ? StdFTell(FStreamGetHandle()) : EOF; }
   /* -- Flush buffered file data to disk ----------------------------------- */
   bool FStreamFlush(void) const
     { return FStreamOpened() ? fflush(FStreamGetHandle()) != EOF : false; }
@@ -120,8 +120,8 @@ class FStream :
   /* -- Is position not at end of the file? -------------------------------- */
   bool FStreamIsNotEOF(void) const { return !FStreamIsEOF(); }
   /* -- Read file information ---------------------------------------------- */
-  bool FStreamStat(STDFSTATSTRUCT &sData) const
-    { return !STDHSTAT(STDFILENO(FStreamGetHandle()), &sData); }
+  bool FStreamStat(StdFStatStruct &sData) const
+    { return !StdHStat(StdFileNo(FStreamGetHandle()), &sData); }
   /* -- Read data from file ------------------------------------------------ */
   size_t FStreamRead(void*const vpBuffer, const size_t stBytes) const
     { return fread(vpBuffer, 1, stBytes, FStreamGetHandle()); }
@@ -148,7 +148,7 @@ class FStream :
     const string strChunk{ FStreamReadString(stBufSize) };
     if(strChunk.empty()) return osS.str();
     // Accumulate the size
-    osS << move(strChunk);
+    osS << std::move(strChunk);
     // Read another string
     goto ContinueReadingStrings;
   }
@@ -239,7 +239,7 @@ class FStream :
   /* -- Constructor with rvalue name init, no open ------------------------- */
   explicit FStream(string &&strF) :
     /* -- Initialisation of members ---------------------------------------- */
-    Ident{ move(strF) },
+    Ident{ std::move(strF) },
     fStream{ nullptr }
     /* -- No code ---------------------------------------------------------- */
     { }
@@ -253,7 +253,7 @@ class FStream :
   /* -- MOVE assignment constructor ---------------------------------------- */
   FStream(FStream &&fsOther) :
     /* -- Initialisation of members ---------------------------------------- */
-    Ident{ move(fsOther) },
+    Ident{ std::move(fsOther) },
     fStream{ fsOther.FStreamGetHandle() }
     /* -- Clear other handle ----------------------------------------------- */
     { fsOther.FStreamClearHandle(); }
@@ -262,6 +262,6 @@ class FStream :
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(FStream);            // Disable copy constructor and operator
 };/* ----------------------------------------------------------------------- */
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

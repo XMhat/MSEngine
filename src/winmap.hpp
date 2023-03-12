@@ -8,11 +8,11 @@
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* == Windows file mapping class =========================================== */
-class SysMap :                         // Allow access to file mappings
+class SysMap :                         // Members initially private
   /* -- Base classes ------------------------------------------------------- */
   public Ident                         // Filename (could override)
-{ /* -- Private typedefs ------------------------------------------ */ private:
-  typedef array<STDTIMET,2> TwoTime;   // The two time back to back 1993-1994
+{ /* -- Private typedefs --------------------------------------------------- */
+  typedef array<StdTimeT,2> TwoTime;   // The two time back to back 1993-1994
   /* -- Private variables -------------------------------------------------- */
   HANDLE           hFile;              // Handle to the file
   uint64_t         qSize;              // Size of file
@@ -25,15 +25,15 @@ class SysMap :                         // Allow access to file mappings
     // the file
     if(SysMapIsAvailable() && SysMapIsNotEmpty() &&
       !UnmapViewOfFile(SysMapGetMemory<LPCVOID>()))
-        LW(LH_WARNING, "System failed to unmap view of '$': $!",
+        cLog->LogWarningExSafe("System failed to unmap view of '$': $!",
           IdentGet(), SysError());
     // Have map handle? Unmap the file and clear the pointer
     if(hMap && !CloseHandle(hMap))
-      LW(LH_WARNING, "System failed to close file mapping for '$': $!",
+      cLog->LogWarningExSafe("System failed to close file mapping for '$': $!",
         IdentGet(), SysError());
     // Have file handle? Unmap the file and clear the pointer
     if(hFile != INVALID_HANDLE_VALUE && !CloseHandle(hFile))
-      LW(LH_WARNING, "System failed to close file '$': $!",
+      cLog->LogWarningExSafe("System failed to close file '$': $!",
         IdentGet(), SysError());
   }
   /* -- Clear variables ---------------------------------------------------- */
@@ -94,8 +94,8 @@ class SysMap :                         // Allow access to file mappings
   { // Get file times and return filetime if successful
     FILETIME ftC, ftM;
     if(GetFileTime(hFile, &ftC, nullptr, &ftM))
-      return { BruteCast<STDTIMET>(ftC) / 100000000,
-               BruteCast<STDTIMET>(ftM) / 100000000 };
+      return { BruteCast<StdTimeT>(ftC) / 100000000,
+               BruteCast<StdTimeT>(ftM) / 100000000 };
     XCS("Failed to query file creation time!",
       "File", IdentGet(), "Handle", hFile);
   }
@@ -107,8 +107,8 @@ class SysMap :                         // Allow access to file mappings
   bool SysMapIsAvailable(void) const { return !!SysMapGetMemory(); }
   bool SysMapIsNotAvailable(void) const { return !SysMapIsAvailable(); }
   uint64_t SysMapGetSize(void) const { return qSize; }
-  STDTIMET SysMapGetCreation(void) const { return atTime[0]; }
-  STDTIMET SysMapGetModified(void) const { return atTime[1]; }
+  StdTimeT SysMapGetCreation(void) const { return atTime[0]; }
+  StdTimeT SysMapGetModified(void) const { return atTime[1]; }
   /* -- Init object from class --------------------------------------------- */
   void SysMapSwap(SysMap &smOther)
   { // Swap members
@@ -129,7 +129,7 @@ class SysMap :                         // Allow access to file mappings
     IdentClear();
   }
   /* -- Constructor with just id initialisation ---------------------------- */
-  SysMap(const string &strIn, const STDTIMET tC, const STDTIMET tM) :
+  SysMap(const string &strIn, const StdTimeT tC, const StdTimeT tM) :
     /* -- Initialisation of members ---------------------------------------- */
     Ident{ strIn },                    // Initialise file name
     hFile(INVALID_HANDLE_VALUE),       // No file handle
@@ -152,12 +152,12 @@ class SysMap :                         // Allow access to file mappings
   /* -- Move constructor --------------------------------------------------- */
   SysMap(SysMap &&smOther) :
     /* -- Initialisation of members ---------------------------------------- */
-    Ident{ move(smOther) },            // Move other identifier
+    Ident{ std::move(smOther) },            // Move other identifier
     hFile(smOther.hFile),              // Move other file handle
     qSize(smOther.qSize),              // Move other size
     hMap(smOther.hMap),                // Move other file map
     cpMem(smOther.cpMem),              // Move other memory pointer
-    atTime{ move(smOther.atTime) }     // Move other file times
+    atTime{ std::move(smOther.atTime) }     // Move other file times
     /* -- Clear other variables -------------------------------------------- */
     { smOther.SysMapClearVarsInternal(); }
   /* -- Constructor with actual initialisation ----------------------------- */

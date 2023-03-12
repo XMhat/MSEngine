@@ -22,6 +22,7 @@
 #if !defined(__cplusplus)              // Must be compiling in C++ mode
 # error Please use a C++ compiler such as GCC, CLANG or MSVC!
 #elif defined(_WIN32)                  // Only applies to MS compiler
+# define WINDOWS                       // Using windows
 # if defined(ALPHA)                    // Debugging?
 #  if !defined(_DEBUG)                 // Might not be defined on LLVM
 #   define _DEBUG                      // Not defined on CLang
@@ -34,7 +35,7 @@
 #  define NDEBUG                       // No assertions
 #  define _NDEBUG                      // No assertions
 # endif                                // Debugging check
-# ifdef __clang__                      // Actually using CLang?
+# if defined(__clang__)                // Actually using CLang?
 #  if __cplusplus < 202002L            // Must be using a C++20 compiler
 #   error Must use a C++20 standards clang compiler!
 #  endif                               // C++ standards check
@@ -52,6 +53,7 @@
 #  error This compiler is not supported. Please use clang or msvc!
 # endif                                // Check actual compiler
 # if defined(_M_AMD64)                 // Target is AMD architecture?
+#  define CISC                         // Using INTEL or AMD instruction set
 #  define X64                          // Using X64 architechture
 #  if defined(__AVX2__)                // Target has AVX2 instructions?
 #   define BUILD_TARGET                "Win-X64-AVX2"
@@ -61,12 +63,15 @@
 #   define BUILD_TARGET                "Win-X64-SSE2"
 #  endif                               // Floating point checks
 # elif defined(_M_ARM64)               // Target is ARM architecture?
+#  define RISC                         // Using ARM instruction set
 #  define X64                          // Using X64 architechture
 #  define BUILD_TARGET                 "Win-ARM64"
 # elif defined(_M_ARM)                 // Target is ARM architechture?
+#  define RISC                         // Using ARM instruction set
 #  define X86                          // Using 32-bit architechture
 #  define BUILD_TARGET                 "Win-ARM"
 # elif defined(_M_IX86)                // Target is X86 architecture?
+#  define CISC                         // Using INTEL or AMD instruction set
 #  define X86                          // Using X86 architechture
 #  if _M_IX86_FP == 1                  // Target FP is SSE?
 #   define BUILD_TARGET                "Win-X86-SSE"
@@ -93,12 +98,15 @@
 # define NOMINMAX                      // Do not define min/max please
 # define DLLEXT                 ".dll" // Extension to use for DLL's
 #elif defined(__APPLE__)               // Apple target?
+# define MACOS                         // Using MacOS
 # include <TargetConditionals.h>       // Include target conditionals header
 # if defined(TARGET_OS_MAC)            // Targeting MacOS?
 #  if defined(__x86_64__)              // 64-bit x86 architecture?
+#   define CISC                        // Using INTEL or AMD instruction set
 #   define X64                         // Using 64-bit architechture
 #   define BUILD_TARGET                "MacOS-X64"
 #  elif defined(__arm64__)             // 64-bit ARM architecture?
+#   define RISC                        // Using ARM instruction set
 #   define X64                         // Using 64-bit architechture
 #   define BUILD_TARGET                "MacOS-ARM64"
 #  else                                // Unknown target?
@@ -117,11 +125,13 @@
 #elif __cplusplus < 202002L            // Must be using a C++20 compiler
 # error Must use a C++ 20 or better compiler!
 #elif defined(__linux__)               // Linux detected?
+# define LINUX                         // Using Linux
 # define COMPILER_NAME                 "GCC"
 # define COMPILER_VERSION              STR(__GNUC__) "." \
                                        STR(__GNUC_MINOR__) "." \
                                        STR(__GNUC_PATCHLEVEL__)
 # if defined(__x86_64__)               // 64-bit compilation?
+#  define CISC                         // Using INTEL or AMD instruction set
 #  define X64                          // Using 64-bit architechture
 #  if defined(__AVX2__)                // Using AVX2 instructions
 #   define BUILD_TARGET                "Linux-X64-AVX2"
@@ -137,6 +147,7 @@
 #   define BUILD_TARGET                "Linux-X64"
 #  endif                               // FP extensions check
 # elif defined(__i386__)               // 32-bit compilation?
+#  define CISC                         // Using INTEL or AMD instruction set
 #  define X86                          // Using 32-bit architechture
 #  if defined(__AVX2__)                // Using AVX2 instructions
 #   define BUILD_TARGET                "Linux-X86-AVX2"
@@ -199,225 +210,126 @@
 /* -- Useful macros -------------------------------------------------------- */
 #define STR_HELPER(...)  #__VA_ARGS__            // Convert macro integer
 #define STR(...)         STR_HELPER(__VA_ARGS__) // to string
-/* -- Cross-platform specific declarations --------------------------------- */
-#ifdef _WIN32                          // Windows 32-bit or 64-bit
-/* -- Entry function and arguments ----------------------------------------- */
-#define ENTRYFUNC    WINAPI _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
-#define CONENTRYFUNC _tmain            // Entry function for console app
-#define ARGTYPE      TCHAR             // Widestring for args
-/* -- For access(). MS don't define, but have same meaning as unix --------- */
-#define R_OK                         4 // File is readable
-#define W_OK                         2 // File is writable
-#define X_OK                         1 // File is executable
-#define F_OK                         0 // File exists
-/* -- Standard library cross-platform compatibility ------------------------ */
-#define STDACCESS(f,x)     _waccess(UTFtoS16(f),x)
-#define STDEXECVE(v,e)     static_cast<int>(_wexecve(*v,v,e))
-#define STDFILENO(h)       _fileno(h)
-#define STDFSTAT(f,s)      _wstat64(UTFtoS16(f),s)
-#define STDFSTATSTRUCT     struct __stat64
-#define STDFSEEK(h,o,m)    _fseeki64(h,o,m)
-#define STDFTELL(h)        _ftelli64(h)
-#define STDGMTIME(r,t)     _gmtime64_s(r,t)
-#define STDHSTAT(h,s)      _fstat64(h,s)
-#define STDLOCALTIME(r,t)  _localtime64_s(r,t)
-#define STDMKDIR(d)        _wmkdir(UTFtoS16(d))
-#define STDMKTIME(s)       _mktime64(s)
-#define STDPOPEN(c,e)      _wpopen(UTFtoS16(c),e)
-#define STDPOPENFLAGS      L"rt"
-#define STDPCLOSE(h)       _pclose(h)
-#define STDPUTENV(e,v)     _wputenv(UTFtoS16(Append(e,'=',v)))
-#define STDRENAME(s,d)     _wrename(UTFtoS16(s),UTFtoS16(d))
-#define STDRMDIR(d)        _wrmdir(UTFtoS16(d))
-#define STDSRAND(x)        srand(x)
-#define STDTIMET           __time64_t
-#define STDUNLINK(d)       _wunlink(UTFtoS16(d))
-/* -- UTF8 handling -------------------------------------------------------- */
-#define S16toUTF(m)  FromWideStringPtr(m)  // Widestring to utf8 str
-#define WS16toUTF(m) S16toUTF((m).c_str()) //    " to utf8 cstr
-#define UTFtoWS16(m) Decoder(m).Wide()     // utf8 to widestring str
-#define UTFtoS16(m)  UTFtoWS16(m).c_str()  //    " to widestring cstr
-/* -- Debug ---------------------------------------------------------------- */
-#ifdef _CRTDBG_MAP_ALLOC               // >> Required by MSDN
-# include <stdlib.h>                   // >> Required by MSDN
-# include <crtdbg.h>                   // >> Basic Leak detection SDK
-//# define USEVLD                      // Set to use VLD (copy *.dll/manifest)
-# ifdef USEVLD                         // Use VLD debugging library?
-#  include <vld/vld.h>                 // >> If basic detection not working
-#  if defined(_WIN64)                  // 64-bit windows?
-#   pragma comment(lib, "res/lib/vld64d") // >> Use 64-bit VLD lib
-#  else                                // 32-bit windows?
-#   pragma comment(lib, "res/lib/vld32d") // >> Use 32-bit VLD lib
-#  endif                               // Bits check
-# endif                                // VLD inclusion requested
-#endif                                 // Not using debug mode
-/* -- Endianness ----------------------------------------------------------- */
-#define SWAP_U16(v) _byteswap_ushort(static_cast<unsigned short>(v))
-#define SWAP_U32(v) _byteswap_ulong(static_cast<unsigned long>(v))
-#define SWAP_U64(v) _byteswap_uint64(static_cast<unsigned __int64>(v))
-#if REG_DWORD == REG_DWORD_LITTLE_ENDIAN  // Using Intel/AMD? (LE)
-# define STRICT_U16LE(v) (v)              // Use 16-bit integers as-is
-# define STRICT_U16BE(v) SWAP_U16(v)      // Swap 16-bits
-# define STRICT_U32LE(v) (v)              // Use 32-bit integers as-is
-# define STRICT_U32BE(v) SWAP_U32(v)      // Swap 32-bits
-# define STRICT_U64LE(v) (v)              // Use 64-bit integers as-is
-# define STRICT_U64BE(v) SWAP_U64(v)      // Swap 64-bits
-# define LITTLE_ENDIAN                    // Using little endian byte order
-#elif REG_DWORD == REG_DWORD_BIG_ENDIAN   // Using ARM? (BE)
-# define STRICT_U16LE(v) SWAP_U16(v)      // Swap 16-bits
-# define STRICT_U16BE(v) (v)              // Use 16-bit integers as-is
-# define STRICT_U32LE(v) SWAP_U32(v)      // Swap 32-bits
-# define STRICT_U32BE(v) (v)              // Use 32-bit integers as-is
-# define STRICT_U64LE(v) SWAP_U64(v)      // Swap 64-bits
-# define STRICT_U64BE(v) (v)              // Use 64-bit integers as-is
-# define BIG_ENDIAN                       // Using big endian byte order
-#else                                     // Unknown endianness?
-# error Unknown endianness!
-#endif                                    // Endianess setup
+/* -- Target specific headers ---------------------------------------------- */
+#if defined(WINDOWS)                   // Windows 32-bit or 64-bit
+# if defined(_CRTDBG_MAP_ALLOC)        // Debug stuff required by MSDN
+#  include <stdlib.h>                  // >> Required by MSDN
+#  include <crtdbg.h>                  // >> Basic Leak detection SDK
+// # define USEVLD                     // Set to use VLD (copy *.dll/manifest)
+#  if defined(USEVLD)                  // Use VLD debugging library?
+#   include <vld/vld.h>                // >> If basic detection not working
+#   if defined(X64)                    // 64-bit windows?
+#    pragma comment(lib, "res/lib/vld64d") // >> Use 64-bit VLD lib
+#   elif defined(X86)                  // 32-bit windows?
+#    pragma comment(lib, "res/lib/vld32d") // >> Use 32-bit VLD lib
+#   endif                              // Bits check
+#  endif                               // VLD inclusion requested
+# endif                                // Not using debug mode
+/* -- STL Headers ---------------------------------------------------------- */
+# include <execution>                  // For std::execution::* classes
 /* -- VC Headers ----------------------------------------------------------- */
-#include <direct.h>                    // Directory header
-#include <intrin.h>                    // Required by jpeg stuff
-#include <stdio.h>                     // Standard IO stuff
-#include <io.h>                        // Io header
-#include <process.h>                   // Process header
-#include <sys/timeb.h>                 // Time block functions
+# include <direct.h>                   // Directory header
+# include <intrin.h>                   // Required by jpeg stuff
+# include <stdio.h>                    // Standard IO stuff
+# include <io.h>                       // Io header
+# include <process.h>                  // Process header
+# include <sys/timeb.h>                // Time block functions
 /* -- Windows base includes ------------------------------------------------ */
-#include <Windows.H>                   // Need windows headers file
-#include <TChar.H>                     // Unicode support
-#include <ImageHlp.H>                  // Executable image headers file
-#include <TlHelp32.H>                  // Toolhelp header file
-#include <ShlObj.H>                    // Shell header file
-#include <RTCapi.H>                    // RTC headers file
-#include <WinSock.H>                   // Windows sockets headers file
-#include <AccCtrl.H>                   // Access control headers file
-#include <AclApi.H>                    // Access control list headers file
+# include <Windows.H>                  // Need windows headers file
+# include <TChar.H>                    // Unicode support
+# include <ImageHlp.H>                 // Executable image headers file
+# include <TlHelp32.H>                 // Toolhelp header file
+# include <ShlObj.H>                   // Shell header file
+# include <RTCapi.H>                   // RTC headers file
+# include <WinSock.H>                  // Windows sockets headers file
+# include <AccCtrl.H>                  // Access control headers file
+# include <AclApi.H>                   // Access control list headers file
 /* ------------------------------------------------------------------------- */
-#define PSAPI_VERSION                1 // Want this to work on XP so use V1
-#include <PsApi.H>                     // Process API header file
-#undef PSAPI_VERSION                   // Don't need this anymore
-#undef GetObject                       // RapidJSon compatibility
+# define PSAPI_VERSION               1 // Want this to work on XP so use V1
+# include <PsApi.H>                    // Process API header file
+# undef PSAPI_VERSION                  // Don't need this anymore
+# undef GetObject                      // RapidJSon compatibility
+/* -- Endianness ----------------------------------------------------------- */
+# define SWAP_U16(v) _byteswap_ushort(static_cast<unsigned short>(v))
+# define SWAP_U32(v) _byteswap_ulong(static_cast<unsigned long>(v))
+# define SWAP_U64(v) _byteswap_uint64(static_cast<unsigned __int64>(v))
+# if REG_DWORD == REG_DWORD_LITTLE_ENDIAN // Using Intel/AMD? (LE)
+#  define STRICT_U16LE(v) (v)          // Use 16-bit integers as-is
+#  define STRICT_U16BE(v) SWAP_U16(v)  // Swap 16-bits
+#  define STRICT_U32LE(v) (v)          // Use 32-bit integers as-is
+#  define STRICT_U32BE(v) SWAP_U32(v)  // Swap 32-bits
+#  define STRICT_U64LE(v) (v)          // Use 64-bit integers as-is
+#  define STRICT_U64BE(v) SWAP_U64(v)  // Swap 64-bits
+#  define LITTLE_ENDIAN                // Using little endian byte order
+# elif REG_DWORD == REG_DWORD_BIG_ENDIAN // Using ARM? (BE)
+#  define STRICT_U16LE(v) SWAP_U16(v)  // Swap 16-bits
+#  define STRICT_U16BE(v) (v)          // Use 16-bit integers as-is
+#  define STRICT_U32LE(v) SWAP_U32(v)  // Swap 32-bits
+#  define STRICT_U32BE(v) (v)          // Use 32-bit integers as-is
+#  define STRICT_U64LE(v) SWAP_U64(v)  // Swap 64-bits
+#  define STRICT_U64BE(v) (v)          // Use 64-bit integers as-is
+#  define BIG_ENDIAN                   // Using big endian byte order
+# else                                 // Unknown endianness?
+#  error Unknown endianness!
+# endif                                // Endianess setup
+/* ------------------------------------------------------------------------- */
+# define GLFW_EXPOSE_NATIVE_WIN32      // Expose Cocoa specific funcs in GlfW
 /* -- Using anything but Windows? ------------------------------------------ */
 #else                                  // Could be OSX or Linux
-/* -- Entry function and arguments for anything but Windows ---------------- */
-#define ARGTYPE            char        // Main() arguments type
-#define ENTRYFUNC          main(int __argc,ARGTYPE**__wargv,ARGTYPE**_wenviron)
-#define CONENTRYFUNC       main
-/* -- Standard library cross-platform compatibility ------------------------ */
-#define STDACCESS(f,x)     access(f.c_str(),x)
-#define STDEXECVE(v,e)     execve(*v,v,e)
-#define STDFILENO(h)       fileno(h)
-#define STDFSTAT(f,s)      stat(f.c_str(),s)
-#define STDFSTATSTRUCT     struct stat
-#define STDFSEEK(h,o,m)    fseeko(h,o,m)
-#define STDFTELL(h)        ftello(h)
-#define STDGMTIME(r,t)     gmtime_r(t,r)
-#define STDHSTAT(h,s)      fstat(h,s)
-#define STDLOCALTIME(r,t)  localtime_r(t,r)
-#define STDMKDIR(d)        mkdir(d.c_str(),S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|\
-                                           S_IXGRP|S_IROTH|S_IXOTH)
-#define STDMKTIME(s)       mktime(s)
-#define STDPOPEN(c,e)      popen(c.c_str(),e)
-#define STDPOPENFLAGS      "r"
-#define STDPCLOSE(h)       pclose(h)
-#define STDPUTENV(e,v)     setenv(e.c_str(),v.c_str())
-#define STDRENAME(s,d)     rename(s.c_str(),d.c_str())
-#define STDRMDIR(d)        rmdir(d.c_str())
-#define STDSRAND(x)        srandom(x)
-#define STDTIMET           time_t
-#define STDUNLINK(d)       unlink(d.c_str())
-/* -- UTF8 handling (not applicable) --------------------------------------- */
-#define UTFtoWS16(m)       m           // Filenames already treated as UTF-8
-#define UTFtoS16(m)        m           // Filenames already treated as UTF-8
-#define WS16toUTF(m)       m           // Filenames already treated as UTF-8
-#define S16toUTF(m)        m           // Filenames already treated as UTF-8
-/* -- Maximum path part lengths -------------------------------------------- */
-#define _MAX_PATH          PATH_MAX    // Maximum size of all path parts
-#define _MAX_DIR           PATH_MAX    // Maximum size of directory part
-#define _MAX_FNAME         PATH_MAX    // Maximum size of filename part
-#define _MAX_EXT           PATH_MAX    // Maximum size of extension part
-/* -- Other cross compatibilities ------------------------------------------ */
-#define _S_IFDIR           S_IFDIR     // Specifies a directory for stat()
-/* -- Critical error types ------------------------------------------------- */
-#define MB_SYSTEMMODAL     0           // No window was available for message
-#define MB_ICONINFORMATION 1           // Informational message only
-#define MB_ICONEXCLAMATION 2           // A warning message occured
-#define MB_ICONSTOP        4           // A critical error message occured
-/* -- Endianness ----------------------------------------------------------- */
-#define SWAP_U16(v) __builtin_bswap16(static_cast<unsigned short>(v))
-#define SWAP_U32(v) __builtin_bswap32(static_cast<unsigned int>(v))
-#define SWAP_U64(v) __builtin_bswap64(static_cast<unsigned long long>(v))
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ // Using Intel/AMD? (LE)
-# define STRICT_U16LE(v) (v)           // Use 16-bit integers as-is
-# define STRICT_U16BE(v) SWAP_U16(v)   // Swap 16-bits
-# define STRICT_U32LE(v) (v)           // Use 32-bit integers as-is
-# define STRICT_U32BE(v) SWAP_U32(v)   // Swap 32-bits
-# define STRICT_U64LE(v) (v)           // Use 64-bit integers as-is
-# define STRICT_U64BE(v) SWAP_U64(v)   // Swap 64-bits
-# ifndef LITTLE_ENDIAN                 // This could already be defined
-#  define LITTLE_ENDIAN                // Define it if not
-# endif                                // Little endian check
-#elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__ // Using ARM? (BE)
-# define STRICT_U16LE(v) SWAP_U16(v)   // Swap 16-bits
-# define STRICT_U16BE(v) (v)           // Use 16-bit integers as-is
-# define STRICT_U32LE(v) SWAP_U32(v)   // Swap 32-bits
-# define STRICT_U32BE(v) (v)           // Use 32-bit integers as-is
-# define STRICT_U64LE(v) SWAP_U64(v)   // Swap 64-bits
-# define STRICT_U64BE(v) (v)           // Use 64-bit integers as-is
-# ifndef BIG_ENDIAN                    // This could already be defined
-#  define BIG_ENDIAN                   // Define it if not
-# endif                                // Big endian check
-#else                                  // Unknown endianness?
-# error Unknown endianness!
-#endif                                 // Endianness setup
 /* ------------------------------------------------------------------------- */
-#include <cxxabi.h>                    // Debug name demangling stuff
-#include <dirent.h>                    // Directory functions (*dir)
-#include <dlfcn.h>                     // Dylib functions
-#include <execinfo.h>                  // Stack trace functions
-#include <libgen.h>                    // Unix core (*name)
-#include <sys/stat.h>                  // Stat struct
-#include <sys/utsname.h>               // OS information
-#include <unistd.h>                    // Unix standard stuff
+# include <cxxabi.h>                   // Debug name demangling stuff
+# include <dirent.h>                   // Directory functions (*dir)
+# include <dlfcn.h>                    // Dylib functions
+# include <execinfo.h>                 // Stack trace functions
+# include <libgen.h>                   // Unix core (*name)
+# include <sys/stat.h>                 // Stat struct
+# include <sys/utsname.h>              // OS information
+# include <unistd.h>                   // Unix standard stuff
+/* -- Endianness ----------------------------------------------------------- */
+# define SWAP_U16(v) __builtin_bswap16(static_cast<unsigned short>(v))
+# define SWAP_U32(v) __builtin_bswap32(static_cast<unsigned int>(v))
+# define SWAP_U64(v) __builtin_bswap64(static_cast<unsigned long long>(v))
+# if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ // Using Intel/AMD? (LE)
+#  define STRICT_U16LE(v) (v)          // Use 16-bit integers as-is
+#  define STRICT_U16BE(v) SWAP_U16(v)  // Swap 16-bits
+#  define STRICT_U32LE(v) (v)          // Use 32-bit integers as-is
+#  define STRICT_U32BE(v) SWAP_U32(v)  // Swap 32-bits
+#  define STRICT_U64LE(v) (v)          // Use 64-bit integers as-is
+#  define STRICT_U64BE(v) SWAP_U64(v)  // Swap 64-bits
+#  if !defined(LITTLE_ENDIAN)          // This could already be defined
+#   define LITTLE_ENDIAN               // Define it if not
+#  endif                               // Little endian check
+# elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__ // Using ARM? (BE)
+#  define STRICT_U16LE(v) SWAP_U16(v)  // Swap 16-bits
+#  define STRICT_U16BE(v) (v)          // Use 16-bit integers as-is
+#  define STRICT_U32LE(v) SWAP_U32(v)  // Swap 32-bits
+#  define STRICT_U32BE(v) (v)          // Use 32-bit integers as-is
+#  define STRICT_U64LE(v) SWAP_U64(v)  // Swap 64-bits
+#  define STRICT_U64BE(v) (v)          // Use 64-bit integers as-is
+#  if !defined(BIG_ENDIAN)             // This could already be defined
+#   define BIG_ENDIAN                  // Define it if not
+#  endif                               // Big endian check
+# else                                 // Unknown endianness?
+#  error Unknown endianness!
+# endif                                // Endianness setup
+/* ------------------------------------------------------------------------- */
+# if defined(MACOS)                    // Uisng MacOS?
+#  define GLFW_EXPOSE_NATIVE_COCOA     // Expose Cocoa specific funcs in GLFW
+# else                                 // Using Linux?
+#  include <execution>                 // For std::execution::* classes
+#  define GLFW_EXPOSE_NATIVE_X11       // Expose X11 specific funcs in GLFW
+#  define GLFW_EXPOSE_NATIVE_WAYLAND   // Expose Wayland specific funcs in GLFW
+# endif                                // Apple check
 /* ------------------------------------------------------------------------- */
 #endif                                 // Operating system
 /* ------------------------------------------------------------------------- */
-#ifdef __APPLE__                       // Parallel execution not on Apple yet!
-# define MYFILL(p,b,e,...)         fill(b, e, __VA_ARGS__)
-# define MYTRANSFORM(p,b,e,o,...)  transform(b, e, o, __VA_ARGS__)
-# define MYFOREACH(p,b,e,...)      for_each(b, e, __VA_ARGS__)
-# define MYCOPY(p,b,e,...)         copy(b, e, __VA_ARGS__)
-# define GLFW_EXPOSE_NATIVE_COCOA      // Expose Cocoa specific funcs in Glfw
-/* ------------------------------------------------------------------------- */
-#else                                  // Linux and windows compilers support
-# include <execution>                  // Parallel execution support
-# define MYFILL(p,b,e,...)         fill(p, b, e, __VA_ARGS__)
-# define MYTRANSFORM(p,b,e,o,...)  transform(p, b, e, o, __VA_ARGS__)
-# define MYFOREACH(p,b,e,...)      for_each(p, b, e, __VA_ARGS__)
-# define MYCOPY(p,b,e,...)         copy(p, b, e, __VA_ARGS__)
-# if defined(_WIN32)                   // Using windows?
-typedef std::make_signed<size_t>::type ssize_t; // Not in MSVC
-#  define GLFW_EXPOSE_NATIVE_WIN32     // Expose Cocoa specific funcs in Glfw
-# elif defined(__linux__)              // Using linux?
-#  define GLFW_EXPOSE_NATIVE_X11       // Expose X11 specific funcs in Glfw
-#  define GLFW_EXPOSE_NATIVE_WAYLAND   // Expose Wayland specific funcs in Glfw
-# endif                                // Windows check
-#endif                                 // Apple check
-/* ------------------------------------------------------------------------- */
 #define UNUSED_VARIABLE(x)             (void)(x)
-/* == Typedefs ============================================================= */
-#ifdef ALPHA                           // Z-Lib debug version requires this
-  extern "C" { int z_verbose = 0, z_error = 0; }
-#endif                                 // Compiling DEBUG/ALPHA version
-/* == API includes ========================================================= */
-/* ######################################################################### */
-/* ## Include API functions                                               ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
-#ifndef _WIN32                         // Not using windows?
+/* == Compiler warning configuration ======================================= */
+#if !defined(WINDOWS)                  // Not using windows?
 # pragma GCC diagnostic push           // Save warnings
-# ifdef __linux__                      // Using linux?
+# if defined(LINUX)                    // Using Linux?
 #  pragma GCC diagnostic ignored "-Wall"        // Disable ALL warnings
-# else                                 // Using macos?
+# elif defined(MACOS)                  // Using MacOS?
 #  pragma GCC diagnostic ignored "-Weverything" // Disable ALL warnings
 # endif                                // Linux or MacOS check
 #endif                                 // Not using windows
@@ -442,7 +354,7 @@ namespace GlFW                         // GLFW API FUNCTIONS
 #include <glfw/glfw3.h>                // Main header
 #include <glfw/glfw3native.h>          // Operating system includes
 #undef GLFW_INCLUDE_GLCOREARB          // Done with this define
-#ifdef __linux__                       // Using linux?
+#if defined(LINUX)                     // Using linux?
 # undef Bool                           // X11 defines this, we don't need it
 #endif                                 // Linux check
 };/* ----------------------------------------------------------------------- */
@@ -456,7 +368,7 @@ namespace Png                          // LIBPNG API FUNCTIONS
 };/* ----------------------------------------------------------------------- */
 namespace JpegTurbo                    // LIBJPEGTURBO API FUNCTIONS
 { /* ----------------------------------------------------------------------- */
-#ifdef __linux__                       // Using Linux?
+#if defined(LINUX)                     // Using Linux?
 # include <jpeglib.h>                  // Repository provided main header
 # include <jerror.h>                   // Repository provided error handling
 #else                                  // MacOS or Windows?
@@ -545,45 +457,8 @@ namespace Theora                       // THEORA API FUNCTIONS
 #include <theora/theora.h>             // Format codec (+ ogg codec)
 #include <theora/theoradec.h>          // Decoder
 };/* ----------------------------------------------------------------------- */
-#ifndef _WIN32                         // Not using windows?
+#if !defined(WINDOWS)                  // Not using windows?
 # pragma GCC diagnostic pop            // - Restore compiler warnings
 #endif                                 // Not using windows
 };/* ----------------------------------------------------------------------- */
-/* == Omission macros ====================================================== */
-/* ######################################################################### */
-/* ## These allow us to delete the assignment operator and assignment     ## */
-/* ## copy constructor in a class so we don't accidently perform copies   ## */
-/* ## instead of move()'s.                                                ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
-#define DELETECOPYCTORS(x) \
-  x(const x&) = delete; const x &operator=(const x&) = delete;
-/* == Static class try/catch helpers ======================================= */
-/* ######################################################################### */
-/* ## Remember that if you put try/catch block on the function level, the ## */
-/* ## memory for the members is not cleaned up and we get memory leaks.   ## */
-/* ## C++ (ISO/IEC JTC 1/SC 22 N 4411). The process of calling            ## */
-/* ## destructors for automatic objects constructed on the path from a    ## */
-/* ## try block to a throw- expression is called 'stack unwinding.'. If a ## */
-/* ## destructor called during stack unwinding exits with an exception,   ## */
-/* ## std::terminate is called (15.5.1). So destructors should generally  ## */
-/* ## catch exceptions and not let them propagate out of the destructor.  ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
-#define DTORHELPERBEGIN(c) c(void) noexcept(false) try {
-#define DTORHELPEREND(c) } catch(const exception &E) \
-  { SysMessage(STR(c) " Shutdown Exception", E.what(), MB_ICONSTOP); }
-#define DTORHELPER(c,...) DTORHELPERBEGIN(c) __VA_ARGS__; DTORHELPEREND(c)
-/* == Init helper ========================================================== */
-/* ######################################################################### */
-/* ## Very useful little helper to create a class in-scope to init and    ## */
-/* ## a de-init function when leaving the scope.                          ## */
-/* ######################################################################### */
-/* ## n ## Name of the class. The variable is called this too prefix 'c'. ## */
-/* ## i ## The function to execute straight away.                         ## */
-/* ## d ## The function to execute when leaving the scope.                ## */
-/* ######################################################################### */
-#define INITHELPER(n,i,d) class n{public:n(void){i;}\
-                               ~n(void) noexcept(false){d;}} c ## n;
-#define DEINITHELPER(n,d) INITHELPER(n,,d);
 /* == EoF =========================================================== EoF == */

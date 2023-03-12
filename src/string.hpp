@@ -6,8 +6,10 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfString {                   // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfString {                   // Start of module namespace
+/* -- Includes ------------------------------------------------------------- */
+using namespace IfStd;                 // Using std namespace
 /* -- Some helpful globals so not to repeat anything ----------------------- */
 static const string     strBlank, strSpace{" "};     // Blank C++ String
 static const char*const cpBlank = strBlank.c_str(),  // Blank C String
@@ -59,7 +61,7 @@ template<typename T, typename... V>
       case 1: osS << *cpPos; cpPos += 2; break;
       // More than one character? Copy characters and stride over the '$'
       // we just processed. Better than storing single characters.
-      default: osS << move(string{ cpPos, stNum });
+      default: osS << std::move(string{ cpPos, stNum });
                cpPos += stNum + 1;
                break;
       // Did not move? This can happen at the start of the string. Just
@@ -76,7 +78,7 @@ template<typename T, typename... V>
 template<typename... V>
   static const string Format(const char*const cpP, const V... vV)
 { // Return if string empty of invalid
-  if(!cpP || !*cpP) return {};
+  if(!IfUtf::IsCStringValid(cpP)) return {};
   // Stream to write to
   ostringstream osS;
   // Format the text
@@ -87,7 +89,7 @@ template<typename... V>
 /* == Format a number ====================================================== */
 template<typename T>
   static const string FormatNumber(const T tV, const int iP=0)
-    { return move(AppendImbued(fixed, setprecision(iP), tV)); }
+    { return std::move(AppendImbued(fixed, setprecision(iP), tV)); }
 /* -- Trim specified characters from string -------------------------------- */
 static const string Trim(const string &strS, const char cC)
 { // Return empty string if source string is empty
@@ -101,7 +103,8 @@ static const string Trim(const string &strS, const char cC)
 /* -- Convert integer to string with padding and precision ----------------- */
 template<typename IntType>static const string ToString(const IntType itV,
   const int iW=0, const int iPrecision=numeric_limits<IntType>::digits10)
-    { return move(Append(setw(iW), fixed, setprecision(iPrecision), itV)); }
+    { return std::move(Append(setw(iW), fixed, setprecision(iPrecision),
+        itV)); }
 /* -- Quickly convert numbered string to integer --------------------------- */
 template<typename IntType=int64_t>
   static const IntType ToNumber(const string &strValue)
@@ -128,7 +131,7 @@ template<typename IntType=int64_t>
 }
 /* -- Convert hex to string with zero padding ------------------------------ */
 template<typename T>static const string ToHex(const T tV, const int iP=0)
-  { return move(Append(setfill('0'), hex, setw(iP), tV)); }
+  { return std::move(Append(setfill('0'), hex, setw(iP), tV)); }
 /* -- Return if specified string has numbers ------------------------------- */
 static bool IsAlpha(const string &strValue)
 { // Return if any value isn't an letter
@@ -192,18 +195,18 @@ static const string LocalError(const int iErrNo=errno)
 { // Buffer to store error message into
   string strErr; strErr.resize(128);
   // Windows?
-#if defined(_WIN32)
+#if defined(WINDOWS)
   // 'https://msdn.microsoft.com/en-us/library/51sah927.aspx' says:
   // "Your string message can be, at most, 94 characters long."
   if(strerror_s(const_cast<char*>(strErr.c_str()), strErr.capacity(), iErrNo))
     strErr.assign(Append("Error ", iErrNo));
   // OSX?
-#elif defined(__APPLE__)
+#elif defined(MACOS)
   // Grab the error result and if failed? Just put in the error number continue
   if(strerror_r(iErrNo, const_cast<char*>(strErr.c_str()), strErr.capacity()))
     strErr.assign(Append("Error ", iErrNo));
   // Linux?
-#else
+#elif defined(LINUX)
   // Grab the error result and if failed? Set a error and continue
   const char*const cpResult =
     strerror_r(iErrNo, const_cast<char*>(strErr.c_str()), strErr.capacity());
@@ -218,18 +221,18 @@ static const string LocalError(const int iErrNo=errno)
   return strErr;
 }
 /* -- Helper plugin for C runtime errno checking --------------------------- */
-class ErrorPluginStandard
-{ /* -- Exception class helper macro for C runtime errors --------- */ private:
-  #define XCL(r,...) throw Error<ErrorPluginStandard>(r, ## __VA_ARGS__)
-  /* -- Constructor to add C runtime error code -------------------- */ public:
+struct ErrorPluginStandard final
+{ /* -- Exception class helper macro for C runtime errors ------------------ */
+#define XCL(r,...) throw Error<ErrorPluginStandard>(r, ## __VA_ARGS__)
+  /* -- Constructor to add C runtime error code ---------------------------- */
   explicit ErrorPluginStandard(ostringstream &osS)
     { osS << "\n+ Reason<" << GetErrNo() << "> = \""
           << LocalError() << "\"."; }
 };/* ----------------------------------------------------------------------- */
 /* -- Convert special formatted string to unix timestamp ------------------- */
-static STDTIMET ParseTime2(const string &strS)
+static StdTimeT ParseTime2(const string &strS)
 { // Time structure
-  struct tm tData;
+  StdTMStruct tData;
   // Scan timestamp into time structure (Don't care about day name). We'll
   // store the timezone in tm_isdst and we'll optimise this by storing the
   // month string in the actual month integer var (4 or 8 bytes so safe).
@@ -245,16 +248,15 @@ static STDTIMET ParseTime2(const string &strS)
   // No daylight savings
   tData.tm_isdst = 0;
   // Return timestamp and adjust for specified timezone if neccesary
-  return STDMKTIME(&tData) +
-    (!tData.tm_wday ? 0 : ((tData.tm_wday < 0 ?
+  return StdMkTime(&tData) + (!tData.tm_wday ? 0 : ((tData.tm_wday < 0 ?
     ((tData.tm_wday % 100) * 60) : -((tData.tm_wday % 100) * 60)) +
     ((tData.tm_wday / 100) * 3600)));
 }
 /* -- Convert ISO 8601 string to unix timestamp ---------------------------- */
-static STDTIMET ParseTime(const string &strS,
+static StdTimeT ParseTime(const string &strS,
   const char*const cpF="%Y-%m-%dT%TZ")
 { // Time structure
-  struct tm tData;
+  StdTMStruct tData;
   // Create static input stringstream (safe and fast in c++11)
   istringstream isS{ strS };
   // Scan timestamp into time structure
@@ -263,7 +265,7 @@ static STDTIMET ParseTime(const string &strS,
   // Fill in other useless junk in the struct
   tData.tm_isdst = 0;
   // Return timestamp
-  return STDMKTIME(&tData);
+  return StdMkTime(&tData);
 }
 /* -- Convert writable reference string to uppercase ----------------------- */
 static string &ToUpperRef(string &strStr)
@@ -369,21 +371,21 @@ template<typename T>static const char *Pluralise(const T tCount,
 /* ------------------------------------------------------------------------- */
 template<typename T>static const string PluraliseNum(const T tCount,
   const char*const cpSingular, const char*const cpPlural)
-   { return move(Append(tCount, ' ',
-       move(Pluralise(tCount, cpSingular, cpPlural)))); }
+   { return std::move(Append(tCount, ' ',
+       std::move(Pluralise(tCount, cpSingular, cpPlural)))); }
 /* ------------------------------------------------------------------------- */
 template<typename T>static const string PluraliseNumEx(const T tCount,
   const char*const cpSingular, const char*const cpPlural)
-   { return move(Append(FormatNumber(tCount), ' ',
-       move(Pluralise(tCount, cpSingular, cpPlural)))); }
+   { return std::move(Append(FormatNumber(tCount), ' ',
+       std::move(Pluralise(tCount, cpSingular, cpPlural)))); }
 /* -- Convert time to long duration ---------------------------------------- */
-static const string ToDuration(const STDTIMET tDuration,
+static const string ToDuration(const StdTimeT tDuration,
   unsigned int uiCompMax = numeric_limits<unsigned int>::max())
 { // Time buffer
-  struct tm tD;
+  StdTMStruct tD;
   // Lets convert the duration as a time then it will be properly formated
   // in terms of leap years, proper days in a month etc.
-  STDGMTIME(&tD, &tDuration);
+  StdGMTime(&tD, &tDuration);
   // Output string
   ostringstream osS;
   // If failed? Manually do it
@@ -466,7 +468,7 @@ static const string
             bcpPair.second) : strOut; }); }
 /* -- Convert time to short duration --------------------------------------- */
 static const string ToShortDuration(const double fdDuration,
-  const int iPrecision=3)
+  const int iPrecision=6)
 { // Output string
   ostringstream osS;
   // Get duration ceiled and if negative?
@@ -498,7 +500,7 @@ static const string ToShortDuration(const double fdDuration,
   osS << fmod(fdInt, 60);
   if(iPrecision > 0)
     osS << '.' << setw(iPrecision) <<
-      static_cast<unsigned int>(abs(fdFrac) * pow(10.0, iPrecision));
+      static_cast<unsigned int>(fabs(fdFrac) * pow(10.0, iPrecision));
   // Return string
   return osS.str();
 }
@@ -508,8 +510,8 @@ static const char *TrueOrFalse(const bool bCondition)
 static const char *YesOrNo(const bool bCondition)
   { return bCondition ? "X" : "-"; }
 /* ------------------------------------------------------------------------- */
-static size_t FindCharForwards(const string &strS, size_t stStart,
-  const size_t stEnd, const char*const cpChars)
+[[maybe_unused]] static size_t FindCharForwards(const string &strS,
+  size_t stStart, const size_t stEnd, const char*const cpChars)
 { // Ignore if invalid parameter
   if(!cpChars) return string::npos;
   // Until we've reached the limit
@@ -580,7 +582,7 @@ static const string ImplodeMap(const StrNCStrMap &ssmSrc,
   StrVector svRet; svRet.reserve(ssmSrc.size());
   transform(ssmSrc.cbegin(), ssmSrc.cend(), back_inserter(svRet),
     [&strKeyValSep, &strValEncaps](const auto &vIter)
-      { return move(Append(vIter.first, strKeyValSep,
+      { return std::move(Append(vIter.first, strKeyValSep,
           strValEncaps, vIter.second, strValEncaps)); });
   // Return vector imploded into a string
   return Implode(svRet, strLineSep);
@@ -604,11 +606,12 @@ template<typename T>static const string Implode(const T sdL,
 /* ------------------------------------------------------------------------- */
 template<typename T>
   static const string PlusOrMinus(const T tVal, const int iPrecision)
-    { return move(Append(showpos, fixed, setprecision(iPrecision), tVal)); }
+    { return std::move(Append(showpos, fixed, setprecision(iPrecision),
+        tVal)); }
 /* ------------------------------------------------------------------------- */
 template<typename T>
   static const string PlusOrMinusEx(const T tVal, const int iPrecision)
-    { return move(AppendImbued(showpos, fixed,
+    { return std::move(AppendImbued(showpos, fixed,
         setprecision(iPrecision), tVal)); }
 /* ------------------------------------------------------------------------- */
 template<typename OutType, typename InType, class SuffixClass>
@@ -812,8 +815,8 @@ static size_t FindCharForwards(const string &strS, size_t stStart,
   return string::npos;
 }
 /* ------------------------------------------------------------------------- */
-static size_t FindCharBackwards(const string &strS, size_t stStart,
-  const size_t stEnd, const char cpChar)
+[[maybe_unused]] static size_t FindCharBackwards(const string &strS,
+  size_t stStart, const size_t stEnd, const char cpChar)
 { // Until we've reached the limit
   while(stStart >= stEnd && stStart != string::npos)
   { // Return position if we find the character
@@ -824,8 +827,8 @@ static size_t FindCharBackwards(const string &strS, size_t stStart,
   return string::npos;
 }
 /* ------------------------------------------------------------------------- */
-static size_t FindCharNotForwards(const string &strS, size_t stStart,
-  const size_t stEnd, const char cpChar)
+[[maybe_unused]] static size_t FindCharNotForwards(const string &strS,
+  size_t stStart, const size_t stEnd, const char cpChar)
 { // Until we've reached the limit
   while(stStart < stEnd && stStart != string::npos)
   { // Return position if we find the character
@@ -848,8 +851,8 @@ static size_t FindCharNotForwards(const string &strS, size_t stStart,
   return string::npos;
 }
 /* ------------------------------------------------------------------------- */
-static size_t FindCharNotBackwards(const string &strS, size_t stStart,
-  const size_t stEnd, const char cpChar)
+[[maybe_unused]] static size_t FindCharNotBackwards(const string &strS,
+  size_t stStart, const size_t stEnd, const char cpChar)
 { // Until we've reached the limit
   while(stStart >= stEnd && stStart != string::npos)
   { // Return position if we find the character
@@ -872,21 +875,29 @@ static size_t FindCharNotBackwards(const string &strS, size_t stStart,
   return string::npos;
 }
 /* -- Do convert the specified structure to string ------------------------= */
-static const string FormatTimeTM(const struct tm &tmData, const char*const cpF)
-  { return Append(put_time(&tmData, cpF)); }
+static const string FormatTimeTM(const StdTMStruct &tmData,
+  const char*const cpF) { return Append(put_time(&tmData, cpF)); }
 /* -- Convert specified timestamp to string -------------------------------- */
-static const string FormatTimeTT(const STDTIMET ttTimestamp,
+static const string FormatTimeTT(const StdTimeT ttTimestamp,
   const char*const cpFormat = cpTimeFormat)
 { // Convert it to local time in a structure
-  struct tm tmData; STDLOCALTIME(&tmData, &ttTimestamp);
+  StdTMStruct tmData; StdLocalTime(&tmData, &ttTimestamp);
   // Do the parse and return the string
   return FormatTimeTM(tmData, cpFormat);
 }
+/* -- Remove suffixing carriage return and line feed ----------------------- */
+static string &Chop(string &strStr)
+{ // Error message should have a carriage return/line feed so remove it
+  while(!strStr.empty() && (strStr.back() == '\r' || strStr.back() == '\n'))
+    strStr.pop_back();
+  // Return string
+  return strStr;
+}
 /* -- Convert specified timestamp to string (UTC) -------------------------- */
-static const string FormatTimeTTUTC(const STDTIMET ttTimestamp,
+static const string FormatTimeTTUTC(const StdTimeT ttTimestamp,
   const char*const cpFormat = cpTimeFormat)
 { // Convert it to local time
-  struct tm tmData; STDGMTIME(&tmData, &ttTimestamp);
+  StdTMStruct tmData; StdGMTime(&tmData, &ttTimestamp);
   // Do the parse and return the string
   return FormatTimeTM(tmData, cpFormat);
 }
@@ -912,6 +923,24 @@ template<typename FloatType>
   return Append(fixed, setprecision(0), ceil(fdLeft / fdDivisor), ':',
     ceil(fdRight / fdDivisor));
 }
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* -- Convert string to lower case ----------------------------------------- */
+[[maybe_unused]] static const string ToLower(const string &strSrc)
+{ // Create memory for destination string and copy the string over
+  string strDst; strDst.resize(strSrc.length());
+  for(size_t stI = 0; stI < strSrc.size(); ++stI)
+    strDst[stI] = static_cast<char>(tolower(static_cast<int>(strSrc[stI])));
+  // Return copied string
+  return strDst;
+}
+/* -- Convert string to upper case ----------------------------------------- */
+[[maybe_unused]] static const string ToUpper(const string &strSrc)
+{ // Create memory for destination string and copy the string over
+  string strDst; strDst.resize(strSrc.length());
+  for(size_t stI = 0; stI < strSrc.size(); ++stI)
+    strDst[stI] = static_cast<char>(toupper(static_cast<int>(strSrc[stI])));
+  // Return copied string
+  return strDst;
+}
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

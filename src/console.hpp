@@ -8,19 +8,19 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfConsole {                  // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfConsole {                  // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfFboMain;             // Using fbomain interface
-using namespace IfFont;                // Using font interface
-using namespace IfSocket;              // Using socket interface
+using namespace IfFboMain;             // Using fbomain namespace
+using namespace IfFont;                // Using font namespace
+using namespace IfSocket;              // Using socket namespace
 /* -- Minor includes ------------------------------------------------------- */
 using IfConLib::ConLib;                // We do not want to 'use' the entire
 using IfConLib::ConCbFunc;             // reasons.
 /* == Typedefs ============================================================= */
 BUILD_FLAGS(Console,                   // Console flags classes
   /* --------------------------------------------------------------------- */
-  // No settings?                      Can't disable console?
+  // No settings?                      Can't disable console? (temporary)
   CF_NONE                {0x00000000}, CF_CANTDISABLE         {0x00000001},
   // Ignore first key on show console? Autoscroll on message?
   CF_IGNOREKEY           {0x00000002}, CF_AUTOSCROLL          {0x00000004},
@@ -28,8 +28,8 @@ BUILD_FLAGS(Console,                   // Console flags classes
   CF_REDRAW              {0x00000008}, CF_AUTOCOPYCVAR        {0x00000010},
   // Character insert mode?            Console displayed?
   CF_INSERT              {0x00000020}, CF_ENABLED             {0x00000040},
-  // Ignore escape key?
-  CF_IGNOREESC           {0x00000080}
+  // Ignore escape key?                Can't disable console? (guest setting)
+  CF_IGNOREESC           {0x00000080}, CF_CANTDISABLEGLOBAL   {0x00000100}
 );/* ======================================================================= */
 BUILD_FLAGS(AutoComplete,              // Autocomplete flags classes
   /* ----------------------------------------------------------------------- */
@@ -40,7 +40,7 @@ BUILD_FLAGS(AutoComplete,              // Autocomplete flags classes
   /* ----------------------------------------------------------------------- */
   AC_MASK{ AC_COMMANDS|AC_CVARS }      // All flags
 );/* ======================================================================= */
-static class Console :                 // The console class
+static class Console final :           // The console class
   /* -- Base classes ------------------------------------------------------- */
   private ConLines,                    // Console text lines list
   private ConLinesConstIt,             // Text lines forward iterator
@@ -70,10 +70,15 @@ static class Console :                 // The console class
                    strStatusRight,     // Text-mode console right status text
                    strTimeFormat;      // Default time format
   /* -- Graphics ----------------------------------------------------------- */
+  const uint32_t   ulFgColour;         // Console input text colour
   uint32_t         ulBgColour;         // Console background texture colour
   Colour           cTextColour;        // Console text colour
-  GLfloat          fScale,             // Console font scale
-                   fConsoleHeight;     // Console height
+  GLfloat          fTextScale,         // Console font scale
+                   fConsoleHeight,     // Console height
+                   fTextLetterSpacing, // Console text letter spacing
+                   fTextLineSpacing,   // Console text line spacing
+                   fTextWidth,         // Console text width
+                   fTextHeight;        // Console text height
   Texture          ctConsole;          // Console background texture
   Font             cfConsole;          // Console font
   char             cCursor;            // Cursor character to use
@@ -111,13 +116,14 @@ static class Console :                 // The console class
   { // Bail if no commands
     if(lfList.empty()) return;
     // Say arrays unloadinghow many arrays loaded
-    LW(LH_DEBUG, "Console unloading $ virtual commands...", lfList.size());
+    cLog->LogDebugExSafe("Console unloading $ virtual commands...",
+      lfList.size());
     // Unregister each lua command until...
     do UnregisterLuaCommand(lfList.begin()->first);
     // ...the command list is empty
     while(!lfList.empty());
     // Say how many arrays loaded
-    LW(LH_INFO, "Console unloaded virtual commands.");
+    cLog->LogInfoSafe("Console unloaded virtual commands.");
   }
   /* -- Register user console command from lua ----------------------------- */
   void RegisterLuaCommand(lua_State*const lS)
@@ -330,7 +336,7 @@ static class Console :                 // The console class
   { // Build command by appending text before and after the cursor
     const string strCmd{ InputText() };
     // Copy to clipboard if not empty
-    if(!strCmd.empty()) cGlFW->SetClipboardString(strCmd);
+    if(!strCmd.empty()) cGlFW->WinSetClipboardString(strCmd);
   }
   /* -- Paste text --------------------------------------------------------- */
   void PasteText(void) { cEvtMain->Add(EMC_INP_PASTE); }
@@ -488,11 +494,9 @@ static class Console :                 // The console class
   /* -- Reset defaults (for lreset) ---------------------------------------- */
   void RestoreDefaultProperties(void)
   { // Restore default settings from cvar registry
-    SetTextSpacing(cCVars->GetInternalSafe<GLfloat>(CON_FONTSPACING));
-    SetTextColour(cCVars->GetInternalSafe<size_t>(CON_FONTCOLOUR));
-    SetTextScale(cCVars->GetInternalSafe<GLfloat>(CON_FONTSCALE));
-    SetTextLineSpacing(cCVars->GetInternalSafe<GLfloat>(CON_FONTLSPACING));
-    SetBackgroundColour(cCVars->GetInternalSafe<uint32_t>(CON_BGCOLOUR));
+    CommitLetterSpacing();
+    CommitScale();
+    CommitLineSpacing();
   }
   /* -- Init console font -------------------------------------------------- */
   void InitConsoleFont(void)
@@ -501,12 +505,10 @@ static class Console :                 // The console class
     // the cvars havn't been initialised
     Ftf fFTFont;
     fFTFont.InitFile(cCVars->GetInternalStrSafe(CON_FONT),
-      cCVars->GetInternalSafe<GLfloat>(CON_FONTWIDTH),
-      cCVars->GetInternalSafe<GLfloat>(CON_FONTHEIGHT), 96, 96, 0.0);
+      fTextWidth, fTextHeight, 96, 96, 0.0);
     cfConsole.InitFTFont(fFTFont,
       cCVars->GetInternalSafe<GLuint>(CON_FONTTEXSIZE),
-      cCVars->GetInternalSafe<GLuint>(CON_FONTPADDING), 11,
-      FontFlagsConst(cCVars->GetInternalSafe<unsigned int>(CON_FONTFLAGS)));
+      cCVars->GetInternalSafe<GLuint>(CON_FONTPADDING), 11, cfConsole);
     // Get minimum precache range and if valid?
     if(const unsigned int uiCharMin =
       cCVars->GetInternalSafe<unsigned int>(CON_FONTPCMIN))
@@ -543,7 +545,7 @@ static class Console :                 // The console class
     const string &strVarOrCmd = aList[0];
     if(strVarOrCmd.empty()) return;
     // Dump whole input to log
-    AddLine(Append('>', strCmd), COLOUR_YELLOW);
+    AddLineExC(COLOUR_YELLOW, '>', strCmd);
     // Reset scrolling position if flag set and not at the bottom.
     if(FlagIsSet(CF_AUTOSCROLL)) MoveLogEnd();
     // If console is not actually enabled ignore the command. We will just add
@@ -567,7 +569,7 @@ static class Console :                 // The console class
           osS << "is currently " << cCVars->Protect(strVarOrCmd) << "!";
           // Copy it to clipboard if requested
           if(FlagIsSet(CF_AUTOCOPYCVAR))
-            cGlFW->SetClipboardString(Format("$ \"$\"",
+            cGlFW->WinSetClipboardString(Format("$ \"$\"",
               strVarOrCmd, cCVars->GetStrSafe(strVarOrCmd)));
         } // Else set item and get return value
         else switch(const CVarSetEnums cscResult =
@@ -623,7 +625,7 @@ static class Console :                 // The console class
           osS << "exists!";
           // Copy to clipboard
           if(FlagIsSet(CF_AUTOCOPYCVAR))
-            cGlFW->SetClipboardString(Format("$ \"$\"",
+            cGlFW->WinSetClipboardString(Format("$ \"$\"",
               strVarOrCmd, cCVars->GetInitialVarSafe(strVarOrCmd)));
         } // Set the value and say if it worked
         else if(cCVars->SetExistingInitialVar(strVarOrCmd, aList[1]))
@@ -651,10 +653,19 @@ static class Console :                 // The console class
       } // exception did occur
       catch(const exception &E)
       { // Print the output in the console
-        AddLine(Append("Console CB failed! > ", E.what()));
+        AddLineExA("Console CB failed! > ", E.what());
       } // Carry on executing as normal
     }
   }
+  /* -- Commit default text scale ------------------------------------------ */
+  void CommitScale(void)
+    { cfConsole.SetSize(fTextScale); }
+  /* -- Commit default letter spacing -------------------------------------- */
+  void CommitLetterSpacing(void)
+    { cfConsole.SetCharSpacing(fTextLetterSpacing); }
+  /* -- Commit default line spacing ---------------------------------------- */
+  void CommitLineSpacing(void)
+    { cfConsole.SetLineSpacing(fTextLineSpacing); }
   /* -- Get console textures --------------------------------------- */ public:
   Texture *GetTexture(void) { return &ctConsole; }
   Font *GetFont(void) { return &cfConsole; }
@@ -668,7 +679,7 @@ static class Console :                 // The console class
   /* -- Set time format ---------------------------------------------------- */
   CVarReturn SetTimeFormat(const string &strFmt, string &)
   { // Verify the new time format and log it
-    LW(LH_INFO, "Console time from format '$' is '$'.",
+    cLog->LogInfoExSafe("Console time from format '$' is '$'.",
       strFmt, cmSys.FormatTime(strFmt.c_str()));
     // Accept the new time format
     strTimeFormat = strFmt;
@@ -749,18 +760,6 @@ static class Console :                 // The console class
     // Succeeded
     return ACCEPT;
   }
-  /* -- Set console text colour -------------------------------------------- */
-  CVarReturn SetTextColour(const size_t stColour)
-  { // Don't alloow alpha to be set
-    if(stColour >= COLOUR_MAX) return DENY;
-    // If have font? set it's colour
-    cTextColour = static_cast<Colour>(stColour);
-    // Done (even if no font)
-    return ACCEPT;
-  }
-  /* -- Set console background colour -------------------------------------- */
-  CVarReturn SetBackgroundColour(const uint32_t ulRGB)
-    { return CVarSimpleSetInt(ulBgColour, ulRGB); }
   /* -- Set console input status bar (left and right) ---------------------- */
   void SetStatusLeft(const string &strValue) { strStatusLeft = strValue; }
   void SetStatusRight(const string &strValue) { strStatusRight = strValue; }
@@ -856,28 +855,30 @@ static class Console :                 // The console class
                              fboC.fcStage.GetCoTop(),
                              fboC.fcStage.GetCoRight(),
                              fboC.fcStage.GetCoBottom());
-    // Set console text size and scale
-    cfConsole.SetSize(fScale);
-    cfConsole.SetQuadAlpha(1);
-    cfConsole.SetQuadRGBInt(uiNDXtoRGB[COLOUR_YELLOW]);
+    // Set console input text colour
+    cfConsole.SetQuadRGBAInt(ulFgColour);
+    // Restore spacing and scale as well
+    CommitLetterSpacing();
+    CommitLineSpacing();
+    CommitScale();
     // Get below baseline height
     const GLfloat fBL = (fboC.fcStage.GetCoBottom() -
       cfConsole.GetBaselineBelow('g')) + cfConsole.fLineSpacing;
     // Draw input text and subtract the height drawn from Y position
     GLfloat fY = fBL - cfConsole.PrintWU(fboC.fcStage.GetCoLeft(), fBL,
-      fboC.fcStage.GetCoRight(), cfConsole.fSWidth,
+      fboC.fcStage.GetCoRight(), cfConsole.dfScale.DimGetWidth(),
         reinterpret_cast<const GLubyte*>(Format(">$\rc000000ff$\rr$",
           strConsoleBegin, cCursor, strConsoleEnd).c_str()));
     // For each line or until we clip the top of the screen, print the text
-    for(ConLinesConstRevIt clI{ clriPosition }; clI != rend() && fY > 0; ++clI)
+    for(ConLinesConstRevIt clI{ clriPosition }; clI!=crend() && fY>0; ++clI)
     { // Get reference to console line data structure
       const ConLine &clD = *clI;
-      // Set text colour
+      // Set text foreground colour with opaqueness already set above
       cfConsole.SetQuadRGBInt(uiNDXtoRGB[clD.cColour]);
       // Draw the text and move upwards of the height that was used
       fY -= cfConsole.PrintWU(fboC.fcStage.GetCoLeft(), fY,
         fboC.fcStage.GetCoRight(),
-          cfConsole.fSWidth, reinterpret_cast<const GLubyte*>
+          cfConsole.dfScale.DimGetWidth(), reinterpret_cast<const GLubyte*>
             (clD.strLine.c_str()));
     } // Finish and render
     fboC.FinishAndRender();
@@ -889,8 +890,7 @@ static class Console :                 // The console class
   /* -- Copy all console lines to log -------------------------------------- */
   size_t ToLog(void)
   { // Write all console lines to log
-    for(const ConLine &clItem : *this)
-      cLog->WriteStringSafe(LH_DEBUG, clItem.strLine);
+    for(const ConLine &clItem : *this) cLog->LogNLCDebugSafe(clItem.strLine);
     // Return lines in buffer
     return size();
   }
@@ -912,17 +912,17 @@ static class Console :                 // The console class
   { // Ignore if no commands registered
     if(llCmds.empty())
     { // Report that we're not unregistered
-      LW(LH_WARNING, "Console unregistering no commands!");
+      cLog->LogWarningSafe("Console unregistering no commands!");
       // Done
       return;
     } // Unregister all commands quickly
     const size_t stCount = llCmds.size();
     // Report that we're removing all the commands quickly
-    LW(LH_DEBUG, "Console flushing $ commands...", stCount);
+    cLog->LogDebugExSafe("Console flushing $ commands...", stCount);
     // Remove all commands quickly
     llCmds.clear();
     // eport that we're removing all the commands quickly
-    LW(LH_INFO, "Console flushed $ commands.", stCount);
+    cLog->LogInfoExSafe("Console flushed $ commands.", stCount);
   }
   /* -- Do clear console, clear history and reset position ----------------- */
   void DoFlush(void) { clear(); clriPosition = rbegin(); }
@@ -933,21 +933,21 @@ static class Console :                 // The console class
   { // Using command function namespace
     using IfConLib::conLibList;
     // Say how many commands we are registering
-    LW(LH_DEBUG, "Console registering $ built-in commands...",
+    cLog->LogDebugExSafe("Console registering $ built-in commands...",
       conLibList.size());
     // Iterate each item and register it
     for(const ConLib &clD : conLibList)
     { // The selected gui mode does not require this command?
       if(cSystem->IsNotGuiMode(clD.guimMin))
       { // Say that we ignored this library
-        LW(LH_DEBUG, "Console ignoring registration of command '$'.",
+        cLog->LogDebugExSafe("Console ignoring registration of command '$'.",
           clD.strName);
         // Try next command
         continue;
       } // Register the command
       RegisterCommand(clD.strName, clD.uiMinimum, clD.uiMaximum, clD.ccbFunc);
     } // Say how many commands we registered
-    LW(LH_INFO, "Console registered $ of $ built-in commands.",
+    cLog->LogInfoExSafe("Console registered $ of $ built-in commands.",
       llCmds.size(), conLibList.size());
   }
   /* -- Check that the console variable name is valid ---------------------- */
@@ -1063,8 +1063,6 @@ static class Console :                 // The console class
     } // ...Until we have cleared enough lines
     while(size() > stRemove);
   }
-  /* -- Add line as string with default text colour ------------------- */
-  void AddLine(const string &strText) { AddLine(strText, cTextColour); }
   /* -- Add line as string with specified text colour ----------------- */
   void AddLine(const string &strText, const Colour pColour)
   { // Tokenise lines into a list limited by the maximum number of lines.
@@ -1076,13 +1074,28 @@ static class Console :                 // The console class
     const bool bAtBottom = clriPosition == rbegin();
     // Add each line we separated
     for(const string &sLine : tLines)
-      push_back({ cLog->CCDeltaToDouble(), pColour, move(sLine) });
+      push_back({ cLog->CCDeltaToDouble(), pColour, std::move(sLine) });
     // Auto scroll enabled or were already at the bottom of log? Set the log
     // to the bottom.
     if(FlagIsSet(CF_AUTOSCROLL) || bAtBottom) clriPosition = rbegin();
     // Redraw the buffer, it changed
     SetRedraw();
   }
+  /* -- Add line as string with default text colour ------------------- */
+  void AddLine(const string &strText) { AddLine(strText, cTextColour); }
+  /* -- Formatted console output ------------------------------------------- */
+  template<typename... VarArgs>void AddLineEx(const char*const cpFormat,
+    const VarArgs &...vaArgs)
+      { AddLine(Format(cpFormat, vaArgs...)); }
+  /* -- Formatted console output with colour ------------------------------- */
+  template<typename... VarArgs>void AddLineEx(const Colour pColour,
+    const char*const cpFormat, const VarArgs &...vaArgs)
+      { AddLine(Format(cpFormat, vaArgs...), pColour); }
+  /* -- Formatted console output using Append() ---------------------------- */
+  template<typename... VarArgs>void AddLineExC(const Colour pColour,
+    const VarArgs &...vaArgs) { AddLine(Append(vaArgs...), pColour); }
+  template<typename... VarArgs>void AddLineExA(const VarArgs &...vaArgs)
+    { AddLineExC(cTextColour, vaArgs...); }
   /* -- Set text-mode console refresh rate --------------------------------- */
   CVarReturn RefreshModified(const unsigned int uiMS)
   { // Ignore if invalid
@@ -1096,30 +1109,27 @@ static class Console :                 // The console class
   CVarReturn SetHeight(const GLfloat fHeight)
     { return CVarSimpleSetIntNLG(fConsoleHeight, fHeight, 0.1f, 1.0f); }
   /* -- Set Console status ------------------------------------------------- */
-  CVarReturn SetCantDisable(const bool bState)
+  void SetCantDisable(const bool bState)
   { // Ignore if not in graphical mode because CON_HEIGHT isn't defined in
     // bot mode as it is unneeded or the flag is already set as such.
-    if(cfConsole.IsNotInitialised()) return ACCEPT;
-    // If state changed?
-    if(FlagIsNotEqualToBool(CF_CANTDISABLE, bState))
-    { // Set the state and if can no longer be disabled?
-      FlagSetOrClear(CF_CANTDISABLE, bState);
-      if(FlagIsSet(CF_CANTDISABLE))
-      { // Log that the console has beend disabled
-        LW(LH_DEBUG, "Console visibility control has been disabled.");
-        // Make sure console is showing
-        DoSetVisible(true);
-        // Set full height and return
-        SetHeight(1);
-      } // Disabling?
-      else
-      { // Log that the console can now be disabled
-        LW(LH_DEBUG, "Console visibility control has been enabled.");
-        // Restore user defined height
-        SetHeight(cCVars->GetInternalSafe<GLfloat>(CON_HEIGHT));
-      }
-    } // Done
-    return ACCEPT;
+    if(cfConsole.IsNotInitialised()) return;
+    // Return if state not changed
+    if(FlagIsEqualToBool(CF_CANTDISABLE, bState)) return;
+    // Set the state and if can no longer be disabled?
+    FlagSetOrClear(CF_CANTDISABLE, bState);
+    if(FlagIsSet(CF_CANTDISABLE))
+    { // Log that the console has beend disabled
+      cLog->LogDebugSafe("Console visibility control has been disabled.");
+      // Make sure console is showing
+      DoSetVisible(true);
+      // Set full height and return
+      SetHeight(1);
+      // Done
+      return;
+    } // Disabling so log that the console can now be disabled
+    cLog->LogDebugSafe("Console visibility control has been enabled.");
+    // Restore user defined height
+    SetHeight(cCVars->GetInternalSafe<GLfloat>(CON_HEIGHT));
   }
   /* -- Do Set Console status ---------------------------------------------- */
   bool DoSetVisible(const bool bState)
@@ -1128,7 +1138,7 @@ static class Console :                 // The console class
     { // Set console enabled and redraw the buffer
       FlagSet(CF_REDRAW|CF_ENABLED);
       // Log that the console has been enabled
-      LW(LH_DEBUG, "Console has been enabled.");
+      cLog->LogDebugSafe("Console has been enabled.");
     } // Disabled and not disabled?
     else if(!bState && IsVisible())
     { // Set console disabled and clear redraw flag
@@ -1136,11 +1146,11 @@ static class Console :                 // The console class
       // We'll need to force a final draw in order to visibly hide the console
       cFboMain->SetDraw();
       // Log that the console has been disabled
-      LW(LH_DEBUG, "Console has been disabled.");
+      cLog->LogDebugSafe("Console has been disabled.");
     } // Say that nothing changed
     else
     { // Log the request
-      LW(LH_WARNING, "Console has already been $.",
+      cLog->LogWarningExSafe("Console has already been $.",
         bState ? "enabled" : "disabled");
       // Failed
       return false;
@@ -1149,11 +1159,9 @@ static class Console :                 // The console class
   }
   /* -- Set Console visibility --------------------------------------------- */
   bool SetVisible(const bool bState)
-  { // Enabling?
-    if(bState)
-    { // We cant enabled if cvar is disabled
-      if(cCVars->GetInternalSafe<bool>(CON_DISABLED)) return false;
-    } // Disabling but can't disable? Return failure
+  { // Enabling? We cant enable if disabled
+    if(bState) { if(FlagIsSet(CF_CANTDISABLEGLOBAL)) return false; }
+    // Disabling but can't disable? Return failure
     else if(FlagIsSet(CF_CANTDISABLE)) return false;
     // Do set enabled
     return DoSetVisible(bState);
@@ -1165,58 +1173,30 @@ static class Console :                 // The console class
     // Get console fbo and font
     Fbo &fboC = cFboMain->fboConsole;
     // Set console text size so the scaled size is properly calculated
-    cfConsole.SetSize(fScale);
+    CommitScale();
     // Estimate amount of triangles that would fit in the console and if
     // we have a non-zero value?
     if(const size_t stTriangles = static_cast<size_t>(
-      (ceil(static_cast<GLfloat>(fboC.stFBOWidth)/ceil(cfConsole.fSWidth))*
-       ceil(static_cast<GLfloat>(fboC.stFBOHeight)/ceil(cfConsole.fSHeight)))
-      +2))
+      (ceilf(fboC.DimGetWidth<GLfloat>() /
+       ceilf(cfConsole.dfScale.DimGetWidth())) *
+       ceilf(fboC.DimGetHeight<GLfloat>() /
+       ceilf(cfConsole.dfScale.DimGetHeight()))) + 2))
       // Try to reserve the triangles and 2 commands and log if failed!
       if(!fboC.Reserve(stTriangles, 2))
-        LW(LH_WARNING, "Console fbo failed to reserve $ triangles!",
+        cLog->LogWarningExSafe("Console fbo failed to reserve $ triangles!",
           stTriangles);
-  }
-  /* -- Set console text scale --------------------------------------------- */
-  CVarReturn SetTextScale(const GLfloat fNewScale)
-  { // Failed if supplied scale is not in range
-    if(fNewScale <= 0.01f || fNewScale > 1.00f) return DENY;
-    // Set new font scale
-    fScale = fNewScale;
-    // Reallocate memory if neccesary for fbo lists
-    RecalculateFboListReserves();
-    // Succeeded reglardless of font availability
-    return ACCEPT;
-  }
-  /* -- Set console text line spacing -------------------------------------- */
-  CVarReturn SetTextLineSpacing(const GLfloat fSpacing)
-  { // Failed if supplied spacing is not in range
-    if(fSpacing < -256.0f || fSpacing > 256.0f) return DENY;
-    // Set console text line spacing if texture available
-    cfConsole.SetLineSpacing(fSpacing);
-    // Succeeded reglardless of font availability
-    return ACCEPT;
-  }
-  /* -- Set console text character spacing --------------------------------- */
-  CVarReturn SetTextSpacing(const GLfloat fSpacing)
-  { // Failed if supplied spacing is not in range
-    if(fSpacing < -256.0f || fSpacing > 256.0f) return DENY;
-    // Set console text line spacing if texture available
-    cfConsole.SetCharSpacing(fSpacing);
-    // Succeeded reglardless of font availability
-    return ACCEPT;
   }
   /* -- Print version information ------------------------------------------ */
   void PrintVersion(void)
   { // Show engine version
-    AddLine(Format(
+    AddLineEx(
       "$ ($) version $.$.$ build $ for $.\n"
       "Compiled $ using $ version $.\n"
       "Copyright \xC2\xA9 $, 2006-$. All Rights Reserved.",
       cSystem->ENGName(), cSystem->ENGBuildType(), cSystem->ENGMajor(),
-      cSystem->ENGMinor(), cSystem->ENGRevision(), cSystem->ENGBuild(),
+      cSystem->ENGMinor(), cSystem->ENGBuild(), cSystem->ENGRevision(),
       cSystem->ENGTarget(), cSystem->ENGCompiled(), cSystem->ENGCompiler(),
-      cSystem->ENGCompVer(), cSystem->ENGAuthor(), cmSys.FormatTime("%Y")));
+      cSystem->ENGCompVer(), cSystem->ENGAuthor(), cmSys.FormatTime("%Y"));
     // Add disclaimer that the author of the engine disclaims all liability for
     // guest software actions and user usage.
     AddLine("Disclaimer: This scripting ENGINE is designed ONLY for "
@@ -1229,20 +1209,20 @@ static class Console :                 // The console class
       "liability for how the GUEST author or the END user chooses to use this "
       "software.", COLOUR_RED);
     // Write guest info in a different colour
-    AddLine(Format("Guest is $ ($) version $ by $.",
+    AddLineEx(COLOUR_GREEN, "Guest is $ ($) version $ by $.",
       cCVars->GetInternalStrSafe(APP_LONGNAME),
       cCVars->GetInternalStrSafe(APP_SHORTNAME),
       cCVars->GetInternalStrSafe(APP_VERSION),
-      cCVars->GetInternalStrSafe(APP_AUTHOR)), COLOUR_GREEN);
+      cCVars->GetInternalStrSafe(APP_AUTHOR));
     // Get optional variables
     const string &strCopy = cCVars->GetInternalStrSafe(APP_COPYRIGHT);
-    if(!strCopy.empty()) AddLine(Append(strCopy, '.'), COLOUR_GREEN);
+    if(!strCopy.empty()) AddLineExC(COLOUR_GREEN, strCopy, '.');
     const string &strDesc = cCVars->GetInternalStrSafe(APP_DESCRIPTION);
-    if(!strDesc.empty()) AddLine(Append(strDesc, '.'), COLOUR_GREEN);
+    if(!strDesc.empty()) AddLineExC(COLOUR_GREEN, strDesc, '.');
     const string &strSite = cCVars->GetInternalStrSafe(APP_WEBSITE);
     if(!strSite.empty())
-      AddLine(Format("Visit $ for more info, help and updates.", strSite),
-        COLOUR_GREEN);
+      AddLineEx(COLOUR_GREEN, "Visit $ for more info, help and updates.",
+        strSite);
   }
   /* -- DeInit console texture and font ------------------------------------ */
   void DeInitTextureAndFont(void)
@@ -1277,7 +1257,7 @@ static class Console :                 // The console class
   { // Class intiialised
     IHInitialise();
     // Log progress
-    LW(LH_DEBUG, "Console initialising...");
+    cLog->LogDebugSafe("Console initialising...");
     // Register core commands
     RegisterCommandList();
     // Reset cursor position
@@ -1289,7 +1269,7 @@ static class Console :                 // The console class
     // Register lua events
     cEvtMain->RegisterEx(reEvents);
     // Log progress
-    LW(LH_INFO, "Console created.");
+    cLog->LogInfoSafe("Console created.");
     // Show version information
     PrintVersion();
   }
@@ -1298,7 +1278,7 @@ static class Console :                 // The console class
   { // Ignore if already deinitialised
     if(IHNotDeInitialise()) return;
     // Log progress
-    LW(LH_DEBUG, "Console de-initialising...");
+    cLog->LogDebugSafe("Console de-initialising...");
     // Remove lua events
     cEvtMain->UnregisterEx(reEvents);
     // Initially shown and not closable. All other flags removed.
@@ -1317,11 +1297,73 @@ static class Console :                 // The console class
     // Clear lines
     DoFlush();
     // Log progress
-    LW(LH_INFO, "Console de-initialised successfully.");
+    cLog->LogInfoSafe("Console de-initialised successfully.");
   }
+  /* -- Set Console status ------------------------------------------------- */
+  CVarReturn CantDisableModified(const bool bState)
+  { // Update flag and disabled status
+    FlagSetOrClear(CF_CANTDISABLEGLOBAL, bState);
+    SetCantDisable(FlagIsSet(CF_CANTDISABLEGLOBAL));
+    // Done
+    return ACCEPT;
+  }
+  /* -- Set console background colour -------------------------------------- */
+  CVarReturn TextBackgroundColourModified(const uint32_t ulNewColour)
+    { return CVarSimpleSetInt(ulBgColour, ulNewColour); }
+  /* -- Set console text colour -------------------------------------------- */
+  CVarReturn TextForegroundColourModified(const unsigned int uiNewColour)
+    { return CVarSimpleSetIntNG(cTextColour,
+        static_cast<Colour>(uiNewColour), COLOUR_MAX); }
+  /* -- Set console text scale --------------------------------------------- */
+  CVarReturn TextScaleModified(const GLfloat fNewScale)
+  { // Failed if supplied scale is not in range
+    if(!CVarToBoolReturn(CVarSimpleSetIntNLG(fTextScale,
+      fNewScale, 0.01f, 1.00f))) return DENY;
+    // Set new font scale
+    CommitScale();
+    // Reallocate memory if neccesary for fbo lists
+    RecalculateFboListReserves();
+    // Succeeded reglardless of font availability
+    return ACCEPT;
+  }
+  /* -- Set text letter spacing -------------------------------------------- */
+  CVarReturn TextLetterSpacingModified(const GLfloat fNewSpacing)
+  { // Failed if supplied spacing is not in range
+    if(!CVarToBoolReturn(CVarSimpleSetIntNLG(fTextLetterSpacing,
+      fNewSpacing, -256.0f, 256.0f))) return DENY;
+    // Set console text line spacing if texture available
+    CommitLetterSpacing();
+    // Succeeded reglardless of font availability
+    return ACCEPT;
+  }
+  /* -- Set text line spacing ---------------------------------------------- */
+  CVarReturn TextLineSpacingModified(const GLfloat fNewSpacing)
+  { // Failed if supplied spacing is not in range
+    if(!CVarToBoolReturn(CVarSimpleSetIntNLG(fTextLineSpacing,
+      fNewSpacing, -256.0f, 256.0f))) return DENY;
+    // Set console text line spacing if texture available
+    CommitLineSpacing();
+    // Succeeded reglardless of font availability
+    return ACCEPT;
+  }
+  /* -- Set text width ----------------------------------------------------- */
+  CVarReturn TextWidthModified(const GLfloat fNewWidth)
+    { return CVarSimpleSetIntNG(fTextWidth, fNewWidth, 4096.0f); }
+  /* -- Set text height ---------------------------------------------------- */
+  CVarReturn TextHeightModified(const GLfloat fNewHeight)
+    { return CVarSimpleSetIntNG(fTextHeight, fNewHeight, 4096.0f); }
   /* -- Set maximum command count ------------------------------------------ */
   CVarReturn MaxCountModified(const size_t stCount)
     { return CVarSimpleSetInt(stMaxCount, stCount); }
+  /* -- Console font flags modfiied ---------------------------------------- */
+  CVarReturn ConsoleFontFlagsModified(const unsigned int uiFlags)
+  { // Check that flags are valid
+    if(uiFlags & ~FF_MASK) return DENY;
+    // Set console flags
+    cfConsole.FlagSet(static_cast<ImageFlags>(uiFlags));
+    // Success
+    return ACCEPT;
+  }
   /* -- Constructor -------------------------------------------------------- */
   Console(void) :
     /* --------------------------------------------------------------------- */
@@ -1337,10 +1379,17 @@ static class Console :                 // The console class
     iPageLines(0),                     // No page up/down lines setting
     ciInputRefresh{                    // Init text mode refresh rate to...
       microseconds{ 31250 } },         // ...0.031sec
+    ulFgColour(                        // Set input text colour
+      uiNDXtoRGB[COLOUR_YELLOW] |      // - Lookup RGB value for yellow
+      0xFF000000),                     // - Force opaqueness
     ulBgColour(0),                     // No background colour
     cTextColour(COLOUR_WHITE),         // Default white text colour
-    fScale(0),                         // No font scale
-    fConsoleHeight(0),                 // No console height
+    fTextScale(0.0f),                  // No font scale
+    fConsoleHeight(0.0f),              // No console height
+    fTextLetterSpacing(0.0f),          // No text letter spacing
+    fTextLineSpacing(0.0f),            // No text line spacing
+    fTextWidth(0.0f),                  // No text width
+    fTextHeight(0.0f),                 // No text height
     ctConsole(true),                   // Console texture on stand-by
     cfConsole(true),                   // COnsole font on stand-by
     cCursor('|'),                      // Cursor shape
@@ -1363,6 +1412,6 @@ static class Console :                 // The console class
 /* ------------------------------------------------------------------------- */
 void Console::LuaCallbackStatic(const Arguments &aList)
   { cConsole->LuaCallback(aList); }
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

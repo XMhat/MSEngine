@@ -17,8 +17,8 @@
 /* ========================================================================= */
 LLNAMESPACEBEGIN(Crypt)                // Crypt namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfCrypt;               // Using crypt interface
-using namespace IfAsset;               // Using asset interface
+using namespace IfCrypt;               // Using crypt namespace
+using namespace IfAsset;               // Using asset namespace
 /* ========================================================================= */
 /* ######################################################################### */
 /* ========================================================================= */
@@ -74,7 +74,7 @@ LLFUNCEX(SHA1, 1,
 // < Hash:string=The calculated SHA1 hash.
 // ? Calculates a SHA1 hash from an array class. Insecure, only use for
 // ? hashing of insignificant data.
-//* ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------------- */
 LLFUNCEX(SHA1A, 1, LCPUSHXSTR(SHA1functions::HashMB(*LCGETPTR(1, Asset))));
 /* ========================================================================= */
 // $ Crypt.SHA224
@@ -89,7 +89,7 @@ LLFUNCEX(SHA224, 1,
 // > Data:array=The data to hash.
 // < Hash:string=The calculated SHA256 hash.
 // ? Calculates a SHA224 hash from an array class.
-//* ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------------- */
 LLFUNCEX(SHA224A, 1,
   LCPUSHXSTR(SHA224functions::HashMB(*LCGETPTR(1, Asset))));
 /* ========================================================================= */
@@ -105,7 +105,7 @@ LLFUNCEX(SHA256, 1,
 // > Data:array=The data to hash.
 // < Hash:string=The calculated SHA256 hash.
 // ? Calculates a SHA256 hash from an array class.
-//* ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------------- */
 LLFUNCEX(SHA256A, 1,
   LCPUSHXSTR(SHA256functions::HashMB(*LCGETPTR(1, Asset))));
 /* ========================================================================= */
@@ -121,7 +121,7 @@ LLFUNCEX(SHA384, 1,
 // > Data:array=The data to hash.
 // < Hash:string=The calculated SHA384 hash.
 // ? Calculates a SHA384 hash from an array class.
-//* ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------------- */
 LLFUNCEX(SHA384A, 1, LCPUSHXSTR(SHA384functions::HashMB(*LCGETPTR(1, Asset))));
 /* ========================================================================= */
 // $ Crypt.SHA512
@@ -136,7 +136,7 @@ LLFUNCEX(SHA512, 1,
 // > Data:array=The data to hash.
 // < Hash:string=The calculated SHA512 hash.
 // ? Calculates a SHA384 hash from an array class.
-//* ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------------- */
 LLFUNCEX(SHA512A, 1, LCPUSHXSTR(SHA512functions::HashMB(*LCGETPTR(1, Asset))));
 /* ========================================================================= */
 // $ Crypt.HMMD5

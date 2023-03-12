@@ -22,17 +22,17 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfPSplit {                   // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfPSplit {                   // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfUtf;                 // Using utf interface
-using namespace IfString;              // Using string interface
+using namespace IfUtf;                 // Using utf namespace
+using namespace IfString;              // Using string namespace
 /* -- Convert back slashes to forward slashes ------------------------------ */
 static string &PSplitBackToForwardSlashes(string &strText)
   { return Replace(strText, '\\', '/'); }
 static const string PSplitBackToForwardSlashes(const string &strIn)
   { string strOut{ strIn }; return PSplitBackToForwardSlashes(strOut); }
-#ifdef _WIN32
+#if defined(WINDOWS)
 static string PSplitBackToForwardSlashes(const wstring &wstrName)
   { return PSplitBackToForwardSlashes(WS16toUTF(wstrName)); }
 #endif
@@ -50,25 +50,25 @@ class FileParts                        // Contains parts of a filename
   FileParts(string &&strDriveNew, string &&strDirNew, string &&strFileNew,
     string &&strExtNew, string &&strFullNew) :
     /* -- Initialisation of members ---------------------------------------- */
-    strDrive{ move(strDriveNew) },
-    strDir{ move(strDirNew) },
-    strFile{ move(strFileNew) },
+    strDrive{ std::move(strDriveNew) },
+    strDir{ std::move(strDirNew) },
+    strFile{ std::move(strFileNew) },
     strExt{ strExtNew },
     strFileExt{ strFile+strExt },
-    strFull{ move(strFullNew) },
+    strFull{ std::move(strFullNew) },
     strLoc{ strDrive+strDir }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- MOVE assign constructor on class creation -------------------------- */
   FileParts(FileParts &&pspOther) :
     /* -- Initialisation of members ---------------------------------------- */
-    strDrive{ move(pspOther.strDrive) },
-    strDir{ move(pspOther.strDir) },
-    strFile{ move(pspOther.strFile) },
-    strExt{ move(pspOther.strExt) },
-    strFileExt{ move(pspOther.strFileExt) },
-    strFull{ move(pspOther.strFull) },
-    strLoc{ move(pspOther.strLoc) }
+    strDrive{ std::move(pspOther.strDrive) },
+    strDir{ std::move(pspOther.strDir) },
+    strFile{ std::move(pspOther.strFile) },
+    strExt{ std::move(pspOther.strExt) },
+    strFileExt{ std::move(pspOther.strFileExt) },
+    strFull{ std::move(pspOther.strFull) },
+    strLoc{ std::move(pspOther.strLoc) }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
@@ -80,7 +80,7 @@ class PathSplit :
 { /* -- Constructors ---------------------------------------------- */ private:
   FileParts Init(const string &strSrc, const bool bUseFullPath) const
   { // Windows?
-#ifdef _WIN32
+#if defined(WINDOWS)
     // Wide strings for wide request functions
     wstring wstrDrive; wstrDrive.resize(_MAX_DRIVE);
     wstring wstrDir; wstrDir.resize(_MAX_DIR);
@@ -91,7 +91,7 @@ class PathSplit :
     // Build full path name and use requested pathname if not wanted or failed?
     if(!bUseFullPath || !_wfullpath(const_cast<wchar_t*>(wstrFull.data()),
       wstrSrc.c_str(), wstrFull.length()))
-        wstrFull = move(wstrSrc);
+        wstrFull = std::move(wstrSrc);
     // Split the executable path name into bits and if failed?
     _wsplitpath_s(const_cast<wchar_t*>(wstrFull.data()),
                   const_cast<wchar_t*>(wstrDrive.data()), wstrDrive.length(),
@@ -164,8 +164,8 @@ class PathSplit :
     strFile.shrink_to_fit();
     strExt.shrink_to_fit();
     // Return parts. There is no drive on unix systems
-    return { {},           move(strDir), move(strFile),
-             move(strExt), move(strFull) };
+    return { {},           std::move(strDir), std::move(strFile),
+             std::move(strExt), std::move(strFull) };
 #endif
   }
   /* -- Constructors with initialisation --------------------------- */ public:
@@ -177,11 +177,11 @@ class PathSplit :
   /* -- MOVE assign constructor on class creation -------------------------- */
   PathSplit(PathSplit &&psOther) :
     /* -- Initialisation of members ---------------------------------------- */
-    FileParts{ move(psOther) }
+    FileParts{ std::move(psOther) }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(PathSplit);          // Disable copy constructor and operator
 };/* -- End of module namespace -------------------------------------------- */
-};                                     // End of interface
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

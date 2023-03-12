@@ -82,7 +82,6 @@ local InitSetup, InitScene, InitCredits, InitEnding, LoadLevel,
 -- Constants for loader ---------------------------------------------------- --
 local aBFlags<const> = Image.Flags;    -- Get bitmap loading flags
 local iTGA<const> = aBFlags.FCE_TGA;   -- Get forced targa format flag
-local iTGAr<const> = aBFlags.REVERSE + iTGA; -- Get reversed bitmap flag
 local aPFlags<const> = Pcm.Flags;      -- Get pcm loading flags
 local iOGG<const> = aPFlags.FCE_OGG;   -- Get forced wave format
 local aPrFlags<const> = Asset.Progress;-- Asset progress flags
@@ -337,7 +336,7 @@ local function SetErrorMessage(sReason)
     if nTime % 1 < 0.5 then nRed = 0.5 else nRed = 1.0 end;
     -- Show error message
     fboMain:SetClearColour(nRed, 0, 0, 1);
-    fFont:SetRGBA(1, 1, 1, 1);
+    fFont:SetCRGBA(1, 1, 1, 1);
     fFont:SetSize(1);
     fFont:PrintW(iStageLeft + 8, iStageTop + 8, iStageWidth - 60, 0, sMessage);
     -- Draw frame if we changed the background colour
@@ -417,7 +416,7 @@ local aTypes<const> = {
   { Image.FileAsync,  {iTGA}, "tex/", ".tga", Font.Image,         false }, -- 3
   { Pcm.FileAsync,    {iOGG}, "sfx/", ".ogg", Sample.Create,      false }, -- 4
   { Asset.FileAsync,  {0},    "",     "",     GenericReturnHandle,false }, -- 5
-  { Image.FileAsync,  {iTGAr},"tex/", ".tga", Mask.Create,        false }, -- 6
+  { Image.FileAsync,  {0},    "tex/", ".tga", Mask.Create,        false }, -- 6
   { Stream.FileAsync, {},     "mus/", ".ogg", GenericReturnHandle,false }, -- 7
   { Video.FileAsync,  {},     "fmv/", ".ogv", GenericReturnHandle,false }, -- 8
   { Asset.FileAsync,  {0},    "src/", ".lua", ParseScript,        true  }, -- 9
@@ -611,17 +610,17 @@ local function PlayMusic(musicHandle, Volume, PosCmd, Loop, Start)
 end
 -- Render fade ------------------------------------------------------------- --
 local function RenderFade(Amount, L, T, R, B, S)
-  texSpr:SetAlpha(Amount);
+  texSpr:SetCA(Amount);
   texSpr:BlitSLTRB(S or 1023, L or iStageLeft,  T or iStageTop,
                               R or iStageRight, B or iStageBottom);
-  texSpr:SetAlpha(1);
+  texSpr:SetCA(1);
 end
 -- Render shadow ----------------------------------------------------------- --
 local function RenderShadow(iL, iT, iR, iB)
   -- Save colour
   texSpr:PushColour();
   -- Set shadow normal intensity
-  texSpr:SetRGBA(1, 1, 1, 0.5);
+  texSpr:SetCRGBA(1, 1, 1, 0.5);
   -- Calculate starting position
   local iLM16<const>, iTM16<const> = iL-16, iT-16;
   -- Draw top part
@@ -644,7 +643,7 @@ local function SetBottomRightTip(strTip)
   -- Draw the right of the tip rect
   texSpr:BlitSLT(849, 296, 216);
   -- Set tip colour
-  fontLittle:SetRGB(1, 1, 1);
+  fontLittle:SetCRGB(1, 1, 1);
   -- Print the tip
   fontLittle:PrintC(272, 220, strTip or "");
 end
@@ -809,7 +808,7 @@ Fbo.OnRedraw(RefreshViewportInfo);
 -- Setup a default sprite set until the real sprite is loaded since we are
 -- loading everything asynchronously.
 texSpr = TextureCreate(Image.Blank("placeholder", 1, 1, false, true), 0);
-texSpr:TrimTList(1024);
+texSpr:TileSTC(1024);
 -- Initialise viewport and cursor
 InputSetCursor(false);
 -- Initialise function callbacks
@@ -1076,13 +1075,13 @@ local function fcbTick()
     if nPercent == nLastPercentage then return end;
     nLastPercentage = nPercent;
     -- Draw progress bar
-    fSolid:SetRGBA(1, 0, 0, 1);        -- Border
+    fSolid:SetCRGBA(1, 0, 0, 1);        -- Border
     fSolid:BlitLTRB(iX, iY, iXBack, iYBack);
-    fSolid:SetRGBA(0.25, 0, 0, 1);     -- Backdrop
+    fSolid:SetCRGBA(0.25, 0, 0, 1);     -- Backdrop
     fSolid:BlitLTRB(iXPlus1, iYPlus1, iXBack2, iYBack2);
-    fSolid:SetRGBA(1, 1, 1, 1);        -- Progress
+    fSolid:SetCRGBA(1, 1, 1, 1);        -- Progress
     fSolid:BlitLTRB(iXPlus1, iYPlus1, iXPlus1+(nPercent*iWidth), iYBack2);
-    fFont:SetRGBA(1, 1, 1, 1);         -- Filename & percentage
+    fFont:SetCRGBA(1, 1, 1, 1);         -- Filename & percentage
     fFont:SetSize(1);
     fFont:Print(iX, iYText, sFile);
     fFont:PrintR(iXText, iYText, format("%.f%% Completed", nPercent*100));

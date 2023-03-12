@@ -7,8 +7,8 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfArgs {                     // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfArgs {                     // Start of module namespace
 /* ------------------------------------------------------------------------- */
 struct Arguments :                     // Arguments list
   /* -- Dependencies ------------------------------------------------------- */
@@ -117,6 +117,6 @@ struct Arguments :                     // Arguments list
 /* -- Build an array of arguments from a string ---------------------------- */
 static const Arguments ArgumentsBuildSafe(const string &strArgs)
   { return strArgs.empty() ? Arguments{} : Arguments{ strArgs }; }
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

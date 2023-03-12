@@ -8,36 +8,36 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfVars {                     // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfVars {                     // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfError;               // Using error interface
+using namespace IfError;               // Using error namespace
 /* -- Vars class ----------------------------------------------------------- */
-template<class MapType>class VarsBase :
+template<class MapType>struct VarsBase :
   /* -- Base classes ------------------------------------------------------- */
   public MapType                       // Derive by specified map type
-{ /* --------------------------------------------------------------- */ public:
+{ /* ----------------------------------------------------------------------- */
   void VarsPushPair(const string &strKey, const string &strValue)
     { this->insert({ strKey, strValue }); }
   void VarsPushPair(const string &strKey, string &&strValue)
-    { this->insert({ strKey, move(strValue) }); }
+    { this->insert({ strKey, std::move(strValue) }); }
   void VarsPushPair(string &&strKey, const string &strValue)
-    { this->insert({ move(strKey), strValue }); }
+    { this->insert({ std::move(strKey), strValue }); }
   void VarsPushPair(string &&strKey, string &&strValue)
-    { this->insert({ move(strKey), move(strValue) }); }
+    { this->insert({ std::move(strKey), std::move(strValue) }); }
   /* -- Insert new key if we don't have it --------------------------------- */
   void VarsPushIfNotExist(const string &strKey, const string &strValue)
     { if(this->find(strKey) == this->end())
         VarsPushPair(strKey, strValue); }
   void VarsPushIfNotExist(string &&strKey, const string &strValue)
     { if(this->find(strKey) == this->end())
-        VarsPushPair(move(strKey), strValue); }
+        VarsPushPair(std::move(strKey), strValue); }
   void VarsPushIfNotExist(const string &strKey, string &&strValue)
     { if(this->find(strKey) == this->end())
-        VarsPushPair(strKey, move(strValue)); }
+        VarsPushPair(strKey, std::move(strValue)); }
   void VarsPushIfNotExist(string &&strKey, string &&strValue)
     { if(this->find(strKey) == this->end())
-        VarsPushPair(move(strKey), move(strValue)); }
+        VarsPushPair(std::move(strKey), std::move(strValue)); }
   /* -- Value access by key name ------------------------------------------- */
   const string &operator[](const string &strKey) const
   { // Find key and return empty string or value
@@ -79,14 +79,14 @@ template<class MapType>class VarsBase :
             const size_t stValEnd =
               FindCharNotBackwards(strS, stSegEnd-1, stValStart);
             if(stValEnd != string::npos) return VarsPushPair(
-              move(strS.substr(stKeyStart, stKeyEnd-stKeyStart+1)),
-              move(strS.substr(stValStart, stValEnd-stValStart+1)));
+              std::move(strS.substr(stKeyStart, stKeyEnd-stKeyStart+1)),
+              std::move(strS.substr(stValStart, stValEnd-stValStart+1)));
           } // Could not prune suffixed whitespaces on value.
         }  // Could not prune prefixed whitespaces on value.
       }  // Could not prune suffixed whitespaces on key.
     } // Could not prune prefixed whitespaces on key. Add full value for debug
     return VarsPushPair(Append('#', this->size()),
-      move(strS.substr(stSegStart, stSegEnd-stSegStart)));
+      std::move(strS.substr(stSegStart, stSegEnd-stSegStart)));
   }
   /* -- Initialise or add entries from a string ---------------------------- */
   VarsBase(const string &strS, const string &strLS, const char cDelimiter)
@@ -112,10 +112,10 @@ template<class MapType>class VarsBase :
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(VarsBase);           // Disable copy constructor/operator
 }; /* -- A Vars class where the values can be modified --------------------- */
-class Vars :
+struct Vars :
   /* -- Base classes ------------------------------------------------------- */
   public VarsBase<StrNCStrMap>
-{ /* --------------------------------------------------------------- */ public:
+{ /* ----------------------------------------------------------------------- */
   void VarsPushOrUpdatePair(const string &strKey, const string &strValue)
   { // Find key and if it exists, just update the value else insert a new one
     const StrNCStrMapIt vIter{ find(strKey) };
@@ -126,25 +126,26 @@ class Vars :
   void VarsPushOrUpdatePair(string &&strKey, const string &strValue)
   { const StrNCStrMapIt vIter{ find(strKey) };
     if(vIter != end()) vIter->second = strValue;
-    else VarsPushPair(move(strKey), strValue);
+    else VarsPushPair(std::move(strKey), strValue);
   }
   /* -- Try to move value but copy key ------------------------------------- */
   void VarsPushOrUpdatePair(const string &strKey, string &&strValue)
   { const StrNCStrMapIt vIter{ find(strKey) };
-    if(vIter != end()) vIter->second = move(strValue);
-    else VarsPushPair(strKey, move(strValue));
+    if(vIter != end()) vIter->second = std::move(strValue);
+    else VarsPushPair(strKey, std::move(strValue));
   }
   /* -- Try to move key and value ------------------------------------------ */
   void VarsPushOrUpdatePair(string &&strKey, string &&strValue)
   { const StrNCStrMapIt vIter{ find(strKey) };
-    if(vIter != end()) vIter->second = move(strValue);
-    else VarsPushPair(move(strKey), move(strValue));
+    if(vIter != end()) vIter->second = std::move(strValue);
+    else VarsPushPair(std::move(strKey), std::move(strValue));
   }
   /* ----------------------------------------------------------------------- */
   void VarsPushOrUpdatePairs(const StrPairList &splValues)
   { // Add each value that was sent
     for(const StrPair &spKeyValue : splValues)
-      VarsPushOrUpdatePair(move(spKeyValue.first), move(spKeyValue.second));
+      VarsPushOrUpdatePair(std::move(spKeyValue.first),
+        std::move(spKeyValue.second));
   }
   /* -- Extracts and deletes the specified key pair ------------------------ */
   const string Extract(const string &strKey)
@@ -152,7 +153,7 @@ class Vars :
     const StrNCStrMapIt vIter{ find(strKey) };
     if(vIter == end()) return {};
     // Take ownership of the string (faster than copy)
-    const string strOut{ move(vIter->second) };
+    const string strOut{ std::move(vIter->second) };
     // Erase keypair
     erase(vIter);
     // Return the value
@@ -162,32 +163,37 @@ class Vars :
   /* -- MOVE assignment operator ------------------------------------------- */
   Vars& operator=(Vars &&vOther) { swap(vOther); return *this; }
   /* -- MOVE assignment constructor ---------------------------------------- */
-  Vars(Vars &&vOther) : VarsBase<StrNCStrMap>{ move(vOther) } { }
+  Vars(Vars &&vOther) : VarsBase<StrNCStrMap>{ std::move(vOther) } { }
   /* -- Constructor -------------------------------------------------------- */
   Vars(const string &strS, const string &strLS, const char cDelimiter) :
     VarsBase<StrNCStrMap>(strS, strLS, cDelimiter) { }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Vars);               // Disable copy constructor/operator
 };/* ----------------------------------------------------------------------- */
+typedef VarsBase<StrStrMap> VarsBaseMap;
 /* -- A Vars class thats values cannot be modified at all ------------------ */
-class VarsConst :
+struct VarsConst :
   /* -- Base classes ------------------------------------------------------- */
-  public VarsBase<StrStrMap>
-{ /* -- Constructor ------------------------------------------------ */ public:
+  public VarsBaseMap
+{ /* -- Constructor -------------------------------------------------------- */
   VarsConst(void) { }
   /* -- MOVE assignment operator ------------------------------------------- */
   VarsConst& operator=(VarsConst &&vcOther) { swap(vcOther); return *this; }
   /* -- MOVE assignment constructor ---------------------------------------- */
-  VarsConst(VarsConst &&vcOther) : VarsBase<StrStrMap>{ move(vcOther) } { }
+  VarsConst(VarsConst &&vcOther) :     // Other vars
+    /* -- Initialisers ----------------------------------------------------- */
+    VarsBaseMap{ std::move(vcOther) }  // Move it over
+    /* -- No code ---------------------------------------------------------- */
+    { }
   /* -- Constructor -------------------------------------------------------- */
   VarsConst(const string &strS, const string &strLS, const char cDelimiter) :
     /* -- Initialisers ----------------------------------------------------- */
-    VarsBase<StrStrMap>{ strS,
-      strLS, cDelimiter }
+    VarsBaseMap{ strS,                 // Initialise vars map...
+      strLS, cDelimiter }              // ...with specified values
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(VarsConst);          // Disable copy constructor/operator
 };/* -- End of module namespace -------------------------------------------- */
-};                                     // End of interface
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

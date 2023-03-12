@@ -8,13 +8,13 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfCollector {                // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfCollector {                // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfCVarDef;             // Using cvardef interface
-using namespace IfSystem;              // Using system interface
-using namespace IfError;               // Using error interface
-using namespace IfLog;                 // Using log interface
+using namespace IfCVarDef;             // Using cvardef namespace
+using namespace IfSysUtil;             // Using system utility namespace
+using namespace IfError;               // Using error namespace
+using namespace IfLog;                 // Using log namespace
 /* -- Collector header ----------------------------------------------------- */
 #define COLLECTHDR(PCR,                /* The collector class type          */\
                    SCR,                /* The member class type             */\
@@ -25,10 +25,10 @@ using namespace IfLog;                 // Using log interface
   class SCR;                           /* Member class prototype            */\
   typedef CLH<SCR,PCI<SCR>>            /* Make an alias to the locktype     */\
     PCR ## CLHelper;                   /*   for the collector helper        */\
-  static class PCR :                   /* Begin collector object class      */\
+  static struct PCR final :            /* Begin collector object class      */\
     public PCR ## CLHelper             /* Derive by collector helper class  */\
     __VA_ARGS__                        /* Any other custom class derives    */\
-  { public: DELETECOPYCTORS(PCR);      /* Remove default functions          */\
+  { DELETECOPYCTORS(PCR);              /* Remove default functions          */\
     PCR(void);                         /* Optional Constructor event        */\
     ~PCR(void) noexcept(false);        /* Optional Destructor event         */\
     PCV;                               /* Any extra variables? (no comma!)  */
@@ -76,12 +76,20 @@ using namespace IfLog;                 // Using log interface
 /* -- Tailing collector class macro with no init and deinit calls ---------- */
 #define END_COLLECTOR(PCR) END_COLLECTOREX(PCR,,,)
 /* -- Start building a member class for a collector ------------------------ */
+#define BEGIN_MEMBERCLASSEX(SCR,       /* The collector type                */\
+                            PCR,       /* The member type                   */\
+                            ICH,       /* ICHelperSafe or ICHelperUnsafe    */\
+                            ...)       /* Extra arguments                   */\
+  typedef ICHelper<SCR,PCR,            /* Make an alias for the locktype    */\
+    ICH<SCR,PCR>> ICHelper ## PCR;     /*   which will be derived           */\
+  class PCR : public ICHelper ## PCR   /* Begin the member class            */\
+    __VA_ARGS__                        /* Add extra arguments if needed     */
+/* -- Start building a member class for a collector ------------------------ */
 #define BEGIN_MEMBERCLASS(SCR,         /* The collector type                */\
                           PCR,         /* The member type                   */\
                           ICH)         /* ICHelperSafe or ICHelperUnsafe    */\
-  typedef ICHelper<SCR,PCR,            /* Make an alias for the locktype    */\
-    ICH<SCR,PCR>> ICHelper ## PCR;     /*   which will be derived           */\
-  class PCR : public ICHelper ## PCR   /* Begin the member class             */
+  BEGIN_MEMBERCLASSEX(SCR,PCR,ICH,,    /* Use expanded macro                */\
+    public IdentCSlave<>)              /* Counter id slave class            */
 /* -- All in one collector and member builder ------------------------------ */
 #define BEGIN_COLLECTORDUO(SCR,        /* The collector type                */\
                            PCR,        /* The member type                   */\
@@ -106,15 +114,14 @@ using namespace IfLog;                 // Using log interface
 class IHelper :                        // The Init Helper class
   /* -- Base classes ------------------------------------------------------- */
   public IfIdent::IdentConst           // Holds the identifier
-{ /* -- Private variables ----------------------------------------- */ private:
+{ /* -- Private variables -------------------------------------------------- */
   ClkTimePoint     ctInitialised,      // Time class was initialised
                    ctDeinitialised;    // Time class was deinitialised
   /* ----------------------------------------------------------------------- */
   void IHSetInitialised(void) { ctInitialised = cmHiRes.GetTime(); }
   void IHSetDeInitialised(void) { ctDeinitialised = cmHiRes.GetTime(); }
   /* --------------------------------------------------------------- */ public:
-  bool IHIsInitialised(void) const
-    { return ctInitialised > ctDeinitialised; }
+  bool IHIsInitialised(void) const { return ctInitialised > ctDeinitialised; }
   bool IHIsNotInitialised(void) const { return !IHIsInitialised(); }
   /* ----------------------------------------------------------------------- */
   void IHInitialise(void)
@@ -160,9 +167,10 @@ template<class MemberType,             // Member type (Archive, Asset, etc.)
          class IteratorType>           // Iterator type (std::list::iterator)
 class CLHelperBase :
   /* -- Base classes ------------------------------------------------------- */
+  public IdentCMaster<>,               // Counter master class
   public ListType,                     // The list of members
   public IHelper                       // Initialisation helper
-{ /* -- Private variables ----------------------------------------- */ private:
+{ /* -- Private variables -------------------------------------------------- */
   size_t           stMaximum;          // Maximum children allowed
   /* -- Return last item in the list ------------------------------- */ public:
   IteratorType CLBaseGetLastItemUnsafe(void) { return this->end(); }
@@ -180,8 +188,7 @@ class CLHelperBase :
     // we will need to serialise this access.
     if(CLBaseCountUnsafe() >= stMaximum)
       XC("Collector child object threshold exceeded!",
-         "Type", IdentGet(),
-         "Current", CLBaseCountUnsafe(),
+         "Type", IdentGet(), "Current", CLBaseCountUnsafe(),
          "Maximum", stMaximum);
   }
   /* -- Set limit ---------------------------------------------------------- */
@@ -197,10 +204,10 @@ class CLHelperBase :
   { // Return if class was initialised and there are no children left
     if(CLBaseIsEmptyUnsafe()) return;
     // Show message box to say we have items remaining
-    LW(LH_WARNING, "$ collector unloading $ remaining objects...",
+    cLog->LogWarningExSafe("$ collector unloading $ remaining objects...",
       IdentGet(), CLBaseCountUnsafe());
     CLBaseDestroyUnsafe();
-    LW(LH_WARNING, "$ collector unloaded the remaining objects!",
+    cLog->LogWarningExSafe("$ collector unloaded the remaining objects!",
       IdentGet());
   }
   /* -- Constructor -------------------------------------------------------- */
@@ -221,7 +228,7 @@ template<class MemberType,
 class CLHelperSafe :
   /* -- Base classes ------------------------------------------------------- */
   public BaseType                      // The collector base type
-{ /* -- Private variables ----------------------------------------- */ private:
+{ /* -- Private variables -------------------------------------------------- */
   mutex            mMutex;             // Multi-thread locking protection
   /* -- Protected functions ------------------------------------- */ protected:
   void CLLock(void) { CollectorGetMutex().lock(); }
@@ -267,7 +274,7 @@ template<class MemberType,
          class ListType = list<MemberType*>,
          class IteratorType = typename ListType::iterator,
          class BaseType = CLHelperBase<MemberType, ListType, IteratorType>>
-class CLHelperUnsafe :
+class CLHelperUnsafe :                 // Members initially private
   /* -- Base classes ------------------------------------------------------- */
   public BaseType                      // The collector base type
 { /* -- (Un)Lock the mutex (nope) ------------------------------- */ protected:
@@ -302,10 +309,10 @@ template<class MemberType,
          class LockType,
          class ListType = list<MemberType*>,
          class IteratorType = typename ListType::iterator>
-class CLHelper :
+struct CLHelper :                      // Members initially public
   /* -- Base classes ------------------------------------------------------- */
   public LockType                      // CLHelperSafe or CLHelperUnsafe
-{ /* -- (Un)Lock the mutex (nope) ---------------------------------- */ public:
+{ /* -- (Un)Lock the mutex (nope) ------------------------------------------ */
   void CollectorLock(void) { this->CLLock(); }
   void CollectorUnlock(void) { this->CLUnlock(); }
   /* -- Return last item in list ------------------------------------------- */
@@ -355,8 +362,8 @@ class CLHelper :
 template<class CollectorType,
          class MemberType,
          class IteratorType = typename CollectorType::iterator>
-class ICHelperBase
-{ /* -- Swap registration with another class ----------------------- */ public:
+struct ICHelperBase                    // Members initially public
+{ /* -- Swap registration with another class ------------------------------- */
   CollectorType   &cParent;            // Parent class of this object
   /* -- Protected variables ------------------------------------- */ protected:
   IteratorType     cIterator;          // Iterator to this object in parent
@@ -425,7 +432,7 @@ class ICHelperBase
   explicit ICHelperBase(CollectorType &ctObj, IteratorType &&itObj) :
     /* -- Initialisation of members ---------------------------------------- */
     cParent{ ctObj },
-    cIterator{ move(itObj) }
+    cIterator{ std::move(itObj) }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
@@ -445,10 +452,10 @@ template<class CollectorType,
          class MemberType,
          class IteratorType = typename CollectorType::iterator,
          class BaseType = ICHelperBase<CollectorType, MemberType>>
-class ICHelperSafe :
+class ICHelperSafe :                   // Members initially private
   /* -- Base classes ------------------------------------------------------- */
   public BaseType                      // ICHelper base class
-{ /* -- Initialise (un)registered entry with synchronisation ------ */ private:
+{ /* -- Initialise (un)registered entry with synchronisation --------------- */
   IteratorType ICHelperInit(CollectorType &ctRef, MemberType*const mtPtr) const
     { const LockGuard lgInitRegistered{ ctRef.CollectorGetMutex() };
       return this->ICHelperBaseInit(ctRef, mtPtr); }
@@ -468,9 +475,9 @@ class ICHelperSafe :
       this->ICHelperBaseSwapRegistration(mtObj); }
   /* -- Constructors ------------------------------------------------------- */
   explicit ICHelperSafe(CollectorType &ctRef) :
-    BaseType(ctRef, move(ICHelperInit(ctRef))) { }
+    BaseType(ctRef, std::move(ICHelperInit(ctRef))) { }
   explicit ICHelperSafe(CollectorType &ctRef, MemberType*const mtPtr) :
-    BaseType(ctRef, move(ICHelperInit(ctRef, mtPtr))) { }
+    BaseType(ctRef, std::move(ICHelperInit(ctRef, mtPtr))) { }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(ICHelperSafe);       // Remove default functions
 };/* ----------------------------------------------------------------------- */
@@ -486,10 +493,10 @@ template<class CollectorType,
          class MemberType,
          class IteratorType = typename CollectorType::iterator,
          class BaseType = ICHelperBase<CollectorType,MemberType>>
-class ICHelperUnsafe :
+class ICHelperUnsafe :                 // Members initially private
   /* -- Base classes ------------------------------------------------------- */
   public BaseType                      // ICHelper base class
-{ /* -- Initialise (un)registered entry without synchronisation --- */ private:
+{ /* -- Initialise (un)registered entry without synchronisation ------------ */
   IteratorType ICHelperInit(CollectorType &ctRef, MemberType*const mtPtr) const
     { return this->ICHelperBaseInit(ctRef, mtPtr); }
   IteratorType ICHelperInit(CollectorType &ctRef) const
@@ -503,13 +510,13 @@ class ICHelperUnsafe :
   /* -- Constructors without registration ---------------------------------- */
   explicit ICHelperUnsafe(CollectorType &ctRef) :
     /* -- Initialisation of members ---------------------------------------- */
-    BaseType{ ctRef, move(ICHelperInit(ctRef)) }
+    BaseType{ ctRef, std::move(ICHelperInit(ctRef)) }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor with registration -------------------------------------- */
   explicit ICHelperUnsafe(CollectorType &ctRef, MemberType*const mtPtr) :
     /* -- Initialisation of members ---------------------------------------- */
-    BaseType{ ctRef, move(ICHelperInit(ctRef, mtPtr)) }
+    BaseType{ ctRef, std::move(ICHelperInit(ctRef, mtPtr)) }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
@@ -528,10 +535,10 @@ template<class CollectorType,
          class MemberType,
          class LockType,
          class IteratorType = typename CollectorType::iterator>
-class ICHelper :
+struct ICHelper :                      // Members initially public
   /* -- Base classes ------------------------------------------------------- */
   public LockType                      // ICHelperSafe or ICHelperUnSafe
-{ /* -- Swap registration with another class ----------------------- */ public:
+{ /* -- Swap registration with another class ------------------------------- */
   void CollectorSwapRegistration(const MemberType &mtObj)
     { this->ICHelperSwap(mtObj); }
   /* -- Register to list --------------------------------------------------- */
@@ -542,7 +549,7 @@ class ICHelper :
   /* -- Constructor (move) ------------------------------------------------- */
   explicit ICHelper(ICHelper &&icOther) :
     /* -- Initialisation of members ---------------------------------------- */
-    LockType{ move(icOther) }
+    LockType{ std::move(icOther) }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor (manual registration) ---------------------------------- */
@@ -567,7 +574,7 @@ class ICHelper :
 /* ## garbage collection.                                                 ## */
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
-class Lockable                         // Allows engine to share with LUA
+class Lockable                         // Members initially private
 { /* -- Private variables -------------------------------------------------- */
   bool             bLocked;            // Class is locked from being dealloced
   /* -- Set locked status -------------------------------------------------- */
@@ -593,5 +600,5 @@ class Lockable                         // Allows engine to share with LUA
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Lockable);           // Remove default functions
 };/* -- End ---------------------------------------------------------------- */
-};                                     // End of interface
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

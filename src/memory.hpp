@@ -9,12 +9,12 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfMemory {                   // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfMemory {                   // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfUtil;                // Using util interface
-using namespace IfError;               // Using error interface
-using namespace IfUtf;                 // Using utf interface
+using namespace IfUtil;                // Using util namespace
+using namespace IfError;               // Using error namespace
+using namespace IfUtf;                 // Using utf namespace
 /* == Read only data class ================================================= */
 class DataConst                        // Start of const Data Block Class
 { /* -- Private variables ----------------------------------------- */ private:
@@ -307,13 +307,13 @@ class Data :
   /* -- Assignment constructor (rvalue) ------------------------------------ */
   Data(Data &&dSrc) :
     /* -- Initialisation of members ---------------------------------------- */
-    DataConst{ move(dSrc) }            // Move other data object
+    DataConst{ std::move(dSrc) }            // Move other data object
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Take ownership of pointer (rvalue) --------------------------------- */
   explicit Data(DataConst &&dcSrc) :
     /* -- Initialisation of members ---------------------------------------- */
-    DataConst{ move(dcSrc) }           // Move other data const object
+    DataConst{ std::move(dcSrc) }           // Move other data const object
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Inherit an already allocated pointer ------------------------------- */
@@ -340,7 +340,7 @@ class Memory :
     else XC("Re-alloc failed!", "OldSize", Size(), "NewSize", stNSize);
   }
   /* -- Swap memory with another memory block ---------------------- */ public:
-  void SwapMemory(Memory &&mOther) { SwapDataConst(move(mOther)); }
+  void SwapMemory(Memory &&mOther) { SwapDataConst(std::move(mOther)); }
   /* -- Resize and preserve allocated memory ------------------------------- */
   void Resize(const size_t stNSize)
     { if(stNSize != Size()) DoResize(stNSize); }
@@ -441,7 +441,7 @@ class Memory :
     for(size_t stIndex = 0; stIndex < stBytes; ++stIndex)
       mDst.DoWrite(Size() - stIndex - 1, DoRead(stIndex), 1);
     // Assign new memory block
-    SwapMemory(move(mDst));
+    SwapMemory(std::move(mDst));
   }
   /* -- Reverse the specified number of bytes------------------------------- */
   void Reverse(const size_t stBytes) { Reverse(0, stBytes); }
@@ -474,23 +474,24 @@ class Memory :
   /* -- Allocate and zero memory ------------------------------------------- */
   void InitSafe(const size_t stS) { InitBlank(stS); Fill(); }
   /* -- Assignment operator (rvalue) ------------------------------------ -- */
-  Memory &operator=(Memory &&mbSrc) { SwapMemory(move(mbSrc)); return *this; }
+  Memory &operator=(Memory &&mbSrc)
+    { SwapMemory(std::move(mbSrc)); return *this; }
   /* -- Assignment constructor (rvalue) ------------------------------------ */
   Memory(Memory &&mbSrc) :
     /* -- Initialisation of members ---------------------------------------- */
-    Data(move(mbSrc))                  // Move other memory object
+    Data(std::move(mbSrc))             // Move other memory object
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Take ownership of pointer (must originally be malloc'd) ------------ */
   explicit Memory(Data &&dSrc) :
     /* -- Initialisation of members ---------------------------------------- */
-    Data(move(dSrc))                   // Move other data object
+    Data(std::move(dSrc))              // Move other data object
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Take ownership of pointer (must originally be malloc'd) ------------ */
   explicit Memory(DataConst &&dcSrc) :
     /* -- Initialisation of members ---------------------------------------- */
-    Data(move(dcSrc))                  // Move other read only memory object
+    Data(std::move(dcSrc))             // Move other read only memory object
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Init from string --------------------------------------------------- */
@@ -535,6 +536,6 @@ class Memory :
 };/* -- Useful types ------------------------------------------------------- */
 typedef list<Memory> MemoryList;       // List of memory blocks
 typedef vector<Memory> MemoryVector;   // A vector of memory classes
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

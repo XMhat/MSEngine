@@ -8,11 +8,11 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfStat {                     // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfStat {                     // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfCollector;           // Using collector interface
-using namespace IfUtil;                // Using util interface
+using namespace IfCollector;           // Using collector namespace
+using namespace IfUtil;                // Using util namespace
 /* -- Statistic ------------------------------------------------------------ */
 class Statistic
 { /* -- Private typedefs --------------------------------------------------- */
@@ -31,17 +31,17 @@ class Statistic
   /* ----------------------------------------------------------------------- */
   void ProcValNoSuf(ostringstream &osS, const StrListConstIt &vIt,
     const Head &ttchD) { osS << ttchD.jFunc << setw(ttchD.iMaxLen) <<
-      move(*vIt); }
+      std::move(*vIt); }
   void ProcValSuf(ostringstream &osS, const StrListConstIt &vIt,
     const Head &ttchD, const string &strSuffix) { osS << ttchD.jFunc <<
-      setw(ttchD.iMaxLen) << move(*vIt) << strSuffix; }
+      setw(ttchD.iMaxLen) << std::move(*vIt) << strSuffix; }
   /* ----------------------------------------------------------------------- */
   void ProcHdrNoSuf(ostringstream &osS,
     const Head &ttchD) { osS << ttchD.jFunc << setw(ttchD.iMaxLen) <<
-      move(ttchD.strName); }
+      std::move(ttchD.strName); }
   void ProcHdrSuf(ostringstream &osS,
     const Head &ttchD, const string &strSuffix) { osS << ttchD.jFunc <<
-      setw(ttchD.iMaxLen) << move(ttchD.strName) << strSuffix; }
+      setw(ttchD.iMaxLen) << std::move(ttchD.strName) << strSuffix; }
   /* ----------------------------------------------------------------------- */
   Head &GetLastHdr(const size_t stHM1)
   { // Get the last header item
@@ -116,13 +116,26 @@ class Statistic
   }
   /* ----------------------------------------------------------------------- */
   template<typename T>Statistic &DataN(const T tNum, const int iP=0)
-    { return Data(move(ToString<T>(tNum, 0, iP))); }
+    { return Data(std::move(ToString<T>(tNum, 0, iP))); }
   /* ----------------------------------------------------------------------- */
   template<typename T>Statistic &DataB(const T tNum, const int iP=0)
     { return Data(ToBytesStr(static_cast<uint64_t>(tNum), iP)); }
   /* ----------------------------------------------------------------------- */
   template<typename T>Statistic &DataH(const T tNum,
-    const int iP=0) { return Data(move(ToHex<T>(tNum, iP))); }
+    const int iP=0) { return Data(std::move(ToHex<T>(tNum, iP))); }
+  /* -- Data by character -------------------------------------------------- */
+  Statistic &DataC(const char cCharacter = '?')
+  { // Return if there are no headers
+    if(hdHeaders.empty()) return *this;
+    // Get pointer to header data
+    Head &ttchD = hdHeaders[slValues.size() % hdHeaders.size()];
+    // Copy the character into the last slot
+    slValues.insert(slValues.cend(), { &cCharacter, 1 });
+    // Initialise maximum length if not set
+    if(ttchD.iMaxLen <= 0) ttchD.iMaxLen = 1;
+    // Return self so we can daisy chain
+    return *this;
+  }
   /* -- Data by read-only lvalue string copy ------------------------------- */
   Statistic &Data(const string &strVal={})
   { // Return if there are no headers
@@ -131,9 +144,8 @@ class Statistic
     Head &ttchD = hdHeaders[slValues.size() % hdHeaders.size()];
     // Copy the value into the last and put the string we inserted into a
     // decoder and get length of the utf8 string
-    const int iLength =
-      IntOrMax<int>(Decoder(*slValues.insert(slValues.cend(),
-        strVal)).Length());
+    const int iLength = IntOrMax<int>(
+      Decoder{ *slValues.insert(slValues.cend(), strVal) }.Length());
     // If the length of this value is longer and is not the last header value
     // then set the header longer
     if(iLength > ttchD.iMaxLen) ttchD.iMaxLen = iLength;
@@ -149,15 +161,13 @@ class Statistic
     // Move the value into the list and put the tring we inserted into
     // a decoder and get length of the utf8 string
     const int iLength = IntOrMax<int>(
-      Decoder(*slValues.insert(slValues.cend(), move(strVal))).Length());
+      Decoder(*slValues.insert(slValues.cend(), std::move(strVal))).Length());
     // If the length of this value is longer and is not the last header value
     // then set the header longer
     if(iLength > ttchD.iMaxLen) ttchD.iMaxLen = iLength;
     // Return self so we can daisy chain
     return *this;
   }
-  /* -- Add single character ----------------------------------------------- */
-  Statistic &DataC(const char cP='?') { return Data(string{ &cP, 1 }); }
   /* -- Data by read-only lvalue widestring copy --------------------------- */
   Statistic &DataW(const wstring &wstrVal={})
     { return Data(FromWideStringPtr(wstrVal.c_str())); }
@@ -174,15 +184,18 @@ class Statistic
     return *this;
   }
   /* ----------------------------------------------------------------------- */
-  Statistic &Header(const string &strH={},
-    const bool bRJ=true, const size_t stL=0)
-  { // Push the header item if there are values as this will mess everything up
+  Statistic &Header(const string &strH, const bool bRJ, const size_t stL=0)
+  { // Push the header item if there are values as this will mess everything
+    // up. Make sure the first column is always left justified.
     if(slValues.empty())
       hdHeaders.push_back({ strH, bRJ ? right : left,
         IntOrMax<int>(Maximum(stL, strH.length())) });
     // Return self so we can daisy chain
     return *this;
   }
+  /* ----------------------------------------------------------------------- */
+  Statistic &Header(const string &strH={}, const size_t stL=0)
+    { return Header(strH, !hdHeaders.empty(), stL); }
   /* -- Data by pointer ---------------------------------------------------- */
   Statistic &DataV(const void*const vpAddr) { return Data(Append(vpAddr)); }
   /* ----------------------------------------------------------------------- */
@@ -197,13 +210,14 @@ BEGIN_COLLECTORDUO(Stats, Stat, CLHelperUnsafe, ICHelperUnsafe),
 { /* -- Constructor ------------------------------------------------ */ public:
   Stat(void) :                         // No parameters
     /* -- Initialisation of members ---------------------------------------- */
-    ICHelperStat{ *cStats, this }      // Automatic (de)registration
+    ICHelperStat{ *cStats, this },     // Automatic (de)registration
+    IdentCSlave{ cParent.CtrNext() }   // Initialise identification number
     /* -- No code ---------------------------------------------------------- */
     { }                                // Do nothing else
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Stat);               // No copy constructors
 };/* ----------------------------------------------------------------------- */
 END_COLLECTOR(Stats);                  // End of stat objects collector
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

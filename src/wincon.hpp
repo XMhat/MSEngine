@@ -39,11 +39,13 @@ static const ColourList wNDXtoW32BC{
   BACKGROUND_INTENSITY|BACKGROUND_RED|BACKGROUND_GREEN|BACKGROUND_BLUE,
 };
 /* -- Windows Console Class ------------------------------------------------ */
-class SysCon :
+class SysCon :                         // Members initially private
   /* -- Base classes ------------------------------------------------------- */
   public SysBase,                      // Defined in 'winbase.hpp'
   public SysConBase                    // Defined in 'syscore.hpp'
-{ /* -- Console data ----------------------------------------------- */ public:
+{ /* -- Private variables -------------------------------------------------- */
+  const string    &strWine;            // Wine version
+  /* -- Console data ----------------------------------------------- */ public:
   HANDLE           hIn, hOut;          // Handle to stdin and stdout
   WORD             wColour;            // Current colour
   WORD             wColourSaved;       // Saved colour
@@ -96,8 +98,9 @@ class SysCon :
       case CTRL_SHUTDOWN_EVENT : cpEvent = "!shutdown";   break;
       default                  : cpEvent = ".unknown";    break;
     } // Log event
-    LW(LH_WARNING, "SysCon got operating system event $<$>, shutting down...",
-      cpEvent+1, dwCtrlType);
+    cLog->LogWarningExSafe(
+      "SysCon got operating system event $<$>, shutting down...",
+        cpEvent+1, dwCtrlType);
     // Because windows will terminate my process after this function returns
     // We'll need to wait for the exit
     if(*cpEvent == '!')
@@ -110,12 +113,12 @@ class SysCon :
         // properly, it can exit immediately cleaning everything up.
         FlagSet(SCO_EXIT);
         // Show warning
-        LW(LH_WARNING, "WARNING: Windows wants this application to shut down "
-          "NOW! Consider using the 'quit' command or 'ctrl+c' instead of "
-          "using the X window button or shutting down/logging off. There "
-          "could be data loss as Windows may force terminate this application "
-          "after five seconds of this message. Trying to save as much as "
-          "possible to disk...");
+        cLog->LogWarningSafe("WARNING: Windows wants this application to "
+          "shut down NOW! Consider using the 'quit' command or 'ctrl+c' "
+          "instead of using the X window button or shutting down/logging off. "
+          "There could be data loss as Windows may force terminate this "
+          "application after five seconds of this message. Trying to save as "
+          "much as possible to disk...");
         // Send logout event
         cEvtMain->Add(EMC_QUIT);
         // Wait for main thread to clean up so we can exit
@@ -135,14 +138,16 @@ class SysCon :
     // See if key is there before potentially blocking execution. If failed?
     if(!PeekConsoleInput(hIn, &iData, 1, &dwRead))
     { // Report warning in log and return nothing read
-      LW(LH_WARNING, "SysCon failed to peek console input: $!", SysError());
+      cLog->LogWarningExSafe("SysCon failed to peek console input: $!",
+        SysError());
       return KT_NONE;
     } // Return if nothing read
     if(!dwRead) return KT_NONE;
     // Read key that is waiting for us. If failed?
     if(!ReadConsoleInput(hIn, &iData, 1, &dwRead))
     { // Report warning in log and return nothing read
-      LW(LH_WARNING, "SysCon failed to read console input: $!", SysError());
+      cLog->LogWarningExSafe("SysCon failed to read console input: $!",
+        SysError());
       return KT_NONE;
     } // Return if nothing read
     if(!dwRead) return KT_NONE;
@@ -229,7 +234,7 @@ class SysCon :
       cciInfo{ dwSize, FlagIsSetTwo(SCO_CURVISIBLE, TRUE, FALSE) };
     if(!SetConsoleCursorInfo(hOut, &cciInfo))
     { // Show error in log for failure
-      LW(LH_ERROR, "SysCon failed to set cursor size from $ to $: $!",
+      cLog->LogErrorExSafe("SysCon failed to set cursor size from $ to $: $!",
         dwCurSize, dwSize, SysError());
     } // Succeeded so update cached value
     else dwCurSize = dwSize;
@@ -244,7 +249,8 @@ class SysCon :
     if(SetConsoleCursorInfo(hOut, &cciInfo))
       return FlagSetOrClear(SCO_CURVISIBLE, bVisible);
     // Show error in log for failure
-    LW(LH_ERROR, "SysCon failed to set cursor visibility from $ to $: $!",
+    cLog->LogErrorExSafe(
+      "SysCon failed to set cursor visibility from $ to $: $!",
       TrueOrFalse(FlagIsSet(SCO_CURVISIBLE)), TrueOrFalse(bVisible),
       SysError());
   }
@@ -255,7 +261,8 @@ class SysCon :
     // Set new cursor co-ordinates and if failed?
     if(!SetConsoleCursorPosition(hOut, cData))
     { // Show error in log for failure
-      LW(LH_ERROR, "SysCon failed to set cursor position from $x$ to $x$: $!",
+      cLog->LogErrorExSafe(
+        "SysCon failed to set cursor position from $x$ to $x$: $!",
         sCurX, sCurY, cData.X, cData.Y, SysError());
     } // Update cache'd co-ordinates
     else sCurX = cData.X, sCurY = cData.Y;
@@ -272,7 +279,7 @@ class SysCon :
       { static_cast<SHORT>(stW), static_cast<SHORT>(stH) },
       { static_cast<SHORT>(stX1), static_cast<SHORT>(stY1) }, &srBounds))
     { // Show error in log and leave drawing bounds as is
-      LW(LH_WARNING, "SysCon failed to write console output: $!",
+      cLog->LogWarningExSafe("SysCon failed to write console output: $!",
         SysError());
     } // Reset drawing bounds
     else ResetDrawingBounds();
@@ -561,7 +568,7 @@ class SysCon :
       // Reset at scrolled position
       utfString.Reset(strIL.c_str() + abs(Maximum(0, (int)stLen-(int)stWm2)));
       // Draw start of input text
-      WriteLine(move(utfString), stWm2, false);
+      WriteLine(std::move(utfString), stWm2, false);
     } // Left size of text is zero long
     else stLen = 0;
     // Have right side of text and have characters left on screen to spare?
@@ -605,7 +612,7 @@ class SysCon :
         // Reset left text position
         utfL.Reset();
         // Put string in a container and draw the string with left align
-        WriteLine(move(utfL), stLC, false);
+        WriteLine(std::move(utfL), stLC, false);
         // Update X position
         stX += stLC;
         // If there is no right text we can just clear to the end of line
@@ -637,7 +644,7 @@ class SysCon :
     // Reset right string position
     utfR.Reset();
     // Write the line and clear the rest
-    WriteLine(move(utfR), stRC, true);
+    WriteLine(std::move(utfR), stRC, true);
   }
   /* -- Redraw bottom status bar ------------------------------------------- */
   void RedrawStatusBar(const string &strSL, const string &strSR)
@@ -676,7 +683,8 @@ class SysCon :
   { // Set the console window information
     const SMALL_RECT rBounds{ 0, 0, sRight, sBottom };
     if(!SetConsoleWindowInfo(hOut, TRUE, &rBounds))
-      LW(LH_ERROR, "SysCon failed to set window info bounds to $x$x$x$: $!",
+      cLog->LogErrorExSafe(
+        "SysCon failed to set window info bounds to $x$x$x$: $!",
         rBounds.Left, rBounds.Top, rBounds.Right,
         rBounds.Bottom, SysError());
   }
@@ -685,7 +693,8 @@ class SysCon :
   { // Set the console screen buffer size
     const COORD cSize{ static_cast<SHORT>(sX), static_cast<SHORT>(sY) };
     if(!SetConsoleScreenBufferSize(hOut, cSize))
-      LW(LH_ERROR, "SysCon failed to set screen buffer size to $x$: $!",
+      cLog->LogErrorExSafe(
+        "SysCon failed to set screen buffer size to $x$: $!",
         cSize.X, cSize.Y, SysError());
   }
   /* -- Size updated event (unused on win32) ------------------------------- */
@@ -760,11 +769,12 @@ class SysCon :
     if(IsNotWindowHandleSet()) return;
     // Unset control and break handler
     if(!SetConsoleCtrlHandler(CtrlHandlerStatic, FALSE))
-      LW(LH_ERROR, "SysCon failed to clear console control handler: $!",
-        SysError());
+      cLog->LogErrorExSafe(
+        "SysCon failed to clear console control handler: $!", SysError());
     // Destroy console window
     if(!FreeConsole())
-      LW(LH_ERROR, "SysCon failed to close console window: $!", SysError());
+      cLog->LogErrorExSafe("SysCon failed to close console window: $!",
+        SysError());
     // No longer opened
     SetWindowDestroyed();
     // Clear screen buffer
@@ -775,8 +785,13 @@ class SysCon :
     const size_t _stH, const bool bNoClose)
   { // Console class initialised
     if(IsWindowHandleSet()) XC("System console already allocated!");
-    // Create a console window and if failed?
-    if(!AllocConsole()) XCS("Failed to allocate console window!");
+    // Create a console window and if failed and the error is it not because
+    // 'access denied' or no wine running? Then throw error. Wine cannot
+    // AllocConsole() but can still run on the existing terminal screen if we
+    // ignore the error.
+    if(!AllocConsole() &&
+        (SysIsNotErrorCode(ERROR_ACCESS_DENIED) || strWine.empty()))
+      XCS("Failed to allocate console window!");
     // Get console window handle and if failed?
     SetWindowHandle(GetConsoleWindow());
     if(IsNotWindowHandleSet())
@@ -810,8 +825,9 @@ class SysCon :
           XCS("Failed to delete close menu option!");
   }
   /* -- Constructor -------------------------------------------------------- */
-  SysCon(void) :
+  SysCon(const string &strW) :         // Wine version if applicable
     /* -- Initialisation of members ---------------------------------------- */
+    strWine{ strW },                   // Set reference to wine version
     hIn(nullptr), hOut(nullptr),       // Handles to input and output streams
     wColour(0),                        // Default colour
     wColourSaved(0),                   // Saved colour

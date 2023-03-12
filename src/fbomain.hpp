@@ -8,12 +8,12 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfFboMain {                  // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfFboMain {                  // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfFbo;                 // Using fbo interface
+using namespace IfFbo;                 // Using fbo namespace
 /* == Main fbo class ======================================================= */
-static class FboMain :                 // The main fbo operations manager
+static class FboMain final :           // The main fbo operations manager
   /* -- Base classes ------------------------------------------------------- */
   public FboColour,                    // Backbuffer clear colour
   public FboBlend,                     // Default blending mode
@@ -81,7 +81,7 @@ static class FboMain :                 // The main fbo operations manager
     // Blit the two triangles
     cOgl->DrawArraysTriangles(TWOTRIANGLES);
     // Flip buffers which also causes a finish and waits for vsync
-    cGlFW->SwapGLBuffers();
+    cGlFW->WinSwapGLBuffers();
     // Update memory
     cOgl->UpdateVRAMAvailable();
     // Clear any existing errors
@@ -172,7 +172,7 @@ static class FboMain :                 // The main fbo operations manager
       // we need to hack a bit. If we also don't keep the size divisble by two.
       // We'll get floating point accuracy problems when drawing.
       fAddWidth =
-        Maximum(round((((fWidth * fAspect) - fWidth) / 2.0f) / 2.0f) * 2.0f,
+        Maximum(roundf((((fWidth * fAspect) - fWidth) / 2.0f) / 2.0f) * 2.0f,
           0.0f);
       // Calculate bounds for stage
       fLeft = -fAddWidth;
@@ -201,7 +201,7 @@ static class FboMain :                 // The main fbo operations manager
     } // Re-initialisation required?
     else bResult = false;
     // Log computations
-    LW(LH_DEBUG, "Fbo main matrix $ as $x$ [$] "
+    cLog->LogDebugExSafe("Fbo main matrix $ as $x$ [$] "
       "(D=$x$,A=$<$-$>,AW=$,S=$:$:$:$).",
       bResult ? "reinitialised" : "recalculated",
       fboMain.GetCoRight(), fboMain.GetCoBottom(),
@@ -216,7 +216,8 @@ static class FboMain :                 // The main fbo operations manager
   { // Set the viewport
     SetViewport(0, 0, stWidth, stHeight);
     // Log event
-    LW(LH_DEBUG, "Fbo processing automatrix size of $x$ to backbuffer...",
+    cLog->LogDebugExSafe(
+      "Fbo processing automatrix size of $x$ to backbuffer...",
       stWidth, stHeight);
     // Update matrix because the window's aspect ratio may have changed
     const bool bResult = AutoMatrix(GetOrthoWidth(), GetOrthoHeight(), false);
@@ -242,7 +243,7 @@ static class FboMain :                 // The main fbo operations manager
   /* -- Init console fbo --------------------------------------------------- */
   void InitConsoleFBO(void)
   { // Initialise the console fbo for the console object
-    fboConsole.Init("console", fboMain.stFBOWidth, fboMain.stFBOHeight);
+    fboConsole.Init("console", fboMain.DimGetWidth(), fboMain.DimGetHeight());
   }
   /* -- Set main fbo float reserve ----------------------------------------- */
   CVarReturn SetFloatReserve(const size_t stCount)
@@ -306,6 +307,6 @@ static class FboMain :                 // The main fbo operations manager
   DTORHELPER(~FboMain, DestroyAllObjectsAndBuiltIns());
   /* -- FboCore::End ------------------------------------------------------- */
 } *cFboMain = nullptr;                    // Pointer to static class
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

@@ -16,7 +16,7 @@
 /* ========================================================================= */
 LLNAMESPACEBEGIN(Core)                 // Core namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfCore;                // Using core interface
+using namespace IfCore;                // Using core namespace
 /* ========================================================================= */
 /* ######################################################################### */
 /* ========================================================================= */
@@ -63,7 +63,8 @@ LLFUNC(End, cEvtMain->Add(EMC_LUA_END));
 // > Text:string=The line of text to write to the log.
 // ? Writes the specified line of text to the engine log with highest level.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Log, LW(LH_DISABLED, "(Lua) $", LCGETSTRING(char, 1, "Text")));
+LLFUNC(Log, cLog->LogExSafe(LH_DISABLED, "(Lua) $",
+  LCGETSTRING(char, 1, "String")));
 /* ========================================================================= */
 // $ Core.LogEx
 // > Level:integer=The log severity level.
@@ -72,8 +73,9 @@ LLFUNC(Log, LW(LH_DISABLED, "(Lua) $", LCGETSTRING(char, 1, "Text")));
 // ? current log level cvar setting is below this then the function does not
 // ? log anything.
 /* ------------------------------------------------------------------------- */
-LLFUNC(LogEx, LW(LCGETINTLGE(LHLevel, 2, LH_DISABLED, LH_MAX, "Level"),
-  "(Lua) $", LCGETSTRING(char, 1, "Text")));
+LLFUNC(LogEx,
+  cLog->LogExSafe(LCGETINTLGE(LHLevel, 2, LH_DISABLED, LH_MAX, "Level"),
+    "(Lua) $", LCGETSTRING(char, 1, "String")));
 /* ========================================================================= */
 // $ Core.Delay
 // > Miliseconds:integer=Time in seconds.

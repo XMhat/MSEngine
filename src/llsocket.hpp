@@ -19,7 +19,7 @@
 /* ========================================================================= */
 LLNAMESPACEBEGIN(Socket)               // Socket namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfSocket;              // Using socket interface
+using namespace IfSocket;              // Using socket namespace
 /* ========================================================================= */
 /* ######################################################################### */
 /* ========================================================================= */
@@ -195,7 +195,7 @@ LLFUNCEX(GetIPAddressEx, 1,
 // < Id:integer=The id of the socket.
 // ? Returns the unique id of the socket.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetId, 1, LCPUSHINT(LCGETPTR(1, Socket)->GetThreadId()));
+LLFUNCEX(GetId, 1, LCPUSHINT(LCGETPTR(1, Socket)->CtrGet()));
 /* ========================================================================= */
 // $ Socket:Callback
 // > Callback:function=The new callback function

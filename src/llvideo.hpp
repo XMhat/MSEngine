@@ -16,7 +16,7 @@
 /* ========================================================================= */
 LLNAMESPACEBEGIN(Video)                // Video namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfVideo;               // Using video interface
+using namespace IfVideo;               // Using video namespace
 /* ========================================================================= */
 /* ######################################################################### */
 /* ========================================================================= */
@@ -58,7 +58,7 @@ LLFUNC(Pause, LCGETPTR(1, Video)->Pause());
 // $ Video:Rewind
 // ? Rewinds the specified video back to the beginning.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Rewind, LCGETPTR(1, Video)->RewindVideo());
+LLFUNC(Rewind, LCGETPTR(1, Video)->Rewind());
 /* ========================================================================= */
 // $ Video:Stop
 // ? Stops and unloads the specified video, this frees resources.
@@ -162,6 +162,12 @@ LLFUNCEX(GetPlaying, 1, LCPUSHBOOL(LCGETPTR(1, Video)->IsPlaying()));
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(GetDrift, 1, LCPUSHNUM(LCGETPTR(1, Video)->GetDrift()));
 /* ========================================================================= */
+// $ Video:GetFrame
+// < Frame:Integer=The current frame
+// ? Returns the current frame number
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(GetFrame, 1, LCPUSHINT(LCGETPTR(1, Video)->GetFrame()));
+/* ========================================================================= */
 // $ Video:GetFrames
 // < Frames:Integer=Returns the frames decoded
 // ? Returns the number of frames decoded
@@ -249,7 +255,8 @@ LLRSMFBEGIN                            // Video:* member functions begin
   LLRSFUNC(GetATime),                  // Get audio time
   LLRSFUNC(GetDrift),                  // Get audio/video drift
   LLRSFUNC(GetFPS),                    // Get video fps
-  LLRSFUNC(GetFrames),                 // Get video frames
+  LLRSFUNC(GetFrame),                  // Get current frame
+  LLRSFUNC(GetFrames),                 // Get video frames rendered
   LLRSFUNC(GetFramesSkipped),          // Get lost video frames
   LLRSFUNC(GetHeight),                 // Get video height
   LLRSFUNC(GetLoop),                   // Get video loop count
@@ -310,7 +317,7 @@ LLFUNC(ArrayAsync, LCCLASSCREATE(Video)->InitAsyncArray(lS));
 // ? array object.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Asset, 1, LCCLASSCREATE(Video)->SyncInitArray(
-  LCGETCPPSTRING(1, "Identifier"), move(*LCGETPTR(2, Asset))));
+  LCGETCPPSTRING(1, "Identifier"), std::move(*LCGETPTR(2, Asset))));
 /* ======================================================================= */
 // $ Video.WaitAsync
 // ? Halts main-thread execution until all async video stream events have
@@ -338,6 +345,24 @@ LLRSBEGIN                              // Video.* namespace functions begin
   LLRSFUNC(FileAsync),                 //   "  asyncronously
   LLRSFUNC(WaitAsync),                 // Wait for async events to complete
 LLRSEND                                // Video.* namespace functions end
+/* ========================================================================= */
+/* ######################################################################### */
+/* ## Video.* namespace constants structure                               ## */
+/* ######################################################################### */
+/* ========================================================================= */
+// @ Video.Flags
+// < Codes:table=The table of key/value pairs of available flags
+// ? Returns possible values for Video:OnEvent() event command.
+/* ------------------------------------------------------------------------- */
+LLRSKTBEGIN(Events)                    // Beginning of Stream event flags
+LLRSKTITEM(Video::VE_,FINISH),         LLRSKTITEM(Video::VE_,LOOP),
+LLRSKTITEM(Video::VE_,PAUSE),          LLRSKTITEM(Video::VE_,PLAY),
+LLRSKTITEM(Video::VE_,STOP),
+LLRSKTEND                              // End of Stream event flags
+/* ========================================================================= */
+LLRSCONSTBEGIN                         // Video.* namespace consts begin
+LLRSCONST(Events),                     // Video event command
+LLRSCONSTEND                           // Video.* namespace consts end
 /* ========================================================================= */
 LLNAMESPACEEND                         // End of Video namespace
 /* == EoF =========================================================== EoF == */

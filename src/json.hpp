@@ -7,11 +7,11 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfJson {                     // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfJson {                     // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace Library::RapidJson;    // Using rapidjson library functions
-using namespace IfAsset;               // Using asset interface
+using namespace IfAsset;               // Using asset namespace
 /* == Json object collector and member class =============================== */
 BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
@@ -140,7 +140,6 @@ BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
     } // Return new object
     return rjvRoot;
   }
-
   /* -- Convert json value to lua object table and put it on stack --------- */
   static void ToTableObject(lua_State*const lS, const Value &rjvVal)
   { // Create the table, we're creating non-indexed key/value pairs
@@ -212,7 +211,7 @@ BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
     else return fsOut.FStreamFError();
   }
   /* ----------------------------------------------------------------------- */
-  void LoadData(FileMap &fC)
+  void AsyncReady(FileMap &fC)
   { // Parse the string and return if succeeded
     const ParseResult prData{ Parse<0>(fC.Ptr<char>(), fC.Size()) };
     if(!prData) XC(GetParseError_En(prData.Code()),
@@ -242,7 +241,7 @@ BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
     CheckFunction(lS, 4, "ProgressFunc");
     CheckFunction(lS, 5, "SuccessFunc");
     // Init the specified string as an array asynchronously
-    AsyncInitArray(lS, strN, "jsonstring", move(mData));
+    AsyncInitArray(lS, strN, "jsonstring", std::move(mData));
   }
   /* -- Init from LUA string ----------------------------------------------- */
   void InitString(lua_State*const lS)
@@ -264,6 +263,7 @@ BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
   Json(void) :
     /* -- Initialisation of members ---------------------------------------- */
     ICHelperJson(*cJsons),
+    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     AsyncLoader<Json>{ this, EMC_MP_JSON }
     /* -- No code ---------------------------------------------------------- */
     { }
@@ -271,6 +271,6 @@ BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
   DELETECOPYCTORS(Json);               // Disable copy constructor and operator
 };/* -- End ---------------------------------------------------------------- */
 END_ASYNCCOLLECTOR(Jsons, Json, JSON);
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

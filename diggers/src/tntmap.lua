@@ -26,7 +26,7 @@ local function InitTNTMap()
   local function OnLoaded(aResources)
     -- Set tntmap graphic
     local texTNTMap = aResources[1].H;
-    texTNTMap:SetTile(0, 208, 312, 512, 512);
+    texTNTMap:TileS(0, 208, 312, 512, 512);
     -- Calculate bitmap size (24-bit RGB colours)
     local iBSize<const> = 128 * 128 * 3;
     -- Create storage for bitmap data (128x128xRGB)

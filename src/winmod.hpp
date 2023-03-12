@@ -7,13 +7,13 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* ========================================================================= */
-class SysModule :                      // System module class
+/* -- System module class -------------------------------------------------- */
+class SysModule :                      // Members initially private
   /* -- Base classes ------------------------------------------------------- */
   public SysModuleData                 // System module data
-{ /* -- Get and store verison numbers ----------------------------- */ private:
-  class VersionNumbers
-  { /* -- Storage for version numbers ------------------------------ */ public:
+{ /* -- Get and store verison numbers -------------------------------------- */
+  struct VersionNumbers                // Members initially public
+  { /* -- Storage for version numbers -------------------------------------- */
     unsigned int uiMajor, uiMinor, uiBuild, uiRevision;
     /* -- Constructor ------------------------------------------------------ */
     explicit VersionNumbers(const wstring &wstrValue)
@@ -40,8 +40,8 @@ class SysModule :                      // System module class
     /* -- VersionNumbers::End ---------------------------------------------- */
   };                                   // End of VersionNumbers class
   /* -- Get and store string data ------------------------------------------ */
-  class VersionStrings
-  { /* -- Storage for version strings------------------------------- */ public:
+  struct VersionStrings                // Members initially public
+  { /* -- Storage for version strings--------------------------------------- */
     string strDescription, strVendor, strCopyright;
     /* -- Get string value ---------------------------------------- */ private:
     const string GetStringValue(const wstring &wstrBlock,
@@ -87,17 +87,16 @@ class SysModule :                      // System module class
         const LANGANDCODEPAGE &lacpData = lcpData[stIndex];
         const LONG lLng = MakeDWord(lacpData.wLanguage, lacpData.wCodePage);
         // To help with retreiving some values
-        #define GSV(v,n) \
-          v = GetStringValue(UTFtoWS16( \
-            Format("\\StringFileInfo\\$$$$$\\" n, \
-              right, hex, setw(8), setfill('0'), lLng)), \
-                wstrValue);
+#define GSV(v,n) v = GetStringValue(UTFtoWS16( \
+          Format("\\StringFileInfo\\$$$$$\\" n, \
+            right, hex, setw(8), setfill('0'), lLng)), \
+              wstrValue);
         // Get version, vendor and comments strings from module
         GSV(strDescription, "FileDescription");
         GSV(strVendor, "CompanyName");
         GSV(strCopyright, "Comments");
         // Done with this define
-        #undef GSV
+#undef GSV
       }
     }
     /* -- VersionStrings::End ---------------------------------------------- */
@@ -140,9 +139,9 @@ class SysModule :                      // System module class
         vnData.uiMajor, vnData.uiMinor, vnData.uiBuild, vnData.uiRevision) };
       // Return data
       return SysModuleData{ strModule, vnData.uiMajor, vnData.uiMinor,
-        vnData.uiBuild, vnData.uiRevision, move(vsData.strVendor),
-        move(vsData.strDescription), move(vsData.strCopyright),
-        move(strVersionNumbers) };
+        vnData.uiBuild, vnData.uiRevision, std::move(vsData.strVendor),
+        std::move(vsData.strDescription), std::move(vsData.strCopyright),
+        std::move(strVersionNumbers) };
     } // Failed
     return SysModuleData{ strModule };
   }
@@ -158,12 +157,12 @@ class SysModule :                      // System module class
       string strVersionNumbers{ Format("$.$.$.$",
         vnData.uiMajor, vnData.uiMinor, vnData.uiBuild, vnData.uiRevision) };
       // Return data
-      return SysModuleData{ move(strModule), vnData.uiMajor, vnData.uiMinor,
-        vnData.uiBuild, vnData.uiRevision, move(vsData.strVendor),
-        move(vsData.strDescription), move(vsData.strCopyright),
-        move(strVersionNumbers) };
+      return SysModuleData{ std::move(strModule), vnData.uiMajor,
+        vnData.uiMinor, vnData.uiBuild, vnData.uiRevision,
+        std::move(vsData.strVendor), std::move(vsData.strDescription),
+        std::move(vsData.strCopyright), std::move(strVersionNumbers) };
     } // Failed
-    return SysModuleData{ move(strModule) };
+    return SysModuleData{ std::move(strModule) };
   }
   /* -- Return data (copy filename) -------------------------------- */ public:
   explicit SysModule(const string &strModule) :
@@ -174,7 +173,7 @@ class SysModule :                      // System module class
   /* -- Return data (move filename) ---------------------------------------- */
   explicit SysModule(string &&strModule) :
     /* -- Initialisation of members ---------------------------------------- */
-    SysModuleData{ Load(move(strModule)) }
+    SysModuleData{ Load(std::move(strModule)) }
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* -- End ---------------------------------------------------------------- */

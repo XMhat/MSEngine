@@ -8,17 +8,17 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfCVar {                     // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfCVar {                     // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfCVarLib;             // Using cvar lib interface
-using namespace IfLua;                 // Using lua interface
+using namespace IfLua;                 // Using lua namespace
 /* == CVars class ========================================================== */
-static class CVars                     // Start of vars class
+static class CVars final               // Start of vars class
 { /* ----------------------------------------------------------------------- */
-  #define CVAR_CONFIG_SIZE_MINIMUM     2
-  #define CVAR_CONFIG_SIZE_MAXIMUM     1048576
-  #define CVAR_CONFIG_MAX_LEVEL        10
+#define CVAR_CONFIG_SIZE_MINIMUM       2
+#define CVAR_CONFIG_SIZE_MAXIMUM       1048576
+#define CVAR_CONFIG_MAX_LEVEL          10
   /* --------------------------------------------------------------- */ public:
   enum DefaultsCommand                 // Flags when loaded from DB
   { /* -- (Note: Don't ever change these around) --------------------------- */
@@ -52,7 +52,7 @@ static class CVars                     // Start of vars class
   /* ----------------------------------------------------------------------- */
   void UnregisterAllVars(void)
   { // Log result then dereg core variables, they don't need testing
-    LW(LH_DEBUG, "CVars unregistering core variables...");
+    cLog->LogDebugSafe("CVars unregistering core variables...");
     // Unregister each built-in engine cvar
     for(const ItemStatic &cvaR : cvEngList)
     { // If the variable falls into the current gui mode then unregister it
@@ -62,12 +62,12 @@ static class CVars                     // Start of vars class
     } // if everything is unregistered? (This should always be true!)
     if(imActive.empty())
     { // Log that we are done and return
-      LW(LH_INFO, "CVars finished unregistering all variables.");
+      cLog->LogInfoSafe("CVars finished unregistering all variables.");
       return;
     }
     // Report amount of lingering variables. We should never get here so if
     // this code is ever executed then there is an internal issue.
-    LW(LH_DEBUG, "CVars unregistering $ lingering variables...",
+    cLog->LogDebugExSafe("CVars unregistering $ lingering variables...",
       imActive.size());
     // Report remaining variables
     while(!imActive.empty())
@@ -75,13 +75,13 @@ static class CVars                     // Start of vars class
       const ItemMapIt itItem{ imActive.begin() };
       const Item &cvarItem = itItem->second;
       // Report it
-      LW(LH_WARNING, "CVars detected lingering cvar '$' "
+      cLog->LogWarningExSafe("CVars detected lingering cvar '$' "
                      "with value '$' and flags $$.",
         cvarItem.GetVar(), cvarItem.GetValue(), hex, cvarItem.FlagGet());
       // Delete it
       imActive.erase(itItem);
     } // Report proper cleanup
-    LW(LH_INFO, "CVars finished unregistering lingering variables.");
+    cLog->LogInfoSafe("CVars finished unregistering lingering variables.");
   }
   /* ----------------------------------------------------------------------- */
   bool InitialVarExists(const string &strVar) const
@@ -116,7 +116,7 @@ static class CVars                     // Start of vars class
   bool IsVarStrEmpty(const string &strVar) { return GetStr(strVar).empty(); }
   /* ----------------------------------------------------------------------- */
   template<typename T>const T GetInternal(const CVarEnums cvId)
-    { return move(ToNumber<T>(GetStrInternal(cvId))); }
+    { return std::move(ToNumber<T>(GetStrInternal(cvId))); }
   /* -- Check that the variable name is valid ------------------------------ */
   bool IsValidVariableName(const string &strVar)
   { // Check minimum name length
@@ -209,7 +209,7 @@ static class CVars                     // Start of vars class
     if(ciItem.FlagIsSet(COMMIT) ||
        ciItem.FlagIsSet(OSAVEFORCE) ||
        ciItem.FlagIsSet(LOADED))
-      imInactive.emplace(move(*itItem));
+      imInactive.emplace(std::move(*itItem));
     // Erase variable
     imActive.erase(itItem);
   }
@@ -228,9 +228,9 @@ static class CVars                     // Start of vars class
   { // Try to unregister the variable and if it succeeded?
     if(UnregisterVarNoLog(strVar))
     { // Log that we unregistered it
-      LW(LH_DEBUG, "CVars unregistered '$'.", strVar);
+      cLog->LogDebugExSafe("CVars unregistered '$'.", strVar);
     } // We could not unregister the variable so log the failure
-    else LW(LH_WARNING, "CVars un-register '$' not found!", strVar);
+    else cLog->LogWarningExSafe("CVars un-register '$' not found!", strVar);
   }
   /* ----------------------------------------------------------------------- */
   void SetInitialVar(Item &ciItem, const string &strVal,
@@ -240,20 +240,20 @@ static class CVars                     // Start of vars class
     { // Flags are the same too?
       if(ciItem.FlagIsSet(cFlags))
       { // Log that we're not overriding
-        LW(LH_WARNING,
-          "CVars initial var '$' already set to '$'/$$!",
-            ciItem.GetVar(), strVal, hex, cFlags.FlagGet());
+        cLog->LogWarningExSafe("CVars initial var '$' already set to '$'/$$!",
+          ciItem.GetVar(), strVal, hex, cFlags.FlagGet());
       } // Flags need updating
       else
       { // Update flags
         ciItem.FlagSet(cFlags);
         // Log that we're overriding flags
-        LW(LH_WARNING, "CVars initial var '$' flags overridden to $$ from $!",
-          ciItem.GetVar(), hex, cFlags.FlagGet(), ciItem.FlagGet());
+        cLog->LogWarningExSafe(
+          "CVars initial var '$' flags overridden to $$ from $!",
+            ciItem.GetVar(), hex, cFlags.FlagGet(), ciItem.FlagGet());
       } // Done
       return;
     } // Log that we're overriding
-    LW(LH_WARNING,
+    cLog->LogWarningExSafe(
       "CVars initial var '$' overridden with '$'[$$] from '$'[$!]",
         ciItem.GetVar(), strVal, hex, cFlags.FlagGet(), ciItem.GetValue(),
         ciItem.FlagGet());
@@ -300,13 +300,13 @@ static class CVars                     // Start of vars class
     const string strSplit{ GetTextFormat(strBuffer) };
     if(strSplit.empty())
     { // Log the detection issue and return failure
-      LW(LH_ERROR, "CVars failed to detect config file type!");
+      cLog->LogErrorSafe("CVars failed to detect config file type!");
       return false;
     } // Initialise it and log and return failed if there are no lines
     const VarsConst varLoaded{ strBuffer, strSplit, '=' };
     if(varLoaded.empty())
     { // Log the issue and return failure
-      LW(LH_WARNING, "CVars detected no readable variables!");
+      cLog->LogWarningSafe("CVars detected no readable variables!");
       return false;
     } // Thread safety
     const LockGuard lgCVarsSync{ mMutex };
@@ -344,7 +344,7 @@ static class CVars                     // Start of vars class
     } // Set total cvars processed and log the result
     const size_t stParsed = stGood + stBad,
                  stIgnored = varLoaded.size() - stParsed;
-    LW(LH_INFO, "CVars parsed $ lines with $ vars (G:$;B:$;I:$).",
+    cLog->LogInfoExSafe("CVars parsed $ lines with $ vars (G:$;B:$;I:$).",
       varLoaded.size(), stParsed, stGood, stBad, stIgnored);
     // Done
     return true;
@@ -382,7 +382,7 @@ static class CVars                     // Start of vars class
       } // Return iterator
       return liIter;
     } // Persistant var exists? Move into cvar list, remove persist & get data.
-    const ItemMapIt liIter{ imActive.emplace(move(*cvarPendItem)).first };
+    const ItemMapIt liIter{ imActive.emplace(std::move(*cvarPendItem)).first };
     imInactive.erase(cvarPendItem);
     // Capture exceptions as we need to remove the variable if the value failed
     // to set for a multitude of reasons.
@@ -393,7 +393,7 @@ static class CVars                     // Start of vars class
       // commit flag at least so the data is saved on exit when the cvar is
       // unregistered and re-registered.
       Item &cvarData = liIter->second;
-      cvarData.SetDefaultValue(strValue);
+      cvarData.SetDefValue(strValue);
       cvarData.SetTrigger(cbTrigger);
       cvarData.FlagReset(cFlags | LOADED | (cvarData & CVREGMASK));
       // Types must not have changed
@@ -415,19 +415,19 @@ static class CVars                     // Start of vars class
   /* ----------------------------------------------------------------------- */
   void RefreshSettings(void)
   { // Completely clear SQL cvars table.
-    LW(LH_DEBUG, "CVars erasing saved engine settings...");
+    cLog->LogDebugSafe("CVars erasing saved engine settings...");
     cSql->CVarDropTable();
     cSql->CVarCreateTable();
-    LW(LH_WARNING, "CVars finished erasing saved engine settings.");
+    cLog->LogWarningSafe("CVars finished erasing saved engine settings.");
   }
   /* ----------------------------------------------------------------------- */
   void OverwriteExistingSettings(void)
   { // Overwrite engine variables with defaults
-    LW(LH_DEBUG, "CVars forcing default engine settings...");
+    cLog->LogDebugSafe("CVars forcing default engine settings...");
     cSql->Begin();
     for(const ItemStatic &cvaR : cvEngList) cSql->CVarPurge(cvaR.tcsVar.strN);
     cSql->End();
-    LW(LH_WARNING, "CVars finished setting defaults.");
+    cLog->LogWarningSafe("CVars finished setting defaults.");
   }
   /* == Cvar updated callback for Lua ============================== */ public:
   static CVarReturn LuaCallbackStatic(Item&,const string &);
@@ -477,7 +477,7 @@ static class CVars                     // Start of vars class
   { // Must have default variables to register
     if(cvEngList.empty()) XC("No default variables to register!");
     // Register each cvar
-    LW(LH_DEBUG, "CVars registering $ built-in variables...",
+    cLog->LogDebugExSafe("CVars registering $ built-in variables...",
       cvEngList.size());
     for(size_t stIndex = 0; stIndex < cvEngList.size(); ++stIndex)
     { // Get cvar
@@ -492,7 +492,7 @@ static class CVars                     // Start of vars class
              cvaR.cFlags, CSC_NOTHING) :
            imActive.end();
     } // Finished
-    LW(LH_INFO, "CVars registered $ of $ built-in variables for "
+    cLog->LogInfoExSafe("CVars registered $ of $ built-in variables for "
       "$ mode $.", imActive.size(), cvEngList.size(),
       cSystem->GetGuiModeString(), cSystem->GetGuiMode());
   }
@@ -508,14 +508,9 @@ static class CVars                     // Start of vars class
     // Get the value name
     const string strD{ GetCppString(lS, 2, "Default") };
     // Get the flags and check that the flags are in range
-    const CVarFlagsConst cF{ GetFlags(lS, 3, NONE, PRIVATE, "Flags") };
+    const CVarFlagsConst cF{ GetFlags(lS, 3, MASK, "Flags") };
     // Check that the fourth parameter is a function
     CheckFunction(lS, 4, "Callback");
-    // Don't allow a flags value above PRIVATE for lua cvars
-    if(cF.FlagIsLesser(NONE) || cF.FlagIsGreaterEqual(PRIVATE))
-      XC("CVar flags are invalid!",
-        "Variable", strVar,       "Flags",   cF.FlagGet(),
-        "Minimum",  NONE.FlagGet(), "Maximum", PRIVATE.FlagGet());
     // Check that the var has at least one type
     CheckTypeValidInFlags(strVar, cF);
     // Wait for concurrent operations on cvars to finish
@@ -559,7 +554,7 @@ static class CVars                     // Start of vars class
     // Bail if no commands
     if(lfList.empty()) return;
     // Say arrays unloadinghow many arrays loaded
-    LW(LH_DEBUG, "CVars unloading $ virtual cvars...", lfList.size());
+    cLog->LogDebugExSafe("CVars unloading $ virtual cvars...", lfList.size());
     // Unregister each lua cvar until...
     // FIXME: I originally intended to unload in the order of creation but
     // dumbass me forgot that std::map's are sorted so this code unloads
@@ -569,7 +564,7 @@ static class CVars                     // Start of vars class
     // Until the lua cvarlist is empty
     while(!lfList.empty());
     // Say how many arrays loaded
-    LW(LH_INFO, "CVars unloaded virtual cvars.");
+    cLog->LogInfoSafe("CVars unloaded virtual cvars.");
   }
   /* ----------------------------------------------------------------------- */
   const ItemMap &GetVarList(void) { return imActive; }
@@ -615,7 +610,7 @@ static class CVars                     // Start of vars class
     { // Ignore overwrite if requested
       if(scFlags.FlagIsSet(CSC_NOIOVERRIDE))
       { // Log that this action was denied
-        LW(LH_WARNING, "CVars ignored overriding '$' with '$'!",
+        cLog->LogWarningExSafe("CVars ignored overriding '$' with '$'!",
           strVar, strVal);
         // Failed
         return false;
@@ -630,9 +625,9 @@ static class CVars                     // Start of vars class
           XC("Initial CVar count upper threshold reached!",
              "Variable", strVar, "Maximum", stMaxInactiveCount);
         // Log that this action was denied
-        LW(LH_WARNING,
+        cLog->LogWarningExSafe(
           "CVars not adding '$' because upper threshold of $ reached!",
-            strVar, stMaxInactiveCount);
+          strVar, stMaxInactiveCount);
         // Failed
         return false;
       } // Check ok so insert
@@ -676,11 +671,11 @@ static class CVars                     // Start of vars class
     return ACCEPT;
   }
   /* -- Return last error from callback (also moves it) -------------------- */
-  const string GetCBError(void) { return move(strCBError); }
+  const string GetCBError(void) { return std::move(strCBError); }
   /* ----------------------------------------------------------------------- */
   template<typename T>T GetInternalSafe(const CVarEnums cvId)
     { const LockGuard lgCVarsSync{ mMutex };
-      return move(GetInternal<T>(cvId)); }
+      return std::move(GetInternal<T>(cvId)); }
   /* ----------------------------------------------------------------------- */
   const string GetInitialVarSafe(const string &strVar)
     { const LockGuard lgCVarsSync{ mMutex };
@@ -761,7 +756,7 @@ static class CVars                     // Start of vars class
             { imPair.second.Save(stCommit, stPurge); });
       // Log variables written
       if(stCommit || stPurge)
-        LW(LH_INFO, "CVars commited $ and purged $ from $ pool.",
+        cLog->LogInfoExSafe("CVars commited $ and purged $ from $ pool.",
           stCommit.load(), stPurge.load(), impData.cpName);
       // Add to totals
       stCommitTotal += stCommit;
@@ -787,12 +782,12 @@ static class CVars                     // Start of vars class
     const Sql::Result &vVars = cSql->GetRecords();
     if(vVars.empty())
     { // Log message and return failed
-      LW(LH_INFO, "CVars found no variables to clean up!");
+      cLog->LogInfoSafe("CVars found no variables to clean up!");
       return 0;
     } // Thread safety to protect cvar modification
     const LockGuard lgCVarsSync{ mMutex };
     // Say how many records we're probing
-    LW(LH_DEBUG, "CVars probing $ records...", vVars.size());
+    cLog->LogDebugExSafe("CVars probing $ records...", vVars.size());
     // Begin transaction
     cSql->Begin();
     // Transactions committed
@@ -822,7 +817,7 @@ static class CVars                     // Start of vars class
     } // End bulk transaction commital
     cSql->End();
     // If we have items to delete, we can say how many we deleted
-    LW(LH_INFO, "CVars removed $ of $ orphan records.",
+    cLog->LogInfoExSafe("CVars removed $ of $ orphan records.",
       stCommit, vVars.size());
     // Clean up downloaded records
     cSql->Reset();
@@ -843,7 +838,7 @@ static class CVars                     // Start of vars class
     const Sql::Result &vVars = cSql->GetRecords();
     if(!vVars.empty())
     { // Log number of vars being parsed
-      LW(LH_DEBUG, "CVars read $ persistent variables, parsing...",
+      cLog->LogDebugExSafe("CVars read $ persistent variables, parsing...",
         vVars.size());
       // For each record returned. Set each keypair returned, these are user
       // variables. We're using multithreading for this to accellerate
@@ -872,7 +867,7 @@ static class CVars                     // Start of vars class
         { // Must be text
           if(mbVal.iT != SQLITE_TEXT)
           { // Show warning and ignore if not
-            LW(LH_WARNING, "CVars expected SQLITE_TEXT<$> "
+            cLog->LogWarningExSafe("CVars expected SQLITE_TEXT<$> "
               "and not type $ for '$'!", SQLITE_TEXT, mbVal.iT, strVar);
             return;
           } // Store value directly with synchronisation and goto next
@@ -891,11 +886,9 @@ static class CVars                     // Start of vars class
         } // exception occured?
         catch(const exception &e)
         { // Log failure and try to reset the initial var so this does not
-          // happen again.
-          LW(LH_ERROR, "CVars variable '$' decrypt exception: $",
-            strVar, e.what());
-          // Next record
-          return;
+          // happen again and goto next record
+          return cLog->LogErrorExSafe(
+            "CVars variable '$' decrypt exception: $", strVar, e.what());
         }
         // Set the variable or place it in the initials list if cvar not not
         // registered. The access will be user mode only and assignments
@@ -905,19 +898,18 @@ static class CVars                     // Start of vars class
         if(SetVarOrInitialSafe(strVar, strNewValue, PUSR,
           CSC_NOIOVERRIDE|CSC_DECRYPTED))
             ++stLoaded;
-      }); // If we loaded all the variables?
+      });
+      // If we loaded all the variables? Report that we loaded all the vars
       if(stLoaded == vVars.size())
-      { // Report that we loaded all the variables
-        LW(LH_INFO, "CVars parsed all $ persistent variables.",
+        cLog->LogInfoExSafe("CVars parsed all $ persistent variables.",
           vVars.size());
-      } // We didn't load all the variables?
-      else
-      { // Report that we could not load all the variables
-        LW(LH_WARNING, "CVars only parsed $ of $ persistent variables!",
-          stLoaded.load(), vVars.size());
-      }
+      // We didn't load all the variables? Report that we could not load all
+      // the variables
+      else cLog->LogWarningExSafe(
+        "CVars only parsed $ of $ persistent variables!",
+        stLoaded.load(), vVars.size());
     } // No variables loaded
-    else LW(LH_WARNING, "CVars found no variables to parse.");
+    else cLog->LogInfoSafe("CVars found no variables to parse.");
     // Clean up downloaded records
     cSql->Reset();
     // Return loaded variables
@@ -949,7 +941,7 @@ static class CVars                     // Start of vars class
     const string strFN{ Append(strC, "." CFG_EXTENSION) };
     if(!LoadFromFile(strFN, PSYSTEM|SAPPCFG)) return DENY;
     // We are manually updating the value with the correct filename
-    strV = move(strFN);
+    strV = std::move(strFN);
     return ACCEPT_HANDLED;
   }
   /* -- Default constructor ------------------------------------------------ */
@@ -971,6 +963,6 @@ static class CVars                     // Start of vars class
 /* == Cvar lua callback ==================================================== */
 CVarReturn CVars::LuaCallbackStatic(Item &cvarD, const string &strVal)
   { return cCVars->LuaCallback(cvarD, strVal); }
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

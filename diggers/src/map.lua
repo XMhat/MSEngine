@@ -55,10 +55,10 @@ local function InitMap()
     end
     -- Set texture handles
     local texZone1 = aRes[1].H;
-    texZone1:SetTile(0, 0, 0, 512, 350);
-    local iTileFlagTexId<const> = texZone1:CreateTile(480, 480, 512, 512);
+    texZone1:TileS(0, 0, 0, 512, 350);
+    local iTileFlagTexId<const> = texZone1:TileA(480, 480, 512, 512);
     local texZone2 = aRes[2].H;
-    texZone2:SetTile(0, 0, 0, 128, 350);
+    texZone2:TileS(0, 0, 0, 128, 350);
     -- Render the map
     local function RenderMap()
       -- Draw main chunk of map

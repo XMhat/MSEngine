@@ -7,11 +7,11 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfEvtMain {                  // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfEvtMain {                  // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfLog;                 // Using log interface
-using namespace IfThread;              // Using thread interface
+using namespace IfLog;                 // Using log namespace
+using namespace IfThread;              // Using thread namespace
 /* -- Available engine commands -------------------------------------------- */
 enum EvtMainCmd                        // Render thread event commands
 { /* -- Main events -------------------------------------------------------- */
@@ -83,7 +83,7 @@ enum EvtMainCmd                        // Render thread event commands
   /* ----------------------------------------------------------------------- */
 };
 /* ------------------------------------------------------------------------- */
-static class EvtMain :                 // Event list for render thread
+static class EvtMain final :           // Event list for render thread
   /* -- Dependencies ------------------------------------------------------- */
   private IfCollector::IHelper,        // Initialisation helper
   public IfEvtCore::EvtCore            // Events common class
@@ -224,6 +224,6 @@ static class EvtMain :                 // Event list for render thread
   DELETECOPYCTORS(EvtMain);            // Delete copy constructor and operator
   /* -- End ---------------------------------------------------------------- */
 } *cEvtMain = nullptr;                 // Pointer to static class
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

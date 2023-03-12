@@ -23,19 +23,19 @@ local function InitRace()
   local function OnLoaded(aResources)
     -- Setup lobby texture
     local texLobby = aResources[1].H;
-    texLobby:TrimTList(1);
-    texLobby:SetTile(0, 0, 272, 512, 512);
+    texLobby:TileSTC(1);
+    texLobby:TileS(0, 0, 272, 512, 512);
     -- Get texture resource and trim texcoords list to 5
     local texRace = aResources[2].H;
-    texRace:TrimTList(5);
+    texRace:TileSTC(5);
     -- Cache other tiles
-    local iTileName<const> = texRace:CreateTile(0, 496, 160, 512);
-                             texRace:CreateTile(0, 479, 160, 495);
-                             texRace:CreateTile(0, 462, 160, 478);
-                             texRace:CreateTile(0, 445, 160, 461);
-    local iTileBG<const> = texRace:CreateTile(208, 312, 512, 512);
-    local iTileSpecial<const> = texRace:CreateTile(190, 496, 206, 512);
-                                texRace:CreateTile(171, 496, 187, 512);
+    local iTileName<const> = texRace:TileA(0, 496, 160, 512);
+                             texRace:TileA(0, 479, 160, 495);
+                             texRace:TileA(0, 462, 160, 478);
+                             texRace:TileA(0, 445, 160, 461);
+    local iTileBG<const> = texRace:TileA(208, 312, 512, 512);
+    local iTileSpecial<const> = texRace:TileA(190, 496, 206, 512);
+                                texRace:TileA(171, 496, 187, 512);
     -- Currently visible race id and selected race data
     local iRaceId, aRaceDataSelected;
     -- Set clamped race id and race data

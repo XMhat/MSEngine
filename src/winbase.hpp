@@ -8,15 +8,15 @@
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfStat;                // Using stat interface
+using namespace IfStat;                // Using stat namespace
 /* == We'll put all these calls in a namespace ============================= */
-class SysBase :                        // Safe exception handler namespace
+class SysBase :                        // Members initially private
   /* -- Base classes ------------------------------------------------------- */
   public Ident                         // Mutex name
 { /* -- Custom exceptions -------------------------------------------------- */
-  #define EXCEPTION_APT     0xF0000001 // Abornmal program termination
-  #define EXCEPTION_ISA     0xF0000002 // Illegal storage access
-  #define EXCEPTION_FPE     0xF0000003 // Floating point exception
+#define EXCEPTION_APT       0xF0000001 // Abornmal program termination
+#define EXCEPTION_ISA       0xF0000002 // Illegal storage access
+#define EXCEPTION_FPE       0xF0000003 // Floating point exception
   /* -- Private variables -------------------------------------------------- */
   HWND             hwndWindow;         // Main window handle being used
   HANDLE           hMutex;             // Global mutex handle
@@ -32,7 +32,7 @@ class SysBase :                        // Safe exception handler namespace
     if(hMutex) return;
     // Close the handle and log if failed
     if(!CloseHandle(hMutex))
-      LW(LH_WARNING, "SysMutex failed to close mutex handle '$'! $.",
+      cLog->LogWarningExSafe("SysMutex failed to close mutex handle '$'! $.",
         IdentGet(), SysError());
   }
   /* ----------------------------------------------------------------------- */
@@ -49,33 +49,33 @@ class SysBase :                        // Safe exception handler namespace
       memcmp(wstrN.data(), wstrT.data(), wstrN.length()*sizeof(wchar_t)))
         return TRUE;
     // We found the window
-    LW(LH_DEBUG, "- Found window handle at $$.\n"
+    cLog->LogDebugExSafe("- Found window handle at $$.\n"
                  "- Window name is '$'.",
       hex, reinterpret_cast<void*>(hH), WS16toUTF(wstrT));
     // First try showing the window and if successful?
     if(ShowWindow(hH, SW_RESTORE|SW_SHOWNORMAL))
     { // Log the successful command
-      LW(LH_DEBUG, "- Show window request was successful.");
+      cLog->LogDebugExSafe("- Show window request was successful.");
     } // Showing the window failed?
     else
     { // Log the failure with reason
-      LW(LH_WARNING, "- Show window request failed: $!", SysError());
+      cLog->LogWarningExSafe("- Show window request failed: $!", SysError());
     } // Then try setting it as a foreground window and if succeeded?
     if(SetForegroundWindow(hH))
     { // Log the successful command
-      LW(LH_DEBUG, "- Set fg window request was successful.");
+      cLog->LogDebugExSafe("- Set fg window request was successful.");
     } // Setting foreground window failed?
     else
     { // Log the failure with reason
-      LW(LH_WARNING, "- Set fg window request failed: $!", SysError());
+      cLog->LogWarningExSafe("- Set fg window request failed: $!", SysError());
     }// Then try setting the focus of the window and if succeeded?
     if(SetFocus(hH) || SysIsErrorCode())
     { // Log the successful command
-      LW(LH_DEBUG, "- Set focus request was successful.");
+      cLog->LogDebugExSafe("- Set focus request was successful.");
     } // Setting focus failed?
     else
     { // Log the failure with reason
-      LW(LH_WARNING, "- Set focus request failed: $!", SysError());
+      cLog->LogWarningExSafe("- Set focus request failed: $!", SysError());
     } // Reset error so it's not seen as the result
     SetLastError(0);
     // Don't look for any more windows
@@ -85,7 +85,7 @@ class SysBase :                        // Safe exception handler namespace
   void SEHDumpEnvironment(void) try
   { // Formatted data
     Statistic tD;
-    tD.Header("Variable", false).Header("Value", false);
+    tD.Header("Variable").Header("Value", false);
     // Get environment strings and if we have them?
     if(wchar_t*const wcpE = GetEnvironmentStrings())
     { // Iterate through the environment lines
@@ -120,7 +120,7 @@ class SysBase :                        // Safe exception handler namespace
     GlobalMemoryStatusEx(&mD);
     // Process, format and return data
     Statistic()
-      .Header("Type", false)
+      .Header("Type")
       .Header("Total")
       .Header("Free")
       .Header("Used")
@@ -201,11 +201,11 @@ class SysBase :                        // Safe exception handler namespace
           << " could not be ";
       // Write the action attempted
       switch(const
-  #ifdef _M_AMD64
+#if defined(X64)
         DWORD64
-  #else
+#elif defined(X86)
         DWORD
-  #endif
+#endif
         &dwAccess = erData.ExceptionInformation[dwParam])
       { // Read, written or executed?
         case 0: osS << "read."; break;
@@ -231,19 +231,19 @@ class SysBase :                        // Safe exception handler namespace
     // Get context from exception record
     const CONTEXT &cData = *pcData;
     // Helper macros
-    #define PUSHINT(id,c,x,e) id "=" << setw(c) << cData.x << e
-    #define D64(id,x,e)       PUSHINT(id,16,x,e)
-    #define D32(id,x,e)       PUSHINT(id,8,x,e)
-    #define D16(id,x,e)       PUSHINT(id,4,x,e)
-    #define D32X(id,x,e)      id "="\
+#define PUSHINT(id,c,x,e) id "=" << setw(c) << cData.x << e
+#define D64(id,x,e) PUSHINT(id,16,x,e)
+#define D32(id,x,e) PUSHINT(id,8,x,e)
+#define D16(id,x,e) PUSHINT(id,4,x,e)
+#define D32X(id,x,e) id "=" \
       << setw(8) << *reinterpret_cast<const uint32_t*>(&cData.x) << e
-    #define D128X(id,x,e)     id "="\
+#define D128X(id,x,e) id "=" \
       << setw(16) << *reinterpret_cast<const uint64_t*>(&cData.x)\
       << setw(16) << *(reinterpret_cast<const uint64_t*>(&cData.x)+1) << e
-    #define SPC               "  "
-    #define CRLF              "\r\n"
+#define SPC               "  "
+#define CRLF              "\r\n"
     // Return registers
-  #ifdef _M_AMD64
+#if defined(X64)
     // Write basic registers
     osS << hex << setfill('0') <<
       D64("Rax", Rax, SPC)  D64("Rbx", Rbx, SPC)  D64("Rcx", Rcx, CRLF)
@@ -286,20 +286,21 @@ class SysBase :                        // Safe exception handler namespace
           << D128X("XmmL" << dec << (stQuad+1) << hex <<,
         Legacy[stQuad+1], CRLF);
     // Write floating point state
-    #define XMM(x,e) << D128X("Xmm" << setw(2) << dec << x\
-      << hex <<, Xmm ## x, e)
+# define XMM(x,e) << \
+      D128X("Xmm" << setw(2) << dec << x << hex <<, Xmm ## x, e)
     osS XMM( 0,SPC)  XMM( 1,CRLF) XMM( 2,SPC)  XMM( 3,CRLF) XMM( 4,SPC)
         XMM( 5,CRLF) XMM( 6,SPC)  XMM( 7,CRLF) XMM( 8,SPC)  XMM( 9,CRLF)
         XMM(10,SPC)  XMM(11,CRLF) XMM(12,SPC)  XMM(13,CRLF) XMM(14,SPC)
         XMM(15,CRLF) CRLF;
-    #undef XMM
+# undef XMM
     // Write vector state
     for(size_t stQuad = 0; stQuad < 26; stQuad += 2)
       osS << D128X("Vec" << setw(2) << dec << stQuad
           << hex <<, VectorRegister[stQuad], SPC)
           << D128X("Vec" << setw(2) << dec << (stQuad+1)
           << hex <<, VectorRegister[stQuad+1], CRLF);
-  #else
+    // Using 32-bit compiler?
+#elif defined(X86)
     // Write basic registers
     osS << hex << setfill('0') <<
       D32("Eax", Eax, SPC)   D32("Ebx", Ebx, SPC)  D32("Ecx", Ecx, SPC)
@@ -339,24 +340,24 @@ class SysBase :                        // Safe exception handler namespace
       for(size_t stX = 0; stX < stZ; ++stX, ++stI)
         osS << D32X("ER" << setw(3) << dec << stI << hex <<,
           ExtendedRegisters[stY+(stX*sizeof(DWORD))], (stX == 4 ? CRLF : SPC));
-  #endif
+#endif
     // Set fill back to space
     osS << setfill(' ');
     // Done with helper macros
-    #undef CRLF
-    #undef SPC
-    #undef D128
-    #undef D16
-    #undef D32
-    #undef D64
-    #undef PUSHINT
+#undef CRLF
+#undef SPC
+#undef D128
+#undef D16
+#undef D32
+#undef D64
+#undef PUSHINT
   } // Shouldn't happen but just incase
   catch(const exception &e) { osS << e.what(); }
   /* == Perform process dump =============================================== */
   void SEHProcessDump(void) try
   { // Data storage
     Statistic tData;
-    tData.Header("Name", false).Header("Pid").Header("PPid").Header("Thr")
+    tData.Header("Name").Header("Pid").Header("PPid").Header("Thr")
          .Header("Pri").Header("Aff").Header("Version", false)
          .Header("Description", false).Header("Vendor", false)
          .Header("Path", false);
@@ -402,12 +403,12 @@ class SysBase :                        // Safe exception handler namespace
           if(GetModuleFileNameEx(hProcess, nullptr,
             const_cast<LPWSTR>(wstrFN.c_str()), MAX_PATH))
           { // Get version information
-            const SysModuleData vD{ move(SysModule(WS16toUTF(wstrFN))) };
+            const SysModuleData vD{ std::move(SysModule(WS16toUTF(wstrFN))) };
             // Push version, description vendor and filename (use .c_str())
             tData.Data(Format("$.$.$.$",
               vD.GetMajor(), vD.GetMinor(), vD.GetRevision(), vD.GetBuild()))
-                 .Data(move(vD.GetDesc()))
-                 .Data(move(vD.GetVendor()))
+                 .Data(std::move(vD.GetDesc()))
+                 .Data(std::move(vD.GetVendor()))
                  .DataW(wstrFN);
           } // Push blank field, error as description, number and reason
           else tData.Data()
@@ -442,7 +443,7 @@ class SysBase :                        // Safe exception handler namespace
   { // Data storage
     Statistic tD;
     // Prepare formatted data
-    tD.Header("Description", false).Header("Version", false)
+    tD.Header("Description").Header("Version", false)
       .Header("Vendor", false).Header("Module", false);
     // Show modules
     HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, 0);
@@ -454,7 +455,8 @@ class SysBase :                        // Safe exception handler namespace
       // Get first module and iterate each one
       if(Module32First(hSnapshot, &medData) == TRUE) do
       { // Get module information
-        const SysModuleData vD{ move(SysModule(S16toUTF(medData.szExePath))) };
+        const SysModuleData vD{
+          std::move(SysModule(S16toUTF(medData.szExePath))) };
         // Print data
         tD.Data(vD.GetDesc()).Data(vD.GetVersion())
           .Data(vD.GetVendor()).DataW(medData.szExePath);
@@ -489,15 +491,15 @@ class SysBase :                        // Safe exception handler namespace
       STACKFRAME sfData{};
       sfData.AddrReturn = sfData.AddrStack = sfData.AddrBStore =
         { 0, 0, AddrModeFlat };
-     #ifdef _M_AMD64                        // Using AMD64/INTEL64? (64-bit)
-     # define IMAGE_FILE_MACHINE IMAGE_FILE_MACHINE_AMD64
-     # define ADDR_PC    cData.Rip
-     # define ADDR_FRAME cData.Rbp
-     #else
-     # define IMAGE_FILE_MACHINE IMAGE_FILE_MACHINE_I386
-     # define ADDR_PC    cData.Eip
-     # define ADDR_FRAME cData.Ebp
-     #endif
+#if defined(X64)                       // Using 64-bit compiler?
+# define IMAGE_FILE_MACHINE IMAGE_FILE_MACHINE_AMD64
+# define ADDR_PC    cData.Rip
+# define ADDR_FRAME cData.Rbp
+#elif defined(X86)                     // Using 32-bit compiler?
+# define IMAGE_FILE_MACHINE IMAGE_FILE_MACHINE_I386
+# define ADDR_PC    cData.Eip
+# define ADDR_FRAME cData.Ebp
+#endif
       // Set register pointers
       sfData.AddrPC = { ADDR_PC, 0, AddrModeFlat };
       sfData.AddrFrame = { ADDR_FRAME, 0, AddrModeFlat };
@@ -574,9 +576,9 @@ class SysBase :                        // Safe exception handler namespace
     } // Show error
     else osS << "SymInitialise failed: " << SysError() << ".\r\n";
     // Done with these defines
-    #undef ADDR_PC
-    #undef ADDR_FRAME
-    #undef IMAGE_FILE_MACHINE
+#undef ADDR_PC
+#undef ADDR_FRAME
+#undef IMAGE_FILE_MACHINE
   } // Shouldn't happen but just incase
   catch(const exception &e) { osS << e.what(); }
   /* == Dump summary to file =============================================== */
@@ -653,7 +655,7 @@ class SysBase :                        // Safe exception handler namespace
   const char *SEHExceptionToString(const DWORD dwCode)
   { // Compare exception code
     switch(dwCode) {
-      #define CASE(n,m) case EXCEPTION_ ## n: return m
+#define CASE(n,m) case EXCEPTION_ ## n: return m
       CASE(ACCESS_VIOLATION,         "Access violation");
       CASE(ARRAY_BOUNDS_EXCEEDED,    "array bounds exceeded");
       CASE(BREAKPOINT,               "Breakpoint");
@@ -679,7 +681,7 @@ class SysBase :                        // Safe exception handler namespace
       CASE(APT,                      "Abormal program termination");
       CASE(ISA,                      "Illegal storage access");
       CASE(FPE,                      "Floating point exception");
-      #undef CASE
+#undef CASE
       default: return "Unrecognised exception";
     }
   }
@@ -702,16 +704,16 @@ class SysBase :                        // Safe exception handler namespace
       osS << "This illegal instruction exception usually indicates that this "
              BUILD_TARGET " compiled binary is NOT compatible with your "
              "operating system and/or central processing unit. "
-  #ifdef X64                             // Special message for 64-bit system?
+#if defined(X64)                       // Special message for 64-bit system?
              "Since you are running the 64-bit version of this binary, please "
              "consider trying the 32-bit version instead."
-  #else                                  // Special message for 32-bit system?
+#elif defined(X86)                     // Special message for 32-bit system?
              "Since you are running the 32-bit version of this binary, you "
              "may need to upgrade your operating system and/or central "
              "processing unit. If you originally tried the 64-bit version and "
              "you still got the same error then you may need to report this "
              "issue as a bug."
-  #endif
+#endif
              "\r\n\r\n";
     } // Add stack dump[
     SEHStackDump(GetCurrentProcess(), GetCurrentThread(),
@@ -798,19 +800,19 @@ class SysBase :                        // Safe exception handler namespace
       // Global mutex name already exists?
       case ERROR_ALREADY_EXISTS:
         // Log that another instance already exists
-        LW(LH_DEBUG,
+        cLog->LogDebugExSafe(
           "System found existing mutex, scanning for original window...");
         // Look for the specified window and if we activated it?
         if(!EnumWindows(EnumWindowsProc, reinterpret_cast<LPARAM>(&wstrTitle)))
         { // If an error occured?
           if(SysIsNotErrorCode())
           { // Log the error and reason why it failed
-            LW(LH_ERROR, "System failed to find the window to activate! $!",
-              SysError());
+            cLog->LogErrorExSafe(
+              "System failed to find the window to activate! $!", SysError());
           } // No window was found
-          else LW(LH_WARNING, "System window enumeration successful!");
+          else cLog->LogWarningExSafe("System window enumeration successful!");
         } // Could not find it?
-        else LW(LH_DEBUG, "System window enumeration unsuccessful!");
+        else cLog->LogDebugExSafe("System window enumeration unsuccessful!");
         // Caller must terminate program
         return false;
       // Other error

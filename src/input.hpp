@@ -6,10 +6,10 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfInput {                    // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfInput {                    // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfConsole;             // Using console interface
+using namespace IfConsole;             // Using console namespace
 using namespace IfEvtWin;              // Using window event manager interface
 /* == Input flags ========================================================== */
 BUILD_FLAGS(Input,
@@ -168,7 +168,7 @@ class JoyInfo :
   { // Get joystick buttons and if found?
     int iButtons;
     if(const unsigned char*const cpData =
-      GlFW::GetJoystickButtons(GetId(), iButtons))
+      GlFWGetJoystickButtons(GetId(), iButtons))
     { // Clamp count to number we support on the stack
       stButtons = Minimum(static_cast<size_t>(iButtons),
         GetConstButtonList().size());
@@ -194,7 +194,7 @@ class JoyInfo :
   void RefreshAxes(void)
   { // Get axis data and if succeeded?
     int iAxises;
-    if(const float*const fpData = GlFW::GetJoystickAxes(GetId(), iAxises))
+    if(const float*const fpData = GlFWGetJoystickAxes(GetId(), iAxises))
     { // Clamp count to number we support on the stack
       stAxises = Minimum(static_cast<size_t>(iAxises),
         GetConstAxisList().size());
@@ -259,20 +259,20 @@ class JoyInfo :
     // Set gamepad status
     FlagSetOrClear(JF_GAMEPAD, glfwJoystickIsGamepad(GetId()));
     // Get name of joystick and set a generic one if invalid
-    IdentSet(IfNull(glfwGetJoystickName(GetId())));
+    IdentSet(IfNull(GlFWGetJoystickName(GetId())));
     // Refresh joystick data
     RefreshData();
     // We gained this joystick
-    LW(LH_INFO, "Input detected $ '$' (I:$;B:$;A:$).",
+    cLog->LogInfoExSafe("Input detected $ '$' (I:$;B:$;A:$).",
       GetGamepadOrJoystickString(), IdentGet(), GetId(), GetButtonCount(),
       GetAxisCount());
     // Return if it's not a gamepad
     if(FlagIsClear(JF_GAMEPAD)) return;
     // Report name and identifier
     if(const char*const cpN = glfwGetGamepadName(GetId()))
-      LW(LH_DEBUG, "- Gamepad Name: $.", cpN);
+      cLog->LogDebugExSafe("- Gamepad Name: $.", cpN);
     if(const char*const cpG = glfwGetJoystickGUID(GetId()))
-      LW(LH_DEBUG, "- Gamepad Identifier: $.", cpG);
+      cLog->LogDebugExSafe("- Gamepad Identifier: $.", cpG);
   }
   /* -- Reset data ------------------------------------------------------- */
   void Disconnect(void)
@@ -281,7 +281,7 @@ class JoyInfo :
     // No longer connected
     FlagClear(JF_CONNECTED);
     // We lost the specified joystick
-    LW(LH_INFO, "Input disconnected $ '$' (I:$).",
+    cLog->LogInfoExSafe("Input disconnected $ '$' (I:$).",
       GetGamepadOrJoystickString(), IdentGet(), GetId());
   }
   /* -- Detect joystick ---------------------------------------------------- */
@@ -327,7 +327,7 @@ class JoyInfo :
 typedef array<JoyInfo, JC_JOYSTICKS> JoyList; // Actual joystick data
 typedef JoyList::const_iterator    JoyListIt; // Iterator for vector of joys
 /* == Input class ========================================================== */
-static class Input :                   // Handles keyboard, mouse & controllers
+static class Input final :             // Handles keyboard, mouse & controllers
   /* -- Base classes ------------------------------------------------------- */
   private IHelper,                     // Initialsation helper
   public InputFlags,                   // Input configuration settings
@@ -371,8 +371,8 @@ static class Input :                   // Handles keyboard, mouse & controllers
       fNewX = Clamp(fAdjX, 0.0f, cFboMain->fboMain.GetCoRight() - 1.0f),
       fNewY = Clamp(fAdjY, 0.0f, cFboMain->fboMain.GetCoBottom() - 1.0f);
     // Now translate that position back into the actual window cursor pos.
-    cGlFW->SetCursorPos(static_cast<double>(fNewX),
-                        static_cast<double>(fNewY));
+    cGlFW->WinSetCursorPos(static_cast<double>(fNewX),
+                           static_cast<double>(fNewY));
   }
   /* -- Filtered key pressed ----------------------------------------------- */
   void OnFilteredKey(const EvtMain::Cell &epData)
@@ -392,9 +392,14 @@ static class Input :                   // Handles keyboard, mouse & controllers
       case GLFW_TRUE: FlagSet(IF_MOUSEFOCUS); break;
       // Mouse is not in the window? Clear mouse in window flag
       case GLFW_FALSE: FlagClear(IF_MOUSEFOCUS); break;
-      // Unknown state? Log the bad mouse focus state and return
-      default: LW(LH_WARNING, "Input ignored bad mouse focus state $<$$>!",
-                 iState, hex, iState); return;
+      // Unknown state?
+      default:
+        // Log the bad mouse focus state and return
+        cLog->LogWarningExSafe(
+          "Input ignored bad mouse focus state $<$$>!",
+          iState, hex, iState);
+        // Don't dispatch an event
+        return;
     } // Dispatch event to lua scripts
     return lfOnMouseFocus.LuaFuncDispatch(iState);
   }
@@ -469,7 +474,7 @@ static class Input :                   // Handles keyboard, mouse & controllers
   /* -- Files dragged and dropped on window--------------------------------- */
   void OnDragDrop(const EvtMain::Cell &)
   { // Get files and return if empty
-    StrVector &vFiles = cGlFW->GetFiles();
+    StrVector &vFiles = cGlFW->WinGetFiles();
     if(vFiles.empty()) return;
     // Send off the event to lua callbacks
     lfOnDragDrop.LuaFuncDispatch(vFiles);
@@ -489,15 +494,19 @@ static class Input :                   // Handles keyboard, mouse & controllers
       // Disconnected?
       case GLFW_DISCONNECTED:
         return ClearJoystickAndDispatch(static_cast<size_t>(iId));
-      // Invalid code? Log the bad joystick state and return
-      default: LW(LH_WARNING, "Input ignored bad joystick state ($ = $$)!",
-                 iId, hex, iState); return;
+      // Invalid code?
+      default:
+        // Log the bad joystick state and return
+        cLog->LogWarningExSafe("Input ignored bad joystick state ($ = $$)!",
+          iId, hex, iState);
+        // No need to dispatch any events
+        return;
     }
   }
   /* -- Window past event--------------------------------------------------- */
   void OnWindowPaste(const EvtMain::Cell&)
   { // Get text in clipboard
-    Decoder utfString(cGlFW->GetClipboard());
+    Decoder utfString(cGlFW->WinGetClipboard());
     // For each character, ddd the character to queue if valid
     while(const unsigned int uiChar = utfString.Next())
       if(uiChar >= 32) cConsole->OnCharPress(uiChar);
@@ -534,7 +543,7 @@ static class Input :                   // Handles keyboard, mouse & controllers
   CVarReturn SetFSTogglerEnabled(const bool bState)
     { FlagSetOrClear(IF_FSTOGGLER, bState); return ACCEPT; }
   /* -- Commit visibility of mouse cursor ---------------------------------- */
-  void CommitCursor(void) { cGlFW->SetCursor(FlagIsSet(IF_CURSOR)); }
+  void CommitCursor(void) { cGlFW->WinSetCursor(FlagIsSet(IF_CURSOR)); }
   /* -- Set visibility of mouse cursor ------------------------------------- */
   void SetCursor(const bool bEnabled)
   { // Set member var incase window needs to re-init so we can restore the
@@ -554,7 +563,7 @@ static class Input :                   // Handles keyboard, mouse & controllers
   /* -- Update window size from actual glfw window ------------------------- */
   void UpdateWindowSize(void)
   { // Get new window size
-    cGlFW->GetWindowSize(iWinWidth, iWinHeight);
+    cGlFW->WinGetSize(iWinWidth, iWinHeight);
     // Update half window size
     UpdateWindowSizeD2();
   }
@@ -569,7 +578,7 @@ static class Input :                   // Handles keyboard, mouse & controllers
   /* -- Get cursor position ------------------------------------------------ */
   void GetCursorPos(double &dX, double &dY) const
   { // Get the cursor position
-    cGlFW->GetCursorPos(dX, dY);
+    cGlFW->WinGetCursorPos(dX, dY);
     // Translate cursor position to framebuffer aspect
     dX = static_cast<double>(cFboMain->fboMain.fcStage.GetCoLeft()) +
       ((dX/GetWindowWidth()) *
@@ -633,7 +642,7 @@ static class Input :                   // Handles keyboard, mouse & controllers
       { // Display joystick polling to save on CPU resources
         jsStatus = JOY_DISABLE;
         // Log result
-        LW(LH_INFO,
+        cLog->LogInfoSafe(
           "Input disabling joystick polling as no devices are detected.");
       } // Done
       return;
@@ -644,7 +653,7 @@ static class Input :                   // Handles keyboard, mouse & controllers
     // Joystick polling set to enabled
     jsStatus = JOY_ENABLE;
     // Log result
-    LW(LH_INFO,
+    cLog->LogInfoExSafe(
       "Input enabling joystick polling as $ devices are detected.", stCount);
   }
   // -- CVar callback to toggle raw mouse ---------------------------------- */
@@ -652,14 +661,14 @@ static class Input :                   // Handles keyboard, mouse & controllers
   { // Ignore changing flags right now if not initialised
     if(IHIsNotInitialised()) return ACCEPT;
     // If raw mouse support is supported?
-    if(!GlFW::IsRawMouseMotionSupported())
+    if(!GlFWIsRawMouseMotionSupported())
     { // Log that mouse support is not supported
-      LW(LH_WARNING, "Input raw mouse support is not available!");
+      cLog->LogWarningSafe("Input raw mouse support is not available!");
       return ACCEPT;
     } // Set the new input if we can and log status
-    cGlFW->SetRawMouseMotion(bState);
-    LW(LH_DEBUG, "Input updated raw mouse status to $.",
-      TrueOrFalse(cGlFW->GetRawMouseMotion()));
+    cGlFW->WinSetRawMouseMotion(bState);
+    cLog->LogDebugExSafe("Input updated raw mouse status to $.",
+      TrueOrFalse(cGlFW->WinGetRawMouseMotion()));
     // CVar allowed to be set
     return ACCEPT;
   }
@@ -668,9 +677,9 @@ static class Input :                   // Handles keyboard, mouse & controllers
   { // Ignore changing flags right now if not initialised
     if(IHIsNotInitialised()) return ACCEPT;
     // Set the new input if we can and log status
-    cGlFW->SetStickyKeys(bState);
-    LW(LH_DEBUG, "Input updated sticky keys status to $.",
-      TrueOrFalse(cGlFW->GetStickyKeys()));
+    cGlFW->WinSetStickyKeys(bState);
+    cLog->LogDebugExSafe("Input updated sticky keys status to $.",
+      TrueOrFalse(cGlFW->WinGetStickyKeys()));
     // CVar allowed to be set
     return ACCEPT;
   }
@@ -679,9 +688,9 @@ static class Input :                   // Handles keyboard, mouse & controllers
   { // Ignore changing flags right now if not initialised
     if(IHIsNotInitialised()) return ACCEPT;
     // Set the new input if we can and log status
-    cGlFW->SetStickyMouseButtons(bState);
-    LW(LH_DEBUG, "Input updated sticky mouse status to $.",
-      TrueOrFalse(cGlFW->GetStickyMouseButtons()));
+    cGlFW->WinSetStickyMouseButtons(bState);
+    cLog->LogDebugExSafe("Input updated sticky mouse status to $.",
+      TrueOrFalse(cGlFW->WinGetStickyMouseButtons()));
     // CVar allowed to be set
     return ACCEPT;
   }
@@ -720,15 +729,15 @@ static class Input :                   // Handles keyboard, mouse & controllers
   void Init(void)
   { // if window not available? This should never happen but we will put
     // this here just incase. The subsequent operations are pointless without
-    // a valid GLFW window.
-    if(!cGlFW->IsWindowAvailable())
-    { // Log that initialisation is being skipped and return
-      LW(LH_WARNING, "Input initialisation skipped with no window available!");
-      return;
-    } // Class initialised
+    // a valid GLFW window. Log that initialisation is being skipped and return
+    // if window is not available.
+    if(!cGlFW->WinIsAvailable())
+      return cLog->LogWarningSafe(
+       "Input initialisation skipped with no window available!");
+    // Class initialised
     IHInitialise();
     // Log progress
-    LW(LH_DEBUG, "Input interface is initialising...");
+    cLog->LogDebugSafe("Input interface is initialising...");
     // Init input engine events
     cEvtMain->RegisterEx(*this);
     // Init input settings
@@ -739,19 +748,19 @@ static class Input :                   // Handles keyboard, mouse & controllers
     // Set/Restore cursor state
     SetCursor(FlagIsSet(IF_CURSOR));
     // Log progress
-    LW(LH_INFO, "Input interface initialised (R:$;J:$).",
-      TrueOrFalse(GlFW::IsRawMouseMotionSupported()), GetJoyCount());
+    cLog->LogInfoExSafe("Input interface initialised (R:$;J:$).",
+      TrueOrFalse(GlFWIsRawMouseMotionSupported()), GetJoyCount());
   }
   /* -- DeInit ------------------------------------------------------------- */
   void DeInit(void)
   { // Ignore if class not initialised
     if(IHNotDeInitialise()) return;
     // Log progress
-    LW(LH_DEBUG, "Input interface deinitialising...");
+    cLog->LogDebugSafe("Input interface deinitialising...");
     // Deinit engine events in the order they were registered
     cEvtMain->UnregisterEx(*this);
     // Log progress
-    LW(LH_INFO, "Input interface deinitialised.");
+    cLog->LogInfoSafe("Input interface deinitialised.");
   }
   /* -- Constructor -------------------------------------------------------- */
   Input(void) :
@@ -804,6 +813,6 @@ static class Input :                   // Handles keyboard, mouse & controllers
   DELETECOPYCTORS(Input);              // Do not need defaults
   /* ----------------------------------------------------------------------- */
 } *cInput = nullptr;                   // Global input class
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

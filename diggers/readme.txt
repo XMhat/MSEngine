@@ -1,8 +1,8 @@
 #############################################################################
-## Diggers R29   A remake of the Amiga/DOS game for Windows, Linux & MacOS ##
+## Diggers R30   A remake of the Amiga/DOS game for Windows, Linux & MacOS ##
 ## Created by Toby Simpson & Mike Froggatt (c) Millennium Interactive 1994 ##
 ## Powered by MS-Engine (X-Platform Multimedia Engine)  (c) MS-Design 2023 ##
-## Visit https://github.com/XMhat/Diggers for more information and updates ##
+## Visit https://github.com/XMhat/MSEngine for more information & updates. ##
 #############################################################################
 
 #############################################################################

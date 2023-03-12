@@ -132,8 +132,8 @@ local function InitCredits()
             texVig:BlitLTRB(iStageL, iStageT, iStageR, iStageB);
 
             local iI = 1;
-            fontLarge:SetRGBA(1, 1, 1, 1);
-            fontLittle:SetRGBA(0, 1, 0, 1);
+            fontLarge:SetCRGBA(1, 1, 1, 1);
+            fontLittle:SetCRGBA(0, 1, 0, 1);
             while iI <= #aXCredits do
               local aCredit<const> = aXCredits[iI];
               if iY+aCredit[3] < iStageT then

@@ -6,10 +6,10 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfLuaCode {                  // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfLuaCode {                  // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfSql;                 // Using sql interface
+using namespace IfSql;                 // Using sql namespace
 /* -- Consts --------------------------------------------------------------- */
 static enum LuaCache { LCC_OFF, LCC_FULL, LCC_MINIMUM, LCC_MAX } lcSetting;
 /* -- Set lua cache setting ------------------------------------------------ */
@@ -51,7 +51,7 @@ static Memory LuaCodeCompileFunction(lua_State*const lS, const bool bDebug)
       XC("Not enough bytes written to binary!",
         "Written", mbData.Size(), "Needed", mdData.stTotal);
     // Return memory block
-    return move(mbData);
+    return std::move(mbData);
   } // Make full memory block
   Memory mbData{ mdData.stTotal };
   // Position to write to
@@ -102,7 +102,7 @@ static void LuaCodeCompileBuffer(lua_State*const lS, const char*const cpBuf,
   } // Get checksum of module
   const unsigned int uiCRC = CrcCalc(cpBuf, stSize);
   // Check if we have cached this in the sql database and if we have?
-  if(!cSql->Execute("SELECT D from L WHERE R=? AND C=?",
+  if(cSql->ExecuteAndSuccess("SELECT D from L WHERE R=? AND C=?",
     { Sql::Cell(strRef), Sql::Cell(uiCRC) }))
   { // Get records and if we have results?
     const Sql::Result &vData = cSql->GetRecords();
@@ -116,24 +116,25 @@ static void LuaCodeCompileBuffer(lua_State*const lS, const char*const cpBuf,
         const Sql::DataListItem &mbO = smmI->second;
         if(mbO.iT == SQLITE_BLOB)
         { // Cache is valid
-          LW(LH_DEBUG,
-            "LuaCode will use cached version of '$'[$]($$)!", strRef, stSize,
-              hex, uiCRC);
+          cLog->LogDebugExSafe(
+            "LuaCode will use cached version of '$'[$]($$)!",
+              strRef, stSize, hex, uiCRC);
           // Do compile the buffer
           LuaCodeDoCompileBuffer(lS, mbO.Ptr<char>(), mbO.Size(), strRef);
           // Done
           return;
         } // Invalid type
-        else LW(LH_WARNING,
+        else cLog->LogWarningExSafe(
           "LuaCode will recompile '$'[$]($$$) as it has a bad type of $!",
             strRef, stSize, hex, uiCRC, dec, mbO.iT);
       } // Invalid keyname?
-      else LW(LH_WARNING,
+      else cLog->LogWarningExSafe(
         "LuaCode will recompile '$'[$]($$) as it has a bad keyname!",
-          strRef, stSize, hex, uiCRC);
+        strRef, stSize, hex, uiCRC);
     } // No results
-    else LW(LH_DEBUG, "LuaCode will compile '$'[$]($$) for the first time!",
-      strRef, stSize, hex, uiCRC);
+    else cLog->LogDebugExSafe(
+      "LuaCode will compile '$'[$]($$) for the first time!",
+        strRef, stSize, hex, uiCRC);
   } // Error reading database
   else
   { // Try to rebuild table
@@ -144,11 +145,13 @@ static void LuaCodeCompileBuffer(lua_State*const lS, const char*const cpBuf,
   // Compile the function
   Memory mbData{ LuaCodeCompileFunction(lS, lcSetting == LCC_FULL) };
   // Send to sql database and return if succeeded
-  if(!cSql->Execute("INSERT or REPLACE into L(C,T,R,D) VALUES(?,?,?,?)",
+  if(cSql->ExecuteAndSuccess(
+       "INSERT or REPLACE into L(C,T,R,D) VALUES(?,?,?,?)",
     { Sql::Cell(uiCRC), Sql::Cell(cmSys.GetTimeNS<sqlite3_int64>()),
       Sql::Cell(strRef), Sql::Cell(mbData) })) return;
   // Show error
-  LW(LH_WARNING, "LuaCode failed to store cache for '$' because $ ($)!",
+  cLog->LogWarningExSafe(
+    "LuaCode failed to store cache for '$' because $ ($)!",
     strRef, cSql->GetErrorStr(), cSql->GetError());
   // Try to rebuild table
   cSql->LuaCacheDropTable();
@@ -204,12 +207,12 @@ static void LuaCodeCompileFunction(lua_State*const lS)
   // Compile the function
   Memory mbData{ LuaCodeCompileFunction(lS, bDebug) };
   // Return a newly created asset
-  ClassCreate<Asset>(lS, "Asset")->SwapMemory(move(mbData));
+  ClassCreate<Asset>(lS, "Asset")->SwapMemory(std::move(mbData));
 }
 /* -- Same as ExecFile() but returns iRet (for LuaLib) --------------------- */
 static int LuaCodeExecFileAndRets(lua_State*const lS,
   const string &strFilename, const int iRet)
     { LuaCodeExecFile(lS, strFilename, iRet); return iRet; }
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

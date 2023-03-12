@@ -14,7 +14,7 @@
 #include <fcntl.h>                     // File control macros
 #include <sys/socket.h>                // Socket functions and types
 /* -- STL Includes --------------------------------------------------------- */
-using namespace IfStat;                // Using stat interface
+using namespace IfStat;                // Using stat namespace
 /* -- Signals to support --------------------------------------------------- */
 static array<pair<const int,void(*)(int)>,14>iaSignals{ {
   { SIGABRT, nullptr }, { SIGBUS,  nullptr },
@@ -23,6 +23,8 @@ static array<pair<const int,void(*)(int)>,14>iaSignals{ {
   { SIGSEGV, nullptr }, { SIGSYS,  nullptr }, { SIGTERM, nullptr },
   { SIGTRAP, nullptr }, { SIGXCPU, nullptr }, { SIGXFSZ, nullptr },
 } };
+/* -- SIGSEGV workaround when still in System() constructor ---------------- */
+static bool bSysBaseDataReady = false; // Is the data ready?
 /* -- We'll put all these calls in a namespace ----------------------------- */
 class SysBase :                        // Safe exception handler namespace
   /* -- Base classes ------------------------------------------------------- */
@@ -32,17 +34,24 @@ class SysBase :                        // Safe exception handler namespace
   /* --------------------------------------------------------------- */ public:
   int DoDeleteGlobalMutex(const string &strTitle)
     { return shm_unlink(strTitle.c_str()); }
+  /* ----------------------------------------------------------------------- */
   int DoDeleteGlobalMutex(void)
-    { return DoDeleteGlobalMutex(IdentGetCStr()); }
+  { // Return if data not ready to prevent SIGSEGV during System() construction
+    if(!bSysBaseDataReady) return 0;
+    // Data no longer ready
+    bSysBaseDataReady = false;
+    // Return result of deleting the mutex
+    return DoDeleteGlobalMutex(IdentGet());
+  }
   /* ----------------------------------------------------------------------- */
   void DeleteGlobalMutex(const string &strTitle)
-  { // Create the semaphore and if the creation failed?
+  { // Create the semaphore and if the creation failed? Put in log that another
+    // instance of this application is running
     if(DoDeleteGlobalMutex(strTitle) == -1)
-    { // Put in log that another instance of this application is running
-      LW(LH_WARNING,
-       "SysMutex could not delete old mutex '$': $", strTitle, SysError());
-    } // Put success in log
-    else LW(LH_WARNING, "SysMutex deleted old mutex '$'.", strTitle);
+      cLog->LogWarningExSafe("SysMutex could not delete old mutex '$': $",
+        strTitle, SysError());
+    // Creation succeeded so put success in log
+    else cLog->LogWarningExSafe("SysMutex deleted old mutex '$'.", strTitle);
   }
   /* ----------------------------------------------------------------------- */
   void DeleteGlobalMutex(void) { DoDeleteGlobalMutex(IdentGet()); }
@@ -50,17 +59,23 @@ class SysBase :                        // Safe exception handler namespace
   bool InitGlobalMutex(const string &strTitle)
   { // Ignore if semaphore already created
     if(strTitle.empty() || IdentIsSet()) return false;
+    // Set a flag to say that the mutex is ready because the function to
+    // delete the shared object can still be called when an signal is sent
+    // during System() construction. This makes sure that the shared object is
+    // not attempted to be deleted.
+    bSysBaseDataReady = true;
     // Create the semaphore and if the creation failed?
     if(shm_open(strTitle.c_str(), O_CREAT | O_EXCL, 0) == -1)
     { // If it was because it already exists?
       if(IsErrNo(EEXIST) || IsErrNo(EACCES))
       { // Put in log that another instance of this application is running
-        LW(LH_WARNING,
+        cLog->LogWarningSafe(
          "System detected another instance of this application running.");
         // Execution may not continue
         return false;
       } // Report error
-      LW(LH_WARNING, "System failed to setup global mutex: $!", SysError());
+      cLog->LogWarningExSafe("System failed to setup global mutex: $!",
+        SysError());
     } // Set mutex title
     IdentSet(strTitle);
     // Execution can continue
@@ -68,11 +83,11 @@ class SysBase :                        // Safe exception handler namespace
   }
   /* ----------------------------------------------------------------------- */
   void DebugFunction(Statistic &staData, const char*const cpStack,
-    const void*const vpStack)
+    const void*const vpStack) const
   { // Information about the object
     Dl_info diData;
     // Need some extra work on Apple
-#ifdef __APPLE__
+#if defined(MACOS)
     // Convert to string
     string strLine{ cpStack };
     // Enumerate characters
@@ -123,20 +138,12 @@ class SysBase :                        // Safe exception handler namespace
     else staData.Data(Format("<$:$>", iStatus, diData.dli_sname));
   }
   /* ----------------------------------------------------------------------- */
-  ExitState DebugMessage(const char*const cpSignal,
-    const char*const cpExtra=cpBlank)
-  { // Build filename
-    string strFileName{ cCmdLine ? Append(cCmdLine->GetCArgs()[0], ".dbg") :
-      "/tmp/msengine-crash.txt" };
-    // Begin message
-    ostringstream osS;
-    osS << "Received signal 'SIG" << cpSignal << "' at "
-        << cmSys.FormatTime() << ", stack trace:-\n";
-    // Create array
-    array<void*,256> vaArray;
+  void DumpStack(ostringstream &osS) const
+  { // Create array to hold stack pointers
+    array<void*, 256> vaArray;
     // Get stack pointers array
-    const int iMaxFrames = sizeof(vaArray) / sizeof(vaArray[0]);
-    const int iSize = backtrace(vaArray.data(), iMaxFrames);
+    const int iMaxFrames = sizeof(vaArray) / sizeof(vaArray[0]),
+              iSize = backtrace(vaArray.data(), iMaxFrames);
     // Spreadsheet formatter
     Statistic staData;
     staData.Header("#").Header("Module").Header("Source")
@@ -154,19 +161,30 @@ class SysBase :                        // Safe exception handler namespace
         // Add others
         DebugFunction(staData, uStack.get()[stI], vaArray[stI]);
       }
-    } // Finish
-    osS << staData.Finish();
+    } // Build output into string stream
+    staData.Finish(osS);
+  }
+  /* ----------------------------------------------------------------------- */
+  ExitState DebugMessage(const char*const cpSignal,
+    const char*const cpExtra=cpBlank)
+  { // Build filename
+    string strFileName{ cCmdLine ? Append(cCmdLine->GetCArgs()[0], ".dbg") :
+      "/tmp/msengine-crash.txt" };
+    // Begin message
+    ostringstream osS;
+    osS << "Received signal 'SIG" << cpSignal << "' at "
+        << cmSys.FormatTime() << ", stack trace:-\n";
+    // Dump the stack
+    DumpStack(osS);
     // Add extra information if set
     if(*cpExtra) osS << "\n" << cpExtra << "\n";
     // Print it to stderr
     fputs(osS.str().c_str(), stderr);
-    // Ig log available
-    if(cLog)
-    { // Add trace header
-      osS << "\nLog trace:-\n";
-      // Now add the buffer lines
-      cLog->GetBufferLines(osS);
-    } // Write the output and close the log
+    // Add trace header
+    osS << "\nLog trace:-\n";
+    // Now add the buffer lines
+    cLog->GetBufferLines(osS);
+    // Write the output and close the log
     const string strMsg{ Append(osS.str(), '\n') };
     // Message box string
     ostringstream osTS;
@@ -174,7 +192,7 @@ class SysBase :                        // Safe exception handler namespace
          << ". This means that the engine must now terminate and we apologise "
             "for the inconvenience with the loss of any unsaved progress. ";
     // Create the debug log and exit if failed
-    if(const FStream fOut{ move(strFileName), FStream::FM_W_T })
+    if(const FStream fOut{ std::move(strFileName), FStream::FM_W_T })
     { // Write to crash output file
       fOut.FStreamWriteString(strMsg);
       // We wrote the crash log
@@ -192,9 +210,6 @@ class SysBase :                        // Safe exception handler namespace
     return ES_CRITICAL;
   }
   /* ----------------------------------------------------------------------- */
-  static void SafeLog(const string &strMsg)
-    { if(cLog) cLog->WriteStringSafe(LH_ERROR, strMsg); }
-  /* ----------------------------------------------------------------------- */
   ExitState ConditionalExit(const string &strName, unsigned int &uiAttempts)
   { // If events system is available?
     if(cEvtMain)
@@ -204,15 +219,16 @@ class SysBase :                        // Safe exception handler namespace
       // Incrememnt attempts and if there are not too many attempts?
       if(++uiAttempts < uiMaxAttempts)
       { // Log that we're trying to shut down
-        SafeLog(Format("System got $ signal $ of $, shutting down...",
-          strName, uiAttempts, uiMaxAttempts));
+        cLog->LogNLCErrorExSafe("System got $ signal $ of $, shutting down...",
+          strName, uiAttempts, uiMaxAttempts);
         // Send clean shutdown event to engine
         return ES_SAFE;
       } // Log immediate shutdown because too many attempts
-      SafeLog(Format("System got $ $ signals so terminating now...",
-        uiMaxAttempts, strName));
+      cLog->LogNLCErrorExSafe("System got $ $ signals so terminating now...",
+        uiMaxAttempts, strName);
     } // No attempts required so log generic exit message
-    else SafeLog(Format("System got $ signal so terminating now...", strName));
+    else cLog->LogNLCErrorExSafe("System got $ signal so terminating now...",
+      strName);
     // Unsafe shutdown
     return ES_UNSAFE;
   }
@@ -248,25 +264,25 @@ class SysBase :                        // Safe exception handler namespace
         "This illegal instruction exception usually indicates that this "
         BUILD_TARGET " compiled binary is NOT compatible with your "
         "operating system and/or central processing unit. "
-#ifdef X64                             // Special message for 64-bit system?
-# ifdef __APPLE__
-#  ifdef __arm64__
+#if defined(X64)                       // Special message for 64-bit system?
+# if defined(MACOS)                    // Apple target?
+#  if defined(RISC)                    // Arm64 target?
         "Since you are running the 64-bit ARM version of this binary, "
         "please consider trying the 64-bit Intel version instead."
-#  else
+#  elif defined(CISC)                  // x86-64 target?
         "Since you are running the 64-bit Intel version of this binary, "
         "please consider trying the 64-bit ARM version instead."
-#  endif
-# else
+#  endif                               // Arch target check
+# elif defined(WINDOWS)                // Windows target?
         "Since you are running the 64-bit version of this binary, please "
         "consider trying the 32-bit version instead."
-# endif
-#else                                  // Special message for 32-bit system?
+# endif                                // OS target check
+#elif defined(X86)                     // X86 target?
         "Since you are running the 32-bit version of this binary, you may "
         "need to upgrade your operating system and/or central processing "
         "unit. If you originally tried the 64-bit version and you still got "
         "the the same error then you may need to report this issue as a bug."
-#endif
+#endif                                 // Bit target check
         );
       // Sent when we attempt to write to a pipe without a process connected
       // to the other end.
@@ -357,10 +373,10 @@ class SysBase :                        // Safe exception handler namespace
   }
   /* ----------------------------------------------------------------------- */
   ~SysBase(void) noexcept(true)
-  { // Install safe signals
+  { // Uninstall safe signals
     for(auto &aSignal : iaSignals)
-      if(signal(aSignal.first, aSignal.second) == SIG_ERR)
-        LW(LH_WARNING, "Failed to restore signal $ handler! $.",
+      if(signal(aSignal.first, aSignal.second) == SIG_ERR && cLog)
+        cLog->LogWarningExSafe("Failed to restore signal $ handler! $.",
           aSignal.first, LocalError());
     // Delete global mutex
     DeleteGlobalMutex();

@@ -8,8 +8,8 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfFlags {                    // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfFlags {                    // Start of module namespace
 /* == Storage for flags ==================================================== */
 /* ######################################################################### */
 /* ## Simple unprotected integer based flags.                             ## */
@@ -70,12 +70,19 @@ class FlagsConst :
   bool FlagIsGreaterEqual(const FlagsConst &fO) const
     { return this->FlagGet() >= fO.FlagGet(); }
   /* -- Are there not any flags set? --------------------------------------- */
-  bool FlagIsZero(void) { return this->FlagGet() == static_cast<IntType>(0); }
+  bool FlagIsZero(void) const
+    { return this->FlagGet() == static_cast<IntType>(0); }
   /* -- Are any flags actually set? ---------------------------------------- */
-  bool FlagIsNonZero(void) { return !FlagIsZero(); }
+  bool FlagIsNonZero(void) const { return !FlagIsZero(); }
   /* -- Is flag set with specified value? ---------------------------------- */
   bool FlagIsSet(const FlagsConst &fO) const
     { return this->FlagGet() & fO.FlagGet(); }
+  /* -- Flags are not masked in specified other flags? --------------------- */
+  bool FlagIsNotInMask(const FlagsConst &fO) const
+    { return this->FlagGet() & ~fO.FlagGet(); }
+  /* -- Flags are masked in specified other flags? ------------------------- */
+  bool FlagIsInMask(const FlagsConst &fO) const
+    { return !FlagIsNotInMask(fO); }
   /* -- Is bit clear of specified value? ----------------------------------- */
   bool FlagIsClear(const FlagsConst &fO) const { return !FlagIsSet(fO); }
   /* -- Is bits set? ------------------------------------------------------- */
@@ -114,12 +121,12 @@ class FlagsConst :
 template<typename IntType,
          class StorageType = FlagsStorageUnsafe<IntType>,
          class ConstType = FlagsConst<IntType, StorageType>>
-class Flags :
+struct Flags :
   /* -- Base classes ------------------------------------------------------- */
   public ConstType
-{ /* -- Swap function ------------------------------------------- */ protected:
+{ /* -- Swap function ------------------------------------------------------ */
   void FlagSwap(Flags &fO) { this->FlagSwapStorage(fO); }
-  /* -- Set bits --------------------------------------------------- */ public:
+  /* -- Set bits ----------------------------------------------------------- */
   void FlagSet(const ConstType &fO)
     { this->FlagSetInt(this->FlagGet() | fO.FlagGet()); }
   /* -- Set all bits ------------------------------------------------------- */
@@ -164,10 +171,10 @@ class SafeFlags :
   explicit SafeFlags(const ConstType &fO) : FlagsType{ fO } {}
   explicit SafeFlags(const UConstType &fO) : FlagsType{ fO } {}
 };/* ----------------------------------------------------------------------- */
-};                                     // End of interface
+};                                     // End of module namespace
 /* == Flags helper macro =================================================== */
 #define BUILD_FLAGS_EX(n, s, ...) \
-  typedef unsigned int n ## FlagsType; \
+  typedef uint64_t n ## FlagsType; \
   typedef s<n ## FlagsType> n ## Flags; \
   typedef FlagsConst<n ## FlagsType> n ## FlagsConst; \
   static const n ## FlagsConst __VA_ARGS__;

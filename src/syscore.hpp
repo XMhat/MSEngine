@@ -9,13 +9,13 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfSystem {                   // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfSystem {                   // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfLog;                 // Using log interface
-using namespace IfEvtMain;             // Using event interface
-using namespace IfConDef;              // Using condef interface
-using namespace IfArgs;                // Using arguments interface
+using namespace IfLog;                 // Using log namespace
+using namespace IfEvtMain;             // Using event namespace
+using namespace IfConDef;              // Using condef namespace
+using namespace IfArgs;                // Using arguments namespace
 /* == System module data =================================================== */
 /* ######################################################################### */
 /* ## Information about a module.                                         ## */
@@ -27,8 +27,8 @@ class SysModuleData :
 { /* -- Variables ---------------------------------------------------------- */
   const unsigned int uiMajor,          // Major version of module
                    uiMinor,            // Minor version of module
-                   uiRevision,         // Revision version of module
-                   uiBuild;            // Build version of module
+                   uiBuild,            // Build version of module
+                   uiRevision;         // Revision version of module
   const string     strVendor,          // Vendor of module
                    strDesc,            // Description of module
                    strComments,        // Comments of module
@@ -43,8 +43,8 @@ class SysModuleData :
   const string &GetLoc(void) const { return strLoc; }
   unsigned int GetMajor(void) const { return uiMajor; }
   unsigned int GetMinor(void) const { return uiMinor; }
-  unsigned int GetRevision(void) const { return uiRevision; }
   unsigned int GetBuild(void) const { return uiBuild; }
+  unsigned int GetRevision(void) const { return uiRevision; }
   const string &GetVendor(void) const { return strVendor; }
   const string &GetDesc(void) const { return strDesc; }
   const string &GetComments(void) const { return strComments; }
@@ -52,27 +52,31 @@ class SysModuleData :
   /* -- Move constructor --------------------------------------------------- */
   SysModuleData(SysModuleData &&smdO) :
     /* -- Initialisation of members ---------------------------------------- */
-    PathSplit{ move(smdO) },           uiMajor(smdO.GetMajor()),
-    uiMinor(smdO.GetMinor()),          uiRevision(smdO.GetRevision()),
-    uiBuild(smdO.GetBuild()),          strVendor{ move(smdO.GetVendor()) },
-    strDesc{ move(smdO.GetDesc()) },   strComments{ move(smdO.GetComments()) },
-    strVersion{ move(smdO.GetVersion()) }
+    PathSplit{ std::move(smdO) },                 // Copy filename
+    uiMajor(smdO.GetMajor()),                     // Copy major version
+    uiMinor(smdO.GetMinor()),                     // Copy minor version
+    uiBuild(smdO.GetBuild()),                     // Copy build version
+    uiRevision(smdO.GetRevision()),               // Copy revision version
+    strVendor{ std::move(smdO.GetVendor()) },     // Move vendor string
+    strDesc{ std::move(smdO.GetDesc()) },         // Move description string
+    strComments{ std::move(smdO.GetComments()) }, // Move comments string
+    strVersion{ std::move(smdO.GetVersion()) }    // Move version string
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Initialise all members contructor ---------------------------------- */
   explicit SysModuleData(const string &strF, const unsigned int uiMa,
-    const unsigned int uiMi, const unsigned int uiRe, const unsigned int uiBu,
+    const unsigned int uiMi, const unsigned int uiBu, const unsigned int uiRe,
     string &&strVen, string &&strDe, string &&strCo, string &&strVer) :
     /* -- Initialisation of members ---------------------------------------- */
     PathSplit{ strF },                 // Copy filename
     uiMajor(uiMa),                     // Copy major version
     uiMinor(uiMi),                     // Copy minor version
-    uiRevision(uiRe),                  // Copy revision version
     uiBuild(uiBu),                     // Copy build version
-    strVendor{ move(strVen) },         // Move vendor string
-    strDesc{ move(strDe) },            // Move description string
-    strComments{ move(strCo) },        // Move comments string
-    strVersion{ move(strVer) }         // Move version string
+    uiRevision(uiRe),                  // Copy revision version
+    strVendor{ std::move(strVen) },    // Move vendor string
+    strDesc{ std::move(strDe) },       // Move description string
+    strComments{ std::move(strCo) },   // Move comments string
+    strVersion{ std::move(strVer) }    // Move version string
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Initialise filename only constructor ------------------------------- */
@@ -81,8 +85,8 @@ class SysModuleData :
     PathSplit{ strF },                 // Initialise path parts
     uiMajor(0),                        // Major version not initialised yet
     uiMinor(0),                        // Minor version not initialised yet
-    uiRevision(0),                     // Revision not initialised yet
-    uiBuild(0)                         // Build version not initialised yet
+    uiBuild(0),                        // Build version not initialised yet
+    uiRevision(0)                      // Revision not initialised yet
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
@@ -95,41 +99,40 @@ class SysModuleData :
 /* ------------------------------------------------------------------------- */
 typedef map<const size_t,const SysModuleData> SysModList; // Map of mod datas
 /* ------------------------------------------------------------------------- */
-class SysModules :
+struct SysModules :
   /* -- Base classes ------------------------------------------------------- */
   public SysModList                    // System module list
-{ /* --------------------------------------------------------------- */ public:
+{ /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(SysModules);         // Disable copy constructor and operator
   /* -- Dump module list --------------------------------------------------- */
   CVarReturn DumpModuleList(const unsigned int uiShow)
   { // No modules? Return okay
     if(!uiShow || empty()) return ACCEPT;
     // Print how many modules we are enumerating
-    cLog->WriteStringSafe(LH_INFO,
-      Format("System enumerating $ modules...", size()));
+    cLog->LogNLCInfoExSafe("System enumerating $ modules...", size());
     // For each shared module, print the data for it to log
     for(const auto &mD : *this)
     { // Get mod data and pathsplit data
       const SysModuleData &smdData = mD.second;
       // Log the module data
-      cLog->WriteStringSafe(LH_INFO, Format("- $ <$> '$' by '$' from '$'.",
+      cLog->LogNLCInfoExSafe("- $ <$> '$' by '$' from '$'.",
         smdData.GetFileExt(), smdData.GetVersion(),
         smdData.GetDesc().empty() ? "Unknown" : smdData.GetDesc(),
         smdData.GetVendor().empty() ? "Unknown" : smdData.GetVendor(),
-        smdData.GetLoc()));
+        smdData.GetLoc());
     } // Done
     return ACCEPT;
   }
   /* -- Move constructor ---------------------------------------- */ protected:
   SysModules(SysModules &&smOther) :
     /* -- Initialisation of members ---------------------------------------- */
-    SysModList{ move(smOther) }
+    SysModList{ std::move(smOther) }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Init from SysModList ----------------------------------------------- */
   explicit SysModules(SysModList &&smlOther) :
     /* -- Initialisation of members ---------------------------------------- */
-    SysModList{ move(smlOther) }
+    SysModList{ std::move(smlOther) }
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */
@@ -181,15 +184,15 @@ class SysVersion :
   /* -- Move constructor r ------------------------------------------------- */
   SysVersion(SysVersion &&svOther) :
     /* -- Initialisation of members ---------------------------------------- */
-    SysModules{ move(svOther) },       // Move other version information
-    smdEng{ move(svOther.smdEng) }     // Move engine exetuable information
+    SysModules{ std::move(svOther) },   // Move other version information
+    smdEng{ std::move(svOther.smdEng) } // Move engine exetuable information
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Init from SysModList ----------------------------------------------- */
   SysVersion(SysModList &&smlOther, const size_t stI) :
     /* -- Initialisation of members ---------------------------------------- */
-    SysModules{ move(smlOther) },           // Move system modules list
-    smdEng{ move(FindBaseModuleInfo(stI)) } // Move engine executable info
+    SysModules{ std::move(smlOther) },           // Move system modules list
+    smdEng{ std::move(FindBaseModuleInfo(stI)) } // Move engine executable info
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */
@@ -200,9 +203,7 @@ class SysVersion :
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 class SysCommon                        // Common system structs and funcs
-{ /* --------------------------------------------------------------- */ public:
-  DELETECOPYCTORS(SysCommon);          // Disable copy constructor and operator
-  /* -- Typedefs ------------------------------------------------ */ protected:
+{ /* -- Typedefs ------------------------------------------------ */ protected:
   const struct ExeData                 // Executable data
   { /* --------------------------------------------------------------------- */
     const unsigned int ulHeaderSum;    // Executable checksum in header
@@ -223,7 +224,7 @@ class SysCommon                        // Common system structs and funcs
     const string       strLocale;      // Os locale
     const bool         bIsAdmin;       // Os user has elevated privileges
     const bool         bIsAdminDef;    // Os uses admin accounts by default
-    const STDTIMET     ttExpiry;       // Os expiry time
+    const StdTimeT     ttExpiry;       // Os expiry time
     const bool         bIsExpired;     // Os has reached end-of-life?
   } /* --------------------------------------------------------------------- */
   osData;                              // Operating system data
@@ -293,7 +294,7 @@ class SysCommon                        // Common system structs and funcs
   const string &OSLocale(void) const { return osData.strLocale; }
   bool OSIsAdmin(void) const { return osData.bIsAdmin; }
   bool OSIsAdminDefault(void) const { return osData.bIsAdminDef; }
-  STDTIMET OSExpiry(void) const { return osData.ttExpiry; }
+  StdTimeT OSExpiry(void) const { return osData.ttExpiry; }
   bool OSExpired(void) const { return osData.bIsExpired; }
   /* ----------------------------------------------------------------------- */
   const string &CPUVendor(void) const { return cpuData.sVendorId; }
@@ -321,12 +322,14 @@ class SysCommon                        // Common system structs and funcs
   double RAMProcUseMegs(void) const
     { return static_cast<double>(RAMProcUse()) / 1048576; }
   size_t RAMProcPeak(void) const { return memData.stMProcPeak; }
+  /* ----------------------------------------------------------------------- */
+  DELETECOPYCTORS(SysCommon);          // Disable copy constructor and operator
   /* -- Constructor --------------------------------------------- */ protected:
   SysCommon(ExeData &&edExe, OSData &&osdOS, CPUData &&cpudCPU) :
     /* -- Initialisation of members ---------------------------------------- */
-    exeData{ move(edExe) },            // Move executable data
-    osData{ move(osdOS) },             // Move operating system data
-    cpuData{ move(cpudCPU) }           // Move processor data
+    exeData{ std::move(edExe) },            // Move executable data
+    osData{ std::move(osdOS) },             // Move operating system data
+    cpuData{ std::move(cpudCPU) }           // Move processor data
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */
@@ -388,11 +391,11 @@ class SysConBase :
 /* ## Here we include data for the specific operating system.             ## */
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
-#if defined(_WIN32)                    // Using windows?
+#if defined(WINDOWS)                   // Using windows?
 # include "syswin.hpp"                 // Include windows system core
-#elif defined(__APPLE__)               // Using mac?
+#elif defined(MACOS)                   // Using mac?
 # include "sysmac.hpp"                 // Include MacOS system core
-#elif defined(__linux__)               // Using linux?
+#elif defined(LINUX)                   // Using linux?
 # include "sysnix.hpp"                 // Include Linux system core
 #endif                                 // Done checking OS
 /* ------------------------------------------------------------------------- */
@@ -401,7 +404,7 @@ class SysConBase :
 /* ## we already defined above.                                           ## */
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
-static class System :                  // The main system class
+static class System final :            // The main system class
   /* -- Base classes ------------------------------------------------------- */
   public SysCore                       // Defined in 'sys*.hpp' headers
 { /* ----------------------------------------------------------------------- */
@@ -469,7 +472,7 @@ static class System :                  // The main system class
         mbData.Fill();
         fdDuration = tpStart.CCDeltaToDouble();
       } // Show result of test in log
-      LW(LH_INFO, "System heap init of $ ($+$) in $ ($/s).",
+      cLog->LogInfoExSafe("System heap init of $ ($+$) in $ ($/s).",
         ToBytesStr(stMemory), ToBytesStr(RAMProcUse()),
         ToBytesStr(stActualMemory), ToShortDuration(fdDuration),
           ToBytesStr(static_cast<uint64_t>
@@ -509,7 +512,7 @@ static class System :                  // The main system class
     // users choice of relative directory.
     cCmdLine->SetStartupCWD();
     // If targeting Apple systems?
-  #ifdef __APPLE__
+#if defined(MACOS)
     // Working directory
     string strWorkDir;
     // No directory specified?
@@ -517,22 +520,22 @@ static class System :                  // The main system class
     { // Build app bundle directory suffix and if we're calling from it from
       // the application bundle? Use the MacOS/../Resources directory instead.
       if(EXEBundled())
-        strWorkDir = move(PathSplit{
+        strWorkDir = std::move(PathSplit{
           Append(ENGLoc(), "../Resources"), true }.strFull);
       // Use executable working directory
       else strWorkDir = ENGLoc();
     } // Directory specified so use that and build full path for it
-    else strWorkDir = move(PathSplit{ strP, true }.strFull);
-  #else
+    else strWorkDir = std::move(PathSplit{ strP, true }.strFull);
+#else
     // Build directory
     string strWorkDir{ strP.empty() ? ENGLoc() :
-      move(PathSplit{ strP, true }.strFull) };
-  #endif
+      std::move(PathSplit{ strP, true }.strFull) };
+#endif
     // Set the directory and if failed? Throw the error
     if(!DirSetCWD(strWorkDir))
       XCL("Failed to set working directory!", "Directory", strWorkDir);
     // We are changing the value ourselves...
-    strV = move(strWorkDir);
+    strV = std::move(strWorkDir);
     // ...so make sure the cvar system knows
     return ACCEPT_HANDLED;
   }
@@ -546,8 +549,10 @@ static class System :                  // The main system class
     switch(static_cast<Mode>(uiMode))
     { // Return if OS uses admin as default for accounts else fall through
       case AM_NOTOKIFMODERNOS: if(OSIsAdminDefault()) return ACCEPT;
+                               [[fallthrough]];
       // Break to error if running as admin else fall through to accept
       case AM_NOTOK: if(OSIsAdmin()) break;
+                     [[fallthrough]];
       // Don't care if running as admin.
       case AM_OK: return ACCEPT;
       // Unknown parameter
@@ -580,7 +585,7 @@ static class System :                  // The main system class
   /* -- Default error handler ---------------------------------------------- */
   static void CriticalHandler[[noreturn]](const char*const cpMessage)
   { // Show message box with error
-    LWN(LH_ERROR, "Critical error: $!", cpMessage);
+    cLog->LogNLCErrorExSafe("Critical error: $!", cpMessage);
     // Abort and crash
     abort();
   }
@@ -603,7 +608,7 @@ static class System :                  // The main system class
     UpdateCPUUsage();
     UpdateMemoryUsageData();
     // Log information about the environment
-    LWN(LH_INFO, "$ v$.$.$.$ ($) for $.\n"
+    cLog->LogNLCInfoExSafe("$ v$.$.$.$ ($) for $.\n"
        "+ Executable: $.\n"
        "+ Created...: $.\n"
        "+ Compiler..: $ v$.\n"
@@ -621,7 +626,7 @@ static class System :                  // The main system class
        "+ Clock.....: $.\n"
        "+ Universal.: $.\n"
        "+ Admin.....: $; Bundled: $.",
-      ENGName(), ENGMajor(), ENGMinor(), ENGRevision(), ENGBuild(),
+      ENGName(), ENGMajor(), ENGMinor(), ENGBuild(), ENGRevision(),
         ENGBuildType(), ENGTarget(),
       ENGFull(), ENGCompiled(), ENGCompiler(), ENGCompVer(),
       EXEModified() ? "Fail" : "Pass",
@@ -660,6 +665,6 @@ MSENGINE_SYSBASE_CALLBACKS();          // Parse requested SysBase callbacks
 /* -- Pre-defined SysCon callbacks that require access to cSystem global --- */
 MSENGINE_SYSCON_CALLBACKS();           // Parse requested SysCon callbacks
 #undef MSENGINE_SYSCON_CALLBACKS       // Done with this
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

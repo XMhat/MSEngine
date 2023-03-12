@@ -7,32 +7,18 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfPcmLib {                   // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfPcmLib {                   // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfOal;                 // Using oal interface
-using namespace IfFileMap;             // Using filemap interface
-/* -- Variables ------------------------------------------------------------ */
-struct PcmData                         // Audio data structure
-{ /* ----------------------------------------------------------------------- */
-  unsigned int     uiRate;             // Samples per second (Frequency/Hz)
-  unsigned int     uiChannels;         // Channels per sample
-  unsigned int     uiBits;             // Bits per channel
-  ALenum           eFormat;            // Format type for openal
-  ALenum           eSFormat;           // Single channel format for openal
-  bool             bDynamic;           // Sample is not static?
-  size_t           stFile;             // The size of the pcm data
-  Memory           aPcm, aPcm2;        // Pcm data (aPcm2 used if stereo)
-};/* ----------------------------------------------------------------------- */
+using namespace IfFileMap;             // Using filemap namespace
 /* == Pcm libraries collector class ======================================== */
-BEGIN_COLLECTOREX(PcmFmts, PcmFmt, CLHelperUnsafe, size_t stId);
+BEGIN_COLLECTOR(PcmFmts, PcmFmt, CLHelperUnsafe);
 /* == Pcm format object class ============================================== */
 BEGIN_MEMBERCLASS(PcmFmts, PcmFmt, ICHelperUnsafe)
 { /* -- Typedefs -------------------------------------------------- */ private:
   typedef bool (&CBLFunc)(FileMap&, PcmData&);
   typedef bool (&CBSFunc)(const FStream&, const PcmData&);
   /* -- Variables ---------------------------------------------------------- */
-  const size_t     stId;               // Unique id number
   const char*const cpName;             // Name of plugin
   const char*const cpExt;              // Default extension of plugin type
   CBLFunc          acLoader;           // Loader callback
@@ -45,7 +31,6 @@ BEGIN_MEMBERCLASS(PcmFmts, PcmFmt, ICHelperUnsafe)
   CBSFunc     GetSaver(void) const { return acSaver; }
   const char *GetName(void) const { return cpName; }
   const char *GetExt(void) const { return cpExt; }
-  size_t      GetId(void) const { return stId; }
   bool        HaveLoader(void) const { return acLoader != NoLoader; }
   bool        HaveSaver(void) const { return acSaver != NoSaver; }
   /* -- Constructor -------------------------------------------------------- */
@@ -57,7 +42,7 @@ BEGIN_MEMBERCLASS(PcmFmts, PcmFmt, ICHelperUnsafe)
     CBSFunc acNewSaver=NoSaver         // Saver function (static)
     ): /* -- Initialisers -------------------------------------------------- */
     ICHelperPcmFmt{ *cPcmFmts, this }, // Register pcm format in collector
-    stId(cPcmFmts->stId++),            // Set unique identification number
+    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     cpName(cpNewName),                 // Set name of plugin
     cpExt(cpNewExt),                   // Set default extension of plugin
     acLoader{ acNewLoader },           // Set loader function
@@ -67,7 +52,7 @@ BEGIN_MEMBERCLASS(PcmFmts, PcmFmt, ICHelperUnsafe)
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(PcmFmt);             // Omit copy constructor for safety
 };/* -- End ---------------------------------------------------------------- */
-END_COLLECTOREX(PcmFmts,,,,stId(0));
+END_COLLECTOR(PcmFmts);
 /* -- Load audio using a specific type ------------------------------------- */
 static void PcmLoadFile(const size_t stFId, FileMap &fC, PcmData &auD)
 { // Ignore if plugin is invalid
@@ -81,20 +66,19 @@ static void PcmLoadFile(const size_t stFId, FileMap &fC, PcmData &auD)
   { // Load the image and if loaded successfully?
     if(pCref.GetLoader()(fC, auD))
     { // Log that we loaded the pcm and return
-      LW(LH_INFO, "Pcm loaded '$' directly as $<$>! ($;$;$;$$;$;$;$$)",
-        fC.IdentGet(), pCref.GetExt(), stFId, auD.uiRate, auD.uiChannels,
-        auD.uiBits, hex, auD.eFormat, auD.eSFormat, TrueOrFalse(auD.bDynamic),
-        hex, auD.stFile);
+      cLog->LogInfoExSafe("Pcm loaded '$' directly as $<$>! ($;$;$;$$;$;$;$$)",
+        fC.IdentGet(), pCref.GetExt(), stFId, auD.GetRate(), auD.GetChannels(),
+        auD.GetBits(), hex, auD.GetFormat(), auD.GetSFormat(),
+        TrueOrFalse(auD.IsDynamic()), hex, auD.GetAlloc());
       return;
     } // Could not detect format so throw error
     throw runtime_error{ "Unable to load sound!" };
   } // Error occured. Error used as title
   catch(const exception &E)
   { // Throw an error with the specified reason
-    XC(E.what(),
-      "Identifier", fC.IdentGet(),  "Size",     fC.Size(),
-      "Position",   fC.FileMapTell(), "FormatId", stFId,
-      "Plugin",     pCref.GetName());
+    XC(E.what(), "Identifier", fC.IdentGet(),    "Size",     fC.Size(),
+                 "Position",   fC.FileMapTell(), "FormatId", stFId,
+                 "Plugin",     pCref.GetName());
   }
 }
 /* -- Load a bitmap and automatically detect type -------------------------- */
@@ -108,27 +92,24 @@ static void PcmLoadFile(FileMap &fC, PcmData &auD)
     { // Load the bitmap if we loaded successfully?
       if(pCref.GetLoader()(fC, auD))
       { // Log that we loaded and return
-        LW(LH_INFO, "Pcm loaded '$' as $! ($;$;$;$$;$;$;$$)", fC.IdentGet(),
-          pCref.GetExt(), auD.uiRate, auD.uiChannels, auD.uiBits, hex,
-          auD.eFormat, auD.eSFormat, TrueOrFalse(auD.bDynamic),
-          dec, auD.stFile);
+        cLog->LogInfoExSafe("Pcm loaded '$' as $! ($;$;$;$$;$;$;$$)",
+          fC.IdentGet(), pCref.GetExt(), auD.GetRate(), auD.GetChannels(),
+          auD.GetBits(), hex, auD.GetFormat(), auD.GetSFormat(),
+          TrueOrFalse(auD.IsDynamic()), dec, auD.GetAlloc());
         return;
       }
     } // Error occured. Error used as title
     catch(const exception &E)
     { // Throw an error with the specified reason
-      XC(E.what(), "Identifier", fC.IdentGet(),  "Size",   fC.Size(),
+      XC(E.what(), "Identifier", fC.IdentGet(),    "Size",   fC.Size(),
                    "Position",   fC.FileMapTell(), "Plugin", pCref.GetName());
-    } // Rewind stream position and reset other members to try next filter
+    } // Rewind stream position
     fC.FileMapRewind();
-    auD.uiRate = auD.uiChannels = auD.uiBits = 0;
-    auD.eFormat = auD.eSFormat = AL_NONE;
-    auD.stFile = 0;
-    auD.aPcm.DeInit();
-    auD.aPcm2.DeInit();
+    // Reset all pcm data read to load again
+    auD.ResetAllData();
   } // Could not detect so throw error
   XC("Unable to determine sound format!", "Identifier", fC.IdentGet());
 }
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

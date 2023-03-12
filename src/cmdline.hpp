@@ -7,13 +7,13 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfCmdLine {                  // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfCmdLine {                  // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfDir;                 // Using util interface
-using namespace IfSystem;              // Using system interface
+using namespace IfDir;                 // Using util namespace
+using namespace IfSysUtil;             // Using system utility namespace
 /* -- Command line helper class (should be the first global to inti) ------- */
-static class CmdLine                   // StrVector is arguments list
+static class CmdLine final             // StrVector is arguments list
 { /* -- Public typedefs -------------------------------------------- */ public:
   enum ExitCommand { EC_QUIT, EC_RESTART_NO_PARAM, EC_RESTART };
   /* -- Command-line and environment variables ---------------------*/ private:
@@ -106,7 +106,7 @@ static class CmdLine                   // StrVector is arguments list
     // variables can cause our terminal apps to spit garbage output and ruin
     // the capture for scripts. If the guest needs these then they can just
     // try the apps standalone in the terminal without the need for the engine.
-#ifdef __APPLE__
+#if defined(MACOS)
     // Variables to unset
     static array<const char*const,9> aUnset{
       "NSZombieEnabled",               // Enable dealloc in foundation
@@ -137,8 +137,8 @@ static class CmdLine                   // StrVector is arguments list
       const StrStrMapConstIt itArg{ ssmRet.find(strKey) };
       if(itArg != ssmRet.cend()) ssmRet.erase(itArg);
       // Insert new key/value into list
-      ssmRet.insert({ move(strKey),
-        tokParam.size() > 1 ? move(tokParam[1]) : strBlank });
+      ssmRet.insert({ std::move(strKey),
+        tokParam.size() > 1 ? std::move(tokParam[1]) : strBlank });
     } // Return environment variables list
     return ssmRet;
   }
@@ -169,7 +169,7 @@ static class CmdLine                   // StrVector is arguments list
     // Restart while keeping parameters
     case EC_RESTART: break;
   } // Do the restart! Again, everything is cleaned up so this is convenient!
-  const int iCode = STDEXECVE(lArgV, lEnvP);
+  const int iCode = StdExecVE(lArgV, lEnvP);
   // The execution failed so report the error
   XCL("Failed to restart process!",
       "Process", *lArgV, "Code", iCode, "Parameters", iArgC);
@@ -178,6 +178,6 @@ static class CmdLine                   // StrVector is arguments list
   DELETECOPYCTORS(CmdLine);            // Remove default functions
   /* -- End ---------------------------------------------------------------- */
 } *cCmdLine = nullptr;                 // Pointer to static class
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

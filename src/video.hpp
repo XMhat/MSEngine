@@ -6,15 +6,15 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfVideo {                    // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfVideo {                    // Start of module namespace
 /* ------------------------------------------------------------------------- */
 using namespace Library::Theora;       // Using Theora library functions
-using namespace IfStream;              // Using source interface
-using namespace IfFbo;                 // Using fbo interface
+using namespace IfStream;              // Using source namespace
+using namespace IfFbo;                 // Using fbo namespace
 /* -- Video collector class for collector data and custom variables -------- */
 BEGIN_ASYNCCOLLECTOREX(Videos, Video, CLHelperSafe,
-/* -- Public variables -------------------------------------------- */ public:\
+/* -- Public variables ----------------------------------------------------- */
 SafeLong           lBufferSize,,       /* Default buffer size               */\
 /* -- Derived classes ------------------------------------------------------ */
 private LuaEvtMaster<Video, LuaEvtTypeParam<Video>>); // Lua event
@@ -35,8 +35,8 @@ BUILD_FLAGS(Video,
   FL_GLINIT              {0x00000200}, FL_KEYED               {0x08000000},
   // Filtering is enabled?             Hard stopped (reopen on play)?
   FL_FILTER              {0x10000000}, FL_STOP                {0x20000000},
-  // Video is playing?                 Video was playing?
-  FL_PLAY                {0x40000000}, FL_REPLAY              {0x80000000}
+  // Video is playing?
+  FL_PLAY                {0x40000000}
 );/* ======================================================================= */
 BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
   /* -- Base classes ------------------------------------------------------- */
@@ -77,15 +77,18 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
       aP{ YCbCr{0},YCbCr{1},YCbCr{2} } // Initialise Y/Cb/Cr frame data
       /* -- No code -------------------------------------------------------- */
       { }
-  };/* ------------------------------------------------------------- */ public:
-  enum Event { SE_PLAY, SE_LOOP, SE_STOP }; // Playback events
+  };/* --------------------------------------------------------------------- */
+  enum Unblock { UB_BLOCK, UB_DATA, UB_REINIT, UB_PLAY, UB_STOP, UB_PAUSE };
+  /* --------------------------------------------------------------- */ public:
+  enum Event { VE_PLAY, VE_LOOP, VE_STOP, VE_PAUSE, VE_FINISH };
   /* -- Concurrency -------------------------------------------------------- */
   Thread           tThread;            // Video Decoding Thread
   condition_variable cvBuffer;         // Re-buffer unblocker
   mutex            mBuffer;            // mutex for rebuffering CV
   mutex            mUpload;            // mutex for uploading data
-  bool             bUnlock;            // Unlock condition variable
+  Unblock          ubReason;           // Unlock condition variable
   SafeSizeT        stLoop;             // Loops count
+  SafeBool         bPause;             // Only pause the stream?
   /* -- Ogg ---------------------------------------------------------------- */
   ogg_sync_state   oSS;                // Ogg sync state
   ogg_page         oPG;                // Ogg page
@@ -153,35 +156,41 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     // is atomic, we'll just make sure we modify it once.
     unsigned int uiSkipped = 0;
     // For each frame...
-    for(Frame &fFrame : fData)
+    for(Frame &fSlot : fData)
     { // Ignore if not set to draw
-      if(!fFrame.bDraw) continue;
+      if(!fSlot.bDraw) continue;
       // Reset the frame data
-      fFrame.Reset();
+      fSlot.Reset();
       // Increment skipped frames counter
       ++uiSkipped;
-    } // Add to skipped frames
+    } // Add to frames lost
     uiVideoFramesLost += uiSkipped;
     // Read and decode a new packet and return if succeeded
     return ogg_stream_packetout(&tSS, &oPK) > 0
         && th_decode_packetin(tDC, &oPK, &iVideoGranulePos) >= 0;
   }
   /* -- Decode data and assign it ------------------------------------------ */
-  void AssignDecodedData(const int iR)
+  void AssignDecodedData(void)
   { // Wait until uploading is done
     const LockGuard lgWaitForUpload{ mUpload };
     // No buffers free? Force this next buffer to be free
     if(!stFFree) { ++stFFree; --stFWaiting; }
     // Get next frame to draw
     Frame &fI = fData[stFNext];
-    // If it's a duplicate frame or decoding the frame failed? Skip the frame!
-    if(iR == TH_DUPFRAME || th_decode_ycbcr_out(tDC, tYB)) fI.bDraw = false;
-    // Not a duplicate frame
+    // If decoding the frame failed?
+    if(th_decode_ycbcr_out(tDC, tYB))
+    { // Skip the frame
+      fI.bDraw = false;
+      // We lost this frame
+      ++uiVideoFramesLost;
+    } // Decoding succeeded?
     else
     { // Set pointers to planes and we will be drawing this frame
       for(size_t stI = 0; stI < fI.aP.size(); ++stI)
         fI.aP[stI].tipP = tYB[stI];
       fI.bDraw = true;
+      // We processed this frame
+      ++uiVideoFrames;
     } // Buffer filled
     stFNext = (stFNext + 1) % fData.size();
     ++stFWaiting;
@@ -193,9 +202,9 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
   /* -- Manage video decoding thread --------------------------------------- */
   int ManageVideo(void)
   { // Audio and/or video availability flags
-    BUILD_FLAGS(Avail, AF_NONE{0x00000000},  // Video or audio not ready?
-                      AF_VIDEO{0x00000001},  // Enough video buffered?
-                      AF_AUDIO{0x00000002}); // Enough audio buffered?
+    BUILD_FLAGS(Avail, AF_NONE{0x0},  // Video or audio not ready?
+                      AF_VIDEO{0x1},  // Enough video buffered?
+                      AF_AUDIO{0x2}); // Enough audio buffered?
     // Video and audio was rendered successfully?
     AvailFlags afStatus{ AF_NONE };
     // Try to read as much audio as possible
@@ -267,25 +276,17 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
               fdAudioBuffer += static_cast<ALdouble>(stFrameSize) / vIN.rate;
               // We got audio
               afStatus.FlagSet(AF_AUDIO);
-            } // Queue failed?
-            else
-            { // Log the error
-              ALLW(cOal->GetOggErr, alErr,
-                "Video failed to queue buffer $ for '$'",
-                  uiBuffer, IdentGet());
-              // Delete the buffers because of error
-              ALL(cOal->DeleteBuffer(uiBuffer),
-                "Video failed to delete buffer $ for '$' "
-                "after failed queue buffer attempt!", uiBuffer, IdentGet());
-            }
+            } // Queue failed? Jump to delete buffer failed
+            else goto DeleteBuffer;
           } // Buffer data had failed?
           else
-          { // Log the error
-            ALLW(cOal->GetOggErr, alErr,
-              "Video failed buffering attempt on '$' "
-              "(B:$;F:$;A:$;S:$;R:$)!",
+          { // Label to delete the buffer
+            DeleteBuffer:
+            // Log the error
+            cLog->LogWarningExSafe("Video failed buffering attempt on '$' "
+              "(B:$;F:$;A:$;S:$;R:$;AL:$<$$>)!",
                 IdentGet(), uiBuffer, eFormat, mbAudio.Ptr(), stFrameSize,
-                vIN.rate);
+                vIN.rate, cOal->GetALErr(alErr), hex, alErr);
             // Delete the buffers because of error
             ALL(cOal->DeleteBuffer(uiBuffer),
               "Video failed to delete buffer $ in '$' "
@@ -309,8 +310,18 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
       else if(ogg_stream_packetout(&tSS, &oPK) > 0)
       { // Decode the packet and if we get a positive result?
         switch(const int iR = th_decode_packetin(tDC, &oPK, &iVideoGranulePos))
-        { // Success? Decode the data packet and fall through
-          case 0: AssignDecodedData(iR);
+        { // Success?
+          case 0:
+            // Try to decode the data packet
+            AssignDecodedData();
+            // We processed a video frame
+            afStatus.FlagSet(AF_VIDEO);
+            // Update position
+            UpdateVideoPosition();
+            // Set next frome time and fall through to break
+            CIAccumulate();
+            // Done
+            break;
           // Duplicate frame? We don't need to decode anything
           case TH_DUPFRAME:
             // We processed a video frame
@@ -321,12 +332,15 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
             UpdateVideoPosition();
             // Set next frome time and fall through to break
             CIAccumulate();
+            // Done
+            break;
           // Bad packet? (ignore)
           case TH_EBADPACKET: break;
           // Anything else?
           default:
             // Just put warning in log
-            LW(LH_WARNING, "Video '$' decode failure code $!", IdentGet(), iR);
+            cLog->LogWarningExSafe("Video '$' decode failure code $!",
+              IdentGet(), iR);
             // Done
             break;
         }
@@ -350,25 +364,31 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
         UniqueLock uLock{ mBuffer };
         // Wait for main thread to say we should rebuffer or when this thread
         // is requested to terminate.
-        cvBuffer.wait(uLock,
-          [this]{ return bUnlock || tThread.ThreadShouldExit(); });
-        // Reset unlock flag
-        bUnlock = false;
+        cvBuffer.wait(uLock, [this]{
+          return ubReason != UB_BLOCK || tThread.ThreadShouldExit(); });
+        // Check reason for unblocking
+        switch(ubReason)
+        { // Re-initialising, stopping or pausing?
+          case UB_REINIT: case UB_STOP: case UB_PAUSE: return 1;
+          // Just for data reasons or for playing?
+          case UB_DATA: case UB_PLAY: case UB_BLOCK: break;
+        } // Reset unlock flag
+        ubReason = UB_BLOCK;
       }
     } // Video frame and audio frame not ready?
     else if(afStatus.FlagIsClear(AF_AUDIO))
     { // We didn't read anything or we're at end-of-file!
       if(IOBuffer())
-      { // We should loop?
+      { // Rewind video
+        Rewind();
+        // We should loop?
         if(stLoop > 0)
         { // Reduce loops if not infinity
           if(stLoop != string::npos) --stLoop;
-          // Loop video again
-          RewindVideo();
           // Send looping event
-          LuaEvtDispatch(SE_LOOP);
-        } // Else return error
-        else return -1;
+          LuaEvtDispatch(VE_LOOP);
+        } // We should pause? Pause playback and stop the thread
+        else return 2;
       } // Read data until we get something useful
       while(ogg_sync_pageout(&oSS, &oPG) > 0)
       { // Find theora data
@@ -376,7 +396,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
         // Find vorbis data
         if(FlagIsSet(FL_VORBIS)) ogg_stream_pagein(&vSS, &oPG);
       }
-    } // Keep thread alive
+    } // Keep thread loop alive
     return 0;
   }
   /* -- Get/Set theora decoder control ------------------------------------- */
@@ -392,7 +412,8 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     // Make sure rate is sane
     if(vIN.rate < 1 || vIN.rate > 192000)
     { // We'll treat this as a warning as we can just disable audio playback
-      LW(LH_WARNING, "Video '$' playback rate of $ not valid at this time.",
+      cLog->LogWarningExSafe(
+        "Video '$' playback rate of $ not valid at this time.",
         IdentGet(), vIN.channels);
       // Disable playback
       FlagClear(FL_VORBIS);
@@ -401,7 +422,8 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     } // Make sure channels are correct
     if(vIN.channels < 1 || vIN.channels > 2)
     { // We'll treat this as a warning as we can just disable audio playback
-      LW(LH_WARNING, "Video '$' playback channel count of $ not supported.",
+      cLog->LogWarningExSafe(
+        "Video '$' playback channel count of $ not supported.",
         IdentGet(), vIN.channels);
       // Disable playback
       FlagClear(FL_VORBIS);
@@ -428,7 +450,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     // memory, but it is better than putting the alloc in the decoder tick
     mbAudio.Resize(static_cast<size_t>(fdMem));
     // Show what we allocated
-    LW(LH_DEBUG, "Video pre-allocated $ bytes for audio decoder.",
+    cLog->LogDebugExSafe("Video pre-allocated $ bytes for audio decoder.",
       mbAudio.Size());
   }
   /* -- Initialise video stream portion of file ---------------------------- */
@@ -504,7 +526,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     fboC.SetClear(false);
     // Only 2 triangles and 3 commands are needed so reserve the memory
     if(!fboC.Reserve(2, 3))
-      LW(LH_WARNING, "Video failed to reserve memory for fbo lists.");
+      cLog->LogWarningExSafe("Video failed to reserve memory for fbo lists.");
     // We must discard the extra garbage from the ogg video. We can do that
     // with the GPU very easily by altering texture coords!
     fiYUV.SetTexCoord(
@@ -646,6 +668,8 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
   double GetAudioTime(void) const { return fdAudioTime; }
   double GetDrift(void) const { return fdVideoTime-fdAudioTime; }
   double GetFPS(void) const { return fdFPS; }
+  unsigned int GetFrame(void) const
+    { return static_cast<unsigned int>(GetVideoTime() * GetFPS()); }
   unsigned int GetFrames(void) const { return uiVideoFrames; }
   unsigned int GetFramesSkipped(void) const { return uiVideoFramesLost; }
   th_pixel_fmt GetPixelFormat(void) const { return tIN.pixel_fmt; }
@@ -739,7 +763,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
   { // If decoder thread is updating, then ignore
     UploadTexture();
     // Tell the thread to continue rebuffering
-    Rebuffer();
+    Unsuspend(UB_DATA);
   }
   /* -- Video is playing? -------------------------------------------------- */
   bool IsPlaying(void) const { return tThread.ThreadIsRunning(); }
@@ -747,19 +771,17 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
   void DeInitAudio(void)
   { // Return if there is no audio in this video or video is not playing
     if(FlagIsClear(FL_VORBIS) || !IsPlaying()) return;
-    // Set that the video was playing
-    FlagSet(FL_REPLAY);
-    // Pause the video
-    Pause();
+    // Pause the video from re-initialisation
+    Pause(UB_REINIT);
   }
   /* -- Initialise audio (because audio is restarting) --------------------- */
   void InitAudio(void)
   { // Return if there is no audio in this video or video was not playing
-    if(FlagIsClear(FL_VORBIS) || FlagIsClear(FL_REPLAY)) return;
+    if(FlagIsClear(FL_VORBIS) || ubReason != UB_REINIT) return;
     // Remove playback after re-init flag
-    FlagClear(FL_REPLAY);
-    // Continue playback
-    Play();
+    ubReason = UB_BLOCK;
+    // Continue playback from re-initialisation
+    Play(UB_REINIT);
   }
   /* -- Stop and unload audio buffers -------------------------------------- */
   void StopAudioAndUnloadBuffers(const bool bReset)
@@ -777,37 +799,43 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     sCptr = nullptr;
   }
   /* -- Unblock rebuffer --------------------------------------------------- */
-  void Rebuffer(void)
+  void Unsuspend(const Unblock ubNewReason)
   { // Acquire unique lock
     const UniqueLock ulGuard{ mBuffer };
     // Modify the unlock boolean
-    bUnlock = true;
+    ubReason = ubNewReason;
     // Send notification
     cvBuffer.notify_one();
   }
   /* -- Do pause video ----------------------------------------------------- */
-  void Pause(void)
+  void Pause(const Unblock ubNewReason = UB_PAUSE)
   { // Return if not playing
     if(FlagIsClear(FL_PLAY)) return;
+    // Remove playing flag
+    FlagClear(FL_PLAY);
     // DeInit the thread
     tThread.ThreadSetExit();
     // Unblock the rebuffering thread
-    Rebuffer();
-    // De init the thread
+    Unsuspend(ubNewReason);
+    // Wait for the thread to stop
     tThread.ThreadStop();
     // Stop and unload buffers
     StopAudioAndUnloadBuffers(true);
     // Flush video data
     FlushVideoData();
-    // Remove playing flag
-    FlagClear(FL_PLAY);
   }
   /* -- Stop video and free everything ------------------------------------- */
-  void Stop(void)
+  void Stop(const Unblock ubNewReason = UB_STOP)
   { // Ignore if already stopped
     if(FlagIsSet(FL_STOP)) return;
+    // Hard stop
+    FlagSet(FL_STOP);
+    // If thread already exited? Send stop event
+    if(tThread.ThreadIsExited()) LuaEvtDispatch(VE_STOP);
     // Pause playback and synchronise
-    Pause();
+    Pause(ubNewReason);
+    // Set the reason for stopping
+    ubReason = ubNewReason;
     // Deinit texture and reset parameters
     DeInitTexture();
     ClearTextures();
@@ -858,8 +886,6 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     uiVideoFrames = uiVideoFramesLost = 0;
     iVideoGranulePos = -1;
     fdVideoTime = fdAudioTime = fdAudioBuffer = fdFPS = 0;
-    // Must block
-    bUnlock = false;
     // Reset buffer status
     stFActive = stFNext = stFWaiting = stFFree = stLoop = 0;
     // Reset OpenAL stuff
@@ -867,8 +893,6 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     eFormat = 0;
     // Rewind data stream
     fmFile.FileMapRewind();
-    // Hard stop
-    FlagSet(FL_STOP);
   }
   /* -- Awaken stream if hard stopped -------------------------------------- */
   void Awaken(void)
@@ -882,7 +906,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     FlagClear(FL_STOP);
   }
   /* -- Play video --------------------------------------------------------- */
-  void Play(void)
+  void Play(const Unblock ubNewReason = UB_PLAY)
   { // Return if there is no audio in this video or video was not playing
     if(FlagIsSet(FL_PLAY)) return;
     // Re-open if hard stopped
@@ -902,18 +926,20 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
                                                AL_FORMAT_STEREO16;
                 break;
         // Unknown channel count. Problem should already be handled at init.
-        default: LW(LH_WARNING, "Video '$' audio playback failed. "
+        default: cLog->LogWarningExSafe("Video '$' audio playback failed. "
           "Invalid channel count of $!", IdentGet(), vIN.channels); return;
       } // Get a new sound source and if we got it update volume and return
       sCptr = GetSource();
       if(sCptr) CommitVolume();
       // Tell log
-      else LW(LH_WARNING, "Video '$' audio playback failed. Out of sources!",
-        IdentGet());
+      else cLog->LogWarningExSafe(
+        "Video '$' audio playback failed. Out of sources!", IdentGet());
     } // Set playing flag
     FlagSet(FL_PLAY);
     // Reset update time so the frame draws immediately
     CISync();
+    // Set reason for playing
+    ubReason = ubNewReason;
     // Start decoding
     tThread.ThreadStart(this);
   }
@@ -921,18 +947,20 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
   void FlushVideoData(void)
   { // Wait until async frame process
     const LockGuard lgWaitForUpload{ mUpload };
-    // Disable draw on all frames
-    for(size_t stI = 0; stI < fData.size(); ++stI) fData[stI].bDraw = false;
-    // Reset buffer index counters
+    // Disable draw and drop  all frames
+    for(Frame &fSlot : fData) if(fSlot.bDraw)
+    { // Do not show anymore
+      fSlot.bDraw = false;
+      // Now lost
+      ++uiVideoFrames;
+    } // Reset buffer index counters
     stFWaiting = stFActive = stFNext = 0;
     stFFree = fData.size();
-    // No longer processing, uploading frames. Also reset frames decoded
-    uiVideoFrames = uiVideoFramesLost = 0;
     // Next frame will be drawn immediately
     CISync();
   }
   /* -- Rewind video ------------------------------------------------------- */
-  void RewindVideo(void)
+  void Rewind(void)
   { // Rewind video to start
     fmFile.FileMapRewind();
     // Reset granule position and frames rendered
@@ -950,7 +978,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     // Flush current video data
     FlushVideoData();
     // Tell the thread to continue rebuffering
-    Rebuffer();
+    Unsuspend(UB_DATA);
   }
   /* -- (De)Initialise video ouput ----------------------------------------- */
   void DeInitTexture(void)
@@ -963,9 +991,6 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
   void ConfigTexture(const GLuint uiTU, const int iW, const int iH)
   { // Get texture id
     GLuint &uiT = uiYUV[uiTU];
-    // Set texture unit
-    GL(cOgl->ActiveTexture(uiTU), "Failed to set active texture unit!",
-      "Identifier", IdentGet(), "Index", uiTU, "Texture", uiT);
     // Bind texture
     GL(cOgl->BindTexture(uiT), "Failed to bind video component texture!",
       "Identifier", IdentGet(), "Index", uiTU, "Texture", uiT);
@@ -990,7 +1015,8 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
       "Failed to set texture wrapping T mode for video component!",
         "Identifier", IdentGet(), "Index", uiTU, "Texture", uiT);
     // Say what we did
-    LW(LH_DEBUG, "Video texture $x$ created for channel $.", iW, iH, uiTU);
+    cLog->LogDebugExSafe("Video texture $x$ created for channel $.",
+      iW, iH, uiTU);
   }
   /* -- Set filtering on video textures ------------------------------------ */
   void SetFilter(const bool bState)
@@ -1055,17 +1081,18 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     InitVideoStream();
     InitAudioStream();
     // Log success
-    LW(LH_INFO, "Video loaded '$' successfully.", IdentGet());
+    cLog->LogInfoExSafe("Video loaded '$' successfully.", IdentGet());
     // Log debug inforation
-    LW(LH_DEBUG, "- Version: $$.$.$.\n"         "- Serial: $ <0x$$$>.\n"
-                 "- Viewable size: $x$ <$>.\n"  "- Actual size: $x$ <$>.\n"
-                 "- Aspect ratio: $:$.\n"       "- Origin: $x$.\n"
-                 "- Pixel format: $ <$>.\n"     "- Colour space: $ <$>.\n"
-                 "- Frame rate: $ fps.\n"       "- Version: $.\n"
-                 "- Audio channels: $.\n"       "- Bit rate: $ ($).\n"
-                 "- Target bit rate: $ ($).\n"  "- Upper bit rate: $ ($).\n"
-                 "- Nominal bit rate: $ ($).\n" "- Lower bit rate: $ ($).\n"
-                 "- Bit window: $ ($).",
+    cLog->LogDebugExSafe(
+      "- Version: $$.$.$.\n"         "- Serial: $ <0x$$$>.\n"
+      "- Viewable size: $x$ <$>.\n"  "- Actual size: $x$ <$>.\n"
+      "- Aspect ratio: $:$.\n"       "- Origin: $x$.\n"
+      "- Pixel format: $ <$>.\n"     "- Colour space: $ <$>.\n"
+      "- Frame rate: $ fps.\n"       "- Version: $.\n"
+      "- Audio channels: $.\n"       "- Bit rate: $ ($).\n"
+      "- Target bit rate: $ ($).\n"  "- Upper bit rate: $ ($).\n"
+      "- Nominal bit rate: $ ($).\n" "- Lower bit rate: $ ($).\n"
+      "- Bit window: $ ($).",
       fixed, static_cast<int>(tIN.version_major),
         static_cast<int>(tIN.version_minor),
         static_cast<int>(tIN.version_subminor),
@@ -1088,7 +1115,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
       vIN.bitrate_window, ToBitsStr(vIN.bitrate_window));
   }
   /* -- When data has asynchronously loaded -------------------------------- */
-  void LoadData(FileMap &fClass)
+  void AsyncReady(FileMap &fClass)
   { // Move filemap into ours
     fmFile.FileMapSwap(fClass);
     // Initialise ogg video and audio
@@ -1107,7 +1134,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     CheckFunction(lS, 4, "ProgressFunc");
     CheckFunction(lS, 5, "SuccessFunc");
     // Set base parameters
-    AsyncInitArray(lS, strF, "videoarray", move(aData));
+    AsyncInitArray(lS, strF, "videoarray", std::move(aData));
   }
   /* -- Load stream from file asynchronously ------------------------------- */
   void InitAsyncFile(lua_State*const lS)
@@ -1123,23 +1150,35 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
   }
   /* -- Thread main function ----------------------------------------------- */
   int VideoThreadMain(const Thread &tClass) try
-  { // Return code
-    int iReturn = 0;
-    // Send playing event if we're not temporarily de-initialising
-    if(FlagIsClear(FL_REPLAY)) LuaEvtDispatch(SE_PLAY);
+  { // Send playing event if we're not temporarily de-initialising
+    if(ubReason != UB_REINIT) LuaEvtDispatch(VE_PLAY);
     // Loop forever until thread should exit and manage video stream.
     // Capture return value and keep looping until non-zero exit.
-    while(!tClass.ThreadShouldExit() && !iReturn) iReturn = ManageVideo();
-    // Send stopped event if we're not temporarily de-initialising
-    if(FlagIsClear(FL_REPLAY)) LuaEvtDispatch(SE_STOP);
-    // Return status
-    return iReturn;
+    for(int iReason = 0;
+        !tClass.ThreadShouldExit() && !iReason;
+        iReason = ManageVideo());
+    // Check reason for exiting
+    switch(ubReason)
+    { // Blocking mode set? Normal exit
+      case UB_BLOCK: return 1;
+      // Stopping or finishing?
+      case UB_STOP: LuaEvtDispatch(VE_STOP); return 2;
+      // Pausing?
+      case UB_PAUSE: LuaEvtDispatch(VE_PAUSE); return 3;
+      // Finishing?
+      case UB_DATA: LuaEvtDispatch(VE_FINISH); return 4;
+      // Re-initialising?
+      case UB_REINIT: return 2;
+      // Playing? (not possible)
+      case UB_PLAY: return -3;
+    } // Shouldn't get here
+    return -2;
   } // exception occured?
   catch(const exception &E)
   { // Report it to log
-    LW(LH_ERROR, "(VIDEO THREAD EXCEPTION) $", E.what());
+    cLog->LogErrorExSafe("(VIDEO THREAD EXCEPTION) $", E.what());
     // Failure exit code
-    return -2;
+    return -1;
   }
   /* -- Destructor --------------------------------------------------------- */
   ~Video(void)
@@ -1158,6 +1197,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
   Video(void) :
     /* -- Initialisation of members ---------------------------------------- */
     ICHelperVideo{ *cVideos, this },
+    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     AsyncLoader<Video>{ this,
       EMC_MP_VIDEO },
     LuaEvtSlave{ this,
@@ -1166,7 +1206,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     tThread{ "video",
       bind(&Video::VideoThreadMain,
         this, _1) },
-    bUnlock(false),
+    ubReason(UB_BLOCK),
     stLoop(0),
     oSS{},
     oPG{},
@@ -1209,20 +1249,20 @@ END_ASYNCCOLLECTOR(Videos, Video, VIDEO,
 static void VideoReInitTextures(void)
 { // Ignore if no videos otherwise re-initialise ogl textures on all videos
   if(cVideos->empty()) return;
-  LW(LH_DEBUG, "Videos re-initialising $ video textures...",
+  cLog->LogDebugExSafe("Videos re-initialising $ video textures...",
     cVideos->CollectorCountUnsafe());
   for(Video*const vCptr : *cVideos) vCptr->InitTexture();
-  LW(LH_INFO, "Videos re-initialised $ video textures!",
+  cLog->LogInfoExSafe("Videos re-initialised $ video textures!",
     cVideos->CollectorCountUnsafe());
 }
 /* == De-init video textures (after thread shutdown) ======================= */
 static void VideoDeInitTextures(void)
 { // Ignore if no videos otherwise de-initialise ogl textures on all videos
   if(cVideos->empty()) return;
-  LW(LH_DEBUG, "Videos de-initialising $ video textures...",
+  cLog->LogDebugExSafe("Videos de-initialising $ video textures...",
     cVideos->CollectorCountUnsafe());
   for(Video*const vCptr : *cVideos) vCptr->DeInitTexture();
-  LW(LH_INFO, "Videos de-initialised $ video textures!",
+  cLog->LogInfoExSafe("Videos de-initialised $ video textures!",
     cVideos->CollectorCountUnsafe());
 }
 /* == Clear event callbacks on all videos (must be synchronised) =========== */
@@ -1230,10 +1270,10 @@ static void VideoClearEvents(void)
 { // Lock access to video collector list and clear all video events
   const LockGuard lgVideosSync{ cVideos->CollectorGetMutex() };
   if(cVideos->empty()) return;
-  LW(LH_DEBUG, "Videos clearing events from $ video objects...",
+  cLog->LogDebugExSafe("Videos clearing events from $ video objects...",
     cVideos->CollectorCountUnsafe());
   for(Video*const vCptr : *cVideos) vCptr->LuaEvtDeInit();
-  LW(LH_INFO, "Videos cleared events from $ video objects!",
+  cLog->LogInfoExSafe("Videos cleared events from $ video objects!",
     cVideos->CollectorCountUnsafe());
 }
 /* == Stop all videos (must be sychronised) ================================ */
@@ -1246,20 +1286,20 @@ static void VideoStop(void)
 static void VideoDeInit(void)
 { // Ignore if no videos otherwise de-initialise oal buffers on all videos
   if(cVideos->empty()) return;
-  LW(LH_DEBUG, "Videos de-initialising $ videos...",
+  cLog->LogDebugExSafe("Videos de-initialising $ videos...",
     cVideos->CollectorCountUnsafe());
   for(Video*const vCptr : *cVideos) vCptr->DeInitAudio();
-  LW(LH_INFO, "Videos de-initialised $ videos!",
+  cLog->LogInfoExSafe("Videos de-initialised $ videos!",
     cVideos->CollectorCountUnsafe());
 }
 /* == ReInit all videos (after engine thread shutdown) ===================== */
 static void VideoReInit(void)
 { // Ignore if no videos otherwise re-initialise oal buffers on all videos
   if(cVideos->empty()) return;
-  LW(LH_DEBUG, "Videos re-initialising $ videos...",
+  cLog->LogDebugExSafe("Videos re-initialising $ videos...",
     cVideos->CollectorCountUnsafe());
   for(Video*const vCptr : *cVideos) vCptr->InitAudio();
-  LW(LH_INFO, "Videos re-initialised $ videos!",
+  cLog->LogInfoExSafe("Videos re-initialised $ videos!",
     cVideos->CollectorCountUnsafe());
 }
 /* == Render all videos ==================================================== */
@@ -1282,6 +1322,6 @@ static CVarReturn VideoSetVolume(const ALfloat fVolume)
   // Success
   return ACCEPT;
 }
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

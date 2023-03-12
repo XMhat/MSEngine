@@ -11,11 +11,11 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfSource {                   // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfSource {                   // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfOal;                 // Using oal interface
-using namespace IfLuaUtil;             // Using luautil interface
+using namespace IfOal;                 // Using oal namespace
+using namespace IfLuaUtil;             // Using luautil namespace
 /* -- Source collector class for collector data and custom variables ------- */
 BEGIN_COLLECTOREX(Sources, Source, CLHelperSafe, /* Build collector/member   */
 /* ------------------------------------------------------------------------- */
@@ -29,7 +29,7 @@ SafeALFloat        fSVolume;           /* Sample volume multiplier          */\
 BEGIN_MEMBERCLASS(Sources, Source, ICHelperSafe),
   /* -- Base classes ------------------------------------------------------- */
   public Lockable                      // Lua garbage collector instruction
-{ /* -- Private variables ----------------------------------------- */ private:
+{ /* -- Private variables -------------------------------------------------- */
   ALuint           uiId;               // Source id
   bool             bExternal;          // Ignore class in audio thread?
   /* -- Get/set source float ----------------------------------------------- */
@@ -264,6 +264,7 @@ BEGIN_MEMBERCLASS(Sources, Source, ICHelperSafe),
   explicit Source(const bool bLocked=true) :
     /* -- Initialisation of members ---------------------------------------- */
     ICHelperSource{ *cSources, this }, // Register in Sources list
+    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     uiId(cOal->CreateSource()),        // Initialise a new source from OpenAL
     bExternal(bLocked)                 // Set source managed flag
     /* -- Check for CreateSource error or initialise ----------------------- */
@@ -350,8 +351,8 @@ static void SourceAlloc(const size_t stCount)
   // Create new sources until we've reached the maximum and mark as usable
   for(size_t stI = stSize; stI < stUsable; ++stI) new Source(false);
   // Log count
-  LW(LH_DEBUG, "Audio added new sources [$:$$].", cSources->size(), hex,
-    cOal->GetError());
+  cLog->LogDebugExSafe("Audio added new sources [$:$$].",
+    cSources->size(), hex, cOal->GetError());
 }
 /* == Set number of sources ================================================ */
 static CVarReturn SourceSetCount(const size_t stCount)
@@ -362,6 +363,6 @@ static CVarReturn SourceSetCount(const size_t stCount)
   // Success
   return ACCEPT;
 }
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

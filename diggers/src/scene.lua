@@ -25,8 +25,8 @@ local function InitScene(Id)
     PlayMusic(aR[2].H);
     -- Set scene texture
     local texScene = aR[1].H;
-    texScene:TrimTList(1);
-    texScene:CreateTile(192, 272, 512, 512);
+    texScene:TileSTC(1);
+    texScene:TileA(192, 272, 512, 512);
     -- Set first tile number
     local iTileId = 0;
     -- Set text to win label
@@ -38,7 +38,7 @@ local function InitScene(Id)
       texScene:BlitSLT(iTileId, 0, 0);
       -- Draw text if ready
       if iTileId == 1 then
-        fontLarge:SetRGBA(1, 1, 1, 1);
+        fontLarge:SetCRGBA(1, 1, 1, 1);
         fontLarge:PrintC(160, 192, sTextToWin);
       end
     end

@@ -17,7 +17,7 @@
 /* ========================================================================= */
 LLNAMESPACEBEGIN(Sample)               // Sample namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfSample;              // Using sample interface
+using namespace IfSample;              // Using sample namespace
 /* ========================================================================= */
 /* ######################################################################### */
 /* ========================================================================= */
@@ -72,7 +72,7 @@ LLFUNCEX(Duration, 1, LCPUSHNUM(LCGETPTR(1, Sample)->GetDuration()));
 // ? If this sample was loaded by a filename or it was set with a custom id.
 // ? This function returns that name which was assigned to it.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Name, 1, LCPUSHXSTR(LCGETPTR(1, Sample)->pcmData.IdentGet()));
+LLFUNCEX(Name, 1, LCPUSHXSTR(LCGETPTR(1, Sample)->IdentGet()));
 /* ========================================================================= */
 // $ Sample:Destroy
 // ? Destroys the sample object and frees all the memory associated with it.

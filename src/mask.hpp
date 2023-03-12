@@ -6,27 +6,29 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfMask {                     // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfMask {                     // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfImage;               // Using image interface
+using namespace IfImage;               // Using image namespace
 /* == Mask collector and member class ====================================== */
 BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
   public MemoryVector,                 // Slots for each mask
   public Lockable,                     // Lua garbage collector instruction
-  public Ident                         // Name of mask object
-{ /* -- Variables -------------------------------------------------- */ public:
-  int              iWidth,iHeight;     // Size of mask image
-  size_t           stSize;             // Size of all mask bitmaps in array
-  /* -- Two masks overlap? ------------------------------------------------- */
+  public Ident,                        // Name of mask object
+  public Dimensions<int>               // Size of mask image
+{ /* -- Variables ---------------------------------------------------------- */
+  size_t           stAlloc;            // Size of all mask bitmaps in array
+  /* -- Two masks overlap? ----------------------------------------- */ public:
   bool IsCollide(const size_t stSourceId, const int iSrcX, const int iSrcY,
     const Mask &mCdest, const size_t stDestId, const int iDestX,
     const int iDestY) const
   { // Caculate distances and lengths between both bounds
     const int
-      iXMax1 = iSrcX + iWidth,          iYMax1 = iSrcY + iHeight,
-      iXMax2 = iDestX + mCdest.iWidth,  iYMax2 = iDestY + mCdest.iHeight,
+      iXMax1 = iSrcX + DimGetWidth(),
+      iYMax1 = iSrcY + DimGetHeight(),
+      iXMax2 = iDestX + mCdest.DimGetWidth(),
+      iYMax2 = iDestY + mCdest.DimGetHeight(),
       iXMin  = Maximum(iSrcX, iDestX),  iYMin  = Maximum(iSrcY, iDestY),
       iXMax  = Minimum(iXMax1, iXMax2), iYMax  = Minimum(iYMax1, iYMax2);
     // Bail if out of bounds
@@ -38,8 +40,8 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     // return if we found a match, else try next pixel
     for(int iY = iYMin; iY < iYMax; ++iY)
       for(int iX = iXMin; iX < iXMax; ++iX)
-        if(Bit::Test(cpS, ((iY-iSrcY)*iWidth)+(iX-iSrcX)) &&
-           Bit::Test(cpD, ((iY-iDestY)*mCdest.iWidth)+(iX-iDestX)))
+        if(Bit::Test(cpS, ((iY-iSrcY)*DimGetWidth())+(iX-iSrcX)) &&
+           Bit::Test(cpD, ((iY-iDestY)*mCdest.DimGetWidth())+(iX-iDestX)))
           return true;
     // No collision
     return false;
@@ -75,9 +77,12 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     const size_t stSourceId, const int iDestX, const int iDestY)
   { // Caculate distances and lengths between both bounds
     const int
-      iXMax2 = iDestX + mCsrc.iWidth,   iYMax2 = iDestY + mCsrc.iHeight,
-      iXMin  = Maximum(iDestX, 0),      iYMin  = Maximum(iDestY, 0),
-      iXMax  = Minimum(iWidth, iXMax2), iYMax  = Minimum(iHeight, iYMax2);
+      iXMax2 = iDestX + mCsrc.DimGetWidth(),
+      iYMax2 = iDestY + mCsrc.DimGetHeight(),
+      iXMin  = Maximum(iDestX, 0),
+      iYMin  = Maximum(iDestY, 0),
+      iXMax  = Minimum(DimGetWidth(), iXMax2),
+      iYMax  = Minimum(DimGetHeight(), iYMax2);
     // Bail if out of bounds
     if(iXMax <= iXMin || iYMax <= iYMin) return;
     // Get bitmask surfaces for both masks
@@ -87,10 +92,10 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     for(int iY = iYMin; iY < iYMax; ++iY)
       for(int iX = iXMin; iX < iXMax; ++iX)
       { // Clear the bits first
-        Bit::Clear(cpD, (iY*iWidth)+iX);
+        Bit::Clear(cpD, (iY*DimGetWidth())+iX);
         // Copy the bits
-        Bit::Set2(cpD, (iY*iWidth)+iX,
-                  cpS, ((iY-iDestY)*mCsrc.iWidth)+(iX-iDestX));
+        Bit::Set2(cpD, (iY*DimGetWidth())+iX,
+                  cpS, ((iY-iDestY)*mCsrc.DimGetWidth())+(iX-iDestX));
       }
   }
   /* -- Merge specified mask into this one --------------------------------- */
@@ -98,9 +103,12 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     const int iDestX, const int iDestY)
   { // Caculate distances and lengths between both bounds
     const int
-      iXMax2 = iDestX + mCsrc.iWidth,   iYMax2 = iDestY + mCsrc.iHeight,
-      iXMin  = Maximum(iDestX, 0),      iYMin  = Maximum(iDestY, 0),
-      iXMax  = Minimum(iWidth, iXMax2), iYMax  = Minimum(iHeight, iYMax2);
+      iXMax2 = iDestX + mCsrc.DimGetWidth(),
+      iYMax2 = iDestY + mCsrc.DimGetHeight(),
+      iXMin  = Maximum(iDestX, 0),
+      iYMin  = Maximum(iDestY, 0),
+      iXMax  = Minimum(DimGetWidth(), iXMax2),
+      iYMax  = Minimum(DimGetHeight(), iYMax2);
     // Bail if out of bounds
     if(iXMax <= iXMin || iYMax <= iYMin) return;
     // Get bitmask surfaces for both masks
@@ -110,20 +118,20 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     // Check the bits and return if we found a match, else try next pixel
     for(int iY = iYMin; iY < iYMax; ++iY)
       for(int iX = iXMin; iX < iXMax; ++iX)
-        Bit::Set2(cpD, (iY*iWidth)+iX,
-                  cpS, ((iY-iDestY)*mCsrc.iWidth)+(iX-iDestX));
+        Bit::Set2(cpD, (iY*DimGetWidth())+iX,
+                  cpS, ((iY-iDestY)*mCsrc.DimGetWidth())+(iX-iDestX));
   }
   /* -- Erase specified mask into this one --------------------------------- */
   void Erase(const size_t stDestId)
   { // Bail if out of bounds
-    if(iWidth <= 0 || iHeight <= 0) return;
+    if(DimGetWidth() <= 0 || DimGetHeight() <= 0) return;
     // Get bitmask surfaces for both masks
     unsigned char*const cpD = at(stDestId).Ptr<unsigned char>();
     // Walk through the pixels of the intersection
     // Check the bits and return if we found a match, else try next pixel
-    for(int iY = 0; iY < iHeight; ++iY)
-      for(int iX = 0; iX < iWidth; ++iX)
-        Bit::Clear(cpD, (iY*iWidth)+iX);
+    for(int iY = 0; iY < DimGetHeight(); ++iY)
+      for(int iX = 0; iX < DimGetWidth(); ++iX)
+        Bit::Clear(cpD, (iY*DimGetWidth())+iX);
   }
   /* -- Fill specified mask ------------------------------------------------ */
   void Fill(const int iDX, const int iDY, const int iW, const int iH)
@@ -131,7 +139,8 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     const int
       iXMax2 = iDX + iW,                iYMax2 = iDY + iH,
       iXMin  = Maximum(iDX, 0),         iYMin  = Maximum(iDY, 0),
-      iXMax  = Minimum(iWidth, iXMax2), iYMax  = Minimum(iHeight, iYMax2);
+      iXMax  = Minimum(DimGetWidth(), iXMax2),
+      iYMax  = Minimum(DimGetHeight(), iYMax2);
     // Bail if out of bounds
     if(iXMax <= iXMin || iYMax <= iYMin) return;
     // Get bitmask surfaces for both masks
@@ -139,7 +148,7 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     // Walk through the pixels of the intersection and set each bit
     for(int iY = iYMin; iY < iYMax; ++iY)
       for(int iX = iXMin; iX < iXMax; ++iX)
-        Bit::Set(cpD, (iY*iWidth)+iX);
+        Bit::Set(cpD, (iY*DimGetWidth())+iX);
   }
   /* -- Clear specified mask ----------------------------------------------- */
   void Clear(const int iDX, const int iDY, const int iW, const int iH)
@@ -147,7 +156,8 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     const int
       iXMax2 = iDX + iW,                iYMax2 = iDY + iH,
       iXMin  = Maximum(iDX, 0),         iYMin  = Maximum(iDY, 0),
-      iXMax  = Minimum(iWidth, iXMax2), iYMax  = Maximum(iHeight, iYMax2);
+      iXMax  = Minimum(DimGetWidth(), iXMax2),
+      iYMax  = Maximum(DimGetHeight(), iYMax2);
     // Bail if out of bounds
     if(iXMax <= iXMin || iYMax <= iYMin) return;
     // Get bitmask surfaces for both masks
@@ -155,7 +165,7 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     // Walk through the pixels of the intersection and set each bit
     for(int iY = iYMin; iY < iYMax; ++iY)
       for(int iX = iXMin; iX < iXMax; ++iX)
-        Bit::Clear(cpD, (iY*iWidth)+iX);
+        Bit::Clear(cpD, (iY*DimGetWidth())+iX);
   }
   /* -- Init --------------------------------------------------------------- */
   void Init(const unsigned int uiW, const unsigned int uiH)
@@ -165,12 +175,11 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     // Calculate space required, push it into mask list and increment size
     const size_t stLen = (uiW * uiH) / 8;
     emplace_back(Memory{ stLen });
-    stSize = stSize + stLen;
+    stAlloc += stLen;
     // Set name of mask
-    IdentSet(Format(":$*$", uiW, uiH));
+    IdentSet(":$*$", uiW, uiH);
     // Set width and height
-    iWidth = static_cast<int>(uiW);
-    iHeight = static_cast<int>(uiH);
+    DimSet(static_cast<int>(uiW), static_cast<int>(uiH));
   }
   /* -- Init cleared mask -------------------------------------------------- */
   void InitBlank(const unsigned int uiW, const unsigned int uiH)
@@ -197,9 +206,9 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
       mDst.WriteIntLE<uint16_t>(CodecTGA::HL_U16LE_X_ORIGIN, 0);
       mDst.WriteIntLE<uint16_t>(CodecTGA::HL_U16LE_Y_ORIGIN, 0);
       mDst.WriteIntLE<uint16_t>(CodecTGA::HL_U16LE_WIDTH,
-        static_cast<uint16_t>(iWidth));
+        DimGetWidth<uint16_t>());
       mDst.WriteIntLE<uint16_t>(CodecTGA::HL_U16LE_HEIGHT,
-        static_cast<uint16_t>(iHeight));
+        DimGetWidth<uint16_t>());
       mDst.WriteInt<uint8_t>(CodecTGA::HL_U08LE_BITS_PER_PIXEL, 1);
       mDst.WriteInt<uint8_t>(CodecTGA::HL_U08LE_IMAGE_DESCRIPTOR,
         CodecTGA::IDF_FLIPPED);
@@ -226,100 +235,126 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
   void InitFromImage(Image &iC, const unsigned int _uiTWidth,
     const unsigned int _uiTHeight)
   { // Set texture name
-    IdentSet(iC.IdentGet());
+    IdentSet(iC);
     // Must have slots
-    if(iC.NoSlots()) XC("No data in image object!", "Identifier", IdentGet());
+    if(iC.empty()) XC("No data in image object!", "Identifier", IdentGet());
     // Check dimensions. We're also working with ints for sizes so we have
     // to limit the size to signed int range so check for that too.
     if(!_uiTWidth || !_uiTHeight ||
-      IntWillOverflow<int>(_uiTWidth) ||
-      IntWillOverflow<int>(_uiTHeight))
+      IntWillOverflow<int>(_uiTWidth) || IntWillOverflow<int>(_uiTHeight))
         XC("Invalid tile dimensions!",
            "Identifier", IdentGet(), "Width", _uiTWidth, "Height", _uiTHeight);
     // Get first image slot and show error as we are not reversing this.
-    ImageSlot &bData = iC.GetFirstSlot();
+    ImageSlot &bData = iC.front();
     // Check bit depth
-    if(iC.GetBitsPP() != 1)
+    if(iC.GetBitsPerPixel() != 1)
       XC("Image is not monochrome!",
-         "Identifier", IdentGet(),        "Width",        bData.uiWidth,
-         "Height",     bData.uiHeight, "BitsPerPixel", iC.GetBitsPP());
-    // If the targa is reversed?
-    if(iC.IsReverse())
-    { // We need to reverse the pixels
-      iC.ReversePixels();
-      // Put warning in log as it's a performance warning
-      LW(LH_WARNING, "Mask '$' was forced unreversal!", IdentGet());
-    } // Check image dimensions too. Again we're dealing with ints!
-    if(!bData.uiWidth || !bData.uiHeight ||
-      IntWillOverflow<int>(bData.uiWidth) ||
-      IntWillOverflow<int>(bData.uiHeight))
+         "Identifier",   IdentGet(),
+         "Width",        bData.DimGetWidth(),
+         "Height",       bData.DimGetHeight(),
+         "BitsPerPixel", iC.GetBitsPerPixel());
+    // Check image dimensions too. Again we're dealing with ints!
+    if(!bData.DimIsSet() ||
+      IntWillOverflow<int>(bData.DimGetWidth()) ||
+      IntWillOverflow<int>(bData.DimGetHeight()))
         XC("Invalid image dimensions!",
-           "Identifier", IdentGet(), "Width", bData.uiWidth,
-           "Height",     bData.uiHeight);
+           "Identifier", IdentGet(), "Width", bData.DimGetWidth(),
+           "Height",     bData.DimGetHeight());
     // Image is divisible by 8?
-    if(!IsDivisible(static_cast<double>(bData.uiWidth)/8) ||
-       !IsDivisible(static_cast<double>(bData.uiHeight)/8))
+    if(!IsDivisible(bData.DimGetWidth<double>() / 8) ||
+       !IsDivisible(bData.DimGetHeight<double>() / 8))
       XC("Image dimensions are not divisible by eight!",
-         "Identifier", IdentGet(), "Width", bData.uiWidth,
-         "Height",     bData.uiHeight);
-    // Get reference to the image memory and if no tiling needed?
-    Memory &mDst = bData.memData;
-    if(bData.uiWidth == _uiTWidth && bData.uiHeight == _uiTHeight)
-    { // Use full size image and return
-      emplace_back(move(mDst));
-      return;
-    } // Calculate how many tiles we can fit in the image
-    const unsigned int uiTotalX = bData.uiWidth / _uiTWidth,
-                       uiTotalY = bData.uiHeight / _uiTHeight,
-    // Properly clamped tile count value
-                       uiTotalXWhole = uiTotalX * _uiTWidth,
-                       uiTotalYWhole = uiTotalY * _uiTHeight;
-    // Calculate size of the bitmask required
-    const size_t stBytes = _uiTWidth * _uiTHeight / CHAR_BIT;
-    // Get source buffer
-    const unsigned char*const ucpS = mDst.Ptr<unsigned char>();
+         "Identifier", IdentGet(), "Width", bData.DimGetWidth(),
+         "Height",     bData.DimGetHeight());
+    // Get reference to the image memory and if no tiling needed? We can just
+    // add the full size texture.
+    if(bData.DimGetWidth() == _uiTWidth && bData.DimGetHeight() == _uiTHeight)
+      { emplace_back(std::move(bData)); return; }
+    // We're dealing with memory now so we need everything as size_t
+    const size_t
+      // Tile dimensions
+      stTWidth = static_cast<size_t>(_uiTWidth),
+      stTHeight = static_cast<size_t>(_uiTHeight),
+      // Bitmap dimensions
+      stWidth = bData.DimGetWidth<size_t>(),
+      stHeight = bData.DimGetHeight<size_t>(),
+      stHeightM1 = stHeight - 1,
+      // Calculate how many tiles we can fit in the image
+      stTotalX = stWidth / stTWidth,
+      stTotalY = stHeight / stTHeight,
+      // Properly clamped tile count value
+      stTotalXWhole = stTotalX * stTWidth,
+      stTotalYWhole = stTotalY * stTHeight,
+      // Calculate size of the bitmask required
+      stBytes = stTWidth * stTHeight / CHAR_BIT;
     // Reserve memory for all the tiles
-    reserve(uiTotalX * uiTotalY);
-    // For each tile
-    for(unsigned int uiY = 0; uiY < uiTotalYWhole; uiY += _uiTHeight)
-      for(unsigned int uiX = 0; uiX < uiTotalXWhole; uiX += _uiTWidth)
+    reserve(stTotalX * stTotalY);
+    // Get source buffer
+    const unsigned char*const ucpS = bData.Ptr<unsigned char>();
+    // If bitmap is reversed?
+    if(iC.IsReversed())
+    { // Get height and width minus one.
+      const size_t stTHeightM1 = stTHeight - 1;
+      // Start iterating rows from the bottom
+      for(size_t stY = stTotalYWhole - stTHeight;
+                 stY < stTotalYWhole;
+                 stY -= stTHeight)
+      { // Iterate columns from the left
+        for(size_t stX = 0; stX < stTotalXWhole; stX += stTWidth)
+        { // Create cleared mask buffer, insert it into list and get ptr to
+          // the memory.
+          unsigned char*const ucpD = emplace(cend(),
+            Memory{ stBytes, true })->Ptr<unsigned char>();
+          // Copy source to buffer
+          for(size_t stTY = stTHeightM1; stTY < stTHeight; --stTY)
+            for(size_t stTX = 0; stTX < stTWidth; ++stTX)
+              // Note that bits are reversed too.
+              Bit::Set2R(ucpD, ((stTHeightM1 - stTY) * stTWidth) + stTX,
+                ucpS, ((stHeightM1 - (stY + stTY)) * stWidth) + (stX + stTX));
+        }
+      }
+    } // Iterate each row from the top
+    else for(size_t stY = 0; stY < stTotalYWhole; stY += stTHeight)
+    { // Iterate each column from the left
+      for(size_t stX = 0; stX < stTotalXWhole; stX += stTWidth)
       { // Create cleared mask buffer, insert it into list and get ptr to
         // the memory.
-        unsigned char*const ucpD = emplace(end(),
+        unsigned char*const ucpD = emplace(cend(),
           Memory{ stBytes, true })->Ptr<unsigned char>();
         // Copy source to buffer
-        for(unsigned int uiTY = 0; uiTY < _uiTHeight; ++uiTY)
-          for(unsigned int uiTX = 0; uiTX < _uiTWidth; ++uiTX)
-            Bit::Set2(ucpD, (uiTY * _uiTWidth) + uiTX, ucpS,
-              ((bData.uiHeight - 1 - (uiY + uiTY)) * bData.uiWidth) +
-                (uiX + uiTX));
-        // Increment size
-        stSize = stSize + stBytes;
+        for(size_t stTY = 0; stTY < stTHeight; ++stTY)
+          for(size_t stTX = 0; stTX < stTWidth; ++stTX)
+            // Note that bits are reversed too.
+            Bit::Set2R(ucpD, (stTY * stTWidth) + stTX, ucpS,
+              ((stHeightM1 - (stY + stTY)) * stWidth) + (stX + stTX));
       }
+    } // Set allocated size
+    stAlloc = stWidth * stHeight / CHAR_BIT;
     // The mask passed in the arguments is usually still allocated by LUA and
     // will still be registered, sp lets put a note in the mask to show that
     // this function has nicked the mask.
-    iC.IdentSet(Format("!MAS!$!", iC.IdentGet()));
+    iC.IdentSet("!MAS!$!", iC.IdentGet());
     // Tell log what we did
-    LW(LH_INFO, "Mask created $ ($x$) tiles from a $x$ bitmask.",
-      size(), _uiTWidth, _uiTHeight, bData.uiWidth, bData.uiHeight);
+    cLog->LogInfoExSafe("Mask created $ ($x$) tiles from a $x$ $ bitmask.",
+      size(), stTWidth, stTHeight, stWidth, stHeight,
+      iC.IsReversed() ? "reversed" : "non-reversed");
     // Set new size and tile size
-    iWidth = static_cast<int>(_uiTWidth);
-    iHeight = static_cast<int>(_uiTHeight);
+    DimSet(static_cast<int>(stTWidth), static_cast<int>(stTHeight));
   }
+  /* -- Get size of all masks ---------------------------------------------- */
+  size_t GetAlloc(void) const { return stAlloc; }
   /* -- Constructor -------------------------------------------------------- */
   Mask(void) :
     /* -- Initialisation of members ---------------------------------------- */
     ICHelperMask{ *cMasks, this },     // Register this object in collector
-    iWidth(0),                         // Uninitialised width
-    iHeight(0),                        // Uninitialised height
-    stSize(0)                          // Uninitialised size
+    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
+    stAlloc(0)                         // Uninitialised allocated size
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Mask);               // Omit copy constructor for safety
 };/* ----------------------------------------------------------------------- */
 END_COLLECTOR(Masks);
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

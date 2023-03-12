@@ -6,10 +6,10 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfCVarDef {                  // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfCVarDef {                  // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfSql;                 // Using sql interface
+using namespace IfSql;                 // Using sql namespace
 /* -- Public typedefs ------------------------------------------------------ */
 BUILD_FLAGS(CVarShow,
   /* ----------------------------------------------------------------------- */
@@ -63,11 +63,11 @@ BUILD_FLAGS(CVarCondition,
   // Do not mark as commit?
   CSC_NOMARKCOMMIT       {0x00000080}
 );/* -- Cvar item class ---------------------------------------------------- */
-class Item :                           // Start of CVar item struct
+class Item :                           // Members initially private
   /* -- Base classes ------------------------------------------------------- */
   public CVarFlags                     // Cvar configuration settings
-{ /* -- Private typedefs ------------------------------------------ */ private:
-  typedef int64_t  ValueIntType;       // When handling integral values
+{ /* -- Private typedefs --------------------------------------------------- */
+  typedef int64_t ValueIntType;        // When handling integral values
   /* -- Private variables -------------------------------------------------- */
   const string   strVar;               // Variable name
   string         strValue;             // Value name
@@ -78,39 +78,39 @@ class Item :                           // Start of CVar item struct
   /* ----------------------------------------------------------------------- */
   void SetTrigger(const CbFunc &cbT) { cbTrigger = cbT; }
   /* ----------------------------------------------------------------------- */
-  bool IsTriggerSet(void) const { return cbTrigger == NoOp; }
+  bool IsTriggerSet(void) const { return GetTrigger() == NoOp; }
   /* ----------------------------------------------------------------------- */
   const string &GetVar(void) const { return strVar; }
   /* ----------------------------------------------------------------------- */
-  const string &GetDefaultValue(void) const { return strDefValue; }
+  const string &GetDefValue(void) const { return strDefValue; }
+  /* ----------------------------------------------------------------------- */
+  size_t GetDefLength(void) const { return GetDefValue().length(); }
   /* ----------------------------------------------------------------------- */
   string &GetModifyableValue(void) { return strValue; }
   /* ----------------------------------------------------------------------- */
   const string &GetValue(void) const { return strValue; }
   /* ----------------------------------------------------------------------- */
-  size_t GetValueLength(void) const { return strValue.length(); }
+  size_t GetValueLength(void) const { return GetValue().length(); }
   /* ----------------------------------------------------------------------- */
-  size_t GetDefaultLength(void) const { return strDefValue.length(); }
+  void PruneValue(void) { GetModifyableValue().shrink_to_fit(); }
   /* ----------------------------------------------------------------------- */
-  void PruneValue(void) { strValue.shrink_to_fit(); }
-  /* ----------------------------------------------------------------------- */
-  bool IsValueUnset(void) const { return strValue.empty(); }
+  bool IsValueUnset(void) const { return GetValue().empty(); }
   /* ----------------------------------------------------------------------- */
   bool IsValueSet(void) const { return !IsValueUnset(); }
   /* ----------------------------------------------------------------------- */
-  bool IsValueChanged(void) const { return strValue != strDefValue; }
+  bool IsValueChanged(void) const { return GetValue() != GetDefValue(); }
   /* ----------------------------------------------------------------------- */
   bool IsValueUnchanged(void) const { return !IsValueChanged(); }
   /* ----------------------------------------------------------------------- */
-  void SetDefault(void) { strValue = strDefValue; }
+  void SetDefault(void) { strValue = GetDefValue(); }
   /* ----------------------------------------------------------------------- */
-  void SetDefaultValue(const string &strN) { strDefValue = strN; }
+  void SetDefValue(const string &strN) { strDefValue = strN; }
   /* ----------------------------------------------------------------------- */
-  void SetDefaultValue(string &&strN) { strDefValue = move(strN); }
+  void SetDefValue(string &&strN) { strDefValue = std::move(strN); }
   /* ----------------------------------------------------------------------- */
   void SetValue(const string &strV) { strValue = strV; }
   /* ----------------------------------------------------------------------- */
-  void SetValue(string &&strV) { strValue = move(strV); }
+  void SetValue(string &&strV) { strValue = std::move(strV); }
   /* ----------------------------------------------------------------------- */
   const string Protect(void) const
   { // If confidential, return confidential
@@ -147,7 +147,7 @@ class Item :                           // Start of CVar item struct
   }
   /* ----------------------------------------------------------------------- */
   bool Commit(const DataConst &dcVal)
-    { return cSql->CVarCommitBlob(strVar, dcVal); }
+    { return cSql->CVarCommitBlob(GetVar(), dcVal); }
   /* --------------------------------------------------------------------- */
   enum CommitResult                    // Result to a commit request
   { /* --------------------------------------------------------------------- */
@@ -189,7 +189,7 @@ class Item :                           // Start of CVar item struct
       } // exception occured
       catch(const exception &e)
       { // Log exception
-        LW(LH_ERROR, "CVars encrypt exception: $", e.what());
+        cLog->LogErrorExSafe("CVars encrypt exception: $", e.what());
         // Capture exceptions again
         try
         { // Try raw encoder and return string
@@ -197,7 +197,7 @@ class Item :                           // Start of CVar item struct
         } // exception occured again?
         catch(const exception &e2)
         { // Log exception and return failure
-          LW(LH_ERROR, "CVars store exception: $", e2.what());
+          cLog->LogErrorExSafe("CVars store exception: $", e2.what());
           return CR_FAIL_ENCRYPT;
         } // Success
       } // If we are to compress
@@ -207,7 +207,7 @@ class Item :                           // Start of CVar item struct
       } // exception occured
       catch(const exception &e)
       { // Log exception
-        LW(LH_ERROR, "CVars compress exception: $", e.what());
+        cLog->LogErrorExSafe("CVars compress exception: $", e.what());
         // Capture exceptions again
         try
         { // Try raw encoder and return string
@@ -215,7 +215,7 @@ class Item :                           // Start of CVar item struct
         } // exception occured again?
         catch(const exception &e2)
         { // Log exception and return failure
-          LW(LH_ERROR, "CVars store exception: $", e2.what());
+          cLog->LogErrorExSafe("CVars store exception: $", e2.what());
           return CR_FAIL_COMPRESS;
         } // Success
       } // Commit the unencrypted cvar and return if failed
@@ -257,23 +257,27 @@ class Item :                           // Start of CVar item struct
       return CVS_OKNOTCHANGED;
     // Result storage
     CVarReturn cbrResult;
-    // If it is a lua cvar?
+    // Mutex unlock/lock helper class to temporarily unlock and then relock
+    // a mutex class.
+    class MutexRelockHelper                // Members initially private
+    { mutex &mMutex;                       // Reference to mutex to use
+      public: explicit MutexRelockHelper(mutex &mMutexRef) : mMutex(mMutexRef)
+        { mMutex.unlock(); }
+      ~MutexRelockHelper(void) { mMutex.lock(); }
+    }; // If it is a lua cvar?
     if(FlagIsSet(TLUA))
     { // Lock the cvar from being unregistered
       FlagSet(LOCKED);
       // If this is a safe call? Capture exceptions so we can clean up
       if(scFlags.FlagIsSet(CSC_SAFECALL)) try
-      { // Unlock mutex so cvars can continue to be manipulated
-        mLock.unlock();
+      { // Temporarily unlock mutex so cvars can continue to be manipulated
+        const MutexRelockHelper mrhUnlockRelock{ mLock };
         // Call the trigger and capture the result of the callback
-        cbrResult = cbTrigger(*this, strNValue);
+        cbrResult = GetTrigger()(*this, strNValue);
         // Relock the mutex so further changes can be made
-        mLock.lock();
       } // exception occured
       catch(const exception &E)
-      { // Relock the mutex so further changes can be made
-        mLock.lock();
-        // Remove the lock on the cvar
+      { // Remove the lock on the cvar
         FlagClear(LOCKED);
         // Handle exception and return error if no exception
         return HandleCallbackException(E.what(), scFlags, strNValue,
@@ -283,7 +287,7 @@ class Item :                           // Start of CVar item struct
       { // Lock the cvar from being unregistered
         FlagSet(LOCKED);
         // Call the trigger and capture the result of the callback
-        cbrResult = cbTrigger(*this, strNValue);
+        cbrResult = GetTrigger()(*this, strNValue);
       } // exception occured
       catch(const exception &E)
       { // Remove the lock on the cvar
@@ -295,23 +299,19 @@ class Item :                           // Start of CVar item struct
       FlagClear(LOCKED);
     } // This is not a LUA callback, so if this is a safecall?
     else if(scFlags.FlagIsSet(CSC_SAFECALL)) try
-    { // Unlock mutex so cvars can continue to be manipulated
-      mLock.unlock();
+    { // Temporarily unlock mutex so cvars can continue to be manipulated
+      const MutexRelockHelper mrhUnlockRelock{ mLock };
       // Call the trigger and capture the result of the callback
-      cbrResult = cbTrigger(*this, strNValue);
-      // Relock the mutex so further changes can be made
-      mLock.lock();
+      cbrResult = GetTrigger()(*this, strNValue);
     } // exception occured
     catch(const exception &E)
-    { // Relock the mutex so further changes can be made
-      mLock.lock();
-      // Handle exception and return error if no exception
+    { // Handle exception and return error if no exception
       return HandleCallbackException(E.what(), scFlags, strNValue,
         strCBError);
     } // Lua callback and not a safe call. Capture exceptions so we can clean
     else try
     { // Call the trigger and capture the result of the callback
-      cbrResult = cbTrigger(*this, strNValue);
+      cbrResult = GetTrigger()(*this, strNValue);
     } // exception occured
     catch(const exception &E)
     { // Handle exception and return error if no exception
@@ -363,7 +363,7 @@ class Item :                           // Start of CVar item struct
       } // Remove commit if set
       else if(FlagIsSet(COMMIT)) FlagClear(COMMIT);
     } // Log progress and return success
-    LW(LH_DEBUG, "CVars $ '$' to $.",
+    cLog->LogDebugExSafe("CVars $ '$' to $.",
       scFlags.FlagIsSet(CSC_NEWCVAR) ? "registered" : "set",
       GetVar(), Protect());
     // Return success
@@ -518,11 +518,15 @@ class Item :                           // Start of CVar item struct
   /* -- Move constructor --------------------------------------------------- */
   Item(Item &&ciOther) :               // Other item
     /* -- Initialisation of members ---------------------------------------- */
-    CVarFlags{ ciOther },
-    strVar{ move(ciOther.GetVar()) },
-    strValue{ move(ciOther.GetValue()) },
-    strDefValue{ move(ciOther.GetDefaultValue()) },
-    cbTrigger{ move(ciOther.GetTrigger()) }
+    CVarFlags{ ciOther },              // Copy flags over
+    strVar{                            // Variable
+      std::move(ciOther.GetVar()) },        // Move variable
+    strValue{                          // Value
+      std::move(ciOther.GetValue()) },      // Move value
+    strDefValue{                       // Default value
+      std::move(ciOther.GetDefValue()) },   // Move default value
+    cbTrigger{                         // Trigger
+      std::move(ciOther.GetTrigger()) }     // Move trigger
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor -------------------------------------------------------- */
@@ -541,6 +545,6 @@ class Item :                           // Start of CVar item struct
   /* -- Other -------------------------------------------------------------- */
   DELETECOPYCTORS(Item);               // No copy constructor
 };/* ----------------------------------------------------------------------- */
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

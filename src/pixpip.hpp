@@ -82,12 +82,12 @@ class SysPipe :
       iResult = kill(pPid, SIGTERM);
       if(iResult)
       { // Write failure to log
-        LW(LH_WARNING, "System failed to send SIGTERM to pid $: $!", pPid,
-          LocalError());
+        cLog->LogWarningExSafe("System failed to send SIGTERM to pid $: $!",
+          pPid, LocalError());
       } // Kill succeeded?
       else
       { // Write success to log
-        LW(LH_DEBUG, "System sent SIGTERM to pid $ with result $<$$>.",
+        cLog->LogDebugExSafe("System sent SIGTERM to pid $ with result $<$$>.",
           pPid, SysPipeBaseGetStatus(), hex, SysPipeBaseGetStatus());
       } // Wait for the pid to terminate
       do pPid = waitpid(pPid, &iResult, 0);
@@ -95,7 +95,7 @@ class SysPipe :
       // Write error if there is one
       if(pPid == -1)
       { // Write reason to log
-        LW(LH_WARNING, "System failed to wait for pid $: $!", pPid,
+        cLog->LogWarningExSafe("System failed to wait for pid $: $!", pPid,
           LocalError());
       } // Set return value
       else SysPipeBaseSetStatus(static_cast<int64_t>(WEXITSTATUS(iResult)));
@@ -132,7 +132,7 @@ class SysPipe :
     } // De-init existing process
     Finish();
     // Show command and arguments
-    LW(LH_INFO, "System opening pipe to '$' with $ args '$'.",
+    cLog->LogInfoExSafe("System opening pipe to '$' with $ args '$'.",
       strApp, aList.size(), strCmdLine);
     // Generate child-to-parent handles and throw error on failure
     if(!haChildToParent.GenerateHandles())
@@ -172,9 +172,9 @@ class SysPipe :
         pPid = pForkedPid;
         uiPid = static_cast<unsigned int>(pForkedPid);
         // Store name of executable
-        IdentSet(move(strApp));
+        IdentSet(std::move(strApp));
         // Report pid
-        LW(LH_INFO, "System forked '$' to pid $.", strApp, pPid);
+        cLog->LogInfoExSafe("System forked '$' to pid $.", strApp, pPid);
         // Done
         break;
       } // Error? Bail out
@@ -215,7 +215,8 @@ class SysPipe :
     { // Success?
       default:
         // Report read
-        LW(LH_DEBUG, "System fork at pid $ read $ bytes.", pPid, stRead);
+        cLog->LogDebugExSafe("System fork at pid $ read $ bytes.",
+          pPid, stRead);
         // Return bytes
         return stRead;
       // Error? Report it!
@@ -243,7 +244,8 @@ class SysPipe :
     { // Success?
       default:
         // Report write
-        LW(LH_DEBUG, "System fork at pid $ wrote $ bytes.", pPid, stWritten);
+        cLog->LogDebugExSafe("System fork at pid $ wrote $ bytes.",
+          pPid, stWritten);
         // Return bytes written
         return stWritten;
       // Error? Report it!

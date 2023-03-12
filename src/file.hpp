@@ -6,10 +6,11 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfFile {                     // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfFile {                     // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfFStream;             // Using fstream interface
+using namespace IfFStream;             // Using fstream namespace
+using namespace IfCollector;           // Using collector namespace
 /* -- File collector and member class -------------------------------------- */
 BEGIN_COLLECTORDUO(Files, File, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
@@ -18,13 +19,14 @@ BEGIN_COLLECTORDUO(Files, File, CLHelperUnsafe, ICHelperUnsafe),
 { /* -- Basic constructor with no init ----------------------------- */ public:
   File(void) :
     /* -- Initialisation of members ---------------------------------------- */
-    ICHelperFile{ *cFiles, this }      // Register the object in collector
+    ICHelperFile{ *cFiles, this },     // Register the object in collector
+    IdentCSlave{ cParent.CtrNext() }   // Initialise identification number
     /* --------------------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(File);               // Disable copy constructor and operator
 };/* ----------------------------------------------------------------------- */
 END_COLLECTOR(Files);                  // Finish global Files collector
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

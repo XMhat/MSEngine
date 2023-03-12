@@ -48,15 +48,15 @@ local function InitBook(bFromInGame)
   local function OnLoadResources(aResources)
     -- Set texture and setup tiles
     local texBook, BookInput = aResources[1].H, nil;
-    texBook:CreateTile(0, 0, 304, 200);
-    texBook:CreateTile(457, 0, 512, 200);
+    texBook:TileA(0, 0, 304, 200);
+    texBook:TileA(457, 0, 512, 200);
     -- Get lobby texture and setup background tile. This will be nil if loading
     -- from in-game so it doesn't matter. Already handled.
     local texLobby;
     if not bFromInGame then
       texLobby = aResources[2].H;
-      texLobby:TrimTList(1);
-      texLobby:SetTile(0, 0, 272, 512, 512);
+      texLobby:TileSTC(1);
+      texLobby:TileS(0, 0, 272, 512, 512);
     -- Play music as we're coming from in game and save position
     else PlayMusic(aResources[2].H, nil, 1) end;
     -- Some vars

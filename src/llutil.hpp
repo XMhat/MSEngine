@@ -17,9 +17,9 @@
 /* ========================================================================= */
 LLNAMESPACEBEGIN(Util)                 // Util namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfClock;               // Using clock interface
-using namespace IfGlFW;                // Using glfw interface
-using namespace IfUuId;                // Using uuid interface
+using namespace IfClock;               // Using clock namespace
+using namespace IfGlFW;                // Using glfw namespace
+using namespace IfUuId;                // Using uuid namespace
 /* ========================================================================= */
 /* ######################################################################### */
 /* ========================================================================= */
@@ -31,7 +31,7 @@ using namespace IfUuId;                // Using uuid interface
 // ? Note that time will be in local time format.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(AscTime, 1,
-  LCPUSHXSTR(FormatTimeTT(LCGETINT(STDTIMET, 1, "Timestamp"))));
+  LCPUSHXSTR(FormatTimeTT(LCGETINT(StdTimeT, 1, "Timestamp"))));
 /* ========================================================================= */
 // $ Util.AscTimeUTC
 // > Timestamp:integer=The timestamp to convert to string
@@ -41,7 +41,7 @@ LLFUNCEX(AscTime, 1,
 // ? Note that time will be in UTC time format.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(AscTimeUTC, 1,
-  LCPUSHXSTR(FormatTimeTTUTC(LCGETINT(STDTIMET, 1, "Timestamp"))));
+  LCPUSHXSTR(FormatTimeTTUTC(LCGETINT(StdTimeT, 1, "Timestamp"))));
 /* ========================================================================= */
 // $ Util.AscNTime
 // < Date:string=The timestamp converted to a string.
@@ -68,7 +68,7 @@ LLFUNCEX(AscNTimeUTC, 1, LCPUSHXSTR(cmSys.FormatTimeUTC()));
 // ? will be in local time format.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(FormatTime, 1, LCPUSHXSTR(FormatTimeTT(
-  LCGETINT(STDTIMET, 1, "Timestamp"), LCGETSTRING(char, 2, "Format"))));
+  LCGETINT(StdTimeT, 1, "Timestamp"), LCGETSTRING(char, 2, "Format"))));
 /* ========================================================================= */
 // $ Util.FormatTimeUTC
 // > Timestamp:integer=The timestamp to convert to string
@@ -79,7 +79,7 @@ LLFUNCEX(FormatTime, 1, LCPUSHXSTR(FormatTimeTT(
 // ? will be in UTC time format.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(FormatTimeUTC, 1, LCPUSHXSTR(FormatTimeTTUTC(
-  LCGETINT(STDTIMET, 1, "Timestamp"), LCGETSTRING(char, 2, "Format"))));
+  LCGETINT(StdTimeT, 1, "Timestamp"), LCGETSTRING(char, 2, "Format"))));
 /* ========================================================================= */
 // $ Util.FormatNTime
 // > Format:stringr=The strftime format string.
@@ -291,7 +291,7 @@ LLFUNCEX(Position, 1,
 // ? human readable string showing the time duration between the two.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(RelTime, 1,
-  LCPUSHXSTR(cmSys.ToDurationRel(LCGETINT(STDTIMET, 1, "Timestamp"))));
+  LCPUSHXSTR(cmSys.ToDurationRel(LCGETINT(StdTimeT, 1, "Timestamp"))));
 /* ========================================================================= */
 // $ Util.RelTimeEx
 // > Seconds:integer=The unix timestamp.
@@ -303,7 +303,7 @@ LLFUNCEX(RelTime, 1,
 // ? specified number of components to show.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(RelTimeEx, 1, LCPUSHXSTR(cmSys.ToDurationRel(
-  LCGETINT(STDTIMET,   1, "Timestamp"),
+  LCGETINT(StdTimeT,   1, "Timestamp"),
   LCGETINT(unsigned int, 2, "Components"))));
 /* ========================================================================= */
 // $ Util.Pluralise
@@ -402,7 +402,7 @@ LLFUNCEX(Duration, 1, LCPUSHXSTR(ToShortDuration(
 // ? string in the format of e.g. 0 years 0 weeks 0 days 0 hours 0 mins 0 secs.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(LDuration, 1,
-  LCPUSHXSTR(ToDuration(LCGETINT(STDTIMET, 1, "Seconds"))));
+  LCPUSHXSTR(ToDuration(LCGETINT(StdTimeT, 1, "Seconds"))));
 /* ========================================================================= */
 // $ Util.LDurationEx
 // > Seconds:integer=The number of seconds.
@@ -412,7 +412,7 @@ LLFUNCEX(LDuration, 1,
 // ? string in the format of e.g. 0 years 0 weeks 0 days 0 hours 0 mins 0 secs.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(LDurationEx, 1, LCPUSHXSTR(ToDuration(
-  LCGETINT(STDTIMET,   1, "Seconds"),
+  LCGETINT(StdTimeT,   1, "Seconds"),
   LCGETINT(unsigned int, 2, "Components"))));
 /* ========================================================================= */
 // $ Util.GetRatio
@@ -454,14 +454,14 @@ LLFUNCEX(ClampInt, 1, LCPUSHINT(Clamp(
 // > Text:string=The text to copy.
 // ? Stores the specified text into the operating system's clipboard.
 /* ------------------------------------------------------------------------- */
-LLFUNC(ClipSet, cGlFW->SetClipboard(LCGETSTRING(char, 1, "Text")));
+LLFUNC(ClipSet, cGlFW->WinSetClipboard(LCGETSTRING(char, 1, "String")));
 /* ========================================================================= */
 // $ Util.ClipGet
 // < Text:string=The text in the clipboard.
 // ? Retrieves text from the operating systems clipboard. Returns a blank
 // ? Returns a blank string if there is no string in the clipboard.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ClipGet, 1, LCPUSHSTR(cGlFW->GetClipboard()));
+LLFUNCEX(ClipGet, 1, LCPUSHSTR(cGlFW->WinGetClipboard()));
 /* ========================================================================= */
 // $ Util.Replace
 // > String:string=The string to search from

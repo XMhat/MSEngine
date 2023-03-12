@@ -6,10 +6,10 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfFbo {                      // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfFbo {                      // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfUtil;                // Using util interface
+using namespace IfUtil;                // Using util namespace
 /* == Fbo item class ======================================================= */
 class FboItem
 { /* -- Typedefs for types we need --------------------------------- */ public:
@@ -199,13 +199,13 @@ class FboItem
   void SetDefaults(void) { sBuffer = GetDefaultLookup(); }
   /* -- Set colour components (0xAARRGGBB) --------------------------------- */
   void SetQuadRGBAInt(const unsigned int uiC)
-    { SetQuadRGBA(Normalise<GLfloat,16>(uiC), Normalise<GLfloat, 8>(uiC),
-                  Normalise<GLfloat>(uiC), Normalise<GLfloat,24>(uiC)); }
+    { SetQuadRGBA(NormaliseEx<GLfloat,16>(uiC), NormaliseEx<GLfloat, 8>(uiC),
+                  NormaliseEx<GLfloat>(uiC), NormaliseEx<GLfloat,24>(uiC)); }
   void SetQuadRGB(const GLfloat fR, const GLfloat fG, const GLfloat fB)
     { SetQuadRed(fR); SetQuadGreen(fG); SetQuadBlue(fB); }
   void SetQuadRGBInt(const unsigned int uiC)
-    { SetQuadRGB(Normalise<GLfloat,16>(uiC), Normalise<GLfloat,8>(uiC),
-                 Normalise<GLfloat>(uiC)); }
+    { SetQuadRGB(NormaliseEx<GLfloat,16>(uiC), NormaliseEx<GLfloat,8>(uiC),
+                 NormaliseEx<GLfloat>(uiC)); }
   /* -- Update red component ----------------------------------------------- */
   void SetQuadRed(const GLfloat fRed)
   { // Get references to triangle colour data and modify the red values
@@ -244,6 +244,6 @@ class FboItem
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(FboItem);
 };/* ----------------------------------------------------------------------- */
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

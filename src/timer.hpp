@@ -6,11 +6,11 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfTimer {                    // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfTimer {                    // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfClock;               // Using util interface
-using namespace IfCVarDef;             // Using cvardef interface
+using namespace IfClock;               // Using util namespace
+using namespace IfCVarDef;             // Using cvardef namespace
 /* -- Variables ------------------------------------------------------------ */
 static ClkTimePoint ctStart{ milliseconds{0} },    // Start of frame time
                     ctTimeOut{ ctStart },          // Time script times out
@@ -41,11 +41,7 @@ static void TimerUpdateDelay(const unsigned int uiNewDelay)
   { cdDelay = milliseconds{ uiNewDelay }; }
 /* -- Forces a delay internally if delay is disabled --------------------- */
 static void TimerSetDelayIfZero(void)
-{ // Return if theres a delay
-  if(cdDelay == seconds(0)) return;
-  // Update delay timer
-  TimerUpdateDelay(1);
-}
+  { if(cdDelay != seconds(0)) TimerUpdateDelay(1); }
 /* -- Restore saved persistent delay timer --------------------------------- */
 static void TimerRestoreDelay(void) { cdDelay = cdDelayPst; }
 /* -- TimerSetDelay -------------------------------------------------------- */
@@ -145,6 +141,6 @@ static uint64_t TimerGetTicks(void) { return qTicks; }
 static double TimerGetDelay(void) { return ClockDurationToDouble(cdDelay); }
 static double TimerGetStart(void)
   { return ClockDurationToDouble(ctStart.time_since_epoch()); }
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

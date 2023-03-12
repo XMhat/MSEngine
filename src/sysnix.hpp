@@ -23,9 +23,9 @@
 #include "pixmap.hpp"                  // File mapping class
 #include "pixpip.hpp"                  // Process output piping class
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfGlFW;                // Using glfw interface
-using namespace IfVars;                // Using vars interface
-using namespace IfFStream;             // Using fstream interface
+using namespace IfGlFW;                // Using glfw namespace
+using namespace IfVars;                // Using vars namespace
+using namespace IfFStream;             // Using fstream namespace
 /* == System intialisation helper ========================================== */
 /* ######################################################################### */
 /* ## Because we want to try and statically init const data as much as    ## */
@@ -153,7 +153,7 @@ class SysCore :
     if(dlinfo(vpModule, RTLD_DI_LINKMAP, &lmData) || !lmData)
       XCL("Failed to read info about shared object!", "File", cpAltName);
     // Get full pathname of file
-    return move(PathSplit{ lmData->l_name, true }.strFull);
+    return std::move(PathSplit{ lmData->l_name, true }.strFull);
   }
   /* ----------------------------------------------------------------------- */
   void UpdateCPUUsageData(void)
@@ -231,13 +231,13 @@ class SysCore :
   /* -- Get executable size from header (N/A on Linux) --------------------- */
   static size_t GetExeSize(const string &strFile)
   { // Machine byte order check
-#   if defined(LITTLE_ENDIAN)
-#     define ELFDATANATIVE ELFDATA2LSB
-#   elif defined(BIG_ENDIAN)
-#     define ELFDATANATIVE ELFDATA2MSB
-#   else
-#     error Unknown Endianness!
-#   endif
+#if defined(LITTLE_ENDIAN)
+# define ELFDATANATIVE ELFDATA2LSB
+#elif defined(BIG_ENDIAN)
+# define ELFDATANATIVE ELFDATA2MSB
+#else
+# error Unknown Endianness!
+#endif
     // Open exe file and return on error
     if(FStream fExe{ strFile, FStream::FM_R_B })
     { // Read in the header
@@ -318,7 +318,7 @@ class SysCore :
     } // Failed to open executable file to read
     else XCL("Failed to open executable!", "File", strFile);
     // Done with this macro
-#   undef ELFDATANATIVE
+#undef ELFDATANATIVE
   }
   /* -- Get executable file name ------------------------------------------- */
   const string GetExeName(void)
@@ -336,7 +336,7 @@ class SysCore :
     SysModList mlData;
     mlData.emplace(make_pair(static_cast<size_t>(0),
       SysModule{ GetExeName(), VER_MAJOR, VER_MINOR, VER_BUILD, VER_REV,
-        VER_AUTHOR, VER_NAME, move(strVersion), VER_STR }));
+        VER_AUTHOR, VER_NAME, std::move(strVersion), VER_STR }));
     // Module list which includes the executable module
     return mlData;
   }
@@ -366,7 +366,8 @@ class SysCore :
       tVersion.empty()    ? 0 : ToNumber<unsigned int>(tVersion[0]),
       tVersion.size() < 2 ? 0 : ToNumber<unsigned int>(tVersion[1]),
       tVersion.size() < 3 ? 0 : ToNumber<unsigned int>(tVersion[2]),
-      sizeof(void*)*8, move(strCode), DetectElevation(), false, 0, false };
+      sizeof(void*)*8, std::move(strCode), DetectElevation(), false, 0,
+      false };
   }
   /* ----------------------------------------------------------------------- */
   ExeData GetExecutableData(void) { return { 0, 0, false, false }; }
@@ -381,32 +382,32 @@ class SysCore :
         VarsConst vVars(strFile, GetTextFormat(strFile), ':');
         if(!vVars.empty())
         { // Read variables
-          string strCpuId{ move(vVars["model name"]) },
-                 strSpeed{ move(vVars["cpu MHz"]) },
-                 strVendor{ move(vVars["vendor_id"]) },
-                 strFamily{ move(vVars["cpu family"]) },
-                 strModel{ move(vVars["model"]) },
-                 strStepping{ move(vVars["stepping"]) };
+          string strCpuId{ std::move(vVars["model name"]) },
+                 strSpeed{ std::move(vVars["cpu MHz"]) },
+                 strVendor{ std::move(vVars["vendor_id"]) },
+                 strFamily{ std::move(vVars["cpu family"]) },
+                 strModel{ std::move(vVars["model"]) },
+                 strStepping{ std::move(vVars["stepping"]) };
           // Return default data we could not read
-          return { strVendor.empty() ? "Unknown" : move(strVendor),
-                   strCpuId.empty() ? "Unknown" : move(strCpuId),
+          return { strVendor.empty() ? "Unknown" : std::move(strVendor),
+                   strCpuId.empty() ? "Unknown" : std::move(strCpuId),
                    strFamily.empty() &&
                    strModel.empty() &&
                    strStepping.empty() ? "Unknown" :
-                     move(Format("$ Family $ Model $ Stepping $",
-                       move(strVendor), move(strFamily),
-                       move(strModel), move(strStepping))),
+                     std::move(Format("$ Family $ Model $ Stepping $",
+                       std::move(strVendor), std::move(strFamily),
+                       std::move(strModel), std::move(strStepping))),
                    thread::hardware_concurrency(),
                    strSpeed.empty() ? 0 : ToNumber<unsigned int>(strSpeed),
                    0, 0 };
         } // Failed to parse cpu variables
-        else LW(LH_WARNING, "Could not parse cpu information file!");
+        else cLog->LogWarningSafe("Could not parse cpu information file!");
       } // Failed to read cpu info failed
-      else LW(LH_WARNING, "Could not read cpu information file: $!",
+      else cLog->LogWarningExSafe("Could not read cpu information file: $!",
         LocalError());
     } // Failed to open cpu info file
-    else LW(LH_WARNING, "Could not open cpu information file: $!",
-      LocalError())
+    else cLog->LogWarningExSafe("Could not open cpu information file: $!",
+      LocalError());
     // Return default data we could not read
     return { "Unknown", "Unknown", "Unknown",
       thread::hardware_concurrency(), 0, 0, 0 };

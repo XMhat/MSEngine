@@ -6,10 +6,10 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfLuaRef {                   // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfLuaRef {                   // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfLuaUtil;             // Using luautil interface
+using namespace IfLuaUtil;             // Using luautil namespace
 /* ------------------------------------------------------------------------- */
 template<size_t Refs=1>class LuaRef    // Lua easy reference class
 { /* -- Private variables --------------------------------------- */ protected:
@@ -39,26 +39,30 @@ template<size_t Refs=1>class LuaRef    // Lua easy reference class
   }
   /* -- Set new state ------------------------------------------------------ */
   void LuaRefSetState(lua_State*const lS=nullptr) { lsState = lS; }
-  /* -- Get the reference ------------------------------------------ */ public:
-  lua_State *LuaRefGetState(void) const
-    { return lsState; }
-  int LuaRefGetId(const size_t stId=0) const
-    { return iReferences[stId]; }
+  /* -- Get the state ---------------------------------------------- */ public:
+  lua_State *LuaRefGetState(void) const { return lsState; }
+  /* -- Returns the reference at the specified index ----------------------- */
+  int LuaRefGetId(const size_t stId=0) const { return iReferences[stId]; }
+  /* -- Returns the function at the specified index ------------------------ */
   bool LuaRefGetFunc(const size_t stId=0) const
     { return GetReferencedFunction(LuaRefGetState(), LuaRefGetId(stId)); }
+  /* -- Returns the userdata at the specified index ------------------------ */
   bool LuaRefGetUData(const size_t stId=0) const
     { return GetReferencedUserdata(LuaRefGetState(), LuaRefGetId(stId)); }
+  /* -- Returns the reference at the specified index ----------------------- */
   void LuaRefGet(const size_t stId=0) const
     { return GetReference(LuaRefGetState(), LuaRefGetId(stId)); }
+  /* -- Returns if the state is equal to the specified state --------------- */
   bool LuaRefStateIsEqual(const lua_State*const lS) const
     { return LuaRefGetState() == lS; }
+  /* -- Returns if the state is NOT equal to the specified state ----------- */
   bool LuaRefStateIsNotEqual(const lua_State*const lS) const
     { return !LuaRefStateIsEqual(lS); }
-  bool LuaRefStateIsSet(void) const
-    { return LuaRefStateIsNotEqual(nullptr); }
-  bool LuaRefStateIsNotSet(void) const
-    { return !LuaRefStateIsSet(); }
-  /* ----------------------------------------------------------------------- */
+  /* -- Returns if the state is set ---------------------------------------- */
+  bool LuaRefStateIsSet(void) const { return LuaRefStateIsNotEqual(nullptr); }
+  /* -- Returns if the state is NOT set ------------------------------------ */
+  bool LuaRefStateIsNotSet(void) const { return !LuaRefStateIsSet(); }
+  /* -- Returns if the specified reference is set -------------------------- */
   bool LuaRefIsSet(const size_t stId=0) const
     { return LuaRefStateIsSet() && LuaRefGetId(stId) != LUA_REFNIL; }
   /* -- De-initialise the reference ---------------------------------------- */
@@ -113,7 +117,9 @@ template<size_t Refs=1>class LuaRef    // Lua easy reference class
   { // Done if no state
     if(LuaRefStateIsNotSet()) return;
     // Delete references back to front
-    for(auto itRef{iReferences.rbegin()}; itRef != iReferences.rend(); ++itRef)
+    for(auto itRef{ iReferences.rbegin() };
+             itRef != iReferences.rend();
+           ++itRef)
     { // Get reference and ignore if reference not set
       const int iReference = *itRef;
       if(iReference == LUA_REFNIL) continue;
@@ -124,5 +130,5 @@ template<size_t Refs=1>class LuaRef    // Lua easy reference class
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(LuaRef);             // Omit copy constructor for safety
 };/* -- End of module namespace -------------------------------------------- */
-};                                     // End of interface
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

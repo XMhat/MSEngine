@@ -9,8 +9,8 @@
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* == Windows Registry Class =============================================== */
-class SysReg                           // Allow access to windows registry
-{ /* -------------------------------------------------------------- */ private:
+class SysReg                           // Members initially private
+{ /* ----------------------------------------------------------------------- */
   HKEY             hkKey;              // Key handle
   /* -- Return handle ---------------------------------------------- */ public:
   HKEY GetHandle(void) const { return hkKey; }

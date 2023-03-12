@@ -6,11 +6,11 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfSocket {                   // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfSocket {                   // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfCert;                // Using certificates interface
-using namespace IfIdent;               // Using identifier interface
+using namespace IfCert;                // Using certificates namespace
+using namespace IfIdent;               // Using identifier namespace
 /* -- Connection flags ----------------------------------------------------- */
 BUILD_SECURE_FLAGS(Socket,
   /* ----------------------------------------------------------------------- */
@@ -58,20 +58,11 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   /* binary text because it is impossible for the http server to return      */
   /* header key names in binary! C++ and LUA can still store keys in binary  */
   /* as well so this should be safe! --------------------------------------- */
-  #define SK_VAR_REQ            "\001" // Registry key name for request data
-  #define SK_VAR_BODY           "\002" // " for http body data
-  #define SK_VAR_PROTO          "\003" // " for http protocol data
-  #define SK_VAR_CODE           "\004" // " for http status code data
-  #define SK_VAR_METHOD         "\005" // " for http method string
-  /* -- Logging helpers ---------------------------------------------------- */
-  #define SLPARAMS(t,...) \
-    "Socket $:$$$:$ " t, GetThreadId(), hex, FlagGet(), dec, \
-      GetAddressAndPort(), ## __VA_ARGS__
-  #define SLNS(l,t,...) LW(l, SLPARAMS(t, ## __VA_ARGS__));
-  #define SL(l,t,...) \
-    { if(cLog->HasLevel(l)) \
-      { const LockGuard lgSocketSync(mMutex); \
-        cLog->WriteStringSafe(l, Format(SLPARAMS(t, ## __VA_ARGS__))); } }
+#define SK_VAR_REQ              "\001" // Registry key name for request data
+#define SK_VAR_BODY             "\002" // " for http body data
+#define SK_VAR_PROTO            "\003" // " for http protocol data
+#define SK_VAR_CODE             "\004" // " for http status code data
+#define SK_VAR_METHOD           "\005" // " for http method string
   /* ----------------------------------------------------------------------- */
   struct Packet                        // Connection packet
   { /* --------------------------------------------------------------------- */
@@ -116,16 +107,41 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
                    duWrite,            // Time socket was last written to
                    duDisconnect,       // Time socket was disconnecting
                    duDisconnected;     // Time socket was disconnected
+  /* -- Do internal log ---------------------------------------------------- */
+  template<typename... VarArgs>void SocketLog(const LHLevel lhLevel,
+    const char*const cpFormat, const VarArgs &...vaArgs)
+  { // Write formatted string
+    cLog->LogExSafe(lhLevel, "Socket $:$$$:$ $", CtrGet(), hex, FlagGet(),
+      dec, GetAddressAndPort(), Format(cpFormat, vaArgs...));
+  }
+  /* -- Internal log ------------------------------------------------------- */
+  template<typename... VarArgs>void SocketLogSafe(const LHLevel lhLevel,
+    const char*const cpFormat, const VarArgs &...vaArgs)
+  { // Return if we don't have this level
+    if(cLog->NotHasLevel(lhLevel)) return;
+    // Synchronise access to socket data while we log details
+    const LockGuard lgSocketSync{ mMutex };
+    // Write formatted string
+    SocketLog(lhLevel, cpFormat, vaArgs...);
+  }
+  /* -- Internal log ------------------------------------------------------- */
+  template<typename... VarArgs>void SocketLogUnsafe(const LHLevel lhLevel,
+    const char*const cpFormat, const VarArgs &...vaArgs)
+  { // Return if we don't have this level
+    if(cLog->NotHasLevel(lhLevel)) return;
+    // Write formatted string
+    SocketLog(lhLevel, cpFormat, vaArgs...);
+  }
   /* -- Initialise static error (no openssl error) ------------------------- */
   int SetErrorStatic(const string &strReason, const bool bSet)
   { // Show reason in log
-    SLNS(LH_WARNING, "$", strReason);
+    SocketLogUnsafe(LH_WARNING, "$", strReason);
     // Forget any error if disconnecting or disconnected
     if(!bSet || IsDisconnectingOrDisconnected()) return -1;
     // Set our own error code
     iError = -1;
     // Set the error as the reason
-    strError = move(strReason);
+    strError = std::move(strReason);
     // Done
     return -1;
   }
@@ -138,7 +154,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     // Set our own error code
     iError = -1;
     // Set the error as the reason
-    SL(LH_WARNING, "$", strError);
+    SocketLogSafe(LH_WARNING, "$", strError);
     // Done
     return -1;
   }
@@ -147,7 +163,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   { // Return if socket was forcefully closed by us
     if(IsDisconnectedByClient()) return -1;
     // Show reason in log
-    SLNS(LH_WARNING, "$", strReason);
+    SocketLogUnsafe(LH_WARNING, "$", strReason);
     // Forget any error if disconnecting or disconnected or error was already
     // set to aborted code?
     if(IsDisconnectingOrDisconnected()) return -1;
@@ -180,7 +196,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
         // Free unused memory since the logevity of this value can be a while
         strError.shrink_to_fit();
       } // Say the reason
-      SLNS(LH_WARNING, "$", strError);
+      SocketLogUnsafe(LH_WARNING, "$", strError);
     } // Use supplied reason if no error string found
     if(strError.empty()) strError = strReason;
     // Break loop
@@ -217,7 +233,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
         // Set last received timestamp
         duRead = cmHiRes.GetEpochTime();
         // Log status
-        SL(LH_DEBUG, "$ received", uiRX);
+        SocketLogSafe(LH_DEBUG, "$ received", uiRX);
         // Return bytes read
         return uiRX;
     }
@@ -251,7 +267,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
         // happen, but if we did?
         if(uiTX == uiL)
         { // Thats good, what we wanted log the transfer
-          SL(LH_DEBUG, "$ sent", uiTX);
+          SocketLogSafe(LH_DEBUG, "$ sent", uiTX);
           // Increment sent bytes and packet counters
           qTX += uiTX;
           ++qTXp;
@@ -281,9 +297,9 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
          "Address", strAddr, "Port", uiPort);
     // Get first top packet and move data to memblock supplied by caller
     Packet &pData = bData.front();
-    aPacket.SwapMemory(move(pData.aPacket));
+    aPacket.SwapMemory(std::move(pData.aPacket));
     // Copy record timestamp
-    const ClkTimePoint dTS{ move(pData.dTimestamp) };
+    const ClkTimePoint dTS{ std::move(pData.dTimestamp) };
     // Subtract total bytes counter
     stS -= aPacket.Size();
     // Pop first RX packet
@@ -363,7 +379,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     // Decrement connection count
     --cParent.stConnected;
     // Report disconnection and statistics to log
-    SLNS(LH_DEBUG, "Disconnected (RX:$/$;TX:$/$).",
+    SocketLogUnsafe(LH_DEBUG, "Disconnected (RX:$/$;TX:$/$).",
       GetRXpkt(), GetRX(), GetTXpkt(), GetTX());
   }
   /* -- Compact all packets into single packet ----------------------------- */
@@ -397,7 +413,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       const_cast<char*>(GetAddressAndPort().c_str())) != 1)
         return SetErrorSafe("Resolve failed");
     // Log and do secure connection
-    SL(LH_DEBUG, "$onnecting...", IsSecure() ? "Securely c" : "C");
+    SocketLogSafe(LH_DEBUG, "$onnecting...", IsSecure() ? "Securely c" : "C");
     // Set connecting flag. Do send an event for this
     AddStatus(SS_CONNECTING, duConnect);
     // Abort if requested
@@ -434,17 +450,25 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     } // No IP address detected for some reason
     else return SetErrorSafe("No address found");
     // Show connected ip address
-    SL(LH_DEBUG, "Connected to $", GetIPAddress());
+    SocketLogSafe(LH_DEBUG, "Connected to $", GetIPAddress());
     // Set socket read and send timeout
     switch(cSystem->SetSocketTimeout(iFd,
       cParent.fdRecvTimeout, cParent.fdSendTimeout))
     { // Success
-      case  0: break;
+      case 0: break;
       // Failed so just log message
-      case  1: SL(LH_WARNING, "Set recv timeout failed"); break;
-      case  2: SL(LH_WARNING, "Set send timeout failed"); break;
-      case  3: SL(LH_WARNING, "Set recv/send timeout failed"); break;
-      default: SL(LH_WARNING, "Unknown error setting socket timeouts"); break;
+      case 1:
+        SocketLogSafe(LH_WARNING, "Set recv timeout failed");
+        break;
+      case 2:
+        SocketLogSafe(LH_WARNING, "Set send timeout failed");
+        break;
+      case 3:
+        SocketLogSafe(LH_WARNING, "Set recv/send timeout failed");
+        break;
+      default:
+        SocketLogSafe(LH_WARNING, "Unknown error setting socket timeouts");
+        break;
     } // Until thread says to terminate
     if(tReader.ThreadShouldExit()) return SetAborted();
     // Return success if the handshake succeeded or process error
@@ -464,7 +488,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       // * Check root CA (self-signed) certificates.
       if(!X509_VERIFY_PARAM_set_flags(x509vp.get(), X509_V_FLAG_CRL_CHECK_ALL |
         X509_V_FLAG_X509_STRICT | X509_V_FLAG_CHECK_SS_SIGNATURE))
-          SL(LH_WARNING, "Failed to set verification flags");
+          SocketLogSafe(LH_WARNING, "Failed to set verification flags");
       // Always check subject line in certificate
       X509_VERIFY_PARAM_set_hostflags(x509vp.get(),
         X509_CHECK_FLAG_ALWAYS_CHECK_SUBJECT);
@@ -472,14 +496,15 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       X509_VERIFY_PARAM_set_auth_level(x509vp.get(), 0);
       // Our certificate chain is full of server CA certificates
       if(!X509_VERIFY_PARAM_set_purpose(x509vp.get(), X509_PURPOSE_SSL_SERVER))
-        SL(LH_WARNING, "Failed to set purpose");
+        SocketLogSafe(LH_WARNING, "Failed to set purpose");
       // Ceritificate must match this domain
       if(!X509_VERIFY_PARAM_set1_host(x509vp.get(), strAddr.data(),
         strAddr.length()))
-          SL(LH_WARNING, "Failed to set matching hostname");
+          SocketLogSafe(LH_WARNING, "Failed to set matching hostname");
       // Apply to context
       if(!SSL_CTX_set1_param(cContext, x509vp.get()))
-        SL(LH_WARNING, "Failed to assign verification parameters to context");
+        SocketLogSafe(LH_WARNING,
+          "Failed to assign verification parameters to context");
     } // Success
     return 0;
   }
@@ -497,18 +522,18 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
         lLength), OCSP_RESPONSE_free })
           return 1;
       // Failed to parse response
-      SL(LH_WARNING, "OCSP response parse failure");
+      SocketLogSafe(LH_WARNING, "OCSP response parse failure");
       // Return result from response call
       return 0;
     } // No response but connection may continue
-    SL(LH_DEBUG, "No OCSP response");
+    SocketLogSafe(LH_DEBUG, "No OCSP response");
     // The callback when used on the client side should return a negative value
     // on error; 0 if the response is not acceptable (in which case the
     // handshake will fail) or a positive value if it is acceptable.
     return cParent.iOCSP >= 2 ? 0 : 1;
   }
   /* -- Verify X509 result ------------------------------------------------- */
-  bool VerifyX509Result(const ssize_t stRes)
+  bool VerifyX509Result(const size_t stRes)
   { // Return if code is valid
     if(stRes == X509_V_OK) return true;
     // Find error code if the error code information is not found?
@@ -517,7 +542,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     { // Return success if user wants to bypass it
       if(cParent.CertsIsX509BypassFlagSet(1, 0x8000000000000000ULL))
       { // Log the warning and return success
-        SL(LH_WARNING, "Unknown X509 error $ bypassed!", stRes);
+        SocketLogSafe(LH_WARNING, "Unknown X509 error $ bypassed!", stRes);
         return true;
       } // Set socket error and error string
       SetErrorStaticSafe(Append("X509_V_ERR_UNKNOWN_", stRes));
@@ -530,7 +555,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       // Return success if user wants to bypass it
       if(cParent.CertsIsX509BypassFlagSet(xErrInfo.stBank, xErrInfo.qFlag))
       { // Log the warning and return success
-        SL(LH_WARNING, "$ bypassed!", strErr);
+        SocketLogSafe(LH_WARNING, "$ bypassed!", strErr);
         return true;
       } // Set socket error and error string
       SetErrorStaticSafe(strErr);
@@ -583,23 +608,25 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       if(cParent.iOCSP >= 1)
       { // Setup OCSP verification
         if(!SSL_set_tlsext_status_type(sSSL, TLSEXT_STATUSTYPE_ocsp))
-          SL(LH_WARNING, "Failed to setup OCSP verification!");
+          SocketLogSafe(LH_WARNING, "Failed to setup OCSP verification!");
         // Set callback and argument
         int(*fCB)(SSL*,void*) = [](SSL *sO, void *vpS)->int
           { return reinterpret_cast<Socket*>(vpS)->
             OCSPVerificationResponse(sO); };
         if(!SSL_CTX_set_tlsext_status_cb(cContext, fCB))
-          SL(LH_WARNING, "Failed to setup OCSP verification callback!");
+          SocketLogSafe(LH_WARNING,
+            "Failed to setup OCSP verification callback!");
         if(!SSL_CTX_set_tlsext_status_arg(cContext,
           reinterpret_cast<void*>(this)))
-            SL(LH_WARNING, "Failed to setup OCSP verification argument!");
+            SocketLogSafe(LH_WARNING,
+              "Failed to setup OCSP verification argument!");
       } // Set SNI hostname. Some sites break if this is not set
       if(!SSL_set_tlsext_host_name(sSSL, strAddr.c_str()))
         return SetErrorStaticSafe("Init TLS SNI hostname failed");
       // Log and do secure connection
       if(DoConnect() == -1) return -1;
       // Verify certificate and disconnect if failed
-      if(!VerifyX509Result(static_cast<ssize_t>(SSL_get_verify_result(sSSL))))
+      if(!VerifyX509Result(static_cast<size_t>(SSL_get_verify_result(sSSL))))
         return -1;
       // Get cipher and if we got it?
       string strD; strD.resize(128);
@@ -610,23 +637,23 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
         // Set cipher used
         MoveVarSafe(mMutex, strCipher, strD);
         // Print encryption info
-        SLNS(LH_DEBUG, "Cipher is $", strCipher);
+        SocketLogUnsafe(LH_DEBUG, "Cipher is $", strCipher);
       } // Get cipher failed?
       else
       { // Log failure
-        SL(LH_WARNING, "Failed $", strD.length());
+        SocketLogSafe(LH_WARNING, "Failed $", strD.length());
       } // Get server certificate
       if(X509*const xCert = SSL_get0_peer_certificate(sSSL))
       { // Get certificate subject and if successful?
         if(X509_NAME_oneline(X509_get_subject_name(xCert),
           const_cast<char *>(strD.data()), static_cast<int>(strD.length())))
         { // Log the subject line of the certificate
-          SL(LH_DEBUG, "Subject is $", strD);
+          SocketLogSafe(LH_DEBUG, "Subject is $", strD);
         } // Get certificate issuer and if successful?
         if(X509_NAME_oneline(X509_get_issuer_name(xCert),
           const_cast<char *>(strD.data()), static_cast<int>(strD.length())))
         { // Log the issuer line of the certificate
-          SL(LH_DEBUG, "Issuer is $", strD);
+          SocketLogSafe(LH_DEBUG, "Issuer is $", strD);
         } // Don't free certificate (using get0)
       } // Error occured
       else return SetErrorSafe("Server returned no certificate");
@@ -671,7 +698,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     const StrNCStrMapIt vlItem{ vlRegistry.find(strItem) };
     if(vlItem == vlRegistry.cend()) return {};
     // Get the value and delete it. We will move instead of copying
-    const string strReq{ move(vlItem->second) };
+    const string strReq{ std::move(vlItem->second) };
     vlRegistry.erase(vlItem);
     // Return it
     return strReq;
@@ -732,13 +759,13 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       { // Read the correct number of bytes? Or we're just doing a HEAD req?
         if(stContentRead == stContentLength || bIsHead)
         { // Log that the download was successful
-          SL(LH_DEBUG, "Download successful");
+          SocketLogSafe(LH_DEBUG, "Download successful");
         } // We did not get the correct number of bytes? Set error code.
         else return SetErrorSafe(Append("Failed at ", stContentRead));
       } // There was no content length?
       else
       { // Just log the bytes downloaded
-        SL(LH_DEBUG, "$ downloaded", stContentRead);
+        SocketLogSafe(LH_DEBUG, "$ downloaded", stContentRead);
       } // We're done with the connection
       return 1;
     } // Processing headers?
@@ -796,15 +823,10 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       const size_t stStatus = ToNumber<size_t>(strStatus);
       if(stStatus < 100 || stStatus > 999)
         return SetErrorStaticSafe(Append("Bad status code ", strStatus));
-      // If the status code is anything but an error?
-      if(stStatus < 400)
-      { // Log successful status code.
-        SL(LH_DEBUG, "Status code $", strStatus);
-      } // Error status code?
-      else
-      { // Log error status code
-        SL(LH_WARNING, "Status error $", strStatus);
-      }
+      // If the status code is anything but an error? Log successful code
+      if(stStatus < 400) SocketLogSafe(LH_DEBUG, "Status code $", strStatus);
+      // Error status code? Log error status code
+      else SocketLogSafe(LH_WARNING, "Status error $", strStatus);
       // Add protocol and status code to registry so guest can read them
       // without having to perform any special string operations
       vlRegistry.VarsPushOrUpdatePair(SK_VAR_PROTO, strProtocol);
@@ -814,9 +836,8 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       // If we got a content type?
       const StrNCStrMapConstIt vlT{ vlRegistry.find("content-type") };
       if(vlT != vlRegistry.cend())
-      { // Log it
-        SL(LH_DEBUG, "Type is $", vlT->second);
-      } // Should get content length
+        SocketLogSafe(LH_DEBUG, "Type is $", vlT->second);
+      // Should get content length
       const StrNCStrMapConstIt vlL{ vlRegistry.find("content-length") };
       if(vlL != vlRegistry.cend())
       { // Get reference to string and if it's not valid?
@@ -824,23 +845,24 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
         if(!IsNumber(strVal))
         { // Assume zero, safe to continue and log the warning
           stContentLength = 0;
-          SL(LH_WARNING, "Invalid content length");
+          SocketLogSafe(LH_WARNING, "Invalid content length");
         } // Valid content-length
         else
         { // Convert length string to integer and log the length
           stContentLength = ToNumber<size_t>(strVal);
-          SL(LH_DEBUG, "Length is $", stContentLength);
+          SocketLogSafe(LH_DEBUG, "Length is $", stContentLength);
         } // Set downloading status
         AddStatus(SS_DOWNLOADING);
         // If we already got enough bytes from the header packet?
         if(stInitial == stContentLength)
         { // Log it and return success
-          SL(LH_DEBUG, "Downloaded in one go");
+          SocketLogSafe(LH_DEBUG, "Downloaded in one go");
           return 1;
         } // If we got too many bytes? treat it as completed anyway
         if(stInitial > stContentLength)
         { // Log it and return success
-          SL(LH_DEBUG, "Downloaded ($ excess)", stInitial-stContentLength);
+          SocketLogSafe(LH_DEBUG, "Downloaded ($ excess)",
+            stInitial-stContentLength);
           return 1;
         } // Haven't received all the data
       } // No content length and connection not closed
@@ -861,7 +883,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     // Have content length and at EOF? Done!
     if(stContentLength && stContentRead == stContentLength)
     { // Log it and return success
-      SL(LH_DEBUG, "Download complete");
+      SocketLogSafe(LH_DEBUG, "Download complete");
       return 1;
     } // Wait for next packet or server disconnect.
     goto WaitForHTTPReadPacket;
@@ -875,7 +897,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     // exception occured?
     catch(const exception &E)
     { // Report error
-      LW(LH_ERROR, "(SOCKET HTTP THREAD EXCEPTION) $", E.what());
+      cLog->LogErrorExSafe("(SOCKET HTTP THREAD EXCEPTION) $", E.what());
       // Set error message
       iReturn = SetErrorStaticSafe(E.what());
     } // Send disconnection and clear
@@ -925,7 +947,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     // exception occured?
     catch(const exception &E)
     { // Report error
-      LW(LH_ERROR, "(SOCKET WRITE THREAD EXCEPTION) $", E.what());
+      cLog->LogErrorExSafe("(SOCKET WRITE THREAD EXCEPTION) $", E.what());
       // Set error message
       iReturn = SetErrorStaticSafe(E.what());
     } // Force close the socket if the reader thread isn't already exiting
@@ -974,7 +996,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     // exception occured?
     catch(const exception &E)
     { // Report error
-      LW(LH_ERROR, "(SOCKET THREAD EXCEPTION) $", E.what());
+      cLog->LogErrorExSafe("(SOCKET THREAD EXCEPTION) $", E.what());
       // Set error message
       iReturn = SetErrorStaticSafe(E.what());
     } // Stop writer thread
@@ -1029,7 +1051,6 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     { return IsDisconnecting() || IsDisconnected(); }
   bool IsDisconnectedByClient(void) { return FlagIsSet(SS_CLOSEDBYCLIENT); }
   /* --------------------------------------------------------------- */ public:
-  uint64_t GetThreadId(void) const { return tReader.ThreadGetId(); }
   bool IsSecure(void) const { return FlagIsSet(SS_ENCRYPTION); }
   int GetFD(void) const { return iFd; }
   int GetError(void) const { return iError; }
@@ -1120,16 +1141,20 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
               // Success
               return;
             } // Not a valid integer so debug it
-            else SL(LH_ERROR, "Invalid integer\n$", GetVarStack(lsState));
+            else SocketLogSafe(LH_ERROR,
+              "Invalid integer\n$", GetVarStack(lsState));
           } // Unknown class?
-          else SL(LH_ERROR, "Invalid class\n$", GetVarStack(lsState));
+          else SocketLogSafe(LH_ERROR,
+            "Invalid class\n$", GetVarStack(lsState));
         } // Unknown function callback?
-        else SL(LH_ERROR, "Invalid callback\n$", GetVarStack(lsState));
+        else SocketLogSafe(LH_ERROR,
+          "Invalid callback\n$", GetVarStack(lsState));
       } // Lua is paused? Log this just to know this event was ignored
-      else SL(LH_WARNING, "Ignoring event $=$$!",
-        epData.evtCommand, hex, uiStatus);
+      else SocketLogSafe(LH_WARNING,
+        "Ignoring event $=$$!", epData.evtCommand, hex, uiStatus);
     } // Not enough parameters so log error
-    else SL(LH_ERROR, "Not enough event params ($)", eParams.size());
+    else SocketLogSafe(LH_ERROR,
+      "Not enough event params ($)", eParams.size());
     // Done
     return EventError();
   } // Exception occured? Cleanup and rethrow exception
@@ -1198,7 +1223,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   { // Ignore if already disconnecting
     if(IsDisconnectingOrDisconnected()) return false;
     // If the connection was closed by the server then it's a clean exit
-    SL(LH_DEBUG, "Disconnecting...");
+    SocketLogSafe(LH_DEBUG, "Disconnecting...");
     // Disconnecting
     AddStatus(SS_DISCONNECTING, duDisconnect);
     // Lock access to packet list
@@ -1298,7 +1323,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     // Init LUA references
     LuaEvtInitEx(lS);
     // Initialise name, thread and start the connection process
-    IdentSet(Append("S:", GetAddressAndPort()));
+    IdentSetA("S:", GetAddressAndPort());
     tReader.ThreadInit(Append("SR:", GetAddressAndPort()),
       bind(&Socket::SockReadThreadMain, this, _1), this);
   }
@@ -1335,26 +1360,26 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       // Also disable keep-alive, we don't support it (yet?).
       { "connection", "close" },
       // Push the source address
-      { "host", move(strA) },
+      { "host", std::move(strA) },
       // Push the formulated request line. Remove the right hand fragment from
       // the URL if neccesary.
       { SK_VAR_REQ, Append(strS, ' ', (SpaceEncode(stFrag == string::npos ?
           strR : strR.substr(0, stFrag))), " HTTP/1.0\r\n") },
       // Push method because we need to check if this is a HEAD request and
       // thus to know when to expect no output.
-      { SK_VAR_METHOD, move(strS) },
+      { SK_VAR_METHOD, std::move(strS) },
     });
     // Body specified?
     if(!strB.empty()) vlRegistry.VarsPushOrUpdatePairs({
       // Add length of body text
       { "content-length", ToString(strB.length()) },
       // Add body text
-      { SK_VAR_BODY, move(strB) }
+      { SK_VAR_BODY, std::move(strB) }
     });
     // Init LUA references
     LuaEvtInitEx(lS);
     // Start the thread
-    IdentSet(Append("HS:", GetAddressAndPort()));
+    IdentSetA("HS:", GetAddressAndPort());
     tReader.ThreadInit(Append("HSR:", GetAddressAndPort()),
       bind(&Socket::SocketHTTPThreadMain, this, _1), this);
   }
@@ -1362,6 +1387,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   Socket(void) :
     /* -- Initialisation of members ---------------------------------------- */
     ICHelperSocket{ *cSockets, this }, // Register in collector
+    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     LuaEvtSlave{ this,                 // Socket async events init
       EMC_MP_SOCKET },                 // ...with this id
     SocketFlags{ SS_STANDBY },         // Initially on standby
@@ -1381,19 +1407,17 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   ~Socket(void) { SendDisconnectAndWait(); }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Socket);             // Supress copy constructor for safety
-  /* ----------------------------------------------------------------------- */
-  #undef SLS                           // Done with secure socket logger
-  #undef SL                            // Done with insecure socket logger
-  #undef SLPARAMS                      // Done with socket param helper
 };/* ----------------------------------------------------------------------- */
 /* ========================================================================= */
 static void DestroyAllSockets(void)
 { // No sockets? Ignore
   if(cSockets->empty()) return;
   // Close all connections and report status
-  LW(LH_DEBUG, "Sockets closing all $ connections...", cSockets->size());
+  cLog->LogDebugExSafe("Sockets closing all $ connections...",
+    cSockets->size());
   cSockets->CollectorDestroyUnsafe();
-  LW(LH_INFO, "Sockets closed all connections [$]!", cSockets->size());
+  cLog->LogInfoExSafe("Sockets closed all connections [$]!",
+    cSockets->size());
 }
 /* ========================================================================= */
 static void DeInitSockets(void)
@@ -1426,10 +1450,12 @@ static size_t SocketWaitAsync(void)
 { // No sockets? Ignore
   if(cSockets->empty()) return 0;
   // Close all sockets. DON'T destroy them!
-  LW(LH_DEBUG, "Sockets waiting to close $ connections...", cSockets->size());
+  cLog->LogDebugExSafe("Sockets waiting to close $ connections...",
+    cSockets->size());
   const ssize_t stClosed = count_if(cSockets->begin(), cSockets->end(),
     [](Socket*const sCptr) { return sCptr->SendDisconnectAndWait(); });
-  LW(LH_INFO, "Sockets reset $ of $ connections!", stClosed, cSockets->size());
+  cLog->LogInfoExSafe("Sockets reset $ of $ connections!",
+    stClosed, cSockets->size());
   // Return number of connections reset
   return static_cast<size_t>(stClosed);
 }
@@ -1438,10 +1464,12 @@ static size_t SocketReset(void)
 { // No sockets? Ignore
   if(cSockets->empty()) return 0;
   // Close all sockets. DON'T destroy them!
-  LW(LH_DEBUG, "Sockets closing $ connections...", cSockets->size());
+  cLog->LogDebugExSafe("Sockets closing $ connections...",
+    cSockets->size());
   const ssize_t stClosed = count_if(cSockets->begin(), cSockets->end(),
     [](Socket*const sCptr) { return sCptr->SendDisconnect(); });
-  LW(LH_INFO, "Sockets reset $ of $ connections!", stClosed, cSockets->size());
+  cLog->LogInfoExSafe("Sockets reset $ of $ connections!",
+    stClosed, cSockets->size());
   // Return number of connections reset
   return static_cast<size_t>(stClosed);
 }
@@ -1477,7 +1505,7 @@ static CVarReturn SocketAgentModified(const string &strN, string &strV)
 static const Sockets::const_iterator SocketFind(const unsigned int uiId)
   { return find_if(cSockets->cbegin(), cSockets->cend(),
       [uiId](const Socket*const sCptr)
-        { return sCptr->GetThreadId() == uiId; }); }
+        { return sCptr->CtrGet() == uiId; }); }
 /* ------------------------------------------------------------------------- */
 static StrNCStrMap SocketOAuth11(const string &strMethod,
   const string &strScheme, const string &strHost, const string &strPort,
@@ -1521,10 +1549,10 @@ static StrNCStrMap SocketOAuth11(const string &strMethod,
   // Put basic stuff in. Be careful of using StrPair with CStrings as
   // you cant use string& with cstrings, so use CSTR*PAIR's instead.
   StrNCStrMap vaOA{{
-    { "oauth_consumer_key",                         move(strCK) },
+    { "oauth_consumer_key",                         std::move(strCK) },
     { "oauth_nonce", MD5functions::HashMB(CryptRandomBlock(64)) },
     { "oauth_timestamp",             ToString(cmSys.GetTimeS()) },
-    { "oauth_token",                               move(strTok) },
+    { "oauth_token",                               std::move(strTok) },
     { "oauth_signature_method",                     "HMAC-SHA1" },
     { "oauth_version",                                    "1.0" }
   }};
@@ -1540,7 +1568,7 @@ static StrNCStrMap SocketOAuth11(const string &strMethod,
   const string strBody{ CryptImplodeMapAndEncode(vaIn, "&") };
   // Hash the string with the key and return empty if fail
   vaOA.insert({ "oauth_signature",
-    CryptURLEncode(CryptMBtoB64(move(SHA1functions::HashStrRaw(
+    CryptURLEncode(CryptMBtoB64(std::move(SHA1functions::HashStrRaw(
       Append(CryptURLEncode(strCS), '&', CryptURLEncode(strUS)),
       Append(CryptURLEncode(strMethod), '&',
              CryptURLEncode(strAddr), '&',
@@ -1561,17 +1589,17 @@ static StrNCStrMap SocketOAuth11(const string &strMethod,
     // Apend to URL address
     strAddr.append(strURLParams);
   } // Return final result
-  return {{ "method",   move(strMethod)         },
-          { "url",      move(strAddr)           },
-          { "scheme",   move(strScheme)         },
-          { "host",     move(strHost)           },
-          { "port",     move(strPort)           },
-          { "resource", move(strReq)            },
-          { "params",   move(strURLParams)      },
-          { "request",  move(strResParams)      },
+  return {{ "method",   std::move(strMethod)         },
+          { "url",      std::move(strAddr)           },
+          { "scheme",   std::move(strScheme)         },
+          { "host",     std::move(strHost)           },
+          { "port",     std::move(strPort)           },
+          { "resource", std::move(strReq)            },
+          { "params",   std::move(strURLParams)      },
+          { "request",  std::move(strResParams)      },
           { "oauth",    Append("OAuth ", strKV) },
-          { "body",     move(strBody)           }};
+          { "body",     std::move(strBody)           }};
 }
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

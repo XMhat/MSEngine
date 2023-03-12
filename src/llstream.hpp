@@ -28,7 +28,7 @@
 /* ========================================================================= */
 LLNAMESPACEBEGIN(Stream)               // Stream namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfStream;              // Using stream interface
+using namespace IfStream;              // Using stream namespace
 /* ========================================================================= */
 /* ######################################################################### */
 /* ========================================================================= */
@@ -298,7 +298,7 @@ LLFUNC(ArrayAsync, LCCLASSCREATE(Stream)->InitAsyncArray(lS));
 // ? object.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Asset, 1, LCCLASSCREATE(Stream)->SyncInitArray(
-  LCGETCPPSTRINGNE(1, "Identifier"), move(*LCGETPTR(2, Asset))));
+  LCGETCPPSTRINGNE(1, "Identifier"), std::move(*LCGETPTR(2, Asset))));
 /* ======================================================================= */
 // $ Stream.WaitAsync
 // ? Halts main-thread execution until all async stream mevents have completed
@@ -334,9 +334,9 @@ LLRSEND                                // Stream.* namespace functions end
 // < Codes:table=The table of key/value pairs of available flags
 // ? Returns possible values for Stream:OnEvent() event command.
 /* ------------------------------------------------------------------------- */
-LLRSKTBEGIN(Events)                    // Beginning of Stream event flags
+LLRSKTBEGIN(Events)                    // Beginning of Video event flags
 LLRSKTITEM(SE_,PLAY),                  LLRSKTITEM(SE_,STOP),
-LLRSKTEND                              // End of Stream event flags
+LLRSKTEND                              // End of Video event flags
 /* ========================================================================= */
 // @ Stream.States
 // < Codes:table=The table of key/value pairs of available flags

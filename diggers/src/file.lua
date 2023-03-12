@@ -59,11 +59,11 @@ local function InitFile()
   local function OnLoaded(aResources)
     -- Set loaded texture resource and create tile for file screen
     local texFile = aResources[1].H;
-    local tileFile<const> = texFile:CreateTile(207, 0, 512, 200);
+    local tileFile<const> = texFile:TileA(207, 0, 512, 200);
     -- Setup lobby texture
     local texLobby<const> = aResources[2].H;
-    texLobby:TrimTList(1);
-    texLobby:SetTile(0, 0, 272, 512, 512);
+    texLobby:TileSTC(1);
+    texLobby:TileS(0, 0, 272, 512, 512);
     -- Display data
     local aFileData<const>, aNameData<const> = { }, { };
     -- Data refresh function
@@ -134,7 +134,7 @@ local function InitFile()
       -- Render shadow
       RenderShadow(8, 8, 312, 208);
       -- Draw message
-      fontSpeech:SetRGB(0, 0, 0.25);
+      fontSpeech:SetCRGB(0, 0, 0.25);
       fontSpeech:PrintC(160, 31, sMsg);
       -- Render file names
       for I = 1, 4 do
@@ -143,7 +143,7 @@ local function InitFile()
           texSpr:BlitSLTRB(801, 35, 47+(I*13), 285, 60+(I*13));
         end
         -- Print name of file
-        fontSpeech:SetRGB(1, 1, 1);
+        fontSpeech:SetCRGB(1, 1, 1);
         fontSpeech:PrintC(160, 49+(I*13), aNameData[I]);
       end
       -- Draw tip

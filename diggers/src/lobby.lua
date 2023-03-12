@@ -136,8 +136,8 @@ local function InitLobby(aActiveObject, bNoSetMusic, iSaveMusicPos)
       -- Cache texure co-ordinates for background. We make sure we have one
       -- tile incase the texture was already cached and therefore the values
       -- will be overwritten
-      texLobby:TrimTList(1);
-      texLobby:SetTile(0, 208, 312, 512, 512);
+      texLobby:TileSTC(1);
+      texLobby:TileS(0, 208, 312, 512, 512);
       -- Change render procs
       SetCallbacks(ProcLobbyOpen, RenderLobbyOpen, InputLobbyOpen);
     -- Lobby is closed?
@@ -226,11 +226,11 @@ local function InitLobby(aActiveObject, bNoSetMusic, iSaveMusicPos)
         else SetTipAndCursor("LOBBY", aCursorIdData.ARROW) end;
       end
       -- Cache background (same rule as above)
-      texLobby:TrimTList(4);
-      texLobby:SetTile(0,   0, 272, 512, 512);
-      texLobby:SetTile(1,   0,   0, 304, 200);
-      texLobby:SetTile(2,   0, 214, 238, 271);
-      texLobby:SetTile(3, 305,   0, 512, 184);
+      texLobby:TileSTC(4);
+      texLobby:TileS(0,   0, 272, 512, 512);
+      texLobby:TileS(1,   0,   0, 304, 200);
+      texLobby:TileS(2,   0, 214, 238, 271);
+      texLobby:TileS(3, 305,   0, 512, 184);
       -- When closed lobby has faded in? Set lobby callbacks
       local function OnFadeIn()
         SetCallbacks(ProcLobbyClosed, RenderLobbyClosed, InputLobbyClosed);

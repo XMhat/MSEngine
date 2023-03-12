@@ -11,12 +11,12 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfStream {                   // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfStream {                   // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfSource;              // Using source interface
-using namespace IfPcmFormat;           // Using codec interface
-using namespace IfAsset;               // Using asset interface
+using namespace IfSource;              // Using source namespace
+using namespace IfPcmFormat;           // Using codec namespace
+using namespace IfAsset;               // Using asset namespace
 /* -- Stream collector class for collector data and custom variables ------- */
 BEGIN_ASYNCCOLLECTOREX(Streams, Stream, CLHelperSafe,
 /* -- Public variables ----------------------------------------------------- */
@@ -47,7 +47,7 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
   public AsyncLoader<Stream>,          // Asynchronous loading of Streams
   public LuaEvtSlave<Stream>,          // Lua event system for Stream
   public Lockable                      // Lua garbage collector instruction
-{ /* -- Typedefs -------------------------------------------------- */ private:
+{ /* -- Typedefs ----------------------------------------------------------- */
   typedef atomic<ogg_int64_t> SafeOggInt; // Multithreaded ogg int
   /* -- Variables ---------------------------------------------------------- */
   OggVorbis_File   vorbisFile;         // Ogg vorbis handle
@@ -144,7 +144,7 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
     // Unlock the source so it can be used by other samples and streams
     UnloadSource();
     // Write debug reason for stoppage
-    LW(LH_DEBUG, "Stream stopped '$'! (R:$<$>;L:$<$>).", IdentGet(),
+    cLog->LogDebugExSafe("Stream stopped '$'! (R:$<$>;L:$<$>).", IdentGet(),
       StopReasonToString(srReason), srReason, StateReasonToString(psState),
       psState);
     // What was the state before?
@@ -315,7 +315,7 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
     sCptr = GetSource();
     if(sCptr) return true;
     // Tell log
-    LW(LH_WARNING, "Can't stream '$'. Out of sources!", IdentGet());
+    cLog->LogWarningExSafe("Can't stream '$'. Out of sources!", IdentGet());
     // Failed
     return false;
   }
@@ -394,13 +394,13 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
           { // Full stop!
             Stop(SR_REBUFFAIL);
             // Log problem
-            LW(LH_WARNING,
+            cLog->LogWarningExSafe(
               "Stream '$' was stopped and was unable to be rebuffered!",
                 fmFile.IdentGet());
             // Done
             return;
           } // Log problem
-          LW(LH_WARNING,
+          cLog->LogWarningExSafe(
             "Stream '$' stopped unexpectedly and is being replayed!",
               fmFile.IdentGet());
           // Replay the buffers
@@ -451,7 +451,8 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
     // Lock the source and return with message if we can't
     if(!LockSource())
     { // Log problem
-      LW(LH_WARNING, "Stream '$' could not be allocated a source after reset!",
+      cLog->LogWarningExSafe(
+        "Stream '$' could not be allocated a source after reset!",
         fmFile.IdentGet());
       // Set internal state to standby
       psState = PS_STANDBY;
@@ -460,8 +461,8 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
     } // If we didn't rebuffer anything then no point playing
     if(!FullRebuffer())
     { // Log problem
-      LW(LH_WARNING,
-        "Stream '$' could not be rebuffered after reset!", fmFile.IdentGet());
+      cLog->LogWarningExSafe("Stream '$' could not be rebuffered after reset!",
+        fmFile.IdentGet());
       // Set fully stopped and return
       return Stop(SR_GENBUFFAIL);
     } // Update volume
@@ -523,7 +524,7 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
     Stop(srReason);
   }
   /* -- Load from memory --------------------------------------------------- */
-  void LoadData(FileMap &fClass)
+  void AsyncReady(FileMap &fClass)
   { // Set file class
     fmFile.FileMapSwap(fClass);
     // Initialise context and test for error
@@ -558,7 +559,8 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
     SetLoopBegin(0);
     SetLoopEnd(GetTotal());
     // Log ogg loaded
-    LW(LH_INFO, "Stream loaded '$' (C=$;R=$;BR=$:$:$:$;D$=$;B=$;BS=$).",
+    cLog->LogInfoExSafe(
+      "Stream loaded '$' (C=$;R=$;BR=$:$:$:$;D$=$;B=$;BS=$).",
       IdentGet(), vorbisInfo.channels, vorbisInfo.rate,
       vorbisInfo.bitrate_upper, vorbisInfo.bitrate_nominal,
       vorbisInfo.bitrate_lower, vorbisInfo.bitrate_window,
@@ -590,7 +592,7 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
     CheckFunction(lS, 4, "ProgressFunc");
     CheckFunction(lS, 5, "SuccessFunc");
     // Load stream from memory
-    AsyncInitArray(lS, strF, "streamarray", move(aData));
+    AsyncInitArray(lS, strF, "streamarray", std::move(aData));
   }
   /* -- Load stream from file asynchronously ------------------------------- */
   void InitAsyncFile(lua_State*const lS)
@@ -610,6 +612,7 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
   Stream(void) :
     /* -- Initialisation of members ---------------------------------------- */
     ICHelperStream{ *cStreams },       // Initialise collector unregistered
+    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     AsyncLoader<Stream>{ this,         // Initialise async loader
       EMC_MP_STREAM },                 //   with our streaming event
     LuaEvtSlave{ this,                 // Initialise stream event manager
@@ -644,7 +647,7 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
     // If stream opened? Clear ogg state
     if(vorbisFile.datasource) ov_clear(&vorbisFile);
     // Log that the stream was unloaded
-    LW(LH_DEBUG, "Stream unloaded '$'!", IdentGet());
+    cLog->LogDebugExSafe("Stream unloaded '$'!", IdentGet());
   }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Stream);             // Supress copy constructor for safety
@@ -715,6 +718,6 @@ static CVarReturn StreamSetVolume(const ALfloat fNewVolume)
 static CVarReturn StreamSetBufferSize(const size_t stNewSize)
   { return CVarSimpleSetIntNLG(cStreams->stBufSize, stNewSize,
       static_cast<size_t>(4096), static_cast<size_t>(65536)); }
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

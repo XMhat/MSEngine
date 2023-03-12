@@ -7,14 +7,15 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfShader {                   // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfShader {                   // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfOgl;                 // Using ogl interface
+using namespace IfOgl;                 // Using ogl namespace
 /* -- Public typedefs ------------------------------------------------------ */
 enum ShaderUniformId {                 // Mandatory uniforms
   /* ----------------------------------------------------------------------- */
   U_ORTHO,                             // Ortho uniform vec4
+  U_PALETTE,                           // Palette uniform vec4
   /* ----------------------------------------------------------------------- */
   U_MAX                                // Max no of mandatory uniforms
 };/* ----------------------------------------------------------------------- */
@@ -27,30 +28,54 @@ enum ShaderAttributeId {               // Mandatory attributes
   A_MAX                                // Max no of mandatory attributes
 };/* ----------------------------------------------------------------------- */
 /* == Shader collector class with variable for rounding method ============= */
-BEGIN_COLLECTOREX(Shaders, Shader, CLHelperUnsafe, const char *cpSubPixRound);
-/* == Shader class ========================================================= */
+BEGIN_COLLECTOREX(Shaders, Shader, CLHelperUnsafe, string strSPRMethod);
+/* -- Shader list class ---------------------------------------------------- */
+class ShaderCell :                     // Members initially private
+  /* -- Initialisers ------------------------------------------------------- */
+  public Ident                         // Name of string
+{ /* -- Private variables -------------------------------------------------- */
+  const string     strCode;            // Shader name and code
+  const GLenum     eType;              // Shader type
+  const GLuint     uiShader;           // Created shader id
+  /* -- Return code of shader -------------------------------------- */ public:
+  const string &GetCode(void) const { return strCode; }
+  /* -- Return length of shader code --------------------------------------- */
+  size_t GetCodeLength(void) const { return GetCode().length(); }
+  /* -- Return name of shader as C-String ---------------------------------- */
+  const char *GetCodeCStr(void) const { return GetCode().c_str(); }
+  /* -- Return type of shader ---------------------------------------------- */
+  GLenum GetType(void) const { return eType; }
+  /* -- Return shader id --------------------------------------------------- */
+  GLuint GetHandle(void) const { return uiShader; }
+  /* -- Default constructor ------------------------------------------------ */
+  ShaderCell(const string &sNName,     // Specified new identifier
+             const string &sNCode,     // Specified code to copmile
+             const GLenum eNType,      // Specified GL type id of code
+             const GLuint uiNShader) : // Specified GL shader id of code
+    /* -- Initialisers ----------------------------------------------------- */
+    Ident{ sNName },                   // Set specified name
+    strCode{ sNCode },                 // Set code
+    eType{ eNType },                   // Set type of shader
+    uiShader{ uiNShader }              // Set shader handle
+    /* -- No code ---------------------------------------------------------- */
+    { }
+};/* ----------------------------------------------------------------------- */
+typedef list<ShaderCell> ShaderList;   // Shader cell list
+/* ------------------------------------------------------------------------- */
 BEGIN_MEMBERCLASS(Shaders, Shader, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
-  public Lockable                      // Lua garbage collector instruction
-{ /* -- Typedefs --------------------------------------------------- */ public:
-  struct Cell                          // Shader data
-  { /* --------------------------------------------------------------------- */
-    const string   strName, strCode;   // Shader name and code
-    const GLenum   eType;              // Shader type
-    const GLuint   uiShader;           // Created shader id
-  };/* --------------------------------------------------------------------- */
-  typedef list<Cell> CellList;         // Cell list
-  /* -- Variables ------------------------------------------------- */ private:
-  CellList         sList;              // Shader list
+  public Lockable,                     // Lua garbage collector instruction
+  public ShaderList                    // List of shader data in this program
+{ /* -- Private typedefs --------------------------------------------------- */
+  typedef array<GLint, U_MAX> UniList; // Uniform array list
+  /* -- Private variables -------------------------------------------------- */
   GLuint           uiProgram;          // Shader program id
-  GLIntVector      vUniforms;          // Ids of mandatory uniforms we need
+  UniList          aUniforms;          // Ids of mandatory uniforms we need
   bool             bLinked;            // Shader program has been linked
   /* -- Get program id number -------------------------------------- */ public:
   GLuint GetProgramId(void) const { return uiProgram; }
   /* -- SHader is linked? -------------------------------------------------- */
   bool IsLinked(void) const { return bLinked; }
-  /* -- Returns the list of shaders ---------------------------------------- */
-  const CellList &GetShaderList(void) const { return sList; }
   /* -- Verify the specified attribute is at the specified location -------- */
   void VerifyAttribLocation(const char *cpAttr, const GLuint uiI)
   { // Get attribute location
@@ -65,27 +90,33 @@ BEGIN_MEMBERCLASS(Shaders, Shader, ICHelperUnsafe),
       "Failed to enable vertex attrib array!",
       "Attrib", cpAttr, "Program", uiProgram, "Index", uiI);
     // Report location in log
-    LW(LH_DEBUG, "Shader bound attribute '$' at location $.", cpAttr, uiI);
+    cLog->LogDebugExSafe("Shader bound attribute '$' at location $.",
+      cpAttr, uiI);
   }
   /* -- Verify the specified uniform is at the specified location ---------- */
   void VerifyUniformLocation(const char *cpUni,const size_t stI)
-  { // Storage for attribute id
-    GLint &iU = vUniforms[stI];
-    // Get attribute location
-    GL(iU = GetUniformLocation(cpUni),
+  { // Get attribute location
+    GL(aUniforms[stI] = GetUniformLocation(cpUni),
       "Failed to get uniform location from shader!",
       "Uniform", cpUni, "Program", uiProgram, "Assign", stI);
     // Report location in log
-    LW(LH_DEBUG, "Shader attribute for '$' at location $ and index $.",
-      cpUni, iU, stI);
+    cLog->LogDebugExSafe("Shader attribute for '$' at location $ and index $.",
+      cpUni, aUniforms[stI], stI);
+  }
+  /* -- Update palette ----------------------------------------------------- */
+  void UpdatePalette(const size_t stSize, const GLfloat*const fpData) const
+  { // Activate shader (no error checking)
+    cOgl->UseProgram(GetProgram());
+    // Commit palette
+    cOgl->Uniform(GetUID(U_PALETTE), static_cast<GLsizei>(stSize), fpData);
   }
   /* -- Update shader ortho ------------------------------------------------ */
-  void UpdateOrtho(const GLfloat fX, const GLfloat fY,
-                   const GLfloat fWidth, const GLfloat fHeight)
+  void UpdateOrtho(const FboRenderItem &foiRef) const
   { // Activate shader (no error checking)
     cOgl->UseProgram(GetProgram());
     // Commit ortho bounds (no error checking)
-    cOgl->Uniform(GetUID(U_ORTHO), fX, fY, fWidth, fHeight);
+    cOgl->Uniform(GetUID(U_ORTHO), foiRef.GetCoLeft(),
+      foiRef.GetCoTop(), foiRef.GetCoRight(), foiRef.GetCoBottom());
   }
   /* -- Linkage ------------------------------------------------------------ */
   void Link(void)
@@ -106,9 +137,6 @@ BEGIN_MEMBERCLASS(Shaders, Shader, ICHelperUnsafe),
     bLinked = true;
     // Activate
     Activate();
-    // Allocate attributes and uniform arrays. These contain id's of the
-    // mandatory variables we will need access to.
-    vUniforms.resize(U_MAX);
     // Verify uniforms are in the correct position
     VerifyUniformLocation("ortho", U_ORTHO);
   }
@@ -126,7 +154,7 @@ BEGIN_MEMBERCLASS(Shaders, Shader, ICHelperUnsafe),
   /* -- Get shader program name -------------------------------------------- */
   GLuint GetProgram(void) const { return uiProgram; }
   /* -- Uniform value ------------------------------------------------------ */
-  GLint GetUID(const size_t stI) const { return vUniforms[stI]; }
+  GLint GetUID(const size_t stI) const { return aUniforms[stI]; }
   /* -- Variable location -------------------------------------------------- */
   GLint GetUniformLocation(const char*const cpVar) const
     { return cOgl->GetUniformLocation(uiProgram, cpVar); }
@@ -136,48 +164,54 @@ BEGIN_MEMBERCLASS(Shaders, Shader, ICHelperUnsafe),
     if(bLinked) DeInit();
     // Create shader item and add it to list. We'll push it now so the
     // destructor can clean up any created data.
-    const Cell sData{ strName, Append("#version 150\n", strC), eT,
-      cOgl->CreateShader(eT) };
-    const size_t stIndex = sList.size();
-    sList.emplace_back(sData);
+    const size_t stIndex = size();
+    const ShaderCell &scItem = *insert(cend(), { strName,
+      Append("#version 150\n", strC), eT, cOgl->CreateShader(eT) });
     // Check the shader
-    if(!sData.uiShader)
-      XC("Failed to create GL shader!", "Identifier", strName, "Type", eT);
+    if(!scItem.GetHandle())
+      XC("Failed to create GL shader!",
+         "Identifier", scItem.IdentGet(), "Type", scItem.GetType());
     // Set shader source code
-    GL(cOgl->ShaderSource(sData.uiShader, sData.strCode.c_str()),
+    GL(cOgl->ShaderSource(scItem.GetHandle(), scItem.GetCodeCStr()),
       "Failed to set shader source code!",
-        "Identifier", strName,        "Type",   eT,
-        "Shader",     sData.uiShader, "Source", sData.strCode);
+        "Identifier", scItem.IdentGet(),  "Type",   scItem.GetType(),
+        "Shader",     scItem.GetHandle(), "Source", scItem.GetCode());
     // Compile the shader source code
-    GL(cOgl->CompileShader(sData.uiShader),
+    GL(cOgl->CompileShader(scItem.GetHandle()),
       "Failed to compile shader source code!",
-        "Type", eT, "Shader", sData.uiShader, "Source", sData.strCode);
+        "Type", eT, "Shader", scItem.GetHandle(), "Source", scItem.GetCode());
     // Get compiler result and show reason if failed
-    if(cOgl->GetCompileStatus(sData.uiShader) == GL_FALSE)
+    if(cOgl->GetCompileStatus(scItem.GetHandle()) == GL_FALSE)
       XC("Shader compilation failed!",
-        "Identifier", strName, "Program", uiProgram,
-        "Type",       eT,      "Shader",  sData.uiShader,
-        "Reason",     cOgl->GetCompileFailureReason(sData.uiShader));
+        "Identifier", scItem.IdentGet(), "Program", uiProgram,
+        "Type",       scItem.GetType(),  "Shader",  scItem.GetHandle(),
+        "Reason",     cOgl->GetCompileFailureReason(scItem.GetHandle()));
     // If the program hasn't been setup yet?
     if(!uiProgram)
     { // Create the shader program, and if failed? We should bail out.
       uiProgram = cOgl->CreateProgram();
       if(!uiProgram) XC("Failed to create shader program!",
-        "Identifier", strName, "Type", eT, "Shader", sData.uiShader);
+        "Identifier", scItem.IdentGet(),
+        "Type",       scItem.GetType(), "Shader", scItem.GetHandle());
     } // Attach the shader to the program
-    GL(cOgl->AttachShader(uiProgram, sData.uiShader),
+    GL(cOgl->AttachShader(uiProgram, scItem.GetHandle()),
       "Failed to attach shader to program!",
-        "Identifier", strName, "Program", uiProgram,
-        "Type",       eT,      "Shader",  sData.uiShader);
+        "Identifier", scItem.IdentGet(), "Program", uiProgram,
+        "Type",       scItem.GetType(),  "Shader",  scItem.GetHandle());
     // Shader compiled
-    LW(LH_DEBUG, "Shader '$'($) compiled at index $ on program $.", strName,
-      sData.uiShader, stIndex, uiProgram);
+    cLog->LogDebugExSafe("Shader '$'($) compiled at index $ on program $.",
+      scItem.IdentGet(), scItem.GetHandle(), stIndex, uiProgram);
   }
+  /* -- Shader initialiser helper ------------------------------------------ */
+  template<typename ...VarArgs>
+    void AddShaderEx(const string &strName, const GLenum eT,
+      const char*const cpFormat, const VarArgs& ...vaArgs)
+  { AddShader(strName, eT, Format(cpFormat, vaArgs...)); }
   /* -- Add vertex shader with template ------------------------------------ */
   void AddVertexShaderWith3DTemplate(const string &strName,
     const char*const cpCode=cpBlank)
   { // Add vertex shader program
-    AddShader(strName, GL_VERTEX_SHADER, Format(
+    AddShaderEx(strName, GL_VERTEX_SHADER,
       // > The vertex shader is for modifying vertice coord data
       // Input parameters           (ONE TRIANGLE)  V1     V2     V3
       "in vec2 texcoord;"              // [3][2]=( {xy},  {xy},  {xy} )
@@ -194,25 +228,26 @@ BEGIN_MEMBERCLASS(Shaders, Shader, ICHelperUnsafe),
         "texcoordout = tc;"            // Set colour from glColorPointer
         "colourout = c;"               // Set colour
         "gl_Position = v;"             // Set vertex position
-      "}", cpCode));
+      "}", cpCode);
   }
   /* -- Add fragment shader with template ---------------------------------- */
   void AddFragmentShaderWithTemplate(const string &strName,
-    const char*const cpCode=cpBlank)
+    const char*const cpCode=cpBlank, const char*const cpHeader=cpBlank)
   { // Add fragmnet shader program
-    AddShader(strName, GL_FRAGMENT_SHADER, Format(
+    AddShaderEx(strName, GL_FRAGMENT_SHADER,
       // > The fragment shader is for modifying actual pixel data
       // Input params    (ONE TRIANGLE, ?=spare)    V1     V2     V3
       "in vec4 texcoordout;"           // [3][4]=({xy??},{xy??},{xy??})
       "in vec4 colourout;"             // [3][4]=({rgba},{rgba},{rgba})
       "out vec4 pixel;"                // Pixel (RGBA) to set
       "uniform sampler2D tex;"                  // Input texture
+      "$"                                       // Any extra header code
       "void main(void){"                        // Entry point
         "vec4 p = texture(tex,texcoordout.xy);" // Save current pixel
         "vec4 c = colourout;"                   // Save custom colour
         "$"                                     // Custom code goes here
         "pixel = p;"                            // Set actual pixel
-      "}", cpCode));                            // Done
+      "}", cpHeader, cpCode);                   // Done
   }
   /* -- Add vertex shader with template ------------------------------------ */
   void AddVertexShaderWith2DTemplate(const string &strName,
@@ -221,23 +256,24 @@ BEGIN_MEMBERCLASS(Shaders, Shader, ICHelperUnsafe),
     AddVertexShaderWith3DTemplate(strName, Format("$"
       "v[0] = -1.0+(((ortho[0]+$(v[0]))/ortho[2])*2.0);"  // X-coord
       "v[1] = -1.0+(((ortho[1]+$(v[1]))/ortho[3])*2.0);", // Y-coord
-        cpCode, cShaders->cpSubPixRound, cShaders->cpSubPixRound).c_str());
+        cpCode, cShaders->strSPRMethod, cShaders->strSPRMethod).c_str());
   }
   /* -- Detach and unlink shaders ------------------------------------------ */
   void DeInitShaders(void)
   { // Ignore if nothing in list
-    if(sList.empty()) return;
+    if(empty()) return;
     // Until shader list is empty
-    for(const Cell &sData : sList)
+    for(const ShaderCell &scItem : *this)
     { // Ignore if no shader
-      if(!sData.uiShader) continue;
+      if(!scItem.GetHandle()) continue;
       // If we have a program. Detach the shader if we have the program
       if(uiProgram)
-        GLL(cOgl->DetachShader(uiProgram, sData.uiShader),
-          "Shader $ not detached from program $!", uiProgram, sData.uiShader);
+        GLL(cOgl->DetachShader(uiProgram, scItem.GetHandle()),
+          "Shader $ not detached from program $!",
+          uiProgram, scItem.GetHandle());
       // Delete the shader
-      GLL(cOgl->DeleteShader(sData.uiShader),
-        "Shader $ could not be deleted!", sData.uiShader);
+      GLL(cOgl->DeleteShader(scItem.GetHandle()),
+        "Shader $ could not be deleted!", scItem.GetHandle());
     } // Done if no program
     if(!uiProgram) return;
     // Deselect program
@@ -255,17 +291,15 @@ BEGIN_MEMBERCLASS(Shaders, Shader, ICHelperUnsafe),
     // No longer linked
     bLinked = false;
     // Clear shader list
-    sList.clear();
-    // Clear uniforms
-    vUniforms.clear();
+    clear();
   }
   /* -- Swap shader members ------------------------------------------------ */
   void SwapShader(Shader &shOtherRef)
   { // Initialise/swap members with old class
-    sList.swap(shOtherRef.sList);
-    swap(uiProgram, shOtherRef.uiProgram);
-    vUniforms.swap(shOtherRef.vUniforms);
-    swap(bLinked, shOtherRef.bLinked);
+    swap(shOtherRef);
+    std::swap(uiProgram, shOtherRef.uiProgram);
+    aUniforms.swap(shOtherRef.aUniforms);
+    std::swap(bLinked, shOtherRef.bLinked);
     // Swap lua lock and registration
     LockSwap(shOtherRef);
     CollectorSwapRegistration(shOtherRef);
@@ -276,6 +310,7 @@ BEGIN_MEMBERCLASS(Shaders, Shader, ICHelperUnsafe),
   Shader(Shader &&oCref) :
     /* -- Initialisation of members ---------------------------------------- */
     ICHelperShader{ *cShaders },       // Initially unregistered
+    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     uiProgram(0),                      // No program set
     bLinked(false)                     // Not linked
     /* -- Swap with other shader members ----------------------------------- */
@@ -284,6 +319,7 @@ BEGIN_MEMBERCLASS(Shaders, Shader, ICHelperUnsafe),
   Shader(void) :
     /* -- Initialisation of members ---------------------------------------- */
     ICHelperShader{ *cShaders, this }, // Register in Shaders list
+    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     uiProgram(0),                      // No program set
     bLinked(false)                     // Not linked
     /* -- No code ---------------------------------------------------------- */
@@ -293,7 +329,7 @@ BEGIN_MEMBERCLASS(Shaders, Shader, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Shader);             // Disable copy constructor and operator
 };/* ----------------------------------------------------------------------- */
-END_COLLECTOREX(Shaders,,,,cpSubPixRound(nullptr));
+END_COLLECTOR(Shaders);
 /* == Init built-in shaders ================================================ */
 static void Init3DShader(Shader &sh3D)
 { // Add our basic 3D shader
@@ -329,6 +365,18 @@ static void Init2D8Shader(Shader &sh2D8)
   sh2D8.Link();
 }
 /* ========================================================================= */
+static void Init2D8PalShader(Shader &sh2D8Pal)
+{ // Add our 2D to 3D transformation shader with GL_LUMINANCE decoding
+  sh2D8Pal.LockSet();
+  sh2D8Pal.AddVertexShaderWith2DTemplate("VERT-2D");
+  sh2D8Pal.AddFragmentShaderWithTemplate("FRAG-2D PAL>RGB",
+    "p = pal[int(p.r * 255)]; p = p * c;", // Set pixel and modulate
+    "uniform vec4 pal[256];");             // Global colour palette
+  sh2D8Pal.Link();
+  // We need the location of the palette
+  sh2D8Pal.VerifyUniformLocation("pal", U_PALETTE);
+}
+/* ========================================================================= */
 static void Init2D16Shader(Shader &sh2D16)
 { // Add our 2D to 3D transformation shader with GL_LUMINANCE_ALPHA decoding
   sh2D16.LockSet();
@@ -343,7 +391,7 @@ static void Init3DYUVTemplate(Shader &sh3DYUV, const char *cpName,
 { // Add YUV to RGB shaders
   sh3DYUV.LockSet();
   sh3DYUV.AddVertexShaderWith3DTemplate("VERT-3D");
-  sh3DYUV.AddShader(cpName, GL_FRAGMENT_SHADER, Format(
+  sh3DYUV.AddShaderEx(cpName, GL_FRAGMENT_SHADER,
     "in vec4 texcoordout;"             // Texture info
     "in vec4 colourout;"               // Colour info
     "out vec4 pixel;"                  // Pixel out
@@ -358,7 +406,7 @@ static void Init3DYUVTemplate(Shader &sh3DYUV, const char *cpName,
       "yuv.z = texture(texCr,vec2(texcoordout)).r-0.5;"
       "rgb = mat3(1,1,1,0,-0.344,1.77,1.403,-0.714,0)*yuv;"
       "pixel = vec4(rgb,$);"
-    "}", cpCode));
+    "}", cpCode);
   sh3DYUV.Link();
   sh3DYUV.Activate();
   // For each texture unit
@@ -367,12 +415,12 @@ static void Init3DYUVTemplate(Shader &sh3DYUV, const char *cpName,
   { // Get location of specified variable in gpu shader and set to the
     // required texture unit.
     const GLchar*const cpUniform = acpCmp[stIndex];
-    const GLint &iU = sh3DYUV.GetUniformLocation(cpUniform);
+    const GLint &iUniformId = sh3DYUV.GetUniformLocation(cpUniform);
     GLC("Failed to get uniform location from YUV shader!",
       "Variable", cpUniform, "Index", stIndex);
-    GL(cOgl->Uniform(iU, static_cast<GLint>(stIndex)),
+    GL(cOgl->Uniform(iUniformId, static_cast<GLint>(stIndex)),
       "Failed to set YUV uniform texture unit!",
-      "Variable", cpUniform, "Index", stIndex, "Uniform", iU);
+      "Variable", cpUniform, "Index", stIndex, "Uniform", iUniformId);
   }
 }
 /* ========================================================================= */
@@ -392,19 +440,18 @@ static void Init3DYUVKShader(Shader &sh3DYUVK)
 /* == Set rounding method for the shader =================================== */
 static CVarReturn SetSPRoundingMethod(const size_t stMethod)
 { // Rounding methods
-  static const array<const char*const,5> acpMethods
-  { /* [0] */ cpBlank,                 // Default (no rounding)
-    /* [1] */ "floor",                 // Floor rounding (> 0 ? 0)
-    /* [2] */ "ceil",                  // Ceil rounding (< 1 ? 1)
-    /* [3] */ "round",                 // Nearest whole number (> 0.5 ? 1 : 0)
-    /* [4] */ "roundEven"              // Nearest even number (???)
-  }; // Set the new rounding value
-  // Return if specified value is outrageous!
+  static const array<const string, 5> acpMethods
+  { /* [0] */ strBlank,                // No rounding
+    /* [1] */ "floor",                 // Floor rounding
+    /* [2] */ "ceil",                  // Ceil rounding
+    /* [3] */ "round",                 // Nearest whole number
+    /* [4] */ "roundEven"              // Nearest even number
+  }; // Return if specified value is outrageous!
   if(stMethod >= acpMethods.size()) return DENY;
-  cShaders->cpSubPixRound = acpMethods[stMethod];
+  cShaders->strSPRMethod = acpMethods[stMethod];
   // Success
   return ACCEPT;
 }
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

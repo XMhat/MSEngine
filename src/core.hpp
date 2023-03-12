@@ -7,17 +7,18 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfCore {                     // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfCore {                     // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfJson;                // Using json interface
-using namespace IfCursor;              // Using cursor interface
-using namespace IfMask;                // Using mask interface
-using namespace IfDisplay;             // Using display interface
-using namespace IfAudio;               // Using audio interface
-using namespace IfFile;                // Using file interface
-using namespace IfSShot;               // Using sshot interface
-using namespace IfCredit;              // Using credit interface
+using namespace IfJson;                // Using json namespace
+using namespace IfCursor;              // Using cursor namespace
+using namespace IfMask;                // Using mask namespace
+using namespace IfDisplay;             // Using display namespace
+using namespace IfAudio;               // Using audio namespace
+using namespace IfFile;                // Using file namespace
+using namespace IfPalette;             // Using palette namespace
+using namespace IfSShot;               // Using sshot namespace
+using namespace IfCredit;              // Using credit namespace
 /* ------------------------------------------------------------------------- */
 static enum ErrorBehaviour             // Lua error mode behaviour
 { /* ----------------------------------------------------------------------- */
@@ -97,7 +98,7 @@ static CVarReturn CoreSetHomeDir(const string &strP, string &strV)
   // Set home directory
   cCmdLine->SetHome(strNP);
   // We are changing the value so make sure the cvar system knows that
-  strV = move(strNP);
+  strV = std::move(strNP);
   return ACCEPT_HANDLED;
 }
 /* -- Set error limit ------------------------------------------------------ */
@@ -114,39 +115,33 @@ static CVarReturn CoreParseCmdLine(const string&, string &strV)
     size_t stGood = 0, stArg = 1;
     // Parse command line arguments and iterate through them
     for(const string &strArg : svArgs)
-    { // If empty argument
+    { // If empty argument? Log the failure and continue
       if(strArg.empty())
-      { // Log the failure and continue
-        LW(LH_WARNING, "Core rejected empty command-line argument at $!",
-          stArg);
-      } // Not empty argument?
+        cLog->LogWarningExSafe(
+          "Core rejected empty command-line argument at $!", stArg);
+      // Not empty argument?
       else
       { // Tokenise the argument into a key/value pair. We only want a maximum
-        // of two tokens, the seperator is allowed on the second token.
+        // of two tokens, the seperator is allowed on the second token. Log the
+        // failure and continue if we didn't parse a key/value pair.
         const Token tKeyVal{ strArg, "=", 2 };
         if(tKeyVal.empty())
-        { // Log the failure and continue
-          LW(LH_WARNING, "Core rejected invalid command-line "
+          cLog->LogWarningExSafe("Core rejected invalid command-line "
             "argument at $: '$'!", stArg, strArg);
-        } // Argument is valid?
-        else
-        { // Set the variable from command line with full permission because we
-          // should allow any variable to be overriden from the command line.
-          // Also show an error if the variable could not be set.
-          if(cCVars->SetVarOrInitial(tKeyVal[0], tKeyVal.size() <= 1 ?
-            strBlank : tKeyVal[1], SCMDLINE|PBOOT, CSC_NOTHING))
-          { // Append argument to accepted command line and add a space
-            strV.append(strArg);
-            strV.append(strSpace);
-            // Good variable
-            ++stGood;
-          } // Failure?
-          else
-          { // Log the failure
-            LW(LH_WARNING, "Core rejected command-line argument at $: '$'!",
-              stArg, strArg);
-          }
-        }
+        // Argument is valid? Set the variable from command line with full
+        // permission because we should allow any variable to be overriden from
+        // the command line. Also show an error if the variable could not be
+        // set.
+        else if(cCVars->SetVarOrInitial(tKeyVal[0], tKeyVal.size() <= 1 ?
+          strBlank : tKeyVal[1], SCMDLINE|PBOOT, CSC_NOTHING))
+        { // Append argument to accepted command line and add a space
+          strV.append(strArg);
+          strV.append(strSpace);
+          // Good variable
+          ++stGood;
+        } // Failure? Log the failure
+        else cLog->LogWarningExSafe(
+          "Core rejected command-line argument at $: '$'!", stArg, strArg);
       } // Next argument
       ++stArg;
     } // Remove empty space if not empty
@@ -154,17 +149,18 @@ static CVarReturn CoreParseCmdLine(const string&, string &strV)
     // Free unused memory
     strV.shrink_to_fit();
     // Write command-line arguments parsed
-    LW(LH_DEBUG, "Core parsed $ of $ command-line arguments.", stGood, stArg);
+    cLog->LogDebugExSafe("Core parsed $ of $ command-line arguments.",
+      stGood, stArg);
   } // No arguments processed
-  else LW(LH_DEBUG, "Core parsed no command-line arguments!");
+  else cLog->LogDebugSafe("Core parsed no command-line arguments!");
   // We handled setting the variable
   return ACCEPT_HANDLED;
 }
 /* -- Reset environment function ------------------------------------------- */
 static void CoreResetEnvironment(const bool bLeaving)
 { // End current SQL transaction, we need to report it if it succeeded.
-  if(!cSql->End())
-    LW(LH_WARNING, "Core ended an in-progress SQL transaction!");
+  if(cSql->End() != SQLITE_ERROR)
+    cLog->LogWarningSafe("Core ended an in-progress SQL transaction!");
   // Reset all SQL error codes and stored results and records.
   cSql->Reset();
   // If using graphical inteactive mode?
@@ -173,6 +169,8 @@ static void CoreResetEnvironment(const bool bLeaving)
     cFboMain->ResetClearColour();
     // Reset texture unit and shader program if in GUI mode
     cOgl->ResetBinds();
+    // Reset default palette
+    cPalettes->palDefault.Commit();
     // Set main framebuffer as default
     cFboMain->ActivateMain();
     // Reset cursor type, show it and clear input states
@@ -261,7 +259,7 @@ static int CoreThreadSandbox(lua_State*const lS)
         // Threading not enabled?
         if(cDisplay->FlagIsClear(DF_THREADED))
         { // Loop until event manager says we should break
-          while(cEvtMain->HandleSafe() && !cGlFW->ShouldWindowClose())
+          while(cEvtMain->HandleSafe() && !cGlFW->WinShouldClose())
           { // Process window event manager commands from other threads
             cEvtWin->ManageUnsafe();
             // Is it time to execute a game tick?
@@ -273,7 +271,7 @@ static int CoreThreadSandbox(lua_State*const lS)
               // Loop point incase we need to catchup game ticks
               TimerCatchupUnthreaded:
               { // Process window events
-                cGlFW->PollEvents();
+                GlFWPollEvents();
                 // Set main fbo by default on each frame
                 cFboMain->ActivateMain();
                 // Poll joysticks
@@ -350,7 +348,7 @@ static void CoreLuaDeInitHelper(void)
 /* -- DeInitialise engine components --------------------------------------- */
 static void CoreDeInitComponents(void) try
 { // Log reason for deinit
-  LW(LH_DEBUG, "Engine de-initialising interfaces with code $.",
+  cLog->LogDebugExSafe("Engine de-initialising interfaces with code $.",
     cEvtMain->GetExitReason());
   // Unregister exit events
   cEvtMain->DeInit();
@@ -394,11 +392,11 @@ static void CoreDeInitComponents(void) try
   // OpenGL de-initialised (do not throw error if de-initialised)
   cOgl->DeInit(true);
   // Close window
-  cGlFW->HideWindow();
+  cGlFW->WinHide();
 } // exception occured?
 catch(const exception &E)
 { // Make sure the exception is logged
-  LW(LH_ERROR, "(ENGINE THREAD DE-INIT EXCEPTION) $", E.what());
+  cLog->LogErrorExSafe("(ENGINE THREAD DE-INIT EXCEPTION) $", E.what());
 }
 /* -- Redraw the frame buffer when error occurs ---------------------------- */
 static void CoreForceRedrawFrameBuffer(const bool bAndConsole)
@@ -418,14 +416,14 @@ static void CoreDeInitEverything(void)
   // If not in graphical mode, we're done
   if(cSystem->IsNotGuiMode(GM_GRAPHICS)) return;
   // Window should close as well
-  cGlFW->SetCloseWindow(GLFW_TRUE);
+  cGlFW->WinSetClose(GLFW_TRUE);
   // Still bugged in 3.3.2 full-screen windows
-  cGlFW->ForceEventHack();
+  GlFWForceEventHack();
 }
 /* -- Engine thread (member function) -------------------------------------- */
 static int CoreThreadMain(Thread&) try
 { // Log reason for init
-  LW(LH_INFO, "Core engine thread started (C:$;M:$<$>).",
+  cLog->LogInfoExSafe("Core engine thread started (C:$;M:$<$>).",
     cEvtMain->GetExitReason(), cSystem->GetGuiModeString(),
     cSystem->GetGuiMode());
   // Non-interactive mode?
@@ -498,7 +496,8 @@ static int CoreThreadMain(Thread&) try
             case LEM_IGNORE:
               // Write ignore exception to log and pause if at the limit.
               if(uiErrorCount >= uiErrorLimit) goto Pause;
-              LW(LH_ERROR, "Core sandbox ignored #$/$ run-time exception: $",
+              cLog->LogErrorExSafe(
+                "Core sandbox ignored #$/$ run-time exception: $",
                 ++uiErrorCount, uiErrorLimit, E.what());
               // Redraw the console but do not show it.
               CoreForceRedrawFrameBuffer(false);
@@ -508,9 +507,9 @@ static int CoreThreadMain(Thread&) try
             case LEM_RESET:
               // Write ignore exception to log and pause if at the limit.
               if(uiErrorCount >= uiErrorLimit) goto Pause;
-              LW(LH_ERROR,
+              cLog->LogErrorExSafe(
                 "Core sandbox reset #$/$ with run-time exception: $",
-                  ++uiErrorCount, uiErrorLimit, E.what());
+                ++uiErrorCount, uiErrorLimit, E.what());
               // Flush events and restart the guest
               cLua->ReInit();
               // Redraw the console but do not show it
@@ -518,20 +517,24 @@ static int CoreThreadMain(Thread&) try
               // Go back into the sandbox
               goto SandBox;
             // Open console and show error? Just break to other code.
-            case LEM_SHOW:
+            case LEM_SHOW: Pause:      // May come here from above too
               // Write ignore exception to log.
-              Pause: LW(LH_ERROR,
-                "Core sandbox run-time exception: $", E.what());
+              cLog->LogErrorExSafe("Core sandbox run-time exception: $",
+                E.what());
               // Add event to pause.
               cEvtMain->Add(EMC_LUA_PAUSE);
               // Redraw the console and show it.
               CoreForceRedrawFrameBuffer(true);
               // Break to pause
               goto SandBox;
-            // Unknown value so report it!
-            default: LW(LH_ERROR,
-              "Core exception with unknown behaviour $: $",
+            // Unknown value?
+            default:
+              // Report it!
+              cLog->LogErrorExSafe(
+                "Core exception with unknown behaviour $: $",
                 ebErrorMode, E.what());
+              // Fall through to LEM_CRITICAL
+              [[fallthrough]];
             // Terminate engine with error? Throw to critical error dialog.
             case LEM_CRITICAL:
               // Redraw the console.
@@ -549,32 +552,44 @@ static int CoreThreadMain(Thread&) try
         // for here.
         switch(cEvtMain->GetExitReason())
         { // Lua is ending execution? (i.e. via 'lend') fall through.
-          case EMC_LUA_END:
+          case EMC_LUA_END: [[fallthrough]];
           // Lua executing is re-initialising? (i.e. lreset).
           case EMC_LUA_REINIT:
             // Write exception to log.
-            LW(LH_ERROR, "Core sandbox de-init exception: $", E.what());
+            cLog->LogErrorExSafe("Core sandbox de-init exception: $",
+              E.what());
             // Break
             break;
-          // Unknown exit reason. Again check EvtMain::DoHandle().
-          default: LW(LH_DEBUG,
-            "Core has unknown exit reason of $!", cEvtMain->GetExitReason());
+          // Unknown exit reason?
+          default:
+            // Report unknown exit reason to log
+            cLog->LogDebugExSafe("Core has unknown exit reason of $!",
+              cEvtMain->GetExitReason());
+            // Fall through to EMC_QUIT_RESTART
+            [[fallthrough]];
           // Quitting and restarting?
-          case EMC_QUIT_RESTART:
-          case EMC_QUIT_RESTART_NP:
+          case EMC_QUIT_RESTART: [[fallthrough]];
+          // Quitting and restarting with no parameters?
+          case EMC_QUIT_RESTART_NP: [[fallthrough]];
           // Thread and main thread should quit so tell thread to break.
           case EMC_QUIT: throw;
         } // We get here if we're going to the choices
         break;
-      // Unknown exit reason so report it and fall through
-      default: LW(LH_WARNING,
-        "Core has unknown exit reason of $!", cEvtMain->GetExitReason());
-      // Lua is ending execution? Shouldn't happen. Fall through.
-      case EMC_LUA_END:
-      // Lua executing is re-initialising? Shouldn't happen. Fall through.
-      case EMC_LUA_REINIT:
-      // Quitting and restarting? Shouldn't happen. Fall through.
-      case EMC_QUIT_RESTART: case EMC_QUIT_RESTART_NP:
+      // Unknown exit reason?
+      default:
+        // Report it
+        cLog->LogWarningExSafe("Core has unknown exit reason of $!",
+          cEvtMain->GetExitReason());
+        // Fall through to EMC_LUA_END
+        [[fallthrough]];
+      // Lua is ending execution? Shouldn't happen.
+      case EMC_LUA_END: [[fallthrough]];
+      // Lua executing is re-initialising? Shouldn't happen.
+      case EMC_LUA_REINIT: [[fallthrough]];
+      // Quitting and restarting? Shouldn't happen.
+      case EMC_QUIT_RESTART: [[fallthrough]];
+      // Quitting and restarting without params? Shouldn't happen.
+      case EMC_QUIT_RESTART_NP: [[fallthrough]];
       // Thread and main thread should quit. De-init components and rethrow.
       case EMC_QUIT: CoreDeInitComponents(); throw;
     } // We get here to process lua event as normal.
@@ -597,8 +612,8 @@ static int CoreThreadMain(Thread&) try
       // Re-initialise lua and go back into the sandbox
       goto SandBoxInit;
     // Unknown value so report it and fall through.
-    default: LW(LH_WARNING,
-      "Core has unknown error behaviour of $!", ebErrorMode);
+    default: cLog->LogWarningExSafe("Core has unknown error behaviour of $!",
+      ebErrorMode);
     // Execution ended because of error. Shouldn't get here. Fall through.
     case EMC_LUA_ERROR:
     // Restarting engine completely? Fall through.
@@ -617,7 +632,7 @@ catch(const exception &E)
 { // We will quit since this is fatal
   cEvtMain->SetExitReason(EMC_QUIT);
   // Write exception to log
-  LW(LH_ERROR, "(ENGINE THREAD FATAL EXCEPTION) $", E.what());
+  cLog->LogErrorExSafe("(ENGINE THREAD FATAL EXCEPTION) $", E.what());
   // Show error
   cSystem->SysMsgEx("Engine Thread Fatal Exception", E.what(), MB_ICONSTOP);
   // De-inti everything
@@ -652,7 +667,7 @@ static int CoreMain(const int iArgs, ARGTYPE**const lArgs,
   // freed memory. The following is a helper macro to create a static class,
   // assign the global pointer version to it (makes compiler optimise the
   // pointers to references) and clear the pointer when the scope is lost.
-  #define INITSS(x, ...) DEINITHELPER(dih ## x, c ## x = nullptr); \
+#define INITSS(x, ...) DEINITHELPER(dih ## x, c ## x = nullptr); \
     x eng ## x{ __VA_ARGS__ }; c ## x = &eng ## x
   // Initialise critical command-line and logging systems. We cannot really
   // do anything else special until we've enabled these subsystems.
@@ -667,7 +682,6 @@ static int CoreMain(const int iArgs, ARGTYPE**const lArgs,
     INITSS(Threads);                   // cppcheck-suppress danglingLifetime
     INITSS(EvtMain);                   // cppcheck-suppress danglingLifetime
     INITSS(System);                    // cppcheck-suppress danglingLifetime
-    INITSS(DyLibs);                    // cppcheck-suppress danglingLifetime
     INITSS(LuaFuncs);                  // cppcheck-suppress danglingLifetime
     INITSS(Archives);                  // cppcheck-suppress danglingLifetime
     INITSS(Assets);                    // cppcheck-suppress danglingLifetime
@@ -675,10 +689,6 @@ static int CoreMain(const int iArgs, ARGTYPE**const lArgs,
     INITSS(Sql);                       // cppcheck-suppress danglingLifetime
     INITSS(GlFW);                      // cppcheck-suppress danglingLifetime
     INITSS(CVars);                     // cppcheck-suppress danglingLifetime
-    INITSS(Images);                    // cppcheck-suppress danglingLifetime
-    INITSS(ImageFmts);                 // cppcheck-suppress danglingLifetime
-    INITSS(Pcms);                      // cppcheck-suppress danglingLifetime
-    INITSS(PcmFmts);                   // cppcheck-suppress danglingLifetime
     INITSS(FreeType);                  // cppcheck-suppress danglingLifetime
     INITSS(Ftfs);                      // cppcheck-suppress danglingLifetime
     INITSS(Files);                     // cppcheck-suppress danglingLifetime
@@ -688,12 +698,16 @@ static int CoreMain(const int iArgs, ARGTYPE**const lArgs,
     INITSS(Bins);                      // cppcheck-suppress danglingLifetime
     // Audio rendering subsystems
     INITSS(Oal);                       // cppcheck-suppress danglingLifetime
+    INITSS(PcmFmts);                   // cppcheck-suppress danglingLifetime
+    INITSS(Pcms);                      // cppcheck-suppress danglingLifetime
     INITSS(Audio);                     // cppcheck-suppress danglingLifetime
     INITSS(Sources);                   // cppcheck-suppress danglingLifetime
     INITSS(Samples);                   // cppcheck-suppress danglingLifetime
     INITSS(Streams);                   // cppcheck-suppress danglingLifetime
     // Graphics rendering and window subsystems
     INITSS(Ogl);                       // cppcheck-suppress danglingLifetime
+    INITSS(ImageFmts);                 // cppcheck-suppress danglingLifetime
+    INITSS(Images);                    // cppcheck-suppress danglingLifetime
     INITSS(Shaders);                   // cppcheck-suppress danglingLifetime
     INITSS(EvtWin);                    // cppcheck-suppress danglingLifetime
     INITSS(Display);                   // cppcheck-suppress danglingLifetime
@@ -704,26 +718,25 @@ static int CoreMain(const int iArgs, ARGTYPE**const lArgs,
     INITSS(FboMain);                   // cppcheck-suppress danglingLifetime
     INITSS(SShot);                     // cppcheck-suppress danglingLifetime
     INITSS(Textures);                  // cppcheck-suppress danglingLifetime
+    INITSS(Palettes);                  // cppcheck-suppress danglingLifetime
     INITSS(Fonts);                     // cppcheck-suppress danglingLifetime
     INITSS(Videos);                    // cppcheck-suppress danglingLifetime
     // Lua always has to be last so it can clean up properly
     INITSS(Console);                   // cppcheck-suppress danglingLifetime
     INITSS(Lua);                       // cppcheck-suppress danglingLifetime
     // Done with this macro
-    #undef INITSS
+#undef INITSS
     // Codec helper macro. Do not change the order or you will have to update
     // the index and order in Image::LoadFlags or Pcm::LoadFlags respectively.
-    #define INITCODEC(x) const Codec ## x engCodec ## x
-    // Initialise available image codecs. Note, these have to match the order
-    // of auto-detection in the image.hpp:LoadData() function...
+#define INITCODEC(x) const Codec ## x engCodec ## x
+    // Initialise available image codecs.
     INITCODEC(TGA); /* #0 */ INITCODEC(JPG); /* #1 */  INITCODEC(PNG); /* #2 */
     INITCODEC(GIF); /* #3 */ INITCODEC(DDS); /* #4 */
-    // Initialise available audio codecs. Note, these have to match the order
-    // of auto-detection in the pcm.hpp:LoadData() function...
+    // Initialise available audio codecs.
     INITCODEC(WAV); /* #0 */ INITCODEC(CAF); /* #1 */  INITCODEC(OGG); /* #2 */
     INITCODEC(MP3); /* #3 */
     // Done with this macro
-    #undef INITCODEC
+#undef INITCODEC
     // Register default cvars and pass over the current gui mode by ref. All
     // the core parts of the engine are initialised from cvar callbacks.
     cCVars->RegisterDefaults();
@@ -782,11 +795,11 @@ static int CoreMain(const int iArgs, ARGTYPE**const lArgs,
           // Setup main thread and start it
           cEvtMain->ThreadInit(CoreThreadMain, nullptr);
           // Loop until window should close
-          while(!cGlFW->ShouldWindowClose())
+          while(!cGlFW->WinShouldClose())
           { // Process window event manager commands from other threads
             cEvtWin->ManageSafe();
             // Wait for more window events
-            cGlFW->WaitEvents();
+            GlFWWaitEvents();
           }
         } // Threading disabled?
         else
@@ -798,7 +811,7 @@ static int CoreMain(const int iArgs, ARGTYPE**const lArgs,
       } // Error occured
       catch(const exception &E)
       { // Send to log and show error message to user
-        LW(LH_ERROR, "(WINDOW LOOP EXCEPTION) $", E.what());
+        cLog->LogErrorExSafe("(WINDOW LOOP EXCEPTION) $", E.what());
         // Exit loop so we don't infinite loop
         cEvtMain->SetExitReason(EMC_QUIT);
         // Show error and try to carry on and clean everything up
@@ -817,7 +830,7 @@ static int CoreMain(const int iArgs, ARGTYPE**const lArgs,
   } // Safe loggable exception occured?
   catch(const exception &E)
   { // Send to log and show error message to user
-    LW(LH_ERROR, "(MAIN THREAD FATAL EXCEPTION) $", E.what());
+    cLog->LogErrorExSafe("(MAIN THREAD FATAL EXCEPTION) $", E.what());
     // Show message box
     SysMessage("Main Thread Exception", E.what(), MB_ICONSTOP);
     // Done
@@ -829,7 +842,7 @@ static int CoreMain(const int iArgs, ARGTYPE**const lArgs,
     { // Just exit? Put in log that this instance is terminating
       case CmdLine::EC_QUIT:
       { // Put event in log
-        LW(LH_WARNING, "Core signalled to terminate!");
+        cLog->LogWarningSafe("Core signalled to terminate!");
         // Set auto quit
         cCmdLine->SetRestart(CmdLine::EC_QUIT);
         // Done
@@ -837,7 +850,8 @@ static int CoreMain(const int iArgs, ARGTYPE**const lArgs,
       } // Restart without parameters?
       case CmdLine::EC_RESTART_NO_PARAM:
       { // Put event in log
-        LW(LH_WARNING, "Core signalled to restart without parameters!");
+        cLog->LogWarningSafe(
+          "Core signalled to restart without parameters!");
         // Set auto restart
         cCmdLine->SetRestart(CmdLine::EC_RESTART_NO_PARAM);
         // Done
@@ -845,7 +859,7 @@ static int CoreMain(const int iArgs, ARGTYPE**const lArgs,
       } // Restart with parameters
       case CmdLine::EC_RESTART:
       { // Message to send
-        LW(LH_WARNING, "Core signalled to restart with $ parameters!",
+        cLog->LogWarningExSafe("Core signalled to restart with $ parameters!",
           cCmdLine->GetTotalCArgs());
         // Have debugging enabled?
         if(cLog->HasLevel(LH_DEBUG))
@@ -854,8 +868,7 @@ static int CoreMain(const int iArgs, ARGTYPE**const lArgs,
           // Log each argument that will be sent. Could be wchar_t or char.
           for(const ARGTYPE*const *atListPtr = cCmdLine->GetCArgs();
             const ARGTYPE*const atPtr = *atListPtr; ++atListPtr)
-              cLog->WriteStringSafe(LH_DEBUG,
-                Format("- Arg $: $.", stId++, S16toUTF(atPtr)));
+              cLog->LogNLCDebugExSafe("- Arg $: $.", stId++, S16toUTF(atPtr));
         } // Set auto restart
         cCmdLine->SetRestart(CmdLine::EC_RESTART);
         // Done
@@ -872,6 +885,6 @@ catch(const exception &E)
   // Done
   return 5;
 }
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

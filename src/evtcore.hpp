@@ -6,10 +6,10 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfEvtCore {                  // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfEvtCore {                  // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfLog;                 // Using log interface
+using namespace IfLog;                 // Using log namespace
 /* -- Common events system (since we need to use this twice) --------------- */
 template<typename Cmd,                 // Variable type of command to use
          size_t   EvtMaxEvents,        // Maximum number of events
@@ -68,7 +68,7 @@ class EvtCore                          // Start of common event system class
       /* -- Initialisers --------------------------------------------------- */
       evtCommand(evtC),                // Set requested command
       evtcFunction{ evtcF },           // Set callback function
-      vParams{ move(vP) }              // Move requested parameters
+      vParams{ std::move(vP) }              // Move requested parameters
       /* -- No code -------------------------------------------------------- */
       { }
     /* -- Initialiser with copy parameters --------------------------------- */
@@ -82,9 +82,9 @@ class EvtCore                          // Start of common event system class
     /* -- Move constructor ------------------------------------------------- */
     Cell(Cell &&cOther) :
       /* -- Initialisers --------------------------------------------------- */
-      evtCommand(cOther.evtCommand),   // Set other command
-      evtcFunction{ move(cOther.evtcFunction) }, // Set other callback function
-      vParams{ move(cOther.vParams) }  // Move other parameters
+      evtCommand(cOther.evtCommand),                  // Set other command
+      evtcFunction{ std::move(cOther.evtcFunction) }, // Set other cb function
+      vParams{ std::move(cOther.vParams) }            // Move other parameters
       /* -- No code -------------------------------------------------------- */
       { }
     /* --------------------------------------------------------------------- */
@@ -97,7 +97,7 @@ class EvtCore                          // Start of common event system class
   /* -- Generic event ------------------------------------------------------ */
   void BlankFunction(const Cell &cData)
   { // Log the error
-    LW(LH_WARNING, "$ ignored unregistered event! ($>$).",
+    cLog->LogWarningExSafe("$ ignored unregistered event! ($>$).",
       strName, cData.evtCommand, cData.vParams.size());
   }
   /* -- Get a function ----------------------------------------------------- */
@@ -106,7 +106,7 @@ class EvtCore                          // Start of common event system class
     const size_t stId = static_cast<size_t>(eCmd);
     if(stId < evtData.size()) return evtData[stId];
     // Log the error
-    LW(LH_WARNING, "$ accessed an invalid event! ($>$).",
+    cLog->LogWarningExSafe("$ accessed an invalid event! ($>$).",
       strName, stId, evtData.size());
     // Return a blank function
     return bind(&EvtCore::BlankFunction, this, _1);
@@ -116,7 +116,7 @@ class EvtCore                          // Start of common event system class
   { // Get callback function
     const CBFunc &fCB = GetFunction(eCmd);
     // Execute callback function
-    fCB({ eCmd, fCB, move(pData) });
+    fCB({ eCmd, fCB, std::move(pData) });
   }
   /* -- Execute specified event NOW (parameters) --------------------------- */
   template<typename... V,typename T>
@@ -129,11 +129,11 @@ class EvtCore                          // Start of common event system class
   /* -- Add with copy parameter semantics (finisher) ----------------------- */
   void AddParam(const Cmd eCmd, Params &pData)
   { // Event data to add to events list
-    Cell cData{ eCmd, GetFunction(eCmd), move(pData) };
+    Cell cData{ eCmd, GetFunction(eCmd), std::move(pData) };
     // Wait and lock main event list
     const LockGuard lgEventsSync{ mMutex };
     // Move cell into event list
-    eEvents.emplace_back(move(cData));
+    eEvents.emplace_back(std::move(cData));
   }
   /* -- Add with copy parameter semantics (parameters) --------------------- */
   template<typename... V,typename T>
@@ -164,13 +164,14 @@ class EvtCore                          // Start of common event system class
   { // Until event list is empty
     while(!eEvents.empty())
     { // Get event data. Move it and never reference it!
-      const Cell epData{ move(eEvents.front()) };
+      const Cell epData{ std::move(eEvents.front()) };
       // Erase element. We're done with it. This is needed here incase the
       // callback throws an exception and causes an infinite loop.
       eEvents.pop_front();
       // Log event if loggable
       if(epData.evtCommand < EvtNoLog)
-        LW(LH_DEBUG, "$ processing event $.", strName, epData.evtCommand);
+        cLog->LogDebugExSafe("$ processing event $.",
+          strName, epData.evtCommand);
       // No callback? Return command to loop
       if(!epData.evtcFunction) return epData.evtCommand;
       // Execute the event callback
@@ -190,13 +191,13 @@ class EvtCore                          // Start of common event system class
     { // Until event list is empty
       while(!eEvents.empty())
       { // Get event data. Move it and never reference it!
-        const Cell epData{ move(eEvents.front()) };
+        const Cell epData{ std::move(eEvents.front()) };
         // Erase element. We're done with it. This is needed here incase the
         // callback throws an exception and causes an infinite loop.
         eEvents.pop_front();
         // Log event if loggable
         if(epData.evtCommand < EvtNoLog)
-          LW(LH_DEBUG, "$ system processing event $.",
+          cLog->LogDebugExSafe("$ system processing event $.",
             strName, epData.evtCommand);
         // No callback? Return command to loop
         if(!epData.evtcFunction) return epData.evtCommand;
@@ -211,7 +212,7 @@ class EvtCore                          // Start of common event system class
     return EvtNone;
   }
   /* -- Flush events list -------------------------------------------------- */
-  void Flush(void) { const LockGuard lgEventsSync(mMutex); eEvents.clear(); }
+  void Flush(void) { const LockGuard lgEventsSync{ mMutex }; eEvents.clear(); }
   /* -- Execute specified event NOW (starter) ------------------------------ */
   template<typename... V>void Execute(const Cmd eCmd, V... vVars)
   { // Parameters list
@@ -233,11 +234,11 @@ class EvtCore                          // Start of common event system class
   /* -- Add to events and return iterator (finisher) ----------------------- */
   void AddExParam(const Cmd eCmd, QueueConstIt &qciItem, Params &pData)
   { // Setup cell to insert
-    Cell cData{ eCmd, GetFunction(eCmd), move(pData) };
+    Cell cData{ eCmd, GetFunction(eCmd), std::move(pData) };
     // Try to lock main event list
     const LockGuard lgEventsSync{ mMutex };
     // Push new event whilst move parameters into it
-    qciItem = move(eEvents.emplace(eEvents.cend(), move(cData)));
+    qciItem = std::move(eEvents.emplace(eEvents.cend(), std::move(cData)));
   }
   /* -- Add to events and return iterator (parameters) --------------------- */
   template<typename... V,typename T>void AddExParam(const Cmd eCmd,
@@ -293,11 +294,11 @@ class EvtCore                          // Start of common event system class
   void UnregisterEx(const RegVec &clCmds)
     { for(const auto &clP : clCmds) Unregister(clP.first); }
     /* -- Event data, all empty functions ---------------------------------- */
-  explicit EvtCore(const string &strN) : strName{move(strN)}
+  explicit EvtCore(const string &strN) : strName{std::move(strN)}
     { evtData.fill(bind(&EvtCore::BlankFunction, this, _1)); }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(EvtCore);            // Delete copy constructor and operator
 };/* ----------------------------------------------------------------------- */
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

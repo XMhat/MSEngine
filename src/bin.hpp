@@ -7,25 +7,25 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfBin {                      // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfBin {                      // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfCollector;           // Using collector interface
+using namespace IfCollector;           // Using collector namespace
+using namespace IfDim;                 // Using dimensions namespace
 /* ========================================================================= */
 template<typename IntType=int,         // Unsigned type not allowed!
          typename Int=typename make_signed<IntType>::type,
-         typename UInt=typename make_unsigned<IntType>::type>
-class Pack
+         typename UInt=typename make_unsigned<IntType>::type,
+         class DimClass=Dimensions<Int>>
+class Pack :
+  /* -- Initialisers ------------------------------------------------------- */
+  public DimClass                      // Dimensions of bin in pixels
 { /* -- Checks ------------------------------------------------------------- */
   static_assert(is_same_v<IntType, Int>, "Invalid type!");
   /* --------------------------------------------------------------- */ public:
-  struct RectSize { Int iW, iH; };     // Simple size of a rectangle
-  struct Rect { Int iX, iY, iW, iH; }; // Rectangle with co-ordinates
+  typedef DimCoords<Int> Rect;         // Rectangle of signed ints
+  typedef vector<Rect> RectList;       // list of rectangles
   /* -------------------------------------------------------------- */ private:
-  typedef vector<Rect>     RectList;   // list of rectangles
-  typedef vector<RectSize> RectSizeList; // list of rectangle sizes
-  /* ----------------------------------------------------------------------- */
-  Int              iWidth, iHeight;    // Size of virtual canvas
   RectList         rlUsed, rlFree;     // Used and free data
   /* -- Remove a rect (not that this can cause a realloc) ------------------ */
   void PruneFreeRect(const size_t stIndex)
@@ -37,46 +37,49 @@ class Pack
   const Rect FindPositionForNewNodeBestShortSideFit(const Int iW,
     const Int iH, Int &iBestShortSideFit, Int &iBestLongSideFit) const
   { // The best node that will be returned
-    Rect rBest{};
     iBestShortSideFit = iBestLongSideFit = numeric_limits<Int>::max();
-    for(const Rect &rNode : rlFree)
+    Rect rFound;
+    for(auto &rNode : rlFree)
     { // Try to place the rectangle in upright (non-flipped) orientation.
-      if(rNode.iW < iW || rNode.iH < iH) continue;
-      const Int iLeftOverHoriz = abs(rNode.iW - iW),
-                iLeftOverVert = abs(rNode.iH - iH),
+      if(rNode.DimGetWidth() < iW || rNode.DimGetHeight() < iH) continue;
+      const Int iLeftOverHoriz = abs(rNode.DimGetWidth() - iW),
+                iLeftOverVert = abs(rNode.DimGetHeight() - iH),
                 iShortSideFit = Minimum(iLeftOverHoriz, iLeftOverVert),
                 iLongSideFit = Maximum(iLeftOverHoriz, iLeftOverVert);
       if(iShortSideFit < iBestShortSideFit ||
         (iShortSideFit == iBestShortSideFit &&
          iLongSideFit < iBestLongSideFit))
-        rBest.iX = rNode.iX,
-        rBest.iY = rNode.iY,
-        rBest.iW = iW,
-        rBest.iH = iH,
-        iBestShortSideFit = iShortSideFit,
+      {
+        iBestShortSideFit = iShortSideFit;
         iBestLongSideFit = iLongSideFit;
-    }
-    return rBest;
+        rFound.DimCoSet(rNode.CoordGetX(), rNode.CoordGetY(), iW, iH);
+      }
+    } // Return what we found if we did
+    return rFound;
   }
   /* -- Do try to split a free node and ------------------------------------ */
   void SplitFreeNodeUnsafe(const Rect &rFree, const Rect &rUsed,
     const Int iFreeH, const Int iUsedH, const Int iFreeV, const Int iUsedV)
   { // Check horizontal bounds
-    if(rUsed.iX < iFreeH && iUsedH > rFree.iX)
+    if(rUsed.CoordGetX() < iFreeH && iUsedH > rFree.CoordGetX())
     { // New node at the top side of the used node.
-      if(rUsed.iY > rFree.iY && rUsed.iY < iFreeV)
-        AddFreeRect(rFree.iX, rFree.iY, rFree.iW, rUsed.iY - rFree.iY);
+      if(rUsed.CoordGetY() > rFree.CoordGetY() && rUsed.CoordGetY() < iFreeV)
+        AddFreeRect(rFree.CoordGetX(), rFree.CoordGetY(),
+          rFree.DimGetWidth(), rUsed.CoordGetY() - rFree.CoordGetY());
       // New node at the bottom side of the used node.
       if(iUsedV < iFreeV)
-        AddFreeRect(rFree.iX, iUsedV, rFree.iW, iFreeV - iUsedV);
+        AddFreeRect(rFree.CoordGetX(), iUsedV,
+          rFree.DimGetWidth(), iFreeV - iUsedV);
     } // Check vertical bounds
-    if(rUsed.iY < iFreeV && iUsedV > rFree.iY)
+    if(rUsed.CoordGetY() < iFreeV && iUsedV > rFree.CoordGetY())
     { // New node at the left side of the used node.
-      if(rUsed.iX > rFree.iX && rUsed.iX < iFreeH)
-        AddFreeRect(rFree.iX, rFree.iY, rUsed.iX - rFree.iX, rFree.iH);
+      if(rUsed.CoordGetX() > rFree.CoordGetX() && rUsed.CoordGetX() < iFreeH)
+        AddFreeRect(rFree.CoordGetX(), rFree.CoordGetY(),
+          rUsed.CoordGetX() - rFree.CoordGetX(), rFree.DimGetHeight());
       // New node at the right side of the used node.
       if(iUsedH < iFreeH)
-        AddFreeRect(iUsedH, rFree.iY, iFreeH - iUsedH, rFree.iH);
+        AddFreeRect(iUsedH, rFree.CoordGetY(),
+          iFreeH - iUsedH, rFree.DimGetHeight());
     }
   }
   /* -- Try to split a free node and return true if succeeded -------------- */
@@ -84,11 +87,14 @@ class Pack
   { // Get reference to free node
     const Rect &rFree = rlFree[stIndex];
      // Calculate maximum bounds of the free and used rslRects.
-    const Int iFreeH = rFree.iX + rFree.iW,  iUsedH = rUsed.iX + rUsed.iW,
-              iFreeV = rFree.iY + rFree.iH,  iUsedV = rUsed.iY + rUsed.iH;
+    const Int iFreeH = rFree.CoordGetX() + rFree.DimGetWidth(),
+              iUsedH = rUsed.CoordGetX() + rUsed.DimGetWidth(),
+              iFreeV = rFree.CoordGetY() + rFree.DimGetHeight(),
+              iUsedV = rUsed.CoordGetY() + rUsed.DimGetHeight();
     // Test with SAT if the rectangles even intersect.
-    if(rUsed.iX >= iFreeH || iUsedH <= rFree.iX ||
-       rUsed.iY >= iFreeV || iUsedV <= rFree.iY) return false;
+    if(rUsed.CoordGetX() >= iFreeH || iUsedH <= rFree.CoordGetX() ||
+       rUsed.CoordGetY() >= iFreeV || iUsedV <= rFree.CoordGetY())
+      return false;
     // DANGER! There must be at least four reserved vector nodes or a
     // push_back() could trigger a realloc() being a std::vector and &rFree
     // would in succession point to freed memory and all havoc breaks lose in
@@ -109,10 +115,12 @@ class Pack
   /* ----------------------------------------------------------------------- */
   bool IsContainedIn(const Rect &rSrc, const Rect &rDest) const
   { // Return if the src rect bounds are contained in dest bounds
-    return rSrc.iX           >= rDest.iX
-        && rSrc.iY           >= rDest.iY
-        && rSrc.iX + rSrc.iW <= rDest.iX + rDest.iW
-        && rSrc.iY + rSrc.iH <= rDest.iY + rDest.iH;
+    return rSrc.CoordGetX() >= rDest.CoordGetX()
+        && rSrc.CoordGetY() >= rDest.CoordGetY()
+        && rSrc.CoordGetX() + rSrc.DimGetWidth()
+        <= rDest.CoordGetX() + rDest.DimGetWidth()
+        && rSrc.CoordGetY() + rSrc.DimGetHeight()
+        <= rDest.CoordGetY() + rDest.DimGetHeight();
   }
   /* -- Goes through free rectangle list and removes any redundan ---------- */
   void PruneFreeList(void)
@@ -139,16 +147,23 @@ class Pack
       }
     }
   }
+  /* -- Swap --------------------------------------------------------------- */
+  void BinSwap(Pack &pOther)
+  { // Swap dimensions
+    DimSwap(pOther);
+    // Swap used and free lists
+    rlUsed.swap(pOther.rlUsed);
+    rlFree.swap(pOther.rlFree);
+  }
   /* -- (Re)initialise bin to empty state -------------------------- */ public:
   void Init(const UInt iNWidth, const UInt iNHeight)
   { // Init iW and iH
-    iWidth = static_cast<Int>(iNWidth);
-    iHeight = static_cast<Int>(iNHeight);
+    this->DimSet(static_cast<Int>(iNWidth), static_cast<Int>(iNHeight));
     // Clear current usage
     rlUsed.clear();
     rlFree.clear();
     // Full bounds initially available
-    AddFreeRect(0, 0, iWidth, iHeight);
+    AddFreeRect(0, 0, this->DimGetWidth(), this->DimGetHeight());
   }
   /* -- Reserve memory ----------------------------------------------------- */
   void Reserve(const size_t stUsedReserve, const size_t stFreeReserve)
@@ -173,19 +188,22 @@ class Pack
     const int iNHeight = static_cast<Int>(uiNHeight);
     const int iNWidth = static_cast<Int>(uiNWidth);
     // New width same as old?
-    if(iNWidth <= iWidth)
+    if(iNWidth <= this->DimGetWidth())
     { // Return if new height same as old
-      if(iNHeight <= iHeight) return false;
+      if(iNHeight <= this->DimGetHeight()) return false;
       // New height specified so add new free rect and update it
-      UpdateHeight: AddFreeRect(0, iHeight, iNWidth, iNHeight - iHeight);
-      iHeight = iNHeight;
+      UpdateHeight:
+      AddFreeRect(0, this->DimGetHeight(), iNWidth,
+        iNHeight - this->DimGetHeight());
+      this->DimSetHeight(iNHeight);
     } // New width specified?
     else
     { // New width specified so add new free rect and update it
-      AddFreeRect(iWidth, 0, iNWidth - iWidth, iHeight);
-      iWidth = iNWidth;
+      AddFreeRect(this->DimGetWidth(), 0,
+        iNWidth - this->DimGetWidth(), this->DimGetHeight());
+      this->DimSetWidth(iNWidth);
       // New height specified? Update it
-      if(iNHeight > iHeight) goto UpdateHeight;
+      if(iNHeight > this->DimGetHeight()) goto UpdateHeight;
     } // Englarge complete
     return true;
   }
@@ -204,7 +222,7 @@ class Pack
     Int iScore1 = numeric_limits<Int>::max(), iScore2 = iScore1;
     const Rect rNew{ FindPositionForNewNodeBestShortSideFit(
       static_cast<Int>(uiW), static_cast<Int>(uiH), iScore1, iScore2) };
-    if(rNew.iH == 0) return rNew;
+    if(rNew.DimGetHeight() == 0) return rNew;
     size_t stRectanglesToProcess = rlFree.size();
     for(size_t stIndex = 0; stIndex < stRectanglesToProcess; ++stIndex)
     { if(!SplitFreeNode(stIndex, rNew)) continue;
@@ -221,20 +239,16 @@ class Pack
   { // Return the ratio of used surface area to the total bin area.
     return accumulate(rlUsed.cbegin(), rlUsed.cend(), 0.0,
       [](double dUsed, const Rect &rNode)
-        { return dUsed += static_cast<double>(rNode.iW) * rNode.iH; }) /
-            (static_cast<double>(iWidth) * iHeight);
+        { return dUsed += rNode.template DimGetWidth<double>() *
+                          rNode.DimGetHeight(); }) /
+      (this->template DimGetWidth<double>() * this->DimGetHeight());
   }
   /* ----------------------------------------------------------------------- */
   size_t Used(void) const { return rlUsed.size(); }
   size_t Free(void) const { return rlFree.size(); }
   size_t Total(void) const { return rlFree.size() + rlUsed.size(); }
-  UInt Width(void) const { return static_cast<UInt>(iWidth); }
-  UInt Height(void) const { return static_cast<UInt>(iHeight); }
-  /* -- Instantiates a bin of size 0x0 ------------------------------------- */
-  Pack(void) :
-    /* -- Initialisation of members ---------------------------------------- */
-    iWidth(0),                         // No width of new pack
-    iHeight(0)                         // No height of new pack
+  /* -- Default constructor that instantiates an empty bin of size 0x0 ----- */
+  Pack(void)
     /* -- Do nothing ------------------------------------------------------- */
     { }
   /* -- Instantiates a bin of the given size with pre-reserved memory ------ */
@@ -250,9 +264,11 @@ class Pack
   Pack(const UInt uiNWidth,            // Width of new pack
        const UInt uiNHeight) :         // Height of new pack
     /* -- Initialisation of members ---------------------------------------- */
-    iWidth(static_cast<Int>(uiNWidth)),   // Set width of new pack
-    iHeight(static_cast<Int>(uiNHeight)), // Set height of new pack
-    rlFree{{ 0, 0, iWidth, iHeight }}     // Initialise free rectangle
+    DimClass{ static_cast<Int>(uiNWidth),    // Set width of new pack
+              static_cast<Int>(uiNHeight) }, // Set height of new pack
+    rlFree{{ 0, 0,                     // Initialise co-ordinates
+      this->DimGetWidth(),             // Initialise specified width
+      this->DimGetHeight() }}          // Initialise specified height
     /* -- Do nothing ------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */
@@ -264,11 +280,12 @@ BEGIN_COLLECTORDUO(Bins, Bin, CLHelperUnsafe, ICHelperUnsafe),
 { /* -- Default constructor ---------------------------------------- */ public:
   Bin(void) :
     /* -- Initialisation of members ---------------------------------------- */
-    ICHelperBin{ *cBins, this }        // Register the object in collector
+    ICHelperBin{ *cBins, this },       // Register the object in collector
+    IdentCSlave{ cParent.CtrNext() }   // Initialise identification number
     /* --------------------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */
 END_COLLECTOR(Bins);                   // End of bin objects collector
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

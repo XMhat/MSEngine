@@ -8,10 +8,10 @@
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* == Windows Registry Class =============================================== */
-class SysPipe :                        // Windows specific process pipe class
+class SysPipe :                        // Members initially private
   /* -- Base classes ------------------------------------------------------- */
   public SysPipeBase                   // System pipe base class
-{ /* -------------------------------------------------------------- */ private:
+{ /* ----------------------------------------------------------------------- */
   HANDLE           hStdinRead,         // Input read handle
                    hStdinWrite,        // Input write handle
                    hStdoutRead,        // Output read handle
@@ -31,33 +31,35 @@ class SysPipe :                        // Windows specific process pipe class
       { // If it is still active? Try to kill it and write error if failed
         if(dwExitCode == STILL_ACTIVE &&
           !TerminateProcess(hProcess, static_cast<UINT>(-1)))
-            LW(LH_WARNING, "System failed to terminate process for '$': $!",
-              IdentGet(), SysError());
+            cLog->LogWarningExSafe(
+              "System failed to terminate process for '$': $!",
+                IdentGet(), SysError());
         // Set exit code
         SysPipeBaseSetStatus(static_cast<int64_t>(dwExitCode));
       } // Failed to get exit code
-      else LW(LH_WARNING, "System failed to get exit code for '$': $!",
+      else cLog->LogWarningExSafe("System failed to get exit code for '$': $!",
         IdentGet(), SysError());
       // Close the process handle
       if(!CloseHandle(hProcess))
-        LW(LH_WARNING, "System failed to close process handle for '$': $!",
-          IdentGet(), SysError());
+        cLog->LogWarningExSafe(
+          "System failed to close process handle for '$': $!",
+            IdentGet(), SysError());
     } // Close pipe handles if open
     if(hStdinRead != INVALID_HANDLE_VALUE &&
       !CloseHandle(hStdinRead))
-        LW(LH_WARNING, "System failed to close process handle for '$' "
+        cLog->LogWarningExSafe("System failed to close process handle for '$' "
           "stdin receive pipe: $!", IdentGet(), SysError());
     if(hStdinWrite != INVALID_HANDLE_VALUE &&
       !CloseHandle(hStdinWrite))
-        LW(LH_WARNING, "System failed to close process handle for '$' "
+        cLog->LogWarningExSafe("System failed to close process handle for '$' "
           "stdin send pipe: $!", IdentGet(), SysError());
     if(hStdoutRead != INVALID_HANDLE_VALUE &&
       !CloseHandle(hStdoutRead))
-        LW(LH_WARNING, "System failed to close process handle for '$' "
+        cLog->LogWarningExSafe("System failed to close process handle for '$' "
           "stdout read pipe: $!", IdentGet(), SysError());
     if(hStdoutWrite != INVALID_HANDLE_VALUE &&
       !CloseHandle(hStdoutWrite))
-        LW(LH_WARNING, "System failed to close process handle for '$' "
+        cLog->LogWarningExSafe("System failed to close process handle for '$' "
           "stdout send pipe: $!", IdentGet(), SysError());
   }
   /* -- Initialise arguments list ------------------------------------------ */
@@ -74,7 +76,7 @@ class SysPipe :                        // Windows specific process pipe class
     // De-init existing process
     Finish();
     // Show command and arguments
-    LW(LH_INFO, "System opening pipe to '$' with $ args '$'.",
+    cLog->LogInfoExSafe("System opening pipe to '$' with $ args '$'.",
       strApp, aList.size(), strCmdLine);
     // Security attributes
     SECURITY_ATTRIBUTES saAttr{ sizeof(SECURITY_ATTRIBUTES), nullptr, TRUE };
@@ -122,7 +124,7 @@ class SysPipe :                        // Windows specific process pipe class
       CREATE_SUSPENDED|CREATE_NO_WINDOW, nullptr, nullptr, &siStartInfo,
       &piProcInfo)) try
     { // Store name of executable
-      IdentSet(move(strApp));
+      IdentSet(std::move(strApp));
       // Close handles to the stdin and stdout pipes no longer needed by the
       // child process. If they are not explicitly closed, there is no way to
       // recognize that the child process has ended.
@@ -137,7 +139,8 @@ class SysPipe :                        // Windows specific process pipe class
       hThread = piProcInfo.hThread;
       dwPid = piProcInfo.dwProcessId;
       // Report pid
-      LW(LH_INFO, "System spawned process '$' to pid $.", strApp, dwPid);
+      cLog->LogInfoExSafe("System spawned process '$' to pid $.",
+        strApp, dwPid);
       // Resume main thread
       if(!ResumeThread(hThread))
         XCS("Failed to resume main thread!", "Executable", IdentGet());
@@ -150,7 +153,7 @@ class SysPipe :                        // Windows specific process pipe class
     } // Create process failed
     else
     { // Store name of executable
-      IdentSet(move(strApp));
+      IdentSet(std::move(strApp));
       // Throw error
       XCS("Failed to execute process!", "Executable", IdentGet());
     }
@@ -185,7 +188,7 @@ class SysPipe :                        // Windows specific process pipe class
     if(ReadFile(hStdoutRead, reinterpret_cast<LPSTR>(vpDest),
       static_cast<DWORD>(stToRead), &dwRead, nullptr))
     { // Log and return number of bytes read
-      LW(LH_DEBUG, "System read $ bytes from pipe for pid $.",
+      cLog->LogDebugExSafe("System read $ bytes from pipe for pid $.",
          dwRead, dwPid);
       return static_cast<size_t>(dwRead);
     } // If the pipe was ended then theres no need for an error
@@ -212,7 +215,7 @@ class SysPipe :                        // Windows specific process pipe class
     if(WriteFile(hStdinWrite, vpDest,
       static_cast<DWORD>(stToWrite), &dwWritten, nullptr))
     { // Log and return number of bytes written
-      LW(LH_DEBUG, "System wrote $ bytes to pipe for pid $.",
+      cLog->LogDebugExSafe("System wrote $ bytes to pipe for pid $.",
         dwWritten, dwPid);
       return static_cast<size_t>(dwWritten);
     } // If the pipe was ended then theres no need for an error

@@ -17,7 +17,7 @@
 /* ========================================================================= */
 LLNAMESPACEBEGIN(Ftf)                  // Ftf namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfFtf;                 // Using ftf interface
+using namespace IfFtf;                 // Using ftf namespace
 /* ========================================================================= */
 /* ######################################################################### */
 /* ========================================================================= */
@@ -104,7 +104,7 @@ LLFUNC(ArrayAsync, LCCLASSCREATE(Ftf)->InitAsyncArray(lS));
 // ? Loads an audio file on the main thread from the specified array object.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Asset, 1, LCCLASSCREATE(Ftf)->InitArray(
-  LCGETCPPSTRINGNE(1, "Identifier"), move(*LCGETPTR(2, Asset)),
+  LCGETCPPSTRINGNE(1, "Identifier"), std::move(*LCGETPTR(2, Asset)),
   LCGETNUMLG(GLfloat, 3, 1, 4096, "Width"),
   LCGETNUMLG(GLfloat, 4, 1, 4096, "Height"),
   LCGETINTLG(unsigned int, 5, 1, 1024, "DPIWidth"),

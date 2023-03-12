@@ -17,7 +17,7 @@
 /* ========================================================================= */
 LLNAMESPACEBEGIN(Info)                 // Info namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfLua;                 // Using lua interface
+using namespace IfLua;                 // Using lua namespace
 /* ========================================================================= */
 /* ######################################################################### */
 /* ========================================================================= */
@@ -215,7 +215,7 @@ LLFUNCEX(Delay, 1,
 // < Boolean:boolean=True if using Windows, false if not.
 // ? Returns true if executable was built for Windows, false if not.
 /* ------------------------------------------------------------------------- */
-#ifdef _WIN32
+#if defined(WINDOWS)
 LLFUNCEX(IsOSWindows, 1, LCPUSHBOOL(true));
 #else
 LLFUNCEX(IsOSWindows, 1, LCPUSHBOOL(false));
@@ -225,7 +225,7 @@ LLFUNCEX(IsOSWindows, 1, LCPUSHBOOL(false));
 // < Boolean:boolean=True if using Linux, false if not.
 // ? Returns true if executable was built for Linux, false if not.
 /* ------------------------------------------------------------------------- */
-#ifdef __linux__
+#if defined(LINUX)
 LLFUNCEX(IsOSLinux, 1, LCPUSHBOOL(true));
 #else
 LLFUNCEX(IsOSLinux, 1, LCPUSHBOOL(false));
@@ -235,7 +235,7 @@ LLFUNCEX(IsOSLinux, 1, LCPUSHBOOL(false));
 // < Boolean:boolean=True if using MacOS, false if not.
 // ? Returns true if executable was built for MacOS, false if not.
 /* ------------------------------------------------------------------------- */
-#ifdef __APPLE__
+#if defined(MACOS)
 LLFUNCEX(IsOSMac, 1, LCPUSHBOOL(true));
 #else
 LLFUNCEX(IsOSMac, 1, LCPUSHBOOL(false));

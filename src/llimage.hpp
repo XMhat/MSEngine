@@ -21,7 +21,7 @@
 /* ========================================================================= */
 LLNAMESPACEBEGIN(Image)                // Image namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfImage;               // Using image interface
+using namespace IfImage;               // Using image namespace
 /* ========================================================================= */
 /* ######################################################################### */
 /* ========================================================================= */
@@ -29,19 +29,19 @@ using namespace IfImage;               // Using image interface
 // < Width:integer=The width of the image in pixels
 // ? Returns the width if the image.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Width, 1, LCPUSHINT(LCGETPTR(1, Image)->GetWidth()));
+LLFUNCEX(Width, 1, LCPUSHINT(LCGETPTR(1, Image)->DimGetWidth()));
 /* ========================================================================= */
 // $ Image:Height
 // < Height:integer=The height of the image in pixels
 // ? Returns the height if the image.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Height, 1, LCPUSHINT(LCGETPTR(1, Image)->GetHeight()));
+LLFUNCEX(Height, 1, LCPUSHINT(LCGETPTR(1, Image)->DimGetHeight()));
 /* ========================================================================= */
 // $ Image:Depth
 // < Height:integer=The bit-depth of the image in bits
 // ? Returns the bit-depth of the image
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Depth, 1, LCPUSHINT(LCGETPTR(1, Image)->GetBitsPP()));
+LLFUNCEX(Depth, 1, LCPUSHINT(LCGETPTR(1, Image)->GetBitsPerPixel()));
 /* ========================================================================= */
 // $ Image:Name
 // < Name:string=Name of the image.
@@ -87,7 +87,7 @@ LLFUNC(FileAsync, LCCLASSCREATE(Image)->InitAsyncFile(lS));
 // ? the image object.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(File, 1, LCCLASSCREATE(Image)->InitFile(LCGETCPPFILE(1, "File"),
-  LCGETFLAGS(ImageFlagsConst, 2, IL_NONE, IL_MASK, "Flags")));
+  LCGETFLAGS(ImageFlagsConst, 2, IL_MASK, "Flags")));
 /* ======================================================================= */
 // $ Image.CreateArray
 // > Name:string=A user-defined id of the image
@@ -109,8 +109,8 @@ LLFUNC(ArrayAsync, LCCLASSCREATE(Image)->InitAsyncArray(lS));
 // ? Returns the image object.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Asset, 1, LCCLASSCREATE(Image)->InitArray(
-  LCGETCPPSTRINGNE(1, "Identifier"), move(*LCGETPTR(2, Asset)),
-  LCGETFLAGS(ImageFlagsConst, 3, IL_NONE, IL_MASK, "Flags")));
+  LCGETCPPSTRINGNE(1, "Identifier"), std::move(*LCGETPTR(2, Asset)),
+  LCGETFLAGS(ImageFlagsConst, 3, IL_MASK, "Flags")));
 /* ======================================================================= */
 // $ Image.Raw
 // > Data:Asset=The data of the image to load
@@ -120,10 +120,10 @@ LLFUNCEX(Asset, 1, LCCLASSCREATE(Image)->InitArray(
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Raw, 1, LCCLASSCREATE(Image)->
   InitRaw(LCGETCPPSTRINGNE(1, "Identifier"),
-    move(*LCGETPTR(2, Asset)),
+    std::move(*LCGETPTR(2, Asset)),
     LCGETINTLG(unsigned int, 3, 1, 65535, "Width"),
     LCGETINTLG(unsigned int, 4, 1, 65535, "Height"),
-    LCGETINTLGE(unsigned int, 5, 1, 32, "Depth"),
+    LCGETINTLG(BitDepth, 5, BD_BINARY, BD_RGBA, "Depth"),
     LCGETINTLG(GLenum, 6, 1, 65535, "PixelType")));
 /* ======================================================================= */
 // $ Image.Colour
@@ -187,6 +187,7 @@ LLRSKTITEM(IL_,TOBGR),                 // Force order to Blue/Green/Red
 LLRSKTITEM(IL_,TORGB),                 // Force order to Red/Green/Blue
 LLRSKTITEM(IL_,REVERSE),               // Reverse bitmap
 LLRSKTITEM(IL_,TOBINARY),              // Force to 1-bit per pixel
+LLRSKTITEM(IL_,ATLAS),                 // Create a texture atlas
 LLRSKTITEM(IL_,FCE_DDS),               // Source is a DDS bitmap
 LLRSKTITEM(IL_,FCE_GIF),               // Source is a GIF bitmap
 LLRSKTITEM(IL_,FCE_JPG),               // Source is a JPEG bitmap

@@ -18,7 +18,7 @@
 /* ========================================================================= */
 LLNAMESPACEBEGIN(Fbo)                  // Fbo namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfFboMain;             // Using fbomain interface
+using namespace IfFboMain;             // Using fbomain namespace
 /* ========================================================================= */
 /* ######################################################################### */
 /* ========================================================================= */
@@ -517,5 +517,5 @@ LLRSCONST(Blends),                     // Blending types
 LLRSCONST(Filters),                    // Filter types
 LLRSCONSTEND                           // Fbo.* namespace consts end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of Cursor namespace
+LLNAMESPACEEND                         // End of Fbo namespace
 /* == EoF =========================================================== EoF == */

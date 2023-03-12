@@ -24,7 +24,7 @@ local function InitFail()
     -- Game over render tick
     local function GameOverRenderProc()
       -- Show fail message
-      fontLarge:SetRGB(1, 0.25, 0.25);
+      fontLarge:SetCRGB(1, 0.25, 0.25);
       fontLarge:PrintC(160, 90, "NO ZONES LEFT TO MINE!");
       fontLarge:PrintC(160, 122, "Your mission has failed!");
     end

@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="robots" content="index, follow">
 <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="description" content="Reference for the MS-Engine API version 23.3.9.39">
+<meta name="description" content="Reference for the MS-Engine API version 23.4.1.218">
 <meta name="author" content="MS-Design">
-<meta name="generator" content="MS-Engine Project Management Utility version 23.3.9.39">
+<meta name="generator" content="MS-Engine Project Management Utility version 23.4.1.218">
 <meta name="format-detection" content="telephone=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="MS-Engine API">
-<title>MS-Engine 23.3.9.39 API reference</title>
+<title>MS-Engine 23.4.1.218 API reference</title>
 <style type="text/css" media="screen">
 body { background-color:gray; color:black; padding:0px; margin:0px; border:0px; font-family:Helvetica; }
 a,a:visited { color:white; text-decoration:none; font-weight:bold; }
@@ -36,11 +36,11 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 </style>
 </head>
 <body id="top">
-<h1>MS-Engine 23.3.9.39 API reference</h1>
+<h1>MS-Engine 23.4.1.218 API reference</h1>
 <div id="index">
 <h2>Table of contents:-</h2>
-<p>A total of 371 members, 344 methods, 20 consts (715 functions) in 30 namespaces with 193 cvars.</p>
-<ol><li id="cvidx"><a href="#cvars">CVars</a> <i>(193 cvars)</i><ul>
+<p>A total of 377 members, 380 methods, 21 consts (757 functions) in 31 namespaces with 192 cvars.</p>
+<ol><li id="cvidx"><a href="#cvars">CVars</a> <i>(192 cvars)</i><ul>
 <li><a href="#cv.app_author">app_author</a></li>
 <li><a href="#cv.app_basedir">app_basedir</a></li>
 <li><a href="#cv.app_clearmutex">app_clearmutex</a></li>
@@ -152,7 +152,6 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#cv.obj_cursormax">obj_cursormax</a></li>
 <li><a href="#cv.obj_cvarimax">obj_cvarimax</a></li>
 <li><a href="#cv.obj_cvarmax">obj_cvarmax</a></li>
-<li><a href="#cv.obj_dylibmax">obj_dylibmax</a></li>
 <li><a href="#cv.obj_fbomax">obj_fbomax</a></li>
 <li><a href="#cv.obj_filemax">obj_filemax</a></li>
 <li><a href="#cv.obj_fontmax">obj_fontmax</a></li>
@@ -235,7 +234,7 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#cv.win_width">win_width</a></li>
 <li><a href="#cv.win_widthmin">win_widthmin</a></li>
 </ul></li>
-<li id="idx"><a href="#idx">Namespaces</a> <i>(30 namespaces)</i><ul>
+<li id="idx"><a href="#idx">Namespaces</a> <i>(31 namespaces)</i><ul>
 <li><a href="#idx:Archive">Archive</a></li>
 <li><a href="#idx:Asset">Asset</a></li>
 <li><a href="#idx:Audio">Audio</a></li>
@@ -256,6 +255,7 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#idx:Input">Input</a></li>
 <li><a href="#idx:Json">Json</a></li>
 <li><a href="#idx:Mask">Mask</a></li>
+<li><a href="#idx:Palette">Palette</a></li>
 <li><a href="#idx:Pcm">Pcm</a></li>
 <li><a href="#idx:Sample">Sample</a></li>
 <li><a href="#idx:Socket">Socket</a></li>
@@ -543,13 +543,14 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#Fbo.Blends">Blends</a></li>
 <li><a href="#Fbo.Filters">Filters</a></li>
 </ul></li>
-<li id="idx:File"><a href="#idx:File">File namespace</a> <i>(23 members)</i><ul>
+<li id="idx:File"><a href="#idx:File">File namespace</a> <i>(24 members)</i><ul>
 <li><a href="#File.AppendOne">AppendOne</a></li>
 <li><a href="#File.AppendOneStr">AppendOneStr</a></li>
 <li><a href="#File.DirExists">DirExists</a></li>
 <li><a href="#File.Enumerate">Enumerate</a></li>
 <li><a href="#File.EnumerateEx">EnumerateEx</a></li>
 <li><a href="#File.Error">Error</a></li>
+<li><a href="#File.Executable">Executable</a></li>
 <li><a href="#File.Exists">Exists</a></li>
 <li><a href="#File.FileExists">FileExists</a></li>
 <li><a href="#File.Info">Info</a></li>
@@ -592,9 +593,12 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#Font.Create">Create</a></li>
 <li><a href="#Font.Image">Image</a></li>
 </ul></li>
-<li id="idxm:Font"><a href="#Font">Font methods</a> <i>(42 methods)</i><ul>
+<li id="idxm:Font"><a href="#Font">Font methods</a> <i>(45 methods)</i><ul>
 <li><a href="#Font:Destroy">Destroy</a></li>
 <li><a href="#Font:Dump">Dump</a></li>
+<li><a href="#Font:GetHeight">GetHeight</a></li>
+<li><a href="#Font:GetName">GetName</a></li>
+<li><a href="#Font:GetWidth">GetWidth</a></li>
 <li><a href="#Font:LoadChars">LoadChars</a></li>
 <li><a href="#Font:LoadRange">LoadRange</a></li>
 <li><a href="#Font:Name">Name</a></li>
@@ -769,6 +773,41 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#Mask:RayCast">RayCast</a></li>
 <li><a href="#Mask:Save">Save</a></li>
 <li><a href="#Mask:Width">Width</a></li>
+</ul></li>
+<li id="idx:Palette"><a href="#idx:Palette">Palette namespace</a> <i>(5 members)</i><ul>
+<li><a href="#Palette.Create">Create</a></li>
+<li><a href="#Palette.Default">Default</a></li>
+<li><a href="#Palette.Image">Image</a></li>
+<li><a href="#Palette.Palette">Palette</a></li>
+<li><a href="#Palette.Texture">Texture</a></li>
+</ul></li>
+<li id="idxm:Palette"><a href="#Palette">Palette methods</a> <i>(26 methods)</i><ul>
+<li><a href="#Palette:Commit">Commit</a></li>
+<li><a href="#Palette:Destroy">Destroy</a></li>
+<li><a href="#Palette:GetA">GetA</a></li>
+<li><a href="#Palette:GetB">GetB</a></li>
+<li><a href="#Palette:GetG">GetG</a></li>
+<li><a href="#Palette:GetIA">GetIA</a></li>
+<li><a href="#Palette:GetIB">GetIB</a></li>
+<li><a href="#Palette:GetIG">GetIG</a></li>
+<li><a href="#Palette:GetIR">GetIR</a></li>
+<li><a href="#Palette:GetIRGBA">GetIRGBA</a></li>
+<li><a href="#Palette:GetR">GetR</a></li>
+<li><a href="#Palette:GetRGBA">GetRGBA</a></li>
+<li><a href="#Palette:Name">Name</a></li>
+<li><a href="#Palette:SetA">SetA</a></li>
+<li><a href="#Palette:SetB">SetB</a></li>
+<li><a href="#Palette:SetG">SetG</a></li>
+<li><a href="#Palette:SetI">SetI</a></li>
+<li><a href="#Palette:SetIA">SetIA</a></li>
+<li><a href="#Palette:SetIB">SetIB</a></li>
+<li><a href="#Palette:SetIG">SetIG</a></li>
+<li><a href="#Palette:SetIR">SetIR</a></li>
+<li><a href="#Palette:SetR">SetR</a></li>
+<li><a href="#Palette:SetRGBA">SetRGBA</a></li>
+<li><a href="#Palette:Shift">Shift</a></li>
+<li><a href="#Palette:ShiftL">ShiftL</a></li>
+<li><a href="#Palette:ShiftR">ShiftR</a></li>
 </ul></li>
 <li id="idx:Pcm"><a href="#idx:Pcm">Pcm namespace</a> <i>(6 members)</i><ul>
 <li><a href="#Pcm.ArrayAsync">ArrayAsync</a></li>
@@ -952,7 +991,7 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#Texture.Create">Create</a></li>
 <li><a href="#Texture.CreateTS">CreateTS</a></li>
 </ul></li>
-<li id="idxm:Texture"><a href="#Texture">Texture methods</a> <i>(59 methods)</i><ul>
+<li id="idxm:Texture"><a href="#Texture">Texture methods</a> <i>(65 methods)</i><ul>
 <li><a href="#Texture:Blit">Blit</a></li>
 <li><a href="#Texture:BlitI">BlitI</a></li>
 <li><a href="#Texture:BlitILT">BlitILT</a></li>
@@ -980,15 +1019,12 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#Texture:BlitTS">BlitTS</a></li>
 <li><a href="#Texture:BlitX">BlitX</a></li>
 <li><a href="#Texture:BlitXI">BlitXI</a></li>
-<li><a href="#Texture:CreateTile">CreateTile</a></li>
-<li><a href="#Texture:CreateTileEx">CreateTileEx</a></li>
 <li><a href="#Texture:Destroy">Destroy</a></li>
 <li><a href="#Texture:Download">Download</a></li>
 <li><a href="#Texture:Dump">Dump</a></li>
 <li><a href="#Texture:GetHeight">GetHeight</a></li>
 <li><a href="#Texture:GetName">GetName</a></li>
 <li><a href="#Texture:GetSubCount">GetSubCount</a></li>
-<li><a href="#Texture:GetTileCount">GetTileCount</a></li>
 <li><a href="#Texture:GetWidth">GetWidth</a></li>
 <li><a href="#Texture:PopColour">PopColour</a></li>
 <li><a href="#Texture:PushColour">PushColour</a></li>
@@ -1004,12 +1040,21 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#Texture:SetRed">SetRed</a></li>
 <li><a href="#Texture:SetTexCoord">SetTexCoord</a></li>
 <li><a href="#Texture:SetTexCoordEx">SetTexCoordEx</a></li>
-<li><a href="#Texture:SetTile">SetTile</a></li>
-<li><a href="#Texture:SetTileEx">SetTileEx</a></li>
 <li><a href="#Texture:SetVertex">SetVertex</a></li>
 <li><a href="#Texture:SetVertexA">SetVertexA</a></li>
 <li><a href="#Texture:SetVertexEx">SetVertexEx</a></li>
-<li><a href="#Texture:TrimTList">TrimTList</a></li>
+<li><a href="#Texture:TileA">TileA</a></li>
+<li><a href="#Texture:TileAD">TileAD</a></li>
+<li><a href="#Texture:TileAS">TileAS</a></li>
+<li><a href="#Texture:TileASD">TileASD</a></li>
+<li><a href="#Texture:TileGSTC">TileGSTC</a></li>
+<li><a href="#Texture:TileGTC">TileGTC</a></li>
+<li><a href="#Texture:TileS">TileS</a></li>
+<li><a href="#Texture:TileSD">TileSD</a></li>
+<li><a href="#Texture:TileSS">TileSS</a></li>
+<li><a href="#Texture:TileSSD">TileSSD</a></li>
+<li><a href="#Texture:TileSSTC">TileSSTC</a></li>
+<li><a href="#Texture:TileSTC">TileSTC</a></li>
 <li><a href="#Texture:Upload">Upload</a></li>
 <li><a href="#Texture:UploadEx">UploadEx</a></li>
 </ul></li>
@@ -1090,7 +1135,7 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#Video.FileAsync">FileAsync</a></li>
 <li><a href="#Video.WaitAsync">WaitAsync</a></li>
 </ul></li>
-<li id="idxm:Video"><a href="#Video">Video methods</a> <i>(29 methods)</i><ul>
+<li id="idxm:Video"><a href="#Video">Video methods</a> <i>(30 methods)</i><ul>
 <li><a href="#Video:Awaken">Awaken</a></li>
 <li><a href="#Video:Blit">Blit</a></li>
 <li><a href="#Video:BlitT">BlitT</a></li>
@@ -1098,6 +1143,7 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#Video:GetATime">GetATime</a></li>
 <li><a href="#Video:GetDrift">GetDrift</a></li>
 <li><a href="#Video:GetFPS">GetFPS</a></li>
+<li><a href="#Video:GetFrame">GetFrame</a></li>
 <li><a href="#Video:GetFrames">GetFrames</a></li>
 <li><a href="#Video:GetFramesSkipped">GetFramesSkipped</a></li>
 <li><a href="#Video:GetHeight">GetHeight</a></li>
@@ -1120,6 +1166,9 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#Video:SetVertexA">SetVertexA</a></li>
 <li><a href="#Video:SetVolume">SetVolume</a></li>
 <li><a href="#Video:Stop">Stop</a></li>
+</ul></li>
+<li id="idxc:Video"><a href="#idx:Video">Video consts</a> <i>(1 const)</i><ul>
+<li><a href="#Video.Flags">Flags</a></li>
 </ul></li>
 </ol></div>
 <div id="cv.app_author"><h3>app_author</h3>
@@ -1454,9 +1503,6 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4><a href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="cv.obj_cvarmax"><h3>obj_cvarmax</h3>
 <p>Specifies the maximum number of cvars allowed to be registered by the engine. This includes the internal default cvars. An exception is generated if more cvars than this are allocated.</p>
-<h4><a href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="cv.obj_dylibmax"><h3>obj_dylibmax</h3>
-<p>Specifies the maximum number of dylib objects allowed to be registered by the engine. An exception is generated if more cvars than this are allocated.</p>
 <h4><a href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="cv.obj_fbomax"><h3>obj_fbomax</h3>
 <p>Specifies the maximum number of framebuffer objects allowed to be registered by the engine. An exception is generated if more cvars than this are allocated.</p>
@@ -3963,6 +4009,17 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Returns the last system error number&#x2e;<br>See&#x3a; https&#x3a;&#x2f;&#x2f;en&#x2e;hppreference&#x2e;com&#x2f;w&#x2f;cpp&#x2f;error&#x2f;errno_macros </p>
 <h4><a href="#idx:File" onclick="r('File.Error')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="File.Executable">
+<h3>File.Executable</h3>
+<h4>Syntax:-</h4>
+<pre><u>Result</u> = File.Executable(<i><u>Source</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Source</u> <i>(string)</i> = Filename<br></pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Result</u> <i>(Boolean)</i> = File executable?<br></pre>
+<h4>Synopsis:-</h4>
+<p>Returns if the file on disk is executable&#x2e; Only allowed as a child of the working executable directory&#x2e; Should always return &#x27;false&#x27; on Windows&#x2e;<br></p>
+<h4><a href="#idx:File" onclick="r('File.Executable')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="File.Exists">
 <h3>File.Exists</h3>
 <h4>Syntax:-</h4>
@@ -4360,6 +4417,33 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Dumps the texture to the specified file in TGA format&#x2e;<br></p>
 <h4><a href="#idx:Font" onclick="r('Font:Dump')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Font:GetHeight">
+<h3>Font:GetHeight</h3>
+<h4>Syntax:-</h4>
+<pre><u>Height</u> = Font:GetHeight()</pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Height</u> <i>(integer)</i> = The tile height of the font.<br></pre>
+<h4>Synopsis:-</h4>
+<p>Returns height of the font tile&#x2e; If this font is a free&#x2d;type font&#x2c; this will just be the height of the white&#x2d;space character only&#x2e;<br></p>
+<h4><a href="#idx:Font" onclick="r('Font:GetHeight')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Font:GetName">
+<h3>Font:GetName</h3>
+<h4>Syntax:-</h4>
+<pre><u>Name</u> = Font:GetName()</pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Name</u> <i>(string)</i> = Name of the font.<br></pre>
+<h4>Synopsis:-</h4>
+<p>If this font was loaded by a filename or it was set with a custom id&#x2e;<br>This function returns that name which was assigned to it&#x2e;<br></p>
+<h4><a href="#idx:Font" onclick="r('Font:GetName')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Font:GetWidth">
+<h3>Font:GetWidth</h3>
+<h4>Syntax:-</h4>
+<pre><u>Width</u> = Font:GetWidth()</pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Width</u> <i>(integer)</i> = The tile width of the font.<br></pre>
+<h4>Synopsis:-</h4>
+<p>Returns width of the font tile&#x2e; If this font is a free&#x2d;type font&#x2c; this will just be the width of the white&#x2d;space character only&#x2e;<br></p>
+<h4><a href="#idx:Font" onclick="r('Font:GetWidth')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Font:LoadChars">
 <h3>Font:LoadChars</h3>
 <h4>Syntax:-</h4>
@@ -5751,6 +5835,309 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Returns the width of each sub&#x2d;mask in the mask&#x2e;<br></p>
 <h4><a href="#idx:Mask" onclick="r('Mask:Width')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette"><h2>Palette</h2>
+<p>The palette class allows creating and modifying palettes and uploading them to the GPU for use with 8&#x2d;bit paletted textures&#x2e; Only one palette can be active at once and textures marked with LF_PALETTE are affected by the palette&#x2e;<br></p><h4><a href="#idx:Palette" onclick="r('Palette')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette.Create">
+<h3>Palette.Create</h3>
+<h4>Syntax:-</h4>
+<pre><u>Handle</u> = Palette.Create(<i><u>Identifier</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Identifier</u> <i>(string)</i> = Reference only user-defined identifier.<br></pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Handle</u> <i>(Palette)</i> = A handle to the newly created palette object.<br></pre>
+<h4>Synopsis:-</h4>
+<p>Creates a new empty palette with the specified name </p>
+<h4><a href="#idx:Palette" onclick="r('Palette.Create')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette.Default">
+<h3>Palette.Default</h3>
+<h4>Syntax:-</h4>
+<pre><u>Handle</u> = Palette.Default(<i><u>Identifier</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Identifier</u> <i>(string)</i> = Reference only user-defined identifier.<br></pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Handle</u> <i>(Palette)</i> = A handle to the newly created palette object.<br></pre>
+<h4>Synopsis:-</h4>
+<p>Creates a new palette with the default VGA palette&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette.Default')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette.Image">
+<h3>Palette.Image</h3>
+<h4>Syntax:-</h4>
+<pre>Palette.Image(<i><u>Identifier</u>, <u>Handle</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Identifier</u> <i>(string)</i> = Reference only user-defined identifier.<br><u>Handle</u> <i>(Image)</i> = Handle to image to grab palette from.<br></pre>
+<h4>Synopsis:-</h4>
+<p>Creates a new palette from the specified image&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette.Image')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette.Palette">
+<h3>Palette.Palette</h3>
+<h4>Syntax:-</h4>
+<pre><u>Handle</u> = Palette.Palette(<i><u>Identifier</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Identifier</u> <i>(string)</i> = Reference only user-defined identifier.<br></pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Handle</u> <i>(Palette)</i> = A handle to the newly created palette object.<br></pre>
+<h4>Synopsis:-</h4>
+<p>Creates a new palette from another essentially copying it&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette.Palette')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette.Texture">
+<h3>Palette.Texture</h3>
+<h4>Syntax:-</h4>
+<pre>Palette.Texture(<i><u>Identifier</u>, <u>Handle</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Identifier</u> <i>(string)</i> = Reference only user-defined identifier.<br><u>Handle</u> <i>(Texture)</i> = Handle to texture to grab palette from.<br></pre>
+<h4>Synopsis:-</h4>
+<p>Creates a new palette from the specified texture&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette.Texture')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:Commit">
+<h3>Palette:Commit</h3>
+<h4>Syntax:-</h4>
+<pre>Palette:Commit()</pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to commit the new palette to the shader&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:Commit')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:Destroy">
+<h3>Palette:Destroy</h3>
+<h4>Syntax:-</h4>
+<pre>Palette:Destroy()</pre>
+<h4>Synopsis:-</h4>
+<p>Destroys the palette and frees the memory associated with it&#x2e; This does not affect the active palette as this is stored on the GPU&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:Destroy')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:GetA">
+<h3>Palette:GetA</h3>
+<h4>Syntax:-</h4>
+<pre><u>Red</u> = Palette:GetA(<i><u>Id</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br></pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Red</u> <i>(number)</i> = The red intensity number (0.0-1.0).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to get the alpha palette entry&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:GetA')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:GetB">
+<h3>Palette:GetB</h3>
+<h4>Syntax:-</h4>
+<pre><u>Red</u> = Palette:GetB(<i><u>Id</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br></pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Red</u> <i>(number)</i> = The red intensity number (0.0-1.0).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to get the blue palette entry&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:GetB')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:GetG">
+<h3>Palette:GetG</h3>
+<h4>Syntax:-</h4>
+<pre><u>Red</u> = Palette:GetG(<i><u>Id</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br></pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Red</u> <i>(number)</i> = The red intensity number (0.0-1.0).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to get the green palette entry&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:GetG')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:GetIA">
+<h3>Palette:GetIA</h3>
+<h4>Syntax:-</h4>
+<pre><u>Red</u> = Palette:GetIA(<i><u>Id</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br></pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Red</u> <i>(integer)</i> = The alpha intensity integer (0-255).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to get the alpha palette entry&#x2e; This function is mainly for convenience only and has slightly more overhead than with &#x3a;GetA&#x28;&#x29; as the palette values have to be stored as GLfloats in the GPU and thus extra calculations are required as a result&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:GetIA')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:GetIB">
+<h3>Palette:GetIB</h3>
+<h4>Syntax:-</h4>
+<pre><u>Blue</u> = Palette:GetIB(<i><u>Id</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br></pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Blue</u> <i>(integer)</i> = The blue intensity integer (0-255).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to get the blue palette entry&#x2e; This function is mainly for convenience only and has slightly more overhead than with &#x3a;GetB&#x28;&#x29; as the palette values have to be stored as GLfloats in the GPU and thus extra calculations are required as a result&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:GetIB')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:GetIG">
+<h3>Palette:GetIG</h3>
+<h4>Syntax:-</h4>
+<pre><u>Green</u> = Palette:GetIG(<i><u>Id</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br></pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Green</u> <i>(integer)</i> = The green intensity integer (0-255).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to get the green palette entry&#x2e; This function is mainly for convenience only and has slightly more overhead than with &#x3a;GetG&#x28;&#x29; as the palette values have to be stored as GLfloats in the GPU and thus extra calculations are required as a result&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:GetIG')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:GetIR">
+<h3>Palette:GetIR</h3>
+<h4>Syntax:-</h4>
+<pre><u>Red</u> = Palette:GetIR(<i><u>Id</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br></pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Red</u> <i>(integer)</i> = The red intensity integer (0-255).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to get the red palette entry&#x2e; This function is mainly for convenience only and has slightly more overhead than with &#x3a;GetR&#x28;&#x29; as the palette values have to be stored as GLfloats in the GPU and thus extra calculations are required as a result&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:GetIR')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:GetIRGBA">
+<h3>Palette:GetIRGBA</h3>
+<h4>Syntax:-</h4>
+<pre><u>Red</u>, <u>Green</u>, <u>Blue</u>, <u>Alpha</u> = Palette:GetIRGBA(<i><u>Id</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br></pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Red</u> <i>(integer)</i> = The red intensity integer (0-255).<br><u>Green</u> <i>(integer)</i> = The green intensity integer (0-255).<br><u>Blue</u> <i>(integer)</i> = The blue intensity integer (0-255).<br><u>Alpha</u> <i>(integer)</i> = The alpha intensity integer (0-255).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to get the palette entry&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:GetIRGBA')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:GetR">
+<h3>Palette:GetR</h3>
+<h4>Syntax:-</h4>
+<pre><u>Red</u> = Palette:GetR(<i><u>Id</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br></pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Red</u> <i>(number)</i> = The red intensity number (0.0-1.0).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to get the red palette entry&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:GetR')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:GetRGBA">
+<h3>Palette:GetRGBA</h3>
+<h4>Syntax:-</h4>
+<pre><u>Red</u>, <u>Green</u>, <u>Blue</u>, <u>Alpha</u> = Palette:GetRGBA(<i><u>Id</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br></pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Red</u> <i>(number)</i> = The red intensity number (0.0-1.0).<br><u>Green</u> <i>(number)</i> = The green intensity number (0.0-1.0).<br><u>Blue</u> <i>(number)</i> = The blue intensity number (0.0-1.0).<br><u>Alpha</u> <i>(number)</i> = The alpha intensity number (0.0-1.0).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to get the palette entry&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:GetRGBA')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:Name">
+<h3>Palette:Name</h3>
+<h4>Syntax:-</h4>
+<pre><u>Name</u> = Palette:Name()</pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Name</u> <i>(string)</i> = The identifier of the palette.<br></pre>
+<h4>Synopsis:-</h4>
+<p>Returns the palette identifier </p>
+<h4><a href="#idx:Palette" onclick="r('Palette:Name')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:SetA">
+<h3>Palette:SetA</h3>
+<h4>Syntax:-</h4>
+<pre>Palette:SetA(<i><u>Id</u>, <u>Alpha</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br><u>Alpha</u> <i>(number)</i> = The alpha intensity number (0.0-1.0).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to set the alpha palette entry&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:SetA')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:SetB">
+<h3>Palette:SetB</h3>
+<h4>Syntax:-</h4>
+<pre>Palette:SetB(<i><u>Id</u>, <u>Blue</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br><u>Blue</u> <i>(number)</i> = The blue intensity number (0.0-1.0).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to set the blue palette entry&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:SetB')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:SetG">
+<h3>Palette:SetG</h3>
+<h4>Syntax:-</h4>
+<pre>Palette:SetG(<i><u>Id</u>, <u>Green</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br><u>Green</u> <i>(number)</i> = The green intensity number (0.0-1.0).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to set the green palette entry&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:SetG')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:SetI">
+<h3>Palette:SetI</h3>
+<h4>Syntax:-</h4>
+<pre>Palette:SetI(<i><u>Id</u>, <u>Red</u>, <u>Green</u>, <u>Blue</u>, <u>Alpha</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br><u>Red</u> <i>(integer)</i> = The red intensity integer (0-255).<br><u>Green</u> <i>(integer)</i> = The green intensity integer (0-255).<br><u>Blue</u> <i>(integer)</i> = The blue intensity integer (0-255).<br><u>Alpha</u> <i>(integer)</i> = The alpha intensity integer (0-255).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to set the palette entry using integers&#x2e; This function is mainly for convenience only and has slightly more overhead than with &#x3a;Set&#x28;&#x29; as the palette values have to be stored as GLfloats in the GPU and thus extra calculations are required as a result&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:SetI')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:SetIA">
+<h3>Palette:SetIA</h3>
+<h4>Syntax:-</h4>
+<pre>Palette:SetIA(<i><u>Id</u>, <u>Alpha</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br><u>Alpha</u> <i>(integer)</i> = The alpha intensity integer (0-255).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to set the alpha palette entry&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:SetIA')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:SetIB">
+<h3>Palette:SetIB</h3>
+<h4>Syntax:-</h4>
+<pre>Palette:SetIB(<i><u>Id</u>, <u>Blue</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br><u>Blue</u> <i>(integer)</i> = The blue intensity integer (0-255).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to set the blue palette entry&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:SetIB')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:SetIG">
+<h3>Palette:SetIG</h3>
+<h4>Syntax:-</h4>
+<pre>Palette:SetIG(<i><u>Id</u>, <u>Green</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br><u>Green</u> <i>(integer)</i> = The green intensity integer (0-255).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to set the green palette entry&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:SetIG')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:SetIR">
+<h3>Palette:SetIR</h3>
+<h4>Syntax:-</h4>
+<pre>Palette:SetIR(<i><u>Id</u>, <u>Red</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br><u>Red</u> <i>(integer)</i> = The red intensity integer (0-255).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to set the red palette entry&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:SetIR')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:SetR">
+<h3>Palette:SetR</h3>
+<h4>Syntax:-</h4>
+<pre>Palette:SetR(<i><u>Id</u>, <u>Red</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br><u>Red</u> <i>(number)</i> = The red intensity number (0.0-1.0).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to set the red palette entry&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:SetR')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:SetRGBA">
+<h3>Palette:SetRGBA</h3>
+<h4>Syntax:-</h4>
+<pre>Palette:SetRGBA(<i><u>Id</u>, <u>Red</u>, <u>Green</u>, <u>Blue</u>, <u>Alpha</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br><u>Red</u> <i>(number)</i> = The red intensity number (0.0-1.0).<br><u>Green</u> <i>(number)</i> = The green intensity number (0.0-1.0).<br><u>Blue</u> <i>(number)</i> = The blue intensity number (0.0-1.0).<br><u>Alpha</u> <i>(number)</i> = The alpha intensity number (0.0-1.0).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to set the palette entry&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:SetRGBA')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:Shift">
+<h3>Palette:Shift</h3>
+<h4>Syntax:-</h4>
+<pre>Palette:Shift(<i><u>Amount</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Amount</u> <i>(integer)</i> = Shift all palette entries backwards or forwards this much.<br></pre>
+<h4>Synopsis:-</h4>
+<p>Shifts all palette entries backwards or forwards this amount&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:Shift')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:ShiftL">
+<h3>Palette:ShiftL</h3>
+<h4>Syntax:-</h4>
+<pre>Palette:ShiftL(<i><u>Amount</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Amount</u> <i>(integer)</i> = Shift all palette entries backwards this much.<br></pre>
+<h4>Synopsis:-</h4>
+<p>Shifts all palette entries backwards this amount&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:ShiftL')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:ShiftR">
+<h3>Palette:ShiftR</h3>
+<h4>Syntax:-</h4>
+<pre>Palette:ShiftR(<i><u>Amount</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Amount</u> <i>(integer)</i> = Shift all palette entries forwards this much.<br></pre>
+<h4>Synopsis:-</h4>
+<p>Shifts all palette entries forwards this amount&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:ShiftR')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Pcm"><h2>Pcm</h2>
 <p>This allows the programmer to maniuplate pcm wave forms asynchronously and send the objects to the OpenAL if needed&#x2e;<br></p><h4><a href="#idx:Pcm" onclick="r('Pcm')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Pcm.ArrayAsync">
@@ -7330,28 +7717,6 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Blits with the currently stored texture at position &#x27;TexIndex&#x27; with the stored texcoord &#x28;SetTexCoord&#x2a;&#x29;&#x2c; vertex &#x28;SetVertex&#x2a;&#x29; and colour &#x28;SetRGB&#x2a;&#x29;&#x2e;<br>Note that the Blit&#x2a; functions will overwrite the stored values&#x2e;<br></p>
 <h4><a href="#idx:Texture" onclick="r('Texture:BlitXI')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Texture:CreateTile">
-<h3>Texture:CreateTile</h3>
-<h4>Syntax:-</h4>
-<pre><u>Id</u> = Texture:CreateTile(<i><u>Left</u>, <u>Top</u>, <u>Right</u>, <u>Bottom</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Left</u> <i>(integer)</i> = The left pixel position on the texture<br><u>Top</u> <i>(integer)</i> = The top pixel position on the texture<br><u>Right</u> <i>(integer)</i> = The right pixel position on the texture<br><u>Bottom</u> <i>(integer)</i> = The bottom pixel position on the texture<br></pre>
-<h4>Return Parameters:-</h4>
-<pre><u>Id</u> <i>(integer)</i> = The id number for the cached texcoords<br></pre>
-<h4>Synopsis:-</h4>
-<p>Caches the specified texture coordinates which you can use as a parameter to &#x27;tileid&#x27; on blitting functions&#x2e;<br></p>
-<h4><a href="#idx:Texture" onclick="r('Texture:CreateTile')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Texture:CreateTileEx">
-<h3>Texture:CreateTileEx</h3>
-<h4>Syntax:-</h4>
-<pre><u>Id</u> = Texture:CreateTileEx(<i><u>Left</u>, <u>Top</u>, <u>Width</u>, <u>Height</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Left</u> <i>(integer)</i> = The left pixel position on the texture<br><u>Top</u> <i>(integer)</i> = The top pixel position on the texture<br><u>Width</u> <i>(integer)</i> = The width of the texture<br><u>Height</u> <i>(integer)</i> = The height of the texture<br></pre>
-<h4>Return Parameters:-</h4>
-<pre><u>Id</u> <i>(integer)</i> = The id number for the cached texcoords<br></pre>
-<h4>Synopsis:-</h4>
-<p>Caches the specified texture coordinates which you can use as a parameter to &#x27;tileid&#x27; on blitting functions&#x2e;<br></p>
-<h4><a href="#idx:Texture" onclick="r('Texture:CreateTileEx')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Texture:Destroy">
 <h3>Texture:Destroy</h3>
 <h4>Syntax:-</h4>
@@ -7404,15 +7769,6 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Returns number of sub&#x2d;textures found in the loaded image file&#x2e;<br></p>
 <h4><a href="#idx:Texture" onclick="r('Texture:GetSubCount')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Texture:GetTileCount">
-<h3>Texture:GetTileCount</h3>
-<h4>Syntax:-</h4>
-<pre><u>Count</u> = Texture:GetTileCount()</pre>
-<h4>Return Parameters:-</h4>
-<pre><u>Count</u> <i>(integer)</i> = The handle of the texture created.<br></pre>
-<h4>Synopsis:-</h4>
-<p>Returns number of tiles found in the loaded texture file&#x2e;<br></p>
-<h4><a href="#idx:Texture" onclick="r('Texture:GetTileCount')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Texture:GetWidth">
 <h3>Texture:GetWidth</h3>
 <h4>Syntax:-</h4>
@@ -7544,24 +7900,6 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Allows you to full control over the texture co&#x2d;ordinates&#x2e;<br></p>
 <h4><a href="#idx:Texture" onclick="r('Texture:SetTexCoordEx')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Texture:SetTile">
-<h3>Texture:SetTile</h3>
-<h4>Syntax:-</h4>
-<pre>Texture:SetTile(<i><u>Id</u>, <u>Left</u>, <u>Top</u>, <u>Right</u>, <u>Bottom</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Id</u> <i>(integer)</i> = The id of the tile to change<br><u>Left</u> <i>(integer)</i> = The left pixel position on the texture<br><u>Top</u> <i>(integer)</i> = The top pixel position on the texture<br><u>Right</u> <i>(integer)</i> = The right pixel position on the texture<br><u>Bottom</u> <i>(integer)</i> = The bottom pixel position on the texture<br></pre>
-<h4>Synopsis:-</h4>
-<p>Changes the specified texture coordinates which you can use as a parameter to &#x27;tileid&#x27; on blitting functions&#x2e;<br></p>
-<h4><a href="#idx:Texture" onclick="r('Texture:SetTile')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Texture:SetTileEx">
-<h3>Texture:SetTileEx</h3>
-<h4>Syntax:-</h4>
-<pre>Texture:SetTileEx(<i><u>Id</u>, <u>Left</u>, <u>Top</u>, <u>Width</u>, <u>Height</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Id</u> <i>(integer)</i> = The id of the tile to change<br><u>Left</u> <i>(integer)</i> = The left pixel position on the texture<br><u>Top</u> <i>(integer)</i> = The top pixel position on the texture<br><u>Width</u> <i>(integer)</i> = The width of the texture<br><u>Height</u> <i>(integer)</i> = The height of the texture<br></pre>
-<h4>Synopsis:-</h4>
-<p>Changes the specified texture coordinates which you can use as a parameter to &#x27;tileid&#x27; on blitting functions&#x2e;<br></p>
-<h4><a href="#idx:Texture" onclick="r('Texture:SetTileEx')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Texture:SetVertex">
 <h3>Texture:SetVertex</h3>
 <h4>Syntax:-</h4>
@@ -7589,15 +7927,124 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Allows you to full control over the vertex co&#x2d;ordinates apart from the Z co&#x2d;ordinate which is not used in this 2D only engine&#x2e;<br></p>
 <h4><a href="#idx:Texture" onclick="r('Texture:SetVertexEx')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Texture:TrimTList">
-<h3>Texture:TrimTList</h3>
+<div id="Texture:TileA">
+<h3>Texture:TileA</h3>
 <h4>Syntax:-</h4>
-<pre>Texture:TrimTList(<i><u>Count</u></i>)</pre>
+<pre><u>Id</u> = Texture:TileA(<i><u>Left</u>, <u>Top</u>, <u>Right</u>, <u>Bottom</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Left</u> <i>(integer)</i> = The left pixel position on the texture<br><u>Top</u> <i>(integer)</i> = The top pixel position on the texture<br><u>Right</u> <i>(integer)</i> = The right pixel position on the texture<br><u>Bottom</u> <i>(integer)</i> = The bottom pixel position on the texture<br></pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = The id number for the cached texcoords<br></pre>
+<h4>Synopsis:-</h4>
+<p>Caches the specified texture coordinates which you can use as a parameter to &#x27;tileid&#x27; on blitting functions&#x2e;<br></p>
+<h4><a href="#idx:Texture" onclick="r('Texture:TileA')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Texture:TileAD">
+<h3>Texture:TileAD</h3>
+<h4>Syntax:-</h4>
+<pre><u>Id</u> = Texture:TileAD(<i><u>Left</u>, <u>Top</u>, <u>Width</u>, <u>Height</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Left</u> <i>(integer)</i> = The left pixel position on the texture<br><u>Top</u> <i>(integer)</i> = The top pixel position on the texture<br><u>Width</u> <i>(integer)</i> = The width of the texture<br><u>Height</u> <i>(integer)</i> = The height of the texture<br></pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = The id number for the cached texcoords<br></pre>
+<h4>Synopsis:-</h4>
+<p>Caches the specified texture coordinates which you can use as a parameter to &#x27;tileid&#x27; on blitting functions&#x2e;<br></p>
+<h4><a href="#idx:Texture" onclick="r('Texture:TileAD')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Texture:TileAS">
+<h3>Texture:TileAS</h3>
+<h4>Syntax:-</h4>
+<pre><u>Id</u> = Texture:TileAS(<i><u>Id</u>, <u>Left</u>, <u>Top</u>, <u>Right</u>, <u>Bottom</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = The id of the sub-texture to add to<br><u>Left</u> <i>(integer)</i> = The left pixel position on the texture<br><u>Top</u> <i>(integer)</i> = The top pixel position on the texture<br><u>Right</u> <i>(integer)</i> = The right pixel position on the texture<br><u>Bottom</u> <i>(integer)</i> = The bottom pixel position on the texture<br></pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = The id number for the cached texcoords<br></pre>
+<h4>Synopsis:-</h4>
+<p>Caches the specified texture coordinates which you can use as a parameter to &#x27;tileid&#x27; on blitting functions of the specified sub&#x2d;texture&#x2e;<br></p>
+<h4><a href="#idx:Texture" onclick="r('Texture:TileAS')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Texture:TileASD">
+<h3>Texture:TileASD</h3>
+<h4>Syntax:-</h4>
+<pre><u>Id</u> = Texture:TileASD(<i><u>Id</u>, <u>Left</u>, <u>Top</u>, <u>Width</u>, <u>Height</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = The id of the sub-texture to add to<br><u>Left</u> <i>(integer)</i> = The left pixel position on the texture<br><u>Top</u> <i>(integer)</i> = The top pixel position on the texture<br><u>Width</u> <i>(integer)</i> = The width of the texture<br><u>Height</u> <i>(integer)</i> = The height of the texture<br></pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = The id number for the cached texcoords<br></pre>
+<h4>Synopsis:-</h4>
+<p>Caches the specified texture coordinates which you can use as a parameter to &#x27;tileid&#x27; on blitting functions of the specified sub&#x2d;texture&#x2e;<br></p>
+<h4><a href="#idx:Texture" onclick="r('Texture:TileASD')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Texture:TileGSTC">
+<h3>Texture:TileGSTC</h3>
+<h4>Syntax:-</h4>
+<pre><u>Count</u> = Texture:TileGSTC(<i><u>Id</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = The id of the sub-texture to get the count for.<br></pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Count</u> <i>(integer)</i> = The handle of the texture created.<br></pre>
+<h4>Synopsis:-</h4>
+<p>Returns number of tiles found in the loaded texture file with the specified sub&#x2d;texture id&#x2e;<br></p>
+<h4><a href="#idx:Texture" onclick="r('Texture:TileGSTC')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Texture:TileGTC">
+<h3>Texture:TileGTC</h3>
+<h4>Syntax:-</h4>
+<pre><u>Count</u> = Texture:TileGTC()</pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Count</u> <i>(integer)</i> = The handle of the texture created.<br></pre>
+<h4>Synopsis:-</h4>
+<p>Returns number of tiles found in the loaded texture file&#x2e;<br></p>
+<h4><a href="#idx:Texture" onclick="r('Texture:TileGTC')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Texture:TileS">
+<h3>Texture:TileS</h3>
+<h4>Syntax:-</h4>
+<pre>Texture:TileS(<i><u>Id</u>, <u>Left</u>, <u>Top</u>, <u>Right</u>, <u>Bottom</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = The id of the tile to change<br><u>Left</u> <i>(integer)</i> = The left pixel position on the texture<br><u>Top</u> <i>(integer)</i> = The top pixel position on the texture<br><u>Right</u> <i>(integer)</i> = The right pixel position on the texture<br><u>Bottom</u> <i>(integer)</i> = The bottom pixel position on the texture<br></pre>
+<h4>Synopsis:-</h4>
+<p>Changes the specified texture coordinates which you can use as a parameter to &#x27;tileid&#x27; on blitting functions&#x2e;<br></p>
+<h4><a href="#idx:Texture" onclick="r('Texture:TileS')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Texture:TileSD">
+<h3>Texture:TileSD</h3>
+<h4>Syntax:-</h4>
+<pre>Texture:TileSD(<i><u>Id</u>, <u>Left</u>, <u>Top</u>, <u>Width</u>, <u>Height</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = The id of the tile to change<br><u>Left</u> <i>(integer)</i> = The left pixel position on the texture<br><u>Top</u> <i>(integer)</i> = The top pixel position on the texture<br><u>Width</u> <i>(integer)</i> = The width of the texture<br><u>Height</u> <i>(integer)</i> = The height of the texture<br></pre>
+<h4>Synopsis:-</h4>
+<p>Changes the specified texture coordinates which you can use as a parameter to &#x27;tileid&#x27; on blitting functions&#x2e;<br></p>
+<h4><a href="#idx:Texture" onclick="r('Texture:TileSD')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Texture:TileSS">
+<h3>Texture:TileSS</h3>
+<h4>Syntax:-</h4>
+<pre>Texture:TileSS(<i><u>TexId</u>, <u>TileId</u>, <u>Left</u>, <u>Top</u>, <u>Right</u>, <u>Bottom</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>TexId</u> <i>(integer)</i> = The id of the sub texture to change<br><u>TileId</u> <i>(integer)</i> = The id of the tile id to change<br><u>Left</u> <i>(integer)</i> = The left pixel position on the texture<br><u>Top</u> <i>(integer)</i> = The top pixel position on the texture<br><u>Right</u> <i>(integer)</i> = The right pixel position on the texture<br><u>Bottom</u> <i>(integer)</i> = The bottom pixel position on the texture<br></pre>
+<h4>Synopsis:-</h4>
+<p>Changes the specified texture coordinates which you can use as a parameter to &#x27;tileid&#x27; on blitting functions&#x2e;<br></p>
+<h4><a href="#idx:Texture" onclick="r('Texture:TileSS')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Texture:TileSSD">
+<h3>Texture:TileSSD</h3>
+<h4>Syntax:-</h4>
+<pre>Texture:TileSSD(<i><u>TexId</u>, <u>TileId</u>, <u>Left</u>, <u>Top</u>, <u>Width</u>, <u>Height</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>TexId</u> <i>(integer)</i> = The id of the sub texture to change<br><u>TileId</u> <i>(integer)</i> = The id of the tile id to change<br><u>Left</u> <i>(integer)</i> = The left pixel position on the texture<br><u>Top</u> <i>(integer)</i> = The top pixel position on the texture<br><u>Width</u> <i>(integer)</i> = The width of the texture<br><u>Height</u> <i>(integer)</i> = The height of the texture<br></pre>
+<h4>Synopsis:-</h4>
+<p>Changes the specified texture coordinates which you can use as a parameter to &#x27;tileid&#x27; on blitting functions&#x2e;<br></p>
+<h4><a href="#idx:Texture" onclick="r('Texture:TileSSD')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Texture:TileSSTC">
+<h3>Texture:TileSSTC</h3>
+<h4>Syntax:-</h4>
+<pre>Texture:TileSSTC(<i><u>Id</u>, <u>Count</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = The id of the sub-texture to set the size of.<br><u>Count</u> <i>(integer)</i> = The new size of the tile list.<br></pre>
+<h4>Synopsis:-</h4>
+<p>Modifies the size of the tile list&#x2e; Useful if you want to manage your tile texcoord list dynamically&#x2e; If the new size is below the current size then existing entries will be deleted&#x2c; otherwise if the new size is larger&#x2c; then new blank entries are created and are set to zero&#x2e; You will need to use SetTileData to change them&#x2e;<br></p>
+<h4><a href="#idx:Texture" onclick="r('Texture:TileSSTC')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Texture:TileSTC">
+<h3>Texture:TileSTC</h3>
+<h4>Syntax:-</h4>
+<pre>Texture:TileSTC(<i><u>Count</u></i>)</pre>
 <h4>Function Parameters:-</h4>
 <pre><u>Count</u> <i>(integer)</i> = The new size of the tile list.<br></pre>
 <h4>Synopsis:-</h4>
 <p>Modifies the size of the tile list&#x2e; Useful if you want to manage your tile texcoord list dynamically&#x2e; If the new size is below the current size then existing entries will be deleted&#x2c; otherwise if the new size is larger&#x2c; then new blank entries are created and are set to zero&#x2e; You will need to use SetTileData to change them&#x2e;<br></p>
-<h4><a href="#idx:Texture" onclick="r('Texture:TrimTList')">&#x25B2; Return to table of contents</a></h4></div>
+<h4><a href="#idx:Texture" onclick="r('Texture:TileSTC')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Texture:Upload">
 <h3>Texture:Upload</h3>
 <h4>Syntax:-</h4>
@@ -8452,6 +8899,15 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Returns the FPS rate of the video </p>
 <h4><a href="#idx:Video" onclick="r('Video:GetFPS')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Video:GetFrame">
+<h3>Video:GetFrame</h3>
+<h4>Syntax:-</h4>
+<pre><u>Frame</u> = Video:GetFrame()</pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Frame</u> <i>(Integer)</i> = The current frame<br></pre>
+<h4>Synopsis:-</h4>
+<p>Returns the current frame number </p>
+<h4><a href="#idx:Video" onclick="r('Video:GetFrame')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Video:GetFrames">
 <h3>Video:GetFrames</h3>
 <h4>Syntax:-</h4>
@@ -8642,7 +9098,16 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Stops and unloads the specified video&#x2c; this frees resources&#x2e;<br></p>
 <h4><a href="#idx:Video" onclick="r('Video:Stop')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Video.Flags">
+<h3>Video.Flags</h3>
+<h4>Syntax:-</h4>
+<pre><u>Codes</u> = Video.Flags</pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Codes</u> <i>(table)</i> = The table of key/value pairs of available flags<br></pre>
+<h4>Synopsis:-</h4>
+<p>Returns possible values for Video&#x3a;OnEvent&#x28;&#x29; event command&#x2e;<br></p>
+<h4><a href="#idx:Video" onclick="r('Video.Flags')">&#x25B2; Return to table of contents</a></h4></div>
 <address>Copyright &copy; 2023 MS-Design, All Rights Reserved.<br>
-This document was created at Thu Mar 09 18:19:46 2023 +0000</address>
+This document was created at Sun Apr 02 01:06:17 2023 +0100</address>
 </body>
 </html>

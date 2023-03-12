@@ -27,15 +27,15 @@ local function InitEnding(iRaceId)
     PlayMusic(aResources[2].H, nil, nil, nil, 371767);
     -- Load lobby texture
     local texLobby = aResources[1].H;
-          texLobby:CreateTile(0, 272, 512, 512);
-          texLobby:CreateTile(0, 214, 238, 271);
-          texLobby:CreateTile(305,   0, 512, 184);
+          texLobby:TileA(0, 272, 512, 512);
+          texLobby:TileA(0, 214, 238, 271);
+          texLobby:TileA(305,   0, 512, 184);
     -- Render callback
     local function Ending1Render()
       -- Blit background
       texLobby:BlitSLT(1, -96, 0);
       -- Blit text
-      fontLittle:SetRGBA(1,1,1,1);
+      fontLittle:SetCRGBA(1,1,1,1);
       fontLittle:PrintC(160, 200, "MINING OPERATIONS COMPLETED!");
     end
     -- First ending screen procedure
@@ -58,7 +58,7 @@ local function InitEnding(iRaceId)
             -- Load texture and tiles
             local texEnding = aResources[1].H;
             local iTileEnding<const> =
-              texEnding:CreateTile(aEndingItem[2], aEndingItem[3],
+              texEnding:TileA(aEndingItem[2], aEndingItem[3],
                                    aEndingItem[4], aEndingItem[5]);
             -- Set custom race specific texts
             local sText1, sText2 = aEndingItem[6], aEndingItem[7];
@@ -67,7 +67,7 @@ local function InitEnding(iRaceId)
               -- Blit background
               texEnding:BlitSLT(iTileEnding, -96, 0);
               -- Blit text
-              fontLittle:SetRGBA(1, 1, 1, 1);
+              fontLittle:SetCRGBA(1, 1, 1, 1);
               fontLittle:PrintC(160, 200, sText1);
               fontLittle:PrintC(160, 220, sText2);
             end
@@ -91,19 +91,19 @@ local function InitEnding(iRaceId)
                     -- Load stranger texture and tiles
                     local texStr = aResources[1].H;
                     local iTileStrBg<const> =
-                      texStr:CreateTile(0, 0, 512, 240);
+                      texStr:TileA(0, 0, 512, 240);
                     local iTileStr<const> =
-                      texStr:CreateTile(0, 330, 113, 512);
+                      texStr:TileA(0, 330, 113, 512);
                     -- Credits render callback
                     local function Ending3Render()
                       -- Blit background
                       texStr:BlitSLT(iTileStrBg, -96, 0);
                       -- Blit stranger
-                      texStr:SetAlpha(iAlphaValue);
+                      texStr:SetCA(iAlphaValue);
                       texStr:BlitSLT(iTileStr, 0, 68);
-                      texStr:SetAlpha(1);
+                      texStr:SetCA(1);
                       -- Blit text
-                      fontLittle:SetRGBA(1,1,1,1);
+                      fontLittle:SetCRGBA(1,1,1,1);
                       fontLittle:PrintC(160, 200,
                         "...WHILST THE MYSTERIOUS FIGURE OF THE");
                       fontLittle:PrintC(160, 220,

@@ -9,10 +9,10 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfFileMap {                  // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfFileMap {                  // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfSystem;              // Using system interface
+using namespace IfSystem;              // Using system namespace
 /* == FileMap Class Definition ============================================= */
 class FileMap :
   /* -- Derivced classes --------------------------------------------------- */
@@ -38,8 +38,8 @@ class FileMap :
   bool FileMapIsEOF(void) const { return FileMapTell() >= Size(); }
   bool FileMapIsNotEOF(void) const { return !FileMapIsEOF(); }
   /* -- Return file times -------------------------------------------------- */
-  STDTIMET FileMapModifiedTime(void) { return SysMapGetModified(); }
-  STDTIMET FileMapCreationTime(void) { return SysMapGetCreation(); }
+  StdTimeT FileMapModifiedTime(void) { return SysMapGetModified(); }
+  StdTimeT FileMapCreationTime(void) { return SysMapGetCreation(); }
   /* -- Return if file is opened ------------------------------------------- */
   bool FileMapOpened(void) const { return !!Ptr(); }
   bool FileMapClosed(void) const { return !FileMapOpened(); }
@@ -119,7 +119,7 @@ class FileMap :
   { // If memory is not mapped? Just move the current memory across so the
     // returned Memory block takes ownership and frees the memory
     if(SysMapIsNotAvailable())
-      return Memory{ move(static_cast<DataConst&>(*this)) };
+      return Memory{ std::move(static_cast<DataConst&>(*this)) };
     // We need to read mapped memory into a new memory block. The map class
     // disallows files greater than size_t(-1) so this is safe
     Memory mOut{ IntOrMax<size_t>(SysMapGetSize()), SysMapGetMemory() };
@@ -183,7 +183,7 @@ class FileMap :
   /* -- Assignment operator ------------------------------------------------ */
   void FileMapSwap(FileMap &fmOther)
   { // Swap memory block and map
-    SwapDataConst(move(fmOther));
+    SwapDataConst(std::move(fmOther));
     SysMapSwap(fmOther);
     // Swap position
     swap(stPosition, fmOther.stPosition);
@@ -199,25 +199,25 @@ class FileMap :
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Take ownership of another memory block ----------------------------- */
-  FileMap(const string &strF, DataConst &&dcData, const STDTIMET tC,
-    const STDTIMET tM) :
+  FileMap(const string &strF, DataConst &&dcData, const StdTimeT tC,
+    const StdTimeT tM) :
     /* -- Initialisation of members ---------------------------------------- */
     SysMap{ strF, tC, tM },            // Reuse system map variables
-    DataConst{ move(dcData) },         // Init read-only memory block
+    DataConst{ std::move(dcData) },         // Init read-only memory block
     stPosition(0)                      // Initialise position
     /* --------------------------------------------------------------------- */
     { }                                // Don't do anything else
   /* -- Take ownership of another memory block ----------------------------- */
-  FileMap(const string &strF, DataConst &&dcData, const STDTIMET tC) :
+  FileMap(const string &strF, DataConst &&dcData, const StdTimeT tC) :
     /* -- Initialisation of members ---------------------------------------- */
-    FileMap{ strF, move(dcData), tC, tC }
+    FileMap{ strF, std::move(dcData), tC, tC }
     /* --------------------------------------------------------------------- */
     { }                                // Don't do anything else
   /* -- Move filemap constructor ------------------------------------------- */
   FileMap(FileMap &&fmOther) :
     /* -- Initialisation of members ---------------------------------------- */
-    SysMap{ move(fmOther) },           // Just moves SysMap members
-    DataConst{ move(fmOther) },        // Just moves DataConst members
+    SysMap{ std::move(fmOther) },           // Just moves SysMap members
+    DataConst{ std::move(fmOther) },        // Just moves DataConst members
     stPosition(fmOther.FileMapTell())  // Copy other current position
     /* --------------------------------------------------------------------- */
     { fmOther.FileMapRewind(); }       // Reset other position
@@ -232,6 +232,6 @@ class FileMap :
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(FileMap);            // Disable copy constructor and operator
 };/* ----------------------------------------------------------------------- */
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

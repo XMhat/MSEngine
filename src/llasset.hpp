@@ -18,8 +18,8 @@
 /* ========================================================================= */
 LLNAMESPACEBEGIN(Asset)                // Asset namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfAsset;               // Using asset interface
-using namespace IfLuaCode;             // Using luacode interface
+using namespace IfAsset;               // Using asset namespace
+using namespace IfLuaCode;             // Using luacode namespace
 /* ========================================================================= */
 /* ######################################################################### */
 /* ========================================================================= */
@@ -234,7 +234,7 @@ LLFUNCEX(Size, 1, LCPUSHINT(LCGETPTR(1, Asset)->Size()));
 // ? Finds the first occurence of 'Text' in array from the beginning.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Find, 1, LCPUSHINT(LCGETPTR(1, Asset)->
-  Find(LCGETCPPSTRINGNE(2, "Text"))));
+  Find(LCGETCPPSTRINGNE(2, "String"))));
 /* ========================================================================= */
 // $ Asset:FindEx
 // > Text:string=String to find in array.
@@ -243,7 +243,7 @@ LLFUNCEX(Find, 1, LCPUSHINT(LCGETPTR(1, Asset)->
 // ? Finds the first occurence of 'Text' in array from the specified position.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(FindEx, 1, LCPUSHINT(LCGETPTR(1, Asset)->
-  Find(LCGETCPPSTRINGNE(2, "Text"), LCGETINT(size_t, 3, "Position"))));
+  Find(LCGETCPPSTRINGNE(2, "String"), LCGETINT(size_t, 3, "Position"))));
 /* ========================================================================= */
 // $ Asset:Set
 // > Position:integer=Position to start at.
@@ -629,8 +629,8 @@ LLFUNC(ExecEx, LCCLASSCREATE(Asset)->InitAsyncCmdLineEx(lS));
 // ? Loads an array on the main thread.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Asset, 1, LCCLASSCREATE(Asset)->InitArray(
-  LCGETCPPSTRINGNE(1, "Identifier"), move(*LCGETPTR(2, Asset)),
-  LCGETFLAGS(AssetFlagsConst, 3, CD_NONE, CD_MASK, "Flags")));
+  LCGETCPPSTRINGNE(1, "Identifier"), std::move(*LCGETPTR(2, Asset)),
+  LCGETFLAGS(AssetFlagsConst, 3, CD_MASK, "Flags")));
 /* ========================================================================= */
 // $ Asset.String
 // > Id:string=The filename of the file to load
@@ -642,7 +642,7 @@ LLFUNCEX(Asset, 1, LCCLASSCREATE(Asset)->InitArray(
 LLFUNCEX(String, 1, LCCLASSCREATE(Asset)->InitString(
   LCGETCPPSTRINGNE(1, "Identifier"),
   LCGETCPPSTRING(2, "Data"),
-  LCGETFLAGS(AssetFlagsConst, 3, CD_NONE, CD_MASK, "Flags")));
+  LCGETFLAGS(AssetFlagsConst, 3, CD_MASK, "Flags")));
 /* ========================================================================= */
 // $ Asset.File
 // > Filename:string=The filename of the file to load
@@ -651,7 +651,7 @@ LLFUNCEX(String, 1, LCCLASSCREATE(Asset)->InitString(
 // ? Loads a file from assets in the main thread.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(File, 1, LCCLASSCREATE(Asset)->InitFile(LCGETCPPFILE(1, "File"),
-  LCGETFLAGS(AssetFlagsConst, 2, CD_NONE, CD_MASK, "Flags")));
+  LCGETFLAGS(AssetFlagsConst, 2, CD_MASK, "Flags")));
 /* ========================================================================= */
 // $ Asset.WaitAsync
 // ? Halts main-thread execution until all async asset events have completed

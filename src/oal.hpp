@@ -11,35 +11,19 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfOal {                      // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfOal {                      // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace Library::OpenAL;       // Using openal library functions
-using namespace IfDyLib;               // Using dylib interface
-/* -- Macros --------------------------------------------------------------- */
-#define ALLW(ECF,C,M,...) \
-  LW(LH_WARNING, "AL call failed: " M " ($/$$).", \
-    ## __VA_ARGS__, ECF(C), hex, C);
-#define ALXC(ECF,C,M,...) \
-  XC("AL call failed: " M, "Code", C, "Reason", ECF(C), ## __VA_ARGS__);
-#define ALLEX(ECF, EF,F,M,...) \
-  { F; const ALenum alError = EF(); \
-    if(alError != AL_NO_ERROR) \
-      ALLW(ECF, alError, M, ## __VA_ARGS__); }
-#define ALEX(ECF,EF,F,M,...) \
-  { F; const ALenum alError = EF(); \
-    if(alError != AL_NO_ERROR) \
-      ALXC(ECF, alError, M, ## __VA_ARGS__); }
-#define ALCEX(ECF,EF,M,...) \
-  { const ALenum alError = EF(); \
-    if(alError != AL_NO_ERROR) \
-      ALXC(ECF, alError, M, ## __VA_ARGS__); }
-#define ALL(F,M,...) \
-  ALLEX(cOal->GetALErr, cOal->GetError, F, M, ## __VA_ARGS__);
-#define AL(F,M,...) \
-  ALEX(cOal->GetALErr, cOal->GetError, F, M, ## __VA_ARGS__);
-#define ALC(M,...) \
-  ALCEX(cOal->GetALErr, cOal->GetError, M, ## __VA_ARGS__);
+using namespace IfFlags;               // Using flags namespace
+using namespace IfIdent;               // Using identification namespace
+using namespace IfLog;                 // Using logging namespace
+using namespace IfMemory;              // Using memory namespace
+/* -- GL error checking wrapper macros ------------------------------------- */
+#define ALEX(EF,F,M,...)  { F; EF(M, ## __VA_ARGS__); }
+#define ALL(F,M,...)      ALEX(cOal->CheckLogError, F, M, ## __VA_ARGS__)
+#define AL(F,M,...)       ALEX(cOal->CheckExceptError, F, M, ## __VA_ARGS__)
+#define ALC(M,...)        ALEX(cOal->CheckExceptError, , M, ## __VA_ARGS__)
 /* -- Typedefs ------------------------------------------------------------- */
 typedef vector<ALuint>   ALUIntVector; // A vector of ALuint's
 /* -- OpenAL flags---------------------------------------------------------- */
@@ -56,12 +40,12 @@ BUILD_FLAGS(Oal,
   // Have infinite sources?
   AFL_INFINITESOURCES    {0x00000200}
 );/* == Oal class ========================================================== */
-static class Oal :
+static class Oal final :
   /* -- Base classes ------------------------------------------------------- */
   public OalFlags                      // OpenAL flags
 { /* -- Defines ------------------------------------------------------------ */
-  #define IAL(F,M,...) ALEX(GetALErr, GetError, F, M, ## __VA_ARGS__);
-  #define IALC(M,...) ALCEX(GetALErr, GetError, M, ## __VA_ARGS__);
+#define IAL(F,M,...) ALEX(CheckExceptError, F, M, ## __VA_ARGS__)
+#define IALC(M,...) ALEX(CheckExceptError, , M, ## __VA_ARGS__)
   /* ----------------------------------------------------------------------- */
   const IdMap<ALenum> imOALCodes;      // OpenAL codes
   const IdMap<>       imOGGCodes;      // Ogg codes
@@ -86,6 +70,26 @@ static class Oal :
   ALenum GetError(void) const { return alGetError(); }
   bool HaveError(void) const { return GetError() != AL_NO_ERROR; }
   bool HaveNoError(void) const { return !HaveError(); }
+  /* -- AL error logger ---------------------------------------------------- */
+  template<typename ...Args>
+    void CheckLogError(const char*const cpFormat, const Args... vaArgs) const
+  { // While there are OpenAL errors
+    for(ALenum alError = alGetError();
+               alError != AL_NO_ERROR;
+               alError = alGetError())
+    cLog->LogWarningExSafe("AL call failed: $ ($/$$).",
+      Format(cpFormat, vaArgs...), GetALErr(alError), hex, alError);
+  }
+  /* -- AL error handler --------------------------------------------------- */
+  template<typename ...Args>
+    void CheckExceptError(const char*const cpFormat,
+      const Args... vaArgs) const
+  { // If there is no error then return
+    const ALenum alError = alGetError();
+    if(alError == GL_NO_ERROR) return;
+    // Raise exception with error details
+    XC(cpFormat, "Code", alError, "Reason", GetALErr(alError), vaArgs...);
+  }
   /* -- Upload data to audio device ---------------------------------------- */
   void BufferData(const ALuint uiBuffer, const ALenum eFormat,
     const ALvoid*const vpData, const ALsizei stSize, const ALsizei stFrequency)
@@ -184,7 +188,7 @@ static class Oal :
   /* -- Delete one buffer -------------------------------------------------- */
   void DeleteBuffer(ALuint &uiBufferRef) const
     { DeleteBuffers(1, &uiBufferRef); }
-  /* -- Get buffer parameter as integer ------------------------------------- */
+  /* -- Get buffer parameter as integer ------------------------------------ */
   void GetBufferInt(const ALuint uiBId, const ALenum eId, ALint *iDest) const
     { alGetBufferi(uiBId, eId, iDest); }
   /* -- Get buffer information --------------------------------------------- */
@@ -385,13 +389,13 @@ static class Oal :
     // Deinitialised?
     if(!bS)
     { // Log as de-initialised
-      LW(LH_INFO, "OAL set to de-initialised.");
+      cLog->LogInfoSafe("OAL set to de-initialised.");
       // Return cleared flag
       return FlagClear(AFL_INITIALISED);
     } // Detect capabilities
     DetectCapabilities();
     // Show change in state
-    LW(LH_INFO, "OAL version $ initialised with capabilities 0x$$...\n"
+    cLog->LogInfoExSafe("OAL version $ initialised with capabilities 0x$$...\n"
                 "- Device: $.",
       GetVersion(), hex, FlagGet(), GetPlaybackDevice());
     // Set the flag
@@ -403,25 +407,25 @@ static class Oal :
     // Build sorted list of extensions and log them all
     map<const string,const size_t> mExts;
     for(size_t stI = 0; stI < tlExtensions.size(); ++stI)
-      mExts.insert({ move(tlExtensions[stI]), stI });
+      mExts.insert({ std::move(tlExtensions[stI]), stI });
     // Log device info and basic capabilities
-    cLog->WriteStringSafe(LH_DEBUG,
-      Format("- Head related transfer function: $.\n"
-             "- Floating-point playback: $.\n"
-             "- Maximum mono sources: $.\n"
-             "- Maximum stereo sources: $.\n"
-             "- Have ext.device enumerator: $.\n"
-             "- Extensions count: $.",
+    cLog->LogNLCDebugExSafe(
+      "- Head related transfer function: $.\n"
+      "- Floating-point playback: $.\n"
+      "- Maximum mono sources: $.\n"
+      "- Maximum stereo sources: $.\n"
+      "- Have ext.device enumerator: $.\n"
+      "- Extensions count: $.",
         TrueOrFalse(FlagIsClear(AFL_INITRESET)),
         TrueOrFalse(Have32FPPB()),
         uiMaxMonoSources,
         uiMaxStereoSources,
         TrueOrFalse(FlagIsSet(AFL_HAVEENUMEXT)),
-        tlExtensions.size()));
+        tlExtensions.size());
     // Log extensions if debug is enabled
     for(const auto &mI : mExts)
-      cLog->WriteStringSafe(LH_DEBUG,
-        Format("- Have extension '$' (#$).", mI.first, mI.second));
+      cLog->LogNLCDebugExSafe("- Have extension '$' (#$).",
+        mI.first, mI.second);
   }
   /* -- Make context current ----------------------------------------------- */
   void SetContext(void)
@@ -517,6 +521,7 @@ static class Oal :
   Oal(void) :
     /* -- Initialisation of members ---------------------------------------- */
     OalFlags{ AFL_NONE },
+    /* -- Const members ---------------------------------------------------- */
     imOALCodes{{
       IDMAPSTR(AL_NO_ERROR),           IDMAPSTR(AL_INVALID_NAME),
       IDMAPSTR(AL_INVALID_ENUM),       IDMAPSTR(AL_INVALID_VALUE),
@@ -531,6 +536,7 @@ static class Oal :
       IDMAPSTR(OV_ENOTAUDIO),          IDMAPSTR(OV_EBADPACKET),
       IDMAPSTR(OV_EBADLINK),           IDMAPSTR(OV_ENOSEEK)
     }, "OV_UNKNOWN" },
+    /* -- Initialisation of members ---------------------------------------- */
     uiMaxStereoSources(0),
     uiMaxMonoSources(numeric_limits<ALuint>::max()),
     alcDevice(nullptr),
@@ -541,11 +547,11 @@ static class Oal :
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Oal);                // Do not need copy constructors
   /* -- Undefines ---------------------------------------------------------- */
-  #undef DLL                           // This macro was only for this class
-  #undef IAL                           //  "
-  #undef IALC                          //  "
+#undef DLL                             // This macro was only for this class
+#undef IAL                             //  "
+#undef IALC                            //  "
   /* ----------------------------------------------------------------------- */
 } *cOal = nullptr;                     // Pointer to static class
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

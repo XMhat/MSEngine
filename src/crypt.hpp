@@ -7,15 +7,16 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfCrypt {                    // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfCrypt {                    // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace Library::OpenSSL;      // Using OpenSSL library functions
 using namespace Library::SevenZip;     // Using 7Zip library functions
-using namespace IfMemory;              // Using memory interface
-using namespace IfLog;                 // Using log interface
-using namespace IfUtf;                 // Using utf interface
-using namespace IfVars;                // Using vars interface
+using namespace IfMemory;              // Using memory namespace
+using namespace IfLog;                 // Using log namespace
+using namespace IfUtf;                 // Using utf namespace
+using namespace IfVars;                // Using vars namespace
+using namespace IfSystem;              // Using system namespace
 /* -- Convert the specified character to hexadecimal ----------------------- */
 static char CryptHex2Char(const uint8_t ucChar)
 { // Hex lookup table
@@ -206,7 +207,7 @@ static void CryptAddEntropy(void)
 { // Grab some data from the timer subsystem
   const uint64_t qMicro = cLog->CCDeltaUS();
   // Add it as entropy to openssl
-  RAND_seed(&CastInt64ToDouble(qMicro), sizeof(qMicro));
+  RAND_seed(&qMicro, sizeof(qMicro));
 }
 /* ------------------------------------------------------------------------- */
 static void CryptRandomPtr(void*const vpDst, const size_t stSize)
@@ -259,7 +260,7 @@ template<class T>static const string CryptImplodeMapAndEncode(const T &ssData,
   // Iterate through each key pair and insert into vector whilst encoding
   transform(ssData.cbegin(), ssData.cend(), back_inserter(svRet),
     [](const auto &vI)
-      { return move(Append(CryptURLEncode(vI.first), '=',
+      { return std::move(Append(CryptURLEncode(vI.first), '=',
           CryptURLEncode(vI.second))); });
   // Return vector
   return Implode(svRet, strSep);
@@ -474,7 +475,7 @@ static Memory CryptHMACCall(const EVP_MD*const fFunc,
           return mbOut; } \
     static const string HashPtr(const unsigned char*const ucpIn, \
       const size_t stLen) \
-        { return CryptBin2Hex(move(HashPtrRaw(ucpIn, stLen))); } \
+        { return CryptBin2Hex(std::move(HashPtrRaw(ucpIn, stLen))); } \
     static const string HashStr(const string &strIn) \
       { return HashPtr(reinterpret_cast<const unsigned char*>(strIn.data()), \
           strIn.length()); } \
@@ -490,7 +491,7 @@ static Memory CryptHMACCall(const EVP_MD*const fFunc,
           reinterpret_cast<const unsigned char*>(strIn.data()),\
           strIn.size()); } \
     static const string HashStr(const string &strKey, const string &strIn) \
-      { return CryptBin2Hex(move(HashStrRaw(strKey, strIn))); } \
+      { return CryptBin2Hex(std::move(HashStrRaw(strKey, strIn))); } \
   };
 DEFINE_HASH_FUNCS(MD5,    MD5_DIGEST_LENGTH,    EVP_md5);    // Insecure
 DEFINE_HASH_FUNCS(SHA1,   SHA_DIGEST_LENGTH,    EVP_sha1);   // Insecure
@@ -531,6 +532,8 @@ static const string CryptURLDecode(const char*const cpURL)
         uc2 -= uc2 >= 'A' ? ('A' - 10) : '0';
         // Set new character and fall through to default
         ucC = 16 * uc1 + uc2;
+        // Fall through
+        [[fallthrough]];
       } // Normal character? (Do not move this as '%' falls through to this)
       default:
       { // Push normal character
@@ -552,7 +555,7 @@ static const Memory CryptRandomBlock(const size_t stSize)
   return aData;
 }
 /* -- Crypt manager class -------------------------------------------------- */
-static class Crypt :
+static class Crypt final :
   /* -- Base classes ------------------------------------------------------- */
   public IHelper                       // The crypto manager class
 { /* -------------------------------------------------------------- */ private:
@@ -568,9 +571,9 @@ static class Crypt :
   static void OSSLFree(void*const vpPtr, const char*const, const int)
     { MemFree(vpPtr); }
   /* -- Private keys ----------------------------------------------- */ public:
-  #define PK_KEY_COUNT               4 // Number of quads in key (256bits)
-  #define PK_IV_COUNT                2 // Number of quads in iv key (128bits)
-  #define PK_TOTAL_COUNT               (PK_KEY_COUNT + PK_IV_COUNT)
+#define PK_KEY_COUNT                 4 // Number of quads in key (256bits)
+#define PK_IV_COUNT                  2 // Number of quads in iv key (128bits)
+#define PK_TOTAL_COUNT                 (PK_KEY_COUNT + PK_IV_COUNT)
   /* ----------------------------------------------------------------------- */
   typedef array<uint64_t, PK_KEY_COUNT>   QPKey;
   typedef array<uint64_t, PK_IV_COUNT>    QIVKey;
@@ -620,7 +623,7 @@ static class Crypt :
       // Cut out the entity
       strS.erase(stAPos, stSPos-stAPos+1);
       // Is a unicode number?
-      if(strT[0] == '#')
+      if(strT.front() == '#')
       { // Don't have at least two characters? Ignore, goto next entity
         if(strT.length() <= 1) continue;
         // Value to convert
@@ -811,6 +814,6 @@ static class Crypt :
 /* -- URL decode the specified string -------------------------------------- */
 static const string CryptURLDecode(const string &strS)
   { return CryptURLDecode(strS.c_str()); }
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

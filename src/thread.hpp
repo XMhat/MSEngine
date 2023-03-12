@@ -7,17 +7,15 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfThread {                   // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfThread {                   // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfLog;                 // Using log interface
-using namespace IfCollector;           // Using collector interface
+using namespace IfLog;                 // Using log namespace
+using namespace IfCollector;           // Using collector namespace
 /* == Thread collector class with global thread id counter ================= */
-BEGIN_COLLECTOREX(Threads, Thread, CLHelperSafe,
-  uint64_t         qwNextId;           /* Unique thread id                   */
+BEGIN_COLLECTOREX(Threads, Thread, CLHelperSafe, /* ------------------------ */
   SafeSizeT        stRunning           /* Number of threads running          */
-);/* == Function that returns the next unique thread id ==================== */
-static uint64_t ThreadGetNextId(void) { return ++cThreads->qwNextId; }
+);/* ----------------------------------------------------------------------- */
 /* == Thread variables class =============================================== */
 class ThreadVariables                  // Thread variables class
 { /* -- Private typedefs ---------------------------------------- */ protected:
@@ -25,7 +23,6 @@ class ThreadVariables                  // Thread variables class
   /* -- Public typedefs -------------------------------------------- */ public:
   typedef function<CBFuncT> CBFunc;    // Wrapped inside a function class
   /* -- Private variables --------------------------------------- */ protected:
-  SafeUInt64       qwThreadId;         // Unique thread identifier
   SafeInt          iExitCode;          // Callback exit code
   void            *vpParam;            // User parameter
   CBFunc           threadCallback;     // Thread callback function
@@ -34,11 +31,9 @@ class ThreadVariables                  // Thread variables class
   SafeClkDuration  duStartTime;        // Thread start time
   SafeClkDuration  duEndTime;          // Thread end time
   /* -- Constructor -------------------------------------------------------- */
-  ThreadVariables(const uint64_t qwI,  // Thread unique identifier
-                  void*const vpP,      // Thread user parameter
+  ThreadVariables(void*const vpP,      // Thread user parameter
                   const CBFunc &cbF) : // Thread callback function
     /* -- Initialisation of members ---------------------------------------- */
-    qwThreadId(qwI),                   // Set unique identifier
     iExitCode(0),                      // Set exit code to standby
     vpParam(vpP),                      // Set user thread parameter
     threadCallback{ cbF },             // Set thread callback function
@@ -53,9 +48,11 @@ class ThreadVariables                  // Thread variables class
 BEGIN_MEMBERCLASS(Threads, Thread, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
   public Ident,                        // Object name
-  public ThreadVariables               // Thread variables class
-{ /* -- Thread class ---------------------------------------------- */ private:
-  thread           tThread;            // The C++11 thread
+  public ThreadVariables,              // Thread variables class
+  private thread                       // The C++11 thread
+{ /* -- Put in place a new thread ------------------------------------------ */
+  template<typename... VarArgs>void ThreadNew(const VarArgs &...vaArgs)
+    { thread tNewThread{ vaArgs... }; this->swap(tNewThread); }
   /* -- Thread handler function -------------------------------------------- */
   void ThreadHandler(void) try
   { // Incrememt thread running count
@@ -63,7 +60,7 @@ BEGIN_MEMBERCLASS(Threads, Thread, ICHelperUnsafe),
     // Thread longer running
     bRunning = true;
     // Thread starting up in log
-    LW(LH_DEBUG, "Thread $<$> started.", ThreadGetId(), IdentGet());
+    cLog->LogDebugExSafe("Thread $<$> started.", CtrGet(), IdentGet());
     // Set the start time and initialise the end time
     duStartTime = cmHiRes.GetEpochTime();
     duEndTime = seconds(0);
@@ -80,8 +77,8 @@ BEGIN_MEMBERCLASS(Threads, Thread, ICHelperUnsafe),
     // Set shutdown time
     duEndTime = cmHiRes.GetEpochTime();
     // Log if thread didn't signal to exit
-    LW(LH_DEBUG, "Thread $<$> exited in $ with code $<$$>.",
-      ThreadGetId(), IdentGet(),
+    cLog->LogDebugExSafe("Thread $<$> exited in $ with code $<$$>.",
+      CtrGet(), IdentGet(),
       ToShortDuration(ClockTimePointRangeToClampedDouble(ThreadGetEndTime(),
         ThreadGetStartTime())),
       ThreadGetExitCode(), hex, ThreadGetExitCode());
@@ -98,8 +95,8 @@ BEGIN_MEMBERCLASS(Threads, Thread, ICHelperUnsafe),
     // Set shutdown time
     duEndTime = cmHiRes.GetEpochTime();
     // Log if thread didn't signal to exit
-    LW(LH_ERROR, "Thread $<$> exited in $ due to exception: $!",
-      ThreadGetId(), IdentGet(),
+    cLog->LogErrorExSafe("Thread $<$> exited in $ due to exception: $!",
+      CtrGet(), IdentGet(),
       ToShortDuration(ClockTimePointRangeToClampedDouble(ThreadGetEndTime(),
         ThreadGetStartTime())),
       e.what());
@@ -113,7 +110,8 @@ BEGIN_MEMBERCLASS(Threads, Thread, ICHelperUnsafe),
       // Run the thread callback
       tPtr->ThreadHandler();
     } // Report the problem
-    else LW(LH_ERROR, "Thread switch to thiscall failed with null class ptr!");
+    else cLog->LogErrorSafe(
+      "Thread switch to thiscall failed with null class ptr!");
   }
   /* --------------------------------------------------------------- */ public:
   template<typename ReturnType>ReturnType ThreadGetParam(void) const
@@ -129,8 +127,6 @@ BEGIN_MEMBERCLASS(Threads, Thread, ICHelperUnsafe),
   int ThreadGetExitCode(void) const { return iExitCode; }
   void ThreadSetExitCode(const int iNewCode) { iExitCode = iNewCode; }
   /* ----------------------------------------------------------------------- */
-  uint64_t ThreadGetId(void) const { return qwThreadId.load(); }
-  /* ----------------------------------------------------------------------- */
   const CBFunc &ThreadGetCallback(void) const { return threadCallback; }
   bool ThreadHaveCallback(void) const { return !!ThreadGetCallback(); }
   /* ----------------------------------------------------------------------- */
@@ -142,7 +138,7 @@ BEGIN_MEMBERCLASS(Threads, Thread, ICHelperUnsafe),
     // Set exit
     bShouldExit = true;
     // Log signalled to exit
-    LW(LH_DEBUG, "Thread $<$> $ to exit.", ThreadGetId(), IdentGet(),
+    cLog->LogDebugExSafe("Thread $<$> $ to exit.", CtrGet(), IdentGet(),
       ThreadIsCurrent() ? "signalling" : "signalled");
   }
   /* ----------------------------------------------------------------------- */
@@ -167,11 +163,11 @@ BEGIN_MEMBERCLASS(Threads, Thread, ICHelperUnsafe),
     // Wait for thread to complete
     ThreadWait();
     // Set to standby with a new thread
-    tThread = thread();
+    ThreadNew();
   }
   /* ----------------------------------------------------------------------- */
   bool ThreadIsCurrent(void) const
-    { return ::std::this_thread::get_id() == tThread.get_id(); }
+    { return ::std::this_thread::get_id() == get_id(); }
   bool ThreadIsNotCurrent(void) const { return !ThreadIsCurrent(); }
   /* ----------------------------------------------------------------------- */
   bool ThreadShouldExit(void) const { return bShouldExit; }
@@ -180,10 +176,10 @@ BEGIN_MEMBERCLASS(Threads, Thread, ICHelperUnsafe),
   bool ThreadIsRunning(void) const { return bRunning; }
   bool ThreadIsNotRunning(void) const { return !ThreadIsRunning(); }
   /* ----------------------------------------------------------------------- */
-  bool ThreadIsJoinable(void) const { return tThread.joinable(); }
+  bool ThreadIsJoinable(void) const { return joinable(); }
   bool ThreadIsNotJoinable(void) const { return !ThreadIsJoinable(); }
   /* ----------------------------------------------------------------------- */
-  void ThreadJoin(void) { return tThread.join(); }
+  void ThreadJoin(void) { return join(); }
   /* ----------------------------------------------------------------------- */
   bool ThreadIsExited(void) const { return ThreadGetExitCode() != -1; }
   /* ----------------------------------------------------------------------- */
@@ -196,10 +192,8 @@ BEGIN_MEMBERCLASS(Threads, Thread, ICHelperUnsafe),
     ThreadCancelExit();
     ThreadSetParam(vpPtr);
     ThreadSetExitCode(0);
-    // Set a thread id, but not zero. Uniqueness not essential.
-    qwThreadId = ThreadGetNextId();
     // Start the thread and move that thread class to this thread
-    tThread = thread(ThreadMain, this);
+    ThreadNew(ThreadMain, this);
   }
   /* -- Stop and de-initialise the thread ---------------------------------- */
   void ThreadDeInit(void)
@@ -225,8 +219,8 @@ BEGIN_MEMBERCLASS(Threads, Thread, ICHelperUnsafe),
     { // Set exit signal
       bShouldExit = true;
       // Log signalled to exit in destructor
-      LW(LH_WARNING, "Thread $<$> signalled to exit in destructor.",
-        ThreadGetId(), IdentGet());
+      cLog->LogWarningExSafe("Thread $<$> signalled to exit in destructor.",
+        CtrGet(), IdentGet());
     } // Wait to synchronise
     ThreadJoin();
   }
@@ -236,11 +230,11 @@ BEGIN_MEMBERCLASS(Threads, Thread, ICHelperUnsafe),
          void*const vpPtr) :           // User parameter to store
     /* -- Initialisation of members ---------------------------------------- */
     ICHelperThread{ *cThreads, this }, // Automatic (de)registration
+    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     Ident{ strN },                     // Initialise requested thread name
-    ThreadVariables{ThreadGetNextId(), // Initialise new thread id
-                    vpPtr,             // Set requested thread user parameter
+    ThreadVariables{vpPtr,             // Set requested thread user parameter
                     tC},               // Set requested thread callback
-    tThread{ ThreadMain, this }        // Start the thread straight away
+    thread{ ThreadMain, this }         // Start the thread straight away
     /* --------------------------------------------------------------------- */
     { }                                // Do nothing else
   /* -- Standby constructor (set everything except user parameter) --------- */
@@ -248,29 +242,32 @@ BEGIN_MEMBERCLASS(Threads, Thread, ICHelperUnsafe),
          const CBFunc &tC) :           // Requested callback function
     /* -- Initialisation of members ---------------------------------------- */
     ICHelperThread{ *cThreads, this }, // Automatic (de)registration
+    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     Ident{ strN },                     // Set requested identifier
-    ThreadVariables{ 0, nullptr, tC }  // Just set callback function
+    ThreadVariables{ nullptr, tC }     // Just set callback function
     /* --------------------------------------------------------------------- */
     { }                                // Do nothing else
   /* -- Standby constructor (set only name) -------------------------------- */
   explicit Thread(const string &strN) :// Requested Thread name
     /* -- Initialisation of members ---------------------------------------- */
     ICHelperThread{ *cThreads },       // No automatic registration
+    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     Ident{ strN },                     // Set requested identifer
-    ThreadVariables{ 0, nullptr, nullptr } // Initialise nothing else
+    ThreadVariables{ nullptr, nullptr } // Initialise nothing else
     /* --------------------------------------------------------------------- */
     { }                                // Do nothing else
   /* -- Standby constructor ------------------------------------------------ */
   Thread(void) :                       // No parameters
     /* -- Initialisation of members ---------------------------------------- */
     ICHelperThread{ *cThreads },       // No automatic registration
-    ThreadVariables{ 0, nullptr, nullptr } // Initialise nothing else
+    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
+    ThreadVariables{ nullptr, nullptr } // Initialise nothing else
     /* --------------------------------------------------------------------- */
     { }                                // Do nothing else
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Thread);             // Disable copy constructor and operator
 };/* ======================================================================= */
-END_COLLECTOREX(Threads,,,,qwNextId(0),stRunning{0});
+END_COLLECTOREX(Threads,,,,stRunning{0});
 /* -- Thread sync helper --------------------------------------------------- */
 template<class Callbacks>class ThreadSyncHelper : private Callbacks
 { /* -------------------------------------------------------------- */ private:
@@ -362,6 +359,6 @@ template<class Callbacks>class ThreadSyncHelper : private Callbacks
   DELETECOPYCTORS(ThreadSyncHelper);   // Omit copy constructor for safety
 };/* ----------------------------------------------------------------------- */
 static size_t ThreadGetRunning(void) { return cThreads->stRunning; }
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

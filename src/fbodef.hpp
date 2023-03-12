@@ -6,10 +6,12 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfFbo {                      // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfFbo {                      // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace Library::GlFW;         // Using GLFW library functions
+using namespace IfDim;                 // Using dimensions namespace
+using namespace IfUtil;                // Using utility namespace
 /* -- Defines -------------------------------------------------------------- */
 #define VERTEXPERTRIANGLE            3 // Vertices used in a triangle (3 ofc!)
 #define TWOTRIANGLES                   (VERTEXPERTRIANGLE * 2)
@@ -70,30 +72,41 @@ struct FboVert                         // Formatted data for OpenGL
 /* +----------+----------+----------+- C(Vec4)=Colour(RGBA) -+-----+-----+-- */
 typedef array<FboVert,VERTEXPERTRIANGLE> FboTri;     // All triangles data
 typedef vector<FboTri>                   FboTriList; // Render triangles list
+typedef array<GLfloat,4>                 FboRGBA;    // Red+Green+Blue+Alpha
 /* == Fbo colour class ===================================================== */
-class FboColour                        // Do not inherit array<GLfloat,4>
-{ /* -------------------------------------------------------------- */ private:
-  array<GLfloat,4> aColour;            // Colour union
-  /* --------------------------------------------------------------- */ public:
-  GLfloat GetColourRed(void) const { return aColour[0]; }
-  GLfloat GetColourGreen(void) const { return aColour[1]; }
-  GLfloat GetColourBlue(void) const { return aColour[2]; }
-  GLfloat GetColourAlpha(void) const { return aColour[3]; }
-  GLfloat *GetColourMemory(void) { return aColour.data(); }
+class FboColour :                      // Members initially private
   /* ----------------------------------------------------------------------- */
-  void SetColourRed(const GLfloat fR) { aColour[0] = fR; }
-  void SetColourGreen(const GLfloat fG) { aColour[1] = fG; }
-  void SetColourBlue(const GLfloat fB) { aColour[2] = fB; }
-  void SetColourAlpha(const GLfloat fA) { aColour[3] = fA; }
+  private FboRGBA                      // Red + Green + Blue + Alpha values
+{ /* ----------------------------------------------------------------------- */
+  const FboRGBA &GetColourConst(void) const { return *this; }
+  FboRGBA &GetColour(void) { return *this; }
+  /* --------------------------------------------------------------- */ public:
+  GLfloat GetColourRed(void) const { return GetColourConst()[0]; }
+  GLfloat GetColourGreen(void) const { return GetColourConst()[1]; }
+  GLfloat GetColourBlue(void) const { return GetColourConst()[2]; }
+  GLfloat GetColourAlpha(void) const { return GetColourConst()[3]; }
+  GLfloat *GetColourMemory(void) { return data(); }
+  /* ----------------------------------------------------------------------- */
+  void SetColourRed(const GLfloat fR) { GetColour()[0] = fR; }
+  void SetColourGreen(const GLfloat fG) { GetColour()[1] = fG; }
+  void SetColourBlue(const GLfloat fB) { GetColour()[2] = fB; }
+  void SetColourAlpha(const GLfloat fA) { GetColour()[3] = fA; }
+  /* ----------------------------------------------------------------------- */
+  void SetColourRedInt(const unsigned int uiR)
+    { SetColourRed(NormaliseEx<GLfloat>(uiR)); }
+  void SetColourGreenInt(const unsigned int uiG)
+    { SetColourGreen(NormaliseEx<GLfloat>(uiG)); }
+  void SetColourBlueInt(const unsigned int uiB)
+    { SetColourBlue(NormaliseEx<GLfloat>(uiB)); }
+  void SetColourAlphaInt(const unsigned int uiA)
+    { SetColourAlpha(NormaliseEx<GLfloat>(uiA)); }
   /* ----------------------------------------------------------------------- */
   void SetColourInt(const unsigned int uiValue)
-  { // Need utility namespace for Normalise();
-    using IfUtil::Normalise;
-    // Strip bits and send to proper clear colour
-    SetColourRed(Normalise<GLfloat,16>(uiValue));
-    SetColourGreen(Normalise<GLfloat,8>(uiValue));
-    SetColourBlue(Normalise<GLfloat>(uiValue));
-    SetColourAlpha(Normalise<GLfloat,24>(uiValue));
+  { // Strip bits and send to proper clear colour
+    SetColourRed(NormaliseEx<GLfloat,16>(uiValue));
+    SetColourGreen(NormaliseEx<GLfloat,8>(uiValue));
+    SetColourBlue(NormaliseEx<GLfloat>(uiValue));
+    SetColourAlpha(NormaliseEx<GLfloat,24>(uiValue));
   }
   /* ----------------------------------------------------------------------- */
   void SetColourRed(const FboColour &cO)
@@ -105,16 +118,25 @@ class FboColour                        // Do not inherit array<GLfloat,4>
   void SetColourAlpha(const FboColour &cO)
     { SetColourAlpha(cO.GetColourAlpha()); }
   /* ----------------------------------------------------------------------- */
-  void ResetColour(void) { aColour.fill(-1.0f); }
+  void ResetColour(void) { fill(-1.0f); }
   /* ----------------------------------------------------------------------- */
   bool RedColourNotEqual(const FboColour &cO) const
-    { return GetColourRed() != cO.GetColourRed(); }
+    { return IsFloatNotEqual(GetColourRed(), cO.GetColourRed()); }
   bool GreenColourNotEqual(const FboColour &cO) const
-    { return GetColourGreen() != cO.GetColourGreen(); }
+    { return IsFloatNotEqual(GetColourGreen(), cO.GetColourGreen()); }
   bool BlueColourNotEqual(const FboColour &cO) const
-    { return GetColourBlue() != cO.GetColourBlue(); }
+    { return IsFloatNotEqual(GetColourBlue(), cO.GetColourBlue()); }
   bool AlphaColourNotEqual(const FboColour &cO) const
-    { return GetColourAlpha() != cO.GetColourAlpha(); }
+    { return IsFloatNotEqual(GetColourAlpha(), cO.GetColourAlpha()); }
+  /* ----------------------------------------------------------------------- */
+  template<typename IntType,
+    class ArrayType=array<IntType,
+      sizeof(FboRGBA)/sizeof(GLfloat)>>
+    const ArrayType Cast(void) const
+  { return { Denormalise<IntType>(GetColourRed()),
+             Denormalise<IntType>(GetColourGreen()),
+             Denormalise<IntType>(GetColourBlue()),
+             Denormalise<IntType>(GetColourAlpha()) }; }
   /* ----------------------------------------------------------------------- */
   bool SetColour(const FboColour &fcData)
   { // Red clear colour change?
@@ -142,17 +164,47 @@ class FboColour                        // Do not inherit array<GLfloat,4>
     // Commit the new viewport
     return true;
   }
+  /* -- Init constructor with RGBA ints ------------------------------------ */
+  FboColour(const unsigned int uiR, const unsigned int uiG,
+            const unsigned int uiB, const unsigned int uiA) :
+    /* -- Initialisation of members ---------------------------------------- */
+    FboRGBA{NormaliseEx<GLfloat>(uiR), // Copy and normalise red component
+            NormaliseEx<GLfloat>(uiG), // Copy and normalise green component
+            NormaliseEx<GLfloat>(uiB), // Copy and normalise blue component
+            NormaliseEx<GLfloat>(uiA)} // Copy and normalise alpha component
+    /* -- No code ---------------------------------------------------------- */
+    { }
+  /* -- Init constructor with RGB ints ------------------------------------- */
+  FboColour(const unsigned int uiR, const unsigned int uiG,
+            const unsigned int uiB) :
+    /* -- Initialisation of members ---------------------------------------- */
+    FboRGBA{NormaliseEx<GLfloat>(uiR), // Copy and normalise red component
+            NormaliseEx<GLfloat>(uiG), // Copy and normalise green component
+            NormaliseEx<GLfloat>(uiB), // Copy and normalise blue component
+            1.0f }                     // Opaque alpha
+    /* -- No code ---------------------------------------------------------- */
+    { }
+  /* -- Init constructor with RGBA bytes ----------------------------------- */
+  FboColour(const uint8_t ucR, const uint8_t ucG,
+            const uint8_t ucB, const uint8_t ucA) :
+    /* -- Initialisation of members ---------------------------------------- */
+    FboRGBA{Normalise<GLfloat>(ucR),   // Copy and normalise red component
+            Normalise<GLfloat>(ucG),   // Copy and normalise green component
+            Normalise<GLfloat>(ucB),   // Copy and normalise blue component
+            Normalise<GLfloat>(ucA)}   // Copy and normalise alpha component
+    /* -- No code ---------------------------------------------------------- */
+    { }
   /* -- Init constructor --------------------------------------------------- */
   FboColour(const GLfloat fR, const GLfloat fG, const GLfloat fB,
     const GLfloat fA) :
     /* -- Initialisation of members ---------------------------------------- */
-    aColour{fR, fG, fB, fA}            // Copy intensity over
+    FboRGBA{ fR, fG, fB, fA }          // Copy intensity over
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Default constructor ------------------------------------------------ */
   FboColour(void) :
     /* -- Initialisation of members ---------------------------------------- */
-    FboColour{ 1.0f,1.0f,1.0f,1.0f }   // Set full Re/Gr/Bl/Alpha intensity
+    FboRGBA{ 1.0f,1.0f,1.0f,1.0f }     // Set full Re/Gr/Bl/Alpha intensity
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */
@@ -239,18 +291,21 @@ class FboBlend
 /* == Fbo coords class ===================================================== */
 template<typename Type1 = GLfloat, typename Type2 = Type1>class FboCoords
 { /* -- Private variables ----------------------------------------- */ private:
-  Type1            tLeft,  tTop;       // Top left co-ordinates
-  Type2            tRight, tBottom;    // Width and height
-  /* --------------------------------------------------------------- */ public:
-  Type1 GetCoLeft(void) const { return tLeft; }
-  Type1 GetCoTop(void) const { return tTop; }
-  Type2 GetCoRight(void) const { return tRight; }
-  Type2 GetCoBottom(void) const { return tBottom; }
+  typedef Coordinates<Type1> CoordType1; // Co-ordinate type one
+  typedef Coordinates<Type2> CoordType2; // Co-ordinate type two
   /* ----------------------------------------------------------------------- */
-  void SetCoLeft(const Type1 tNLeft) { tLeft = tNLeft; }
-  void SetCoTop(const Type1 tNTop) { tTop = tNTop; }
-  void SetCoRight(const Type2 tNRight) { tRight = tNRight; }
-  void SetCoBottom(const Type2 tNBottom) { tBottom = tNBottom; }
+  CoordType1       tXY1;               // Top left co-ordinates
+  CoordType2       tXY2;               // Width and height
+  /* --------------------------------------------------------------- */ public:
+  Type1 GetCoLeft(void) const { return tXY1.CoordGetX(); }
+  Type1 GetCoTop(void) const { return tXY1.CoordGetY(); }
+  Type2 GetCoRight(void) const { return tXY2.CoordGetX(); }
+  Type2 GetCoBottom(void) const { return tXY2.CoordGetY(); }
+  /* ----------------------------------------------------------------------- */
+  void SetCoLeft(const Type1 tNLeft) { tXY1.CoordSetX(tNLeft); }
+  void SetCoTop(const Type1 tNTop) { tXY1.CoordSetY(tNTop); }
+  void SetCoRight(const Type2 tNRight) { tXY2.CoordSetX(tNRight); }
+  void SetCoBottom(const Type2 tNBottom) { tXY2.CoordSetY(tNBottom); }
   /* ----------------------------------------------------------------------- */
   void SetCoLeft(const FboCoords &fvOther)
     { SetCoLeft(fvOther.GetCoLeft()); }
@@ -261,7 +316,7 @@ template<typename Type1 = GLfloat, typename Type2 = Type1>class FboCoords
   void SetCoBottom(const FboCoords &fvOther)
     { SetCoBottom(fvOther.GetCoBottom()); }
   /* ----------------------------------------------------------------------- */
-  void ResetCoords(void) { tLeft = tTop = 0, tRight = tBottom = 0; }
+  void ResetCoords(void) { tXY1.CoordSet(); tXY2.CoordSet(); }
   /* ----------------------------------------------------------------------- */
   bool SetCoords(const Type1 tNLeft, const Type1 tNTop,
                  const Type2 tNRight, const Type2 tNBottom)
@@ -295,21 +350,21 @@ template<typename Type1 = GLfloat, typename Type2 = Type1>class FboCoords
     { return SetCoords(fcData.GetCoLeft(), fcData.GetCoTop(),
                        fcData.GetCoRight(), fcData.GetCoBottom()); }
   /* -- Init constructor --------------------------------------------------- */
-  FboCoords(const Type1 tNLeft, const Type1 tNTop, const Type2 tNRight,
-    const Type2 tNBottom) :
-    /* -- Initialisation of members ---------------------------------------- */
-    tLeft(tNLeft),                     // X1 co-ordinate
-    tTop(tNTop),                       // Y1 co-ordinate
-    tRight(tNRight),                   // X2 co-ordinate
-    tBottom(tNBottom)                  // Y2 co-ordinate
-    /* --------------------------------------------------------------------- */
-    { }
+  FboCoords(const Type1 tNLeft,        // Left (X1) co-ordinate
+            const Type1 tNTop,         // Top (Y1) co-ordinate
+            const Type2 tNRight,       // Right (X2) co-ordinate
+            const Type2 tNBottom) :    // Bottom (Y2) co-ordinate
+    /* -- Initialisers ----------------------------------------------------- */
+    tXY1{ tNLeft, tNTop },             // X1 & Y1 co-ordinate
+    tXY2{ tNRight, tNBottom }          // X2 & Y2 co-ordinate
+    /* -- Code ------------------------------------------------------------- */
+    { }                                // Do nothing else
   /* -- Default constructor ------------------------------------------------ */
-  FboCoords(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+  FboCoords(void) :                    // No parameters
+    /* -- Initialisers ----------------------------------------------------- */
     FboCoords{ 0, 0, 0, 0 }            // Initialise co-ordinates
     /* --------------------------------------------------------------------- */
-    { }
+    { }                                // Do nothing else
 };/* ----------------------------------------------------------------------- */
 typedef FboCoords<GLint,GLsizei> FboViewport; // Viewport co-ordinates
 /* == Data required to complete a render of an fbo ========================= */
@@ -317,22 +372,18 @@ struct FboRenderItem :                 // Rendering item data class
   /* -- Base classes ------------------------------------------------------- */
   public FboColour,                    // Clear colour of the fbo
   public FboBlend,                     // Blend mode of the fbo
-  public FboCoords<GLfloat>            // Ortho co-ordinates of the fbo
+  public FboCoords<GLfloat>,           // Ortho co-ordinates of the fbo
+  public Dimensions<GLsizei>           // Fbo dimensions
 { /* ----------------------------------------------------------------------- */
   GLuint           uiFBO;              // Fbo name
   bool             bClear;             // Clear the fbo?
-  GLsizei          stFBOWidth,         // Frame buffer width as float.
-                   stFBOHeight;        // Frame buffer height as float.
   /* -- Default constructor ------------------------------------------------ */
-  FboRenderItem(void) :
+  FboRenderItem(void) :                // No parameters
     /* -- Initialisation of members ---------------------------------------- */
     uiFBO(0),                          // No fbo id yet
-    bClear(true),                      // Clear fbo set
-    stFBOWidth(0),                     // No width
-    stFBOHeight(0)                     // No height
-    /* --------------------------------------------------------------------- */
+    bClear(true)                       // Clear fbo set
+    /* -- No code ---------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

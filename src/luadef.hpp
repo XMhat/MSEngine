@@ -6,10 +6,10 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfLuaDef {                   // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfLuaDef {                   // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfCVarDef;             // Using util interface
+using namespace IfCVarDef;             // Using util namespace
 /* == Typedefs ============================================================= */
 struct LuaKeyInt                       // Lua key/value pairs C
 { /* ----------------------------------------------------------------------- */
@@ -24,9 +24,9 @@ struct LuaTable                        // Lua table as C
 };/* ----------------------------------------------------------------------- */
 };                                     // End of luadef interface
 /* == LibLua interface namespace =========================================== */
-namespace IfLuaLib {                   // Beginning of lualib interface
+namespace IfLuaLib {                   // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfLuaDef;              // Using cvardef interface
+using namespace IfLuaDef;              // Using cvardef namespace
 /* == Variables ============================================================ */
 extern const struct LuaLibStatic       // Name of struct
 { /* ----------------------------------------------------------------------- */
@@ -42,5 +42,5 @@ extern const struct LuaLibStatic       // Name of struct
   /* --------------------------------------------------------------------- */
 } luaLibList[];                        // Library list in lualib.hpp
 /* ------------------------------------------------------------------------- */
-};                                     // End of lualib interface
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

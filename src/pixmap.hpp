@@ -13,15 +13,15 @@
 class SysMap :
   /* -- Derivced classes --------------------------------------------------- */
   public FStream                       // Allow access to file mappings
-{ /* ------------------------------------------------------------ */ protected:
-  STDFSTATSTRUCT   sData;              // File data
+{ /* ----------------------------------------------------------------------- */
+  StdFStatStruct   sData;              // File data
   char            *cpMem;              // Handle to memory
-  /* -- De-init the file map -------------------------------------- */ private:
+  /* -- De-init the file map ----------------------------------------------- */
   void SysMapDeInitInternal(void)
   { // Unmap the memory if it was mapped
     if(SysMapIsAvailable() && SysMapIsNotEmpty() && munmap(SysMapGetMemory(),
       static_cast<size_t>(SysMapGetSize())))
-      LW(LH_WARNING, "Failed to unmap '$' from 0x$$[$$]: $!",
+      cLog->LogWarningExSafe("Failed to unmap '$' from 0x$$[$$]: $!",
         IdentGet(), SysMapGetMemory<void>(), SysMapGetSize(), SysError());
     // ~FStream() will close the file
   }
@@ -32,9 +32,9 @@ class SysMap :
     XCS("Open file for file mapping failed!", "File", strF);
   }
   /* -- Setup file information --------------------------------------------- */
-  STDFSTATSTRUCT SMSetupInfo(void)
+  StdFStatStruct SMSetupInfo(void)
   { // Get informationa about file and return it else show error
-    STDFSTATSTRUCT sNewData;
+    StdFStatStruct sNewData;
     if(FStreamStat(sNewData)) return sNewData;
     XCS("Failed to read file information!", "File", IdentGet());
   }
@@ -43,7 +43,7 @@ class SysMap :
   { // Memory to return
     char *cpNewMem;
     // Size cannot be bigger than 4GB on 32-bit system
-#ifdef X86
+#if defined(X86)
     if(SysMapGetSize() > 0xFFFFFFFF)
       XC("File too big to map into address space!",
         "File", IdentGet(), "Size", SysMapGetSize());
@@ -77,8 +77,8 @@ class SysMap :
   bool SysMapIsNotAvailable(void) const { return !SysMapIsAvailable(); }
   uint64_t SysMapGetSize(void) const
     { return static_cast<uint64_t>(sData.st_size); }
-  STDTIMET SysMapGetCreation(void) const { return sData.st_ctime; }
-  STDTIMET SysMapGetModified(void) const { return sData.st_mtime; }
+  StdTimeT SysMapGetCreation(void) const { return sData.st_ctime; }
+  StdTimeT SysMapGetModified(void) const { return sData.st_mtime; }
   /* -- Init object from class --------------------------------------------- */
   void SysMapSwap(SysMap &smOther)
   { // Swap members
@@ -98,10 +98,10 @@ class SysMap :
     IdentClear();
   }
   /* -- Constructor with just id initialisation ---------------------------- */
-  SysMap(const string &strF, const STDTIMET tC, const STDTIMET tM) :
+  SysMap(const string &strF, const StdTimeT tC, const StdTimeT tM) :
     /* -- Initialisers------------------------------------------------------ */
     FStream{ strF },                   // Open specified file
-#ifdef __linux__                       // Linux?
+#if defined(LINUX)                     // Using Linux?
     // Note that all these zeros cause an error for other systems because
     // the structure may contain padding values so this needs to be changed to
     // fit the system being compiled with.
@@ -110,14 +110,14 @@ class SysMap :
            {tM,0}, // struct timespec st_mtimespec = time of last modification
            {tC,0}  // struct timespec st_ctimespec = time of last status change
          },
-#else                                  // OSX?
+#elif defined(MACOS)                   // Using MacOS?
     sData{ 0,      // dev_t   st_dev   = ID of device containing file
            0,      // mode_t  st_mode  = Mode of file (see below)
            0,      // nlink_t st_nlink = Number of hard links
-           0,      // ino64_t st_ino   = File serial number
+           0,      // ino64_t st_ino   = Serial number of the file
            0,      // uid_t   st_uid   = User ID of the file
            0,      // gid_t   st_gid   = Group ID of the file
-           0,      // dev_t   st_rdev  = Device ID
+           0,      // dev_t   st_rdev  = Device ID of the file
            { 0,0}, // struct timespec st_atimespec = time of last access
            {tM,0}, // struct timespec st_mtimespec = time of last modification
            {tC,0}, // struct timespec st_ctimespec = time of last status change
@@ -130,15 +130,15 @@ class SysMap :
            0,      // int32_t   st_lspare    = RESERVED: DO NOT USE!
            { 0,0}  // int64_t   st_qspare[2] = RESERVED: DO NOT USE!
          },
-#endif
+#endif                                 // End of Linux check
     cpMem(nullptr)                     // No handle initialised yet
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
   SysMap(SysMap &&smOther) :
     /* -- Initialisation of members ---------------------------------------- */
-    FStream{ move(smOther) },          // Move stream over
-    sData{ move(smOther.sData) },      // Move file data over
+    FStream{ std::move(smOther) },          // Move stream over
+    sData{ std::move(smOther.sData) },      // Move file data over
     cpMem(smOther.cpMem)               // Move memory pointer over
     /* -- So other class doesn't destruct ---------------------------------- */
     { smOther.SysMapClearVarsInternal(); }

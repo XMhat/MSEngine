@@ -16,7 +16,7 @@
 /* ========================================================================= */
 LLNAMESPACEBEGIN(Audio)                // Audio namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfAudio;               // Using audio interface
+using namespace IfAudio;               // Using audio namespace
 /* ========================================================================= */
 // $ Audio.GetGlobalVolume
 // < Volume:number=Current master volume (0 to 1).

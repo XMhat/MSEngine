@@ -6,15 +6,16 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfIdent {                    // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfIdent {                    // Start of module namespace
 /* -- Read only identifier class ------------------------------------------- */
-template<class StringType>class IdentBase
+template<class StringType>             // STL string type to use
+  class IdentBase                      // Members initially private
 { /* -- Private variables --------------------------------------- */ protected:
   StringType       strIdentifier;      // The identifier
   /* -- Identifier is set? ----------------------------------------- */ public:
-  bool IdentIsSet(void) { return !strIdentifier.empty(); }
-  bool IdentIsNotSet(void) { return !IdentIsSet(); }
+  bool IdentIsSet(void) const { return !strIdentifier.empty(); }
+  bool IdentIsNotSet(void) const { return !IdentIsSet(); }
   /* -- Get identifier ----------------------------------------------------- */
   const StringType &IdentGet(void) const { return strIdentifier; }
   /* -- Get identifier by address ------------------------------------------ */
@@ -22,14 +23,14 @@ template<class StringType>class IdentBase
   /* -- Move constructor from another rvalue string ------------- */ protected:
   explicit IdentBase(StringType &&strId) :
     /* -- Initialisation of members ---------------------------------------- */
-    strIdentifier{ move(strId) }       // Move supplied string
+    strIdentifier{ std::move(strId) }       // Move supplied string
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Move constructor from rvalue identifier ---------------------------- */
   explicit IdentBase(IdentBase &&idOther) :
     /* -- Initialisation of members ---------------------------------------- */
     strIdentifier{                     // Initialise string
-      move(idOther.strIdentifier) }    // Move supplied string
+      std::move(idOther.strIdentifier) }    // Move supplied string
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Copy constructor from another lvalue string ------------------------ */
@@ -42,15 +43,24 @@ template<class StringType>class IdentBase
   IdentBase(void) { }
   /* -- Default suppressions ----------------------------------------------- */
   DELETECOPYCTORS(IdentBase);          // Remove default functions
-};/* ----------------------------------------------------------------------- */
-/* -- Identifier class ----------------------------------------------------- */
-class Ident :
+};/* -- Identifier class --------------------------------------------------- */
+struct Ident :                         // Members initially public
   /* -- Base classes ------------------------------------------------------- */
   public IdentBase<string>             // The read-only class
-{ /* -- Set identifier by rvalue ----------------------------------- */ public:
-  void IdentSet(string &&strId) { strIdentifier = move(strId); }
+{ /* -- Set identifier by rvalue ------------------------------------------- */
+  void IdentSet(string &&strId) { strIdentifier = std::move(strId); }
   /* -- Set identifier by lvalue ------------------------------------------- */
   void IdentSet(const string &strId) { strIdentifier = strId; }
+  /* -- Set identifier by class ------------------------------------------- */
+  void IdentSet(const IdentBase &ibO) { strIdentifier = ibO.IdentGet(); }
+  /* -- Formatted set using Format() --------------------------------------- */
+  template<typename... VarArgs>
+    void IdentSet(const char*const cpFormat, const VarArgs &...vaArgs)
+  { IdentSet(IfString::Format(cpFormat, vaArgs...)); }
+  /* -- Formatted set using Append() --------------------------------------- */
+  template<typename... VarArgs>
+    void IdentSetA(const VarArgs &...vaArgs)
+  { IdentSet(IfString::Append(vaArgs...)); }
   /* -- Clear identifier --------------------------------------------------- */
   void IdentClear(void) { strIdentifier.clear(); }
   /* -- Swap identifier ---------------------------------------------------- */
@@ -58,16 +68,15 @@ class Ident :
   /* -- Move constructor from another rvalue string ------------------------ */
   explicit Ident(string &&strId) :
     /* -- Initialisation of members ---------------------------------------- */
-    IdentBase{ move(strId) }           // Move supplied name
+    IdentBase{ std::move(strId) }           // Move supplied name
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Move constructor from rvalue identifier ---------------------------- */
-  explicit Ident(Ident &&idOther) :
+  explicit Ident(Ident &&idO) :
     /* -- Initialisation of members ---------------------------------------- */
-    IdentBase{                         // Initialise base
-      move(idOther.strIdentifier) }    // Move other name
-    /* -- No code ---------------------------------------------------------- */
-    { }
+    IdentBase{ std::move(idO.IdentGet()) }  //  Move string
+    /* -- Code ------------------------------------------------------------- */
+    { }                                // No code
   /* -- Copy constructor from another lvalue string ------------------------ */
   explicit Ident(const string &strId) :
     /* -- Initialisation of members ---------------------------------------- */
@@ -81,55 +90,84 @@ class Ident :
   /* -- Default suppressions ----------------------------------------------- */
   DELETECOPYCTORS(Ident);              // Remove default functions
 };/* ----------------------------------------------------------------------- */
-typedef IdentBase<const string> IdentConst;
+typedef IdentBase<const string> IdentConst;       // Const type of Ident
 /* == Id to string list helper class ======================================= */
-template<size_t stMaximum,size_t stMinimum=0>class IdList :
+template<size_t stMaximum,             // Maximum number of items
+         size_t stMinimum=0,           // Minimum allowed value
+         class List =                  // List array type alias
+           array<const string,         // Use const type string
+             stMaximum>>               // Maximum number of strings in array
+struct IdList :                        // Members initially public
   /* -- Dependents --------------------------------------------------------- */
-  private IdentConst                   // Alternative if id is unknown
-{ /* -- Typedefs ----------------------------------------------------------- */
-  typedef array<const string, stMaximum> List;
-  /* -- Variables ---------------------------------------------------------- */
-  const List       lItems;             // The list of items
-  /* -- Constructor (no initialisation) ---------------------------- */ public:
+  private IdentConst,                  // Alternative if id is unknown
+  private List                         // Array of strings
+{ /* -- Constructor (no initialisation) ------------------------------------ */
   public: explicit IdList(const List &lNI,
     const string &strNU=IfString::strBlank) :
     /* -- Initialisers ----------------------------------------------------- */
-    IdentConst{ move(strNU) },         // Unknown item string
-    lItems{ move(lNI) }                // Items
+    IdentConst{ std::move(strNU) },         // Unknown item string
+    List{ std::move(lNI) }                  // Items
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Get string --------------------------------------------------------- */
   template<typename IntType=size_t>const string &Get(const IntType itId) const
   { // Allow any input integer type, we don't need to convert if the same
     const size_t stId = static_cast<size_t>(itId);
-    return stId >= stMinimum && stId < stMaximum ? lItems[stId] : IdentGet();
+    return stId >= stMinimum && stId < stMaximum ? (*this)[stId] : IdentGet();
   }
 };/* ----------------------------------------------------------------------- */
 /* == Id to string list helper class ======================================= */
-template<class KeyType=unsigned int, class ValueType=string>class IdMap :
-  /* -- Dependents --------------------------------------------------------- */
-  private IdentConst                   // Alternative if id is unknown
+template<class KeyType = unsigned int, // The user specified type of the key
+         class ValueType = string,     // The user specified type of the value
+         class MapType =               // The map type to hold key/value pairs
+           map<const KeyType,          // The key type
+               const ValueType>>       // The value type
+struct IdMap :                         // Members initially public
+  /* -- Dependencies ------------------------------------------------------- */
+  private IdentConst,                  // Alternative if id is unknown
+  private MapType                      // Map of key->value pairs
 { /* -- Macros ------------------------------------------------------------- */
-  #define IDMAPSTR(i) { i, #i }        // Helper macro for constructors
-  /* -- Typedefs ----------------------------------------------------------- */
-  typedef map<const KeyType, const ValueType> Map;
-  /* -- Variables ---------------------------------------------------------- */
-  const Map        mItems;             // The list of items
-  /* -- Constructor (no initialisation) ---------------------------- */ public:
-  public: explicit IdMap(const Map &mNI,
+#define IDMAPSTR(e) { e, #e }          // Helper macro
+  /* -- Constructor (no initialisation) ------------------------------------ */
+  explicit IdMap(const MapType &mNI,
     const string &strNU=IfString::strBlank) :
     /* -- Initialisers ----------------------------------------------------- */
-    IdentConst{ move(strNU) },         // Unknown item string
-    mItems{ move(mNI) }                // Items map
+    IdentConst{ std::move(strNU) },         // Unknown item string
+    MapType{ std::move(mNI) }               // Items map
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Get string --------------------------------------------------------- */
   const ValueType &Get(const KeyType ktId) const
   { // Find code and return custom error if not found else return string
-    const auto aName{ mItems.find(ktId) };
-    return aName != mItems.cend() ? aName->second : IdentGet();
+    const auto aName{ this->find(ktId) };
+    return aName != this->cend() ? aName->second : IdentGet();
   }
 };/* ----------------------------------------------------------------------- */
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+template<typename IntType = const uint64_t>class IdentCSlave
+{ /* -- Protected variables ------------------------------------- */ protected:
+  IntType          itCounter;          // The counter
+  /* -- Protected functions ------------------------------------------------ */
+  explicit IdentCSlave(const IntType itId) :
+    /* -- Initialisers ----------------------------------------------------- */
+    itCounter(itId)                    // Initialise id
+    /* -- No code ---------------------------------------------------------- */
+    { }
+  /* -- Public functions ------------------------------------------- */ public:
+  IntType CtrGet(void) const { return itCounter; }
+};/* ----------------------------------------------------------------------- */
+template<typename IntType = uint64_t,             // Counter integer type
+         class SlaveClass = IdentCSlave<IntType>> // Slave class type
+class IdentCMaster :
+  /* -- Initialisers ------------------------------------------------------ */
+  public SlaveClass                    // Might as well reuse it
+{ /* -- Protected functions ------------------------------------- */ protected:
+  IdentCMaster() :
+    /* -- Initialisers ----------------------------------------------------- */
+    SlaveClass(0)                      // Initialise id at zero
+    /* -- No code ---------------------------------------------------------- */
+    { }
+  /* -- Public functions ------------------------------------------- */ public:
+  IntType CtrNext(void) { return this->itCounter++; }
+};/* ----------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

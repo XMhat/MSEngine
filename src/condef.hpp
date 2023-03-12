@@ -6,8 +6,8 @@
 /* ## created.                                                            ## */
 /* ######################################################################### */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfConDef {                   // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfConDef {                   // Start of module namespace
 /* -- Constraints ---------------------------------------------------------- */
 #define CONCMD_MIN_LENGTH            1 // Minimum length of a console command
 #define CONCMD_MAX_LENGTH          255 // Maximum length of a console command
@@ -40,8 +40,8 @@ typedef list<ConLine>                    ConLines;           // Con lines data
 typedef ConLines::const_iterator         ConLinesConstIt;    // " fwd const it
 typedef ConLines::reverse_iterator       ConLinesRevIt;      // " reverse it
 typedef ConLines::const_reverse_iterator ConLinesConstRevIt; // " const
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* ===================================================================== */
 namespace IfConLib {                   // Console library namespace
 /* == Notes ================================================================ */
@@ -53,8 +53,8 @@ namespace IfConLib {                   // Console library namespace
 /* ## command library later on.                                           ## */
 /* ######################################################################### */
 /* == Includes ============================================================= */
-using namespace IfCVarDef;             // Using cvardef interface
-using namespace IfArgs;                // Using arguments interface
+using namespace IfCVarDef;             // Using cvardef namespace
+using namespace IfArgs;                // Using arguments namespace
 /* ========================================================================= */
 /* ######################################################################### */
 /* ## BASE ENGINE COMMANDS DEFINES                                        ## */
@@ -136,8 +136,6 @@ CC_CVSAVE,
 /* ------------------------------------------------------------------------- */
 CC_DIR,
 /* ------------------------------------------------------------------------- */
-CC_DYLIBS,
-/* ------------------------------------------------------------------------- */
 CC_ENV,
 /* ------------------------------------------------------------------------- */
 CC_EVENTS,
@@ -199,6 +197,8 @@ CC_OBJS,
 CC_OGLEXT,
 /* ------------------------------------------------------------------------- */
 CC_OGLFUNC,
+/* ------------------------------------------------------------------------- */
+CC_PALETTES,
 /* ------------------------------------------------------------------------- */
 CC_PCMFMTS,
 /* ------------------------------------------------------------------------- */
@@ -270,5 +270,5 @@ struct ConLib                          // Console library command structure
 typedef array<const ConLib, MAX_CONCMD> ConCmdStaticList;
 extern const ConCmdStaticList conLibList;
 /* ------------------------------------------------------------------------- */
-};                                     // End of interface
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

@@ -26,30 +26,30 @@ local function InitCon()
   local function OnLoaded(aResources)
     -- Setup lobby texture
     local texLobby = aResources[1].H;
-    texLobby:TrimTList(1);
-    texLobby:SetTile(0, 0, 272, 512, 512);
+    texLobby:TileSTC(1);
+    texLobby:TileS(0, 0, 272, 512, 512);
     -- Setup controller texture
     local texCon = aResources[2].H;
-    local tileConAnim<const> = texCon:CreateTile(0,   0, 160,  84);
-                               texCon:CreateTile(0,  85, 160, 169);
-                               texCon:CreateTile(0, 170, 160, 254);
-                               texCon:CreateTile(0, 255, 160, 339);
+    local tileConAnim<const> = texCon:TileA(0,   0, 160,  84);
+                               texCon:TileA(0,  85, 160, 169);
+                               texCon:TileA(0, 170, 160, 254);
+                               texCon:TileA(0, 255, 160, 339);
     -- Cache other tiles
-    local tileCon<const>    = texCon:CreateTile(208, 312, 512, 512); -- [0](1)
-    local tileSpeech<const> = texCon:CreateTile(356, 250, 512, 274); -- [0](1)
-    local tileFish<const>   = texCon:CreateTile(273, 275, 320, 311); -- [0](5)
-                              texCon:CreateTile(321, 275, 368, 311); -- [1]
-                              texCon:CreateTile(369, 275, 416, 311); -- [2]
-                              texCon:CreateTile(417, 275, 464, 311); -- [3]
-                              texCon:CreateTile(465, 275, 512, 311); -- [4]
-    local tileMap<const>    = texCon:CreateTile(  0, 412,  63, 453); -- [0](2)
-                              texCon:CreateTile( 64, 412, 127, 453); -- [1]
-    local tileRace<const>   = texCon:CreateTile(128, 409, 160, 453); -- [0](2)
-                              texCon:CreateTile(161, 409, 193, 453); -- [1]
-    local tileBook<const>   = texCon:CreateTile(  0, 454,  79, 485); -- [0](2)
-                              texCon:CreateTile( 80, 454, 159, 485); -- [1]
-    local tileFile<const>   = texCon:CreateTile(  0, 486,  95, 512); -- [0](2)
-                              texCon:CreateTile( 96, 486, 191, 512); -- [1]
+    local tileCon<const>    = texCon:TileA(208, 312, 512, 512); -- [0](1)
+    local tileSpeech<const> = texCon:TileA(356, 250, 512, 274); -- [0](1)
+    local tileFish<const>   = texCon:TileA(273, 275, 320, 311); -- [0](5)
+                              texCon:TileA(321, 275, 368, 311); -- [1]
+                              texCon:TileA(369, 275, 416, 311); -- [2]
+                              texCon:TileA(417, 275, 464, 311); -- [3]
+                              texCon:TileA(465, 275, 512, 311); -- [4]
+    local tileMap<const>    = texCon:TileA(  0, 412,  63, 453); -- [0](2)
+                              texCon:TileA( 64, 412, 127, 453); -- [1]
+    local tileRace<const>   = texCon:TileA(128, 409, 160, 453); -- [0](2)
+                              texCon:TileA(161, 409, 193, 453); -- [1]
+    local tileBook<const>   = texCon:TileA(  0, 454,  79, 485); -- [0](2)
+                              texCon:TileA( 80, 454, 159, 485); -- [1]
+    local tileFile<const>   = texCon:TileA(  0, 486,  95, 512); -- [0](2)
+                              texCon:TileA( 96, 486, 191, 512); -- [1]
     -- Data for flashing textures to help the player know what to do
     local aFlashCache<const> = {
       [tileMap]  = { tileMap,  9,   9 }, [tileRace] = { tileRace, 232, 160 },
@@ -102,7 +102,7 @@ local function InitCon()
     AddSpeechItem("THE BOOK MAY BE OF HELP", tileBook);
     AddSpeechItem("AND DON'T TAKE ALL DAY");
     -- Set colour of speech text
-    fontSpeech:SetRGB(0, 0, 0.25);
+    fontSpeech:SetCRGB(0, 0, 0.25);
     -- Render callback
     local function RenderCon()
       -- Draw backdrop, controller screen and animated fish

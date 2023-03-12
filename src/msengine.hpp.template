@@ -12,8 +12,8 @@
 #define VER_AUTHOR  "My Company Name"                // Author of engine
 #define VER_MAJOR   1                                // Version major (year)
 #define VER_MINOR   0                                // Version minor (month)
-#define VER_REV     0                                // Version revision (day)
 #define VER_BUILD   0                                // Version build (count)
+#define VER_REV     0                                // Version revision (day)
 #define VER_STR_NQ  1,0,0,0                          // Version as literal
 #define VER_STR     "1.0.0.0"                        // Version as string
 #define VER_DATE    "Thu Jan 01 00:00:00 1970 +0000" // Compilation date

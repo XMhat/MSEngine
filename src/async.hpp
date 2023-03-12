@@ -6,7 +6,7 @@
 /* ## Do not use class directly. It must be derived with another class.   ## */
 /* ######################################################################### */
 /* ## This class requires the parent class to have these functions...     ## */
-/* ##   void LoadData(FileMap &fileClass)                                 ## */
+/* ##   void AsyncReady(FileMap &fileClass)                               ## */
 /* ##     - Fired when file is loading from memory (data block)           ## */
 /* ######################################################################### */
 /* ## It also requires the parent class' collector class to also register ## */
@@ -18,20 +18,20 @@
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* -- Prototypes ----------------------------------------------------------- */
-namespace IfAsset {                    // We need to define some prototypes
+namespace IfAsset {                    // Start of Asset module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfFileMap;             // Using filemap interface
+using namespace IfFileMap;             // Using filemap namespace
 /* -- Prototypes ----------------------------------------------------------- */
 static FileMap AssetExtract(const string&);      // Extract files from archives
 static FileMap AssetLoadFromDisk(const string&); // Load file from disk
 static size_t AssetGetPipeBufferSize(void);      // Get pipe buffer size
 /* ------------------------------------------------------------------------- */
-};                                     // End of asset interface
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfASync {                    // Keep declarations neatly categorised
+};                                     // End of asset namespace
+/* ------------------------------------------------------------------------- */
+namespace IfASync {                    // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfAsset;               // Using asset interface
-using namespace IfLuaEvt;              // Using luaevent interface
+using namespace IfAsset;               // Using asset namespace
+using namespace IfLuaEvt;              // Using luaevent namespace
 /* ------------------------------------------------------------------------- */
 enum ASyncProgressCommand              // For lua callback events
 { /* ----------------------------------------------------------------------- */
@@ -171,7 +171,7 @@ template<typename MemberType>class AsyncLoader :
       // Close the writing portion of the pipe
       spProcess.SendFinish();
       // Report that we write data
-      LW(LH_INFO, "Async pipe wrote $ bytes to stdin of pid $ in $!",
+      cLog->LogInfoExSafe("Async pipe wrote $ bytes to stdin of pid $ in $!",
         stPosition, spProcess.GetPid(),
         ToShortDuration(ccExecute.CCDeltaToDouble()));
       // Clear the memory to re-use for output
@@ -187,13 +187,14 @@ template<typename MemberType>class AsyncLoader :
       // Increase total bytes read
       stTotalRead += mBuffer.Size();
       // Move it into the packet list
-      mlBlocks.emplace_back(move(mBuffer));
+      mlBlocks.emplace_back(std::move(mBuffer));
     } // Finished with pipe. Also gets the exit code too.
     spProcess.Finish();
     // Pid no longer valid
     uiAsyncPid = 0;
     // Log pipe result.
-    LW(LH_INFO, "Async pipe returned $ bytes and exit code $ from pid $ in $!",
+    cLog->LogInfoExSafe(
+      "Async pipe returned $ bytes and exit code $ from pid $ in $!",
       stTotalRead, spProcess.SysPipeBaseGetStatus(), spProcess.GetPid(),
       ToShortDuration(ccExecute.CCDeltaToDouble()));
     // If we have no memory stored? Return exit code
@@ -224,11 +225,12 @@ template<typename MemberType>class AsyncLoader :
       static_cast<uint64_t>(fmFile.FileMapModifiedTime()),
       static_cast<uint64_t>(fmFile.FileMapCreationTime()));
     // Move our memory block into a file map and send it to loader
-    cAsyncOwner.LoadData(fmFile);
+    cAsyncOwner.AsyncReady(fmFile);
   }
   /* -- Move the stored memory block into a new filemap and parse it ------- */
   void AsyncParseMemory(void)
-    { FileMap fmFile{ IdentGet(), move(mAsyncLoadData), cmSys.GetTimeS() };
+    { FileMap fmFile{ IdentGet(),
+        std::move(mAsyncLoadData), cmSys.GetTimeS() };
       AsyncParseFileMap(fmFile); }
   /* -- Load the specified file and parse it ------------------------------- */
   void AsyncParseFile(void)
@@ -245,7 +247,7 @@ template<typename MemberType>class AsyncLoader :
         case BA_NONE:
         { // Just send a blank file and signal completion
           FileMap fmData;
-          cAsyncOwner.LoadData(fmData);
+          cAsyncOwner.AsyncReady(fmData);
           AsyncCompletion();
           break;
         } // Loading from a file?
@@ -277,7 +279,7 @@ template<typename MemberType>class AsyncLoader :
       // Signal completion
       AsyncCompletionDispatch(AR_ERROR);
       // Report error in log
-      LW(LH_ERROR, "(ASYNCLOADER THREAD EXCEPTION) $", strAsyncError);
+      cLog->LogErrorExSafe("(ASYNCLOADER THREAD EXCEPTION) $", strAsyncError);
       // Return failure to thread manager
       return -1;
     }
@@ -293,7 +295,7 @@ template<typename MemberType>class AsyncLoader :
     lesAsync.LuaEvtInitEx(lsS);
     // Save the current stack because if an error occurs asynchronously, the
     // event subsystem executes the callback and will be empty.
-    strAsyncError = move(GetStack(lsS));
+    strAsyncError = std::move(GetStack(lsS));
     // Begin async thread
     tAsyncThread.ThreadInit(Append(strL, ':', strName),
       bind(&AsyncLoader<MemberType>::AsyncThreadMain,
@@ -320,8 +322,8 @@ template<typename MemberType>class AsyncLoader :
       // Now do the callback. An exception could occur here.
       CallFuncEx(lesAsync.LuaRefGetState(), 1);
     } // Invalid userdata?
-    else LW(LH_ERROR, "AsyncLoader got invalid params in failure event "
-      "$ for '$' with luastate($) and fref($) from $ params!",
+    else cLog->LogErrorExSafe("AsyncLoader got invalid params in failure "
+      "event $ for '$' with luastate($) and fref($) from $ params!",
       epData.evtCommand, IdentGet(), lesAsync.LuaRefStateIsSet(),
       lesAsync.LuaRefGetFunc(LR_ERROR), epData.vParams.size());
   }
@@ -395,7 +397,7 @@ template<typename MemberType>class AsyncLoader :
   { // Loading from command-line
     aiAsyncType = BA_EXECUTE;
     // Set memory sent to stdin
-    mAsyncLoadData = move(mbInput);
+    mAsyncLoadData = std::move(mbInput);
     // Init rest of members
     AsyncInit(lsS, strCmdLine, strLabel);
   }
@@ -403,7 +405,7 @@ template<typename MemberType>class AsyncLoader :
   void AsyncInitArray(lua_State*const lsS, const string &strName,
     const string &strLabel, Memory &&mData)
   { // Set data to load from
-    mAsyncLoadData = move(mData);
+    mAsyncLoadData = std::move(mData);
     // Loading from memory
     aiAsyncType = BA_MEMORY;
     // Init rest of members
@@ -412,7 +414,7 @@ template<typename MemberType>class AsyncLoader :
   /* -- Send load data update and register in collector -------------------- */
   void SyncLoadDataAndRegister(FileMap &fmData)
   { // Send file map to derived class
-    cAsyncOwner.LoadData(fmData);
+    cAsyncOwner.AsyncReady(fmData);
     // Load succeeded so register the block.
     cAsyncOwner.CollectorRegister();
   }
@@ -421,7 +423,7 @@ template<typename MemberType>class AsyncLoader :
   { // Set identifier
     IdentSet(strName);
     // Put the memory block into a file map and load the block
-    FileMap fmData{ strName, move(mData), cmSys.GetTimeS() };
+    FileMap fmData{ strName, std::move(mData), cmSys.GetTimeS() };
     // Send to derived class and register
     SyncLoadDataAndRegister(fmData);
   }
@@ -450,7 +452,7 @@ template<typename MemberType>class AsyncLoader :
       { // Unknown operation?
         case AR_UNKNOWN:
         { // Log the invalid parameter count
-          LW(LH_WARNING, "AsyncLoader parameter mismatch of $ in "
+          cLog->LogWarningExSafe("AsyncLoader parameter mismatch of $ in "
             "event $ for '$' with status $!", eParams.size(),
             epData.evtCommand, IdentGet(), uiAsyncResult);
           // Done
@@ -473,8 +475,9 @@ template<typename MemberType>class AsyncLoader :
             // Do not do anything else
             return;
           } // Show error
-          else LW(LH_ERROR, "AsyncLoader got invalid params in progress "
-            "event $ for '$' with luastate($) and fref($) from $ params!",
+          else cLog->LogErrorExSafe("AsyncLoader got invalid params in "
+            "progress event $ for '$' with luastate($) and fref($) from $ "
+            "params!",
             epData.evtCommand, IdentGet(), lesAsync.LuaRefStateIsSet(),
             lesAsync.LuaRefGetFunc(LR_PROGRESS), eParams.size());
           // Done
@@ -495,17 +498,17 @@ template<typename MemberType>class AsyncLoader :
                 // Dispatch the event with two parameters
                 AsyncDoFinishLuaProtectedDispatch(epData, 2, iErrorHandler);
               } // Failed? Write error to log
-              else LW(LH_ERROR, "AsyncLoader got invalid userdata param in "
-                "success param event $ for '$' from $ params!",
+              else cLog->LogErrorExSafe("AsyncLoader got invalid userdata "
+                "param in success param event $ for '$' from $ params!",
                 epData.evtCommand, IdentGet(), eParams.size());
             } // Show error
-            else LW(LH_ERROR, "AsyncLoader got invalid params in success "
-              "param event $ for '$' with luastate($) and fref($) from $ "
-              "params!", epData.evtCommand, IdentGet(),
-              lesAsync.LuaRefStateIsSet(), lesAsync.LuaRefGetFunc(LR_SUCCESS),
-              eParams.size());
+            else cLog->LogErrorExSafe("AsyncLoader got invalid params in "
+              "success param event $ for '$' with luastate($) and fref($) "
+              "from $ params!",
+              epData.evtCommand, IdentGet(), lesAsync.LuaRefStateIsSet(),
+              lesAsync.LuaRefGetFunc(LR_SUCCESS), eParams.size());
           } // Log error
-          else LW(LH_ERROR, "AsyncLoader got invalid value in "
+          else cLog->LogErrorExSafe("AsyncLoader got invalid value in "
             "success param event $ for '$' from $ params!", epData.evtCommand,
               IdentGet(), eParams.size());
           // Done
@@ -521,12 +524,13 @@ template<typename MemberType>class AsyncLoader :
             if(lesAsync.LuaRefGetUData())
               AsyncDoFinishLuaProtectedDispatch(epData, 1, iErrorHandler);
             // Failed? Write error to log
-            else LW(LH_ERROR, "AsyncLoader got invalid userdata param in "
-              "success event $ for '$' from $ params!",
-                epData.evtCommand, IdentGet(), eParams.size());
+            else cLog->LogErrorExSafe("AsyncLoader got invalid userdata param "
+              "in success event $ for '$' from $ params!",
+              epData.evtCommand, IdentGet(), eParams.size());
           } // Show error
-          else LW(LH_ERROR, "AsyncLoader got invalid params in success event "
-            "$ for '$' with luastate($) and fref($) from $ params!",
+          else cLog->LogErrorExSafe("AsyncLoader got invalid params in "
+            "success event $ for '$' with luastate($) and fref($) from $ "
+            "params!",
             epData.evtCommand, IdentGet(), lesAsync.LuaRefStateIsSet(),
             lesAsync.LuaRefGetFunc(LR_SUCCESS), eParams.size());
           // Done
@@ -540,7 +544,8 @@ template<typename MemberType>class AsyncLoader :
         } // Other error?
         default:
         { // Report it and fall through to clean-up
-          LW(LH_ERROR, "AsyncLoader got unknown result $ after loading '$'!",
+          cLog->LogErrorExSafe(
+            "AsyncLoader got unknown result $ after loading '$'!",
             uiAsyncResult, IdentGet());
         } // If the thread was told to abort? Clear references and just return
         case AR_ABORT: break;
@@ -571,9 +576,8 @@ template<typename MemberType>class AsyncLoader :
     if(tAsyncThread.ThreadIsNotRunning()) return;
     // Print a warning to say that we should not be allowing this destructor
     // the clean up the thread
-    LW(LH_WARNING,
-      "AsyncLoader waiting for '$' to unload in its own destructor. "
-      "There could be memory leaks!", strAsyncError);
+    cLog->LogWarningExSafe("AsyncLoader waiting for '$' to unload in its own "
+      "destructor. There could be memory leaks!", strAsyncError);
     // Wait for the thread to stop
     AsyncStop();
   }
@@ -607,5 +611,5 @@ class CLHelperAsync :
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(CLHelperAsync);      // Supress copy constructor for safety
 };/* -- End of module namespace -------------------------------------------- */
-};                                     // End of interface
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

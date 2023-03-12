@@ -11,9 +11,10 @@
 namespace Engine {                     // Start of engine namespace
 /* ------------------------------------------------------------------------- */
 #include "msengine.hpp"                // Build version numbers
-#include "types.hpp"                   // Global types
+#include "stdtypes.hpp"                // Standard types
 #include "flags.hpp"                   // Flags class
 #include "utf.hpp"                     // Unicode transformation format utils
+#include "std.hpp"                     // Std function wrappers
 #include "string.hpp"                  // String utilities
 #include "error.hpp"                   // Error class
 #include "token.hpp"                   // Token class
@@ -36,9 +37,11 @@ namespace Engine {                     // Start of engine namespace
 #include "evtcore.hpp"                 // Thread-safe events system core
 #include "evtmain.hpp"                 // Main engine thread events system
 #include "condef.hpp"                  // Console definitions
+#include "glfwutil.hpp"                // GLFW utilities
+#include "glfwwin.hpp"                 // GLFW window class
 #include "glfw.hpp"                    // GLFW wrapper
+#include "dim.hpp"                     // Dimensions header file
 #include "syscore.hpp"                 // Operating system interface
-#include "dylib.hpp"                   // DyLib interface
 #include "filemap.hpp"                 // File map interface
 #include "luautil.hpp"                 // Lua utility functions
 #include "luaref.hpp"                  // Lua reference helper class
@@ -57,16 +60,18 @@ namespace Engine {                     // Start of engine namespace
 #include "lua.hpp"                     // Lua core subsystem
 #include "cvar.hpp"                    // CVar item header file
 #include "cvars.hpp"                   // CVars header file
-#include "imagelib.hpp"                // Image formats header file
-#include "imagefmt.hpp"                // Image format plugins
-#include "bin.hpp"                     // Bin packing header file
-#include "image.hpp"                   // Image loader header file
 #include "oal.hpp"                     // OpenAL header file
+#include "pcmdef.hpp"                  // Pcm data header file
 #include "pcmlib.hpp"                  // Pcm formats header file
 #include "pcmfmt.hpp"                  // Pcm format plugins
 #include "pcm.hpp"                     // Pcm loader header file
 #include "fbodef.hpp"                  // Fbo defs header file
 #include "ogl.hpp"                     // OpenGL header file
+#include "imagedef.hpp"                // Image data header file
+#include "imagelib.hpp"                // Image formats header file
+#include "imagefmt.hpp"                // Image format plugins
+#include "bin.hpp"                     // Bin packing header file
+#include "image.hpp"                   // Image loader header file
 #include "shader.hpp"                  // Shader program header file
 #include "fbobase.hpp"                 // Context, thread and fbo base vars
 #include "fboitem.hpp"                 // Frame buffer object render item
@@ -74,6 +79,7 @@ namespace Engine {                     // Start of engine namespace
 #include "fbomain.hpp"                 // Core fbos header file
 #include "sshot.hpp"                   // Screenshot header file
 #include "texture.hpp"                 // Texture header file
+#include "palette.hpp"                 // Palette header file
 #include "ftf.hpp"                     // Freetype font header file
 #include "font.hpp"                    // Font header file
 #include "file.hpp"                    // File class header file

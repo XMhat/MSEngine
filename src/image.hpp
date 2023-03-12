@@ -7,233 +7,155 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfImage {                    // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfImage {                    // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfImageFormat;         // Using imageformat interface
-/* -- Loading flags -------------------------------------------------------- */
-BUILD_FLAGS(Image,
-  /* -- Post processing ---------------------------------------------------- */
-  // No flags                          // Image will be loadable in OpenGL
-  IL_NONE                {0x00000000}, IL_TOGPU               {0x00000002},
-  // Convert loaded image to 24bpp     // Convert loaded image to 32bpp
-  IL_TO24BPP             {0x00000004}, IL_TO32BPP             {0x00000008},
-  // Convert loaded image to BGR(A)    Convert loaded image to RGB(A)
-  IL_TOBGR               {0x00000010}, IL_TORGB               {0x00000020},
-  // Convert loaded image to BINARY    Force reverse the image
-  IL_TOBINARY            {0x00000040}, IL_REVERSE             {0x00000080},
-  /* -- Formats ------------------------------------------------------------ */
-  // Force load as TARGA               Force load as JPEG
-  IL_FCE_TGA             {0x02000000}, IL_FCE_JPG             {0x04000000},
-  // Force load as PNG                 Force load as GIF
-  IL_FCE_PNG             {0x08000000}, IL_FCE_GIF             {0x20000000},
-  // Force load as DDS
-  IL_FCE_DDS             {0x40000000},
-  /* -- Mask bits ---------------------------------------------------------- */
-  IL_MASK{ IL_TO32BPP|IL_TOBGR|IL_TORGB|IL_TOBINARY|IL_REVERSE|
-    IL_FCE_TGA|IL_FCE_JPG|IL_FCE_PNG|IL_FCE_GIF|IL_FCE_DDS }
-);/* == Image collector and member class =================================== */
+using namespace IfImageFormat;         // Using imageformat namespace
+/* == Image collector and member class ===================================== */
 BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
   public AsyncLoader<Image>,           // For loading images off main thread
   public Lockable,                     // Lua garbage collector instruction
-  public ImageFlags                    // Image load settings
-{ /* -- Variables -------------------------------------------------- */ public:
-  ImageData             imgData;       // Image data
-  /* -- ImageData retrieval ------------------------------------------------ */
-  SlotList &GetSlotsData(void) { return imgData.sData; }
-  bool NoSlots(void) const { return imgData.sData.empty(); }
-  ImageSlot &GetSlot(const size_t stId) { return imgData.sData[stId]; }
-  ImageSlot &GetFirstSlot(void) { return GetSlot(0); }
-  size_t GetSlots(void) const { return imgData.sData.size(); }
-  size_t GetSlotsMax(void) const { return imgData.sData.capacity(); }
-  size_t GetSize(void) const { return imgData.stFile; }
-  size_t GetUsage(void) const { return imgData.stAlloc; }
-  bool IsMipmap(void) const { return imgData.bMipmaps; }
-  bool IsReverse(void) const { return imgData.bReverse; }
-  bool IsCompressed(void) const { return imgData.bCompressed; }
-  bool IsDynamic(void) const { return imgData.bDynamic; }
-  GLenum GetPixelType(void) const { return imgData.glPixelType; }
-  template<typename IntType=decltype(imgData.uiWidth)>
-    IntType GetWidth(void) const
-      { return static_cast<IntType>(imgData.uiWidth); }
-  template<typename IntType=decltype(imgData.uiHeight)>
-    IntType GetHeight(void) const
-      { return static_cast<IntType>(imgData.uiHeight); }
-  template<typename IntType=decltype(imgData.uiBitsPerPixel)>
-    IntType GetBitsPP(void) const
-      { return static_cast<IntType>(imgData.uiBitsPerPixel); }
-  template<typename IntType=decltype(imgData.uiBytesPerPixel)>
-    IntType GetBytesPP(void) const
-      { return static_cast<IntType>(imgData.uiBytesPerPixel); }
-  /* ----------------------------------------------------------------------- */
-  void SwapImage(Image &oCref)
-  { // Swap async, lua lock data and registration
-    IdentSwap(oCref);
-    LockSwap(oCref);
-    CollectorSwapRegistration(oCref);
-    FlagSwap(oCref);
-    // Swap image lib data
-    swap(imgData.uiWidth, oCref.imgData.uiWidth);
-    swap(imgData.uiHeight, oCref.imgData.uiHeight);
-    swap(imgData.uiBitsPerPixel, oCref.imgData.uiBitsPerPixel);
-    swap(imgData.uiBytesPerPixel, oCref.imgData.uiBytesPerPixel);
-    swap(imgData.glPixelType, oCref.imgData.glPixelType);
-    swap(imgData.bMipmaps, oCref.imgData.bMipmaps);
-    swap(imgData.bReverse, oCref.imgData.bReverse);
-    swap(imgData.bCompressed, oCref.imgData.bCompressed);
-    swap(imgData.bDynamic, oCref.imgData.bDynamic);
-    swap(imgData.stAlloc, oCref.imgData.stAlloc);
-    swap(imgData.stFile, oCref.imgData.stFile);
-    imgData.sData.swap(oCref.imgData.sData);
+  public ImageData                     // Raw image data
+{ /* -- Swap image data  ------------------------------------------- */ public:
+  void SwapImage(Image &imgRef)
+  { // Swap members with other class
+    IdentSwap(imgRef);                 // Image filename
+    LockSwap(imgRef);                  // Lua lock status
+    CollectorSwapRegistration(imgRef); // Collector registration
+    ImageDataSwap(imgRef);             // Image data and flags swap
   }
-  /* -- Clear allocated data ----------------------------------------------- */
-  void ClearData(void) { imgData.sData.clear(); imgData.stAlloc = 0; }
   /* -- Force the specified colour mode ------------------------------------ */
-  void ForcePixelOrder(const unsigned int uiCM)
-  { // Force a RGB colour mode?
+  bool ForcePixelOrder(const unsigned int uiCM)
+  { // Return failure if parameters are wrong
     if((uiCM == GL_BGR &&
-       (imgData.glPixelType == GL_RGBA || imgData.glPixelType == GL_RGB)) ||
+       (GetPixelType() != GL_RGBA && GetPixelType() != GL_RGB)) ||
        (uiCM == GL_RGB &&
-       (imgData.glPixelType == GL_BGRA || imgData.glPixelType == GL_BGR)))
-    { // For each slot
-      for(ImageSlot &sItem : imgData.sData)
-      { // Get memory
-        Memory &mbIn = sItem.memData;
-        // Swap pixels
-        const int iResult = ImageSwapPixels(mbIn.Ptr<char>(), mbIn.Size(),
-          imgData.uiBytesPerPixel, 0, 2);
-        if(iResult < 0) XC("Pixel reorder failed!",
-          "Identifier",    IdentGet(),
-          "Code",          iResult,
-          "FromFormat",    imgData.glPixelType,
-          "ToFormat",      uiCM,
-          "BytesPerPixel", imgData.uiBytesPerPixel,
-          "Address",       mbIn.Ptr<void>(),
-          "Length",        mbIn.Size());
-      } // Set new pixel type
-      switch(imgData.glPixelType)
-      { case GL_RGBA : imgData.glPixelType = GL_BGRA; break;
-        case GL_RGB  : imgData.glPixelType = GL_BGR;  break;
-        case GL_BGRA : imgData.glPixelType = GL_RGBA; break;
-        case GL_BGR  : imgData.glPixelType = GL_RGB;  break;
-      } // Log operation
-      LW(LH_DEBUG, "Image '$' pixel type converted from 0x$$ to 0x$.",
-        IdentGet(), hex, imgData.glPixelType, uiCM);
-    }
+       (GetPixelType() != GL_BGRA && GetPixelType() != GL_BGR)))
+      return false;
+    // For each slot
+    for(ImageSlot &sItem : *this)
+    { // Swap pixels
+      const int iResult = ImageSwapPixels(sItem.Ptr<char>(), sItem.Size(),
+        GetBytesPerPixel(), 0, 2);
+      if(iResult < 0)
+        XC("Pixel reorder failed!",
+           "Code",     iResult,           "FromFormat",    GetPixelType(),
+           "ToFormat", uiCM,              "BytesPerPixel", GetBytesPerPixel(),
+           "Address",  sItem.Ptr<void>(), "Length",        sItem.Size());
+    } // Set new pixel type
+    switch(GetPixelType())
+    { case GL_RGBA : SetPixelType(GL_BGRA); break;
+      case GL_RGB  : SetPixelType(GL_BGR);  break;
+      case GL_BGRA : SetPixelType(GL_RGBA); break;
+      case GL_BGR  : SetPixelType(GL_RGB);  break;
+    } // Success
+    return true;
   }
   /* -- Force binary mode -------------------------------------------------- */
-  void ForceBinary(void)
+  bool ForceBinary(void)
   { // Ignore if already one bit or there are no slots
-    if(imgData.uiBitsPerPixel == 1 || imgData.sData.empty()) return;
+    if(GetBitsPerPixel() == BD_BINARY || empty()) return false;
     // Throw error if compressed
-    if(imgData.bCompressed)
-      XC("Cannot binary downsample a compressed image!",
-         "File", IdentGet());
+    if(IsCompressed())
+      XC("Cannot binary downsample a compressed image!");
     // Must be 32bpp
-    if(imgData.uiBitsPerPixel != 32)
+    if(GetBitsPerPixel() != BD_RGBA)
       XC("Cannot binary downsample a non RGBA encoded image!",
-         "File", IdentGet(), "BytesPerPixel", imgData.uiBytesPerPixel);
+         "BitsPerPixel", GetBitsPerPixel());
     // Calculate destination size
-    const size_t stDst = imgData.uiWidth * imgData.uiHeight / 8;
+    const size_t stDst = TotalPixels() / 8;
     // Must be divisible by eight
     if(!IsDivisible(static_cast<double>(stDst)))
-      XC("Image size not divisible by eight!",
-         "File", IdentGet(), "Size", stDst);
+      XC("Image size not divisible by eight!", "Size", stDst);
     // Bits lookup table
     static const array<const unsigned char,8>
-      uiaBits{1, 2, 4, 8, 16, 32, 64, 128};
+      ucaBits{1, 2, 4, 8, 16, 32, 64, 128};
     // For each image slot
-    for(ImageSlot &imgSlot : imgData.sData)
+    for(ImageSlot &isRef : *this)
     { // Destination image for binary data
-      Memory &aSrc = imgSlot.memData, aDst{ stDst };
+      Memory mDst{ stDst };
       // For each byte in the alpha channel array
-      for(size_t stIndex = 0, stSubIndex = 0, stLimit = aSrc.Size();
+      for(size_t stIndex = 0, stSubIndex = 0, stLimit = isRef.Size();
                  stIndex < stLimit;
                  stIndex += 8, ++stSubIndex)
       { // Init bits
         unsigned char ucBits = 0;
         // Set bits depending on image bytes
         for(size_t stBitIndex = 0; stBitIndex < 8; ++stBitIndex)
-          if(aSrc.ReadInt<uint8_t>(stBitIndex) > 0)
-            ucBits |= uiaBits[stBitIndex];
+          if(isRef.ReadInt<uint8_t>(stBitIndex) > 0)
+            ucBits |= ucaBits[stBitIndex];
         // Write new bit value
-        aDst.WriteInt<uint8_t>(stSubIndex, ucBits);
+        mDst.WriteInt<uint8_t>(stSubIndex, ucBits);
       } // Update slot data
-      aSrc.SwapMemory(move(aDst));
+      isRef.SwapMemory(std::move(mDst));
     } // Update image data
-    imgData.uiBitsPerPixel = 1;
-    imgData.uiBytesPerPixel = 1;
-    imgData.glPixelType = GL_RED;
-    imgData.stAlloc = imgData.stFile = stDst;
-    // Log operation
-    LW(LH_DEBUG, "Image '$' pixel components forced to binary.", IdentGet());
+    SetBitsPerPixel(BD_BINARY);
+    SetBytesPerPixel(BY_GRAY);
+    SetPixelType(GL_RED);
+    SetAlloc(stDst);
+    // Success
+    return true;
   }
   /* -- Reverse pixels ----------------------------------------------------- */
-  void ReversePixels(void)
-  { // Return if no slots
-    if(imgData.sData.empty()) return;
-    // Monochrome image?
-    if(imgData.uiBitsPerPixel == 1)
-      // Enumerate through each slot and swap the 4-bits in each 8-bit byte
-      for(ImageSlot &sItem : imgData.sData) sItem.memData.ByteSwap8();
-    // Bits >= 8?
-    else if(imgData.uiBitsPerPixel >= 8)
-    { // Enumerate through each slot
-      for(ImageSlot &sItem : imgData.sData)
-      { // Get reference to data and source memblock
-        const Memory &mbIn = sItem.memData;
-        // Create new mem block to write to
-        Memory mbOut(mbIn.Size());
-        // Pixel size
-        const size_t stStep = imgData.uiBytesPerPixel * sItem.uiWidth;
-        // Copy the pixels
-        for(size_t stI = 0; stI < mbIn.Size(); stI += stStep)
-          mbOut.Write(stI, mbIn.Read(mbIn.Size()-stStep-stI), stStep);
-        // Set new mem block for this class automatically unloading the old
-        // one
-        sItem.memData.SwapMemory(move(mbOut));
-      }
-    } // Log operation
-    LW(LH_DEBUG, "Image '$' flipped.", IdentGet());
+  bool ReversePixels(void)
+  { // Compare bits per pixel
+    switch(GetBitsPerPixel())
+    { // Monochrome image? Enumerate through each slot and swap the 4-bits in
+      // each 8-bit byte.
+      case BD_BINARY: for(ImageSlot &sItem : *this) sItem.ByteSwap8(); break;
+      // 8-bits per pixel or greater?
+      case BD_GRAY: case BD_GRAYALPHA: case BD_RGB: case BD_RGBA:
+        // Enumerate through each slot
+        for(ImageSlot &sItem : *this)
+        { // Create new mem block to write to
+          Memory mbOut{ sItem.Size() };
+          // Pixel size
+          const size_t stStep = GetBytesPerPixel() * sItem.DimGetWidth();
+          // Copy the pixels
+          for(size_t stI = 0; stI < sItem.Size(); stI += stStep)
+            mbOut.Write(stI, sItem.Read(sItem.Size()-stStep-stI), stStep);
+          // Set new mem block for this class automatically unloading the old
+          // one
+          sItem.SwapMemory(std::move(mbOut));
+        } // Done
+        break;
+      // Nothing done so return and log a warning
+      default: return false;
+    } // Flip reversed state
+    if(IsReversed()) ClearReversed();
+    else SetReversed();
+    // Success
+    return true;
   }
   /* -- Pixel conversion process ------------------------------------------- */
   template<class PixelConversionFunction, size_t stSrcStep, size_t stDstStep,
-    unsigned int uiNewBPP, GLenum glNewPixelType>void ConvertPixels(void)
-  { // Calculate bytes per pixel
-    const unsigned int uiBytesPerPixel = uiNewBPP / 8;
+    BitDepth bdNewBPP, GLenum glNewPixelType>void ConvertPixels(void)
+  { // Set new bits and bytes
+    SetBitsAndBytesPerPixel(bdNewBPP);
+    SetPixelType(glNewPixelType);
+    // New allocation size
+    size_t stNewAlloc = 0;
     // For each slot
-    for(ImageSlot &sItem : imgData.sData)
-    { // Get source memory block
-      Memory &aSrc = sItem.memData;
-      // Make a new memblock for the destinaiton pixels
-      Memory aDst{ sItem.uiWidth * sItem.uiHeight * uiBytesPerPixel };
+    for(ImageSlot &sItem : *this)
+    { // Make a new memblock for the destinaiton pixels
+      Memory mDst{ sItem.DimGetWidth() * sItem.DimGetHeight() *
+        GetBytesPerPixel() };
       // Iterate through the array
-      for(uint8_t *cpSrc = aSrc.Ptr<uint8_t>(),
-         *const cpSrcEnd = aSrc.PtrEnd<uint8_t>(),
-                  *cpDst = aDst.Ptr<uint8_t>();
+      for(uint8_t *cpSrc = sItem.Ptr<uint8_t>(),
+         *const cpSrcEnd = sItem.PtrEnd<uint8_t>(),
+                  *cpDst = mDst.Ptr<uint8_t>();
                    cpSrc < cpSrcEnd;
                    cpSrc += stSrcStep,
                    cpDst += stDstStep)
         // Call pixel function conversion
         PixelConversionFunction(cpSrc, cpDst);
-      // Move memblocks
-      imgData.stAlloc -= aSrc.Size();
-      aSrc.SwapMemory(move(aDst));
-      imgData.stAlloc += aSrc.Size();
-    } // Save old bits per pixel for log because we're updating it
-    const unsigned int uiOldBPP = imgData.uiBitsPerPixel;
-    // Save old data size
-    const size_t stOldFile = imgData.stFile;
-    // Update pixel information
-    imgData.uiBitsPerPixel = uiNewBPP;
-    imgData.uiBytesPerPixel = uiBytesPerPixel;
-    imgData.glPixelType = glNewPixelType;
-    // Update actual data size
-    imgData.stFile = imgData.stAlloc;
-    // Log operation
-    LW(LH_DEBUG, "Image '$' pixels changed (B:$>$;C:$;S:$>$).", IdentGet(),
-      uiOldBPP, uiNewBPP, imgData.sData.size(), stOldFile, imgData.stFile);
+      // Move memory on top of old memory
+      sItem.SwapMemory(std::move(mDst));
+      // Adjust alloc size
+      stNewAlloc += sItem.Size();
+    } // Update new size
+    SetAlloc(stNewAlloc);
   }
   /* -- Force luminance alpha pixel to RGB pixel type ---------------------- */
   void ConvertLuminanceAlphaToRGB(void)
@@ -245,7 +167,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
       *reinterpret_cast<uint8_t*>(cpDst+1) = 0xFF;
     } };
     // Do the conversion of luminance alpha to RGB
-    ConvertPixels<Filter, 2, 3, 24, GL_RGB>();
+    ConvertPixels<Filter, 2, 3, BD_RGB, GL_RGB>();
   }
   /* -- Force luminance pixel to RGB pixel type ---------------------------- */
   void ConvertLuminanceToRGB(void)
@@ -256,7 +178,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
       *reinterpret_cast<uint8_t*>(cpDst+2) = *cpSrc;
     } };
     // Do the conversion of luminance to RGB
-    ConvertPixels<Filter, 1, 3, 24, GL_RGB>();
+    ConvertPixels<Filter, 1, 3, BD_RGB, GL_RGB>();
   }
   /* -- Force luminance alpha pixel to RGBA pixel type --------------------- */
   void ConvertLuminanceAlphaToRGBA(void)
@@ -268,7 +190,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
         (static_cast<uint32_t>(*(cpSrc+1)) * 0x01000000);
     } };
     // Do the conversion of luminance alpha to RGBA
-    ConvertPixels<Filter, 2, 4, 32, GL_RGBA>();
+    ConvertPixels<Filter, 2, 4, BD_RGBA, GL_RGBA>();
   }
   /* -- Force luminance pixel to RGBA pixel type --------------------------- */
   void ConvertLuminanceToRGBA(void)
@@ -278,7 +200,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
       *reinterpret_cast<uint32_t*>(cpDst) = (*cpSrc * 0x01010100) | 0xFF;
     } };
     // Do the conversion of luminance alpha to RGBA
-    ConvertPixels<Filter, 1, 4, 32, GL_RGBA>();
+    ConvertPixels<Filter, 1, 4, BD_RGBA, GL_RGBA>();
   }
   /* -- Force binary pixel to luminance pixel type ------------------------- */
   void ConvertBinaryToLuminance(void)
@@ -288,17 +210,17 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
       const unsigned int uiPixels = *cpSrc;
       // Unpack eight binary pixels into eight luminance pixels
       *reinterpret_cast<uint64_t*>(cpDst) =
-        (uiPixels & 0x01 ? 0xff00000000000000 : 0x0000000000000000) |
-        (uiPixels & 0x02 ? 0x00ff000000000000 : 0x0000000000000000) |
-        (uiPixels & 0x04 ? 0x0000ff0000000000 : 0x0000000000000000) |
-        (uiPixels & 0x08 ? 0x000000ff00000000 : 0x0000000000000000) |
-        (uiPixels & 0x10 ? 0x00000000ff000000 : 0x0000000000000000) |
-        (uiPixels & 0x20 ? 0x0000000000ff0000 : 0x0000000000000000) |
-        (uiPixels & 0x40 ? 0x000000000000ff00 : 0x0000000000000000) |
-        (uiPixels & 0x80 ? 0x00000000000000ff : 0x0000000000000000);
+        (uiPixels & 0x01 ? 0xff00000000000000 : 0) |
+        (uiPixels & 0x02 ? 0x00ff000000000000 : 0) |
+        (uiPixels & 0x04 ? 0x0000ff0000000000 : 0) |
+        (uiPixels & 0x08 ? 0x000000ff00000000 : 0) |
+        (uiPixels & 0x10 ? 0x00000000ff000000 : 0) |
+        (uiPixels & 0x20 ? 0x0000000000ff0000 : 0) |
+        (uiPixels & 0x40 ? 0x000000000000ff00 : 0) |
+        (uiPixels & 0x80 ? 0x00000000000000ff : 0);
     } };
     // Do the conversion of binary to luminance
-    ConvertPixels<Filter, 1, 8, 8, GL_RED>();
+    ConvertPixels<Filter, 1, 8, BD_GRAY, GL_RED>();
   }
   /* -- Force binary pixel to RGB pixel type ------------------------------- */
   void ConvertBinaryToRGB(void)
@@ -308,21 +230,21 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
       const unsigned int uiPixels = *cpSrc;
       // Unpack eight BINARY pixels into right RGB pixels
       *reinterpret_cast<uint64_t*>(cpDst) =
-        (uiPixels & 0x80 ? 0xffffff0000000000 : 0x0000000000000000) |
-        (uiPixels & 0x40 ? 0x000000ffffff0000 : 0x0000000000000000) |
-        (uiPixels & 0x20 ? 0x000000000000ffff : 0x0000000000000000);
+        (uiPixels & 0x80 ? 0xffffff0000000000 : 0) |
+        (uiPixels & 0x40 ? 0x000000ffffff0000 : 0) |
+        (uiPixels & 0x20 ? 0x000000000000ffff : 0);
       *(reinterpret_cast<uint64_t*>(cpDst)+1) =
-        (uiPixels & 0x20 ? 0xff00000000000000 : 0x0000000000000000) |
-        (uiPixels & 0x10 ? 0x00ffffff00000000 : 0x0000000000000000) |
-        (uiPixels & 0x08 ? 0x00000000ffffff00 : 0x0000000000000000) |
-        (uiPixels & 0x04 ? 0x00000000000000ff : 0x0000000000000000);
+        (uiPixels & 0x20 ? 0xff00000000000000 : 0) |
+        (uiPixels & 0x10 ? 0x00ffffff00000000 : 0) |
+        (uiPixels & 0x08 ? 0x00000000ffffff00 : 0) |
+        (uiPixels & 0x04 ? 0x00000000000000ff : 0);
       *(reinterpret_cast<uint64_t*>(cpDst)+2) =
-        (uiPixels & 0x04 ? 0xffff000000000000 : 0x0000000000000000) |
-        (uiPixels & 0x02 ? 0x0000ffffff000000 : 0x0000000000000000) |
-        (uiPixels & 0x01 ? 0x0000000000ffffff : 0x0000000000000000);
+        (uiPixels & 0x04 ? 0xffff000000000000 : 0) |
+        (uiPixels & 0x02 ? 0x0000ffffff000000 : 0) |
+        (uiPixels & 0x01 ? 0x0000000000ffffff : 0);
     } };
     // Do the conversion of binary to RGBA
-    ConvertPixels<Filter, 1, 24, 24, GL_RGB>();
+    ConvertPixels<Filter, 1, 24, BD_RGB, GL_RGB>();
   }
   /* -- Force binary pixel to RGBA pixel type ------------------------------ */
   void ConvertBinaryToRGBA(void)
@@ -332,190 +254,522 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
       const unsigned int uiPixels = *cpSrc;
       // Unpack eight BINARY pixels into eight RGBA pixels
       *reinterpret_cast<uint64_t*>(cpDst) =
-        (uiPixels & 0x80 ? 0xffffffff00000000 : 0x0000000000000000) |
-        (uiPixels & 0x40 ? 0x00000000ffffffff : 0x0000000000000000);
+        (uiPixels & 0x80 ? 0xffffffff00000000 : 0) |
+        (uiPixels & 0x40 ? 0x00000000ffffffff : 0);
       *(reinterpret_cast<uint64_t*>(cpDst)+1) =
-        (uiPixels & 0x20 ? 0xffffffff00000000 : 0x0000000000000000) |
-        (uiPixels & 0x10 ? 0x00000000ffffffff : 0x0000000000000000);
+        (uiPixels & 0x20 ? 0xffffffff00000000 : 0) |
+        (uiPixels & 0x10 ? 0x00000000ffffffff : 0);
       *(reinterpret_cast<uint64_t*>(cpDst)+2) =
-        (uiPixels & 0x08 ? 0xffffffff00000000 : 0x0000000000000000) |
-        (uiPixels & 0x04 ? 0x00000000ffffffff : 0x0000000000000000);
+        (uiPixels & 0x08 ? 0xffffffff00000000 : 0) |
+        (uiPixels & 0x04 ? 0x00000000ffffffff : 0);
       *(reinterpret_cast<uint64_t*>(cpDst)+3) =
-        (uiPixels & 0x02 ? 0xffffffff00000000 : 0x0000000000000000) |
-        (uiPixels & 0x01 ? 0x00000000ffffffff : 0x0000000000000000);
+        (uiPixels & 0x02 ? 0xffffffff00000000 : 0) |
+        (uiPixels & 0x01 ? 0x00000000ffffffff : 0);
     } };
     // Do the conversion of binary to RGBA
-    ConvertPixels<Filter, 1, 32, 32, GL_RGBA>();
+    ConvertPixels<Filter, 1, 32, BD_RGBA, GL_RGBA>();
   }
-  /* -- Load specified image ----------------------------------------------- */
-  void LoadData(FileMap &fC)
-  { // Force load a certain type of image (for speed?) but in Async mode,
-    // force detection doesn't really matter as much, but overall, still
-    // needed if speed is absolutely neccesary.
-    if     (FlagIsSet(IL_FCE_TGA)) ImageLoad(0, fC, imgData);
-    else if(FlagIsSet(IL_FCE_JPG)) ImageLoad(1, fC, imgData);
-    else if(FlagIsSet(IL_FCE_PNG)) ImageLoad(2, fC, imgData);
-    else if(FlagIsSet(IL_FCE_GIF)) ImageLoad(3, fC, imgData);
-    else if(FlagIsSet(IL_FCE_DDS)) ImageLoad(4, fC, imgData);
-    // Auto detection of image
-    else ImageLoad(fC, imgData);
-    // Record total size of raw pixel data
-    imgData.stFile = imgData.stAlloc;
-    // Do not apply filters on compressed textures or if no load flags set
-    if(imgData.bCompressed || FlagIsZero()) return;
-    // We don't have functionality to load <8bpp images in GPU yet so if this
+  /* -- Concatenate tiles into a single texture ---------------------------- */
+  bool MakeAtlas(void)
+  { // Return if 1 or less slides or 1 or less bit depth or has a palette
+    if(size() <= 1 || GetBitsPerPixel() <= BD_BINARY || IsPalette())
+      return false;
+    // Save number of images compacted
+    stTiles = size();
+    // Remaining tiles
+    size_t stRemain = stTiles;
+    // Take ownership current slots list and make a blank new one.
+    SlotList slSlots{ std::move(*this) };
+    // Reset allocation
+    SetAlloc(0);
+    // Get first image slot
+    ImageSlot &isFirst = slSlots.front();
+    // Set override tile size and count
+    duTileOR.DimSet(isFirst);
+    // Get maximum texture size allowed
+    const size_t stMaxSize = IfOgl::cOgl->MaxTexSize();
+    // Setup compatible types needed to do the compaction
+    size_t stTexWidth  = 0,            // Current destination texture width
+           stTexHeight = 0,            // Current destination texture height
+           stWidth     = isFirst.DimGetWidth(),  // Current tile width
+           stHeight    = isFirst.DimGetHeight(), // Current tile height
+           stOptSize   = stMaxSize,    // Safe texture size to use
+           stCols      = stOptSize/stWidth,  // Safe columns count
+           stRows      = stOptSize/stHeight, // Safe rows count
+           stNOptSize  = stOptSize,    // New texture size to test with
+           stNCols     = stCols,       // New columns count to test
+           stNRows     = stRows;       // New rows count to test
+    // Now keep dividing the texture size by two until we can no longer fit
+    // the needed amount of tiles inside the texture.
+    while(stNOptSize && stNCols * stNRows > stRemain)
+    { // Update new size
+      stOptSize = stNOptSize;
+      // Record new valid values
+      stCols = stNCols;
+      stRows = stNRows;
+      // Divide texture size by half to keep power of two textures
+      stNOptSize = stOptSize / 2;
+      // Calculate new columns and rows
+      stNCols = stNOptSize / stWidth;
+      stNRows = stNOptSize / stHeight;
+    } // If we are going to need more than 1 sub-texture then reset to max
+    if(!stOptSize)
+    { // Use maximum texture size
+      stOptSize = stMaxSize;
+      // Set exact new texture size
+      stTexWidth = (stOptSize / stWidth) * stWidth;
+      stTexHeight = (stOptSize / stHeight) * stHeight;
+    } // Now we have the new width and height
+    else { stTexWidth = stCols * stWidth; stTexHeight = stRows * stHeight; }
+    // Make memory for texture
+    Memory mTexture{ stTexWidth * stTexHeight * GetBytesPerPixel() };
+    // Texture position and tiles remaining
+    size_t stTX = 0, stTY = 0;
+    // Scanline size
+    const size_t stScanLine = stWidth * GetBytesPerPixel();
+    // Until we have no more slots. We'll keep deleting them as we process
+    // them to keep the memory usage down
+    for(const ImageSlot &isData : slSlots)
+    { // Now we copy this slide into the texuree
+      for(size_t stY = 0; stY < stHeight; ++stY)
+        mTexture.Write((((stTY + stY) * stTexWidth) + stTX) *
+          GetBytesPerPixel(), isData.Read(stY * stScanLine, stScanLine),
+          stScanLine);
+      // Add to number of tiles added
+      --stRemain;
+      // Move texture position and continue if we can hold another column
+      stTX += stWidth;
+      if(stTX + stWidth <= stTexWidth) continue;
+      // Move to next row and continue if we can hold another row
+      stTX = 0;
+      stTY += stHeight;
+      if(stTY + stHeight <= stTexHeight) continue;
+      // Now off the bottom of the texture so reset Y position
+      stTY = 0;
+      // Add this texture as it is finished
+      AddSlot(mTexture, static_cast<unsigned int>(stTexWidth),
+                        static_cast<unsigned int>(stTexHeight));
+      // Copy new tile sizes
+      stWidth  = isData.DimGetWidth<size_t>();
+      stHeight = isData.DimGetHeight<size_t>();
+      // Set new safe values and setup next values to test
+      stOptSize = stMaxSize;           stNOptSize = stOptSize;
+      stRows    = stOptSize/stHeight;  stNRows    = stRows;
+      stCols    = stOptSize/stWidth;   stNCols    = stCols;
+      // Now keep dividing the texture size by two until we can no longer fit
+      // the needed amount of tiles inside the texture.
+      while(stNOptSize && stNCols * stNRows > stRemain)
+      { // Update new size
+        stOptSize = stNOptSize;
+        // Record new valid values
+        stCols = stNCols;
+        stRows = stNRows;
+        // Divide texture size by half to keep power of two textures
+        stNOptSize = stOptSize / 2;
+        // Calculate new columns and rows
+        stNCols = stNOptSize / stWidth;
+        stNRows = stNOptSize / stHeight;
+      } // If we are going to need more than 1 sub-texture?
+      if(!stOptSize)
+      { // Reset to maximum
+        stOptSize = stMaxSize;
+        // Set exact new texture size
+        stTexWidth = (stOptSize / stWidth) * stWidth;
+        stTexHeight = (stOptSize / stHeight) * stHeight;
+      } // Now we have the new width and height
+      else { stTexWidth = stCols * stWidth; stTexHeight = stRows * stHeight; }
+      // Make a new texture
+      mTexture.InitBlank(stTexWidth * stTexHeight * GetBytesPerPixel());
+    } // A new texture has been written? Add the final slot
+    if(stTX || stTY) AddSlot(mTexture, static_cast<unsigned int>(stTexWidth),
+                                       static_cast<unsigned int>(stTexHeight));
+    // Set size of first texture
+    DimSet(isFirst);
+    // Success
+    return true;
+  }
+  /* -- Convert palette to RGB(A) ------------------------------------------ */
+  template<ByteDepth byDepth, GLenum eType>bool ExpandPalette(void)
+  { // Ignore if not paletted
+    if(IsNotPalette()) return false;
+    // Must only have two slots
+    if(size() != 2)
+      XC("Cannot convert palette to RGB because we need two slots!",
+         "Slots", size());
+    // Take ownership current slots list and make a blank new one.
+    SlotList slSlots{ std::move(*this) };
+    // Reset allocation
+    SetAlloc(0);
+    // Get datas
+    const ImageSlot &isImage = slSlots.front(),
+                    &isPalette = slSlots.back();
+    // Create output buffer and enumerate through the pixels
+    Memory mOut{ DimGetWidth() * DimGetHeight() * byDepth };
+    // If palette and output image are same depth?
+    if(isPalette.DimGetHeight() == byDepth)
+    { // We can copy directlry
+      for(size_t stIn = 0, stOut = 0;
+                 stIn < mOut.Size();
+               ++stIn, stOut += byDepth)
+        // Read palette index from pixel data, then write the RGB value
+        // from the palette to the output image.
+        mOut.Write(stOut, isPalette.Read(isImage.ReadInt<uint8_t>(stIn) *
+          byDepth), byDepth);
+    } // Not same so less trivial
+    else if constexpr(byDepth == BY_RGBA) for(size_t stIn = 0, stOut = 0;
+                                                     stIn < mOut.Size();
+                                                   ++stIn, stOut += byDepth)
+    { // Get palette location
+      const size_t stPalIndex = isImage.ReadInt<uint8_t>(stIn) *
+        isPalette.DimGetHeight();
+      // Get palette value
+      const uint32_t uiVal =
+        (isPalette.ReadInt<uint16_t>(stPalIndex) << 8) |
+         isPalette.ReadInt<uint8_t>(stPalIndex+sizeof(uint16_t));
+      // Write new value
+      mOut.WriteInt<uint32_t>(stOut, uiVal);
+    } // Unknown
+    else XC("Image expanding circumstances not implemented!");
+    // Update output, we will be converting to rgb
+    SetBytesAndBitsPerPixel(byDepth);
+    SetPixelType(eType);
+    // Add expanded image to list
+    AddSlot(mOut);
+    // Success
+    return true;
+  }
+  /* -- Convert data to GPU compatible ------------------------------------- */
+  bool ConvertGPUCompatible(void)
+  { // We don't have functionality to load <8bpp images in GPU yet so if this
     // flag is specified, we will make sure <8bpp textures get converted
     // properly so they can be loaded by OpenGL. This is useful if the
     // bit-depth of the bitmap isn't known and the caller wants to make sure
     // it guarantees to be loaded into OpenGL.
-    if(FlagIsSet(IL_TOGPU)) switch(imgData.uiBitsPerPixel)
+    switch(GetBitsPerPixel())
     { // 1bpp (BINARY)
-      case 1: ConvertBinaryToLuminance(); break;
+      case BD_BINARY: ConvertBinaryToLuminance(); break;
       // Ignore anything else
-      default: break;
-    } // If a request to convert to RGB?
-    else if(FlagIsSet(IL_TO24BPP)) switch(imgData.uiBitsPerPixel)
+      default: return false;
+    } // Success
+    return true;
+  }
+  /* -- Convert image bit-depth to to 24-bits per pixel RGB format --------- */
+  bool ConvertRGB(void)
+  { // Compare current bit-depth
+    switch(GetBitsPerPixel())
     { // 1bpp (BINARY)
-      case 1: ConvertBinaryToRGB(); break;
+      case BD_BINARY: ConvertBinaryToRGB(); break;
       // 8bpp (LUMINANCE)
-      case 8: ConvertLuminanceToRGB(); break;
+      case BD_GRAY:
+        if(IsPalette()) return ExpandPalette<BY_RGB,GL_RGB>();
+        ConvertLuminanceToRGB();
+        break;
       // 16bpp (LUMINANCE+ALPHA)
-      case 16: ConvertLuminanceAlphaToRGB(); break;
+      case BD_GRAYALPHA: ConvertLuminanceAlphaToRGB(); break;
       // Ignore anything else
-      default: break;
+      default: return false;
+    } // Success
+    return true;
+  }
+  /* -- Convert image bit-depth to to 32-bits per pixel RGBA format -------- */
+  bool ConvertRGBA(void)
+  { // Compare current bit-depth
+    switch(GetBitsPerPixel())
+    { // 1bpp (BINARY)
+      case BD_BINARY: ConvertBinaryToRGBA(); break;
+      // 8bpp (LUMINANCE)
+      case BD_GRAY:
+        if(IsPalette()) return ExpandPalette<BY_RGBA,GL_RGBA>();
+        ConvertLuminanceToRGBA();
+        break;
+      // 16bpp (LUMINANCE+ALPHA)
+      case BD_GRAYALPHA: ConvertLuminanceAlphaToRGBA(); break;
+      // Ignore anything else
+      default: return false;
+    } // Success
+    return true;
+  }
+  /* -- Apply filters ------------------------------------------------------ */
+  void ApplyFilters(void)
+  { // Record current parameters
+    const Dimensions<> dOld{ *this };
+    const size_t stSlots = size();
+    const BitDepth bdOld = GetBitsPerPixel();
+    const ByteDepth byOld = GetBytesPerPixel();
+    const GLenum glOld = GetPixelType();
+    const size_t stOld = GetAlloc();
+    // Convert to GPU copmatible texture?
+    if(IsConvertGPUCompat())
+    { // Log that we're running this function
+      cLog->LogDebugExSafe("Image '$' safe pixel depth request...",
+        IdentGet());
+      // Run the function and log success if succeeded
+      if(ConvertGPUCompatible())
+      { // Log the successful result
+        cLog->LogInfoExSafe("Image '$' pixel-depth now safe.",
+          IdentGet());
+        // Set activated flag
+        SetActiveGPUCompat();
+      } // Conversion did not happen so log that too
+      else cLog->LogDebugExSafe("Image '$' skipped safe pixel depth!",
+        IdentGet());
+    } // If a request to convert to 24-bits per pixel?
+    else if(IsConvertRGB())
+    { // Log that we're running this function
+      cLog->LogDebugExSafe("Image '$' force 24-bit request...",
+        IdentGet());
+      // Run the function and log success if succeeded
+      if(ConvertRGB())
+      { // Log the successful result
+        cLog->LogInfoExSafe("Image '$' pixel depth now 24-bit.",
+          IdentGet());
+        // Set activated flag
+        SetActiveRGB();
+      } // Conversion did not happen so log that too
+      else cLog->LogDebugExSafe("Image '$' skipped converting to 24-bit!",
+        IdentGet());
     } // If a request to convert to RGBA?
-    else if(FlagIsSet(IL_TO32BPP)) switch(imgData.uiBitsPerPixel)
-    { // 1bpp (BINARY)
-      case 1: ConvertBinaryToRGBA(); break;
-      // 8bpp (LUMINANCE)
-      case 8: ConvertLuminanceToRGBA(); break;
-      // 16bpp (LUMINANCE+ALPHA)
-      case 16: ConvertLuminanceAlphaToRGBA(); break;
-      // Ignore anything else
-      default: break;
+    else if(IsConvertRGBA())
+    { // Log that we're running this function
+      cLog->LogDebugExSafe("Image '$' force 32-bit request...",
+        IdentGet());
+      // Run the function and log success if succeeded
+      if(ConvertRGBA())
+      { // Log the successful result
+        cLog->LogInfoExSafe("Image '$' pixel depth now 32-bit.",
+          IdentGet());
+        // Set activated flag
+        SetActiveRGBA();
+      } // Conversion did not happen so log that too
+      else cLog->LogDebugExSafe("Image '$' skipped converting to 32-bit!",
+        IdentGet());
     } // To BGR colour mode?
-    if(FlagIsSet(IL_TOBGR)) ForcePixelOrder(GL_BGR);
-    // To RGB colour mode
-    else if(FlagIsSet(IL_TORGB)) ForcePixelOrder(GL_RGB);
-    // Reverse the image pixels
-    if(FlagIsSet(IL_REVERSE)) ReversePixels();
-    // To binary colour mode
-    if(FlagIsSet(IL_TOBINARY)) ForceBinary();
+    if(IsConvertBGROrder())
+    { // Log that we're running this function
+      cLog->LogDebugExSafe("Image '$' re-order to BGR request...",
+        IdentGet());
+      // Run the function and log success if succeeded
+      if(ForcePixelOrder(GL_BGR))
+      { // Log the successful result
+        cLog->LogInfoExSafe("Image '$' re-ordered to BGR.",
+          IdentGet());
+        // Set activated flag
+        SetActiveBGROrder();
+      } // Conversion did not happen so log that too
+      else cLog->LogDebugExSafe("Image '$' re-order to BGR skipped!",
+        IdentGet());
+    } // To RGB colour mode
+    else if(IsConvertRGBOrder())
+    { // Log that we're running this function
+      cLog->LogDebugExSafe("Image '$' re-order to RGB request...",
+        IdentGet());
+      // Run the function and log success if succeeded
+      if(ForcePixelOrder(GL_RGB))
+      { // Log the successful result
+        cLog->LogInfoExSafe("Image '$' re-ordered now RGB.",
+          IdentGet());
+        // Set activated flag
+        SetActiveRGBOrder();
+      } // Conversion did not happen so log that too
+      else cLog->LogDebugExSafe("Image '$'[$] re-order to RGB skipped!",
+        IdentGet());
+    } // Reverse the image pixels
+    if(IsConvertReverse())
+    { // Log that we're running this function
+      cLog->LogDebugExSafe("Image '$' pixel reversal request...",
+        IdentGet());
+      // Run the function and log success if succeeded
+      if(ReversePixels())
+      { // Log the successful result
+        cLog->LogInfoExSafe("Image '$' pixels reversed!",
+          IdentGet());
+        // Set activated flag
+        SetActiveReverse();
+      } // Conversion did not happen so log that too
+      else cLog->LogDebugExSafe("Image '$' skipped pixel reversal!",
+        IdentGet());
+    } // To binary colour mode
+    if(IsConvertBinary())
+    { // Log that we're running this function
+      cLog->LogDebugExSafe("Image '$' downsample to binary request...",
+        IdentGet());
+      // Run the function and log success if succeeded
+      if(ForceBinary())
+      { // Log the successful result
+        cLog->LogInfoExSafe("Image '$' downsample to binary completed.",
+          IdentGet());
+        // Set activated flag
+        SetActiveBinary();
+      } // Conversion did not happen so log that too
+      else cLog->LogDebugExSafe("Image '$' downsample to binary skipped!",
+        IdentGet());
+    } // Compact all slides into a single texture if possible
+    if(IsConvertAtlas())
+    { // Log that we're running this function
+      cLog->LogDebugExSafe("Image '$' compact request...",
+        IdentGet());
+      // Run the function and log success if succeeded
+      if(MakeAtlas())
+      { // Log the successful result
+        cLog->LogInfoExSafe("Image '$' compacted.",
+          IdentGet());
+        // Set activated flag
+        SetActiveAtlas();
+      } // Conversion did not happen so log that too
+      else cLog->LogDebugExSafe("Image '$' compact skipped!",
+        IdentGet());
+    } // Report status if we acticated anything
+    if(IsActiveAtlas() || IsActiveReverse() || IsActiveRGB() ||
+       IsActiveRGBA() || IsActiveBGROrder() || IsActiveBinary() ||
+       IsActiveGPUCompat() || IsActiveRGBOrder())
+      cLog->LogDebugExSafe("Image '$' filtering completed...\n"
+                         "$$$$$$$$"
+                         "- Bitmap dimensions: $x$ -> $x$.\n"
+                         "- Bitmap slots: $ -> $.\n"
+                         "- Pixel depth: $<$> -> $<$>.\n"
+                         "- Pixel type: $<$$> -> $<$$>.\n"
+                         "- Memory usage: $ -> $ bytes.\n"
+                         "- Tile size override: $x$.\n"
+                         "- Tile count override: $.",
+        IdentGet(),
+        IsActiveAtlas()     ? "- Slots compacted to atlas.\n"       : strBlank,
+        IsActiveReverse()   ? "- Pixels reversed.\n"                : strBlank,
+        IsActiveRGB()       ? "- Pixels converted to 24-bit.\n"     : strBlank,
+        IsActiveRGBA()      ? "- Pixels converted to 32-bit.\n"     : strBlank,
+        IsActiveBGROrder()  ? "- Pixels converted to BGR order.\n"  : strBlank,
+        IsActiveRGBOrder()  ? "- Pixels converted to RGB order.\n"  : strBlank,
+        IsActiveBinary()    ? "- Pixels converted to monochrome.\n" : strBlank,
+        IsActiveGPUCompat() ? "- Pixels made OpenGL compatible.\n"  : strBlank,
+        dOld.DimGetWidth(), dOld.DimGetHeight(), DimGetWidth(),
+        DimGetHeight(), stSlots, size(), bdOld, byOld, GetBitsPerPixel(),
+        GetBytesPerPixel(), IfOgl::cOgl->GetPixelFormat(glOld), hex, glOld,
+        IfOgl::cOgl->GetPixelFormat(GetPixelType()), GetPixelType(), dec,
+        stOld, GetAlloc(), duTileOR.DimGetWidth(), duTileOR.DimGetHeight(),
+        stTiles);
+  }
+  /* -- Load specified image ----------------------------------------------- */
+  void AsyncReady(FileMap &fmData)
+  { // Force load a certain type of image (for speed?) but in Async mode,
+    // force detection doesn't really matter as much, but overall, still
+    // needed if speed is absolutely neccesary.
+    if     (IsLoadAsTGA()) ImageLoad(0, fmData, *this);
+    else if(IsLoadAsJPG()) ImageLoad(1, fmData, *this);
+    else if(IsLoadAsPNG()) ImageLoad(2, fmData, *this);
+    else if(IsLoadAsGIF()) ImageLoad(3, fmData, *this);
+    else if(IsLoadAsDDS()) ImageLoad(4, fmData, *this);
+    // Auto detection of image
+    else ImageLoad(fmData, *this);
+    // Apply filters if image has no special circumstances
+    if(IsNotCompressed() && IsNotMipmaps()) ApplyFilters();
+    // Recover slots memory if they were modified
+    shrink_to_fit();
   }
   /* -- Reload specified image --------------------------------------------- */
   void ReloadData(void)
-    { FileMap fmData{ AssetExtract(IdentGet()) }; LoadData(fmData); }
+  { // Load the file from disk or archive
+    FileMap fmData{ AssetExtract(IdentGet()) };
+    // Reset memory usage to zero
+    SetAlloc(0);
+    // Run codecs and filters on it
+    AsyncReady(fmData);
+  }
   /* -- Save image using a type id ----------------------------------------- */
   void SaveFile(const string &strFN, const size_t stSId, const size_t stPId)
-    { ImageSave(stPId, strFN, imgData, GetSlot(stSId)); }
+    { ImageSave(stPId, strFN, *this, (*this)[stSId]); }
   /* -- Load image from memory asynchronously ------------------------------ */
   void InitAsyncArray(lua_State*const lS)
   { // Need 6 parameters (class pointer was already pushed onto the stack);
     CheckParams(lS, 7);
     // Get and check parameters
-    const string strF{ GetCppStringNE(lS, 1, "Identifier") };
+    const string strName{ GetCppStringNE(lS, 1, "Identifier") };
     Asset &aData = *GetPtr<Asset>(lS, 2, "Asset");
-    FlagReset(GetFlags(lS, 3, IL_NONE, IL_MASK, "Flags"));
+    FlagSet(GetFlags(lS, 3, IL_MASK, "Flags"));
     CheckFunction(lS, 4, "ErrorFunc");
     CheckFunction(lS, 5, "ProgressFunc");
     CheckFunction(lS, 6, "SuccessFunc");
     // The decoded image will be kept in memory
-    imgData.bDynamic = true;
+    SetDynamic();
     // Load image from memory asynchronously
-    AsyncInitArray(lS, strF, "bmparray", move(aData));
+    AsyncInitArray(lS, strName, "bmparray", std::move(aData));
   }
   /* -- Load image from file asynchronously -------------------------------- */
   void InitAsyncFile(lua_State*const lS)
   { // Need 5 parameters (class pointer was already pushed onto the stack);
     CheckParams(lS, 6);
     // Get and check parameters
-    const string strF{ GetCppFileName(lS, 1, "File") };
-    FlagReset(GetFlags(lS, 2, IL_NONE, IL_MASK, "Flags"));
+    const string strFile{ GetCppFileName(lS, 1, "File") };
+    FlagSet(GetFlags(lS, 2, IL_MASK, "Flags"));
     CheckFunction(lS, 3, "ErrorFunc");
     CheckFunction(lS, 4, "ProgressFunc");
     CheckFunction(lS, 5, "SuccessFunc");
     // Load image from file asynchronously
-    AsyncInitFile(lS, strF, "bmpfile");
+    AsyncInitFile(lS, strFile, "bmpfile");
   }
   /* -- Create a blank image for working on -------------------------------- */
-  void InitBlank(const string &strN, const unsigned int uiBWidth,
+  void InitBlank(const string &strName, const unsigned int uiBWidth,
     const unsigned int uiBHeight, const bool bAlpha, const bool bClear)
-  { // If alpha requested?
-    if(bAlpha)
-    { // Set a 32bpp transparent surface
-      imgData.uiBitsPerPixel = 32;
-      imgData.glPixelType = GL_RGBA;
-      imgData.uiBytesPerPixel = 4;
-    } // If alpha not requested?
-    else
-    { // Set a 24bpp opaque surface
-      imgData.uiBitsPerPixel = 24;
-      imgData.glPixelType = GL_RGB;
-      imgData.uiBytesPerPixel = 3;
-    } // Set other members
-    IdentSet(strN);
-    imgData.stFile = uiBWidth * uiBHeight * imgData.uiBytesPerPixel;
-    imgData.bDynamic = true;
-    imgData.uiWidth = uiBWidth;
-    imgData.uiHeight = uiBHeight;
-    imgData.stAlloc = imgData.stFile;
+  { // Lookup table for alpha setting
+    static const array<const std::pair<const BitDepth, const GLenum>,2>
+      aLookup{ { { BD_RGB, GL_RGB }, { BD_RGBA, GL_RGBA } } };
+    const auto &aLookupRef = aLookup[static_cast<size_t>(bAlpha)];
+    // Set appropriate parameters
+    SetBitsAndBytesPerPixel(aLookupRef.first);
+    SetPixelType(aLookupRef.second);
+    // Set other members
+    IdentSet(strName);
+    SetDynamic();
+    DimSet(uiBWidth, uiBHeight);
     // Add the raw data into a slot
-    imgData.sData.push_back({ { imgData.stFile, bClear },
-      uiBWidth, uiBHeight });
+    Memory mData{ TotalPixels() * GetBytesPerPixel(), bClear };
+    AddSlot(mData);
     // Load succeeded so register the block
     CollectorRegister();
   }
   /* -- Load image from a raw image ---------------------------------------- */
-  void InitRaw(const string &strN, Memory &&aSrc,
+  void InitRaw(const string &strName, Memory &&mSrc,
     const unsigned int uiBWidth, const unsigned int uiBHeight,
-    const unsigned int uiBitsPP, const GLenum ePixType)
+    const BitDepth bdBitsPP, const GLenum ePixType)
   { // Error if no data specified
-    if(aSrc.Empty()) XC("Image data is empty!", "File", strN);
-    // Maximum size is 16-bit
-    if(uiBWidth > 0xFFFF || uiBHeight > 0xFFFF)
-      XC("Image dimensions are out of 16-bit integer range!",
-        "File", strN, "Width", uiBWidth, "Height", uiBHeight);
+    if(mSrc.Empty()) XC("Image data is empty!", "File", strName);
+    // Check that the range is valid
+    if(!uiBWidth || !uiBHeight || uiBWidth > 0xFFFF || uiBHeight > 0xFFFF)
+      XC("Image dimensions are not valid!",
+        "File", strName, "Width", uiBWidth, "Height", uiBHeight);
     // Check bitrate
-    switch(uiBitsPP)
-    { // Allowed bit-rates are 1, 8, 16, 24 and 32 bits per pixel
-      case 1: case 8: case 16: case 24: case 32: break;
+    switch(bdBitsPP)
+    { // Allowed bit-rates are...
+      case BD_BINARY:                  // 1bpp (binary)
+      case BD_GRAY:                    // 8bpp (gray NOT palette)
+      case BD_GRAYALPHA:               // 16bpp (gray+alpha NOT palette)
+      case BD_RGB:                     // 24bpp (rgb or bgr)
+      case BD_RGBA: break;             // 32bpp (rgba or bgra)
       // Error
       default: XC("Image bit-depth is not valid!",
-        "File", strN, "Depth", uiBitsPP);
+        "File", strName, "Depth", bdBitsPP);
     } // Check the size
-    imgData.uiBytesPerPixel = uiBitsPP / 8;
-    imgData.stFile = aSrc.Size();
-    const size_t stExpect = uiBWidth * uiBHeight * imgData.uiBytesPerPixel;
-    if(stExpect != imgData.stFile)
+    SetBitsAndBytesPerPixel(bdBitsPP);
+    DimSet(uiBWidth, uiBHeight);
+    const size_t stExpect = TotalPixels() * GetBytesPerPixel();
+    if(stExpect != mSrc.Size())
       XC("Arguments are not valid for specified image data!",
-        "File", strN, "Expect", stExpect, "Actual",   imgData.stFile);
+        "File", strName, "Expect", stExpect, "Actual", mSrc.Size());
     // Everything looks OK, set rest of the members
-    IdentSet(strN);
-    imgData.uiBitsPerPixel = uiBitsPP;
-    imgData.glPixelType = ePixType;
-    imgData.bDynamic = true;
-    imgData.bMipmaps =
-      imgData.bReverse =
-      imgData.bCompressed = false;
-    imgData.uiWidth = uiBWidth;
-    imgData.uiHeight = uiBHeight;
-    imgData.stAlloc = imgData.stFile;
+    IdentSet(strName);
+    SetPixelType(ePixType);
+    SetDynamic();
     // Add the raw data into a slot
-    imgData.sData.push_back({ move(aSrc), uiBWidth, uiBHeight });
+    AddSlot(mSrc);
     // Load succeeded so register the block
     CollectorRegister();
   }
   /* -- Load image from a single colour ------------------------------------ */
   void InitColour(const uint32_t ulColour)
   { // Set members
-    IdentSet(Append("solid/0x", hex, ulColour));
-    imgData.uiBitsPerPixel = 32;
-    imgData.uiBytesPerPixel = 4;
-    imgData.glPixelType = GL_RGBA;
-    imgData.stFile = sizeof(ulColour);
-    imgData.bDynamic = true;
-    imgData.uiWidth = imgData.uiHeight = 1;
-    imgData.stAlloc = imgData.stFile;
+    IdentSetA("solid/0x", hex, ulColour);
+    SetBitsAndBytesPerPixel(BD_RGBA);
+    SetPixelType(GL_RGBA);
+    SetDynamic();
+    DimSet(1);
     // Make sure the specified colour is in the correct order that the GPU can
     // read. It will be interpreted as GL_RGBA. The guest will specify the
     // input as 0xAARRGGBB like FboItem::SetRGBAInt().
@@ -526,94 +780,91 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
       static_cast<uint8_t>(ulColour >> 24)  // 0x[AA]000000 24-32 [3] rgb[A]
     };                                      // ------------ ----- --- ------
     // Add the image
-    imgData.sData.push_back({
-      { imgData.uiBytesPerPixel, ucaColour.data() }, 1, 1 });
+    Memory mData{ GetBytesPerPixel(), ucaColour.data() };
+    AddSlot(mData);
     // Load succeeded so register the block
     CollectorRegister();
   }
   /* -- Init from file ----------------------------------------------------- */
-  void InitFile(const string &strFilename, const ImageFlagsConst &lfS)
+  void InitFile(const string &strFileName, const ImageFlagsConst &lfS)
   { // Set the loading flags
-    FlagReset(lfS);
+    FlagSet(lfS);
     // Load the file normally
-    SyncInitFileSafe(strFilename);
+    SyncInitFileSafe(strFileName);
   }
   /* -- Init from array ---------------------------------------------------- */
   void InitArray(const string &strName, Memory &&mbD,
     const ImageFlagsConst &lfS)
   { // Is dynamic because it was not loaded from disk
-    imgData.bDynamic = true;
+    SetDynamic();
     // Set the loading flags
-    FlagReset(lfS);
+    FlagSet(lfS);
     // Load the array normally
-    SyncInitArray(strName, move(mbD));
+    SyncInitArray(strName, std::move(mbD));
   }
-  /* -- Get slot image data ------------------------------------------------ */
-  Memory &GetData(const size_t stId=0) { return GetSlot(stId).memData; }
-  /* -- Constructor -------------------------------------------------------- */
-  Image(void) :                        // Default constructor
+  /* -- Default constructor ------------------------------------------------ */
+  Image(void) :                        // No parameters
     /* -- Initialisation of members ---------------------------------------- */
     ICHelperImage(*cImages),           // Initialise collector helper
+    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     AsyncLoader<Image>(this,           // Initialise async loader
-      EMC_MP_IMAGE),                   // Initialise async event id
-    ImageFlags(IL_NONE),               // No image loading flags
-    imgData{}                          // Clear image data
-    /* -- No code ---------------------------------------------------------- */
-    { }
+      EMC_MP_IMAGE)                    // Initialise async event id
+    /* -- Code ------------------------------------------------------------- */
+    { }                                // Do nothing else
   /* -- Constructor -------------------------------------------------------- */
   explicit Image(                      // Initialise a 1x1 pixel texture
     /* -- Parameters ------------------------------------------------------- */
     const uint32_t uiColour            // 32-bit RGBA colour pixel value
-    ): /* -- Initialisation of members ------------------------------------- */
+    ): /* -- Initialisers -------------------------------------------------- */
     Image()                            // Default initialisation
-    /* -- Initialise a 1x1 with the specified colour ----------------------- */
-    { InitColour(uiColour); }
+    /* -- Code  ------------------------------------------------------------ */
+    { InitColour(uiColour); }          // Init 1x1 tex with specified colour
   /* -- Constructor -------------------------------------------------------- */
   explicit Image(                      // Initialise from RAW pixel data
     /* -- Parameters ------------------------------------------------------- */
     const string &strName,             // Name of the object
-    Memory &&aSource,                  // Source pixel data
+    Memory &&mSrc,                     // Source pixel data
     const unsigned int uiWidth,        // Number of pixels in each scanline
     const unsigned int uiHeight,       // Number of scan lines
-    const unsigned int uiBits,         // Nit depth of the pixel data
+    const BitDepth bdBits,             // Bit depth of the pixel data
     const GLenum eFormat               // OpenGL pixel format
     ): /* -- Initialisation of members ------------------------------------- */
     Image()                            // Default initialisation
     /* -- Initialise raw image --------------------------------------------- */
-    { InitRaw(strName, move(aSource), uiWidth, uiHeight, uiBits, eFormat); }
+    { InitRaw(strName, std::move(mSrc), uiWidth, uiHeight, bdBits, eFormat); }
   /* -- Constructor -------------------------------------------------------- */
   explicit Image(                      // Initialise from known file formats
     /* -- Parameters ------------------------------------------------------- */
     const string &strName,             // Name of object
-    Memory &&aSource,                  // Source memory block to read from
-    const ImageFlagsConst &lfFlags     // Loading flags
+    Memory &&mSrc,                     // Source memory block to read from
+    const ImageFlagsConst &ifFlags     // Loading flags
     ): /* -- Initialisation of members ------------------------------------- */
     Image()                            // Default initialisation
     /* -- Initialise from array -------------------------------------------- */
-    { InitArray(strName, move(aSource), lfFlags); }
+    { InitArray(strName, std::move(mSrc), ifFlags); }
   /* -- Constructor -------------------------------------------------------- */
   explicit Image(                      // Initialise image from file
     /* -- Parameters ------------------------------------------------------- */
     const string &strName,             // Name of image from assets to load
-    const ImageFlagsConst &lfFlags     // Loading flags
+    const ImageFlagsConst &ifFlags     // Loading flags
     ): /* -- Initialisation of members ------------------------------------- */
     Image()                            // Default initialisation
-    /* -- Initialisation from file ----------------------------------------- */
-    { InitFile(strName, lfFlags); }
+    /* -- Code ------------------------------------------------------------- */
+    { InitFile(strName, ifFlags); }    // Initialisation from file
   /* -- Constructor -------------------------------------------------------- */
   Image(                               // MOVE constructor to SWAP with another
     /* -- Parameters ------------------------------------------------------- */
-    Image &&oCref                      // Other image to swap with
+    Image &&imgRef                     // Other image to swap with
     ): /* -- Initialisation of members ------------------------------------- */
     Image()                            // Default initialisation
-    /* -- Swap image over -------------------------------------------------- */
-    { SwapImage(oCref); }
+    /* -- Code ------------------------------------------------------------- */
+    { SwapImage(imgRef); }             // Swap image over
   /* -- Destructor --------------------------------------------------------- */
-  ~Image(void) { AsyncCancel(); }
+  ~Image(void) { AsyncCancel(); }      // Wait for loading thread to cancel
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Image);              // Disable copy constructor and operator
 };/* -- End ---------------------------------------------------------------- */
 END_ASYNCCOLLECTOR(Images, Image, IMAGE);
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

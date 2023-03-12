@@ -7,12 +7,12 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfLog {                      // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfLog {                      // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfFStream;             // Using fstream interface
-using namespace IfClock;               // Using clock interface
-using namespace IfCVarDef;             // Using cvardef interface
+using namespace IfFStream;             // Using fstream namespace
+using namespace IfClock;               // Using clock namespace
+using namespace IfCVarDef;             // Using cvardef namespace
 /* -- Log levels ----------------------------------------------------------- */
 enum LHLevel                           // Log helper level flags
 { /* ----------------------------------------------------------------------- */
@@ -26,17 +26,13 @@ enum LHLevel                           // Log helper level flags
 struct LogLine { double dTime; LHLevel lhLevel; string strLine; };
 typedef list<LogLine> LogLines;
 /* == Log class ============================================================ */
-static class Log :
+static class Log final :
   /* -- Base classes ------------------------------------------------------- */
   public LogLines,                     // Holds info about every log line
   private FStream,                     // Output log file if needed
   public ClockChrono<CoreClock>,       // Holds the current log time
   private mutex                        // Because logger needs thread safe
-{ /* -- Macros ------------------------------------------------------------- */
-  #define LWN(l,...) cLog->WriteStringSafe(l, Format(__VA_ARGS__));
-  #define LW(l,...) if(cLog->HasLevel(l)) LWN(l, ## __VA_ARGS__)
-  #define ILW(l,...) if(HasLevel(l)) WriteString(l, Format(__VA_ARGS__));
-  /* -- Private variables -------------------------------------------------- */
+{ /* -- Private variables -------------------------------------------------- */
   const string     strStdOut;          // Label for 'stdout'
   const string     strStdErr;          // Label for 'stderr'
   atomic<LHLevel>  lhLevel;            // Log helper level for this instance
@@ -72,13 +68,13 @@ static class Log :
         // Flush failed so close file
         FStreamClose();
         // Write closure reason
-        ILW(LH_ERROR, "Log file closed (flush error: $)!", LocalError());
+        LogErrorExSafe("Log file closed (flush error: $)!", LocalError());
       } // Write string failed?
       else
       { // Close file
         FStreamClose();
         // Write closure reason
-        ILW(LH_ERROR, "Log file closed (write error: $)!", LocalError());
+        LogErrorExSafe("Log file closed (write error: $)!", LocalError());
       } // Erase the lines we actually wrote. Never erase the first line.
       erase(begin(), llciItem);
       // Do not write anymore lines
@@ -99,7 +95,7 @@ static class Log :
     // using formatstring due to the fact that less memory management
     // is required!
     for(const string &sL : tLines)
-      push_back({ CCDeltaToDouble(), lhL, move(sL) });
+      push_back({ CCDeltaToDouble(), lhL, std::move(sL) });
     // Write lines to log
     FlushLog();
   }
@@ -107,7 +103,7 @@ static class Log :
   void WriteString(const LHLevel lhL, const string &strL) noexcept(true)
     { WriteLines(lhL, { strL, "\n", stMaximum }); }
   void WriteString(const LHLevel lhL, string &&strL) noexcept(true)
-    { WriteLines(lhL, { move(strL), "\n", stMaximum }); }
+    { WriteLines(lhL, { std::move(strL), "\n", stMaximum }); }
   /* ----------------------------------------------------------------------- */
   void WriteString(const string &strL) { WriteString(LH_DISABLED, strL); }
   /* ----------------------------------------------------------------------- */
@@ -138,10 +134,9 @@ static class Log :
     const LHLevel lhOldLevel = lhLevel;
     lhLevel = static_cast<LHLevel>(uiLevel);
     // Report state, we could disable logging so we should force report it
-    WriteStringSafe(LH_DEBUG,
-      Format("Log change verbosity from $ ($) to $ ($).",
-        LogLevelToString(lhOldLevel), lhOldLevel,
-        LogLevelToString(lhLevel.load()), lhLevel.load()));
+    LogNLCDebugExSafe("Log change verbosity from $ ($) to $ ($).",
+      LogLevelToString(lhOldLevel), lhOldLevel,
+      LogLevelToString(lhLevel.load()), lhLevel.load());
     // Success
     return ACCEPT;
   }
@@ -157,20 +152,94 @@ static class Log :
   /* ----------------------------------------------------------------------- */
   bool HasLevel(const LHLevel lhReq) const { return lhReq <= lhLevel; }
   /* ----------------------------------------------------------------------- */
+  bool NotHasLevel(const LHLevel lhReq) const { return !HasLevel(lhReq); }
+  /* ----------------------------------------------------------------------- */
   LHLevel GetLevel(void) const { return lhLevel; }
   /* ----------------------------------------------------------------------- */
   mutex &GetMutex(void) { return *this; }
+  /* ----------------------------------------------------------------------- */
   bool IsRedirectedToDevice(void)
     { const LockGuard lgLogSync{ GetMutex() }; return FStreamIsHandleStd(); }
+  /* ----------------------------------------------------------------------- */
   bool OpenedSafe(void)
     { const LockGuard lgLogSync{ GetMutex() }; return FStreamOpened(); }
+  /* ----------------------------------------------------------------------- */
   void DeInitSafe(void)
     { const LockGuard lgLogSync{ GetMutex() }; DeInit(); }
+  /* ----------------------------------------------------------------------- */
   const string GetNameSafe(void)
     { const LockGuard lgLogSync{ GetMutex() }; return IdentGet(); }
-  /* ----------------------------------------------------------------------- */
-  void WriteStringSafe(const LHLevel lhL, const string& strLine)
+  /* -- Unformatted logging without level check (specified level) ---------- */
+  void LogNLCSafe(const LHLevel lhL, const string& strLine)
     { const LockGuard lgLogSync{ GetMutex() }; WriteString(lhL, strLine); }
+  /* -- Unformatted logging without level check (error level) -------------- */
+  void LogNLCErrorSafe(const string& strLine)
+    { LogNLCSafe(LH_ERROR, strLine); }
+  /* -- Unformatted logging without level check (warning level) ------------ */
+  void LogNLCWarningSafe(const string& strLine)
+    { LogNLCSafe(LH_WARNING, strLine); }
+  /* -- Unformatted logging without level check (info level) --------------- */
+  void LogNLCInfoSafe(const string& strLine)
+    { LogNLCSafe(LH_INFO, strLine); }
+  /* -- Unformatted logging without level check (debug level) -------------- */
+  void LogNLCDebugSafe(const string& strLine)
+    { LogNLCSafe(LH_DEBUG, strLine); }
+  /* -- Formatted logging without level check (specified level) ------------ */
+  template<typename... VarArgs>void LogNLCExSafe(const LHLevel lhLev,
+    const char*const cpFormat, const VarArgs &...vaArgs)
+      { LogNLCSafe(lhLev, Format(cpFormat, vaArgs...)); }
+  /* -- Formatted logging without level check (error level) ---------------- */
+  template<typename... VarArgs>
+    void LogNLCErrorExSafe(const char*const cpFormat, const VarArgs &...vaArgs)
+      { LogNLCExSafe(LH_ERROR, cpFormat, vaArgs...); }
+  /* -- Formatted logging without level check (warning level) -------------- */
+  template<typename... VarArgs>
+    void LogNLCWarningExSafe(const char*const cpFormat,
+      const VarArgs &...vaArgs)
+        { LogNLCExSafe(LH_WARNING, cpFormat, vaArgs...); }
+  /* -- Formatted logging without level check (info level) ----------------- */
+  template<typename... VarArgs>
+    void LogNLCInfoExSafe(const char*const cpFormat, const VarArgs &...vaArgs)
+      { LogNLCExSafe(LH_INFO, cpFormat, vaArgs...); }
+  /* -- Formatted logging without level check (debug level) ---------------- */
+  template<typename... VarArgs>
+    void LogNLCDebugExSafe(const char*const cpFormat, const VarArgs &...vaArgs)
+      { LogNLCExSafe(LH_DEBUG, cpFormat, vaArgs...); }
+  /* -- Formatted logging with level check (specified level) --------------- */
+  template<typename... VarArgs>void LogExSafe(const LHLevel lhL,
+    const char*const cpFormat, const VarArgs &...vaArgs)
+  { // Return if we don't have this level
+    if(NotHasLevel(lhL)) return;
+    // Write formatted string
+    LogNLCExSafe(lhL, cpFormat, vaArgs...);
+  }
+  /* -- Formatted logging with level check (error level) ------------------- */
+  template<typename... VarArgs>
+    void LogErrorExSafe(const char*const cpFormat, const VarArgs &...vaArgs)
+      { LogExSafe(LH_ERROR, cpFormat, vaArgs...); }
+  /* -- Formatted logging with level check (warning level) ----------------- */
+  template<typename... VarArgs>
+    void LogWarningExSafe(const char*const cpFormat, const VarArgs &...vaArgs)
+      { LogExSafe(LH_WARNING, cpFormat, vaArgs...); }
+  /* -- Formatted logging with level check (info level) -------------------- */
+  template<typename... VarArgs>
+    void LogInfoExSafe(const char*const cpFormat, const VarArgs &...vaArgs)
+      { LogExSafe(LH_INFO, cpFormat, vaArgs...); }
+  /* -- Formatted logging with level check --------------------------------- */
+  template<typename... VarArgs>
+    void LogDebugExSafe(const char*const cpFormat, const VarArgs &...vaArgs)
+      { LogExSafe(LH_DEBUG, cpFormat, vaArgs...); }
+  /* -- Unformatted logging with level check (specified level) ------------- */
+  void LogSafe(const LHLevel lhL, const string& strLine)
+    { if(NotHasLevel(lhLevel)) return; LogNLCSafe(lhL, strLine); }
+  /* -- Unformatted logging with level check (error level) ----------------- */
+  void LogErrorSafe(const string& strLine) { LogSafe(LH_ERROR, strLine); }
+  /* -- Unformatted logging with level check (warning level) --------------- */
+  void LogWarningSafe(const string& strLine) { LogSafe(LH_WARNING, strLine); }
+  /* -- Unformatted logging with level check (info level) ------------------ */
+  void LogInfoSafe(const string& strLine) { LogSafe(LH_INFO, strLine); }
+  /* -- Unformatted logging with level check (debug level) ----------------- */
+  void LogDebugSafe(const string& strLine) { LogSafe(LH_DEBUG, strLine); }
   /* -- Return buffer lines for debugger ----------------------------------- */
   void GetBufferLines(ostringstream &osS)
   { // Gain exclusive access to log lines
@@ -187,7 +256,7 @@ static class Log :
     // Set name
     IdentSet(strLabel);
     // Write log ifle
-    ILW(LH_INFO, "Logging to standard output '$'.", IdentGet());
+    WriteString(Format("Logging to standard output '$'.", IdentGet()));
   }
   /* ----------------------------------------------------------------------- */
   bool Init(const string &strFN)
@@ -196,7 +265,7 @@ static class Log :
     // has already checked that this filename is valid.
     if(FStreamOpen(strFN, FStream::FM_W_T)) return false;
     // Write log file
-    ILW(LH_INFO, "Log file is '$'.", IdentGet());
+    WriteString(Format("Log file is '$'.", IdentGet()));
     // Success
     return true;
   }
@@ -261,10 +330,8 @@ static class Log :
   DTORHELPER(~Log, DeInitSafe());
   /* -- Macros ------------------------------------------------------------- */
   DELETECOPYCTORS(Log);                // Do not need defaults
-  /* -- Done with this, it's only for internal use ------------------------- */
-  #undef ILW
   /* -- End ---------------------------------------------------------------- */
 } *cLog = nullptr;                     // Pointer to static class
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+/* ------------------------------------------------------------------------- */
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

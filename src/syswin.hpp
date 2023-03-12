@@ -45,7 +45,7 @@ class SysProcess                       // Need this before of System init order
   /* ----------------------------------------------------------------------- */
   void InitReportMemoryLeaks(void)
   { // Only needed if in debug mode
-#ifdef ALPHA
+#if defined(ALPHA)
     // Create storage for the filename and clear it
     wstring wstrName; wstrName.resize(MAX_PATH);
     // Get path to executable. The base module filename info struct may not be
@@ -75,21 +75,8 @@ class SysProcess                       // Need this before of System init order
   /* -- Set heap information helper ---------------------------------------- */
   template<typename Type = ULONG>static void HeapSetInfo(const HANDLE hH,
     const HEAP_INFORMATION_CLASS hicData, const Type &tVal)
-  { // Holds heap information (Debugging)
-    // ULONG ulHeapInformation;
-    // Query current heap parameters (Debugging)
-    // if(!HeapQueryInformation(hH, HeapCompatibilityInformation,
-    //   &ulHeapInformation, sizeof(ulHeapInformation), nullptr))
-    //     return;
-    // Print heap information (Debugging)
-    // LW(LH_"$ -> $ -> $", hH, ulHeapInformation, tVal);
-    // Set new heap parameters
-    HeapSetInformation(hH, hicData, ToNonConstCast<PVOID>(&tVal),
-      sizeof(tVal));
-    // (Note) One of the heaps will always fail so no point reporting.
-    //   LW(LH_"System failed to update heap parameters: $",
-    //     SysError());
-  }
+      { HeapSetInformation(hH, hicData, ToNonConstCast<PVOID>(&tVal),
+          sizeof(tVal)); }
   /* ----------------------------------------------------------------------- */
   void ReconfigureMemoryModel(void) const
   { // Disable paging memory to disk. RAM is cheap now, cmon ffs!
@@ -99,14 +86,14 @@ class SysProcess                       // Need this before of System init order
     const DWORD dwHeaps = GetProcessHeaps(0, nullptr);
     if(!dwHeaps)
     { // Log the error and return
-      LW(LH_ERROR, "System failed to retrieve process heaps size: $!",
+      cLog->LogErrorExSafe("System failed to retrieve process heaps size: $!",
         SysError());
       return;
     } // Allocate memory for heaps handles, fill handles and
     vector<HANDLE> phData{ dwHeaps, INVALID_HANDLE_VALUE };
     if(!GetProcessHeaps(dwHeaps, phData.data()))
     { // Log the error and return
-      LW(LH_ERROR, "System failed to retrieve process heaps: $!",
+      cLog->LogErrorExSafe("System failed to retrieve process heaps: $!",
         SysError());
       return;
     } // For each heap, enable low fragmentation heap
@@ -126,7 +113,7 @@ class SysProcess                       // Need this before of System init order
   static int CRTException(const int, char*const cpMsg, int *iRet)
   { // Log exception. You can't actually throw an exception here and I don't
     // know why, so just log it for now.
-    LW(LH_ERROR, "CRT exception: $", cpMsg);
+    cLog->LogErrorExSafe("CRT exception: $", cpMsg);
     // Continue
     *iRet = 2;
     // Process other dialogs
@@ -146,22 +133,22 @@ class SysProcess                       // Need this before of System init order
       wcpFmt, vlData));
     va_end(vlData);
     // Throw exception (parameters are wide strings :|)
-    LW(LH_ERROR, "RTC error $ in $::$::$: $!", iType,
+    cLog->LogErrorExSafe("RTC error $ in $::$::$: $!", iType,
       S16toUTF(wcpF), S16toUTF(wcpM), iLine, WS16toUTF(wstrFmt));
     // Done
     return 0;
   }
   /* -- Called when C std functions need to abort -------------------------- */
   static void CException(
-#ifdef ALPHA
-  const wchar_t*const wcpE, const wchar_t *const wcpFN,
-  const wchar_t*const wcpF, const unsigned int uiL, uintptr_t)
-    { XC("C exception!", "Expression", wcpE,  "File", wcpF,
-                         "Function",   wcpFN, "Line", uiL); }
+#if defined(ALPHA)
+    const wchar_t*const wcpE, const wchar_t *const wcpFN,
+    const wchar_t*const wcpF, const unsigned int uiL, uintptr_t)
+      { XC("C exception!", "Expression", wcpE,  "File", wcpF,
+                           "Function",   wcpFN, "Line", uiL); }
 #else
-  const wchar_t*const, const wchar_t*const,
-  const wchar_t*const, const unsigned int, uintptr_t)
-    { XC("C exception!"); }
+    const wchar_t*const, const wchar_t*const,
+    const wchar_t*const, const unsigned int, uintptr_t)
+      { XC("C exception!"); }
 #endif
   /* ----------------------------------------------------------------------- */
   void InitCRTParameters(void)
@@ -243,10 +230,10 @@ class SysProcess                       // Need this before of System init order
 };/* == Class ============================================================== */
 class SysCore :
   /* -- Base classes ------------------------------------------------------- */
-  public SysCon,                       // System console and crash handler
   public SysProcess,                   // Gets system process information
   public SysVersion,                   // Gets system version information
-  public SysCommon                     // Common system functions
+  public SysCommon,                    // Common system functions
+  public SysCon                        // System console and crash handler
 { /* -- Public Variables ------------------------------------------ */ private:
   HICON            hIconLarge;         // Handle to large icon
   HICON            hIconSmall;         // Handle to small icon
@@ -319,27 +306,29 @@ class SysCore :
             { // Failed result
               bResult = false;
               // Write that process isn't owned by me
-              LW(LH_WARNING, "System process $ parent $ not $!",
+              cLog->LogWarningExSafe("System process $ parent $ not $!",
                 dwPid, pedData.th32ParentProcessID, GetPid());
             } // Terminate the process and if failed?
             else if(!TerminateProcess(hPid, static_cast<UINT>(-1)))
             { // Failed result
               bResult = false;
               // Write that we couldnt terminate processes
-              LW(LH_WARNING, "System failed to terminate process $: $!",
-                uiPid, SysError());
+              cLog->LogWarningExSafe(
+                "System failed to terminate process $: $!", uiPid, SysError());
             } // Success so set success result
             else
             { // Success result
               bResult = true;
               // Write that we couldnt terminate processes
-              LW(LH_INFO, "System forcefully terminated process $!", uiPid);
+              cLog->LogInfoExSafe(
+                "System forcefully terminated process $!", uiPid);
             } // We're finished
             goto Finished;
             // ...until no more processes.
           } while(Process32Next(hSnapshot, &pedData));
           // Write that we couldnt enumerate processes
-          LW(LH_WARNING, "System could not find process $ to terminate: $!",
+          cLog->LogWarningExSafe(
+            "System could not find process $ to terminate: $!",
             uiPid, SysError());
           // Failed
           bResult = false;
@@ -348,8 +337,8 @@ class SysCore :
         } // Enumerate processes function call failed?
         else
         { // Write that we couldnt enumerate processes
-          LW(LH_WARNING, "System failed to read first process to terminate "
-            "process $: $!", uiPid, SysError());
+          cLog->LogWarningExSafe("System failed to read first process to "
+            "terminate process $: $!", uiPid, SysError());
           // Failed
           bResult = false;
         } // Close the snapshot handle
@@ -363,7 +352,8 @@ class SysCore :
       } // Enumerate processes function call failed?
       else
       { // Write that we couldnt enumerate processes
-        LW(LH_WARNING, "System failed to snapshot to terminate process $: $!",
+        cLog->LogWarningExSafe(
+          "System failed to snapshot to terminate process $: $!",
           uiPid, SysError());
         // Failed
         bResult = false;
@@ -378,8 +368,8 @@ class SysCore :
     } // Open process handle failed?
     else
     { // Write that we couldnt open process
-      LW(LH_WARNING, "System failed to open process $ to terminate: $!",
-        uiPid, SysError());
+      cLog->LogWarningExSafe(
+        "System failed to open process $ to terminate: $!", uiPid, SysError());
       // Failed
       bResult = false;
     } // Return result
@@ -401,7 +391,7 @@ class SysCore :
       { // Set failed
         bResult = true;
         // Write error to log
-        LW(LH_WARNING, "System failed get process $ exit code: $!",
+        cLog->LogWarningExSafe("System failed get process $ exit code: $!",
           uiPid, SysError());
       } // Close the open handle
       CloseHandle(hPid);
@@ -417,7 +407,7 @@ class SysCore :
       bResult = true;
       // Write to log ONLY if the process id was found
       if(SysIsNotErrorCode(ERROR_INVALID_PARAMETER))
-        LW(LH_WARNING, "System failed to open executing process $: $!",
+        cLog->LogWarningExSafe("System failed to open executing process $: $!",
           uiPid, SysError());
     } // Return result
     return bResult;
@@ -430,7 +420,7 @@ class SysCore :
     SendMessage(GetWindowHandle(), WM_SETICON, uiMsg,
       reinterpret_cast<LPARAM>(hIcon));
     // Log the result
-    LW(LH_DEBUG, "System updated the window icon with type $.", uiMsg);
+    cLog->LogDebugExSafe("System updated the window icon with type $.", uiMsg);
   }
   /* ----------------------------------------------------------------------- */
   void UpdateIcons(void) const
@@ -468,14 +458,14 @@ class SysCore :
           "Window", reinterpret_cast<void*>(GetWindowHandle()));
     // Destroy old icon if created and then assign the new icon
     if(hI && !DestroyIcon(hI))
-      LW(LH_WARNING, "System failed to delete old window icon: $!",
-        SysError())
+      cLog->LogWarningExSafe("System failed to delete old window icon: $!",
+        SysError());
     hI = hNewIcon;
     // Update window icon if we have a window
     SendMessage(GetWindowHandle(),
       WM_SETICON, uiT, reinterpret_cast<LPARAM>(hI));
     // Remember: We have to destroy the icons when we're done with them.
-    LW(LH_DEBUG, "System set $ ($) $x$x$ window icon from '$'.",
+    cLog->LogDebugExSafe("System set $ ($) $x$x$ window icon from '$'.",
       cpType, uiT, stWidth, stHeight, stBits, strId);
   }
   /* -- Set small or large icon -------------------------------------------- */
@@ -738,7 +728,7 @@ class SysCore :
       // Major, minor and service pack of OS which applies to this label
       const unsigned int uiHi, uiLo, uiBd, uiSp;
       // Expiry date
-      const STDTIMET ttExp;
+      const StdTimeT ttExp;
     };
     // Handy converter at https://www.unixtimestamp.com/ and OS list data at...
     // https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions.
@@ -784,7 +774,7 @@ class SysCore :
       //   cpLevel  uiHi  uiLo  uiBl  uiSp  ttExp           Note
     } };
     // Operating system expiry time
-    STDTIMET ttExpiry;
+    StdTimeT ttExpiry;
     // Iterate through the versions and try to find a match for the
     // versions above. 'Unknown' is caught if none are found.
     for(const OSListItem &osItem : osList)
@@ -816,12 +806,12 @@ class SysCore :
         GetSharedFunc<LPWINEGETVERSION>(hDLL, "wine_get_version"))
           strExtra = Append("Wine ", fcbWGV()), bExtra = true;
       else bExtra = false;
-    } // Store if we have extra info because strExtra is being move()'d
+    } // Store if we have extra info because strExtra is being std::move()'d
     else bExtra = false;
     // Return data
     return {
       osOS.str(),                            // Version string
-      move(strExtra),                        // Extra version string
+      std::move(strExtra),                        // Extra version string
       osviData.dwMajorVersion,               // Major OS version
       osviData.dwMinorVersion,               // Minor OS version
       osviData.dwBuildNumber,                // OS build version
@@ -881,12 +871,12 @@ class SysCore :
     memData.qMTotal = msD.ullTotalPhys;
     memData.qMFree = msD.ullAvailPhys;
     memData.qMUsed = msD.ullTotalPhys - msD.ullAvailPhys;
-#ifdef X86                             // 32-bit?
-    memData.stMFree = msD.ullAvailPhys <= 0xFFFFFFFF ?
-      static_cast<size_t>(msD.ullAvailPhys) : 0 - pmcData.WorkingSetSize;
-#else                                  // 64-bit?
+#if defined(X64)                       // 64-bit?
     memData.stMFree =
       static_cast<size_t>(Minimum(msD.ullAvailPhys, 0xFFFFFFFF));
+#elif defined(X86)                     // 32-bit?
+    memData.stMFree = msD.ullAvailPhys <= 0xFFFFFFFF ?
+      static_cast<size_t>(msD.ullAvailPhys) : 0 - pmcData.WorkingSetSize;
 #endif                                 // Bits check
     memData.dMLoad = MakePercentage(memData.qMUsed, msD.ullTotalPhys);
     memData.stMProcUse = pmcData.WorkingSetSize;
@@ -990,15 +980,15 @@ class SysCore :
       // It's not a big deal if it fails but log it anyway. This can return
       // nullptr even when there is no error so check for an error first.
       else if(SysIsNotErrorCode())
-        LW(LH_WARNING, "System failed to apply new window background: $!",
-          SysError());
+        cLog->LogWarningExSafe(
+          "System failed to apply new window background: $!", SysError());
       // Redraw the background
       if(!InvalidateRect(GetWindowHandle(), nullptr, 1))
-        LW(LH_WARNING, "System failed to invalidate window background: $!",
-          SysError());
+        cLog->LogWarningExSafe(
+          "System failed to invalidate window background: $!", SysError());
     } // It's not a big deal if this fails
-    else LW(LH_WARNING, "System failed to create new window brush: $!",
-      SysError());
+    else cLog->LogWarningExSafe(
+      "System failed to create new window brush: $!", SysError());
   }
   /* -- Help with debugging ------------------------------------------------ */
   const char *HeapCheck(void)
@@ -1025,14 +1015,15 @@ class SysCore :
   /* -- Constructor (only derivable) --------------------------------------- */
   SysCore(void) :
     /* -- Initialisation of members ---------------------------------------- */
-    SysVersion{ EnumModules(),
-      reinterpret_cast<size_t>
-        (hInstance) },
-    SysCommon{ GetExecutableData(),
-               GetOperatingSystemData(),
-               GetProcessorData() },
-    hIconLarge(nullptr),
-    hIconSmall(nullptr)
+    SysVersion{ EnumModules(),         // Enumerate modules
+      reinterpret_cast<size_t>         // Stored as 'size_t' for cross-platform
+        (hInstance) },                 // Send this processes instance handle
+    SysCommon{ GetExecutableData(),    // Get and store executable data
+             GetOperatingSystemData(), // Get and store operating system data
+               GetProcessorData() },   // Get and store processor data
+    hIconLarge(nullptr),               // Large icon not initialised yet
+    hIconSmall(nullptr),               // Small icon not initialised yet
+    SysCon { this->OSNameEx() }        // Send Wine version to console
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Destructor (only derivable) ---------------------------------------- */

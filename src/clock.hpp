@@ -9,10 +9,11 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfClock {                    // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfClock {                    // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfUtil;                // Using util interface
+using namespace IfString;              // Using string namespace
+using namespace IfUtil;                // Using util namespace
 /* -- Get count from a duration -------------------------------------------- */
 template<typename DurType>
   static auto ClockGetCount(const ClkDuration cdDuration)
@@ -43,7 +44,7 @@ template<class ClockType = CoreClock>struct ClockManager
   double GetTimeDouble(void) const
     { return ClockDurationToDouble(GetEpochTime()); }
   /* -- Return time since epoch count as integer --------------------------- */
-  template<typename Type=STDTIMET>const Type GetTimeS(void) const
+  template<typename Type=StdTimeT>const Type GetTimeS(void) const
     { return GetTimeEx<duration<Type>,Type>(); }
   /* -- Return time in microseconds ---------------------------------------- */
   template<typename Type=uint64_t>const Type GetTimeUS(void) const
@@ -74,13 +75,13 @@ template<class ClockType = CoreClock>struct ClockManager
   const string FormatTimeUTC(const char*const cpFormat = cpTimeFormat) const
     { return FormatTimeTTUTC(GetTimeS(), cpFormat); }
   /* -- Convert time to short duration ------------------------------------- */
-  const string ToDurationString(unsigned int uiPrecision = 0) const
+  const string ToDurationString(unsigned int uiPrecision = 6) const
     { return ToShortDuration(GetTimeDouble(), uiPrecision); }
   /* -- Convert seconds to long duration relative to current time ---------- */
-  const string ToDurationRel(const STDTIMET tDuration = 0,
+  const string ToDurationRel(const StdTimeT tDuration = 0,
     unsigned int uiCompMax = numeric_limits<unsigned int>::max()) const
       { return ToDuration(GetTimeS() - tDuration, uiCompMax); }
-  /* -- Convert time to long duration ------------------------------------- */
+  /* -- Convert time to long duration -------------------------------------- */
   const string ToDurationLongString(unsigned int uiCompMax =
     numeric_limits<unsigned int>::max()) const
       { return ToDurationRel(0, uiCompMax); }
@@ -90,10 +91,12 @@ template<class ClockType = CoreClock>struct ClockManager
 static const ClockManager<system_clock> cmSys;// System time clock functor
 static const ClockManager<CoreClock> cmHiRes; // High resolution clock functor
 /* -- Interval helper ------------------------------------------------------ */
-template<class ClockType = CoreClock>class ClockInterval :
-  /* -- Derived classes ---------------------------------------------------- */
-  protected ClockManager<ClockType>    // Type of clock to use
-{ /* -- Variables ------------------------------------------------- */ private:
+template<class CoreClockType = CoreClock,
+         class ClockManagerType = ClockManager<CoreClockType>>
+class ClockInterval :                  // Members initially private
+  /* -- Base classes ------------------------------------------------------- */
+  protected ClockManagerType           // Type of clock to use
+{ /* -- Variables ---------------------------------------------------------- */
   ClkDuration      cdLimit;            // Time delay before trigger
   ClkTimePoint     ctpNext;            // Next trigger
   /* -- Time elapsed? ---------------------------------------------- */ public:
@@ -147,10 +150,12 @@ template<class ClockType = CoreClock>class ClockInterval :
     { }
 }; /* -- End --------------------------------------------------------------- */
 /* == Chronometer ========================================================== */
-template<class ClockType = CoreClock>class ClockChrono :
+template<class CoreClockType = CoreClock,
+         class ClockManagerType = ClockManager<CoreClockType>>
+class ClockChrono :                    // Members intially private
   /* -- Derived classes ---------------------------------------------------- */
-  protected ClockManager<ClockType>    // Type of clock to use
-{ /* -- Private variables ----------------------------------------- */ private:
+  protected ClockManagerType           // Type of clock to use
+{ /* -- Private variables -------------------------------------------------- */
   ClkTimePoint ctpStart;               // Don't make this a base class
   /* -- Subtract specified time from the stored time and return as - */ public:
   double CCDeltaRangeToDouble(const ClkTimePoint ctpEnd) const
@@ -178,12 +183,11 @@ template<class ClockType = CoreClock>class ClockChrono :
   /* -- Reset counter and return uptime as a double ------------------------ */
   double CCResetDeltaToDouble(void) { CCReset(); return CCDeltaToDouble(); }
   /* -- Constructor. Just initialise current time -------------------------- */
-  ClockChrono(void) :
+  ClockChrono(void) :                  // No parameters
     /* -- Initialisation of members ---------------------------------------- */
     ctpStart{ this->GetTime() }        // Set start time
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */
-/* -- End of module namespace ---------------------------------------------- */
-};                                     // End of interface
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

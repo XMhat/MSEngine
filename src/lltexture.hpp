@@ -17,7 +17,7 @@
 /* ========================================================================= */
 LLNAMESPACEBEGIN(Texture)              // Texture namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfTexture;             // Using texture interface
+using namespace IfTexture;             // Using texture namespace
 /* ========================================================================= */
 /* ######################################################################### */
 /* ========================================================================= */
@@ -98,7 +98,7 @@ LLFUNC(Blit, LCGETPTR(1, Texture)->Blit(0, 0));
 /* ========================================================================= */
 // $ Texture:BlitX
 // ? Blits with the currently stored texture at position 0 with the stored
-// ? texcoord (SetTexCoord*), vertex (SetVertex*) and colour (SetRGB*). Note
+// ? texcoord (SetTC*), vertex (SetV*) and colour (SetC*). Note
 // ? that the Blit* functions will overwrite the stored values.
 /* ------------------------------------------------------------------------- */
 LLFUNC(BlitX, LCGETPTR(1, Texture)->BlitStored(0));
@@ -106,7 +106,7 @@ LLFUNC(BlitX, LCGETPTR(1, Texture)->BlitStored(0));
 // $ Texture:BlitXI
 // > TexIndex:integer=The texture id number
 // ? Blits with the currently stored texture at position 'TexIndex' with the
-// ? stored texcoord (SetTexCoord*), vertex (SetVertex*) and colour (SetRGB*).
+// ? stored texcoord (SetTC*), vertex (SetV*) and colour (SetC*).
 // ? Note that the Blit* functions will overwrite the stored values.
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(BlitXI)
@@ -421,18 +421,18 @@ LLFUNCBEGIN(BlitISLTA)
     LCGETNUM   (GLfloat, 6,                          "Angle"));
 LLFUNCEND
 /* ========================================================================= */
-// $ Texture:SetRGB
+// $ Texture:SetCRGB
 // > Red:number=The colour intensity of the texture's red component (0-1).
 // > Green:number=The colour intensity of the texture's green component (0-1).
 // > Blue:number=The colour intensity of the texture's blue omponent (0-1).
 // ? Sets the colour intensity of the texture for each component. The change
 // ? affects all subsequent calls to all blitting functions.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetRGB, LCGETPTR(1, Texture)->SetQuadRGB(
+LLFUNC(SetCRGB, LCGETPTR(1, Texture)->SetQuadRGB(
   LCGETNUM(GLfloat, 2, "Red"), LCGETNUM(GLfloat, 3, "Green"),
   LCGETNUM(GLfloat, 4, "Blue")));
 /* ========================================================================= */
-// $ Texture:SetRGBA
+// $ Texture:SetCRGBA
 // > Red:number=The colour intensity of the texture's red component (0-1).
 // > Green:number=The colour intensity of the texture's green component (0-1).
 // > Blue:number=The colour intensity of the texture's blue omponent (0-1).
@@ -440,48 +440,48 @@ LLFUNC(SetRGB, LCGETPTR(1, Texture)->SetQuadRGB(
 // ? Sets the colour intensity of the texture for each component. The change
 // ? affects all subsequent calls to all blitting functions.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetRGBA, LCGETPTR(1, Texture)->SetQuadRGBA(
+LLFUNC(SetCRGBA, LCGETPTR(1, Texture)->SetQuadRGBA(
   LCGETNUM(GLfloat, 2, "Red"),  LCGETNUM(GLfloat, 3, "Green"),
   LCGETNUM(GLfloat, 4, "Blue"), LCGETNUM(GLfloat, 5, "Alpha")));
 /* ========================================================================= */
-// $ Texture:SetRGBAInt
+// $ Texture:SetCRGBAI
 // > Colour:integer=The entire colour to set as an integer (0xAARRGGBB)
 // ? Sets the colour intensity of the texture for each component using a 32
 // ? bit integer.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetRGBAInt,
+LLFUNC(SetCRGBAI,
   LCGETPTR(1, Texture)->SetQuadRGBAInt(LCGETINT(uint32_t, 2, "Colour")));
 /* ========================================================================= */
-// $ Texture:SetRed
+// $ Texture:SetCR
 // > Red:number=The colour intensity of the texture's red component (0-1).
 // ? Sets the colour intensity of the texture for the red component. The change
 // ? affects all subsequent calls to all blitting functions.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetRed,
+LLFUNC(SetCR,
   LCGETPTR(1, Texture)->SetQuadRed(LCGETNUM(GLfloat, 2, "Red")));
 /* ========================================================================= */
-// $ Texture:SetGreen
+// $ Texture:SetCG
 // > Green:number=The colour intensity of the texture's green component (0-1).
 // ? Sets the colour intensity of the texture for the green component. The
 // ? change affects all subsequent calls to all blitting functions.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetGreen,
+LLFUNC(SetCG,
   LCGETPTR(1, Texture)->SetQuadGreen(LCGETNUM(GLfloat, 2, "Green")));
 /* ========================================================================= */
-// $ Texture:SetBlue
+// $ Texture:SetCB
 // > Blue:number=The colour intensity of the texture's blue component (0-1).
 // ? Sets the colour intensity of the texture for the blue component. The
 // ? change affects all subsequent calls to all blitting functions.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetBlue,
+LLFUNC(SetCB,
   LCGETPTR(1, Texture)->SetQuadBlue(LCGETNUM(GLfloat, 2, "Blue")));
 /* ========================================================================= */
-// $ Texture:SetAlpha
+// $ Texture:SetCA
 // > Alpha:number=The transparency of the texture (0-1).
 // ? Sets the colour transparency of the texture. The change affects all
 // ? subsequent calls to all blitting functions.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetAlpha,
+LLFUNC(SetCA,
   LCGETPTR(1, Texture)->SetQuadAlpha(LCGETNUM(GLfloat, 2, "Alpha")));
 /* ========================================================================= */
 // $ Texture:BlitM
@@ -498,7 +498,7 @@ LLFUNC(BlitM, LCGETPTR(1, Texture)->BlitMulti(
   LCGETNUM(GLfloat, 4, "Top"),     LCGETNUM(GLfloat, 5, "Right"),
   LCGETNUM(GLfloat, 6, "Bottom")));
 /* ========================================================================= */
-// $ Texture:TrimTList
+// $ Texture:TileSTC
 // > Count:integer=The new size of the tile list.
 // ? Modifies the size of the tile list. Useful if you want to manage
 // ? your tile texcoord list dynamically. If the new size is below the current
@@ -506,12 +506,68 @@ LLFUNC(BlitM, LCGETPTR(1, Texture)->BlitMulti(
 // ? is larger, then new blank entries are created and are set to zero. You
 // ? will need to use SetTileData to change them.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(TrimTList)
+LLFUNC(TileSTC, LCGETPTR(1, Texture)->
+  SetTileCount(LCGETINTLG(size_t, 2, 0, UINT_MAX, "Count")));
+/* ========================================================================= */
+// $ Texture:TileSSTC
+// > Id:integer=The id of the sub-texture to set the size of.
+// > Count:integer=The new size of the tile list.
+// ? Modifies the size of the tile list. Useful if you want to manage
+// ? your tile texcoord list dynamically. If the new size is below the current
+// ? size then existing entries will be deleted, otherwise if the new size
+// ? is larger, then new blank entries are created and are set to zero. You
+// ? will need to use SetTileData to change them.
+/* ------------------------------------------------------------------------- */
+LLFUNCBEGIN(TileSSTC)
   Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.SetTileCount(LCGETINTLG(size_t, 2, 0, UINT_MAX, "Count"));
+  tCref.SetTileCount(LCGETINTLG (size_t, 3, 0, UINT_MAX,            "Count"),
+                     LCGETINTLGE(size_t, 2, 0, tCref.GetSubCount(), "TexId"));
 LLFUNCEND
 /* ========================================================================= */
-// $ Texture:CreateTile
+// $ Texture:TileAS
+// > Id:integer=The id of the sub-texture to add to
+// > Left:integer=The left pixel position on the texture
+// > Top:integer=The top pixel position on the texture
+// > Right:integer=The right pixel position on the texture
+// > Bottom:integer=The bottom pixel position on the texture
+// < Id:integer=The id number for the cached texcoords
+// ? Caches the specified texture coordinates which you can use as a parameter
+// ? to 'tileid' on blitting functions of the specified sub-texture.
+/* ------------------------------------------------------------------------- */
+LLFUNCBEGIN(TileAS)
+  Texture &tCref = *LCGETPTR(1, Texture);
+  const size_t stId = LCGETINTLGE(size_t, 2, 0, tCref.GetSubCount(), "TexId");
+  tCref.AddTileDOR(stId,
+    LCGETNUMLG(GLfloat, 3, 0, tCref.GetFWidth(),  "Left"),
+    LCGETNUMLG(GLfloat, 4, 0, tCref.GetFHeight(), "Top"),
+    LCGETNUMLG(GLfloat, 5, 0, tCref.GetFWidth(),  "Right"),
+    LCGETNUMLG(GLfloat, 6, 0, tCref.GetFHeight(), "Bottom"));
+  LCPUSHINT(tCref.GetTileCount(stId)-1);
+LLFUNCENDEX(1)
+/* ========================================================================= */
+// $ Texture:TileASD
+// > Id:integer=The id of the sub-texture to add to
+// > Left:integer=The left pixel position on the texture
+// > Top:integer=The top pixel position on the texture
+// > Width:integer=The width of the texture
+// > Height:integer=The height of the texture
+// < Id:integer=The id number for the cached texcoords
+// ? Caches the specified texture coordinates which you can use as a parameter
+// ? to 'tileid' on blitting functions of the specified sub-texture.
+/* ------------------------------------------------------------------------- */
+LLFUNCBEGIN(TileASD)
+  Texture &tCref = *LCGETPTR(1, Texture);
+  const size_t stId = LCGETINTLGE(size_t, 2, 0, tCref.GetSubCount(), "TexId");
+  const GLfloat
+    fX = LCGETNUMLG(GLfloat, 3, 0, tCref.GetFWidth(),     "Left"),
+    fY = LCGETNUMLG(GLfloat, 4, 0, tCref.GetFHeight(),    "Top"),
+    fW = LCGETNUMLG(GLfloat, 5, 0, tCref.GetFWidth()-fX,  "Width"),
+    fH = LCGETNUMLG(GLfloat, 6, 0, tCref.GetFHeight()-fY, "Height");
+  tCref.AddTileDORWH(stId, fX, fY, fW, fH);
+  LCPUSHINT(tCref.GetTileCount(stId)-1);
+LLFUNCENDEX(1)
+/* ========================================================================= */
+// $ Texture:TileA
 // > Left:integer=The left pixel position on the texture
 // > Top:integer=The top pixel position on the texture
 // > Right:integer=The right pixel position on the texture
@@ -520,9 +576,9 @@ LLFUNCEND
 // ? Caches the specified texture coordinates which you can use as a parameter
 // ? to 'tileid' on blitting functions.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(CreateTile)
+LLFUNCBEGIN(TileA)
   Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.AddTileDOR(
+  tCref.AddTileDOR(0,
     LCGETNUMLG(GLfloat, 2, 0, tCref.GetFWidth(),  "Left"),
     LCGETNUMLG(GLfloat, 3, 0, tCref.GetFHeight(), "Top"),
     LCGETNUMLG(GLfloat, 4, 0, tCref.GetFWidth(),  "Right"),
@@ -530,7 +586,7 @@ LLFUNCBEGIN(CreateTile)
   LCPUSHINT(tCref.GetTileCount()-1);
 LLFUNCENDEX(1)
 /* ========================================================================= */
-// $ Texture:CreateTileEx
+// $ Texture:TileAD
 // > Left:integer=The left pixel position on the texture
 // > Top:integer=The top pixel position on the texture
 // > Width:integer=The width of the texture
@@ -539,18 +595,64 @@ LLFUNCENDEX(1)
 // ? Caches the specified texture coordinates which you can use as a parameter
 // ? to 'tileid' on blitting functions.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(CreateTileEx)
+LLFUNCBEGIN(TileAD)
   Texture &tCref = *LCGETPTR(1, Texture);
   const GLfloat
     fX = LCGETNUMLG(GLfloat, 2, 0, tCref.GetFWidth(),     "Left"),
     fY = LCGETNUMLG(GLfloat, 3, 0, tCref.GetFHeight(),    "Top"),
     fW = LCGETNUMLG(GLfloat, 4, 0, tCref.GetFWidth()-fX,  "Width"),
     fH = LCGETNUMLG(GLfloat, 5, 0, tCref.GetFHeight()-fY, "Height");
-  tCref.AddTileDORWH(fX, fY, fW, fH);
+  tCref.AddTileDORWH(0, fX, fY, fW, fH);
   LCPUSHINT(tCref.GetTileCount()-1);
 LLFUNCENDEX(1)
 /* ========================================================================= */
-// $ Texture:SetTile
+// $ Texture:TileSS
+// > TexId:integer=The id of the sub texture to change
+// > TileId:integer=The id of the tile id to change
+// > Left:integer=The left pixel position on the texture
+// > Top:integer=The top pixel position on the texture
+// > Right:integer=The right pixel position on the texture
+// > Bottom:integer=The bottom pixel position on the texture
+// ? Changes the specified texture coordinates which you can use as a parameter
+// ? to 'tileid' on blitting functions.
+/* ------------------------------------------------------------------------- */
+LLFUNCBEGIN(TileSS)
+  Texture &tCref = *LCGETPTR(1, Texture);
+  const size_t stTexId =
+    LCGETINTLGE(size_t,  2, 0, tCref.GetSubCount(),         "TexId");
+  tCref.SetTileDOR(stTexId,
+    LCGETINTLGE(size_t,  3, 0, tCref.GetTileCount(stTexId), "TileId"),
+    LCGETNUMLG (GLfloat, 4, 0, tCref.GetFWidth(),           "Left"),
+    LCGETNUMLG (GLfloat, 5, 0, tCref.GetFHeight(),          "Top"),
+    LCGETNUMLG (GLfloat, 6, 0, tCref.GetFWidth(),           "Right"),
+    LCGETNUMLG (GLfloat, 7, 0, tCref.GetFHeight(),          "Bottom"));
+LLFUNCEND
+/* ========================================================================= */
+// $ Texture:TileSSD
+// > TexId:integer=The id of the sub texture to change
+// > TileId:integer=The id of the tile id to change
+// > Left:integer=The left pixel position on the texture
+// > Top:integer=The top pixel position on the texture
+// > Width:integer=The width of the texture
+// > Height:integer=The height of the texture
+// ? Changes the specified texture coordinates which you can use as a parameter
+// ? to 'tileid' on blitting functions.
+/* ------------------------------------------------------------------------- */
+LLFUNCBEGIN(TileSSD)
+  Texture &tCref = *LCGETPTR(1, Texture);
+  const size_t stTexId =
+    LCGETINTLGE(size_t,  2, 0, tCref.GetSubCount(),         "TexId");
+  const size_t stTileId =
+    LCGETINTLGE(size_t,  3, 0, tCref.GetTileCount(stTexId), "TileId");
+  const GLfloat
+    fX = LCGETNUMLG(GLfloat, 4, 0, tCref.GetFWidth(),       "Left"),
+    fY = LCGETNUMLG(GLfloat, 5, 0, tCref.GetFHeight(),      "Top"),
+    fW = LCGETNUMLG(GLfloat, 6, 0, tCref.GetFWidth()-fX,    "Width"),
+    fH = LCGETNUMLG(GLfloat, 7, 0, tCref.GetFHeight()-fY,   "Height");
+  tCref.SetTileDORWH(stTexId, stTileId, fX, fY, fW, fH);
+LLFUNCEND
+/* ========================================================================= */
+// $ Texture:TileS
 // > Id:integer=The id of the tile to change
 // > Left:integer=The left pixel position on the texture
 // > Top:integer=The top pixel position on the texture
@@ -559,17 +661,17 @@ LLFUNCENDEX(1)
 // ? Changes the specified texture coordinates which you can use as a parameter
 // ? to 'tileid' on blitting functions.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(SetTile)
+LLFUNCBEGIN(TileS)
   Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.SetTileDOR(
-    LCGETINTLGE(size_t,  2, 0, tCref.GetTileCount(), "Index"),
-    LCGETNUMLG (GLfloat, 3, 0, tCref.GetFWidth(),    "Left"),
-    LCGETNUMLG (GLfloat, 4, 0, tCref.GetFHeight(),   "Top"),
-    LCGETNUMLG (GLfloat, 5, 0, tCref.GetFWidth(),    "Right"),
-    LCGETNUMLG (GLfloat, 6, 0, tCref.GetFHeight(),   "Bottom"));
+  tCref.SetTileDOR(0,
+    LCGETINTLGE(size_t,  2, 0, tCref.GetTileCount(0), "Index"),
+    LCGETNUMLG (GLfloat, 3, 0, tCref.GetFWidth(),     "Left"),
+    LCGETNUMLG (GLfloat, 4, 0, tCref.GetFHeight(),    "Top"),
+    LCGETNUMLG (GLfloat, 5, 0, tCref.GetFWidth(),     "Right"),
+    LCGETNUMLG (GLfloat, 6, 0, tCref.GetFHeight(),    "Bottom"));
 LLFUNCEND
 /* ========================================================================= */
-// $ Texture:SetTileEx
+// $ Texture:TileSD
 // > Id:integer=The id of the tile to change
 // > Left:integer=The left pixel position on the texture
 // > Top:integer=The top pixel position on the texture
@@ -578,22 +680,35 @@ LLFUNCEND
 // ? Changes the specified texture coordinates which you can use as a parameter
 // ? to 'tileid' on blitting functions.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(SetTileEx)
+LLFUNCBEGIN(TileSD)
   Texture &tCref = *LCGETPTR(1, Texture);
-  const size_t stId = LCGETINTLGE(size_t, 2, 0, tCref.GetTileCount(), "Index");
+  const size_t stId =
+    LCGETINTLGE(size_t, 2, 0, tCref.GetTileCount(0), "Index");
   const GLfloat
     fX = LCGETNUMLG(GLfloat, 3, 0, tCref.GetFWidth(),     "Left"),
     fY = LCGETNUMLG(GLfloat, 4, 0, tCref.GetFHeight(),    "Top"),
     fW = LCGETNUMLG(GLfloat, 5, 0, tCref.GetFWidth()-fX,  "Width"),
     fH = LCGETNUMLG(GLfloat, 6, 0, tCref.GetFHeight()-fY, "Height");
-  tCref.SetTileDORWH(stId, fX, fY, fW, fH);
+  tCref.SetTileDORWH(0, stId, fX, fY, fW, fH);
 LLFUNCEND
 /* ========================================================================= */
-// $ Texture:GetTileCount
+// $ Texture:TileGTC
 // < Count:integer=The handle of the texture created.
 // ? Returns number of tiles found in the loaded texture file.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetTileCount, 1, LCPUSHINT(LCGETPTR(1, Texture)->GetTileCount()));
+LLFUNCEX(TileGTC, 1, LCPUSHINT(LCGETPTR(1, Texture)->GetTileCount()));
+/* ========================================================================= */
+// $ Texture:TileGSTC
+// > Id:integer=The id of the sub-texture to get the count for.
+// < Count:integer=The handle of the texture created.
+// ? Returns number of tiles found in the loaded texture file with the
+// ? specified sub-texture id.
+/* ------------------------------------------------------------------------- */
+LLFUNCBEGIN(TileGSTC)
+  const Texture &tCref = *LCGETPTR(1, Texture);
+  LCPUSHINT(tCref.GetTileCount(
+    LCGETINTLGE(size_t, 2, 0, tCref.GetSubCount(), "TexId")));
+LLFUNCENDEX(1)
 /* ========================================================================= */
 // $ Texture:GetSubCount
 // < Count:integer=The number of sub-textures in this texture
@@ -605,7 +720,7 @@ LLFUNCEX(GetSubCount, 1, LCPUSHINT(LCGETPTR(1, Texture)->GetSubCount()));
 // < Height:integer=The handle of the new mask created.
 // ? Returns height of texture.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetHeight, 1, LCPUSHINT(LCGETPTR(1, Texture)->GetHeight()));
+LLFUNCEX(GetHeight, 1, LCPUSHINT(LCGETPTR(1, Texture)->DimGetHeight()));
 /* ========================================================================= */
 // $ Texture:GetName
 // < Name:string=Name of the texture.
@@ -618,7 +733,7 @@ LLFUNCEX(GetName, 1, LCPUSHXSTR(LCGETPTR(1, Texture)->IdentGet()));
 // < Width:integer=The handle of the new mask created.
 // ? Returns width of texture.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetWidth, 1, LCPUSHINT(LCGETPTR(1, Texture)->GetWidth()));
+LLFUNCEX(GetWidth, 1, LCPUSHINT(LCGETPTR(1, Texture)->DimGetWidth()));
 /* ========================================================================= */
 // $ Texture:Dump
 // ? Dumps the texture to the specified file in TGA format.
@@ -673,19 +788,19 @@ LLFUNCBEGIN(UploadEx)
      LCGETINT   (GLint,  5,                         "OffsetY"));
 LLFUNCEND
 /* ========================================================================= */
-// $ Texture:SetVertex
+// $ Texture:SetV
 // > Left:number=The left co-ordinate.
 // > Top:number=The top co-ordinate.
 // > Right:number=The right co-ordinate.
 // > Bottom:number=The bottom co-ordinate.
 // ? Allows you to set basic vertex co-ordinates when blitting the fbo. For
-// ? a more advanced version of this function, see Fbo:SetVertexEx().
+// ? a more advanced version of this function, see Fbo:SetVX().
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetVertex, LCGETPTR(1, Texture)->SetVertex(
+LLFUNC(SetV, LCGETPTR(1, Texture)->SetVertex(
   LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom")));
 /* ========================================================================= */
-// $ Texture:SetVertexEx
+// $ Texture:SetVX
 // > TriIndex:integer=Triangle index. Triangle #1 (zero) or triangle #2 (one).
 // > C1V1:number=GLfloat for coord #1 of vertex #1 of the specified triangle.
 // > C2V2:number=GLfloat for coord #2 of vertex #2 of the specified triangle.
@@ -696,13 +811,13 @@ LLFUNC(SetVertex, LCGETPTR(1, Texture)->SetVertex(
 // ? Allows you to full control over the vertex co-ordinates apart from the Z
 // ? co-ordinate which is not used in this 2D only engine.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetVertexEx, LCGETPTR(1, Texture)->
+LLFUNC(SetVX, LCGETPTR(1, Texture)->
   SetVertexEx(LCGETINTLGE(size_t, 2, 0, TRISPERQUAD, "TriIndex"), {
     LCGETNUM(GLfloat, 3, "C1V1"), LCGETNUM(GLfloat, 4, "C2V1"),
     LCGETNUM(GLfloat, 5, "C1V2"), LCGETNUM(GLfloat, 6, "C2V2"),
     LCGETNUM(GLfloat, 7, "C1V3"), LCGETNUM(GLfloat, 8, "C2V3") }));
 /* ========================================================================= */
-// $ Texture:SetTexCoordEx
+// $ Texture:SetVTC
 // > TriIndex:integer=Triangle index. Triangle #1 (zero) or triangle #2 (one).
 // > C1V1:number=GLfloat for coord #1 of vertex #1 of the specified triangle.
 // > C2V2:number=GLfloat for coord #2 of vertex #2 of the specified triangle.
@@ -712,13 +827,13 @@ LLFUNC(SetVertexEx, LCGETPTR(1, Texture)->
 // > C2V3:number=GLfloat for coord #2 of vertex #3 of the specified triangle.
 // ? Allows you to full control over the texture co-ordinates.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetTexCoordEx, LCGETPTR(1, Texture)->
+LLFUNC(SetVTC, LCGETPTR(1, Texture)->
   SetTexCoordEx(LCGETINTLGE(size_t, 2, 0, TRISPERQUAD, "TriIndex"), {
     LCGETNUM(GLfloat, 3, "C1V1"), LCGETNUM(GLfloat, 4, "C2V1"),
     LCGETNUM(GLfloat, 5, "C1V2"), LCGETNUM(GLfloat, 6, "C2V2"),
     LCGETNUM(GLfloat, 7, "C1V3"), LCGETNUM(GLfloat, 8, "C2V3") }));
 /* ========================================================================= */
-// $ Texture:SetRGBAEx
+// $ Texture:SetVCRGBA
 // > TriIndex:integer=Triangle index. Triangle #1 (zero) or triangle #2 (one).
 // > RV1:number=Red component of vertex #1 of the specified triangle.
 // > GV1:number=Green component of vertex #1 of the specified triangle.
@@ -734,7 +849,7 @@ LLFUNC(SetTexCoordEx, LCGETPTR(1, Texture)->
 // > AV3:number=Alpha component of vertex #3 of the specified triangle.
 // ? Allows you to full control over the colour of the texture.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetRGBAEx, LCGETPTR(1, Texture)->
+LLFUNC(SetVCRGBA, LCGETPTR(1, Texture)->
   SetColourEx(LCGETINTLGE(size_t, 2, 0, TRISPERQUAD, "TriIndex"), {
     LCGETNUM(GLfloat,  3, "RV1"), LCGETNUM(GLfloat,  4, "GV1"),
     LCGETNUM(GLfloat,  5, "BV1"), LCGETNUM(GLfloat,  6, "AV1"),
@@ -743,7 +858,7 @@ LLFUNC(SetRGBAEx, LCGETPTR(1, Texture)->
     LCGETNUM(GLfloat, 11, "RV3"), LCGETNUM(GLfloat, 12, "GV3"),
     LCGETNUM(GLfloat, 13, "BV3"), LCGETNUM(GLfloat, 14, "AV3") }));
 /* ========================================================================= */
-// $ Texture:SetTexCoord
+// $ Texture:SetTC
 // > Left:number=The left co-ordinate.
 // > Top:number=The top co-ordinate.
 // > Right:number=The right co-ordinate.
@@ -751,11 +866,11 @@ LLFUNC(SetRGBAEx, LCGETPTR(1, Texture)->
 // ? Allows you to set basic texture co-ordinates when blitting the fbo. For
 // ? a more advanced version of this function, see Fbo:SetTexCoordEx().
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetTexCoord, LCGETPTR(1, Texture)->SetTexCoord(
+LLFUNC(SetTC, LCGETPTR(1, Texture)->SetTexCoord(
   LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom")));
 /* ========================================================================= */
-// $ Texture:SetVertexA
+// $ Texture:SetVA
 // > Left:number=The left co-ordinate.
 // > Top:number=The top co-ordinate.
 // > Right:number=The right co-ordinate.
@@ -764,13 +879,13 @@ LLFUNC(SetTexCoord, LCGETPTR(1, Texture)->SetTexCoord(
 // ? Allows you to set basic vertex co-ordinates when blitting the fbo with
 // ? angle calculations.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetVertexA, LCGETPTR(1, Texture)->SetVertex(
+LLFUNC(SetVA, LCGETPTR(1, Texture)->SetVertex(
   LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom"),
   LCGETNUM(GLfloat, 6, "Angle")));
 /* ========================================================================= */
 // $ Texture:PushColour
-// ? Saves the currently set colour by SetRGBA. Use PopColour to restore it.
+// ? Saves the currently set colour by SetCRGBA. Use PopColour to restore it.
 /* ------------------------------------------------------------------------- */
 LLFUNC(PushColour, LCGETPTR(1, Texture)->PushQuadColour());
 /* ========================================================================= */
@@ -792,65 +907,28 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Texture));
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Texture:* member functions begin
-  LLRSFUNC(Blit),                      // With stored position (0, 0)
-  LLRSFUNC(BlitT),                     //  " only one triangle
-  LLRSFUNC(BlitTI),                    //  "  "  of the specified tex index
-  LLRSFUNC(BlitTIS),                   //  "  "  "  tex and tile index
-  LLRSFUNC(BlitTS),                    //  "  "  "  tile index
-  LLRSFUNC(BlitLT),                    // Default texture with just LT
-  LLRSFUNC(BlitLTA),                   //  " with angle
-  LLRSFUNC(BlitLTRB),                  // Default texture with LTRB
-  LLRSFUNC(BlitLTRBA),                 //  " with angle
-  LLRSFUNC(BlitS),                     // Current position with sub-index
-  LLRSFUNC(BlitSLT),                   // Just tile with just LT
-  LLRSFUNC(BlitSLTA),                  //  " with angle
-  LLRSFUNC(BlitSLTRB),                 // Just tile with LTRB
-  LLRSFUNC(BlitSLTRBA),                //  " with angle
-  LLRSFUNC(BlitI),                     // Current pos with texture index
-  LLRSFUNC(BlitILT),                   // Specified texture with just LT
-  LLRSFUNC(BlitILTA),                  //  " with angle
-  LLRSFUNC(BlitILTRB),                 // Specified texture with LTRB
-  LLRSFUNC(BlitILTRBA),                //  " with angle
-  LLRSFUNC(BlitIS),                    // Current pos with tile & sub index
-  LLRSFUNC(BlitISLT),                  // Texture&tile with just LT
-  LLRSFUNC(BlitISLTA),                 //  " with angle
-  LLRSFUNC(BlitISLTRB),                // Texture&tile with LTRB
-  LLRSFUNC(BlitISLTRBA),               //  " with angle
-  LLRSFUNC(BlitM),                     // Multi blit texture
-  LLRSFUNC(BlitX),                     // With internal values (sub-texture 0)
-  LLRSFUNC(BlitXI),                    //  "  "  with specified sub-texture
-  LLRSFUNC(CreateTile),                // Add specified texture coords
-  LLRSFUNC(CreateTileEx),              //  " except with width & height
-  LLRSFUNC(Dump),                      // Dump texture to file
-  LLRSFUNC(Download),                  // Download texture data from VRAM
-  LLRSFUNC(Destroy),                   // Drain texture class memory
-  LLRSFUNC(GetHeight),                 // Return height of texture
-  LLRSFUNC(GetName),                   // Name of the texture
-  LLRSFUNC(GetSubCount),               // Return sub texture count
-  LLRSFUNC(GetTileCount),              // Return tile count
-  LLRSFUNC(GetWidth),                  // Return width of texture
-  LLRSFUNC(PopColour),                 // Restore current colour
-  LLRSFUNC(PushColour),                // Save current colour
-  LLRSFUNC(SetRGB),                    // Set texture RGB
-  LLRSFUNC(SetRGBA),                   //  " RGB+Alpha
-  LLRSFUNC(SetRGBAInt),                //  " RGB+Alpha as integer
-  LLRSFUNC(SetRGBAEx),                 //  " full control
-  LLRSFUNC(SetRed),                    //  " red component
-  LLRSFUNC(SetGreen),                  //  " green component
-  LLRSFUNC(SetBlue),                   //  " blue component
-  LLRSFUNC(SetAlpha),                  //  " alpha component
-  LLRSFUNC(SetLTRB),                   // Preset position/size coords
-  LLRSFUNC(SetLTRBA),                  //  " plus angle
-  LLRSFUNC(SetTexCoord),               // Set blit tex coordinates
-  LLRSFUNC(SetTexCoordEx),             //  " full control
-  LLRSFUNC(SetVertex),                 // Set blit vertex coordinates
-  LLRSFUNC(SetVertexA),                //  " with Angle
-  LLRSFUNC(SetVertexEx),               //  " full control
-  LLRSFUNC(SetTile),                   // Set specified texture coords
-  LLRSFUNC(SetTileEx),                 //  " except with width & height
-  LLRSFUNC(TrimTList),                 // Trim the texcoord list
-  LLRSFUNC(Upload),                    // Reupload texture data to VRAM
-  LLRSFUNC(UploadEx),                  // Reupload partial texture data "
+  LLRSFUNC(Blit),       LLRSFUNC(BlitI),       LLRSFUNC(BlitILT),
+  LLRSFUNC(BlitILTA),   LLRSFUNC(BlitILTRB),   LLRSFUNC(BlitILTRBA),
+  LLRSFUNC(BlitIS),     LLRSFUNC(BlitISLT),    LLRSFUNC(BlitISLTA),
+  LLRSFUNC(BlitISLTRB), LLRSFUNC(BlitISLTRBA), LLRSFUNC(BlitLT),
+  LLRSFUNC(BlitLTA),    LLRSFUNC(BlitLTRB),    LLRSFUNC(BlitLTRBA),
+  LLRSFUNC(BlitM),      LLRSFUNC(BlitS),       LLRSFUNC(BlitSLT),
+  LLRSFUNC(BlitSLTA),   LLRSFUNC(BlitSLTRB),   LLRSFUNC(BlitSLTRBA),
+  LLRSFUNC(BlitT),      LLRSFUNC(BlitTI),      LLRSFUNC(BlitTIS),
+  LLRSFUNC(BlitTS),     LLRSFUNC(BlitX),       LLRSFUNC(BlitXI),
+  LLRSFUNC(Destroy),    LLRSFUNC(Download),    LLRSFUNC(Dump),
+  LLRSFUNC(GetHeight),  LLRSFUNC(GetName),     LLRSFUNC(GetSubCount),
+  LLRSFUNC(GetWidth),   LLRSFUNC(PopColour),   LLRSFUNC(PushColour),
+  LLRSFUNC(SetCA),      LLRSFUNC(SetCB),       LLRSFUNC(SetCG),
+  LLRSFUNC(SetCR),      LLRSFUNC(SetCRGB),     LLRSFUNC(SetCRGBA),
+  LLRSFUNC(SetCRGBAI),  LLRSFUNC(SetLTRB),     LLRSFUNC(SetLTRBA),
+  LLRSFUNC(SetTC),      LLRSFUNC(SetV),        LLRSFUNC(SetVA),
+  LLRSFUNC(SetVCRGBA),  LLRSFUNC(SetVTC),      LLRSFUNC(SetVX),
+  LLRSFUNC(TileA),      LLRSFUNC(TileAD),      LLRSFUNC(TileAS),
+  LLRSFUNC(TileASD),    LLRSFUNC(TileGSTC),    LLRSFUNC(TileGTC),
+  LLRSFUNC(TileS),      LLRSFUNC(TileSD),      LLRSFUNC(TileSS),
+  LLRSFUNC(TileSSD),    LLRSFUNC(TileSSTC),    LLRSFUNC(TileSTC),
+  LLRSFUNC(Upload),     LLRSFUNC(UploadEx),
 LLRSEND                                // Texture:* member functions end
 /* ========================================================================= */
 // $ Texture.Create
@@ -893,9 +971,7 @@ LLFUNCEX(Console, 1, LCCLASSCREATEPTR(Texture, cConsole->GetTexture()));
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Texture.* namespace functions begin
-  LLRSFUNC(Create),                    // Create from image class
-  LLRSFUNC(CreateTS),                  //  " with tiles and padding
-  LLRSFUNC(Console),                   // Get console texture
+  LLRSFUNC(Create), LLRSFUNC(CreateTS), LLRSFUNC(Console),
 LLRSEND                                // Texture.* namespace functions end
 /* ========================================================================= */
 LLNAMESPACEEND                         // End of Texture namespace

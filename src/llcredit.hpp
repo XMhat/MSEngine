@@ -16,7 +16,7 @@
 /* ========================================================================= */
 LLNAMESPACEBEGIN(Credit)               // Credit namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfCredit;              // Using credit interface
+using namespace IfCredit;              // Using credit namespace
 /* ========================================================================= */
 // $ Credit.Credit
 // > Id:integer=The index of the licence.
@@ -31,8 +31,8 @@ using namespace IfCredit;              // Using credit interface
 LLFUNCBEGIN(Item)
   const CreditLib &libItem = CreditGetItem(
     LCGETINTLGE(CreditEnums, 1, CL_FIRST, CL_MAX, "Id"));
-  LCPUSHXSTR(libItem.strName);         LCPUSHXSTR(libItem.strVersion);
-  LCPUSHBOOL(libItem.bCopyright);      LCPUSHXSTR(libItem.strAuthor);
+  LCPUSHXSTR(libItem.GetName());       LCPUSHXSTR(libItem.GetVersion());
+  LCPUSHBOOL(libItem.IsCopyright());   LCPUSHXSTR(libItem.GetAuthor());
 LLFUNCENDEX(4)
 /* ========================================================================= */
 // $ Credit.Licence

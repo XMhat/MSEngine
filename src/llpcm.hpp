@@ -17,7 +17,7 @@
 /* ========================================================================= */
 LLNAMESPACEBEGIN(Pcm)                  // Pcm namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfPcm;                 // Using pcm interface
+using namespace IfPcm;                 // Using pcm namespace
 /* ========================================================================= */
 /* ######################################################################### */
 /* ========================================================================= */
@@ -63,7 +63,7 @@ LLFUNC(FileAsync, LCCLASSCREATE(Pcm)->InitAsyncFile(lS));
 // ? Returns the pcm object.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(File, 1, LCCLASSCREATE(Pcm)->InitFile(LCGETCPPFILE(1, "File"),
-  LCGETFLAGS(PcmFlagsConst, 2, PL_NONE, PL_MASK, "Flags")));
+  LCGETFLAGS(PcmFlagsConst, 2, PL_MASK, "Flags")));
 /* ========================================================================= */
 // $ Pcm.ArrayAsync
 // > Id:String=The identifier of the string
@@ -84,8 +84,8 @@ LLFUNC(ArrayAsync, LCCLASSCREATE(Pcm)->InitAsyncArray(lS));
 // ? Loads an audio file on the main thread from the specified array object.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Asset, 1, LCCLASSCREATE(Pcm)->InitArray(
-  LCGETCPPSTRINGNE(1, "Identifier"), move(*LCGETPTR(2, Asset)),
-  LCGETFLAGS(PcmFlagsConst, 3, PL_NONE, PL_MASK, "Flags")));
+  LCGETCPPSTRINGNE(1, "Identifier"), std::move(*LCGETPTR(2, Asset)),
+  LCGETFLAGS(PcmFlagsConst, 3, PL_MASK, "Flags")));
 /* ======================================================================= */
 // $ Pcm.Raw
 // > Identifier:string=Identifier of the sample.
@@ -97,7 +97,7 @@ LLFUNCEX(Asset, 1, LCCLASSCREATE(Pcm)->InitArray(
 // ? Loads an audio file on the main thread from the specified array object.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Raw, 1, LCCLASSCREATE(Pcm)->InitRaw(
-  LCGETCPPSTRINGNE(1, "Identifier"), move(*LCGETPTR(2, Asset)),
+  LCGETCPPSTRINGNE(1, "Identifier"), std::move(*LCGETPTR(2, Asset)),
   LCGETINT(unsigned int, 3, "Rate"), LCGETINT(unsigned int, 4, "Channel"),
   LCGETINT(unsigned int, 5, "Bits")));
 /* ========================================================================= */

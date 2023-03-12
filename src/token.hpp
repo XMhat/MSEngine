@@ -7,8 +7,8 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Module namespace ----------------------------------------------------- */
-namespace IfToken {                    // Keep declarations neatly categorised
+/* ------------------------------------------------------------------------- */
+namespace IfToken {                    // Start of module namespace
 /* -- Token class with permission to modify the original string ------------ */
 struct TokenListNC :
   /* -- Base classes ------------------------------------------------------- */
@@ -53,7 +53,7 @@ struct TokenListNC :
   /* -- MOVE assignment constructor ---------------------------------------- */
   TokenListNC(TokenListNC &&tOther) :
     /* -- Initialisation of members ---------------------------------------- */
-    CStrVector{ move(tOther) }         // Move vector of C-Strings over
+    CStrVector{ std::move(tOther) }         // Move vector of C-Strings over
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
@@ -79,6 +79,7 @@ struct TokenList :
         size_t stStart = strStr.size() - 1;
         // Until there are no more occurences of separator
         for(size_t stLoc;
+          stStart != string::npos &&
           (stLoc = strStr.find_last_of(strSep, stStart)) != string::npos;
           stStart = stLoc - 1)
         { // Get location plus length
@@ -101,7 +102,7 @@ struct TokenList :
   /* -- MOVE assignment constructor ---------------------------------------- */
   TokenList(TokenList &&tOther) :
     /* -- Initialisation of members ---------------------------------------- */
-    StrList{ move(tOther) }            // Move list of strings over
+    StrList{ std::move(tOther) }            // Move list of strings over
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
@@ -162,11 +163,11 @@ struct Token :
   /* -- MOVE assignment constructor ---------------------------------------- */
   Token(Token &&tOther) :
     /* -- Initialisation of members ---------------------------------------- */
-    StrVector{ move(tOther) }          // Move vector string over
+    StrVector{ std::move(tOther) }          // Move vector string over
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Token);              // Disable copy constructor/operator
 };/* -- End of module namespace -------------------------------------------- */
-};                                     // End of interface
+};                                     // End of module namespace
 /* == EoF =========================================================== EoF == */
