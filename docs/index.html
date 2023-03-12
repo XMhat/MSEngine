@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="robots" content="index, follow">
 <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="description" content="Reference for the MS-Engine API version 23.3.9.39">
+<meta name="description" content="Reference for the MS-Engine API version 23.3.12.9">
 <meta name="author" content="MS-Design">
-<meta name="generator" content="MS-Engine Project Management Utility version 23.3.9.39">
+<meta name="generator" content="MS-Engine Project Management Utility version 23.3.12.9">
 <meta name="format-detection" content="telephone=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="MS-Engine API">
-<title>MS-Engine 23.3.9.39 API reference</title>
+<title>MS-Engine 23.3.12.9 API reference</title>
 <style type="text/css" media="screen">
 body { background-color:gray; color:black; padding:0px; margin:0px; border:0px; font-family:Helvetica; }
 a,a:visited { color:white; text-decoration:none; font-weight:bold; }
@@ -36,10 +36,10 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 </style>
 </head>
 <body id="top">
-<h1>MS-Engine 23.3.9.39 API reference</h1>
+<h1>MS-Engine 23.3.12.9 API reference</h1>
 <div id="index">
 <h2>Table of contents:-</h2>
-<p>A total of 371 members, 344 methods, 20 consts (715 functions) in 30 namespaces with 193 cvars.</p>
+<p>A total of 372 members, 344 methods, 20 consts (716 functions) in 30 namespaces with 193 cvars.</p>
 <ol><li id="cvidx"><a href="#cvars">CVars</a> <i>(193 cvars)</i><ul>
 <li><a href="#cv.app_author">app_author</a></li>
 <li><a href="#cv.app_basedir">app_basedir</a></li>
@@ -543,13 +543,14 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#Fbo.Blends">Blends</a></li>
 <li><a href="#Fbo.Filters">Filters</a></li>
 </ul></li>
-<li id="idx:File"><a href="#idx:File">File namespace</a> <i>(23 members)</i><ul>
+<li id="idx:File"><a href="#idx:File">File namespace</a> <i>(24 members)</i><ul>
 <li><a href="#File.AppendOne">AppendOne</a></li>
 <li><a href="#File.AppendOneStr">AppendOneStr</a></li>
 <li><a href="#File.DirExists">DirExists</a></li>
 <li><a href="#File.Enumerate">Enumerate</a></li>
 <li><a href="#File.EnumerateEx">EnumerateEx</a></li>
 <li><a href="#File.Error">Error</a></li>
+<li><a href="#File.Executable">Executable</a></li>
 <li><a href="#File.Exists">Exists</a></li>
 <li><a href="#File.FileExists">FileExists</a></li>
 <li><a href="#File.Info">Info</a></li>
@@ -3963,6 +3964,17 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Returns the last system error number&#x2e;<br>See&#x3a; https&#x3a;&#x2f;&#x2f;en&#x2e;hppreference&#x2e;com&#x2f;w&#x2f;cpp&#x2f;error&#x2f;errno_macros </p>
 <h4><a href="#idx:File" onclick="r('File.Error')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="File.Executable">
+<h3>File.Executable</h3>
+<h4>Syntax:-</h4>
+<pre><u>Result</u> = File.Executable(<i><u>Source</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Source</u> <i>(string)</i> = Filename<br></pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Result</u> <i>(Boolean)</i> = File executable?<br></pre>
+<h4>Synopsis:-</h4>
+<p>Returns if the file on disk is executable&#x2e; Only allowed as a child of the working executable directory&#x2e; Should always return &#x27;false&#x27; on Windows&#x2e;<br></p>
+<h4><a href="#idx:File" onclick="r('File.Executable')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="File.Exists">
 <h3>File.Exists</h3>
 <h4>Syntax:-</h4>
@@ -8643,6 +8655,6 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <p>Stops and unloads the specified video&#x2c; this frees resources&#x2e;<br></p>
 <h4><a href="#idx:Video" onclick="r('Video:Stop')">&#x25B2; Return to table of contents</a></h4></div>
 <address>Copyright &copy; 2023 MS-Design, All Rights Reserved.<br>
-This document was created at Thu Mar 09 18:19:46 2023 +0000</address>
+This document was created at Sun Mar 12 00:52:38 2023 +0000</address>
 </body>
 </html>

@@ -464,11 +464,11 @@ BEGIN_MEMBERCLASS(Textures, Texture, ICHelperUnsafe),
         const GLfloat
           fTPSizeX = fTWidth+fPadX,
           fTPSizeY = fTHeight+fPadY,
-          fBTSizeX = floor(fBWidth/fTPSizeX)*fTPSizeX,
-          fBTSizeY = floor(fBHeight/fTPSizeY)*fTPSizeY;
+          fBTSizeX = floorf(fBWidth/fTPSizeX)*fTPSizeX,
+          fBTSizeY = floorf(fBHeight/fTPSizeY)*fTPSizeY;
         // Make sure theres enough memory allocated for each coord data
         tcList.reserve(static_cast<size_t>(
-          floor(fBTSizeX/fTPSizeX)*floor(fBTSizeY/fTPSizeY)));
+          floorf(fBTSizeX/fTPSizeX)*floorf(fBTSizeY/fTPSizeY)));
         // Image is reversed?
         if(bReversed)
           for(GLfloat fY = 0; fY < fBTSizeY; fY += fTPSizeY)

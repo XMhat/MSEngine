@@ -155,7 +155,7 @@ static void SysSetThreadName(const char*const) { }
 /* ------------------------------------------------------------------------- */
 #endif                                 // Done checking OS
 /* ------------------------------------------------------------------------- */
-class SysErrorPlugin
+class SysErrorPlugin final
 { /* -- Exception class helper macro for system errors --------------------- */
   #define XCS(r,...) throw Error<SysErrorPlugin>(r, ## __VA_ARGS__)
   /* -- Constructor to add system error code ----------------------- */ public:

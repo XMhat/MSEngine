@@ -27,7 +27,7 @@ using namespace IfAsset;               // Using asset interface
 #define FT(F,M,...) if(const FT_Error ftErr = (F)) \
   XC("FT call failed: " M, "Code", ftErr, ## __VA_ARGS__);
 /* == Freetype core class ================================================== */
-static class FreeType
+static class FreeType final
 { /* -- OnError --------------------------------------------------- */ private:
   FT_Library    ftLibrary;             // Freetype instance
   FT_MemoryRec_ ftMemory;              // Freetype custom allocator

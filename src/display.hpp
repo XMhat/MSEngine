@@ -28,10 +28,16 @@ BUILD_FLAGS(Display,
   DF_AUTOICONIFY         {0x00000200}, DF_AUTOFOCUS           {0x00000400},
   // Engine is in it's own thread?     HiDPI is enabled?
   DF_THREADED            {0x00000800}, DF_HIDPI               {0x00001000},
-  // Window is actually in fullscreen?
-  DF_INFULLSCREEN        {0x00002000}
+  // Window is actually in fullscreen? Graphics switching enabled?
+  DF_INFULLSCREEN        {0x00002000}, DF_GASWITCH            {0x00004000},
+  // SRGB namespace is enabled?        Windoe transparency enabled?
+  DF_SRGB                {0x00008000}, DF_TRANSPARENT         {0x00010000},
+  // OpenGL debug context?             Stereo mode enabled?
+  DF_DEBUG               {0x00020000}, DF_STEREO              {0x00040000},
+  // No opengl errors?                 Window maximised at start?
+  DF_NOERRORS            {0x00080000}, DF_MAXIMISED           {0x00100000}
 );/* == Display class ====================================================== */
-static class Display :
+static class Display final :
   /* -- Base classes ------------------------------------------------------- */
   private IHelper,                     // Initialisation helper
   public DisplayFlags,                 // Display settings
@@ -43,7 +49,8 @@ static class Display :
                    iMSelected;         // Monitor id selected
   const GLFWvidmode *vSelected;        // Video mode selected
   int              iVRequested,        // Video mode requested
-                   iVSelected;         // Video mode selected
+                   iVSelected,         // Video mode selected
+                   iBPPSelected;       // Selected bit depth mode
   GLfloat          fGamma,             // Monitor gamma setting
                    fOrthoWidth,        // Saved ortho width
                    fOrthoHeight;       // Saved ortho height
@@ -242,7 +249,7 @@ static class Display :
           if(mItem == mPrimary && !memcmp(&vMode, vPrimary, sizeof(vMode)))
             iVPrimary = iMode;
           // Report mode
-          LW(LH_DEBUG, "-- Mode $: $x$x$bpp @$hz (R:$;G:$;B:$).",
+          LW(LH_DEBUG, "-- Mode $: $x$x$bpp @$hz (RGB$$$).",
             iMode, vMode.width, vMode.height,
             vMode.redBits+vMode.greenBits+vMode.blueBits, vMode.refreshRate,
             vMode.redBits, vMode.greenBits, vMode.blueBits);
@@ -430,11 +437,13 @@ static class Display :
     // Trnslate user specified window size
     int iW, iH; TranslateUserSize(iW, iH);
     int iX, iY; TranslateUserCoords(iX, iY, iW, iH);
+    // Set menu bar on MacOS
+    // cGlFW->SetWindowCocoaMenuBarEnabled();
     // Initialise the desktop window and send the handle to system class
     // because they need the handle for exceptions, icons and other things.
     cGlFW->SetWindowMonitor(nullptr, iX, iY, iW, iH, 0);
     // Window mode so update users window border setting
-    cGlFW->SetWindowAttribBoolean(GLFW_DECORATED, FlagIsSet(DF_BORDER));
+    cGlFW->SetDecoratedAttrib(FlagIsSet(DF_BORDER));
     // Log that we switched to window mode
     LW(LH_INFO, "Display switched to desktop window $x$ at $x$.",
       iW, iH, iX, iY);
@@ -452,11 +461,13 @@ static class Display :
     if(FlagIsSet(DF_EXCLUSIVE)) { mUsing = mSelected; cpType = "exclusive"; }
     // Not exclusive full-screen mode?
     else
-    { // Not using exclusive full-screen mode
+    { // Hide menu bar on MacOS if in borderless full-screen mode
+//    cGlFW->SetWindowCocoaMenuBarDisabled();
+      // Not using exclusive full-screen mode
       mUsing = nullptr;
       cpType = "borderless";
       // Force disable window border
-      cGlFW->SetWindowAttribDisable(GLFW_DECORATED);
+      cGlFW->SetDecoratedDisabled();
     } // Set the full-screen window
     cGlFW->SetWindowMonitor(mUsing, 0, 0,
       vmData.width, vmData.height, vmData.refreshRate);
@@ -530,11 +541,10 @@ static class Display :
     // Window mode selected
     else ReInitDesktopModeWindow();
     // Update window attributes
-    cGlFW->SetWindowAttribBoolean(GLFW_RESIZABLE, FlagIsSet(DF_SIZABLE));
-    cGlFW->SetWindowAttribBoolean(GLFW_FLOATING, FlagIsSet(DF_FLOATING));
-    cGlFW->SetWindowAttribBoolean(GLFW_AUTO_ICONIFY,
-      FlagIsSet(DF_AUTOICONIFY));
-    cGlFW->SetWindowAttribBoolean(GLFW_FOCUS_ON_SHOW, FlagIsSet(DF_AUTOFOCUS));
+    cGlFW->SetResizableAttrib(FlagIsSet(DF_SIZABLE));
+    cGlFW->SetFloatingAttrib(FlagIsSet(DF_FLOATING));
+    cGlFW->SetAutoIconifyAttrib(FlagIsSet(DF_AUTOICONIFY));
+    cGlFW->SetFocusOnShowAttrib(FlagIsSet(DF_AUTOFOCUS));
     // Store current window position
     cGlFW->GetWindowPos(iWinPosX, iWinPosY);
     cInput->UpdateWindowSize();
@@ -595,6 +605,24 @@ static class Display :
   }
   /* -- Return current video mode refresh rate ----------------------------- */
   int GetRefreshRate(void) { return vSelected->refreshRate; }
+  /* -- Set maximised at startup ------------------------------------------- */
+  CVarReturn SetMaximisedMode(const bool bState)
+    { FlagSetOrClear(DF_MAXIMISED, bState); return ACCEPT; }
+  /* -- Set opengl no errors mode ------------------------------------------ */
+  CVarReturn SetNoErrorsMode(const bool bState)
+    { FlagSetOrClear(DF_NOERRORS, bState); return ACCEPT; }
+  /* -- Set stereo mode ---------------------------------------------------- */
+  CVarReturn SetStereoMode(const bool bState)
+    { FlagSetOrClear(DF_STEREO, bState); return ACCEPT; }
+  /* -- Set OpenGL debug mode ---------------------------------------------- */
+  CVarReturn SetGLDebugMode(const bool bState)
+    { FlagSetOrClear(DF_DEBUG, bState); return ACCEPT; }
+  /* -- Set window transparency mode  -------------------------------------- */
+  CVarReturn SetWindowTransparency(const bool bState)
+    { FlagSetOrClear(DF_TRANSPARENT, bState); return ACCEPT; }
+  /* -- Set default orthagonal width  -------------------------------------- */
+  CVarReturn SetForcedBitDepth(const int iBPP)
+    { return CVarSimpleSetIntNLG(iBPPSelected, iBPP, 1, 16); }
   /* -- Set default orthagonal width  -------------------------------------- */
   CVarReturn SetOrthoWidth(const GLfloat fWidth)
     { return CVarSimpleSetIntNLG(fOrthoWidth, fWidth, 320.0f, 16384.0f); }
@@ -619,6 +647,12 @@ static class Display :
   /* -- Set hidpi cvar ----------------------------------------------------- */
   CVarReturn HiDPIChanged(const bool bState)
     { FlagSetOrClear(DF_HIDPI, bState); return ACCEPT; }
+  /* -- Set SRGB colour space ---------------------------------------------- */
+  CVarReturn SRGBColourSpaceChanged(const bool bState)
+    { FlagSetOrClear(DF_SRGB, bState); return ACCEPT; }
+  /* -- Set graphics switching --------------------------------------------- */
+  CVarReturn GraphicsSwitchingChanged(const bool bState)
+    { FlagSetOrClear(DF_GASWITCH, bState); return ACCEPT; }
   /* -- Set window resizable ----------------------------------------------- */
   CVarReturn SizableChanged(const bool bState)
     { FlagSetOrClear(DF_SIZABLE, bState); return ACCEPT; }
@@ -826,121 +860,48 @@ static class Display :
     IHInitialise();
     // Log progress
     LW(LH_DEBUG, "Display class starting up...");
+    // Inform main fbo class of our transparency setting
+    cFboMain->fboMain.SetTransparency(FlagIsSet(DF_TRANSPARENT));
     // Enumerate monitors and video modes
     EnumerateMonitorsAndVideoModes();
-    // GLFW_CLIENT_API indicates the client API provided by the window's c
-    // ontext; either GLFW_OPENGL_API, GLFW_OPENGL_ES_API or GLFW_NO_API.
-    cGlFW->SetWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
-    // ************** WE WANT A STANDARD OPENGL 3.2 CORE CONTEXT **************
-    // GLFW_CONTEXT_VERSION_MAJOR and GLFW_CONTEXT_VERSION_MINOR specify the
-    // client API version that the created context must be compatible with.
-    // The exact behavior of these hints depend on the requested client API.
-    cGlFW->SetWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    cGlFW->SetWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-    // GLFW_OPENGL_PROFILE indicates the OpenGL profile used by the context.
-    // This is GLFW_OPENGL_CORE_PROFILE or GLFW_OPENGL_COMPAT_PROFILE if the
-    // context uses a known profile, or GLFW_OPENGL_ANY_PROFILE if the OpenGL
-    // profile is unknown or the context is an OpenGL ES context. Note that
-    // the returned profile may not match the profile bits of the context
-    // flags, as GLFW will try other means of detecting the profile when no
-    // bits are set.
-    cGlFW->SetWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    // Specifies whether the OpenGL context should be forward-compatible, i.e.
-    // one where all functionality deprecated in the requested version of
-    // OpenGL is removed. This must only be used if the requested OpenGL
-    // version is 3.0 or above. If OpenGL ES is requested, this hint is
-    // ignored. https://www.opengl.org/registry/
-    cGlFW->SetWindowHintEnable(GLFW_OPENGL_FORWARD_COMPAT);
-    // Specifies whether to create a debug OpenGL context, which may have
-    // additional error and performance issue reporting functionality. If
-    // OpenGL ES is requested, this hint is ignored.
-    cGlFW->SetWindowHintBoolean(GLFW_OPENGL_DEBUG_CONTEXT,
-      cCVars->GetInternalSafe<bool>(VID_DEBUG));
-    // Specifies whether errors should be generated by the context. Possible
-    // values are GLFW_TRUE and GLFW_FALSE. If enabled, situations that would
-    // have generated errors instead cause undefined behavior.
-    cGlFW->SetWindowHintBoolean(GLFW_CONTEXT_NO_ERROR,
-      cCVars->GetInternalSafe<bool>(VID_NOERRORS));
-    // Specifies whether the framebuffer should be double buffered. You nearly
-    // always want to use double buffering. This is a hard constraint.
-    cGlFW->SetWindowHintEnable(GLFW_DOUBLEBUFFER);
-    // No depth or stencil buffer
-    cGlFW->SetWindowHint(GLFW_DEPTH_BITS, 0);
-    cGlFW->SetWindowHint(GLFW_STENCIL_BITS, 0);
+    // We are using the OpenGL 3.2 forward compatible API
+    cGlFW->SetClientAPI(GLFW_OPENGL_API);
+    cGlFW->SetContextVersion(3, 2);
+    cGlFW->SetCoreProfile(GLFW_OPENGL_CORE_PROFILE);
+    cGlFW->SetForwardCompatEnabled();
+    cGlFW->SetRobustness(GLFW_LOSE_CONTEXT_ON_RESET);
+    // Set other settings
+    cGlFW->SetDebug(FlagIsSet(DF_DEBUG));
+    cGlFW->SetNoErrors(FlagIsSet(DF_NOERRORS));
+    cGlFW->SetDoubleBufferEnabled();
+    cGlFW->SetSRGBCapable(FlagIsSet(DF_SRGB));
+    cGlFW->SetRefreshRate(vSelected->refreshRate);
+    cGlFW->SetAuxBuffers(iAuxBuffers);
+    cGlFW->SetMultisamples(iSamples);
+    cGlFW->SetMaximised(FlagIsSet(DF_MAXIMISED));
+    cGlFW->SetStereo(FlagIsSet(DF_STEREO));
+    cGlFW->SetTransparency(cFboMain->fboMain.IsTransparencyEnabled());
+    cGlFW->SetDepthBits(0);
+    cGlFW->SetStencilBits(0);
     // Force custom bit-depth?
-    if(const int iDepth = cCVars->GetInternalSafe<int>(VID_BPP))
-    { // Force depth buffer bits
-      cGlFW->SetWindowHint(GLFW_RED_BITS, iDepth);
-      cGlFW->SetWindowHint(GLFW_GREEN_BITS, iDepth);
-      cGlFW->SetWindowHint(GLFW_BLUE_BITS, iDepth);
-      cGlFW->SetWindowHint(GLFW_ALPHA_BITS,
-        cFboMain->fboMain.IsTransparencyEnabled() ? iDepth : 0);
-    } // Use default
-    else
-    { // Set regular depth buffer bits
-      cGlFW->SetWindowHint(GLFW_RED_BITS, vSelected->redBits);
-      cGlFW->SetWindowHint(GLFW_GREEN_BITS, vSelected->greenBits);
-      cGlFW->SetWindowHint(GLFW_BLUE_BITS, vSelected->blueBits);
-      cGlFW->SetWindowHint(GLFW_ALPHA_BITS,
-        cFboMain->fboMain.IsTransparencyEnabled() ? 8 : 0);
-    } // Set transparency of main FBO
-    cFboMain->fboMain.SetTransparency
-      (cCVars->GetInternalSafe<bool>(VID_ALPHA));
-    // Specifies whether the framebuffer should be sRGB capable. If supported,
-    // a created OpenGL context will support the GL_FRAMEBUFFER_SRGB enable,
-    // also called GL_FRAMEBUFFER_SRGB_EXT) for controlling sRGB rendering and
-    // a created OpenGL ES context will always have sRGB rendering enabled.
-    cGlFW->SetWindowHintBoolean(GLFW_SRGB_CAPABLE,
-      cCVars->GetInternalSafe<bool>(VID_SRGB));
-    // Specifies the desired refresh rate for full screen windows. If set to
-    // GLFW_DONT_CARE, the highest available refresh rate will be used. This
-    // hint is ignored for windowed mode windows. Although we could add an
-    // override, I'm not sure what the implications are if the user picks a
-    // bad mode so we'll keep this strict for now.
-    cGlFW->SetWindowHint(GLFW_REFRESH_RATE, vSelected->refreshRate);
-    // Specifies the desired number of auxiliary buffers. GLFW_DONT_CARE means
-    // the application has no preference.
-    cGlFW->SetWindowHint(GLFW_AUX_BUFFERS, iAuxBuffers);
-    // Specifies the desired number of samples to use for multisampling. Zero
-    // disables multisampling. GLFW_DONT_CARE means the application has no
-    // preference.
-    cGlFW->SetWindowHint(GLFW_SAMPLES, iSamples);
-    // Specifies whether to use stereoscopic rendering. This is a hard
-    // constraint.
-    cGlFW->SetWindowHintBoolean(GLFW_STEREO,
-      cCVars->GetInternalSafe<bool>(VID_STEREO));
-    // Specifies whether the window framebuffer will be transparent. If
-    // enabled and supported by the system, the window framebuffer alpha
-    // channel will be used to combine the framebuffer with the background.
-    // This does not affect window decorations. Possible values are GLFW_TRUE
-    // and GLFW_FALSE.
-    cGlFW->SetWindowHintBoolean(GLFW_TRANSPARENT_FRAMEBUFFER,
-      cFboMain->fboMain.IsTransparencyEnabled());
-    // Set maximized on startup attribute
-    cGlFW->SetWindowHintBoolean(GLFW_MAXIMIZED,
-      cCVars->GetInternalSafe<bool>(WIN_MAXIMISED));
-    // Set input focused on startup
-    cGlFW->SetWindowHintBoolean(GLFW_FOCUSED,
-      cCVars->GetInternalSafe<bool>(WIN_FOCUSED));
-    // Compiling on Mac?
+    if(iBPPSelected)
+      cGlFW->SetColourDepth(iBPPSelected, iBPPSelected, iBPPSelected,
+        cFboMain->fboMain.IsTransparencyEnabled() ? iBPPSelected : 0);
+    // Use default? Set regular depth buffer bits
+    else cGlFW->SetColourDepth(vSelected->redBits, vSelected->greenBits,
+      vSelected->blueBits, cFboMain->fboMain.IsTransparencyEnabled() ? 8 : 0);
+    // Set Apple operating system only settings
 #ifdef __APPLE__
-    // Set retina framebuffer if MacOS version
-    cGlFW->SetWindowHintBoolean(GLFW_COCOA_RETINA_FRAMEBUFFER,
-      FlagIsSet(DF_HIDPI));
-    // Set graphics autoswitching
-    cGlFW->SetWindowHintBoolean(GLFW_COCOA_GRAPHICS_SWITCHING,
-      cCVars->GetInternalSafe<bool>(VID_GASWITCH));
+    cGlFW->SetRetinaMode(FlagIsSet(DF_HIDPI));
+    cGlFW->SetGPUSwitching(FlagIsSet(DF_GASWITCH));
 #endif
-    // These window hints changed dynamically after creation
-    cGlFW->SetWindowHintDisable(GLFW_RESIZABLE);
-    cGlFW->SetWindowHintDisable(GLFW_AUTO_ICONIFY);
-    cGlFW->SetWindowHintDisable(GLFW_FOCUS_ON_SHOW);
-    cGlFW->SetWindowHintDisable(GLFW_FLOATING);
-    cGlFW->SetWindowHintDisable(GLFW_VISIBLE);
+    // Get window name and use it for frame and instance name. It's assumed
+    // that 'cpTitle' won't be freed while using it these two times.
+    const char*const cpTitle = cCVars->GetInternalCStrSafe(APP_TITLE);
+    cGlFW->SetWindowFrameName(cpTitle);
     // Initialise basic window. We will modify it after due to limitations in
     // this particular function. For example, this can't set the refresh rate.
-    cSystem->WindowInitialised(cGlFW->InitWindow(1, 1,
-      cCVars->GetInternalCStrSafe(APP_TITLE), nullptr));
+    cSystem->WindowInitialised(cGlFW->InitWindow(1, 1, cpTitle, nullptr));
     // Re-adjust the window
     ReInitWindow(FlagIsSet(DF_FULLSCREEN));
     // Set forced aspect ratio
@@ -1028,6 +989,7 @@ static class Display :
     vSelected(nullptr),                // No video mode selected
     iVRequested(-1),                   // No video mode id requested
     iVSelected(-1),                    // No video mode id selected
+    iBPPSelected(-1),                  // Bit depth not selected yet
     fGamma(0),                         // Gamma initialised by CVars
     fOrthoWidth(0.0f),                 // Ortho width initialised by CVars
     fOrthoHeight(0.0f),                // Ortho height initialised by CVars

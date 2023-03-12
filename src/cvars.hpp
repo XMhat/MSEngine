@@ -14,7 +14,7 @@ namespace IfCVar {                     // Keep declarations neatly categorised
 using namespace IfCVarLib;             // Using cvar lib interface
 using namespace IfLua;                 // Using lua interface
 /* == CVars class ========================================================== */
-static class CVars                     // Start of vars class
+static class CVars final               // Start of vars class
 { /* ----------------------------------------------------------------------- */
   #define CVAR_CONFIG_SIZE_MINIMUM     2
   #define CVAR_CONFIG_SIZE_MAXIMUM     1048576

@@ -18,7 +18,7 @@ using namespace IfPcmLib;              // Using pcmlib interface
 /* ## Windows WAVE format                                             WAV ## */
 /* ######################################################################### */
 /* -- WAV Codec Object ----------------------------------------------------- */
-class CodecWAV :
+class CodecWAV final :
   /* -- Base classes ------------------------------------------------------- */
   private PcmFmt                       // Pcm format helper class
 { /* -- WAV header layout -------------------------------------------------- */
@@ -159,7 +159,7 @@ class CodecWAV :
 /* ## Core Audio Format                                               CAF ## */
 /* ######################################################################### */
 /* -- CAF Codec Object ----------------------------------------------------- */
-class CodecCAF :
+class CodecCAF final :
   /* -- Base classes ------------------------------------------------------- */
   private PcmFmt                       // Pcm format helper class
 { /* -- CAF header layout -------------------------------------------------- */
@@ -309,7 +309,7 @@ class CodecCAF :
 /* ## Ogg Vorbis                                                      OGG ## */
 /* ######################################################################### */
 /* -- OGG Codec Object ----------------------------------------------------- */
-class CodecOGG :
+class CodecOGG final :
   /* -- Base classes ------------------------------------------------------- */
   private PcmFmt                       // Pcm format helper class
 { /* -- Vorbis read callback ----------------------------------------------- */
@@ -397,7 +397,7 @@ class CodecOGG :
 /* ## MPEG Layer-3                                                    MP3 ## */
 /* ######################################################################### */
 /* -- MP3 codec object ----------------------------------------------------- */
-class CodecMP3 :
+class CodecMP3 final :
   /* -- Base classes ------------------------------------------------------- */
   private PcmFmt                       // Pcm format helper class
 { /* -- Loader for MP3 files ----------------------------------------------- */

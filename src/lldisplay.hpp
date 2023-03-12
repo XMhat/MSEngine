@@ -86,7 +86,7 @@ LLFUNC(Iconify, cGlFW->MinimiseWindow());
 // < State:boolean=The window is inconified?
 // ? Returns if the window is iconified.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Iconified, 1, LCPUSHBOOL(cGlFW->IsMinimised()));
+LLFUNCEX(Iconified, 1, LCPUSHBOOL(cGlFW->IsIconifyEnabled()));
 /* ========================================================================= */
 // $ Display.Restore
 // ? Restores the window from a minimized state. This may not work in
@@ -104,26 +104,26 @@ LLFUNC(Focus, cGlFW->FocusWindow());
 // < State:boolean=The window is focused?
 // ? Returns if the window is focused.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Focused, 1, LCPUSHBOOL(cGlFW->IsFocused()));
+LLFUNCEX(Focused, 1, LCPUSHBOOL(cGlFW->IsFocusEnabled()));
 /* ========================================================================= */
 // $ Display.Hovered
 // < State:boolean=Mouse is over the window?
 // ? Indicates whether the cursor is currently directly over the content area
 // ? of the window, with no other windows between.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Hovered, 1, LCPUSHBOOL(cGlFW->IsHovered()));
+LLFUNCEX(Hovered, 1, LCPUSHBOOL(cGlFW->IsMouseHoveredEnabled()));
 /* ========================================================================= */
 // $ Display.Visible
 // < State:boolean=The window is visible?
 // ? Indicates whether the window is visible.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Visible, 1, LCPUSHBOOL(cGlFW->IsVisible()));
+LLFUNCEX(Visible, 1, LCPUSHBOOL(cGlFW->IsVisibilityEnabled()));
 /* ========================================================================= */
 // $ Display.Resizable
 // < State:boolean=The window is visible?
 // ? Indicates whether the window is resizable.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Resizable, 1, LCPUSHBOOL(cGlFW->IsResizable()));
+LLFUNCEX(Resizable, 1, LCPUSHBOOL(cGlFW->IsResizableEnabled()));
 /* ========================================================================= */
 // $ Display.Maximise
 // ? Maximises the window.
@@ -134,25 +134,25 @@ LLFUNC(Maximise, cGlFW->MaximiseWindow());
 // < State:boolean=The window is maximised?
 // ? Returns if the window is maximised.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Maximised, 1, LCPUSHBOOL(cGlFW->IsMaximised()));
+LLFUNCEX(Maximised, 1, LCPUSHBOOL(cGlFW->IsMaximisedEnabled()));
 /* ========================================================================= */
 // $ Display.Decordated
 // < State:boolean=The window is decorated?
 // ? Returns if the window is decorated with a border.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Decorated, 1, LCPUSHBOOL(cGlFW->IsDecorated()));
+LLFUNCEX(Decorated, 1, LCPUSHBOOL(cGlFW->IsDecoratedEnabled()));
 /* ========================================================================= */
 // $ Display.Transparent
 // < State:boolean=The window is using an alpha framebuffer?
 // ? Returns if the window is transparent and using a alpha framebuffer.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Transparent, 1, LCPUSHBOOL(cGlFW->IsTransparent()));
+LLFUNCEX(Transparent, 1, LCPUSHBOOL(cGlFW->IsTransparencyEnabled()));
 /* ========================================================================= */
 // $ Display.Floating
 // < State:boolean=The window is floating?
 // ? Returns if the window is floating an always showing on top.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Floating, 1, LCPUSHBOOL(cGlFW->IsFloating()));
+LLFUNCEX(Floating, 1, LCPUSHBOOL(cGlFW->IsFloatingEnabled()));
 /* ========================================================================= */
 // $ Display.SetFullScreen
 // > State:boolean=true for fullscreen, false for window.

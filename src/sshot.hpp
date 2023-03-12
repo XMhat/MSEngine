@@ -13,7 +13,7 @@ using namespace IfThread;              // Using thread interface
 using namespace IfImage;               // Using image interface
 using namespace IfFboMain;             // Using fbomain interface
 /* == Core fbo wrapper class =============================================== */
-static class SShot :
+static class SShot final :
   /* -- Base classes ------------------------------------------------------- */
   public Thread,                       // Process in background
   public Image,                        // Image data class

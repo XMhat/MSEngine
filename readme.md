@@ -54,19 +54,19 @@ A remake of the classic Amiga and DOS game [Diggers](diggers) was made with this
 ## Credits…
 This engine makes use of the following open-source and commercially distributable components that are always updated to the latest versions...
 
-| Library | Version | Author | Usage |
+| Library | Version | Author | Purpose |
 | --- | --- | --- | --- |
+| [7-Zip](https://7-zip.org/sdk.html) | 22 | Igor Pavlov | LZMA (De/En)coder and support .7Z archives. |
 | [FreeType](https://github.com/freetype/freetype) | 2.13 | © The FreeType Project | Load and render TTF fonts. |
-| [GLFW](https://github.com/glfw) | 3.3 | © Marcus Geelnard & Camilla Löwy | Interface to Window, OpenGL and input. |
+| [GLFW](https://github.com/glfw/glfw) | 3.3 | © Marcus Geelnard & Camilla Löwy | Interface to Window, OpenGL and input. |
 | [LibJPEGTurbo](https://github.com/libjpeg-turbo/libjpeg-turbo) | 2.1 | © IJG/Contributing authors | (De/En)code JPEG's. |
-| [LibNSGif](https://www.netsurf-browser.org/projects/libnsgif/) | 0.2 | © Richard Wilson & Sean Fox | Decode GIF's. |
-| [LibPNG](https://github.com/glennrp/libpng) | 1.6 | © Contributing authors. | (De/En)code PNG's. |
+| [LibNSGif](https://github.com/netsurf-browser/libnsgif) | 0.2 | © Richard Wilson & Sean Fox | Decode GIF's. |
+| [LibPNG](https://github.com/glennrp/libpng) | 1.6 | © Contributing authors | (De/En)code PNG's. |
 | [LUA](https://github.com/lua/lua) | 5.4 | © Lua.org, PUC-Rio | User code interpreter. |
-| [LZMA](https://7-zip.org/sdk.html) | 22 | Igor Pavlov | LZMA (De/En)coder and support .7Z archives. |
-| [MiniMP3](https://www.pschatzmann.ch/home/2022/05/14/the-minimp3-codec-on-an-esp32/) | 1.0 | Martin Fiedler. | Decode .MP3 files. |
-| [NCurses](https://linux.die.net/man/3/ncurses) | 5.7 | © Free Software Foundation. | Unix and MacOS text mode support. |
+| [MiniMP3](https://www.pschatzmann.ch/home/2022/05/14/the-minimp3-codec-on-an-esp32/) | 1.0 | Martin Fiedler | Decode .MP3 files. |
+| [NCurses](https://linux.die.net/man/3/ncurses) | 5.7 | © Free Software Foundation | Unix and MacOS text mode support. |
 | [Ogg](https://github.com/xiph/ogg) | 1.3 | Xiph.Org | Read .OGG files. |
-| [OpenALSoft](https://github.com/kcat/openal-soft) | 1.23 | Chris Robinson. | 3-D audio API. |
+| [OpenALSoft](https://github.com/kcat/openal-soft) | 1.23 | Chris Robinson | 3-D audio API. |
 | [OpenSSL](https://github.com/openssl/openssl) | 3.0 | OpenSSL Software Foundation | Basic SSL networking and (de/en)cryption. |
 | [RapidJson](https://github.com/Tencent/rapidjson) | 1.1 | © THL A29 Ltd., Tencent co. & Milo Yip | Read/write JSON objects. |
 | [SQLite](https://github.com/sqlite/sqlite) | 3.41 | Contributing authors | Store user non-volatile data. |

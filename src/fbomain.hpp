@@ -13,7 +13,7 @@ namespace IfFboMain {                  // Keep declarations neatly categorised
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfFbo;                 // Using fbo interface
 /* == Main fbo class ======================================================= */
-static class FboMain :                 // The main fbo operations manager
+static class FboMain final :           // The main fbo operations manager
   /* -- Base classes ------------------------------------------------------- */
   public FboColour,                    // Backbuffer clear colour
   public FboBlend,                     // Default blending mode
@@ -172,7 +172,7 @@ static class FboMain :                 // The main fbo operations manager
       // we need to hack a bit. If we also don't keep the size divisble by two.
       // We'll get floating point accuracy problems when drawing.
       fAddWidth =
-        Maximum(round((((fWidth * fAspect) - fWidth) / 2.0f) / 2.0f) * 2.0f,
+        Maximum(roundf((((fWidth * fAspect) - fWidth) / 2.0f) / 2.0f) * 2.0f,
           0.0f);
       // Calculate bounds for stage
       fLeft = -fAddWidth;

@@ -163,7 +163,7 @@ static CVarReturn CoreParseCmdLine(const string&, string &strV)
 /* -- Reset environment function ------------------------------------------- */
 static void CoreResetEnvironment(const bool bLeaving)
 { // End current SQL transaction, we need to report it if it succeeded.
-  if(!cSql->End())
+  if(cSql->End() != SQLITE_ERROR)
     LW(LH_WARNING, "Core ended an in-progress SQL transaction!");
   // Reset all SQL error codes and stored results and records.
   cSql->Reset();

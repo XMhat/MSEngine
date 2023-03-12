@@ -49,7 +49,14 @@ local InitSetup, aButtonData, aCursorIdData, aSfxData, GetCallbacks, SetCallback
   RenderShadow, IsScrollingLeft, IsScrollingRight, IsFading;
 -- Frame-limiter types ----------------------------------------------------- --
 local aFrameLimiterLabels<const> = {
-  "Disabled", "Hardware Only", "Software Only", "Software and Hardware"
+  "Adaptive VSync",                    -- VSync = -1; Delay = 0
+  "None",                              -- VSync =  0; Delay = 0
+  "VSync Only",                        -- VSync =  1; Delay = 0
+  "Double VSync",                      -- VSync =  2; Delay = 0
+  "Adaptive VSync & Suspend",          -- VSync = -1; Delay = 1
+  "Suspend Only",                      -- VSync =  0; Delay = 1
+  "VSync & Suspend",                   -- VSync =  1; Delay = 1
+  "Double VSync & Suspend",            -- VSync =  2; Delay = 1
 };
 -- Window types ------------------------------------------------------------ --
 local aWindowLabels<const> = {
@@ -72,9 +79,9 @@ local iOColour, aColours<const> = 1, {-- Colour transition animations
 local sTitle, sStatusLine1, sStatusLine2;
 local nButtonIntensity, nButtonIntensityIncrement;
 local iWindowId, iWindowIdOriginal, iSelectedOption, iSelectedButton;
-local iFullScreenState, iFrameLimiter, iAudioDeviceId, iMonitorId;
+local iFullScreenState, iAudioDeviceId, iMonitorId;
 local iFullScreenMode, iFullScreenModeOriginal;
-local iFullScreenStateOriginal, iFrameLimiterOriginal, iAudioDeviceIdOriginal;
+local iFullScreenStateOriginal, iAudioDeviceIdOriginal;
 local iMonitorIdOriginal;
 local iCursorId, fcbTick, fcbRender, fcbInput;
 local aReadmeData, aReadmeVisibleLines, aReadmeColourData = { }, { }, { };
@@ -175,14 +182,39 @@ local function WSizeUp()
   if iWindowId > #aWindowSizes then iWindowId = #aWindowSizes end;
 end
 -- ------------------------------------------------------------------------- --
+local function LimiterSet(iFrameLimiter)
+  -- Set frame limiter options
+  local iVSync, iDelay;
+  if iFrameLimiter >= 4 then iVSync, iDelay = -1 + (iFrameLimiter % 4), 1;
+  else iVSync, iDelay = -1 + iFrameLimiter, 0 end;
+  CVarsSet("vid_vsync", iVSync);
+  CVarsSet("app_delay", iDelay);
+end
+-- ------------------------------------------------------------------------- --
+local function LimiterGet()
+  -- Get vsync value, thread delay and kernel tick rate
+  local iFrameLimiter = 1 + tonumber(CVarsGet("vid_vsync"));
+  -- Check for delay and if set? Set software category too
+  local iAddedDelay<const> = tonumber(CVarsGet("app_delay"));
+  if iAddedDelay > 0 then iFrameLimiter = iFrameLimiter + 4 end;
+  -- Return value
+  return iFrameLimiter;
+end
+-- ------------------------------------------------------------------------- --
 local function LimiterUpdate()
-  return aFrameLimiterLabels[iFrameLimiter+1] or aFrameLimiterLabels[2]
+  -- Get vsync value, thread delay and kernel tick rate
+  local iFrameLimiter = 1 + tonumber(CVarsGet("vid_vsync"));
+  -- Check for delay and if set? Set software category too
+  local iAddedDelay<const> = tonumber(CVarsGet("app_delay"));
+  if iAddedDelay > 0 then iFrameLimiter = iFrameLimiter + 4 end;
+  -- Set original value
+  return aFrameLimiterLabels[LimiterGet()+1];
 end
 local function LimiterDown()
-  iFrameLimiter = UtilClampInt(iFrameLimiter-1, 0, #aFrameLimiterLabels-1);
+  LimiterSet(UtilClampInt(LimiterGet()-1, 0, #aFrameLimiterLabels-1));
 end
 local function LimiterUp()
-  iFrameLimiter = UtilClampInt(iFrameLimiter+1, 0, #aFrameLimiterLabels-1);
+  LimiterSet(UtilClampInt(LimiterGet()+1, 0, #aFrameLimiterLabels-1));
 end
 -- ------------------------------------------------------------------------- --
 local function FilterUpdate()
@@ -401,16 +433,6 @@ local function Refresh()
     -- Record original id
     iWindowIdOriginal = iWindowId;
   end
-  -- Refresh frame limiter setting
-  local function RefreshFrameLimiterSettings()
-    -- Get vsync value, thread delay and kernel tick rate
-    iFrameLimiter = tonumber(CVarsGet("vid_vsync"));
-    -- Check for delay and if set? Set software category too
-    local iAddedDelay<const> = tonumber(CVarsGet("app_delay"));
-    if iAddedDelay > 0 then iFrameLimiter = iFrameLimiter + 2 end;
-    -- Set original value
-    iFrameLimiterOriginal = iFrameLimiter;
-  end;
   -- Refresh audio settings
   local function RefreshAudioSettings()
     iAudioDeviceId = tonumber(CVarsGet("aud_interface"));
@@ -419,7 +441,6 @@ local function Refresh()
   -- Perform refreshes
   RefreshMonitorSettings();
   RefreshWindowSettings();
-  RefreshFrameLimiterSettings();
   RefreshAudioSettings();
   -- Update labels
   UpdateLabels();
@@ -443,18 +464,11 @@ local function ApplySettings()
   else CVarsSet("vid_fsmode", iFullScreenMode) end;
   CVarsSet("vid_monitor", iMonitorId);
   CVarsSet("aud_interface", iAudioDeviceId);
-  -- Set frame limiter options
-  local iVSync, iDelay;
-  if iFrameLimiter > 1 then iVSync, iDelay = iFrameLimiter % 2, 1;
-  else iVSync, iDelay = iFrameLimiter, 0 end;
-  CVarsSet("vid_vsync", iVSync);
-  CVarsSet("app_delay", iDelay);
   -- Reset audio subsystem if interface changed
   if iAudioDeviceIdOriginal ~= iAudioDeviceId then AudioReset() end;
   -- If GPU related parameters changed from original then reset video
   if iFullScreenMode ~= iFullScreenModeOriginal or
      iFullScreenStateOriginal ~= iFullScreenState or
-     iFrameLimiterOriginal ~= iFrameLimiter or
      iMonitorIdOriginal ~= iMonitorId then DisplayVReset();
   -- If window parameters changed then just reset window
   elseif iFullScreenState == 0 and iWindowId ~= iWindowIdOriginal then
@@ -469,9 +483,10 @@ local function SetDefaults()
   iFullScreenMode = -3;
   iMonitorId = -1;
   iAudioDeviceId = -1;
-  iFrameLimiter = 1;
   iWindowId = 1;
   -- Other options
+  CVarsReset("app_delay");
+  CVarsReset("vid_vsync");
   CVarsReset("vid_texfilter");
   -- Reset volumes
   CVarsReset("aud_vol");
@@ -958,9 +973,11 @@ return { A = { InitSetup = InitSetup }, F = function(GetAPI)
       "MODE. PRESS APPLY WHEN YOU ARE HAPPY WITH THE SELECTION TO ACTIVATE "..
       "IT" },
     { "Frame Limiter",   "", LimiterUpdate, LimiterDown, LimiterUp,
-      "ALLOWS YOU TO SET A FRAME-LIMITER USING THE HARDWARE (VSYNC) AND/OR "..
-      "BY USING A CPU WAIT FUNCTION TO CONSERVE POWER. PRESS APPLY WHEN YOU "..
-      "ARE HAPPY WITH THE SELECTION TO ACTIVATE IT" },
+      "ALLOWS YOU TO CHOOSE FROM A RANGE OF FRAME-LIMITING OPTIONS TO "..
+      "BALANCE THE PERFORMANCE VERSUS POWER USAGE OF RENDERING. SOME VALUES "..
+      "MAY BE INEFFECTIVE WHEN THE VSYNC VALUE IS BEING OVERRIDDEN IN YOUR "..
+      "VIDEO ADAPTER SETTINGS OR WHEN YOUR SYSTEM IS UNDERPERFORMING. THE "..
+      "CHANGE IS INSTANTLY APPLIED" },
     { "Texture Filter",  "", FilterUpdate,  FilterSwap,  FilterSwap,
       "APPLY A BILINEAR UPSCALE FILTER TO THE MAIN FRAMEBUFFER. THE GAME IS "..
       "RENDERED IN 320x240. THE CHANGE OF OPTION IS INSTANTLY APPLIED" },

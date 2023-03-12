@@ -56,7 +56,7 @@ BUILD_FLAGS(Oal,
   // Have infinite sources?
   AFL_INFINITESOURCES    {0x00000200}
 );/* == Oal class ========================================================== */
-static class Oal :
+static class Oal final :
   /* -- Base classes ------------------------------------------------------- */
   public OalFlags                      // OpenAL flags
 { /* -- Defines ------------------------------------------------------------ */

@@ -255,7 +255,7 @@ static void CBvmlist(const Arguments &clParam)
        .Header("RATIO ", false);
   // Total divided by 2 so we can have two pretty columns of video mode info
   const int iMonitorCountD2 =
-    static_cast<int>(ceil(static_cast<float>(iMonitorCount) / 2));
+    static_cast<int>(ceilf(static_cast<float>(iMonitorCount) / 2));
   // Add extra header if more than one mode
   if(iMonitorCountD2 > 1) tData.DupeHeader();
   // Enumerate video modes
@@ -602,16 +602,7 @@ static void CBsqlexec(const Arguments &aList)
   if(cSql->Active())
     return cConsole->AddLine("Sql transaction already active!");
   // Execute the string and catch exceptions
-  cSql->Execute(Implode(aList, 1));
-  // Grab formatted query time
-  const string strTime{ ToShortDuration(cSql->Time()) };
-  // Error occured?
-  if(cSql->GetError())
-    cConsole->AddLine(Format("Query took $ with $<$>: $!",
-      strTime, cSql->GetErrorAsIdString(), cSql->GetError(),
-      cSql->GetErrorStr()));
-  // Not an error?
-  else
+  if(cSql->ExecuteAndSuccess(Implode(aList, 1)))
   { // Get records and if we did not have any?
     const Sql::Result &vData = cSql->GetRecords();
     if(vData.empty())
@@ -621,10 +612,11 @@ static void CBsqlexec(const Arguments &aList)
       // Show rows affected if we have them
       if(strFirst == "insert" || strFirst == "update" || strFirst == "delete")
         cConsole->AddLine(Format("$ affected in $.",
-          PluraliseNum(cSql->Affected(), "record", "records"), strTime));
+          PluraliseNum(cSql->Affected(), "record", "records"),
+            cSql->TimeStr()));
       // Show time
       else if(cSql->Time() > 0)
-        cConsole->AddLine(Format("Query time was $.", strTime));
+        cConsole->AddLine(Format("Query time was $.", cSql->TimeStr()));
     } // Results were returned?
     else
     { // Data for output
@@ -672,9 +664,12 @@ static void CBsqlexec(const Arguments &aList)
         stRecordId++;
       } // Show number of records matched and rows affected
       cConsole->AddLine(Append(tData.Finish(), Format("$ matched in $.",
-        PluraliseNum(stRecordId, "record", "records"), strTime)));
+        PluraliseNum(stRecordId, "record", "records"), cSql->TimeStr())));
     }
-  } // Reset sql transaction because it will leave arrays registered
+  } // Error occured?
+  else cConsole->AddLine(Format("Query took $ with $<$>: $!", cSql->TimeStr(),
+    cSql->GetErrorAsIdString(), cSql->GetError(), cSql->GetErrorStr()));
+  // Reset sql transaction because it will leave arrays registered
   cSql->Reset();
 }
 /* == Check database ======================================================= */
@@ -694,7 +689,7 @@ static void CBsqlend(const Arguments &)
   if(!cSql->Active()) return cConsole->AddLine("Sql transaction not active!");
   // End transaction
   cConsole->AddLine(Format("Sql transaction$ ended.",
-    cSql->Execute("END TRANSACTION") ? strBlank : " NOT"));
+    cSql->End() == SQLITE_OK ? strBlank : " NOT"));
 }
 /* == Optimise databsae ==================================================== */
 static void CBsqldefrag(const Arguments &)
@@ -1634,7 +1629,7 @@ static void CBgpu(const Arguments &)
     "Version: $ by $.\n"
     "$" // Memory (optional)
     "Window: $x$ ($) @ $x$ (*$x$); Flags: 0x$$.\n"
-    "- Viewport size: $$x$ ($ ).\n"
+    "- Viewport size: $$x$ ($).\n"
     "- Ortho matrix: $x$ ($); total: $x$ ($).\n"
     "- Stage: $$; $; $; $.\n"
     "- Main Framebuffer: $x$; Maximum: $^2; Flags: 0x$$.\n"
@@ -1753,8 +1748,14 @@ static void CBcrash[[noreturn]](const Arguments &)
   { System::CriticalHandler("Requested operation"); }
 /* == Dump directory listing to console which includes archived files ====== */
 static void CBdir(const Arguments &aList)
-{ // Enumerate local directories on disk
-  const DirSafe dPath{ aList.size() > 1 ? Format("./$", aList[1]) : "." };
+{ // Make and checkfilename
+  const string &strVal = aList.size() > 1 ? Append("./", aList[1]) : ".";
+  const ValidResult vResult = DirValidName(strVal);
+  if(vResult != VR_OK)
+    return cConsole->AddLine(Format("Cannot check directory '$': $!",
+      strVal, DirValidNameResultToString(vResult)));
+  // Enumerate local directories on disk
+  const Dir dPath{ move(strVal) };
   // Get reference to assets collector class and lock it so it's not changed
   const LockGuard lgArchivesSync{ cArchives->CollectorGetMutex() };
   // Files and directories and total bytes matched

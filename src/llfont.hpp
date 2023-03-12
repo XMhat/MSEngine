@@ -179,7 +179,7 @@ LLFUNC(SetOAlpha,
 // ? Prints the specified string on screen with left alignment.
 /* ------------------------------------------------------------------------- */
 LLFUNC(Print, LCGETPTR(1, Font)->Print(LCGETNUM(GLfloat, 2, "Left"),
-  LCGETNUM(GLfloat, 3, "Top"), LCGETSTRING(GLubyte, 4, "Text")));
+  LCGETNUM(GLfloat, 3, "Top"), LCGETSTRING(GLubyte, 4, "String")));
 /* ========================================================================= */
 // $ Font:PrintT
 // > X:number=The X position of where to start printing the string
@@ -193,7 +193,7 @@ LLFUNC(Print, LCGETPTR(1, Font)->Print(LCGETNUM(GLfloat, 2, "Left"),
 /* ------------------------------------------------------------------------- */
 LLFUNC(PrintT, LCGETPTR(1, Font)->PrintT(
   LCGETNUM   (GLfloat, 2, "X"),    LCGETNUM(GLfloat, 3, "Y"),
-  LCGETSTRING(GLubyte, 4, "Text"), LCGETPTR(5, Texture)));
+  LCGETSTRING(GLubyte, 4, "String"), LCGETPTR(5, Texture)));
 /* ========================================================================= */
 // $ Font:PrintRT
 // > X:number=The X position of where to start printing the string
@@ -207,7 +207,7 @@ LLFUNC(PrintT, LCGETPTR(1, Font)->PrintT(
 /* ------------------------------------------------------------------------- */
 LLFUNC(PrintRT, LCGETPTR(1, Font)->PrintRT(
   LCGETNUM   (GLfloat, 2, "X"),    LCGETNUM(GLfloat, 3, "Y"),
-  LCGETSTRING(GLubyte, 4, "Text"), LCGETPTR(5, Texture)));
+  LCGETSTRING(GLubyte, 4, "String"), LCGETPTR(5, Texture)));
 /* ========================================================================= */
 // $ Font:PrintM
 // > X:number=The X position of where to draw the string.
@@ -220,7 +220,7 @@ LLFUNC(PrintRT, LCGETPTR(1, Font)->PrintRT(
 LLFUNC(PrintM, LCGETPTR(1, Font)->PrintM(
   LCGETNUM   (GLfloat, 2, "X"),      LCGETNUM(GLfloat, 3, "Y"),
   LCGETNUM   (GLfloat, 4, "Scroll"), LCGETNUM(GLfloat, 5, "Width"),
-  LCGETSTRING(GLubyte, 6, "Text")));
+  LCGETSTRING(GLubyte, 6, "String")));
 /* ========================================================================= */
 // $ Font:PrintMT
 // > X:number=The X position of where to draw the string.
@@ -235,7 +235,7 @@ LLFUNC(PrintM, LCGETPTR(1, Font)->PrintM(
 LLFUNC(PrintMT, LCGETPTR(1, Font)->PrintMT(
   LCGETNUM   (GLfloat, 2, "X"),      LCGETNUM(GLfloat, 3, "Y"),
   LCGETNUM   (GLfloat, 4, "Scroll"), LCGETNUM(GLfloat, 5, "Width"),
-  LCGETSTRING(GLubyte, 6, "Text"),   LCGETPTR(7, Texture)));
+  LCGETSTRING(GLubyte, 6, "String"),   LCGETPTR(7, Texture)));
 /* ========================================================================= */
 // $ Font:PrintS
 // > Text:string=The string to simulate printing.
@@ -244,7 +244,7 @@ LLFUNC(PrintMT, LCGETPTR(1, Font)->PrintMT(
 // ? and returns the width of the string printed
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(PrintS, 1,
-  LCPUSHNUM(LCGETPTR(1, Font)->PrintS(LCGETSTRING(GLubyte, 2, "Text"))));
+  LCPUSHNUM(LCGETPTR(1, Font)->PrintS(LCGETSTRING(GLubyte, 2, "String"))));
 /* ========================================================================= */
 // $ Font:PrintTS
 // > Text:string=The string to simulate printing.
@@ -254,7 +254,7 @@ LLFUNCEX(PrintS, 1,
 // ? and returns the width of the string printed
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(PrintTS, 1, LCPUSHNUM(LCGETPTR(1, Font)->PrintTS(
-  LCGETSTRING(GLubyte, 2, "Text"), LCGETPTR(3, Texture))));
+  LCGETSTRING(GLubyte, 2, "String"), LCGETPTR(3, Texture))));
 /* ========================================================================= */
 // $ Font:PrintW
 // > X:number=The X position of where to start printing the string
@@ -270,7 +270,7 @@ LLFUNCEX(PrintTS, 1, LCPUSHNUM(LCGETPTR(1, Font)->PrintTS(
 LLFUNCEX(PrintW, 1, LCPUSHNUM(LCGETPTR(1, Font)->PrintW(
   LCGETNUM(GLfloat, 2, "X"),      LCGETNUM(GLfloat, 3, "Y"),
   LCGETNUMLGE(GLfloat, 4, 0, FLT_MAX, "Width"),
-  LCGETNUM(GLfloat, 5, "Indent"), LCGETSTRING(GLubyte, 6,"Text"))));
+  LCGETNUM(GLfloat, 5, "Indent"), LCGETSTRING(GLubyte, 6,"String"))));
 /* ========================================================================= */
 // $ Font:PrintWUT
 // > X:number=The X position of where to start printing the string
@@ -287,7 +287,7 @@ LLFUNCEX(PrintW, 1, LCPUSHNUM(LCGETPTR(1, Font)->PrintW(
 LLFUNCEX(PrintWUT, 1, LCPUSHNUM(LCGETPTR(1, Font)->PrintWUT(
   LCGETNUM   (GLfloat, 2, "X"),                 LCGETNUM(GLfloat, 3, "Y"),
   LCGETNUMLGE(GLfloat, 4, 0, FLT_MAX, "Width"), LCGETNUM(GLfloat, 5, "Indent"),
-  LCGETSTRING(GLubyte, 6, "Text"),              LCGETPTR(7, Texture))));
+  LCGETSTRING(GLubyte, 6, "String"),              LCGETPTR(7, Texture))));
 /* ========================================================================= */
 // $ Font:PrintWT
 // > X:number=The X position of where to start printing the string
@@ -304,7 +304,7 @@ LLFUNCEX(PrintWUT, 1, LCPUSHNUM(LCGETPTR(1, Font)->PrintWUT(
 LLFUNCEX(PrintWT, 1, LCPUSHNUM(LCGETPTR(1, Font)->PrintWT(
   LCGETNUM   (GLfloat, 2, "X"),                 LCGETNUM(GLfloat, 3, "Y"),
   LCGETNUMLGE(GLfloat, 4, 0, FLT_MAX, "Width"), LCGETNUM(GLfloat, 5, "Indent"),
-  LCGETSTRING(GLubyte, 6, "Text"),              LCGETPTR(7, Texture))));
+  LCGETSTRING(GLubyte, 6, "String"),              LCGETPTR(7, Texture))));
 /* ========================================================================= */
 // $ Font:PrintWTS
 // > Right:number=The right position of where to wrap text to the next line.
@@ -318,7 +318,7 @@ LLFUNCEX(PrintWT, 1, LCPUSHNUM(LCGETPTR(1, Font)->PrintWT(
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(PrintWTS, 1, LCPUSHNUM(LCGETPTR(1, Font)->PrintWTS(
   LCGETNUMLGE(GLfloat, 2, 0, FLT_MAX, "Width"), LCGETNUM(GLfloat, 3, "Indent"),
-  LCGETSTRING(GLubyte, 4, "Text"),              LCGETPTR(5, Texture))));
+  LCGETSTRING(GLubyte, 4, "String"),              LCGETPTR(5, Texture))));
 /* ========================================================================= */
 // $ Font:PrintWU
 // > X:number=The X screen position of the string.
@@ -334,7 +334,7 @@ LLFUNCEX(PrintWTS, 1, LCPUSHNUM(LCGETPTR(1, Font)->PrintWTS(
 LLFUNCEX(PrintWU, 1, LCPUSHNUM(LCGETPTR(1, Font)->PrintWU(
   LCGETNUM   (GLfloat, 2, "X"),                 LCGETNUM(GLfloat, 3, "Y"),
   LCGETNUMLGE(GLfloat, 4, 0, FLT_MAX, "Width"), LCGETNUM(GLfloat, 5, "Indent"),
-  LCGETSTRING(GLubyte, 6, "Text"))));
+  LCGETSTRING(GLubyte, 6, "String"))));
 /* ========================================================================= */
 // $ Font:PrintU
 // > X:number=The X screen position of the string.
@@ -345,7 +345,7 @@ LLFUNCEX(PrintWU, 1, LCPUSHNUM(LCGETPTR(1, Font)->PrintWU(
 /* ------------------------------------------------------------------------- */
 LLFUNC(PrintU, LCGETPTR(1, Font)->PrintU(
   LCGETNUM   (GLfloat, 2, "X"), LCGETNUM(GLfloat, 3, "Y"),
-  LCGETSTRING(GLubyte, 4, "Text")));
+  LCGETSTRING(GLubyte, 4, "String")));
 /* ========================================================================= */
 // $ Font:PrintUS
 // > String:string=The string to print.
@@ -353,7 +353,7 @@ LLFUNC(PrintU, LCGETPTR(1, Font)->PrintU(
 // ? Simulates printing a string. Returns height.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(PrintUS, 1,
-  LCPUSHNUM(LCGETPTR(1, Font)->PrintSU(LCGETSTRING(GLubyte, 2, "Text"))));
+  LCPUSHNUM(LCGETPTR(1, Font)->PrintSU(LCGETSTRING(GLubyte, 2, "String"))));
 /* ========================================================================= */
 // $ Font:PrintWS
 // > WrapX:number=The X position to wrap the text at.
@@ -364,7 +364,7 @@ LLFUNCEX(PrintUS, 1,
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(PrintWS, 1, LCPUSHNUM(LCGETPTR(1, Font)->PrintWS(
   LCGETNUMLGE(GLfloat, 2, 0, FLT_MAX, "WrapX"), LCGETNUM(GLfloat, 3, "Indent"),
-  LCGETSTRING(GLubyte, 4, "Text"))));
+  LCGETSTRING(GLubyte, 4, "String"))));
 /* ========================================================================= */
 // $ Font:PrintR
 // > X:number=The X screen position of the string.
@@ -374,7 +374,7 @@ LLFUNCEX(PrintWS, 1, LCPUSHNUM(LCGETPTR(1, Font)->PrintWS(
 /* ------------------------------------------------------------------------- */
 LLFUNC(PrintR, LCGETPTR(1, Font)->PrintR(
   LCGETNUM   (GLfloat, 2, "X"), LCGETNUM(GLfloat, 3, "Y"),
-  LCGETSTRING(GLubyte, 4, "Text")));
+  LCGETSTRING(GLubyte, 4, "String")));
 /* ========================================================================= */
 // $ Font:PrintC
 // > X:number=The X screen position of the string.
@@ -384,7 +384,7 @@ LLFUNC(PrintR, LCGETPTR(1, Font)->PrintR(
 /* ------------------------------------------------------------------------- */
 LLFUNC(PrintC, LCGETPTR(1, Font)->PrintC(
   LCGETNUM   (GLfloat, 2, "X"), LCGETNUM(GLfloat, 3, "Y"),
-  LCGETSTRING(GLubyte, 4, "Text")));
+  LCGETSTRING(GLubyte, 4, "String")));
 /* ========================================================================= */
 // $ Font:PrintCT
 // > X:number=The X position of where to start printing the string
@@ -395,7 +395,7 @@ LLFUNC(PrintC, LCGETPTR(1, Font)->PrintC(
 /* ------------------------------------------------------------------------- */
 LLFUNC(PrintCT, LCGETPTR(1, Font)->PrintCT(
   LCGETNUM   (GLfloat, 2, "X"),    LCGETNUM(GLfloat, 3, "Y"),
-  LCGETSTRING(GLubyte, 4, "Text"), LCGETPTR(        5, Texture)));
+  LCGETSTRING(GLubyte, 4, "String"), LCGETPTR(        5, Texture)));
 /* ========================================================================= */
 // $ Font:Dump
 // ? Dumps the texture to the specified file in TGA format.

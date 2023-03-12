@@ -454,7 +454,7 @@ LLFUNCEX(ClampInt, 1, LCPUSHINT(Clamp(
 // > Text:string=The text to copy.
 // ? Stores the specified text into the operating system's clipboard.
 /* ------------------------------------------------------------------------- */
-LLFUNC(ClipSet, cGlFW->SetClipboard(LCGETSTRING(char, 1, "Text")));
+LLFUNC(ClipSet, cGlFW->SetClipboard(LCGETSTRING(char, 1, "String")));
 /* ========================================================================= */
 // $ Util.ClipGet
 // < Text:string=The text in the clipboard.

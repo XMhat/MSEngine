@@ -26,7 +26,7 @@ BUILD_FLAGS(Sql,                       // Sql flags classes
   // Delete empty databases?           Debug sql executions?
   SF_DELETEEMPTYDB       {0x00000002}
 );/* -- Sql manager class -------------------------------------------------- */
-static class Sql :
+static class Sql final :
   /* -- Base classes ------------------------------------------------------- */
   public Ident,                        // Sql database filename
   private SqlFlags                     // Sql flags
@@ -238,14 +238,16 @@ static class Sql :
   template<typename T>void DoPair(Records &smbData, const int iType,
     const char*const cpKey, const T tVal)
       { DoPair(smbData, iType, cpKey, &tVal, sizeof(tVal)); }
+  /* -- Set error code ----------------------------------------------------- */
+  void SetError(const int iCode) { iError = iCode; }
   /* -- Compile the sql command and store output rows ---------------------- */
   void DoStep(sqlite3_stmt*const stmtData)
   { // Until we're done with all the data
-    for(iError = sqlite3_step(stmtData);
-        iError != SQLITE_DONE;
-        iError = sqlite3_step(stmtData))
-    { // Return if error
-      if(iError != SQLITE_ROW) return;
+    for(SetError(sqlite3_step(stmtData));
+        IsErrorNotEqual(SQLITE_DONE);
+        SetError(sqlite3_step(stmtData)))
+    { // Return if an error in the row
+      if(IsErrorNotEqual(SQLITE_ROW)) return;
       // Create key/memblock map and reserve entries
       Records smbData;
       // For each column, add to string/memblock map
@@ -285,7 +287,7 @@ static class Sql :
       } // Move key/values into records list if there were keys inserted
       if(!smbData.empty()) vKeys.emplace_back(move(smbData));
     } // Set error code to OK because it's set to SQLITE_DONE
-    iError = SQLITE_OK;
+    SetError(SQLITE_OK);
   }
   /* -- Can database be deleted, no point keeping if it's empty! ----------- */
   ADResult CanDatabaseBeDeleted(void)
@@ -315,6 +317,70 @@ static class Sql :
       // More than one table? Do not delete
       default: return ADR_ERR_TABLES_EXIST;
     } // Call should not continue after this switch statement
+  }
+  /* -- Send command to sql in raw format ---------------------------------- */
+  void DoExecute(const string &strC, const CellList &vIn={})
+  { // Reset previous results
+    Reset();
+    // Set query start time
+    const ClockInterval<> tpStart;
+    // Statement preparation
+    sqlite3_stmt *stmtData = nullptr;
+    SetError(sqlite3_prepare_v2(sqlDB, strC.c_str(),
+      IntOrMax<int>(strC.length()), &stmtData, nullptr));
+    // If succeeded then start parsing the input and ouput
+    if(IsNoError())
+    { // Free the statement context incase of exception
+      typedef unique_ptr<sqlite3_stmt,
+        function<decltype(sqlite3_finalize)>> SqliteStatementPtr;
+      const SqliteStatementPtr sspPtr{ stmtData, sqlite3_finalize };
+      // How many bind parameters per record?
+      const int iMax = sqlite3_bind_parameter_count(stmtData);
+      // Column id
+      int iCol = 1;
+      // Commit the statement
+      bool bCommit = false;
+      // For each memblock
+      for(const Cell &mbIn : vIn)
+      { // Commit the last statement? We can't put this at the end of the loop
+        // because we don't want to call sqlite3_step twice in a row.
+        if(bCommit)
+        { // Compile the record
+          DoStep(stmtData);
+          if(IsError()) return;
+          // Reset bindings so we can insert another
+          SetError(sqlite3_reset(stmtData));
+          if(IsError()) return;
+          // Done commit
+          bCommit = false;
+        } // What is the data type
+        switch(mbIn.iT)
+        { // 64-bit integer?
+          case SQLITE_INTEGER: SetError(sqlite3_bind_int64(stmtData,
+            iCol, mbIn.qV)); break;
+          // 64-bit IEEE float?
+          case SQLITE_FLOAT: SetError(sqlite3_bind_double(stmtData,
+            iCol, mbIn.fdV)); break;
+          // Raw data?
+          case SQLITE_BLOB: SetError(sqlite3_bind_blob(stmtData,
+            iCol, mbIn.cpD, mbIn.iS, SQLITE_TRANSIENT)); break;
+          // Text?
+          case SQLITE_TEXT: SetError(sqlite3_bind_text(stmtData,
+            iCol, mbIn.cpD, mbIn.iS, SQLITE_TRANSIENT)); break;
+          // SQLITE_NULL or unknown data type? Treat as null
+          default: SetError(sqlite3_bind_null(stmtData, iCol)); break;
+        } // Return if bind failed
+        if(IsError()) return;
+        // If we still have columns to bind reloop and bind the next parameter
+        if(iCol != iMax) ++iCol;
+        // Commit the record on the next iteration, we don't do it now because
+        // this might be the last parameter the user supplied and we don't want
+        // to insert the same record twice.
+        else { bCommit = true; iCol = 1; }
+      } // Make sure we process the last record
+      DoStep(stmtData);
+    } // Get end query time to get total execution duration
+    duQuery = tpStart.CIDelta();
   }
   /* -- Is sqlite database opened? --------------------------------- */ public:
   bool IsOpened(void) { return !!sqlDB; }
@@ -486,93 +552,25 @@ static class Sql :
   /* -- Reset last sql result ---------------------------------------------- */
   void Reset(void)
   { // Clear error
-    iError = SQLITE_OK;
+    SetError(SQLITE_OK);
     // Clear last result data
     vKeys.clear();
     // Reset query time
     duQuery = seconds(0);
   }
-  /* -- Send command to sql in raw format ---------------------------------- */
-  void DoExecute(sqlite3_stmt *stmtData, const CellList &vIn)
-  { // Ignore if empty statement
-    if(!stmtData) { iError = SQLITE_ERROR; return; }
-    // How many bind parameters per record?
-    const int iMax = sqlite3_bind_parameter_count(stmtData);
-    // Column id
-    int iCol = 1;
-    // Commit the statement
-    bool bCommit = false;
-    // For each memblock
-    for(const Cell &mbIn : vIn)
-    { // Commit the last statement? We can't put this at the end of the loop
-      // because we don't want to call sqlite3_step twice in a row.
-      if(bCommit)
-      { // Compile the record
-        DoStep(stmtData);
-        if(iError != SQLITE_OK) return;
-        // Reset bindings so we can insert another
-        iError = sqlite3_reset(stmtData);
-        if(iError != SQLITE_OK) return;
-        // Done commit
-        bCommit = false;
-      } // What is the data type
-      switch(mbIn.iT)
-      { // 64-bit integer?
-        case SQLITE_INTEGER: iError = sqlite3_bind_int64(stmtData,
-          iCol, mbIn.qV); break;
-        // 64-bit IEEE float?
-        case SQLITE_FLOAT: iError = sqlite3_bind_double(stmtData,
-          iCol, mbIn.fdV); break;
-        // Raw data?
-        case SQLITE_BLOB: iError = sqlite3_bind_blob(stmtData,
-          iCol, mbIn.cpD, mbIn.iS, SQLITE_TRANSIENT); break;
-        // Text?
-        case SQLITE_TEXT: iError = sqlite3_bind_text(stmtData,
-          iCol, mbIn.cpD, mbIn.iS, SQLITE_TRANSIENT); break;
-        // SQLITE_NULL or unknown data type? Treat as null
-        default: iError = sqlite3_bind_null(stmtData, iCol); break;
-      } // Return if bind failed
-      if(iError != SQLITE_OK) return;
-      // If we still have columns to bind reloop and bind the next parameter
-      if(iCol != iMax) ++iCol;
-      // Commit the record on the next iteration, we don't do it now because
-      // this might be the last parameter the user supplied and we don't want
-      // to insert the same record twice.
-      else { bCommit = true; iCol = 1; }
-    } // Make sure we process the last record
-    DoStep(stmtData);
-  }
-  /* -- Dispatch stored transaction ---------------------------------------- */
+  /* -- Dispatch stored transaction with logging --------------------------- */
   int Execute(const string &strC, const CellList &vIn={})
   { // Ignore if nothing to dispatch
     if(strC.empty()) return SQLITE_ERROR;
-    // Reset previous results
-    Reset();
-    // Statement preparation
-    sqlite3_stmt *stmtHandle = nullptr;
-    iError = sqlite3_prepare_v2(sqlDB, strC.c_str(),
-      IntOrMax<int>(strC.length()), &stmtHandle, nullptr);
-    // Set query start time
-    const ClockInterval<> tpStart;
-    // If succeeded then start parsing the input and ouput
-    if(iError == SQLITE_OK)
-    { // Free the statement context incase of exception
-      typedef unique_ptr<sqlite3_stmt, function<decltype(sqlite3_finalize)>>
-        SqliteStatementPtr;
-      const SqliteStatementPtr sspPtr{ stmtHandle, sqlite3_finalize };
-      DoExecute(stmtHandle, vIn);
-    } // Get end query time to get total execution duration
-    duQuery = tpStart.CIDelta();
+    // Do execution
+    DoExecute(strC, vIn);
     // If log is in debug mode?
     if(cLog->HasLevel(LH_DEBUG))
-    { // Decide level to use
-      const LHLevel lhLevel = GetError() != SQLITE_OK ? LH_WARNING : LH_DEBUG;
-      // Write string
-      cLog->WriteStringSafe(lhLevel,
+    { // Write string
+      cLog->WriteStringSafe(LH_DEBUG,
         Format("Sql executed '$'<$>.\n- Args: $; Code: $<$>; RTT: $ sec.",
           strC, strC.length(), vIn.size(), ResultToString(GetError()),
-          GetError(),
-          IfClock::ToShortDuration(ClockDurationToDouble(duQuery), 6)));
+          GetError(), TimeStr()));
       // Write parameters
       for(size_t stIndex = 0; stIndex < vIn.size(); ++stIndex)
       { // Get cell data
@@ -580,23 +578,23 @@ static class Sql :
         // Get type
         switch(cItem.iT)
         { // Type is an integer?
-          case SQLITE_INTEGER: cLog->WriteStringSafe(lhLevel,
+          case SQLITE_INTEGER: cLog->WriteStringSafe(LH_DEBUG,
             Format("- Arg #$<Int> = $ <$0x$>.",
               stIndex, cItem.qV, hex, cItem.qV)); break;
           // Type is a float?
-          case SQLITE_FLOAT: cLog->WriteStringSafe(lhLevel,
+          case SQLITE_FLOAT: cLog->WriteStringSafe(LH_DEBUG,
             Format("- Arg #$<Float> = $.",
               stIndex, cItem.fdV)); break;
           // Type is text?
-          case SQLITE_TEXT: cLog->WriteStringSafe(lhLevel,
+          case SQLITE_TEXT: cLog->WriteStringSafe(LH_DEBUG,
             Format("- Arg #$<Text> = \"$\" ($ bytes).",
               stIndex, cItem.cpD, cItem.iS)); break;
           // Type is data?
-          case SQLITE_BLOB: cLog->WriteStringSafe(lhLevel,
+          case SQLITE_BLOB: cLog->WriteStringSafe(LH_DEBUG,
             Format("- Arg #$<Blob> = $ bytes.",
               stIndex, cItem.iS)); break;
           // Unknown type?
-          default: cLog->WriteStringSafe(lhLevel,
+          default: cLog->WriteStringSafe(LH_DEBUG,
             Format("- Param $<Unknown:$> = $ bytes.",
               stIndex, cItem.iT, cItem.iS)); break;
         }
@@ -604,6 +602,9 @@ static class Sql :
     } // Return error status
     return iError;
   }
+  /* -- Dispatch stored transaction with logging but return success bool -- */
+  bool ExecuteAndSuccess(const string &strC, const CellList &vIn={})
+    { return Execute(strC, vIn) == SQLITE_OK; }
   /* -- Check integrity ---------------------------------------------------- */
   bool CheckIntegrity(void)
   { // Do check (We need a result so dont use Pragma())
@@ -699,10 +700,16 @@ static class Sql :
   const char *GetErrorStr(void) const { return sqlite3_errmsg(sqlDB); }
   /* -- Return error code -------------------------------------------------- */
   int GetError(void) const { return iError; }
-  bool IsReadOnlyError(void) const { return GetError() & SQLITE_READONLY; }
+  bool IsErrorEqual(const int iWhat) const { return GetError() == iWhat; };
+  bool IsErrorNotEqual(const int iWhat) const { return !IsErrorEqual(iWhat); };
+  bool IsError(void) { return IsErrorNotEqual(SQLITE_OK); }
+  bool IsNoError(void) { return !IsError(); }
+  bool IsReadOnlyError(void) const { return IsErrorEqual(SQLITE_READONLY); }
   const string &GetErrorAsIdString(void) { return ResultToString(iError); }
   /* -- Return duration of last query -------------------------------------- */
   double Time(void) const { return ClockDurationToDouble(duQuery); }
+  /* -- Return formatted query time ---------------------------------------- */
+  const string TimeStr(void) const { return ToShortDuration(Time()); }
   /* -- Returns if sql is in a transaction --------------------------------- */
   bool Active(void) const { return !sqlite3_get_autocommit(sqlDB); }
   /* -- Return string map of records --------------------------------------- */
@@ -1070,9 +1077,8 @@ static class Sql :
     strMemoryDBName{ ":memory:" }      // Create a memory database by default
     /* -- Code ------------------------------------------------------------- */
     { // Throw error if sqlite startup failed
-      if(iError != SQLITE_OK)
-        XC("Failed to initialise SQLite!",
-           "Error", GetError(), "Reason", GetErrorAsIdString());
+      if(IsError()) XC("Failed to initialise SQLite!",
+                       "Error", GetError(), "Reason", GetErrorAsIdString());
     }
   /* -- Destructor --------------------------------------------------------- */
   DTORHELPERBEGIN(~Sql) DeInit(); sqlite3_shutdown(); DTORHELPEREND(Sql);

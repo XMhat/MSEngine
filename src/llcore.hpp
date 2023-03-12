@@ -63,7 +63,7 @@ LLFUNC(End, cEvtMain->Add(EMC_LUA_END));
 // > Text:string=The line of text to write to the log.
 // ? Writes the specified line of text to the engine log with highest level.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Log, LW(LH_DISABLED, "(Lua) $", LCGETSTRING(char, 1, "Text")));
+LLFUNC(Log, LW(LH_DISABLED, "(Lua) $", LCGETSTRING(char, 1, "String")));
 /* ========================================================================= */
 // $ Core.LogEx
 // > Level:integer=The log severity level.
@@ -73,7 +73,7 @@ LLFUNC(Log, LW(LH_DISABLED, "(Lua) $", LCGETSTRING(char, 1, "Text")));
 // ? log anything.
 /* ------------------------------------------------------------------------- */
 LLFUNC(LogEx, LW(LCGETINTLGE(LHLevel, 2, LH_DISABLED, LH_MAX, "Level"),
-  "(Lua) $", LCGETSTRING(char, 1, "Text")));
+  "(Lua) $", LCGETSTRING(char, 1, "String")));
 /* ========================================================================= */
 // $ Core.Delay
 // > Miliseconds:integer=Time in seconds.

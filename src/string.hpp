@@ -218,7 +218,7 @@ static const string LocalError(const int iErrNo=errno)
   return strErr;
 }
 /* -- Helper plugin for C runtime errno checking --------------------------- */
-class ErrorPluginStandard
+class ErrorPluginStandard final
 { /* -- Exception class helper macro for C runtime errors --------- */ private:
   #define XCL(r,...) throw Error<ErrorPluginStandard>(r, ## __VA_ARGS__)
   /* -- Constructor to add C runtime error code -------------------- */ public:
@@ -466,7 +466,7 @@ static const string
             bcpPair.second) : strOut; }); }
 /* -- Convert time to short duration --------------------------------------- */
 static const string ToShortDuration(const double fdDuration,
-  const int iPrecision=3)
+  const int iPrecision=6)
 { // Output string
   ostringstream osS;
   // Get duration ceiled and if negative?
@@ -508,8 +508,8 @@ static const char *TrueOrFalse(const bool bCondition)
 static const char *YesOrNo(const bool bCondition)
   { return bCondition ? "X" : "-"; }
 /* ------------------------------------------------------------------------- */
-static size_t FindCharForwards(const string &strS, size_t stStart,
-  const size_t stEnd, const char*const cpChars)
+[[maybe_unused]] static size_t FindCharForwards(const string &strS,
+  size_t stStart, const size_t stEnd, const char*const cpChars)
 { // Ignore if invalid parameter
   if(!cpChars) return string::npos;
   // Until we've reached the limit
@@ -812,8 +812,8 @@ static size_t FindCharForwards(const string &strS, size_t stStart,
   return string::npos;
 }
 /* ------------------------------------------------------------------------- */
-static size_t FindCharBackwards(const string &strS, size_t stStart,
-  const size_t stEnd, const char cpChar)
+[[maybe_unused]] static size_t FindCharBackwards(const string &strS,
+  size_t stStart, const size_t stEnd, const char cpChar)
 { // Until we've reached the limit
   while(stStart >= stEnd && stStart != string::npos)
   { // Return position if we find the character
@@ -824,8 +824,8 @@ static size_t FindCharBackwards(const string &strS, size_t stStart,
   return string::npos;
 }
 /* ------------------------------------------------------------------------- */
-static size_t FindCharNotForwards(const string &strS, size_t stStart,
-  const size_t stEnd, const char cpChar)
+[[maybe_unused]] static size_t FindCharNotForwards(const string &strS,
+  size_t stStart, const size_t stEnd, const char cpChar)
 { // Until we've reached the limit
   while(stStart < stEnd && stStart != string::npos)
   { // Return position if we find the character
@@ -848,8 +848,8 @@ static size_t FindCharNotForwards(const string &strS, size_t stStart,
   return string::npos;
 }
 /* ------------------------------------------------------------------------- */
-static size_t FindCharNotBackwards(const string &strS, size_t stStart,
-  const size_t stEnd, const char cpChar)
+[[maybe_unused]] static size_t FindCharNotBackwards(const string &strS,
+  size_t stStart, const size_t stEnd, const char cpChar)
 { // Until we've reached the limit
   while(stStart >= stEnd && stStart != string::npos)
   { // Return position if we find the character

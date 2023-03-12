@@ -552,7 +552,7 @@ static const Memory CryptRandomBlock(const size_t stSize)
   return aData;
 }
 /* -- Crypt manager class -------------------------------------------------- */
-static class Crypt :
+static class Crypt final :
   /* -- Base classes ------------------------------------------------------- */
   public IHelper                       // The crypto manager class
 { /* -------------------------------------------------------------- */ private:

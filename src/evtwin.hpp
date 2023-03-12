@@ -29,7 +29,7 @@ enum EvtWinCmd                         // Render thread event commands
   /* ----------------------------------------------------------------------- */
   EWC_MAX = EWC_NOLOG,                 // 08: Below are just codes
 };/* ----------------------------------------------------------------------- */
-static class EvtWin :                  // Event list for window thread
+static class EvtWin final :            // Event list for window thread
   /* -- Dependencies ------------------------------------------------------- */
   public IfEvtCore::EvtCore            // Events common class
    <EvtWinCmd,                         // The enum list of events supported

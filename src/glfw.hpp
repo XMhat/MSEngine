@@ -11,7 +11,7 @@ namespace IfGlFW {                     // Keep declarations neatly categorised
 /* ------------------------------------------------------------------------- */
 using namespace IfEvtMain;             // Using event interface
 /* == GlFW manager class =================================================== */
-static class GlFW :
+static class GlFW final :
   /* -- Base classes ------------------------------------------------------- */
   public IHelper                       // Initialisation helper
 { /* -- Private variables -------------------------------------------------- */
@@ -263,28 +263,20 @@ static class GlFW :
     { return glfwGetKey(GetWindowHandle(), iK); }
   static const char *GetKeyName(const int iK, const int iSC)
     { return glfwGetKeyName(iK, iSC); }
-  /* -- Get window attribute ----------------------------------------------- */
+  /* -- Get window attributes ---------------------------------------------- */
   int GetWindowAttrib(const int iA) const
     { return glfwGetWindowAttrib(GetWindowHandle(), iA); }
-  /* -- Window settings ---------------------------------------------------- */
-  /* ####################################################################### */
-  /* ## Using a helper macro we can make it easier to define functions    ## */
-  /* ## that check and test for a simple boolean in GLFW's window         ## */
-  /* ## properties.                                                       ## */
-  /* ####################################################################### */
-  /* ----------------------------------------------------------------------- */
-  #define IS(nc,nu) bool Is ## nc(void) const \
-    { return GLFWBooleanToBoolean(GetWindowAttrib(GLFW_ ## nu)); }
-  IS(Decorated,   DECORATED);               // Window has a border?
-  IS(Floating,    FLOATING);                // Window is always-on-top?
-  IS(Focused,     FOCUSED);                 // Window is focued?
-  IS(Hovered,     HOVERED);                 // Mouse is hovering over window?
-  IS(Visible,     VISIBLE);                 // Window is visible?
-  IS(Resizable,   RESIZABLE);               // Window is resizable?
-  IS(Minimised,   ICONIFIED);               // Window is minimised?
-  IS(Maximised,   MAXIMIZED);               // Window is maximised?
-  IS(Transparent, TRANSPARENT_FRAMEBUFFER); // Window uses alpha framebuffer?
-  #undef IS
+  /* -- Get window hint boolean -------------------------------------------- */
+  bool GetWindowAttribBoolean(const int iVar) const
+    { return GLFWBooleanToBoolean(GetWindowAttrib(iVar)); }
+  /* -- Update window attributes ------------------------------------------- */
+  void SetWindowAttrib(const int iVar, const int iVal) const
+  { // Set the window attribute
+    glfwSetWindowAttrib(GetWindowHandle(), iVar, iVal);
+    // Log the attribute change
+    LW(LH_DEBUG, "GlFW set attrib $<0x$$> to $$<0x$$>.",
+      GetHintName(iVar), hex, iVar, dec, iVal, hex, iVal);
+  }
   /* -- Window state ------------------------------------------------------- */
   void RestoreWindow(void) const
     { glfwRestoreWindow(GetWindowHandle()); }
@@ -387,23 +379,45 @@ static class GlFW :
     { return glfwGetMouseButton(GetWindowHandle(), iB); }
   /* == Set window hint ==================================================== */
   static void SetDefaultWindowHints(void) { glfwDefaultWindowHints(); }
-  /* -- Update window attributes ------------------------------------------- */
-  void SetWindowAttrib(const int iVar, const int iVal)
-  { // Set the window attribute
-    glfwSetWindowAttrib(GetWindowHandle(), iVar, iVal);
-    // Log the attribute change
-    LW(LH_DEBUG, "GlFW set attrib $<0x$$> to $$<0x$$>.",
-      GetHintName(iVar), hex, iVar, dec, iVal, hex, iVal);
+  /* -- Set window hint string --------------------------------------------- */
+  void SetWindowHintString(const int iVar, const char*const cpVal) const
+  { // Set window hint directly
+    glfwWindowHintString(iVar, cpVal);
+    // Log the change
+    LW(LH_DEBUG, "GlFW set hint $<0x$$> to '$'.",
+      GetHintName(iVar), hex, iVar, cpVal);
   }
-  /* -- Update window attribute from a boolean ----------------------------- */
-  void SetWindowAttribBoolean(const int iVar, const bool bVal)
-    { SetWindowAttrib(iVar, BooleanToGLFWBoolean(bVal)); }
-  /* -- Update window attribute to GLFW_FALSE ------------------------------ */
-  void SetWindowAttribDisable(const int iVar)
-    { SetWindowAttrib(iVar, false); }
-  /* -- Update window attribute to GLFW_TRUE ------------------------------- */
-  void SetWindowAttribEnable(const int iVar)
-    { SetWindowAttrib(iVar, true); }
+  /* -- Set frame name in MacOS -------------------------------------------- */
+  void SetWindowCocoaFrameName([[maybe_unused]] const char*const cpName) const
+  { // Only applies to Apple targets
+#ifdef __APPLE__
+    SetWindowHintString(GLFW_COCOA_FRAME_NAME, cpName);
+#endif
+  }
+  /* -- Set class name in X11 ---------------------------------------------- */
+  void SetWindowX11ClassName([[maybe_unused]] const char*const cpName) const
+  { // Only applies to Linux targets
+#ifdef __linux__
+    SetWindowHintString(GLFW_X11_CLASS_NAME, cpName);
+#endif
+  }
+  /* -- Set instance name in X11 -------------------------------------------- */
+  void SetWindowX11InstanceName([[maybe_unused]] const char*const cpName) const
+  { // Only applies to Linux targets
+#ifdef __linux__
+    SetWindowHintString(GLFW_X11_INSTANCE_NAME, cpName);
+#endif
+  }
+  /* -- Set window frame names --------------------------------------------- */
+  void SetWindowFrameName([[maybe_unused]] const char*const cpName)
+  { // Set custom frame names
+#if defined(__APPLE__)
+    SetWindowCocoaFrameName(cpName);
+#elif defined(__linux__)
+    SetWindowX11ClassName(cpName);
+    SetWindowX11InstanceName(cpName);
+#endif
+  }
   /* -- Set window hint ---------------------------------------------------- */
   void SetWindowHint(const int iVar, const int iVal) const
   { // Set window hint directly
@@ -412,15 +426,112 @@ static class GlFW :
     LW(LH_DEBUG, "GlFW set hint $<0x$$> to $$<0x$$>.",
       GetHintName(iVar), hex, iVar, dec, iVal, hex, iVal);
   }
-  /* -- Set window hint via boolean converting to GL_TRUE/GL_FALSE --------- */
+  /* ----------------------------------------------------------------------- */
+#define SET(nc,nu) \
+  /* -- Create functions to access all attributes ------------------------- */\
+  [[maybe_unused]] void Set ## nc(const int iNV) const \
+    { SetWindowHint(GLFW_ ## nu, iNV); }
+  /* ---------------------------------------------------------------------- */\
+  SET(RedBits, RED_BITS);              // Set depth of red component
+  SET(GreenBits, GREEN_BITS);          // Set depth of green component
+  SET(BlueBits, BLUE_BITS);            // Set depth of blue component
+  SET(AlphaBits, ALPHA_BITS);          // Set depth of alpha component
+  SET(DepthBits, DEPTH_BITS);          // Set depth of Z component
+  SET(StencilBits, STENCIL_BITS);      // Set depth of stencil component
+  SET(Multisamples, SAMPLES);          // Set anti-aliasing factor
+  SET(AuxBuffers, AUX_BUFFERS);        // Set auxiliary buffer count
+  SET(RefreshRate, REFRESH_RATE);      // Set desktop refresh rate
+  SET(ClientAPI, CLIENT_API);          // Set client api to use
+  SET(CtxMajor, CONTEXT_VERSION_MAJOR); // Set gl context major version
+  SET(CtxMinor, CONTEXT_VERSION_MINOR); // Set gl context minor version
+  SET(CoreProfile, OPENGL_PROFILE);    // Set gl profile to use
+  SET(Robustness, CONTEXT_ROBUSTNESS); // Set context robustness
+  /* ----------------------------------------------------------------------- */
+#undef SET                             // Done with this macro
+  /* -- Set window bits all in one ----------------------------------------- */
+  void SetColourDepth(const int iR, const int iG, const int iB, const int iA)
+    const { SetRedBits(iR); SetGreenBits(iG); SetBlueBits(iB);
+            SetAlphaBits(iA); }
+  /* -- Set opengl context version in one function ------------------------- */
+  void SetContextVersion(const int iMajor, const int iMinor) const
+    { SetCtxMajor(iMajor); SetCtxMinor(iMinor); }
+  /* -- Set window attribute core functions -------------------------------- */
+  void SetWindowAttribBoolean(const int iVar, const bool bVal) const
+    { SetWindowAttrib(iVar, BooleanToGLFWBoolean(bVal)); }
+  void SetWindowAttribEnabled(const int iVar) const
+    { SetWindowAttribBoolean(iVar, true); }
+  void SetWindowAttribDisabled(const int iVar) const
+    { SetWindowAttribBoolean(iVar, false); }
+  /* -- Get/Set/Check window attributes ------------------------------------ */
+#define SET(nc,nu) \
+  /* -- Create functions to access all attributes ------------------------- */\
+  [[maybe_unused]] void Set ## nc ## Attrib(const bool bState) const \
+    { SetWindowAttribBoolean(GLFW_ ## nu, bState); } \
+  [[maybe_unused]] void Set ## nc ## AttribEnabled(void) const \
+    { SetWindowAttribEnabled(GLFW_ ## nu); } \
+  [[maybe_unused]] void Set ## nc ## AttribDisabled(void) const \
+    { SetWindowAttribDisabled(GLFW_ ## nu); } \
+  [[maybe_unused]] bool Is ## nc ## AttribEnabled(void) const \
+    { return GLFWBooleanToBoolean(GetWindowAttrib(GLFW_ ## nu)); } \
+  [[maybe_unused]] bool Is ## nc ## AttribDisabled(void) const \
+    { return !Is ## nc ## AttribEnabled(); }
+  /* ----------------------------------------------------------------------- */
+  SET(Decorated, DECORATED);           // Window has a caption and border?
+  SET(Resizable, RESIZABLE);           // Window is resizable?
+  SET(Floating, FLOATING);             // Window is always on top?
+  SET(AutoIconify, AUTO_ICONIFY);      // Window is auto-minimised?
+  SET(FocusOnShow, FOCUS_ON_SHOW);     // Window is shown on focus?
+  /* ----------------------------------------------------------------------- */
+#undef SET                             // Done with this macro
+  /* -- Set window hint core functions ------------------------------------- */
   void SetWindowHintBoolean(const int iVar, const bool bVal) const
     { SetWindowHint(iVar, BooleanToGLFWBoolean(bVal)); }
-  /* -- Set window hint to GL_TRUE ----------------------------------------- */
-  void SetWindowHintEnable(const int iVar) const
+  void SetWindowHintEnabled(const int iVar) const
     { SetWindowHintBoolean(iVar, true); }
-  /* -- Set window hint to GL_FALSE ---------------------------------------- */
-  void SetWindowHintDisable(const int iVar) const
+  void SetWindowHintDisabled(const int iVar) const
     { SetWindowHintBoolean(iVar, false); }
+  /* ----------------------------------------------------------------------- */
+#define SET(nc,nu) \
+  /* -- Create functions to access all attributes ------------------------- */\
+  [[maybe_unused]] void Set ## nc(const bool bState) const \
+    { SetWindowHintBoolean(GLFW_ ## nu, bState); } \
+  [[maybe_unused]] void Set ## nc ## Enabled(void) const \
+    { SetWindowHintEnabled(GLFW_ ## nu); } \
+  [[maybe_unused]] void Set ## nc ## Disabled(void) const \
+    { SetWindowHintDisabled(GLFW_ ## nu); } \
+  [[maybe_unused]] bool Is ## nc ## Enabled(void) const \
+    { return GetWindowAttribBoolean(GLFW_ ## nu); } \
+  [[maybe_unused]] bool Is ## nc ## Disabled(void) const \
+    { return !Is ## nc ## Enabled(); }
+  /* ----------------------------------------------------------------------- */
+  SET(Focus, FOCUSED);                 // Set window focused state
+  SET(Iconify, ICONIFIED);             // Set window minimised state
+  SET(Resizable, RESIZABLE);           // Set window resizable state
+  SET(Visibility, VISIBLE);            // Set window visibility state
+  SET(Decorated, DECORATED);           // Set window border state
+  SET(AutoIconify, AUTO_ICONIFY);      // Set window auto-minimise state
+  SET(Floating, FLOATING);             // Set window floating state
+  SET(Maximised, MAXIMIZED);           // Set window maximised state
+  SET(CentreCursor, CENTER_CURSOR);    // Set window cursor centre state
+  SET(Transparency, TRANSPARENT_FRAMEBUFFER); // Set transparent framebuffer
+  SET(Stereo, CENTER_CURSOR);          // Set window cursor centre state
+  SET(MouseHovered, HOVERED);          // Set mouse hovered over state
+  SET(FocusOnShow, FOCUS_ON_SHOW);     // Set focus on show window
+  SET(SRGBCapable, SRGB_CAPABLE);      // Set SRGB colour space capable
+  SET(DoubleBuffer, DOUBLEBUFFER);     // Set double buffering
+  SET(NoErrors, CONTEXT_NO_ERROR);     // Set context no errors
+  SET(Debug, OPENGL_DEBUG_CONTEXT);    // Set opengl debug mode
+  SET(ForwardCompat, OPENGL_FORWARD_COMPAT); // Set opengl fwd compatibility
+  /* ----------------------------------------------------------------------- */
+#ifdef __APPLE__                       // Using Apple compiler?
+  /* ----------------------------------------------------------------------- */
+  SET(MenuBar,      COCOA_MENUBAR);    // Set MacOS menu bar?
+  SET(RetinaMode,   COCOA_RETINA_FRAMEBUFFER); // Set retina framebuffer?
+  SET(GPUSwitching, COCOA_GRAPHICS_SWITCHING); // Set graphics switching?
+  /* ----------------------------------------------------------------------- */
+#endif                                 // End of Apple check
+  /* ----------------------------------------------------------------------- */
+#undef SET                             // Done with this macro
   /* -- Get function address------------------------------------------------ */
   static bool ProcExists(const char*const cpFunction)
     { return !!glfwGetProcAddress(cpFunction); }
@@ -462,15 +573,10 @@ static class GlFW :
   { // We HAVE to ignore clipboard errors as grabbing text with GetClipboard
     // always seems to fail and call this routine. Is this because of a bug?
     if(iCode == GLFW_FORMAT_UNAVAILABLE) return;
-    // Already sent an exception?
-    if(uiErrorLevel)
-    { // Put further errors in the log
-      LW(LH_WARNING, "GlFW got API error $/$: $\n",
-        uiErrorLevel, iCode, cpDesc);
-      // Increment error level
-      ++uiErrorLevel;
-    } // Throw the error
-    else XC(cpDesc, "Code", iCode);
+    // Send an exception for the first infringement
+    if(!uiErrorLevel++) XC(cpDesc, "Code", iCode);
+    // Put further errors in the log to prevent message box spam
+    LW(LH_WARNING, "GlFW got API error $/$: $!", uiErrorLevel, iCode, cpDesc);
   }
   /* -- Initialiser -------------------------------------------------------- */
   void Init(void)
@@ -520,7 +626,7 @@ static class GlFW :
       GLFWID(VISIBLE),                 GLFWID(X11_CLASS_NAME),
       GLFWID(X11_INSTANCE_NAME)
     }, "GLFW_UNKNOWN" },
-    wClass{ nullptr },                    // Uninitialised window context
+    wClass{ nullptr },                 // Uninitialised window context
     uiErrorLevel(0)                    // No errors occured
     /* -- No code ---------------------------------------------------------- */
     { }

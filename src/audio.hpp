@@ -17,7 +17,7 @@ BUILD_FLAGS(Audio,                     // Audio flags classes
   // No settings?                      Audio system is resetting?
   AF_NONE                {0x00000000}, AF_REINIT              {0x00000001}
 );/* ======================================================================= */
-static class Audio :                   // Audio manager class
+static class Audio final :             // Audio manager class
   /* -- Base classes ------------------------------------------------------- */
   private IHelper,                     // Initialisation helper class
   public AudioFlags                    // Audio flags

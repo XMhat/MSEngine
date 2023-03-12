@@ -13,7 +13,7 @@ namespace IfCmdLine {                  // Keep declarations neatly categorised
 using namespace IfDir;                 // Using util interface
 using namespace IfSystem;              // Using system interface
 /* -- Command line helper class (should be the first global to inti) ------- */
-static class CmdLine                   // StrVector is arguments list
+static class CmdLine final             // StrVector is arguments list
 { /* -- Public typedefs -------------------------------------------- */ public:
   enum ExitCommand { EC_QUIT, EC_RESTART_NO_PARAM, EC_RESTART };
   /* -- Command-line and environment variables ---------------------*/ private:

@@ -26,7 +26,7 @@ enum LHLevel                           // Log helper level flags
 struct LogLine { double dTime; LHLevel lhLevel; string strLine; };
 typedef list<LogLine> LogLines;
 /* == Log class ============================================================ */
-static class Log :
+static class Log final :
   /* -- Base classes ------------------------------------------------------- */
   public LogLines,                     // Holds info about every log line
   private FStream,                     // Output log file if needed

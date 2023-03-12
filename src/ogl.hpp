@@ -46,12 +46,8 @@ BUILD_FLAGS(Ogl,
   GFL_NONE               {0x00000000}, GFL_INITIALISED        {0x00000001},
   // Either of the below commands?     Have nVidia memory information?
   GFL_HAVEMEM            {0x00000002}, GFL_HAVENVMEM          {0x00000004},
-  // Have ATI memory avail info?       VSync is enabled?
-  GFL_HAVEATIMEM         {0x00000008}, GFL_VSYNC              {0x00000010},
-  // Devices shares memory with system
-  GFL_SHARERAM           {0x00000020},
-  /* -- Mask bits ---------------------------------------------------------- */
-  GFL_MASK(GFL_INITIALISED|GFL_HAVEMEM|GFL_HAVENVMEM|GFL_HAVEATIMEM|GFL_VSYNC);
+  // Have ATI memory avail info?       Devices shares memory with system
+  GFL_HAVEATIMEM         {0x00000008}, GFL_SHARERAM           {0x00000010}
 );/* ----------------------------------------------------------------------- */
 enum OglFilterEnum                     // Available filter combinations
 { /* ----------------------------------------------------------------------- */
@@ -67,7 +63,7 @@ enum OglBlendEnum                      // Available blend combinations
   OB_C_A, OB_O_M_C_A, OB_S_A_S, OB_MAX
 };
 /* -- OpenGL manager class ------------------------------------------------- */
-static class Ogl :                     // OGL class for OpenGL use simplicity
+static class Ogl final :               // OGL class for OpenGL use simplicity
   /* -- Sub-classes -------------------------------------------------------- */
   private IHelper,                     // Initialisation helper
   public FboColour,                    // OpenGL colour
@@ -80,6 +76,15 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
   #define IGLL(F,M,...)  GLLEX(GetGLErr, sAPI.glGetError, F, M, ## __VA_ARGS__)
   #define IGL(F,M,...)   GLEX(GetGLErr, sAPI.glGetError, F, M, ## __VA_ARGS__)
   #define IGLC(M,...)    GLCEX(GetGLErr, sAPI.glGetError, M, ## __VA_ARGS__)
+  /* ----------------------------------------------------------------------- */
+  enum VSyncMode : int {               // VSync settings
+    VSYNC_MIN      = -1,               // (-1) Minimum Vertical Sync value
+    VSYNC_ON_ADAPT = VSYNC_MIN,        // (-1) Adaptive Vertical Sync enabled
+    VSYNC_OFF,                         // ( 0) Vertical Sync disable
+    VSYNC_ON,                          // ( 1) Vertical Sync enabled
+    VSYNC_ON_HALFRATE,                 // ( 2) Verfical sync enabled (half)
+    VSYNC_MAX                          // ( 3) Maximum Vertical Sync value
+  } vsSetting;                         // Storage for setting
   /* -- Bindings cache --------------------------------------------- */ public:
   GLuint           uiActiveFbo;        // Currently selected FBO name cache
   GLuint           uiActiveProgram;    // Currently active shader program
@@ -907,8 +912,6 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
   const string &GetVendor(void) const { return strVendor; }
   const string &GetRenderer(void) const { return strRenderer; }
   const string &GetVersion(void) const { return strVersion; }
-  /* ----------------------------------------------------------------------- */
-  bool IsVSyncEnabled(void) { return FlagIsSet(GFL_VSYNC); }
   /* -- Update texture destroy list size ----------------------------------- */
   CVarReturn SetTexDListReserve(const size_t stCount)
     { return BoolToCVarReturn(ReserveList(vTextures, stCount)); }
@@ -918,6 +921,16 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
   /* -- Update minimum VRAM ------------------------------------------------ */
   CVarReturn SetMinVRAM(const GLuint64 qwValue)
     { return CVarSimpleSetInt(qwMinVRAM, qwValue); }
+  /* -- Setup VSync -------------------------------------------------------- */
+  CVarReturn SetVSyncMode(const int iValue)
+  { // Deny if the value is not valid
+    if(CVarSimpleSetIntNLGE(vsSetting, static_cast<VSyncMode>(iValue),
+      VSYNC_MIN, VSYNC_MAX) == DENY) return DENY;
+    // If opengl is already initalised then update the new value immediately
+    if(IsGLInitialised()) cGlFW->SetVSync(vsSetting);
+    // Done
+    return ACCEPT;
+  }
   /* -- Update hints ------------------------------------------------------- */
   CVarReturn SetQCompressHint(const size_t stMode)
   { // Ignore if no context, but still succeeded
@@ -1126,8 +1139,7 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
     // Check that there is enough VRAM available if requested
     VerifyVRAMConstraints();
     // Init vsync
-    FlagSetOrClear(GFL_VSYNC, cCVars->GetInternalSafe<bool>(VID_VSYNC));
-    cGlFW->SetVSync(IsVSyncEnabled());
+    cGlFW->SetVSync(vsSetting);
     // Enable extensions
     EnableExtension(GL_BLEND);
     EnableExtension(GL_DITHER);
@@ -1235,6 +1247,7 @@ static class Ogl :                     // OGL class for OpenGL use simplicity
     /* -- Initialisation of members ---------------------------------------- */
     IHelper{ __FUNCTION__ },           // Send name to InitHelper
     OglFlags{ GFL_NONE },              // Set no flags
+    vsSetting{ VSYNC_OFF },            // Set no VSync
     uiActiveFbo(                       // Select back buffer
       numeric_limits<GLuint>::max()),  // Maxed so values commit properly
     uiActiveProgram(uiActiveFbo),      // No active shader programme

@@ -10,7 +10,7 @@ namespace IfFboBase {                  // Keep declarations neatly categorised
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfShader;              // Using shader interface
 /* == Fbo base class ======================================================= */
-static class FboBase
+static class FboBase final
 { /* -- 3D shader references --------------------------------------- */ public:
   array<Shader,3> sh3DBuiltIns;        // list of built-in 3D shaders
   Shader          &sh3D;               // Basic 3D transformation shader

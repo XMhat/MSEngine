@@ -401,7 +401,7 @@ class SysConBase :
 /* ## we already defined above.                                           ## */
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
-static class System :                  // The main system class
+static class System final :            // The main system class
   /* -- Base classes ------------------------------------------------------- */
   public SysCore                       // Defined in 'sys*.hpp' headers
 { /* ----------------------------------------------------------------------- */

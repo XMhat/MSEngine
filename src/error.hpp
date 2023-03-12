@@ -22,10 +22,10 @@ namespace IfError {                    // Keep declarations neatly categorised
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfString;              // Using string interface
 /* ------------------------------------------------------------------------- */
-struct ErrorPluginGeneric
+struct ErrorPluginGeneric final
   { explicit ErrorPluginGeneric(ostringstream&) { } };
 /* ------------------------------------------------------------------------- */
-template<class Plugin=ErrorPluginGeneric>class Error :
+template<class Plugin=ErrorPluginGeneric>class Error final :
   /* -- Derivced classes --------------------------------------------------- */
   public exception,                    // So we can capture as exception
   public string                        // String to store generated string

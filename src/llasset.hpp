@@ -234,7 +234,7 @@ LLFUNCEX(Size, 1, LCPUSHINT(LCGETPTR(1, Asset)->Size()));
 // ? Finds the first occurence of 'Text' in array from the beginning.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Find, 1, LCPUSHINT(LCGETPTR(1, Asset)->
-  Find(LCGETCPPSTRINGNE(2, "Text"))));
+  Find(LCGETCPPSTRINGNE(2, "String"))));
 /* ========================================================================= */
 // $ Asset:FindEx
 // > Text:string=String to find in array.
@@ -243,7 +243,7 @@ LLFUNCEX(Find, 1, LCPUSHINT(LCGETPTR(1, Asset)->
 // ? Finds the first occurence of 'Text' in array from the specified position.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(FindEx, 1, LCPUSHINT(LCGETPTR(1, Asset)->
-  Find(LCGETCPPSTRINGNE(2, "Text"), LCGETINT(size_t, 3, "Position"))));
+  Find(LCGETCPPSTRINGNE(2, "String"), LCGETINT(size_t, 3, "Position"))));
 /* ========================================================================= */
 // $ Asset:Set
 // > Position:integer=Position to start at.

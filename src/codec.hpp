@@ -543,7 +543,7 @@ CODEC_PLUGINEX(RAW, 0);
 #undef CODEC_PLUGIN                    // Done need this anymore
 #undef CODEC_HELPER                    // Done need this anymore
 /* == Main interface class ================================================= */
-template<class EncoderType>class Block : public EncoderType
+template<class EncoderType>class Block final : public EncoderType
 { /* -- Initialise by data array ----------------------------------- */ public:
   explicit Block(const DataConst &dIn, const size_t stUser=string::npos) :
     /* -- Initialisation of members ---------------------------------------- */
@@ -558,7 +558,6 @@ template<class EncoderType>class Block : public EncoderType
     { }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Block);              // Omit copy constructor for safety
-};/* ----------------------------------------------------------------------- */
-/* -- End of module namespace ---------------------------------------------- */
+};/* -- End of class ------------------------------------------------------- */
 };                                     // End of interface
 /* == EoF =========================================================== EoF == */

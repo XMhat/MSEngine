@@ -254,11 +254,11 @@ template<typename IntType>static bool IsNegative(const IntType itVal)
 template<typename TestIntType, typename ParamIntType>
   static bool IntWillOverflow(const ParamIntType pitVal)
 { // Automatically false if both types are the same
-  if constexpr(is_same_v<TestIntType, ParamIntType>) return false;
+  if(is_same_v<TestIntType, ParamIntType>) return false;
   // Is signed (can be negative?). Return if out of bounds
-  if constexpr(numeric_limits<TestIntType>::is_signed)
+  if(numeric_limits<TestIntType>::is_signed)
   { // If input type is unsigned then return true if it overflows.
-    if constexpr(!numeric_limits<ParamIntType>::is_signed)
+    if(!numeric_limits<ParamIntType>::is_signed)
       if(static_cast<uintmax_t>(pitVal) > static_cast<uintmax_t>(INTMAX_MAX))
         return true;
     // Return if overflows
@@ -335,29 +335,6 @@ template<typename RetType, typename IntType>
   static RetType IntOrMax(const IntType itValue)
     { return IntWillOverflow<RetType, IntType>(itValue) ?
         numeric_limits<RetType>::max() : static_cast<RetType>(itValue); }
-/* -- Configurable rounding functor helper class --------------------------- */
-template<typename T=double>class RoundFuncNone // Default no-outline class
-{ /* -------------------------------------------------------------- */ private:
-  static_assert(is_floating_point_v<T>, "Type not floating point!");
-  /* ----------------------------------------------------------------------- */
-  const T          tValue;             // Calculated advance value
-  /* --------------------------------------------------------------- */ public:
-  T Result(void) const { return tValue; }
-  /* ----------------------------------------------------------------------- */
-  explicit RoundFuncNone(const T tV) : tValue{ tV } { }
-};/* -- Full outline required ---------------------------------------------- */
-template<typename T=double>class RoundFuncFloor : public RoundFuncNone<T> {
-  public: explicit RoundFuncFloor(const T tV) :
-    RoundFuncNone<T>{ floor(tV) } {}
-};/* -- Outside outline required ------------------------------------------- */
-template<typename T=double>class RoundFuncCeil : public RoundFuncNone<T> {
-  public: explicit RoundFuncCeil(const T tV) :
-    RoundFuncNone<T>{ ceil(tV) } {}
-};/* ----------------------------------------------------------------------- */
-template<typename T=double>class RoundFuncRound : public RoundFuncNone<T> {
-  public: explicit RoundFuncRound(const T tV) :
-    RoundFuncNone<T>{ round(tV) } {}
-};
 /* -- Conversions ---------------------------------------------------------- */
 template<typename IntType>
   static double MillimetresToInches(const IntType itValue)

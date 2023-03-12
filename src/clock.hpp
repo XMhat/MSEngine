@@ -74,7 +74,7 @@ template<class ClockType = CoreClock>struct ClockManager
   const string FormatTimeUTC(const char*const cpFormat = cpTimeFormat) const
     { return FormatTimeTTUTC(GetTimeS(), cpFormat); }
   /* -- Convert time to short duration ------------------------------------- */
-  const string ToDurationString(unsigned int uiPrecision = 0) const
+  const string ToDurationString(unsigned int uiPrecision = 6) const
     { return ToShortDuration(GetTimeDouble(), uiPrecision); }
   /* -- Convert seconds to long duration relative to current time ---------- */
   const string ToDurationRel(const STDTIMET tDuration = 0,

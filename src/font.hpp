@@ -337,6 +337,30 @@ BEGIN_MEMBERCLASS(Fonts, Font, ICHelperUnsafe),
       public: StrokerCheckFuncManual(Font*const fP,
         FT_GlyphSlot &ftgD, const size_t stP, const size_t stC,
         const GLfloat fA) : StrokerLoadTypeFunc{ fP, ftgD, stP, stC, fA } {} };
+  /* -- Configurable rounding functor helper class ------------------------- */
+  template<typename T=double>class RoundFuncNone // Default no-outline class
+  { /* ------------------------------------------------------------ */ private:
+    static_assert(is_floating_point_v<T>, "Type not floating point!");
+    /* --------------------------------------------------------------------- */
+    const T          tValue;           // Calculated advance value
+    /* ------------------------------------------------------------- */ public:
+    T Result(void) const { return tValue; }
+    /* --------------------------------------------------------------------- */
+    explicit RoundFuncNone(const T tV) : tValue{ tV } { }
+  };/* -- Round co-ordinates to lowest or highest unit --------------------- */
+  template<typename T=double>class RoundFuncRound : public RoundFuncNone<T> {
+    public: explicit RoundFuncRound(const T tV) :
+      RoundFuncNone<T>{ roundf(tV) } {}
+  };
+  /* -- Round co-ordinates to lowest unit ---------------------------------- */
+  template<typename T=double>class RoundFuncFloor : public RoundFuncNone<T> {
+    public: explicit RoundFuncFloor(const T tV) :
+      RoundFuncNone<T>{ floorf(tV) } {}
+  };/* -- Round co-ordinates to upper unit --------------------------------- */
+  template<typename T=double>class RoundFuncCeil : public RoundFuncNone<T> {
+    public: explicit RoundFuncCeil(const T tV) :
+      RoundFuncNone<T>{ ceilf(tV) } {}
+  };
   /* -- Function to to automatically check for rounding method ------------- */
   template<class RoundFunc>class RoundCheckFuncAuto : public RoundFunc
   { /* -- Detect advance rounding method from flags ------------------------ */

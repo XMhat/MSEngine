@@ -102,7 +102,7 @@ static void LuaCodeCompileBuffer(lua_State*const lS, const char*const cpBuf,
   } // Get checksum of module
   const unsigned int uiCRC = CrcCalc(cpBuf, stSize);
   // Check if we have cached this in the sql database and if we have?
-  if(!cSql->Execute("SELECT D from L WHERE R=? AND C=?",
+  if(cSql->ExecuteAndSuccess("SELECT D from L WHERE R=? AND C=?",
     { Sql::Cell(strRef), Sql::Cell(uiCRC) }))
   { // Get records and if we have results?
     const Sql::Result &vData = cSql->GetRecords();
@@ -144,7 +144,8 @@ static void LuaCodeCompileBuffer(lua_State*const lS, const char*const cpBuf,
   // Compile the function
   Memory mbData{ LuaCodeCompileFunction(lS, lcSetting == LCC_FULL) };
   // Send to sql database and return if succeeded
-  if(!cSql->Execute("INSERT or REPLACE into L(C,T,R,D) VALUES(?,?,?,?)",
+  if(cSql->ExecuteAndSuccess(
+       "INSERT or REPLACE into L(C,T,R,D) VALUES(?,?,?,?)",
     { Sql::Cell(uiCRC), Sql::Cell(cmSys.GetTimeNS<sqlite3_int64>()),
       Sql::Cell(strRef), Sql::Cell(mbData) })) return;
   // Show error

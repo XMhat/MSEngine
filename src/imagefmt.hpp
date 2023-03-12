@@ -20,7 +20,7 @@ using namespace IfCVar;                // Using cvar interface
 /* ## DirectDraw Surface                                              DDS ## */
 /* ######################################################################### */
 /* -- DDS Codec Object ----------------------------------------------------- */
-class CodecDDS :
+class CodecDDS final :
   /* -- Base classes ------------------------------------------------------- */
   private ImageFmt                     // Image format helper class
 { /* --------------------------------------------------------------- */ public:
@@ -221,7 +221,7 @@ class CodecDDS :
 /* ## Graphics Interchange Format                                     GIF ## */
 /* ######################################################################### */
 /* -- GIF Codec Object ----------------------------------------------------- */
-class CodecGIF :
+class CodecGIF final :
   /* -- Base classes ------------------------------------------------------- */
   private ImageFmt                     // Image format helper class
 { /* -- Allocate memory ------------------------------------------- */ private:
@@ -319,7 +319,7 @@ class CodecGIF :
 /* ## Portable Network Graphics                                       PNG ## */
 /* ######################################################################### */
 /* -- PNG Codec Object ----------------------------------------------------- */
-class CodecPNG :
+class CodecPNG final :
   /* -- Base classes ------------------------------------------------------- */
   private ImageFmt                     // Image format helper class
 { /* -- PNG callbacks ---------------------------------------------- */ public:
@@ -548,7 +548,7 @@ class CodecPNG :
 /* ## JPEG format                                                    JPEG ## */
 /* ######################################################################### */
 /* -- JPEG Codec Object ---------------------------------------------------- */
-class CodecJPG :
+class CodecJPG final :
   /* -- Base classes ------------------------------------------------------- */
   private ImageFmt                     // Image format helper class
 { /* -- JPEG callbacks --------------------------------------------- */ public:
@@ -731,7 +731,7 @@ class CodecJPG :
 /* ## Targa Bitmap Format                                             TGA ## */
 /* ######################################################################### */
 /* -- TGA Codec Object ----------------------------------------------------- */
-class CodecTGA :
+class CodecTGA final :
   /* -- Base classes ------------------------------------------------------- */
   private ImageFmt                     // Image format helper class
 { /* -- TGA header is 18 bytes long -------------------------------- */ public:

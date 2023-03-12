@@ -83,7 +83,7 @@ enum EvtMainCmd                        // Render thread event commands
   /* ----------------------------------------------------------------------- */
 };
 /* ------------------------------------------------------------------------- */
-static class EvtMain :                 // Event list for render thread
+static class EvtMain final :           // Event list for render thread
   /* -- Dependencies ------------------------------------------------------- */
   private IfCollector::IHelper,        // Initialisation helper
   public IfEvtCore::EvtCore            // Events common class

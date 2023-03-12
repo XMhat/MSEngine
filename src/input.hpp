@@ -327,7 +327,7 @@ class JoyInfo :
 typedef array<JoyInfo, JC_JOYSTICKS> JoyList; // Actual joystick data
 typedef JoyList::const_iterator    JoyListIt; // Iterator for vector of joys
 /* == Input class ========================================================== */
-static class Input :                   // Handles keyboard, mouse & controllers
+static class Input final :             // Handles keyboard, mouse & controllers
   /* -- Base classes ------------------------------------------------------- */
   private IHelper,                     // Initialsation helper
   public InputFlags,                   // Input configuration settings

@@ -26,7 +26,7 @@ BUILD_FLAGS(Lua,
   LUF_MASK{ LUF_ENGINE|LUF_CORE }
 );
 /* == Lua class ========================================================== */
-static class Lua :
+static class Lua final :
   /* -- Base classes ------------------------------------------------------- */
   public ClockChrono<CoreClock>,       // Runtime clock
   public LuaFlags,                     // Lua startup flags

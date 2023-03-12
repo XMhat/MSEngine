@@ -25,7 +25,7 @@ using namespace IfLog;                 // Using log interface
   class SCR;                           /* Member class prototype            */\
   typedef CLH<SCR,PCI<SCR>>            /* Make an alias to the locktype     */\
     PCR ## CLHelper;                   /*   for the collector helper        */\
-  static class PCR :                   /* Begin collector object class      */\
+  static class PCR final :             /* Begin collector object class      */\
     public PCR ## CLHelper             /* Derive by collector helper class  */\
     __VA_ARGS__                        /* Any other custom class derives    */\
   { public: DELETECOPYCTORS(PCR);      /* Remove default functions          */\

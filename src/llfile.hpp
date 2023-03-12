@@ -186,7 +186,7 @@ LLFUNCEX(Open, 1, LCCLASSCREATE(File)->FStreamOpen(LCGETCPPFILE(1, "File"),
 // ? Creates the specified directory. Only allowed as a child of the working
 // ? executable directory.
 // * ----------------------------------------------------------------------- */
-LLFUNCEX(MkDir, 1, LCPUSHINT(DirSafeMkDir(LCGETCPPSTRING(1, "Directory"))));
+LLFUNCEX(MkDir, 1, LCPUSHINT(DirMkDir(LCGETCPPFILE(1, "Directory"))?0:errno));
 /* ========================================================================= */
 // $ File.MkDirEx
 // > Directory:string=Directory to create
@@ -196,7 +196,7 @@ LLFUNCEX(MkDir, 1, LCPUSHINT(DirSafeMkDir(LCGETCPPSTRING(1, "Directory"))));
 // ? exist. If the directory already exists than the function returns success.
 // * ----------------------------------------------------------------------- */
 LLFUNCEX(MkDirEx, 1,
-  LCPUSHINT(DirSafeMkDirEx(LCGETCPPSTRING(1, "Directory"))));
+  LCPUSHINT(DirMkDirEx(LCGETCPPFILE(1, "Directory"))?0:errno));
 /* ========================================================================= */
 // $ File.RmDir
 // > Directory:string=Directory to create
@@ -204,8 +204,7 @@ LLFUNCEX(MkDirEx, 1,
 // ? Creates the specified directory. Only allowed as a child of the working
 // ? executable directory.
 ///* ----------------------------------------------------------------------- */
-LLFUNCEX(RmDir, 1,
-  LCPUSHINT(DirSafeRmDir(LCGETCPPSTRING(1, "Directory"))));
+LLFUNCEX(RmDir, 1, LCPUSHINT(DirRmDir(LCGETCPPFILE(1, "Directory"))?0:errno));
 /* ========================================================================= */
 // $ File.RmDirEx
 // > Directory:string=Directories to remove
@@ -215,7 +214,7 @@ LLFUNCEX(RmDir, 1,
 // ? directories that are empty.
 // * ----------------------------------------------------------------------- */
 LLFUNCEX(RmDirEx, 1,
-  LCPUSHINT(DirSafeRmDirEx(LCGETCPPSTRING(1, "Directory"))));
+  LCPUSHINT(DirRmDirEx(LCGETCPPFILE(1, "Directory"))?0:errno));
 /* ========================================================================= */
 // $ File.Unlink
 // > File:string=File to delete
@@ -224,7 +223,7 @@ LLFUNCEX(RmDirEx, 1,
 // ? executable directory.
 ///* ----------------------------------------------------------------------- */
 LLFUNCEX(Unlink, 1,
-  LCPUSHINT(DirSafeFileUnlink(LCGETCPPSTRING(1, "File"))));
+  LCPUSHINT(DirFileUnlink(LCGETCPPFILE(1, "File"))?0:errno));
 /* ========================================================================= */
 // $ File.Rename
 // > Source:string=Source filename
@@ -233,16 +232,15 @@ LLFUNCEX(Unlink, 1,
 // ? Renames the specified file or directory. Only allowed as a child of the
 // ? working executable directory for both parameters.
 // * ----------------------------------------------------------------------- */
-LLFUNCEX(Rename, 1, LCPUSHINT(DirSafeFileRename(
-  LCGETCPPSTRING(1, "Source"), LCGETCPPSTRING(2, "Destination"))));
+LLFUNCEX(Rename, 1, LCPUSHINT(DirFileRename(
+  LCGETCPPFILE(1, "Source"), LCGETCPPFILE(2, "Destination"))));
 /* ========================================================================= */
 // $ File.DirExists
 // > Source:string=Directory
 // < Result:Boolean=Directory exists?
 // ? Returns if the specified directory exists and is actually a directory.
 ///* ----------------------------------------------------------------------- */
-LLFUNCEX(DirExists, 1,
-  LCPUSHBOOL(DirSafeLocalDirExists(LCGETCPPSTRING(1,"Dir"))));
+LLFUNCEX(DirExists, 1, LCPUSHBOOL(DirLocalDirExists(LCGETCPPFILE(1,"Dir"))));
 /* ========================================================================= */
 // $ File.FileExists
 // > Source:string=Filename
@@ -250,7 +248,16 @@ LLFUNCEX(DirExists, 1,
 // ? Returns if the specified directory exists and is actually a directory.
 ///* ----------------------------------------------------------------------- */
 LLFUNCEX(FileExists, 1,
-  LCPUSHBOOL(DirSafeLocalFileExists(LCGETCPPSTRING(1,"File"))));
+  LCPUSHBOOL(DirLocalFileExists(LCGETCPPFILE(1,"File"))));
+/* ========================================================================= */
+// $ File.Executable
+// > Source:string=Filename
+// < Result:Boolean=File executable?
+// ? Returns if the file on disk is executable. Only allowed as a child of the
+// ? working executable directory. Should always return 'false' on Windows.
+///* ----------------------------------------------------------------------- */
+LLFUNCEX(Executable, 1,
+  LCPUSHBOOL(DirIsFileExecutable(LCGETCPPFILE(1, "File"))));
 /* ========================================================================= */
 // $ File.Exists
 // > Source:string=File name or directory name
@@ -258,7 +265,7 @@ LLFUNCEX(FileExists, 1,
 // ? Returns if the specified file or directory exists on disk.
 ///* ----------------------------------------------------------------------- */
 LLFUNCEX(Exists, 1,
-  LCPUSHBOOL(DirSafeLocalResourceExists(LCGETCPPSTRING(1,"Resource"))));
+  LCPUSHBOOL(DirLocalResourceExists(LCGETCPPFILE(1,"Resource"))));
 /* ========================================================================= */
 // $ File.Readable
 // > Source:string=Filename
@@ -266,8 +273,7 @@ LLFUNCEX(Exists, 1,
 // ? Returns if the file on disk is readable. Only allowed as a child of the
 // ? working executable directory.
 ///* ----------------------------------------------------------------------- */
-LLFUNCEX(Readable, 1,
-  LCPUSHBOOL(DirSafeFileReadable(LCGETCPPSTRING(1, "File"))));
+LLFUNCEX(Readable, 1, LCPUSHBOOL(DirIsFileReadable(LCGETCPPFILE(1, "File"))));
 /* ========================================================================= */
 // $ File.Writable
 // > Source:string=Filename
@@ -276,7 +282,7 @@ LLFUNCEX(Readable, 1,
 // ? working executable directory.
 ///* ----------------------------------------------------------------------- */
 LLFUNCEX(Writable, 1,
-  LCPUSHBOOL(DirSafeFileWritable(LCGETCPPSTRING(1, "File"))));
+  LCPUSHBOOL(DirIsFileWritable(LCGETCPPFILE(1, "File"))));
 /* ========================================================================= */
 // $ File.ReadWritable
 // > Source:string=Filename
@@ -285,7 +291,7 @@ LLFUNCEX(Writable, 1,
 // ? child of the working executable directory.
 ///* ----------------------------------------------------------------------- */
 LLFUNCEX(ReadWritable, 1,
-  LCPUSHBOOL(DirSafeFileReadWriteable(LCGETCPPSTRING(1, "File"))));
+  LCPUSHBOOL(DirIsFileReadWriteable(LCGETCPPFILE(1, "File"))));
 /* ========================================================================= */
 // $ File.Info
 // > Source:string=Filename
@@ -305,7 +311,7 @@ LLFUNCEX(ReadWritable, 1,
 ///* ----------------------------------------------------------------------- */
 LLFUNCBEGIN(Info)
   STDFSTATSTRUCT stData;
-  LCPUSHINT(DirSafeFileSize(LCGETCPPSTRING(1, "File"), stData));
+  LCPUSHINT(DirFileSize(LCGETCPPFILE(1, "File"), stData));
   LCPUSHINT(stData.st_size);           LCPUSHINT(stData.st_mode);
   LCPUSHINT(stData.st_ctime);          LCPUSHINT(stData.st_mtime);
   LCPUSHINT(stData.st_atime);          LCPUSHINT(stData.st_nlink);
@@ -321,7 +327,7 @@ LLFUNCENDEX(12)
 // ? Dumps all the files in the specified directory to two tables
 ///* ----------------------------------------------------------------------- */
 LLFUNCBEGIN(Enumerate)
-  const DirSafe dData{ LCGETCPPFILE(1, "Directory") };
+  const Dir dData{ LCGETCPPFILE(1, "Directory") };
   LCTOTABLE(dData.dFiles);
   LCTOTABLE(dData.dDirs);
 LLFUNCENDEX(2)
@@ -335,8 +341,8 @@ LLFUNCENDEX(2)
 // ? directory to two tables.
 ///* ----------------------------------------------------------------------- */
 LLFUNCBEGIN(EnumerateEx)
-  const DirSafe dData{ LCGETCPPFILE(1, "Directory"),
-                       LCGETCPPSTRING(2, "Extension") };
+  const Dir dData{ LCGETCPPFILE(1, "Directory"),
+                   LCGETCPPFILE(2, "Extension") };
   LCTOTABLE(dData.dFiles);
   LCTOTABLE(dData.dDirs);
 LLFUNCENDEX(2)
@@ -357,7 +363,7 @@ LLFUNCEX(Error, 1, LCPUSHINT(GetErrNo()));
 ///* ----------------------------------------------------------------------- */
 LLFUNCEX(AppendOneStr, 1,
   LCPUSHINT(FStream(LCGETCPPFILE(1, "File"), FStream::FM_A_B).
-    FStreamWriteString(LCGETCPPSTRING(2, "Text"))));
+    FStreamWriteString(LCGETCPPSTRING(2, "String"))));
 /* ========================================================================= */
 // $ File.AppendOne
 // > Source:string=Filename to append asset to
@@ -400,7 +406,7 @@ LLFUNCEX(WriteOne, 1,
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(WriteOneStr, 1,
   LCPUSHINT(FStream(LCGETCPPFILE(1, "File"), FStream::FM_W_B).
-    FStreamWriteString(LCGETCPPSTRING(2, "Text"))));
+    FStreamWriteString(LCGETCPPSTRING(2, "String"))));
 /* ========================================================================= */
 // $ File.ValidName
 // > Source:string=Filename to check
@@ -421,13 +427,14 @@ LLRSBEGIN                              // File.* namespace functions begin
   LLRSFUNC(Error),                     // Return last error number
   LLRSFUNC(DirExists),                 // Directory exists on disk
   LLRSFUNC(FileExists),                // File exists on disk
+  LLRSFUNC(Executable),                // File is executable?
   LLRSFUNC(Exists),                    // Directory or file exists on disk
   LLRSFUNC(Info),                      // Get file information
   LLRSFUNC(MkDir),                     // Make a directory
   LLRSFUNC(MkDirEx),                   // Make interim directories
   LLRSFUNC(Open),                      // Open or create a file
   LLRSFUNC(ReadOneStr),                // Read one string from file
-  LLRSFUNC(ReadWritable),              // File is readable?
+  LLRSFUNC(ReadWritable),              // File is readable and writable?
   LLRSFUNC(Readable),                  // File is readable?
   LLRSFUNC(Rename),                    // Move a file or directory
   LLRSFUNC(RmDir),                     // Delete a empty directory

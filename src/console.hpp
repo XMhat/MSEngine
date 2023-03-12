@@ -40,7 +40,7 @@ BUILD_FLAGS(AutoComplete,              // Autocomplete flags classes
   /* ----------------------------------------------------------------------- */
   AC_MASK{ AC_COMMANDS|AC_CVARS }      // All flags
 );/* ======================================================================= */
-static class Console :                 // The console class
+static class Console final :           // The console class
   /* -- Base classes ------------------------------------------------------- */
   private ConLines,                    // Console text lines list
   private ConLinesConstIt,             // Text lines forward iterator
@@ -1169,8 +1169,8 @@ static class Console :                 // The console class
     // Estimate amount of triangles that would fit in the console and if
     // we have a non-zero value?
     if(const size_t stTriangles = static_cast<size_t>(
-      (ceil(static_cast<GLfloat>(fboC.stFBOWidth)/ceil(cfConsole.fSWidth))*
-       ceil(static_cast<GLfloat>(fboC.stFBOHeight)/ceil(cfConsole.fSHeight)))
+      (ceilf(static_cast<GLfloat>(fboC.stFBOWidth)/ceilf(cfConsole.fSWidth))*
+       ceilf(static_cast<GLfloat>(fboC.stFBOHeight)/ceilf(cfConsole.fSHeight)))
       +2))
       // Try to reserve the triangles and 2 commands and log if failed!
       if(!fboC.Reserve(stTriangles, 2))
