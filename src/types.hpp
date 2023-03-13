@@ -81,13 +81,13 @@ using std::chrono::nanoseconds;        // Nanoseconds unit for duration
 using std::chrono::seconds;            // Seconds unit for duration
 using std::chrono::system_clock;       // Need system clock for time
 /* -- Operating system specific -------------------------------------------- */
-#ifndef _WIN32                         // Not using windows?
+#if !defined(WINDOWS)                  // Not using windows?
 using std::unexpected_handler;         // Unexpected exception handler
 using std::set_unexpected;             // Set unexpected exception handler
 #endif                                 // Not windows check
 using std::terminate_handler;          // Terminate handler
 using std::set_terminate;              // Set terminate handler
-#ifndef __APPLE__                      // Using apple compiler?
+#if !defined(MACOS)                    // Using apple compiler?
 using std::execution::par_unseq;       // Parallel unserialised operation
 using std::execution::par;             // Parallel serialised operation
 #endif                                 // Apple check

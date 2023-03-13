@@ -550,7 +550,7 @@ static class Display final :
     cInput->UpdateWindowSize();
     cGlFW->GetWindowScale(fWinScaleWidth, fWinScaleHeight);
     // Need to fix a GLFW scaling bug with this :(
-#ifdef __APPLE__
+#if defined(MACOS)
     // Return if hidpi not enabled
     if(FlagIsClear(DF_HIDPI))
     { // Update the main fbo viewport size without scale
@@ -622,7 +622,7 @@ static class Display final :
     { FlagSetOrClear(DF_TRANSPARENT, bState); return ACCEPT; }
   /* -- Set default orthagonal width  -------------------------------------- */
   CVarReturn SetForcedBitDepth(const int iBPP)
-    { return CVarSimpleSetIntNLG(iBPPSelected, iBPP, 1, 16); }
+    { return CVarSimpleSetIntNLG(iBPPSelected, iBPP, 0, 16); }
   /* -- Set default orthagonal width  -------------------------------------- */
   CVarReturn SetOrthoWidth(const GLfloat fWidth)
     { return CVarSimpleSetIntNLG(fOrthoWidth, fWidth, 320.0f, 16384.0f); }
@@ -768,7 +768,7 @@ static class Display final :
   /* -- Update window icon ------------------------------------------------- */
   void UpdateIcons(void)
   { // This functionality throws a GLFW api error on MacOS so just NullOp it
-#ifndef __APPLE__
+#if !defined(MACOS)
     // If using interactive mode?
     if(cSystem->IsGuiMode(GM_GRAPHICS))
     { // Ignore if no icons
@@ -829,7 +829,7 @@ static class Display final :
     } // Not in interactive mode?
     else
     { // Only Win32 terminal windows can change the icon afaik
-#ifdef _WIN32
+#if defined(WINDOWS)
       // Have two icons at least?
       if(tIcons.size() >= 2)
       { // Set small icon from the last icon specified
@@ -891,7 +891,7 @@ static class Display final :
     else cGlFW->SetColourDepth(vSelected->redBits, vSelected->greenBits,
       vSelected->blueBits, cFboMain->fboMain.IsTransparencyEnabled() ? 8 : 0);
     // Set Apple operating system only settings
-#ifdef __APPLE__
+#if defined(MACOS)
     cGlFW->SetRetinaMode(FlagIsSet(DF_HIDPI));
     cGlFW->SetGPUSwitching(FlagIsSet(DF_GASWITCH));
 #endif

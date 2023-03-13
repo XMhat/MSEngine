@@ -14,9 +14,9 @@ class SysBase :                        // Safe exception handler namespace
   /* -- Base classes ------------------------------------------------------- */
   public Ident                         // Mutex name
 { /* -- Custom exceptions -------------------------------------------------- */
-  #define EXCEPTION_APT     0xF0000001 // Abornmal program termination
-  #define EXCEPTION_ISA     0xF0000002 // Illegal storage access
-  #define EXCEPTION_FPE     0xF0000003 // Floating point exception
+#define EXCEPTION_APT       0xF0000001 // Abornmal program termination
+#define EXCEPTION_ISA       0xF0000002 // Illegal storage access
+#define EXCEPTION_FPE       0xF0000003 // Floating point exception
   /* -- Private variables -------------------------------------------------- */
   HWND             hwndWindow;         // Main window handle being used
   HANDLE           hMutex;             // Global mutex handle
@@ -201,11 +201,11 @@ class SysBase :                        // Safe exception handler namespace
           << " could not be ";
       // Write the action attempted
       switch(const
-  #ifdef _M_AMD64
+#if defined(X64)
         DWORD64
-  #else
+#elif defined(X86)
         DWORD
-  #endif
+#endif
         &dwAccess = erData.ExceptionInformation[dwParam])
       { // Read, written or executed?
         case 0: osS << "read."; break;
@@ -231,19 +231,19 @@ class SysBase :                        // Safe exception handler namespace
     // Get context from exception record
     const CONTEXT &cData = *pcData;
     // Helper macros
-    #define PUSHINT(id,c,x,e) id "=" << setw(c) << cData.x << e
-    #define D64(id,x,e)       PUSHINT(id,16,x,e)
-    #define D32(id,x,e)       PUSHINT(id,8,x,e)
-    #define D16(id,x,e)       PUSHINT(id,4,x,e)
-    #define D32X(id,x,e)      id "="\
+#define PUSHINT(id,c,x,e) id "=" << setw(c) << cData.x << e
+#define D64(id,x,e) PUSHINT(id,16,x,e)
+#define D32(id,x,e) PUSHINT(id,8,x,e)
+#define D16(id,x,e) PUSHINT(id,4,x,e)
+#define D32X(id,x,e) id "=" \
       << setw(8) << *reinterpret_cast<const uint32_t*>(&cData.x) << e
-    #define D128X(id,x,e)     id "="\
+#define D128X(id,x,e) id "=" \
       << setw(16) << *reinterpret_cast<const uint64_t*>(&cData.x)\
       << setw(16) << *(reinterpret_cast<const uint64_t*>(&cData.x)+1) << e
-    #define SPC               "  "
-    #define CRLF              "\r\n"
+#define SPC               "  "
+#define CRLF              "\r\n"
     // Return registers
-  #ifdef _M_AMD64
+#if defined(X64)
     // Write basic registers
     osS << hex << setfill('0') <<
       D64("Rax", Rax, SPC)  D64("Rbx", Rbx, SPC)  D64("Rcx", Rcx, CRLF)
@@ -286,20 +286,21 @@ class SysBase :                        // Safe exception handler namespace
           << D128X("XmmL" << dec << (stQuad+1) << hex <<,
         Legacy[stQuad+1], CRLF);
     // Write floating point state
-    #define XMM(x,e) << D128X("Xmm" << setw(2) << dec << x\
-      << hex <<, Xmm ## x, e)
+# define XMM(x,e) << \
+      D128X("Xmm" << setw(2) << dec << x << hex <<, Xmm ## x, e)
     osS XMM( 0,SPC)  XMM( 1,CRLF) XMM( 2,SPC)  XMM( 3,CRLF) XMM( 4,SPC)
         XMM( 5,CRLF) XMM( 6,SPC)  XMM( 7,CRLF) XMM( 8,SPC)  XMM( 9,CRLF)
         XMM(10,SPC)  XMM(11,CRLF) XMM(12,SPC)  XMM(13,CRLF) XMM(14,SPC)
         XMM(15,CRLF) CRLF;
-    #undef XMM
+# undef XMM
     // Write vector state
     for(size_t stQuad = 0; stQuad < 26; stQuad += 2)
       osS << D128X("Vec" << setw(2) << dec << stQuad
           << hex <<, VectorRegister[stQuad], SPC)
           << D128X("Vec" << setw(2) << dec << (stQuad+1)
           << hex <<, VectorRegister[stQuad+1], CRLF);
-  #else
+    // Using 32-bit compiler?
+#elif defined(X86)
     // Write basic registers
     osS << hex << setfill('0') <<
       D32("Eax", Eax, SPC)   D32("Ebx", Ebx, SPC)  D32("Ecx", Ecx, SPC)
@@ -339,17 +340,17 @@ class SysBase :                        // Safe exception handler namespace
       for(size_t stX = 0; stX < stZ; ++stX, ++stI)
         osS << D32X("ER" << setw(3) << dec << stI << hex <<,
           ExtendedRegisters[stY+(stX*sizeof(DWORD))], (stX == 4 ? CRLF : SPC));
-  #endif
+#endif
     // Set fill back to space
     osS << setfill(' ');
     // Done with helper macros
-    #undef CRLF
-    #undef SPC
-    #undef D128
-    #undef D16
-    #undef D32
-    #undef D64
-    #undef PUSHINT
+#undef CRLF
+#undef SPC
+#undef D128
+#undef D16
+#undef D32
+#undef D64
+#undef PUSHINT
   } // Shouldn't happen but just incase
   catch(const exception &e) { osS << e.what(); }
   /* == Perform process dump =============================================== */
@@ -489,15 +490,15 @@ class SysBase :                        // Safe exception handler namespace
       STACKFRAME sfData{};
       sfData.AddrReturn = sfData.AddrStack = sfData.AddrBStore =
         { 0, 0, AddrModeFlat };
-     #ifdef _M_AMD64                        // Using AMD64/INTEL64? (64-bit)
-     # define IMAGE_FILE_MACHINE IMAGE_FILE_MACHINE_AMD64
-     # define ADDR_PC    cData.Rip
-     # define ADDR_FRAME cData.Rbp
-     #else
-     # define IMAGE_FILE_MACHINE IMAGE_FILE_MACHINE_I386
-     # define ADDR_PC    cData.Eip
-     # define ADDR_FRAME cData.Ebp
-     #endif
+#if defined(X64)                       // Using 64-bit compiler?
+# define IMAGE_FILE_MACHINE IMAGE_FILE_MACHINE_AMD64
+# define ADDR_PC    cData.Rip
+# define ADDR_FRAME cData.Rbp
+#elif defined(X86)                     // Using 32-bit compiler?
+# define IMAGE_FILE_MACHINE IMAGE_FILE_MACHINE_I386
+# define ADDR_PC    cData.Eip
+# define ADDR_FRAME cData.Ebp
+#endif
       // Set register pointers
       sfData.AddrPC = { ADDR_PC, 0, AddrModeFlat };
       sfData.AddrFrame = { ADDR_FRAME, 0, AddrModeFlat };
@@ -574,9 +575,9 @@ class SysBase :                        // Safe exception handler namespace
     } // Show error
     else osS << "SymInitialise failed: " << SysError() << ".\r\n";
     // Done with these defines
-    #undef ADDR_PC
-    #undef ADDR_FRAME
-    #undef IMAGE_FILE_MACHINE
+#undef ADDR_PC
+#undef ADDR_FRAME
+#undef IMAGE_FILE_MACHINE
   } // Shouldn't happen but just incase
   catch(const exception &e) { osS << e.what(); }
   /* == Dump summary to file =============================================== */
@@ -653,7 +654,7 @@ class SysBase :                        // Safe exception handler namespace
   const char *SEHExceptionToString(const DWORD dwCode)
   { // Compare exception code
     switch(dwCode) {
-      #define CASE(n,m) case EXCEPTION_ ## n: return m
+#define CASE(n,m) case EXCEPTION_ ## n: return m
       CASE(ACCESS_VIOLATION,         "Access violation");
       CASE(ARRAY_BOUNDS_EXCEEDED,    "array bounds exceeded");
       CASE(BREAKPOINT,               "Breakpoint");
@@ -679,7 +680,7 @@ class SysBase :                        // Safe exception handler namespace
       CASE(APT,                      "Abormal program termination");
       CASE(ISA,                      "Illegal storage access");
       CASE(FPE,                      "Floating point exception");
-      #undef CASE
+#undef CASE
       default: return "Unrecognised exception";
     }
   }
@@ -702,16 +703,16 @@ class SysBase :                        // Safe exception handler namespace
       osS << "This illegal instruction exception usually indicates that this "
              BUILD_TARGET " compiled binary is NOT compatible with your "
              "operating system and/or central processing unit. "
-  #ifdef X64                             // Special message for 64-bit system?
+#if defined(X64)                       // Special message for 64-bit system?
              "Since you are running the 64-bit version of this binary, please "
              "consider trying the 32-bit version instead."
-  #else                                  // Special message for 32-bit system?
+#elif defined(X86)                     // Special message for 32-bit system?
              "Since you are running the 32-bit version of this binary, you "
              "may need to upgrade your operating system and/or central "
              "processing unit. If you originally tried the 64-bit version and "
              "you still got the same error then you may need to report this "
              "issue as a bug."
-  #endif
+#endif
              "\r\n\r\n";
     } // Add stack dump[
     SEHStackDump(GetCurrentProcess(), GetCurrentThread(),

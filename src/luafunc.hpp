@@ -84,7 +84,7 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
     LuaFuncParams(++iParams, vVars...);
   }
   /* -- Helper function to make LUAREFDISPATCH parameters ------------------ */
-  #define MP(t,s,f) template<typename... Vars> \
+#define MP(t,s,f) template<typename... Vars> \
     void LuaFunc ## Params(int &iParams, const t tValue, Vars... vVars) { \
       if(!LuaFuncCheckAddParams(1, s)) return; \
       f(cParent.LuaRefGetState(), tValue); \
@@ -99,10 +99,10 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
   MP(double,             "double", PushNumber);
   MP(bool,               "bool",   PushBoolean);
   /* -- Done with helper function ------------------------------------------ */
-  #undef MP
+#undef MP
   /* ----------------------------------------------------------------------- */
   void LuaFuncPushFunc(void) const
-  { /// Get referenced function and return if succeeded
+  { // Get referenced function and return if succeeded
     if(GetReferencedFunction(cParent.LuaRefGetState(), iRef)) return;
     // Failed so throw error
     XC("Pushed function is not a valid function!",

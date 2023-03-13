@@ -270,7 +270,7 @@ static const CVarKeyValueStaticList cvKeyValueStaticList{ {
 // ? archives with files. This is makes it easier to update and mod resource
 // ? if true. It is by default disabled on release builds and enabled on
 // ? all other builds.
-#ifdef RELEASE                         // Default disabled in release builds
+#if defined(RELEASE)                   // Default disabled in release builds
 { "ast_fsoverride", "0" },
 #else                                  // Default enabled in other builds
 { "ast_fsoverride", "1" },
@@ -381,7 +381,7 @@ static const CVarKeyValueStaticList cvKeyValueStaticList{ {
 // ? engine can startup. You only need to do this if the engine crashes. On
 // ? Windows the mutex is freed on process termination so there is never any
 // ? need to use this on Windows.
-#if !defined(_WIN32) && defined(ALPHA)
+#if !defined(WINDOWS) && defined(ALPHA)
 { "app_clearmutex", "1" },
 #else
 { "app_clearmutex", "0" },
@@ -657,7 +657,7 @@ static const CVarKeyValueStaticList cvKeyValueStaticList{ {
 // ? applies on Windows executables only as Linux executable does not have a
 // ? checksum and MacOS uses code signing externally. The default value is 1
 // ? on release executable else 0 on beta executable.
-#ifdef RELEASE
+#if defined(RELEASE)
 { "err_checksum", "1" },
 #else
 { "err_checksum", "0" },
@@ -666,7 +666,7 @@ static const CVarKeyValueStaticList cvKeyValueStaticList{ {
 // ! ERR_DEBUGGER
 // ? Throws an error if a debugger is running at start-up. The default value
 // ? is 1 on release executable else 0 on beta executable.
-#ifdef RELEASE
+#if defined(RELEASE)
 { "err_debugger", "1" },
 #else
 { "err_debugger", "0" },
@@ -679,7 +679,7 @@ static const CVarKeyValueStaticList cvKeyValueStaticList{ {
 // ? 2 (LEM_SHOW)     = Open console and show error.
 // ? 3 (LEM_CRITICAL) = Terminate engine with error.
 // ? The default value is 3 for release executable and 2 for beta executable.
-#ifdef RELEASE
+#if defined(RELEASE)
 { "err_luamode", "3" },
 #else
 { "err_luamode", "2" },
@@ -690,7 +690,7 @@ static const CVarKeyValueStaticList cvKeyValueStaticList{ {
 // ? errors that are allowed before an error after this is treated as a
 // ? critical error. The default value for release executable is 1000 and
 // ? 10 for beta executable.
-#ifdef RELEASE
+#if defined(RELEASE)
 { "err_lmresetlimit", "1000" },
 #else
 { "err_lmresetlimit", "10" },
@@ -870,7 +870,7 @@ static const CVarKeyValueStaticList cvKeyValueStaticList{ {
 /* ------------------------------------------------------------------------- */
 // ! CON_DISABLED
 // ? Specifies wether the console is permanantly disabled or not.
-#ifdef RELEASE
+#if defined(RELEASE)
 { "con_disabled", "1" },
 #else
 { "con_disabled", "0" },
@@ -1103,7 +1103,7 @@ static const CVarKeyValueStaticList cvKeyValueStaticList{ {
 // ? system. Anything >= -1 means exclusive full-screen mode and -1 makes the
 // ? engine use the current desktop resolution (default on Mac for now). Use -2
 // ? to make the engine use borderless full-screen mode (default on Win/Linux).
-#ifdef __APPLE__
+#if defined(MACOS)
 { "vid_fsmode", "-1" },
 #else
 { "vid_fsmode", "-2" },
@@ -1127,7 +1127,7 @@ static const CVarKeyValueStaticList cvKeyValueStaticList{ {
 /* ------------------------------------------------------------------------- */
 // ! VID_BPP
 // ? Not explained yet.
-#ifdef _WIN32
+#if defined(WINDOWS)
 { "vid_bpp", "0" },                    // Win32 doesn't need forcing depth
 #else
 { "vid_bpp", "16" },                   // For better bit-depth quality
@@ -1298,10 +1298,10 @@ static const CVarKeyValueStaticList cvKeyValueStaticList{ {
 // ? be upstream issues on both Wayland and MacOS. This can only be changed at
 // ? the in the application configuration file and not saved to the persistence
 // ? database.
-#ifndef _WIN32
-{ "win_thread", "0" },                 // Fix temporary bug in GLFW
-#else
+#if defined(WINDOWS)
 { "win_thread", "1" },
+#else
+{ "win_thread", "0" },                 // Fix temporary bug in GLFW
 #endif
 /* ------------------------------------------------------------------------- */
 // ! WIN_WIDTH

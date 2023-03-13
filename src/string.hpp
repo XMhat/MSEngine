@@ -192,18 +192,18 @@ static const string LocalError(const int iErrNo=errno)
 { // Buffer to store error message into
   string strErr; strErr.resize(128);
   // Windows?
-#if defined(_WIN32)
+#if defined(WINDOWS)
   // 'https://msdn.microsoft.com/en-us/library/51sah927.aspx' says:
   // "Your string message can be, at most, 94 characters long."
   if(strerror_s(const_cast<char*>(strErr.c_str()), strErr.capacity(), iErrNo))
     strErr.assign(Append("Error ", iErrNo));
   // OSX?
-#elif defined(__APPLE__)
+#elif defined(MACOS)
   // Grab the error result and if failed? Just put in the error number continue
   if(strerror_r(iErrNo, const_cast<char*>(strErr.c_str()), strErr.capacity()))
     strErr.assign(Append("Error ", iErrNo));
   // Linux?
-#else
+#elif defined(LINUX)
   // Grab the error result and if failed? Set a error and continue
   const char*const cpResult =
     strerror_r(iErrNo, const_cast<char*>(strErr.c_str()), strErr.capacity());
@@ -220,7 +220,7 @@ static const string LocalError(const int iErrNo=errno)
 /* -- Helper plugin for C runtime errno checking --------------------------- */
 class ErrorPluginStandard final
 { /* -- Exception class helper macro for C runtime errors --------- */ private:
-  #define XCL(r,...) throw Error<ErrorPluginStandard>(r, ## __VA_ARGS__)
+#define XCL(r,...) throw Error<ErrorPluginStandard>(r, ## __VA_ARGS__)
   /* -- Constructor to add C runtime error code -------------------- */ public:
   explicit ErrorPluginStandard(ostringstream &osS)
     { osS << "\n+ Reason<" << GetErrNo() << "> = \""

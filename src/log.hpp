@@ -33,9 +33,9 @@ static class Log final :
   public ClockChrono<CoreClock>,       // Holds the current log time
   private mutex                        // Because logger needs thread safe
 { /* -- Macros ------------------------------------------------------------- */
-  #define LWN(l,...) cLog->WriteStringSafe(l, Format(__VA_ARGS__));
-  #define LW(l,...) if(cLog->HasLevel(l)) LWN(l, ## __VA_ARGS__)
-  #define ILW(l,...) if(HasLevel(l)) WriteString(l, Format(__VA_ARGS__));
+#define LWN(l,...) cLog->WriteStringSafe(l, Format(__VA_ARGS__));
+#define LW(l,...) if(cLog->HasLevel(l)) LWN(l, ## __VA_ARGS__)
+#define ILW(l,...) if(HasLevel(l)) WriteString(l, Format(__VA_ARGS__));
   /* -- Private variables -------------------------------------------------- */
   const string     strStdOut;          // Label for 'stdout'
   const string     strStdErr;          // Label for 'stderr'
@@ -262,7 +262,7 @@ static class Log final :
   /* -- Macros ------------------------------------------------------------- */
   DELETECOPYCTORS(Log);                // Do not need defaults
   /* -- Done with this, it's only for internal use ------------------------- */
-  #undef ILW
+#undef ILW                             // Only meant for Log class use
   /* -- End ---------------------------------------------------------------- */
 } *cLog = nullptr;                     // Pointer to static class
 /* -- End of module namespace ---------------------------------------------- */

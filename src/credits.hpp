@@ -45,7 +45,7 @@ enum CreditEnums                       // Credit ids
   CL_LUA,                              // Id for Lua credit data
   CL_LZMA,                             // Id for 7-Zip/LZMA credit data
   CL_MP3,                              // Id for MiniMP3 credit data
-#ifndef _WIN32                         // Not using Windows?
+#if !defined(WINDOWS)                  // Not using Windows?
   CL_NCURSES,                          // Id for NCurses credit data
 #endif                                 // Not using windows
   CL_OGG,                              // Id for LibOgg+LibVorbis credit data
@@ -61,17 +61,17 @@ enum CreditEnums                       // Credit ids
 typedef array<const CreditLib,CL_MAX> CreditLibList; // Library list typedef
 static const CreditLibList &CreditGetList(void)
 { // Setup compressed licence data
-  #define ENDLICENCE };                // Helper functions for licences header
-  #define BEGINLICENCE(n, s)           static array<const uint8_t, s> l ## n{
-  #include "licence.hpp"               // Load up compressed licences
-  #undef BEGINLICENCE                  // Done with this macro
-  #undef ENDLICENCE                    // Done with this macro
+#define ENDLICENCE };                  // Helper functions for licences header
+#define BEGINLICENCE(n, s)             static array<const uint8_t, s> l ## n{
+#include "licence.hpp"                 // Load up compressed licences
+#undef BEGINLICENCE                    // Done with this macro
+#undef ENDLICENCE                      // Done with this macro
   // Setup compressed licence data list structure
   static const CreditLibList libList{  // The library list
   { // t = Title of dependency         v = Version of dependency
     // n = licence variable name       c = is dependency copyrighted?
     // a = Author of dependency
-    #define LD(t,v,n,c,a) { t, v, { l ## n.size(), l ## n.data() }, c, a }
+#define LD(t,v,n,c,a) { t, v, { l ## n.size(), l ## n.data() }, c, a }
     // The credits data structure (Keep MS-Engine as the first)
     LD(cSystem->ENGName(), cSystem->ENGVersion(), MSENGINE, true,
       cSystem->ENGAuthor()),
@@ -88,7 +88,7 @@ static const CreditLibList &CreditGetList(void)
       LUA, true, "Lua.org, PUC-Rio"),
     LD("LZMA", MY_VERSION, 7ZIP, false, "Igor Pavlov"),
     LD("MiniMP3", "1.0", MINIMP3, false, "Martin Fiedler"),
-#ifndef _WIN32
+#if !defined(WINDOWS)
     LD("NCurses", NCURSES_VERSION, NCURSES, true, "Free Software Foundation"),
 #endif
     LD("OggVorbis", string{ IfAudio::vorbis_version_string() }.
@@ -109,7 +109,7 @@ static const CreditLibList &CreditGetList(void)
       STR(ZLIB_VER_REVISION) "." STR(ZLIB_VER_SUBREVISION), ZLIB, true,
       "Jean-loup Gailly & Mark Adler"),
     // End of credits data structure
-    #undef LD                          // Done with this macro
+#undef LD                              // Done with this macro
   } };
   // Return list
   return libList;

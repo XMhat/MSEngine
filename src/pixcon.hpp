@@ -14,7 +14,7 @@
 /* Curses API in it's own namespace to prevent ambiguity problems.           */
 /* ------------------------------------------------------------------------- */
 namespace IfCurses {                   // Start of Curses interface
-# include <ncurses.h>                  // Using Curses for fancy term effects
+#include <ncurses.h>                   // Using Curses for fancy term effects
 }                                      // End of Curses interface
 /* == Console Class ======================================================== */
 class SysCon :
@@ -53,7 +53,7 @@ class SysCon :
     using namespace IfCurses;
     // Build character with specified colour
     const cchar_t ccChar{ aColour, { static_cast<wchar_t>(uiChar) },
-#ifdef __linux__
+#if defined(LINUX)
       0
 #endif
     };
@@ -642,7 +642,7 @@ class SysCon :
       case OK: break;
       // Any other value
       default: XC("Failed to de-initialise ncurses!", "Code", iResult);
-    } //Re-initialise ncurses
+    } // Re-initialise ncurses
     if(!initscr()) XC("Failed to re-initialise ncurses!");
   }
   /* -- DeInitialise ------------------------------------------------------- */

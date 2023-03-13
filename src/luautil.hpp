@@ -648,8 +648,9 @@ template<typename ClassType>
 static int GCSet(lua_State*const lS, const int iCmd, const int iVal1,
   const int iVal2)
     { return lua_gc(lS, iCmd, iVal1, iVal2); }
-//static int GCSet(lua_State*const lS, const int iCmd, const int iVal)
-//  { return lua_gc(lS, iCmd, iVal); }
+[[maybe_unused]]
+  static int GCSet(lua_State*const lS, const int iCmd, const int iVal)
+    { return lua_gc(lS, iCmd, iVal); }
 static int GCSet(lua_State*const lS, const int iCmd)
   { return lua_gc(lS, iCmd); }
 static int GCStop(lua_State*const lS)
@@ -919,7 +920,6 @@ static lua_Unsigned GetKeyValueTableSize(lua_State*const lS)
   // Return count of key/value pairs in table
   return uiCount - uiIndexedCount;
 }
-
 /* -- Replace text with values from specified LUA table -------------------- */
 static void ReplaceMulti(lua_State*const lS)
 { // Get string to replace

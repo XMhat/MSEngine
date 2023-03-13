@@ -652,7 +652,7 @@ static int CoreMain(const int iArgs, ARGTYPE**const lArgs,
   // freed memory. The following is a helper macro to create a static class,
   // assign the global pointer version to it (makes compiler optimise the
   // pointers to references) and clear the pointer when the scope is lost.
-  #define INITSS(x, ...) DEINITHELPER(dih ## x, c ## x = nullptr); \
+#define INITSS(x, ...) DEINITHELPER(dih ## x, c ## x = nullptr); \
     x eng ## x{ __VA_ARGS__ }; c ## x = &eng ## x
   // Initialise critical command-line and logging systems. We cannot really
   // do anything else special until we've enabled these subsystems.
@@ -710,10 +710,10 @@ static int CoreMain(const int iArgs, ARGTYPE**const lArgs,
     INITSS(Console);                   // cppcheck-suppress danglingLifetime
     INITSS(Lua);                       // cppcheck-suppress danglingLifetime
     // Done with this macro
-    #undef INITSS
+#undef INITSS
     // Codec helper macro. Do not change the order or you will have to update
     // the index and order in Image::LoadFlags or Pcm::LoadFlags respectively.
-    #define INITCODEC(x) const Codec ## x engCodec ## x
+#define INITCODEC(x) const Codec ## x engCodec ## x
     // Initialise available image codecs. Note, these have to match the order
     // of auto-detection in the image.hpp:LoadData() function...
     INITCODEC(TGA); /* #0 */ INITCODEC(JPG); /* #1 */  INITCODEC(PNG); /* #2 */
@@ -723,7 +723,7 @@ static int CoreMain(const int iArgs, ARGTYPE**const lArgs,
     INITCODEC(WAV); /* #0 */ INITCODEC(CAF); /* #1 */  INITCODEC(OGG); /* #2 */
     INITCODEC(MP3); /* #3 */
     // Done with this macro
-    #undef INITCODEC
+#undef INITCODEC
     // Register default cvars and pass over the current gui mode by ref. All
     // the core parts of the engine are initialised from cvar callbacks.
     cCVars->RegisterDefaults();

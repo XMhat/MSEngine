@@ -110,7 +110,7 @@ template<class KeyType=unsigned int, class ValueType=string>class IdMap :
   /* -- Dependents --------------------------------------------------------- */
   private IdentConst                   // Alternative if id is unknown
 { /* -- Macros ------------------------------------------------------------- */
-  #define IDMAPSTR(i) { i, #i }        // Helper macro for constructors
+#define IDMAPSTR(e) { e, #e }          // Helper macro
   /* -- Typedefs ----------------------------------------------------------- */
   typedef map<const KeyType, const ValueType> Map;
   /* -- Variables ---------------------------------------------------------- */

@@ -30,7 +30,7 @@ template<class Plugin=ErrorPluginGeneric>class Error final :
   public exception,                    // So we can capture as exception
   public string                        // String to store generated string
 { /* -- exception class helper macro ------------------------------ */ private:
-  #define XC(r,...) throw Error<>{ r, ## __VA_ARGS__ }
+# define XC(r,...) throw Error<>{ r, ## __VA_ARGS__ }
   /* -- Private variables -------------------------------------------------- */
   ostringstream osS;                   // Error message builder
   /* -- Write left part of var --------------------------------------------- */
@@ -53,7 +53,8 @@ template<class Plugin=ErrorPluginGeneric>class Error final :
     osS << dec << tVal << " (0x" << hex
         << static_cast<UnsignedType>(tVal) << ").";
   }
-#ifdef _WIN32
+  /* ----------------------------------------------------------------------- */
+#if defined(WINDOWS)                   // Using windows?
   /* -- Process long integer ----------------------------------------------- */
   template<typename... V>void Param(const char*const cpName,
     const long lVal, const V... vVars)
@@ -62,7 +63,19 @@ template<class Plugin=ErrorPluginGeneric>class Error final :
   template<typename... V>void Param(const char*const cpName,
     const unsigned long lVal, const V... vVars)
       { Int<unsigned long>(cpName, "ULong", lVal); Param(vVars...); }
-#endif
+  /* ----------------------------------------------------------------------- */
+#elif defined(MACOS)                   // Targeting Apple device?
+  /* -- Process signed long ------------------------------------------------ */
+  template<typename... V>
+    void Param(const char*const cpName, const long lVal, const V... vVars)
+      { Int<long>(cpName, "Long", lVal); Param(vVars...); }
+  /* -- Process unsigned long ---------------------------------------------- */
+  template<typename... V>
+    void Param(const char*const cpName, const unsigned long ulVal,
+      const V... vVars)
+        { Int<unsigned long>(cpName, "ULong", ulVal); Param(vVars...); }
+  /* ----------------------------------------------------------------------- */
+#endif                                 // Target check
   /* -- Process 16-bit signed integer -------------------------------------- */
   template<typename... V>
     void Param(const char*const cpName, const int16_t sVal, const V... vVars)
@@ -107,19 +120,6 @@ template<class Plugin=ErrorPluginGeneric>class Error final :
     // Process more parameters
     Param(vVars...);
   }
-  /* -- Apple needs this for some crazy reason ----------------------------- */
-#ifdef __APPLE__
-  /* -- Process signed long ------------------------------------------------ */
-  template<typename... V>
-    void Param(const char*const cpName, const long lVal, const V... vVars)
-      { Int<long>(cpName, "Long", lVal); Param(vVars...); }
-  /* -- Process unsigned long ---------------------------------------------- */
-  template<typename... V>
-    void Param(const char*const cpName, const unsigned long ulVal,
-      const V... vVars)
-        { Int<unsigned long>(cpName, "ULong", ulVal); Param(vVars...); }
-  /* ----------------------------------------------------------------------- */
-#endif
   /* -- Show float --------------------------------------------------------- */
   template<typename FloatType>void Float(const char*const cpName,
     const char*const cpType, const FloatType tVal)
@@ -148,11 +148,11 @@ template<class Plugin=ErrorPluginGeneric>class Error final :
      // Get variable as a C-string
     if(!vpPtr) osS << "<Null>";
     // Valid? Display and translation if neccesary
-#ifdef _WIN32
+#if defined(WINDOWS)                   // Using Windows?
     else osS << "0x" << vpPtr;         // Windows doesn't put in 0x for us
-#else
+#else                                  // Using anything but Windows?
     else osS << vpPtr;                 // Already puts in 0x for us
-#endif
+#endif                                 // Windows check
     // Add full stop
     osS << '.';
     // Process more parameters

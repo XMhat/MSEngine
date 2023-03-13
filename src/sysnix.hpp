@@ -231,13 +231,13 @@ class SysCore :
   /* -- Get executable size from header (N/A on Linux) --------------------- */
   static size_t GetExeSize(const string &strFile)
   { // Machine byte order check
-#   if defined(LITTLE_ENDIAN)
-#     define ELFDATANATIVE ELFDATA2LSB
-#   elif defined(BIG_ENDIAN)
-#     define ELFDATANATIVE ELFDATA2MSB
-#   else
-#     error Unknown Endianness!
-#   endif
+#if defined(LITTLE_ENDIAN)
+# define ELFDATANATIVE ELFDATA2LSB
+#elif defined(BIG_ENDIAN)
+# define ELFDATANATIVE ELFDATA2MSB
+#else
+# error Unknown Endianness!
+#endif
     // Open exe file and return on error
     if(FStream fExe{ strFile, FStream::FM_R_B })
     { // Read in the header
@@ -318,7 +318,7 @@ class SysCore :
     } // Failed to open executable file to read
     else XCL("Failed to open executable!", "File", strFile);
     // Done with this macro
-#   undef ELFDATANATIVE
+#undef ELFDATANATIVE
   }
   /* -- Get executable file name ------------------------------------------- */
   const string GetExeName(void)

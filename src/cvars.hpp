@@ -16,9 +16,9 @@ using namespace IfLua;                 // Using lua interface
 /* == CVars class ========================================================== */
 static class CVars final               // Start of vars class
 { /* ----------------------------------------------------------------------- */
-  #define CVAR_CONFIG_SIZE_MINIMUM     2
-  #define CVAR_CONFIG_SIZE_MAXIMUM     1048576
-  #define CVAR_CONFIG_MAX_LEVEL        10
+#define CVAR_CONFIG_SIZE_MINIMUM       2
+#define CVAR_CONFIG_SIZE_MAXIMUM       1048576
+#define CVAR_CONFIG_MAX_LEVEL          10
   /* --------------------------------------------------------------- */ public:
   enum DefaultsCommand                 // Flags when loaded from DB
   { /* -- (Note: Don't ever change these around) --------------------------- */

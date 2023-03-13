@@ -14,7 +14,7 @@ using namespace Library::GlFW;         // Using GlFW library functions
 using namespace IfUtf;                 // Using utf interface
 using namespace IfString;              // Using string interface
 /* -- Includes ------------------------------------------------------------- */
-#if defined(_WIN32)                    // Using windows?
+#if defined(WINDOWS)                   // Using windows?
 /* -- System error formatter with specified error code --------------------- */
 static const string SysError(const int iError)
 { // Convert int to DWORD as we use the same function type across platforms
@@ -74,7 +74,7 @@ static void SysSetThreadName(const char*const cpName)
   __except(EXCEPTION_CONTINUE_EXECUTION) { }
 }
 /* ------------------------------------------------------------------------- */
-#elif defined(__APPLE__)               // Using mac?
+#elif defined(MACOS)                   // Using mac?
 /* -- System error code ---------------------------------------------------- */
 template<typename IntType=int>static IntType SysErrorCode(void)
   { return static_cast<IntType>(GetErrNo()); }
@@ -131,9 +131,9 @@ static void SysSetThreadName(const char*const) { }
 /* ------------------------------------------------------------------------- */
 #else                                  // Using linux?
 /* -- Compatibility with X11 ----------------------------------------------- */
-#ifdef Bool                            // Undefine 'Bool' set by X11
-# undef Bool                           // To prevent problems with other apis
-#endif                                 // Done checking for 'Bool'
+# if defined(Bool)                     // Undefine 'Bool' set by X11
+#  undef Bool                          // To prevent problems with other apis
+# endif                                // Done checking for 'Bool'
 /* -- System error code ---------------------------------------------------- */
 template<typename IntType=int>static IntType SysErrorCode(void)
   { return static_cast<IntType>(GetErrNo()); }
@@ -157,7 +157,7 @@ static void SysSetThreadName(const char*const) { }
 /* ------------------------------------------------------------------------- */
 class SysErrorPlugin final
 { /* -- Exception class helper macro for system errors --------------------- */
-  #define XCS(r,...) throw Error<SysErrorPlugin>(r, ## __VA_ARGS__)
+#define XCS(r,...) throw Error<SysErrorPlugin>(r, ## __VA_ARGS__)
   /* -- Constructor to add system error code ----------------------- */ public:
   explicit SysErrorPlugin(ostringstream &osS)
   { // Get system error code and add system formatted parameter

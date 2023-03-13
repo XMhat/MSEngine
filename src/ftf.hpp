@@ -23,12 +23,12 @@ namespace IfFtf {                      // Keep declarations neatly categorised
 /* -- Includes ------------------------------------------------------------- */
 using namespace Library::FreeType;     // Using freetype library functions
 using namespace IfAsset;               // Using asset interface
-/* == Helper functions ===================================================== */
+/* -- Macros --------------------------------------------------------------- */
 #define FT(F,M,...) if(const FT_Error ftErr = (F)) \
   XC("FT call failed: " M, "Code", ftErr, ## __VA_ARGS__);
-/* == Freetype core class ================================================== */
-static class FreeType final
-{ /* -- OnError --------------------------------------------------- */ private:
+/* -- Freetype core class -------------------------------------------------- */
+static class FreeType final            // Used as a global interface
+{ /* -- Private variables -------------------------------------------------- */
   FT_Library    ftLibrary;             // Freetype instance
   FT_MemoryRec_ ftMemory;              // Freetype custom allocator
   mutex         mMutex;                // Instance protection

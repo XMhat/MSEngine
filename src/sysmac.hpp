@@ -22,10 +22,10 @@
 #include <mach-o/loader.h>             // For getting mach-o header format
 #include <mach-o/fat.h>                // For getting mach-o fat header format
 /* ------------------------------------------------------------------------- */
-# include <termios.h>                  // For changing terminal settings
-# include <libproc.h>                  // For getting program executable
+#include <termios.h>                   // For changing terminal settings
+#include <libproc.h>                   // For getting program executable
 /* ------------------------------------------------------------------------- */
-# define _XOPEN_SOURCE_EXTENDED        // Unlock extended ncurses functionality
+#define _XOPEN_SOURCE_EXTENDED         // Unlock extended ncurses functionality
 typedef void (*__sighandler_t)(int);   // For signal() on OSX
 /* == Dependiencies ======================================================== */
 #include "pixbase.hpp"                 // Base system class
@@ -403,27 +403,27 @@ class SysCore :
   { // Open exe file and return on error
     if(FStream fExe{ strFile, FStream::FM_R_B })
     { // Machine byte order check
-#     if defined(LITTLE_ENDIAN)
-#       define MACHO_LE32 MH_MAGIC
-#       define MACHO_LE64 MH_MAGIC_64
-#       define MACHO_BE32 MH_CIGAM
-#       define MACHO_BE64 MH_CIGAM_64
-#       define MACHO_FAT_LE32 FAT_MAGIC
-#       define MACHO_FAT_LE64 FAT_MAGIC_64
-#       define MACHO_FAT_BE32 FAT_CIGAM
-#       define MACHO_FAT_BE64 FAT_CIGAM_64
-#     elif defined(BIG_ENDIAN)
-#       define MACHO_LE32 MH_CIGAM
-#       define MACHO_LE64 MH_CIGAM_64
-#       define MACHO_BE32 MH_MAGIC
-#       define MACHO_BE64 MH_MAGIC_64
-#       define MACHO_FAT_LE32 FAT_CIGAM
-#       define MACHO_FAT_LE64 FAT_CIGAM_64
-#       define MACHO_FAT_BE32 FAT_MAGIC
-#       define MACHO_FAT_BE64 FAT_MAGIC_64
-#     else
-#       error Unknown Endianness!
-#     endif
+#if defined(LITTLE_ENDIAN)
+# define MACHO_LE32 MH_MAGIC
+# define MACHO_LE64 MH_MAGIC_64
+# define MACHO_BE32 MH_CIGAM
+# define MACHO_BE64 MH_CIGAM_64
+# define MACHO_FAT_LE32 FAT_MAGIC
+# define MACHO_FAT_LE64 FAT_MAGIC_64
+# define MACHO_FAT_BE32 FAT_CIGAM
+# define MACHO_FAT_BE64 FAT_CIGAM_64
+#elif defined(BIG_ENDIAN)
+# define MACHO_LE32 MH_CIGAM
+# define MACHO_LE64 MH_CIGAM_64
+# define MACHO_BE32 MH_MAGIC
+# define MACHO_BE64 MH_MAGIC_64
+# define MACHO_FAT_LE32 FAT_CIGAM
+# define MACHO_FAT_LE64 FAT_CIGAM_64
+# define MACHO_FAT_BE32 FAT_MAGIC
+# define MACHO_FAT_BE64 FAT_MAGIC_64
+#else
+# error Unknown Endianness!
+#endif
       // Load magic directly into integer
       unsigned int uiMagic;
       switch(const size_t stMagicBytes =
@@ -465,14 +465,14 @@ class SysCore :
                     "Requested", sizeof(uiMagic), "Actual", stMagicBytes,
                     "File", strFile);
       } // Done with these defines
-      #undef MACHO_FAT_BE64
-      #undef MACHO_FAT_BE32
-      #undef MACHO_FAT_LE64
-      #undef MACHO_FAT_LE32
-      #undef MACHO_BE32
-      #undef MACHO_BE64
-      #undef MACHO_LE32
-      #undef MACHO_LE64
+#undef MACHO_FAT_BE64
+#undef MACHO_FAT_BE32
+#undef MACHO_FAT_LE64
+#undef MACHO_FAT_LE32
+#undef MACHO_BE32
+#undef MACHO_BE64
+#undef MACHO_LE32
+#undef MACHO_LE64
     } // Failed to open mach executable
     XCL("Failed to open MACH-O executable!", "File", strFile);
   }
@@ -616,7 +616,7 @@ class SysCore :
   { // Get processor information
     const size_t stCpuCount = thread::hardware_concurrency();
     // Using arm cpu?
-#ifdef __arm64__
+#if defined(RISC)
     const unsigned int
       ulFeatureSet = GetSysCTLInfoNum<unsigned int>("hw.cpufamily"),
       ulPlatformId = GetSysCTLInfoNum<unsigned int>("hw.cputype");
@@ -645,7 +645,8 @@ class SysCore :
       static_cast<unsigned int>
         (GetSysCTLInfoNum<uint64_t>("hw.tbfrequency")/10000) :
       smListIt->second[1];
-#else
+    // Using INTEL processor?
+#elif defined(CISC)
     const unsigned int
       uiSpeed = GetSysCTLInfoNum<uint64_t>("hw.cpufrequency")/1000000,
       ulFeatureSet = GetSysCTLInfoNum<uint64_t>("machdep.cpu.feature_bits"),

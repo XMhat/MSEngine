@@ -87,17 +87,16 @@ class SysModule :                      // System module class
         const LANGANDCODEPAGE &lacpData = lcpData[stIndex];
         const LONG lLng = MakeDWord(lacpData.wLanguage, lacpData.wCodePage);
         // To help with retreiving some values
-        #define GSV(v,n) \
-          v = GetStringValue(UTFtoWS16( \
-            Format("\\StringFileInfo\\$$$$$\\" n, \
-              right, hex, setw(8), setfill('0'), lLng)), \
-                wstrValue);
+#define GSV(v,n) v = GetStringValue(UTFtoWS16( \
+          Format("\\StringFileInfo\\$$$$$\\" n, \
+            right, hex, setw(8), setfill('0'), lLng)), \
+              wstrValue);
         // Get version, vendor and comments strings from module
         GSV(strDescription, "FileDescription");
         GSV(strVendor, "CompanyName");
         GSV(strCopyright, "Comments");
         // Done with this define
-        #undef GSV
+#undef GSV
       }
     }
     /* -- VersionStrings::End ---------------------------------------------- */

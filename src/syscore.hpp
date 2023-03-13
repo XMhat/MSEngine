@@ -388,11 +388,11 @@ class SysConBase :
 /* ## Here we include data for the specific operating system.             ## */
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
-#if defined(_WIN32)                    // Using windows?
+#if defined(WINDOWS)                   // Using windows?
 # include "syswin.hpp"                 // Include windows system core
-#elif defined(__APPLE__)               // Using mac?
+#elif defined(MACOS)                   // Using mac?
 # include "sysmac.hpp"                 // Include MacOS system core
-#elif defined(__linux__)               // Using linux?
+#elif defined(LINUX)                   // Using linux?
 # include "sysnix.hpp"                 // Include Linux system core
 #endif                                 // Done checking OS
 /* ------------------------------------------------------------------------- */
@@ -509,7 +509,7 @@ static class System final :            // The main system class
     // users choice of relative directory.
     cCmdLine->SetStartupCWD();
     // If targeting Apple systems?
-  #ifdef __APPLE__
+#if defined(MACOS)
     // Working directory
     string strWorkDir;
     // No directory specified?
@@ -523,11 +523,11 @@ static class System final :            // The main system class
       else strWorkDir = ENGLoc();
     } // Directory specified so use that and build full path for it
     else strWorkDir = move(PathSplit{ strP, true }.strFull);
-  #else
+#else
     // Build directory
     string strWorkDir{ strP.empty() ? ENGLoc() :
       move(PathSplit{ strP, true }.strFull) };
-  #endif
+#endif
     // Set the directory and if failed? Throw the error
     if(!DirSetCWD(strWorkDir))
       XCL("Failed to set working directory!", "Directory", strWorkDir);

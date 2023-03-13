@@ -203,7 +203,7 @@ LLFUNCEX(MkDirEx, 1,
 // < Result:Integer=The errno return code from the C-Lib mkdir() function
 // ? Creates the specified directory. Only allowed as a child of the working
 // ? executable directory.
-///* ----------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
 LLFUNCEX(RmDir, 1, LCPUSHINT(DirRmDir(LCGETCPPFILE(1, "Directory"))?0:errno));
 /* ========================================================================= */
 // $ File.RmDirEx
@@ -212,7 +212,7 @@ LLFUNCEX(RmDir, 1, LCPUSHINT(DirRmDir(LCGETCPPFILE(1, "Directory"))?0:errno));
 // ? Removes the specified directory and interim directories. Only allowed as a
 // ? child of the working executable directory. This removes interim
 // ? directories that are empty.
-// * ----------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
 LLFUNCEX(RmDirEx, 1,
   LCPUSHINT(DirRmDirEx(LCGETCPPFILE(1, "Directory"))?0:errno));
 /* ========================================================================= */
@@ -221,7 +221,7 @@ LLFUNCEX(RmDirEx, 1,
 // < Result:Integer=The errno return code from the C-Lib unlink() function
 // ? Deletes the specified file. Only allowed as a child of the working
 // ? executable directory.
-///* ----------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
 LLFUNCEX(Unlink, 1,
   LCPUSHINT(DirFileUnlink(LCGETCPPFILE(1, "File"))?0:errno));
 /* ========================================================================= */
@@ -239,14 +239,14 @@ LLFUNCEX(Rename, 1, LCPUSHINT(DirFileRename(
 // > Source:string=Directory
 // < Result:Boolean=Directory exists?
 // ? Returns if the specified directory exists and is actually a directory.
-///* ----------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
 LLFUNCEX(DirExists, 1, LCPUSHBOOL(DirLocalDirExists(LCGETCPPFILE(1,"Dir"))));
 /* ========================================================================= */
 // $ File.FileExists
 // > Source:string=Filename
 // < Result:Boolean=File exists?
 // ? Returns if the specified directory exists and is actually a directory.
-///* ----------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
 LLFUNCEX(FileExists, 1,
   LCPUSHBOOL(DirLocalFileExists(LCGETCPPFILE(1,"File"))));
 /* ========================================================================= */
@@ -255,7 +255,7 @@ LLFUNCEX(FileExists, 1,
 // < Result:Boolean=File executable?
 // ? Returns if the file on disk is executable. Only allowed as a child of the
 // ? working executable directory. Should always return 'false' on Windows.
-///* ----------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
 LLFUNCEX(Executable, 1,
   LCPUSHBOOL(DirIsFileExecutable(LCGETCPPFILE(1, "File"))));
 /* ========================================================================= */
@@ -263,7 +263,7 @@ LLFUNCEX(Executable, 1,
 // > Source:string=File name or directory name
 // < Result:Boolean=File or directory exists?
 // ? Returns if the specified file or directory exists on disk.
-///* ----------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
 LLFUNCEX(Exists, 1,
   LCPUSHBOOL(DirLocalResourceExists(LCGETCPPFILE(1,"Resource"))));
 /* ========================================================================= */
@@ -272,7 +272,7 @@ LLFUNCEX(Exists, 1,
 // < Result:Boolean=File readable?
 // ? Returns if the file on disk is readable. Only allowed as a child of the
 // ? working executable directory.
-///* ----------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
 LLFUNCEX(Readable, 1, LCPUSHBOOL(DirIsFileReadable(LCGETCPPFILE(1, "File"))));
 /* ========================================================================= */
 // $ File.Writable
@@ -280,7 +280,7 @@ LLFUNCEX(Readable, 1, LCPUSHBOOL(DirIsFileReadable(LCGETCPPFILE(1, "File"))));
 // < Result:Boolean=File writable?
 // ? Returns if the file on disk is writable. Only allowed as a child of the
 // ? working executable directory.
-///* ----------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
 LLFUNCEX(Writable, 1,
   LCPUSHBOOL(DirIsFileWritable(LCGETCPPFILE(1, "File"))));
 /* ========================================================================= */
@@ -289,7 +289,7 @@ LLFUNCEX(Writable, 1,
 // < Result:Boolean=File readable and writable?
 // ? Returns if the file on disk is readable and writable. Only allowed as a
 // ? child of the working executable directory.
-///* ----------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
 LLFUNCEX(ReadWritable, 1,
   LCPUSHBOOL(DirIsFileReadWriteable(LCGETCPPFILE(1, "File"))));
 /* ========================================================================= */
@@ -308,7 +308,7 @@ LLFUNCEX(ReadWritable, 1,
 // < RDevice:integer=Device id of special file
 // < INode:integer=Inode id
 // ? Returns information about a file without opening it.
-///* ----------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(Info)
   STDFSTATSTRUCT stData;
   LCPUSHINT(DirFileSize(LCGETCPPFILE(1, "File"), stData));
@@ -325,7 +325,7 @@ LLFUNCENDEX(12)
 // < Files:table=File list in a indexed table
 // < Directories:table=Directory list in a indexed table
 // ? Dumps all the files in the specified directory to two tables
-///* ----------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(Enumerate)
   const Dir dData{ LCGETCPPFILE(1, "Directory") };
   LCTOTABLE(dData.dFiles);
@@ -339,7 +339,7 @@ LLFUNCENDEX(2)
 // < Directories:table=Directory list in a indexed table
 // ? Dumps all the files ending in the specified extension in the specified
 // ? directory to two tables.
-///* ----------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(EnumerateEx)
   const Dir dData{ LCGETCPPFILE(1, "Directory"),
                    LCGETCPPFILE(2, "Extension") };
@@ -360,7 +360,7 @@ LLFUNCEX(Error, 1, LCPUSHINT(GetErrNo()));
 // < Bytes:integer=Number of bytes written.
 // ? Opens/Creates the specified file, appends the specified string and closes
 // ? the file.
-///* ----------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
 LLFUNCEX(AppendOneStr, 1,
   LCPUSHINT(FStream(LCGETCPPFILE(1, "File"), FStream::FM_A_B).
     FStreamWriteString(LCGETCPPSTRING(2, "String"))));
@@ -371,7 +371,7 @@ LLFUNCEX(AppendOneStr, 1,
 // < Bytes:integer=Number of bytes written
 // ? Create or open existing file, appends the specified asset and closes
 // ? the file.
-///* ----------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
 LLFUNCEX(AppendOne, 1,
   LCPUSHINT(FStream(LCGETCPPFILE(1, "File"), FStream::FM_A_B).
     FStreamWriteBlock(*LCGETPTR(2, Asset))));
@@ -381,7 +381,7 @@ LLFUNCEX(AppendOne, 1,
 // < Mode:integer=The mode to use
 // ? Opens the specified file in 'text' mode, reads a line of text into a
 // ? string. To read the whole file to a string, use the 'Asset.String(Async)'
-///* ----------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
 LLFUNCEX(ReadOneStr, 1,
   LCPUSHXSTR(FStream(LCGETCPPFILE(1, "File"), FStream::FM_R_T).
     FStreamReadString()));

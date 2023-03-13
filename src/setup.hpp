@@ -22,6 +22,7 @@
 #if !defined(__cplusplus)              // Must be compiling in C++ mode
 # error Please use a C++ compiler such as GCC, CLANG or MSVC!
 #elif defined(_WIN32)                  // Only applies to MS compiler
+# define WINDOWS                       // Using windows
 # if defined(ALPHA)                    // Debugging?
 #  if !defined(_DEBUG)                 // Might not be defined on LLVM
 #   define _DEBUG                      // Not defined on CLang
@@ -34,7 +35,7 @@
 #  define NDEBUG                       // No assertions
 #  define _NDEBUG                      // No assertions
 # endif                                // Debugging check
-# ifdef __clang__                      // Actually using CLang?
+# if defined(__clang__)                // Actually using CLang?
 #  if __cplusplus < 202002L            // Must be using a C++20 compiler
 #   error Must use a C++20 standards clang compiler!
 #  endif                               // C++ standards check
@@ -52,6 +53,7 @@
 #  error This compiler is not supported. Please use clang or msvc!
 # endif                                // Check actual compiler
 # if defined(_M_AMD64)                 // Target is AMD architecture?
+#  define CISC                         // Using INTEL or AMD instruction set
 #  define X64                          // Using X64 architechture
 #  if defined(__AVX2__)                // Target has AVX2 instructions?
 #   define BUILD_TARGET                "Win-X64-AVX2"
@@ -61,12 +63,15 @@
 #   define BUILD_TARGET                "Win-X64-SSE2"
 #  endif                               // Floating point checks
 # elif defined(_M_ARM64)               // Target is ARM architecture?
+#  define RISC                         // Using ARM instruction set
 #  define X64                          // Using X64 architechture
 #  define BUILD_TARGET                 "Win-ARM64"
 # elif defined(_M_ARM)                 // Target is ARM architechture?
+#  define RISC                         // Using ARM instruction set
 #  define X86                          // Using 32-bit architechture
 #  define BUILD_TARGET                 "Win-ARM"
 # elif defined(_M_IX86)                // Target is X86 architecture?
+#  define CISC                         // Using INTEL or AMD instruction set
 #  define X86                          // Using X86 architechture
 #  if _M_IX86_FP == 1                  // Target FP is SSE?
 #   define BUILD_TARGET                "Win-X86-SSE"
@@ -93,12 +98,15 @@
 # define NOMINMAX                      // Do not define min/max please
 # define DLLEXT                 ".dll" // Extension to use for DLL's
 #elif defined(__APPLE__)               // Apple target?
+# define MACOS                         // Using MacOS
 # include <TargetConditionals.h>       // Include target conditionals header
 # if defined(TARGET_OS_MAC)            // Targeting MacOS?
 #  if defined(__x86_64__)              // 64-bit x86 architecture?
+#   define CISC                        // Using INTEL or AMD instruction set
 #   define X64                         // Using 64-bit architechture
 #   define BUILD_TARGET                "MacOS-X64"
 #  elif defined(__arm64__)             // 64-bit ARM architecture?
+#   define RISC                        // Using ARM instruction set
 #   define X64                         // Using 64-bit architechture
 #   define BUILD_TARGET                "MacOS-ARM64"
 #  else                                // Unknown target?
@@ -117,11 +125,13 @@
 #elif __cplusplus < 202002L            // Must be using a C++20 compiler
 # error Must use a C++ 20 or better compiler!
 #elif defined(__linux__)               // Linux detected?
+# define LINUX                         // Using Linux
 # define COMPILER_NAME                 "GCC"
 # define COMPILER_VERSION              STR(__GNUC__) "." \
                                        STR(__GNUC_MINOR__) "." \
                                        STR(__GNUC_PATCHLEVEL__)
 # if defined(__x86_64__)               // 64-bit compilation?
+#  define CISC                         // Using INTEL or AMD instruction set
 #  define X64                          // Using 64-bit architechture
 #  if defined(__AVX2__)                // Using AVX2 instructions
 #   define BUILD_TARGET                "Linux-X64-AVX2"
@@ -137,6 +147,7 @@
 #   define BUILD_TARGET                "Linux-X64"
 #  endif                               // FP extensions check
 # elif defined(__i386__)               // 32-bit compilation?
+#  define CISC                         // Using INTEL or AMD instruction set
 #  define X86                          // Using 32-bit architechture
 #  if defined(__AVX2__)                // Using AVX2 instructions
 #   define BUILD_TARGET                "Linux-X86-AVX2"
@@ -200,7 +211,7 @@
 #define STR_HELPER(...)  #__VA_ARGS__            // Convert macro integer
 #define STR(...)         STR_HELPER(__VA_ARGS__) // to string
 /* -- Cross-platform specific declarations --------------------------------- */
-#ifdef _WIN32                          // Windows 32-bit or 64-bit
+#if defined(WINDOWS)                   // Windows 32-bit or 64-bit
 /* -- Entry function and arguments ----------------------------------------- */
 #define ENTRYFUNC    WINAPI _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 #define CONENTRYFUNC _tmain            // Entry function for console app
@@ -238,15 +249,15 @@
 #define UTFtoWS16(m) Decoder(m).Wide()     // utf8 to widestring str
 #define UTFtoS16(m)  UTFtoWS16(m).c_str()  //    " to widestring cstr
 /* -- Debug ---------------------------------------------------------------- */
-#ifdef _CRTDBG_MAP_ALLOC               // >> Required by MSDN
+#if defined(_CRTDBG_MAP_ALLOC)         // >> Required by MSDN
 # include <stdlib.h>                   // >> Required by MSDN
 # include <crtdbg.h>                   // >> Basic Leak detection SDK
-//# define USEVLD                      // Set to use VLD (copy *.dll/manifest)
-# ifdef USEVLD                         // Use VLD debugging library?
+// # define USEVLD                     // Set to use VLD (copy *.dll/manifest)
+# if defined(USEVLD)                   // Use VLD debugging library?
 #  include <vld/vld.h>                 // >> If basic detection not working
-#  if defined(_WIN64)                  // 64-bit windows?
+#  if defined(X64)                     // 64-bit windows?
 #   pragma comment(lib, "res/lib/vld64d") // >> Use 64-bit VLD lib
-#  else                                // 32-bit windows?
+#  elif defined(X86)                   // 32-bit windows?
 #   pragma comment(lib, "res/lib/vld32d") // >> Use 32-bit VLD lib
 #  endif                               // Bits check
 # endif                                // VLD inclusion requested
@@ -353,7 +364,7 @@
 # define STRICT_U32BE(v) SWAP_U32(v)   // Swap 32-bits
 # define STRICT_U64LE(v) (v)           // Use 64-bit integers as-is
 # define STRICT_U64BE(v) SWAP_U64(v)   // Swap 64-bits
-# ifndef LITTLE_ENDIAN                 // This could already be defined
+# if !defined(LITTLE_ENDIAN)           // This could already be defined
 #  define LITTLE_ENDIAN                // Define it if not
 # endif                                // Little endian check
 #elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__ // Using ARM? (BE)
@@ -363,7 +374,7 @@
 # define STRICT_U32BE(v) (v)           // Use 32-bit integers as-is
 # define STRICT_U64LE(v) SWAP_U64(v)   // Swap 64-bits
 # define STRICT_U64BE(v) (v)           // Use 64-bit integers as-is
-# ifndef BIG_ENDIAN                    // This could already be defined
+# if !defined(BIG_ENDIAN)              // This could already be defined
 #  define BIG_ENDIAN                   // Define it if not
 # endif                                // Big endian check
 #else                                  // Unknown endianness?
@@ -381,23 +392,22 @@
 /* ------------------------------------------------------------------------- */
 #endif                                 // Operating system
 /* ------------------------------------------------------------------------- */
-#ifdef __APPLE__                       // Parallel execution not on Apple yet!
-# define MYFILL(p,b,e,...)         fill(b, e, __VA_ARGS__)
-# define MYTRANSFORM(p,b,e,o,...)  transform(b, e, o, __VA_ARGS__)
-# define MYFOREACH(p,b,e,...)      for_each(b, e, __VA_ARGS__)
-# define MYCOPY(p,b,e,...)         copy(b, e, __VA_ARGS__)
+#if defined(MACOS)                     // Parallel execution not on Apple yet!
+# define MYFILL(p,b,e,...)        fill(b, e, __VA_ARGS__)
+# define MYTRANSFORM(p,b,e,o,...) transform(b, e, o, __VA_ARGS__)
+# define MYFOREACH(p,b,e,...)     for_each(b, e, __VA_ARGS__)
+# define MYCOPY(p,b,e,...)        copy(b, e, __VA_ARGS__)
 # define GLFW_EXPOSE_NATIVE_COCOA      // Expose Cocoa specific funcs in Glfw
-/* ------------------------------------------------------------------------- */
 #else                                  // Linux and windows compilers support
 # include <execution>                  // Parallel execution support
-# define MYFILL(p,b,e,...)         fill(p, b, e, __VA_ARGS__)
-# define MYTRANSFORM(p,b,e,o,...)  transform(p, b, e, o, __VA_ARGS__)
-# define MYFOREACH(p,b,e,...)      for_each(p, b, e, __VA_ARGS__)
-# define MYCOPY(p,b,e,...)         copy(p, b, e, __VA_ARGS__)
-# if defined(_WIN32)                   // Using windows?
+# define MYFILL(p,b,e,...)        fill(p, b, e, __VA_ARGS__)
+# define MYTRANSFORM(p,b,e,o,...) transform(p, b, e, o, __VA_ARGS__)
+# define MYFOREACH(p,b,e,...)     for_each(p, b, e, __VA_ARGS__)
+# define MYCOPY(p,b,e,...)        copy(p, b, e, __VA_ARGS__)
+# if defined(WINDOWS)                  // Using windows?
 typedef std::make_signed<size_t>::type ssize_t; // Not in MSVC
 #  define GLFW_EXPOSE_NATIVE_WIN32     // Expose Cocoa specific funcs in Glfw
-# elif defined(__linux__)              // Using linux?
+# elif defined(LINUX)                  // Using linux?
 #  define GLFW_EXPOSE_NATIVE_X11       // Expose X11 specific funcs in Glfw
 #  define GLFW_EXPOSE_NATIVE_WAYLAND   // Expose Wayland specific funcs in Glfw
 # endif                                // Windows check
@@ -405,7 +415,7 @@ typedef std::make_signed<size_t>::type ssize_t; // Not in MSVC
 /* ------------------------------------------------------------------------- */
 #define UNUSED_VARIABLE(x)             (void)(x)
 /* == Typedefs ============================================================= */
-#ifdef ALPHA                           // Z-Lib debug version requires this
+#if defined(ALPHA)                     // Z-Lib debug version requires this
   extern "C" { int z_verbose = 0, z_error = 0; }
 #endif                                 // Compiling DEBUG/ALPHA version
 /* == API includes ========================================================= */
@@ -413,11 +423,11 @@ typedef std::make_signed<size_t>::type ssize_t; // Not in MSVC
 /* ## Include API functions                                               ## */
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
-#ifndef _WIN32                         // Not using windows?
+#if !defined(WINDOWS)                  // Not using windows?
 # pragma GCC diagnostic push           // Save warnings
-# ifdef __linux__                      // Using linux?
+# if defined(LINUX)                    // Using Linux?
 #  pragma GCC diagnostic ignored "-Wall"        // Disable ALL warnings
-# else                                 // Using macos?
+# elif defined(MACOS)                  // Using MacOS?
 #  pragma GCC diagnostic ignored "-Weverything" // Disable ALL warnings
 # endif                                // Linux or MacOS check
 #endif                                 // Not using windows
@@ -442,7 +452,7 @@ namespace GlFW                         // GLFW API FUNCTIONS
 #include <glfw/glfw3.h>                // Main header
 #include <glfw/glfw3native.h>          // Operating system includes
 #undef GLFW_INCLUDE_GLCOREARB          // Done with this define
-#ifdef __linux__                       // Using linux?
+#if defined(LINUX)                     // Using linux?
 # undef Bool                           // X11 defines this, we don't need it
 #endif                                 // Linux check
 };/* ----------------------------------------------------------------------- */
@@ -456,7 +466,7 @@ namespace Png                          // LIBPNG API FUNCTIONS
 };/* ----------------------------------------------------------------------- */
 namespace JpegTurbo                    // LIBJPEGTURBO API FUNCTIONS
 { /* ----------------------------------------------------------------------- */
-#ifdef __linux__                       // Using Linux?
+#if defined(LINUX)                     // Using Linux?
 # include <jpeglib.h>                  // Repository provided main header
 # include <jerror.h>                   // Repository provided error handling
 #else                                  // MacOS or Windows?
@@ -545,7 +555,7 @@ namespace Theora                       // THEORA API FUNCTIONS
 #include <theora/theora.h>             // Format codec (+ ogg codec)
 #include <theora/theoradec.h>          // Decoder
 };/* ----------------------------------------------------------------------- */
-#ifndef _WIN32                         // Not using windows?
+#if !defined(WINDOWS)                  // Not using windows?
 # pragma GCC diagnostic pop            // - Restore compiler warnings
 #endif                                 // Not using windows
 };/* ----------------------------------------------------------------------- */

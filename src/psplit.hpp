@@ -32,7 +32,7 @@ static string &PSplitBackToForwardSlashes(string &strText)
   { return Replace(strText, '\\', '/'); }
 static const string PSplitBackToForwardSlashes(const string &strIn)
   { string strOut{ strIn }; return PSplitBackToForwardSlashes(strOut); }
-#ifdef _WIN32
+#if defined(WINDOWS)
 static string PSplitBackToForwardSlashes(const wstring &wstrName)
   { return PSplitBackToForwardSlashes(WS16toUTF(wstrName)); }
 #endif
@@ -80,7 +80,7 @@ class PathSplit :
 { /* -- Constructors ---------------------------------------------- */ private:
   FileParts Init(const string &strSrc, const bool bUseFullPath) const
   { // Windows?
-#ifdef _WIN32
+#if defined(WINDOWS)
     // Wide strings for wide request functions
     wstring wstrDrive; wstrDrive.resize(_MAX_DRIVE);
     wstring wstrDir; wstrDir.resize(_MAX_DIR);

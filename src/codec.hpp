@@ -163,8 +163,8 @@ static void CodecDecodeAES(const DataConst &dIn, Memory &aOut,
 /* -- Stringify a 7zip error code ------------------------------------------ */
 static const char *CodecGetLzmaErrString(const int iCode)
 { // Helpful temporary defines
-  #define SZERR "SZ_ERROR_"
-  #define CASE(n) case SZ_ERROR_ ## n: return SZERR STR(n)
+#define SZERR "SZ_ERROR_"
+#define CASE(n) case SZ_ERROR_ ## n: return SZERR STR(n)
   // Which code
   switch(iCode)
   { CASE(DATA);        CASE(MEM);        CASE(CRC);
@@ -175,14 +175,14 @@ static const char *CodecGetLzmaErrString(const int iCode)
   } // Unknown error
   return SZERR "UNKNOWN";
   // Done with these defines
-  #undef CASE
-  #undef SZERR
+#undef CASE
+#undef SZERR
 }
 /* -- Stringify zlib error code -------------------------------------------- */
 static const char *CodecGetZLIBErrString(const int iCode)
 { // Helpful temporary defines
-  #define ZERR "Z_"
-  #define CASE(n) case Z_ ## n: return ZERR STR(n)
+#define ZERR "Z_"
+#define CASE(n) case Z_ ## n: return ZERR STR(n)
   // Check zlib code
   switch(iCode)
   { CASE(OK);        CASE(STREAM_END);   CASE(NEED_DICT);
@@ -191,8 +191,8 @@ static const char *CodecGetZLIBErrString(const int iCode)
   } // Unknown error
   return ZERR "UNKNOWN";
   // Done with these defines
-  #undef CASE
-  #undef ZERR
+#undef CASE
+#undef ZERR
 }
 /* ------------------------------------------------------------------------- */
 static const EncData CodecEncodeAESCompressed(const EncMode eOverrideMode,

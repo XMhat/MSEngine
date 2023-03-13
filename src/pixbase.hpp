@@ -72,7 +72,7 @@ class SysBase :                        // Safe exception handler namespace
   { // Information about the object
     Dl_info diData;
     // Need some extra work on Apple
-#ifdef __APPLE__
+#if defined(MACOS)
     // Convert to string
     string strLine{ cpStack };
     // Enumerate characters
@@ -248,25 +248,25 @@ class SysBase :                        // Safe exception handler namespace
         "This illegal instruction exception usually indicates that this "
         BUILD_TARGET " compiled binary is NOT compatible with your "
         "operating system and/or central processing unit. "
-#ifdef X64                             // Special message for 64-bit system?
-# ifdef __APPLE__
-#  ifdef __arm64__
+#if defined(X64)                       // Special message for 64-bit system?
+# if defined(MACOS)                    // Apple target?
+#  if defined(RISC)                    // Arm64 target?
         "Since you are running the 64-bit ARM version of this binary, "
         "please consider trying the 64-bit Intel version instead."
-#  else
+#  elif defined(CISC)                  // x86-64 target?
         "Since you are running the 64-bit Intel version of this binary, "
         "please consider trying the 64-bit ARM version instead."
-#  endif
-# else
+#  endif                               // Arch target check
+# elif defined(WINDOWS)                // Windows target?
         "Since you are running the 64-bit version of this binary, please "
         "consider trying the 32-bit version instead."
-# endif
-#else                                  // Special message for 32-bit system?
+# endif                                // OS target check
+#elif defined(X86)                     // X86 target?
         "Since you are running the 32-bit version of this binary, you may "
         "need to upgrade your operating system and/or central processing "
         "unit. If you originally tried the 64-bit version and you still got "
         "the the same error then you may need to report this issue as a bug."
-#endif
+#endif                                 // Bit target check
         );
       // Sent when we attempt to write to a pipe without a process connected
       // to the other end.

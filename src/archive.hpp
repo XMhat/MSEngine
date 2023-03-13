@@ -13,18 +13,6 @@ namespace IfArchive {                  // Keep declarations neatly categorised
 using namespace IfASync;               // Using async interface
 using namespace IfCodec;               // Using codec interface
 using namespace IfCrypt;               // Using cryptographic interface
-/* -- Macros --------------------------------------------------------------- */
-#ifndef _WIN32
-/* -- Setup macros that make P7Zip compilable ------------------------------ */
-#define LZMAOpen(s,f)                  InFile_Open(s, f)
-#define LZMAGetHandle(s)               (s).file.fd
-/* -- Using original lzma api? --------------------------------------------- */
-#else                                  // Using vanilla LZMA?
-/* -- Setup macros that make the LZMA api compilable ----------------------- */
-#define LZMAOpen(s,f)                  InFile_OpenW(s, UTFtoS16(f))
-#define LZMAGetHandle(s)               (s).file.handle
-/* ------------------------------------------------------------------------- */
-#endif                                 // Operating system check
 /* == Archive collector with extract buffer size =========================== */
 BEGIN_ASYNCCOLLECTOREX(Archives, Archive, CLHelperSafe,
   /* ----------------------------------------------------------------------- */
@@ -49,7 +37,15 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
   public AsyncLoader<Archive>,         // Async manager for off-thread loading
   public Lockable,                     // Lua garbage collect instruction
   public ArchiveFlags                  // Archive initialisation flags
-{ /* -- Private Variables ----------------------------------------- */ private:
+{ /* -- Private macros ----------------------------------------------------- */
+#if !defined(WINDOWS)                  // Not using Windows?
+# define LZMAOpen(s,f)                 InFile_Open(s, f)
+# define LZMAGetHandle(s)              (s).file.fd
+#else                                  // Using Windows?
+# define LZMAOpen(s,f)                 InFile_OpenW(s, UTFtoS16(f))
+# define LZMAGetHandle(s)              (s).file.handle
+#endif                                 // Operating system check
+  /* -- Private Variables -------------------------------------------------- */
   condition_variable cvExtract;        // Waiting for async ops to complete
   mutex            mExtract;           // mutex for condition variable
   SafeSizeT        stInUse;            // API in use reference count
@@ -431,6 +427,10 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
   }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Archive);            // Supress copy constructor for safety
+  /* -- Done with these defines -------------------------------------------- */
+#undef LZMAGetHandle                   // Done with this macro
+#undef LZMAOpen                        // Done with this macro
+#undef ISzAllocPtr                     // Done with this macro
 };/* ----------------------------------------------------------------------- */
 END_ASYNCCOLLECTOR(Archives, Archive, ARCHIVE,
   stExtractBufSize(0),
@@ -611,10 +611,6 @@ static const string ArchiveGetNames(void)
   // Return string
   return osS.str();
 }
-/* -- Done with these defines ---------------------------------------------- */
-#undef LZMAGetHandle                   // Done with this define
-#undef LZMAOpen                        // Done with this define
-#undef ISzAllocPtr                     // Done with this define
 /* -- End of module namespace ---------------------------------------------- */
 };                                     // End of interface
 /* == EoF =========================================================== EoF == */

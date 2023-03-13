@@ -568,9 +568,9 @@ static class Crypt final :
   static void OSSLFree(void*const vpPtr, const char*const, const int)
     { MemFree(vpPtr); }
   /* -- Private keys ----------------------------------------------- */ public:
-  #define PK_KEY_COUNT               4 // Number of quads in key (256bits)
-  #define PK_IV_COUNT                2 // Number of quads in iv key (128bits)
-  #define PK_TOTAL_COUNT               (PK_KEY_COUNT + PK_IV_COUNT)
+#define PK_KEY_COUNT                 4 // Number of quads in key (256bits)
+#define PK_IV_COUNT                  2 // Number of quads in iv key (128bits)
+#define PK_TOTAL_COUNT                 (PK_KEY_COUNT + PK_IV_COUNT)
   /* ----------------------------------------------------------------------- */
   typedef array<uint64_t, PK_KEY_COUNT>   QPKey;
   typedef array<uint64_t, PK_IV_COUNT>    QIVKey;
@@ -620,7 +620,7 @@ static class Crypt final :
       // Cut out the entity
       strS.erase(stAPos, stSPos-stAPos+1);
       // Is a unicode number?
-      if(strT[0] == '#')
+      if(strT.front() == '#')
       { // Don't have at least two characters? Ignore, goto next entity
         if(strT.length() <= 1) continue;
         // Value to convert

@@ -54,7 +54,7 @@ static void ShowCVarList(const Arguments &aList, const CVars::ItemMap &cimList)
   // Lock cvars list
   const LockGuard lgCVarsSync{ cCVars->mMutex };
   // Try to find the cvar outright first (only make work when not in release)
-#ifndef RELEASE
+#if !defined(RELEASE)
   CVars::ItemMapItConst ciItem{ cimList.find(strFilter) };
   if(ciItem != cimList.cend())
   { // Get cvar data an flags
@@ -784,7 +784,7 @@ static void CBassets(const Arguments &)
   // Size of all blocks
   size_t stTotal = 0;
   // Onnly show previews in BETA or ALPHA version
-#ifndef RELEASE
+#if !defined(RELEASE)
   // Number of bytes to show
   const size_t stCount = 16;
   // Preview of block and reserve memory for it
@@ -801,7 +801,7 @@ static void CBassets(const Arguments &)
   for(const DataConst*const dcCptr : *cAssets)
   { // Get reference to memory block
     const DataConst &dcCref = *dcCptr;
-#ifndef RELEASE
+#if !defined(RELEASE)
     // Set preview size
     const size_t stMax = Minimum(dcCref.Size(), stCount);
     // Set id and size
@@ -831,7 +831,7 @@ static void CBassets(const Arguments &)
     // Add size of this array to the total size of all arrays
     stTotal += dcCref.Size();
   } // Number of items in buffer. We're not showing data in release mode.
-#ifdef RELEASE
+#if defined(RELEASE)
   cConsole->AddLine(Format("$ totalling $.",
     PluraliseNum(cAssets->size(), "block", "blocks"),
     PluraliseNum(stTotal, "byte", "bytes")));
@@ -850,9 +850,9 @@ static void CBobjs(const Arguments &)
   const string strCmds{"Cmds"}, strCVars{"CVars"};
   typedef list<MemoryUsageItem> MemoryUsageItems;
   // Helper macros so there is not as much spam
-  #define MSSEX(x,f,i) { x, f, f * sizeof(i) }
-  #define MSS(x) MSSEX(c ## x ## s->IdentGet(), \
-    c ## x ## s->CollectorCount(), x)
+#define MSSEX(x,f,i) { x, f, f * sizeof(i) }
+#define MSS(x) \
+    MSSEX(c ## x ## s->IdentGet(), c ## x ## s->CollectorCount(), x)
   // Build memory usage items database
   MemoryUsageItems muiData{ {
     MSS(Archive),  MSS(Asset),  MSS(Bin),
@@ -864,8 +864,8 @@ static void CBobjs(const Arguments &)
     MSS(Stat),     MSS(Stream), MSS(Texture), MSS(Thread), MSS(Video)
   } };
   // Done with these macros
-  #undef MSS
-  #undef MSSEX
+#undef MSS
+#undef MSSEX
   // Prepare statistics data
   Statistic stData;
   stData.Header("TYPE", false).Header("#").Header("STACK").Header("")
@@ -1126,7 +1126,7 @@ static void CBmem(const Arguments &)
          .DataN(qwU).DataB(qwU).Data("Renderer usage")
          .DataN(qwT).DataB(qwT).Data("Renderer total");
   } // Compiling in debug mode?
-#ifdef ALPHA
+#if defined(ALPHA)
   // Add heap check result
   tData.Data().Data().Data(cSystem->HeapCheck());
 #endif

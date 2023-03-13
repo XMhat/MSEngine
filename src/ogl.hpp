@@ -70,12 +70,19 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
   public FboBlend,                     // OpenGL blend
   public FboViewport,                  // OpenGL viewport
   public OglFlags                      // OpenGL init flags
-{ /* -- Macros ---------------------------------------------------- */ private:
+{ /* -- String defines ----------------------------------------------------- */
+  const IdMap<GLenum> idPolyFaces,     // Polygon face names (log detail)
+                      idPolyModes,     // Polygon mode names (log detail)
+                      idExtensions,    // OpenGL extension names (log detail)
+                      idHintTargets,   // Hint target names (log detail)
+                      idHintModes,     // Hint mode values (log detail)
+                      idOGLCodes;      // OpenGL codes
+  /* -- Macros ------------------------------------------------------------- */
   DELETECOPYCTORS(Ogl);                // Do not need defaults
   /* -- Defines ------------------------------------------------------------ */
-  #define IGLL(F,M,...)  GLLEX(GetGLErr, sAPI.glGetError, F, M, ## __VA_ARGS__)
-  #define IGL(F,M,...)   GLEX(GetGLErr, sAPI.glGetError, F, M, ## __VA_ARGS__)
-  #define IGLC(M,...)    GLCEX(GetGLErr, sAPI.glGetError, M, ## __VA_ARGS__)
+#define IGLL(F,M,...) GLLEX(GetGLErr, sAPI.glGetError, F, M, ## __VA_ARGS__)
+#define IGL(F,M,...)  GLEX(GetGLErr, sAPI.glGetError, F, M, ## __VA_ARGS__)
+#define IGLC(M,...)   GLCEX(GetGLErr, sAPI.glGetError, M, ## __VA_ARGS__)
   /* ----------------------------------------------------------------------- */
   enum VSyncMode : int {               // VSync settings
     VSYNC_MIN      = -1,               // (-1) Minimum Vertical Sync value
@@ -106,7 +113,6 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
   string           strRenderer;        // GL renderer string
   string           strVersion;         // GL version string
   string           strVendor;          // GL vendor string
-  const IdMap<GLenum> imOGLCodes;      // OpenGL codes
   /* -- Handles ------------------------------------------------------------ */
   GLuint           uiVAO, uiVBO;       // Default vertex array/buffer object
   /* -- Delayed destruction ------------------------------------------------ */
@@ -231,9 +237,8 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
   /* -- Load GL extensions ------------------------------------------------- */
   const char *LoadFunctions(void)
   { // Helper macro
-    #define GETPTR(v,t) \
-      sAPI.v = reinterpret_cast<t>(cGlFW->GetProcAddress(#v)); \
-      if(!sAPI.v) return #v;
+#define GETPTR(v,t) sAPI.v = reinterpret_cast<t>(cGlFW->GetProcAddress(#v)); \
+    if(!sAPI.v) return #v;
     // Get basic ARB functions
     GETPTR(glActiveTexture, PFNGLACTIVETEXTUREPROC);
     GETPTR(glBindTexture, PFNGLBINDTEXTUREPROC);
@@ -301,7 +306,7 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
     GETPTR(glFramebufferTexture2D, PFNGLFRAMEBUFFERTEXTURE2DPROC);
     GETPTR(glGenFramebuffers, PFNGLGENFRAMEBUFFERSPROC);
     // Done with this
-    #undef GETPTR
+#undef GETPTR
     // Log functions initialised
     LW(LH_DEBUG, "OGL loaded $ function addresses.",
       sizeof(sAPI) / sizeof(void*));
@@ -771,20 +776,24 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
   void DisableVertexAttribArray(const GLuint uiAId) const
     { sAPI.glDisableVertexAttribArray(uiAId); }
   /* -- Enable an extension ------------------------------------------------ */
-  void EnableExtension(const GLenum eParam) const
+  void EnableExtension(const GLenum eExtension) const
   { // Ignore if already disabled
-    if(sAPI.glIsEnabled(eParam)) return;
+    if(sAPI.glIsEnabled(eExtension)) return;
     // Enable the extension and log result
-    IGL(sAPI.glEnable(eParam), "Enable extension failed!", "eParam", eParam);
-    LW(LH_DEBUG, "OGL enabled extension 0x$$.", hex, eParam);
+    IGL(sAPI.glEnable(eExtension), "Enable extension failed!",
+      "Extension", eExtension, "ExtensionId", idExtensions.Get(eExtension));
+    LW(LH_DEBUG, "OGL enabled extension $<0x$$>.",
+      idExtensions.Get(eExtension), hex, eExtension);
   }
   /* -- Disable an extension ----------------------------------------------- */
-  void DisableExtension(const GLenum eParam) const
+  void DisableExtension(const GLenum eExtension) const
   { // Ignore if already disabled
-    if(!sAPI.glIsEnabled(eParam)) return;
+    if(!sAPI.glIsEnabled(eExtension)) return;
     // Disable the extension and log result
-    IGL(sAPI.glDisable(eParam), "Disable extension failed!", "eParam", eParam);
-    LW(LH_DEBUG, "OGL disabled extension 0x$$.", hex, eParam);
+    IGL(sAPI.glDisable(eExtension), "Disable extension failed!",
+      "Key", eExtension, "KeyId", idExtensions.Get(eExtension));
+    LW(LH_DEBUG, "OGL disabled extension $<0x$$>.",
+      idExtensions.Get(eExtension), hex, eExtension);
   }
   /* -- Commit blending algorithms ----------------------------------------- */
   void CommitBlend(void)
@@ -797,18 +806,22 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
   void SetTexParam(const GLenum eVar, const GLint iVal) const
     { sAPI.glTexParameteri(GL_TEXTURE_2D, eVar, iVal); }
   /* -- Update hint -------------------------------------------------------- */
-  void SetHint(const GLenum eType, const GLenum eMode) const
+  void SetHint(const GLenum eTarget, const GLenum eMode) const
   { // Get opengl hint and throw if not failed else set hint
-    IGL(sAPI.glHint(eType, eMode), "Failed to set hint!",
-      "Target", eType, "Value", eMode);
-    LW(LH_DEBUG, "OGL set hint 0x$$ to 0x$.", hex, eType, eMode);
+    IGL(sAPI.glHint(eTarget, eMode), "Failed to set hint!",
+      "Target", idHintTargets.Get(eTarget), "TargetId", eTarget,
+      "Mode",   idHintModes.Get(eMode),     "ModeId",   eMode);
+    LW(LH_DEBUG, "OGL set hint $<0x$$> to $<0x$>.",
+      idHintTargets.Get(eTarget), hex, eTarget, idHintModes.Get(eMode), eMode);
   }
   /* -- Update polygon rendering mode -------------------------------------- */
-  void SetPolygonMode(const GLenum eType, const GLenum eMode) const
+  void SetPolygonMode(const GLenum eFace, const GLenum eMode) const
   { // Set polygon mode and log result
-    IGL(sAPI.glPolygonMode(eType, eMode), "Failed to set polygon mode!",
-      "Buffer", eType, "Mode", eMode);
-    LW(LH_DEBUG, "OGL set polymode to 0x$$/0x$.", hex, eType, eMode);
+    IGL(sAPI.glPolygonMode(eFace, eMode), "Failed to set polygon mode!",
+      "Face", idPolyFaces.Get(eFace), "FaceId", eFace,
+      "Mode", idPolyModes.Get(eMode), "ModeId", eMode);
+    LW(LH_DEBUG, "OGL set poly mode $<0x$$> to $<0x$>.",
+      idPolyFaces.Get(eFace), hex, eFace, idPolyModes.Get(eMode), eMode);
   }
   /* -- GL is initialised? ------------------------------------------------- */
   bool IsGLInitialised(void) const { return FlagIsSet(GFL_INITIALISED); }
@@ -1114,7 +1127,7 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
   }
   /* --------------------------------------------------------------- */ public:
   template<typename IntType>const string &GetGLErr(const IntType itCode) const
-    { return imOGLCodes.Get(static_cast<GLenum>(itCode)); }
+    { return idOGLCodes.Get(static_cast<GLenum>(itCode)); }
   /* -- Set context -------------------------------------------------------- */
   void SetContext(void) { cGlFW->SetContext(); }
   /* -- Release context ---------------------------------------------------- */
@@ -1247,6 +1260,37 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
     /* -- Initialisation of members ---------------------------------------- */
     IHelper{ __FUNCTION__ },           // Send name to InitHelper
     OglFlags{ GFL_NONE },              // Set no flags
+    /* -- Const members ---------------------------------------------------- */
+    idPolyFaces{{                      // Init GL polygon face names
+      IDMAPSTR(GL_FRONT),              IDMAPSTR(GL_BACK),
+      IDMAPSTR(GL_FRONT_AND_BACK),
+    }, "GL)POLYGON_FACE_UNKNOWN" },    // Unknown polygon face name
+    idPolyModes{{                      // Init GL polygon mode names
+      IDMAPSTR(GL_POINT),              IDMAPSTR(GL_LINE),
+      IDMAPSTR(GL_FILL),
+    }, "GL_POLYGON_MODE_UNKNOWN" },    // Unknown polygon mode name
+    idExtensions{{                     // Init GL extension names
+      IDMAPSTR(GL_BLEND),              IDMAPSTR(GL_DITHER),
+      IDMAPSTR(GL_POLYGON_SMOOTH),     IDMAPSTR(GL_LINE_SMOOTH),
+    }, "GL_EXT_UNKNOWN" },             // Unknown extension name
+    idHintTargets{{                    // Init hint target strings
+      IDMAPSTR(GL_FRAGMENT_SHADER_DERIVATIVE_HINT),
+      IDMAPSTR(GL_LINE_SMOOTH_HINT),   IDMAPSTR(GL_POLYGON_SMOOTH_HINT),
+      IDMAPSTR(GL_TEXTURE_COMPRESSION_HINT),
+    }, "GL_HINT_TARGET_UNKNOWN" },     // Unknown hint target name
+    idHintModes{{                      // INit hint mode strings
+      IDMAPSTR(GL_FASTEST),            IDMAPSTR(GL_NICEST),
+      IDMAPSTR(GL_DONT_CARE)
+    }, "GL_HINT_MODE_UNKNOWN"},        // Unknown hint mode name
+    idOGLCodes{{                       // Init error codes
+      IDMAPSTR(GL_NO_ERROR),           IDMAPSTR(GL_INVALID_ENUM),
+      IDMAPSTR(GL_INVALID_VALUE),      IDMAPSTR(GL_INVALID_OPERATION),
+#if !defined(MACOS)                    // These only work on non-Apple targets
+      IDMAPSTR(GL_STACK_OVERFLOW),     IDMAPSTR(GL_STACK_UNDERFLOW),
+#endif                                 // End of Apple target check
+      IDMAPSTR(GL_OUT_OF_MEMORY),
+    }, "GL_ERROR_UNKNOWN" },           // Unknown error value
+    /* -- Initialisation of members ---------------------------------------- */
     vsSetting{ VSYNC_OFF },            // Set no VSync
     uiActiveFbo(                       // Select back buffer
       numeric_limits<GLuint>::max()),  // Maxed so values commit properly
@@ -1264,14 +1308,6 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
     qwMinVRAM(0),                      // No minimum vram
     qwTotalVRAM(0),                    // No total vram
     qwFreeVRAM(0),                     // No free vram
-    imOGLCodes{{                       // Init error codes
-      IDMAPSTR(GL_NO_ERROR),           IDMAPSTR(GL_INVALID_ENUM),
-      IDMAPSTR(GL_INVALID_VALUE),      IDMAPSTR(GL_INVALID_OPERATION),
-#ifndef __APPLE__
-      IDMAPSTR(GL_STACK_OVERFLOW),     IDMAPSTR(GL_STACK_UNDERFLOW),
-#endif
-      IDMAPSTR(GL_OUT_OF_MEMORY)
-    }, "GL_UNKNOWN" },
     uiVAO(0),                          // No default vertex array object
     uiVBO(0)                           // No default vertex buffer object
     /* -- No code ---------------------------------------------------------- */
@@ -1279,9 +1315,9 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
   /* -- Destructor --------------------------------------------------------- */
   DTORHELPER(~Ogl, DeInit(true));
   /* -- Undefines ---------------------------------------------------------- */
-  #undef IGLC                          // This macro was only for this class
-  #undef IGL                           // This macro was only for this class
-  #undef IGLL                          // This macro was only for this class
+#undef IGLC                            // This macro was only for this class
+#undef IGL                             // This macro was only for this class
+#undef IGLL                            // This macro was only for this class
   /* ----------------------------------------------------------------------- */
 } *cOgl = nullptr;                     // Pointer to static class
 /* -- End of module namespace ---------------------------------------------- */

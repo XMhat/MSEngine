@@ -60,8 +60,8 @@ static class Oal final :
   /* -- Base classes ------------------------------------------------------- */
   public OalFlags                      // OpenAL flags
 { /* -- Defines ------------------------------------------------------------ */
-  #define IAL(F,M,...) ALEX(GetALErr, GetError, F, M, ## __VA_ARGS__);
-  #define IALC(M,...) ALCEX(GetALErr, GetError, M, ## __VA_ARGS__);
+#define IAL(F,M,...) ALEX(GetALErr, GetError, F, M, ## __VA_ARGS__);
+#define IALC(M,...) ALCEX(GetALErr, GetError, M, ## __VA_ARGS__);
   /* ----------------------------------------------------------------------- */
   const IdMap<ALenum> imOALCodes;      // OpenAL codes
   const IdMap<>       imOGGCodes;      // Ogg codes
@@ -184,7 +184,7 @@ static class Oal final :
   /* -- Delete one buffer -------------------------------------------------- */
   void DeleteBuffer(ALuint &uiBufferRef) const
     { DeleteBuffers(1, &uiBufferRef); }
-  /* -- Get buffer parameter as integer ------------------------------------- */
+  /* -- Get buffer parameter as integer ------------------------------------ */
   void GetBufferInt(const ALuint uiBId, const ALenum eId, ALint *iDest) const
     { alGetBufferi(uiBId, eId, iDest); }
   /* -- Get buffer information --------------------------------------------- */
@@ -517,6 +517,7 @@ static class Oal final :
   Oal(void) :
     /* -- Initialisation of members ---------------------------------------- */
     OalFlags{ AFL_NONE },
+    /* -- Const members ---------------------------------------------------- */
     imOALCodes{{
       IDMAPSTR(AL_NO_ERROR),           IDMAPSTR(AL_INVALID_NAME),
       IDMAPSTR(AL_INVALID_ENUM),       IDMAPSTR(AL_INVALID_VALUE),
@@ -531,6 +532,7 @@ static class Oal final :
       IDMAPSTR(OV_ENOTAUDIO),          IDMAPSTR(OV_EBADPACKET),
       IDMAPSTR(OV_EBADLINK),           IDMAPSTR(OV_ENOSEEK)
     }, "OV_UNKNOWN" },
+    /* -- Initialisation of members ---------------------------------------- */
     uiMaxStereoSources(0),
     uiMaxMonoSources(numeric_limits<ALuint>::max()),
     alcDevice(nullptr),
@@ -541,9 +543,9 @@ static class Oal final :
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Oal);                // Do not need copy constructors
   /* -- Undefines ---------------------------------------------------------- */
-  #undef DLL                           // This macro was only for this class
-  #undef IAL                           //  "
-  #undef IALC                          //  "
+#undef DLL                             // This macro was only for this class
+#undef IAL                             //  "
+#undef IALC                            //  "
   /* ----------------------------------------------------------------------- */
 } *cOal = nullptr;                     // Pointer to static class
 /* -- End of module namespace ---------------------------------------------- */

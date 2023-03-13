@@ -83,7 +83,7 @@ static ValidResult DirValidName(const string &strName,
   // Failed if the length is longer than the maximum allowed path.
   if(strName.length() > _MAX_PATH) return VR_TOOLONG;
   // If using windows
-#ifdef WIN32
+#if defined(WINDOWS)
   // Failed if the first or last character is a space
   if(strName.front() <= 32) return VR_NOLEADWS;
   if(strName.back() <= 32) return VR_NOTRAILWS;
@@ -209,7 +209,7 @@ class DirCore                          // System specific implementation
   DirFile::Item    dItem;              // Current item information
   bool             bIsDir;             // Current item is a directory
   /* -- Setup implementation for WIN32 ------------------------------------- */
-#if defined(_WIN32)                    // WIN32 implementation
+#if defined(WINDOWS)                   // WIN32 implementation
   /* -- Variables for WIN32 system -------------------------------- */ private:
   _wfinddata64_t   wfData;             // Data returned
   const intptr_t   iH;                 // Context handle
@@ -249,7 +249,7 @@ class DirCore                          // System specific implementation
   /* -- Destructor for WIN32 system ---------------------------------------- */
   ~DirCore(void) { if(iH != -1) _findclose(iH); }
   /* ----------------------------------------------------------------------- */
-#elif defined(__APPLE__)               // Must use readdir_r on OSX
+#elif defined(MACOS)                   // Must use readdir_r on OSX
   /* -- Private typedefs ------------------------------------------ */ private:
   // This handle will be cleaned up by closedir() when it goes out of scope!
   typedef unique_ptr<DIR, function<decltype(closedir)>> DirUPtr;
@@ -548,7 +548,7 @@ class Url
 /* -- Get current directory ------------------------------------------------ */
 static const string DirGetCWD(void)
 { // On windows, we need to use unicode
-#ifdef WIN32
+#if defined(WINDOWS)
   // Storage of filename and initialise it to maximum path length
   wstring wstrDir; wstrDir.resize(_MAX_PATH);
   // Get current directory and store it in string, throw exception if error
@@ -576,7 +576,7 @@ static bool DirSetCWD(const string &strDirectory)
 { // Ignore if empty
   if(strDirectory.empty()) return false;
   // Process is different on win32 with having drive letters
-#ifdef WIN32
+#if defined(WINDOWS)
   // Get first character because it needs casting
   const unsigned char &ucD = strDirectory.front();
   // Set drive first if specified

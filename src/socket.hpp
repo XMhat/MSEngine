@@ -58,20 +58,18 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   /* binary text because it is impossible for the http server to return      */
   /* header key names in binary! C++ and LUA can still store keys in binary  */
   /* as well so this should be safe! --------------------------------------- */
-  #define SK_VAR_REQ            "\001" // Registry key name for request data
-  #define SK_VAR_BODY           "\002" // " for http body data
-  #define SK_VAR_PROTO          "\003" // " for http protocol data
-  #define SK_VAR_CODE           "\004" // " for http status code data
-  #define SK_VAR_METHOD         "\005" // " for http method string
+#define SK_VAR_REQ              "\001" // Registry key name for request data
+#define SK_VAR_BODY             "\002" // " for http body data
+#define SK_VAR_PROTO            "\003" // " for http protocol data
+#define SK_VAR_CODE             "\004" // " for http status code data
+#define SK_VAR_METHOD           "\005" // " for http method string
   /* -- Logging helpers ---------------------------------------------------- */
-  #define SLPARAMS(t,...) \
-    "Socket $:$$$:$ " t, GetThreadId(), hex, FlagGet(), dec, \
-      GetAddressAndPort(), ## __VA_ARGS__
-  #define SLNS(l,t,...) LW(l, SLPARAMS(t, ## __VA_ARGS__));
-  #define SL(l,t,...) \
-    { if(cLog->HasLevel(l)) \
-      { const LockGuard lgSocketSync(mMutex); \
-        cLog->WriteStringSafe(l, Format(SLPARAMS(t, ## __VA_ARGS__))); } }
+#define SLPARAMS(t,...) "Socket $:$$$:$ " t, GetThreadId(), hex, FlagGet(), \
+  dec, GetAddressAndPort(), ## __VA_ARGS__
+#define SLNS(l,t,...) LW(l, SLPARAMS(t, ## __VA_ARGS__));
+#define SL(l,t,...) { if(cLog->HasLevel(l)) \
+  { const LockGuard lgSocketSync(mMutex); \
+    cLog->WriteStringSafe(l, Format(SLPARAMS(t, ## __VA_ARGS__))); } }
   /* ----------------------------------------------------------------------- */
   struct Packet                        // Connection packet
   { /* --------------------------------------------------------------------- */
@@ -1382,9 +1380,9 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Socket);             // Supress copy constructor for safety
   /* ----------------------------------------------------------------------- */
-  #undef SLS                           // Done with secure socket logger
-  #undef SL                            // Done with insecure socket logger
-  #undef SLPARAMS                      // Done with socket param helper
+#undef SLS                             // Done with secure socket logger
+#undef SL                              // Done with insecure socket logger
+#undef SLPARAMS                        // Done with socket param helper
 };/* ----------------------------------------------------------------------- */
 /* ========================================================================= */
 static void DestroyAllSockets(void)

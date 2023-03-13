@@ -140,7 +140,6 @@ BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
     } // Return new object
     return rjvRoot;
   }
-
   /* -- Convert json value to lua object table and put it on stack --------- */
   static void ToTableObject(lua_State*const lS, const Value &rjvVal)
   { // Create the table, we're creating non-indexed key/value pairs

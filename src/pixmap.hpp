@@ -43,7 +43,7 @@ class SysMap :
   { // Memory to return
     char *cpNewMem;
     // Size cannot be bigger than 4GB on 32-bit system
-#ifdef X86
+#if defined(X86)
     if(SysMapGetSize() > 0xFFFFFFFF)
       XC("File too big to map into address space!",
         "File", IdentGet(), "Size", SysMapGetSize());
@@ -101,7 +101,7 @@ class SysMap :
   SysMap(const string &strF, const STDTIMET tC, const STDTIMET tM) :
     /* -- Initialisers------------------------------------------------------ */
     FStream{ strF },                   // Open specified file
-#ifdef __linux__                       // Linux?
+#if defined(LINUX)                     // Using Linux?
     // Note that all these zeros cause an error for other systems because
     // the structure may contain padding values so this needs to be changed to
     // fit the system being compiled with.
@@ -110,14 +110,14 @@ class SysMap :
            {tM,0}, // struct timespec st_mtimespec = time of last modification
            {tC,0}  // struct timespec st_ctimespec = time of last status change
          },
-#else                                  // OSX?
+#elif defined(MACOS)                   // Using MacOS?
     sData{ 0,      // dev_t   st_dev   = ID of device containing file
            0,      // mode_t  st_mode  = Mode of file (see below)
            0,      // nlink_t st_nlink = Number of hard links
-           0,      // ino64_t st_ino   = File serial number
+           0,      // ino64_t st_ino   = Serial number of the file
            0,      // uid_t   st_uid   = User ID of the file
            0,      // gid_t   st_gid   = Group ID of the file
-           0,      // dev_t   st_rdev  = Device ID
+           0,      // dev_t   st_rdev  = Device ID of the file
            { 0,0}, // struct timespec st_atimespec = time of last access
            {tM,0}, // struct timespec st_mtimespec = time of last modification
            {tC,0}, // struct timespec st_ctimespec = time of last status change
@@ -130,7 +130,7 @@ class SysMap :
            0,      // int32_t   st_lspare    = RESERVED: DO NOT USE!
            { 0,0}  // int64_t   st_qspare[2] = RESERVED: DO NOT USE!
          },
-#endif
+#endif                                 // End of Linux check
     cpMem(nullptr)                     // No handle initialised yet
     /* -- No code ---------------------------------------------------------- */
     { }

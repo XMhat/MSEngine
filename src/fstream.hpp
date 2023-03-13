@@ -56,7 +56,7 @@ class FStream :
   /* -- Open a file -------------------------------------------------------- */
   bool FStreamDoOpen(const string &strFile, const Mode mMode)
   { // Obviously Windows has to be different from everyone else!
-#ifdef _WIN32                          // Using windows?
+#if defined(WINDOWS)                   // Using windows?
     // The mode supported (in unicode)
     static const array<const wchar_t*const,FM_MAX>cplModes{
       L"rt", L"wt", L"at", L"r+t", L"w+t", L"a+t",

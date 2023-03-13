@@ -45,7 +45,7 @@ class SysProcess                       // Need this before of System init order
   /* ----------------------------------------------------------------------- */
   void InitReportMemoryLeaks(void)
   { // Only needed if in debug mode
-#ifdef ALPHA
+#if defined(ALPHA)
     // Create storage for the filename and clear it
     wstring wstrName; wstrName.resize(MAX_PATH);
     // Get path to executable. The base module filename info struct may not be
@@ -153,15 +153,15 @@ class SysProcess                       // Need this before of System init order
   }
   /* -- Called when C std functions need to abort -------------------------- */
   static void CException(
-#ifdef ALPHA
-  const wchar_t*const wcpE, const wchar_t *const wcpFN,
-  const wchar_t*const wcpF, const unsigned int uiL, uintptr_t)
-    { XC("C exception!", "Expression", wcpE,  "File", wcpF,
-                         "Function",   wcpFN, "Line", uiL); }
+#if defined(ALPHA)
+    const wchar_t*const wcpE, const wchar_t *const wcpFN,
+    const wchar_t*const wcpF, const unsigned int uiL, uintptr_t)
+      { XC("C exception!", "Expression", wcpE,  "File", wcpF,
+                           "Function",   wcpFN, "Line", uiL); }
 #else
-  const wchar_t*const, const wchar_t*const,
-  const wchar_t*const, const unsigned int, uintptr_t)
-    { XC("C exception!"); }
+    const wchar_t*const, const wchar_t*const,
+    const wchar_t*const, const unsigned int, uintptr_t)
+      { XC("C exception!"); }
 #endif
   /* ----------------------------------------------------------------------- */
   void InitCRTParameters(void)
@@ -881,12 +881,12 @@ class SysCore :
     memData.qMTotal = msD.ullTotalPhys;
     memData.qMFree = msD.ullAvailPhys;
     memData.qMUsed = msD.ullTotalPhys - msD.ullAvailPhys;
-#ifdef X86                             // 32-bit?
-    memData.stMFree = msD.ullAvailPhys <= 0xFFFFFFFF ?
-      static_cast<size_t>(msD.ullAvailPhys) : 0 - pmcData.WorkingSetSize;
-#else                                  // 64-bit?
+#if defined(X64)                       // 64-bit?
     memData.stMFree =
       static_cast<size_t>(Minimum(msD.ullAvailPhys, 0xFFFFFFFF));
+#elif defined(X86)                     // 32-bit?
+    memData.stMFree = msD.ullAvailPhys <= 0xFFFFFFFF ?
+      static_cast<size_t>(msD.ullAvailPhys) : 0 - pmcData.WorkingSetSize;
 #endif                                 // Bits check
     memData.dMLoad = MakePercentage(memData.qMUsed, msD.ullTotalPhys);
     memData.stMProcUse = pmcData.WorkingSetSize;

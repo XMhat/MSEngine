@@ -15,7 +15,7 @@ static class GlFW final :
   /* -- Base classes ------------------------------------------------------- */
   public IHelper                       // Initialisation helper
 { /* -- Private variables -------------------------------------------------- */
-  const IdMap<int> imStrings;          // GLFW ids to strings
+  const IdMap<int> imTargets;          // GLFW target ids to strings
   GLFWwindow      *wClass;             // GLFW window class
   StrVector        vFiles;             // Drag and drop file list
   unsigned int     uiErrorLevel;       // Ignore further glfw errors
@@ -149,7 +149,7 @@ static class GlFW final :
   }
   /* -- Convert window hint id to string ----------------------------------- */
   const string &GetHintName(const int iVar) const
-    { return imStrings.Get(iVar); }
+    { return imTargets.Get(iVar); }
   /* --------------------------------------------------------------- */ public:
   void SetIcon(const int iC, const GLFWimage*const iData)
     { glfwSetWindowIcon(GetWindowHandle(), iC, iData); }
@@ -390,30 +390,30 @@ static class GlFW final :
   /* -- Set frame name in MacOS -------------------------------------------- */
   void SetWindowCocoaFrameName([[maybe_unused]] const char*const cpName) const
   { // Only applies to Apple targets
-#ifdef __APPLE__
+#if defined(MACOS)
     SetWindowHintString(GLFW_COCOA_FRAME_NAME, cpName);
 #endif
   }
   /* -- Set class name in X11 ---------------------------------------------- */
   void SetWindowX11ClassName([[maybe_unused]] const char*const cpName) const
   { // Only applies to Linux targets
-#ifdef __linux__
+#if defined(LINUX)
     SetWindowHintString(GLFW_X11_CLASS_NAME, cpName);
 #endif
   }
-  /* -- Set instance name in X11 -------------------------------------------- */
+  /* -- Set instance name in X11 ------------------------------------------- */
   void SetWindowX11InstanceName([[maybe_unused]] const char*const cpName) const
   { // Only applies to Linux targets
-#ifdef __linux__
+#if defined(LINUX)
     SetWindowHintString(GLFW_X11_INSTANCE_NAME, cpName);
 #endif
   }
   /* -- Set window frame names --------------------------------------------- */
   void SetWindowFrameName([[maybe_unused]] const char*const cpName)
   { // Set custom frame names
-#if defined(__APPLE__)
+#if defined(MACOS)
     SetWindowCocoaFrameName(cpName);
-#elif defined(__linux__)
+#elif defined(LINUX)
     SetWindowX11ClassName(cpName);
     SetWindowX11InstanceName(cpName);
 #endif
@@ -426,10 +426,8 @@ static class GlFW final :
     LW(LH_DEBUG, "GlFW set hint $<0x$$> to $$<0x$$>.",
       GetHintName(iVar), hex, iVar, dec, iVal, hex, iVal);
   }
-  /* ----------------------------------------------------------------------- */
-#define SET(nc,nu) \
   /* -- Create functions to access all attributes ------------------------- */\
-  [[maybe_unused]] void Set ## nc(const int iNV) const \
+#define SET(nc,nu) [[maybe_unused]] void Set ## nc(const int iNV) const \
     { SetWindowHint(GLFW_ ## nu, iNV); }
   /* ---------------------------------------------------------------------- */\
   SET(RedBits, RED_BITS);              // Set depth of red component
@@ -462,9 +460,8 @@ static class GlFW final :
     { SetWindowAttribBoolean(iVar, true); }
   void SetWindowAttribDisabled(const int iVar) const
     { SetWindowAttribBoolean(iVar, false); }
-  /* -- Get/Set/Check window attributes ------------------------------------ */
-#define SET(nc,nu) \
   /* -- Create functions to access all attributes ------------------------- */\
+#define SET(nc,nu) \
   [[maybe_unused]] void Set ## nc ## Attrib(const bool bState) const \
     { SetWindowAttribBoolean(GLFW_ ## nu, bState); } \
   [[maybe_unused]] void Set ## nc ## AttribEnabled(void) const \
@@ -490,9 +487,8 @@ static class GlFW final :
     { SetWindowHintBoolean(iVar, true); }
   void SetWindowHintDisabled(const int iVar) const
     { SetWindowHintBoolean(iVar, false); }
-  /* ----------------------------------------------------------------------- */
-#define SET(nc,nu) \
   /* -- Create functions to access all attributes ------------------------- */\
+#define SET(nc,nu) \
   [[maybe_unused]] void Set ## nc(const bool bState) const \
     { SetWindowHintBoolean(GLFW_ ## nu, bState); } \
   [[maybe_unused]] void Set ## nc ## Enabled(void) const \
@@ -523,7 +519,7 @@ static class GlFW final :
   SET(Debug, OPENGL_DEBUG_CONTEXT);    // Set opengl debug mode
   SET(ForwardCompat, OPENGL_FORWARD_COMPAT); // Set opengl fwd compatibility
   /* ----------------------------------------------------------------------- */
-#ifdef __APPLE__                       // Using Apple compiler?
+#if defined(MACOS)                     // Using Apple compiler?
   /* ----------------------------------------------------------------------- */
   SET(MenuBar,      COCOA_MENUBAR);    // Set MacOS menu bar?
   SET(RetinaMode,   COCOA_RETINA_FRAMEBUFFER); // Set retina framebuffer?
@@ -595,47 +591,43 @@ static class GlFW final :
   }
   /* -- Destructor --------------------------------------------------------- */
   DTORHELPER(~GlFW, DeInit())
-  /* -- Macros ------------------------------------------------------------- */
-  #define GLFWID(e) { GLFW_ ## e, STR(e) }
   /* -- Constructor -------------------------------------------------------- */
   GlFW(void) :
     /* -- Initialisation of members ---------------------------------------- */
     IHelper{ __FUNCTION__ },           // Set class function name
-    imStrings{{                        // Glfw ids as strings
-      GLFWID(ACCUM_ALPHA_BITS),        GLFWID(ACCUM_BLUE_BITS),
-      GLFWID(ACCUM_GREEN_BITS),        GLFWID(ACCUM_RED_BITS),
-      GLFWID(ALPHA_BITS),              GLFWID(AUTO_ICONIFY),
-      GLFWID(AUX_BUFFERS),             GLFWID(BLUE_BITS),
-      GLFWID(CENTER_CURSOR),           GLFWID(CLIENT_API),
-      GLFWID(COCOA_FRAME_NAME),        GLFWID(COCOA_GRAPHICS_SWITCHING),
-      GLFWID(COCOA_RETINA_FRAMEBUFFER),GLFWID(CONTEXT_CREATION_API),
-      GLFWID(CONTEXT_NO_ERROR),        GLFWID(CONTEXT_RELEASE_BEHAVIOR),
-      GLFWID(CONTEXT_REVISION),        GLFWID(CONTEXT_ROBUSTNESS),
-      GLFWID(CONTEXT_VERSION_MAJOR),   GLFWID(CONTEXT_VERSION_MINOR),
-      GLFWID(DECORATED),               GLFWID(DEPTH_BITS),
-      GLFWID(DOUBLEBUFFER),            GLFWID(FLOATING),
-      GLFWID(FOCUS_ON_SHOW),           GLFWID(FOCUSED),
-      GLFWID(GREEN_BITS),              GLFWID(HOVERED),
-      GLFWID(ICONIFIED),               GLFWID(MAXIMIZED),
-      GLFWID(OPENGL_DEBUG_CONTEXT),    GLFWID(OPENGL_FORWARD_COMPAT),
-      GLFWID(OPENGL_PROFILE),          GLFWID(RED_BITS),
-      GLFWID(REFRESH_RATE),            GLFWID(RESIZABLE),
-      GLFWID(SAMPLES),                 GLFWID(SCALE_TO_MONITOR),
-      GLFWID(SRGB_CAPABLE),            GLFWID(STENCIL_BITS),
-      GLFWID(STEREO),                  GLFWID(TRANSPARENT_FRAMEBUFFER),
-      GLFWID(VISIBLE),                 GLFWID(X11_CLASS_NAME),
-      GLFWID(X11_INSTANCE_NAME)
-    }, "GLFW_UNKNOWN" },
+    imTargets{{                        // Glfw targets as strings
+      IDMAPSTR(GLFW_ACCUM_ALPHA_BITS), IDMAPSTR(GLFW_ACCUM_BLUE_BITS),
+      IDMAPSTR(GLFW_ACCUM_GREEN_BITS), IDMAPSTR(GLFW_ACCUM_RED_BITS),
+      IDMAPSTR(GLFW_ALPHA_BITS), IDMAPSTR(GLFW_AUTO_ICONIFY),
+      IDMAPSTR(GLFW_AUX_BUFFERS), IDMAPSTR(GLFW_BLUE_BITS),
+      IDMAPSTR(GLFW_CENTER_CURSOR), IDMAPSTR(GLFW_CLIENT_API),
+      IDMAPSTR(GLFW_COCOA_FRAME_NAME), IDMAPSTR(GLFW_COCOA_GRAPHICS_SWITCHING),
+      IDMAPSTR(GLFW_COCOA_MENUBAR), IDMAPSTR(GLFW_COCOA_RETINA_FRAMEBUFFER),
+      IDMAPSTR(GLFW_CONTEXT_CREATION_API), IDMAPSTR(GLFW_CONTEXT_NO_ERROR),
+      IDMAPSTR(GLFW_CONTEXT_RELEASE_BEHAVIOR), IDMAPSTR(GLFW_CONTEXT_REVISION),
+      IDMAPSTR(GLFW_CONTEXT_ROBUSTNESS), IDMAPSTR(GLFW_CONTEXT_VERSION_MAJOR),
+      IDMAPSTR(GLFW_CONTEXT_VERSION_MINOR), IDMAPSTR(GLFW_DECORATED),
+      IDMAPSTR(GLFW_DEPTH_BITS), IDMAPSTR(GLFW_DOUBLEBUFFER),
+      IDMAPSTR(GLFW_FLOATING), IDMAPSTR(GLFW_FOCUS_ON_SHOW),
+      IDMAPSTR(GLFW_FOCUSED), IDMAPSTR(GLFW_GREEN_BITS),
+      IDMAPSTR(GLFW_HOVERED), IDMAPSTR(GLFW_ICONIFIED),
+      IDMAPSTR(GLFW_MAXIMIZED), IDMAPSTR(GLFW_OPENGL_DEBUG_CONTEXT),
+      IDMAPSTR(GLFW_OPENGL_FORWARD_COMPAT), IDMAPSTR(GLFW_OPENGL_PROFILE),
+      IDMAPSTR(GLFW_RED_BITS), IDMAPSTR(GLFW_REFRESH_RATE),
+      IDMAPSTR(GLFW_RESIZABLE), IDMAPSTR(GLFW_SAMPLES),
+      IDMAPSTR(GLFW_SCALE_TO_MONITOR), IDMAPSTR(GLFW_SRGB_CAPABLE),
+      IDMAPSTR(GLFW_STENCIL_BITS), IDMAPSTR(GLFW_STEREO),
+      IDMAPSTR(GLFW_TRANSPARENT_FRAMEBUFFER), IDMAPSTR(GLFW_VISIBLE),
+      IDMAPSTR(GLFW_X11_CLASS_NAME), IDMAPSTR(GLFW_X11_INSTANCE_NAME),
+    }, "GLFW_UNKNOWN" },               // Unknown GLFW target
     wClass{ nullptr },                 // Uninitialised window context
     uiErrorLevel(0)                    // No errors occured
     /* -- No code ---------------------------------------------------------- */
     { }
-  /* -- Macros ------------------------------------------------------------- */
-  #undef GLFWID                        // Done with this macro
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(GlFW);               // Do not need defaults
   /* ----------------------------------------------------------------------- */
-} *cGlFW = nullptr;                       // Pointer to static class
+} *cGlFW = nullptr;                    // Pointer to static class
 /* == Process a drag and drop event ======================================== */
 void GlFW::OnDropSt(GLFWwindow*const wC, int iC, const char**const cpaFiles)
   { cGlFW->OnDrop(wC, static_cast<unsigned int>(iC), cpaFiles); }

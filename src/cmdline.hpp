@@ -106,7 +106,7 @@ static class CmdLine final             // StrVector is arguments list
     // variables can cause our terminal apps to spit garbage output and ruin
     // the capture for scripts. If the guest needs these then they can just
     // try the apps standalone in the terminal without the need for the engine.
-#ifdef __APPLE__
+#if defined(MACOS)
     // Variables to unset
     static array<const char*const,9> aUnset{
       "NSZombieEnabled",               // Enable dealloc in foundation

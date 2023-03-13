@@ -140,7 +140,7 @@ class Certs                            // Certificates store
     // Finished
     LW(LH_INFO, "Certs de-initialised $ certificates.", stFreed);
   }
-  /* -- Load certificates from a list of files ------------------------------ */
+  /* -- Load certificates from a list of files ----------------------------- */
   void CertsLoadList(const string &strD, const AssetList &aList)
   { // Unload existing certificates
     CertsEmpty();
@@ -159,7 +159,7 @@ class Certs                            // Certificates store
     LW(LH_DEBUG, "Certs store initialised. Loading $ certificates...",
       aList.size());
     // Apple compiler does not support std::execution yet :(.
-#ifdef __APPLE__
+#if defined(MACOS)
     // Create sync method class
     LoadSerialised ccaSync;
     // Now initialising certificate store
