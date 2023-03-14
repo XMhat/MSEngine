@@ -36,6 +36,7 @@ namespace Engine {                     // Start of engine namespace
 #include "evtcore.hpp"                 // Thread-safe events system core
 #include "evtmain.hpp"                 // Main engine thread events system
 #include "condef.hpp"                  // Console definitions
+#include "glfwwin.hpp"                 // GLFW window class
 #include "glfw.hpp"                    // GLFW wrapper
 #include "syscore.hpp"                 // Operating system interface
 #include "dylib.hpp"                   // DyLib interface

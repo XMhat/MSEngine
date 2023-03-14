@@ -330,7 +330,7 @@ static class Console final :           // The console class
   { // Build command by appending text before and after the cursor
     const string strCmd{ InputText() };
     // Copy to clipboard if not empty
-    if(!strCmd.empty()) cGlFW->SetClipboardString(strCmd);
+    if(!strCmd.empty()) cGlFW->WinSetClipboardString(strCmd);
   }
   /* -- Paste text --------------------------------------------------------- */
   void PasteText(void) { cEvtMain->Add(EMC_INP_PASTE); }
@@ -567,7 +567,7 @@ static class Console final :           // The console class
           osS << "is currently " << cCVars->Protect(strVarOrCmd) << "!";
           // Copy it to clipboard if requested
           if(FlagIsSet(CF_AUTOCOPYCVAR))
-            cGlFW->SetClipboardString(Format("$ \"$\"",
+            cGlFW->WinSetClipboardString(Format("$ \"$\"",
               strVarOrCmd, cCVars->GetStrSafe(strVarOrCmd)));
         } // Else set item and get return value
         else switch(const CVarSetEnums cscResult =
@@ -623,7 +623,7 @@ static class Console final :           // The console class
           osS << "exists!";
           // Copy to clipboard
           if(FlagIsSet(CF_AUTOCOPYCVAR))
-            cGlFW->SetClipboardString(Format("$ \"$\"",
+            cGlFW->WinSetClipboardString(Format("$ \"$\"",
               strVarOrCmd, cCVars->GetInitialVarSafe(strVarOrCmd)));
         } // Set the value and say if it worked
         else if(cCVars->SetExistingInitialVar(strVarOrCmd, aList[1]))

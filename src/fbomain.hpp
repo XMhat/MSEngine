@@ -81,7 +81,7 @@ static class FboMain final :           // The main fbo operations manager
     // Blit the two triangles
     cOgl->DrawArraysTriangles(TWOTRIANGLES);
     // Flip buffers which also causes a finish and waits for vsync
-    cGlFW->SwapGLBuffers();
+    cGlFW->WinSwapGLBuffers();
     // Update memory
     cOgl->UpdateVRAMAvailable();
     // Clear any existing errors

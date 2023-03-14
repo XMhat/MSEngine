@@ -114,16 +114,18 @@ local function InitIntro(bAndSetup)
     end
     -- Play video and setup event
     local function PlayVideo()
+      -- Get video events list and id's
+      local aEvents<const> = Video.Events;
+      local iStop<const>, iPause<const>, iPlay<const>, iFinish<const> =
+        aEvents.STOP, aEvents.PAUSE, aEvents.PLAY, aEvents.FINISH;
       -- A video event occured?
       local function OnEvent(iEvent)
         -- Playing?
-        if iEvent == 0 then
+        if iEvent == iPlay then
           -- If we were in our render loop? Transition to title screen
           if fcbRender == NotPlayingProc then fcbRender = PlayingProc end;
-        -- Looping? (unused)
-        elseif iEvent == 1 then
-        -- Stopped?
-        elseif iEvent == 2 then
+        -- Paused, stopped or finished?
+        elseif iEvent == iPause or iEvent == iStop or iEvent == iFinish then
           -- We someone took our render callback (i.e. setup) then we need to
           -- to switch render proc
           local _, CBRender = GetCallbacks();

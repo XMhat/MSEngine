@@ -817,7 +817,7 @@ local function InitConfig()
   local AT, AV, AMAV, AMIV, ABV, ARV, _, _, ATA = InfoEngine();
   sStatusLine1 = format("%s %s on %s %u.%u.%u.%u (%s)",
     CVarsGet("app_longname"), CVarsGet("app_version"),
-    AT, AMAV, AMIV, ARV, ABV, ATA):upper();
+    AT, AMAV, AMIV, ABV, ARV, ATA):upper();
   sStatusLine2 = "MS-DESIGN PROUDLY PRESENTS DIGGERS! A REMAKE FOR MODERN "..
     "OPERATING SYSTEMS AND HARDWARE FROM THE CLASSIC CD32 AND DOS DAYS. "..
     "THIS IS THE CONFIGURATION SCREEN. PRESS ESCAPE OR THE 'DONE' BUTTON "..

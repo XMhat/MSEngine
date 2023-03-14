@@ -112,7 +112,7 @@ static class Display final :
     const int iMinW = ewcArgs.vParams[0].i, iMinH = ewcArgs.vParams[1].i,
               iMaxW = ewcArgs.vParams[2].i, iMaxH = ewcArgs.vParams[3].i;
     // Set the new limits
-    cGlFW->SetLimits(iMinW, iMinH, iMaxW, iMaxH);
+    cGlFW->WinSetLimits(iMinW, iMinH, iMaxW, iMaxH);
   }
   /* -- Window focused ----------------------------------------------------- */
   void OnFocus(const EvtMain::Cell &ewcArgs)
@@ -371,14 +371,14 @@ static class Display final :
   /* == Window size requested ============================================== */
   void OnResize(const EvtWin::Cell &ewcArgs)
   { // Set requested window size
-    cGlFW->SetWindowSize(ewcArgs.vParams[0].i, ewcArgs.vParams[1].i);
+    cGlFW->WinSetSize(ewcArgs.vParams[0].i, ewcArgs.vParams[1].i);
     // Done
     return;
   }
   /* == Window move requested ============================================== */
   void OnMove(const EvtWin::Cell &ewcArgs)
   { // Set requested window size
-    cGlFW->MoveWindow(ewcArgs.vParams[0].i, ewcArgs.vParams[1].i);
+    cGlFW->WinMove(ewcArgs.vParams[0].i, ewcArgs.vParams[1].i);
     // Done
     return;
   }
@@ -390,22 +390,22 @@ static class Display final :
     int iX, iY; GetCentreCoords(iX, iY,
       cInput->GetWindowWidth(), cInput->GetWindowHeight());
     // Move the window
-    cGlFW->MoveWindow(iX, iY);
+    cGlFW->WinMove(iX, iY);
   }
   /* == Window reset requested ============================================= */
   void OnReset(const EvtWin::Cell&)
   { // If in full screen mode, don't resize or move anything
     if(FlagIsSet(DF_INFULLSCREEN)) return;
     // Restore window state
-    cGlFW->RestoreWindow();
+    cGlFW->WinRestore();
     // Translate user specified window size and set the size of hte window
     int iX, iY; TranslateUserSize(iX, iY);
-    cGlFW->SetWindowSize(iX, iY);
+    cGlFW->WinSetSize(iX, iY);
     // Get new window size (Input won't have received it yet).
-    int iW, iH; cGlFW->GetWindowSize(iW, iH);
+    int iW, iH; cGlFW->WinGetSize(iW, iH);
     TranslateUserCoords(iX, iY, iW, iH);
     // Update window position
-    cGlFW->MoveWindow(iX, iY);
+    cGlFW->WinMove(iX, iY);
   }
   /* -- Set new full screen setting ---------------------------------------- */
   void SetFullScreenSetting(const bool bState) const
@@ -441,9 +441,9 @@ static class Display final :
     // cGlFW->SetWindowCocoaMenuBarEnabled();
     // Initialise the desktop window and send the handle to system class
     // because they need the handle for exceptions, icons and other things.
-    cGlFW->SetWindowMonitor(nullptr, iX, iY, iW, iH, 0);
+    cGlFW->WinSetMonitor(nullptr, iX, iY, iW, iH, 0);
     // Window mode so update users window border setting
-    cGlFW->SetDecoratedAttrib(FlagIsSet(DF_BORDER));
+    cGlFW->WinSetDecoratedAttrib(FlagIsSet(DF_BORDER));
     // Log that we switched to window mode
     LW(LH_INFO, "Display switched to desktop window $x$ at $x$.",
       iW, iH, iX, iY);
@@ -469,7 +469,7 @@ static class Display final :
       // Force disable window border
       cGlFW->SetDecoratedDisabled();
     } // Set the full-screen window
-    cGlFW->SetWindowMonitor(mUsing, 0, 0,
+    cGlFW->WinSetMonitor(mUsing, 0, 0,
       vmData.width, vmData.height, vmData.refreshRate);
     // Log that we switched to full-screen mode
     LW(LH_INFO, "Display switch to $ full-screen $x$ (M:$>$;V:$>$;R:$).",
@@ -541,14 +541,14 @@ static class Display final :
     // Window mode selected
     else ReInitDesktopModeWindow();
     // Update window attributes
-    cGlFW->SetResizableAttrib(FlagIsSet(DF_SIZABLE));
-    cGlFW->SetFloatingAttrib(FlagIsSet(DF_FLOATING));
-    cGlFW->SetAutoIconifyAttrib(FlagIsSet(DF_AUTOICONIFY));
-    cGlFW->SetFocusOnShowAttrib(FlagIsSet(DF_AUTOFOCUS));
+    cGlFW->WinSetResizableAttrib(FlagIsSet(DF_SIZABLE));
+    cGlFW->WinSetFloatingAttrib(FlagIsSet(DF_FLOATING));
+    cGlFW->WinSetAutoIconifyAttrib(FlagIsSet(DF_AUTOICONIFY));
+    cGlFW->WinSetFocusOnShowAttrib(FlagIsSet(DF_AUTOFOCUS));
     // Store current window position
-    cGlFW->GetWindowPos(iWinPosX, iWinPosY);
+    cGlFW->WinGetPos(iWinPosX, iWinPosY);
     cInput->UpdateWindowSize();
-    cGlFW->GetWindowScale(fWinScaleWidth, fWinScaleHeight);
+    cGlFW->WinGetScale(fWinScaleWidth, fWinScaleHeight);
     // Need to fix a GLFW scaling bug with this :(
 #if defined(MACOS)
     // Return if hidpi not enabled
@@ -574,8 +574,8 @@ static class Display final :
       static_cast<GLsizei>(cInput->GetWindowHeight()));
 #endif
     // Show and focus the window
-    cGlFW->ShowWindow();
-    cGlFW->FocusWindow();
+    cGlFW->WinShow();
+    cGlFW->WinFocus();
     // Update cursor visibility as OS or glfw can mess it up
     cInput->CommitCursor();
     // Focused and no longer restarting
@@ -687,7 +687,7 @@ static class Display final :
     // Record new gamma
     fGamma = fNewGamma;
     // Apply new gamma setting if window is available
-    if(cGlFW && cGlFW->IsWindowAvailable() && mSelected) ApplyGamma();
+    if(cGlFW && cGlFW->WinIsAvailable() && mSelected) ApplyGamma();
     // Success
     return ACCEPT;
   }
@@ -901,11 +901,11 @@ static class Display final :
     cGlFW->SetWindowFrameName(cpTitle);
     // Initialise basic window. We will modify it after due to limitations in
     // this particular function. For example, this can't set the refresh rate.
-    cSystem->WindowInitialised(cGlFW->InitWindow(1, 1, cpTitle, nullptr));
+    cSystem->WindowInitialised(cGlFW->WinInit(1, 1, cpTitle, nullptr));
     // Re-adjust the window
     ReInitWindow(FlagIsSet(DF_FULLSCREEN));
     // Set forced aspect ratio
-    cGlFW->SetAspectRatio(cCVars->GetInternalStrSafe(WIN_ASPECT));
+    cGlFW->WinSetAspectRatio(cCVars->GetInternalStrSafe(WIN_ASPECT));
     // Register monitor removal event. We can't use our events system for this
     // because once the event callback is over, the data for the monitor is
     // freed.
@@ -934,7 +934,7 @@ static class Display final :
     cEvtWin->UnregisterEx(*this);
     cEvtMain->UnregisterEx(*this);
     // Have window?
-    if(cGlFW->IsWindowAvailable())
+    if(cGlFW->WinIsAvailable())
     { // If we have monitor?
       if(mSelected)
       { // Restore gamma (this fails if theres no window).
@@ -944,7 +944,7 @@ static class Display final :
       } // Tell system we destroyed the window
       cSystem->SetWindowDestroyed();
       // Actually destroy window
-      cGlFW->DestroyWindow();
+      cGlFW->WinDeInit();
       // Log progress
       LW(LH_DEBUG, "Display window handle and context destroyed.");
     } // Don't have window

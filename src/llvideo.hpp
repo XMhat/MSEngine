@@ -58,7 +58,7 @@ LLFUNC(Pause, LCGETPTR(1, Video)->Pause());
 // $ Video:Rewind
 // ? Rewinds the specified video back to the beginning.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Rewind, LCGETPTR(1, Video)->RewindVideo());
+LLFUNC(Rewind, LCGETPTR(1, Video)->Rewind());
 /* ========================================================================= */
 // $ Video:Stop
 // ? Stops and unloads the specified video, this frees resources.
@@ -338,6 +338,24 @@ LLRSBEGIN                              // Video.* namespace functions begin
   LLRSFUNC(FileAsync),                 //   "  asyncronously
   LLRSFUNC(WaitAsync),                 // Wait for async events to complete
 LLRSEND                                // Video.* namespace functions end
+/* ========================================================================= */
+/* ######################################################################### */
+/* ## Video.* namespace constants structure                               ## */
+/* ######################################################################### */
+/* ========================================================================= */
+// @ Video.Flags
+// < Codes:table=The table of key/value pairs of available flags
+// ? Returns possible values for Video:OnEvent() event command.
+/* ------------------------------------------------------------------------- */
+LLRSKTBEGIN(Events)                    // Beginning of Stream event flags
+LLRSKTITEM(Video::VE_,FINISH),         LLRSKTITEM(Video::VE_,LOOP),
+LLRSKTITEM(Video::VE_,PAUSE),          LLRSKTITEM(Video::VE_,PLAY),
+LLRSKTITEM(Video::VE_,STOP),
+LLRSKTEND                              // End of Stream event flags
+/* ========================================================================= */
+LLRSCONSTBEGIN                         // Video.* namespace consts begin
+LLRSCONST(Events),                     // Video event command
+LLRSCONSTEND                           // Video.* namespace consts end
 /* ========================================================================= */
 LLNAMESPACEEND                         // End of Video namespace
 /* == EoF =========================================================== EoF == */

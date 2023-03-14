@@ -1129,7 +1129,7 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
   template<typename IntType>const string &GetGLErr(const IntType itCode) const
     { return idOGLCodes.Get(static_cast<GLenum>(itCode)); }
   /* -- Set context -------------------------------------------------------- */
-  void SetContext(void) { cGlFW->SetContext(); }
+  void SetContext(void) { cGlFW->WinSetContext(); }
   /* -- Release context ---------------------------------------------------- */
   void ReleaseContext(void) { cGlFW->ReleaseContext(); }
   /* -- Initialise --------------------------------------------------------- */

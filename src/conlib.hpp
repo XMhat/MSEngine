@@ -1605,7 +1605,7 @@ static void CBvideos(const Arguments &)
       { vCref.LuaRefIsSet(),    'L' }, { vCref.HaveAudio(),      'A' },
       { vCref.FlagIsSet(FL_FILTER), 'F' }, { vCref.GetKeyed(),       'K' },
       { vCref.FlagIsSet(FL_PLAY),   'P' }, { vCref.FlagIsSet(FL_STOP),   'S' },
-      { vCref.FlagIsSet(FL_REPLAY), 'R' }, { vCref.FlagIsSet(FL_THEORA), 'T' },
+      { vCref.FlagIsSet(FL_THEORA), 'T' },
       { vCref.FlagIsSet(FL_VORBIS), 'V' }, { vCref.FlagIsSet(FL_VDINIT), '1' },
       { vCref.FlagIsSet(FL_VBINIT), '2' }, { vCref.FlagIsSet(FL_OSINIT), '3' },
       { vCref.FlagIsSet(FL_TCINIT), '4' }, { vCref.FlagIsSet(FL_TIINIT), '5' },

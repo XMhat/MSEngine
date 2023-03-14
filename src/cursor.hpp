@@ -21,7 +21,7 @@ BEGIN_MEMBERCLASS(Cursors, Cursor, ICHelperUnsafe),
   GLFWcursor      *pCursor;            // Pointer to glfw cursor resource
   int              iInternal;          // Is a standard cursor?
   /* -- Activate the cursor graphic -------------------------------- */ public:
-  void Activate(void) { cGlFW->SetCursorGraphic(pCursor); }
+  void Activate(void) { cGlFW->WinSetCursorGraphic(pCursor); }
   /* -- Initialise --------------------------------------------------------- */
   void InitStandard(const int iId)
   { // De-init if initialised
@@ -70,7 +70,7 @@ BEGIN_MEMBERCLASS(Cursors, Cursor, ICHelperUnsafe),
 };/* ----------------------------------------------------------------------- */
 END_COLLECTOR(Cursors);
 /* == Reset cursor graphic ================================================= */
-static void CursorReset(void) { cGlFW->SetCursorGraphic(nullptr); }
+static void CursorReset(void) { cGlFW->WinSetCursorGraphic(nullptr); }
 /* == De-initialise all ==================================================== */
 static void CursorDeInit(void)
 { // Ignore if no fbos

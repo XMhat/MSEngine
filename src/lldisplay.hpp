@@ -31,7 +31,7 @@ LLFUNC(Reset, cDisplay->RequestReposition());
 // ? as a whole. Once the user has given attention, usually by focusing the
 // ? window or application, the system will end the request automatically.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Attention, cGlFW->RequestWindowAttention());
+LLFUNC(Attention, cGlFW->WinRequestAttention());
 /* ========================================================================= */
 // $ Display.Centre
 // ? Moves the window to the centre of the screen.
@@ -80,7 +80,7 @@ LLFUNC(SetPos, cDisplay->RequestMove(LCGETINT(int, 1, "X"),
 // $ Display.Iconify
 // ? Minimises the window.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Iconify, cGlFW->MinimiseWindow());
+LLFUNC(Iconify, cGlFW->WinMinimise());
 /* ========================================================================= */
 // $ Display.Iconified
 // < State:boolean=The window is inconified?
@@ -92,13 +92,13 @@ LLFUNCEX(Iconified, 1, LCPUSHBOOL(cGlFW->IsIconifyEnabled()));
 // ? Restores the window from a minimized state. This may not work in
 // ? full-screen mode. Check Display.Focus().
 /* ------------------------------------------------------------------------- */
-LLFUNC(Restore, cGlFW->RestoreWindow());
+LLFUNC(Restore, cGlFW->WinRestore());
 /* ========================================================================= */
 // $ Display.Focus
 // ? Sets input focus to the window. This will actually restore the window if
 // ? in full-screen mode.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Focus, cGlFW->FocusWindow());
+LLFUNC(Focus, cGlFW->WinFocus());
 /* ========================================================================= */
 // $ Display.Focused
 // < State:boolean=The window is focused?
@@ -128,7 +128,7 @@ LLFUNCEX(Resizable, 1, LCPUSHBOOL(cGlFW->IsResizableEnabled()));
 // $ Display.Maximise
 // ? Maximises the window.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Maximise, cGlFW->MaximiseWindow());
+LLFUNC(Maximise, cGlFW->WinMaximise());
 /* ========================================================================= */
 // $ Display.Maximised
 // < State:boolean=The window is maximised?

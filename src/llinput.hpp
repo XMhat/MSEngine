@@ -94,7 +94,7 @@ LLFUNCENDEX(2)
 // < Result:integer=Button state (0=up,1=down).
 // ? Returns the state of the specified mouse button.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(MouseState, 1, LCPUSHINT(cGlFW->GetMouse(
+LLFUNCEX(MouseState, 1, LCPUSHINT(cGlFW->WinGetMouse(
   LCGETINTLG(int, 1, 0, GLFW_MOUSE_BUTTON_LAST, "Button"))));
 /* ========================================================================= */
 // $ Input.KeyState
@@ -103,7 +103,7 @@ LLFUNCEX(MouseState, 1, LCPUSHINT(cGlFW->GetMouse(
 // ? Returns the state of the specified keyboard button direct from cGlFW->
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(KeyState, 1,
-  LCPUSHINT(cGlFW->GetKey(LCGETINTLG(int, 1, 0, GLFW_KEY_LAST, "Key"))));
+  LCPUSHINT(cGlFW->WinGetKey(LCGETINTLG(int, 1, 0, GLFW_KEY_LAST, "Key"))));
 /* ========================================================================= */
 // $ Input.ClearStates
 // ? Clears the keyboard, mouse and joystick states which wipes the current

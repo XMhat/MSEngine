@@ -261,7 +261,7 @@ static int CoreThreadSandbox(lua_State*const lS)
         // Threading not enabled?
         if(cDisplay->FlagIsClear(DF_THREADED))
         { // Loop until event manager says we should break
-          while(cEvtMain->HandleSafe() && !cGlFW->ShouldWindowClose())
+          while(cEvtMain->HandleSafe() && !cGlFW->WinShouldClose())
           { // Process window event manager commands from other threads
             cEvtWin->ManageUnsafe();
             // Is it time to execute a game tick?
@@ -394,7 +394,7 @@ static void CoreDeInitComponents(void) try
   // OpenGL de-initialised (do not throw error if de-initialised)
   cOgl->DeInit(true);
   // Close window
-  cGlFW->HideWindow();
+  cGlFW->WinHide();
 } // exception occured?
 catch(const exception &E)
 { // Make sure the exception is logged
@@ -418,7 +418,7 @@ static void CoreDeInitEverything(void)
   // If not in graphical mode, we're done
   if(cSystem->IsNotGuiMode(GM_GRAPHICS)) return;
   // Window should close as well
-  cGlFW->SetCloseWindow(GLFW_TRUE);
+  cGlFW->WinSetClose(GLFW_TRUE);
   // Still bugged in 3.3.2 full-screen windows
   cGlFW->ForceEventHack();
 }
@@ -782,7 +782,7 @@ static int CoreMain(const int iArgs, ARGTYPE**const lArgs,
           // Setup main thread and start it
           cEvtMain->ThreadInit(CoreThreadMain, nullptr);
           // Loop until window should close
-          while(!cGlFW->ShouldWindowClose())
+          while(!cGlFW->WinShouldClose())
           { // Process window event manager commands from other threads
             cEvtWin->ManageSafe();
             // Wait for more window events

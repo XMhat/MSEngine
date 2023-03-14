@@ -371,8 +371,8 @@ static class Input final :             // Handles keyboard, mouse & controllers
       fNewX = Clamp(fAdjX, 0.0f, cFboMain->fboMain.GetCoRight() - 1.0f),
       fNewY = Clamp(fAdjY, 0.0f, cFboMain->fboMain.GetCoBottom() - 1.0f);
     // Now translate that position back into the actual window cursor pos.
-    cGlFW->SetCursorPos(static_cast<double>(fNewX),
-                        static_cast<double>(fNewY));
+    cGlFW->WinSetCursorPos(static_cast<double>(fNewX),
+                           static_cast<double>(fNewY));
   }
   /* -- Filtered key pressed ----------------------------------------------- */
   void OnFilteredKey(const EvtMain::Cell &epData)
@@ -469,7 +469,7 @@ static class Input final :             // Handles keyboard, mouse & controllers
   /* -- Files dragged and dropped on window--------------------------------- */
   void OnDragDrop(const EvtMain::Cell &)
   { // Get files and return if empty
-    StrVector &vFiles = cGlFW->GetFiles();
+    StrVector &vFiles = cGlFW->WinGetFiles();
     if(vFiles.empty()) return;
     // Send off the event to lua callbacks
     lfOnDragDrop.LuaFuncDispatch(vFiles);
@@ -497,7 +497,7 @@ static class Input final :             // Handles keyboard, mouse & controllers
   /* -- Window past event--------------------------------------------------- */
   void OnWindowPaste(const EvtMain::Cell&)
   { // Get text in clipboard
-    Decoder utfString(cGlFW->GetClipboard());
+    Decoder utfString(cGlFW->WinGetClipboard());
     // For each character, ddd the character to queue if valid
     while(const unsigned int uiChar = utfString.Next())
       if(uiChar >= 32) cConsole->OnCharPress(uiChar);
@@ -534,7 +534,7 @@ static class Input final :             // Handles keyboard, mouse & controllers
   CVarReturn SetFSTogglerEnabled(const bool bState)
     { FlagSetOrClear(IF_FSTOGGLER, bState); return ACCEPT; }
   /* -- Commit visibility of mouse cursor ---------------------------------- */
-  void CommitCursor(void) { cGlFW->SetCursor(FlagIsSet(IF_CURSOR)); }
+  void CommitCursor(void) { cGlFW->WinSetCursor(FlagIsSet(IF_CURSOR)); }
   /* -- Set visibility of mouse cursor ------------------------------------- */
   void SetCursor(const bool bEnabled)
   { // Set member var incase window needs to re-init so we can restore the
@@ -554,7 +554,7 @@ static class Input final :             // Handles keyboard, mouse & controllers
   /* -- Update window size from actual glfw window ------------------------- */
   void UpdateWindowSize(void)
   { // Get new window size
-    cGlFW->GetWindowSize(iWinWidth, iWinHeight);
+    cGlFW->WinGetSize(iWinWidth, iWinHeight);
     // Update half window size
     UpdateWindowSizeD2();
   }
@@ -569,7 +569,7 @@ static class Input final :             // Handles keyboard, mouse & controllers
   /* -- Get cursor position ------------------------------------------------ */
   void GetCursorPos(double &dX, double &dY) const
   { // Get the cursor position
-    cGlFW->GetCursorPos(dX, dY);
+    cGlFW->WinGetCursorPos(dX, dY);
     // Translate cursor position to framebuffer aspect
     dX = static_cast<double>(cFboMain->fboMain.fcStage.GetCoLeft()) +
       ((dX/GetWindowWidth()) *
@@ -657,9 +657,9 @@ static class Input final :             // Handles keyboard, mouse & controllers
       LW(LH_WARNING, "Input raw mouse support is not available!");
       return ACCEPT;
     } // Set the new input if we can and log status
-    cGlFW->SetRawMouseMotion(bState);
+    cGlFW->WinSetRawMouseMotion(bState);
     LW(LH_DEBUG, "Input updated raw mouse status to $.",
-      TrueOrFalse(cGlFW->GetRawMouseMotion()));
+      TrueOrFalse(cGlFW->WinGetRawMouseMotion()));
     // CVar allowed to be set
     return ACCEPT;
   }
@@ -668,9 +668,9 @@ static class Input final :             // Handles keyboard, mouse & controllers
   { // Ignore changing flags right now if not initialised
     if(IHIsNotInitialised()) return ACCEPT;
     // Set the new input if we can and log status
-    cGlFW->SetStickyKeys(bState);
+    cGlFW->WinSetStickyKeys(bState);
     LW(LH_DEBUG, "Input updated sticky keys status to $.",
-      TrueOrFalse(cGlFW->GetStickyKeys()));
+      TrueOrFalse(cGlFW->WinGetStickyKeys()));
     // CVar allowed to be set
     return ACCEPT;
   }
@@ -679,9 +679,9 @@ static class Input final :             // Handles keyboard, mouse & controllers
   { // Ignore changing flags right now if not initialised
     if(IHIsNotInitialised()) return ACCEPT;
     // Set the new input if we can and log status
-    cGlFW->SetStickyMouseButtons(bState);
+    cGlFW->WinSetStickyMouseButtons(bState);
     LW(LH_DEBUG, "Input updated sticky mouse status to $.",
-      TrueOrFalse(cGlFW->GetStickyMouseButtons()));
+      TrueOrFalse(cGlFW->WinGetStickyMouseButtons()));
     // CVar allowed to be set
     return ACCEPT;
   }
@@ -721,7 +721,7 @@ static class Input final :             // Handles keyboard, mouse & controllers
   { // if window not available? This should never happen but we will put
     // this here just incase. The subsequent operations are pointless without
     // a valid GLFW window.
-    if(!cGlFW->IsWindowAvailable())
+    if(!cGlFW->WinIsAvailable())
     { // Log that initialisation is being skipped and return
       LW(LH_WARNING, "Input initialisation skipped with no window available!");
       return;

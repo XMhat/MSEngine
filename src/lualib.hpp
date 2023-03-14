@@ -215,7 +215,7 @@ const LuaLibStatic luaLibList[] =
   LLSMX(Stat,    TEXT_NOAUDIO),        LLSMC(Socket,  TEXT_NOAUDIO),
   LLSMX(Source,  TEXT_AUDIO),          LLSXC(Sql,     TEXT_NOAUDIO),
   LLSMC(Stream,  TEXT_AUDIO),          LLSMX(Texture, GRAPHICS),
-  LLSXX(Util,    TEXT_NOAUDIO),        LLSMX(Video,   GRAPHICS),
+  LLSXX(Util,    TEXT_NOAUDIO),        LLSMC(Video,   GRAPHICS),
   /* -- Last item, do not delete ------------------------------------------- */
   { nullptr, GM_HIGHEST, LLNOCONSTS(), LLNOMETHODS(), LLNOCONSTS() }
 };/* ----------------------------------------------------------------------- */

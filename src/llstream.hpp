@@ -334,9 +334,9 @@ LLRSEND                                // Stream.* namespace functions end
 // < Codes:table=The table of key/value pairs of available flags
 // ? Returns possible values for Stream:OnEvent() event command.
 /* ------------------------------------------------------------------------- */
-LLRSKTBEGIN(Events)                    // Beginning of Stream event flags
+LLRSKTBEGIN(Events)                    // Beginning of Video event flags
 LLRSKTITEM(SE_,PLAY),                  LLRSKTITEM(SE_,STOP),
-LLRSKTEND                              // End of Stream event flags
+LLRSKTEND                              // End of Video event flags
 /* ========================================================================= */
 // @ Stream.States
 // < Codes:table=The table of key/value pairs of available flags

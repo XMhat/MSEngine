@@ -454,14 +454,14 @@ LLFUNCEX(ClampInt, 1, LCPUSHINT(Clamp(
 // > Text:string=The text to copy.
 // ? Stores the specified text into the operating system's clipboard.
 /* ------------------------------------------------------------------------- */
-LLFUNC(ClipSet, cGlFW->SetClipboard(LCGETSTRING(char, 1, "String")));
+LLFUNC(ClipSet, cGlFW->WinSetClipboard(LCGETSTRING(char, 1, "String")));
 /* ========================================================================= */
 // $ Util.ClipGet
 // < Text:string=The text in the clipboard.
 // ? Retrieves text from the operating systems clipboard. Returns a blank
 // ? Returns a blank string if there is no string in the clipboard.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ClipGet, 1, LCPUSHSTR(cGlFW->GetClipboard()));
+LLFUNCEX(ClipGet, 1, LCPUSHSTR(cGlFW->WinGetClipboard()));
 /* ========================================================================= */
 // $ Util.Replace
 // > String:string=The string to search from
