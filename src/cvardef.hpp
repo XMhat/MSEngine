@@ -25,6 +25,8 @@ enum CVarReturn                        // Callback return values
 };/* == Convert bool result cvar accept or deny ============================ */
 static CVarReturn BoolToCVarReturn(const bool bState)
   { return bState ? ACCEPT : DENY; }
+static bool CVarToBoolReturn(const CVarReturn cvState)
+  { return cvState != DENY; }
 /* -- Helper function to just set a value and return accept ---------------- */
 template<typename AnyToType, typename AnyFromType>
   static CVarReturn CVarSimpleSetInt(AnyToType &atTo,

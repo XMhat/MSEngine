@@ -77,9 +77,10 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
       aP{ YCbCr{0},YCbCr{1},YCbCr{2} } // Initialise Y/Cb/Cr frame data
       /* -- No code -------------------------------------------------------- */
       { }
-  };/* ------------------------------------------------------------- */ public:
-  enum Event { VE_PLAY, VE_LOOP, VE_STOP, VE_PAUSE, VE_FINISH };
+  };/* --------------------------------------------------------------------- */
   enum Unblock { UB_BLOCK, UB_DATA, UB_REINIT, UB_PLAY, UB_STOP, UB_PAUSE };
+  /* --------------------------------------------------------------- */ public:
+  enum Event { VE_PLAY, VE_LOOP, VE_STOP, VE_PAUSE, VE_FINISH };
   /* -- Concurrency -------------------------------------------------------- */
   Thread           tThread;            // Video Decoding Thread
   condition_variable cvBuffer;         // Re-buffer unblocker
@@ -87,7 +88,6 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
   mutex            mUpload;            // mutex for uploading data
   Unblock          ubReason;           // Unlock condition variable
   SafeSizeT        stLoop;             // Loops count
-
   SafeBool         bPause;             // Only pause the stream?
   /* -- Ogg ---------------------------------------------------------------- */
   ogg_sync_state   oSS;                // Ogg sync state

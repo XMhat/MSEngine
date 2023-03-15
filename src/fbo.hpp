@@ -22,10 +22,10 @@ struct OrderItem :                     /* Order item structure              */\
 { /* -- Variables --------------------------------------------------------- */\
   Fbo             *fboDest;            /* Reference to fbo to draw to       */\
   GLsizei          stVertices;         /* No. of vertices in fbo gtlData.   */\
-  size_t           stCommands;         /* No. of commands in fbo gclData.   */\
+  ssize_t          stCommands;         /* No. of commands in fbo gclData.   */\
   /* -- Init constructor --------------------------------------------------- */
   OrderItem(const FboRenderItem &friOther, Fbo*const fboNDest,
-    const GLsizei stNVertices, const size_t stNCommands) : \
+    const GLsizei stNVertices, const ssize_t stNCommands) : \
     /* -- Initialisation of members ---------------------------------------- */
     FboRenderItem{ friOther },         fboDest(fboNDest), \
     stVertices(stNVertices),           stCommands(stNCommands) \
@@ -165,7 +165,7 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
     cOgl->BufferStaticData(oiRef.stVertices, ftlActive.data());
     // For each command in this order
     for(auto fclIt{ fclActive.cbegin() },
-             fclItEnd{ next(fclIt, static_cast<ssize_t>(oiRef.stCommands)) };
+             fclItEnd{ next(fclIt, oiRef.stCommands) };
              fclIt < fclItEnd;
            ++fclIt)
     { // Get command data
@@ -215,7 +215,7 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
     // Add current count to fbo rendering queue
     cParent.ovActive.push_back({ *this, this,
       static_cast<GLsizei>(stTrianglesFrame * sizeof(FboTri)),
-      stCommandsFrame });
+      IntOrMax<ssize_t>(stCommandsFrame) });
     // Incrememnt number of times this fbo is referenced in the active list,
     // this is so when the reference counter is reduced the zero, the triangles
     // and command lists are permitted to clear on FboRender().

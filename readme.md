@@ -67,7 +67,7 @@ This engine makes use of the following open-source and commercially distributabl
 | [NCurses](https://linux.die.net/man/3/ncurses) | 5.7 | © Free Software Foundation | Unix and MacOS text mode support. |
 | [Ogg](https://github.com/xiph/ogg) | 1.3 | Xiph.Org | Read .OGG files. |
 | [OpenALSoft](https://github.com/kcat/openal-soft) | 1.23 | Chris Robinson | 3-D audio API. |
-| [OpenSSL](https://github.com/openssl/openssl) | 3.0 | OpenSSL Software Foundation | Basic SSL networking and (de/en)cryption. |
+| [OpenSSL](https://github.com/openssl/openssl) | 3.1 | OpenSSL Software Foundation | Basic SSL networking and (de/en)cryption. |
 | [RapidJson](https://github.com/Tencent/rapidjson) | 1.1 | © THL A29 Ltd., Tencent co. & Milo Yip | Read/write JSON objects. |
 | [SQLite](https://github.com/sqlite/sqlite) | 3.41 | Contributing authors | Store user non-volatile data. |
 | [Theora](https://github.com/xiph/theora) | 3.2 | Xiph.Org | Read and render .OGV full-motion movies. |

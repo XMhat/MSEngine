@@ -326,11 +326,32 @@ class GlFWWindow
   [[maybe_unused]] bool WinIs ## nc ## AttribDisabled(void) const \
     { return !WinIs ## nc ## AttribEnabled(); }
   /* ----------------------------------------------------------------------- */
-  SET(Decorated, DECORATED);           // Win has a caption and border?
+  SET(AutoIconify, AUTO_ICONIFY);      // Set window auto-minimise state
+  SET(CentreCursor, CENTER_CURSOR);    // Set window cursor centre state
+  SET(Debug, OPENGL_DEBUG_CONTEXT);    // Set opengl debug mode
+  SET(Decorated, DECORATED);           // Set window border state
+  SET(DoubleBuffer, DOUBLEBUFFER);     // Set double buffering
+  SET(Floating, FLOATING);             // Set window floating state
+  SET(Focus, FOCUSED);                 // Set window focused state
+  SET(FocusOnShow, FOCUS_ON_SHOW);     // Set focus on show window
+  SET(ForwardCompat, OPENGL_FORWARD_COMPAT); // Set opengl fwd compatibility
+  SET(Iconify, ICONIFIED);             // Set window minimised state
+  SET(Maximised, MAXIMIZED);           // Set window maximised state
+  SET(MouseHovered, HOVERED);          // Set mouse hovered over state
+  SET(NoErrors, CONTEXT_NO_ERROR);     // Set context no errors
   SET(Resizable, RESIZABLE);           // Win is resizable?
-  SET(Floating, FLOATING);             // Win is always on top?
-  SET(AutoIconify, AUTO_ICONIFY);      // Win is auto-minimised?
-  SET(FocusOnShow, FOCUS_ON_SHOW);     // Win is shown on focus?
+  SET(SRGBCapable, SRGB_CAPABLE);      // Set SRGB colour space capable
+  SET(Stereo, CENTER_CURSOR);          // Set window cursor centre state
+  SET(Transparency, TRANSPARENT_FRAMEBUFFER); // Set transparent framebuffer
+  SET(Visibility, VISIBLE);            // Set window visibility state
+  /* ----------------------------------------------------------------------- */
+#if defined(MACOS)                     // Using Apple compiler?
+  /* ----------------------------------------------------------------------- */
+  SET(GPUSwitching, COCOA_GRAPHICS_SWITCHING); // Set graphics switching?
+  SET(MenuBar,      COCOA_MENUBAR);    // Set MacOS menu bar?
+  SET(RetinaMode,   COCOA_RETINA_FRAMEBUFFER); // Set retina framebuffer?
+  /* ----------------------------------------------------------------------- */
+#endif                                 // End of Apple check
   /* ----------------------------------------------------------------------- */
 #undef SET                             // Done with this macro
   /* -- Check current context ---------------------------------------------- */

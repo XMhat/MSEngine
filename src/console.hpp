@@ -20,7 +20,7 @@ using IfConLib::ConCbFunc;             // reasons.
 /* == Typedefs ============================================================= */
 BUILD_FLAGS(Console,                   // Console flags classes
   /* --------------------------------------------------------------------- */
-  // No settings?                      Can't disable console?
+  // No settings?                      Can't disable console? (temporary)
   CF_NONE                {0x00000000}, CF_CANTDISABLE         {0x00000001},
   // Ignore first key on show console? Autoscroll on message?
   CF_IGNOREKEY           {0x00000002}, CF_AUTOSCROLL          {0x00000004},
@@ -28,8 +28,8 @@ BUILD_FLAGS(Console,                   // Console flags classes
   CF_REDRAW              {0x00000008}, CF_AUTOCOPYCVAR        {0x00000010},
   // Character insert mode?            Console displayed?
   CF_INSERT              {0x00000020}, CF_ENABLED             {0x00000040},
-  // Ignore escape key?
-  CF_IGNOREESC           {0x00000080}
+  // Ignore escape key?                Can't disable console? (guest setting)
+  CF_IGNOREESC           {0x00000080}, CF_CANTDISABLEGLOBAL   {0x00000100}
 );/* ======================================================================= */
 BUILD_FLAGS(AutoComplete,              // Autocomplete flags classes
   /* ----------------------------------------------------------------------- */
@@ -70,10 +70,15 @@ static class Console final :           // The console class
                    strStatusRight,     // Text-mode console right status text
                    strTimeFormat;      // Default time format
   /* -- Graphics ----------------------------------------------------------- */
+  const uint32_t   ulFgColour;         // Console input text colour
   uint32_t         ulBgColour;         // Console background texture colour
   Colour           cTextColour;        // Console text colour
-  GLfloat          fScale,             // Console font scale
-                   fConsoleHeight;     // Console height
+  GLfloat          fTextScale,         // Console font scale
+                   fConsoleHeight,     // Console height
+                   fTextLetterSpacing, // Console text letter spacing
+                   fTextLineSpacing;   // Console text line spacing
+  unsigned int     uiTextWidth,        // Console text width
+                   uiTextHeight;       // Console text height
   Texture          ctConsole;          // Console background texture
   Font             cfConsole;          // Console font
   char             cCursor;            // Cursor character to use
@@ -488,11 +493,9 @@ static class Console final :           // The console class
   /* -- Reset defaults (for lreset) ---------------------------------------- */
   void RestoreDefaultProperties(void)
   { // Restore default settings from cvar registry
-    SetTextSpacing(cCVars->GetInternalSafe<GLfloat>(CON_FONTSPACING));
-    SetTextColour(cCVars->GetInternalSafe<size_t>(CON_FONTCOLOUR));
-    SetTextScale(cCVars->GetInternalSafe<GLfloat>(CON_FONTSCALE));
-    SetTextLineSpacing(cCVars->GetInternalSafe<GLfloat>(CON_FONTLSPACING));
-    SetBackgroundColour(cCVars->GetInternalSafe<uint32_t>(CON_BGCOLOUR));
+    CommitLetterSpacing();
+    CommitScale();
+    CommitLineSpacing();
   }
   /* -- Init console font -------------------------------------------------- */
   void InitConsoleFont(void)
@@ -501,8 +504,7 @@ static class Console final :           // The console class
     // the cvars havn't been initialised
     Ftf fFTFont;
     fFTFont.InitFile(cCVars->GetInternalStrSafe(CON_FONT),
-      cCVars->GetInternalSafe<GLfloat>(CON_FONTWIDTH),
-      cCVars->GetInternalSafe<GLfloat>(CON_FONTHEIGHT), 96, 96, 0.0);
+      uiTextWidth, uiTextHeight, 96, 96, 0.0);
     cfConsole.InitFTFont(fFTFont,
       cCVars->GetInternalSafe<GLuint>(CON_FONTTEXSIZE),
       cCVars->GetInternalSafe<GLuint>(CON_FONTPADDING), 11,
@@ -655,6 +657,15 @@ static class Console final :           // The console class
       } // Carry on executing as normal
     }
   }
+  /* -- Commit default text scale ------------------------------------------ */
+  void CommitScale(void)
+    { cfConsole.SetSize(fTextScale); }
+  /* -- Commit default letter spacing -------------------------------------- */
+  void CommitLetterSpacing(void)
+    { cfConsole.SetCharSpacing(fTextLetterSpacing); }
+  /* -- Commit default line spacing ---------------------------------------- */
+  void CommitLineSpacing(void)
+    { cfConsole.SetLineSpacing(fTextLineSpacing); }
   /* -- Get console textures --------------------------------------- */ public:
   Texture *GetTexture(void) { return &ctConsole; }
   Font *GetFont(void) { return &cfConsole; }
@@ -749,18 +760,6 @@ static class Console final :           // The console class
     // Succeeded
     return ACCEPT;
   }
-  /* -- Set console text colour -------------------------------------------- */
-  CVarReturn SetTextColour(const size_t stColour)
-  { // Don't alloow alpha to be set
-    if(stColour >= COLOUR_MAX) return DENY;
-    // If have font? set it's colour
-    cTextColour = static_cast<Colour>(stColour);
-    // Done (even if no font)
-    return ACCEPT;
-  }
-  /* -- Set console background colour -------------------------------------- */
-  CVarReturn SetBackgroundColour(const uint32_t ulRGB)
-    { return CVarSimpleSetInt(ulBgColour, ulRGB); }
   /* -- Set console input status bar (left and right) ---------------------- */
   void SetStatusLeft(const string &strValue) { strStatusLeft = strValue; }
   void SetStatusRight(const string &strValue) { strStatusRight = strValue; }
@@ -856,10 +855,12 @@ static class Console final :           // The console class
                              fboC.fcStage.GetCoTop(),
                              fboC.fcStage.GetCoRight(),
                              fboC.fcStage.GetCoBottom());
-    // Set console text size and scale
-    cfConsole.SetSize(fScale);
-    cfConsole.SetQuadAlpha(1);
-    cfConsole.SetQuadRGBInt(uiNDXtoRGB[COLOUR_YELLOW]);
+    // Set console input text colour
+    cfConsole.SetQuadRGBAInt(ulFgColour);
+    // Restore spacing and scale as well
+    CommitLetterSpacing();
+    CommitLineSpacing();
+    CommitScale();
     // Get below baseline height
     const GLfloat fBL = (fboC.fcStage.GetCoBottom() -
       cfConsole.GetBaselineBelow('g')) + cfConsole.fLineSpacing;
@@ -869,10 +870,10 @@ static class Console final :           // The console class
         reinterpret_cast<const GLubyte*>(Format(">$\rc000000ff$\rr$",
           strConsoleBegin, cCursor, strConsoleEnd).c_str()));
     // For each line or until we clip the top of the screen, print the text
-    for(ConLinesConstRevIt clI{ clriPosition }; clI != rend() && fY > 0; ++clI)
+    for(ConLinesConstRevIt clI{ clriPosition }; clI!=crend() && fY>0; ++clI)
     { // Get reference to console line data structure
       const ConLine &clD = *clI;
-      // Set text colour
+      // Set text foreground colour with opaqueness already set above
       cfConsole.SetQuadRGBInt(uiNDXtoRGB[clD.cColour]);
       // Draw the text and move upwards of the height that was used
       fY -= cfConsole.PrintWU(fboC.fcStage.GetCoLeft(), fY,
@@ -1063,8 +1064,6 @@ static class Console final :           // The console class
     } // ...Until we have cleared enough lines
     while(size() > stRemove);
   }
-  /* -- Add line as string with default text colour ------------------- */
-  void AddLine(const string &strText) { AddLine(strText, cTextColour); }
   /* -- Add line as string with specified text colour ----------------- */
   void AddLine(const string &strText, const Colour pColour)
   { // Tokenise lines into a list limited by the maximum number of lines.
@@ -1083,6 +1082,8 @@ static class Console final :           // The console class
     // Redraw the buffer, it changed
     SetRedraw();
   }
+  /* -- Add line as string with default text colour ------------------- */
+  void AddLine(const string &strText) { AddLine(strText, cTextColour); }
   /* -- Set text-mode console refresh rate --------------------------------- */
   CVarReturn RefreshModified(const unsigned int uiMS)
   { // Ignore if invalid
@@ -1096,30 +1097,27 @@ static class Console final :           // The console class
   CVarReturn SetHeight(const GLfloat fHeight)
     { return CVarSimpleSetIntNLG(fConsoleHeight, fHeight, 0.1f, 1.0f); }
   /* -- Set Console status ------------------------------------------------- */
-  CVarReturn SetCantDisable(const bool bState)
+  void SetCantDisable(const bool bState)
   { // Ignore if not in graphical mode because CON_HEIGHT isn't defined in
     // bot mode as it is unneeded or the flag is already set as such.
-    if(cfConsole.IsNotInitialised()) return ACCEPT;
-    // If state changed?
-    if(FlagIsNotEqualToBool(CF_CANTDISABLE, bState))
-    { // Set the state and if can no longer be disabled?
-      FlagSetOrClear(CF_CANTDISABLE, bState);
-      if(FlagIsSet(CF_CANTDISABLE))
-      { // Log that the console has beend disabled
-        LW(LH_DEBUG, "Console visibility control has been disabled.");
-        // Make sure console is showing
-        DoSetVisible(true);
-        // Set full height and return
-        SetHeight(1);
-      } // Disabling?
-      else
-      { // Log that the console can now be disabled
-        LW(LH_DEBUG, "Console visibility control has been enabled.");
-        // Restore user defined height
-        SetHeight(cCVars->GetInternalSafe<GLfloat>(CON_HEIGHT));
-      }
-    } // Done
-    return ACCEPT;
+    if(cfConsole.IsNotInitialised()) return;
+    // Return if state not changed
+    if(FlagIsEqualToBool(CF_CANTDISABLE, bState)) return;
+    // Set the state and if can no longer be disabled?
+    FlagSetOrClear(CF_CANTDISABLE, bState);
+    if(FlagIsSet(CF_CANTDISABLE))
+    { // Log that the console has beend disabled
+      LW(LH_DEBUG, "Console visibility control has been disabled.");
+      // Make sure console is showing
+      DoSetVisible(true);
+      // Set full height and return
+      SetHeight(1);
+      // Done
+      return;
+    } // Disabling so log that the console can now be disabled
+    LW(LH_DEBUG, "Console visibility control has been enabled.");
+    // Restore user defined height
+    SetHeight(cCVars->GetInternalSafe<GLfloat>(CON_HEIGHT));
   }
   /* -- Do Set Console status ---------------------------------------------- */
   bool DoSetVisible(const bool bState)
@@ -1149,11 +1147,9 @@ static class Console final :           // The console class
   }
   /* -- Set Console visibility --------------------------------------------- */
   bool SetVisible(const bool bState)
-  { // Enabling?
-    if(bState)
-    { // We cant enabled if cvar is disabled
-      if(cCVars->GetInternalSafe<bool>(CON_DISABLED)) return false;
-    } // Disabling but can't disable? Return failure
+  { // Enabling? We cant enable if disabled
+    if(bState) { if(FlagIsSet(CF_CANTDISABLEGLOBAL)) return false; }
+    // Disabling but can't disable? Return failure
     else if(FlagIsSet(CF_CANTDISABLE)) return false;
     // Do set enabled
     return DoSetVisible(bState);
@@ -1165,7 +1161,7 @@ static class Console final :           // The console class
     // Get console fbo and font
     Fbo &fboC = cFboMain->fboConsole;
     // Set console text size so the scaled size is properly calculated
-    cfConsole.SetSize(fScale);
+    CommitScale();
     // Estimate amount of triangles that would fit in the console and if
     // we have a non-zero value?
     if(const size_t stTriangles = static_cast<size_t>(
@@ -1176,35 +1172,6 @@ static class Console final :           // The console class
       if(!fboC.Reserve(stTriangles, 2))
         LW(LH_WARNING, "Console fbo failed to reserve $ triangles!",
           stTriangles);
-  }
-  /* -- Set console text scale --------------------------------------------- */
-  CVarReturn SetTextScale(const GLfloat fNewScale)
-  { // Failed if supplied scale is not in range
-    if(fNewScale <= 0.01f || fNewScale > 1.00f) return DENY;
-    // Set new font scale
-    fScale = fNewScale;
-    // Reallocate memory if neccesary for fbo lists
-    RecalculateFboListReserves();
-    // Succeeded reglardless of font availability
-    return ACCEPT;
-  }
-  /* -- Set console text line spacing -------------------------------------- */
-  CVarReturn SetTextLineSpacing(const GLfloat fSpacing)
-  { // Failed if supplied spacing is not in range
-    if(fSpacing < -256.0f || fSpacing > 256.0f) return DENY;
-    // Set console text line spacing if texture available
-    cfConsole.SetLineSpacing(fSpacing);
-    // Succeeded reglardless of font availability
-    return ACCEPT;
-  }
-  /* -- Set console text character spacing --------------------------------- */
-  CVarReturn SetTextSpacing(const GLfloat fSpacing)
-  { // Failed if supplied spacing is not in range
-    if(fSpacing < -256.0f || fSpacing > 256.0f) return DENY;
-    // Set console text line spacing if texture available
-    cfConsole.SetCharSpacing(fSpacing);
-    // Succeeded reglardless of font availability
-    return ACCEPT;
   }
   /* -- Print version information ------------------------------------------ */
   void PrintVersion(void)
@@ -1319,6 +1286,59 @@ static class Console final :           // The console class
     // Log progress
     LW(LH_INFO, "Console de-initialised successfully.");
   }
+  /* -- Set Console status ------------------------------------------------- */
+  CVarReturn CantDisableModified(const bool bState)
+  { // Update flag and disabled status
+    FlagSetOrClear(CF_CANTDISABLEGLOBAL, bState);
+    SetCantDisable(FlagIsSet(CF_CANTDISABLEGLOBAL));
+    // Done
+    return ACCEPT;
+  }
+  /* -- Set console background colour -------------------------------------- */
+  CVarReturn TextBackgroundColourModified(const uint32_t ulNewColour)
+    { return CVarSimpleSetInt(ulBgColour, ulNewColour); }
+  /* -- Set console text colour -------------------------------------------- */
+  CVarReturn TextForegroundColourModified(const unsigned int uiNewColour)
+    { return CVarSimpleSetIntNG(cTextColour,
+        static_cast<Colour>(uiNewColour), COLOUR_MAX); }
+  /* -- Set console text scale --------------------------------------------- */
+  CVarReturn TextScaleModified(const GLfloat fNewScale)
+  { // Failed if supplied scale is not in range
+    if(!CVarToBoolReturn(CVarSimpleSetIntNLG(fTextScale,
+      fNewScale, 0.01f, 1.00f))) return DENY;
+    // Set new font scale
+    CommitScale();
+    // Reallocate memory if neccesary for fbo lists
+    RecalculateFboListReserves();
+    // Succeeded reglardless of font availability
+    return ACCEPT;
+  }
+  /* -- Set text letter spacing -------------------------------------------- */
+  CVarReturn TextLetterSpacingModified(const GLfloat fNewSpacing)
+  { // Failed if supplied spacing is not in range
+    if(!CVarToBoolReturn(CVarSimpleSetIntNLG(fTextLetterSpacing,
+      fNewSpacing, -256.0f, 256.0f))) return DENY;
+    // Set console text line spacing if texture available
+    CommitLetterSpacing();
+    // Succeeded reglardless of font availability
+    return ACCEPT;
+  }
+  /* -- Set text line spacing ---------------------------------------------- */
+  CVarReturn TextLineSpacingModified(const GLfloat fNewSpacing)
+  { // Failed if supplied spacing is not in range
+    if(!CVarToBoolReturn(CVarSimpleSetIntNLG(fTextLineSpacing,
+      fNewSpacing, -256.0f, 256.0f))) return DENY;
+    // Set console text line spacing if texture available
+    CommitLineSpacing();
+    // Succeeded reglardless of font availability
+    return ACCEPT;
+  }
+  /* -- Set text width ----------------------------------------------------- */
+  CVarReturn TextWidthModified(const unsigned int uiNewWidth)
+    { return CVarSimpleSetIntNG(uiTextWidth, uiNewWidth, 4096U); }
+  /* -- Set text height ---------------------------------------------------- */
+  CVarReturn TextHeightModified(const unsigned int uiNewHeight)
+    { return CVarSimpleSetIntNG(uiTextHeight, uiNewHeight, 4096U); }
   /* -- Set maximum command count ------------------------------------------ */
   CVarReturn MaxCountModified(const size_t stCount)
     { return CVarSimpleSetInt(stMaxCount, stCount); }
@@ -1337,10 +1357,17 @@ static class Console final :           // The console class
     iPageLines(0),                     // No page up/down lines setting
     ciInputRefresh{                    // Init text mode refresh rate to...
       microseconds{ 31250 } },         // ...0.031sec
+    ulFgColour(                        // Set input text colour
+      uiNDXtoRGB[COLOUR_YELLOW] |      // - Lookup RGB value for yellow
+      0xFF000000),                     // - Force opaqueness
     ulBgColour(0),                     // No background colour
     cTextColour(COLOUR_WHITE),         // Default white text colour
-    fScale(0),                         // No font scale
-    fConsoleHeight(0),                 // No console height
+    fTextScale(0.0f),                  // No font scale
+    fConsoleHeight(0.0f),              // No console height
+    fTextLetterSpacing(0.0f),          // No text letter spacing
+    fTextLineSpacing(0.0f),            // No text line spacing
+    uiTextWidth(0),                    // No text width
+    uiTextHeight(0),                   // No text height
     ctConsole(true),                   // Console texture on stand-by
     cfConsole(true),                   // COnsole font on stand-by
     cCursor('|'),                      // Cursor shape

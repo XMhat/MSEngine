@@ -130,35 +130,31 @@ static class GlFW final :
     { SetWindowHintEnabled(GLFW_ ## nu); } \
   [[maybe_unused]] void Set ## nc ## Disabled(void) const \
     { SetWindowHintDisabled(GLFW_ ## nu); } \
-  [[maybe_unused]] bool Is ## nc ## Enabled(void) const \
-    { return this->WinGetAttribBoolean(GLFW_ ## nu); } \
-  [[maybe_unused]] bool Is ## nc ## Disabled(void) const \
-    { return !Is ## nc ## Enabled(); }
   /* ----------------------------------------------------------------------- */
-  SET(Focus, FOCUSED);                 // Set window focused state
-  SET(Iconify, ICONIFIED);             // Set window minimised state
-  SET(Resizable, RESIZABLE);           // Set window resizable state
-  SET(Visibility, VISIBLE);            // Set window visibility state
-  SET(Decorated, DECORATED);           // Set window border state
   SET(AutoIconify, AUTO_ICONIFY);      // Set window auto-minimise state
-  SET(Floating, FLOATING);             // Set window floating state
-  SET(Maximised, MAXIMIZED);           // Set window maximised state
   SET(CentreCursor, CENTER_CURSOR);    // Set window cursor centre state
-  SET(Transparency, TRANSPARENT_FRAMEBUFFER); // Set transparent framebuffer
-  SET(Stereo, CENTER_CURSOR);          // Set window cursor centre state
-  SET(MouseHovered, HOVERED);          // Set mouse hovered over state
-  SET(FocusOnShow, FOCUS_ON_SHOW);     // Set focus on show window
-  SET(SRGBCapable, SRGB_CAPABLE);      // Set SRGB colour space capable
-  SET(DoubleBuffer, DOUBLEBUFFER);     // Set double buffering
-  SET(NoErrors, CONTEXT_NO_ERROR);     // Set context no errors
   SET(Debug, OPENGL_DEBUG_CONTEXT);    // Set opengl debug mode
+  SET(Decorated, DECORATED);           // Set window border state
+  SET(DoubleBuffer, DOUBLEBUFFER);     // Set double buffering
+  SET(Floating, FLOATING);             // Set window floating state
+  SET(Focus, FOCUSED);                 // Set window focused state
+  SET(FocusOnShow, FOCUS_ON_SHOW);     // Set focus on show window
   SET(ForwardCompat, OPENGL_FORWARD_COMPAT); // Set opengl fwd compatibility
+  SET(Iconify, ICONIFIED);             // Set window minimised state
+  SET(Maximised, MAXIMIZED);           // Set window maximised state
+  SET(MouseHovered, HOVERED);          // Set mouse hovered over state
+  SET(NoErrors, CONTEXT_NO_ERROR);     // Set context no errors
+  SET(Resizable, RESIZABLE);           // Set window resizable state
+  SET(SRGBCapable, SRGB_CAPABLE);      // Set SRGB colour space capable
+  SET(Stereo, CENTER_CURSOR);          // Set window cursor centre state
+  SET(Transparency, TRANSPARENT_FRAMEBUFFER); // Set transparent framebuffer
+  SET(Visibility, VISIBLE);            // Set window visibility state
   /* ----------------------------------------------------------------------- */
 #if defined(MACOS)                     // Using Apple compiler?
   /* ----------------------------------------------------------------------- */
+  SET(GPUSwitching, COCOA_GRAPHICS_SWITCHING); // Set graphics switching?
   SET(MenuBar,      COCOA_MENUBAR);    // Set MacOS menu bar?
   SET(RetinaMode,   COCOA_RETINA_FRAMEBUFFER); // Set retina framebuffer?
-  SET(GPUSwitching, COCOA_GRAPHICS_SWITCHING); // Set graphics switching?
   /* ----------------------------------------------------------------------- */
 #endif                                 // End of Apple check
   /* ----------------------------------------------------------------------- */

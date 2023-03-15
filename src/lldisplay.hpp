@@ -86,7 +86,7 @@ LLFUNC(Iconify, cGlFW->WinMinimise());
 // < State:boolean=The window is inconified?
 // ? Returns if the window is iconified.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Iconified, 1, LCPUSHBOOL(cGlFW->IsIconifyEnabled()));
+LLFUNCEX(Iconified, 1, LCPUSHBOOL(cGlFW->WinIsIconifyAttribEnabled()));
 /* ========================================================================= */
 // $ Display.Restore
 // ? Restores the window from a minimized state. This may not work in
@@ -104,26 +104,26 @@ LLFUNC(Focus, cGlFW->WinFocus());
 // < State:boolean=The window is focused?
 // ? Returns if the window is focused.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Focused, 1, LCPUSHBOOL(cGlFW->IsFocusEnabled()));
+LLFUNCEX(Focused, 1, LCPUSHBOOL(cGlFW->WinIsFocusAttribEnabled()));
 /* ========================================================================= */
 // $ Display.Hovered
 // < State:boolean=Mouse is over the window?
 // ? Indicates whether the cursor is currently directly over the content area
 // ? of the window, with no other windows between.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Hovered, 1, LCPUSHBOOL(cGlFW->IsMouseHoveredEnabled()));
+LLFUNCEX(Hovered, 1, LCPUSHBOOL(cGlFW->WinIsMouseHoveredAttribEnabled()));
 /* ========================================================================= */
 // $ Display.Visible
 // < State:boolean=The window is visible?
 // ? Indicates whether the window is visible.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Visible, 1, LCPUSHBOOL(cGlFW->IsVisibilityEnabled()));
+LLFUNCEX(Visible, 1, LCPUSHBOOL(cGlFW->WinIsVisibilityAttribEnabled()));
 /* ========================================================================= */
 // $ Display.Resizable
 // < State:boolean=The window is visible?
 // ? Indicates whether the window is resizable.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Resizable, 1, LCPUSHBOOL(cGlFW->IsResizableEnabled()));
+LLFUNCEX(Resizable, 1, LCPUSHBOOL(cGlFW->WinIsResizableAttribEnabled()));
 /* ========================================================================= */
 // $ Display.Maximise
 // ? Maximises the window.
@@ -134,25 +134,25 @@ LLFUNC(Maximise, cGlFW->WinMaximise());
 // < State:boolean=The window is maximised?
 // ? Returns if the window is maximised.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Maximised, 1, LCPUSHBOOL(cGlFW->IsMaximisedEnabled()));
+LLFUNCEX(Maximised, 1, LCPUSHBOOL(cGlFW->WinIsMaximisedAttribEnabled()));
 /* ========================================================================= */
 // $ Display.Decordated
 // < State:boolean=The window is decorated?
 // ? Returns if the window is decorated with a border.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Decorated, 1, LCPUSHBOOL(cGlFW->IsDecoratedEnabled()));
+LLFUNCEX(Decorated, 1, LCPUSHBOOL(cGlFW->WinIsDecoratedAttribEnabled()));
 /* ========================================================================= */
 // $ Display.Transparent
 // < State:boolean=The window is using an alpha framebuffer?
 // ? Returns if the window is transparent and using a alpha framebuffer.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Transparent, 1, LCPUSHBOOL(cGlFW->IsTransparencyEnabled()));
+LLFUNCEX(Transparent, 1, LCPUSHBOOL(cGlFW->WinIsTransparencyAttribEnabled()));
 /* ========================================================================= */
 // $ Display.Floating
 // < State:boolean=The window is floating?
 // ? Returns if the window is floating an always showing on top.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Floating, 1, LCPUSHBOOL(cGlFW->IsFloatingEnabled()));
+LLFUNCEX(Floating, 1, LCPUSHBOOL(cGlFW->WinIsFloatingAttribEnabled()));
 /* ========================================================================= */
 // $ Display.SetFullScreen
 // > State:boolean=true for fullscreen, false for window.
@@ -190,8 +190,7 @@ LLFUNC(OnFocused, LCSETEVENTCB(cDisplay->lrFocused));
 // ? Returns info about OpenGL.
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(GPU)
-  LCPUSHXSTR(cOgl->GetVendor());
-  LCPUSHXSTR(cOgl->GetVersion());
+  LCPUSHXSTR(cOgl->GetVendor());       LCPUSHXSTR(cOgl->GetVersion());
   LCPUSHXSTR(cOgl->GetRenderer());
 LLFUNCENDEX(3)
 /* ========================================================================= */
@@ -202,12 +201,8 @@ LLFUNCENDEX(3)
 // ? you might want to restrict the frequency of this call if used in a loop.
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(VRAM)
-  const GLuint64 qwFree = cOgl->GetVRAMFree();
-  LCPUSHNUM(100 - ((static_cast<lua_Number>(qwFree) /
-    cOgl->GetVRAMTotal()) * 100));
-  LCPUSHINT(cOgl->GetVRAMTotal());
-  LCPUSHINT(qwFree);
-  LCPUSHINT(cOgl->GetVRAMTotal() - qwFree);
+  LCPUSHNUM(cOgl->GetVRAMFreePC());    LCPUSHINT(cOgl->GetVRAMTotal());
+  LCPUSHINT(cOgl->GetVRAMFree());      LCPUSHINT(cOgl->GetVRAMUsed());
 LLFUNCENDEX(4)
 /* ========================================================================= */
 // $ Display.Monitor
