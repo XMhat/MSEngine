@@ -52,12 +52,12 @@ struct TokenListNC :
   TokenListNC &operator=(TokenListNC &&tOther) { swap(tOther); return *this; }
   /* -- MOVE assignment constructor ---------------------------------------- */
   TokenListNC(TokenListNC &&tOther) :
-    /* -- Initialisation of members ---------------------------------------- */
-    CStrVector{ std::move(tOther) }         // Move vector of C-Strings over
+    /* -- Initialisers ----------------------------------------------------- */
+    CStrVector{ StdMove(tOther) }         // Move vector of C-Strings over
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(TokenListNC);        // Disable copy constructor/operator
+  DELETECOPYCTORS(TokenListNC)         // Disable copy constructor/operator
 };/* ----------------------------------------------------------------------- */
 /* -- Token class with line limit ------------------------------------------ */
 struct TokenList :
@@ -101,12 +101,12 @@ struct TokenList :
   TokenList& operator=(TokenList &&tOther) { swap(tOther); return *this; }
   /* -- MOVE assignment constructor ---------------------------------------- */
   TokenList(TokenList &&tOther) :
-    /* -- Initialisation of members ---------------------------------------- */
-    StrList{ std::move(tOther) }            // Move list of strings over
+    /* -- Initialisers ----------------------------------------------------- */
+    StrList{ StdMove(tOther) }            // Move list of strings over
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(TokenList);          // Disable copy constructor/operator
+  DELETECOPYCTORS(TokenList)           // Disable copy constructor/operator
 }; /* ---------------------------------------------------------------------- */
 /* == Token class ========================================================== */
 struct Token :
@@ -162,12 +162,12 @@ struct Token :
   Token& operator=(Token &&tOther) { swap(tOther); return *this; }
   /* -- MOVE assignment constructor ---------------------------------------- */
   Token(Token &&tOther) :
-    /* -- Initialisation of members ---------------------------------------- */
-    StrVector{ std::move(tOther) }          // Move vector string over
+    /* -- Initialisers ----------------------------------------------------- */
+    StrVector{ StdMove(tOther) }          // Move vector string over
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Token);              // Disable copy constructor/operator
+  DELETECOPYCTORS(Token)               // Disable copy constructor/operator
 };/* -- End of module namespace -------------------------------------------- */
 };                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

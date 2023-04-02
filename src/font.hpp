@@ -17,7 +17,7 @@ using namespace IfTexture;             // Using texture namespace
 using namespace IfBin;                 // Using bin namespace
 using namespace IfFtf;                 // Using ftf namespace
 /* == Font collector class for collector data and custom variables ========= */
-BEGIN_COLLECTOR(Fonts, Font, CLHelperUnsafe);
+BEGIN_COLLECTOR(Fonts, Font, CLHelperUnsafe)
 /* == Font Variables Class ================================================= */
 // Only put vars used in the Font class in here. This is an optimisation so
 // we do not have to initialise all these variables more than once as we have
@@ -115,7 +115,7 @@ class FontVariables :                  // Members initially private
     /* --------------------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(FontVariables);      // No copy constructors
+  DELETECOPYCTORS(FontVariables)       // No copy constructors
 };/* ----------------------------------------------------------------------- */
 /* == Font Class (which inherits a Texture) ================================ */
 BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
@@ -150,7 +150,7 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
           rRedraw.RectGetY1(), DimGetWidth(), 2);
         // Calculate position in buffer to read from
         const GLubyte*const ucpSrc =
-          front().Read<GLubyte>(stRTPos, DimGetWidth());
+          GetSlots().front().Read<GLubyte>(stRTPos, DimGetWidth());
         // Update partial texture
         UpdateEx(GetSubName(),
           rRedraw.RectGetX1<GLint>(), rRedraw.RectGetY1<GLint>(),
@@ -312,7 +312,7 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
     // cause display artifacts
     Memory mPixels{ DimGetWidth() * DimGetHeight() * 2 };
     mPixels.Fill<uint16_t>(0x00FF);
-    InitRaw(ftfData.IdentGet(), std::move(mPixels), DimGetWidth(),
+    InitRaw(ftfData.IdentGet(), StdMove(mPixels), DimGetWidth(),
       DimGetHeight(), BD_GRAYALPHA, GL_RG);
     // Initialise image in GL. This class is responsible for updating the
     // texture tile co-ords set.
@@ -391,7 +391,7 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
          "Identifier", IdentGet(), "Manfiest", strManfiest);
     cLog->LogDebugExSafe("- Widths: $.", strWidths);
     // Break apart the widths and throw if there are none
-    const StrVector svList{ std::move(Token{ strWidths, strSpace }) };
+    const StrVector svList{ StdMove(Token{ strWidths, cCommon->Space() }) };
     if(svList.size() != uiCharCount)
       XC("Unexpected number of widths detected in metadata!",
          "Identifier", IdentGet(),  "Index",  strManfiest,
@@ -415,8 +415,8 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
     // the default characters data.
     const unsigned int uiCharOffsetM1 = uiCharOffset-1;
     const Glyph &gRef = gvData[ulDefaultChar];
-    MYFILL(par_unseq, gvData.begin(), gvData.begin()+uiCharOffsetM1, gRef);
-    MYFILL(par_unseq, gvData.begin()+uiCharEnd, gvData.end(), gRef);
+    StdFill(par_unseq, gvData.begin(), gvData.begin()+uiCharOffsetM1, gRef);
+    StdFill(par_unseq, gvData.begin()+uiCharEnd, gvData.end(), gRef);
     // Initialise memory for texture tile co-ordinates
     clTiles.resize(1);
     CoordList &clFirst = clTiles[0];
@@ -430,8 +430,8 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
     // Initialise the uninitialised texcoords with the default character that
     // was initialised using InitImage
     const CoordData &cdRef = clFirst[ulDefaultChar];
-    MYFILL(par_unseq, clFirst.begin(),clFirst.begin()+uiCharOffsetM1, cdRef);
-    MYFILL(par_unseq, clFirst.begin()+uiCharEnd, clFirst.end(), cdRef);
+    StdFill(par_unseq, clFirst.begin(),clFirst.begin()+uiCharOffsetM1, cdRef);
+    StdFill(par_unseq, clFirst.begin()+uiCharEnd, clFirst.end(), cdRef);
     // Initialise font scale
     SetSize(ToNumber<GLfloat>(vC["scale"]));
     // Show that we've loaded the file
@@ -440,20 +440,20 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
   }
   /* -- Constructor (Initialisation then registration) --------------------- */
   Font(void) :                         // No parameters
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperFont{ *cFonts, this }      // Initially registered
     /* --------------------------------------------------------------------- */
     { }                                // Do nothing else
   /* -- Constructor (without registration) --------------------------------- */
   explicit Font(const bool) :          // Dummy parameter
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperFont{ *cFonts }            // Initially unregistered
     /* --------------------------------------------------------------------- */
     { }                                // Do nothing else
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Font);               // Omit copy constructor for safety
+  DELETECOPYCTORS(Font)                // Omit copy constructor for safety
 };/* ----------------------------------------------------------------------- */
-END_COLLECTOR(Fonts);                  // End of collector class
+END_COLLECTOR(Fonts)                   // End of collector class
 /* -- DeInit Font Textures ------------------------------------------------- */
 static void FontDeInitTextures(void)
 { // Ignore if no fonts

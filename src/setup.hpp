@@ -96,7 +96,6 @@
 # define UNICODE                       // Using native Windows functions
 # define _UNICODE                      //  prevents conversions & allocations
 # define NOMINMAX                      // Do not define min/max please
-# define DLLEXT                 ".dll" // Extension to use for DLL's
 #elif defined(__APPLE__)               // Apple target?
 # define MACOS                         // Using MacOS
 # include <TargetConditionals.h>       // Include target conditionals header
@@ -121,7 +120,6 @@
                                        STR(__GNUC_PATCHLEVEL__)
 # define _DARWIN_USE_64_BIT_INODE      // For 64-bit size values
 # define _LIBCPP_ENABLE_CXX17_REMOVED_UNEXPECTED_FUNCTIONS // On in MSVC & GCC
-# define DLLEXT               ".dylib" // Extension to use for DLL's
 #elif __cplusplus < 202002L            // Must be using a C++20 compiler
 # error Must use a C++ 20 or better compiler!
 #elif defined(__linux__)               // Linux detected?
@@ -165,7 +163,6 @@
 # else                                 // Invalid architecture?
 #  error "This Linux target being compiled with is not supported!"
 # endif                                // Linux arch check
-# define DLLEXT                  ".so" // Extension to use for DLL's
 #else                                  // Unsupported target environment
 # error "This platform being compiled with is not supported!"
 #endif                                 // Using Microsoft compiler
@@ -274,6 +271,10 @@
 # endif                                // Endianess setup
 /* ------------------------------------------------------------------------- */
 # define GLFW_EXPOSE_NATIVE_WIN32      // Expose Cocoa specific funcs in GlfW
+/* ------------------------------------------------------------------------- */
+typedef TCHAR      ArgType;            // Widestring for args
+# define ENTRYFUNC    WINAPI _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
+# define CONENTRYFUNC _tmain           // For project management utility
 /* -- Using anything but Windows? ------------------------------------------ */
 #else                                  // Could be OSX or Linux
 /* ------------------------------------------------------------------------- */
@@ -282,6 +283,7 @@
 # include <dlfcn.h>                    // Dylib functions
 # include <execinfo.h>                 // Stack trace functions
 # include <libgen.h>                   // Unix core (*name)
+# include <spawn.h>                    // Spawn functions header
 # include <sys/stat.h>                 // Stat struct
 # include <sys/utsname.h>              // OS information
 # include <unistd.h>                   // Unix standard stuff
@@ -320,6 +322,10 @@
 #  define GLFW_EXPOSE_NATIVE_X11       // Expose X11 specific funcs in GLFW
 #  define GLFW_EXPOSE_NATIVE_WAYLAND   // Expose Wayland specific funcs in GLFW
 # endif                                // Apple check
+/* ------------------------------------------------------------------------- */
+typedef char       ArgType;            // Main() arguments type
+# define ENTRYFUNC    main(int __argc,ArgType**__wargv,ArgType**_wenviron)
+# define CONENTRYFUNC main             // For project management utility
 /* ------------------------------------------------------------------------- */
 #endif                                 // Operating system
 /* ------------------------------------------------------------------------- */
@@ -384,7 +390,7 @@ namespace RapidJson                    // RAPIDJSON API FUNCTIONS
 #define RAPIDJSON_NOEXCEPT             // We have noexcept
 #define RAPIDJSON_NAMESPACE_BEGIN      // Keep blank or errors
 #define RAPIDJSON_NAMESPACE_END        // Keep blank or errors
-#define RAPIDJSON_ASSERT(x)            if(!(x)) throw std::runtime_error{(#x)};
+#define RAPIDJSON_ASSERT(x)          if(!(x)) throw ::std::runtime_error{(#x)};
 #define RAPIDJSON_HAS_CXX11_NOEXCEPT 1 // Force to use noexcept
 #include <rapidjson/document.h>        // Main header
 #include <rapidjson/prettywriter.h>    // Pretty formatting

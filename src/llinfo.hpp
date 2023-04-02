@@ -15,7 +15,7 @@
 // ! The info class allows the programmer to gain information about the engine.
 // ! Check out the Glfw namespace for more system information functions.
 /* ========================================================================= */
-LLNAMESPACEBEGIN(Info)                 // Info namespace
+namespace NsInfo {                     // Info namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfLua;                 // Using lua namespace
 /* ========================================================================= */
@@ -193,14 +193,14 @@ LLFUNCEX(Uptime, 1, LCPUSHNUM(cLua->CCDeltaToDouble()));
 // < Ticks:integer=Number of ticks.
 // ? Returns the total number of frames rendered since the engine started.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Ticks, 1, LCPUSHINT(TimerGetTicks()));
+LLFUNCEX(Ticks, 1, LCPUSHINT(cTimer->TimerGetTicks()));
 /* ========================================================================= */
 // $ Info.CPUFPS
 // < FPS:number=Frames per second.
 // ? Get CPU loops processed in the last second. Should be the same as GPU for
 // ? most people but at times may be different, sometimes much higher.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(CPUFPS, 1, LCPUSHNUM(TimerGetSecond()));
+LLFUNCEX(CPUFPS, 1, LCPUSHNUM(cTimer->TimerGetSecond()));
 /* ========================================================================= */
 // $ Info.Delay
 // < Time:number=Delay time in seconds.
@@ -209,7 +209,7 @@ LLFUNCEX(CPUFPS, 1, LCPUSHNUM(TimerGetSecond()));
 // ? the delay and you want to offset a time point by the thread delay.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Delay, 1,
-  LCPUSHNUM(static_cast<double>(TimerGetDelay()) / 1000));
+  LCPUSHNUM(static_cast<double>(cTimer->TimerGetDelay()) / 1000));
 /* ========================================================================= */
 // $ Info.IsOSWindows
 // < Boolean:boolean=True if using Windows, false if not.
@@ -247,7 +247,7 @@ LLFUNCEX(IsOSMac, 1, LCPUSHBOOL(false));
 // ? play properly if this is constantly used. Only use when doing loading
 // ? screens.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Catchup, TimerCatchup());
+LLFUNC(Catchup, cTimer->TimerCatchup());
 /* ========================================================================= */
 // $ Info.Env
 // > Value:string=The name of the variable to query.
@@ -263,31 +263,15 @@ LLFUNCEX(Env, 1, LCPUSHXSTR(cCmdLine->GetEnv(LCGETCPPSTRING(1, "Variable"))));
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Info.* namespace functions begin
-  LLRSFUNC(Catchup),                   // Reset the accumulator
-  LLRSFUNC(CPU),                       // Get CPU info
-  LLRSFUNC(CPUFPS),                    // Get CPU frames per second
-  LLRSFUNC(CPUUsage),                  // Get CPU Usage (process+system)
-  LLRSFUNC(CPUProcUsage),              // Get CPU Usage (process)
-  LLRSFUNC(CPUSysUsage),               // Get CPU Usage (system)
-  LLRSFUNC(Delay),                     // Get current thread delay time
-  LLRSFUNC(Engine),                    // Get engine info
-  LLRSFUNC(Env),                       // Get environment variable
-  LLRSFUNC(Locale),                    // Get locale ID
-  LLRSFUNC(LUAUsage),                  // Get LUA RAM usage
-  LLRSFUNC(OS),                        // Get os version information
-  LLRSFUNC(IsOSWindows),               // Returns true if using windows
-  LLRSFUNC(IsOSLinux),                 // Returns true if using linux
-  LLRSFUNC(IsOSMac),                   // Returns true if using macos
-  LLRSFUNC(OSTime),                    // Get unix timestamp in seconds as int
-  LLRSFUNC(OSNumTime),                 //   " in seconds as number
-  LLRSFUNC(OSMilliTime),               //   " in milliseconds as int
-  LLRSFUNC(OSMicroTime),               //   " in microseconds as int
-  LLRSFUNC(OSNanoTime),                //   " in nanoseconds as int
-  LLRSFUNC(RAM),                       // Get RAM info
-  LLRSFUNC(Ticks),                     // Get ticks rendered in game loop
-  LLRSFUNC(Time),                      // Get engine hi-res time
-  LLRSFUNC(Uptime),                    // Get lua execution time in seconds
+  LLRSFUNC(Catchup),     LLRSFUNC(CPU),          LLRSFUNC(CPUFPS),
+  LLRSFUNC(CPUUsage),    LLRSFUNC(CPUProcUsage), LLRSFUNC(CPUSysUsage),
+  LLRSFUNC(Delay),       LLRSFUNC(Engine),       LLRSFUNC(Env),
+  LLRSFUNC(Locale),      LLRSFUNC(LUAUsage),     LLRSFUNC(OS),
+  LLRSFUNC(IsOSWindows), LLRSFUNC(IsOSLinux),    LLRSFUNC(IsOSMac),
+  LLRSFUNC(OSTime),      LLRSFUNC(OSNumTime),    LLRSFUNC(OSMilliTime),
+  LLRSFUNC(OSMicroTime), LLRSFUNC(OSNanoTime),   LLRSFUNC(RAM),
+  LLRSFUNC(Ticks),       LLRSFUNC(Time),         LLRSFUNC(Uptime),
 LLRSEND                                // Info.* namespace functions end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of Info namespace
+}                                      // End of Info namespace
 /* == EoF =========================================================== EoF == */

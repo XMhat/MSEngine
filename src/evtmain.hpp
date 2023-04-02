@@ -39,43 +39,43 @@ enum EvtMainCmd                        // Render thread event commands
   EMC_WIN_CLOSE,                       // 18: Window wants to be closed
   EMC_WIN_LIMITS,                      // 19: Window limits change
   /* -- OpenGL events ------------------------------------------------------ */
-  EMC_VID_SCREENSHOT,                  // 20: Take video screenshot
-  EMC_VID_FB_REINIT,                   // 21: Reset frame buffer
-  EMC_VID_MATRIX_REINIT,               // 22: Reset matrix
+  EMC_VID_FB_REINIT,                   // 20: Reset frame buffer
+  EMC_VID_MATRIX_REINIT,               // 21: Reset matrix
   /* -- Audio events ------------------------------------------------------- */
-  EMC_AUD_REINIT,                      // 23: Re-initialise audio
+  EMC_AUD_REINIT,                      // 22: Re-initialise audio
   /* -- Input events ------------------------------------------------------- */
-  EMC_INP_PASTE,                       // 24: Paste into input from clipboard
+  EMC_INP_PASTE,                       // 23: Paste into input from clipboard
   /* ----------------------------------------------------------------------- */
-  EMC_NOLOG,                           // 25: Events after this aren't logged
+  EMC_NOLOG,                           // 24: Events after this aren't logged
   /* -- Console events ----------------------------------------------------- */
-  EMC_CON_UPDATE = EMC_NOLOG,          // 26: Force a syscon display update
-  EMC_CON_RESIZE,                      // 27: Syscon resized event
-  EMC_CON_KEYPRESS,                    // 28: Console key pressed
+  EMC_CON_UPDATE = EMC_NOLOG,          // 25: Force a syscon display update
+  EMC_CON_RESIZE,                      // 26: Syscon resized event
+  EMC_CON_KEYPRESS,                    // 27: Console key pressed
   /* -- Input events ------------------------------------------------------- */
-  EMC_INP_KEYPRESS,                    // 29: Unfiltered key pressed
-  EMC_INP_CHAR,                        // 30: Filtered key pressed
-  EMC_INP_DRAG_DROP,                   // 31: Files dragged and dropped
-  EMC_INP_MOUSE_FOCUS,                 // 32: Mouse moved outside/inside window
-  EMC_INP_MOUSE_MOVE,                  // 33: Mouse cursor moved
-  EMC_INP_MOUSE_CLICK,                 // 34: Mouse button clicked
-  EMC_INP_MOUSE_SCROLL,                // 35: Mouse wheel scrolled
-  EMC_INP_JOY_STATE,                   // 36: Joystick status changed
-  EMC_INP_SET_CUR_POS,                 // 37: Set cursor position
+  EMC_INP_KEYPRESS,                    // 28: Unfiltered key pressed
+  EMC_INP_CHAR,                        // 29: Filtered key pressed
+  EMC_INP_DRAG_DROP,                   // 30: Files dragged and dropped
+  EMC_INP_MOUSE_FOCUS,                 // 31: Mouse moved outside/inside window
+  EMC_INP_MOUSE_MOVE,                  // 32: Mouse cursor moved
+  EMC_INP_MOUSE_CLICK,                 // 33: Mouse button clicked
+  EMC_INP_MOUSE_SCROLL,                // 34: Mouse wheel scrolled
+  EMC_INP_JOY_STATE,                   // 35: Joystick status changed
+  EMC_INP_SET_CUR_POS,                 // 36: Set cursor position
   /* -- Async events ------------------------------------------------------- */
-  EMC_MP_ARCHIVE,                      // 38: Archive async event occured
-  EMC_MP_ASSET,                        // 39: Asset async event occured
-  EMC_MP_FONT,                         // 40: Char async event occured
-  EMC_MP_IMAGE,                        // 41: Image async event occured
-  EMC_MP_JSON,                         // 42: Json async event occured
-  EMC_MP_PCM,                          // 43: Pcm async event occured
-  EMC_MP_PROCESS,                      // 44: Process async event occured
-  EMC_MP_SOCKET,                       // 45: Socket async event occured
-  EMC_MP_STREAM,                       // 46: Stream async event occured
-  EMC_MP_VIDEO,                        // 47: Video async event occured
-  /* -- Stream events ------------------------------------------------------ */
-  EMC_STR_EVENT,                       // 48: Stream event occured
-  EMC_VID_EVENT,                       // 49: Video event occured
+  EMC_MP_ARCHIVE,                      // 37: Archive async event occured
+  EMC_MP_ASSET,                        // 38: Asset async event occured
+  EMC_MP_FONT,                         // 39: Char async event occured
+  EMC_MP_IMAGE,                        // 40: Image async event occured
+  EMC_MP_JSON,                         // 41: Json async event occured
+  EMC_MP_PCM,                          // 42: Pcm async event occured
+  EMC_MP_PROCESS,                      // 43: Process async event occured
+  EMC_MP_SOCKET,                       // 44: Socket async event occured
+  EMC_MP_STREAM,                       // 45: Stream async event occured
+  EMC_MP_VIDEO,                        // 46: Video async event occured
+  /* -- Other async events ------------------------------------------------- */
+  EMC_STR_EVENT,                       // 47: Stream event occured
+  EMC_VID_EVENT,                       // 48: Video event occured
+  EMC_CB_EVENT,                        // 49: Clipboard event occured
   /* ----------------------------------------------------------------------- */
   EMC_MAX,                             // 50: Below are just codes
   /* ----------------------------------------------------------------------- */
@@ -201,13 +201,14 @@ static class EvtMain final :           // Event list for render thread
     UnregisterEx(rvEvents);
   }
   /* -- Destructor --------------------------------------------------------- */
-  DTORHELPER(~EvtMain);
+  DTORHELPER(~EvtMain)
   /* -- Constructor -------------------------------------------------------- */
   EvtMain(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     IHelper{ __FUNCTION__ },           // Initialise helper
     EvtCore{"EventMain"},              // Set name of this object
-    Thread{ "engine" },                // Sandbox thread
+    Thread{ "engine",                  // Set up engine thread
+      SysThread::Engine },             // High performance sandbox thread
     emcPending(EMC_NONE),              // Not exiting yet
     emcExit(EMC_NONE),                 // Not exited yet
     uiConfirm(0),                      // Exit not confirmed yet
@@ -221,7 +222,7 @@ static class EvtMain final :           // Event list for render thread
     /* --------------------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(EvtMain);            // Delete copy constructor and operator
+  DELETECOPYCTORS(EvtMain)             // Delete copy constructor and operator
   /* -- End ---------------------------------------------------------------- */
 } *cEvtMain = nullptr;                 // Pointer to static class
 /* ------------------------------------------------------------------------- */

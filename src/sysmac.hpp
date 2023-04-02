@@ -7,7 +7,9 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* == OSX includes ========================================================= */
+/* ------------------------------------------------------------------------- */
+namespace SysBase {                    // Start of module namespace
+/* -- Includes ------------------------------------------------------------- */
 #include <sys/sysctl.h>                // Kernel info stuff
 #include <mach/mach_init.h>            // For getting cpu and memory usage
 #include <mach/mach_error.h>           // For getting cpu usage
@@ -27,13 +29,15 @@
 #include <libproc.h>                   // For getting program executable
 /* ------------------------------------------------------------------------- */
 #define _XOPEN_SOURCE_EXTENDED         // Unlock extended ncurses functionality
-typedef void (*__sighandler_t)(int);   // For signal() on OSX
-/* == Dependiencies ======================================================== */
+typedef void (*__sighandler_t)(int);   // For signal() on MacOS
+/* -- Dependiencies -------------------------------------------------------- */
 #include "pixbase.hpp"                 // Base system class
 #include "pixcon.hpp"                  // Console emulation class
 #include "pixmod.hpp"                  // Version information class
 #include "pixmap.hpp"                  // FileMap memory mapping class
 #include "pixpip.hpp"                  // Process pipe handling
+/* ------------------------------------------------------------------------- */
+#undef _XOPEN_SOURCE_EXTENDED          // Done with this macro
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfGlFW;                // Using glfw namespace
 using namespace IfVars;                // Using vars namespace
@@ -70,13 +74,12 @@ class SysProcess                       // Need this before of System init order
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(SysProcess);         // Supress copy constructor for safety
+  DELETECOPYCTORS(SysProcess)          // Supress copy constructor for safety
 };/* == Class ============================================================== */
 class SysCore :
   /* -- Dependency classes ------------------------------------------------- */
-  public SysCon,                       // Defined in 'pixcon.hpp'
   public SysProcess,                   // Process information class
-  public SysVersion,                   // Version information class
+  public SysCon,                       // Defined in 'pixcon.hpp'
   public SysCommon                     // Common functions class
 { /* -- Variables ------------------------------------------------- */ private:
   bool             bWindowInitialised; // Is window initialised?
@@ -89,7 +92,7 @@ class SysCore :
     string strOut; strOut.resize(stSize - 1);
     if(sysctlbyname(cpS, ToNonConstCast<char*>(strOut.c_str()),
       &stSize, nullptr, 0) < 0)
-        return strBlank;
+        return cCommon->Blank();
     // Return the string
     return strOut;
   }
@@ -163,7 +166,7 @@ class SysCore :
     if(!dladdr(vpModule, &dlData))
       XCL("Failed to read info about shared object!", "File", cpAltName);
     // Get full pathname of file
-    return std::move(PathSplit{ dlData.dli_fname, true }.strFull);
+    return StdMove(PathSplit{ dlData.dli_fname, true }.strFull);
   }
   /* ----------------------------------------------------------------------- */
   void UpdateCPUUsageData(void)
@@ -522,7 +525,7 @@ class SysCore :
       // Find dot and ignore if not found? It's a frame work so the full name
       // will be the id.
       const size_t stDot = strBaseName.find_last_of('.');
-      if(stDot == string::npos) strPathName = std::move(strBaseName);
+      if(stDot == string::npos) strPathName = StdMove(strBaseName);
       // Have extension? If it ends in 'dylib' and it starts with 'lib'? Grab
       // first part before dot and after the lib part
       else if(ToLower(strBaseName.substr(stDot+1)) == "dylib" &&
@@ -547,7 +550,7 @@ class SysCore :
       else uiMajor = uiMinor = uiBuild = 0;
       // Add it to mods list
       mlData.emplace(make_pair(static_cast<size_t>(ulIndex),
-        SysModule{ std::move(strFullPath), uiMajor, uiMinor, uiBuild,
+        SysModule{ StdMove(strFullPath), uiMajor, uiMinor, uiBuild,
           0, strPathName.c_str(), strPathName.c_str(),
           string(strVersion), string(Format("$.$.$.0",
             uiMajor, uiMinor, uiBuild)) }));
@@ -577,7 +580,7 @@ class SysCore :
     // https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions.
     static const array<const OSListItem,20>osList{ {
       //   cpLevel       uiHi  uiLo  ttExp           Note
-      { cpBlank,         14,   0,    1798675200 }, // ~31/12/2026
+      {cCommon->CBlank(),14,   0,    1798675200 }, // ~31/12/2026
       { "Ventura",       13,   0,    1767139200 }, // ~31/12/2025
       { "Monterey",      12,   0,    1735603200 }, // ~31/12/2024
       { "Big Sur",       11,   0,    1703980800 }, // ~31/12/2023
@@ -640,12 +643,12 @@ class SysCore :
     // Return operating system info
     return {
       osS.str(),                       // Version string
-      std::move(strExtra),                  // Extra version string
+      StdMove(strExtra),                  // Extra version string
       uiMajor,                         // Major OS version
       uiMinor,                         // Minor OS version
       uiBuild,                         // OS build version
       sizeof(void*)*8,                 // 32 or 64 OS arch
-      std::move(strCode),                   // Get locale
+      StdMove(strCode),                   // Get locale
       DetectElevation(),               // Elevated?
       false,                           // Wine or Old OS?
       ttExpiry,                        // OS expiry
@@ -704,7 +707,7 @@ class SysCore :
       ulPlatformId = GetSysCTLInfoNum<uint32_t>("machdep.cpu.signature");
     const string strIdentifier{
       Format("Intel$ Family $ Model $ Stepping $",
-        sizeof(void*) == 8 ? "64" : strBlank,
+        sizeof(void*) == 8 ? "64" : cCommon->Blank(),
         GetSysCTLInfoNum<uint32_t>("machdep.cpu.family"),
         GetSysCTLInfoNum<uint32_t>("machdep.cpu.model"),
         GetSysCTLInfoNum<uint32_t>("machdep.cpu.stepping"))
@@ -712,8 +715,8 @@ class SysCore :
        strVendorId{ GetSysCTLInfoString("machdep.cpu.vendor") };
 #endif
     // Return default data we could not read
-    return { std::move(strVendorId),        std::move(strProcessorName),
-             std::move(strIdentifier),      stCpuCount,
+    return { StdMove(strVendorId),        StdMove(strProcessorName),
+             StdMove(strIdentifier),      stCpuCount,
              uiSpeed,                  ulFeatureSet,
              ulPlatformId };
   }
@@ -764,13 +767,14 @@ class SysCore :
     { return cCmdLine->MakeEnvPath("HOME", "/Library/Application Support"); }
   /* -- Constructor -------------------------------------------------------- */
   SysCore(void) :
-    /* -- Initialisation of members ---------------------------------------- */
-    SysVersion{ EnumModules(), 0 },
+    /* -- Initialisers ----------------------------------------------------- */
+    SysCon{ EnumModules(), 0 },
     SysCommon{ GetExecutableData(),
                GetOperatingSystemData(),
                GetProcessorData() },
     bWindowInitialised(false) { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(SysCore);            // Supress copy constructor for safety
+  DELETECOPYCTORS(SysCore)             // Supress copy constructor for safety
 }; /* ---------------------------------------------------------------------- */
+}                                      // End of module namespace
 /* == EoF =========================================================== EoF == */

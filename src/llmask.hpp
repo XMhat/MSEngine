@@ -17,7 +17,7 @@
 // ! whether the test maybe between two sprites or actual terrain background.
 // ! You can create bitmasks as big as the system will allow.
 /* ========================================================================= */
-LLNAMESPACEBEGIN(Mask)                 // Mask namespace
+namespace NsMask {                     // Mask namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfMask;                // Using mask namespace
 /* ========================================================================= */
@@ -93,7 +93,7 @@ LLFUNCENDEX(3)
 /* ========================================================================= */
 // $ Mask:Save
 // > Id:integer=The id number of the mask to dump.
-// > Filename:string=The targa file to save to.
+// > Filename:string=The file to save to.
 // ? Dumps the specified mask to disk for debugging purposes.
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(Save)
@@ -213,20 +213,11 @@ LLFUNCBEGIN(Destroy) LCCLASSDESTROY(1, Mask); LLFUNCEND
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Mask:* member functions begin
-  LLRSFUNC(Clear),                     // Set area of mask with 0's
-  LLRSFUNC(Copy),                      // Copy with specified mask bits
-  LLRSFUNC(Count),                     // Number of sub-masks in mask
-  LLRSFUNC(Destroy),                   // Destroy the internal mask object
-  LLRSFUNC(Erase),                     // Erase with specified mask bits
-  LLRSFUNC(Fill),                      // Set area of mask with 1's
-  LLRSFUNC(Height),                    // Return tile height of mask
-  LLRSFUNC(IsCollide),                 // Other mask collides?
-  LLRSFUNC(IsCollideEx),               // Two masks collide?
-  LLRSFUNC(Merge),                     // Merge with specified mask bits
-  LLRSFUNC(Name),                      // Name of the mask
-  LLRSFUNC(Raycast),                   // Collision testing by raycasting
-  LLRSFUNC(Save),                      // Save mask to disk
-  LLRSFUNC(Width),                     // Return tile width of mask
+  LLRSFUNC(Clear),   LLRSFUNC(Copy),      LLRSFUNC(Count),
+  LLRSFUNC(Destroy), LLRSFUNC(Erase),     LLRSFUNC(Fill),
+  LLRSFUNC(Height),  LLRSFUNC(IsCollide), LLRSFUNC(IsCollideEx),
+  LLRSFUNC(Merge),   LLRSFUNC(Name),      LLRSFUNC(Raycast),
+  LLRSFUNC(Save),    LLRSFUNC(Width),
 LLRSEND                                // Mask:* member functions end
 /* ========================================================================= */
 // $ Mask.CreateNew
@@ -255,7 +246,7 @@ LLFUNCEX(CreateBlank, 1, LCCLASSCREATE(Mask)->InitBlank(
   LCGETINTLG(unsigned int, 2, 0, UINT_MAX, "Height")));
 /* ========================================================================= */
 // $ Mask.Create
-// > Image:image=The monochrome image or targa to open.
+// > Image:image=The monochrome image to open.
 // > Count:integer=The number of tiles to grab from image.
 // > Width:integer=The width of each tile.
 // > Height:integer=The height of each tile.
@@ -272,10 +263,8 @@ LLFUNCEX(Create, 1, LCCLASSCREATE(Mask)->InitFromImage(
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Mask.* namespace functions begin
-  LLRSFUNC(Create),                    // Create a mask
-  LLRSFUNC(CreateNew),                 // Create uninitialised mask
-  LLRSFUNC(CreateBlank),               // Create a blank mask
+  LLRSFUNC(Create), LLRSFUNC(CreateNew), LLRSFUNC(CreateBlank),
 LLRSEND                                // Mask.* namespace functions end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of Mask namespace
+}                                      // End of Mask namespace
 /* == EoF =========================================================== EoF == */

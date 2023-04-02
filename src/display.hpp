@@ -11,7 +11,8 @@
 namespace IfDisplay {                  // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfInput;               // Using input namespace
-/* -- Typedefs ------------------------------------------------------------- */
+using namespace IfGlFWMonitor;         // Using glfw monitor namespace
+/* ------------------------------------------------------------------------- */
 BUILD_FLAGS(Display,
   /* ----------------------------------------------------------------------- */
   // No display flags                  Full-screen mode set?
@@ -40,33 +41,34 @@ BUILD_FLAGS(Display,
 static class Display final :
   /* -- Base classes ------------------------------------------------------- */
   private IHelper,                     // Initialisation helper
-  public DisplayFlags,                 // Display settings
+  public  DisplayFlags,                // Display settings
   private EvtMain::RegVec,             // Main events list to register
-  private EvtWin::RegVec               // Window events list to register
-{ /* -- Variables ------------------------------------------------- */ private:
-  GLFWmonitor     *mSelected;          // Monitor selected
-  int              iMRequested,        // Monitor id request
-                   iMSelected;         // Monitor id selected
-  const GLFWvidmode *vSelected;        // Video mode selected
-  int              iVRequested,        // Video mode requested
-                   iVSelected,         // Video mode selected
-                   iBPPSelected;       // Selected bit depth mode
+  private EvtWin::RegVec,              // Window events list to register
+  private DimCoInt                     // Requested window position and size
+{ /* -- Variables ---------------------------------------------------------- */
+  GlFWMonitors     mlData;             // Monitor list data
+  const GlFWMonitor *moSelected;       // Monitor selected
+  size_t           stMRequested;       // Monitor id request
+  const GlFWRes   *rSelected;          // Monitor resolution selected
+  size_t           stVRequested;       // Video mode requested
+  int              iBPPSelected;       // Selected bit depth mode
   GLfloat          fGamma,             // Monitor gamma setting
                    fOrthoWidth,        // Saved ortho width
                    fOrthoHeight;       // Saved ortho height
-  int              iWinPosX, iWinPosY, // Window position
-                   iWinDefX, iWinDefY, // Default window position
-                   iWinWidthReq,       // Window width
-                   iWinHeightReq;      // Window height
+  int              iWinPosX, iWinPosY; // Window position
   float            fWinScaleWidth,     // Window scale width
                    fWinScaleHeight;    // Window scale height
   int              iAuxBuffers,        // Auxilliary buffers to use
                    iSamples;           // FSAA setting to use
+  string           strClipboard;       // Clipboard string to copy or grab
   /* -- Icons -------------------------------------------------------------- */
-  vector<GLFWimage> giImages;          // Contiguous memory for glfw image data
-  vector<Image>     imgIcons;          // Image icon data
+  typedef vector<GLFWimage> GlFWIconList; // Glfw image list
+  GlFWIconList     gilIcons;           // Contiguous memory for glfw image data
+  typedef vector<Image> IconList;      // Actual icon list
+  IconList         ilIcons;            // Image icon data
   /* -- Macros ----------------------------------------------------- */ public:
   LuaFunc          lrFocused;          // Window focused lua event
+  LuaFunc          lrClipboard;        // Clipboard function callback
   /* -- Window moved request -------------------------------------- */ private:
   void OnMoved(const EvtMain::Cell &ewcArgs)
   { // Get new values
@@ -161,8 +163,7 @@ static class Display final :
   /* -- On window resized callback ----------------------------------------- */
   void OnResized(const EvtMain::Cell &ewcArgs)
   { // Get width and height
-    const int iWidth = ewcArgs.vParams[1].i,
-              iHeight = ewcArgs.vParams[2].i;
+    const int iWidth = ewcArgs.vParams[1].i, iHeight = ewcArgs.vParams[2].i;
     // If position not changed? Report event and return
     if(cInput->GetWindowWidth() == iWidth &&
        cInput->GetWindowHeight() == iHeight)
@@ -204,83 +205,37 @@ static class Display final :
   void EnumerateMonitorsAndVideoModes(void)
   { // Log progress
     cLog->LogDebugSafe("Display now enumerating available displays...");
+    // Refresh monitors data
+    mlData.Refresh();
     // Get primary monitor information, throw exception if invalid
-    GLFWmonitor*const mPrimary = glfwGetPrimaryMonitor();
-    if(!mPrimary)
-      XC("Could not detect primary monitor!");
-    // Get primary video mode information
-    const GLFWvidmode*const vPrimary = glfwGetVideoMode(mPrimary);
-    if(!vPrimary)
-      XC("Could not detect primary video mode!",
-         "Monitor", glfwGetMonitorName(mPrimary));
-    // Primary video mode, monitor and monitor count
-    int iVPrimary = -1, iMPrimary = -1, iMonitors;
-    // Get monitors count and if valid?
-    GLFWmonitor*const*const mData = GlFWGetMonitors(iMonitors);
-    if(mData && iMonitors > 0)
-    { // Display information about each new monitor
-      for(int iMonitor = 0; iMonitor < iMonitors; ++iMonitor)
-      { // Get monitor, position, physical size and video modes
-        GLFWmonitor*const mItem = mData[iMonitor];
-        if(mItem == mPrimary) iMPrimary = iMonitor;
-        int iPosX, iPosY;
-        glfwGetMonitorPos(mItem, &iPosX, &iPosY);
-        int iWidth, iHeight;
-        glfwGetMonitorPhysicalSize(mItem, &iWidth, &iHeight);
-        int iModes;
-        const GLFWvidmode*const vModes = glfwGetVideoModes(mItem, &iModes);
-        // Write information about the monitor
-        cLog->LogDebugExSafe(
-          "- Monitor $: $.\n"
-          "- Mode count: $.\n"
-          "- Position: $x$.\n"
-          "- Dimensions: $$$x$\" ($x$mm).\n"
-          "- Size: $\" ($mm).",
-          iMonitor, glfwGetMonitorName(mItem), iModes, iPosX, iPosY, fixed,
-          setprecision(1), MillimetresToInches(iWidth),
-          MillimetresToInches(iHeight), iWidth, iHeight,
-          MillimetresToInches(GetDiagLength(iWidth, iHeight)),
-          GetDiagLength(iWidth, iHeight));
-        // Get video modes for this monitor and ignore if invalid
-        if(!vModes || iModes <= 0) continue;
-        // Enumerate video modes
-        for(int iMode = 0; iMode < iModes; ++iMode)
-        { // Get mode and set primary mode id if found
-          const GLFWvidmode &vMode = vModes[iMode];
-          if(mItem == mPrimary && !memcmp(&vMode, vPrimary, sizeof(vMode)))
-            iVPrimary = iMode;
-          // Report mode
-          cLog->LogDebugExSafe("-- Mode $: $x$x$bpp @$hz (RGB$$$).",
-            iMode, vMode.width, vMode.height,
-            vMode.redBits+vMode.greenBits+vMode.blueBits, vMode.refreshRate,
-            vMode.redBits, vMode.greenBits, vMode.blueBits);
-        }
-      } // Check that we detected the primary resolution and monitor
-      if(iMPrimary == -1) XC("Could not detect primary monitor id!");
-      if(iVPrimary == -1) XC("Could not detect primary resolution id!");
-      // Custom monitor selected and valid monitor? Set it
-      if(iMRequested >= 0 && iMRequested < iMonitors)
-        { mSelected = mData[iMRequested]; iMSelected = iMRequested; }
-      // Select primary resolution
-      else { mSelected = mPrimary; iMSelected = iMPrimary; }
-    } // Select primary monitor
-    else { mSelected = mPrimary; iMSelected = -1; }
-    // Get number of video modes on selected monitor
-    int iModes;
-    const GLFWvidmode *vModes = glfwGetVideoModes(mSelected, &iModes);
-    if(vModes && iVRequested >= 0 && iVRequested < iModes)
-      { vSelected = &vModes[iVRequested]; iVSelected = iVRequested; }
-    else { vSelected = vPrimary; iVSelected = iVPrimary; }
-    // Get information about the primary monitor
-    int iPrimaryPosX, iPrimaryPosY;
-    glfwGetMonitorPos(mPrimary, &iPrimaryPosX, &iPrimaryPosY);
-    int iPrimaryWidth, iPrimaryHeight;
-    glfwGetMonitorPhysicalSize(mPrimary, &iPrimaryWidth, &iPrimaryHeight);
-    // Get information about the selected monitor
-    int iSelectedPosX, iSelectedPosY;
-    glfwGetMonitorPos(mSelected, &iSelectedPosX, &iSelectedPosY);
-    int iSelectedWidth, iSelectedHeight;
-    glfwGetMonitorPhysicalSize(mSelected, &iSelectedWidth, &iSelectedHeight);
+    for(const GlFWMonitor &mData : mlData)
+    { // Write information about the monitor
+      cLog->LogDebugExSafe(
+        "- Monitor $: $.\n"            "- Mode count: $.\n"
+        "- Position: $x$.\n"           "- Dimensions: $$$x$\" ($x$mm).\n"
+        "- Size: $\" ($mm).",
+        mData.Index(), mData.Name(), mData.size(), mData.CoordGetX(),
+        mData.CoordGetY(), fixed, setprecision(1), mData.WidthInch(),
+        mData.HeightInch(), mData.DimGetWidth(), mData.DimGetHeight(),
+        mData.DiagonalInch(), mData.Diagonal());
+      // Log resolution data
+      for(const GlFWRes &rData : mData)
+        cLog->LogDebugExSafe("-- Mode $: $x$x$<RGB$$$> @ $Hz$.",
+          rData.Index(), rData.Width(), rData.Height(), rData.Depth(),
+          rData.Red(), rData.Green(), rData.Blue(), rData.Refresh(),
+          &rData == mData.Primary() ? " (Active)" : cCommon->Blank());
+    } // Custom monitor selected and valid monitor? Set it
+    static constexpr size_t stM2 = string::npos - 1;
+    moSelected = (stMRequested < stM2 && stMRequested < mlData.size()) ?
+      &mlData[stMRequested] : mlData.Primary();
+    // Get selected screen resolution
+    rSelected = (stVRequested < stM2 && stVRequested < (*moSelected).size()) ?
+      &(*moSelected)[stVRequested] : moSelected->Primary();
+    // Set exclusive full-screen mode flag if value is not -2
+    FlagSetOrClear(DF_EXCLUSIVE, stVRequested != stM2);
+    // Get primary monitor and mode
+    const GlFWMonitor &moPrimary = *mlData.Primary();
+    const GlFWRes &rPrimary = *moPrimary.Primary();
     // Write to log the monitor we are using
     cLog->LogInfoExSafe(
       "Display finished enumerating $ displays...\n"
@@ -288,26 +243,21 @@ static class Display final :
       "- Primary mode $: $x$x$bpp(R$G$B$) @$hz.\n"
       "- Selected monitor $: $ @$x$ ($$$\"x$\"=$\").\n"
       "- Selected mode $: $x$x$bpp(R$G$B$) @$hz.",
-      iMonitors,
-      iMPrimary, glfwGetMonitorName(mPrimary), iPrimaryPosX, iPrimaryPosY,
-        fixed, setprecision(1), MillimetresToInches(iPrimaryWidth),
-        MillimetresToInches(iPrimaryHeight),
-        MillimetresToInches(GetDiagLength(iPrimaryWidth, iPrimaryHeight)),
-      iVPrimary, vPrimary->width, vPrimary->height,
-        vPrimary->redBits+vPrimary->greenBits+vPrimary->blueBits,
-        vPrimary->redBits, vPrimary->greenBits, vPrimary->blueBits,
-        vPrimary->refreshRate,
-      iMSelected, glfwGetMonitorName(mSelected), iSelectedPosX, iSelectedPosY,
-        fixed, setprecision(1), MillimetresToInches(iSelectedWidth),
-        MillimetresToInches(iSelectedHeight),
-        MillimetresToInches(GetDiagLength(iSelectedWidth, iSelectedHeight)),
-      iVSelected, vSelected->width, vSelected->height,
-        vSelected->redBits+vSelected->greenBits+vSelected->blueBits,
-        vSelected->redBits, vSelected->greenBits, vSelected->blueBits,
-        vSelected->refreshRate);
-    // Set exclusive full-screen mode flag meaning that the cvars say that
-    // the guest or end user wants a full-screen mode set.
-    FlagSetOrClear(DF_EXCLUSIVE, iVRequested >= -1);
+      mlData.size(),
+      moPrimary.Index(), moPrimary.Name(), moPrimary.CoordGetX(),
+        moPrimary.CoordGetY(), fixed, setprecision(1),
+        moPrimary.WidthInch(), moPrimary.HeightInch(),
+        moPrimary.DiagonalInch(),
+      rPrimary.Index(), rPrimary.Width(), rPrimary.Height(),
+        rPrimary.Depth(), rPrimary.Red(), rPrimary.Green(),
+        rPrimary.Blue(), rPrimary.Refresh(),
+      moSelected->Index(), moSelected->Name(), moSelected->CoordGetX(),
+        moSelected->CoordGetY(), fixed, setprecision(1),
+        moSelected->WidthInch(), moSelected->HeightInch(),
+        moSelected->DiagonalInch(),
+      rSelected->Index(), rSelected->Width(), rSelected->Height(),
+        rSelected->Depth(), rSelected->Red(), rSelected->Green(),
+        rSelected->Blue(), rSelected->Refresh());
   }
   /* -- Monitor changed ---------------------------------------------------- */
   static void OnMonitorStatic(GLFWmonitor*const, const int);
@@ -323,12 +273,10 @@ static class Display final :
       // Device was disconnected?
       case GLFW_DISCONNECTED:
         // If this is our active montior?
-        if(mAffected == mSelected)
+        if(mAffected == moSelected->Context())
         { // Log disconnection
           cLog->LogInfoExSafe(
             "Display disconnected monitor '$', re-initialising...", cpName);
-          // Enumerate monitors again as current one is invalid
-          EnumerateMonitorsAndVideoModes();
           // We need to re-initialise the opengl context
           cEvtMain->Add(EMC_QUIT_THREAD);
         } // Not our active monitor but still report it
@@ -347,6 +295,8 @@ static class Display final :
     else cLog->LogWarningExSafe(
       "Display sent state $$ with invalid monitor at 0x$!",
       hex, iAction, reinterpret_cast<void*>(mAffected));
+    // Enumerate monitors again
+    EnumerateMonitorsAndVideoModes();
   }
   /* == Call to reset the fbo ============================================== */
   void DoResizeFbo(const GLsizei stWidth, const GLsizei stHeight)
@@ -419,8 +369,10 @@ static class Display final :
     { cCVars->SetInternalSafe<bool>(VID_FS, bState); }
   /* -- Toggle full-screen event (Engine thread) --------------------------- */
   void OnToggleFS(const EvtWin::Cell &ewcArgs)
-  { // Ignore further requests if already restarting
+  { // Ignore further requests if already restarting or toggle is locked
     if(FlagIsSet(DF_RESTARTING)) return;
+    // Changing window settings, except no more events of this type
+    FlagSet(DF_RESTARTING);
     // If an argument was not specified?
     if(ewcArgs.vParams.empty())
     { // Set full screen depending on current state
@@ -433,7 +385,7 @@ static class Display final :
   /* -- Apply gamma setting ------------------------------------------------ */
   void ApplyGamma(void)
   { // Set gamma
-    GlFWSetGamma(mSelected, fGamma);
+    GlFWSetGamma(moSelected->Context(), fGamma);
     // Report
     cLog->LogDebugExSafe("Display set gamma to $$.", fixed, fGamma);
   }
@@ -443,58 +395,62 @@ static class Display final :
     FlagClear(DF_INFULLSCREEN);
     // Trnslate user specified window size
     int iW, iH; TranslateUserSize(iW, iH);
-    int iX, iY; TranslateUserCoords(iX, iY, iW, iH);
+    TranslateUserCoords(iWinPosX, iWinPosY, iW, iH);
     // Set menu bar on MacOS
     // cGlFW->SetCocoaMenuBarEnabled();
-    // Initialise the desktop window and send the handle to system class
-    // because they need the handle for exceptions, icons and other things.
-    cGlFW->WinSetMonitor(nullptr, iX, iY, iW, iH, 0);
-    // Window mode so update users window border setting
+    // Instruct glfw to change to window mode
+    cGlFW->WinSetMonitor(nullptr, iWinPosX, iWinPosY, iW, iH, 0);
+    // Window mode so update users window border and resize setting
     cGlFW->WinSetDecoratedAttrib(FlagIsSet(DF_BORDER));
+    cGlFW->WinSetResizableAttrib(FlagIsSet(DF_SIZABLE));
     // Log that we switched to window mode
     cLog->LogInfoExSafe("Display switched to desktop window $x$ at $x$.",
-      iW, iH, iX, iY);
+      iW, iH, iWinPosX, iWinPosY);
   }
   /* -- ReInit full-screen mode window ------------------------------------- */
   void ReInitFullScreenModeWindow(void)
   { // Actually in full screen mode window
     FlagSet(DF_INFULLSCREEN);
-    // Get selected desktop resolution as reference
-    const GLFWvidmode &vmData = *vSelected;
     // Chosen settings
     GLFWmonitor *mUsing;
     const char *cpType;
-    // Exclusive full-screen window requested? Set video mode and label
-    if(FlagIsSet(DF_EXCLUSIVE)) { mUsing = mSelected; cpType = "exclusive"; }
-    // Not exclusive full-screen mode?
+    // Exclusive full-screen window requested?
+    if(FlagIsSet(DF_EXCLUSIVE))
+    { // Set video mode and label
+      mUsing = moSelected->Context();
+      cpType = "exclusive";
+    } // Not exclusive full-screen mode?
     else
-    { // Hide menu bar on MacOS if in borderless full-screen mode
-//    cGlFW->SetCocoaMenuBarDisabled();
-      // Not using exclusive full-screen mode
+    { // Not using exclusive full-screen mode
       mUsing = nullptr;
       cpType = "borderless";
       // Force disable window border
-      GlFWSetDecoratedDisabled();
-    } // Set the full-screen window
-    cGlFW->WinSetMonitor(mUsing, 0, 0,
-      vmData.width, vmData.height, vmData.refreshRate);
+      cGlFW->WinSetDecoratedAttribDisabled();
+    } // Position is top-left in full-screen
+    iWinPosX = iWinPosY = 0;
+    // Disable resizing of the window
+    cGlFW->WinSetResizableAttribDisabled();
+    // Instruct glfw to set full-screen window
+    cGlFW->WinSetMonitor(mUsing, iWinPosX, iWinPosY,
+      rSelected->Width(), rSelected->Height(), rSelected->Refresh());
     // Log that we switched to full-screen mode
     cLog->LogInfoExSafe(
       "Display switch to $ full-screen $x$ (M:$>$;V:$>$;R:$).",
-      cpType, vmData.width, vmData.height, iMRequested, iMSelected,
-      iVRequested, iVSelected, vmData.refreshRate);
+      cpType, rSelected->Width(), rSelected->Height(), stMRequested,
+      moSelected->Index(), stVRequested, rSelected->Index(),
+      rSelected->Refresh());
   }
   /* -- Translate user specified window dimensions ------------------------- */
   void TranslateUserSize(int &iW, int &iH) const
   { // Get window size specified by user
-    iW = iWinWidthReq;
-    iH = iWinHeightReq;
+    iW = DimGetWidth();
+    iH = DimGetHeight();
     // If size is not valid? Report result and return
     if(iW > 0 && iH > 0)
       return cLog->LogDebugExSafe(
         "Display using user specified dimensions of $x$.", iW, iH);
     // We need a selected video resolution
-    if(!vSelected)
+    if(!rSelected)
     { // Set defaults
       iW = 640;
       iH = 480;
@@ -503,15 +459,13 @@ static class Display final :
         "detect the best dimensions for the window because the current "
         "desktop resolution was not detected properly! Using fallback default "
         "of $x$.", iW, iH);
-    } // Get selected resolution as reference
-    const GLFWvidmode &vmData = *vSelected;
-    // Convert selected height to double as we need to use it twice
-    const double fdHeight = static_cast<double>(vmData.height);
+    } // Convert selected height to double as we need to use it twice
+    const double fdHeight = static_cast<double>(rSelected->Height());
     // Set the height to 80% of desktop height
     iH = static_cast<int>(ceil(fdHeight * 0.8));
     // Now set the width based on desktop aspect ratio
     iW = static_cast<int>(ceil(static_cast<double>(iH) *
-      (static_cast<double>(vmData.width) / fdHeight)));
+      (static_cast<double>(rSelected->Width()) / fdHeight)));
     // Report result
     cLog->LogDebugExSafe("Display translated user size to $x$.", iW, iH);
   }
@@ -520,24 +474,22 @@ static class Display final :
   { // Bail if not in full screen
     if(FlagIsSet(DF_INFULLSCREEN)) { iX = iY = 0; return; }
     // Must have current desktop information
-    if(!mSelected)
+    if(!moSelected->Context())
     { // Clear co-ordinates
       iX = iY = 0;
       // Put message in  log
       cLog->LogWarningSafe(
         "Display class cannot centre the window without monitor data.");
       return;
-    } // Get desktop mode
-    const GLFWvidmode*const vmData = glfwGetVideoMode(mSelected);
-    // Get new co-ordinates
-    iX = (vmData->width / 2) - (iW / 2);
-    iY = (vmData->height / 2) - (iH / 2);
+    } // Get new co-ordinates
+    iX = (rSelected->Width() / 2) - (iW / 2);
+    iY = (rSelected->Height() / 2) - (iH / 2);
   }
   /* -- Translate co-ordinates --------------------------------------------- */
   void TranslateUserCoords(int &iX, int &iY, const int iW, const int iH) const
   { // Put user values into window co-ordinates
-    iX = iWinDefX;
-    iY = iWinDefY;
+    iX = CoordGetX();
+    iY = CoordGetY();
     // Centre window?
     if(iX==-2 || iY==-2) GetCentreCoords(iX, iY, iW, iH);
   }
@@ -548,7 +500,6 @@ static class Display final :
     // Window mode selected
     else ReInitDesktopModeWindow();
     // Update window attributes
-    cGlFW->WinSetResizableAttrib(FlagIsSet(DF_SIZABLE));
     cGlFW->WinSetFloatingAttrib(FlagIsSet(DF_FLOATING));
     cGlFW->WinSetAutoIconifyAttrib(FlagIsSet(DF_AUTOICONIFY));
     cGlFW->WinSetFocusOnShowAttrib(FlagIsSet(DF_AUTOFOCUS));
@@ -588,7 +539,15 @@ static class Display final :
     // Focused and no longer restarting
     FlagSetAndClear(DF_FOCUSED, DF_RESTARTING);
   }
-  /* -- Request from alternative thread to resize window ----------- */ public:
+  /* -- Get monitors list ------------------------------------------ */ public:
+  const GlFWMonitors &GetMonitors(void) const { return mlData; }
+  /* -- Get monitors cound ------------------------------------------------- */
+  size_t GetMonitorsCount(void) const { return mlData.size(); }
+  /* -- Return selected monitor -------------------------------------------- */
+  const GlFWMonitor *GetSelectedMonitor(void) const { return moSelected; }
+  /* -- Return selected resolution ----------------------------------------- */
+  const GlFWRes *GetSelectedRes(void) const { return rSelected; }
+  /* -- Request from alternative thread to resize window ------------------- */
   void RequestResize(const int iW, const int iH)
     { cEvtWin->AddUnblock(EWC_WIN_RESIZE, iW, iH); }
   /* -- Request from alternative thread to move window --------------------- */
@@ -601,9 +560,9 @@ static class Display final :
     { cEvtWin->AddUnblock(EWC_WIN_TOGGLE_FS, bState); }
   /* -- Request from alternative thread to reposition the window ----------- */
   void RequestReposition(void) { cEvtWin->AddUnblock(EWC_WIN_RESET); }
-  /* -- Set full screen ---------------------------------------------------- */
+  /* -- Set full screen in Window thread ----------------------------------- */
   void SetFullScreen(const bool bState)
-  { // Return if setting not different than actual
+  {// Return if setting not different than actual
     if(FlagIsEqualToBool(DF_INFULLSCREEN, bState)) return;
     // Update new fullscreen setting and re-initialise if successful
     ReInitWindow(bState);
@@ -611,7 +570,7 @@ static class Display final :
     cEvtMain->Add(EMC_VID_MATRIX_REINIT);
   }
   /* -- Return current video mode refresh rate ----------------------------- */
-  int GetRefreshRate(void) { return vSelected->refreshRate; }
+  int GetRefreshRate(void) { return rSelected->Refresh(); }
   /* -- Set maximised at startup ------------------------------------------- */
   CVarReturn SetMaximisedMode(const bool bState)
     { FlagSetOrClear(DF_MAXIMISED, bState); return ACCEPT; }
@@ -644,10 +603,10 @@ static class Display final :
     { return CVarSimpleSetIntNLG(iAuxBuffers, iCount, GLFW_DONT_CARE, 16); }
   /* -- Set window width --------------------------------------------------- */
   CVarReturn WidthChanged(const int iWidth)
-    { return CVarSimpleSetInt(iWinWidthReq, iWidth); }
+    { DimSetWidth(iWidth); return ACCEPT; }
   /* -- Set window height -------------------------------------------------- */
   CVarReturn HeightChanged(const int iHeight)
-    { return CVarSimpleSetInt(iWinHeightReq, iHeight); }
+    { DimSetHeight(iHeight); return ACCEPT; }
   /* -- Set full-screen cvar ----------------------------------------------- */
   CVarReturn BorderChanged(const bool bState)
     { FlagSetOrClear(DF_BORDER, bState); return ACCEPT; }
@@ -683,14 +642,26 @@ static class Display final :
     { FlagSetOrClear(DF_AUTOFOCUS, bState); return ACCEPT; }
   /* -- Set full-screen video mode cvar ------------------------------------ */
   CVarReturn FullScreenModeChanged(const int iVId)
-    { return CVarSimpleSetIntNL(iVRequested, iVId, -2); }
+  { // Return if invalid full-screen mode
+    if(iVId < -2) return DENY;
+    // Set video mode requested
+    stVRequested = static_cast<size_t>(iVId);
+    // Accepted
+    return ACCEPT;
+  }
   /* -- Set monitor number ------------------------------------------------- */
   CVarReturn MonitorChanged(const int iMId)
-    { return CVarSimpleSetIntNL(iMRequested, iMId, -1); }
+  { // Return if invalid full-screen mode
+    if(iMId < -1) return DENY;
+    // Set video mode requested
+    stMRequested = static_cast<size_t>(iMId);
+    // Accepted
+    return ACCEPT;
+  }
   /* -- Set window X position ---------------------------------------------- */
   CVarReturn SetXPosition(const int iNewX)
   { // Deny change request if an invalid value was sent
-    if(!CVarToBoolReturn(CVarSimpleSetInt(iWinDefX, iNewX))) return DENY;
+    CoordSetX(iNewX);
     // Apply window position if window is available
     if(cGlFW && cGlFW->WinIsAvailable()) RequestReposition();
     // Success
@@ -699,7 +670,7 @@ static class Display final :
   /* -- Set window Y position ---------------------------------------------- */
   CVarReturn SetYPosition(const int iNewY)
   { // Deny change request if an invalid value was sent
-    if(!CVarToBoolReturn(CVarSimpleSetInt(iWinDefY, iNewY))) return DENY;
+    CoordSetY(iNewY);
     // Apply window position if window is available
     if(cGlFW && cGlFW->WinIsAvailable()) RequestReposition();
     // Success
@@ -711,7 +682,7 @@ static class Display final :
     if(!CVarToBoolReturn(CVarSimpleSetIntNLG(fGamma, fNewGamma, 0.25f, 4.00f)))
       return DENY;
     // Apply new gamma setting if window is available
-    if(cGlFW && cGlFW->WinIsAvailable() && mSelected) ApplyGamma();
+    if(cGlFW && cGlFW->WinIsAvailable() && moSelected->Context()) ApplyGamma();
     // Success
     return ACCEPT;
   }
@@ -719,46 +690,11 @@ static class Display final :
   CVarReturn SetIcon(const string &strF, string&)
     { return BoolToCVarReturn(strF.empty() || SetIcon(strF)); }
   /* -- Get selected monitor id -------------------------------------------- */
-  int GetMonitorId(void) const { return iMSelected; }
+  int GetMonitorId(void) const { return moSelected->Index(); }
   /* -- Get selected video mode id ----------------------------------------- */
-  int GetVideoModeId(void) const { return iVSelected; }
-  /* -- Get video mode data ------------------------------------------------ */
-  const GLFWvidmode &GetVideoMode(const int iMId, const int iVId) const
-  { // Num monitors and num modes
-    int iMonitors, iModes;
-     // Get monitors list
-    GLFWmonitor*const*const mData = GlFWGetMonitors(iMonitors);
-    // Bail if monitor id invalid
-    if(iMId < 0 || iMId >= iMonitors)
-      XC("Invalid monitor id number!",
-         "iMId", iMId, "iMonitors", iMonitors);
-    // Get number of video modes for
-    const GLFWvidmode*const vData = glfwGetVideoModes(mData[iMId], &iModes);
-    // Bail if monitor id invalid
-    if(iVId < 0 || iVId >= iModes)
-      XC("Invalid video mode id number!",
-         "iVId", iVId, "iModes", iModes, "iMId", iMId, "iMonitors", iMonitors);
-    // Return video mode info
-    return vData[iVId];
-  }
-  /* -- Get video mode count ----------------------------------------------- */
-  int GetVideoModes(const int iId) const
-  { // Num monitors and num modes
-    int iMonitors, iModes;
-     // Get monitors list
-    GLFWmonitor*const*const mData = GlFWGetMonitors(iMonitors);
-    // Bail if monitor id invalid
-    if(iId < 0 || iId >= iMonitors)
-      XC("Invalid monitor id number",
-         "iId", iId, "iMonitors", iMonitors);
-    // Get number of video modes for
-    glfwGetVideoModes(mData[iId], &iModes);
-    // Return number of video modes
-    return iModes;
-  }
+  int GetVideoModeId(void) const { return rSelected->Index(); }
   /* -- Init info ---------------------------------------------------------- */
-  const char *GetMonitorName(void) const
-    { return glfwGetMonitorName(mSelected); }
+  const string &GetMonitorName(void) const { return moSelected->Name(); }
   /* -- Set default matrix ------------------------------------------------- */
   void SetDefaultMatrix(const bool bForce) const
   { // Set the default matrix from the configuration and if it was changed
@@ -784,10 +720,10 @@ static class Display final :
     // If using interactive mode?
     if(cSystem->IsGuiMode(GM_GRAPHICS))
     { // Ignore if no icons
-      if(giImages.empty()) return;
+      if(gilIcons.empty()) return;
       // Capture exceptions and ask GLFW to set the icon
-      try { cGlFW->WinSetIcon(IntOrMax<int>(giImages.size()),
-              giImages.data()); }
+      try { cGlFW->WinSetIcon(IntOrMax<int>(gilIcons.size()),
+              gilIcons.data()); }
       // Exception occured? GLFW can throw GLFW_PLATFORM_ERROR on Wayland which
       // is absolutely retarded as is not consistent with other platforms such
       // as MacOS which will silently succeed
@@ -795,17 +731,17 @@ static class Display final :
       { // Just log the error that occured
         cLog->LogWarningExSafe(
           "Display could not load $ icon files due to GlFW exception: $.",
-            giImages.size(), e.what());
+            gilIcons.size(), e.what());
         // Done
         return;
       } // Report that we updated the icons
       cLog->LogInfoExSafe("Display updated $ windows icons." ,
-        giImages.size());
+        gilIcons.size());
       // Show details?
       if(cLog->HasLevel(LH_DEBUG))
-        for(Image &imC : imgIcons)
+        for(Image &imC : ilIcons)
         { // Get first icon
-          ImageSlot &imsD = imC.front();
+          const ImageSlot &imsD = imC.GetSlotsConst().front();
           // Write data
           cLog->LogNLCDebugExSafe("- $x$x$: $.",
             imsD.DimGetWidth(), imsD.DimGetHeight(),
@@ -824,20 +760,20 @@ static class Display final :
     // If using interactive mode?
     if(cSystem->IsGuiMode(GM_GRAPHICS))
     { // Clear images and icons
-      giImages.clear();
-      imgIcons.clear();
+      gilIcons.clear();
+      ilIcons.clear();
       // Create contiguous memory for glfw icon descriptors and icon data
-      giImages.reserve(tIcons.size());
-      imgIcons.reserve(tIcons.size());
+      gilIcons.reserve(tIcons.size());
+      ilIcons.reserve(tIcons.size());
       // Build icons
       for(string &strName : tIcons)
       { // Check filename
         DirVerifyFileNameIsValid(strName);
         // Load icon as RGB 32BPP.
-        Image &imC = imgIcons.emplace_back(
-          Image{ std::move(strName), IL_REVERSE|IL_TORGB|IL_TO32BPP });
-        ImageSlot &imsD = imC.front();
-        giImages.emplace_back(GLFWimage{
+        const Image &imC = ilIcons.emplace_back(
+          Image{ StdMove(strName), IL_REVERSE|IL_TORGB|IL_TO32BPP });
+        const ImageSlot &imsD = imC.GetSlotsConst().front();
+        gilIcons.emplace_back(GLFWimage{
           imsD.DimGetWidth<int>(), imsD.DimGetHeight<int>(),
           imsD.Ptr<unsigned char>() });
       }
@@ -847,16 +783,24 @@ static class Display final :
 #if defined(WINDOWS)
       // Have two icons at least?
       if(tIcons.size() >= 2)
-      { // Set small icon from the last icon specified
-        Image imC{ std::move(*prev(tIcons.cend())), IL_REVERSE|IL_TOBGR };
-        ImageSlot &imsD = imC.front();
+      { // Get string
+        // Set small icon from the last icon specified
+        string &strFile = *tIcons.end();
+        const Image imC{ StdMove(strFile), IL_REVERSE|IL_TOBGR };
+        const ImageSlot &imsD = imC.GetSlotsConst().front();
         cSystem->SetSmallIcon(imC.IdentGet(), imsD.DimGetWidth(),
           imsD.DimGetHeight(), imC.GetBitsPerPixel(), imsD);
       } // Set large icon from the first icon specified
-      Image imC{ std::move(*next(tIcons.cbegin())), IL_REVERSE|IL_TOBGR };
-      ImageSlot &imsD = imC.front();
+      string &strFile = *tIcons.begin();
+      const Image imC{ StdMove(strFile), IL_REVERSE|IL_TOBGR };
+      const ImageSlot &imsD = imC.GetSlotsConst().front();
       cSystem->SetLargeIcon(imC.IdentGet(), imsD.DimGetWidth(),
         imsD.DimGetHeight(), imC.GetBitsPerPixel(), imsD);
+     // Not using windows?
+#else
+     // Log that we cannot set icons
+     cLog->LogDebugSafe("Display cannot set icons on this mode and system.");
+     // Windows check?
 #endif
     } // Success
     return true;
@@ -875,45 +819,45 @@ static class Display final :
     IHInitialise();
     // Log progress
     cLog->LogDebugExSafe("Display class starting up...");
-    // Inform main fbo class of our transparency setting
-    cFboMain->fboMain.SetTransparency(FlagIsSet(DF_TRANSPARENT));
     // Enumerate monitors and video modes
     EnumerateMonitorsAndVideoModes();
+    // Inform main fbo class of our transparency setting
+    cFboMain->fboMain.SetTransparency(FlagIsSet(DF_TRANSPARENT));
     // We are using the OpenGL 3.2 forward compatible API
-    GlFWSetClientAPI(GLFW_OPENGL_API);
-    GlFWSetContextVersion(3, 2);
-    GlFWSetCoreProfile(GLFW_OPENGL_CORE_PROFILE);
-    GlFWSetForwardCompatEnabled();
-    GlFWSetRobustness(GLFW_LOSE_CONTEXT_ON_RESET);
+    cGlFW->GlFWSetClientAPI(GLFW_OPENGL_API);
+    cGlFW->GlFWSetContextVersion(3, 2);
+    cGlFW->GlFWSetCoreProfile(GLFW_OPENGL_CORE_PROFILE);
+    cGlFW->GlFWSetForwardCompatEnabled();
+    cGlFW->GlFWSetRobustness(GLFW_LOSE_CONTEXT_ON_RESET);
     // Set other settings
-    GlFWSetDebug(FlagIsSet(DF_DEBUG));
-    GlFWSetNoErrors(FlagIsSet(DF_NOERRORS));
-    GlFWSetDoubleBufferEnabled();
-    GlFWSetSRGBCapable(FlagIsSet(DF_SRGB));
-    GlFWSetRefreshRate(vSelected->refreshRate);
-    GlFWSetAuxBuffers(iAuxBuffers);
-    GlFWSetMultisamples(iSamples);
-    GlFWSetMaximised(FlagIsSet(DF_MAXIMISED));
-    GlFWSetStereo(FlagIsSet(DF_STEREO));
-    GlFWSetTransparency(cFboMain->fboMain.IsTransparencyEnabled());
-    GlFWSetDepthBits(0);
-    GlFWSetStencilBits(0);
+    cGlFW->GlFWSetDebug(FlagIsSet(DF_DEBUG));
+    cGlFW->GlFWSetNoErrors(FlagIsSet(DF_NOERRORS));
+    cGlFW->GlFWSetDoubleBufferEnabled();
+    cGlFW->GlFWSetSRGBCapable(FlagIsSet(DF_SRGB));
+    cGlFW->GlFWSetRefreshRate(GetRefreshRate());
+    cGlFW->GlFWSetAuxBuffers(iAuxBuffers);
+    cGlFW->GlFWSetMultisamples(iSamples);
+    cGlFW->GlFWSetMaximised(FlagIsSet(DF_MAXIMISED));
+    cGlFW->GlFWSetStereo(FlagIsSet(DF_STEREO));
+    cGlFW->GlFWSetTransparency(cFboMain->fboMain.IsTransparencyEnabled());
+    cGlFW->GlFWSetDepthBits(0);
+    cGlFW->GlFWSetStencilBits(0);
     // Force custom bit-depth?
     if(iBPPSelected)
-      GlFWSetColourDepth(iBPPSelected, iBPPSelected, iBPPSelected,
+      cGlFW->GlFWSetColourDepth(iBPPSelected, iBPPSelected, iBPPSelected,
         cFboMain->fboMain.IsTransparencyEnabled() ? iBPPSelected : 0);
     // Use default? Set regular depth buffer bits
-    else GlFWSetColourDepth(vSelected->redBits, vSelected->greenBits,
-      vSelected->blueBits, cFboMain->fboMain.IsTransparencyEnabled() ? 8 : 0);
+    else cGlFW->GlFWSetColourDepth(rSelected->Red(), rSelected->Green(),
+      rSelected->Blue(), cFboMain->fboMain.IsTransparencyEnabled() ? 8 : 0);
     // Set Apple operating system only settings
 #if defined(MACOS)
-    GlFWSetRetinaMode(FlagIsSet(DF_HIDPI));
-    GlFWSetGPUSwitching(FlagIsSet(DF_GASWITCH));
+    cGlFW->GlFWSetRetinaMode(FlagIsSet(DF_HIDPI));
+    cGlFW->GlFWSetGPUSwitching(FlagIsSet(DF_GASWITCH));
 #endif
     // Get window name and use it for frame and instance name. It's assumed
     // that 'cpTitle' won't be freed while using it these two times.
     const char*const cpTitle = cCVars->GetInternalCStrSafe(APP_TITLE);
-    GlFWSetFrameName(cpTitle);
+    cGlFW->GlFWSetFrameName(cpTitle);
     // Initialise basic window. We will modify it after due to limitations in
     // this particular function. For example, this can't set the refresh rate.
     cSystem->WindowInitialised(cGlFW->WinInit(1, 1, cpTitle, nullptr));
@@ -951,11 +895,11 @@ static class Display final :
     // Have window?
     if(cGlFW->WinIsAvailable())
     { // If we have monitor?
-      if(mSelected)
+      if(moSelected->Context())
       { // Restore gamma (this fails if theres no window).
-        GlFWSetGamma(mSelected, 1.0);
+        GlFWSetGamma(moSelected->Context(), 1.0);
         // Monitor no longer valid
-        mSelected = nullptr;
+        moSelected = nullptr;
       } // Tell system we destroyed the window
       cSystem->SetWindowDestroyed();
       // Actually destroy window
@@ -968,9 +912,9 @@ static class Display final :
       cLog->LogDebugExSafe(
         "Display window handle and context destruction skipped.");
       // Can't restore gamma without window
-      mSelected = nullptr;
+      moSelected = nullptr;
     } // Clear selected video mode
-    vSelected = nullptr;
+    rSelected = nullptr;
     // Log progress
     cLog->LogInfoExSafe("Display class deinitialised successfully.");
   }
@@ -998,21 +942,18 @@ static class Display final :
       { EWC_WIN_RESIZE,    bind(&Display::OnResize,   this, _1) },
       { EWC_WIN_MOVE,      bind(&Display::OnMove,     this, _1) },
       { EWC_WIN_SETICON,   bind(&Display::OnSetIcon,  this, _1) },
+      { EWC_WIN_SETICON,   bind(&Display::OnSetIcon,  this, _1) },
     },
-    mSelected(nullptr),                // No monitor selected
-    iMRequested(-1),                   // No monitor requested
-    iMSelected(-1),                    // No monitor id selected
-    vSelected(nullptr),                // No video mode selected
-    iVRequested(-1),                   // No video mode id requested
-    iVSelected(-1),                    // No video mode id selected
+    DimCoInt{ -1, -1, 0, 0 },          // Requested position and size
+    moSelected(nullptr),               // No monitor selected
+    stMRequested(string::npos),        // No monitor requested
+    rSelected(nullptr),                // No video mode selected
+    stVRequested(string::npos),        // No video mode id requested
     iBPPSelected(-1),                  // Bit depth not selected yet
     fGamma(0),                         // Gamma initialised by CVars
     fOrthoWidth(0.0f),                 // Ortho width initialised by CVars
     fOrthoHeight(0.0f),                // Ortho height initialised by CVars
     iWinPosX(-1), iWinPosY(-1),        // No initial window position
-    iWinDefX(-1), iWinDefY(-1),        // No default window position
-    iWinWidthReq(0),                   // No initial min width requested
-    iWinHeightReq(0),                  // No initial min height requested,
     fWinScaleWidth(1.0),               // No initial scale width
     fWinScaleHeight(1.0),              // No initial scale height
     iAuxBuffers(0),                    // No auxiliary buffers specified
@@ -1021,9 +962,9 @@ static class Display final :
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Destructor --------------------------------------------------------- */
-  DTORHELPER(~Display, DeInit());
+  DTORHELPER(~Display, DeInit())
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Display);            // Do not need copy defaults
+  DELETECOPYCTORS(Display)             // Do not need copy defaults
   /* ----------------------------------------------------------------------- */
 } *cDisplay = nullptr;                 // Pointer to static class
 /* -- Monitor changed static event ----------------------------------------- */

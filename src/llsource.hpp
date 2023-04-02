@@ -16,7 +16,7 @@
 // ! changing volume, pitch, position and other things. It can only be       */
 // ! created by the Sample:Play() function.
 /* ========================================================================= */
-LLNAMESPACEBEGIN(Source)               // Stream namespace
+namespace NsSource {                   // Stream namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfSource;              // Using source namespace
 /* ========================================================================= */
@@ -247,36 +247,16 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Source));
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Source:* member functions begin
-  LLRSFUNC(Destroy),                   // Destroy internal source object
-  LLRSFUNC(GetDirection),              // Current source direction
-  LLRSFUNC(GetElapsed),                // Current source elapsed time
-  LLRSFUNC(GetGain),                   // Current source gain
-  LLRSFUNC(GetLooping),                // Current source is looping?
-  LLRSFUNC(GetMaxDist),                // Current source maximum distance
-  LLRSFUNC(GetMaxGain),                // Current source maximum gain
-  LLRSFUNC(GetMinGain),                // Current source minimum gain
-  LLRSFUNC(GetPitch),                  // Current source pitch
-  LLRSFUNC(GetPosition),               // Current source position
-  LLRSFUNC(GetRefDist),                // Current source ref distance
-  LLRSFUNC(GetRelative),               // Current source is relative?
-  LLRSFUNC(GetRollOff),                // Current source roll off
-  LLRSFUNC(GetState),                  // Current source playback state
-  LLRSFUNC(GetVelocity),               // Current source velocity
-  LLRSFUNC(Play),                      // Play the source
-  LLRSFUNC(SetDirection),              // Set source direction
-  LLRSFUNC(SetElapsed),                // Set source elapsed time
-  LLRSFUNC(SetGain),                   // Set source gain
-  LLRSFUNC(SetLooping),                // Set source is looping?
-  LLRSFUNC(SetMaxDist),                // Set source maximum distance
-  LLRSFUNC(SetMaxGain),                // Set source maximum gain
-  LLRSFUNC(SetMinGain),                // Set source minimum gain
-  LLRSFUNC(SetPitch),                  // Set source pitch
-  LLRSFUNC(SetPosition),               // Set source position
-  LLRSFUNC(SetRefDist),                // Set source ref distance
-  LLRSFUNC(SetRelative),               // Set source is relative?
-  LLRSFUNC(SetRollOff),                // Set source roll off
-  LLRSFUNC(SetVelocity),               // Set source velocity
-  LLRSFUNC(Stop),                      // Stop the source
+  LLRSFUNC(Destroy),     LLRSFUNC(GetDirection), LLRSFUNC(GetElapsed),
+  LLRSFUNC(GetGain),     LLRSFUNC(GetLooping),   LLRSFUNC(GetMaxDist),
+  LLRSFUNC(GetMaxGain),  LLRSFUNC(GetMinGain),   LLRSFUNC(GetPitch),
+  LLRSFUNC(GetPosition), LLRSFUNC(GetRefDist),   LLRSFUNC(GetRelative),
+  LLRSFUNC(GetRollOff),  LLRSFUNC(GetState),     LLRSFUNC(GetVelocity),
+  LLRSFUNC(Play),        LLRSFUNC(SetDirection), LLRSFUNC(SetElapsed),
+  LLRSFUNC(SetGain),     LLRSFUNC(SetLooping),   LLRSFUNC(SetMaxDist),
+  LLRSFUNC(SetMaxGain),  LLRSFUNC(SetMinGain),   LLRSFUNC(SetPitch),
+  LLRSFUNC(SetPosition), LLRSFUNC(SetRefDist),   LLRSFUNC(SetRelative),
+  LLRSFUNC(SetRollOff),  LLRSFUNC(SetVelocity),  LLRSFUNC(Stop),
 LLRSEND                                // Source:* member functions end
 /* ========================================================================= */
 /* ######################################################################### */
@@ -286,5 +266,5 @@ LLRSEND                                // Source:* member functions end
 LLRSBEGIN                              // Source.* namespace functions begin
 LLRSEND                                // Source.* namespace functions end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of Stream namespace
+}                                      // End of Stream namespace
 /* == EoF =========================================================== EoF == */

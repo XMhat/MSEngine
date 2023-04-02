@@ -24,7 +24,7 @@ local function InitRace()
     -- Setup lobby texture
     local texLobby = aResources[1].H;
     texLobby:TileSTC(1);
-    texLobby:TileS(0, 0, 272, 512, 512);
+    texLobby:TileS(0, 0, 272, 428, 512);
     -- Get texture resource and trim texcoords list to 5
     local texRace = aResources[2].H;
     texRace:TileSTC(5);
@@ -57,7 +57,7 @@ local function InitRace()
     -- Render race
     local function RenderRace()
       -- Draw backdrop, race screen and it's shadow
-      texLobby:BlitLT(-96, 0);
+      texLobby:BlitLT(-54, 0);
       texRace:BlitSLT(iTileBG, 8, 8);
       RenderShadow(8, 8, 312, 208);
       -- Draw race and title text

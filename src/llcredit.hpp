@@ -14,7 +14,7 @@
 /* ------------------------------------------------------------------------- */
 // ! Allows access to engine credits information.
 /* ========================================================================= */
-LLNAMESPACEBEGIN(Credit)               // Credit namespace
+namespace NsCredit {                   // Credit namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfCredit;              // Using credit namespace
 /* ========================================================================= */
@@ -29,7 +29,7 @@ using namespace IfCredit;              // Using credit namespace
 // ? Shows the full credits information of the specified api index.
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(Item)
-  const CreditLib &libItem = CreditGetItem(
+  const CreditLib &libItem = cCredits->CreditGetItem(
     LCGETINTLGE(CreditEnums, 1, CL_FIRST, CL_MAX, "Id"));
   LCPUSHXSTR(libItem.GetName());       LCPUSHXSTR(libItem.GetVersion());
   LCPUSHBOOL(libItem.IsCopyright());   LCPUSHXSTR(libItem.GetAuthor());
@@ -41,24 +41,22 @@ LLFUNCENDEX(4)
 // < Text:string=Full text file of the licence.
 // ? Shows the full licence information of the specified index.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Licence, 1, LCPUSHXSTR(CreditGetItemText(
+LLFUNCEX(Licence, 1, LCPUSHXSTR(cCredits->CreditGetItemText(
   LCGETINTLGE(CreditEnums, 1, CL_FIRST, CL_MAX, "Id"))));
 /* ========================================================================= */
 // $ Credit.Total
 // < Total:integer=Number of credits used in the executable.
 // ? Returns the number of API's stored in the executable.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Total, 1, LCPUSHINT(CreditGetItemCount()));
+LLFUNCEX(Total, 1, LCPUSHINT(cCredits->CreditGetItemCount()));
 /* ========================================================================= */
 /* ######################################################################### */
 /* ## Credit.* namespace functions structure                              ## */
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Credit.* namespace functions begin
-  LLRSFUNC(Item),                      // Return specific credit information
-  LLRSFUNC(Licence),                   // Return specific licence information
-  LLRSFUNC(Total),                     // Return total credits
+  LLRSFUNC(Item), LLRSFUNC(Licence), LLRSFUNC(Total),
 LLRSEND                                // Credit.* namespace functions end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of Credit namespace
+}                                      // End of Credit namespace
 /* == EoF =========================================================== EoF == */

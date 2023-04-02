@@ -56,7 +56,7 @@ local function InitMap()
     -- Set texture handles
     local texZone1 = aRes[1].H;
     texZone1:TileS(0, 0, 0, 512, 350);
-    local iTileFlagTexId<const> = texZone1:TileA(480, 480, 512, 512);
+    local iTileFlagTexId<const> = texZone1:TileA(512, 0, 544, 32);
     local texZone2 = aRes[2].H;
     texZone2:TileS(0, 0, 0, 128, 350);
     -- Render the map

@@ -72,14 +72,14 @@ static class FboMain final :           // The main fbo operations manager
     // Buffer the interlaced triangle data
     cOgl->BufferStaticData(fboMain.GetDataSize(), fboMain.GetData());
     // Specify format of the interlaced triangle data
-    cOgl->VertexAttribPointer(A_COORD, COMPSPERCOORD, 0,
+    cOgl->VertexAttribPointer(A_COORD, stCompsPerCoord, 0,
       fboMain.GetTCIndex());
-    cOgl->VertexAttribPointer(A_VERTEX, COMPSPERPOS, 0,
+    cOgl->VertexAttribPointer(A_VERTEX, stCompsPerPos, 0,
       fboMain.GetVIndex());
-    cOgl->VertexAttribPointer(A_COLOUR, COMPSPERCOLOUR, 0,
+    cOgl->VertexAttribPointer(A_COLOUR, stCompsPerColour, 0,
       fboMain.GetCIndex());
     // Blit the two triangles
-    cOgl->DrawArraysTriangles(TWOTRIANGLES);
+    cOgl->DrawArraysTriangles(stTwoTriangles);
     // Flip buffers which also causes a finish and waits for vsync
     cGlFW->WinSwapGLBuffers();
     // Update memory
@@ -99,9 +99,9 @@ static class FboMain final :           // The main fbo operations manager
     FboRender();
     // We don't want to swap if the guest has chosen not to draw but we should
     // at least wait if the timer isn't already waiting or the GPU is going to
-    // be locked at 100% in siutations where the engine is in standby mode with
+    // be locked at 100% in situations where the engine is in standby mode with
     // an empty tick function.
-    if(!CanDraw()) return TimerForceWait();
+    if(!CanDraw()) return cTimer->TimerForceWait();
     // Clear redraw flag
     ClearDraw();
     // Swap the buffers
@@ -120,9 +120,6 @@ static class FboMain final :           // The main fbo operations manager
     // Flush main fbo
     fboMain.Flush();
   }
-  /* -- Initialise ortho dimensions ---------------------------------------- */
-  void InitOrthoDimensions(const GLfloat fWidth, const GLfloat fHeight)
-    { fOrthoWidth = fWidth; fOrthoHeight = fHeight; }
   /* -- De-initialise all fbos --------------------------------------------- */
   void DeInitAllObjectsAndBuiltIns(void)
   { // Temporary de-init all user objects
@@ -179,15 +176,23 @@ static class FboMain final :           // The main fbo operations manager
       fTop = 0.0f;
       fRight = fWidth + fAddWidth;
       fBottom = fHeight;
-    } // Save requested ortho size incase viewport changes
-    InitOrthoDimensions(fWidth, fHeight);
-    // Set stage bounds for drawing
-    fboMain.SetOrtho(fLeft, fTop, fRight, fBottom);
-    // Calculate new fbo width and height
+    } // If the viewport didn't change?
+    if(IsFloatEqual(fLeft, fboMain.fcStage.GetCoLeft()) &&
+       IsFloatEqual(fTop, fboMain.fcStage.GetCoTop()) &&
+       IsFloatEqual(fRight, fboMain.fcStage.GetCoRight()) &&
+       IsFloatEqual(fBottom, fboMain.fcStage.GetCoBottom()))
+    { // Return if we're not forcing the change
+      if(!bForce) return false;
+    } // Viewport changed?
+    else
+    { // Save requested ortho size incase viewport changes
+      fOrthoWidth = fWidth;
+      fOrthoHeight = fHeight;
+      // Set stage bounds for drawing
+      fboMain.SetOrtho(fLeft, fTop, fRight, fBottom);
+    } // Calculate new fbo width and height
     const GLsizei stFBOWidth = static_cast<GLsizei>(fRight - fLeft),
                   stFBOHeight = static_cast<GLsizei>(fBottom - fTop);
-    // Re-initialised?
-    bool bResult;
     // No point changing anything if the bounds are the same and if the fbo
     // needs updating? Also ignore if opengl isn't initialised as the GLfW FB
     // reset window event might be sent before we've initialised it!
@@ -196,20 +201,22 @@ static class FboMain final :           // The main fbo operations manager
         bForce) && cOgl->IsGLInitialised())
     { // Re-initialise the main framebuffer
       fboMain.Init("main", stFBOWidth, stFBOHeight);
-      // Re-initialised
-      bResult = true;
+      // Log computations
+      cLog->LogDebugExSafe("Fbo main matrix reinitialised as $x$ [$] "
+        "(D=$x$,A=$<$-$>,AW=$,S=$:$:$:$).",
+        fboMain.GetCoRight(), fboMain.GetCoBottom(),
+        ToRatio(fboMain.GetCoRight(), fboMain.GetCoBottom()),
+          fWidth, fHeight, fAspect, fOrthoMinimum, fOrthoMaximum, fAddWidth,
+          fLeft, fTop, fRight, fBottom);
+      // Everything changed
+      return true;
     } // Re-initialisation required?
-    else bResult = false;
-    // Log computations
-    cLog->LogDebugExSafe("Fbo main matrix $ as $x$ [$] "
+    cLog->LogDebugExSafe("Fbo main matrix recalculated! "
       "(D=$x$,A=$<$-$>,AW=$,S=$:$:$:$).",
-      bResult ? "reinitialised" : "recalculated",
-      fboMain.GetCoRight(), fboMain.GetCoBottom(),
-      ToRatio(fboMain.GetCoRight(), fboMain.GetCoBottom()),
-        fWidth, fHeight, fAspect, fOrthoMinimum, fOrthoMaximum, fAddWidth,
-        fLeft, fTop, fRight, fBottom);
-    // Bounds were changed
-    return bResult;
+      fWidth, fHeight, fAspect, fOrthoMinimum, fOrthoMaximum, fAddWidth,
+      fLeft, fTop, fRight, fBottom);
+    // Only bounds were changed
+    return false;
   }
   /* -- Sent when the window is resized ------------------------------------ */
   bool DoAutoViewport(const GLsizei stWidth, const GLsizei stHeight)
@@ -294,7 +301,7 @@ static class FboMain final :           // The main fbo operations manager
     { return CVarSimpleSetInt(bSimpleMatrix, bState); }
   /* -- Initialise fbos using a different constructor ---------------------- */
   FboMain(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     fOrthoMinimum(1.0f),               fOrthoMaximum(2.0f),
     fOrthoWidth(0.0f),                 fOrthoHeight(0.0f),
     bDraw(false),                      bSimpleMatrix(false),
@@ -304,7 +311,7 @@ static class FboMain final :           // The main fbo operations manager
     /* -- Set pointer to main fbo ------------------------------------------ */
     { cFbos->fboMain = &fboMain; }
   /* -- Destructor --------------------------------------------------------- */
-  DTORHELPER(~FboMain, DestroyAllObjectsAndBuiltIns());
+  DTORHELPER(~FboMain, DestroyAllObjectsAndBuiltIns())
   /* -- FboCore::End ------------------------------------------------------- */
 } *cFboMain = nullptr;                    // Pointer to static class
 /* ------------------------------------------------------------------------- */

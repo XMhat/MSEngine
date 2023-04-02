@@ -14,8 +14,8 @@ using namespace IfLog;                 // Using log namespace
 using namespace IfCollector;           // Using collector namespace
 /* == Thread collector class with global thread id counter ================= */
 BEGIN_COLLECTOREX(Threads, Thread, CLHelperSafe, /* ------------------------ */
-  SafeSizeT        stRunning           /* Number of threads running          */
-);/* ----------------------------------------------------------------------- */
+  SafeSizeT        stRunning;          /* Number of threads running          */
+)/* ------------------------------------------------------------------------ */
 /* == Thread variables class =============================================== */
 class ThreadVariables                  // Thread variables class
 { /* -- Private typedefs ---------------------------------------- */ protected:
@@ -30,17 +30,20 @@ class ThreadVariables                  // Thread variables class
   SafeBool         bRunning;           // Thread is running?
   SafeClkDuration  duStartTime;        // Thread start time
   SafeClkDuration  duEndTime;          // Thread end time
+  const SysThread  stPerf;             // Thread is high performance?
   /* -- Constructor -------------------------------------------------------- */
-  ThreadVariables(void*const vpP,      // Thread user parameter
+  ThreadVariables(const SysThread stP, // Thread is high performance?
+                  void*const vpP,      // Thread user parameter
                   const CBFunc &cbF) : // Thread callback function
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     iExitCode(0),                      // Set exit code to standby
     vpParam(vpP),                      // Set user thread parameter
     threadCallback{ cbF },             // Set thread callback function
     bShouldExit(false),                // Should never exit at first
     bRunning(false),                   // Should never be running at first
     duStartTime{ seconds{ 0 } },       // Never started time
-    duEndTime{ seconds{ 0 } }          // Never finished time
+    duEndTime{ seconds{ 0 } },         // Never finished time
+    stPerf(stP)                        // Set thread high performance
     /* --------------------------------------------------------------------- */
     { }                                // Do nothing else
 };/* ----------------------------------------------------------------------- */
@@ -105,8 +108,10 @@ BEGIN_MEMBERCLASS(Threads, Thread, ICHelperUnsafe),
   static void ThreadMain(void*const vpPtr)
   { // Get pointer to thread class and if valid?
     if(Thread*const tPtr = reinterpret_cast<Thread*>(vpPtr))
-    { // Set thread name in system
-      SysSetThreadName(tPtr->IdentGetCStr());
+    { // Set thread name and priority in system
+      if(!SysInitThread(tPtr->IdentGetCStr(), tPtr->stPerf))
+        cLog->LogWarningExSafe("Thread '$' update priority to $ failed: $!",
+          tPtr->IdentGet(), tPtr->ThreadGetPerf(), LocalError());
       // Run the thread callback
       tPtr->ThreadHandler();
     } // Report the problem
@@ -170,6 +175,9 @@ BEGIN_MEMBERCLASS(Threads, Thread, ICHelperUnsafe),
     { return ::std::this_thread::get_id() == get_id(); }
   bool ThreadIsNotCurrent(void) const { return !ThreadIsCurrent(); }
   /* ----------------------------------------------------------------------- */
+  unsigned int ThreadGetPerf(void) const
+    { return static_cast<unsigned int>(stPerf); }
+  /* ----------------------------------------------------------------------- */
   bool ThreadShouldExit(void) const { return bShouldExit; }
   bool ThreadShouldNotExit(void) const { return !ThreadShouldExit(); }
   /* ----------------------------------------------------------------------- */
@@ -226,46 +234,52 @@ BEGIN_MEMBERCLASS(Threads, Thread, ICHelperUnsafe),
   }
   /* -- Full initialise and execute constructor ---------------------------- */
   Thread(const string &strN,           // Requested Thread name
+         const SysThread stP,          // Thread needs high performance?
          const CBFunc &tC,             // Requested callback function
          void*const vpPtr) :           // User parameter to store
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperThread{ *cThreads, this }, // Automatic (de)registration
     IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     Ident{ strN },                     // Initialise requested thread name
-    ThreadVariables{vpPtr,             // Set requested thread user parameter
+    ThreadVariables{stP,               // Set requested performance
+                    vpPtr,             // Set requested thread user parameter
                     tC},               // Set requested thread callback
     thread{ ThreadMain, this }         // Start the thread straight away
     /* --------------------------------------------------------------------- */
     { }                                // Do nothing else
   /* -- Standby constructor (set everything except user parameter) --------- */
   Thread(const string &strN,           // Requested Thread name
+         const SysThread stP,          // Thread needs high performance?
          const CBFunc &tC) :           // Requested callback function
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperThread{ *cThreads, this }, // Automatic (de)registration
     IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     Ident{ strN },                     // Set requested identifier
-    ThreadVariables{ nullptr, tC }     // Just set callback function
+    ThreadVariables{ stP,nullptr,tC }  // Just set callback function
     /* --------------------------------------------------------------------- */
     { }                                // Do nothing else
   /* -- Standby constructor (set only name) -------------------------------- */
-  explicit Thread(const string &strN) :// Requested Thread name
-    /* -- Initialisation of members ---------------------------------------- */
+  Thread(const string &strN,           // Requested Thread name
+         const SysThread stP) :        // Thread needs high performance?
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperThread{ *cThreads },       // No automatic registration
     IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     Ident{ strN },                     // Set requested identifer
-    ThreadVariables{ nullptr, nullptr } // Initialise nothing else
+    ThreadVariables{ stP, nullptr, nullptr } // Initialise nothing else
     /* --------------------------------------------------------------------- */
     { }                                // Do nothing else
   /* -- Standby constructor ------------------------------------------------ */
-  Thread(void) :                       // No parameters
-    /* -- Initialisation of members ---------------------------------------- */
+  Thread(const SysThread stP) :        // Thread needs high performance?
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperThread{ *cThreads },       // No automatic registration
     IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
-    ThreadVariables{ nullptr, nullptr } // Initialise nothing else
+    ThreadVariables{ stP,
+      nullptr,
+      nullptr }                        // Initialise nothing else
     /* --------------------------------------------------------------------- */
     { }                                // Do nothing else
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Thread);             // Disable copy constructor and operator
+  DELETECOPYCTORS(Thread)              // Disable copy constructor and operator
 };/* ======================================================================= */
 END_COLLECTOREX(Threads,,,,stRunning{0});
 /* -- Thread sync helper --------------------------------------------------- */
@@ -348,7 +362,7 @@ template<class Callbacks>class ThreadSyncHelper : private Callbacks
   }
   /* -- Constructor -------------------------------------------------------- */
   explicit ThreadSyncHelper(Thread &tO) : // Thread being used
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     tOwner(tO),                        // Set thread owner
     bUnlock(false),                    // Initially unlocked
     bAToB(false),                      // Not sending msg from Thread A to B
@@ -356,7 +370,7 @@ template<class Callbacks>class ThreadSyncHelper : private Callbacks
     /* --------------------------------------------------------------------- */
     { }                                // Do nothing else
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(ThreadSyncHelper);   // Omit copy constructor for safety
+  DELETECOPYCTORS(ThreadSyncHelper)    // Omit copy constructor for safety
 };/* ----------------------------------------------------------------------- */
 static size_t ThreadGetRunning(void) { return cThreads->stRunning; }
 /* ------------------------------------------------------------------------- */

@@ -31,6 +31,17 @@ BUILD_SECURE_FLAGS(Socket,
   SS_EVENTERROR          {0x40000000}, SS_READPACKET          {0x80000000}
 );/* == Socket collector class for collector data and custom variables ===== */
 BEGIN_COLLECTOREX(Sockets, Socket, CLHelperUnsafe,
+/* -- Internal registry values for http data ------------------------------- */
+/* We use these key names internally for passing http data around without   */\
+/* creating unneccesary new variables. Let us keep these key names in       */\
+/* binary text because it is impossible for the http server to return       */\
+/* header key names in binary! C++ and LUA can still store keys in binary   */\
+/* as well so this should be safe! ----------------------------------------- */
+const string       strRegVarREQ;         /* Registry key name for req data    */\
+const string       strRegVarBODY;        /* " for http body data              */\
+const string       strRegVarPROTO;       /* " for http protocol data          */\
+const string       strRegVarCODE;        /* " for http status code data       */\
+const string       strRegVarMETHOD;      /* " for http method string          */\
 /* -- Variables ------------------------------------------------------------ */
 SafeInt            iOCSP;              /* Use OCSP (0=Off;1=On;2=Strict)    */\
 SafeSizeT          stBufferSize;       /* Default recv/send buffer size     */\
@@ -41,7 +52,7 @@ SafeUInt64         qRX;                /* Total bytes received              */\
 SafeUInt64         qTX;                /* Total bytes sent                  */\
 SafeUInt64         qRXp;               /* Total packets received            */\
 SafeUInt64         qTXp;               /* Total packets sent                */\
-SafeSizeT          stConnected,,       /* Total connected sockets           */\
+SafeSizeT          stConnected;,,      /* Total connected sockets           */\
 /* -- Derived classes ----------------------------------------------------- */\
 public  Certs,                         /* Certificate store                 */\
 private LuaEvtMaster<Socket,LuaEvtTypeAsync<Socket>>);
@@ -52,18 +63,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   public Lockable,                     // Lua garbage collector instruction
   public SocketFlags,                  // Socket flags
   public Ident                         // Identifier
-{ /* -- Internal registry values for http data -------------------- */ private:
-  /* We use these key names internally for passing http data around without  */
-  /* creating unneccesary new variables. Let us keep these key names in      */
-  /* binary text because it is impossible for the http server to return      */
-  /* header key names in binary! C++ and LUA can still store keys in binary  */
-  /* as well so this should be safe! --------------------------------------- */
-#define SK_VAR_REQ              "\001" // Registry key name for request data
-#define SK_VAR_BODY             "\002" // " for http body data
-#define SK_VAR_PROTO            "\003" // " for http protocol data
-#define SK_VAR_CODE             "\004" // " for http status code data
-#define SK_VAR_METHOD           "\005" // " for http method string
-  /* ----------------------------------------------------------------------- */
+{ /* ----------------------------------------------------------------------- */
   struct Packet                        // Connection packet
   { /* --------------------------------------------------------------------- */
     ClkTimePoint   dTimestamp;         // Packet timestamp
@@ -141,7 +141,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     // Set our own error code
     iError = -1;
     // Set the error as the reason
-    strError = std::move(strReason);
+    strError = StdMove(strReason);
     // Done
     return -1;
   }
@@ -169,35 +169,9 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     if(IsDisconnectingOrDisconnected()) return -1;
     // Clear the error
     strError.clear();
-    iError = -1;
     // Process errors... Only show errors we can actually report on
-    // See ERR.H for actual error codes.
-    while(const unsigned long ulErr = ERR_get_error())
-    { // Set error number and string
-      iError = static_cast<int>(ulErr);
-      // If the operating system has the reason?
-      if(ERR_GET_LIB(ulErr) == ERR_LIB_SYS ||
-         ERR_GET_REASON(ulErr) == ERR_R_SYS_LIB)
-      { // Get system error code and format it
-        iError = cSystem->LastSocketOrSysError();
-        strError = SysError(iError);
-        // If no error set? Store what OpenSSL actually sent
-        if(strError.empty()) strError = CryptGetErrorReason(ulErr);
-        // Remove the rest of the errors because system errors are best
-        else ERR_clear_error();
-      } // An error we don't need to specially process
-      else
-      { // Clear the error and make room for the error message
-        strError = CryptGetErrorReason(ulErr);
-        // If theres a colon in it, delete everything up to that colon
-        const size_t stColon = strError.find_last_of(':');
-        if(stColon != string::npos)
-          strError = Capitalise(strError.substr(stColon + 1));
-        // Free unused memory since the logevity of this value can be a while
-        strError.shrink_to_fit();
-      } // Say the reason
-      SocketLogUnsafe(LH_WARNING, "$", strError);
-    } // Use supplied reason if no error string found
+    iError = CryptGetError(strError);
+    SocketLogUnsafe(LH_WARNING, "$", strError);
     if(strError.empty()) strError = strReason;
     // Break loop
     return -1;
@@ -297,9 +271,9 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
          "Address", strAddr, "Port", uiPort);
     // Get first top packet and move data to memblock supplied by caller
     Packet &pData = bData.front();
-    aPacket.SwapMemory(std::move(pData.aPacket));
+    aPacket.SwapMemory(StdMove(pData.aPacket));
     // Copy record timestamp
-    const ClkTimePoint dTS{ std::move(pData.dTimestamp) };
+    const ClkTimePoint dTS{ StdMove(pData.dTimestamp) };
     // Subtract total bytes counter
     stS -= aPacket.Size();
     // Pop first RX packet
@@ -409,9 +383,8 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   /* -- Create connection with select used to monitor for timeout ---------- */
   int DoConnect(void)
   { // Set hostname (always returns 1).
-    if(BIO_set_conn_hostname(bSocket,
-      const_cast<char*>(GetAddressAndPort().c_str())) != 1)
-        return SetErrorSafe("Resolve failed");
+    if(CryptBIOSetConnHostname(bSocket, GetAddressAndPort().c_str()) != 1)
+      return SetErrorSafe("Resolve failed");
     // Log and do secure connection
     SocketLogSafe(LH_DEBUG, "$onnecting...", IsSecure() ? "Securely c" : "C");
     // Set connecting flag. Do send an event for this
@@ -425,7 +398,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     // Set descriptor and set error if failed
     if(!UpdateDescriptor()) return SetErrorSafe("Lost descriptor");
     // Get and check pointer to address data
-    if(const BIO_ADDR*const baData = BIO_get_conn_address(bSocket))
+    if(const BIO_ADDR*const baData = CryptBIOGetConnAddress(bSocket))
     { // Setup query commands for host and IP data
       struct AddressData{ const int iId; string &strDest; };
       const array<const AddressData,2> adCmds
@@ -591,7 +564,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       SSL_CTX_set_mode(cContext, SSL_MODE_RELEASE_BUFFERS);
       // Set our shared certificate store if we have one
       if(cParent.CertsIsStoreAvailable() &&
-        !SSL_CTX_set1_verify_cert_store(cContext, cParent.CertsGetStore()))
+        !CryptSSLCtxSet1VerifyCertStore(cContext, cParent.CertsGetStore()))
           return SetErrorStaticSafe("Cert store failure");
       // Setup security
       if(SetupVerification() == -1) return -1;
@@ -599,7 +572,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       bSocket = BIO_new_ssl_connect(cContext);
       if(!bSocket) return SetErrorSafe("Failed to create BIO socket");
       // Try to get ssl pointer from socket
-      if(BIO_get_ssl(bSocket, &sSSL) < 1)
+      if(CryptBIOGetSSL(bSocket, &sSSL) < 1)
         return SetErrorSafe("No SSL ptr from BIO");
       if(!sSSL) return SetErrorSafe("Get SSL ptr failed");
       // Client mode
@@ -613,7 +586,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
         int(*fCB)(SSL*,void*) = [](SSL *sO, void *vpS)->int
           { return reinterpret_cast<Socket*>(vpS)->
             OCSPVerificationResponse(sO); };
-        if(!SSL_CTX_set_tlsext_status_cb(cContext, fCB))
+        if(!CryptSSLCtxSetTlsExtStatusCb(cContext, fCB))
           SocketLogSafe(LH_WARNING,
             "Failed to setup OCSP verification callback!");
         if(!SSL_CTX_set_tlsext_status_arg(cContext,
@@ -621,7 +594,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
             SocketLogSafe(LH_WARNING,
               "Failed to setup OCSP verification argument!");
       } // Set SNI hostname. Some sites break if this is not set
-      if(!SSL_set_tlsext_host_name(sSSL, strAddr.c_str()))
+      if(!CryptSSLSetTlsExtHostName(sSSL, strAddr.c_str()))
         return SetErrorStaticSafe("Init TLS SNI hostname failed");
       // Log and do secure connection
       if(DoConnect() == -1) return -1;
@@ -698,7 +671,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     const StrNCStrMapIt vlItem{ vlRegistry.find(strItem) };
     if(vlItem == vlRegistry.cend()) return {};
     // Get the value and delete it. We will move instead of copying
-    const string strReq{ std::move(vlItem->second) };
+    const string strReq{ StdMove(vlItem->second) };
     vlRegistry.erase(vlItem);
     // Return it
     return strReq;
@@ -716,8 +689,8 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     AddStatus(SS_SENDREQUEST);
     // Build full request and headers (GetRegistry() removes the item too).
     // This order is important so don't try to optimise this into one line.
-    const string strProtocol{ GetRegistry(SK_VAR_REQ) };
-    const string strBody{ GetRegistry(SK_VAR_BODY) };
+    const string strProtocol{ GetRegistry(cParent.strRegVarREQ) };
+    const string strBody{ GetRegistry(cParent.strRegVarBODY) };
     const string strReq{ Append(strProtocol,
       vlRegistry.VarsImplodeEx(": ", "\r\n"), "\r\n", strBody) };
     // Clear registry as we don't need anything in there anymore
@@ -732,7 +705,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   /* -- HTTP Socket main thread function ----------------------------------- */
   int HTTPMain(void)
   { // Check if this is a HEAD quest
-    const bool bIsHead = GetRegistry(SK_VAR_METHOD) == "HEAD";
+    const bool bIsHead = GetRegistry(cParent.strRegVarMETHOD) == "HEAD";
     // Connect and send http request and break loop if failed.
     if(InitialConnect() == -1 || SendHTTPRequest() == -1) return 1;
     // Expecting reponse headers? and connection closed status
@@ -809,7 +782,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       const StrNCStrMapConstIt vlR{ vlRegistry.find("#0") };
       if(vlR == vlRegistry.cend()) return SetErrorStaticSafe("Bad response");
       // Split into words. We should have got at least three words
-      const Token tWords{ vlR->second, strSpace };
+      const Token tWords{ vlR->second, cCommon->Space() };
       if(tWords.size() < 3) return SetErrorStaticSafe("Unknown response");
       // Get protocol and if it is not valid?
       const string strProtocol{ tWords[0] };
@@ -829,8 +802,8 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       else SocketLogSafe(LH_WARNING, "Status error $", strStatus);
       // Add protocol and status code to registry so guest can read them
       // without having to perform any special string operations
-      vlRegistry.VarsPushOrUpdatePair(SK_VAR_PROTO, strProtocol);
-      vlRegistry.VarsPushOrUpdatePair(SK_VAR_CODE, strStatus);
+      vlRegistry.VarsPushOrUpdatePair(cParent.strRegVarPROTO, strProtocol);
+      vlRegistry.VarsPushOrUpdatePair(cParent.strRegVarCODE, strStatus);
       // For each response var. Push key/value pair to TX registry
       for(const auto &vlI : vlRegistry) PushTXPairSafe(vlI.first, vlI.second);
       // If we got a content type?
@@ -1021,7 +994,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   /* -- Update file descriptor --------------------------------------------- */
   bool UpdateDescriptor(void)
   { // Update descriptor
-    iFd = static_cast<int>(BIO_get_fd(bSocket, nullptr));
+    iFd = CryptBIOGetFd(bSocket);
     // Return if succeeded
     return iFd != -1;
   }
@@ -1360,21 +1333,22 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       // Also disable keep-alive, we don't support it (yet?).
       { "connection", "close" },
       // Push the source address
-      { "host", std::move(strA) },
+      { "host", StdMove(strA) },
       // Push the formulated request line. Remove the right hand fragment from
       // the URL if neccesary.
-      { SK_VAR_REQ, Append(strS, ' ', (SpaceEncode(stFrag == string::npos ?
-          strR : strR.substr(0, stFrag))), " HTTP/1.0\r\n") },
+      { cParent.strRegVarREQ, Append(strS, ' ',
+          (SpaceEncode(stFrag == string::npos ?
+            strR : strR.substr(0, stFrag))), " HTTP/1.0\r\n") },
       // Push method because we need to check if this is a HEAD request and
       // thus to know when to expect no output.
-      { SK_VAR_METHOD, std::move(strS) },
+      { cParent.strRegVarMETHOD, StdMove(strS) },
     });
     // Body specified?
     if(!strB.empty()) vlRegistry.VarsPushOrUpdatePairs({
       // Add length of body text
       { "content-length", ToString(strB.length()) },
       // Add body text
-      { SK_VAR_BODY, std::move(strB) }
+      { cParent.strRegVarBODY, StdMove(strB) }
     });
     // Init LUA references
     LuaEvtInitEx(lS);
@@ -1385,7 +1359,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   }
   /* -- Constructor -------------------------------------------------------- */
   Socket(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperSocket{ *cSockets, this }, // Register in collector
     IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     LuaEvtSlave{ this,                 // Socket async events init
@@ -1396,6 +1370,8 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     sSSL(nullptr),                     // Invalid ssl (openssl)
     qRX(0), qTX(0),                    // No RX or TX bytes
     qRXp(0), qTXp(0),                  // No RX or TX packets
+    tReader{ SysThread::Low },         // Low priority reader thread
+    tWriter{ SysThread::Low },         // Low priority writer thread
     bUnlock(false),                    // Block sock writer thread
     uiPort(0),                         // No port
     iError(0),                         // No error
@@ -1406,7 +1382,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   /* -- Destructor --------------------------------------------------------- */
   ~Socket(void) { SendDisconnectAndWait(); }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Socket);             // Supress copy constructor for safety
+  DELETECOPYCTORS(Socket)              // Supress copy constructor for safety
 };/* ----------------------------------------------------------------------- */
 /* ========================================================================= */
 static void DestroyAllSockets(void)
@@ -1438,14 +1414,18 @@ static void InitSockets(void)
 }
 /* ========================================================================= */
 END_COLLECTOREX(Sockets, InitSockets(), DeInitSockets(),,
-/* -- Collector initialisers --------------------------------------------- */
-LuaEvtMaster{
-  EMC_MP_SOCKET },
-strCipherDefault{ "-" },
-qRX(0), qTX(0),
-qRXp(0), qTXp(0),
-stConnected(0));
-/* ========================================================================= */
+  /* -- Initialisers ------------------------------------------------------- */
+  LuaEvtMaster{ EMC_MP_SOCKET },       // Setup async socket event
+  strRegVarREQ{ "\001" },              // Init reg key name for request data
+  strRegVarBODY{ "\002" },             // " for http body data
+  strRegVarPROTO{ "\003" },            // " for http protocol data
+  strRegVarCODE{ "\004" },             // " for http status code data
+  strRegVarMETHOD{ "\005" },           // " for http method string
+  strCipherDefault{ "-" },             // Default cipher
+  qRX(0), qTX(0),                      // Init received and sent bytes
+  qRXp(0), qTXp(0),                    // Init received and sent packets
+  stConnected(0)                       // Init sockets connected
+) /* ======================================================================= */
 static size_t SocketWaitAsync(void)
 { // No sockets? Ignore
   if(cSockets->empty()) return 0;
@@ -1495,7 +1475,7 @@ static CVarReturn SocketAgentModified(const string &strN, string &strV)
   // Empty so use default
   strV = Format("Mozilla/5.0 ($; $-bit; v$.$.$.$) $/$",
     cSystem->ENGName(), cSystem->ENGBits(), cSystem->ENGMajor(),
-    cSystem->ENGMinor(), cSystem->ENGRevision(), cSystem->ENGBuild(),
+    cSystem->ENGMinor(), cSystem->ENGBuild(), cSystem->ENGRevision(),
     cCVars->GetInternalStrSafe(APP_SHORTNAME),
     cCVars->GetInternalStrSafe(APP_VERSION));
   // We changed the value so return that
@@ -1543,16 +1523,16 @@ static StrNCStrMap SocketOAuth11(const string &strMethod,
   // If scheme and default port are equal then ignore port
   const string strCPort{ (strScheme == "https" && strPort != "443") ||
     (strScheme == "http" && strPort != "80") ?
-      Append(':', strPort) : strBlank };
+      Append(':', strPort) : cCommon->Blank() };
   // Generate full url
   string strAddr{ Append(strScheme, "://", strHost, strCPort, strReq) };
   // Put basic stuff in. Be careful of using StrPair with CStrings as
   // you cant use string& with cstrings, so use CSTR*PAIR's instead.
   StrNCStrMap vaOA{{
-    { "oauth_consumer_key",                         std::move(strCK) },
+    { "oauth_consumer_key",                       StdMove(strCK) },
     { "oauth_nonce", MD5functions::HashMB(CryptRandomBlock(64)) },
     { "oauth_timestamp",             ToString(cmSys.GetTimeS()) },
-    { "oauth_token",                               std::move(strTok) },
+    { "oauth_token",                             StdMove(strTok) },
     { "oauth_signature_method",                     "HMAC-SHA1" },
     { "oauth_version",                                    "1.0" }
   }};
@@ -1568,7 +1548,7 @@ static StrNCStrMap SocketOAuth11(const string &strMethod,
   const string strBody{ CryptImplodeMapAndEncode(vaIn, "&") };
   // Hash the string with the key and return empty if fail
   vaOA.insert({ "oauth_signature",
-    CryptURLEncode(CryptMBtoB64(std::move(SHA1functions::HashStrRaw(
+    CryptURLEncode(CryptMBtoB64(StdMove(SHA1functions::HashStrRaw(
       Append(CryptURLEncode(strCS), '&', CryptURLEncode(strUS)),
       Append(CryptURLEncode(strMethod), '&',
              CryptURLEncode(strAddr), '&',
@@ -1589,16 +1569,16 @@ static StrNCStrMap SocketOAuth11(const string &strMethod,
     // Apend to URL address
     strAddr.append(strURLParams);
   } // Return final result
-  return {{ "method",   std::move(strMethod)         },
-          { "url",      std::move(strAddr)           },
-          { "scheme",   std::move(strScheme)         },
-          { "host",     std::move(strHost)           },
-          { "port",     std::move(strPort)           },
-          { "resource", std::move(strReq)            },
-          { "params",   std::move(strURLParams)      },
-          { "request",  std::move(strResParams)      },
+  return {{ "method",   StdMove(strMethod)         },
+          { "url",      StdMove(strAddr)           },
+          { "scheme",   StdMove(strScheme)         },
+          { "host",     StdMove(strHost)           },
+          { "port",     StdMove(strPort)           },
+          { "resource", StdMove(strReq)            },
+          { "params",   StdMove(strURLParams)      },
+          { "request",  StdMove(strResParams)      },
           { "oauth",    Append("OAuth ", strKV) },
-          { "body",     std::move(strBody)           }};
+          { "body",     StdMove(strBody)           }};
 }
 /* ------------------------------------------------------------------------- */
 };                                     // End of module namespace

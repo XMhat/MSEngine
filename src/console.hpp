@@ -40,14 +40,18 @@ BUILD_FLAGS(AutoComplete,              // Autocomplete flags classes
   /* ----------------------------------------------------------------------- */
   AC_MASK{ AC_COMMANDS|AC_CVARS }      // All flags
 );/* ======================================================================= */
-static class Console final :           // The console class
+static class Console final :           // Members initially private
   /* -- Base classes ------------------------------------------------------- */
   private ConLines,                    // Console text lines list
   private ConLinesConstIt,             // Text lines forward iterator
   private ConLinesConstRevIt,          // Text lines reverse iterator
   private IHelper,                     // Initialisation helper
   public ConsoleFlags                  // Console flags
-{ /* -- Public typedefs -------------------------------------------- */ public:
+{ /* -- Private variables -------------------------------------------------- */
+  constexpr static const size_t
+    stConCmdMinLength = 1,             // Minimum length of a console command
+    stConCmdMaxLength = 255;           // Maximum length of a console command
+  /* -- Public typedefs -------------------------------------------- */ public:
   AutoCompleteFlags acFlags;           // Flags for autocomplete
   /* ----------------------------------------------------------------------- */
   typedef map<const string,const ConLib> LibList; // Map of commands type
@@ -83,6 +87,7 @@ static class Console final :           // The console class
   Font             cfConsole;          // Console font
   char             cCursor;            // Cursor character to use
   /* -- Other -------------------------------------------------------------- */
+  const IfConLib::ConCmdStaticList &conLibList; // Default console cmds list
   LibList          llCmds;             // Console commands list
   size_t           stMaxCount;         // Maximum console commands allowed
   /* -- Lua ---------------------------------------------------------------- */
@@ -227,7 +232,7 @@ static class Console final :           // The console class
     // The mainmanual* functions will consume 100% of the thread load
     // when it doesn't request a request to redraw so make sure to
     // throttle it.
-    if(cSystem->IsNotGuiMode(GM_GRAPHICS)) TimerSetDelayIfZero();
+    if(cSystem->IsNotGuiMode(GM_GRAPHICS)) cTimer->TimerSetDelayIfZero();
     // Can't disable console while paused
     SetCantDisable(true);
     // Write to console
@@ -240,7 +245,7 @@ static class Console final :           // The console class
       return AddLine("Execution already in progress.");
     // Refresh stored delay because of manual render mode
     if(cSystem->IsNotGuiMode(GM_GRAPHICS))
-      TimerSetDelay(cCVars->GetInternalSafe<unsigned int>(APP_DELAY));
+      cTimer->TimerSetDelay(cCVars->GetInternalSafe<unsigned int>(APP_DELAY));
     // Console can now be disabled
     SetCantDisable(false);
     // Write to console
@@ -654,6 +659,9 @@ static class Console final :           // The console class
       catch(const exception &E)
       { // Print the output in the console
         AddLineExA("Console CB failed! > ", E.what());
+        // Force the console to be shown because the callback might have
+        // hidden the console
+        DoSetVisible(true);
       } // Carry on executing as normal
     }
   }
@@ -784,18 +792,19 @@ static class Console final :           // The console class
     // throttle calls to it as it will prevent the engine running at full
     // speed. Picking a delay of 0.03125 because it's 1/32th of a second
     // which is the largest repeat rate the keyboard subsystem allows.
-    if(TimerGetDelay() == 0.0 && !ciInputRefresh.CITriggerStrict()) goto Done;
+    if(cTimer->TimerGetDelay() == 0.0 && !ciInputRefresh.CITriggerStrict())
+      goto Done;
     // Loop forever until no more keys are pressed
     for(int iKey, iMods;;) switch(cSystem->GetKey(iKey, iMods))
     { // No key is pressed (ignore)
-      case SysCon::KT_NONE:
+      case SysBase::SysCon::KT_NONE:
         goto Done;
       // A key was pressed
-      case SysCon::KT_KEY:
+      case SysBase::SysCon::KT_KEY:
         OnKeyPress(iKey, GLFW_PRESS, iMods);
         continue;
       // A scan code was pressed
-      case SysCon::KT_CHAR:
+      case SysBase::SysCon::KT_CHAR:
         OnCharPress(static_cast<unsigned int>(iKey));
         continue;
     } // Check completed
@@ -808,7 +817,7 @@ static class Console final :           // The console class
       // Redraw title
       cSystem->RedrawTitleBar(Format("CPU:$$$%  FPS:$$  MEM:$  NET:$  UP:$",
         fixed, setprecision(1), cSystem->CPUUsage(), setprecision(0),
-        TimerGetSecond(), ToBytesStr(cSystem->RAMProcUse(), 0),
+        cTimer->TimerGetSecond(), ToBytesStr(cSystem->RAMProcUse(), 0),
         cSockets->stConnected.load(),
         ToShortDuration(cLog->CCDeltaToDouble(), 0)),
         cmSys.FormatTime(strTimeFormat.c_str()));
@@ -930,9 +939,7 @@ static class Console final :           // The console class
   void Flush(void) { DoFlush(); SetRedraw(); }
   /* -- Register command list ---------------------------------------------- */
   void RegisterCommandList(void)
-  { // Using command function namespace
-    using IfConLib::conLibList;
-    // Say how many commands we are registering
+  { // Say how many commands we are registering
     cLog->LogDebugExSafe("Console registering $ built-in commands...",
       conLibList.size());
     // Iterate each item and register it
@@ -953,8 +960,8 @@ static class Console final :           // The console class
   /* -- Check that the console variable name is valid ---------------------- */
   bool IsValidConsoleCommandName(const string &strName)
   { // Check minimum name length
-    if(strName.length() < CONCMD_MIN_LENGTH ||
-       strName.length() > CONCMD_MAX_LENGTH) return false;
+    if(strName.length() < stConCmdMinLength ||
+       strName.length() > stConCmdMaxLength) return false;
     // Get address of string. The first character must be a letter
     const unsigned char *ucpPtr =
       reinterpret_cast<const unsigned char*>(strName.c_str());
@@ -973,8 +980,8 @@ static class Console final :           // The console class
   { // Check that the console command is valid
     if(!IsValidConsoleCommandName(strName))
       XC("Console command name is invalid!",
-         "Command", strName, "Minimum", CONCMD_MIN_LENGTH,
-         "Maximum", CONCMD_MAX_LENGTH);
+         "Command", strName, "Minimum", stConCmdMinLength,
+         "Maximum", stConCmdMaxLength);
     // Check min/Max params and that they're valid
     if(uiMin && uiMax && uiMax < uiMin)
       XC("Minimum greater than maximum!",
@@ -997,7 +1004,7 @@ static class Console final :           // The console class
          "Command", strName, "Maximum", stMaxCount);
     // Checks passed. Now add it
     return llCmds.insert({ strName,
-      { strName, uiMin, uiMax, ccbFunc, GM_TEXT_NOAUDIO } }).first;
+      { strName, uiMin, uiMax, GM_TEXT_NOAUDIO, ccbFunc } }).first;
   }
   /* -- Command exists? ---------------------------------------------------- */
   bool CommandIsRegistered(const string &strName) const
@@ -1074,7 +1081,7 @@ static class Console final :           // The console class
     const bool bAtBottom = clriPosition == rbegin();
     // Add each line we separated
     for(const string &sLine : tLines)
-      push_back({ cLog->CCDeltaToDouble(), pColour, std::move(sLine) });
+      push_back({ cLog->CCDeltaToDouble(), pColour, StdMove(sLine) });
     // Auto scroll enabled or were already at the bottom of log? Set the log
     // to the bottom.
     if(FlagIsSet(CF_AUTOSCROLL) || bAtBottom) clriPosition = rbegin();
@@ -1150,7 +1157,7 @@ static class Console final :           // The console class
     } // Say that nothing changed
     else
     { // Log the request
-      cLog->LogWarningExSafe("Console has already been $.",
+      cLog->LogDebugExSafe("Console has already been $.",
         bState ? "enabled" : "disabled");
       // Failed
       return false;
@@ -1265,7 +1272,7 @@ static class Console final :           // The console class
     // Load console texture
     if(bInteractive) InitConsoleFontAndTexture();
     // Initially shown and not closable
-    FlagReset(CF_CANTDISABLE|CF_ENABLED|CF_REDRAW|CF_INSERT);
+    FlagSet(CF_CANTDISABLE|CF_ENABLED|CF_REDRAW|CF_INSERT);
     // Register lua events
     cEvtMain->RegisterEx(reEvents);
     // Log progress
@@ -1365,8 +1372,8 @@ static class Console final :           // The console class
     return ACCEPT;
   }
   /* -- Constructor -------------------------------------------------------- */
-  Console(void) :
-    /* --------------------------------------------------------------------- */
+  explicit Console(const IfConLib::ConCmdStaticList &ccslDef) :
+    /* -- Initialisers ----------------------------------------------------- */
     IHelper{ __FUNCTION__ },           // Init helper function name
     Flags{ CF_NONE },                  // No initial flags
     acFlags{ AC_NONE },                // No autocomplete flags
@@ -1393,6 +1400,7 @@ static class Console final :           // The console class
     ctConsole(true),                   // Console texture on stand-by
     cfConsole(true),                   // COnsole font on stand-by
     cCursor('|'),                      // Cursor shape
+    conLibList{ ccslDef },             // Set default commands list
     stMaxCount(llCmds.max_size()),     // Maxmimum console commands
     /* --------------------------------------------------------------------- */
     reEvents{                          // Default events
@@ -1404,9 +1412,9 @@ static class Console final :           // The console class
     /* --------------------------------------------------------------------- */
     { }
   /* -- Destructor --------------------------------------------------------- */
-  DTORHELPER(~Console, DeInit());
+  DTORHELPER(~Console, DeInit())
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Console);            // Disable copy constructor and operator
+  DELETECOPYCTORS(Console)             // Disable copy constructor and operator
   /* ----------------------------------------------------------------------- */
 } *cConsole = nullptr;                 // Pointer to static class
 /* ------------------------------------------------------------------------- */

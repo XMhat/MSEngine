@@ -14,9 +14,12 @@ class SysBase :                        // Members initially private
   /* -- Base classes ------------------------------------------------------- */
   public Ident                         // Mutex name
 { /* -- Custom exceptions -------------------------------------------------- */
-#define EXCEPTION_APT       0xF0000001 // Abornmal program termination
+#define EXCEPTION_ABORT     0xF0000001 // Abornmal program termination
 #define EXCEPTION_ISA       0xF0000002 // Illegal storage access
-#define EXCEPTION_FPE       0xF0000003 // Floating point exception
+#define EXCEPTION_FPOINT    0xF0000003 // Floating point exception
+  /* -- Private typedefs --------------------------------------------------- */
+  typedef IdMap<const DWORD> ExCoList; // List of Win32 exception strings
+  const ExCoList   eclStrings;         // Exception strings strings
   /* -- Private variables -------------------------------------------------- */
   HWND             hwndWindow;         // Main window handle being used
   HANDLE           hMutex;             // Global mutex handle
@@ -240,90 +243,88 @@ class SysBase :                        // Members initially private
 #define D128X(id,x,e) id "=" \
       << setw(16) << *reinterpret_cast<const uint64_t*>(&cData.x)\
       << setw(16) << *(reinterpret_cast<const uint64_t*>(&cData.x)+1) << e
-#define SPC               "  "
-#define CRLF              "\r\n"
+    const string strCrLf{ "\r\n" }, strSpc{ "  " };
     // Return registers
 #if defined(X64)
     // Write basic registers
-    osS << hex << setfill('0') <<
-      D64("Rax", Rax, SPC)  D64("Rbx", Rbx, SPC)  D64("Rcx", Rcx, CRLF)
-      D64("Rdx", Rdx, SPC)  D64("Rsp", Rsp, SPC)  D64("Rbp", Rbp, CRLF)
-      D64("Rip", Rip, SPC)  D64("Rsi", Rsi, SPC)  D64("Rdi", Rdi, CRLF)
-      CRLF
-      D16("SegCs", SegCs, SPC)  D16("SegDs", SegDs, SPC)
-      D16("SegEs", SegEs, SPC)  D16("SegFs", SegFs, SPC)
-      D16("SegGs", SegGs, SPC)  D16("SegSs", SegSs, CRLF)
-      CRLF
-      D32("CFlags", ContextFlags, SPC)  D32("MxCsr", MxCsr, SPC)
-      D32("EFlags", EFlags, CRLF)
-      CRLF
-      D64("P1H", P1Home, SPC)  D64("P2H", P2Home, SPC)
-      D64("P3H", P3Home, CRLF) D64("P4H", P4Home, SPC)
-      D64("P5H", P5Home, SPC)  D64("P6H", P6Home, CRLF)
-      CRLF
-      D64("Dr0", Dr0, SPC)  D64("Dr1", Dr1, SPC)  D64("Dr2", Dr2, CRLF)
-      D64("Dr3", Dr3, SPC)  D64("Dr6", Dr6, SPC)  D64("Dr7", Dr7, CRLF)
-      CRLF
-      D64("R08", R8,  SPC)  D64("R09", R9,  SPC)  D64("R10", R10, CRLF)
-      D64("R11", R11, SPC)  D64("R12", R12, SPC)  D64("R13", R13, CRLF)
-      D64("R14", R14, SPC)  D64("R15", R15, CRLF)
-      CRLF
-      D64("VCon", VectorControl, SPC)     D64("DCon", DebugControl, SPC)
-      D64("LBtR", LastBranchToRip, CRLF)  D64("LBfR", LastBranchFromRip, SPC)
-      D64("LEtR", LastExceptionToRip, SPC)
-      D64("LEfR", LastExceptionFromRip, CRLF)
-      CRLF;
+    osS << hex << setfill('0')
+      << D64("Rax", Rax, strSpc)  << D64("Rbx", Rbx, strSpc)
+      << D64("Rcx", Rcx, strCrLf) << D64("Rdx", Rdx, strSpc)
+      << D64("Rsp", Rsp, strSpc)  << D64("Rbp", Rbp, strCrLf)
+      << D64("Rip", Rip, strSpc)  << D64("Rsi", Rsi, strSpc)
+      << D64("Rdi", Rdi, strCrLf) << strCrLf
+      << D16("SegCs", SegCs, strSpc) << D16("SegDs", SegDs, strSpc)
+      << D16("SegEs", SegEs, strSpc) << D16("SegFs", SegFs, strSpc)
+      << D16("SegGs", SegGs, strSpc) << D16("SegSs", SegSs, strCrLf) << strCrLf
+      << D32("CFlags", ContextFlags, strSpc) << D32("MxCsr", MxCsr, strSpc)
+      << D32("EFlags", EFlags, strCrLf) << strCrLf
+      << D64("P1H", P1Home, strSpc)  << D64("P2H", P2Home, strSpc)
+      << D64("P3H", P3Home, strCrLf) << D64("P4H", P4Home, strSpc)
+      << D64("P5H", P5Home, strSpc)  << D64("P6H", P6Home, strCrLf) << strCrLf
+      << D64("Dr0", Dr0, strSpc)  << D64("Dr1", Dr1, strSpc)
+      << D64("Dr2", Dr2, strCrLf) << D64("Dr3", Dr3, strSpc)
+      << D64("Dr6", Dr6, strSpc)  << D64("Dr7", Dr7, strCrLf) << strCrLf
+      << D64("R08", R8,  strSpc)  << D64("R09", R9,  strSpc)
+      << D64("R10", R10, strCrLf) << D64("R11", R11, strSpc)
+      << D64("R12", R12, strSpc)  << D64("R13", R13, strCrLf)
+      << D64("R14", R14, strSpc)  << D64("R15", R15, strCrLf) << strCrLf
+      << D64("VCon", VectorControl, strSpc)
+      << D64("DCon", DebugControl, strSpc)
+      << D64("LBtR", LastBranchToRip, strCrLf)
+      << D64("LBfR", LastBranchFromRip, strSpc)
+      << D64("LEtR", LastExceptionToRip, strSpc)
+      << D64("LEfR", LastExceptionFromRip, strCrLf) << strCrLf;
     // Write floating point header state
     for(size_t stQuad = 0; stQuad < 2; stQuad += 2)
       osS << D128X("XmmH" << dec << stQuad << hex <<,
-        Header[stQuad], SPC)
+        Header[stQuad], strSpc)
           << D128X("XmmH" << dec << (stQuad+1) << hex <<,
-        Header[stQuad+1], CRLF);
+        Header[stQuad+1], strCrLf);
     // Write floating point legacy state
     for(size_t stQuad = 0; stQuad < 8; stQuad += 2)
       osS << D128X("XmmL" << dec << stQuad << hex <<,
-        Legacy[stQuad], SPC)
+        Legacy[stQuad], strSpc)
           << D128X("XmmL" << dec << (stQuad+1) << hex <<,
-        Legacy[stQuad+1], CRLF);
+        Legacy[stQuad+1], strCrLf);
     // Write floating point state
 # define XMM(x,e) << \
       D128X("Xmm" << setw(2) << dec << x << hex <<, Xmm ## x, e)
-    osS XMM( 0,SPC)  XMM( 1,CRLF) XMM( 2,SPC)  XMM( 3,CRLF) XMM( 4,SPC)
-        XMM( 5,CRLF) XMM( 6,SPC)  XMM( 7,CRLF) XMM( 8,SPC)  XMM( 9,CRLF)
-        XMM(10,SPC)  XMM(11,CRLF) XMM(12,SPC)  XMM(13,CRLF) XMM(14,SPC)
-        XMM(15,CRLF) CRLF;
+    osS XMM( 0,strSpc)  XMM( 1,strCrLf) XMM( 2,strSpc)  XMM( 3,strCrLf)
+        XMM( 4,strSpc)  XMM( 5,strCrLf) XMM( 6,strSpc)  XMM( 7,strCrLf)
+        XMM( 8,strSpc)  XMM( 9,strCrLf) XMM(10,strSpc)  XMM(11,strCrLf)
+        XMM(12,strSpc)  XMM(13,strCrLf) XMM(14,strSpc)  XMM(15,strCrLf)
+     << strCrLf;
 # undef XMM
     // Write vector state
     for(size_t stQuad = 0; stQuad < 26; stQuad += 2)
       osS << D128X("Vec" << setw(2) << dec << stQuad
-          << hex <<, VectorRegister[stQuad], SPC)
+          << hex <<, VectorRegister[stQuad], strSpc)
           << D128X("Vec" << setw(2) << dec << (stQuad+1)
-          << hex <<, VectorRegister[stQuad+1], CRLF);
+          << hex <<, VectorRegister[stQuad+1], strCrLf);
     // Using 32-bit compiler?
 #elif defined(X86)
     // Write basic registers
-    osS << hex << setfill('0') <<
-      D32("Eax", Eax, SPC)   D32("Ebx", Ebx, SPC)  D32("Ecx", Ecx, SPC)
-      D32("Edx", Edx, CRLF)  D32("Esp", Esp, SPC)  D32("Ebp", Ebp, SPC)
-      D32("Esi", Esi, SPC)   D32("Edi", Edi, SPC)  D32("Eip", Eip, CRLF)
-      CRLF
-      D32("SegCs", SegCs, SPC)   D32("SegDs", SegDs, SPC)
-      D32("SegEs", SegEs, CRLF)  D32("SegFs", SegFs, SPC)
-      D32("SegGs", SegGs, SPC)   D32("SegSs", SegSs, CRLF)
-      CRLF
-      D32("CFlags", ContextFlags, SPC)  D32("EFlags", EFlags, CRLF)
-      CRLF
-      D32("Dr0", Dr0, SPC)  D32("Dr1", Dr1, SPC)  D32("Dr2", Dr2, CRLF)
-      D32("Dr3", Dr3, SPC)  D32("Dr6", Dr6, SPC)  D32("Dr7", Dr7, CRLF)
-      CRLF
-      D32("FCW", FloatSave.ControlWord, SPC)
-      D32("FSW", FloatSave.StatusWord, SPC)
-      D32("FTW", FloatSave.TagWord, SPC)
-      D32("FES", FloatSave.ErrorSelector, CRLF)
-      D32("FDO", FloatSave.DataOffset, SPC)
-      D32("FDS", FloatSave.DataSelector, SPC)
-      D32("FNS", FloatSave.Spare0, CRLF)
-      CRLF;
+    osS << hex << setfill('0')
+      << D32("Eax", Eax, strSpc) << D32("Ebx", Ebx, strSpc)
+      << D32("Ecx", Ecx, strSpc) << D32("Edx", Edx, strCrLf)
+      << D32("Esp", Esp, strSpc) << D32("Ebp", Ebp, strSpc)
+      << D32("Esi", Esi, strSpc) << D32("Edi", Edi, strSpc)
+      << D32("Eip", Eip, strCrLf) << strCrLf
+      << D32("SegCs", SegCs, strSpc) << D32("SegDs", SegDs, strSpc)
+      << D32("SegEs", SegEs, strCrLf) << D32("SegFs", SegFs, strSpc)
+      << D32("SegGs", SegGs, strSpc) << D32("SegSs", SegSs, strCrLf) << strCrLf
+      << D32("CFlags", ContextFlags, strSpc)
+      << D32("EFlags", EFlags, strCrLf) << strCrLf
+      << D32("Dr0", Dr0, strSpc) << D32("Dr1", Dr1, strSpc)
+      << D32("Dr2", Dr2, strCrLf) << D32("Dr3", Dr3, strSpc)
+      << D32("Dr6", Dr6, strSpc) << D32("Dr7", Dr7, strCrLf) << strCrLf
+      << D32("FCW", FloatSave.ControlWord, strSpc)
+      << D32("FSW", FloatSave.StatusWord, strSpc)
+      << D32("FTW", FloatSave.TagWord, strSpc)
+      << D32("FES", FloatSave.ErrorSelector, strCrLf)
+      << D32("FDO", FloatSave.DataOffset, strSpc)
+      << D32("FDS", FloatSave.DataSelector, strSpc)
+      << D32("FNS", FloatSave.Spare0, strCrLf) << strCrLf;
     // Write floating point state
     for(size_t stI = 0, stY = 0, stZ = 5 % WOW64_SIZE_OF_80387_REGISTERS;
                stY < WOW64_SIZE_OF_80387_REGISTERS;
@@ -331,21 +332,20 @@ class SysBase :                        // Members initially private
       for(size_t stX = 0; stX < stZ; ++stX, ++stI)
         osS << D32X("FRA" << setw(2) << dec << stI << hex <<,
           FloatSave.RegisterArea[stY+(stX*sizeof(DWORD))],
-            (stX == 4 ? CRLF : SPC));
-    osS << CRLF;
+            (stX == 4 ? strCrLf : strSpc));
+    osS << strCrLf;
     // Write extended registers state
     for(size_t stI = 0, stY = 0, stZ = 5 % WOW64_MAXIMUM_SUPPORTED_EXTENSION;
                stY < WOW64_MAXIMUM_SUPPORTED_EXTENSION;
                stY += sizeof(DWORD)*5)
       for(size_t stX = 0; stX < stZ; ++stX, ++stI)
         osS << D32X("ER" << setw(3) << dec << stI << hex <<,
-          ExtendedRegisters[stY+(stX*sizeof(DWORD))], (stX == 4 ? CRLF : SPC));
+          ExtendedRegisters[stY+(stX*sizeof(DWORD))],
+          (stX == 4 ? strCrLf : strSpc));
 #endif
     // Set fill back to space
     osS << setfill(' ');
     // Done with helper macros
-#undef CRLF
-#undef SPC
 #undef D128
 #undef D16
 #undef D32
@@ -403,12 +403,12 @@ class SysBase :                        // Members initially private
           if(GetModuleFileNameEx(hProcess, nullptr,
             const_cast<LPWSTR>(wstrFN.c_str()), MAX_PATH))
           { // Get version information
-            const SysModuleData vD{ std::move(SysModule(WS16toUTF(wstrFN))) };
+            const SysModuleData vD{ StdMove(SysModule(WS16toUTF(wstrFN))) };
             // Push version, description vendor and filename (use .c_str())
             tData.Data(Format("$.$.$.$",
               vD.GetMajor(), vD.GetMinor(), vD.GetRevision(), vD.GetBuild()))
-                 .Data(std::move(vD.GetDesc()))
-                 .Data(std::move(vD.GetVendor()))
+                 .Data(StdMove(vD.GetDesc()))
+                 .Data(StdMove(vD.GetVendor()))
                  .DataW(wstrFN);
           } // Push blank field, error as description, number and reason
           else tData.Data()
@@ -456,7 +456,7 @@ class SysBase :                        // Members initially private
       if(Module32First(hSnapshot, &medData) == TRUE) do
       { // Get module information
         const SysModuleData vD{
-          std::move(SysModule(S16toUTF(medData.szExePath))) };
+          StdMove(SysModule(S16toUTF(medData.szExePath))) };
         // Print data
         tD.Data(vD.GetDesc()).Data(vD.GetVersion())
           .Data(vD.GetVendor()).DataW(medData.szExePath);
@@ -512,7 +512,7 @@ class SysBase :                        // Members initially private
         ToNonConstCast<PVOID>(&cData), nullptr, SymFunctionTableAccess,
         SymGetModuleBase, nullptr))
       { // Add function number
-        osS << stFunctions++ << ": ";
+        osS << dec << stFunctions++ << ": ";
         // Is a null address? Ignore it
         if(!sfData.AddrPC.Offset)
         { // Ignore it so goto next function
@@ -522,9 +522,12 @@ class SysBase :                        // Members initially private
         IMAGEHLP_MODULE ihmMod;
         ihmMod.SizeOfStruct = sizeof(ihmMod);
         if(SymGetModuleInfo(hProcess, sfData.AddrPC.Offset, &ihmMod))
-          osS << S16toUTF(ihmMod.ModuleName) << '!';
+          osS << ihmMod.ModuleName << '!';
         // Failed so write reason
         else osS << "<SGMI:" << SysError() << ">!";
+        // A self note here that there were no wide functions until Windows 8.1
+        // (or version 6.3 of the DbgHelp library) so we're stuck with ANSI
+        // string functions.
         // Buffer for symbol name
         string strName; strName.resize(MAX_PATH);
         DWORD_PTR dwOffsetFromSym;
@@ -552,16 +555,13 @@ class SysBase :                        // Members initially private
             osS << "0x" << hex << sfData.AddrPC.Offset << '@';
             break;
           // Any other code
-          default:
-            osS << "<SGSFA:" << SysError(dwCode) << ">@";
-            break;
+          default: osS << "<SGSFA:" << SysError(dwCode) << ">@"; break;
         } // Get source file and line info and if succeded?
         IMAGEHLP_LINE ihlLine;
         ihlLine.SizeOfStruct = sizeof(ihlLine);
         if(SymGetLineFromAddr(hProcess, sfData.AddrPC.Offset,
           reinterpret_cast<PDWORD>(&dwOffsetFromSym), &ihlLine))
-            osS << S16toUTF(ihlLine.FileName) << ':'
-                << ihlLine.LineNumber << "\r\n";
+            osS << ihlLine.FileName << ':' << ihlLine.LineNumber << "\r\n";
         // Failed so record reason why that couldn't be obtained
         else switch(const DWORD dwCode = SysErrorCode<DWORD>())
         { // Invalid address
@@ -636,7 +636,7 @@ class SysBase :                        // Members initially private
       SEHSubTitle("Modules");     SEHModuleDump();            osS << "\r\n";
       SEHSubTitle("Processes");   SEHProcessDump();           osS << "\r\n";
       SEHSubTitle("Log");
-      cLog->GetBufferLines(osS);                               osS << "\r\n";
+      cLog->GetBufferLines(osS);                              osS << "\r\n";
       SEHSubTitle("End-of-File");
       // Write the log and throw if failed
       SEHWrite(hFile, osS.str());
@@ -651,40 +651,6 @@ class SysBase :                        // Members initially private
     }
   } // Shouldn't happen but just incase
   catch(const exception &) { }
-  /* == Convert exception to string ======================================== */
-  const char *SEHExceptionToString(const DWORD dwCode)
-  { // Compare exception code
-    switch(dwCode) {
-#define CASE(n,m) case EXCEPTION_ ## n: return m
-      CASE(ACCESS_VIOLATION,         "Access violation");
-      CASE(ARRAY_BOUNDS_EXCEEDED,    "array bounds exceeded");
-      CASE(BREAKPOINT,               "Breakpoint");
-      CASE(DATATYPE_MISALIGNMENT,    "Datatype misalignment");
-      CASE(FLT_DENORMAL_OPERAND,     "Float denormal operand");
-      CASE(FLT_DIVIDE_BY_ZERO,       "Float divide-by-zero");
-      CASE(FLT_INEXACT_RESULT,       "Float inexact result");
-      CASE(FLT_INVALID_OPERATION,    "Float invalid operation");
-      CASE(FLT_OVERFLOW,             "Float overflow");
-      CASE(FLT_STACK_CHECK,          "Float stack check");
-      CASE(FLT_UNDERFLOW,            "Float underflow");
-      CASE(ILLEGAL_INSTRUCTION,      "Illegal instruction");
-      CASE(IN_PAGE_ERROR,            "In-page error");
-      CASE(INT_DIVIDE_BY_ZERO,       "Integer divide-by-zero");
-      CASE(INT_OVERFLOW,             "Integer overflow");
-      CASE(INVALID_DISPOSITION,      "Invalid disposition");
-      CASE(NONCONTINUABLE_EXCEPTION, "Non-continuable exception");
-      CASE(PRIV_INSTRUCTION,         "Privileged instruction");
-      CASE(SINGLE_STEP,              "Single step");
-      CASE(STACK_OVERFLOW,           "Stack overflow");
-      CASE(GUARD_PAGE,               "Guard page violation");
-      CASE(INVALID_HANDLE,           "Invalid handle");
-      CASE(APT,                      "Abormal program termination");
-      CASE(ISA,                      "Illegal storage access");
-      CASE(FPE,                      "Floating point exception");
-#undef CASE
-      default: return "Unrecognised exception";
-    }
-  }
   /* == Build summary ====================================================== */
   const string SEHGetSummary(const EXCEPTION_POINTERS &epData) try
   { // Get exception record
@@ -694,7 +660,7 @@ class SysBase :                        // Members initially private
         << " of thread " << GetCurrentThreadId()
         << " in process " << GetCurrentProcessId()
         << " caused exception 0x" << hex << erData.ExceptionCode
-        << " (" << SEHExceptionToString(erData.ExceptionCode)
+        << " (" << eclStrings.Get(erData.ExceptionCode)
         << ") with flags 0x" << erData.ExceptionFlags << dec << '.';
     SEHDumpExceptionMemoryAddresses(erData);
     osS << "\r\n\r\n";
@@ -732,20 +698,20 @@ class SysBase :                        // Members initially private
     // Prepare summary
     const string strDialog{ SEHGetSummary(epData) };
     // Clear string stream
-    osS.str(cpBlank);
+    osS.str(cCommon->CBlank());
     // Write the log file
     SEHDumpLog(epData.ContextRecord, strDialog);
     // No need to show anything if we're in a debugger
     if(IsDebuggerPresent()) return EXCEPTION_CONTINUE_SEARCH;
     // Show message box
-    MessageBox(hwndWindow, UTFtoS16(strDialog),
+    MessageBox(hwndWindow, UTFtoS16(strDialog).c_str(),
       L"Unhandled exception", MB_ICONSTOP);
     // We handled the exception
     return EXCEPTION_EXECUTE_HANDLER;
   } // This shouldn't happen but just incase
   catch(const exception &e)
   { // Show message box
-    MessageBox(hwndWindow, UTFtoS16(e.what()),
+    MessageBox(hwndWindow, UTFtoS16(e.what()).c_str(),
       L"exception in unhandled exception", MB_ICONSTOP);
     // We handled the exception
     return EXCEPTION_EXECUTE_HANDLER;
@@ -771,11 +737,11 @@ class SysBase :                        // Members initially private
     // Compare signal
     switch(iSignal)
     { // Abort?
-      case SIGABRT: dwId = EXCEPTION_APT; break;
+      case SIGABRT: dwId = EXCEPTION_ABORT; break;
       // Segmentation fault?
       case SIGSEGV: dwId = EXCEPTION_ISA; break;
       // Floating point error?
-      case SIGFPE: dwId = EXCEPTION_FPE; break;
+      case SIGFPE: dwId = EXCEPTION_FPOINT; break;
       // Something else? Breakpoint
       default: return DebugBreak();
     } // Raise exception
@@ -847,13 +813,45 @@ class SysBase :                        // Members initially private
     // Install signal handlers and save old ones
     fcbAbortCallback(signal(SIGABRT, SignalEvent)),
     fcbIllegalStorageAccess(signal(SIGSEGV, SignalEvent)),
-    fcbFloatingPointException(signal(SIGFPE, SignalEvent))
+    fcbFloatingPointException(signal(SIGFPE, SignalEvent)),
+    // Exception strings
+    eclStrings{{
+      IDMAPSTR(EXCEPTION_ACCESS_VIOLATION),
+      IDMAPSTR(EXCEPTION_ARRAY_BOUNDS_EXCEEDED),
+      IDMAPSTR(EXCEPTION_BREAKPOINT),
+      IDMAPSTR(EXCEPTION_DATATYPE_MISALIGNMENT),
+      IDMAPSTR(EXCEPTION_FLT_DENORMAL_OPERAND),
+      IDMAPSTR(EXCEPTION_FLT_DIVIDE_BY_ZERO),
+      IDMAPSTR(EXCEPTION_FLT_INEXACT_RESULT),
+      IDMAPSTR(EXCEPTION_FLT_INVALID_OPERATION),
+      IDMAPSTR(EXCEPTION_FLT_OVERFLOW),
+      IDMAPSTR(EXCEPTION_FLT_STACK_CHECK),
+      IDMAPSTR(EXCEPTION_FLT_UNDERFLOW),
+      IDMAPSTR(EXCEPTION_ILLEGAL_INSTRUCTION),
+      IDMAPSTR(EXCEPTION_IN_PAGE_ERROR),
+      IDMAPSTR(EXCEPTION_INT_DIVIDE_BY_ZERO),
+      IDMAPSTR(EXCEPTION_INT_OVERFLOW),
+      IDMAPSTR(EXCEPTION_INVALID_DISPOSITION),
+      IDMAPSTR(EXCEPTION_NONCONTINUABLE_EXCEPTION),
+      IDMAPSTR(EXCEPTION_PRIV_INSTRUCTION),
+      IDMAPSTR(EXCEPTION_SINGLE_STEP),
+      IDMAPSTR(EXCEPTION_STACK_OVERFLOW),
+      IDMAPSTR(EXCEPTION_GUARD_PAGE),
+      IDMAPSTR(EXCEPTION_INVALID_HANDLE),
+      IDMAPSTR(EXCEPTION_ABORT),
+      IDMAPSTR(EXCEPTION_ISA),
+      IDMAPSTR(EXCEPTION_FPOINT)
+    }}
   /* -- Install unhandled exception filter --------------------------------- */
   { SetUnhandledExceptionFilter(HandleExceptionStatic); }
+  /* ----------------------------------------------------------------------- */
+#undef EXCEPTION_APT                   // Done with this macro
+#undef EXCEPTION_ISA                   // Done with this macro
+#undef EXCEPTION_FPE                   // Done with this macro
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(SysBase);            // Suppress copy constructor for safety
 };/* ======================================================================= */
 #define MSENGINE_SYSBASE_CALLBACKS() \
-  LONG WINAPI SysBase::HandleExceptionStatic(LPEXCEPTION_POINTERS epData) \
-    { return cSystem->HandleException(*epData); }
+  LONG WINAPI SysBase::SysBase::HandleExceptionStatic(LPEXCEPTION_POINTERS \
+    epData) { return cSystem->HandleException(*epData); }
 /* == EoF =========================================================== EoF == */

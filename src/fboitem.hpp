@@ -13,13 +13,20 @@ using namespace IfUtil;                // Using util namespace
 /* == Fbo item class ======================================================= */
 class FboItem
 { /* -- Typedefs for types we need --------------------------------- */ public:
-  typedef array<GLfloat,FLOATSPERCOORD>   TriCoordData;  // Triangle TexCoords
-  typedef array<TriCoordData,TRISPERQUAD> QuadCoordData; // Quad tex-coord
-  typedef array<GLfloat,FLOATSPERPOS>     TriPosData;    // Triangle positions
-  typedef array<TriPosData,TRISPERQUAD>   QuadPosData;   // Quad position data
-  typedef array<GLfloat,FLOATSPERCOLOUR>  TriColData;    // Triangl intensities
-  typedef array<TriColData,TRISPERQUAD>   QuadColData;   // Quad colour data
-  typedef array<GLfloat,FLOATSPERQUAD>    AllData;       // All data elements
+  typedef array<GLfloat, stFloatsPerCoord>
+    TriCoordData;                      // Triangle TexCoords
+  typedef array<TriCoordData, stTrisPerQuad>
+    QuadCoordData;                     // Quad tex-coord
+  typedef array<GLfloat, stFloatsPerPos>
+    TriPosData;                        // Triangle positions
+  typedef array<TriPosData, stTrisPerQuad>
+    QuadPosData;                       // Quad position data
+  typedef array<GLfloat, stFloatsPerColour>
+    TriColData;                        // Triangl intensities
+  typedef array<TriColData, stTrisPerQuad>
+    QuadColData;                       // Quad colour data
+  typedef array<GLfloat, stFloatsPerQuad>
+    AllData;                           // All data elements
   /* -- Variables ------------------------------------------------- */ private:
   union Quad                           // Render to texture Vertex array data
   { AllData        faData;             // Vertices to upload to VBO
@@ -237,13 +244,12 @@ class FboItem
   explicit FboItem(const unsigned int uiC) { SetQuadRGBAInt(uiC); }
   /* ----------------------------------------------------------------------- */
   FboItem(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     sBuffer{ GetDefaultLookup() }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(FboItem);
+  DELETECOPYCTORS(FboItem)
 };/* ----------------------------------------------------------------------- */
-/* ------------------------------------------------------------------------- */
 };                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

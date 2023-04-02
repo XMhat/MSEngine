@@ -63,7 +63,7 @@ local function InitFile()
     -- Setup lobby texture
     local texLobby<const> = aResources[2].H;
     texLobby:TileSTC(1);
-    texLobby:TileS(0, 0, 272, 512, 512);
+    texLobby:TileS(0, 0, 272, 428, 512);
     -- Display data
     local aFileData<const>, aNameData<const> = { }, { };
     -- Data refresh function
@@ -128,7 +128,7 @@ local function InitFile()
     -- Render callback
     local function RenderFile()
       -- Draw backdrop
-      texLobby:BlitLT(-96, 0);
+      texLobby:BlitLT(-54, 0);
       -- Draw controller screen
       texFile:BlitSLT(tileFile, 8, 8);
       -- Render shadow

@@ -38,12 +38,12 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
   public Lockable,                     // Lua garbage collect instruction
   public ArchiveFlags                  // Archive initialisation flags
 { /* -- Private macros ----------------------------------------------------- */
-#if !defined(WINDOWS)                  // Not using Windows?
+#if defined(WINDOWS)                   // Not using Windows?
+# define LZMAOpen(s,f)                 InFile_OpenW(s, UTFtoS16(f).c_str())
+# define LZMAGetHandle(s)              (s).file.handle
+#else                                  // Using Windows?
 # define LZMAOpen(s,f)                 InFile_Open(s, f)
 # define LZMAGetHandle(s)              (s).file.fd
-#else                                  // Using Windows?
-# define LZMAOpen(s,f)                 InFile_OpenW(s, UTFtoS16(f))
-# define LZMAGetHandle(s)              (s).file.handle
 #endif                                 // Operating system check
   /* -- Private Variables -------------------------------------------------- */
   condition_variable cvExtract;        // Waiting for async ops to complete
@@ -118,7 +118,7 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
       // Free the data that was allocated by LZMA as we had to copy it
       cParent.isaData.Free(nullptr, reinterpret_cast<void*>(ucpData));
       // Return newly added item
-      FileMap fmFile{ strFile, std::move(mData), GetCreatedTime(uiSrcId),
+      FileMap fmFile{ strFile, StdMove(mData), GetCreatedTime(uiSrcId),
         GetModifiedTime(uiSrcId) };
       // Log progress
       cLog->LogInfoExSafe("Archive extracted '$'[$]{$>$} from '$'.",
@@ -330,20 +330,21 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
         SzArEx_GetFileNameUtf16(&csaeData, uiIndex, nullptr);
       if(stLen < sizeof(UInt16)) continue;
       // Create buffer for file name.
-      vector<UInt16> vFilesWide(stLen, 0x0000);
-      SzArEx_GetFileNameUtf16(&csaeData, uiIndex, vFilesWide.data());
+      typedef vector<UInt16> UInt16Vec;
+      UInt16Vec wvFilesWide(stLen, 0x0000);
+      SzArEx_GetFileNameUtf16(&csaeData, uiIndex, wvFilesWide.data());
       // If is a directory?
       if(SzArEx_IsDir(&csaeData, uiIndex))
         // Convert wide-string to utf-8 and insert it in the dirs to integer
         // list and store the iterator in the vector
         vDirs.push_back(lDirs.insert({
-          FromWideStringPtr(vFilesWide.data()), uiIndex }).first);
+          FromWideStringPtr(wvFilesWide.data()), uiIndex }).first);
       // Is a file?
       else
         // Convert wide-string to utf-8 and insert it in the files to integer
         // list and store the iterator in the vector
         vFiles.push_back(lFiles.insert({
-          FromWideStringPtr(vFilesWide.data()), uiIndex }).first);
+          FromWideStringPtr(wvFilesWide.data()), uiIndex }).first);
     } // We did not know how many files and directories there were
     // specifically so lets free the extra memory allocated for the lists
     vFiles.shrink_to_fit();
@@ -364,7 +365,7 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
     // Throw error if invalid name
     if(const ValidResult vrId = DirValidName(strFilename))
       XC("Filename is invalid!",
-         "File",     strFilename, "Reason", DirValidNameResultToString(vrId),
+         "File",     strFilename, "Reason", cDirBase->VNRtoStr(vrId),
          "ReasonId", vrId);
     // Load asynchronously, except we load the file, not async class
     AsyncInitNone(lS, strFilename, "archivefile");
@@ -428,7 +429,7 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
     cLog->LogInfoExSafe("Archive unloaded '$' successfully.", IdentGet());
   }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Archive);            // Supress copy constructor for safety
+  DELETECOPYCTORS(Archive)             // Supress copy constructor for safety
   /* -- Done with these defines -------------------------------------------- */
 #undef LZMAGetHandle                   // Done with this macro
 #undef LZMAOpen                        // Done with this macro
@@ -488,7 +489,7 @@ static CVarReturn ArchiveInit(const string &strFileMask, string&)
   if(strFileMask.empty()) return ACCEPT;
   // Build directory listing and log how many files we found
   cLog->LogDebugExSafe("Archives scanning for '$' files...", strFileMask);
-  const Dir dList{ strBlank, strFileMask };
+  const Dir dList{ cCommon->Blank(), strFileMask };
   // Return if no files found (rare but not impossible)
   if(dList.dFiles.empty())
   { // Log no files and return success
@@ -522,16 +523,17 @@ static CVarReturn ArchiveInit(const string &strFileMask, string&)
 static void ArchiveEnumFiles(const string &strDir, const StrUIntMap &suimList,
   StrSet &ssFiles, mutex &mLock)
 { // For each directory in archive. Try to use multi-threading.
-  MYFOREACH(par_unseq, suimList.cbegin(), suimList.cend(),
+  StdForEach(par_unseq, suimList.cbegin(), suimList.cend(),
     [&strDir, &ssFiles, &mLock](const auto &itItem)
-  { // If folder name does not match ignore
-    if(strDir != itItem.first.substr(0, strDir.length())) return;
+  { // Ignore if folder name does not match or a forward-slash found after
+    if(strDir != itItem.first.substr(0, strDir.length()) ||
+      itItem.first.find('/', strDir.length()+1) != string::npos) return;
     // Split file path
-    const PathSplit psFile{ itItem.first };
+    const PathSplit psParts{ itItem.first };
     // Lock access to archives list
     const LockGuard lgLock{ mLock };
     // Split path parts, lock mutex, and move into list
-    ssFiles.emplace(std::move(psFile.strFileExt));
+    ssFiles.emplace(StdMove(psParts.strFileExt));
   });
 }
 /* -- Return files in directories and archives with empty check ------------ */
@@ -544,30 +546,31 @@ static const StrSet &ArchiveEnumerate(const string &strDir,
     mutex mLock;
     // If only dirs requested? For each archive.
     if(bOnlyDirs)
-      MYFOREACH(par, cArchives->cbegin(), cArchives->cend(),
+      StdForEach(par, cArchives->cbegin(), cArchives->cend(),
         [&strDir, &ssFiles, &mLock](const Archive*const aCptr)
           { ArchiveEnumFiles(strDir, aCptr->GetDirList(), ssFiles, mLock); });
     // No extension specified? Show all files
     else if(strExt.empty())
-      MYFOREACH(par, cArchives->cbegin(), cArchives->cend(),
+      StdForEach(par, cArchives->cbegin(), cArchives->cend(),
         [&strDir, &ssFiles, &mLock](const Archive*const aCptr)
           { ArchiveEnumFiles(strDir, aCptr->GetFileList(), ssFiles, mLock); });
     // Files with extension requested. For each archive.
-    else MYFOREACH(par, cArchives->cbegin(), cArchives->cend(),
+    else StdForEach(par, cArchives->cbegin(), cArchives->cend(),
       [&strDir, &ssFiles, &mLock, &strExt](const Archive*const aCptr)
     { // Get reference to file list
       const StrUIntMap &suimList = aCptr->GetFileList();
       // For each directory in archive...
-      MYFOREACH(par_unseq, suimList.cbegin(), suimList.cend(),
+      StdForEach(par_unseq, suimList.cbegin(), suimList.cend(),
         [&strDir, &ssFiles, &mLock, &strExt](const auto &itItem)
-      { // If folder name does not match ignore
-        if(strDir != itItem.first.substr(0, strDir.length())) return;
+      { // Ignore if folder name does not match or a forward-slash found after
+        if(strDir != itItem.first.substr(0, strDir.length()) ||
+          itItem.first.find('/', strDir.length()+1) != string::npos) return;
         // Split path parts, and ignore if extension does not match
         const PathSplit psParts{ itItem.first };
         if(psParts.strExt != strExt) return;
         // Lock the mutex and insert into list
         const LockGuard lgLock{ mLock };
-        ssFiles.emplace(std::move(psParts.strFileExt));
+        ssFiles.emplace(StdMove(psParts.strFileExt));
       });
     });
   } // Return file list

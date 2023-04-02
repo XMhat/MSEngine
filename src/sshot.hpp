@@ -38,7 +38,7 @@ static class SShot final :             // Members initially private
       // Errored return code
       iReturn = -1;
     } // Free the memory created with the bitmap
-    clear();
+    ResetAllData();
     // Return the code specified
     return iReturn;
   }
@@ -55,7 +55,7 @@ static class SShot final :             // Members initially private
     // Allocate storage (Writing as RGB 24-bit).
     const BitDepth bdBPP = BD_RGB;
     const GLenum eMode = GL_RGB;
-    const size_t stBytesPerPixel = BD_RGB / 8;
+    const size_t stBytesPerPixel = bdBPP / 8;
     Memory mBuffer{ fboRef.DimGetWidth<size_t>() *
       fboRef.DimGetHeight<size_t>() * stBytesPerPixel };
     // Bind the fbo
@@ -79,7 +79,7 @@ static class SShot final :             // Members initially private
       fboRef.IdentGet(), Image::IdentGet(), fboRef.DimGetWidth(),
       fboRef.DimGetHeight(), bdBPP);
     // Setup raw image
-    InitRaw(Image::IdentGet(), std::move(mBuffer),
+    InitRaw(Image::IdentGet(), StdMove(mBuffer),
       fboRef.DimGetWidth<unsigned int>(), fboRef.DimGetHeight<unsigned int>(),
       bdBPP, eMode);
     // Launch thread to write the screenshot to disk in the background
@@ -91,8 +91,9 @@ static class SShot final :             // Members initially private
   void DumpMain(void) { DumpFBO(cFboMain->fboMain); }
   /* -- Default constructor ------------------------------------------------ */
   SShot(void) :                        // No parameters
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     Thread{ "sshot",                   // Prepare screenshot thread
+      SysThread::Low,                  // Non-critical low performance
       bind(&SShot::DumpThread,         // Dump thread entry function
         this, _1) },                   // Send this class pointer
     stFormatId(0)                      // Not truly initialised yet
@@ -102,7 +103,7 @@ static class SShot final :             // Members initially private
   CVarReturn SetScreenShotType(const size_t stId)
     { return CVarSimpleSetIntNGE(stFormatId, stId, cImageFmts->size()); }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(SShot);              // Supress copy constructor for safety
+  DELETECOPYCTORS(SShot)               // Supress copy constructor for safety
   /* ----------------------------------------------------------------------- */
 } *cSShot = nullptr;                   // Pointer to static class
 /* ------------------------------------------------------------------------- */

@@ -7,6 +7,8 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
+/* ------------------------------------------------------------------------- */
+namespace SysBase {                    // Start of module namespace
 /* == Win32 extras ========================================================= */
 #include "winmod.hpp"                  // Module information class
 #include "winreg.hpp"                  // Registry class
@@ -90,14 +92,15 @@ class SysProcess                       // Need this before of System init order
         SysError());
       return;
     } // Allocate memory for heaps handles, fill handles and
-    vector<HANDLE> phData{ dwHeaps, INVALID_HANDLE_VALUE };
-    if(!GetProcessHeaps(dwHeaps, phData.data()))
+    typedef vector<HANDLE> HandleVec;
+    HandleVec hvList{ dwHeaps, INVALID_HANDLE_VALUE };
+    if(!GetProcessHeaps(dwHeaps, hvList.data()))
     { // Log the error and return
       cLog->LogErrorExSafe("System failed to retrieve process heaps: $!",
         SysError());
       return;
     } // For each heap, enable low fragmentation heap
-    for(const HANDLE &hH : phData)
+    for(const HANDLE &hH : hvList)
       HeapSetInfo(hH, HeapCompatibilityInformation, 2);
     // Enable optimize resources in Win 8.1+ with HeapOptimizeResources
     // - This is a interesting little optimization because I don't invoke
@@ -195,7 +198,7 @@ class SysProcess                       // Need this before of System init order
     { if(!tParam) XCS(cpStr); return tParam; }
   /* ----------------------------------------------------------------------- */
   SysProcess(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     qwSKL(0),
     qwSUL(0),
     qwPKL(0),
@@ -433,7 +436,7 @@ class SysCore :
   /* ----------------------------------------------------------------------- */
   void SetIcon(const string &strId, const char *cpType, const UINT uiT,
     HICON &hI, const size_t stWidth, const size_t stHeight,
-    const size_t stBits, Memory &mbData)
+    const size_t stBits, const DataConst &dcData)
   { // Check parameters
     if(!stWidth || !stHeight)
       XC("Supplied icon dimensions invalid!",
@@ -442,19 +445,19 @@ class SysCore :
     if(stBits != 24 && stBits != 32)
       XC("Must be 24/32 bpp icon!",
          "Type", cpType, "Identifier", strId, "Bits", stBits);
-    if(mbData.Empty())
+    if(dcData.Empty())
       XC("Invalid icon data!", "Type", cpType, "Identifier", strId);
     // Create the icon. CreateIcon() seems to ignore the AND bits
     // on 24/32bpp icons but /analyse complains, so send original bits to it
     // The old icon will be preserved if the api call fails
     const HICON hNewIcon = CreateIcon(hInstance, static_cast<int>(stWidth),
       static_cast<int>(stHeight), 1, static_cast<BYTE>(stBits),
-      mbData.Ptr<BYTE>(), mbData.Ptr<BYTE>());
+      dcData.Ptr<BYTE>(), dcData.Ptr<BYTE>());
     if(!hNewIcon)
       XCS("Failed to create new icon!",
           "Type",   cpType,  "Identifier", strId,
           "Width",  stWidth, "Height",     stHeight,
-          "Bits",   stBits,  "Data",       !mbData.Empty(),
+          "Bits",   stBits,  "Data",       !dcData.Empty(),
           "Window", reinterpret_cast<void*>(GetWindowHandle()));
     // Destroy old icon if created and then assign the new icon
     if(hI && !DestroyIcon(hI))
@@ -470,13 +473,13 @@ class SysCore :
   }
   /* -- Set small or large icon -------------------------------------------- */
   void SetLargeIcon(const string &strId, const size_t stWidth,
-    const size_t stHeight, const size_t stBits, Memory &mbData)
+    const size_t stHeight, const size_t stBits, const DataConst &dcData)
       { SetIcon(strId, "large", ICON_BIG, hIconLarge, stWidth, stHeight,
-          stBits, mbData); }
+          stBits, dcData); }
   void SetSmallIcon(const string &strId, const size_t stWidth,
-    const size_t stHeight, const size_t stBits, Memory &mbData)
+    const size_t stHeight, const size_t stBits, const DataConst &dcData)
       { SetIcon(strId, "small", ICON_SMALL, hIconSmall, stWidth, stHeight,
-          stBits, mbData); }
+          stBits, dcData); }
   /* -- Free the library handle -------------------------------------------- */
   static bool LibFree(void*const vpModule)
     { return vpModule && !!FreeLibrary(reinterpret_cast<HMODULE>(vpModule)); }
@@ -494,20 +497,21 @@ class SysCore :
           cpExport); }
   /* -- Load the specified .dll -------------------------------------------- */
   static void *LibLoad(const char*const cpFileName) { return
-    reinterpret_cast<void*>(LoadLibraryEx(UTFtoS16(cpFileName), nullptr, 0)); }
+    reinterpret_cast<void*>(LoadLibraryEx(UTFtoS16(cpFileName).c_str(),
+      nullptr, 0)); }
   /* -- Get full pathname to the library ----------------------------------- */
   const string LibGetName(void*const vpModule,
     const char*const cpAltName) const
   { // Return nothing if no module
     if(!vpModule) return {};
     // Storage for library name.
-    Memory mStr{ _MAX_PATH * sizeof(ARGTYPE) };
+    Memory mStr{ _MAX_PATH * sizeof(ArgType) };
     // Get the library name and store it in the memory
     mStr.Resize(GetModuleFileNameEx(hProcess,
-      reinterpret_cast<HMODULE>(vpModule), mStr.Ptr<ARGTYPE>(),
-      mStr.Size<DWORD>()) * sizeof(ARGTYPE));
+      reinterpret_cast<HMODULE>(vpModule), mStr.Ptr<ArgType>(),
+      mStr.Size<DWORD>()) * sizeof(ArgType));
     // Use default name if empty or failed
-    return mStr.Empty() ? cpAltName : S16toUTF(mStr.Ptr<ARGTYPE>());
+    return mStr.Empty() ? cpAltName : S16toUTF(mStr.Ptr<ArgType>());
   }
   /* ----------------------------------------------------------------------- */
   void UpdateCPUUsageData(void)
@@ -643,15 +647,16 @@ class SysCore :
     if(!dwNeeded)
       XC("Windows gave zero size module handle list!", "Process", hProcess);
     // Allocate memory
-    vector<HMODULE> vModules{ dwNeeded / sizeof(HMODULE) };
+    typedef vector<HMODULE> ModuleHandleVec;
+    ModuleHandleVec mhvList{ dwNeeded / sizeof(HMODULE) };
     // Get modules
-    if(!EnumProcessModules(hProcess, vModules.data(), dwNeeded, &dwNeeded))
+    if(!EnumProcessModules(hProcess, mhvList.data(), dwNeeded, &dwNeeded))
       XCS("Failed to enumerate process modules!",
           "Process",    reinterpret_cast<void*>(hProcess),
-          "Allocation", vModules.size(),
+          "Allocation", mhvList.size(),
           "Required",   static_cast<unsigned int>(dwNeeded));
     // For each module. Get filename then check the version info for it
-    for(const HMODULE hH : vModules)
+    for(const HMODULE hH : mhvList)
     { // Prepare string to hold filename
       wstring wstrP; wstrP.resize(MAX_PATH);
       // Put filename of file in string and resize string to amount returned
@@ -806,12 +811,12 @@ class SysCore :
         GetSharedFunc<LPWINEGETVERSION>(hDLL, "wine_get_version"))
           strExtra = Append("Wine ", fcbWGV()), bExtra = true;
       else bExtra = false;
-    } // Store if we have extra info because strExtra is being std::move()'d
+    } // Store if we have extra info because strExtra is being StdMove()'d
     else bExtra = false;
     // Return data
     return {
       osOS.str(),                            // Version string
-      std::move(strExtra),                        // Extra version string
+      StdMove(strExtra),                        // Extra version string
       osviData.dwMajorVersion,               // Major OS version
       osviData.dwMinorVersion,               // Minor OS version
       osviData.dwBuildNumber,                // OS build version
@@ -828,9 +833,10 @@ class SysCore :
   { // Get this executables checksum and show error if failed
     DWORD dwHeaderSum, dwCheckSum;
     if(const DWORD dwResult =
-      MapFileAndCheckSum(UTFtoS16(ENGFull()), &dwHeaderSum, &dwCheckSum))
-        XCS("Error reading the executable checksum!",
-            "Executable", ENGFull(), "Result", dwResult);
+         MapFileAndCheckSum(UTFtoS16(ENGFull()).c_str(),
+           &dwHeaderSum, &dwCheckSum))
+      XCS("Error reading the executable checksum!",
+          "Executable", ENGFull(), "Result", dwResult);
     // Return data
     return { dwHeaderSum, dwCheckSum, dwHeaderSum != dwCheckSum, false };
   }
@@ -1014,7 +1020,7 @@ class SysCore :
     { return cCmdLine->MakeEnvPath("APPDATA", ""); }
   /* -- Constructor (only derivable) --------------------------------------- */
   SysCore(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     SysVersion{ EnumModules(),         // Enumerate modules
       reinterpret_cast<size_t>         // Stored as 'size_t' for cross-platform
         (hInstance) },                 // Send this processes instance handle
@@ -1035,4 +1041,5 @@ class SysCore :
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(SysCore);            // Supress copy constructor for safety
 }; /* ---------------------------------------------------------------------- */
+}                                      // End of module namespace
 /* == EoF =========================================================== EoF == */

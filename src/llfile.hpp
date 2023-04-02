@@ -15,7 +15,7 @@
 // ! The file class allows the programmer to read and write files from the
 // ! game directory.
 /* ========================================================================= */
-LLNAMESPACEBEGIN(File)                 // File namespace
+namespace NsFile {                     // File namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfFile;                // Using file namespace
 using namespace IfAsset;               // Using asset namespace
@@ -420,45 +420,29 @@ LLFUNCEX(ValidName, 1, LCPUSHINT(DirValidName(LCGETCPPSTRING(1, "File"))));
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSBEGIN                              // File.* namespace functions begin
-  LLRSFUNC(AppendOne),                 // Open file, append asset and close
-  LLRSFUNC(AppendOneStr),              // Open file, append string and close
-  LLRSFUNC(Enumerate),                 // Enumerate specified filespec
-  LLRSFUNC(EnumerateEx),               // " plus extension filtering
-  LLRSFUNC(Error),                     // Return last error number
-  LLRSFUNC(DirExists),                 // Directory exists on disk
-  LLRSFUNC(FileExists),                // File exists on disk
-  LLRSFUNC(Executable),                // File is executable?
-  LLRSFUNC(Exists),                    // Directory or file exists on disk
-  LLRSFUNC(Info),                      // Get file information
-  LLRSFUNC(MkDir),                     // Make a directory
-  LLRSFUNC(MkDirEx),                   // Make interim directories
-  LLRSFUNC(Open),                      // Open or create a file
-  LLRSFUNC(ReadOneStr),                // Read one string from file
-  LLRSFUNC(ReadWritable),              // File is readable and writable?
-  LLRSFUNC(Readable),                  // File is readable?
-  LLRSFUNC(Rename),                    // Move a file or directory
-  LLRSFUNC(RmDir),                     // Delete a empty directory
-  LLRSFUNC(RmDirEx),                   // Delete interim directories
-  LLRSFUNC(Unlink),                    // Delete a file
-  LLRSFUNC(ValidName),                 // File name is valid?
-  LLRSFUNC(Writable),                  // File is writable?
-  LLRSFUNC(WriteOne),                  // Open file, write asset and close
-  LLRSFUNC(WriteOneStr),               // Open file, write string and close
+  LLRSFUNC(AppendOne),    LLRSFUNC(AppendOneStr), LLRSFUNC(DirExists),
+  LLRSFUNC(Enumerate),    LLRSFUNC(EnumerateEx),  LLRSFUNC(Error),
+  LLRSFUNC(Executable),   LLRSFUNC(Exists),       LLRSFUNC(FileExists),
+  LLRSFUNC(Info),         LLRSFUNC(MkDir),        LLRSFUNC(MkDirEx),
+  LLRSFUNC(Open),         LLRSFUNC(Readable),     LLRSFUNC(ReadOneStr),
+  LLRSFUNC(ReadWritable), LLRSFUNC(Rename),       LLRSFUNC(RmDir),
+  LLRSFUNC(RmDirEx),      LLRSFUNC(Unlink),       LLRSFUNC(ValidName),
+  LLRSFUNC(Writable),     LLRSFUNC(WriteOne),     LLRSFUNC(WriteOneStr),
 LLRSEND                                // File.* namespace functions end
 /* ------------------------------------------------------------------------- */
 LLRSKTBEGIN(Flags)                     // Beginning of open mode flags
-LLRSKTITEM(FStream::FM_,R_T),          LLRSKTITEM(FStream::FM_,W_T),
-LLRSKTITEM(FStream::FM_,A_T),          LLRSKTITEM(FStream::FM_,R_P_T),
-LLRSKTITEM(FStream::FM_,W_P_T),        LLRSKTITEM(FStream::FM_,A_P_T),
-LLRSKTITEM(FStream::FM_,R_B),          LLRSKTITEM(FStream::FM_,W_B),
-LLRSKTITEM(FStream::FM_,A_B),          LLRSKTITEM(FStream::FM_,R_P_B),
-LLRSKTITEM(FStream::FM_,W_P_B),        LLRSKTITEM(FStream::FM_,A_P_B),
-LLRSKTITEM(FStream::FM_,MAX),
+  LLRSKTITEM(FStream::FM_,R_T),        LLRSKTITEM(FStream::FM_,W_T),
+  LLRSKTITEM(FStream::FM_,A_T),        LLRSKTITEM(FStream::FM_,R_P_T),
+  LLRSKTITEM(FStream::FM_,W_P_T),      LLRSKTITEM(FStream::FM_,A_P_T),
+  LLRSKTITEM(FStream::FM_,R_B),        LLRSKTITEM(FStream::FM_,W_B),
+  LLRSKTITEM(FStream::FM_,A_B),        LLRSKTITEM(FStream::FM_,R_P_B),
+  LLRSKTITEM(FStream::FM_,W_P_B),      LLRSKTITEM(FStream::FM_,A_P_B),
+  LLRSKTITEM(FStream::FM_,MAX),
 LLRSKTEND                              // End of open mode flags
 /* ========================================================================= */
 LLRSCONSTBEGIN                         // File.* namespace consts begin
-LLRSCONST(Flags),                      // File open mode flags
+  LLRSCONST(Flags),
 LLRSCONSTEND                           // File.* namespace consts end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of File namespace
+}                                      // End of File namespace
 /* == EoF =========================================================== EoF == */

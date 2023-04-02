@@ -113,7 +113,7 @@ template<typename MemberType>class AsyncLoader :
           reinterpret_cast<void*>(&cAsyncOwner), AR_LOADING,
           static_cast<uint64_t>(apcCmd), vVars...); }
   /* -- Write to pipe assistant -------------------------------------------- */
-  void AsyncWriteToPipe(SysPipe &spProcess, size_t &stPosition,
+  void AsyncWriteToPipe(SysBase::SysPipe &spProcess, size_t &stPosition,
     const size_t stBuffer)
   { // Write a block of data and get how much we wrote. We hard fail if we did
     // not write the correct number of bytes
@@ -145,7 +145,7 @@ template<typename MemberType>class AsyncLoader :
   { // Duration of execution
     const ClockChrono<> ccExecute;
     // Open pipe to application
-    SysPipe spProcess{ IdentGet() };
+    SysBase::SysPipe spProcess{ IdentGet() };
     // Record pid. This is so the destructor can kill it on exit
     uiAsyncPid = spProcess.GetPid();
     // Send progress event
@@ -187,7 +187,7 @@ template<typename MemberType>class AsyncLoader :
       // Increase total bytes read
       stTotalRead += mBuffer.Size();
       // Move it into the packet list
-      mlBlocks.emplace_back(std::move(mBuffer));
+      mlBlocks.emplace_back(StdMove(mBuffer));
     } // Finished with pipe. Also gets the exit code too.
     spProcess.Finish();
     // Pid no longer valid
@@ -230,7 +230,7 @@ template<typename MemberType>class AsyncLoader :
   /* -- Move the stored memory block into a new filemap and parse it ------- */
   void AsyncParseMemory(void)
     { FileMap fmFile{ IdentGet(),
-        std::move(mAsyncLoadData), cmSys.GetTimeS() };
+        StdMove(mAsyncLoadData), cmSys.GetTimeS() };
       AsyncParseFileMap(fmFile); }
   /* -- Load the specified file and parse it ------------------------------- */
   void AsyncParseFile(void)
@@ -295,7 +295,7 @@ template<typename MemberType>class AsyncLoader :
     lesAsync.LuaEvtInitEx(lsS);
     // Save the current stack because if an error occurs asynchronously, the
     // event subsystem executes the callback and will be empty.
-    strAsyncError = std::move(GetStack(lsS));
+    strAsyncError = StdMove(GetStack(lsS));
     // Begin async thread
     tAsyncThread.ThreadInit(Append(strL, ':', strName),
       bind(&AsyncLoader<MemberType>::AsyncThreadMain,
@@ -397,7 +397,7 @@ template<typename MemberType>class AsyncLoader :
   { // Loading from command-line
     aiAsyncType = BA_EXECUTE;
     // Set memory sent to stdin
-    mAsyncLoadData = std::move(mbInput);
+    mAsyncLoadData = StdMove(mbInput);
     // Init rest of members
     AsyncInit(lsS, strCmdLine, strLabel);
   }
@@ -405,7 +405,7 @@ template<typename MemberType>class AsyncLoader :
   void AsyncInitArray(lua_State*const lsS, const string &strName,
     const string &strLabel, Memory &&mData)
   { // Set data to load from
-    mAsyncLoadData = std::move(mData);
+    mAsyncLoadData = StdMove(mData);
     // Loading from memory
     aiAsyncType = BA_MEMORY;
     // Init rest of members
@@ -423,7 +423,7 @@ template<typename MemberType>class AsyncLoader :
   { // Set identifier
     IdentSet(strName);
     // Put the memory block into a file map and load the block
-    FileMap fmData{ strName, std::move(mData), cmSys.GetTimeS() };
+    FileMap fmData{ strName, StdMove(mData), cmSys.GetTimeS() };
     // Send to derived class and register
     SyncLoadDataAndRegister(fmData);
   }
@@ -562,6 +562,7 @@ template<typename MemberType>class AsyncLoader :
     cAsyncOwner{ *cO },                // Initialise owner of this class
     evtAsyncEvent(eC),                 // Initialise event id
     lesAsync{ cO, eC },                // Initialise Lua event class
+    tAsyncThread{ SysThread::Low },    // Initialise low priority thread
     aiAsyncType(BA_NONE),              // Initialise load source type
     uiAsyncPid(0)                      // Initialise pid for BA_EXECUTE
     /* --------------------------------------------------------------------- */
@@ -582,7 +583,7 @@ template<typename MemberType>class AsyncLoader :
     AsyncStop();
   }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(AsyncLoader);        // Disable copy constructor
+  DELETECOPYCTORS(AsyncLoader)         // Disable copy constructor
 };/* -- Function to wait for async of all members in a collector ----------- */
 template<class MemberType,
          class LockType,
@@ -603,13 +604,13 @@ class CLHelperAsync :
   }
   /* -- Constructor -------------------------------------------------------- */
   CLHelperAsync(const char*const cpN, const EvtMainCmd eC) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     BaseType{ cpN },                   // Initialise name of base tpye
     lemAsync{ eC }                     // Initialise event name
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(CLHelperAsync);      // Supress copy constructor for safety
+  DELETECOPYCTORS(CLHelperAsync)       // Supress copy constructor for safety
 };/* -- End of module namespace -------------------------------------------- */
 };                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

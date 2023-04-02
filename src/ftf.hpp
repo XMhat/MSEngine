@@ -100,8 +100,6 @@ static class FreeType final            // Members initially private
   /* ----------------------------------------------------------------------- */
   void DeInit(void) { if(DoDeInit()) ftLibrary = nullptr; }
   /* ----------------------------------------------------------------------- */
-  DTORHELPER(~FreeType, DoDeInit());
-  /* ----------------------------------------------------------------------- */
   FreeType(void) : ftLibrary(nullptr), ftMemory{ this,
     [](FT_Memory, long lBytes)->void*
       { return MemAlloc<void>(lBytes); },
@@ -111,7 +109,9 @@ static class FreeType final            // Members initially private
       { return MemReAlloc(vpAddress, lBytes); }
   } { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(FreeType);           // No copying of class allowed
+  DTORHELPER(~FreeType, DoDeInit())
+  /* ----------------------------------------------------------------------- */
+  DELETECOPYCTORS(FreeType)            // No copying of class allowed
   /* ----------------------------------------------------------------------- */
 } *cFreeType = nullptr;                   // Pointer to static class
 /* == Ftf collector class for collector data and custom variables ========== */
@@ -225,7 +225,7 @@ BEGIN_ASYNCCOLLECTORDUO(Ftfs, Ftf, CLHelperUnsafe, ICHelperUnsafe),
     // Set other members
     InitVars(fW, fH, uiDW, uiDH, fO);
     // Prepare asynchronous loading from array
-    AsyncInitArray(lS, strName, "ftfarray", std::move(aData));
+    AsyncInitArray(lS, strName, "ftfarray", StdMove(aData));
   }
   /* -- Load pcm from file asynchronously ---------------------------------- */
   void InitAsyncFile(lua_State*const lS)
@@ -263,7 +263,7 @@ BEGIN_ASYNCCOLLECTORDUO(Ftfs, Ftf, CLHelperUnsafe, ICHelperUnsafe),
   { // Set other members
     InitVars(fW, fH, uiDW, uiDH, fO);
     // Load file as array
-    SyncInitArray(strName, std::move(mbD));
+    SyncInitArray(strName, StdMove(mbD));
   }
   /* -- De-init ftf font --------------------------------------------------- */
   void DeInit(void) { DoDeInit(); ftStroker = nullptr; ftFace = nullptr; }
@@ -272,9 +272,9 @@ BEGIN_ASYNCCOLLECTORDUO(Ftfs, Ftf, CLHelperUnsafe, ICHelperUnsafe),
   { // Copy variables over from source class
     DimSwap(oCref);
     dDPI.DimSwap(oCref.dDPI);
-    std::swap(fOutline, oCref.fOutline);
-    std::swap(ftFace, oCref.ftFace);
-    std::swap(ftStroker, oCref.ftStroker);
+    swap(fOutline, oCref.fOutline);
+    swap(ftFace, oCref.ftFace);
+    swap(ftStroker, oCref.ftStroker);
     // Swap file class
     fFTData.FileMapSwap(oCref.fFTData);
     // Swap async, lua lock data and registration
@@ -286,7 +286,7 @@ BEGIN_ASYNCCOLLECTORDUO(Ftfs, Ftf, CLHelperUnsafe, ICHelperUnsafe),
   Ftf& operator=(Ftf &&oCref) { SwapFtf(oCref); return *this; }
   /* -- Default constructor ------------------------------------------------ */
   Ftf(void) :                          // No parameters
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperFtf{ *cFtfs },             // Initially unregistered
     IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     AsyncLoader<Ftf>{ this,            // Initialise async loader with class
@@ -298,16 +298,16 @@ BEGIN_ASYNCCOLLECTORDUO(Ftfs, Ftf, CLHelperUnsafe, ICHelperUnsafe),
     { }                                // Do nothing else
   /* -- MOVE constructor --------------------------------------------------- */
   Ftf(Ftf &&oCref) :                   // The other Ftf class to swap with
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     Ftf()                              // Use default initialisers
     /* --------------------------------------------------------------------- */
     { SwapFtf(oCref); }                // Do the swap
   /* -- Destructor --------------------------------------------------------- */
   ~Ftf(void) { AsyncCancel(); DoDeInit(); }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Ftf);                // Disable copy constructor and operator
+  DELETECOPYCTORS(Ftf)                 // Disable copy constructor and operator
 };/* -- End ---------------------------------------------------------------- */
-END_ASYNCCOLLECTOR(Ftfs, Ftf, FONT);   // End of ftf collector
+END_ASYNCCOLLECTOR(Ftfs, Ftf, FONT)    // End of ftf collector
 /* ------------------------------------------------------------------------- */
 };                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

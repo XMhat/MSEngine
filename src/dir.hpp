@@ -1,4 +1,4 @@
-/* == PSPLIT.HPP =========================================================== */
+/* == DIR.HPP ============================================================== */
 /* ######################################################################### */
 /* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
 /* ######################################################################### */
@@ -10,7 +10,6 @@
 namespace IfDir {                      // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfPSplit;              // Using psplit namespace
-using namespace IfError;               // Using error namespace
 using namespace IfToken;               // Using token namespace
 /* ------------------------------------------------------------------------- */
 enum ValidResult                       // Return values for ValidName()
@@ -35,22 +34,30 @@ enum ValidType                         // Types for ValidName()
 { /* ----------------------------------------------------------------------- */
   VT_TRUSTED,                          // Trusted caller
   VT_UNTRUSTED,                        // Untrusted caller (chroot-like)
-}; /* ====================================================================== */
-/* -- Convert a valid result from ValidName to string ---------------------- */
-static const string &DirValidNameResultToString(const ValidResult vrId)
-{ // Lookup table of errors
-  static const IfIdent::IdList<VR_MAX> ilErrors{{
-    "Filename is valid",         /*00-01*/ "Empty filename",
-    "Filename too long",         /*02-03*/ "Root directory not allowed",
-    "Drive letter not allowed",  /*04-05*/ "Invalid drive letter",
-    "Invalid trust parameter",   /*06-07*/ "Double-slash or pre/suffix slash",
-    "Invalid character in part", /*08-09*/ "Parent directory not allowed",
-    "No trailing whitespace",    /*10-11*/ "No leading whitespace",
-    "No reserved names",         /*12   */
-  }};
-  // Return looked up string
-  return ilErrors.Get(vrId);
-}
+};/* ----------------------------------------------------------------------- */
+static const class DirBase final       // Members initially private
+{ /* ----------------------------------------------------------------------- */
+  typedef IfIdent::IdList<VR_MAX> VRList;
+  const VRList     vrStrings;          // List of ValidName strings.
+  /* -- Convert a valid result from ValidName to string ------------ */ public:
+  const string &VNRtoStr(const ValidResult vrId) const
+    { return vrStrings.Get(vrId); }
+  /* -- Default constructor ------------------------------------------------ */
+  DirBase(void) :                      // No parameters
+    /* -- Initialisers ----------------------------------------------------- */
+    vrStrings{{                        // Init ValidNameResult strings
+      "Filename is valid",         /*0001*/ "Empty filename",
+      "Filename too long",         /*0203*/ "Root directory not allowed",
+      "Drive letter not allowed",  /*0405*/ "Invalid drive letter",
+      "Invalid trust parameter",   /*0607*/ "Double-slash or pre/suffix slash",
+      "Invalid character in part", /*0809*/ "Parent directory not allowed",
+      "No trailing whitespace",    /*1011*/ "No leading whitespace",
+      "No reserved names",         /*12  */
+    }}                                 // Finished ValidNameResult strings
+    /* -- No code ---------------------------------------------------------- */
+    { }
+} /* ----------------------------------------------------------------------- */
+*cDirBase = nullptr;                   // Assigned by main function
 /* -- Check that path part character is valid ------------------------------ */
 static bool DirIsValidPathPartCharacter(const char cChar)
 { // Test character
@@ -178,7 +185,7 @@ class DirFile                          // Files container class
   const StrSet Export(const EntMap &dSrc) const
   { // Write entries into a single set list and return it
     StrSet ssFiles;
-    for(const auto &dFile : dSrc) ssFiles.emplace(std::move(dFile.first));
+    for(const auto &dFile : dSrc) ssFiles.emplace(StdMove(dFile.first));
     return ssFiles;
   }
   /* -- Convert to set ----------------------------------------------------- */
@@ -188,20 +195,20 @@ class DirFile                          // Files container class
   DirFile(void) { }
   /* -- Move constructor --------------------------------------------------- */
   DirFile(EntMap &&dD, EntMap &&dF) :
-    /* -- Initialisation of members ---------------------------------------- */
-    dDirs{ std::move(dD) },
-    dFiles{ std::move(dF) }
+    /* -- Initialisers ----------------------------------------------------- */
+    dDirs{ StdMove(dD) },
+    dFiles{ StdMove(dF) }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Move constructor --------------------------------------------------- */
   DirFile(DirFile &&dflOther) :
-    /* -- Initialisation of members ---------------------------------------- */
-    dDirs{ std::move(dflOther.dDirs) },
-    dFiles{ std::move(dflOther.dFiles) }
+    /* -- Initialisers ----------------------------------------------------- */
+    dDirs{ StdMove(dflOther.dDirs) },
+    dFiles{ StdMove(dflOther.dFiles) }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(DirFile);            // Disable copy constructor and operator
+  DELETECOPYCTORS(DirFile)             // Disable copy constructor and operator
 };/* -- DirCore class ------------------------------------------------------ */
 class DirCore                          // System specific implementation
 { /* -- Variables -------------------------------------------------- */ public:
@@ -240,9 +247,9 @@ class DirCore                          // System specific implementation
   }
   /* -- Constructor for WIN32 system --------------------------------------- */
   explicit DirCore(const string &strDir) :
-    /* -- Initialisation of members ---------------------------------------- */
-    iH(_wfindfirst64(UTFtoS16(string{ strDir.empty() ? "*" :
-      Append(Trim(strDir, '/'), "/*") }), &wfData)),
+    /* -- Initialisers ----------------------------------------------------- */
+    iH(_wfindfirst64(UTFtoS16(strDir.empty() ? "*" :
+      Append(Trim(strDir, '/'), "/*")).c_str(), &wfData)),
     bMore(iH != -1)
     /* -- Process file if there are more ----------------------------------- */
     { if(bMore) ProcessItem(); }
@@ -287,7 +294,7 @@ class DirCore                          // System specific implementation
   }
   /* -- Constructor for POSIX system --------------------------------------- */
   explicit DirCore(const string &strDir) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     dData{ opendir(Trim(strDir.empty() ? "." : strDir, '/').c_str()),
       closedir },
     dPtrNext{ &dPtr }
@@ -334,7 +341,7 @@ class DirCore                          // System specific implementation
   }
   /* -- Constructor for POSIX system --------------------------------------- */
   explicit DirCore(const string &strDir) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     dData{ opendir(Trim(strDir.empty() ? "." : strDir, '/').c_str()) }
     /* -- Initialise directory handle -------------------------------------- */
     { // Return if we could not open the directory
@@ -353,7 +360,7 @@ class DirCore                          // System specific implementation
   /* ----------------------------------------------------------------------- */
 #endif                                 // End of system implementation check
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(DirCore);            // Disable copy constructor and operator
+  DELETECOPYCTORS(DirCore)             // Disable copy constructor and operator
 };/* == Dir class ========================================================== */
 class Dir :                            // Directory information class
   /* -- Base classes ------------------------------------------------------- */
@@ -381,17 +388,17 @@ class Dir :                            // Directory information class
       do
       { // Add directory if is a directory
         if(dfcInterface.bIsDir)
-          dliDirs.insert({ std::move(dfcInterface.strFile),
-                           std::move(dfcInterface.dItem) });
+          dliDirs.insert({ StdMove(dfcInterface.strFile),
+                           StdMove(dfcInterface.dItem) });
         // Insert into files list
-        else dliFiles.insert({ std::move(dfcInterface.strFile),
-                               std::move(dfcInterface.dItem) });
+        else dliFiles.insert({ StdMove(dfcInterface.strFile),
+                               StdMove(dfcInterface.dItem) });
         // ...until no more entries
       } while(dfcInterface.GetNextFile());
       // Remove '.' and '..' entries
       RemoveParentAndCurrentDirectory(dliDirs);
     } // Return list of files and directories
-    return { std::move(dliDirs), std::move(dliFiles) };
+    return { StdMove(dliDirs), StdMove(dliFiles) };
   }
   /* -- Scan with match checking ------------------------------------------- */
   static DirFile ScanDirExt(const string &strDir, const string &strExt)
@@ -404,147 +411,47 @@ class Dir :                            // Directory information class
       do
       { // Add directory if is a directory
         if(dfcInterface.bIsDir)
-          dliDirs.insert({ std::move(dfcInterface.strFile),
-                           std::move(dfcInterface.dItem) });
+          dliDirs.insert({ StdMove(dfcInterface.strFile),
+                           StdMove(dfcInterface.dItem) });
         // Is a file and extension doesn't match? Ignore it
         else if(PathSplit(dfcInterface.strFile).strExt != strExt) continue;
         // Insert into files list
-        else dliFiles.insert({ std::move(dfcInterface.strFile),
-                               std::move(dfcInterface.dItem) });
+        else dliFiles.insert({ StdMove(dfcInterface.strFile),
+                               StdMove(dfcInterface.dItem) });
         // ...until no more entries
       } while(dfcInterface.GetNextFile());
       // Remove '.' and '..' entries
       RemoveParentAndCurrentDirectory(dliDirs);
     } // Return list of files and directories
-    return { std::move(dliDirs), std::move(dliFiles) };
+    return { StdMove(dliDirs), StdMove(dliFiles) };
   }
   /* -- Constructor of current directory without safety --------- */ protected:
   explicit Dir(DirFile &&dfList) :
-    /* -- Initialisation of members ---------------------------------------- */
-    DirFile{ std::move(dfList) }
+    /* -- Initialisers ----------------------------------------------------- */
+    DirFile{ StdMove(dfList) }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor of current directory without safety ------------ */ public:
   Dir(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     DirFile{ ScanDir() }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor of specified directory without safety ------------------ */
   explicit Dir(const string &strDir) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     DirFile{ ScanDir(strDir) }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor of specified dir without safety and file matching ------ */
   Dir(const string &strDir, const string &strExt) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     DirFile{ ScanDirExt(strDir, strExt) }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Dir);                // Disable copy constructor and operator
+  DELETECOPYCTORS(Dir)                 // Disable copy constructor and operator
 };/* ----------------------------------------------------------------------- */
-/* == Class to break apart urls ============================================ */
-class Url
-{ /* -- Public typedefs -------------------------------------------- */ public:
-  enum Result                          // Result codes
-  {/* ---------------------------------------------------------------------- */
-    R_GOOD,                            // Url is good
-    R_EMPTYURL,                        // Empty URL specified
-    R_NOPROTO,                         // No protocol delimiter ':'
-    R_INVPROTO,                        // Invalid protocol (not ://)
-    R_EMPROTO,                         // Empty protocol after processing
-    R_EMHOST,                          // Empty hostname
-    R_EMPORT,                          // Empty port number
-    R_INVPORT,                         // Invalid port number (1-65535)
-    R_UNKPROTOPORT,                    // Unknown protocol with portr specified
-    R_EMHOSTPORT,                      // Empty hostname after port parsed
-    R_UNKPROTO,                        // Unknown protocol without port
-    R_MAX                              // Maximum number of codes
-  };/* -- Private variables --------------------------------------- */ private:
-  Result           rResult;            // Result
-  string           strProtocol;        // 'http' or 'https'
-  string           strHost;            // Hostname
-  string           strResource;        // The request uri
-  string           strBookmark;        // Bookmark
-  unsigned int     uiPort;             // Port number (1-65535)
-  bool             bSecure;            // Connection would require SSL?
-  /* -- Return data ------------------------------------------------ */ public:
-  Result GetResult(void) const { return rResult; }
-  const string &GetProtocol(void) const { return strProtocol; }
-  const string &GetHost(void) const { return strHost; }
-  const string &GetResource(void) const { return strResource; }
-  const string &GetBookmark(void) const { return strBookmark; }
-  unsigned int GetPort(void) const { return uiPort; }
-  bool GetSecure(void) const { return bSecure; }
-  /* -- Constructor -------------------------------------------------------- */
-  explicit Url(const string &strUrl)
-  { // Error if url is empty
-    if(strUrl.empty()) { rResult = R_EMPTYURL; return; }
-    // Find protocol and throw if error
-    const size_t stProtPos = strUrl.find(':');
-    if(stProtPos == string::npos) { rResult = R_NOPROTO; return; }
-    for(size_t stPos = stProtPos + 1, stPosEnd = stPos + 1;
-               stPos < stPosEnd;
-             ++stPos)
-      if(strUrl[stPos] != '/') { rResult = R_INVPROTO; return; }
-    // Copy the protocol part and throw error if empty string
-    strProtocol = strUrl.substr(0, stProtPos);
-    if(strProtocol.empty()) { rResult = R_EMPROTO; return; }
-    // Find hostname and if we couldn't find it?
-    const size_t stUrlStartPos = stProtPos + 3;
-    const size_t stHostPos = strUrl.find('/', stUrlStartPos);
-    if(stHostPos == string::npos)
-    { // Set default resource to root
-      strResource = '/';
-      // Finalise hostname
-      strHost = strUrl.substr(stUrlStartPos);
-    } // Request not found
-    else
-    { // Copy request part of url
-      strResource = strUrl.substr(stHostPos);
-      // Copy host part of url
-      strHost = strUrl.substr(stUrlStartPos, stHostPos-stUrlStartPos);
-    } // Check hostname not empty
-    if(strHost.empty()) { rResult = R_EMHOST; return; }
-    // Find port in hostname
-    const size_t stPortPos = strHost.find(':');
-    if(stPortPos != string::npos)
-    { // Get port part of string and throw error if empty string
-      const string strPort{ strHost.substr(stPortPos + 1) };
-      if(strPort.empty()) { rResult = R_EMPORT; return; }
-      // Convert port to number and throw error if invalid
-      uiPort = ToNumber<unsigned int>(strPort);
-      if(!uiPort || uiPort > 65535) { rResult = R_INVPORT; return; }
-      // Set insecure if http was requested
-      if(strProtocol == "http") bSecure = false;
-      // Set secure if https was requested
-      else if(strProtocol == "https") bSecure = true;
-      // Unknown protocol error
-      else { rResult = R_UNKPROTOPORT; return; }
-      // Copy host part without port
-      strHost.resize(stPortPos);
-      if(strHost.empty()) { rResult = R_EMHOSTPORT; return; }
-    } // Port number not found?
-    else
-    { // We have to find the port so set insecure port 80 if scheme is http
-      if(strProtocol == "http") { uiPort = 80; bSecure = false; }
-      // Set 443 if protocol is secure https
-      else if(strProtocol == "https") { uiPort = 443; bSecure = true; }
-      // Unknown protocol error
-      else { rResult = R_UNKPROTO; return; }
-    } // Find bookmark and if there is one?
-    const size_t stBookmarkPos = strResource.find('#');
-    if(stBookmarkPos != string::npos)
-    { // Copy in bookmark string
-      strBookmark = strResource.substr(stBookmarkPos + 1);
-      // Trim resource
-      strResource.resize(stBookmarkPos);
-    } // Good result
-    rResult = R_GOOD;
-  }
-};/* -- End of module namespace -------------------------------------------- */
 /* -- Get current directory ------------------------------------------------ */
 static const string DirGetCWD(void)
 { // On windows, we need to use unicode
@@ -583,12 +490,9 @@ static bool DirSetCWD(const string &strDirectory)
   if(strDirectory.length() >= 3 && strDirectory[1] == ':' &&
      (strDirectory[2] == '\\' || strDirectory[2] != '/') &&
        _chdrive((toupper(ucD) - 'A') + 1) < 0) return false;
-  // Set directory and drive, return false if there is a problem
-  return !_wchdir(UTFtoS16(strDirectory));
-#else
-  // It's far more easier on a unix system!
-  return !chdir(strDirectory.c_str());
 #endif
+  // Set current directory and return false if there is a problem
+  return !StdChDir(strDirectory);
 }
 /* -- Make a directory ----------------------------------------------------- */
 static bool DirMkDir(const string &strD) { return !StdMkDir(strD); }
@@ -611,7 +515,7 @@ static bool DirMkDirEx(const string &strDir)
     // directory doesn't already exist
     if(!DirMkDir(strFirst) && IsNotErrNo(EEXIST)) return false;
     // Move first item. It will be empty if directory started with a slash
-    osS << std::move(strFirst);
+    osS << StdMove(strFirst);
   } // If there are more directories?
   if(tParts.size() >= 2)
   { // Create all the other directories
@@ -619,7 +523,7 @@ static bool DirMkDirEx(const string &strDir)
                          svI != tParts.cend();
                        ++svI)
     { // Append next directory
-      osS << '/' << std::move(*svI);
+      osS << '/' << StdMove(*svI);
       // Make the directory and if failed and it doesn't exist return error
       if(!DirMkDir(osS.str()) && IsNotErrNo(EEXIST)) return false;
     }
@@ -705,7 +609,7 @@ static void DirVerifyFileNameIsValid(const string &strFilename)
   if(const ValidResult vrId = DirValidName(strFilename))
     XC("Filename is invalid!",
        "File",     strFilename,
-       "Reason",   DirValidNameResultToString(vrId),
+       "Reason",   cDirBase->VNRtoStr(vrId),
        "ReasonId", vrId);
 }
 /* ------------------------------------------------------------------------- */
@@ -729,6 +633,5 @@ class DirSaver
     /* --------------------------------------------------------------------- */
     { DirSetCWD(strCWD); }
 };/* ----------------------------------------------------------------------- */
-/* ------------------------------------------------------------------------- */
 };                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

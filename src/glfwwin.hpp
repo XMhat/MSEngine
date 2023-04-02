@@ -11,7 +11,9 @@ namespace IfGlFWWindow {               // Start of module namespace
 /* ------------------------------------------------------------------------- */
 using namespace IfGlFWUtil;            // Using glfw utility namespace
 /* ------------------------------------------------------------------------- */
-class GlFWWindow                       // GLFW window class
+class GlFWWindow :                     // GLFW window class
+  /* -- Base classes ------------------------------------------------------- */
+  public GlFWUtil                      // Include utilities
 { /* -- Private variables -------------------------------------------------- */
   GLFWwindow      *wClass;             // GLFW window context
   StrVector        vFiles;             // Drag and drop file list
@@ -124,9 +126,6 @@ class GlFWWindow                       // GLFW window class
     glfwSetWindowRefreshCallback(WinGetHandle(),
       [](GLFWwindow*const wC)
         { cEvtMain->Add(EMC_WIN_REFRESH, reinterpret_cast<void*>(wC)); });
-    glfwSetWindowRefreshCallback(WinGetHandle(),
-      [](GLFWwindow*const wC)
-        { cEvtMain->Add(EMC_WIN_REFRESH, reinterpret_cast<void*>(wC)); });
     glfwSetWindowSizeCallback(WinGetHandle(),
       [](GLFWwindow*const wC, int iW, int iH)
         { cEvtMain->Add(EMC_WIN_RESIZED,
@@ -212,10 +211,10 @@ class GlFWWindow                       // GLFW window class
     if(const char*const cpData =
       glfwGetClipboardString(WinGetHandle())) return cpData;
     // Return empty string
-    return cpBlank;
+    return cCommon->CBlank();
   }
   /* -- Get clipboard C++ string ------------------------------------------- */
-  const string GetClipboardString(void) const
+  const string WinGetClipboardString(void) const
     { return WinGetClipboard(); }
   /* -- Get mouse/key button state ----------------------------------------- */
   int WinGetMouse(const int iB) const
@@ -273,41 +272,40 @@ class GlFWWindow                       // GLFW window class
   /* -- Create functions to access all attributes -------------------------- */
 #define SET(nc,nu) \
   /* ---------------------------------------------------------------------- */\
-  [[maybe_unused]] void WinSet ## nc ## Attrib(const bool bState) const \
+  void WinSet ## nc ## Attrib[[maybe_unused]](const bool bState) const \
     { WinSetAttribBoolean(GLFW_ ## nu, bState); } \
-  [[maybe_unused]] void WinSet ## nc ## AttribEnabled(void) const \
+  void WinSet ## nc ## AttribEnabled[[maybe_unused]](void) const \
     { WinSetAttribEnabled(GLFW_ ## nu); } \
-  [[maybe_unused]] void WinSet ## nc ## AttribDisabled(void) const \
+  void WinSet ## nc ## AttribDisabled[[maybe_unused]](void) const \
     { WinSetAttribDisabled(GLFW_ ## nu); } \
-  [[maybe_unused]] bool WinIs ## nc ## AttribEnabled(void) const \
+  bool WinIs ## nc ## AttribEnabled[[maybe_unused]](void) const \
     { return GlFWGBooleanToBoolean(WinGetAttrib(GLFW_ ## nu)); } \
-  [[maybe_unused]] bool WinIs ## nc ## AttribDisabled(void) const \
+  bool WinIs ## nc ## AttribDisabled[[maybe_unused]](void) const \
     { return !WinIs ## nc ## AttribEnabled(); }
   /* ----------------------------------------------------------------------- */
-  SET(AutoIconify, AUTO_ICONIFY);      // Set window auto-minimise state
-  SET(CentreCursor, CENTER_CURSOR);    // Set window cursor centre state
-  SET(Debug, OPENGL_DEBUG_CONTEXT);    // Set opengl debug mode
-  SET(Decorated, DECORATED);           // Set window border state
-  SET(DoubleBuffer, DOUBLEBUFFER);     // Set double buffering
-  SET(Floating, FLOATING);             // Set window floating state
-  SET(Focus, FOCUSED);                 // Set window focused state
-  SET(FocusOnShow, FOCUS_ON_SHOW);     // Set focus on show window
-  SET(ForwardCompat, OPENGL_FORWARD_COMPAT); // Set opengl fwd compatibility
-  SET(Iconify, ICONIFIED);             // Set window minimised state
-  SET(Maximised, MAXIMIZED);           // Set window maximised state
-  SET(MouseHovered, HOVERED);          // Set mouse hovered over state
-  SET(NoErrors, CONTEXT_NO_ERROR);     // Set context no errors
-  SET(Resizable, RESIZABLE);           // Win is resizable?
-  SET(SRGBCapable, SRGB_CAPABLE);      // Set SRGB colour space capable
-  SET(Stereo, CENTER_CURSOR);          // Set window cursor centre state
-  SET(Transparency, TRANSPARENT_FRAMEBUFFER); // Set transparent framebuffer
-  SET(Visibility, VISIBLE);            // Set window visibility state
+  SET(AutoIconify, AUTO_ICONIFY)       // Set window auto-minimise state
+  SET(CentreCursor, CENTER_CURSOR)     // Set window cursor centre state
+  SET(Debug, OPENGL_DEBUG_CONTEXT)     // Set opengl debug mode
+  SET(Decorated, DECORATED)            // Set window border state
+  SET(DoubleBuffer, DOUBLEBUFFER)      // Set double buffering
+  SET(Floating, FLOATING)              // Set window floating state
+  SET(Focus, FOCUSED)                  // Set window focused state
+  SET(FocusOnShow, FOCUS_ON_SHOW)      // Set focus on show window
+  SET(ForwardCompat, OPENGL_FORWARD_COMPAT) // Set opengl fwd compatibility
+  SET(Iconify, ICONIFIED)              // Set window minimised state
+  SET(Maximised, MAXIMIZED)            // Set window maximised state
+  SET(MouseHovered, HOVERED)           // Set mouse hovered over state
+  SET(NoErrors, CONTEXT_NO_ERROR)      // Set context no errors
+  SET(Resizable, RESIZABLE)            // Win is resizable?
+  SET(SRGBCapable, SRGB_CAPABLE)       // Set SRGB colour space capable
+  SET(Stereo, CENTER_CURSOR)           // Set window cursor centre state
+  SET(Transparency, TRANSPARENT_FRAMEBUFFER) // Set transparent framebuffer
+  SET(Visibility, VISIBLE)             // Set window visibility state
   /* ----------------------------------------------------------------------- */
 #if defined(MACOS)                     // Using Apple compiler?
   /* ----------------------------------------------------------------------- */
-  SET(GPUSwitching, COCOA_GRAPHICS_SWITCHING); // Set graphics switching?
-  SET(MenuBar,      COCOA_MENUBAR);    // Set MacOS menu bar?
-  SET(RetinaMode,   COCOA_RETINA_FRAMEBUFFER); // Set retina framebuffer?
+  SET(GPUSwitching, COCOA_GRAPHICS_SWITCHING) // Set graphics switching?
+  SET(RetinaMode,   COCOA_RETINA_FRAMEBUFFER) // Set retina framebuffer?
   /* ----------------------------------------------------------------------- */
 #endif                                 // End of Apple check
   /* ----------------------------------------------------------------------- */
@@ -371,7 +369,7 @@ class GlFWWindow                       // GLFW window class
     if(WinIsAvailable())
       XC("Window already created!",
          "Class", WinGetHandle(), "Width",   iW, "Height", iH,
-         "Title", cpT,               "Monitor", mM);
+         "Title", cpT,            "Monitor", mM);
     // Set handle and create window, throw exception if failed
     if(!WinSetHandleResult(glfwCreateWindow(iW, iH, cpT, mM, nullptr)))
       XC("Failed to create window!",
@@ -383,12 +381,12 @@ class GlFWWindow                       // GLFW window class
   }
   /* -- Constructor --------------------------------------------- */ protected:
   GlFWWindow(void) :                   // Default constructor (no arguments)
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     wClass{ nullptr }                  // Uninitialised window context
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(GlFWWindow);         // Do not need defaults
+  DELETECOPYCTORS(GlFWWindow)          // Do not need defaults
 };/* ----------------------------------------------------------------------- */
 };                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

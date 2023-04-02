@@ -14,7 +14,7 @@
 /* ------------------------------------------------------------------------- */
 // ! The audio class allows control of audio subsystem.
 /* ========================================================================= */
-LLNAMESPACEBEGIN(Audio)                // Audio namespace
+namespace NsAudio {                    // Audio namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfAudio;               // Using audio namespace
 /* ========================================================================= */
@@ -136,21 +136,14 @@ LLFUNCEX(Reset, 1, LCPUSHBOOL(cAudio->ReInit()));
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Audio.* namespace functions begin
-  LLRSFUNC(GetNumPBDevices),           // Get # playback devs
-  LLRSFUNC(GetPBDeviceName),           // Get PB device # name
-  LLRSFUNC(GetGlobalVolume),           // Get global volume
-  LLRSFUNC(SetGlobalVolume),           // Set global volume
-  LLRSFUNC(GetStreamVolume),           // Get stream volume
-  LLRSFUNC(StreamSetVolume),           // Set stream volume
-  LLRSFUNC(GetSampleVolume),           // Get sample volume
-  LLRSFUNC(SetSampleVolume),           // Set sample volume
-  LLRSFUNC(GetVideoVolume),            // Set video volume
-  LLRSFUNC(VideoSetVolume),            // Set video volume
-  LLRSFUNC(SetPosition),               // Get global listener position
-  LLRSFUNC(SetOrientation),            // Get global listener orientation
-  LLRSFUNC(SetVelocity),               // Get global listener velocity
-  LLRSFUNC(Reset),                     // Reset audio interface
+  LLRSFUNC(GetGlobalVolume),           LLRSFUNC(GetNumPBDevices),
+  LLRSFUNC(GetPBDeviceName),           LLRSFUNC(GetSampleVolume),
+  LLRSFUNC(GetStreamVolume),           LLRSFUNC(GetVideoVolume),
+  LLRSFUNC(Reset),                     LLRSFUNC(SetGlobalVolume),
+  LLRSFUNC(SetOrientation),            LLRSFUNC(SetPosition),
+  LLRSFUNC(SetSampleVolume),           LLRSFUNC(SetVelocity),
+  LLRSFUNC(StreamSetVolume),           LLRSFUNC(VideoSetVolume),
 LLRSEND                                // Audio.* namespace functions end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of Audio namespace
+}                                      // End of Audio namespace
 /* == EoF =========================================================== EoF == */

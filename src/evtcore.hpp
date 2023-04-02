@@ -10,6 +10,58 @@
 namespace IfEvtCore {                  // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfLog;                 // Using log namespace
+/* ----------------------------------------------------------------------- */
+enum MVarType                        // MVar variable types
+{ /* --------------------------------------------------------------------- */
+  MVT_BOOL,     MVT_CSTR, MVT_STR,  MVT_PTR,       MVT_FLOAT,
+  MVT_DOUBLE,   MVT_UINT, MVT_INT,  MVT_ULONGLONG, MVT_LONGLONG,
+  MVT_LONGUINT, MVT_LONGINT, MVT_MAX
+};/* --------------------------------------------------------------------- */
+struct MVar                          // Multi-type helps access event data
+{ /* --------------------------------------------------------------------- */
+  const MVarType       t;            // Variable type
+  /* --------------------------------------------------------------------- */
+  union                              // Variables share same memory space
+  { /* -- All these use the same memory ---------------------------------- */
+    size_t             z;            // Size Integer ............ (4-8 bytes)
+    bool               b;            // Boolean .................... (1 byte)
+    void              *vp;           // Pointer ................. (4-8 bytes)
+    char              *cp;           // C-String pointer ........ (4-8 bytes)
+    string            *str;          // STL-String pointer ...... (4-8 bytes)
+    float              f;            // Float ..................... (4 bytes)
+    double             d;            // Double .................... (8 bytes)
+    unsigned int       ui;           // Unsigned Integer .......... (4 bytes)
+    signed int         i;            // Signed Integer ............ (4 bytes)
+    unsigned long long ull;          // Unsigned Long Long ........ (8 bytes)
+    signed long long   ll;           // Signed Long Long .......... (8 bytes)
+    long unsigned int  lui;          // Long Unsigned Integer ... (4-8 bytes)
+    long signed int    li;           // Long Signed Integer ..... (4-8 bytes)
+  }; /* ------------------------------------------------------------------ */
+  explicit MVar(const void*const vpP) :
+    t(MVT_PTR), vp(const_cast<void*>(vpP)) {}
+  explicit MVar(const char*const cpP) :
+    t(MVT_CSTR), cp(const_cast<char*>(cpP)) {}
+  explicit MVar(const string &strV) :
+    t(MVT_STR), str(const_cast<string*>(&strV)) {}
+  explicit MVar(const unsigned int uiV) :
+    t(MVT_UINT), ui(static_cast<unsigned int>(uiV)) {}
+  explicit MVar(const signed int siV) :
+    t(MVT_INT), i(static_cast<signed int>(siV)){}
+  explicit MVar(const double fdV) :
+    t(MVT_DOUBLE), d(fdV) {}
+  explicit MVar(const float fV):
+    t(MVT_FLOAT), f(fV) {}
+  explicit MVar(const unsigned long long ullV) :
+    t(MVT_ULONGLONG), ull(ullV) {}
+  explicit MVar(const signed long long sllV) :
+    t(MVT_LONGLONG), ll(sllV) {}
+  explicit MVar(const long unsigned int luiV) :
+    t(MVT_LONGUINT), lui(luiV) {}
+  explicit MVar(const long signed int liV) :
+    t(MVT_LONGINT), li(liV) {}
+  explicit MVar(const bool bV):
+    t(MVT_BOOL), b(bV) {}
+};/* --------------------------------------------------------------------- */
 /* -- Common events system (since we need to use this twice) --------------- */
 template<typename Cmd,                 // Variable type of command to use
          size_t   EvtMaxEvents,        // Maximum number of events
@@ -26,36 +78,6 @@ class EvtCore                          // Start of common event system class
   typedef typename Queue::const_iterator QueueConstIt; // Current events queue
   /* ----------------------------------------------------------------------- */
   typedef const vector<pair<const Cmd,const CBFunc>> RegVec; // Event list
-  /* ----------------------------------------------------------------------- */
-  struct MVar                          // Multi-type helps access event data
-  { /* --------------------------------------------------------------------- */
-    union                              // Variables share same memory space
-    { /* -- All these use the same memory ---------------------------------- */
-      size_t             z;            // Size Integer ......... (4 or 8 bytes)
-      bool               b;            // Boolean .................... (1 byte)
-      void              *vp;           // Pointer .............. (4 or 8 bytes)
-      float              f;            // Float ..................... (4 bytes)
-      double             d;            // Double .................... (8 bytes)
-      unsigned int       ui;           // Unsigned Integer .......... (4 bytes)
-      signed int         i;            // Signed Integer ............ (4 bytes)
-      unsigned long long ull;          // Unsigned Long Long ........ (8 bytes)
-      signed long long   ll;           // Signed Long Long .......... (8 bytes)
-      long unsigned int  lui;          // Long Unsigned Integer ..... (? bytes)
-      long signed int    li;           // Long Signed Integer ....... (? bytes)
-    }; /* ------------------------------------------------------------------ */
-    explicit MVar(const void*const vpP): vp(const_cast<void*>(vpP)){}
-    explicit MVar(const unsigned int uiV): ui(static_cast<unsigned int>(uiV)){}
-    explicit MVar(const signed int siV): i(static_cast<signed int>(siV)){}
-    explicit MVar(const double fdV): d(fdV){}
-    explicit MVar(const float fV): f(fV){}
-    explicit MVar(const unsigned long long ullV): ull(ullV){}
-    explicit MVar(const signed long long sllV): ll(sllV){}
-    explicit MVar(const long unsigned int luiV): lui(luiV){}
-    explicit MVar(const long signed int liV): li(liV){}
-    explicit MVar(const bool bV): b(bV){}
-    /* --------------------------------------------------------------------- */
-    MVar(void): ull(0){}
-  };/* --------------------------------------------------------------------- */
   typedef vector<MVar> Params;         // vector of MVars Params;
   /* ----------------------------------------------------------------------- */
   struct Cell                          // Event packet information
@@ -68,7 +90,7 @@ class EvtCore                          // Start of common event system class
       /* -- Initialisers --------------------------------------------------- */
       evtCommand(evtC),                // Set requested command
       evtcFunction{ evtcF },           // Set callback function
-      vParams{ std::move(vP) }              // Move requested parameters
+      vParams{ StdMove(vP) }              // Move requested parameters
       /* -- No code -------------------------------------------------------- */
       { }
     /* -- Initialiser with copy parameters --------------------------------- */
@@ -83,12 +105,12 @@ class EvtCore                          // Start of common event system class
     Cell(Cell &&cOther) :
       /* -- Initialisers --------------------------------------------------- */
       evtCommand(cOther.evtCommand),                  // Set other command
-      evtcFunction{ std::move(cOther.evtcFunction) }, // Set other cb function
-      vParams{ std::move(cOther.vParams) }            // Move other parameters
+      evtcFunction{ StdMove(cOther.evtcFunction) }, // Set other cb function
+      vParams{ StdMove(cOther.vParams) }            // Move other parameters
       /* -- No code -------------------------------------------------------- */
       { }
     /* --------------------------------------------------------------------- */
-    DELETECOPYCTORS(Cell);             // No copying of this structure allowed
+    DELETECOPYCTORS(Cell)              // No copying of this structure allowed
   };/* -- Private variables --------------------------------------- */ private:
   Funcs            evtData;            // Event callback storage
   mutex            mMutex;             // Primary events list mutex
@@ -116,7 +138,7 @@ class EvtCore                          // Start of common event system class
   { // Get callback function
     const CBFunc &fCB = GetFunction(eCmd);
     // Execute callback function
-    fCB({ eCmd, fCB, std::move(pData) });
+    fCB({ eCmd, fCB, StdMove(pData) });
   }
   /* -- Execute specified event NOW (parameters) --------------------------- */
   template<typename... V,typename T>
@@ -129,11 +151,11 @@ class EvtCore                          // Start of common event system class
   /* -- Add with copy parameter semantics (finisher) ----------------------- */
   void AddParam(const Cmd eCmd, Params &pData)
   { // Event data to add to events list
-    Cell cData{ eCmd, GetFunction(eCmd), std::move(pData) };
+    Cell cData{ eCmd, GetFunction(eCmd), StdMove(pData) };
     // Wait and lock main event list
     const LockGuard lgEventsSync{ mMutex };
     // Move cell into event list
-    eEvents.emplace_back(std::move(cData));
+    eEvents.emplace_back(StdMove(cData));
   }
   /* -- Add with copy parameter semantics (parameters) --------------------- */
   template<typename... V,typename T>
@@ -164,7 +186,7 @@ class EvtCore                          // Start of common event system class
   { // Until event list is empty
     while(!eEvents.empty())
     { // Get event data. Move it and never reference it!
-      const Cell epData{ std::move(eEvents.front()) };
+      const Cell epData{ StdMove(eEvents.front()) };
       // Erase element. We're done with it. This is needed here incase the
       // callback throws an exception and causes an infinite loop.
       eEvents.pop_front();
@@ -191,7 +213,7 @@ class EvtCore                          // Start of common event system class
     { // Until event list is empty
       while(!eEvents.empty())
       { // Get event data. Move it and never reference it!
-        const Cell epData{ std::move(eEvents.front()) };
+        const Cell epData{ StdMove(eEvents.front()) };
         // Erase element. We're done with it. This is needed here incase the
         // callback throws an exception and causes an infinite loop.
         eEvents.pop_front();
@@ -234,11 +256,11 @@ class EvtCore                          // Start of common event system class
   /* -- Add to events and return iterator (finisher) ----------------------- */
   void AddExParam(const Cmd eCmd, QueueConstIt &qciItem, Params &pData)
   { // Setup cell to insert
-    Cell cData{ eCmd, GetFunction(eCmd), std::move(pData) };
+    Cell cData{ eCmd, GetFunction(eCmd), StdMove(pData) };
     // Try to lock main event list
     const LockGuard lgEventsSync{ mMutex };
     // Push new event whilst move parameters into it
-    qciItem = std::move(eEvents.emplace(eEvents.cend(), std::move(cData)));
+    qciItem = StdMove(eEvents.emplace(eEvents.cend(), StdMove(cData)));
   }
   /* -- Add to events and return iterator (parameters) --------------------- */
   template<typename... V,typename T>void AddExParam(const Cmd eCmd,
@@ -294,11 +316,10 @@ class EvtCore                          // Start of common event system class
   void UnregisterEx(const RegVec &clCmds)
     { for(const auto &clP : clCmds) Unregister(clP.first); }
     /* -- Event data, all empty functions ---------------------------------- */
-  explicit EvtCore(const string &strN) : strName{std::move(strN)}
+  explicit EvtCore(const string &strN) : strName{StdMove(strN)}
     { evtData.fill(bind(&EvtCore::BlankFunction, this, _1)); }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(EvtCore);            // Delete copy constructor and operator
+  DELETECOPYCTORS(EvtCore)             // Delete copy constructor and operator
 };/* ----------------------------------------------------------------------- */
-/* ------------------------------------------------------------------------- */
 };                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

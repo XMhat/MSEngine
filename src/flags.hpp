@@ -84,13 +84,14 @@ class FlagsConst :
   bool FlagIsInMask(const FlagsConst &fO) const
     { return !FlagIsNotInMask(fO); }
   /* -- Is bit clear of specified value? ----------------------------------- */
-  bool FlagIsClear(const FlagsConst &fO) const { return !FlagIsSet(fO); }
+  bool FlagIsClear(const FlagsConst &fO) const
+    { return !FlagIsSet(fO); }
   /* -- Is bits set? ------------------------------------------------------- */
   bool FlagIsEqualToBool(const FlagsConst &fO, const bool bS) const
-   { return FlagIsSet(fO) == bS; }
+    { return FlagIsSet(fO) == bS; }
   /* -- Is bits not set? --------------------------------------------------- */
-  bool FlagIsNotEqualToBool(const FlagsConst &fO, const bool bS) const
-   { return FlagIsSet(fO) != bS; }
+  bool FlagIsNotEqualToBool(const FlagsConst &fO, const bool bS)
+    const { return FlagIsSet(fO) != bS; }
   /* -- Return one variable or another if set ------------------------------ */
   template<typename AnyType>
     const AnyType FlagIsSetTwo(const FlagsConst &fO,
@@ -112,7 +113,8 @@ class FlagsConst :
     { return FlagsConst{ this->template FlagGet<IntType>() ^
                              a.template FlagGet<IntType>() }; }
   /* -- Direct access using class variable name which returns value -------- */
-  operator IntType(void) const { return this->template FlagGet<IntType>(); }
+  operator IntType(void) const
+    { return this->template FlagGet<IntType>(); }
 };/* ----------------------------------------------------------------------- */
 /* == Flags helper class =================================================== */
 /* ######################################################################### */

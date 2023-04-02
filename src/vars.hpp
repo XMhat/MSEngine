@@ -11,7 +11,7 @@
 /* ------------------------------------------------------------------------- */
 namespace IfVars {                     // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfError;               // Using error namespace
+using namespace IfString;              // Using string namespace
 /* -- Vars class ----------------------------------------------------------- */
 template<class MapType>struct VarsBase :
   /* -- Base classes ------------------------------------------------------- */
@@ -20,24 +20,24 @@ template<class MapType>struct VarsBase :
   void VarsPushPair(const string &strKey, const string &strValue)
     { this->insert({ strKey, strValue }); }
   void VarsPushPair(const string &strKey, string &&strValue)
-    { this->insert({ strKey, std::move(strValue) }); }
+    { this->insert({ strKey, StdMove(strValue) }); }
   void VarsPushPair(string &&strKey, const string &strValue)
-    { this->insert({ std::move(strKey), strValue }); }
+    { this->insert({ StdMove(strKey), strValue }); }
   void VarsPushPair(string &&strKey, string &&strValue)
-    { this->insert({ std::move(strKey), std::move(strValue) }); }
+    { this->insert({ StdMove(strKey), StdMove(strValue) }); }
   /* -- Insert new key if we don't have it --------------------------------- */
   void VarsPushIfNotExist(const string &strKey, const string &strValue)
     { if(this->find(strKey) == this->end())
         VarsPushPair(strKey, strValue); }
   void VarsPushIfNotExist(string &&strKey, const string &strValue)
     { if(this->find(strKey) == this->end())
-        VarsPushPair(std::move(strKey), strValue); }
+        VarsPushPair(StdMove(strKey), strValue); }
   void VarsPushIfNotExist(const string &strKey, string &&strValue)
     { if(this->find(strKey) == this->end())
-        VarsPushPair(strKey, std::move(strValue)); }
+        VarsPushPair(strKey, StdMove(strValue)); }
   void VarsPushIfNotExist(string &&strKey, string &&strValue)
     { if(this->find(strKey) == this->end())
-        VarsPushPair(std::move(strKey), std::move(strValue)); }
+        VarsPushPair(StdMove(strKey), StdMove(strValue)); }
   /* -- Value access by key name ------------------------------------------- */
   const string &operator[](const string &strKey) const
   { // Find key and return empty string or value
@@ -79,14 +79,14 @@ template<class MapType>struct VarsBase :
             const size_t stValEnd =
               FindCharNotBackwards(strS, stSegEnd-1, stValStart);
             if(stValEnd != string::npos) return VarsPushPair(
-              std::move(strS.substr(stKeyStart, stKeyEnd-stKeyStart+1)),
-              std::move(strS.substr(stValStart, stValEnd-stValStart+1)));
+              StdMove(strS.substr(stKeyStart, stKeyEnd-stKeyStart+1)),
+              StdMove(strS.substr(stValStart, stValEnd-stValStart+1)));
           } // Could not prune suffixed whitespaces on value.
         }  // Could not prune prefixed whitespaces on value.
       }  // Could not prune suffixed whitespaces on key.
     } // Could not prune prefixed whitespaces on key. Add full value for debug
     return VarsPushPair(Append('#', this->size()),
-      std::move(strS.substr(stSegStart, stSegEnd-stSegStart)));
+      StdMove(strS.substr(stSegStart, stSegEnd-stSegStart)));
   }
   /* -- Initialise or add entries from a string ---------------------------- */
   VarsBase(const string &strS, const string &strLS, const char cDelimiter)
@@ -110,7 +110,7 @@ template<class MapType>struct VarsBase :
   /* -- Constructor -------------------------------------------------------- */
   VarsBase(void) { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(VarsBase);           // Disable copy constructor/operator
+  DELETECOPYCTORS(VarsBase)            // Disable copy constructor/operator
 }; /* -- A Vars class where the values can be modified --------------------- */
 struct Vars :
   /* -- Base classes ------------------------------------------------------- */
@@ -126,26 +126,26 @@ struct Vars :
   void VarsPushOrUpdatePair(string &&strKey, const string &strValue)
   { const StrNCStrMapIt vIter{ find(strKey) };
     if(vIter != end()) vIter->second = strValue;
-    else VarsPushPair(std::move(strKey), strValue);
+    else VarsPushPair(StdMove(strKey), strValue);
   }
   /* -- Try to move value but copy key ------------------------------------- */
   void VarsPushOrUpdatePair(const string &strKey, string &&strValue)
   { const StrNCStrMapIt vIter{ find(strKey) };
-    if(vIter != end()) vIter->second = std::move(strValue);
-    else VarsPushPair(strKey, std::move(strValue));
+    if(vIter != end()) vIter->second = StdMove(strValue);
+    else VarsPushPair(strKey, StdMove(strValue));
   }
   /* -- Try to move key and value ------------------------------------------ */
   void VarsPushOrUpdatePair(string &&strKey, string &&strValue)
   { const StrNCStrMapIt vIter{ find(strKey) };
-    if(vIter != end()) vIter->second = std::move(strValue);
-    else VarsPushPair(std::move(strKey), std::move(strValue));
+    if(vIter != end()) vIter->second = StdMove(strValue);
+    else VarsPushPair(StdMove(strKey), StdMove(strValue));
   }
   /* ----------------------------------------------------------------------- */
   void VarsPushOrUpdatePairs(const StrPairList &splValues)
   { // Add each value that was sent
     for(const StrPair &spKeyValue : splValues)
-      VarsPushOrUpdatePair(std::move(spKeyValue.first),
-        std::move(spKeyValue.second));
+      VarsPushOrUpdatePair(StdMove(spKeyValue.first),
+        StdMove(spKeyValue.second));
   }
   /* -- Extracts and deletes the specified key pair ------------------------ */
   const string Extract(const string &strKey)
@@ -153,7 +153,7 @@ struct Vars :
     const StrNCStrMapIt vIter{ find(strKey) };
     if(vIter == end()) return {};
     // Take ownership of the string (faster than copy)
-    const string strOut{ std::move(vIter->second) };
+    const string strOut{ StdMove(vIter->second) };
     // Erase keypair
     erase(vIter);
     // Return the value
@@ -163,12 +163,12 @@ struct Vars :
   /* -- MOVE assignment operator ------------------------------------------- */
   Vars& operator=(Vars &&vOther) { swap(vOther); return *this; }
   /* -- MOVE assignment constructor ---------------------------------------- */
-  Vars(Vars &&vOther) : VarsBase<StrNCStrMap>{ std::move(vOther) } { }
+  Vars(Vars &&vOther) : VarsBase<StrNCStrMap>{ StdMove(vOther) } { }
   /* -- Constructor -------------------------------------------------------- */
   Vars(const string &strS, const string &strLS, const char cDelimiter) :
     VarsBase<StrNCStrMap>(strS, strLS, cDelimiter) { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Vars);               // Disable copy constructor/operator
+  DELETECOPYCTORS(Vars)                // Disable copy constructor/operator
 };/* ----------------------------------------------------------------------- */
 typedef VarsBase<StrStrMap> VarsBaseMap;
 /* -- A Vars class thats values cannot be modified at all ------------------ */
@@ -182,7 +182,7 @@ struct VarsConst :
   /* -- MOVE assignment constructor ---------------------------------------- */
   VarsConst(VarsConst &&vcOther) :     // Other vars
     /* -- Initialisers ----------------------------------------------------- */
-    VarsBaseMap{ std::move(vcOther) }  // Move it over
+    VarsBaseMap{ StdMove(vcOther) }  // Move it over
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor -------------------------------------------------------- */
@@ -193,7 +193,7 @@ struct VarsConst :
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(VarsConst);          // Disable copy constructor/operator
+  DELETECOPYCTORS(VarsConst)           // Disable copy constructor/operator
 };/* -- End of module namespace -------------------------------------------- */
 };                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

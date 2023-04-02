@@ -27,9 +27,13 @@ enum ShaderAttributeId {               // Mandatory attributes
   /* ----------------------------------------------------------------------- */
   A_MAX                                // Max no of mandatory attributes
 };/* ----------------------------------------------------------------------- */
-/* == Shader collector class with variable for rounding method ============= */
-BEGIN_COLLECTOREX(Shaders, Shader, CLHelperUnsafe, string strSPRMethod);
-/* -- Shader list class ---------------------------------------------------- */
+typedef array<const string, 5> RoundList;
+/* ------------------------------------------------------------------------- */
+BEGIN_COLLECTOREX(Shaders, Shader, CLHelperUnsafe,
+  /* ----------------------------------------------------------------------- */
+  const RoundList  rList;              // Rounding strings list
+  string           strSPRMethod;,      // Rounding method
+);/* -- Shader list class -------------------------------------------------- */
 class ShaderCell :                     // Members initially private
   /* -- Initialisers ------------------------------------------------------- */
   public Ident                         // Name of string
@@ -207,9 +211,9 @@ BEGIN_MEMBERCLASS(Shaders, Shader, ICHelperUnsafe),
     void AddShaderEx(const string &strName, const GLenum eT,
       const char*const cpFormat, const VarArgs& ...vaArgs)
   { AddShader(strName, eT, Format(cpFormat, vaArgs...)); }
-  /* -- Add vertex shader with template ------------------------------------ */
+  /* -- Add vertex shader with template and extra code --------------------- */
   void AddVertexShaderWith3DTemplate(const string &strName,
-    const char*const cpCode=cpBlank)
+    const char*const cpCode)
   { // Add vertex shader program
     AddShaderEx(strName, GL_VERTEX_SHADER,
       // > The vertex shader is for modifying vertice coord data
@@ -230,9 +234,12 @@ BEGIN_MEMBERCLASS(Shaders, Shader, ICHelperUnsafe),
         "gl_Position = v;"             // Set vertex position
       "}", cpCode);
   }
+  /* -- Add vertex shader with template ------------------------------------ */
+  void AddVertexShaderWith3DTemplate(const string &strName)
+    { AddVertexShaderWith3DTemplate(strName, cCommon->CBlank()); }
   /* -- Add fragment shader with template ---------------------------------- */
   void AddFragmentShaderWithTemplate(const string &strName,
-    const char*const cpCode=cpBlank, const char*const cpHeader=cpBlank)
+    const char*const cpCode, const char*const cpHeader)
   { // Add fragmnet shader program
     AddShaderEx(strName, GL_FRAGMENT_SHADER,
       // > The fragment shader is for modifying actual pixel data
@@ -249,15 +256,26 @@ BEGIN_MEMBERCLASS(Shaders, Shader, ICHelperUnsafe),
         "pixel = p;"                            // Set actual pixel
       "}", cpHeader, cpCode);                   // Done
   }
+  /* -- Add fragment shader with template ---------------------------------- */
+  void AddFragmentShaderWithTemplate(const string &strName)
+    { AddFragmentShaderWithTemplate(strName,
+        cCommon->CBlank(), cCommon->CBlank()); }
+  /* -- Add fragment shader with template ---------------------------------- */
+  void AddFragmentShaderWithTemplate(const string &strName,
+    const char*const cpCode)
+  { AddFragmentShaderWithTemplate(strName, cpCode, cCommon->CBlank()); }
   /* -- Add vertex shader with template ------------------------------------ */
   void AddVertexShaderWith2DTemplate(const string &strName,
-    const char*const cpCode=cpBlank)
+    const char*const cpCode)
   { // Add vertex shader program
     AddVertexShaderWith3DTemplate(strName, Format("$"
       "v[0] = -1.0+(((ortho[0]+$(v[0]))/ortho[2])*2.0);"  // X-coord
       "v[1] = -1.0+(((ortho[1]+$(v[1]))/ortho[3])*2.0);", // Y-coord
         cpCode, cShaders->strSPRMethod, cShaders->strSPRMethod).c_str());
   }
+  /* -- Add vertex shader with template ------------------------------------ */
+  void AddVertexShaderWith2DTemplate(const string &strName)
+    { AddVertexShaderWith2DTemplate(strName, cCommon->CBlank()); }
   /* -- Detach and unlink shaders ------------------------------------------ */
   void DeInitShaders(void)
   { // Ignore if nothing in list
@@ -293,31 +311,9 @@ BEGIN_MEMBERCLASS(Shaders, Shader, ICHelperUnsafe),
     // Clear shader list
     clear();
   }
-  /* -- Swap shader members ------------------------------------------------ */
-  void SwapShader(Shader &shOtherRef)
-  { // Initialise/swap members with old class
-    swap(shOtherRef);
-    std::swap(uiProgram, shOtherRef.uiProgram);
-    aUniforms.swap(shOtherRef.aUniforms);
-    std::swap(bLinked, shOtherRef.bLinked);
-    // Swap lua lock and registration
-    LockSwap(shOtherRef);
-    CollectorSwapRegistration(shOtherRef);
-  }
-  /* -- Move assignment ---------------------------------------------------- */
-  Shader &operator=(Shader &&oCref) { SwapShader(oCref); return *this; }
-  /* -- Move constructor --------------------------------------------------- */
-  Shader(Shader &&oCref) :
-    /* -- Initialisation of members ---------------------------------------- */
-    ICHelperShader{ *cShaders },       // Initially unregistered
-    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
-    uiProgram(0),                      // No program set
-    bLinked(false)                     // Not linked
-    /* -- Swap with other shader members ----------------------------------- */
-    { SwapShader(oCref); }
   /* -- Constructor -------------------------------------------------------- */
   Shader(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperShader{ *cShaders, this }, // Register in Shaders list
     IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     uiProgram(0),                      // No program set
@@ -327,10 +323,18 @@ BEGIN_MEMBERCLASS(Shaders, Shader, ICHelperUnsafe),
   /* -- Destructor --------------------------------------------------------- */
   ~Shader(void) { DeInitShaders(); }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Shader);             // Disable copy constructor and operator
+  DELETECOPYCTORS(Shader)              // Disable copy constructor and operator
 };/* ----------------------------------------------------------------------- */
-END_COLLECTOR(Shaders);
-/* == Init built-in shaders ================================================ */
+END_COLLECTOREX(Shaders,,,,            // Finish shaders collector
+  /* -- Initialisers ------------------------------------------------------- */
+  rList{{                              // Initialise rounding strings list
+    cCommon->Blank(),                          // [0] No rounding
+    "floor",                           // [1] Floor rounding
+    "ceil",                            // [2] Ceil rounding
+    "round",                           // [3] Nearest whole number
+    "roundEven"                        // [4] Nearest even number
+  }}                                   // End of rounding strings list
+);/* == Init built-in shaders ============================================== */
 static void Init3DShader(Shader &sh3D)
 { // Add our basic 3D shader
   sh3D.LockSet();
@@ -370,8 +374,8 @@ static void Init2D8PalShader(Shader &sh2D8Pal)
   sh2D8Pal.LockSet();
   sh2D8Pal.AddVertexShaderWith2DTemplate("VERT-2D");
   sh2D8Pal.AddFragmentShaderWithTemplate("FRAG-2D PAL>RGB",
-    "p = pal[int(p.r * 255)]; p = p * c;", // Set pixel and modulate
-    "uniform vec4 pal[256];");             // Global colour palette
+    "p = pal[int(p.r * 255)] * c;",    // Set pixel and modulate
+    "uniform vec4 pal[256];");         // Global colour palette
   sh2D8Pal.Link();
   // We need the location of the palette
   sh2D8Pal.VerifyUniformLocation("pal", U_PALETTE);
@@ -439,16 +443,9 @@ static void Init3DYUVKShader(Shader &sh3DYUVK)
 }
 /* == Set rounding method for the shader =================================== */
 static CVarReturn SetSPRoundingMethod(const size_t stMethod)
-{ // Rounding methods
-  static const array<const string, 5> acpMethods
-  { /* [0] */ strBlank,                // No rounding
-    /* [1] */ "floor",                 // Floor rounding
-    /* [2] */ "ceil",                  // Ceil rounding
-    /* [3] */ "round",                 // Nearest whole number
-    /* [4] */ "roundEven"              // Nearest even number
-  }; // Return if specified value is outrageous!
-  if(stMethod >= acpMethods.size()) return DENY;
-  cShaders->strSPRMethod = acpMethods[stMethod];
+{ // Return if specified value is outrageous!
+  if(stMethod >= cShaders->rList.size()) return DENY;
+  cShaders->strSPRMethod = cShaders->rList[stMethod];
   // Success
   return ACCEPT;
 }

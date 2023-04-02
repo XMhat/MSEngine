@@ -18,15 +18,15 @@ BEGIN_COLLECTORDUO(Files, File, CLHelperUnsafe, ICHelperUnsafe),
   public Lockable                      // Lua garbage collector instruction
 { /* -- Basic constructor with no init ----------------------------- */ public:
   File(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperFile{ *cFiles, this },     // Register the object in collector
     IdentCSlave{ cParent.CtrNext() }   // Initialise identification number
     /* --------------------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(File);               // Disable copy constructor and operator
+  DELETECOPYCTORS(File)                // Disable copy constructor and operator
 };/* ----------------------------------------------------------------------- */
-END_COLLECTOR(Files);                  // Finish global Files collector
+END_COLLECTOR(Files)                   // Finish global Files collector
 /* ------------------------------------------------------------------------- */
 };                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

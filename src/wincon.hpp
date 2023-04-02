@@ -43,13 +43,15 @@ class SysCon :                         // Members initially private
   /* -- Base classes ------------------------------------------------------- */
   public SysBase,                      // Defined in 'winbase.hpp'
   public SysConBase                    // Defined in 'syscore.hpp'
-{ /* -- Private variables -------------------------------------------------- */
+{ /* -- Private typedefs --------------------------------------------------- */
+  typedef vector<CHAR_INFO> CharInfoVec;
+  /* -- Private variables -------------------------------------------------- */
   const string    &strWine;            // Wine version
   /* -- Console data ----------------------------------------------- */ public:
   HANDLE           hIn, hOut;          // Handle to stdin and stdout
   WORD             wColour;            // Current colour
   WORD             wColourSaved;       // Saved colour
-  vector<CHAR_INFO> ciData;            // Display buffers
+  CharInfoVec      civBuf;             // Display buffers
   /* -- Co-ordinates and limits -------------------------------------------- */
   size_t           stEndPos;           // End position
   DWORD            dwCurSize;          // Current Win32Cursor size
@@ -275,7 +277,7 @@ class SysCon :                         // Members initially private
     SMALL_RECT srBounds = {static_cast<SHORT>(stX1),static_cast<SHORT>(stY1),
                            static_cast<SHORT>(stX2),static_cast<SHORT>(stY2)};
     // Do the clear
-    if(!WriteConsoleOutputW(hOut, ciData.data(),
+    if(!WriteConsoleOutputW(hOut, civBuf.data(),
       { static_cast<SHORT>(stW), static_cast<SHORT>(stH) },
       { static_cast<SHORT>(stX1), static_cast<SHORT>(stY1) }, &srBounds))
     { // Show error in log and leave drawing bounds as is
@@ -287,7 +289,7 @@ class SysCon :                         // Members initially private
   /* -- Set a character at the specified screen buffer position ------------ */
   void SetCharPos(const size_t stPos, const unsigned int uiC=' ')
   { // Get pointer to character ata
-    CHAR_INFO &ciCell = ciData[stPos];
+    CHAR_INFO &ciCell = civBuf[stPos];
     // Convert parameters to native format
     WCHAR wcChar = static_cast<WCHAR>(uiC);
     // Character is the same?
@@ -568,7 +570,7 @@ class SysCon :                         // Members initially private
       // Reset at scrolled position
       utfString.Reset(strIL.c_str() + abs(Maximum(0, (int)stLen-(int)stWm2)));
       // Draw start of input text
-      WriteLine(std::move(utfString), stWm2, false);
+      WriteLine(StdMove(utfString), stWm2, false);
     } // Left size of text is zero long
     else stLen = 0;
     // Have right side of text and have characters left on screen to spare?
@@ -612,7 +614,7 @@ class SysCon :                         // Members initially private
         // Reset left text position
         utfL.Reset();
         // Put string in a container and draw the string with left align
-        WriteLine(std::move(utfL), stLC, false);
+        WriteLine(StdMove(utfL), stLC, false);
         // Update X position
         stX += stLC;
         // If there is no right text we can just clear to the end of line
@@ -644,7 +646,7 @@ class SysCon :                         // Members initially private
     // Reset right string position
     utfR.Reset();
     // Write the line and clear the rest
-    WriteLine(std::move(utfR), stRC, true);
+    WriteLine(StdMove(utfR), stRC, true);
   }
   /* -- Redraw bottom status bar ------------------------------------------- */
   void RedrawStatusBar(const string &strSL, const string &strSR)
@@ -723,16 +725,16 @@ class SysCon :                         // Members initially private
     } // Calculate total number of characters
     const size_t stWtH = _stW * _stH;
     // Resize character buffer used for writing to the buffer
-    ciData.resize(stWtH);
+    civBuf.resize(stWtH);
     // Free any excess memory when resized down
-    ciData.shrink_to_fit();
+    civBuf.shrink_to_fit();
     // This is the char and attribute to fill with
     const CHAR_INFO ciItem{ { 32 },
       FOREGROUND_BLUE|FOREGROUND_GREEN|FOREGROUND_RED };
     // Fill the entire cached screen buffer with the default character. This
     // make sure every character is rewritten to when the entire screen buffer
     // has changed.
-    fill(ciData.begin(), ciData.end(), ciItem);
+    fill(civBuf.begin(), civBuf.end(), ciItem);
     // Initialise drawing bounds
     ResetDrawingBounds();
     // Set maximum buffer character count
@@ -778,7 +780,7 @@ class SysCon :                         // Members initially private
     // No longer opened
     SetWindowDestroyed();
     // Clear screen buffer
-    ciData.clear();
+    civBuf.clear();
   }
   /* -- Initialise --------------------------------------------------------- */
   void SysConInit(const char*const cpTitle, const size_t _stW,
@@ -800,7 +802,7 @@ class SysCon :                         // Members initially private
       // Throw the error
       XCS("Failed to retrieve console window handle!");
     } // Set console window title (doesn't matter if failed)
-    if(!SetConsoleTitleW(UTFtoS16(cpTitle)))
+    if(!SetConsoleTitleW(UTFtoS16(cpTitle).c_str()))
       XCS("Failed to set window title!", "Title", cpTitle);
     // Get output handle
     hOut = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -826,7 +828,7 @@ class SysCon :                         // Members initially private
   }
   /* -- Constructor -------------------------------------------------------- */
   SysCon(const string &strW) :         // Wine version if applicable
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     strWine{ strW },                   // Set reference to wine version
     hIn(nullptr), hOut(nullptr),       // Handles to input and output streams
     wColour(0),                        // Default colour
@@ -848,6 +850,6 @@ class SysCon :                         // Members initially private
   DELETECOPYCTORS(SysCon);             // Do not need defaults
 };/* ----------------------------------------------------------------------- */
 #define MSENGINE_SYSCON_CALLBACKS() \
-  BOOL WINAPI SysCon::CtrlHandlerStatic(DWORD dwCtrlType) \
+  BOOL WINAPI SysBase::SysCon::CtrlHandlerStatic(DWORD dwCtrlType) \
     { return cSystem->CtrlHandler(dwCtrlType); }
 /* == EoF =========================================================== EoF == */

@@ -51,7 +51,7 @@ static Memory LuaCodeCompileFunction(lua_State*const lS, const bool bDebug)
       XC("Not enough bytes written to binary!",
         "Written", mbData.Size(), "Needed", mdData.stTotal);
     // Return memory block
-    return std::move(mbData);
+    return StdMove(mbData);
   } // Make full memory block
   Memory mbData{ mdData.stTotal };
   // Position to write to
@@ -102,8 +102,9 @@ static void LuaCodeCompileBuffer(lua_State*const lS, const char*const cpBuf,
   } // Get checksum of module
   const unsigned int uiCRC = CrcCalc(cpBuf, stSize);
   // Check if we have cached this in the sql database and if we have?
-  if(cSql->ExecuteAndSuccess("SELECT D from L WHERE R=? AND C=?",
-    { Sql::Cell(strRef), Sql::Cell(uiCRC) }))
+  if(cSql->ExecuteAndSuccess(Format("SELECT `$` from `$` WHERE R=? AND C=?",
+    cSql->strCodeColumn, cSql->strLuaCacheTable),
+      { Sql::Cell(strRef), Sql::Cell(uiCRC) }))
   { // Get records and if we have results?
     const Sql::Result &vData = cSql->GetRecords();
     if(!vData.empty())
@@ -145,8 +146,10 @@ static void LuaCodeCompileBuffer(lua_State*const lS, const char*const cpBuf,
   // Compile the function
   Memory mbData{ LuaCodeCompileFunction(lS, lcSetting == LCC_FULL) };
   // Send to sql database and return if succeeded
-  if(cSql->ExecuteAndSuccess(
-       "INSERT or REPLACE into L(C,T,R,D) VALUES(?,?,?,?)",
+  if(cSql->ExecuteAndSuccess(Format(
+       "INSERT or REPLACE into `$`(`$`,`$`,`$`,`$`) VALUES(?,?,?,?)",
+       cSql->strLuaCacheTable, cSql->strCRCColumn, cSql->strTimeColumn,
+       cSql->strRefColumn, cSql->strCodeColumn),
     { Sql::Cell(uiCRC), Sql::Cell(cmSys.GetTimeNS<sqlite3_int64>()),
       Sql::Cell(strRef), Sql::Cell(mbData) })) return;
   // Show error
@@ -207,7 +210,7 @@ static void LuaCodeCompileFunction(lua_State*const lS)
   // Compile the function
   Memory mbData{ LuaCodeCompileFunction(lS, bDebug) };
   // Return a newly created asset
-  ClassCreate<Asset>(lS, "Asset")->SwapMemory(std::move(mbData));
+  ClassCreate<Asset>(lS, "Asset")->SwapMemory(StdMove(mbData));
 }
 /* -- Same as ExecFile() but returns iRet (for LuaLib) --------------------- */
 static int LuaCodeExecFileAndRets(lua_State*const lS,

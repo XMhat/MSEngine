@@ -13,7 +13,15 @@ namespace IfSysUtil {                  // Start of module namespace
 using namespace Library::GlFW;         // Using GlFW library functions
 using namespace IfUtf;                 // Using utf namespace
 using namespace IfString;              // Using string namespace
-/* -- Includes ------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
+enum class SysThread                   // Thread priority types
+{ /* ----------------------------------------------------------------------- */
+  Main,                                // Reserved for main thread
+  Engine,                              // Reserved for engine thread
+  Audio,                               // Reserved for audio thread
+  High,                                // Aux thread high priority
+  Low                                  // Aux thread low priority
+};/* -- Includes ----------------------------------------------------------- */
 #if defined(WINDOWS)                   // Using windows?
 /* -- System error formatter with specified error code --------------------- */
 static const string SysError(const int iError)
@@ -54,10 +62,11 @@ static const string SysError(void) { return SysError(SysErrorCode()); }
 static unsigned int SysMessage(void*const vpHandle, const string &strTitle,
   const string &strMessage, const unsigned int uiFlags)
     { return static_cast<unsigned int>(
-        MessageBoxExW(reinterpret_cast<HWND>(vpHandle), UTFtoS16(strMessage),
-        UTFtoS16(strTitle), static_cast<DWORD>(uiFlags), 0)); }
+        MessageBoxExW(reinterpret_cast<HWND>(vpHandle),
+          UTFtoS16(strMessage).c_str(), UTFtoS16(strTitle).c_str(),
+          static_cast<DWORD>(uiFlags), 0)); }
 /* ------------------------------------------------------------------------- */
-static void SysSetThreadName(const char*const cpName)
+static bool SysInitThread(const char*const cpName, const SysThread stLevel)
 { // Keep bytes aligned
 #pragma pack(push, 8)
   struct WinDBGThreadData {
@@ -72,16 +81,27 @@ static void SysSetThreadName(const char*const cpName)
   __try { RaiseException(0x406D1388, 0,
             sizeof(tInfo)/sizeof(ULONG_PTR), (ULONG_PTR*)&tInfo); }
   __except(EXCEPTION_CONTINUE_EXECUTION) { }
+  // Priority to set
+  int iPriority;
+  // What level was requested?
+  switch(stLevel)
+  { // Reserved for main thread
+    case SysThread::Main: iPriority = THREAD_PRIORITY_ABOVE_NORMAL; break;
+    // Reserved for engine thread
+    case SysThread::Engine: iPriority = THREAD_PRIORITY_HIGHEST; break;
+    // Reserved for audio thread
+    case SysThread::Audio: iPriority = THREAD_PRIORITY_BELOW_NORMAL; break;
+    // Aux thread high priority
+    case SysThread::High: iPriority = THREAD_PRIORITY_NORMAL; break;
+    // Aux thread low priority
+    case SysThread::Low: iPriority = THREAD_PRIORITY_LOWEST; break;
+    // Anything else
+    default: return false;
+  } // Set thread priorty and return result
+  return !!SetThreadPriority(GetCurrentThread(), iPriority);
 }
 /* ------------------------------------------------------------------------- */
 #elif defined(MACOS)                   // Using mac?
-/* -- System error code ---------------------------------------------------- */
-template<typename IntType=int>static IntType SysErrorCode(void)
-  { return static_cast<IntType>(GetErrNo()); }
-/* -- System error formatter with specified error code --------------------- */
-static const string SysError(const int iError) { return LocalError(iError); }
-/* -- System error formatter with current error code ----------------------- */
-static const string SysError(void) { return LocalError(SysErrorCode()); }
 /* -- Actual interface to show a message box ----------------------------- */
 static unsigned int SysMessage(void*const, const string &strTitle,
   const string &strMessage, const unsigned int uiFlags)
@@ -120,11 +140,11 @@ static unsigned int SysMessage(void*const, const string &strTitle,
           // Dispatch the message box and return result if successful
           if(const CFAutoRelPtr pDlg{
             CFUserNotificationCreate(kCFAllocatorDefault, 0,
-              uiFlags & MB_ICONSTOP ?
+              (uiFlags & MB_ICONSTOP) ?
                 kCFUserNotificationStopAlertLevel
-            :(uiFlags & MB_ICONEXCLAMATION ?
+            :((uiFlags & MB_ICONEXCLAMATION) ?
                 kCFUserNotificationCautionAlertLevel
-            :(uiFlags & MB_ICONINFORMATION ?
+            :((uiFlags & MB_ICONINFORMATION) ?
                 kCFUserNotificationPlainAlertLevel
             : kCFUserNotificationNoteAlertLevel)), &nRes,
               reinterpret_cast<CFDictionaryRef>(cfdrDict.get())),
@@ -139,20 +159,11 @@ static unsigned int SysMessage(void*const, const string &strTitle,
   return 0;
 }
 /* ------------------------------------------------------------------------- */
-static void SysSetThreadName(const char*const) { }
-/* ------------------------------------------------------------------------- */
 #else                                  // Using linux?
 /* -- Compatibility with X11 ----------------------------------------------- */
 # if defined(Bool)                     // Undefine 'Bool' set by X11
 #  undef Bool                          // To prevent problems with other apis
 # endif                                // Done checking for 'Bool'
-/* -- System error code ---------------------------------------------------- */
-template<typename IntType=int>static IntType SysErrorCode(void)
-  { return static_cast<IntType>(GetErrNo()); }
-/* -- System error formatter with specified error code --------------------- */
-static const string SysError(const int iError) { return LocalError(iError); }
-/* -- System error formatter with current error code ----------------------- */
-static const string SysError(void) { return LocalError(SysErrorCode()); }
 /* -- Actual interface to show a message box ----------------------------- */
 static unsigned int SysMessage(void*const, const string &strTitle,
   const string &strMessage, const unsigned int uiFlags)
@@ -163,13 +174,84 @@ static unsigned int SysMessage(void*const, const string &strTitle,
   return 0;
 }
 /* ------------------------------------------------------------------------- */
-static void SysSetThreadName(const char*const) { }
-/* ------------------------------------------------------------------------- */
 #endif                                 // Done checking OS
+/* ------------------------------------------------------------------------- */
+#if !defined(WINDOWS)                  // Not using Windows target? (POSIX)
+/* -- System error code ---------------------------------------------------- */
+template<typename IntType=int>static IntType SysErrorCode(void)
+  { return static_cast<IntType>(GetErrNo()); }
+/* -- System error formatter with specified error code --------------------- */
+static const string SysError(const int iError) { return LocalError(iError); }
+/* -- System error formatter with current error code ----------------------- */
+static const string SysError(void) { return LocalError(SysErrorCode()); }
+/* ------------------------------------------------------------------------- */
+static bool SysInitThread(const char*const cpName, const SysThread stLevel)
+{ // Get this thread handle
+  pthread_t ptHandle = pthread_self();
+  // Set thread name
+#if defined(MACOS)
+  pthread_setname_np(cpName);
+#else
+  pthread_setname_np(ptHandle, cpName);
+#endif
+  // Container for current scheduler parameters
+  struct sched_param spParam;
+  // Container for current policy level
+  int iPolicy;
+  // Get current thread settings
+  if(pthread_getschedparam(ptHandle, &iPolicy, &spParam)) return false;
+  // Get bounds
+  const int iMinPriority = sched_get_priority_min(iPolicy),
+            iMaxPriority = sched_get_priority_max(iPolicy);
+  // What level was requested?
+  switch(stLevel)
+  { // Reserved for main thread
+    case SysThread::Main:
+      // Use high priority parameters
+      spParam.sched_priority = iMinPriority+1;
+      iPolicy = SCHED_RR;
+      // Done
+      break;
+    // Reserved for engine thread
+    case SysThread::Engine:
+      // Use high priority parameters
+      spParam.sched_priority = iMinPriority;
+      iPolicy = SCHED_RR;
+      // Done
+      break;
+    // Reserved for audio thread
+    case SysThread::Audio:
+      // Use high priority parameters
+      spParam.sched_priority = iMinPriority+2;
+      iPolicy = SCHED_RR;
+      // Done
+      break;
+    // Aux thread high priority
+    case SysThread::High:
+      // Use high priority parameters
+      spParam.sched_priority = iMinPriority+3;
+      iPolicy = SCHED_RR;
+      // Done
+      break;
+    // Aux thread low priority
+    case SysThread::Low:
+      // Use high priority parameters
+      spParam.sched_priority = iMaxPriority;
+      iPolicy = SCHED_OTHER;
+      // Done
+      break;
+  } // Clamp the value
+  spParam.sched_priority =
+    IfUtil::Clamp(spParam.sched_priority, iMinPriority, iMaxPriority);
+  // Set the new parameters and return true if succeeded
+  return !pthread_setschedparam(ptHandle, iPolicy, &spParam);
+}
+/* ------------------------------------------------------------------------- */
+#endif                                 // Not using Windows target
 /* ------------------------------------------------------------------------- */
 struct SysErrorPlugin final
 { /* -- Exception class helper macro for system errors --------------------- */
-#define XCS(r,...) throw Error<SysErrorPlugin>(r, ## __VA_ARGS__)
+#define XCS(r,...) throw IfError::Error<SysErrorPlugin>(r, ## __VA_ARGS__)
   /* -- Constructor to add system error code ------------------------------- */
   explicit SysErrorPlugin(ostringstream &osS)
   { // Get system error code and add system formatted parameter
@@ -179,7 +261,7 @@ struct SysErrorPlugin final
 };/* ----------------------------------------------------------------------- */
 static bool SysIsErrorCode(const int iCode=0)
   { return SysErrorCode() == iCode; }
-[[maybe_unused]] static bool SysIsNotErrorCode(const int iCode=0)
+static bool SysIsNotErrorCode[[maybe_unused]](const int iCode=0)
   { return !SysIsErrorCode(iCode); }
 /* -- System message without a handle -------------------------------------- */
 static unsigned int SysMessage(const string &strTitle,

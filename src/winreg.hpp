@@ -68,8 +68,8 @@ class SysReg                           // Members initially private
     // Set size
     DWORD dwSize = dwS, dwType = 0;
     // Query value and return status
-    return RegQueryValueEx(GetHandle(), UTFtoS16(strV), nullptr, &dwType,
-      reinterpret_cast<LPBYTE>(vpD), &dwSize);
+    return RegQueryValueEx(GetHandle(), UTFtoS16(strV).c_str(), nullptr,
+      &dwType, reinterpret_cast<LPBYTE>(vpD), &dwSize);
   }
   /* -- Query integer ------------------------------------------------------ */
   template<typename StorageType>
@@ -85,7 +85,7 @@ class SysReg                           // Members initially private
   SysReg(HKEY hkB, const string &strSK, const REGSAM rsA) :
     /* -- Initialisers ----------------------------------------------------- */
     hkKey(RegOpenKeyEx(hkB,            // Open registry key with specified root
-      UTFtoS16(strSK),                 // Specified subkey to open
+      UTFtoS16(strSK).c_str(),         // Specified subkey to open
       0,                               // No options
       rsA,                             // Specified security
       &hkB) == ERROR_SUCCESS ?         // Destination handle and if succeeded?

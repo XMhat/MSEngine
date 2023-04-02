@@ -48,7 +48,7 @@ class SysMap :                         // Members initially private
   /* -- Get file handle ---------------------------------------------------- */
   HANDLE SysMapSetupFile(void)
   { // Open file and return if opened
-    HANDLE hF = CreateFile(UTFtoS16(IdentGetCStr()), GENERIC_READ,
+    HANDLE hF = CreateFile(UTFtoS16(IdentGetCStr()).c_str(), GENERIC_READ,
       FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
     if(hF != INVALID_HANDLE_VALUE) return hF;
     // Failed
@@ -82,7 +82,7 @@ class SysMap :                         // Members initially private
   /* -- Get pointer to memory ---------------------------------------------- */
   char *SMSetupMemory(void)
   { // Return a blank string if file is empty
-    if(!qSize) return const_cast<char*>(cpBlank);
+    if(!qSize) return const_cast<char*>(cCommon->CBlank());
     // Get pointer to mapped memory and return it if successful
     if(char*const cpM =
       reinterpret_cast<char*>(MapViewOfFile(hMap, FILE_MAP_READ, 0, 0, 0)))
@@ -102,7 +102,7 @@ class SysMap :                         // Members initially private
   /* -- Get members ------------------------------------------------ */ public:
   template<typename RT=char>RT *SysMapGetMemory(void) const
     { return reinterpret_cast<RT*>(cpMem); }
-  bool SysMapIsEmpty(void) const { return cpMem == cpBlank; }
+  bool SysMapIsEmpty(void) const { return cpMem == cCommon->CBlank(); }
   bool SysMapIsNotEmpty(void) const { return !SysMapIsEmpty(); }
   bool SysMapIsAvailable(void) const { return !!SysMapGetMemory(); }
   bool SysMapIsNotAvailable(void) const { return !SysMapIsAvailable(); }
@@ -130,7 +130,7 @@ class SysMap :                         // Members initially private
   }
   /* -- Constructor with just id initialisation ---------------------------- */
   SysMap(const string &strIn, const StdTimeT tC, const StdTimeT tM) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     Ident{ strIn },                    // Initialise file name
     hFile(INVALID_HANDLE_VALUE),       // No file handle
     qSize(0),                          // No file size
@@ -141,7 +141,7 @@ class SysMap :                         // Members initially private
     { }                                // Do nothing else
   /* -- Constructor on standby --------------------------------------------- */
   SysMap(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     hFile(INVALID_HANDLE_VALUE),       // No file handle
     qSize(0),                          // No size
     hMap(nullptr),                     // No map handle
@@ -151,18 +151,18 @@ class SysMap :                         // Members initially private
     { }                                // Do nothing else
   /* -- Move constructor --------------------------------------------------- */
   SysMap(SysMap &&smOther) :
-    /* -- Initialisation of members ---------------------------------------- */
-    Ident{ std::move(smOther) },            // Move other identifier
+    /* -- Initialisers ----------------------------------------------------- */
+    Ident{ StdMove(smOther) },            // Move other identifier
     hFile(smOther.hFile),              // Move other file handle
     qSize(smOther.qSize),              // Move other size
     hMap(smOther.hMap),                // Move other file map
     cpMem(smOther.cpMem),              // Move other memory pointer
-    atTime{ std::move(smOther.atTime) }     // Move other file times
+    atTime{ StdMove(smOther.atTime) }     // Move other file times
     /* -- Clear other variables -------------------------------------------- */
     { smOther.SysMapClearVarsInternal(); }
   /* -- Constructor with actual initialisation ----------------------------- */
   explicit SysMap(const string &strIn) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     Ident{ strIn },                    // Set file name
     hFile(SysMapSetupFile()),          // Get file handle from file on disk
     qSize(SysMapSetupSize()),          // Get file size on disk

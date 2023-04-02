@@ -26,7 +26,7 @@ struct OrderItem :                     /* Order item structure              */\
   /* -- Init constructor --------------------------------------------------- */
   OrderItem(const FboRenderItem &friOther, Fbo*const fboNDest,
     const GLsizei stNVertices, const ssize_t stNCommands) : \
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     FboRenderItem{ friOther },         fboDest(fboNDest), \
     stVertices(stNVertices),           stCommands(stNCommands) \
     /* -- No code ---------------------------------------------------------- */
@@ -70,10 +70,10 @@ class FboVariables :                   // Fbo variables class
   size_t           stRenderCounter;    // Times rendered
   /* -- Variables ---------------------------------------------------------- */
   GLuint           uiFBOtex;           // Frame buffer texture name
-  FboCoords<GLfloat> fcStage;          // Stage co-ordinates
+  FboFloatCoords   fcStage;            // Stage co-ordinates
   /* -- Constructor -------------------------------------------------------- */
   explicit FboVariables(const GLint iPF) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     stFilterId(0),                     iMinFilter(GL_NEAREST),
     iMagFilter(GL_NEAREST),            iWrapMode(GL_CLAMP_TO_EDGE),
     iPixFormat(iPF),                   stGLArrayOff(0),
@@ -84,7 +84,7 @@ class FboVariables :                   // Fbo variables class
     /* --------------------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(FboVariables);       // No copy constructors
+  DELETECOPYCTORS(FboVariables)        // No copy constructors
 };/* ----------------------------------------------------------------------- */
 /* == Fbo object class ===================================================== */
 BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
@@ -175,11 +175,11 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
       cOgl->UseProgram(fcData.uiPrgId);
       // Prepare data arrays
       cOgl->VertexAttribPointer(A_COORD,
-        COMPSPERCOORD, BYTESPERVERTEX, fcData.vpTCOffset);
+        stCompsPerCoord, stBytesPerVertex, fcData.vpTCOffset);
       cOgl->VertexAttribPointer(A_VERTEX,
-        COMPSPERPOS, BYTESPERVERTEX, fcData.vpVOffset);
+        stCompsPerPos, stBytesPerVertex, fcData.vpVOffset);
       cOgl->VertexAttribPointer(A_COLOUR,
-        COMPSPERCOLOUR, BYTESPERVERTEX, fcData.vpCOffset);
+        stCompsPerColour, stBytesPerVertex, fcData.vpCOffset);
       // Blit array
       cOgl->DrawArraysTriangles(fcData.uiVertices);
     }
@@ -198,10 +198,10 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
       uiTexUnitCache,                                          // uiTUId
       uiTextureCache,                                          // uiTexId
       uiShaderCache,                                           // uiPrgId
-      reinterpret_cast<GLvoid*>(stGLArrayOff + OFFSETTXCDATA), // vpTCOffset
-      reinterpret_cast<GLvoid*>(stGLArrayOff + OFFSETPOSDATA), // vpVOffset
-      reinterpret_cast<GLvoid*>(stGLArrayOff + OFFSETCOLDATA), // vpCOffset
-      static_cast<GLsizei>(GetTrisCmd() * VERTEXPERTRIANGLE),  // uiVertices
+      reinterpret_cast<GLvoid*>(stGLArrayOff + stOffsetTxcData), // vpTCOffset
+      reinterpret_cast<GLvoid*>(stGLArrayOff + stOffsetPosData), // vpVOffset
+      reinterpret_cast<GLvoid*>(stGLArrayOff + stOffsetColData), // vpCOffset
+      static_cast<GLsizei>(GetTrisCmd() * stVertexPerTriangle),  // uiVertices
     });
   }
   /* -- Finish and render the graphics ------------------------------------- */
@@ -262,11 +262,12 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
         fboSrc.GetCData(stId), 0, &cFboBase->sh2D); }
   /* -- Blit the specified fbo texture into this fbo ----------------------- */
   void Blit(Fbo &fboSrc)
-    { for(size_t stId = 0; stId < TRISPERQUAD; ++stId) BlitTri(fboSrc, stId); }
+    { for(size_t stId = 0; stId < stTrisPerQuad; ++stId)
+        BlitTri(fboSrc, stId); }
   /* -- Blit the specified quad into this fbo ------------------------------ */
   void Blit(FboItem &fboiSrc, const GLuint uiTex, const GLuint uiTexU,
     Shader*const shProgram)
-      { for(size_t stId = 0; stId < TRISPERQUAD; ++stId)
+      { for(size_t stId = 0; stId < stTrisPerQuad; ++stId)
           Blit(uiTex, fboiSrc.GetVData(stId), fboiSrc.GetTCData(stId),
             fboiSrc.GetCData(stId), uiTexU, shProgram); }
   /* -- Set wrapping mode -------------------------------------------------- */
@@ -277,7 +278,7 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
     BindAndTexture();
     // Structure of the wrapping types
     struct Procedure { const GLenum eWrap; const char cWrap; };
-    typedef std::array<const Procedure, 3> Procedures;
+    typedef array<const Procedure, 3> Procedures;
     // Procedures to perform
     static const Procedures sProcedures{{
       { GL_TEXTURE_WRAP_S, 'S' },
@@ -322,9 +323,8 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
   /* -- Set backbuffer blending mode --------------------------------------- */
   void SetBlend(const size_t stSFactorRGB, const size_t stDFactorRGB,
     const size_t stSFactorA, const size_t stDFactorA)
-  { // Structure of the data to lookup
-    typedef std::array<const GLenum, OB_MAX> BlendFunctions;
-    // OpenGL blending flags
+  { // OpenGL blending flags
+    typedef array<const GLenum, OB_MAX> BlendFunctions;
     static const BlendFunctions aBlends
     { // ## RGB & Alpha Blend Factors StringId
       GL_ZERO,                         // 00 (0,0,0)            0      Z
@@ -420,7 +420,7 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
   { // De-initialise old FBO first.
     DeInit();
     // Set identifier.
-    IdentSet(std::move(strID));
+    IdentSet(strID);
     // Say we're initialising the frame buffer.
     cLog->LogDebugExSafe("Fbo initialising a $x$ object '$'...",
       stW, stH, IdentGet());
@@ -443,7 +443,7 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
     GL(cOgl->CreateTexture(&uiFBOtex),
      "Failed to create texture for framebuffer!",
      "Identifier", IdentGet(), "Width",  stW,
-     "Height",     stH,     "Buffer", &uiFBOtex);
+     "Height",     stH,        "Buffer", &uiFBOtex);
     // Bind the texture so we can set it up
     BindTexture();
     // nullptr means reserve texture memory but to not copy any data to it
@@ -461,7 +461,7 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
     const GLenum uiError = cOgl->VerifyFBO();
     if(uiError != GL_FRAMEBUFFER_COMPLETE)
       XC("Failed to complete framebuffer!",
-        "Identifier", IdentGet(), "Error", uiError);
+         "Identifier", IdentGet(), "Error", uiError);
     // Set total requested width and height
     SetCoRight(static_cast<GLfloat>(stW));
     SetCoBottom(static_cast<GLfloat>(stH));
@@ -494,9 +494,9 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
   /* -- Destructor --------------------------------------------------------- */
   ~Fbo(void) { DeInit(); }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Fbo);                // Disable copy constructor and operator
+  DELETECOPYCTORS(Fbo)                 // Disable copy constructor and operator
 };/* ----------------------------------------------------------------------- */
-END_COLLECTOREX(Fbos,,,,fboActive(nullptr),fboMain(nullptr));
+END_COLLECTOREX(Fbos,,,,fboActive(nullptr),fboMain(nullptr))
 /* ========================================================================= */
 static void FboRender(void)
 { // If there are fbo's in the queue?

@@ -256,14 +256,14 @@ class Pack :
        const UInt   uiNHeight,         // Set height of new pack
        const size_t stUsedReserve,     // Used list initial size
        const size_t stFreeReserve) :   // Free list initial size
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     Pack{ uiNWidth, uiNHeight }        // Initialise pack
     /* -- Reserve list sizes ----------------------------------------------- */
     { Reserve(stUsedReserve, stFreeReserve); }
   /* -- Instantiates a bin of the given size ------------------------------- */
   Pack(const UInt uiNWidth,            // Width of new pack
        const UInt uiNHeight) :         // Height of new pack
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     DimClass{ static_cast<Int>(uiNWidth),    // Set width of new pack
               static_cast<Int>(uiNHeight) }, // Set height of new pack
     rlFree{{ 0, 0,                     // Initialise co-ordinates
@@ -279,13 +279,13 @@ BEGIN_COLLECTORDUO(Bins, Bin, CLHelperUnsafe, ICHelperUnsafe),
   public Pack<GLint>                   // Base Pack class with GLint's
 { /* -- Default constructor ---------------------------------------- */ public:
   Bin(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperBin{ *cBins, this },       // Register the object in collector
     IdentCSlave{ cParent.CtrNext() }   // Initialise identification number
     /* --------------------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */
-END_COLLECTOR(Bins);                   // End of bin objects collector
+END_COLLECTOR(Bins)                    // End of bin objects collector
 /* ------------------------------------------------------------------------- */
 };                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

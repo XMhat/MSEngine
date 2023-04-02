@@ -12,7 +12,7 @@ namespace IfPcmLib {                   // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfFileMap;             // Using filemap namespace
 /* == Pcm libraries collector class ======================================== */
-BEGIN_COLLECTOR(PcmFmts, PcmFmt, CLHelperUnsafe);
+BEGIN_COLLECTOR(PcmFmts, PcmFmt, CLHelperUnsafe)
 /* == Pcm format object class ============================================== */
 BEGIN_MEMBERCLASS(PcmFmts, PcmFmt, ICHelperUnsafe)
 { /* -- Typedefs -------------------------------------------------- */ private:
@@ -50,9 +50,9 @@ BEGIN_MEMBERCLASS(PcmFmts, PcmFmt, ICHelperUnsafe)
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(PcmFmt);             // Omit copy constructor for safety
+  DELETECOPYCTORS(PcmFmt)              // Omit copy constructor for safety
 };/* -- End ---------------------------------------------------------------- */
-END_COLLECTOR(PcmFmts);
+END_COLLECTOR(PcmFmts)                 // Finish collector class
 /* -- Load audio using a specific type ------------------------------------- */
 static void PcmLoadFile(const size_t stFId, FileMap &fC, PcmData &auD)
 { // Ignore if plugin is invalid

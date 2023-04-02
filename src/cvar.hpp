@@ -106,11 +106,11 @@ class Item :                           // Members initially private
   /* ----------------------------------------------------------------------- */
   void SetDefValue(const string &strN) { strDefValue = strN; }
   /* ----------------------------------------------------------------------- */
-  void SetDefValue(string &&strN) { strDefValue = std::move(strN); }
+  void SetDefValue(string &&strN) { strDefValue = StdMove(strN); }
   /* ----------------------------------------------------------------------- */
   void SetValue(const string &strV) { strValue = strV; }
   /* ----------------------------------------------------------------------- */
-  void SetValue(string &&strV) { strValue = std::move(strV); }
+  void SetValue(string &&strV) { strValue = StdMove(strV); }
   /* ----------------------------------------------------------------------- */
   const string Protect(void) const
   { // If confidential, return confidential
@@ -464,7 +464,7 @@ class Item :                           // Members initially private
           default : if(scFlags.FlagIsClear(CSC_THROWONERROR))
                       return CVS_NOTFILENAME;
                     XC("CVar untrusted path name is invalid!",
-                       "Reason",   DirValidNameResultToString(vRes),
+                       "Reason",   cDirBase->VNRtoStr(vRes),
                        "Result",   vRes,
                        "Variable", GetVar());
         }
@@ -478,7 +478,7 @@ class Item :                           // Members initially private
           default : if(scFlags.FlagIsClear(CSC_THROWONERROR))
                       return CVS_NOTFILENAME;
                     XC("CVar trusted path name is invalid!",
-                       "Reason",   DirValidNameResultToString(vRes),
+                       "Reason",   cDirBase->VNRtoStr(vRes),
                        "Result",   vRes,
                        "Variable", GetVar());
         }
@@ -517,16 +517,16 @@ class Item :                           // Members initially private
       { return SetValue(strDefValue, cAcc, scFlags, mLock, strCBError); }
   /* -- Move constructor --------------------------------------------------- */
   Item(Item &&ciOther) :               // Other item
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     CVarFlags{ ciOther },              // Copy flags over
     strVar{                            // Variable
-      std::move(ciOther.GetVar()) },        // Move variable
+      StdMove(ciOther.GetVar()) },        // Move variable
     strValue{                          // Value
-      std::move(ciOther.GetValue()) },      // Move value
+      StdMove(ciOther.GetValue()) },      // Move value
     strDefValue{                       // Default value
-      std::move(ciOther.GetDefValue()) },   // Move default value
+      StdMove(ciOther.GetDefValue()) },   // Move default value
     cbTrigger{                         // Trigger
-      std::move(ciOther.GetTrigger()) }     // Move trigger
+      StdMove(ciOther.GetTrigger()) }     // Move trigger
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor -------------------------------------------------------- */
@@ -534,7 +534,7 @@ class Item :                           // Members initially private
        const string &strVal,           // Value name
        const CbFunc &cbT,              // Trigger function
        const CVarFlagsConst &cF) :     // CVar flags
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     CVarFlags{ cF },                   // Initialise cvars flags
     strVar{ strKey },                  // Initialise variable name
     strValue{ strVal },                // Initialise new value
@@ -543,8 +543,7 @@ class Item :                           // Members initially private
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Other -------------------------------------------------------------- */
-  DELETECOPYCTORS(Item);               // No copy constructor
+  DELETECOPYCTORS(Item)                // No copy constructor
 };/* ----------------------------------------------------------------------- */
-/* ------------------------------------------------------------------------- */
 };                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

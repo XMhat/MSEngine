@@ -31,17 +31,17 @@ class Statistic
   /* ----------------------------------------------------------------------- */
   void ProcValNoSuf(ostringstream &osS, const StrListConstIt &vIt,
     const Head &ttchD) { osS << ttchD.jFunc << setw(ttchD.iMaxLen) <<
-      std::move(*vIt); }
+      StdMove(*vIt); }
   void ProcValSuf(ostringstream &osS, const StrListConstIt &vIt,
     const Head &ttchD, const string &strSuffix) { osS << ttchD.jFunc <<
-      setw(ttchD.iMaxLen) << std::move(*vIt) << strSuffix; }
+      setw(ttchD.iMaxLen) << StdMove(*vIt) << strSuffix; }
   /* ----------------------------------------------------------------------- */
   void ProcHdrNoSuf(ostringstream &osS,
     const Head &ttchD) { osS << ttchD.jFunc << setw(ttchD.iMaxLen) <<
-      std::move(ttchD.strName); }
+      StdMove(ttchD.strName); }
   void ProcHdrSuf(ostringstream &osS,
     const Head &ttchD, const string &strSuffix) { osS << ttchD.jFunc <<
-      setw(ttchD.iMaxLen) << std::move(ttchD.strName) << strSuffix; }
+      setw(ttchD.iMaxLen) << StdMove(ttchD.strName) << strSuffix; }
   /* ----------------------------------------------------------------------- */
   Head &GetLastHdr(const size_t stHM1)
   { // Get the last header item
@@ -116,13 +116,13 @@ class Statistic
   }
   /* ----------------------------------------------------------------------- */
   template<typename T>Statistic &DataN(const T tNum, const int iP=0)
-    { return Data(std::move(ToString<T>(tNum, 0, iP))); }
+    { return Data(StdMove(ToString<T>(tNum, 0, iP))); }
   /* ----------------------------------------------------------------------- */
   template<typename T>Statistic &DataB(const T tNum, const int iP=0)
     { return Data(ToBytesStr(static_cast<uint64_t>(tNum), iP)); }
   /* ----------------------------------------------------------------------- */
   template<typename T>Statistic &DataH(const T tNum,
-    const int iP=0) { return Data(std::move(ToHex<T>(tNum, iP))); }
+    const int iP=0) { return Data(StdMove(ToHex<T>(tNum, iP))); }
   /* -- Data by character -------------------------------------------------- */
   Statistic &DataC(const char cCharacter = '?')
   { // Return if there are no headers
@@ -161,7 +161,7 @@ class Statistic
     // Move the value into the list and put the tring we inserted into
     // a decoder and get length of the utf8 string
     const int iLength = IntOrMax<int>(
-      Decoder(*slValues.insert(slValues.cend(), std::move(strVal))).Length());
+      Decoder(*slValues.insert(slValues.cend(), StdMove(strVal))).Length());
     // If the length of this value is longer and is not the last header value
     // then set the header longer
     if(iLength > ttchD.iMaxLen) ttchD.iMaxLen = iLength;
@@ -209,15 +209,15 @@ BEGIN_COLLECTORDUO(Stats, Stat, CLHelperUnsafe, ICHelperUnsafe),
   public Statistic                     // Statistics data
 { /* -- Constructor ------------------------------------------------ */ public:
   Stat(void) :                         // No parameters
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperStat{ *cStats, this },     // Automatic (de)registration
     IdentCSlave{ cParent.CtrNext() }   // Initialise identification number
     /* -- No code ---------------------------------------------------------- */
     { }                                // Do nothing else
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Stat);               // No copy constructors
+  DELETECOPYCTORS(Stat)                // No copy constructors
 };/* ----------------------------------------------------------------------- */
-END_COLLECTOR(Stats);                  // End of stat objects collector
+END_COLLECTOR(Stats)                   // End of stat objects collector
 /* ------------------------------------------------------------------------- */
 };                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

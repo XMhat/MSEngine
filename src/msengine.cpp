@@ -1,109 +1,117 @@
 /* == MSENGINE.CPP ========================================================= */
 /* ######################################################################### */
+/* ##*@@****@@**@@@@@@*******@@@@@**@@@@@@***@@@@@*@@@@@@*@@@@@@***@@@@@**## */
+/* ##*@@@@@@@@*@@*******@@**@@***@@*@@***@@*@@*******@@***@@***@@*@@***@@*## */
+/* ##*@@*@@*@@**@@@@@**@@@@*@@@@****@@***@@*@@*@@@***@@***@@***@@*@@@@****## */
+/* ##*@@****@@******@@**@@**@@***@@*@@***@@*@@***@@**@@***@@***@@*@@***@@*## */
+/* ##*@@****@@*@@@@@@********@@@@@**@@***@@**@@@@@*@@@@@@*@@***@@**@@@@@**## */
+/* ######################################################################### */
 /* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
 /* ######################################################################### */
 /* ## This the file that handles the inclusing of engine subsystems in a  ## */
 /* ## tidy namespace and handles the main entry point.                    ## */
 /* ######################################################################### */
-/* == Setup includes ======================================================= */
+/* ========================================================================= */
 #include "setup.hpp"                   // Setup the compilation environment
-/* -- Engine includes ------------------------------------------------------ */
+/* ------------------------------------------------------------------------- */
 namespace Engine {                     // Start of engine namespace
 /* ------------------------------------------------------------------------- */
-#include "msengine.hpp"                // Build version numbers
-#include "stdtypes.hpp"                // Standard types
-#include "flags.hpp"                   // Flags class
-#include "utf.hpp"                     // Unicode transformation format utils
-#include "std.hpp"                     // Std function wrappers
-#include "string.hpp"                  // String utilities
-#include "error.hpp"                   // Error class
-#include "token.hpp"                   // Token class
-#include "vars.hpp"                    // Vars class
-#include "psplit.hpp"                  // PathSplit class
-#include "ident.hpp"                   // Identifier class
-#include "dir.hpp"                     // Dir class
-#include "util.hpp"                    // Miscellenious utilities
-#include "sysutil.hpp"                 // System utilities
-#include "cvardef.hpp"                 // CVar definition registry
-#include "clock.hpp"                   // Clock helper classes
-#include "args.hpp"                    // Arguments class
-#include "cmdline.hpp"                 // Command-line helper class
-#include "memory.hpp"                  // Memory management system
-#include "fstream.hpp"                 // File stream wrapper
-#include "log.hpp"                     // Logging helper
-#include "collect.hpp"                 // Collector helpers
-#include "stat.hpp"                    // Statistic class
-#include "thread.hpp"                  // Thread helper
-#include "evtcore.hpp"                 // Thread-safe events system core
-#include "evtmain.hpp"                 // Main engine thread events system
-#include "condef.hpp"                  // Console definitions
-#include "glfwutil.hpp"                // GLFW utilities
-#include "glfwwin.hpp"                 // GLFW window class
-#include "glfw.hpp"                    // GLFW wrapper
-#include "dim.hpp"                     // Dimensions header file
-#include "syscore.hpp"                 // Operating system interface
-#include "filemap.hpp"                 // File map interface
-#include "luautil.hpp"                 // Lua utility functions
-#include "luaref.hpp"                  // Lua reference helper class
-#include "luaevent.hpp"                // Lua event helper class
-#include "luafunc.hpp"                 // Lua function callback helper class
-#include "async.hpp"                   // Async file loading helper
-#include "crypt.hpp"                   // Cryptography header file
-#include "uuid.hpp"                    // UuId class
-#include "codec.hpp"                   // Codec header file
-#include "archive.hpp"                 // Archive header file
-#include "asset.hpp"                   // Asset header file
-#include "timer.hpp"                   // Timer header file
-#include "sql.hpp"                     // SQL header file
-#include "luacode.hpp"                 // Lua code subsystem
-#include "luadef.hpp"                  // Lua definitions file
-#include "lua.hpp"                     // Lua core subsystem
-#include "cvar.hpp"                    // CVar item header file
-#include "cvars.hpp"                   // CVars header file
-#include "oal.hpp"                     // OpenAL header file
-#include "pcmdef.hpp"                  // Pcm data header file
-#include "pcmlib.hpp"                  // Pcm formats header file
-#include "pcmfmt.hpp"                  // Pcm format plugins
-#include "pcm.hpp"                     // Pcm loader header file
-#include "fbodef.hpp"                  // Fbo defs header file
-#include "ogl.hpp"                     // OpenGL header file
-#include "imagedef.hpp"                // Image data header file
-#include "imagelib.hpp"                // Image formats header file
-#include "imagefmt.hpp"                // Image format plugins
-#include "bin.hpp"                     // Bin packing header file
-#include "image.hpp"                   // Image loader header file
-#include "shader.hpp"                  // Shader program header file
-#include "fbobase.hpp"                 // Context, thread and fbo base vars
-#include "fboitem.hpp"                 // Frame buffer object render item
-#include "fbo.hpp"                     // Frame buffer object header file
-#include "fbomain.hpp"                 // Core fbos header file
-#include "sshot.hpp"                   // Screenshot header file
-#include "texture.hpp"                 // Texture header file
-#include "palette.hpp"                 // Palette header file
-#include "ftf.hpp"                     // Freetype font header file
-#include "font.hpp"                    // Font header file
-#include "file.hpp"                    // File class header file
-#include "cert.hpp"                    // Certificates include file
-#include "socket.hpp"                  // Sockets include file
-#include "console.hpp"                 // Console header file
-#include "mask.hpp"                    // Mask header file
-#include "source.hpp"                  // Source header file
-#include "stream.hpp"                  // Stream header file
-#include "sample.hpp"                  // Sample header file
-#include "video.hpp"                   // Video class
-#include "audio.hpp"                   // Audio class
-#include "json.hpp"                    // Json class
-#include "cursor.hpp"                  // Cursor class
-#include "evtwin.hpp"                  // Window thread events system
-#include "input.hpp"                   // Input class
-#include "display.hpp"                 // Display class
-#include "credits.hpp"                 // Credits class
-#include "core.hpp"                    // Core class file
-#include "cvarlib.hpp"                 // Lua cvar function library
-#include "conlib.hpp"                  // Lua console function library
+#include "msengine.hpp"                // Engine version information header
+#include "stdtypes.hpp"                // Engine STL types used header
+#include "flags.hpp"                   // Flags helper utility header
+#include "utf.hpp"                     // UTF strings utility header
+#include "std.hpp"                     // StdLib function helpers header
+#include "string.hpp"                  // String utilities header
+#include "error.hpp"                   // Error handling utility header
+#include "token.hpp"                   // String tokenisation utility header
+#include "vars.hpp"                    // String variables utility header
+#include "psplit.hpp"                  // Path handling utilities header
+#include "ident.hpp"                   // Identifier utility header
+#include "dir.hpp"                     // Directory handling utility header
+#include "util.hpp"                    // Miscellenious utilities header
+#include "sysutil.hpp"                 // System utilities header
+#include "cvardef.hpp"                 // CVar definitions header
+#include "clock.hpp"                   // Clock utilities header
+#include "args.hpp"                    // Arguments handling header
+#include "cmdline.hpp"                 // Command-line class header
+#include "memory.hpp"                  // Memory management utilities header
+#include "fstream.hpp"                 // File IO utility header
+#include "log.hpp"                     // Logging helper class header
+#include "collect.hpp"                 // Class collector utility header
+#include "stat.hpp"                    // Statistic utility class header
+#include "thread.hpp"                  // Thread helper class header
+#include "evtcore.hpp"                 // Thread-safe event system core header
+#include "evtmain.hpp"                 // Main engine events system header
+#include "condef.hpp"                  // Console definitions header
+#include "glfwutil.hpp"                // GLFW utility class header
+#include "glfwwin.hpp"                 // GLFW window class header
+#include "glfw.hpp"                    // GLFW utilities header
+#include "dim.hpp"                     // Data grouping classes header
+#include "syscore.hpp"                 // Operating system interface header
+#include "filemap.hpp"                 // Virtual file IO interface
+#include "luautil.hpp"                 // Lua utility functions header
+#include "luaref.hpp"                  // Lua reference helper class header
+#include "luaevent.hpp"                // Lua event helper class header
+#include "luafunc.hpp"                 // Lua callback helper class header
+#include "async.hpp"                   // Async file loading class header
+#include "crypt.hpp"                   // Cryptography utilities header
+#include "uuid.hpp"                    // UuId parsing header
+#include "codec.hpp"                   // Codec classes header
+#include "archive.hpp"                 // Archive handling class header
+#include "asset.hpp"                   // Asset handling class header
+#include "timer.hpp"                   // Timing utilities header
+#include "sql.hpp"                     // SQL database management header
+#include "luacode.hpp"                 // Lua code subsystem header
+#include "luadef.hpp"                  // Lua definitions header
+#include "lua.hpp"                     // Lua core subsystem header
+#include "cvar.hpp"                    // CVar item header
+#include "cvars.hpp"                   // CVars management class header
+#include "oal.hpp"                     // OpenAL audio header
+#include "pcmdef.hpp"                  // Pcm definitions header
+#include "pcmlib.hpp"                  // Pcm codecs handling header
+#include "pcmfmt.hpp"                  // Pcm format support plugins header
+#include "pcm.hpp"                     // Pcm loader class header
+#include "fbodef.hpp"                  // Frambuffer object definitions header
+#include "ogl.hpp"                     // OpenGL graphics management header
+#include "imagedef.hpp"                // Image data definitions header
+#include "imagelib.hpp"                // Image codecs handling header
+#include "imagefmt.hpp"                // Image format support plugins header
+#include "bin.hpp"                     // Bin packing class header
+#include "image.hpp"                   // Image load and save handling header
+#include "shader.hpp"                  // OpenGL Shader handling header
+#include "fbobase.hpp"                 // Frame buffer object base class header
+#include "fboitem.hpp"                 // Frame buffer object item class header
+#include "fbo.hpp"                     // Frame buffer object class header
+#include "fbomain.hpp"                 // Core frame buffer object class header
+#include "sshot.hpp"                   // Screenshot handling class header
+#include "texture.hpp"                 // Texture handling class header
+#include "palette.hpp"                 // Palette handling class header
+#include "ftf.hpp"                     // Freetype font handling class header
+#include "font.hpp"                    // Font loading and printing header
+#include "file.hpp"                    // FStream+FileMap class header
+#include "cert.hpp"                    // X509 certificate store class header
+#include "socket.hpp"                  // Socket handling class header
+#include "evtwin.hpp"                  // Window thread events system header
+#include "clip.hpp"                    // Clipboard class header
+#include "console.hpp"                 // Console handling header
+#include "mask.hpp"                    // BitMask system header
+#include "source.hpp"                  // Audio source class header
+#include "stream.hpp"                  // Audio stream class header
+#include "sample.hpp"                  // Audio sample class header
+#include "video.hpp"                   // Theora video playback class header
+#include "audio.hpp"                   // Audio base management class header
+#include "json.hpp"                    // Json handling class header
+#include "cursor.hpp"                  // Cursor activation class header
+#include "input.hpp"                   // Input handling class header
+#include "glfwmon.hpp"                 // GLFW monitor class header
+#include "display.hpp"                 // Window handling class header
+#include "credits.hpp"                 // Credits handling class header
+#include "core.hpp"                    // Core class header
+#include "url.hpp"                     // Url parsing library
 #include "lualib.hpp"                  // Lua lua function api library
 /* ------------------------------------------------------------------------- */
 };                                     // End of engine namespace
 /* == The main entry point (defined in 'core.cpp') ========================= */
-int ENTRYFUNC { return Engine::IfCore::CoreMain(__argc, __wargv, _wenviron); }
+int ENTRYFUNC { Engine::IfCore::Core engCore;
+                return engCore.CoreMain(__argc, __wargv, _wenviron); }
 /* == End-of-File ========================================================== */

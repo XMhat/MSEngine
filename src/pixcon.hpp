@@ -16,15 +16,13 @@
 namespace IfCurses {                   // Start of Curses interface
 #include <ncurses.h>                   // Using Curses for fancy term effects
 }                                      // End of Curses interface
-/* ------------------------------------------------------------------------- */
-typedef IfDim::DimCoords<int> DimCoInt; // Dimension Cordinates typedef
 /* == Console Class ======================================================== */
 class SysCon :                         // All members initially private
   /* -- Base classes ------------------------------------------------------- */
   public SysBase,                      // Defined in 'sys(nix/mac).hpp'
   public SysConBase,                   // Defined in 'syscore.hpp'
   private IHelper,                     // Allow access to windows console
-  private DimCoInt                     // Console drawing position & dimensions
+  private IfDim::DimCoInt              // Console drawing position & dimensions
 {  /* -- Typedefs ---------------------------------------------------------- */
   typedef IfCurses::attr_t attr_t;     // NCurses alias
   typedef IfDim::Coordinates<int> CoordInt; // Cordinates typedef
@@ -534,7 +532,7 @@ class SysCon :                         // All members initially private
       utfString.Reset(strIL.c_str() +
         abs(Maximum(0, iLen - diSizeM2.DimGetWidth())));
       // Draw start of input text
-      WriteLine(std::move(utfString), diSizeM1.DimGetWidth(), false);
+      WriteLine(StdMove(utfString), diSizeM1.DimGetWidth(), false);
     } // Left size of text is zero long
     else iLen = 0;
     // Have right side of text and have characters left on screen to spare?
@@ -579,7 +577,7 @@ class SysCon :                         // All members initially private
         // Reset left text position
         utfL.Reset();
         // Put string in a container and draw the string with left align
-        WriteLine(std::move(utfL), CoordGetX()+iLC, false);
+        WriteLine(StdMove(utfL), CoordGetX()+iLC, false);
         // If there is no right text we can just clear to the end of line
         if(!iRC) return ClearLine();
       } // No length of left text? Set initial position.
@@ -606,7 +604,7 @@ class SysCon :                         // All members initially private
     // Reset right string position
     utfR.Reset();
     // Write the line and clear the rest
-    WriteLine(std::move(utfR), CoordGetX()+iRC, true);
+    WriteLine(StdMove(utfR), CoordGetX()+iRC, true);
   }
   /* -- Redraw bottom status bar ------------------------------------------- */
   void RedrawStatusBar(const string &strSL, const string &strSR)
@@ -700,7 +698,7 @@ class SysCon :                         // All members initially private
     // System console is initialising
     cLog->LogDebugSafe("SysCon initialising...");
     // Set locale
-    if(const char*const cpLocale = setlocale(LC_ALL, cpBlank))
+    if(const char*const cpLocale = setlocale(LC_ALL, cCommon->CBlank()))
       { cLog->LogDebugExSafe("SysCon initialised locale to $.", cpLocale); }
     else XCL("Failed to initialse default locale!");
     // Init ncurses
@@ -801,8 +799,9 @@ class SysCon :                         // All members initially private
     cLog->LogInfoSafe("SysCon initialised.");
   }
   /* -- Constructor -------------------------------------------------------- */
-  SysCon(void) :                       // No parameters
-    /* -- Initialisation of members ---------------------------------------- */
+  SysCon(SysModList &&svVersion, const size_t stI) : // No parameters
+    /* -- Initialisers ----------------------------------------------------- */
+    SysBase{ StdMove(svVersion), stI }, // Initialise base with module info
     IHelper{ __FUNCTION__ },           // Initialise init helper
     fpSignal(nullptr),                 // Signal handler on standby
     aColour(0),                        // Black colour
@@ -815,9 +814,9 @@ class SysCon :                         // All members initially private
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Destructor --------------------------------------------------------- */
-  DTORHELPER(~SysCon, SysConDeInit());
+  DTORHELPER(~SysCon, SysConDeInit())
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(SysCon);             // Do not need defaults
+  DELETECOPYCTORS(SysCon)              // Do not need defaults
 };/* ----------------------------------------------------------------------- */
 #define MSENGINE_SYSCON_CALLBACKS()    // Not required
 /* == EoF =========================================================== EoF == */

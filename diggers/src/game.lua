@@ -983,11 +983,13 @@ local function DoSetAction(O, A, J, D)
     return;
   -- Jump?
   elseif A == ACT.JUMP then
-    -- Object is not jumping or accumulating falling damage
-    if O.F & OFL.JUMPRISE == 0 and
-       O.F & OFL.JUMPFALL == 0 and
-       O.FS == 1 and
-       O.FD == 0 then
+    -- Object is...
+    if O.A ~= ACT.FIGHT and            -- ...not fighting -and-
+       O.F & OFL.BUSY == 0 and         -- ...not busy -and-
+       O.F & OFL.JUMPRISE == 0 and     -- ...not jumping -and-
+       O.F & OFL.JUMPFALL == 0 and     -- ...not falling -and-
+       O.FS == 1 and                   -- ...not falling -and-
+       O.FD == 0 then                  -- ...not accumulating fall damage
       -- Remove fall flag and add busy and jumping flags
       O.F = (O.F | OFL.BUSY | OFL.JUMPRISE) & ~OFL.FALL;
       -- Play jump sound
@@ -3252,7 +3254,7 @@ local function ProcInput()
         "Press Q or START+JB4+JB5 to give up.";
       local sSmallTips<const> =
         "F1 OR SELECT+START BUTTON FOR SETUP\n"..
-        "F2 TO READ THE README FILE\n"..
+        "F2 FOR THE GAME AND ENGINE CREDITS\n"..
         "F11 TO RESET WINDOW SIZE AND POSITION\n"..
         "F12 TO TAKE A SCREENSHOT";
       local iKeyQ<const>, iKeyEscape<const> = aKeys.Q, aKeys.ESCAPE;

@@ -15,7 +15,11 @@ using namespace IfFbo;                 // Using fbo namespace
 /* -- Video collector class for collector data and custom variables -------- */
 BEGIN_ASYNCCOLLECTOREX(Videos, Video, CLHelperSafe,
 /* -- Public variables ----------------------------------------------------- */
-SafeLong           lBufferSize,,       /* Default buffer size               */\
+typedef IfIdent::IdList<TH_CS_NSPACES> CSStrings;
+const CSStrings    csStrings;          /* Colour space strings list         */\
+typedef IfIdent::IdList<TH_PF_NFORMATS> PFStrings;
+const PFStrings    pfStrings;          /* Pixel format strings list         */\
+SafeLong           lBufferSize;,,      /* Default buffer size               */\
 /* -- Derived classes ------------------------------------------------------ */
 private LuaEvtMaster<Video, LuaEvtTypeParam<Video>>); // Lua event
 /* ------------------------------------------------------------------------- */
@@ -217,14 +221,15 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
         uiBuffer = sCptr->UnQueueBuffer();
         if(cOal->HaveError()) continue;
         // Remove buffer time
-        fdAudioBuffer -= Maximum(static_cast<ALdouble>
-          (cOal->GetBufferInt(uiBuffer, AL_SIZE)) / vIN.rate, 0);
+        fdAudioBuffer -=
+          Maximum(cOal->GetBufferInt<ALdouble>(uiBuffer, AL_SIZE) /
+            vIN.rate, 0);
         // Delete the buffer that was returned continue if successful
         ALL(cOal->DeleteBuffer(uiBuffer),
           "Video failed to delete unqueued buffer $ in '$'!",
              uiBuffer, IdentGet());
       } // No need to process more if we have more than 1 sec of audio.
-      if(fdAudioBuffer >= 1) break;
+      if(fdAudioBuffer >= 1.0) break;
       // If audio time is ahead of video by two seconds then we don't need any
       // more data.
       if(FlagIsSet(FL_THEORA) && fdAudioTime > fdVideoTime + 1) break;
@@ -302,7 +307,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
         vorbis_synthesis_blockin(&vDS, &vBL);
     } // Have theora stream and we've got audio buffered?
     if(FlagIsSet(FL_THEORA) &&
-      ((FlagIsSet(FL_VORBIS) && fdAudioBuffer >= 1) ||
+      ((FlagIsSet(FL_VORBIS) && fdAudioBuffer >= 1.0) ||
       FlagIsClear(FL_VORBIS)))
     { // If we haven't reached the time we expect to draw the next frame?
       if(CINoTrigger()) afStatus.FlagSet(AF_VIDEO);
@@ -352,7 +357,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     if(afStatus.FlagIsSet(AF_VIDEO))
     { // If stream has audio, audio is buffered and video is behind audio by
       // one-tenth of a second?
-      if(FlagIsSet(FL_VORBIS) && fdAudioTime >= 0 &&
+      if(FlagIsSet(FL_VORBIS) && fdAudioTime >= 0.0 &&
         fdVideoTime < fdAudioTime - 0.1)
       { // Catch up and if succeeded? Update video position
         if(TimerCatchup()) UpdateVideoPosition();
@@ -644,25 +649,11 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     if(iGotVorbisPage) FlagSet(FL_VORBIS);
   }
   /* -- Convert colour space to name -------------------------------------- */
-  static const string &ColourSpaceToString(const th_colorspace csId)
-  { // Lookup table of codes
-    static const IfIdent::IdList<TH_CS_NSPACES> ilColourSpaces{{
-      "TH_CS_UNSPECIFIED",         "TH_CS_ITU_REC_470M",
-      "TH_CS_ITU_REC_470BG"
-    }, "TH_CS_UNSUPPORTED"};
-    // Return looked up string
-    return ilColourSpaces.Get(csId);
-  }
+  const string &ColourSpaceToString(const th_colorspace csId) const
+    { return cParent.csStrings.Get(csId); }
   /* -- Convert pixel format to name --------------------------------------- */
-  static const string &PixelFormatToString(const th_pixel_fmt pfId)
-  { // Lookup table of codes
-    static const IfIdent::IdList<TH_PF_NFORMATS> ilPixelFormats{{
-      "TH_PF_420", /* 0 */ "TH_PF_RSVD", /* 1 */
-      "TH_PF_422", /* 2 */ "TH_PF_444",  /* 3 */
-    }, "TH_PF_UNSUPPORTED"};
-    // Return looked up string
-    return ilPixelFormats.Get(pfId);
-  }
+  const string &PixelFormatToString(const th_pixel_fmt pfId) const
+    { return cParent.pfStrings.Get(pfId); }
   /* -- Video properties ------------------------------------------- */ public:
   double GetVideoTime(void) const { return fdVideoTime; }
   double GetAudioTime(void) const { return fdAudioTime; }
@@ -679,8 +670,8 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
   int GetHeight(void) const { return static_cast<int>(tIN.pic_height); }
   int GetWidth(void) const { return static_cast<int>(tIN.pic_width); }
   uint64_t GetLength(void) const { return fmFile.Size(); }
-  bool HaveAudio(void) const { return !!sCptr; };
-  ALenum GetAudioFormat(void) const { return eFormat; };
+  bool HaveAudio(void) const { return !!sCptr; }
+  ALenum GetAudioFormat(void) const { return eFormat; }
   const string GetFormatAsIdentifier(void) const
     { return cOal->GetALFormat(eFormat); }
   /* -- Update volume ------------------------------------------------------ */
@@ -791,7 +782,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     // then unqueue and delete the buffer
     sCptr->StopUnQueueAndDeleteAllBuffers();
     // Audio buffers are empty
-    fdAudioBuffer = 0;
+    fdAudioBuffer = 0.0;
     // We need to free the source?
     if(!bReset) return;
     // Unlock the source so the source manager can recycle it
@@ -885,12 +876,12 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     // Reset counters
     uiVideoFrames = uiVideoFramesLost = 0;
     iVideoGranulePos = -1;
-    fdVideoTime = fdAudioTime = fdAudioBuffer = fdFPS = 0;
+    fdVideoTime = fdAudioTime = fdAudioBuffer = fdFPS = 0.0;
     // Reset buffer status
     stFActive = stFNext = stFWaiting = stFFree = stLoop = 0;
     // Reset OpenAL stuff
     sCptr = nullptr;
-    eFormat = 0;
+    eFormat = AL_NONE;
     // Rewind data stream
     fmFile.FileMapRewind();
   }
@@ -1134,7 +1125,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     CheckFunction(lS, 4, "ProgressFunc");
     CheckFunction(lS, 5, "SuccessFunc");
     // Set base parameters
-    AsyncInitArray(lS, strF, "videoarray", std::move(aData));
+    AsyncInitArray(lS, strF, "videoarray", StdMove(aData));
   }
   /* -- Load stream from file asynchronously ------------------------------- */
   void InitAsyncFile(lua_State*const lS)
@@ -1195,7 +1186,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
   }
   /* -- Constructor -------------------------------------------------------- */
   Video(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperVideo{ *cVideos, this },
     IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     AsyncLoader<Video>{ this,
@@ -1204,6 +1195,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
       EMC_VID_EVENT },
     VideoFlags(FL_NONE),
     tThread{ "video",
+      SysThread::High,
       bind(&Video::VideoThreadMain,
         this, _1) },
     ubReason(UB_BLOCK),
@@ -1232,20 +1224,28 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     vCO{},
     vDS{},
     vBL{},
-    fdAudioTime(0),
-    fdAudioBuffer(0),
-    fAudioVolume(1),
+    fdAudioTime(0.0),
+    fdAudioBuffer(0.0),
+    fAudioVolume(1.0f),
     fboC(GL_RGB8),
     shProgram(nullptr),
     sCptr(nullptr),
-    eFormat(0)
+    eFormat(AL_NONE)
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* -- End ---------------------------------------------------------------- */
-END_ASYNCCOLLECTOR(Videos, Video, VIDEO,
-  /* -- Collector initialisers --------------------------------------------- */
-  LuaEvtMaster{ EMC_VID_EVENT }
-);/* == Reinit textures (after engine thread shutdown) ===================== */
+END_ASYNCCOLLECTOR(Videos, Video, VIDEO, // Finish Videos collector class
+  /* -- Initialisers ------------------------------------------------------- */
+  LuaEvtMaster{ EMC_VID_EVENT },       // Init lua event async helper
+  csStrings{{                          // Init colour space strings list
+    "TH_CS_UNSPECIFIED",         "TH_CS_ITU_REC_470M",
+    "TH_CS_ITU_REC_470BG"
+  }, "TH_CS_UNSUPPORTED" },            // End of colour space strings list
+  pfStrings{{                          // Init pixel format strings list
+    "TH_PF_420", "TH_PF_RSVD",         // 0-1
+    "TH_PF_422", "TH_PF_444",          // 2-3
+  }, "TH_PF_UNSUPPORTED"}              // End of pixel format strings list
+)/* == Reinit textures (after engine thread shutdown) ====================== */
 static void VideoReInitTextures(void)
 { // Ignore if no videos otherwise re-initialise ogl textures on all videos
   if(cVideos->empty()) return;
@@ -1314,7 +1314,7 @@ static CVarReturn VideoSetBufferSize(const long lSize)
 /* == Set all streams base volume ========================================== */
 static CVarReturn VideoSetVolume(const ALfloat fVolume)
 { // Ignore if invalid value
-  if(fVolume < 0 || fVolume > 1) return DENY;
+  if(fVolume < 0.0f || fVolume > 1.0f) return DENY;
   // Store volume (SOURCES class keeps it)
   cSources->fVVolume = fVolume;
   // Update volumes

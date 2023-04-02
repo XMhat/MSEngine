@@ -13,15 +13,19 @@ namespace IfCmdLine {                  // Start of module namespace
 using namespace IfDir;                 // Using util namespace
 using namespace IfSysUtil;             // Using system utility namespace
 /* -- Command line helper class (should be the first global to inti) ------- */
-static class CmdLine final             // StrVector is arguments list
-{ /* -- Public typedefs -------------------------------------------- */ public:
-  enum ExitCommand { EC_QUIT, EC_RESTART_NO_PARAM, EC_RESTART };
+static struct CmdLine final            // Members initially public
+{ /* -- Public typedefs ---------------------------------------------------- */
+  enum class EcId { Quit,              // Quit normally
+                    RestartNoParam,    // Restart without parameters
+                    RestartNoParamUI,  // Same as above but in UI mode
+                    Restart,           // Restart with parameters
+                    RestartUI };       // Same as above but in UI mode
   /* -- Command-line and environment variables ---------------------*/ private:
-  ExitCommand      ecExit;             // Exit mode
+  EcId             ecExit;             // Exit mode
   const string     strCWD;             // Current startup working directory
   int              iArgC;              // Arguments count
-  ARGTYPE        **lArgV;              // Arguments list
-  ARGTYPE        **lEnvP;              // Environment list
+  ArgType        **lArgV;              // Arguments list
+  ArgType        **lEnvP;              // Environment list
   const StrVector  svArg;              // Arguments list
   const StrStrMap  lEnv;               // Formatted environment variables
   string           strHD;              // Persistant directory
@@ -53,17 +57,17 @@ static class CmdLine final             // StrVector is arguments list
     // Show error otherwise
     XC("The specified environment variable is invalid!",
        "Variable", strEnv,
-       "Reason",   DirValidNameResultToString(vRes),
+       "Reason",   cDirBase->VNRtoStr(vRes),
        "Result",   vRes);
   }
   /* -- Get parameter total ------------------------------------------------ */
   size_t GetTotalCArgs(void) const { return static_cast<size_t>(iArgC); }
-  ARGTYPE*const*GetCArgs(void) const { return lArgV; }
-  ARGTYPE*const*GetCEnv(void) const { return lEnvP; }
+  ArgType*const*GetCArgs(void) const { return lArgV; }
+  ArgType*const*GetCEnv(void) const { return lEnvP; }
   const StrStrMap &GetEnvList(void) const { return lEnv; }
   const StrVector &GetArgList(void) const { return svArg; }
   /* -- Set restart flag (0 = no restart, 1 = no params, 2 = params) ------- */
-  void SetRestart(const ExitCommand ecCmd) { ecExit = ecCmd; }
+  void SetRestart(const EcId ecCmd) { ecExit = ecCmd; }
   /* -- Get startup current directory -------------------------------------- */
   const string &GetStartupCWD(void) const { return strCWD; }
   /* -- Return to startup directory ---------------------------------------- */
@@ -85,8 +89,8 @@ static class CmdLine final             // StrVector is arguments list
     const size_t stArgCM1 = static_cast<size_t>(iArgC - 1);
     StrVector svRet; svRet.reserve(stArgCM1);
     // For each argument format the argument and add it to list
-    for(const ARGTYPE*const *atPtr = lArgV+1;
-        const ARGTYPE*const  atStr = *atPtr;
+    for(const ArgType*const *atPtr = lArgV+1;
+        const ArgType*const  atStr = *atPtr;
                            ++atPtr)
       svRet.emplace_back(S16toUTF(atStr));
     // One final sanity check
@@ -124,28 +128,28 @@ static class CmdLine final             // StrVector is arguments list
     // Arguments list to return
     StrStrMap ssmRet;
     // Process environment variables
-    for(const ARGTYPE*const *atPtr = lEnvP;
-        const ARGTYPE*const  atStr = *atPtr;
+    for(const ArgType*const *atPtr = lEnvP;
+        const ArgType*const  atStr = *atPtr;
                            ++atPtr)
     { // Ignore if parameter empty
       if(!*atStr) continue;
       // Split argument into key/value pair. Ignore if no parameters
       Token tokParam{ S16toUTF(atStr), "=", 2 };
       if(tokParam.empty()) continue;
-      // Find key and insert it if not found then erase the ExitCommand value
+      // Find key and insert it if not found then erase the EcId value
       string &strKey = ToUpperRef(tokParam[0]);
       const StrStrMapConstIt itArg{ ssmRet.find(strKey) };
       if(itArg != ssmRet.cend()) ssmRet.erase(itArg);
       // Insert new key/value into list
-      ssmRet.insert({ std::move(strKey),
-        tokParam.size() > 1 ? std::move(tokParam[1]) : strBlank });
+      ssmRet.insert({ StdMove(strKey),
+        tokParam.size() > 1 ? StdMove(tokParam[1]) : cCommon->Blank() });
     } // Return environment variables list
     return ssmRet;
   }
   /* -- Assign arguments ------------------------------------------- */ public:
-  CmdLine(const int iArgs, ARGTYPE**const atArgs, ARGTYPE**const atEnv) :
-    /* -- Initialisation of members ---------------------------------------- */
-    ecExit(EC_QUIT),                   // Initialise exit code
+  CmdLine(const int iArgs, ArgType**const atArgs, ArgType**const atEnv) :
+    /* -- Initialisers ----------------------------------------------------- */
+    ecExit(EcId::Quit),                // Initialise exit code
     strCWD{ DirGetCWD() },             // Initialise current working directory
     iArgC(iArgs),                      // Initialise stdlib args count
     lArgV(atArgs),                     // Initialise stdlib args ptr
@@ -162,20 +166,40 @@ static class CmdLine final             // StrVector is arguments list
   SetStartupCWD();
   // Do we have a restart mode set?
   switch(ecExit)
-  { // Just return if no restart required
-    case EC_QUIT: return;
-    // Remove first parameter and break
-    case EC_RESTART_NO_PARAM: lArgV[1] = nullptr; iArgC = 1;
-    // Restart while keeping parameters
-    case EC_RESTART: break;
-  } // Do the restart! Again, everything is cleaned up so this is convenient!
-  const int iCode = StdExecVE(lArgV, lEnvP);
-  // The execution failed so report the error
-  XCL("Failed to restart process!",
-      "Process", *lArgV, "Code", iCode, "Parameters", iArgC);
-  DTORHELPEREND(CmdLine)
+  { // Just return if no restart required?
+    case EcId::Quit: return;
+    // Remove first parameter and break?
+    case EcId::RestartNoParam:
+      lArgV[1] = nullptr; iArgC = 1; [[fallthrough]];
+    // Restart while keeping parameters?
+    case EcId::Restart: SetRestart(EcId::Quit);
+      // Do the restart! Again, everything is cleaned up so this is convenient!
+      switch(const int iCode = StdExecVE(lArgV, lEnvP))
+      { // Success? Proceed to quit
+        case 0: break;
+        // Error occured? Don't attempt execution again and show error
+        default: XCL("Failed to restart process!",
+          "Process", *lArgV, "Code", iCode, "Parameters", iArgC);
+      } // Done
+      break;
+    // Remove first parameter and break in ui mode?
+    case EcId::RestartNoParamUI:
+      lArgV[1] = nullptr; iArgC = 1; [[fallthrough]];
+    // Restart while keeping parameters in ui mode?
+    case EcId::RestartUI: SetRestart(EcId::Quit);
+      // Do the restart! Again, everything is cleaned up so this is convenient!
+      switch(const int iCode = StdSpawnVE(lArgV, lEnvP))
+      { // Success? Proceed to quit
+        case 0: break;
+        // Error occurred? Don't attempt execution again and show error
+        default: XCL("Failed to spawn new process!",
+          "Process", *lArgV, "Code", iCode, "Parameters", iArgC);
+      } // Done
+      break;
+  } // Parent process should be exiting cleanly after returning here
+  DTORHELPEREND(~CmdLine)
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(CmdLine);            // Remove default functions
+  DELETECOPYCTORS(CmdLine)             // Remove default functions
   /* -- End ---------------------------------------------------------------- */
 } *cCmdLine = nullptr;                 // Pointer to static class
 /* ------------------------------------------------------------------------- */

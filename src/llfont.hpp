@@ -15,9 +15,10 @@
 // ! The font class allows dynamic creation from font files using the FREETYPE
 // ! library.
 /* ========================================================================= */
-LLNAMESPACEBEGIN(Font)                 // Font namespace
+namespace NsFont {                     // Font namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfFont;                // Using font namespace
+using namespace IfConsole;             // Using console namespace
 /* ========================================================================= */
 /* ######################################################################### */
 /* ========================================================================= */
@@ -396,7 +397,7 @@ LLFUNC(PrintCT, LCGETPTR(1, Font)->PrintCT(
   LCGETSTRING(GLubyte, 4, "String"), LCGETPTR(        5, Texture)));
 /* ========================================================================= */
 // $ Font:Dump
-// ? Dumps the texture to the specified file in TGA format.
+// ? Dumps the texture to the specified file in the specified format.
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(Dump)
   const Font &tC = *LCGETPTR(1, Font);
@@ -496,7 +497,7 @@ LLRSEND                                // Font:* member functions end
 // ? tileheight = The height of the tile.
 // ? tilespacingwidth = The horizontal spacing between each tile.
 // ? tilespacingheight = The vertical spacing between each tile.
-// ? filetype = The source type of texture (.bmp or .tga).
+// ? filetype = The source type of texture.
 // ? width = The widths of each character separated by a whitespace.
 // ? default = The default ASCII character to draw if char not available.
 // ? name = A name to describe the font.
@@ -545,14 +546,14 @@ LLRSEND                                // Font.* namespace functions end
 // ? the InitFTFont function.
 /* ------------------------------------------------------------------------- */
 LLRSKTBEGIN(Flags)                     // Beginning of ft font loading flags
-LLRSKTITEM(IL_,NONE),                  LLRSKTITEM(FF_,USEGLYPHSIZE),
-LLRSKTITEM(FF_,FLOORADVANCE),          LLRSKTITEM(FF_,CEILADVANCE),
-LLRSKTITEM(FF_,ROUNDADVANCE),          LLRSKTITEM(FF_,STROKETYPE2),
+  LLRSKTITEM(IL_,NONE),                LLRSKTITEM(FF_,USEGLYPHSIZE),
+  LLRSKTITEM(FF_,FLOORADVANCE),        LLRSKTITEM(FF_,CEILADVANCE),
+  LLRSKTITEM(FF_,ROUNDADVANCE),        LLRSKTITEM(FF_,STROKETYPE2),
 LLRSKTEND                              // End of ft font loading flags
 /* ========================================================================= */
 LLRSCONSTBEGIN                         // Font.* namespace consts begin
-LLRSCONST(Flags),                      // Font loading flags
+  LLRSCONST(Flags),
 LLRSCONSTEND                           // Font.* namespace consts end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of Font namespace
+}                                      // End of Font namespace
 /* == EoF =========================================================== EoF == */

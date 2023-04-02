@@ -17,9 +17,10 @@
 // ! be active at once and textures marked with LF_PALETTE are affected by the
 // ! palette.
 /* ========================================================================= */
-LLNAMESPACEBEGIN(Palette)              // Palette namespace
+namespace NsPalette {                  // Palette namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfPalette;             // Using palette namespace
+using namespace IfTexture;             // Using texture namespace
 /* ========================================================================= */
 /* ######################################################################### */
 /* ========================================================================= */
@@ -27,6 +28,45 @@ using namespace IfPalette;             // Using palette namespace
 // ? Use this function to commit the new palette to the shader.
 /* ------------------------------------------------------------------------- */
 LLFUNC(Commit, LCGETPTR(1, Palette)->Commit());
+/* ========================================================================= */
+// $ Palette:Fill
+// > Id:integer=Palette entry to modify from (0-255).
+// > Count:integer=The number of indexes to fill
+// < Red:number=The red intensity number (0.0-1.0).
+// < Green:number=The green intensity number (0.0-1.0).
+// < Blue:number=The blue intensity number (0.0-1.0).
+// < Alpha:number=The alpha intensity number (0.0-1.0).
+// ? Use this function to fill the palette with the specified values.
+/* ------------------------------------------------------------------------- */
+LLFUNCBEGIN(Fill)
+  Palette &pDstRef = *LCGETPTR(1, Palette);
+  const size_t stIndex =
+    LCGETINTLGE(size_t, 2, 0, cPalettes->palDefault.size(), "Index");
+  pDstRef.Fill(stIndex,
+    LCGETINTLG(size_t, 3, 0, cPalettes->palDefault.size()-stIndex, "Count"),
+    LCGETNUMLG(GLfloat, 4, 0.0f, 1.0f, "Red"),
+    LCGETNUMLG(GLfloat, 5, 0.0f, 1.0f, "Green"),
+    LCGETNUMLG(GLfloat, 6, 0.0f, 1.0f, "Blue"),
+    LCGETNUMLG(GLfloat, 7, 0.0f, 1.0f, "Alpha"));
+LLFUNCEND
+/* ========================================================================= */
+// $ Palette:Copy
+// > Count:integer=The number of values to copy.
+// > DstId:integer=Index offset to copy the values to.
+// > Src:Palette=The source palette to copy.
+// > SrcId:integer=Index offset to copy the values from.
+// ? Use this function to copy palette data from another palette.
+/* ------------------------------------------------------------------------- */
+LLFUNCBEGIN(Copy)
+  Palette &pDstRef = *LCGETPTR(1, Palette);
+  const size_t stCount =
+    LCGETINTLG(size_t, 2, 0, cPalettes->palDefault.size(), "Count");
+  const size_t stMaxEnd = cPalettes->palDefault.size()-stCount;
+  const size_t stDstIndex = LCGETINTLG(size_t, 3, 0, stMaxEnd, "DestIndex");
+  const Palette &pSrcRef = *LCGETPTR(4, Palette);
+  const size_t stSrcIndex = LCGETINTLG(size_t, 5, 0, stMaxEnd, "SrcIndex");
+  pDstRef.Copy(stDstIndex, pSrcRef, stSrcIndex, stCount);
+LLFUNCEND
 /* ========================================================================= */
 // $ Palette:Destroy
 // ? Destroys the palette and frees the memory associated with it. This does
@@ -253,39 +293,59 @@ LLFUNC(SetRGBA, LCGETPTR(1, Palette)->SetRGBA(
   LCGETNUMLG (GLfloat, 6, 0.0f, 1.0f, "Alpha")));
 /* ========================================================================= */
 // $ Palette:Shift
-// > Amount:integer=Shift all palette entries backwards or forwards this much.
-// ? Shifts all palette entries backwards or forwards this amount.
+// > Begin:integer=The starting palette index to shift up to.
+// > End:integer=The ending palette index to shift up to.
+// > Amount:integer=Amount to rotate by.
+// ? Shifts all palette entries backwards or forwards this amount from the
+// ? specified palette index and limited to the specified number of indexes.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Shift, LCGETPTR(1, Palette)->Shift(LCGETINTLEG(ssize_t, 2,
-  -static_cast<ssize_t>(cPalettes->palDefault.size()),
-                        cPalettes->palDefault.size(), "Amount")));
+LLFUNCBEGIN(Shift)
+  Palette &pRef = *LCGETPTR(1, Palette);
+  const ssize_t stBegin = LCGETINTLG(ssize_t, 2, 0, pRef.Size(), "Begin");
+  pRef.Shift(stBegin, LCGETINTLGE(ssize_t, 3, 0, pRef.Size() - stBegin, "End"),
+    LCGETINTLEG(ssize_t, 4, pRef.SizeN(), pRef.Size(), "Amount"));
+LLFUNCEND
 /* ========================================================================= */
-// $ Palette:ShiftL
-// > Amount:integer=Shift all palette entries backwards this much.
-// ? Shifts all palette entries backwards this amount.
+// $ Palette:ShiftB
+// > Begin:integer=The starting palette index to shift up to.
+// > End:integer=The ending palette index to shift up to.
+// > Amount:integer=Amount to rotate backwards by.
+// ? Shifts all palette entries backwards this amount from the specified
+// ? palette index and limited to the specified number of indexes.
 /* ------------------------------------------------------------------------- */
-LLFUNC(ShiftL, LCGETPTR(1, Palette)->ShiftL(LCGETINTLG(size_t, 2,
-  0, cPalettes->palDefault.size(), "Amount")));
+LLFUNCBEGIN(ShiftB)
+  Palette &pRef = *LCGETPTR(1, Palette);
+  const ssize_t stBegin = LCGETINTLGE(ssize_t, 2, 0, pRef.Size(), "Begin");
+  pRef.ShiftBck(stBegin, LCGETINTLGE(ssize_t, 3, stBegin, pRef.Size(), "End"),
+    LCGETINTLG(ssize_t, 4, 0, pRef.Size() - stBegin, "Amount"));
+LLFUNCEND
 /* ========================================================================= */
-// $ Palette:ShiftR
-// > Amount:integer=Shift all palette entries forwards this much.
-// ? Shifts all palette entries forwards this amount.
+// $ Palette:ShiftF
+// > Begin:integer=The starting palette index to shift up to.
+// > End:integer=The ending palette index to shift up to.
+// > Amount:integer=Amount to rotate forwards by.
+// ? Shifts all palette entries forwards this amount from the specified
+// ? palette index and limited to the specified number of indexes.
 /* ------------------------------------------------------------------------- */
-LLFUNC(ShiftR, LCGETPTR(1, Palette)->ShiftR(LCGETINTLG(size_t, 2,
-  0, cPalettes->palDefault.size(), "Amount")));
+LLFUNCBEGIN(ShiftF)
+  Palette &pRef = *LCGETPTR(1, Palette);
+  const ssize_t stBegin = LCGETINTLGE(ssize_t, 2, 0, pRef.Size(), "Start");
+  pRef.ShiftFwd(stBegin, LCGETINTLGE(ssize_t, 3,stBegin, pRef.Size(), "Limit"),
+    LCGETINTLG(ssize_t, 4, 0, pRef.Size() - stBegin, "Amount"));
+LLFUNCEND
 /* ========================================================================= */
 /* ######################################################################### */
 /* ## Palette:* member functions structure                                ## */
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Palette:* member functions begin
-LLRSFUNC(Commit),  LLRSFUNC(Destroy),  LLRSFUNC(GetA),    LLRSFUNC(GetAI),
-LLRSFUNC(GetB),    LLRSFUNC(GetBI),    LLRSFUNC(GetG),    LLRSFUNC(GetGI),
-LLRSFUNC(GetName), LLRSFUNC(GetR),     LLRSFUNC(GetRGBA), LLRSFUNC(GetRGBAI),
-LLRSFUNC(GetRI),   LLRSFUNC(SetA),     LLRSFUNC(SetAI),   LLRSFUNC(SetB),
-LLRSFUNC(SetBI),   LLRSFUNC(SetG),     LLRSFUNC(SetGI),   LLRSFUNC(SetR),
-LLRSFUNC(SetRGBA), LLRSFUNC(SetRGBAI), LLRSFUNC(SetRI),   LLRSFUNC(Shift),
-LLRSFUNC(ShiftL),  LLRSFUNC(ShiftR),
+  LLRSFUNC(Commit),  LLRSFUNC(Copy),     LLRSFUNC(Destroy), LLRSFUNC(Fill),
+  LLRSFUNC(GetA),    LLRSFUNC(GetAI),    LLRSFUNC(GetB),    LLRSFUNC(GetBI),
+  LLRSFUNC(GetG),    LLRSFUNC(GetGI),    LLRSFUNC(GetName), LLRSFUNC(GetR),
+  LLRSFUNC(GetRGBA), LLRSFUNC(GetRGBAI), LLRSFUNC(GetRI),   LLRSFUNC(SetA),
+  LLRSFUNC(SetAI),   LLRSFUNC(SetB),     LLRSFUNC(SetBI),   LLRSFUNC(SetG),
+  LLRSFUNC(SetGI),   LLRSFUNC(SetR),     LLRSFUNC(SetRGBA), LLRSFUNC(SetRGBAI),
+  LLRSFUNC(SetRI),   LLRSFUNC(Shift),    LLRSFUNC(ShiftB),  LLRSFUNC(ShiftF),
 LLRSEND                                // Palette:* member functions end
 /* ========================================================================= */
 // $ Palette.Create
@@ -337,5 +397,5 @@ LLRSBEGIN                              // Palette.* namespace functions begin
   LLRSFUNC(Texture),
 LLRSEND                                // Palette.* namespace functions end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of Palette namespace
+}                                      // End of Palette namespace
 /* == EoF =========================================================== EoF == */

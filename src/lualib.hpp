@@ -16,7 +16,7 @@
 namespace IfLuaLib {                   // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfLuaUtil;             // Using luautil namespace
-/* == Macros to simplify param checking ==================================== */
+/* -- Macros to simplify param checking ------------------------------------ */
 #define LCPUSHBOOL(a)                  PushBoolean(lS, a)
 #define LCPUSHNUM(a)                   PushNumber(lS, a)
 #define LCPUSHINT(a)                   PushInteger(lS, a)
@@ -44,44 +44,44 @@ using namespace IfLuaUtil;             // Using luautil namespace
 #define LCCHECKMAINSTATE()             cLua->StateAssert(lS)
 #define LCSETEVENTCBEX(c,p)            cLua->SetLuaRef(lS, c, p)
 #define LCSETEVENTCB(c)                LCSETEVENTCBEX(c, 1)
-/* == Macros to simplify LUA class creation and destruction ================ */
+/* -- Macros to simplify LUA class creation and destruction ---------------- */
 #define LCCLASSCREATEPTR(t,f)          ClassCreatePtr<t>(lS, #t, f)
 #define LCCLASSCREATE(t)               ClassCreate<t>(lS, #t)
 #define LCCLASSDESTROY(p,t)            ClassDestroy<t>(lS, p, #t)
 #define LCGETPTR(p,t)                  GetPtr<t>(lS, p, #t)
-/* == Macros to simplify try/catch on each lualib function ================= */
+#define LCGETULPTR(p,t)                GetUnlockedPtr<t>(lS, p, #t)
+/* -- Macros to simplify try/catch on each lualib function ----------------- */
 #define LLFUNCBEGIN(n)                 static int Cb ## n(lua_State*const lS) {
 #define LLFUNCENDEX(p)                 UNUSED_VARIABLE(lS); return p; }
 #define LLFUNCBEGINEX(n,p)             LLFUNCBEGIN(n) LCCHECKPARAMS(p);
 #define LLFUNCBEGINTEMPLATE(n)         template<typename T>LLFUNCBEGIN(n)
 #define LLFUNCEND                      LLFUNCENDEX(0)
-/* == One-line function declaration ======================================== */
-#define LLNAMESPACEBEGIN(n)            namespace Ns ## n {
-#define LLNAMESPACEEND                 };
+/* -- One-line function declaration ---------------------------------------- */
 #define LLFUNC(n,f)                    LLFUNCBEGIN(n) f; LLFUNCEND
 #define LLFUNCEX(n,x,f)                LLFUNCBEGIN(n) f; LLFUNCENDEX(x)
 #define LLFUNCTEMPLATE(n,f)            LLFUNCBEGINTEMPLATE(n) f; LLFUNCEND
 #define LLFUNCTEMPLATEEX(n,x,f)        LLFUNCBEGINTEMPLATE(n) f; LLFUNCENDEX(x)
-/* == Macros to simplify definition of lualib reg func structures ========== */
-#define ARRAYLEN(a)             (sizeof((a)) / sizeof((a)[0]) - 1)
-#define LLRSBEGIN               static const luaL_Reg llStatics[]{
-#define LLRSMFBEGIN             static const luaL_Reg llMethods[]{
-#define LLRSCONSTBEGIN          static const LuaTable llConsts[]{
-#define LLRSCONST(n)            { #n, llConsts ## n, ARRAYLEN(llConsts ## n) }
-#define LLRSCONSTEND            { nullptr, nullptr, 0 } };
-#define LLRSKTBEGIN(n)          static const LuaKeyInt llConsts ## n[]{
-#define LLRSKTITEMEX2(k,v)      { k, static_cast<lua_Integer>(v) }
-#define LLRSKTITEMEX(p,n,u)     LLRSKTITEMEX2(#n, p ## n ## u)
-#define LLRSKTITEM(p,n)         LLRSKTITEMEX2(#n, p ## n)
-#define LLRSKTEND               { nullptr, 0 } };
-#define LLRSFUNC(n)             { #n, Cb ## n }
-#define LLRSFUNCEX(n,f)         { #n, Cb ## f }
-#define LLRSEND                 { nullptr, nullptr } };
-/* == Includes ============================================================= */
+/* -- Macros to simplify definition of lualib reg func structures ---------- */
+#define ARRAYLEN(a)              (sizeof((a)) / sizeof((a)[0]) - 1)
+#define LLRSBEGIN                static const luaL_Reg llStatics[]{
+#define LLRSMFBEGIN              static const luaL_Reg llMethods[]{
+#define LLRSCONSTBEGIN           static const LuaTable llConsts[]{
+#define LLRSCONST(n)             { #n, llConsts ## n, ARRAYLEN(llConsts ## n) }
+#define LLRSCONSTEND             { nullptr, nullptr, 0 } };
+#define LLRSKTBEGIN(n)           static const LuaKeyInt llConsts ## n[]{
+#define LLRSKTITEMEX2(k,v)       { k, static_cast<lua_Integer>(v) }
+#define LLRSKTITEMEX(p,n,u)      LLRSKTITEMEX2(#n, p ## n ## u)
+#define LLRSKTITEM(p,n)          LLRSKTITEMEX2(#n, p ## n)
+#define LLRSKTEND                { nullptr, 0 } };
+#define LLRSFUNC(n)              { #n, Cb ## n }
+#define LLRSFUNCEX(n,f)          { #n, Cb ## f }
+#define LLRSEND                  { nullptr, nullptr } };
+/* -- Includes ------------------------------------------------------------- */
 #include "llarchive.hpp"               // Archive namespace and methods
 #include "llasset.hpp"                 // Asset namespace and methods
 #include "llaudio.hpp"                 // Audio namespace and methods
 #include "llbin.hpp"                   // Bin namespace and methods
+#include "llclip.hpp"                  // Clipboard namespace and methods
 #include "llconsole.hpp"               // Console namespace and methods
 #include "llcore.hpp"                  // Core namespace and methods
 #include "llcredit.hpp"                // Credit namespace and methods
@@ -109,11 +109,7 @@ using namespace IfLuaUtil;             // Using luautil namespace
 #include "llpalette.hpp"               // Palette namespace and methods
 #include "llutil.hpp"                  // Util namespace and methods
 #include "llvideo.hpp"                 // Video namespace and methods
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## CLEAN-UP                                                            ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* -- Done with these macros ----------------------------------------------- */
 #undef LLRSEND
 #undef LLRSFUNCEX
 #undef LLRSFUNC
@@ -127,8 +123,6 @@ using namespace IfLuaUtil;             // Using luautil namespace
 #undef LLRSMFBEGIN
 #undef LLRSBEGIN
 /* ------------------------------------------------------------------------- */
-#undef LLNAMESPACEEND
-#undef LLNAMESPACEBEGIN
 #undef LLFUNCTEMPLATE
 #undef LLFUNCTEMPLATEEX
 #undef LLFUNCNOTHROW
@@ -149,6 +143,7 @@ using namespace IfLuaUtil;             // Using luautil namespace
 #undef LCPUSHNUM
 #undef LCPUSHINT
 #undef LCPUSHSTR
+#undef LCGETULPTR
 #undef LCGETPTR
 #undef LCCLASSCREATEPTR
 #undef LCCLASSCREATE
@@ -195,7 +190,7 @@ using namespace IfLuaUtil;             // Using luautil namespace
 #define LLNOMETHODS()   nullptr, 0, nullptr
 #define LLCONSTS(n)     LLPTRLEN(n, Consts)
 #define LLNOCONSTS()    nullptr, 0
-#define LLITEM(n,l,m,c) { #n, GM_ ## l, LLSTATICS(n), m, c }
+#define LLITEM(n,l,m,c) { #n, l, LLSTATICS(n), m, c }
 /* -- Helps define a namespace (use below) --------------------------------- */
 #define LLSXX(n,l) LLITEM(n, l, LLNOMETHODS(), LLNOCONSTS()) // Meth:N,Const:N
 #define LLSMX(n,l) LLITEM(n, l, LLMETHODS(n),  LLNOCONSTS()) // Meth:Y,Const:N
@@ -204,26 +199,26 @@ using namespace IfLuaUtil;             // Using luautil namespace
 /* -- Define the ms-engine api list loaded at startup ---------------------- */
 const LuaLibStatic luaLibList[] =
 { /* -- Use the above macros to define namespaces -------------------------- */
-  LLSMX(Archive, TEXT_NOAUDIO),        LLSMC(Asset,   TEXT_NOAUDIO),
-  LLSXX(Audio,   TEXT_AUDIO),          LLSMX(Bin,     TEXT_NOAUDIO),
-  LLSXC(Core,    TEXT_NOAUDIO),        LLSXX(Credit,  TEXT_NOAUDIO),
-  LLSXC(CVars,   TEXT_NOAUDIO),        LLSXC(Console, TEXT_NOAUDIO),
-  LLSXX(Crypt,   TEXT_NOAUDIO),        LLSMC(Cursor,  GRAPHICS),
-  LLSXX(Display, GRAPHICS),            LLSMC(Fbo,     GRAPHICS),
-  LLSMC(File,    TEXT_NOAUDIO),        LLSMC(Font,    GRAPHICS),
-  LLSMX(Ftf,     TEXT_NOAUDIO),        LLSMC(Image,   TEXT_NOAUDIO),
-  LLSXX(Info,    TEXT_NOAUDIO),        LLSXC(Input,   GRAPHICS),
-  LLSMX(Json,    TEXT_NOAUDIO),        LLSMX(Mask,    TEXT_NOAUDIO),
-  LLSMX(Palette, GRAPHICS),            LLSMC(Pcm,     TEXT_NOAUDIO),
-  LLSMX(Sample,  TEXT_AUDIO),          LLSMX(Stat,    TEXT_NOAUDIO),
-  LLSMC(Socket,  TEXT_NOAUDIO),        LLSMX(Source,  TEXT_AUDIO),
-  LLSXC(Sql,     TEXT_NOAUDIO),        LLSMC(Stream,  TEXT_AUDIO),
-  LLSMX(Texture, GRAPHICS),            LLSXX(Util,    TEXT_NOAUDIO),
-  LLSMC(Video,   GRAPHICS),
+  LLSMX(Archive, GM_TEXT_NOAUDIO),     LLSMC(Asset,   GM_TEXT_NOAUDIO),
+  LLSXX(Audio,   GM_TEXT_AUDIO),       LLSMX(Bin,     GM_TEXT_NOAUDIO),
+  LLSMX(Clip,    GM_GRAPHICS),         LLSXX(Display, GM_GRAPHICS),
+  LLSMC(Fbo,     GM_GRAPHICS),         LLSXC(Core,    GM_TEXT_NOAUDIO),
+  LLSXX(Credit,  GM_TEXT_NOAUDIO),     LLSXC(CVars,   GM_TEXT_NOAUDIO),
+  LLSXC(Console, GM_TEXT_NOAUDIO),     LLSXX(Crypt,   GM_TEXT_NOAUDIO),
+  LLSMC(Cursor,  GM_GRAPHICS),         LLSXX(Display, GM_GRAPHICS),
+  LLSMC(Fbo,     GM_GRAPHICS),         LLSMC(File,    GM_TEXT_NOAUDIO),
+  LLSMC(Font,    GM_GRAPHICS),         LLSMX(Ftf,     GM_TEXT_NOAUDIO),
+  LLSMC(Image,   GM_TEXT_NOAUDIO),     LLSXX(Info,    GM_TEXT_NOAUDIO),
+  LLSXC(Input,   GM_GRAPHICS),         LLSMX(Json,    GM_TEXT_NOAUDIO),
+  LLSMX(Mask,    GM_TEXT_NOAUDIO),     LLSMX(Palette, GM_GRAPHICS),
+  LLSMC(Pcm,     GM_TEXT_NOAUDIO),     LLSMX(Sample,  GM_TEXT_AUDIO),
+  LLSMX(Stat,    GM_TEXT_NOAUDIO),     LLSMC(Socket,  GM_TEXT_NOAUDIO),
+  LLSMX(Source,  GM_TEXT_AUDIO),       LLSXC(Sql,     GM_TEXT_NOAUDIO),
+  LLSMC(Stream,  GM_TEXT_AUDIO),       LLSMX(Texture, GM_GRAPHICS),
+  LLSXX(Util,    GM_TEXT_NOAUDIO),     LLSMC(Video,   GM_GRAPHICS),
   /* -- Last item, do not delete ------------------------------------------- */
   { nullptr, GM_HIGHEST, LLNOCONSTS(), LLNOMETHODS(), LLNOCONSTS() }
-};/* ----------------------------------------------------------------------- */
-/* -- Done with these macros ----------------------------------------------- */
+};/* -- Done with these macros --------------------------------------------- */
 #undef LLSXC
 #undef LLSMC
 #undef LLSMX
@@ -237,6 +232,6 @@ const LuaLibStatic luaLibList[] =
 #undef LLPTRLEN
 #undef LLPTRLENEX
 #undef ARRAYLEN
-/* ========================================================================= */
+/* ------------------------------------------------------------------------- */
 };                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

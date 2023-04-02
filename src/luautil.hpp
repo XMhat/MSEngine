@@ -138,6 +138,9 @@ static void PushDataBlock(lua_State*const lS, const DataConst &dcItem)
 /* -- Push a C++ string onto the stack ------------------------------------- */
 static void PushCppString(lua_State*const lS, const string &strStr)
   { PushLString(lS, strStr.data(), strStr.length()); }
+/* -- Push a pointer ------------------------------------------------------- */
+static void PushPtr(lua_State*const lS, void*const vpPtr)
+  { lua_pushlightuserdata(lS, vpPtr); }
 /* -- Throw error and add impossible abort to shut the compiler up --------- */
 static void ThrowError(lua_State*const lS) { lua_error(lS); }
 /* -- Push C-String on stack and throw ------------------------------------- */
@@ -265,7 +268,7 @@ static const string GetStack(lua_State*const lST)
       // LUA in lua_getinfo() according to ldebug.c.
       ldData.event = iCoId;
       // Insert into list
-      lThread.emplace_front(std::move(ldData));
+      lThread.emplace_front(StdMove(ldData));
     } // Move into lStack in reverse order
     lStack.splice(lStack.cend(), lThread);
     // If the top item is not a thread? We're done
@@ -418,7 +421,7 @@ static const string GetCppFileName(lua_State*const lS, const int iId,
     XC("Invalid parameter!",
        "Param",    iId,
        "File",     strFileName,
-       "Reason",   DirValidNameResultToString(vrId),
+       "Reason",   cDirBase->VNRtoStr(vrId),
        "ReasonId", vrId);
   // Return the constructed string
   return strFileName;
@@ -503,8 +506,8 @@ template<typename IntType>
   if(itVal >= itMin && itVal <= itMax) return itVal;
   // Throw error
   XC("Integer out of range!",
-    "Parameter", iIndex, "Name",            cpName, "Supplied", itVal,
-    "NotLesser", itMin,  "NotGreaterEqual", itMax);
+    "Parameter", iIndex, "Name",       cpName, "Supplied", itVal,
+    "NotLesser", itMin,  "NotGreater", itMax);
 }
 /* -- Try to get and check a valid integer range not < or >= --------------- */
 template<typename IntType>
@@ -515,8 +518,8 @@ template<typename IntType>
   if(itVal >= itMin && itVal < itMax) return itVal;
   // Throw error
   XC("Integer out of range!",
-    "Parameter", iIndex, "Name",       cpName, "Supplied", itVal,
-    "NotLesser", itMin,  "NotGreater", itMax);
+    "Parameter", iIndex, "Name",            cpName, "Supplied", itVal,
+    "NotLesser", itMin,  "NotGreaterEqual", itMax);
 }
 /* -- Try to get and check a valid integer range not <= or > --------------- */
 template<typename IntType>
@@ -527,8 +530,8 @@ template<typename IntType>
   if(itVal > itMin && itVal <= itMax) return itVal;
   // Throw error
   XC("Integer out of range!",
-    "Parameter", iIndex, "Name",       cpName, "Supplied", itVal,
-    "NotLesser", itMin,  "NotGreater", itMax);
+    "Parameter",      iIndex, "Name",       cpName, "Supplied", itVal,
+    "NotLesserEqual", itMin,  "NotGreater", itMax);
 }
 /* -- Try to get and check a 'Flags' parameter ----------------------------- */
 template<class FlagsType>
@@ -632,13 +635,33 @@ template<typename ClassType>
   } // lua data class not valid
   XC("Null class parameter!", "Parameter", iP, "Type", cpT);
 }
+/* -- Check that a class isn't locked (i.e. a built-in class) -------------- */
+template<class ClassType>
+  ClassType *GetUnlockedPtr(lua_State*const lS, const int iP,
+    const char*const cpT)
+{ // Get pointer to class and return if isn't locked (a built-in class)
+  ClassType*const acPtr = GetPtr<ClassType>(lS, iP, cpT);
+  if(acPtr->LockIsNotSet()) return acPtr;
+  // Throw error
+  XC("Call not allowed on this class!", "Identifier", acPtr->IdentGet());
+}
+/* -- Get the light user data pointer -------------------------------------- */
+template<typename PtrType>
+  static PtrType *GetSimplePtr(lua_State*const lS, const int iP)
+{ // Check that it is user data
+  if(!lua_isuserdata(lS, iP)) XC("Not userdata!", "Param", iP);
+  // Test to make sure if supplied parameter is a valid string
+  void*const vpPtr = lua_touserdata(lS, iP);
+  // Return the pointer as the requested type
+  return reinterpret_cast<PtrType*>(vpPtr);
+}
 /* -- Garbage collection control (two params) ------------------------------ */
 static int GCSet(lua_State*const lS, const int iCmd, const int iVal1,
   const int iVal2)
 { return lua_gc(lS, iCmd, iVal1, iVal2); }
 /* -- Garbage collection control (one param) ------------------------------- */
-[[maybe_unused]]
-  static int GCSet(lua_State*const lS, const int iCmd, const int iVal)
+static int GCSet[[maybe_unused]](lua_State*const lS, const int iCmd,
+  const int iVal)
 { return lua_gc(lS, iCmd, iVal); }
 /* -- Garbage collection control (no param) -------------------------------- */
 static int GCSet(lua_State*const lS, const int iCmd)
@@ -725,7 +748,7 @@ static void IfBlank(lua_State*const lS)
   PushLString(lS, cpStr, stStr);
 }
 /* -- Convert string string map to lua table and put it on stack ----------- */
-[[maybe_unused]] static void ToTable(lua_State*const lS,
+static void ToTable[[maybe_unused]](lua_State*const lS,
   const StrStrMap &ssmData)
 { // Create the table, we're creating non-indexed key/value pairs
   PushTable(lS, 0, ssmData.size());
@@ -828,7 +851,7 @@ static lua_Integer ImplodePrepare(lua_State*const lS, const int iMaxParams)
     IntOrMax<lua_Integer>(LuaUtilGetSize(lS, 1)))
   { // No entries? Just check the separator for consistency and push blank
     case 0: CheckString(lS, 2, "Separator");
-            PushCppString(lS, strBlank);
+            PushCppString(lS, cCommon->Blank());
             break;
     // One entry? Just check the separator and push the first item
     case 1: CheckString(lS, 2, "Separator");
@@ -915,25 +938,21 @@ static void ReplaceMulti(lua_State*const lS)
   string strDest{ GetCppString(lS, 1, "String") };
   // Check that we have a table of strings
   CheckTable(lS, 2, "Data");
-  // Source string is empty?
-  if(!strDest.empty())
-  { // Build table
-    StrPairList lList;
-    // Until there are no more items, add value if key is a string
-    for(PushNil(lS); lua_next(lS, -2); RemoveStack(lS))
-      if(lua_isstring(lS, -1))
-        lList.push_back({ ToCppString(lS, -2), ToCppString(lS) });
-    // Remove table
-    RemoveStack(lS);
-    // List isn't empty?
-    if(!lList.empty())
-    { // Build the string and push it to lua
-      PushCppString(lS, ReplaceEx(strDest, lList));
-      // Done
-      return;
-    }
-  } // Return original string by deleting the table parameter
-  RemoveStack(lS);
+  // Source string is empty or there are indexed items in the table? Remove
+  // table and return original blank string
+  if(strDest.empty() || LuaUtilGetSize(lS, 2)) return RemoveStack(lS);
+  // Build table
+  StrPairList lList;
+  // Until there are no more items, add value if key is a string
+  for(PushNil(lS); lua_next(lS, -2); RemoveStack(lS))
+    if(lua_isstring(lS, -1))
+      lList.push_back({ ToCppString(lS, -2), ToCppString(lS) });
+  // Return original string if nothing added
+  if(lList.empty()) return RemoveStack(lS);
+  // Remove table and string parameter
+  lua_pop(lS, 2);
+  // Execute replacements and return newly made string
+  PushCppString(lS, ReplaceEx(strDest, lList));
 }
 /* -- Convert string/uint map to table ------------------------------------- */
 static void ToTable(lua_State*const lS, const StrUIntMap &vData)

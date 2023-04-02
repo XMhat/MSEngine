@@ -22,33 +22,33 @@ template<class StringType>             // STL string type to use
   const char *IdentGetCStr(void) const { return IdentGet().c_str(); }
   /* -- Move constructor from another rvalue string ------------- */ protected:
   explicit IdentBase(StringType &&strId) :
-    /* -- Initialisation of members ---------------------------------------- */
-    strIdentifier{ std::move(strId) }       // Move supplied string
+    /* -- Initialisers ----------------------------------------------------- */
+    strIdentifier{ StdMove(strId) }       // Move supplied string
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Move constructor from rvalue identifier ---------------------------- */
   explicit IdentBase(IdentBase &&idOther) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     strIdentifier{                     // Initialise string
-      std::move(idOther.strIdentifier) }    // Move supplied string
+      StdMove(idOther.strIdentifier) }    // Move supplied string
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Copy constructor from another lvalue string ------------------------ */
   explicit IdentBase(const StringType &strId) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     strIdentifier{ strId }             // Copy supplied name
     /* -- Noi code --------------------------------------------------------- */
     { }
   /* -- Standby constructor ------------------------------------------------ */
   IdentBase(void) { }
   /* -- Default suppressions ----------------------------------------------- */
-  DELETECOPYCTORS(IdentBase);          // Remove default functions
+  DELETECOPYCTORS(IdentBase)           // Remove default functions
 };/* -- Identifier class --------------------------------------------------- */
 struct Ident :                         // Members initially public
   /* -- Base classes ------------------------------------------------------- */
   public IdentBase<string>             // The read-only class
 { /* -- Set identifier by rvalue ------------------------------------------- */
-  void IdentSet(string &&strId) { strIdentifier = std::move(strId); }
+  void IdentSet(string &&strId) { strIdentifier = StdMove(strId); }
   /* -- Set identifier by lvalue ------------------------------------------- */
   void IdentSet(const string &strId) { strIdentifier = strId; }
   /* -- Set identifier by class ------------------------------------------- */
@@ -67,19 +67,19 @@ struct Ident :                         // Members initially public
   void IdentSwap(Ident &idOther) { strIdentifier.swap(idOther.strIdentifier); }
   /* -- Move constructor from another rvalue string ------------------------ */
   explicit Ident(string &&strId) :
-    /* -- Initialisation of members ---------------------------------------- */
-    IdentBase{ std::move(strId) }           // Move supplied name
+    /* -- Initialisers ----------------------------------------------------- */
+    IdentBase{ StdMove(strId) }           // Move supplied name
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Move constructor from rvalue identifier ---------------------------- */
   explicit Ident(Ident &&idO) :
-    /* -- Initialisation of members ---------------------------------------- */
-    IdentBase{ std::move(idO.IdentGet()) }  //  Move string
+    /* -- Initialisers ----------------------------------------------------- */
+    IdentBase{ StdMove(idO.IdentGet()) }  //  Move string
     /* -- Code ------------------------------------------------------------- */
     { }                                // No code
   /* -- Copy constructor from another lvalue string ------------------------ */
   explicit Ident(const string &strId) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     IdentBase{ strId }                 // Copy name
     /* -- No code ---------------------------------------------------------- */
     { }
@@ -88,7 +88,7 @@ struct Ident :                         // Members initially public
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Default suppressions ----------------------------------------------- */
-  DELETECOPYCTORS(Ident);              // Remove default functions
+  DELETECOPYCTORS(Ident)               // Remove default functions
 };/* ----------------------------------------------------------------------- */
 typedef IdentBase<const string> IdentConst;       // Const type of Ident
 /* == Id to string list helper class ======================================= */
@@ -101,15 +101,20 @@ struct IdList :                        // Members initially public
   /* -- Dependents --------------------------------------------------------- */
   private IdentConst,                  // Alternative if id is unknown
   private List                         // Array of strings
-{ /* -- Constructor (no initialisation) ------------------------------------ */
-  public: explicit IdList(const List &lNI,
-    const string &strNU=IfString::strBlank) :
+{ /* -- Constructor with alternative string -------------------------------- */
+  public: IdList(const List &lNI, const string &strNU) :
     /* -- Initialisers ----------------------------------------------------- */
-    IdentConst{ std::move(strNU) },         // Unknown item string
-    List{ std::move(lNI) }                  // Items
+    IdentConst{ StdMove(strNU) },       // Unknown item string
+    List{ StdMove(lNI) }                // Items
     /* -- No code ---------------------------------------------------------- */
     { }
-  /* -- Get string --------------------------------------------------------- */
+  /* -- Constructor with blank alternative string -------------------------- */
+  explicit IdList(const List &lNI) :
+    /* -- Initialisers ----------------------------------------------------- */
+    IdList(lNI, IfString::cCommon->Blank())
+    /* -- No code ---------------------------------------------------------- */
+    { }
+  /* -- Get name from id --------------------------------------------------- */
   template<typename IntType=size_t>const string &Get(const IntType itId) const
   { // Allow any input integer type, we don't need to convert if the same
     const size_t stId = static_cast<size_t>(itId);
@@ -128,12 +133,17 @@ struct IdMap :                         // Members initially public
   private MapType                      // Map of key->value pairs
 { /* -- Macros ------------------------------------------------------------- */
 #define IDMAPSTR(e) { e, #e }          // Helper macro
-  /* -- Constructor (no initialisation) ------------------------------------ */
-  explicit IdMap(const MapType &mNI,
-    const string &strNU=IfString::strBlank) :
+  /* -- Constructor with alternative string ------------------------------- */
+  explicit IdMap(const MapType &mNI, const string &strNU) :
     /* -- Initialisers ----------------------------------------------------- */
-    IdentConst{ std::move(strNU) },         // Unknown item string
-    MapType{ std::move(mNI) }               // Items map
+    IdentConst{ StdMove(strNU) },         // Unknown item string
+    MapType{ StdMove(mNI) }               // Items map
+    /* -- No code ---------------------------------------------------------- */
+    { }
+  /* -- Constructor with no alternative string ----------------------------- */
+  explicit IdMap(const MapType &mNI) :
+    /* -- Initialisers ----------------------------------------------------- */
+    IdMap(mNI, IfString::cCommon->Blank())
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Get string --------------------------------------------------------- */

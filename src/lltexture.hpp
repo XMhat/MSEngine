@@ -15,9 +15,10 @@
 // ! The texture class allows the programmer to draw textures on the screen
 // ! which also includes font management.
 /* ========================================================================= */
-LLNAMESPACEBEGIN(Texture)              // Texture namespace
+namespace NsTexture {                  // Texture namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfTexture;             // Using texture namespace
+using namespace IfConsole;             // Using console namespace
 /* ========================================================================= */
 /* ######################################################################### */
 /* ========================================================================= */
@@ -120,7 +121,7 @@ LLFUNCEND
 // ? stored position.
 /* ------------------------------------------------------------------------- */
 LLFUNC(BlitT, LCGETPTR(1, Texture)->
-  BlitT(LCGETINTLGE(size_t, 2, 0, TRISPERQUAD, "TriIndex"), 0, 0));
+  BlitT(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex"), 0, 0));
 /* ========================================================================= */
 // $ Texture:BlitS
 // > TileIndex:integer=The tile index of the texture to blit.
@@ -139,7 +140,7 @@ LLFUNCEND
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(BlitTS)
   Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.BlitT(LCGETINTLGE(size_t, 2, 0, TRISPERQUAD,          "TriIndex"), 0,
+  tCref.BlitT(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad,          "TriIndex"), 0,
               LCGETINTLGE(size_t, 3, 0, tCref.GetTileCount(), "TileIndex"));
 LLFUNCEND
 /* ========================================================================= */
@@ -160,7 +161,7 @@ LLFUNCEND
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(BlitTI)
   Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.BlitT(LCGETINTLGE(size_t, 2, 0, TRISPERQUAD,         "TriIndex"),
+  tCref.BlitT(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad,         "TriIndex"),
               LCGETINTLGE(size_t, 3, 0, tCref.GetSubCount(), "TexIndex"), 0);
 LLFUNCEND
 /* ========================================================================= */
@@ -186,7 +187,7 @@ LLFUNCEND
 LLFUNCBEGIN(BlitTIS)
   Texture &tCref = *LCGETPTR(1, Texture);
   tCref.BlitT(
-    LCGETINTLGE(size_t, 2, 0, TRISPERQUAD,          "TriIndex"),
+    LCGETINTLGE(size_t, 2, 0, stTrisPerQuad,          "TriIndex"),
     LCGETINTLGE(size_t, 3, 0, tCref.GetSubCount(),  "TexIndex"),
     LCGETINTLGE(size_t, 4, 0, tCref.GetTileCount(), "TileIndex"));
 LLFUNCEND
@@ -736,7 +737,7 @@ LLFUNCEX(GetName, 1, LCPUSHXSTR(LCGETPTR(1, Texture)->IdentGet()));
 LLFUNCEX(GetWidth, 1, LCPUSHINT(LCGETPTR(1, Texture)->DimGetWidth()));
 /* ========================================================================= */
 // $ Texture:Dump
-// ? Dumps the texture to the specified file in TGA format.
+// ? Dumps the texture to the specified file in the specified format.
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(Dump)
   const Texture &tCref = *LCGETPTR(1, Texture);
@@ -812,7 +813,7 @@ LLFUNC(SetV, LCGETPTR(1, Texture)->SetVertex(
 // ? co-ordinate which is not used in this 2D only engine.
 /* ------------------------------------------------------------------------- */
 LLFUNC(SetVX, LCGETPTR(1, Texture)->
-  SetVertexEx(LCGETINTLGE(size_t, 2, 0, TRISPERQUAD, "TriIndex"), {
+  SetVertexEx(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex"), {
     LCGETNUM(GLfloat, 3, "C1V1"), LCGETNUM(GLfloat, 4, "C2V1"),
     LCGETNUM(GLfloat, 5, "C1V2"), LCGETNUM(GLfloat, 6, "C2V2"),
     LCGETNUM(GLfloat, 7, "C1V3"), LCGETNUM(GLfloat, 8, "C2V3") }));
@@ -828,7 +829,7 @@ LLFUNC(SetVX, LCGETPTR(1, Texture)->
 // ? Allows you to full control over the texture co-ordinates.
 /* ------------------------------------------------------------------------- */
 LLFUNC(SetVTC, LCGETPTR(1, Texture)->
-  SetTexCoordEx(LCGETINTLGE(size_t, 2, 0, TRISPERQUAD, "TriIndex"), {
+  SetTexCoordEx(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex"), {
     LCGETNUM(GLfloat, 3, "C1V1"), LCGETNUM(GLfloat, 4, "C2V1"),
     LCGETNUM(GLfloat, 5, "C1V2"), LCGETNUM(GLfloat, 6, "C2V2"),
     LCGETNUM(GLfloat, 7, "C1V3"), LCGETNUM(GLfloat, 8, "C2V3") }));
@@ -850,7 +851,7 @@ LLFUNC(SetVTC, LCGETPTR(1, Texture)->
 // ? Allows you to full control over the colour of the texture.
 /* ------------------------------------------------------------------------- */
 LLFUNC(SetVCRGBA, LCGETPTR(1, Texture)->
-  SetColourEx(LCGETINTLGE(size_t, 2, 0, TRISPERQUAD, "TriIndex"), {
+  SetColourEx(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex"), {
     LCGETNUM(GLfloat,  3, "RV1"), LCGETNUM(GLfloat,  4, "GV1"),
     LCGETNUM(GLfloat,  5, "BV1"), LCGETNUM(GLfloat,  6, "AV1"),
     LCGETNUM(GLfloat,  7, "RV2"), LCGETNUM(GLfloat,  8, "GV2"),
@@ -974,5 +975,5 @@ LLRSBEGIN                              // Texture.* namespace functions begin
   LLRSFUNC(Create), LLRSFUNC(CreateTS), LLRSFUNC(Console),
 LLRSEND                                // Texture.* namespace functions end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of Texture namespace
+}                                      // End of Texture namespace
 /* == EoF =========================================================== EoF == */

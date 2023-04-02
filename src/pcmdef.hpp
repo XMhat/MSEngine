@@ -74,13 +74,13 @@ class PcmData :                        // Audio data structure
   void Set ## n(bool bState=true) { FlagSetOrClear(f, bState); } \
   void Clear ## n(void) { Set ## n(false); }
   /* ----------------------------------------------------------------------- */
-  FH(Dynamic, PL_DYNAMIC);             // Is/Set/ClearDynamic
+  FH(Dynamic, PL_DYNAMIC)              // Is/Set/ClearDynamic
   /* ----------------------------------------------------------------------- */
 #undef FH                              // Done with this macro
   /* -- Set allocated data size -------------------------------------------- */
   void SetAlloc(const size_t stNAlloc) { stAlloc = stNAlloc; }
   /* ----------------------------------------------------------------------- */
-  void SetSlot(Memory &mData) { aPcmL = std::move(mData); }
+  void SetSlot(Memory &mData) { aPcmL = StdMove(mData); }
   /* ----------------------------------------------------------------------- */
   void ResetAllData(void)
   { // Reset all data
@@ -101,7 +101,7 @@ class PcmData :                        // Audio data structure
     swap(stAlloc, pcmRef.stAlloc);
     // Swap all channeld ata
     for(size_t stIndex = 0; stIndex < aPcm.size(); ++stIndex)
-      aPcm[stIndex].SwapMemory(std::move(pcmRef.aPcm[stIndex]));
+      aPcm[stIndex].SwapMemory(StdMove(pcmRef.aPcm[stIndex]));
   }
   /* -- Default constructor ------------------------------------------------ */
   PcmData(void) :

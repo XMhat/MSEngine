@@ -32,7 +32,10 @@ static class Log final :
   private FStream,                     // Output log file if needed
   public ClockChrono<CoreClock>,       // Holds the current log time
   private mutex                        // Because logger needs thread safe
-{ /* -- Private variables -------------------------------------------------- */
+{ /* -- Private typedefs --------------------------------------------------- */
+  typedef IdList<LH_MAX> LogLevels;
+  /* -- Private variables -------------------------------------------------- */
+  const LogLevels  llLevels;           // Log level strings
   const string     strStdOut;          // Label for 'stdout'
   const string     strStdErr;          // Label for 'stderr'
   atomic<LHLevel>  lhLevel;            // Log helper level for this instance
@@ -95,7 +98,7 @@ static class Log final :
     // using formatstring due to the fact that less memory management
     // is required!
     for(const string &sL : tLines)
-      push_back({ CCDeltaToDouble(), lhL, std::move(sL) });
+      push_back({ CCDeltaToDouble(), lhL, StdMove(sL) });
     // Write lines to log
     FlushLog();
   }
@@ -103,7 +106,7 @@ static class Log final :
   void WriteString(const LHLevel lhL, const string &strL) noexcept(true)
     { WriteLines(lhL, { strL, "\n", stMaximum }); }
   void WriteString(const LHLevel lhL, string &&strL) noexcept(true)
-    { WriteLines(lhL, { std::move(strL), "\n", stMaximum }); }
+    { WriteLines(lhL, { StdMove(strL), "\n", stMaximum }); }
   /* ----------------------------------------------------------------------- */
   void WriteString(const string &strL) { WriteString(LH_DISABLED, strL); }
   /* ----------------------------------------------------------------------- */
@@ -119,13 +122,7 @@ static class Log final :
   }
   /* -- Convert log level to a string -------------------------------------- */
   const string &LogLevelToString(const LHLevel lhId)
-  { // Lookup table of log levels
-    static const IdList<LH_MAX> ilLevels{{
-      "Disabled", "Error", "Warning", "Info", "Debug"
-    }};
-    // Return looked up string
-    return ilLevels.Get(lhId);
-  }
+    { return llLevels.Get(lhId); }
   /* -- Safe access to members ------------------------------------- */ public:
   CVarReturn SetLevel(const unsigned int uiLevel)
   { // Deny if invalid level
@@ -231,7 +228,7 @@ static class Log final :
       { LogExSafe(LH_DEBUG, cpFormat, vaArgs...); }
   /* -- Unformatted logging with level check (specified level) ------------- */
   void LogSafe(const LHLevel lhL, const string& strLine)
-    { if(NotHasLevel(lhLevel)) return; LogNLCSafe(lhL, strLine); }
+    { if(NotHasLevel(lhL)) return; LogNLCSafe(lhL, strLine); }
   /* -- Unformatted logging with level check (error level) ----------------- */
   void LogErrorSafe(const string& strLine) { LogSafe(LH_ERROR, strLine); }
   /* -- Unformatted logging with level check (warning level) --------------- */
@@ -318,7 +315,14 @@ static class Log final :
   }
   /* -- Constructor -------------------------------------------------------- */
   Log(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
+    llLevels{{                         // Initialise log level strings
+      "Disabled",                      // Shouldn't really be used
+      "Error",                         // Log line is an error
+      "Warning",                       // Log line is a warning
+      "Info",                          // Log line is information
+      "Debug"                          // Log line is for developers
+    }},                                // End of log level strings
     strStdOut{ "/dev/stdout" },        // Initialise display label for stdout
     strStdErr{ "/dev/stderr" },        // Initialise display label for stderr
     lhLevel{ LH_DEBUG },               // Initialise default level
@@ -327,9 +331,9 @@ static class Log final :
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Destructor --------------------------------------------------------- */
-  DTORHELPER(~Log, DeInitSafe());
+  DTORHELPER(~Log, DeInitSafe())
   /* -- Macros ------------------------------------------------------------- */
-  DELETECOPYCTORS(Log);                // Do not need defaults
+  DELETECOPYCTORS(Log)                 // Do not need defaults
   /* -- End ---------------------------------------------------------------- */
 } *cLog = nullptr;                     // Pointer to static class
 /* ------------------------------------------------------------------------- */

@@ -16,7 +16,7 @@ local insert, UtilBlank<const>, InfoTime<const> =
 -- Diggers function and data aliases --------------------------------------- --
 local LoadResources, GetCallbacks, SetCallbacks, VideoPlay, VideoStop, Fade,
   IsButtonPressed, InitTitle, texSpr, InitSetup, RegisterFBUCallback,
-  fontLittle, RenderShadow, RenderFade;
+  fontLittle, RenderShadow, RenderFade, aSubTitles;
 -- Intro initialisation function ------------------------------------------- --
 local function InitIntro(bAndSetup)
   -- When intro resources have loaded?
@@ -38,34 +38,7 @@ local function InitIntro(bAndSetup)
     local vVideo = aResources[3].H;
     vVideo:SetFilter(false);
     -- Subtitles list
-    local iSubTitle, iFrameEnd, aSubTitles<const> = 1, math.maxinteger, {
-      {  380,  440, { "This is no ordinary day on the planet Zarg." } },
-      {  450,  510, { "Today is the glorious four-hundred and twelfth." } },
-      {  520,  640, { "The day that each year, signals the commencement",
-                      "of one months frenzied digging." } },
-      {  650,  770, { "Four races of diggers, are tunneling their way",
-                      "to the Zargon Mineral Trading Centre." } },
-      {  780,  810, { "They each have an ambition..." } },
-      {  820,  930, { "That requires them to mine as much of the",
-                      "planets mineral wealth, as possible." } },
-      { 1150, 1280, { "Observing the quarrelsome diggers from afar,",
-                      "is a mysterious stranger." } },
-      { 1290, 1410, { "Each of the races are hoping that this 'stranger'",
-                      "will control their mining operations." } },
-      { 1420, 1550, { "His expertese, will be vital, in guiding",
-                      "them along the long, dangerous path..." } },
-      { 1560, 1620, { "...that leads them to their ultimate goal." } },
-      { 1630, 1790, { "His first step, is to register, at the",
-                      "Zargon mineral trading centre." } },
-      { 1900, 2040, { "As the diggers wait nervously, the stranger",
-                      "heads towards the trading centre." } },
-      { 2050, 2180, { "For him, the ultimate test. The greatest",
-                      "challenge of his life lies ahead." } },
-      { 2200, 2290, { "The rewards for success,",
-                      "will be wealth unlimited." } },
-      { 2310, 2440, { "The results of failure,",
-                      "are unthinkable!" } },
-    };
+    local iSubTitle, iFrameEnd = 1, math.maxinteger;
     -- Get font size
     local iFWidth<const>, iFHeight<const>, iPadding<const> =
       fontLittle:GetWidth(), fontLittle:GetHeight(), 5;
@@ -121,25 +94,30 @@ local function InitIntro(bAndSetup)
         -- Draw video normally
         vVideo:SetTexCoord(0, 0, 1, 1);
         vVideo:SetVertex(0, 0, 320, 240);
-        return vVideo:Blit();
-      end
-      -- Draw video effect for widescreen (left side)
-      vVideo:SetTexCoord(0, 0, 0, 1);
-      vVideo:SetVertex(0, 0, iStageL, 240);
-      vVideo:Blit();
-      -- Draw video effect for widescreen (right side)
-      vVideo:SetTexCoord(1, 0, 1, 1);
-      vVideo:SetVertex(iStageR, 0, 320, 240);
-      vVideo:Blit();
-      -- Draw the actual video in the centre (4:3)
-      vVideo:SetTexCoord(0, 0, 1, 1);
-      vVideo:SetVertex(0, 0, 320, 240);
-      vVideo:Blit();
-      -- Draw transparent tiles over the top of the widescreen border
-      tTiles:SetCRGBA(1, 1, 1, 0.5);
-      for iY = 0, 240, 16 do
-        for iX = -16, iStageL-16, -16 do tTiles:BlitSLT(3, iX, iY) end;
-        for iX = 320, iStageR, 16 do tTiles:BlitSLT(3, iX, iY) end;
+        vVideo:Blit();
+      -- In widescreen?
+      else
+        -- Draw video effect for widescreen (left side)
+        vVideo:SetTexCoord(0, 0, 0, 1);
+        vVideo:SetVertex(0, 0, iStageL, 240);
+        vVideo:Blit();
+        -- Draw video effect for widescreen (right side)
+        vVideo:SetTexCoord(1, 0, 1, 1);
+        vVideo:SetVertex(iStageR, 0, 320, 240);
+        vVideo:Blit();
+        -- Draw the actual video in the centre (4:3)
+        vVideo:SetTexCoord(0, 0, 1, 1);
+        vVideo:SetVertex(0, 0, 320, 240);
+        vVideo:Blit();
+        -- Draw transparent tiles over the top of the widescreen border
+        tTiles:SetCRGBA(1, 1, 1, 0.5);
+        for iY = 0, 240, 16 do
+          for iX = -16, iStageL-16, -16 do tTiles:BlitSLT(3, iX, iY) end;
+          for iX = 320, iStageR, 16 do tTiles:BlitSLT(3, iX, iY) end;
+        end
+        -- Draw shadow
+        texSpr:BlitSLTRB(1017, -16, iStageT,   0, iStageB);
+        texSpr:BlitSLTRB(1018, 320, iStageT, 336, iStageB);
       end
       -- Get frame number
       local iFrame<const> = vVideo:GetFrame();
@@ -173,9 +151,6 @@ local function InitIntro(bAndSetup)
         iSubTitle = iSubTitle + 1;
         aSubTitle = aSubTitles[iSubTitle] or { math.maxinteger };
       end
-      -- Draw shadow
-      texSpr:BlitSLTRB(1017, -16, iStageT,   0, iStageB);
-      texSpr:BlitSLTRB(1018, 320, iStageT, 336, iStageB);
     end
     -- Not playing procedure
     local function NotPlayingProc()
@@ -279,11 +254,12 @@ return { A = { InitIntro = InitIntro }, F = function(GetAPI)
   -- Imports --------------------------------------------------------------- --
   LoadResources, GetCallbacks, SetCallbacks, VideoPlay, VideoStop, Fade,
   IsButtonPressed, InitTitle, texSpr, InitSetup, RegisterFBUCallback,
-  fontLittle, RenderShadow, RenderFade
+  fontLittle, RenderShadow, RenderFade, aSubTitles
   = -- --------------------------------------------------------------------- --
   GetAPI("LoadResources", "GetCallbacks", "SetCallbacks", "VideoPlay",
     "VideoStop", "Fade", "IsButtonPressed", "InitTitle", "texSpr", "InitSetup",
-    "RegisterFBUCallback", "fontLittle", "RenderShadow", "RenderFade");
+    "RegisterFBUCallback", "fontLittle", "RenderShadow", "RenderFade",
+    "aIntroSubTitles");
   -- ----------------------------------------------------------------------- --
 end };
 -- End-of-File ============================================================= --

@@ -115,15 +115,16 @@ class SysPipe :
       // Anything else and we need to throw an exception
       default: XC("Executable name is invalid!",
                   "Program", strApp, "Code", vrResult,
-                  "Reason",  DirValidNameResultToString(vrResult));
+                  "Reason",  cDirBase->VNRtoStr(vrResult));
     } // Make sure the executable exists
     if(!DirIsFileExecutable(strApp))
       XCS("Executable not valid!", "Program", strApp);
     // This is the arguments list, it will be allocated manually. We need the
     // extra one pointer for nullptr which is the last argument.
-    vector<char*> vArgs{ aList.size() + 1 };
+    typedef vector<char*> CharVector;
+    CharVector cvArgs{ aList.size() + 1 };
     // Enumerate through strings
-    char**const cpaArgV = vArgs.data(), **cpaArgVPtr = cpaArgV;
+    char**const cpaArgV = cvArgs.data(), **cpaArgVPtr = cpaArgV;
     for(const string &strArg : aList)
     { // Set address of argument string
       *cpaArgVPtr = const_cast<char*>(strArg.c_str());
@@ -172,7 +173,7 @@ class SysPipe :
         pPid = pForkedPid;
         uiPid = static_cast<unsigned int>(pForkedPid);
         // Store name of executable
-        IdentSet(std::move(strApp));
+        IdentSet(StdMove(strApp));
         // Report pid
         cLog->LogInfoExSafe("System forked '$' to pid $.", strApp, pPid);
         // Done
@@ -258,20 +259,20 @@ class SysPipe :
   unsigned int GetPid(void) { return uiPid; }
   /* -- Constructor with init ---------------------------------------------- */
   SysPipe(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     uiPid(0),                          // No external pid
     pPid(0)                            // No internal pid
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor with init ---------------------------------------------- */
   explicit SysPipe(const string &strF) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     SysPipe()                          // Use default constructor parameters
     /* -- Initialise pipe -------------------------------------------------- */
     { Init(strF); }
   /* -- Destructor to kill and wait for process to exit -------------------- */
   ~SysPipe(void) { DeInit(); }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(SysPipe);            // Suppress copy constructor for safety
+  DELETECOPYCTORS(SysPipe)             // Suppress copy constructor for safety
 };/* -- End ---------------------------------------------------------------- */
 /* == EoF =========================================================== EoF == */

@@ -16,7 +16,7 @@
 // ! Useful for the neat display of debug data to the console or logging to
 // ! a file.
 /* ========================================================================= */
-LLNAMESPACEBEGIN(Stat)                 // Stat namespace
+namespace NsStat {                     // Stat namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfStat;                // Using stat namespace
 /* ========================================================================= */
@@ -80,13 +80,9 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Stat));
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // stat:* member functions begin
-  LLRSFUNC(Data),                      // Insert string
-  LLRSFUNC(DataI),                     // Insert integer
-  LLRSFUNC(DataN),                     // Insert number
-  LLRSFUNC(Destroy),                   // Destroy internal stat object
-  LLRSFUNC(Header),                    // Add header
-  LLRSFUNC(HeaderDupe),                // Duplicate headers
-  LLRSFUNC(Finish),                    // Build data
+  LLRSFUNC(Data),    LLRSFUNC(DataI),  LLRSFUNC(DataN),
+  LLRSFUNC(Destroy), LLRSFUNC(Header), LLRSFUNC(HeaderDupe),
+  LLRSFUNC(Finish),
 LLRSEND                                // Stat:* member functions end
 /* ========================================================================= */
 // $ Stat.Create
@@ -101,8 +97,8 @@ LLFUNCEX(Create, 1,
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Bin.* namespace functions begin
-  LLRSFUNC(Create),                    // Create the bin
+  LLRSFUNC(Create),
 LLRSEND                                // Bin.* namespace functions end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of Bin namespace
+}                                      // End of Bin namespace
 /* == EoF =========================================================== EoF == */

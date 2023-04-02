@@ -14,7 +14,7 @@
 /* ------------------------------------------------------------------------- */
 // ! The video class allows loading of video streams and playback into an fbo.
 /* ========================================================================= */
-LLNAMESPACEBEGIN(Video)                // Video namespace
+namespace NsVideo {                    // Video namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfVideo;               // Using video namespace
 /* ========================================================================= */
@@ -43,7 +43,7 @@ LLFUNC(Blit, LCGETPTR(1, Video)->Blit());
 // ? vertex, texcoord, colour and ortho values are used.
 /* ------------------------------------------------------------------------- */
 LLFUNC(BlitT, LCGETPTR(1, Video)->
-  BlitTri(LCGETINTLGE(size_t, 2, 0, TRISPERQUAD, "TriIndex")))
+  BlitTri(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex")))
 /* ========================================================================= */
 // $ Video:Play
 // ? Plays the specified video.
@@ -174,11 +174,11 @@ LLFUNCEX(GetFrame, 1, LCPUSHINT(LCGETPTR(1, Video)->GetFrame()));
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(GetFrames, 1, LCPUSHINT(LCGETPTR(1, Video)->GetFrames()));
 /* ========================================================================= */
-// $ Video:GetFramesSkipped
+// $ Video:GetFramesLost
 // < Frames:Integer=Returns the frames that were skipped
 // ? Returns the number of skipped frames decoded
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetFramesSkipped, 1,
+LLFUNCEX(GetFramesLost, 1,
   LCPUSHINT(LCGETPTR(1, Video)->GetFramesSkipped()));
 /* ========================================================================= */
 // $ Video:SetFilter
@@ -248,36 +248,16 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Video));
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Video:* member functions begin
-  LLRSFUNC(Awaken),                    // Awaken from stop
-  LLRSFUNC(Blit),                      // Blit video
-  LLRSFUNC(BlitT),                     //  " specific triangle
-  LLRSFUNC(Destroy),                   // Destroy the object
-  LLRSFUNC(GetATime),                  // Get audio time
-  LLRSFUNC(GetDrift),                  // Get audio/video drift
-  LLRSFUNC(GetFPS),                    // Get video fps
-  LLRSFUNC(GetFrame),                  // Get current frame
-  LLRSFUNC(GetFrames),                 // Get video frames rendered
-  LLRSFUNC(GetFramesSkipped),          // Get lost video frames
-  LLRSFUNC(GetHeight),                 // Get video height
-  LLRSFUNC(GetLoop),                   // Get video loop count
-  LLRSFUNC(GetName),                   // Get identifier of video
-  LLRSFUNC(GetPlaying),                // Get video playback status
-  LLRSFUNC(GetTime),                   // Get video time
-  LLRSFUNC(GetWidth),                  // Get video width
-  LLRSFUNC(Pause),                     // Pause Video
-  LLRSFUNC(OnEvent),                   // Event occured
-  LLRSFUNC(Play),                      // Play Video
-  LLRSFUNC(Rewind),                    // Rewind Video
-  LLRSFUNC(SetColour),                 // Set fbo colours
-  LLRSFUNC(SetFilter),                 // Set texture filter
-  LLRSFUNC(SetKeyColour),              // Set chrome key colour
-  LLRSFUNC(SetKeyed),                  // Set keyed video
-  LLRSFUNC(SetLoop),                   // Set loop count
-  LLRSFUNC(SetTexCoord),               // Set fbo tex coordinates
-  LLRSFUNC(SetVertex),                 // Set fbo vertex co-ords
-  LLRSFUNC(SetVertexA),                //     " with angle
-  LLRSFUNC(SetVolume),                 // Set volume
-  LLRSFUNC(Stop),                      // Stop Video
+  LLRSFUNC(Awaken),        LLRSFUNC(Blit),         LLRSFUNC(BlitT),
+  LLRSFUNC(Destroy),       LLRSFUNC(GetATime),     LLRSFUNC(GetDrift),
+  LLRSFUNC(GetFPS),        LLRSFUNC(GetFrame),     LLRSFUNC(GetFrames),
+  LLRSFUNC(GetFramesLost), LLRSFUNC(GetHeight),    LLRSFUNC(GetLoop),
+  LLRSFUNC(GetName),       LLRSFUNC(GetPlaying),   LLRSFUNC(GetTime),
+  LLRSFUNC(GetWidth),      LLRSFUNC(OnEvent),      LLRSFUNC(Pause),
+  LLRSFUNC(Play),          LLRSFUNC(Rewind),       LLRSFUNC(SetColour),
+  LLRSFUNC(SetFilter),     LLRSFUNC(SetKeyColour), LLRSFUNC(SetKeyed),
+  LLRSFUNC(SetLoop),       LLRSFUNC(SetTexCoord),  LLRSFUNC(SetVertex),
+  LLRSFUNC(SetVertexA),    LLRSFUNC(SetVolume),    LLRSFUNC(Stop),
 LLRSEND                                // Video:* member functions end
 /* ========================================================================= */
 // $ Video.FileAsync
@@ -317,7 +297,7 @@ LLFUNC(ArrayAsync, LCCLASSCREATE(Video)->InitAsyncArray(lS));
 // ? array object.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Asset, 1, LCCLASSCREATE(Video)->SyncInitArray(
-  LCGETCPPSTRING(1, "Identifier"), std::move(*LCGETPTR(2, Asset))));
+  LCGETCPPSTRING(1, "Identifier"), StdMove(*LCGETPTR(2, Asset))));
 /* ======================================================================= */
 // $ Video.WaitAsync
 // ? Halts main-thread execution until all async video stream events have
@@ -338,12 +318,8 @@ LLFUNC(ClearEvents, VideoClearEvents());
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Video.* namespace functions begin
-  LLRSFUNC(Asset),                     // Load from array asyncronously
-  LLRSFUNC(ArrayAsync),                //   "  asyncronously
-  LLRSFUNC(ClearEvents),               // Clear OnEvent() for all Videos
-  LLRSFUNC(File),                      // Load from specified file
-  LLRSFUNC(FileAsync),                 //   "  asyncronously
-  LLRSFUNC(WaitAsync),                 // Wait for async events to complete
+  LLRSFUNC(Asset), LLRSFUNC(ArrayAsync), LLRSFUNC(ClearEvents),
+  LLRSFUNC(File),  LLRSFUNC(FileAsync),  LLRSFUNC(WaitAsync),
 LLRSEND                                // Video.* namespace functions end
 /* ========================================================================= */
 /* ######################################################################### */
@@ -355,14 +331,14 @@ LLRSEND                                // Video.* namespace functions end
 // ? Returns possible values for Video:OnEvent() event command.
 /* ------------------------------------------------------------------------- */
 LLRSKTBEGIN(Events)                    // Beginning of Stream event flags
-LLRSKTITEM(Video::VE_,FINISH),         LLRSKTITEM(Video::VE_,LOOP),
-LLRSKTITEM(Video::VE_,PAUSE),          LLRSKTITEM(Video::VE_,PLAY),
-LLRSKTITEM(Video::VE_,STOP),
+  LLRSKTITEM(Video::VE_,FINISH),       LLRSKTITEM(Video::VE_,LOOP),
+  LLRSKTITEM(Video::VE_,PAUSE),        LLRSKTITEM(Video::VE_,PLAY),
+  LLRSKTITEM(Video::VE_,STOP),
 LLRSKTEND                              // End of Stream event flags
 /* ========================================================================= */
 LLRSCONSTBEGIN                         // Video.* namespace consts begin
-LLRSCONST(Events),                     // Video event command
+  LLRSCONST(Events),
 LLRSCONSTEND                           // Video.* namespace consts end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of Video namespace
+}                                      // End of Video namespace
 /* == EoF =========================================================== EoF == */

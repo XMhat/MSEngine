@@ -14,9 +14,7 @@ namespace IfTexture {                  // Start of module namespace
 using namespace IfFbo;                 // Using fbo namespace
 using namespace IfImage;               // Using image namespace
 /* -- Texture collector class for collector data and custom variables ------ */
-BEGIN_COLLECTOR(Textures, Texture, CLHelperUnsafe);
-/* ------------------------------------------------------------------------- */
-typedef Dimensions<GLuint> DimUInt;    // Dimension of GLuint's
+BEGIN_COLLECTOR(Textures, Texture, CLHelperUnsafe)
 /* ------------------------------------------------------------------------- */
 class TextureVars :                    // All members initially private
   /* -- Base classes ------------------------------------------------------- */
@@ -65,6 +63,7 @@ class TextureVars :                    // All members initially private
   };/* --------------------------------------------------------------------- */
   typedef vector<CoordData> CoordList; // Tile coordinates data list
   typedef vector<CoordList> CoordsList;// A list of tile coords per sub-tex
+  typedef Dimensions<GLuint> DimUInt;    // Dimension of GLuint's
   /* ----------------------------------------------------------------------- */
   CoordsList       clTiles;            // Texture coordinates for tiles
   GLUIntVector     vTexture;           // OpenGL texture handle list
@@ -75,7 +74,7 @@ class TextureVars :                    // All members initially private
                    dfTile;             // Texture tile width and height (GL)
   /* -- Constructor -------------------------------------------------------- */
   TextureVars(void) :                  // No parameters
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     iTexMinFilter(GL_NONE),            // No minification filter set yet
     iTexMagFilter(GL_NONE),            // No magnification filter set et
     iMipmaps(0),                       // No mipmaps yet
@@ -84,10 +83,9 @@ class TextureVars :                    // All members initially private
     /* -- Code ------------------------------------------------------------- */
     { }                                // No code
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(TextureVars);        // No defaults
+  DELETECOPYCTORS(TextureVars)         // No defaults
 };/* ----------------------------------------------------------------------- */
-/* == Texture object class ================================================= */
-BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* n/a */),
+BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
   /* -- Base classes ------------------------------------------------------- */
   public TextureVars                   // Texture class variables
 { /* -- Return padding width --------------------------------------- */ public:
@@ -104,9 +102,6 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* n/a */),
   /* -- Set tile count ----------------------------------------------------- */
   void SetTileCount(const size_t stCount, const size_t stSubTexId=0)
     { clTiles[stSubTexId].resize(stCount); }
-  /* -- Reserve texture co-ordinates size ---------------------------------- */
-  void SetTileReserveCount(const size_t stCount, const size_t stSubTexId=0)
-    { clTiles[stSubTexId].reserve(stCount); }
   /* -- Return image width float value ------------------------------------- */
   GLfloat GetFWidth(void) const { return dfImage.DimGetWidth(); }
   /* -- Return image height float value ------------------------------------ */
@@ -123,8 +118,8 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* n/a */),
   /* -- Return a new tile -------------------------------------------------- */
   const CoordData NewTile(const GLfloat fL, const GLfloat fT, const GLfloat fR,
     const GLfloat fB, const GLfloat fW, const GLfloat fH)
-  { const GLfloat fLeft =   fL/GetFWidth(),  fRight  =   fR/GetFWidth(),
-                  fTop  = 1-fT/GetFHeight(), fBottom = 1-fB/GetFHeight();
+  { const GLfloat fLeft =      fL/GetFWidth(),  fRight  =      fR/GetFWidth(),
+                  fTop  = 1.0f-fT/GetFHeight(), fBottom = 1.0f-fB/GetFHeight();
     return { fW, fH, fLeft, fTop, fRight, fBottom }; }
   /* -- Set the texture co-ordinates of a tile ----------------------------- */
   void SetTile(const size_t stSubTexId, const size_t stTileId,
@@ -280,7 +275,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* n/a */),
       // For each image slot
       for(size_t stSubTexId = 0; stSubTexId < stSlots; ++stSubTexId)
       { // Get next slot and verify that dimensions are different from slot 0
-        const ImageSlot &sSlot = (*this)[stSubTexId];
+        const ImageSlot &sSlot = GetSlots()[stSubTexId];
         if(DimGetWidth() != sSlot.DimGetWidth() ||
            DimGetHeight() != sSlot.DimGetHeight())
           XC("Alternating image sizes are not supported!",
@@ -334,7 +329,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* n/a */),
     // Load all the other mipmaps
     for(size_t stSubTexId = 1; stSubTexId < stSlots; ++stSubTexId)
     { // Get next slot
-      const ImageSlot &sSlot = (*this)[stSubTexId];
+      const ImageSlot &sSlot = GetSlotsConst()[stSubTexId];
       // Make sure size is smaller than the last
       if(sSlot.DimGetWidth() >= uiLWidth || sSlot.DimGetHeight() >= uiLHeight)
         XC("Specified mipmap is not smaller than the last!",
@@ -381,7 +376,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* n/a */),
                            stSubTexId < GetSubCount();
                          ++stSubTexId)
     { // Make sure theres enough memory allocated for each coord data
-      SetTileReserveCount(stSubTexId, stTilesMax);
+      clTiles[stSubTexId].reserve(stTiles);
       // Image is reversed?
       if(IsReversed())
         for(GLfloat fY = 0;
@@ -408,7 +403,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* n/a */),
                     stSubTexId < GetSubCount();
                   ++stSubTexId)
     { // Make sure theres enough memory allocated for each coord data
-      SetTileReserveCount(stSubTexId, stTilesMax);
+      clTiles[stSubTexId].reserve(stTilesMax);
       // Image is reversed?
       if(IsReversed())
         for(GLfloat fY = 0; fY < fBTSizeY; fY += fTPSizeY)
@@ -431,9 +426,9 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* n/a */),
   /* -- Load texture from image class -------------------------------------- */
   void LoadFromImage(void)
   { // Get number of slots in this image and return if zero
-    if(empty()) XC("No data in image object!", "Identifier", IdentGet());
+    if(IsNoSlots()) XC("No data in image object!", "Identifier", IdentGet());
     // Get first slot
-    const ImageSlot &sData = front();
+    const ImageSlot &sData = GetSlotsConst().front();
     // Copy image dimensions to texture dimensions
     DimSet(sData);
     // Set image dimensions as float for opengl
@@ -461,7 +456,6 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* n/a */),
         "Identifier",   IdentGet(), "BytesPerPixel", GetBytesPerPixel(),
         "BitsPerPixel", GetBitsPerPixel());
     } // Calculated internal and external format
-    GLint iNICFormat;
     GLenum eNXCFormat;
     // Because we're using shaders we can trick OpenGL into giving it a
     // non-standard colour encoded raster image and the shaders can decode
@@ -470,48 +464,50 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* n/a */),
     switch(iICFormat)
     { // Texture is 8-bpp?
       case GL_RED:
-        // Set GL_LUMINANCE decoding shader
-        shProgram = IsPalette() ? &cFboBase->sh2D8Pal : &cFboBase->sh2D8;
+        // Is palleted?
+        if(IsPalette())
+        { // Set palette shader
+          shProgram = &cFboBase->sh2D8Pal;
+          // Force no filtering and no mipmapping or we get the wrong colours
+          stTexFilter = 0;
+          iTexMinFilter = iTexMagFilter = GL_NEAREST;
+        } // No palette
+        else shProgram = &cFboBase->sh2D8;
+        // Set requested external format
         eNXCFormat = GetPixelType();
-        iNICFormat = iICFormat;
         break;
       // Texture is 16-bpp?
       case GL_RG:
         // Set GL_LUMINANCE_ALPHA decoding shader
         shProgram = &cFboBase->sh2D16;
         eNXCFormat = GetPixelType();
-        iNICFormat = iICFormat;
         break;
       // Texture is 24 or 32-bpp? Whats the external format?
       case GL_RGB: case GL_RGBA: switch(GetPixelType())
       { // Compressed texture?
         case 0x83F1: case 0x83F2: case 0x83F3:
           // Set compressed texture
-          iNICFormat = iICFormat;
           eNXCFormat = GetPixelType();
           shProgram = &cFboBase->sh2D;
           bCompressed = true;
           break;
-        // BGRA (Windows image)?
+        // BGRA colour order type?
         case GL_BGRA:
           // Use BGR shader and redefine to RGBA.
           shProgram = &cFboBase->sh2DBGR;
           eNXCFormat = GL_RGBA;
-          iNICFormat = iICFormat;
           break;
-        // BGR (Windows image)?
+        // BGR colour order type?
         case GL_BGR:
           // Use BGR shader and redefine to RGB.
           shProgram = &cFboBase->sh2DBGR;
           eNXCFormat = GL_RGB;
-          iNICFormat = iICFormat;
           break;
         // RGBA or RGB (Normal image).
         case GL_RGB: case GL_RGBA:
           // Use RGB shader. No format change.
           shProgram = &cFboBase->sh2D;
           eNXCFormat = GetPixelType();
-          iNICFormat = iICFormat;
           break;
         // Unknown external format
         default: XC("External colour type not acceptable!",
@@ -523,9 +519,9 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* n/a */),
         "Identifier", IdentGet(), "ICFormat", iICFormat,
         "XCFormat", GetPixelType());
     } // Set usable slots
-    const size_t stSlots = size() - static_cast<size_t>(IsPalette());
+    const size_t stSlots = GetSlotCount() - static_cast<size_t>(IsPalette());
     // Upload the texture
-    UploadTexture(stSlots, bCompressed, sData, iNICFormat, eNXCFormat);
+    UploadTexture(stSlots, bCompressed, sData, iICFormat, eNXCFormat);
     // Log progress
     cLog->LogDebugExSafe("Texture '$'[$:$;M:$;D:$x$] uploaded.", IdentGet(),
       bCompressed ? 'C' : 'U', stSlots, GetMipmaps(), sData.DimGetWidth(),
@@ -538,7 +534,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* n/a */),
   /* -- Blit two triangles that form a square ------------------------------ */
   void BlitQuad(const GLuint uiGLTexId, const QuadCoordData &qcoData,
     const QuadPosData &qpData, const QuadColData &acData)
-  { for(size_t stTriId = 0; stTriId < TRISPERQUAD; ++stTriId)
+  { for(size_t stTriId = 0; stTriId < stTrisPerQuad; ++stTriId)
       BlitTri(uiGLTexId, qcoData[stTriId], qpData[stTriId],
         acData[stTriId]); }
   /* -- Blit with currently stored position -------------------------------- */
@@ -653,7 +649,8 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* n/a */),
     const GLint iX, const GLint iY)
   { // Do the update
     UpdateEx(GetSubName(stSubTexId), iX, iY, imS.DimGetWidth<GLsizei>(),
-      imS.DimGetHeight<GLsizei>(), imS.GetPixelType(), imS.front().Ptr());
+      imS.DimGetHeight<GLsizei>(), imS.GetPixelType(),
+      GetSlotsConst().front().Ptr());
   }
   /* -- Replace texture in VRAM from array --------------------------------- */
   void Update(Image &imOther)
@@ -677,7 +674,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* n/a */),
       "Download texture failed!",
       "Identifier", IdentGet(), "Index", stSubTexId, "Format", ePixType);
     // Return a newly created image class containing this data
-    return Image{ IdentGet(), std::move(mOut), DimGetWidth(), DimGetHeight(),
+    return Image{ IdentGet(), StdMove(mOut), DimGetWidth(), DimGetHeight(),
       bdDDepth, ePixType };
   }
   /* -- Download texture and dump it to disk ------------------------------- */
@@ -698,7 +695,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* n/a */),
       LoadFromImage();
       // Remove all image data because we can just load it from file again
       // and theres no point taking up precious memory for it.
-      clear();
+      ClearSlots();
     } // Error if no textures loaded
     if(IsNotInitialised()) XC("No textures loaded!", "Identifier", IdentGet());
     // Show what was loaded
@@ -737,7 +734,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* n/a */),
     if(bGenerateTileset) GenerateTileset();
     // Remove all image data because we can just load it from file again
     // and theres no point taking up precious memory for it.
-    if(IsNotDynamic()) clear();
+    if(IsNotDynamic()) ClearSlots();
   }
   /* -- Deinitialise ------------------------------------------------------- */
   void DeInit(void)
@@ -753,22 +750,22 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* n/a */),
   }
   /* -- Constructor (Initialisation then registration) --------------------- */
   Texture(void) :                      // No parameters
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperTexture{ *cTextures,this } // Automatic (de)registration
     /* -- Code ------------------------------------------------------------- */
     { }                                // Do nothing else
-  /* -- Constructor (No registration) -------------------------------------- */
+  /* -- Constructor (No registration, base class of Font class) ------------ */
   explicit Texture(const bool) :       // Parameter does nothing
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperTexture{ *cTextures }      // Initially unregistered
     /* -- Code ------------------------------------------------------------- */
     { }                                // Do nothing else
   /* -- Destructor (Unregistration then deinitialisation) ------------------ */
   ~Texture(void) { DeInit(); }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Texture);            // Supress copy constructor for safety
+  DELETECOPYCTORS(Texture)             // Supress copy constructor for safety
 };/* -- Finish the collector ----------------------------------------------- */
-END_COLLECTOR(Textures);               // Finish collector class
+END_COLLECTOR(Textures)                // Finish collector class
 /* -- DeInit Textures ------------------------------------------------------ */
 static void TextureDeInitTextures(void)
 { // Ignore if no textures

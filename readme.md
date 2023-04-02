@@ -18,7 +18,7 @@ You might wonder why I decided to write this software using a 3-D sound and rend
 * Use of LUA interpreter with configurability and infinite-loop timeout.
 * Full and safe error reporting via extensive use of C++ exceptions.
 * Choice of Unix NCurses, Win32 console or OpenGL 2-D interface.
-* Asynchronous image format loading (such as TGA, PNG, JPG, GIF and DDS).
+* Asynchronous image format loading (such as PNG, JPG, GIF and DDS).
 * Support for transparent framebuffers and windows.
 * Optional global 8-bit colour palette system for retro applications.
 * Asynchronous audio format loading (such as WAV, CAF, MP3 and OGG).

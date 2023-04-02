@@ -37,7 +37,7 @@ class EncData                          // Encoded data returned by callback
   /* -- Init constructor --------------------------------------------------- */
   EncData(const EncMode eM, const size_t stU, const size_t stC,
     const size_t stX) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     eMode(eM),                         // Set requested mode
     stUncompressed(stU),               // Set requested uncompressed size
     stCompressed(stC),                 // Set requested compressed size
@@ -46,7 +46,7 @@ class EncData                          // Encoded data returned by callback
     { }
   /* -- Copy constructor --------------------------------------------------- */
   explicit EncData(const EncData &edOther) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     eMode(edOther.GetMode()),                  // Copy requested mode
     stUncompressed(edOther.GetUncompressed()), // Copy uncompressed size
     stCompressed(edOther.GetCompressed()),     // Copy compressed size
@@ -208,7 +208,7 @@ static const EncData CodecEncodeAESCompressed(const EncMode eOverrideMode,
   aOut.WriteIntLE<uint32_t>
     (static_cast<uint32_t>(encCompressedData.GetUncompressed()));
   // Discord compressed block and replace with encrypted block (dirty but meh)
-  const Memory aCompressed{ std::move(aOut) };
+  const Memory aCompressed{ StdMove(aOut) };
   // Resize the output block with enough memory for encrypting
   aOut.Resize(ENCHDR_SIZE + aCompressed.Size() + CodecGetAES256CBCSize());
   // Encrypt data and get result
@@ -339,7 +339,7 @@ static void CodecDecodeAESZLIB(const DataConst &dIn, Memory &aOut,
   const size_t stUncompressed =
     static_cast<size_t>(aOut.ReadIntLE<uint32_t>());
   // Move memory
-  const Memory mIn{ std::move(aOut) };
+  const Memory mIn{ StdMove(aOut) };
   // Decompress the block now from the start
   CodecDecodeZLIB(mIn, aOut, sizeof(uint32_t),
     dIn.Size()-sizeof(uint32_t), stUncompressed);
@@ -376,7 +376,7 @@ static void CodecDecodeAESLZMA(const DataConst &dIn, Memory &aOut,
   const size_t stUncompressed =
     static_cast<size_t>(aOut.ReadIntLE<uint32_t>());
   // Move memory
-  const Memory mIn{ std::move(aOut) };
+  const Memory mIn{ StdMove(aOut) };
   // Decompress the block now from the start
   CodecDecodeLZMA(mIn, aOut, sizeof(uint32_t),
     dIn.Size()-sizeof(uint32_t), stUncompressed, stExtra);
@@ -463,7 +463,7 @@ class CoDecoder :                      // Magic decoder derivative class
       default: XC("Invalid version!", "Version", uiVersionActual);
     }
   } /* --------------------------------------------------------------------- */
-  DELETECOPYCTORS(CoDecoder);          // Omit copy constructor for safety
+  DELETECOPYCTORS(CoDecoder)           // Omit copy constructor for safety
 };/* == Encoder base class ================================================= */
 template<class EncPlugin>class CoEncoder :
   /* -- Base classes ------------------------------------------------------- */
@@ -489,19 +489,19 @@ template<class EncPlugin>class CoEncoder :
   }
   /* -- Constructor that doesn't initialise memory block size ------ */ public:
   CoEncoder(const DataConst &dIn, const size_t stLevel) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     EncPlugin{ dIn, *this, stLevel }
     /* -- Code ------------------------------------------------------------- */
     { InitHeader(); }
   /* -- Constructor that initialises memory block size --------------------- */
   CoEncoder(const DataConst &dIn, const size_t stInit, const size_t stLevel) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     Memory{ ENCHDR_SIZE + dIn.Size() + stInit },
     EncPlugin{ dIn, *this, stLevel }
     /* -- Code ------------------------------------------------------------- */
     { InitHeader(); }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(CoEncoder);          // Omit copy constructor for safety
+  DELETECOPYCTORS(CoEncoder)           // Omit copy constructor for safety
 };/* ======================================================================= */
 /* ######################################################################### */
 /* ## Encoder helpers                                                     ## */
@@ -509,7 +509,7 @@ template<class EncPlugin>class CoEncoder :
 /* -- Command helper interface to a class with encoder data ---------------- */
 #define CODEC_HELPER(n,...) namespace CodecHelper { \
   class n ## Encoder : public EncData { \
-    DELETECOPYCTORS(n ## Encoder); \
+    DELETECOPYCTORS(n ## Encoder) \
     public: n ## Encoder(const DataConst &dS, Memory &mD, const size_t stU) : \
       EncData{ CodecEncode ## n(dS, mD, stU, ## __VA_ARGS__, ENCHDR_SIZE) } {}\
   }; \
@@ -527,18 +527,18 @@ template<class EncPlugin>class CoEncoder :
     public: explicit n ## Encoder(const DataConst &dS, const size_t stU) : \
       CoEncoder<CodecHelper::n ## Encoder>{ dS, stU } {} };
 /* -- The AES + ZLIB combined encoder (already provides init sizes) -------- */
-CODEC_PLUGIN(AESZLIB, cCrypt->pkKey.p.qKey, cCrypt->pkKey.p.qIV);
+CODEC_PLUGIN(AESZLIB, cCrypt->pkKey.p.qKey, cCrypt->pkKey.p.qIV)
 /* -- The AES + LZMA combined encoder (already provides init sizes) -------- */
-CODEC_PLUGINEX(AESLZMA, 5, cCrypt->pkKey.p.qKey, cCrypt->pkKey.p.qIV);
+CODEC_PLUGINEX(AESLZMA, 5, cCrypt->pkKey.p.qKey, cCrypt->pkKey.p.qIV)
 /* -- The AES only encoder (needs init size and keys) ---------------------- */
 CODEC_PLUGINEX(AES, CodecGetAES256CBCSize(), cCrypt->pkKey.p.qKey,
-  cCrypt->pkKey.p.qIV);
+  cCrypt->pkKey.p.qIV)
 /* -- The ZLIB encoder class (provides init size) -------------------------- */
-CODEC_PLUGINEX(ZLIB, static_cast<size_t>(ceil(dS.Size() * 0.001)) + 12);
+CODEC_PLUGINEX(ZLIB, static_cast<size_t>(ceil(dS.Size() * 0.001)) + 12)
 /* -- The LZMA encoder class (provides the extra data needed size) --------- */
-CODEC_PLUGINEX(LZMA, 5);
+CODEC_PLUGINEX(LZMA, 5)
 /* -- The nullptr encoder (no extra size needed) --------------------------- */
-CODEC_PLUGINEX(RAW, 0);
+CODEC_PLUGINEX(RAW, 0)
 /* ------------------------------------------------------------------------- */
 #undef CODEC_PLUGIN                    // Done need this anymore
 #undef CODEC_HELPER                    // Done need this anymore
@@ -546,18 +546,18 @@ CODEC_PLUGINEX(RAW, 0);
 template<class EncoderType>class Block final : public EncoderType
 { /* -- Initialise by data array ----------------------------------- */ public:
   explicit Block(const DataConst &dIn, const size_t stUser=string::npos) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     EncoderType{ dIn, stUser }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Initialise by string ----------------------------------------------- */
   explicit Block(const string &strIn, const size_t stUser=string::npos) :
-    /* -- Initialisation of members ---------------------------------------- */
-    EncoderType{ std::move(DataConst(strIn)), stUser }
+    /* -- Initialisers ----------------------------------------------------- */
+    EncoderType{ StdMove(DataConst(strIn)), stUser }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Block);              // Omit copy constructor for safety
+  DELETECOPYCTORS(Block)               // Omit copy constructor for safety
 };/* -- End of class ------------------------------------------------------- */
 };                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

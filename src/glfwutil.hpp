@@ -10,43 +10,167 @@
 namespace IfGlFWUtil {                 // Start of module namespace
 /* ------------------------------------------------------------------------- */
 using namespace IfEvtMain;             // Using event namespace
-/* -- Convert window hint id to string ------------------------------------- */
-static const string &GlFWGetHintAttribStr(const int iTarget)
-{ // Glfw targets as strings
-  static const IdMap<int> imTargets{{
-    IDMAPSTR(GLFW_ACCUM_ALPHA_BITS), IDMAPSTR(GLFW_ACCUM_BLUE_BITS),
-    IDMAPSTR(GLFW_ACCUM_GREEN_BITS), IDMAPSTR(GLFW_ACCUM_RED_BITS),
-    IDMAPSTR(GLFW_ALPHA_BITS), IDMAPSTR(GLFW_AUTO_ICONIFY),
-    IDMAPSTR(GLFW_AUX_BUFFERS), IDMAPSTR(GLFW_BLUE_BITS),
-    IDMAPSTR(GLFW_CENTER_CURSOR), IDMAPSTR(GLFW_CLIENT_API),
-    IDMAPSTR(GLFW_COCOA_FRAME_NAME), IDMAPSTR(GLFW_COCOA_GRAPHICS_SWITCHING),
-    IDMAPSTR(GLFW_COCOA_MENUBAR), IDMAPSTR(GLFW_COCOA_RETINA_FRAMEBUFFER),
-    IDMAPSTR(GLFW_CONTEXT_CREATION_API), IDMAPSTR(GLFW_CONTEXT_NO_ERROR),
-    IDMAPSTR(GLFW_CONTEXT_RELEASE_BEHAVIOR), IDMAPSTR(GLFW_CONTEXT_REVISION),
-    IDMAPSTR(GLFW_CONTEXT_ROBUSTNESS), IDMAPSTR(GLFW_CONTEXT_VERSION_MAJOR),
-    IDMAPSTR(GLFW_CONTEXT_VERSION_MINOR), IDMAPSTR(GLFW_DECORATED),
-    IDMAPSTR(GLFW_DEPTH_BITS), IDMAPSTR(GLFW_DOUBLEBUFFER),
-    IDMAPSTR(GLFW_FLOATING), IDMAPSTR(GLFW_FOCUS_ON_SHOW),
-    IDMAPSTR(GLFW_FOCUSED), IDMAPSTR(GLFW_GREEN_BITS),
-    IDMAPSTR(GLFW_HOVERED), IDMAPSTR(GLFW_ICONIFIED),
-    IDMAPSTR(GLFW_MAXIMIZED), IDMAPSTR(GLFW_OPENGL_DEBUG_CONTEXT),
-    IDMAPSTR(GLFW_OPENGL_FORWARD_COMPAT), IDMAPSTR(GLFW_OPENGL_PROFILE),
-    IDMAPSTR(GLFW_RED_BITS), IDMAPSTR(GLFW_REFRESH_RATE),
-    IDMAPSTR(GLFW_RESIZABLE), IDMAPSTR(GLFW_SAMPLES),
-    IDMAPSTR(GLFW_SCALE_TO_MONITOR), IDMAPSTR(GLFW_SRGB_CAPABLE),
-    IDMAPSTR(GLFW_STENCIL_BITS), IDMAPSTR(GLFW_STEREO),
-    IDMAPSTR(GLFW_TRANSPARENT_FRAMEBUFFER), IDMAPSTR(GLFW_VISIBLE),
-    IDMAPSTR(GLFW_X11_CLASS_NAME), IDMAPSTR(GLFW_X11_INSTANCE_NAME),
-  }, "GLFW_UNKNOWN" };
-  // GLFW target ids to strings
-  return imTargets.Get(iTarget);
-}
 /* -- Returns GLFW_TRUE or GLFW_FALSE depending on expression -------------- */
 static int GlFWBooleanToGBoolean(const bool bC)
   { return bC ? GLFW_TRUE : GLFW_FALSE; }
 /* -- Returns false if GLFW_FALSE or true if anything else ----------------- */
 static bool GlFWGBooleanToBoolean(const int iR)
   { return iR != GLFW_FALSE; }
+/* ------------------------------------------------------------------------- */
+class GlFWUtil                         // Members initially private
+{ /* -- Private typedefs --------------------------------------------------- */
+  typedef IdMap<const int> HintList;   // List of glfw hints
+  const HintList   hsStrings;          // Hint strings
+  /* -- Convert window hint id to string --------------------------- */ public:
+  const string &GlFWGetHintAttribStr(const int iTarget) const
+    { return hsStrings.Get(iTarget); }
+  /* -- Set window hint ---------------------------------------------------- */
+  void GlFWSetHint(const int iVar, const int iVal)
+  { // Set window hint directly
+    glfwWindowHint(iVar, iVal);
+    // Log the change
+    cLog->LogDebugExSafe("GlFW set hint $<0x$$> to $$<0x$$>.",
+      GlFWGetHintAttribStr(iVar), hex, iVar, dec, iVal, hex, iVal);
+  }
+  /* -- Set window hint core functions ------------------------------------- */
+  void GlFWSetHintBoolean(const int iVar, const bool bVal)
+    { GlFWSetHint(iVar, GlFWBooleanToGBoolean(bVal)); }
+  void GlFWSetHintEnabled(const int iVar)
+    { GlFWSetHintBoolean(iVar, true); }
+  void GlFWSetHintDisabled(const int iVar)
+    { GlFWSetHintBoolean(iVar, false); }
+  /* -- Set window hint string --------------------------------------------- */
+  void GlFWSetHintString(const int iHint, const char*const cpValue)
+  { // Set window hint directly
+    glfwWindowHintString(iHint, cpValue);
+    // Log the change
+    cLog->LogDebugExSafe("GlFW set hint $<0x$$> to '$'.",
+      GlFWGetHintAttribStr(iHint), hex, iHint, cpValue);
+  }
+  /* -- OS specific routines ----------------------------------------------- */
+#if defined(MACOS)                     // Targeting MacOS?
+  /* -- Set frame name in MacOS -------------------------------------------- */
+  void GlFWSetCocoaFrameName([[maybe_unused]] const char*const cpName)
+    { GlFWSetHintString(GLFW_COCOA_FRAME_NAME, cpName); }
+  /* ----------------------------------------------------------------------- */
+#elif defined(LINUX)                   // Targeting Linux?
+  /* -- Set class name in X11 ---------------------------------------------- */
+  void GlFWSetX11ClassName([[maybe_unused]] const char*const cpName)
+    { GlFWSetHintString(GLFW_X11_CLASS_NAME, cpName); }
+  /* -- Set instance name in X11 ------------------------------------------- */
+  void GlFWSetX11InstanceName([[maybe_unused]] const char*const cpName)
+    { GlFWSetHintString(GLFW_X11_INSTANCE_NAME, cpName); }
+  /* ----------------------------------------------------------------------- */
+#endif                                 // End of target checks
+  /* -- Set window frame names --------------------------------------------- */
+  void GlFWSetFrameName([[maybe_unused]] const char*const cpName)
+  { // Set custom frame names based on operating system
+#if defined(MACOS)
+    GlFWSetCocoaFrameName(cpName);
+#elif defined(LINUX)
+    GlFWSetX11ClassName(cpName);
+    GlFWSetX11InstanceName(cpName);
+#endif
+  }
+  /* -- Create functions to access all attributes -------------------------- */
+#define SET(nc,nu) \
+  /* ---------------------------------------------------------------------- */\
+  void GlFWSet ## nc[[maybe_unused]](const int iNewMode) \
+    { GlFWSetHint(GLFW_ ## nu, iNewMode); }
+  /* ----------------------------------------------------------------------- */
+  SET(RedBits, RED_BITS)               // Set depth of red component
+  SET(GreenBits, GREEN_BITS)           // Set depth of green component
+  SET(BlueBits, BLUE_BITS)             // Set depth of blue component
+  SET(AlphaBits, ALPHA_BITS)           // Set depth of alpha component
+  SET(DepthBits, DEPTH_BITS)           // Set depth of Z component
+  SET(StencilBits, STENCIL_BITS)       // Set depth of stencil component
+  SET(Multisamples, SAMPLES)           // Set anti-aliasing factor
+  SET(AuxBuffers, AUX_BUFFERS)         // Set auxiliary buffer count
+  SET(RefreshRate, REFRESH_RATE)       // Set desktop refresh rate
+  SET(ClientAPI, CLIENT_API)           // Set client api to use
+  SET(CtxMajor, CONTEXT_VERSION_MAJOR) // Set gl context major version
+  SET(CtxMinor, CONTEXT_VERSION_MINOR) // Set gl context minor version
+  SET(CoreProfile, OPENGL_PROFILE)     // Set gl profile to use
+  SET(Robustness, CONTEXT_ROBUSTNESS)  // Set context robustness
+  /* ----------------------------------------------------------------------- */
+#undef SET                             // Done with this macro
+  /* -- Set window bits all in one ----------------------------------------- */
+  void GlFWSetColourDepth(const int iRed, const int iGreen,
+    const int iBlue, const int iAlpha)
+  { GlFWSetRedBits(iRed); GlFWSetGreenBits(iGreen);
+    GlFWSetBlueBits(iBlue); GlFWSetAlphaBits(iAlpha); }
+  /* -- Set opengl context version in one function ------------------------- */
+  void GlFWSetContextVersion(const int iMajor, const int iMinor)
+    { GlFWSetCtxMajor(iMajor); GlFWSetCtxMinor(iMinor); }
+  /* -- Create functions to access all attributes -------------------------- */
+#define SET(nc,nu) \
+  /* ---------------------------------------------------------------------- */\
+  void GlFWSet ## nc(const bool bState) \
+    { GlFWSetHintBoolean(GLFW_ ## nu, bState); } \
+   void GlFWSet ## nc ## Enabled(void) \
+    { GlFWSetHintEnabled(GLFW_ ## nu); } \
+  void GlFWSet ## nc ## Disabled(void) \
+    { GlFWSetHintDisabled(GLFW_ ## nu); } \
+  /* ----------------------------------------------------------------------- */
+  SET(AutoIconify, AUTO_ICONIFY)       // Set window auto-minimise state
+  SET(CentreCursor, CENTER_CURSOR)     // Set window cursor centre state
+  SET(Debug, OPENGL_DEBUG_CONTEXT)     // Set opengl debug mode
+  SET(Decorated, DECORATED)            // Set window border state
+  SET(DoubleBuffer, DOUBLEBUFFER)      // Set double buffering
+  SET(Floating, FLOATING)              // Set window floating state
+  SET(Focus, FOCUSED)                  // Set window focused state
+  SET(FocusOnShow, FOCUS_ON_SHOW)      // Set focus on show window
+  SET(ForwardCompat, OPENGL_FORWARD_COMPAT) // Set opengl fwd compatibility
+  SET(Iconify, ICONIFIED)              // Set window minimised state
+  SET(Maximised, MAXIMIZED)            // Set window maximised state
+  SET(MouseHovered, HOVERED)           // Set mouse hovered over state
+  SET(NoErrors, CONTEXT_NO_ERROR)      // Set context no errors
+  SET(Resizable, RESIZABLE)            // Set window resizable state
+  SET(SRGBCapable, SRGB_CAPABLE)       // Set SRGB colour space capable
+  SET(Stereo, CENTER_CURSOR)           // Set window cursor centre state
+  SET(Transparency, TRANSPARENT_FRAMEBUFFER) // Set transparent framebuffer
+  SET(Visibility, VISIBLE)             // Set window visibility state
+  /* ----------------------------------------------------------------------- */
+#if defined(MACOS)                     // Using Apple compiler?
+  /* ----------------------------------------------------------------------- */
+  SET(GPUSwitching, COCOA_GRAPHICS_SWITCHING) // Set graphics switching?
+  SET(MenuBar,      COCOA_MENUBAR)     // Set MacOS menu bar?
+  SET(RetinaMode,   COCOA_RETINA_FRAMEBUFFER) // Set retina framebuffer?
+  /* ----------------------------------------------------------------------- */
+#endif                                 // End of Apple check
+  /* ----------------------------------------------------------------------- */
+#undef SET                             // Done with this macro
+  /* -- Default constructor ------------------------------------------------ */
+  GlFWUtil(void) :
+    /* -- Initialisers ----------------------------------------------------- */
+    hsStrings{{                        // Initialise hint strings
+      IDMAPSTR(GLFW_ACCUM_ALPHA_BITS), IDMAPSTR(GLFW_ACCUM_BLUE_BITS),
+      IDMAPSTR(GLFW_ACCUM_GREEN_BITS), IDMAPSTR(GLFW_ACCUM_RED_BITS),
+      IDMAPSTR(GLFW_ALPHA_BITS), IDMAPSTR(GLFW_AUTO_ICONIFY),
+      IDMAPSTR(GLFW_AUX_BUFFERS), IDMAPSTR(GLFW_BLUE_BITS),
+      IDMAPSTR(GLFW_CENTER_CURSOR), IDMAPSTR(GLFW_CLIENT_API),
+      IDMAPSTR(GLFW_COCOA_FRAME_NAME), IDMAPSTR(GLFW_COCOA_GRAPHICS_SWITCHING),
+      IDMAPSTR(GLFW_COCOA_MENUBAR), IDMAPSTR(GLFW_COCOA_RETINA_FRAMEBUFFER),
+      IDMAPSTR(GLFW_CONTEXT_CREATION_API), IDMAPSTR(GLFW_CONTEXT_NO_ERROR),
+      IDMAPSTR(GLFW_CONTEXT_RELEASE_BEHAVIOR), IDMAPSTR(GLFW_CONTEXT_REVISION),
+      IDMAPSTR(GLFW_CONTEXT_ROBUSTNESS), IDMAPSTR(GLFW_CONTEXT_VERSION_MAJOR),
+      IDMAPSTR(GLFW_CONTEXT_VERSION_MINOR), IDMAPSTR(GLFW_DECORATED),
+      IDMAPSTR(GLFW_DEPTH_BITS), IDMAPSTR(GLFW_DOUBLEBUFFER),
+      IDMAPSTR(GLFW_FLOATING), IDMAPSTR(GLFW_FOCUS_ON_SHOW),
+      IDMAPSTR(GLFW_FOCUSED), IDMAPSTR(GLFW_GREEN_BITS),
+      IDMAPSTR(GLFW_HOVERED), IDMAPSTR(GLFW_ICONIFIED),
+      IDMAPSTR(GLFW_MAXIMIZED), IDMAPSTR(GLFW_OPENGL_DEBUG_CONTEXT),
+      IDMAPSTR(GLFW_OPENGL_FORWARD_COMPAT), IDMAPSTR(GLFW_OPENGL_PROFILE),
+      IDMAPSTR(GLFW_RED_BITS), IDMAPSTR(GLFW_REFRESH_RATE),
+      IDMAPSTR(GLFW_RESIZABLE), IDMAPSTR(GLFW_SAMPLES),
+      IDMAPSTR(GLFW_SCALE_TO_MONITOR), IDMAPSTR(GLFW_SRGB_CAPABLE),
+      IDMAPSTR(GLFW_STENCIL_BITS), IDMAPSTR(GLFW_STEREO),
+      IDMAPSTR(GLFW_TRANSPARENT_FRAMEBUFFER), IDMAPSTR(GLFW_VISIBLE),
+      IDMAPSTR(GLFW_X11_CLASS_NAME), IDMAPSTR(GLFW_X11_INSTANCE_NAME),
+    }, "GLFW_UNKNOWN" }                // End of initialisation of hint strings
+  /* -- No code ------------------------------------------------------------ */
+  { }
+};/* ----------------------------------------------------------------------- */
 /* -- Get window data pointer ---------------------------------------------- */
 template<typename AnyCast=void*>
   static AnyCast GlFWGetWindowUserPointer(GLFWwindow*const wC)
@@ -55,30 +179,6 @@ template<typename AnyCast=void*>
 template<typename AnyCast=void*const>
   static void GlFWSetWindowUserPointer(GLFWwindow*const wC, AnyCast acData)
     { glfwSetWindowUserPointer(wC, reinterpret_cast<void*>(acData)); }
-/* -- Set window hint ------------------------------------------------------ */
-static void GlFWSetHint(const int iVar, const int iVal)
-{ // Set window hint directly
-  glfwWindowHint(iVar, iVal);
-  // Log the change
-  cLog->LogDebugExSafe("GlFW set hint $<0x$$> to $$<0x$$>.",
-    GlFWGetHintAttribStr(iVar), hex, iVar, dec, iVal, hex, iVal);
-}
-/* -- Set window hint core functions --------------------------------------- */
-static void GlFWSetHintBoolean(const int iVar, const bool bVal)
-  { GlFWSetHint(iVar, GlFWBooleanToGBoolean(bVal)); }
-static void GlFWSetHintEnabled(const int iVar)
-  { GlFWSetHintBoolean(iVar, true); }
-static void GlFWSetHintDisabled(const int iVar)
-  { GlFWSetHintBoolean(iVar, false); }
-/* -- Set window hint string ----------------------------------------------- */
-[[maybe_unused]]
-  static void GlFWSetHintString(const int iHint, const char*const cpValue)
-{ // Set window hint directly
-  glfwWindowHintString(iHint, cpValue);
-  // Log the change
-  cLog->LogDebugExSafe("GlFW set hint $<0x$$> to '$'.",
-    GlFWGetHintAttribStr(iHint), hex, iHint, cpValue);
-}
 /* ------------------------------------------------------------------------- */
 static void GlFWForceEventHack(void) { glfwPostEmptyEvent(); }
 /* -- Joystick axes -------------------------------------------------------- */
@@ -100,123 +200,9 @@ static void GlFWReleaseContext(void) { glfwMakeContextCurrent(nullptr); }
 /* -- Set gamma ------------------------------------------------------------ */
 static void GlFWSetGamma(GLFWmonitor*const mDevice, const GLfloat fValue)
   { glfwSetGamma(mDevice, fValue); }
-/* -- Set default window hints --------------------------------------------- */
-[[maybe_unused]] static void GlFWSetDefaultWindowHints(void)
-  { glfwDefaultWindowHints(); }
-/* -- OS specific routines ------------------------------------------------- */
-#if defined(MACOS)                     // Targeting MacOS?
-/* -- Set frame name in MacOS ---------------------------------------------- */
-static void GlFWSetCocoaFrameName([[maybe_unused]] const char*const cpName)
-  { GlFWSetHintString(GLFW_COCOA_FRAME_NAME, cpName); }
-/* ------------------------------------------------------------------------- */
-#elif defined(LINUX)                   // Targeting Linux?
-/* -- Set class name in X11 ------------------------------------------------ */
-static void GlFWSetX11ClassName([[maybe_unused]] const char*const cpName)
-  { GlFWSetHintString(GLFW_X11_CLASS_NAME, cpName); }
-/* -- Set instance name in X11 --------------------------------------------- */
-static void GlFWSetX11InstanceName([[maybe_unused]] const char*const cpName)
-  { GlFWSetHintString(GLFW_X11_INSTANCE_NAME, cpName); }
-/* ------------------------------------------------------------------------- */
-#endif                                 // End of target checks
-/* -- Set window frame names ----------------------------------------------- */
-static void GlFWSetFrameName([[maybe_unused]] const char*const cpName)
-{ // Set custom frame names based on operating system
-#if defined(MACOS)
-  GlFWSetCocoaFrameName(cpName);
-#elif defined(LINUX)
-  GlFWSetX11ClassName(cpName);
-  GlFWSetX11InstanceName(cpName);
-#endif
-}
-/* -- Create functions to access all attributes ---------------------------- */
-#define SET(nc,nu) \
-/* ------------------------------------------------------------------------ */\
-[[maybe_unused]] static void GlFWSet ## nc(const int iNewMode) \
-  { GlFWSetHint(GLFW_ ## nu, iNewMode); }
-/* ------------------------------------------------------------------------- */
-SET(RedBits, RED_BITS);                // Set depth of red component
-SET(GreenBits, GREEN_BITS);            // Set depth of green component
-SET(BlueBits, BLUE_BITS);              // Set depth of blue component
-SET(AlphaBits, ALPHA_BITS);            // Set depth of alpha component
-SET(DepthBits, DEPTH_BITS);            // Set depth of Z component
-SET(StencilBits, STENCIL_BITS);        // Set depth of stencil component
-SET(Multisamples, SAMPLES);            // Set anti-aliasing factor
-SET(AuxBuffers, AUX_BUFFERS);          // Set auxiliary buffer count
-SET(RefreshRate, REFRESH_RATE);        // Set desktop refresh rate
-SET(ClientAPI, CLIENT_API);            // Set client api to use
-SET(CtxMajor, CONTEXT_VERSION_MAJOR);  // Set gl context major version
-SET(CtxMinor, CONTEXT_VERSION_MINOR);  // Set gl context minor version
-SET(CoreProfile, OPENGL_PROFILE);      // Set gl profile to use
-SET(Robustness, CONTEXT_ROBUSTNESS);   // Set context robustness
-/* ------------------------------------------------------------------------- */
-#undef SET                             // Done with this macro
-/* -- Set window bits all in one ------------------------------------------- */
-static void GlFWSetColourDepth(const int iRed, const int iGreen,
-  const int iBlue, const int iAlpha)
-{ GlFWSetRedBits(iRed); GlFWSetGreenBits(iGreen);
-  GlFWSetBlueBits(iBlue); GlFWSetAlphaBits(iAlpha); }
-/* -- Set opengl context version in one function --------------------------- */
-static void GlFWSetContextVersion(const int iMajor, const int iMinor)
-  { GlFWSetCtxMajor(iMajor); GlFWSetCtxMinor(iMinor); }
-/* -- Create functions to access all attributes ---------------------------- */
-#define SET(nc,nu) \
-/* ------------------------------------------------------------------------ */\
-[[maybe_unused]] static void GlFWSet ## nc(const bool bState) \
-  { GlFWSetHintBoolean(GLFW_ ## nu, bState); } \
-[[maybe_unused]] static void GlFWSet ## nc ## Enabled(void) \
-  { GlFWSetHintEnabled(GLFW_ ## nu); } \
-[[maybe_unused]] static void GlFWSet ## nc ## Disabled(void) \
-  { GlFWSetHintDisabled(GLFW_ ## nu); } \
-/* ------------------------------------------------------------------------- */
-SET(AutoIconify, AUTO_ICONIFY);        // Set window auto-minimise state
-SET(CentreCursor, CENTER_CURSOR);      // Set window cursor centre state
-SET(Debug, OPENGL_DEBUG_CONTEXT);      // Set opengl debug mode
-SET(Decorated, DECORATED);             // Set window border state
-SET(DoubleBuffer, DOUBLEBUFFER);       // Set double buffering
-SET(Floating, FLOATING);               // Set window floating state
-SET(Focus, FOCUSED);                   // Set window focused state
-SET(FocusOnShow, FOCUS_ON_SHOW);       // Set focus on show window
-SET(ForwardCompat, OPENGL_FORWARD_COMPAT); // Set opengl fwd compatibility
-SET(Iconify, ICONIFIED);               // Set window minimised state
-SET(Maximised, MAXIMIZED);             // Set window maximised state
-SET(MouseHovered, HOVERED);            // Set mouse hovered over state
-SET(NoErrors, CONTEXT_NO_ERROR);       // Set context no errors
-SET(Resizable, RESIZABLE);             // Set window resizable state
-SET(SRGBCapable, SRGB_CAPABLE);        // Set SRGB colour space capable
-SET(Stereo, CENTER_CURSOR);            // Set window cursor centre state
-SET(Transparency, TRANSPARENT_FRAMEBUFFER); // Set transparent framebuffer
-SET(Visibility, VISIBLE);              // Set window visibility state
-/* ------------------------------------------------------------------------- */
-#if defined(MACOS)                     // Using Apple compiler?
-/* ------------------------------------------------------------------------- */
-SET(GPUSwitching, COCOA_GRAPHICS_SWITCHING); // Set graphics switching?
-SET(MenuBar,      COCOA_MENUBAR);      // Set MacOS menu bar?
-SET(RetinaMode,   COCOA_RETINA_FRAMEBUFFER); // Set retina framebuffer?
-/* ------------------------------------------------------------------------- */
-#endif                                 // End of Apple check
-/* ------------------------------------------------------------------------- */
-#undef SET                             // Done with this macro
 /* -- Get function address-------------------------------------------------- */
 static bool GlFWProcExists(const char*const cpFunction)
   { return !!glfwGetProcAddress(cpFunction); }
-/* -- Return monitor count ------------------------------------------------- */
-static GLFWmonitor** GlFWGetMonitors(int &iCount)
-  { return glfwGetMonitors(&iCount); }
-/* -- Return monitor count ------------------------------------------------- */
-static int GlFWGetMonitorCount(void)
-  { int iMonitors; GlFWGetMonitors(iMonitors); return iMonitors; }
-/* -- Get name of monitor by id ------------------------------------------ */
-static const char *GlFWGetMonitorNameById(const int iMonitorId)
-{ // Num monitors and num modes
-  int iMonitorCount;
-  // Get monitors list and count
-  GLFWmonitor*const*const mList = GlFWGetMonitors(iMonitorCount);
-  // Throw exception if invalid monitor id
-  if(iMonitorId < 0 || iMonitorId >= iMonitorCount)
-    XC("Invalid monitor id number", "Id", iMonitorId, "Count", iMonitorCount);
-  // Return monitor name
-  return glfwGetMonitorName(mList[iMonitorId]);
-}
 /* -- Get internal name of key --------------------------------------------- */
 static const char *GlFWGetKeyName(const int iK, const int iSC)
   { return glfwGetKeyName(iK, iSC); }
@@ -235,6 +221,5 @@ static GLFWglproc GlFWGetProcAddress(const char*const cpFunction)
       "else fails, you will need to upgrade your graphics hardware!",
       "Function", cpFunction);
 }
-/* ------------------------------------------------------------------------- */
 };                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

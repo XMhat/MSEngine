@@ -108,7 +108,7 @@ template<size_t Refs=1>class LuaRef    // Lua easy reference class
   }
   /* -- Constructor that does nothing but pre-initialise references -------- */
   LuaRef(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     lsState(nullptr)                   // State not initialised yet
     /* -- Uninitialised lua reverences ------------------------------------- */
     { iReferences.fill(LUA_REFNIL); }
@@ -128,7 +128,7 @@ template<size_t Refs=1>class LuaRef    // Lua easy reference class
     }
   }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(LuaRef);             // Omit copy constructor for safety
+  DELETECOPYCTORS(LuaRef)              // Omit copy constructor for safety
 };/* -- End of module namespace -------------------------------------------- */
 };                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

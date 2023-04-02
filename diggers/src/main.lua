@@ -81,7 +81,7 @@ local InitSetup, InitScene, InitCredits, InitEnding, LoadLevel,
   aLevelData, aRaceData, CheckGlobalKeys, LoadInfinitePlay;
 -- Constants for loader ---------------------------------------------------- --
 local aBFlags<const> = Image.Flags;    -- Get bitmap loading flags
-local iTGA<const> = aBFlags.FCE_TGA;   -- Get forced targa format flag
+local iPNG<const> = aBFlags.FCE_PNG;   -- Get forced PNG format flag
 local aPFlags<const> = Pcm.Flags;      -- Get pcm loading flags
 local iOGG<const> = aPFlags.FCE_OGG;   -- Get forced wave format
 local aPrFlags<const> = Asset.Progress;-- Asset progress flags
@@ -369,10 +369,10 @@ local function SetGlobalKeys(bState)
     -- Callback
     local function Callback()
       -- F1 key pressed?
-      if IsKeyPressed(iKeyF1) then InitSetup(true);
+      if IsKeyPressed(iKeyF1) then InitSetup(false);
       -- F2 key pressed?
       elseif IsKeyPressed(iKeyF2) or (IsJoyPressed(8) and IsJoyPressed(9))
-        then InitSetup(false);
+        then InitSetup(true);
       -- F11 key pressed?
       elseif IsKeyPressed(iKeyF11) then DisplayReset();
       -- F12 key pressed?
@@ -411,12 +411,12 @@ end
 -- Asset types supported --------------------------------------------------- --
 local aTypes<const> = {
   -- Async function   Params  Prefix  Suffix  Data loader function  Info?   Id
-  { Image.FileAsync,  {iTGA}, "tex/", ".tga", Texture.CreateTS,   false }, -- 1
-  { Image.FileAsync,  {iTGA}, "tex/", ".tga", TextureCreate,      false }, -- 2
-  { Image.FileAsync,  {iTGA}, "tex/", ".tga", Font.Image,         false }, -- 3
+  { Image.FileAsync,  {iPNG}, "tex/", ".png", Texture.CreateTS,   false }, -- 1
+  { Image.FileAsync,  {iPNG}, "tex/", ".png", TextureCreate,      false }, -- 2
+  { Image.FileAsync,  {iPNG}, "tex/", ".png", Font.Image,         false }, -- 3
   { Pcm.FileAsync,    {iOGG}, "sfx/", ".ogg", Sample.Create,      false }, -- 4
   { Asset.FileAsync,  {0},    "",     "",     GenericReturnHandle,false }, -- 5
-  { Image.FileAsync,  {0},    "tex/", ".tga", Mask.Create,        false }, -- 6
+  { Image.FileAsync,  {0},    "tex/", ".png", Mask.Create,        false }, -- 6
   { Stream.FileAsync, {},     "mus/", ".ogg", GenericReturnHandle,false }, -- 7
   { Video.FileAsync,  {},     "fmv/", ".ogv", GenericReturnHandle,false }, -- 8
   { Asset.FileAsync,  {0},    "src/", ".lua", ParseScript,        true  }, -- 9
@@ -599,11 +599,20 @@ local function PlayMusic(musicHandle, Volume, PosCmd, Loop, Start)
       -- Restore position
       musicHandle:SetPosition(nMusicPosition);
       -- Play music
-      musicHandle:Play(iMusicLoops, Volume, -1);
+      musicHandle:SetLoop(iMusicLoops);
       -- Delete position and loop variable
       nMusicPosition, iMusicLoops = nil, nil;
-    -- Play music from start
-    else musicHandle:Play(Loop, Volume, 0) end;
+    -- No restore position?
+    else
+      -- Play music from start
+      musicHandle:SetPosition(0);
+      -- Loop forever
+      musicHandle:SetLoop(-1);
+    end
+    -- Set volume
+    musicHandle:SetVolume(Volume);
+    -- Play music
+    musicHandle:Play();
     -- Set current track
     strmMusic = musicHandle;
   end

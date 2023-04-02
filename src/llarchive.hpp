@@ -31,7 +31,7 @@
 // ! that encrypted or split archives are not supported yet as these features
 // ! are not handled by the LZMA library.
 /* ========================================================================= */
-LLNAMESPACEBEGIN(Archive)              // Archive namespace
+namespace NsArchive {                  // Archive namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfArchive;             // Using archive namespace
 /* ========================================================================= */
@@ -126,16 +126,9 @@ LLFUNCBEGIN(Destroy) LCCLASSDESTROY(1, Archive); LLFUNCEND
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Archive:* member functions begin
-  LLRSFUNC(Destroy),                   // Destroy the internal object
-  LLRSFUNC(Dir),                       // Get directory by index
-  LLRSFUNC(Dirs),                      // Get directories count
-  LLRSFUNC(DirList),                   // Get directories list
-  LLRSFUNC(File),                      // Get file by index
-  LLRSFUNC(Files),                     // Get files count
-  LLRSFUNC(FileList),                  // Get files list
-  LLRSFUNC(Name),                      // Get name of archive
-  LLRSFUNC(Size),                      // Get size of specified file
-  LLRSFUNC(Total),                     // Total files and directories
+  LLRSFUNC(Destroy), LLRSFUNC(Dir),   LLRSFUNC(Dirs),     LLRSFUNC(DirList),
+  LLRSFUNC(File),    LLRSFUNC(Files), LLRSFUNC(FileList), LLRSFUNC(Name),
+  LLRSFUNC(Size),    LLRSFUNC(Total),
 LLRSEND                                // Archive:* member functions end
 /* ========================================================================= */
 // $ Archive.Load
@@ -171,10 +164,8 @@ LLFUNC(WaitAsync, cArchives->WaitAsync());
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Archive.* namespace functions begin
-  LLRSFUNC(Load),                      // Load an archive
-  LLRSFUNC(LoadAsync),                 // Load an archive async
-  LLRSFUNC(WaitAsync),                 // Wait archive async event
+  LLRSFUNC(Load), LLRSFUNC(LoadAsync), LLRSFUNC(WaitAsync),
 LLRSEND                                // Archive.* namespace functions end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of Archive namespace
+}                                      // End of Archive namespace
 /* == EoF =========================================================== EoF == */

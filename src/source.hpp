@@ -262,7 +262,7 @@ BEGIN_MEMBERCLASS(Sources, Source, ICHelperSafe),
   }
   /* -- Constructor default locked for immediate async usage --------------- */
   explicit Source(const bool bLocked=true) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperSource{ *cSources, this }, // Register in Sources list
     IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     uiId(cOal->CreateSource()),        // Initialise a new source from OpenAL
@@ -279,9 +279,9 @@ BEGIN_MEMBERCLASS(Sources, Source, ICHelperSafe),
     if(uiId) ALL(cOal->DeleteSource(uiId), "Source failed to delete $!", uiId);
   }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Source);             // Supress copy constructor for safety
+  DELETECOPYCTORS(Source)              // Supress copy constructor for safety
 };/* -- End ---------------------------------------------------------------- */
-END_COLLECTOREX(Sources,,,,fGVolume(0), fMVolume(0), fVVolume(0), fSVolume(0));
+END_COLLECTOREX(Sources,,,,fGVolume(0), fMVolume(0), fVVolume(0), fSVolume(0))
 /* -- Stop (multiple buffers) ---------------------------------------------- */
 static unsigned int SourceStop(const ALUIntVector &uiBuffers)
 { // Done if no buffers

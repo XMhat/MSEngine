@@ -24,10 +24,14 @@ enum EvtWinCmd                         // Render thread event commands
   EWC_WIN_MOVE,                        // 04: Move window
   EWC_WIN_RESIZE,                      // 05: Resize window
   EWC_WIN_SETICON,                     // 06: Set window icon
+  /* -- Clipboard events --------------------------------------------------- */
+  EWC_CB_GET,                          // 07: Get clipboard (via Clip class)
+  EWC_CB_SET,                          // 08: Set clipboard (via Clip class)
+  EWC_CB_SETNR,                        // 09: " but no callback
   /* ----------------------------------------------------------------------- */
-  EWC_NOLOG,                           // 07: Events after this aren't logged
+  EWC_NOLOG,                           // 10: Events after this aren't logged
   /* ----------------------------------------------------------------------- */
-  EWC_MAX = EWC_NOLOG,                 // 08: Below are just codes
+  EWC_MAX = EWC_NOLOG,                 // 11: Below are just codes
 };/* ----------------------------------------------------------------------- */
 static class EvtWin final :            // Event list for window thread
   /* -- Dependencies ------------------------------------------------------- */
@@ -44,7 +48,7 @@ static class EvtWin final :            // Event list for window thread
     GlFWForceEventHack();
   }
   /* -- Destructor --------------------------------------------------------- */
-  DTORHELPER(~EvtWin);
+  DTORHELPER(~EvtWin)
   /* -- Constructor -------------------------------------------------------- */
   EvtWin(void) :
     /* -- Initialisers ----------------------------------------------------- */
@@ -52,7 +56,7 @@ static class EvtWin final :            // Event list for window thread
     /* -- No core ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(EvtWin);             // Delete copy constructor and operator
+  DELETECOPYCTORS(EvtWin)              // Delete copy constructor and operator
   /* -- End ---------------------------------------------------------------- */
 } *cEvtWin = nullptr;                  // Pointer to static class
 /* ------------------------------------------------------------------------- */

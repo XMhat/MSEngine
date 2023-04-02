@@ -15,10 +15,11 @@
 // ! This contains miscellenious utility functions such as string, number and
 // ! time manipulation functions.
 /* ========================================================================= */
-LLNAMESPACEBEGIN(Util)                 // Util namespace
+namespace NsUtil {                     // Util namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfClock;               // Using clock namespace
 using namespace IfGlFW;                // Using glfw namespace
+using namespace IfUrl;                 // Using url namespace
 using namespace IfUuId;                // Using uuid namespace
 /* ========================================================================= */
 /* ######################################################################### */
@@ -450,19 +451,6 @@ LLFUNCEX(ClampInt, 1, LCPUSHINT(Clamp(
   LCGETINT(lua_Integer, 1, "Value"), LCGETINT(lua_Integer, 2, "Minimum"),
   LCGETINT(lua_Integer, 3, "Maximum"))));
 /* ========================================================================= */
-// $ Util.ClipSet
-// > Text:string=The text to copy.
-// ? Stores the specified text into the operating system's clipboard.
-/* ------------------------------------------------------------------------- */
-LLFUNC(ClipSet, cGlFW->WinSetClipboard(LCGETSTRING(char, 1, "String")));
-/* ========================================================================= */
-// $ Util.ClipGet
-// < Text:string=The text in the clipboard.
-// ? Retrieves text from the operating systems clipboard. Returns a blank
-// ? Returns a blank string if there is no string in the clipboard.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(ClipGet, 1, LCPUSHSTR(cGlFW->WinGetClipboard()));
-/* ========================================================================= */
 // $ Util.Replace
 // > String:string=The string to search from
 // > Search:string=The string to find
@@ -714,75 +702,29 @@ LLFUNCEX(RoundPow2, 1,
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Util.* namespace functions begin
-  LLRSFUNC(AscTime),                   // Autoformat specified time
-  LLRSFUNC(AscTimeUTC),                // Autoformat specified time as UTC
-  LLRSFUNC(AscNTime),                  // Autoformat current time
-  LLRSFUNC(AscNTimeUTC),               // Autoformat Current time as UTC
-  LLRSFUNC(Bits),                      // Get readable bytes string
-  LLRSFUNC(Blank),                     // Just a blank function
-  LLRSFUNC(Bytes),                     // Get readable bytes string
-  LLRSFUNC(Capitalise),                // Capitalise the specified string
-  LLRSFUNC(Clamp),                     // Clamp a number
-  LLRSFUNC(ClampInt),                  // Clamp an integer
-  LLRSFUNC(ClipGet),                   // Get string from clipboard
-  LLRSFUNC(ClipSet),                   // Set string to clipboard
-  LLRSFUNC(CountOf),                   // Count occurences in string
-  LLRSFUNC(DecodeUUID),                // Decode two UUID ints to string
-  LLRSFUNC(Duration),                  // Make short duration string from float
-  LLRSFUNC(EncodeUUID),                // Encode UUID string to two UUID ints
-  LLRSFUNC(Explode),                   // Explode string to table
-  LLRSFUNC(ExplodeEx),                 // Explode string to table limited match
-  LLRSFUNC(FormatNumber),              // Format number to locale
-  LLRSFUNC(FormatNumberI),             // Format integer to locale
-  LLRSFUNC(FormatNTime),               // Format current time
-  LLRSFUNC(FormatNTimeUTC),            // Format Current time as UTC
-  LLRSFUNC(FormatTime),                // Format specified time
-  LLRSFUNC(FormatTimeUTC),             // Format specified time as UTC
-  LLRSFUNC(GetRatio),                  // Convert dimensions
-  LLRSFUNC(Grouped),                   // Get readable string
-  LLRSFUNC(Hex),                       // Convert integer to hexadecimal
-  LLRSFUNC(HighByte),                  // Return highest 8-bit of a 16-bit
-  LLRSFUNC(HighDWord),                 //   "           32-bit of a 64-bit
-  LLRSFUNC(HighWord),                  //   "           16-bit of a 32-bit
-  LLRSFUNC(IfBlank),                   // Return altstring if string empty
-  LLRSFUNC(IsASCII),                   // Return if all chars <= 0x7F
-  LLRSFUNC(IsExtASCII),                // Return if all chars <= 0xFF
-  LLRSFUNC(Implode),                   // Implode table to string
-  LLRSFUNC(ImplodeEx),                 // Advanced implode table to string
-  LLRSFUNC(LDuration),                 // Make long duration string (num | int)
-  LLRSFUNC(LDurationEx),               //   " with component limit (num | int)
-  LLRSFUNC(LowByte),                   // Return lowest 8-bit of a 16-bit
-  LLRSFUNC(LowDWord),                  // Return lowest 32-bit of a 64-bit
-  LLRSFUNC(LowWord),                   // Return lowest 16-bit of a 32-bit
-  LLRSFUNC(MakeWord),                  // Join two 8-bits to make a 16-bit
-  LLRSFUNC(MakeDWord),                 // Join two 16-bits to make a 32-bit
-  LLRSFUNC(MakeQWord),                 // Join two 32-bits to make a 64-bit
-  LLRSFUNC(ParseArgs),                 // Parse cmd str to table
-  LLRSFUNC(ParseTime),                 // Parse ISO8601 time string
-  LLRSFUNC(ParseTime2),                // Parse special time string
-  LLRSFUNC(ParseTimeEx),               // Parse custom time string
-  LLRSFUNC(ParseUrl),                  // Parse an url
-  LLRSFUNC(Pluralise),                 // Pluralise specified integer
-  LLRSFUNC(PluraliseEx),               //   " and format
-  LLRSFUNC(PlusOrMinus),               // Add + if number positive
-  LLRSFUNC(PlusOrMinusEx),             //   " and format
-  LLRSFUNC(Position),                  // Make position from int
-  LLRSFUNC(RandUUID),                  // Return random UUID
-  LLRSFUNC(RelTime),                   // Get relative time string
-  LLRSFUNC(RelTimeEx),                 //   " with component limit
-  LLRSFUNC(Replace),                   // Simple replace text
-  LLRSFUNC(ReplaceEx),                 // Advanced replace text
-  LLRSFUNC(Round),                     // Round up specified number
-  LLRSFUNC(RoundInt),                  // Round specified number to int
-  LLRSFUNC(RoundMul),                  // Round up to specified multiplier
-  LLRSFUNC(RoundPow2),                 // Round up to nearest power of two
-  LLRSFUNC(StretchInner),              // Stretch to inner bounds
-  LLRSFUNC(StretchOuter),              // Stretch to outer bounds
-  LLRSFUNC(TableSize),                 // Get size of a key/value table
-  LLRSFUNC(Trim),                      // Trim off characters at end
-  LLRSFUNC(UTF8Char),                  // Makes a UTF8 character from int
-  LLRSFUNC(WordWrap),                  // Word wrap a string
+  LLRSFUNC(AscNTime),      LLRSFUNC(AscNTimeUTC),   LLRSFUNC(AscTime),
+  LLRSFUNC(AscTimeUTC),    LLRSFUNC(Bits),          LLRSFUNC(Blank),
+  LLRSFUNC(Bytes),         LLRSFUNC(Capitalise),    LLRSFUNC(Clamp),
+  LLRSFUNC(ClampInt),      LLRSFUNC(CountOf),       LLRSFUNC(DecodeUUID),
+  LLRSFUNC(Duration),      LLRSFUNC(EncodeUUID),    LLRSFUNC(Explode),
+  LLRSFUNC(ExplodeEx),     LLRSFUNC(FormatNTime),   LLRSFUNC(FormatNTimeUTC),
+  LLRSFUNC(FormatNumber),  LLRSFUNC(FormatNumberI), LLRSFUNC(FormatTime),
+  LLRSFUNC(FormatTimeUTC), LLRSFUNC(GetRatio),      LLRSFUNC(Grouped),
+  LLRSFUNC(Hex),           LLRSFUNC(HighByte),      LLRSFUNC(HighDWord),
+  LLRSFUNC(HighWord),      LLRSFUNC(IfBlank),       LLRSFUNC(Implode),
+  LLRSFUNC(ImplodeEx),     LLRSFUNC(IsASCII),       LLRSFUNC(IsExtASCII),
+  LLRSFUNC(LDuration),     LLRSFUNC(LDurationEx),   LLRSFUNC(LowByte),
+  LLRSFUNC(LowDWord),      LLRSFUNC(LowWord),       LLRSFUNC(MakeDWord),
+  LLRSFUNC(MakeQWord),     LLRSFUNC(MakeWord),      LLRSFUNC(ParseArgs),
+  LLRSFUNC(ParseTime),     LLRSFUNC(ParseTime2),    LLRSFUNC(ParseTimeEx),
+  LLRSFUNC(ParseUrl),      LLRSFUNC(Pluralise),     LLRSFUNC(PluraliseEx),
+  LLRSFUNC(PlusOrMinus),   LLRSFUNC(PlusOrMinusEx), LLRSFUNC(Position),
+  LLRSFUNC(RandUUID),      LLRSFUNC(RelTime),       LLRSFUNC(RelTimeEx),
+  LLRSFUNC(Replace),       LLRSFUNC(ReplaceEx),     LLRSFUNC(Round),
+  LLRSFUNC(RoundInt),      LLRSFUNC(RoundMul),      LLRSFUNC(RoundPow2),
+  LLRSFUNC(StretchInner),  LLRSFUNC(StretchOuter),  LLRSFUNC(TableSize),
+  LLRSFUNC(Trim),          LLRSFUNC(UTF8Char),      LLRSFUNC(WordWrap),
 LLRSEND                                // Util.* namespace functions end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of Util namespace
+}                                      // End of Util namespace
 /* == EoF =========================================================== EoF == */

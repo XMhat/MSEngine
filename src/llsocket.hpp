@@ -17,7 +17,7 @@
 // ! support for HTTP connections, or you can write your own routines for that
 // ! or any other protocol in Lua!
 /* ========================================================================= */
-LLNAMESPACEBEGIN(Socket)               // Socket namespace
+namespace NsSocket {                   // Socket namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfSocket;              // Using socket namespace
 /* ========================================================================= */
@@ -263,38 +263,17 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Socket));
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Socket:* member functions begin
-  LLRSFUNC(Callback),                  // Set new callback function
-  LLRSFUNC(Destroy),                   // Destroy internal socket object
-  LLRSFUNC(Disconnect),                // Disconnect socket
-  LLRSFUNC(GetStatus),                 // Socket status
-  LLRSFUNC(GetId),                     // Socket ID
-  LLRSFUNC(GetIPAddress),              // Socket IP address
-  LLRSFUNC(GetIPAddressEx),            // Socket IP address and port
-  LLRSFUNC(GetAddress),                // Socket address
-  LLRSFUNC(GetAddressEx),              // Socket address and port
-  LLRSFUNC(GetCipher),                 // Socket cipher mode
-  LLRSFUNC(GetError),                  // Socket error status
-  LLRSFUNC(GetReason),                 // Socket error reason
-  LLRSFUNC(GetSecure),                 // Encryption enabled?
-  LLRSFUNC(GetRXBytes),                // Get bytes downloaded
-  LLRSFUNC(GetTXBytes),                // Get bytes uploaded
-  LLRSFUNC(GetRXPackets),              // Get packets downloaded
-  LLRSFUNC(GetTXPackets),              // Get packets uploaded
-  LLRSFUNC(CompactRecvQ),              // Compact recv queue
-  LLRSFUNC(CompactSendQ),              // Compact send queue
-  LLRSFUNC(RecvQCount),                // Socket recv queue count
-  LLRSFUNC(SendQCount),                // Socket send queue count
-  LLRSFUNC(PopRecvQ),                  // Get oldest stored packet
-  LLRSFUNC(PopSendQ),                  // Get oldest stored packet
-  LLRSFUNC(PopSendQT),                 //  " as key->value table
-  LLRSFUNC(Write),                     // Write specified array
-  LLRSFUNC(WriteString),               // Write specified string
-  LLRSFUNC(TConnect),                  // Time socket connecting
-  LLRSFUNC(TConnected),                // Time socket connected
-  LLRSFUNC(TRead),                     // Time socket read from
-  LLRSFUNC(TWrite),                    // Time socket written to
-  LLRSFUNC(TDisconnect),               // Time socket disconnecting
-  LLRSFUNC(TDisconnected),             // Time socket disconnected
+  LLRSFUNC(Callback),      LLRSFUNC(CompactRecvQ), LLRSFUNC(CompactSendQ),
+  LLRSFUNC(Destroy),       LLRSFUNC(Disconnect),   LLRSFUNC(GetAddress),
+  LLRSFUNC(GetAddressEx),  LLRSFUNC(GetCipher),    LLRSFUNC(GetError),
+  LLRSFUNC(GetId),         LLRSFUNC(GetIPAddress), LLRSFUNC(GetIPAddressEx),
+  LLRSFUNC(GetReason),     LLRSFUNC(GetRXBytes),   LLRSFUNC(GetRXPackets),
+  LLRSFUNC(GetSecure),     LLRSFUNC(GetStatus),    LLRSFUNC(GetTXBytes),
+  LLRSFUNC(GetTXPackets),  LLRSFUNC(PopRecvQ),     LLRSFUNC(PopSendQ),
+  LLRSFUNC(PopSendQT),     LLRSFUNC(RecvQCount),   LLRSFUNC(SendQCount),
+  LLRSFUNC(TConnect),      LLRSFUNC(TConnected),   LLRSFUNC(TDisconnect),
+  LLRSFUNC(TDisconnected), LLRSFUNC(TRead),        LLRSFUNC(TWrite),
+  LLRSFUNC(Write),         LLRSFUNC(WriteString),
 LLRSEND                                // Socket:* member functions end
 /* ========================================================================= */
 // $ Socket.ValidAddress
@@ -408,18 +387,10 @@ LLFUNCEX(OAuth11, 1, LCTOTABLE(SocketOAuth11(
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Socket.* namespace functions begin
-  LLRSFUNC(Create),                    // Connect tcp socket
-  LLRSFUNC(CreateHTTP),                // Connect HTTP socket
-  LLRSFUNC(Count),                     // Sockets created
-  LLRSFUNC(Connected),                 // Sockets connected
-  LLRSFUNC(Flush),                     // Flush all sockets
-  LLRSFUNC(OAuth11),                   // Build a OAuth11 request
-  LLRSFUNC(TotalRXBytes),              // Get total bytes downloaded
-  LLRSFUNC(TotalTXBytes),              // Get total bytes uploaded
-  LLRSFUNC(TotalRXPackets),            // Get total packets downloaded
-  LLRSFUNC(TotalTXPackets),            // Get total packets uploaded
-  LLRSFUNC(WaitAsync),                 // Flush all sockets and wait
-  LLRSFUNC(ValidAddress),              // Check if address valid
+  LLRSFUNC(Create),         LLRSFUNC(CreateHTTP),   LLRSFUNC(Count),
+  LLRSFUNC(Connected),      LLRSFUNC(Flush),        LLRSFUNC(OAuth11),
+  LLRSFUNC(TotalRXBytes),   LLRSFUNC(TotalTXBytes), LLRSFUNC(TotalRXPackets),
+  LLRSFUNC(TotalTXPackets), LLRSFUNC(WaitAsync),    LLRSFUNC(ValidAddress),
 LLRSEND                                // Socket.* namespace functions end
 /* ========================================================================= */
 /* ######################################################################### */
@@ -444,5 +415,5 @@ LLRSCONSTBEGIN                         // Socket.* namespace consts begin
 LLRSCONST(Flags),                      // Socket status flags
 LLRSCONSTEND                           // Socket.* namespace consts end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of Socket namespace
+}                                      // End of Socket namespace
 /* == EoF =========================================================== EoF == */

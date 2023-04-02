@@ -7,7 +7,7 @@
 /* ######################################################################### */
 /* ## UNIX PATH LAYOUT                                                    ## */
 /* ######################################################################### */
-/* ## Path      ## MAX_PATH   #### \Directory\SubDirectory\File.Extension ## */
+/* ## Path      ## MAX_PATH   #### /Directory/SubDirectory/File.Extension ## */
 /* ## Directory ## MAX_DIR    #### ^^^^^^^^^^^^^^^^^^^^^^^^-------------- ## */
 /* ## FileMap   ## MAX_FNAME  #### ------------------------^^^^---------- ## */
 /* ## Extension ## MAX_EXT    #### ----------------------------^^^^^^^^^^ ## */
@@ -49,30 +49,30 @@ class FileParts                        // Contains parts of a filename
   /* -- Initialise constructor --------------------------------------------- */
   FileParts(string &&strDriveNew, string &&strDirNew, string &&strFileNew,
     string &&strExtNew, string &&strFullNew) :
-    /* -- Initialisation of members ---------------------------------------- */
-    strDrive{ std::move(strDriveNew) },
-    strDir{ std::move(strDirNew) },
-    strFile{ std::move(strFileNew) },
+    /* -- Initialisers ----------------------------------------------------- */
+    strDrive{ StdMove(strDriveNew) },
+    strDir{ StdMove(strDirNew) },
+    strFile{ StdMove(strFileNew) },
     strExt{ strExtNew },
     strFileExt{ strFile+strExt },
-    strFull{ std::move(strFullNew) },
+    strFull{ StdMove(strFullNew) },
     strLoc{ strDrive+strDir }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- MOVE assign constructor on class creation -------------------------- */
   FileParts(FileParts &&pspOther) :
-    /* -- Initialisation of members ---------------------------------------- */
-    strDrive{ std::move(pspOther.strDrive) },
-    strDir{ std::move(pspOther.strDir) },
-    strFile{ std::move(pspOther.strFile) },
-    strExt{ std::move(pspOther.strExt) },
-    strFileExt{ std::move(pspOther.strFileExt) },
-    strFull{ std::move(pspOther.strFull) },
-    strLoc{ std::move(pspOther.strLoc) }
+    /* -- Initialisers ----------------------------------------------------- */
+    strDrive{ StdMove(pspOther.strDrive) },
+    strDir{ StdMove(pspOther.strDir) },
+    strFile{ StdMove(pspOther.strFile) },
+    strExt{ StdMove(pspOther.strExt) },
+    strFileExt{ StdMove(pspOther.strFileExt) },
+    strFull{ StdMove(pspOther.strFull) },
+    strLoc{ StdMove(pspOther.strLoc) }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(FileParts);          // Disable copy constructor and operator
+  DELETECOPYCTORS(FileParts)           // Disable copy constructor and operator
 };/* -- PathSplit class ---------------------------------------------------- */
 class PathSplit :
   /* -- Base classes ------------------------------------------------------- */
@@ -91,7 +91,7 @@ class PathSplit :
     // Build full path name and use requested pathname if not wanted or failed?
     if(!bUseFullPath || !_wfullpath(const_cast<wchar_t*>(wstrFull.data()),
       wstrSrc.c_str(), wstrFull.length()))
-        wstrFull = std::move(wstrSrc);
+        wstrFull = StdMove(wstrSrc);
     // Split the executable path name into bits and if failed?
     _wsplitpath_s(const_cast<wchar_t*>(wstrFull.data()),
                   const_cast<wchar_t*>(wstrDrive.data()), wstrDrive.length(),
@@ -164,24 +164,24 @@ class PathSplit :
     strFile.shrink_to_fit();
     strExt.shrink_to_fit();
     // Return parts. There is no drive on unix systems
-    return { {},           std::move(strDir), std::move(strFile),
-             std::move(strExt), std::move(strFull) };
+    return { {},           StdMove(strDir), StdMove(strFile),
+             StdMove(strExt), StdMove(strFull) };
 #endif
   }
   /* -- Constructors with initialisation --------------------------- */ public:
   explicit PathSplit(const string &strSrc, const bool bUseFullPath=false) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     FileParts{ Init(strSrc, bUseFullPath) }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- MOVE assign constructor on class creation -------------------------- */
   PathSplit(PathSplit &&psOther) :
-    /* -- Initialisation of members ---------------------------------------- */
-    FileParts{ std::move(psOther) }
+    /* -- Initialisers ----------------------------------------------------- */
+    FileParts{ StdMove(psOther) }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(PathSplit);          // Disable copy constructor and operator
+  DELETECOPYCTORS(PathSplit)           // Disable copy constructor and operator
 };/* -- End of module namespace -------------------------------------------- */
 };                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

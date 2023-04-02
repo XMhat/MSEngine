@@ -48,15 +48,16 @@ local function InitBook(bFromInGame)
   local function OnLoadResources(aResources)
     -- Set texture and setup tiles
     local texBook, BookInput = aResources[1].H, nil;
-    texBook:TileA(0, 0, 304, 200);
-    texBook:TileA(457, 0, 512, 200);
+    texBook:TileSTC(0);
+    texBook:TileA(  0, 0, 304, 200); -- Cover
+    texBook:TileA(305, 0, 360, 200); -- Spine
     -- Get lobby texture and setup background tile. This will be nil if loading
     -- from in-game so it doesn't matter. Already handled.
     local texLobby;
     if not bFromInGame then
       texLobby = aResources[2].H;
       texLobby:TileSTC(1);
-      texLobby:TileS(0, 0, 272, 512, 512);
+      texLobby:TileS(0, 0, 272, 428, 512);
     -- Play music as we're coming from in game and save position
     else PlayMusic(aResources[2].H, nil, 1) end;
     -- Some vars
@@ -73,7 +74,7 @@ local function InitBook(bFromInGame)
         SetBottomRightTip(strTip);
       else
         -- Render static background
-        texLobby:BlitLT(-96, 0);
+        texLobby:BlitLT(-54, 0);
         -- Draw tip and return
         SetBottomRightTipAndShadow(strTip);
       end
@@ -85,7 +86,7 @@ local function InitBook(bFromInGame)
       -- Render book background
       RenderBookBackground();
       -- Draw spine
-      texBook:BlitSLT(2, 8, 8);
+      texBook:BlitSLT(1, 8, 8);
       -- Draw backdrop
       texPage:BlitSLT(iTilePage, 57, 8);
     end
@@ -230,7 +231,7 @@ local function InitBook(bFromInGame)
           -- Render background
           RenderBookBackground();
           -- Draw backdrop
-          texBook:BlitSLT(1, 8, 8, 0);
+          texBook:BlitLT(8, 8);
         end
         -- On input callback
         local function OnIntroInput()

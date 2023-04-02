@@ -16,9 +16,11 @@
 // ! object which they can use to create seperate drawing canvases which they
 // ! can apply special effects to without modifying other canvases.
 /* ========================================================================= */
-LLNAMESPACEBEGIN(Fbo)                  // Fbo namespace
+namespace NsFbo {                      // Fbo namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfFboMain;             // Using fbomain namespace
+using namespace IfSShot;               // Using screenshot namespace
+using namespace IfConsole;             // Using console namespace
 /* ========================================================================= */
 /* ######################################################################### */
 /* ========================================================================= */
@@ -48,8 +50,8 @@ LLFUNC(SetBlend, LCGETPTR(1, Fbo)->SetBlend(
 // ? Allows you to full control over the fbo vertex co-ordinates apart from
 // ? the Z co-ordinate which is not used in this 2D only engine.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetVertexEx, LCGETPTR(1, Fbo)->
-  SetVertexEx(LCGETINTLGE(size_t, 2, 0, TRISPERQUAD, "TriIndex"), {
+LLFUNC(SetVertexEx, LCGETULPTR(1, Fbo)->
+  SetVertexEx(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex"), {
     LCGETNUM(GLfloat, 3, "C1V1"), LCGETNUM(GLfloat, 4, "C2V1"),
     LCGETNUM(GLfloat, 5, "C1V2"), LCGETNUM(GLfloat, 6, "C2V2"),
     LCGETNUM(GLfloat, 7, "C1V3"), LCGETNUM(GLfloat, 8, "C2V3") }));
@@ -64,8 +66,8 @@ LLFUNC(SetVertexEx, LCGETPTR(1, Fbo)->
 // > C2V3:number=GLfloat for coord #2 of vertex #3 of the specified triangle.
 // ? Allows you to full control over the fbo texture co-ordinates.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetTexCoordEx, LCGETPTR(1, Fbo)->
-  SetTexCoordEx(LCGETINTLGE(size_t, 2, 0, TRISPERQUAD, "TriIndex"), {
+LLFUNC(SetTexCoordEx, LCGETULPTR(1, Fbo)->
+  SetTexCoordEx(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex"), {
     LCGETNUM(GLfloat, 3, "C1V1"), LCGETNUM(GLfloat, 4, "C2V1"),
     LCGETNUM(GLfloat, 5, "C1V2"), LCGETNUM(GLfloat, 6, "C2V2"),
     LCGETNUM(GLfloat, 7, "C1V3"), LCGETNUM(GLfloat, 8, "C2V3") }));
@@ -87,7 +89,7 @@ LLFUNC(SetTexCoordEx, LCGETPTR(1, Fbo)->
 // ? Allows you to full control over the colour of the fbo texture colour.
 /* ------------------------------------------------------------------------- */
 LLFUNC(SetColourEx, LCGETPTR(1, Fbo)->
-  SetColourEx(LCGETINTLGE(size_t, 2, 0, TRISPERQUAD, "TriIndex"), {
+  SetColourEx(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex"), {
     LCGETNUM(GLfloat,  3, "RV1"), LCGETNUM(GLfloat,  4, "GV1"),
     LCGETNUM(GLfloat,  5, "BV1"), LCGETNUM(GLfloat,  6, "AV1"),
     LCGETNUM(GLfloat,  7, "RV2"), LCGETNUM(GLfloat,  8, "GV2"),
@@ -103,7 +105,7 @@ LLFUNC(SetColourEx, LCGETPTR(1, Fbo)->
 // ? Allows you to set basic vertex co-ordinates when blitting the fbo. For
 // ? a more advanced version of this function, see Fbo:SetVertexEx().
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetVertex, LCGETPTR(1, Fbo)->SetVertex(
+LLFUNC(SetVertex, LCGETULPTR(1, Fbo)->SetVertex(
   LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom")));
 /* ========================================================================= */
@@ -116,7 +118,7 @@ LLFUNC(SetVertex, LCGETPTR(1, Fbo)->SetVertex(
 // ? Allows you to set basic vertex co-ordinates when blitting the fbo with
 // ? angle calculations.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetVertexA, LCGETPTR(1, Fbo)->SetVertex(
+LLFUNC(SetVertexA, LCGETULPTR(1, Fbo)->SetVertex(
   LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom"),
   LCGETNUM(GLfloat, 6, "Angle")));
@@ -130,7 +132,7 @@ LLFUNC(SetVertexA, LCGETPTR(1, Fbo)->SetVertex(
 // ? where you can draw. Same as glOrtho().
 // ? See: https://www.opengl.org/sdk/docs/man2/xhtml/glOrtho.xml
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetOrtho, LCGETPTR(1, Fbo)->SetOrtho(
+LLFUNC(SetOrtho, LCGETULPTR(1, Fbo)->SetOrtho(
   LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom")));
 /* ========================================================================= */
@@ -142,7 +144,7 @@ LLFUNC(SetOrtho, LCGETPTR(1, Fbo)->SetOrtho(
 // ? Allows you to set basic texture co-ordinates when blitting the fbo. For
 // ? a more advanced version of this function, see Fbo:SetTexCoordEx().
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetTexCoord, LCGETPTR(1, Fbo)->SetTexCoord(
+LLFUNC(SetTexCoord, LCGETULPTR(1, Fbo)->SetTexCoord(
   LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom")));
 /* ========================================================================= */
@@ -216,7 +218,7 @@ LLFUNC(Blit, FboActive()->Blit(*LCGETPTR(1, Fbo)));
 // ? currently stored vertex, texcoord, colour and ortho values are used.
 /* ------------------------------------------------------------------------- */
 LLFUNC(BlitT, FboActive()->BlitTri(*LCGETPTR(1, Fbo),
-  LCGETINTLGE(size_t, 2, 0, TRISPERQUAD, "TriIndex")));
+  LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex")));
 /* ========================================================================= */
 // $ Fbo:GetLastFloatCount
 // < Count:integer=Number of floats in display lists.
@@ -260,7 +262,7 @@ LLFUNCENDEX(6)
 // ? 'file' parameter to use an engine generated file.
 /* ------------------------------------------------------------------------- */
 LLFUNC(Dump, cSShot->DumpFBO(*LCGETPTR(1, Fbo),
-  GetStackCount(lS) < 2 ? strBlank : LCGETCPPFILE(2, "File")));
+  GetStackCount(lS) < 2 ? cCommon->Blank() : LCGETCPPFILE(2, "File")));
 /* ========================================================================= */
 // $ Fbo:Reserve
 // > Vertexes:integer=How many 64-bit floats to reserve in GPU float list
@@ -286,28 +288,14 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Fbo));
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Fbo:* member functions begin
-  LLRSFUNC(Activate),                  // Make specified fbo active
-  LLRSFUNC(Blit),                      // Render fbo to active fbo
-  LLRSFUNC(BlitT),                     // Blit only the specified triangle
-  LLRSFUNC(Destroy),                   // Destroy the internal object
-  LLRSFUNC(Dump),                      // Dump screenshot of fbo
-  LLRSFUNC(Finish),                    // Finish rendering FBO
-  LLRSFUNC(GetFloatCount),             // Get current items in queue
-  LLRSFUNC(GetLFloatCount),            // Get last items in queue
-  LLRSFUNC(GetMatrix),                 // Get matrix values
-  LLRSFUNC(Reserve),                   // Reserve memory for float lists
-  LLRSFUNC(SetBlend),                  // Set fbo blend mode
-  LLRSFUNC(SetClear),                  // Set if fbo should clear
-  LLRSFUNC(SetClearColour),            // Set fbo clear colour
-  LLRSFUNC(SetColour),                 // Set fbo colours
-  LLRSFUNC(SetColourEx),               //   " full control
-  LLRSFUNC(SetFilter),                 // Set fbo filtering
-  LLRSFUNC(SetOrtho),                  // Set ortho matrix
-  LLRSFUNC(SetTexCoord),               // Set fbo tex coordinates
-  LLRSFUNC(SetTexCoordEx),             //     " raw co-ordinates
-  LLRSFUNC(SetVertex),                 // Set fbo vertex coordinates
-  LLRSFUNC(SetVertexA),                //     " with Angle
-  LLRSFUNC(SetVertexEx),               //     " raw co-ordinates
+  LLRSFUNC(Activate),       LLRSFUNC(Blit),           LLRSFUNC(BlitT),
+  LLRSFUNC(Destroy),        LLRSFUNC(Dump),           LLRSFUNC(Finish),
+  LLRSFUNC(GetFloatCount),  LLRSFUNC(GetLFloatCount), LLRSFUNC(GetMatrix),
+  LLRSFUNC(Reserve),        LLRSFUNC(SetBlend),       LLRSFUNC(SetClear),
+  LLRSFUNC(SetClearColour), LLRSFUNC(SetColour),      LLRSFUNC(SetColourEx),
+  LLRSFUNC(SetFilter),      LLRSFUNC(SetOrtho),       LLRSFUNC(SetTexCoord),
+  LLRSFUNC(SetTexCoordEx),  LLRSFUNC(SetVertex),      LLRSFUNC(SetVertexA),
+  LLRSFUNC(SetVertexEx),
 LLRSEND                                // Fbo:* member functions end
 /* ========================================================================= */
 // $ Fbo.Main
@@ -402,16 +390,10 @@ LLFUNC(Viewport, cFboMain->SetViewport(
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Fbo.* namespace functions begin
-  LLRSFUNC(ConEnabled),                // Is console enabled?
-  LLRSFUNC(ConHeight),                 // Set console height
-  LLRSFUNC(ConLock),                   // Lock console visibility
-  LLRSFUNC(ConSet),                    // Set console state
-  LLRSFUNC(Create),                    // Create an fbo for drawing on
-  LLRSFUNC(Draw),                      // Can redraw main fbo (manual mode)
-  LLRSFUNC(IsDrawing),                 // Is redraw set on the main fbo?
-  LLRSFUNC(Main),                      // Return handle to screen fbo
-  LLRSFUNC(OnRedraw),                  // Set redraw request callback
-  LLRSFUNC(Viewport),                  // Set backbuffer viewport
+  LLRSFUNC(ConEnabled), LLRSFUNC(ConHeight), LLRSFUNC(ConLock),
+  LLRSFUNC(ConSet),     LLRSFUNC(Create),    LLRSFUNC(Draw),
+  LLRSFUNC(IsDrawing),  LLRSFUNC(Main),      LLRSFUNC(OnRedraw),
+  LLRSFUNC(Viewport),
 LLRSEND                                // Fbo.* namespace functions end
 /* ========================================================================= */
 /* ######################################################################### */
@@ -447,13 +429,13 @@ LLRSEND                                // Fbo.* namespace functions end
 // ? for more information about the formulas.
 /* ------------------------------------------------------------------------- */
 LLRSKTBEGIN(Blends)                    // Beginning of blending types
-LLRSKTITEM(OB_,Z),                     LLRSKTITEM(OB_,O),
-LLRSKTITEM(OB_,S_C),                   LLRSKTITEM(OB_,O_M_S_C),
-LLRSKTITEM(OB_,D_C),                   LLRSKTITEM(OB_,O_M_D_C),
-LLRSKTITEM(OB_,S_A),                   LLRSKTITEM(OB_,O_M_S_A),
-LLRSKTITEM(OB_,D_A),                   LLRSKTITEM(OB_,O_M_D_A),
-LLRSKTITEM(OB_,C_C),                   LLRSKTITEM(OB_,C_A),
-LLRSKTITEM(OB_,S_A_S),
+  LLRSKTITEM(OB_,Z),                   LLRSKTITEM(OB_,O),
+  LLRSKTITEM(OB_,S_C),                 LLRSKTITEM(OB_,O_M_S_C),
+  LLRSKTITEM(OB_,D_C),                 LLRSKTITEM(OB_,O_M_D_C),
+  LLRSKTITEM(OB_,S_A),                 LLRSKTITEM(OB_,O_M_S_A),
+  LLRSKTITEM(OB_,D_A),                 LLRSKTITEM(OB_,O_M_D_A),
+  LLRSKTITEM(OB_,C_C),                 LLRSKTITEM(OB_,C_A),
+  LLRSKTITEM(OB_,S_A_S),
 LLRSKTEND                              // End of blending types
 /* ======================================================================= */
 // @ Fbo.Filters
@@ -504,18 +486,17 @@ LLRSKTEND                              // End of blending types
 // ? weighted average of those two values.
 /* ------------------------------------------------------------------------- */
 LLRSKTBEGIN(Filters)                   // Beginning of filter types
-LLRSKTITEM(OF_,N_N),                   LLRSKTITEM(OF_,N_L),
-LLRSKTITEM(OF_,L_N),                   LLRSKTITEM(OF_,L_L),
-LLRSKTITEM(OF_,N_N_MM_N),              LLRSKTITEM(OF_,L_N_MM_N),
-LLRSKTITEM(OF_,N_N_MM_L),              LLRSKTITEM(OF_,L_N_MM_L),
-LLRSKTITEM(OF_,N_L_MM_N),              LLRSKTITEM(OF_,L_L_MM_N),
-LLRSKTITEM(OF_,N_L_MM_L),              LLRSKTITEM(OF_,L_L_MM_L),
+  LLRSKTITEM(OF_,N_N),                 LLRSKTITEM(OF_,N_L),
+  LLRSKTITEM(OF_,L_N),                 LLRSKTITEM(OF_,L_L),
+  LLRSKTITEM(OF_,N_N_MM_N),            LLRSKTITEM(OF_,L_N_MM_N),
+  LLRSKTITEM(OF_,N_N_MM_L),            LLRSKTITEM(OF_,L_N_MM_L),
+  LLRSKTITEM(OF_,N_L_MM_N),            LLRSKTITEM(OF_,L_L_MM_N),
+  LLRSKTITEM(OF_,N_L_MM_L),            LLRSKTITEM(OF_,L_L_MM_L),
 LLRSKTEND                              // End of filter types
 /* ========================================================================= */
 LLRSCONSTBEGIN                         // Fbo.* namespace consts begin
-LLRSCONST(Blends),                     // Blending types
-LLRSCONST(Filters),                    // Filter types
+  LLRSCONST(Blends), LLRSCONST(Filters),
 LLRSCONSTEND                           // Fbo.* namespace consts end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of Fbo namespace
+}                                      // End of Fbo namespace
 /* == EoF =========================================================== EoF == */

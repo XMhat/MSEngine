@@ -14,7 +14,7 @@
 /* ------------------------------------------------------------------------- */
 // ! This allows the programmer to encode and decode Json objects.
 /* ========================================================================= */
-LLNAMESPACEBEGIN(Json)                 // Json namespace
+namespace NsJson {                     // Json namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfJson;                // Using json namespace
 /* ========================================================================= */
@@ -75,13 +75,9 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Json));
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Json:* member functions begin
-  LLRSFUNC(Destroy),                   // Destroy the internal object
-  LLRSFUNC(Name),                      // Name of the json object
-  LLRSFUNC(ToTable),                   // Convert entire scope to lua table
-  LLRSFUNC(ToString),                  // Convert entire scope to string
-  LLRSFUNC(ToHRString),                //   "  human readable output
-  LLRSFUNC(ToFile),                    // Write entire scope to file
-  LLRSFUNC(ToHRFile),                  //   "  human readable output
+  LLRSFUNC(Destroy),  LLRSFUNC(Name),       LLRSFUNC(ToTable),
+  LLRSFUNC(ToString), LLRSFUNC(ToHRString), LLRSFUNC(ToFile),
+  LLRSFUNC(ToHRFile),
 LLRSEND                                // Json:* member functions end
 /* ========================================================================= */
 // $ Json.File
@@ -134,13 +130,9 @@ LLFUNC(WaitAsync, cJsons->WaitAsync());
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Json.* namespace functions begin
-  LLRSFUNC(File),                      // Decode json from file
-  LLRSFUNC(FileAsync),                 //   " asynchronously
-  LLRSFUNC(String),                    // Decode json from string
-  LLRSFUNC(StringAsync),               //   " asynchronously
-  LLRSFUNC(Table),                     // Create class from LUA table
-  LLRSFUNC(WaitAsync),                 // Wait for async events to complete
+  LLRSFUNC(File),        LLRSFUNC(FileAsync), LLRSFUNC(String),
+  LLRSFUNC(StringAsync), LLRSFUNC(Table),     LLRSFUNC(WaitAsync),
 LLRSEND                                // Json.* namespace functions end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of Json namespace
+}                                      // End of Json namespace
 /* == EoF =========================================================== EoF == */

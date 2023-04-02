@@ -248,7 +248,7 @@ template<class StrokerFuncType>
       const GLuint uiWidth = bData.width + uiPadding,
                    uiHeight = bData.rows + uiPadding;
       // Get image slot and data we're writing to
-      ImageSlot &isRef = front();
+      ImageSlot &isRef = GetSlots().front();
       // Get texcoord data
       CoordData &cdRef = clTiles[0][stPos];
       // Put this glyph in the bin packer and if succeeded
@@ -327,7 +327,7 @@ template<class StrokerFuncType>
             stBWidthx2);
         } // This is the new image and the old one will be destroyed
         const size_t stOldAlloc = isRef.Size();
-        isRef.SwapMemory(std::move(mDst));
+        isRef.SwapMemory(StdMove(mDst));
         mDst.DeInit();
         AdjustAlloc(stOldAlloc, isRef.Size());
         // Calculate how much the image increased. This should really be 2
@@ -343,10 +343,10 @@ template<class StrokerFuncType>
         // Now we need to walk through the char datas and reduce the values
         // by the enlargement factor. A very simple and effective solution.
         // Note that using transform is ~100% slower than this.
-        MYFOREACH(par_unseq, clTiles[0].begin(), clTiles[0].end(),
+        StdForEach(par_unseq, clTiles[0].begin(), clTiles[0].end(),
           [uiDivisor](CoordData &tcI)
-            { for(size_t stTriId = 0; stTriId < TRISPERQUAD; ++stTriId)
-                for(size_t stFltId = 0; stFltId < FLOATSPERCOORD; ++stFltId)
+            { for(size_t stTriId = 0; stTriId < stTrisPerQuad; ++stTriId)
+                for(size_t stFltId = 0; stFltId < stFloatsPerCoord; ++stFltId)
                   tcI[stTriId][stFltId] /= uiDivisor; });
         // Copy the glyph to texture atlast
         GlyphToTexture(iprNew, bData, cdRef, isRef);

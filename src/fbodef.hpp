@@ -13,27 +13,29 @@ using namespace Library::GlFW;         // Using GLFW library functions
 using namespace IfDim;                 // Using dimensions namespace
 using namespace IfUtil;                // Using utility namespace
 /* -- Defines -------------------------------------------------------------- */
-#define VERTEXPERTRIANGLE            3 // Vertices used in a triangle (3 ofc!)
-#define TWOTRIANGLES                   (VERTEXPERTRIANGLE * 2)
-#define TRISPERQUAD                  2 // Triangles needed to make a quad
-/* -- Defines for triangle texture co-ordinates data ----------------------- */
-#define COMPSPERCOORD                2 // Floats used to define texcoord (XY)
-#define FLOATSPERCOORD                 (VERTEXPERTRIANGLE * COMPSPERCOORD)
-/* -- Defines for triangle position co-ordinates data----------------------- */
-#define COMPSPERPOS                  2 // Floats used to define position (XY)
-#define FLOATSPERPOS                   (VERTEXPERTRIANGLE * COMPSPERPOS)
-/* -- Defines for colour intensity data ------------------------------------ */
-#define COMPSPERCOLOUR               4 // Floats used to define colour (RGBA)
-#define FLOATSPERCOLOUR                (VERTEXPERTRIANGLE * COMPSPERCOLOUR)
-/* -- Totals --------------------------------------------------------------- */
-#define FLOATSPERTRI        (FLOATSPERCOORD + FLOATSPERPOS + FLOATSPERCOLOUR)
-#define FLOATSPERQUAD                  (FLOATSPERTRI * TRISPERQUAD)
-/* -- OpenGL buffer structure ---------------------------------------------- */
-#define FLOATSPERVERTEX (COMPSPERCOORD + COMPSPERPOS + COMPSPERCOLOUR)
-#define BYTESPERVERTEX  (sizeof(GLfloat) * FLOATSPERVERTEX)
-#define OFFSETTXCDATA   0
-#define OFFSETPOSDATA   (sizeof(GLfloat) * COMPSPERCOORD)
-#define OFFSETCOLDATA   (sizeof(GLfloat) * (COMPSPERCOORD + COMPSPERPOS))
+constexpr static const size_t
+  /* -- Defines to describe a simple triangle  ----------------------------- */
+  stVertexPerTriangle = 3,             // Vertices used in a triangle (3 ofc!)
+  stTwoTriangles      = (stVertexPerTriangle * 2),
+  stTrisPerQuad       = 2,             // Triangles needed to make a quad
+  /* -- Defines for triangle texture co-ordinates data --------------------- */
+  stCompsPerCoord  = 2,                // Floats used to define texcoord (XY)
+  stFloatsPerCoord = (stVertexPerTriangle * stCompsPerCoord),
+  /* -- Defines for triangle position co-ordinates data--------------------- */
+  stCompsPerPos  = 2,                  // Floats used to define position (XY)
+  stFloatsPerPos = (stVertexPerTriangle * stCompsPerPos),
+  /* -- Defines for colour intensity data ---------------------------------- */
+  stCompsPerColour  = 4,               // Floats used to define colour (RGBA)
+  stFloatsPerColour = (stVertexPerTriangle * stCompsPerColour),
+  /* -- Totals ------------------------------------------------------------- */
+  stFloatsPerTri  = (stFloatsPerCoord + stFloatsPerPos + stFloatsPerColour),
+  stFloatsPerQuad = (stFloatsPerTri * stTrisPerQuad),
+  /* -- OpenGL buffer structure -------------------------------------------- */
+  stFloatsPerVertex = (stCompsPerCoord + stCompsPerPos + stCompsPerColour),
+  stBytesPerVertex  = (sizeof(GLfloat) * stFloatsPerVertex),
+  stOffsetTxcData   = 0,
+  stOffsetPosData   = (sizeof(GLfloat) * stCompsPerCoord),
+  stOffsetColData   = (sizeof(GLfloat) * (stCompsPerCoord + stCompsPerPos));
 /* -- Render command item -------------------------------------------------- */
 struct FboCmd                          // Render command structure
 { /* ----------------------------------------------------------------------- */
@@ -48,9 +50,9 @@ struct FboCmd                          // Render command structure
 typedef vector<FboCmd>             FboCmdList;   // Render command list
 typedef FboCmdList::const_iterator FboCmdListIt; // " iterator
 /* -- Single point data ---------------------------------------------------- */
-typedef array<GLfloat,COMPSPERCOORD>  TriCoord;  // Coord data in triangle
-typedef array<GLfloat,COMPSPERPOS>    TriVertex; // Position in triangle
-typedef array<GLfloat,COMPSPERCOLOUR> TriColour; // Colour in triangle
+typedef array<GLfloat,stCompsPerCoord>  TriCoord;  // Coord data in triangle
+typedef array<GLfloat,stCompsPerPos>    TriVertex; // Position in triangle
+typedef array<GLfloat,stCompsPerColour> TriColour; // Colour in triangle
 /* -- One triangle data ---------------------------------------------------- */
 struct FboVert                         // Formatted data for OpenGL
 { /* ----------------------------------------------------------------------- */
@@ -70,22 +72,22 @@ struct FboVert                         // Formatted data for OpenGL
 /* +-- Single interlaced triangle --+- T(Vec2)=Texcoord(XY) -+-----+-----+-- */
 /* + TTVVCCCC | TTVVCCCC | TTVVCCCC |  V(Vec2)=Vertex(XY)    | ... | ... |   */
 /* +----------+----------+----------+- C(Vec4)=Colour(RGBA) -+-----+-----+-- */
-typedef array<FboVert,VERTEXPERTRIANGLE> FboTri;     // All triangles data
+typedef array<FboVert,stVertexPerTriangle> FboTri;     // All triangles data
 typedef vector<FboTri>                   FboTriList; // Render triangles list
-typedef array<GLfloat,4>                 FboRGBA;    // Red+Green+Blue+Alpha
 /* == Fbo colour class ===================================================== */
-class FboColour :                      // Members initially private
+class FboColour                        // Members initially private
+{ /* -- Private typedefs --------------------------------------------------- */
+  typedef array<GLfloat,4> FboRGBA;    // Array of RGBA floats
+  FboRGBA           fboRGBA;           // Red + Green + Blue + Alpha values
   /* ----------------------------------------------------------------------- */
-  private FboRGBA                      // Red + Green + Blue + Alpha values
-{ /* ----------------------------------------------------------------------- */
-  const FboRGBA &GetColourConst(void) const { return *this; }
-  FboRGBA &GetColour(void) { return *this; }
+  const FboRGBA &GetColourConst(void) const { return fboRGBA; }
+  FboRGBA &GetColour(void) { return fboRGBA; }
   /* --------------------------------------------------------------- */ public:
   GLfloat GetColourRed(void) const { return GetColourConst()[0]; }
   GLfloat GetColourGreen(void) const { return GetColourConst()[1]; }
   GLfloat GetColourBlue(void) const { return GetColourConst()[2]; }
   GLfloat GetColourAlpha(void) const { return GetColourConst()[3]; }
-  GLfloat *GetColourMemory(void) { return data(); }
+  GLfloat *GetColourMemory(void) { return GetColour().data(); }
   /* ----------------------------------------------------------------------- */
   void SetColourRed(const GLfloat fR) { GetColour()[0] = fR; }
   void SetColourGreen(const GLfloat fG) { GetColour()[1] = fG; }
@@ -118,7 +120,7 @@ class FboColour :                      // Members initially private
   void SetColourAlpha(const FboColour &cO)
     { SetColourAlpha(cO.GetColourAlpha()); }
   /* ----------------------------------------------------------------------- */
-  void ResetColour(void) { fill(-1.0f); }
+  void ResetColour(void) { GetColour().fill(-1.0f); }
   /* ----------------------------------------------------------------------- */
   bool RedColourNotEqual(const FboColour &cO) const
     { return IsFloatNotEqual(GetColourRed(), cO.GetColourRed()); }
@@ -167,8 +169,8 @@ class FboColour :                      // Members initially private
   /* -- Init constructor with RGBA ints ------------------------------------ */
   FboColour(const unsigned int uiR, const unsigned int uiG,
             const unsigned int uiB, const unsigned int uiA) :
-    /* -- Initialisation of members ---------------------------------------- */
-    FboRGBA{NormaliseEx<GLfloat>(uiR), // Copy and normalise red component
+    /* -- Initialisers ----------------------------------------------------- */
+    fboRGBA{NormaliseEx<GLfloat>(uiR), // Copy and normalise red component
             NormaliseEx<GLfloat>(uiG), // Copy and normalise green component
             NormaliseEx<GLfloat>(uiB), // Copy and normalise blue component
             NormaliseEx<GLfloat>(uiA)} // Copy and normalise alpha component
@@ -177,8 +179,8 @@ class FboColour :                      // Members initially private
   /* -- Init constructor with RGB ints ------------------------------------- */
   FboColour(const unsigned int uiR, const unsigned int uiG,
             const unsigned int uiB) :
-    /* -- Initialisation of members ---------------------------------------- */
-    FboRGBA{NormaliseEx<GLfloat>(uiR), // Copy and normalise red component
+    /* -- Initialisers ----------------------------------------------------- */
+    fboRGBA{NormaliseEx<GLfloat>(uiR), // Copy and normalise red component
             NormaliseEx<GLfloat>(uiG), // Copy and normalise green component
             NormaliseEx<GLfloat>(uiB), // Copy and normalise blue component
             1.0f }                     // Opaque alpha
@@ -187,8 +189,8 @@ class FboColour :                      // Members initially private
   /* -- Init constructor with RGBA bytes ----------------------------------- */
   FboColour(const uint8_t ucR, const uint8_t ucG,
             const uint8_t ucB, const uint8_t ucA) :
-    /* -- Initialisation of members ---------------------------------------- */
-    FboRGBA{Normalise<GLfloat>(ucR),   // Copy and normalise red component
+    /* -- Initialisers ----------------------------------------------------- */
+    fboRGBA{Normalise<GLfloat>(ucR),   // Copy and normalise red component
             Normalise<GLfloat>(ucG),   // Copy and normalise green component
             Normalise<GLfloat>(ucB),   // Copy and normalise blue component
             Normalise<GLfloat>(ucA)}   // Copy and normalise alpha component
@@ -197,14 +199,14 @@ class FboColour :                      // Members initially private
   /* -- Init constructor --------------------------------------------------- */
   FboColour(const GLfloat fR, const GLfloat fG, const GLfloat fB,
     const GLfloat fA) :
-    /* -- Initialisation of members ---------------------------------------- */
-    FboRGBA{ fR, fG, fB, fA }          // Copy intensity over
+    /* -- Initialisers ----------------------------------------------------- */
+    fboRGBA{ fR, fG, fB, fA }          // Copy intensity over
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Default constructor ------------------------------------------------ */
   FboColour(void) :
-    /* -- Initialisation of members ---------------------------------------- */
-    FboRGBA{ 1.0f,1.0f,1.0f,1.0f }     // Set full Re/Gr/Bl/Alpha intensity
+    /* -- Initialisers ----------------------------------------------------- */
+    fboRGBA{ 1.0f,1.0f,1.0f,1.0f }     // Set full Re/Gr/Bl/Alpha intensity
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */
@@ -271,7 +273,7 @@ class FboBlend
   /* -- Init constructor --------------------------------------------------- */
   FboBlend(const GLenum eSrcRGB, const GLenum eDstRGB, const GLenum eSrcAlpha,
     const GLenum eDstAlpha) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     aBlend{ eSrcRGB,                   // Copy blend source RGB
             eDstRGB,                   // Copy blend destination RGB
             eSrcAlpha,                 // Copy blend source Alpha
@@ -280,7 +282,7 @@ class FboBlend
     { }
   /* -- Default constructor ------------------------------------------------ */
   FboBlend(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     FboBlend{ GL_SRC_ALPHA,            // Init blend source RGB
               GL_ONE_MINUS_SRC_ALPHA,  // Init blend destination RGB
               GL_ONE,                  // Init blend source Alpha
@@ -366,20 +368,22 @@ template<typename Type1 = GLfloat, typename Type2 = Type1>class FboCoords
     /* --------------------------------------------------------------------- */
     { }                                // Do nothing else
 };/* ----------------------------------------------------------------------- */
-typedef FboCoords<GLint,GLsizei> FboViewport; // Viewport co-ordinates
+typedef FboCoords<GLint,GLsizei> FboViewport;    // Viewport co-ordinates
+typedef FboCoords<GLfloat>       FboFloatCoords; // Coords made of floats
+typedef Dimensions<GLsizei>      DimGLInt;       // Dimension of GLints
 /* == Data required to complete a render of an fbo ========================= */
 struct FboRenderItem :                 // Rendering item data class
   /* -- Base classes ------------------------------------------------------- */
   public FboColour,                    // Clear colour of the fbo
   public FboBlend,                     // Blend mode of the fbo
-  public FboCoords<GLfloat>,           // Ortho co-ordinates of the fbo
-  public Dimensions<GLsizei>           // Fbo dimensions
+  public FboFloatCoords,               // Ortho co-ordinates of the fbo
+  public DimGLInt                      // Fbo dimensions
 { /* ----------------------------------------------------------------------- */
   GLuint           uiFBO;              // Fbo name
   bool             bClear;             // Clear the fbo?
   /* -- Default constructor ------------------------------------------------ */
   FboRenderItem(void) :                // No parameters
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     uiFBO(0),                          // No fbo id yet
     bClear(true)                       // Clear fbo set
     /* -- No code ---------------------------------------------------------- */

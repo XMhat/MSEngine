@@ -87,7 +87,7 @@ class SysModule :                      // Members initially private
         const LANGANDCODEPAGE &lacpData = lcpData[stIndex];
         const LONG lLng = MakeDWord(lacpData.wLanguage, lacpData.wCodePage);
         // To help with retreiving some values
-#define GSV(v,n) v = GetStringValue(UTFtoWS16( \
+#define GSV(v,n) v = GetStringValue(UTFtoS16( \
           Format("\\StringFileInfo\\$$$$$\\" n, \
             right, hex, setw(8), setfill('0'), lLng)), \
               wstrValue);
@@ -106,7 +106,7 @@ class SysModule :                      // Members initially private
   { // Get size of version info structure. Done if succeeded
     DWORD dwDummy = 0;
     if(const DWORD dwSize =
-      GetFileVersionInfoSizeW(UTFtoS16(strModule), &dwDummy))
+      GetFileVersionInfoSizeW(UTFtoS16(strModule).c_str(), &dwDummy))
         return dwSize;
     // Ignore if module has no resource section. This can be triggered when
     // using Wine as their DLL's don't have resource data sections.
@@ -119,7 +119,7 @@ class SysModule :                      // Members initially private
   const wstring ReadInfo(const string &strModule, const DWORD dwSize)
   { // Allocate memory for string and read data. Return string if succeeded!
     wstring wstrVI(dwSize, 0);
-    if(GetFileVersionInfoW(UTFtoS16(strModule), 0, dwSize,
+    if(GetFileVersionInfoW(UTFtoS16(strModule).c_str(), 0, dwSize,
       ToNonConstCast<LPVOID>(wstrVI.data())))
         return wstrVI;
     // Failed to throw error
@@ -139,9 +139,9 @@ class SysModule :                      // Members initially private
         vnData.uiMajor, vnData.uiMinor, vnData.uiBuild, vnData.uiRevision) };
       // Return data
       return SysModuleData{ strModule, vnData.uiMajor, vnData.uiMinor,
-        vnData.uiBuild, vnData.uiRevision, std::move(vsData.strVendor),
-        std::move(vsData.strDescription), std::move(vsData.strCopyright),
-        std::move(strVersionNumbers) };
+        vnData.uiBuild, vnData.uiRevision, StdMove(vsData.strVendor),
+        StdMove(vsData.strDescription), StdMove(vsData.strCopyright),
+        StdMove(strVersionNumbers) };
     } // Failed
     return SysModuleData{ strModule };
   }
@@ -157,23 +157,23 @@ class SysModule :                      // Members initially private
       string strVersionNumbers{ Format("$.$.$.$",
         vnData.uiMajor, vnData.uiMinor, vnData.uiBuild, vnData.uiRevision) };
       // Return data
-      return SysModuleData{ std::move(strModule), vnData.uiMajor,
+      return SysModuleData{ StdMove(strModule), vnData.uiMajor,
         vnData.uiMinor, vnData.uiBuild, vnData.uiRevision,
-        std::move(vsData.strVendor), std::move(vsData.strDescription),
-        std::move(vsData.strCopyright), std::move(strVersionNumbers) };
+        StdMove(vsData.strVendor), StdMove(vsData.strDescription),
+        StdMove(vsData.strCopyright), StdMove(strVersionNumbers) };
     } // Failed
-    return SysModuleData{ std::move(strModule) };
+    return SysModuleData{ StdMove(strModule) };
   }
   /* -- Return data (copy filename) -------------------------------- */ public:
   explicit SysModule(const string &strModule) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     SysModuleData{ Load(strModule) }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Return data (move filename) ---------------------------------------- */
   explicit SysModule(string &&strModule) :
-    /* -- Initialisation of members ---------------------------------------- */
-    SysModuleData{ Load(std::move(strModule)) }
+    /* -- Initialisers ----------------------------------------------------- */
+    SysModuleData{ Load(StdMove(strModule)) }
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* -- End ---------------------------------------------------------------- */

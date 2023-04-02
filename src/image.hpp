@@ -34,7 +34,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
        (GetPixelType() != GL_BGRA && GetPixelType() != GL_BGR)))
       return false;
     // For each slot
-    for(ImageSlot &sItem : *this)
+    for(ImageSlot &sItem : GetSlots())
     { // Swap pixels
       const int iResult = ImageSwapPixels(sItem.Ptr<char>(), sItem.Size(),
         GetBytesPerPixel(), 0, 2);
@@ -55,7 +55,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Force binary mode -------------------------------------------------- */
   bool ForceBinary(void)
   { // Ignore if already one bit or there are no slots
-    if(GetBitsPerPixel() == BD_BINARY || empty()) return false;
+    if(GetBitsPerPixel() == BD_BINARY || IsNoSlots()) return false;
     // Throw error if compressed
     if(IsCompressed())
       XC("Cannot binary downsample a compressed image!");
@@ -72,7 +72,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     static const array<const unsigned char,8>
       ucaBits{1, 2, 4, 8, 16, 32, 64, 128};
     // For each image slot
-    for(ImageSlot &isRef : *this)
+    for(ImageSlot &isRef : GetSlots())
     { // Destination image for binary data
       Memory mDst{ stDst };
       // For each byte in the alpha channel array
@@ -88,7 +88,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
         // Write new bit value
         mDst.WriteInt<uint8_t>(stSubIndex, ucBits);
       } // Update slot data
-      isRef.SwapMemory(std::move(mDst));
+      isRef.SwapMemory(StdMove(mDst));
     } // Update image data
     SetBitsPerPixel(BD_BINARY);
     SetBytesPerPixel(BY_GRAY);
@@ -101,13 +101,16 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
   bool ReversePixels(void)
   { // Compare bits per pixel
     switch(GetBitsPerPixel())
-    { // Monochrome image? Enumerate through each slot and swap the 4-bits in
-      // each 8-bit byte.
-      case BD_BINARY: for(ImageSlot &sItem : *this) sItem.ByteSwap8(); break;
+    { // Monochrome image?
+      case BD_BINARY:
+        // Enumerate through each slot and swap the 4-bits in each 8-bit byte.
+        for(ImageSlot &sItem : GetSlots()) sItem.ByteSwap8();
+        // Done
+        break;
       // 8-bits per pixel or greater?
       case BD_GRAY: case BD_GRAYALPHA: case BD_RGB: case BD_RGBA:
         // Enumerate through each slot
-        for(ImageSlot &sItem : *this)
+        for(ImageSlot &sItem : GetSlots())
         { // Create new mem block to write to
           Memory mbOut{ sItem.Size() };
           // Pixel size
@@ -117,7 +120,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
             mbOut.Write(stI, sItem.Read(sItem.Size()-stStep-stI), stStep);
           // Set new mem block for this class automatically unloading the old
           // one
-          sItem.SwapMemory(std::move(mbOut));
+          sItem.SwapMemory(StdMove(mbOut));
         } // Done
         break;
       // Nothing done so return and log a warning
@@ -137,7 +140,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     // New allocation size
     size_t stNewAlloc = 0;
     // For each slot
-    for(ImageSlot &sItem : *this)
+    for(ImageSlot &sItem : GetSlots())
     { // Make a new memblock for the destinaiton pixels
       Memory mDst{ sItem.DimGetWidth() * sItem.DimGetHeight() *
         GetBytesPerPixel() };
@@ -151,7 +154,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
         // Call pixel function conversion
         PixelConversionFunction(cpSrc, cpDst);
       // Move memory on top of old memory
-      sItem.SwapMemory(std::move(mDst));
+      sItem.SwapMemory(StdMove(mDst));
       // Adjust alloc size
       stNewAlloc += sItem.Size();
     } // Update new size
@@ -272,18 +275,18 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Concatenate tiles into a single texture ---------------------------- */
   bool MakeAtlas(void)
   { // Return if 1 or less slides or 1 or less bit depth or has a palette
-    if(size() <= 1 || GetBitsPerPixel() <= BD_BINARY || IsPalette())
+    if(GetSlotCount() <= 1 || GetBitsPerPixel() <= BD_BINARY || IsPalette())
       return false;
     // Save number of images compacted
-    stTiles = size();
+    stTiles = GetSlotCount();
     // Remaining tiles
     size_t stRemain = stTiles;
     // Take ownership current slots list and make a blank new one.
-    SlotList slSlots{ std::move(*this) };
+    SlotList slSrc{ StdMove(slSlots) };
     // Reset allocation
     SetAlloc(0);
     // Get first image slot
-    ImageSlot &isFirst = slSlots.front();
+    ImageSlot &isFirst = slSrc.front();
     // Set override tile size and count
     duTileOR.DimSet(isFirst);
     // Get maximum texture size allowed
@@ -329,7 +332,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     const size_t stScanLine = stWidth * GetBytesPerPixel();
     // Until we have no more slots. We'll keep deleting them as we process
     // them to keep the memory usage down
-    for(const ImageSlot &isData : slSlots)
+    for(const ImageSlot &isData : slSrc)
     { // Now we copy this slide into the texuree
       for(size_t stY = 0; stY < stHeight; ++stY)
         mTexture.Write((((stTY + stY) * stTexWidth) + stTX) *
@@ -393,16 +396,16 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
   { // Ignore if not paletted
     if(IsNotPalette()) return false;
     // Must only have two slots
-    if(size() != 2)
+    if(GetSlotCount() != 2)
       XC("Cannot convert palette to RGB because we need two slots!",
-         "Slots", size());
+         "Slots", GetSlotCount());
     // Take ownership current slots list and make a blank new one.
-    SlotList slSlots{ std::move(*this) };
+    SlotList slSrc{ StdMove(slSlots) };
     // Reset allocation
     SetAlloc(0);
     // Get datas
-    const ImageSlot &isImage = slSlots.front(),
-                    &isPalette = slSlots.back();
+    const ImageSlot &isImage = slSrc.front(),
+                    &isPalette = slSrc.back();
     // Create output buffer and enumerate through the pixels
     Memory mOut{ DimGetWidth() * DimGetHeight() * byDepth };
     // If palette and output image are same depth?
@@ -423,9 +426,9 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
       const size_t stPalIndex = isImage.ReadInt<uint8_t>(stIn) *
         isPalette.DimGetHeight();
       // Get palette value
-      const uint32_t uiVal =
+      const uint32_t uiVal = static_cast<uint32_t>(
         (isPalette.ReadInt<uint16_t>(stPalIndex) << 8) |
-         isPalette.ReadInt<uint8_t>(stPalIndex+sizeof(uint16_t));
+         isPalette.ReadInt<uint8_t>(stPalIndex+sizeof(uint16_t)));
       // Write new value
       mOut.WriteInt<uint32_t>(stOut, uiVal);
     } // Unknown
@@ -493,7 +496,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
   void ApplyFilters(void)
   { // Record current parameters
     const Dimensions<> dOld{ *this };
-    const size_t stSlots = size();
+    const size_t stSlots = GetSlotCount();
     const BitDepth bdOld = GetBitsPerPixel();
     const ByteDepth byOld = GetBytesPerPixel();
     const GLenum glOld = GetPixelType();
@@ -632,16 +635,24 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
                          "- Tile size override: $x$.\n"
                          "- Tile count override: $.",
         IdentGet(),
-        IsActiveAtlas()     ? "- Slots compacted to atlas.\n"       : strBlank,
-        IsActiveReverse()   ? "- Pixels reversed.\n"                : strBlank,
-        IsActiveRGB()       ? "- Pixels converted to 24-bit.\n"     : strBlank,
-        IsActiveRGBA()      ? "- Pixels converted to 32-bit.\n"     : strBlank,
-        IsActiveBGROrder()  ? "- Pixels converted to BGR order.\n"  : strBlank,
-        IsActiveRGBOrder()  ? "- Pixels converted to RGB order.\n"  : strBlank,
-        IsActiveBinary()    ? "- Pixels converted to monochrome.\n" : strBlank,
-        IsActiveGPUCompat() ? "- Pixels made OpenGL compatible.\n"  : strBlank,
-        dOld.DimGetWidth(), dOld.DimGetHeight(), DimGetWidth(),
-        DimGetHeight(), stSlots, size(), bdOld, byOld, GetBitsPerPixel(),
+        IsActiveAtlas()     ? "- Slots compacted to atlas.\n" :
+          cCommon->Blank(),
+        IsActiveReverse()   ? "- Pixels reversed.\n" :
+          cCommon->Blank(),
+        IsActiveRGB()       ? "- Pixels converted to 24-bit.\n" :
+          cCommon->Blank(),
+        IsActiveRGBA()      ? "- Pixels converted to 32-bit.\n" :
+          cCommon->Blank(),
+        IsActiveBGROrder()  ? "- Pixels converted to BGR order.\n" :
+          cCommon->Blank(),
+        IsActiveRGBOrder()  ? "- Pixels converted to RGB order.\n" :
+          cCommon->Blank(),
+        IsActiveBinary()    ? "- Pixels converted to monochrome.\n" :
+          cCommon->Blank(),
+        IsActiveGPUCompat() ? "- Pixels made OpenGL compatible.\n" :
+          cCommon->Blank(),
+        dOld.DimGetWidth(), dOld.DimGetHeight(), DimGetWidth(), DimGetHeight(),
+        stSlots, GetSlotCount(), bdOld, byOld, GetBitsPerPixel(),
         GetBytesPerPixel(), IfOgl::cOgl->GetPixelFormat(glOld), hex, glOld,
         IfOgl::cOgl->GetPixelFormat(GetPixelType()), GetPixelType(), dec,
         stOld, GetAlloc(), duTileOR.DimGetWidth(), duTileOR.DimGetHeight(),
@@ -652,17 +663,16 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
   { // Force load a certain type of image (for speed?) but in Async mode,
     // force detection doesn't really matter as much, but overall, still
     // needed if speed is absolutely neccesary.
-    if     (IsLoadAsTGA()) ImageLoad(0, fmData, *this);
+    if(IsLoadAsPNG()) ImageLoad(0, fmData, *this);
     else if(IsLoadAsJPG()) ImageLoad(1, fmData, *this);
-    else if(IsLoadAsPNG()) ImageLoad(2, fmData, *this);
-    else if(IsLoadAsGIF()) ImageLoad(3, fmData, *this);
-    else if(IsLoadAsDDS()) ImageLoad(4, fmData, *this);
+    else if(IsLoadAsGIF()) ImageLoad(2, fmData, *this);
+    else if(IsLoadAsDDS()) ImageLoad(3, fmData, *this);
     // Auto detection of image
     else ImageLoad(fmData, *this);
     // Apply filters if image has no special circumstances
     if(IsNotCompressed() && IsNotMipmaps()) ApplyFilters();
     // Recover slots memory if they were modified
-    shrink_to_fit();
+    CompactSlots();;
   }
   /* -- Reload specified image --------------------------------------------- */
   void ReloadData(void)
@@ -675,7 +685,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
   }
   /* -- Save image using a type id ----------------------------------------- */
   void SaveFile(const string &strFN, const size_t stSId, const size_t stPId)
-    { ImageSave(stPId, strFN, *this, (*this)[stSId]); }
+    const { ImageSave(stPId, strFN, *this, GetSlotsConst()[stSId]); }
   /* -- Load image from memory asynchronously ------------------------------ */
   void InitAsyncArray(lua_State*const lS)
   { // Need 6 parameters (class pointer was already pushed onto the stack);
@@ -690,7 +700,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     // The decoded image will be kept in memory
     SetDynamic();
     // Load image from memory asynchronously
-    AsyncInitArray(lS, strName, "bmparray", std::move(aData));
+    AsyncInitArray(lS, strName, "bmparray", StdMove(aData));
   }
   /* -- Load image from file asynchronously -------------------------------- */
   void InitAsyncFile(lua_State*const lS)
@@ -709,12 +719,15 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
   void InitBlank(const string &strName, const unsigned int uiBWidth,
     const unsigned int uiBHeight, const bool bAlpha, const bool bClear)
   { // Lookup table for alpha setting
-    static const array<const std::pair<const BitDepth, const GLenum>,2>
-      aLookup{ { { BD_RGB, GL_RGB }, { BD_RGBA, GL_RGBA } } };
-    const auto &aLookupRef = aLookup[static_cast<size_t>(bAlpha)];
+    typedef pair<const BitDepth, const GLenum> BitDepthEnumPair;
+    typedef array<const BitDepthEnumPair,2> BitDepthEnumPairArray;
+    static const BitDepthEnumPairArray
+      bdepaLookup{ { { BD_RGB, GL_RGB }, { BD_RGBA, GL_RGBA } } };
+    const BitDepthEnumPair &bdepLookupRef =
+      bdepaLookup[static_cast<size_t>(bAlpha)];
     // Set appropriate parameters
-    SetBitsAndBytesPerPixel(aLookupRef.first);
-    SetPixelType(aLookupRef.second);
+    SetBitsAndBytesPerPixel(bdepLookupRef.first);
+    SetPixelType(bdepLookupRef.second);
     // Set other members
     IdentSet(strName);
     SetDynamic();
@@ -735,27 +748,41 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     if(!uiBWidth || !uiBHeight || uiBWidth > 0xFFFF || uiBHeight > 0xFFFF)
       XC("Image dimensions are not valid!",
         "File", strName, "Width", uiBWidth, "Height", uiBHeight);
+    // Set bits per pixel
+    SetBitsAndBytesPerPixel(bdBitsPP);
+    // Set the dimensions
+    DimSet(uiBWidth, uiBHeight);
+    // Expected image size
+    size_t stExpect;
     // Check bitrate
-    switch(bdBitsPP)
+    switch(GetBitsPerPixel())
     { // Allowed bit-rates are...
       case BD_BINARY:                  // 1bpp (binary)
-      case BD_GRAY:                    // 8bpp (gray NOT palette)
-      case BD_GRAYALPHA:               // 16bpp (gray+alpha NOT palette)
-      case BD_RGB:                     // 24bpp (rgb or bgr)
-      case BD_RGBA: break;             // 32bpp (rgba or bgra)
+        // Set image bytes expected
+        stExpect = TotalPixels() / CHAR_BIT;
+        // Not loadable by OpenGL
+        SetPixelType(GL_NONE);
+        // Done
+        break;
+      // 8bpp (gray NOT palette)       16bpp (gray+alpha NOT palette)
+      case BD_GRAY:                    case BD_GRAYALPHA:
+      // 24bpp (rgb or bgr)            32bpp (rgba or bgra)
+      case BD_RGB:                     case BD_RGBA:
+        // Set image bytes expected
+        stExpect = TotalPixels() * GetBytesPerPixel();
+        // Loadable by OpenGL
+        SetPixelType(ePixType);
+        // Done
+        break;
       // Error
       default: XC("Image bit-depth is not valid!",
         "File", strName, "Depth", bdBitsPP);
-    } // Check the size
-    SetBitsAndBytesPerPixel(bdBitsPP);
-    DimSet(uiBWidth, uiBHeight);
-    const size_t stExpect = TotalPixels() * GetBytesPerPixel();
+    } // Check that the size matches
     if(stExpect != mSrc.Size())
       XC("Arguments are not valid for specified image data!",
         "File", strName, "Expect", stExpect, "Actual", mSrc.Size());
     // Everything looks OK, set rest of the members
     IdentSet(strName);
-    SetPixelType(ePixType);
     SetDynamic();
     // Add the raw data into a slot
     AddSlot(mSrc);
@@ -800,11 +827,11 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     // Set the loading flags
     FlagSet(lfS);
     // Load the array normally
-    SyncInitArray(strName, std::move(mbD));
+    SyncInitArray(strName, StdMove(mbD));
   }
   /* -- Default constructor ------------------------------------------------ */
   Image(void) :                        // No parameters
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperImage(*cImages),           // Initialise collector helper
     IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     AsyncLoader<Image>(this,           // Initialise async loader
@@ -831,7 +858,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     ): /* -- Initialisation of members ------------------------------------- */
     Image()                            // Default initialisation
     /* -- Initialise raw image --------------------------------------------- */
-    { InitRaw(strName, std::move(mSrc), uiWidth, uiHeight, bdBits, eFormat); }
+    { InitRaw(strName, StdMove(mSrc), uiWidth, uiHeight, bdBits, eFormat); }
   /* -- Constructor -------------------------------------------------------- */
   explicit Image(                      // Initialise from known file formats
     /* -- Parameters ------------------------------------------------------- */
@@ -841,7 +868,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     ): /* -- Initialisation of members ------------------------------------- */
     Image()                            // Default initialisation
     /* -- Initialise from array -------------------------------------------- */
-    { InitArray(strName, std::move(mSrc), ifFlags); }
+    { InitArray(strName, StdMove(mSrc), ifFlags); }
   /* -- Constructor -------------------------------------------------------- */
   explicit Image(                      // Initialise image from file
     /* -- Parameters ------------------------------------------------------- */
@@ -862,9 +889,9 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Destructor --------------------------------------------------------- */
   ~Image(void) { AsyncCancel(); }      // Wait for loading thread to cancel
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Image);              // Disable copy constructor and operator
+  DELETECOPYCTORS(Image)               // Disable copy constructor and operator
 };/* -- End ---------------------------------------------------------------- */
-END_ASYNCCOLLECTOR(Images, Image, IMAGE);
+END_ASYNCCOLLECTOR(Images, Image, IMAGE)
 /* ------------------------------------------------------------------------- */
 };                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

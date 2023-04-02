@@ -15,7 +15,7 @@
 // ! This gives the guest to have a virtual bin of the specified size and
 // ! rectangles of a given size are placed inside until filled up.
 /* ========================================================================= */
-LLNAMESPACEBEGIN(Bin)                  // Bin namespace
+namespace NsBin {                      // Bin namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfBin;                 // Using bin namespace
 /* ========================================================================= */
@@ -99,13 +99,8 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Bin));
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Bin:* member functions begin
-  LLRSFUNC(Destroy),                   // Destroy the internal object
-  LLRSFUNC(Insert),                    // Insert the specified item in the bin
-  LLRSFUNC(Enlarge),                   // Enlarge the specified bin
-  LLRSFUNC(Height),                    // Return height of bin in units
-  LLRSFUNC(Occupancy),                 // Returns the occupancy % of the bin
-  LLRSFUNC(Test),                      // Test inserting item in the bin
-  LLRSFUNC(Width),                     // Return width of bin in units
+  LLRSFUNC(Destroy),   LLRSFUNC(Insert), LLRSFUNC(Enlarge), LLRSFUNC(Height),
+  LLRSFUNC(Occupancy), LLRSFUNC(Test),   LLRSFUNC(Width),
 LLRSEND                                // Bin:* member functions end
 /* ========================================================================= */
 // $ Bin.Create
@@ -123,8 +118,8 @@ LLFUNCEX(Create, 1, LCCLASSCREATE(Bin)->Init(
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Bin.* namespace functions begin
-  LLRSFUNC(Create),                    // Create the bin
+  LLRSFUNC(Create),
 LLRSEND                                // Bin.* namespace functions end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of Bin namespace
+}                                      // End of Bin namespace
 /* == EoF =========================================================== EoF == */

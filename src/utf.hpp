@@ -10,15 +10,9 @@
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
 namespace IfUtf {                      // Start of module namespace
-/* == UTF classes and functions ============================================ */
-/* The following functions and classes provides some useful UTF translation  */
-/* routines which will be used sporadically througout the engine.            */
-/* == Defines ============================================================== */
-#define UTF8_ACCEPT                  0 // The UTF8 code is acceptable
-#define UTF8_REJECT                 12 // The UTF8 code is invalid
 /* -- Lookup table for decoder --------------------------------------------- */
 /* ######################################################################### */
-/* ## The first part of the table maps bytes to character classes that to ## */
+/* ## The first part of the table maps bytes to character classes to      ## */
 /* ## reduce the size of the transition table and create bitmasks.        ## */
 /* ######################################################################### */
 static const array<const unsigned int,256> uiaDecodeLookupData{
@@ -85,8 +79,8 @@ static void Decode(unsigned int &uiState, unsigned int &uiCode,
 { // Get type from lookup table
   const unsigned int uiType = uiaDecodeLookupData[ucByte];
   // Calculate the utf code
-  uiCode = (uiState != UTF8_ACCEPT) ?
-    (ucByte & 0x3fu) | (uiCode << 6) : (0xff >> uiType) & ucByte;
+  uiCode = uiState ? (ucByte & 0x3fu) | (uiCode << 6) :
+                     (0xff >> uiType) & ucByte;
   // Update the new state of the code
   uiState = uiaDecodeLookupDataX[uiState + uiType];
 }
@@ -124,7 +118,7 @@ static bool PopFront(string &strStr)
     unsigned int uiState = 0;
     // Walk through the string until we get to a null terminator
     do uiState = uiaDecodeLookupDataX[uiState + uiaDecodeLookupData[*cpI]];
-      while(++cpI < cpE && uiState != UTF8_ACCEPT);
+      while(++cpI < cpE && uiState);
     // If pointer moved?
     if(cpI >= cpB)
     { // Erase the specified characters
@@ -189,7 +183,7 @@ static bool MoveFrontToBack(string &strSrc, string &strDst)
     unsigned int uiState = 0, uiCode = 0;
     // Walk through the string until we get to a null terminator
     do Decode(uiState, uiCode, *cpI);
-      while(++cpI < cpE && uiState != UTF8_ACCEPT);
+      while(++cpI < cpE && uiState);
     // Get size to remove
     const size_t stBytes = static_cast<size_t>(cpI - cpB);
     // Add the characters we will remove to the end of the string
@@ -237,15 +231,13 @@ class Decoder                          // UTF8 string decoder helper
     for(unsigned int uiState = 0, uiCode = 0; *ucpPtr > 0; ++ucpPtr)
     { // Decode the specified character
       Decode(uiState, uiCode, *ucpPtr);
-      // Return state if we got the UTF8 character (limit to 0-2097151).
+      // Ignore if we haven't got a valid UTF8 character yet.
+      if(uiState) continue;
+      // Move position onwards
+      ++ucpPtr;
+      // Return the UTF8 character as requested type (limit to 0-2097151).
       // UTF8 can only address 1,112,064 (0x10F800) total characters
-      // (uiState of 0 is UTF8_ACCEPT, see util.hpp for source)
-      if(uiState == UTF8_ACCEPT)
-      { // Move position onwards
-        ++ucpPtr;
-        // Return casted result
-        return static_cast<CharType>(uiCode & 0x1fffff);
-      }
+      return static_cast<CharType>(uiCode & 0x1fffff);
     } // Invald string. Return null character
     return 0;
   }
@@ -363,19 +355,19 @@ class Decoder                          // UTF8 string decoder helper
   }
   /* -- Constructors that copy the address of the allocated text ----------- */
   explicit Decoder(const char*const ucpSrc) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ucpStr(reinterpret_cast<const unsigned char*>(ucpSrc)),
     ucpPtr(ucpStr)
     /* -- No code ---------------------------------------------------------- */
     { }
   explicit Decoder(const unsigned char*const ucpSrc) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ucpStr(ucpSrc),
     ucpPtr(ucpStr)
     /* -- No codes --------------------------------------------------------- */
     { }
   explicit Decoder(const string &strStr) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ucpStr(reinterpret_cast<const unsigned char*>(strStr.c_str())),
     ucpPtr(ucpStr)
     /* -- No code ---------------------------------------------------------- */

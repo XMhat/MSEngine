@@ -15,7 +15,7 @@
 // ! This allows the programmer to maniuplate supported freetype fonts forms
 // ! asynchronously and send the objects to a font rendering object.
 /* ========================================================================= */
-LLNAMESPACEBEGIN(Ftf)                  // Ftf namespace
+namespace NsFtf {                      // Ftf namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfFtf;                 // Using ftf namespace
 /* ========================================================================= */
@@ -57,11 +57,8 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Ftf));
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Ftf:* member functions begin
-  LLRSFUNC(Destroy),                   // Destroy the internal object
-  LLRSFUNC(Name),                      // Get Filename of the Ftf object
-  LLRSFUNC(Family),                    // Get internal name of font
-  LLRSFUNC(Style),                     // Get internal style of font
-  LLRSFUNC(Glyphs),                    // Get internal glyph count of font
+  LLRSFUNC(Destroy), LLRSFUNC(Name),   LLRSFUNC(Family),
+  LLRSFUNC(Style),   LLRSFUNC(Glyphs),
 LLRSEND                                // Ftf:* member functions end
 /* ========================================================================= */
 // $ Ftf.FileAsync
@@ -104,7 +101,7 @@ LLFUNC(ArrayAsync, LCCLASSCREATE(Ftf)->InitAsyncArray(lS));
 // ? Loads an audio file on the main thread from the specified array object.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Asset, 1, LCCLASSCREATE(Ftf)->InitArray(
-  LCGETCPPSTRINGNE(1, "Identifier"), std::move(*LCGETPTR(2, Asset)),
+  LCGETCPPSTRINGNE(1, "Identifier"), StdMove(*LCGETPTR(2, Asset)),
   LCGETNUMLG(GLfloat, 3, 1, 4096, "Width"),
   LCGETNUMLG(GLfloat, 4, 1, 4096, "Height"),
   LCGETINTLG(unsigned int, 5, 1, 1024, "DPIWidth"),
@@ -121,12 +118,9 @@ LLFUNC(WaitAsync, cFtfs->WaitAsync());
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Ftf.* namespace functions begin
-  LLRSFUNC(Asset),                     // Load from array asyncronously
-  LLRSFUNC(ArrayAsync),                //   "  asyncronously
-  LLRSFUNC(File),                      // Load from specified file
-  LLRSFUNC(FileAsync),                 //   "  asyncronously
-  LLRSFUNC(WaitAsync),                 // Wait for async events to complete
+  LLRSFUNC(Asset),     LLRSFUNC(ArrayAsync), LLRSFUNC(File),
+  LLRSFUNC(FileAsync), LLRSFUNC(WaitAsync),
 LLRSEND                                // Ftf.* namespace functions end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of Ftf namespace
+}                                      // End of Ftf namespace
 /* == EoF =========================================================== EoF == */

@@ -26,7 +26,7 @@
 // ! Since playback is done in separate threads, there is not much need to
 // ! modify any of the above settings.
 /* ========================================================================= */
-LLNAMESPACEBEGIN(Stream)               // Stream namespace
+namespace NsStream {                   // Stream namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfStream;              // Using stream namespace
 /* ========================================================================= */
@@ -48,31 +48,23 @@ LLFUNC(OnEvent, LCGETPTR(1, Stream)->LuaEvtInit(lS));
 // $ Stream:Play
 // > Loops:integer=Number of loops.
 // > Volume:number=Stream volume (0 to 1).
-// > Position:integer=PCM position.
-// ? Plays the specified stream at the specified PCM position.
+// > Position:integer=Sample position.
+// ? Plays the specified stream at the specified sample position.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(Play)
-  Stream &sCref = *LCGETPTR(1, Stream);
-  sCref.PlaySafe(
-    LCGETINT   (size_t,      2,                           "Loops"),
-    LCGETNUMLG (ALfloat,     3,  0,                    1, "Volume"),
-    LCGETINTLGE(ogg_int64_t, 4, -1, sCref.GetTotalSafe(), "Position"));
-LLFUNCEND
+LLFUNC(Play, LCGETPTR(1, Stream)->PlaySafe());
 /* ========================================================================= */
 // $ Stream:GetDuration
 // < Duration:number=Duration in seconds
 // ? Returns the duration of the specified stream in seconds.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetDuration, 1,
-  LCPUSHNUM(LCGETPTR(1, Stream)->GetDurationSafe()));
+LLFUNCEX(GetDuration, 1, LCPUSHNUM(LCGETPTR(1, Stream)->GetDurationSafe()));
 /* ========================================================================= */
 // $ Stream:GetElapsed
 // < Duration:number=Elapsed time in seconds
 // ? Returns the time elapsed of the stream. This is the position of the codec
 // ? and not the actual playback position.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetElapsed, 1,
-  LCPUSHNUM(LCGETPTR(1, Stream)->GetElapsedSafe()));
+LLFUNCEX(GetElapsed, 1, LCPUSHNUM(LCGETPTR(1, Stream)->GetElapsedSafe()));
 /* ========================================================================= */
 // $ Stream:SetElapsed
 // > Duration:number=Duration in seconds
@@ -96,32 +88,31 @@ LLFUNCBEGIN(SetElapsedPage)
 LLFUNCEND
 /* ========================================================================= */
 // $ Stream:GetPosition
-// < Position:integer=PCM Position
-// ? Returns the PCM index position elapsed of the stream. This is the position
-// ? of the codec and not the actual playback position.
+// < Position:integer=Sample position
+// ? Returns the sample position elapsed of the stream.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(GetPosition, 1,
   LCPUSHINT(static_cast<lua_Integer>(LCGETPTR(1, Stream)->GetPositionSafe())));
 /* ========================================================================= */
 // $ Stream:SetPosition
-// > Position:integer=PCM position.
-// ? Sets the current PCM position of playback. This is not a precise PCM
-// ? index and is optimised for speed. Use Stream.SetPositionP() for precision.
+// > Position:integer=Sample position.
+// ? Sets the precise specified sample position index of the stream.
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(SetPosition)
   Stream &sCref = *LCGETPTR(1, Stream);
   sCref.SetPositionSafe(
-    LCGETINTLG(ogg_int64_t, 2, 0, sCref.GetTotalSafe(), "Index"));
+    LCGETINTLG(ogg_int64_t, 2, 0, sCref.GetSamplesSafe(), "Index"));
 LLFUNCEND
 /* ========================================================================= */
 // $ Stream:SetPositionPage
-// > Position:integer=PCM position
-// ? Sets the precise specified PCM position index of the stream.
+// > Position:integer=Sample position
+// ? Sets the current sample position of playback. This is not a precise
+// ? position is optimised for speed. Use Stream.SetPosition() for precision.
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(SetPositionPage)
   Stream &sCref = *LCGETPTR(1, Stream);
   sCref.SetPositionFastSafe(
-    LCGETINTLG(ogg_int64_t, 2, 0, sCref.GetTotalSafe(), "Index"));
+    LCGETINTLG(ogg_int64_t, 2, 0, sCref.GetSamplesSafe(), "Index"));
 LLFUNCEND
 /* ========================================================================= */
 // $ Stream:Stop
@@ -141,7 +132,7 @@ LLFUNCEX(IsPlaying, 1, LCPUSHBOOL(LCGETPTR(1, Stream)->IsPlaying()));
 // ? Returns the number of loops remaining of playback.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(GetLoop, 1,
-  LCPUSHINT(static_cast<lua_Integer>(LCGETPTR(1, Stream)->GetLoop())));
+  LCPUSHINT(static_cast<lua_Integer>(LCGETPTR(1, Stream)->GetLoopSafe())));
 /* ========================================================================= */
 // $ Stream:GetName
 // < Name:string=Filename of stream
@@ -150,58 +141,59 @@ LLFUNCEX(GetLoop, 1,
 LLFUNCEX(GetName, 1, LCPUSHXSTR(LCGETPTR(1, Stream)->IdentGet()));
 /* ========================================================================= */
 // $ Stream:GetLoopBegin
-// < Count:integer=The PCM position where loops begin
-// ? Gets the current loop begin PCM point
+// < Count:integer=Smaple position begin point
+// ? Gets the current loop begin sample.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetLoopBegin, 1,
-  LCPUSHINT(static_cast<lua_Integer>(LCGETPTR(1, Stream)->GetLoopBegin())));
+LLFUNCEX(GetLoopBegin, 1, LCPUSHINT(static_cast<lua_Integer>
+  (LCGETPTR(1, Stream)->GetLoopBeginSafe())));
 /* ========================================================================= */
 // $ Stream:GetLoopEnd
-// < Count:integer=The PCM position of where loops end and back to begin point
-// ? Gets the current loop end PCM point
+// < Count:integer=Sample position end point
+// ? Gets the current loop end sample.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetLoopEnd, 1,
-  LCPUSHINT(static_cast<lua_Integer>(LCGETPTR(1, Stream)->GetLoopEnd())));
+LLFUNCEX(GetLoopEnd, 1, LCPUSHINT(static_cast<lua_Integer>
+  (LCGETPTR(1, Stream)->GetLoopEndSafe())));
 /* ========================================================================= */
 // $ Stream:SetLoop
 // > Count:integer=New playback loop count.
 // ? Sets the new playback loop count.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetLoop,
-  LCGETPTR(1, Stream)->SetLoop(LCGETINT(size_t, 2, "Count")));
+LLFUNC(SetLoop, LCGETPTR(1, Stream)->
+  SetLoopSafe(LCGETINTLGE(ogg_int64_t, 2, -1,
+    numeric_limits<ogg_int64_t>::max(), "Count")));
 /* ========================================================================= */
 // $ Stream:SetLoopRange
-// > Begin:integer=New beginning PCM playback position of loop.
-// > End:integer=New ending PCM playback position of loop.
-// ? Sets the new playback beginning PCM position after stream loops and
-// ? the ending PCM position.
+// > Begin:integer=New beginning sample playback position of loop.
+// > End:integer=New ending sample playback position of loop.
+// ? Sets the new playback beginning sample position after stream loops and
+// ? the ending sample position.
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(SetLoopRange)
   Stream &sCref = *LCGETPTR(1, Stream);
-  sCref.SetLoopBegin(LCGETINTLGE(ogg_int64_t,
-    2, 0, sCref.GetLoopEnd(), "pcmpos"));
-  sCref.SetLoopEnd(LCGETINTLGE(ogg_int64_t,
-    3, sCref.GetLoopBegin(), sCref.GetTotalSafe(), "pcmpos"));
+  sCref.SetLoopRangeSafe(
+    LCGETINTLGE(ogg_int64_t, 2, 0, sCref.GetLoopEndSafe(), "BeginPos"),
+    LCGETINTLGE(ogg_int64_t, 3, sCref.GetLoopBeginSafe(),
+      sCref.GetSamplesSafe(), "EndPos"));
 LLFUNCEND
 /* ========================================================================= */
 // $ Stream:SetLoopBegin
-// > Begin:integer=New beginning PCM playback position of loop.
-// ? Sets the new playback beginning PCM position after stream loops.
+// > Begin:integer=New beginning sample playback position of loop.
+// ? Sets the new playback beginning sample position after stream loops.
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(SetLoopBegin)
   Stream &sCref = *LCGETPTR(1, Stream);
-  sCref.SetLoopBegin(LCGETINTLGE(ogg_int64_t,
-    2, 0, sCref.GetLoopEnd(), "pcmpos"));
+  sCref.SetLoopBeginSafe(LCGETINTLGE(ogg_int64_t,
+    2, 0, sCref.GetLoopEndSafe(), "pcmpos"));
 LLFUNCEND
 /* ========================================================================= */
 // $ Stream:SetLoopEnd
-// > End:integer=New ending PCM playback position of loop.
-// ? Sets the new playback ending PCM position before stream loops.
+// > End:integer=New ending sample playback position of loop.
+// ? Sets the new playback ending sample position before stream loops.
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(SetLoopEnd)
   Stream &sCref = *LCGETPTR(1, Stream);
-  sCref.SetLoopEnd(LCGETINTLGE(ogg_int64_t, 2, sCref.GetLoopBegin(),
-    sCref.GetTotalSafe(), "pcmpos"));
+  sCref.SetLoopEndSafe(LCGETINTLGE(ogg_int64_t, 2, sCref.GetLoopBeginSafe(),
+    sCref.GetSamplesSafe(), "pcmpos"));
 LLFUNCEND
 /* ========================================================================= */
 // $ Stream:SetVolume
@@ -217,12 +209,56 @@ LLFUNC(SetVolume,
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(GetVolume, 1, LCPUSHNUM(LCGETPTR(1, Stream)->GetVolume()));
 /* ========================================================================= */
+// $ Stream:GetBytes
+// < Total:integer=Current stream total bytes.
+// ? Returns the size of the file that is streaming.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(GetBytes, 1, LCPUSHINT(LCGETPTR(1, Stream)->GetOggBytes()));
+/* ========================================================================= */
+// $ Stream:GetSamples
+// < Total:integer=Current stream total samples.
+// ? Returns the duration of the stream in samples.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(GetSamples, 1, LCPUSHINT(LCGETPTR(1, Stream)->GetSamplesSafe()));
+/* ========================================================================= */
 // $ Stream:GetMetaData
 // < Data:table=Stream metadata key/value table.
 // ? Returns all the metadata that was stored inside the audio file.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetMetaData, 1,
-  LCTOTABLE(LCGETPTR(1, Stream)->GetMetaData()));
+LLFUNCEX(GetMetaData, 1, LCTOTABLE(LCGETPTR(1, Stream)->GetMetaData()));
+/* ========================================================================= */
+// $ Stream:GetRate
+// < Rate:integer=The sample rate
+// ? Returns the sample rate per second in samples.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(GetRate, 1, LCPUSHINT(LCGETPTR(1, Stream)->GetRate()));
+/* ========================================================================= */
+// $ Stream:GetBitRate
+// < Upper:integer=The upper bitrate
+// < Nominal:integer=The nominal bitrate
+// < Lower:integer=The lower bitrate
+// < Window:integer=The window bitrate
+// ? Returns bitrate information for the audio file.
+/* ------------------------------------------------------------------------- */
+LLFUNCBEGIN(GetBitRate)
+  Stream &sCref = *LCGETPTR(1, Stream);
+  LCPUSHINT(sCref.GetBitRateUpper());
+  LCPUSHINT(sCref.GetBitRateNominal());
+  LCPUSHINT(sCref.GetBitRateLower());
+  LCPUSHINT(sCref.GetBitRateWindow());
+LLFUNCENDEX(4)
+/* ========================================================================= */
+// $ Stream:GetVersion
+// < Version:integer=The ogg version
+// ? Returns the version of the ogg file
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(GetVersion, 1, LCPUSHINT(LCGETPTR(1, Stream)->GetVersion()));
+/* ========================================================================= */
+// $ Stream:GetChannels
+// < Rate:integer=The number of channels
+// ? Returns the number of channels in the audio file.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(GetChannels, 1, LCPUSHINT(LCGETPTR(1, Stream)->GetChannels()));
 /* ========================================================================= */
 // $ Stream:Destroy
 // ? Stops and destroys the stream object and frees all the memory associated
@@ -236,29 +272,16 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Stream));
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Stream:* member functions begin
-  LLRSFUNC(OnEvent),                   // Set event handler
-  LLRSFUNC(GetDuration),               // Get codec position
-  LLRSFUNC(GetElapsed),                // Get elapsed time
-  LLRSFUNC(GetPosition),               // Get PCM position
-  LLRSFUNC(GetName),                   // Get stream filename
-  LLRSFUNC(GetLoop),                   // Get loop count left
-  LLRSFUNC(GetLoopBegin),              // Get loop begin point
-  LLRSFUNC(GetLoopEnd),                // Get loop end point
-  LLRSFUNC(GetVolume),                 // Get volume
-  LLRSFUNC(GetMetaData),               // Get stream metadata
-  LLRSFUNC(IsPlaying),                 // Stream is playing?
-  LLRSFUNC(OnEvent),                   // Set event handler
-  LLRSFUNC(Play),                      // Play Stream
-  LLRSFUNC(SetElapsed),                // Seek by time
-  LLRSFUNC(SetElapsedPage),            // Seek by time (page)
-  LLRSFUNC(SetPosition),               // Seek PCM position
-  LLRSFUNC(SetPositionPage),           // Seek PCM position (page)
-  LLRSFUNC(SetLoop),                   // Set loop count
-  LLRSFUNC(SetLoopBegin),              // Set loop begin point
-  LLRSFUNC(SetLoopEnd),                // Set loop end point
-  LLRSFUNC(SetLoopRange),              // Set loop begin & end
-  LLRSFUNC(SetVolume),                 // Set volume
-  LLRSFUNC(Stop),                      // Stop Stream
+  LLRSFUNC(OnEvent),      LLRSFUNC(GetBitRate),      LLRSFUNC(GetBytes),
+  LLRSFUNC(GetChannels),  LLRSFUNC(GetDuration),     LLRSFUNC(GetElapsed),
+  LLRSFUNC(GetName),      LLRSFUNC(GetPosition),     LLRSFUNC(GetLoop),
+  LLRSFUNC(GetLoopBegin), LLRSFUNC(GetLoopEnd),      LLRSFUNC(GetRate),
+  LLRSFUNC(GetSamples),   LLRSFUNC(GetVersion),      LLRSFUNC(GetVolume),
+  LLRSFUNC(GetMetaData),  LLRSFUNC(IsPlaying),       LLRSFUNC(OnEvent),
+  LLRSFUNC(Play),         LLRSFUNC(SetElapsed),      LLRSFUNC(SetElapsedPage),
+  LLRSFUNC(SetPosition),  LLRSFUNC(SetPositionPage), LLRSFUNC(SetLoop),
+  LLRSFUNC(SetLoopBegin), LLRSFUNC(SetLoopEnd),      LLRSFUNC(SetLoopRange),
+  LLRSFUNC(SetVolume),    LLRSFUNC(Stop),
 LLRSEND                                // Stream:* member functions end
 /* ========================================================================= */
 // $ Stream.FileAsync
@@ -298,7 +321,7 @@ LLFUNC(ArrayAsync, LCCLASSCREATE(Stream)->InitAsyncArray(lS));
 // ? object.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Asset, 1, LCCLASSCREATE(Stream)->SyncInitArray(
-  LCGETCPPSTRINGNE(1, "Identifier"), std::move(*LCGETPTR(2, Asset))));
+  LCGETCPPSTRINGNE(1, "Identifier"), StdMove(*LCGETPTR(2, Asset))));
 /* ======================================================================= */
 // $ Stream.WaitAsync
 // ? Halts main-thread execution until all async stream mevents have completed
@@ -318,12 +341,8 @@ LLFUNC(ClearEvents, StreamClearEvents());
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Stream.* namespace functions begin
-  LLRSFUNC(Asset),                     // Load from array asyncronously
-  LLRSFUNC(ArrayAsync),                //   "  asyncronously
-  LLRSFUNC(ClearEvents),               // Clear all lua reference events
-  LLRSFUNC(File),                      // Load from specified file
-  LLRSFUNC(FileAsync),                 //   "  asyncronously
-  LLRSFUNC(WaitAsync),                 // Wait for async events to complete
+  LLRSFUNC(Asset), LLRSFUNC(ArrayAsync), LLRSFUNC(ClearEvents),
+  LLRSFUNC(File),  LLRSFUNC(FileAsync),  LLRSFUNC(WaitAsync),
 LLRSEND                                // Stream.* namespace functions end
 /* ========================================================================= */
 /* ######################################################################### */
@@ -360,10 +379,8 @@ LLRSKTITEM(SR_,LUA),                   LLRSKTITEM(SR_,MAX),
 LLRSKTEND                              // End of Stream stop reasons
 /* ========================================================================= */
 LLRSCONSTBEGIN                         // Stream.* namespace consts begin
-LLRSCONST(Events),                     // Stream event command
-LLRSCONST(States),                     // Stream state command
-LLRSCONST(Reasons),                    // Stream stop command
+LLRSCONST(Events), LLRSCONST(States), LLRSCONST(Reasons),
 LLRSCONSTEND                           // Stream.* namespace consts end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of Stream namespace
+}                                      // End of Stream namespace
 /* == EoF =========================================================== EoF == */

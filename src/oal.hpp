@@ -192,8 +192,10 @@ static class Oal final :
   void GetBufferInt(const ALuint uiBId, const ALenum eId, ALint *iDest) const
     { alGetBufferi(uiBId, eId, iDest); }
   /* -- Get buffer information --------------------------------------------- */
-  ALint GetBufferInt(const ALuint uiBId, const ALenum eId) const
-    { ALint iV; GetBufferInt(uiBId, eId, &iV); return iV; }
+  template<typename IntType=ALint>
+    IntType GetBufferInt(const ALuint uiBId, const ALenum eId) const
+      { ALint iV; GetBufferInt(uiBId, eId, &iV);
+        return static_cast<IntType>(iV); }
   /* -- Set distance model ------------------------------------------------- */
   void SetDistanceModel(const ALenum eModel) const
     { alDistanceModel(eModel); }
@@ -403,11 +405,11 @@ static class Oal final :
     // Return if debug logging not enabled
     if(!cLog->HasLevel(LH_DEBUG)) return;
     // Build extensions list
-    const Token tlExtensions{ GetString(AL_EXTENSIONS), strSpace };
+    const Token tlExtensions{ GetString(AL_EXTENSIONS), cCommon->Space() };
     // Build sorted list of extensions and log them all
     map<const string,const size_t> mExts;
     for(size_t stI = 0; stI < tlExtensions.size(); ++stI)
-      mExts.insert({ std::move(tlExtensions[stI]), stI });
+      mExts.insert({ StdMove(tlExtensions[stI]), stI });
     // Log device info and basic capabilities
     cLog->LogNLCDebugExSafe(
       "- Head related transfer function: $.\n"
@@ -516,10 +518,10 @@ static class Oal final :
     uiMaxMonoSources = numeric_limits<ALuint>::max();
   }
   /* -- Destructor --------------------------------------------------------- */
-  DTORHELPER(~Oal, DoDeInit());
+  DTORHELPER(~Oal, DoDeInit())
   /* -- Constructor -------------------------------------------------------- */
   Oal(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     OalFlags{ AFL_NONE },
     /* -- Const members ---------------------------------------------------- */
     imOALCodes{{
@@ -536,7 +538,7 @@ static class Oal final :
       IDMAPSTR(OV_ENOTAUDIO),          IDMAPSTR(OV_EBADPACKET),
       IDMAPSTR(OV_EBADLINK),           IDMAPSTR(OV_ENOSEEK)
     }, "OV_UNKNOWN" },
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     uiMaxStereoSources(0),
     uiMaxMonoSources(numeric_limits<ALuint>::max()),
     alcDevice(nullptr),
@@ -545,9 +547,8 @@ static class Oal final :
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Oal);                // Do not need copy constructors
+  DELETECOPYCTORS(Oal)                 // Do not need copy constructors
   /* -- Undefines ---------------------------------------------------------- */
-#undef DLL                             // This macro was only for this class
 #undef IAL                             //  "
 #undef IALC                            //  "
   /* ----------------------------------------------------------------------- */

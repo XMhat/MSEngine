@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="robots" content="index, follow">
 <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="description" content="Reference for the MS-Engine API version 23.4.1.218">
+<meta name="description" content="Reference for the MS-Engine API version 23.4.25.43">
 <meta name="author" content="MS-Design">
-<meta name="generator" content="MS-Engine Project Management Utility version 23.4.1.218">
+<meta name="generator" content="MS-Engine Project Management Utility version 23.4.25.43">
 <meta name="format-detection" content="telephone=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="MS-Engine API">
-<title>MS-Engine 23.4.1.218 API reference</title>
+<title>MS-Engine 23.4.25.43 API reference</title>
 <style type="text/css" media="screen">
 body { background-color:gray; color:black; padding:0px; margin:0px; border:0px; font-family:Helvetica; }
 a,a:visited { color:white; text-decoration:none; font-weight:bold; }
@@ -36,11 +36,11 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 </style>
 </head>
 <body id="top">
-<h1>MS-Engine 23.4.1.218 API reference</h1>
+<h1>MS-Engine 23.4.25.43 API reference</h1>
 <div id="index">
 <h2>Table of contents:-</h2>
-<p>A total of 377 members, 380 methods, 21 consts (757 functions) in 31 namespaces with 192 cvars.</p>
-<ol><li id="cvidx"><a href="#cvars">CVars</a> <i>(192 cvars)</i><ul>
+<p>A total of 377 members, 386 methods, 22 consts (763 functions) in 32 namespaces with 193 cvars.</p>
+<ol><li id="cvidx"><a href="#cvars">CVars</a> <i>(193 cvars)</i><ul>
 <li><a href="#cv.app_author">app_author</a></li>
 <li><a href="#cv.app_basedir">app_basedir</a></li>
 <li><a href="#cv.app_clearmutex">app_clearmutex</a></li>
@@ -148,6 +148,7 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#cv.obj_archivemax">obj_archivemax</a></li>
 <li><a href="#cv.obj_assetmax">obj_assetmax</a></li>
 <li><a href="#cv.obj_binmax">obj_binmax</a></li>
+<li><a href="#cv.obj_clipmax">obj_clipmax</a></li>
 <li><a href="#cv.obj_cmdmax">obj_cmdmax</a></li>
 <li><a href="#cv.obj_cursormax">obj_cursormax</a></li>
 <li><a href="#cv.obj_cvarimax">obj_cvarimax</a></li>
@@ -234,12 +235,13 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#cv.win_width">win_width</a></li>
 <li><a href="#cv.win_widthmin">win_widthmin</a></li>
 </ul></li>
-<li id="idx"><a href="#idx">Namespaces</a> <i>(31 namespaces)</i><ul>
+<li id="idx"><a href="#idx">Namespaces</a> <i>(32 namespaces)</i><ul>
 <li><a href="#idx:Archive">Archive</a></li>
 <li><a href="#idx:Asset">Asset</a></li>
 <li><a href="#idx:Audio">Audio</a></li>
 <li><a href="#idx:Bin">Bin</a></li>
 <li><a href="#idx:CVars">CVars</a></li>
+<li><a href="#idx:Clip">Clip</a></li>
 <li><a href="#idx:Console">Console</a></li>
 <li><a href="#idx:Core">Core</a></li>
 <li><a href="#idx:Credit">Credit</a></li>
@@ -374,8 +376,18 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#CVars.Set">Set</a></li>
 <li><a href="#CVars.Unregister">Unregister</a></li>
 </ul></li>
-<li id="idxc:CVars"><a href="#idx:CVars">CVars consts</a> <i>(1 const)</i><ul>
+<li id="idxc:CVars"><a href="#idx:CVars">CVars consts</a> <i>(2 consts)</i><ul>
 <li><a href="#CVars.Flags">Flags</a></li>
+<li><a href="#CVars.Result">Result</a></li>
+</ul></li>
+<li id="idx:Clip"><a href="#idx:Clip">Clip namespace</a> <i>(2 members)</i><ul>
+<li><a href="#Clip.Get">Get</a></li>
+<li><a href="#Clip.Set">Set</a></li>
+</ul></li>
+<li id="idxm:Clip"><a href="#Clip">Clip methods</a> <i>(3 methods)</i><ul>
+<li><a href="#Clip:Destroy">Destroy</a></li>
+<li><a href="#Clip:Id">Id</a></li>
+<li><a href="#Clip:Value">Value</a></li>
 </ul></li>
 <li id="idx:Console"><a href="#idx:Console">Console namespace</a> <i>(9 members)</i><ul>
 <li><a href="#Console.Exists">Exists</a></li>
@@ -593,7 +605,7 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#Font.Create">Create</a></li>
 <li><a href="#Font.Image">Image</a></li>
 </ul></li>
-<li id="idxm:Font"><a href="#Font">Font methods</a> <i>(45 methods)</i><ul>
+<li id="idxm:Font"><a href="#Font">Font methods</a> <i>(44 methods)</i><ul>
 <li><a href="#Font:Destroy">Destroy</a></li>
 <li><a href="#Font:Dump">Dump</a></li>
 <li><a href="#Font:GetHeight">GetHeight</a></li>
@@ -601,7 +613,6 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#Font:GetWidth">GetWidth</a></li>
 <li><a href="#Font:LoadChars">LoadChars</a></li>
 <li><a href="#Font:LoadRange">LoadRange</a></li>
-<li><a href="#Font:Name">Name</a></li>
 <li><a href="#Font:Print">Print</a></li>
 <li><a href="#Font:PrintC">PrintC</a></li>
 <li><a href="#Font:PrintCT">PrintCT</a></li>
@@ -620,23 +631,23 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#Font:PrintWTS">PrintWTS</a></li>
 <li><a href="#Font:PrintWU">PrintWU</a></li>
 <li><a href="#Font:PrintWUT">PrintWUT</a></li>
-<li><a href="#Font:SetAlpha">SetAlpha</a></li>
-<li><a href="#Font:SetBlue">SetBlue</a></li>
+<li><a href="#Font:SetCA">SetCA</a></li>
+<li><a href="#Font:SetCB">SetCB</a></li>
+<li><a href="#Font:SetCG">SetCG</a></li>
+<li><a href="#Font:SetCOA">SetCOA</a></li>
+<li><a href="#Font:SetCOB">SetCOB</a></li>
+<li><a href="#Font:SetCOG">SetCOG</a></li>
+<li><a href="#Font:SetCOR">SetCOR</a></li>
+<li><a href="#Font:SetCORGB">SetCORGB</a></li>
+<li><a href="#Font:SetCORGBA">SetCORGBA</a></li>
+<li><a href="#Font:SetCORGBAI">SetCORGBAI</a></li>
+<li><a href="#Font:SetCR">SetCR</a></li>
+<li><a href="#Font:SetCRGB">SetCRGB</a></li>
+<li><a href="#Font:SetCRGBA">SetCRGBA</a></li>
+<li><a href="#Font:SetCRGBAI">SetCRGBAI</a></li>
 <li><a href="#Font:SetGSize">SetGSize</a></li>
 <li><a href="#Font:SetGlyphPadding">SetGlyphPadding</a></li>
-<li><a href="#Font:SetGreen">SetGreen</a></li>
 <li><a href="#Font:SetLSpacing">SetLSpacing</a></li>
-<li><a href="#Font:SetOAlpha">SetOAlpha</a></li>
-<li><a href="#Font:SetOBlue">SetOBlue</a></li>
-<li><a href="#Font:SetOGreen">SetOGreen</a></li>
-<li><a href="#Font:SetORGB">SetORGB</a></li>
-<li><a href="#Font:SetORGBA">SetORGBA</a></li>
-<li><a href="#Font:SetORGBAInt">SetORGBAInt</a></li>
-<li><a href="#Font:SetORed">SetORed</a></li>
-<li><a href="#Font:SetRGB">SetRGB</a></li>
-<li><a href="#Font:SetRGBA">SetRGBA</a></li>
-<li><a href="#Font:SetRGBAInt">SetRGBAInt</a></li>
-<li><a href="#Font:SetRed">SetRed</a></li>
 <li><a href="#Font:SetSize">SetSize</a></li>
 <li><a href="#Font:SetSpacing">SetSpacing</a></li>
 </ul></li>
@@ -781,33 +792,35 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#Palette.Palette">Palette</a></li>
 <li><a href="#Palette.Texture">Texture</a></li>
 </ul></li>
-<li id="idxm:Palette"><a href="#Palette">Palette methods</a> <i>(26 methods)</i><ul>
+<li id="idxm:Palette"><a href="#Palette">Palette methods</a> <i>(28 methods)</i><ul>
 <li><a href="#Palette:Commit">Commit</a></li>
+<li><a href="#Palette:Copy">Copy</a></li>
 <li><a href="#Palette:Destroy">Destroy</a></li>
+<li><a href="#Palette:Fill">Fill</a></li>
 <li><a href="#Palette:GetA">GetA</a></li>
+<li><a href="#Palette:GetAI">GetAI</a></li>
 <li><a href="#Palette:GetB">GetB</a></li>
+<li><a href="#Palette:GetBI">GetBI</a></li>
 <li><a href="#Palette:GetG">GetG</a></li>
-<li><a href="#Palette:GetIA">GetIA</a></li>
-<li><a href="#Palette:GetIB">GetIB</a></li>
-<li><a href="#Palette:GetIG">GetIG</a></li>
-<li><a href="#Palette:GetIR">GetIR</a></li>
-<li><a href="#Palette:GetIRGBA">GetIRGBA</a></li>
+<li><a href="#Palette:GetGI">GetGI</a></li>
+<li><a href="#Palette:GetName">GetName</a></li>
 <li><a href="#Palette:GetR">GetR</a></li>
 <li><a href="#Palette:GetRGBA">GetRGBA</a></li>
-<li><a href="#Palette:Name">Name</a></li>
+<li><a href="#Palette:GetRGBAI">GetRGBAI</a></li>
+<li><a href="#Palette:GetRI">GetRI</a></li>
 <li><a href="#Palette:SetA">SetA</a></li>
+<li><a href="#Palette:SetAI">SetAI</a></li>
 <li><a href="#Palette:SetB">SetB</a></li>
+<li><a href="#Palette:SetBI">SetBI</a></li>
 <li><a href="#Palette:SetG">SetG</a></li>
-<li><a href="#Palette:SetI">SetI</a></li>
-<li><a href="#Palette:SetIA">SetIA</a></li>
-<li><a href="#Palette:SetIB">SetIB</a></li>
-<li><a href="#Palette:SetIG">SetIG</a></li>
-<li><a href="#Palette:SetIR">SetIR</a></li>
+<li><a href="#Palette:SetGI">SetGI</a></li>
 <li><a href="#Palette:SetR">SetR</a></li>
 <li><a href="#Palette:SetRGBA">SetRGBA</a></li>
+<li><a href="#Palette:SetRGBAI">SetRGBAI</a></li>
+<li><a href="#Palette:SetRI">SetRI</a></li>
 <li><a href="#Palette:Shift">Shift</a></li>
-<li><a href="#Palette:ShiftL">ShiftL</a></li>
-<li><a href="#Palette:ShiftR">ShiftR</a></li>
+<li><a href="#Palette:ShiftB">ShiftB</a></li>
+<li><a href="#Palette:ShiftF">ShiftF</a></li>
 </ul></li>
 <li id="idx:Pcm"><a href="#idx:Pcm">Pcm namespace</a> <i>(6 members)</i><ul>
 <li><a href="#Pcm.ArrayAsync">ArrayAsync</a></li>
@@ -956,8 +969,9 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#Stream.FileAsync">FileAsync</a></li>
 <li><a href="#Stream.WaitAsync">WaitAsync</a></li>
 </ul></li>
-<li id="idxm:Stream"><a href="#Stream">Stream methods</a> <i>(23 methods)</i><ul>
+<li id="idxm:Stream"><a href="#Stream">Stream methods</a> <i>(25 methods)</i><ul>
 <li><a href="#Stream:Destroy">Destroy</a></li>
+<li><a href="#Stream:GetBytes">GetBytes</a></li>
 <li><a href="#Stream:GetDuration">GetDuration</a></li>
 <li><a href="#Stream:GetElapsed">GetElapsed</a></li>
 <li><a href="#Stream:GetLoop">GetLoop</a></li>
@@ -966,6 +980,7 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#Stream:GetMetaData">GetMetaData</a></li>
 <li><a href="#Stream:GetName">GetName</a></li>
 <li><a href="#Stream:GetPosition">GetPosition</a></li>
+<li><a href="#Stream:GetSamples">GetSamples</a></li>
 <li><a href="#Stream:GetVolume">GetVolume</a></li>
 <li><a href="#Stream:IsPlaying">IsPlaying</a></li>
 <li><a href="#Stream:OnEvent">OnEvent</a></li>
@@ -1028,21 +1043,21 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#Texture:GetWidth">GetWidth</a></li>
 <li><a href="#Texture:PopColour">PopColour</a></li>
 <li><a href="#Texture:PushColour">PushColour</a></li>
-<li><a href="#Texture:SetAlpha">SetAlpha</a></li>
-<li><a href="#Texture:SetBlue">SetBlue</a></li>
-<li><a href="#Texture:SetGreen">SetGreen</a></li>
+<li><a href="#Texture:SetCA">SetCA</a></li>
+<li><a href="#Texture:SetCB">SetCB</a></li>
+<li><a href="#Texture:SetCG">SetCG</a></li>
+<li><a href="#Texture:SetCR">SetCR</a></li>
+<li><a href="#Texture:SetCRGB">SetCRGB</a></li>
+<li><a href="#Texture:SetCRGBA">SetCRGBA</a></li>
+<li><a href="#Texture:SetCRGBAI">SetCRGBAI</a></li>
 <li><a href="#Texture:SetLTRB">SetLTRB</a></li>
 <li><a href="#Texture:SetLTRBA">SetLTRBA</a></li>
-<li><a href="#Texture:SetRGB">SetRGB</a></li>
-<li><a href="#Texture:SetRGBA">SetRGBA</a></li>
-<li><a href="#Texture:SetRGBAEx">SetRGBAEx</a></li>
-<li><a href="#Texture:SetRGBAInt">SetRGBAInt</a></li>
-<li><a href="#Texture:SetRed">SetRed</a></li>
-<li><a href="#Texture:SetTexCoord">SetTexCoord</a></li>
-<li><a href="#Texture:SetTexCoordEx">SetTexCoordEx</a></li>
-<li><a href="#Texture:SetVertex">SetVertex</a></li>
-<li><a href="#Texture:SetVertexA">SetVertexA</a></li>
-<li><a href="#Texture:SetVertexEx">SetVertexEx</a></li>
+<li><a href="#Texture:SetTC">SetTC</a></li>
+<li><a href="#Texture:SetV">SetV</a></li>
+<li><a href="#Texture:SetVA">SetVA</a></li>
+<li><a href="#Texture:SetVCRGBA">SetVCRGBA</a></li>
+<li><a href="#Texture:SetVTC">SetVTC</a></li>
+<li><a href="#Texture:SetVX">SetVX</a></li>
 <li><a href="#Texture:TileA">TileA</a></li>
 <li><a href="#Texture:TileAD">TileAD</a></li>
 <li><a href="#Texture:TileAS">TileAS</a></li>
@@ -1058,7 +1073,7 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#Texture:Upload">Upload</a></li>
 <li><a href="#Texture:UploadEx">UploadEx</a></li>
 </ul></li>
-<li id="idx:Util"><a href="#idx:Util">Util namespace</a> <i>(67 members)</i><ul>
+<li id="idx:Util"><a href="#idx:Util">Util namespace</a> <i>(65 members)</i><ul>
 <li><a href="#Util.AscNTime">AscNTime</a></li>
 <li><a href="#Util.AscNTimeUTC">AscNTimeUTC</a></li>
 <li><a href="#Util.AscTime">AscTime</a></li>
@@ -1069,8 +1084,6 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#Util.Capitalise">Capitalise</a></li>
 <li><a href="#Util.Clamp">Clamp</a></li>
 <li><a href="#Util.ClampInt">ClampInt</a></li>
-<li><a href="#Util.ClipGet">ClipGet</a></li>
-<li><a href="#Util.ClipSet">ClipSet</a></li>
 <li><a href="#Util.CountOf">CountOf</a></li>
 <li><a href="#Util.DecodeUUID">DecodeUUID</a></li>
 <li><a href="#Util.Duration">Duration</a></li>
@@ -1145,7 +1158,7 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#Video:GetFPS">GetFPS</a></li>
 <li><a href="#Video:GetFrame">GetFrame</a></li>
 <li><a href="#Video:GetFrames">GetFrames</a></li>
-<li><a href="#Video:GetFramesSkipped">GetFramesSkipped</a></li>
+<li><a href="#Video:GetFramesLost">GetFramesLost</a></li>
 <li><a href="#Video:GetHeight">GetHeight</a></li>
 <li><a href="#Video:GetLoop">GetLoop</a></li>
 <li><a href="#Video:GetName">GetName</a></li>
@@ -1491,6 +1504,9 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4><a href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="cv.obj_binmax"><h3>obj_binmax</h3>
 <p>Specifies the maximum number of bin objects allowed to be registered by the engine. An exception is generated if more cvars than this are allocated.</p>
+<h4><a href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="cv.obj_clipmax"><h3>obj_clipmax</h3>
+<p>Specifies the maximum number of clipboard objects allowed to be registered by the engine. An exception is generated if more cvars than this are allocated.</p>
 <h4><a href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="cv.obj_cmdmax"><h3>obj_cmdmax</h3>
 <p>Specifies the maximum number of console commands allowed to be registered by the engine. This includes the internal default commands. An exception is generated if more cvars than this are allocated.</p>
@@ -2572,7 +2588,7 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Function Parameters:-</h4>
 <pre><u>Name</u> <i>(string)</i> = The engine cvar name.<br><u>Default</u> <i>(string)</i> = The default cvar value.<br><u>Flags</u> <i>(integer)</i> = The cvar flags.<br><u>Callback</u> <i>(function)</i> = The callback global function name.<br></pre>
 <h4>Synopsis:-</h4>
-<p>Registers the specified cvar name with the specified default value&#x2e; The default value is ignored if there is already a saved value in the Sql cvars database&#x2e; If the saved value is a corrupted encrypted value then the default is used&#x2e; If the cvar already exists then an exception is thrown so make sure you check for it first if do not expect this call to garauntee success&#x2e; Normally it is unless there is a memory allocation issue&#x2e; You can register an unlimited amount of variables&#x2e;<br>See CVars&#x2e;Flags&#x28;&#x29; to see available flags&#x2e;<br></p>
+<p>Registers the specified cvar name with the specified default value&#x2e; The default value is ignored if there is already a saved value in the Sql cvars database&#x2e; If the saved value is a corrupted encrypted value then the default is used&#x2e; If the cvar already exists then an exception is thrown so make sure you check for it first if do not expect this call to garauntee success&#x2e; Normally it is unless there is a memory allocation issue&#x2e; You can register an unlimited amount of variables&#x2e;<br>See CVars&#x2e;Flags to see available flags&#x2e;<br></p>
 <h4><a href="#idx:CVars" onclick="r('CVars.Register')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="CVars.Reset">
 <h3>CVars.Reset</h3>
@@ -2599,7 +2615,7 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Function Parameters:-</h4>
 <pre><u>Name</u> <i>(string)</i> = The engine cvar name.<br><u>Value</u> <i>(string)</i> = The new engine cvar value.<br></pre>
 <h4>Synopsis:-</h4>
-<p>Sets the new value of the specified engine cvar name&#x2e; An exception is raised if the specified cvar does not exist or the value cannot be set due to type restraints specified by the cvars creation flags&#x2e;<br></p>
+<p>Sets the new value of the specified engine cvar name&#x2e; An exception is raised if any error occurds&#x2e; See CVars&#x2e;Result to see the possible results&#x2e;<br></p>
 <h4><a href="#idx:CVars" onclick="r('CVars.Set')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="CVars.Unregister">
 <h3>CVars.Unregister</h3>
@@ -2617,8 +2633,62 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Return Parameters:-</h4>
 <pre><u>Data</u> <i>(table)</i> = A table of const string/int key pairs<br></pre>
 <h4>Synopsis:-</h4>
-<p>Returns all the cvar flags supported by the engine in the form of a string&#x2f;int key pairs which can be used with the cCVars&#x2d;&#x3e;Register&#x28;&#x29; command STRING    &#x28;0x00001&#x29;&#x3a; Store an unlimited amount of text&#x2e;<br>INTEGER   &#x28;0x00002&#x29;&#x3a; Store a 64&#x2d;bit integer&#x2e;<br>FLOAT     &#x28;0x00004&#x29;&#x3a; Store a 64&#x2d;bit IEEE floating number&#x2e;<br>BOOLEAN   &#x28;0x00008&#x29;&#x3a; Store a simple binary number &#x28;0 or 1&#x29;&#x2e;<br>SAVEABLE  &#x28;0x00010&#x29;&#x3a; The variable is persistant&#x2e;<br>PROTECTED &#x28;0x00020&#x29;&#x3a; The variable is encrypted in persistant storage&#x2e;<br>NOTEMPTY  &#x28;0x00040&#x29;&#x3a; The variable cannot be empty&#x2e;<br>UNSIGNED  &#x28;0x00080&#x29;&#x3a; A negative value is not allowed&#x2e;<br>POW2      &#x28;0x00100&#x29;&#x3a; The value cannot be zero and not a power of two&#x2e;<br>POW2Z     &#x28;0x00200&#x29;&#x3a; The value can be zero but not a power of two&#x2e;<br>TRIM      &#x28;0x10000&#x29;&#x3a; Whitespaces are trimmed from prefix and suffix&#x2e;<br>SAVEFORCE &#x28;0x20000&#x29;&#x3a; The value is saved even if default wasn&#x27;t changed&#x2e;<br></p>
+<p>Returns all the cvar flags supported by the engine in the form of a string&#x2f;int key pairs which can be used with the cCVars&#x2d;&#x3e;Register&#x28;&#x29; command </p>
 <h4><a href="#idx:CVars" onclick="r('CVars.Flags')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="CVars.Result">
+<h3>CVars.Result</h3>
+<h4>Syntax:-</h4>
+<pre><u>Data</u> = CVars.Result</pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Data</u> <i>(table)</i> = A table of const string/int key pairs<br></pre>
+<h4>Synopsis:-</h4>
+<p>Returns the possible values that can be returned with the CVars&#x2e;Set&#x28;&#x29;<br>function&#x2e;<br></p>
+<h4><a href="#idx:CVars" onclick="r('CVars.Result')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Clip"><h2>Clip</h2>
+<p>Contains functions for retrieving and setting text in the Clip&#x2e;<br></p><h4><a href="#idx:Clip" onclick="r('Clip')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Clip.Get">
+<h3>Clip.Get</h3>
+<h4>Syntax:-</h4>
+<pre>Clip.Get(<i><u>Identifier</u>, <u>Completion</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Identifier</u> <i>(string)</i> = The identifier for the request.<br><u>Completion</u> <i>(function)</i> = The function to call when completed.<br></pre>
+<h4>Synopsis:-</h4>
+<p>Retrieves text from the operating systems clipboard&#x2e; Executes the specified function when completed as the window thread has to request the operation and then forward the request back to the engine thread&#x2e;<br></p>
+<h4><a href="#idx:Clip" onclick="r('Clip.Get')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Clip.Set">
+<h3>Clip.Set</h3>
+<h4>Syntax:-</h4>
+<pre>Clip.Set(<i><u>Identifier</u>, <u>Text</u>, <u>Completion</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Identifier</u> <i>(string)</i> = The identifier for the request.<br><u>Text</u> <i>(string)</i> = The text to copy.<br><u>Completion</u> <i>(function)</i> = The function to call when completed.<br></pre>
+<h4>Synopsis:-</h4>
+<p>Stores the specified text into the operating system&#x27;s clipboard and executes the specified completion function when done as the window thread has to request the operation and then forward the request back to the engine thread&#x2e;<br></p>
+<h4><a href="#idx:Clip" onclick="r('Clip.Set')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Clip:Destroy">
+<h3>Clip:Destroy</h3>
+<h4>Syntax:-</h4>
+<pre>Clip:Destroy()</pre>
+<h4>Synopsis:-</h4>
+<p>Destroys the specified Clip object&#x2e;<br></p>
+<h4><a href="#idx:Clip" onclick="r('Clip:Destroy')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Clip:Id">
+<h3>Clip:Id</h3>
+<h4>Syntax:-</h4>
+<pre><u>Identifier</u> = Clip:Id()</pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Identifier</u> <i>(string )</i> =  The identifier given at creation.<br></pre>
+<h4>Synopsis:-</h4>
+<p>Returns the identifier of this request given at creation&#x2e;<br></p>
+<h4><a href="#idx:Clip" onclick="r('Clip:Id')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Clip:Value">
+<h3>Clip:Value</h3>
+<h4>Syntax:-</h4>
+<pre><u>Value</u> = Clip:Value()</pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Value</u> <i>(string )</i> =  The value retrieved from or sent to the Clip.<br></pre>
+<h4>Synopsis:-</h4>
+<p>Returns the value sent with Clip&#x2e;Set or the value retrieved with Clip&#x2e;Get&#x2e;<br></p>
+<h4><a href="#idx:Clip" onclick="r('Clip:Value')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Console"><h2>Console</h2>
 <p>The console class allows manipulation of the game console&#x2e;<br></p><h4><a href="#idx:Console" onclick="r('Console')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Console.Exists">
@@ -2852,7 +2922,7 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Function Parameters:-</h4>
 <pre><u>Filename</u> <i>(string)</i> = The filenames of the large icon to set.<br></pre>
 <h4>Synopsis:-</h4>
-<p>Asks the operating system to set the specified icons of the programmers choosing&#x2e; Can be &#x2e;bmp &#x2e;jpg &#x2e;png or &#x2e;tga&#x2e; Separate each filename with a colon &#x27;&#x3a;&#x27;&#x2e; On Windows&#x2c; anything but the first and the last icon are dropped so make sure you list the first filename as the large icon and the last filename as the small icon&#x2e;<br></p>
+<p>Asks the operating system to set the specified icons of the programmers choosing&#x2e; Separate each filename with a colon &#x27;&#x3a;&#x27;&#x2e; On Windows&#x2c; anything but the first and the last icon are dropped so make sure you list the first filename as the large icon and the last filename as the small icon&#x2e;<br></p>
 <h4><a href="#idx:Core" onclick="r('Core.SetIcon')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Core.Stack">
 <h3>Core.Stack</h3>
@@ -4401,7 +4471,7 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Return Parameters:-</h4>
 <pre><u>Handle</u> <i>(Font)</i> = A handle to the newly created texture.<br></pre>
 <h4>Synopsis:-</h4>
-<p>Creates a texture as a font tileset&#x2e; The function looks for a file with the same name as &#x27;filename&#x27; with the &#x2e;txt extension which explains the parameters for the font tileset&#x2e; These parameters are as follows&#x2e;&#x2e;&#x2e;<br><br>rangestart &#x3d; The ASCII character to represent the first tile&#x2e;&#x2e;<br>range &#x3d; The number of ASCII characters in the tileset&#x2e;&#x2e;<br>tilewidth &#x3d; The width of the tile&#x2e;<br>tileheight &#x3d; The height of the tile&#x2e;<br>tilespacingwidth &#x3d; The horizontal spacing between each tile&#x2e;<br>tilespacingheight &#x3d; The vertical spacing between each tile&#x2e;<br>filetype &#x3d; The source type of texture &#x28;&#x2e;bmp or &#x2e;tga&#x29;&#x2e;<br>width &#x3d; The widths of each character separated by a whitespace&#x2e;<br>default &#x3d; The default ASCII character to draw if char not available&#x2e;<br>name &#x3d; A name to describe the font&#x2e;<br>scale &#x3d; The starting scale of the characters &#x28;i&#x2e;e&#x2e; 1&#x3d;100&#x25;&#x2c; 0&#x2e;5&#x3d;50&#x25;&#x29;&#x2e;<br></p>
+<p>Creates a texture as a font tileset&#x2e; The function looks for a file with the same name as &#x27;filename&#x27; with the &#x2e;txt extension which explains the parameters for the font tileset&#x2e; These parameters are as follows&#x2e;&#x2e;&#x2e;<br><br>rangestart &#x3d; The ASCII character to represent the first tile&#x2e;&#x2e;<br>range &#x3d; The number of ASCII characters in the tileset&#x2e;&#x2e;<br>tilewidth &#x3d; The width of the tile&#x2e;<br>tileheight &#x3d; The height of the tile&#x2e;<br>tilespacingwidth &#x3d; The horizontal spacing between each tile&#x2e;<br>tilespacingheight &#x3d; The vertical spacing between each tile&#x2e;<br>filetype &#x3d; The source type of texture&#x2e;<br>width &#x3d; The widths of each character separated by a whitespace&#x2e;<br>default &#x3d; The default ASCII character to draw if char not available&#x2e;<br>name &#x3d; A name to describe the font&#x2e;<br>scale &#x3d; The starting scale of the characters &#x28;i&#x2e;e&#x2e; 1&#x3d;100&#x25;&#x2c; 0&#x2e;5&#x3d;50&#x25;&#x29;&#x2e;<br></p>
 <h4><a href="#idx:Font" onclick="r('Font.Image')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Font:Destroy">
 <h3>Font:Destroy</h3>
@@ -4415,7 +4485,7 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Syntax:-</h4>
 <pre>Font:Dump()</pre>
 <h4>Synopsis:-</h4>
-<p>Dumps the texture to the specified file in TGA format&#x2e;<br></p>
+<p>Dumps the texture to the specified file in the specified format&#x2e;<br></p>
 <h4><a href="#idx:Font" onclick="r('Font:Dump')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Font:GetHeight">
 <h3>Font:GetHeight</h3>
@@ -4462,15 +4532,6 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Caches the specified UNICODE character range to the texture&#x2e; Although new characters are dynamically loaded on demand&#x2c; this function will act as a &#x27;pre&#x2d;cache&#x27; for characters you KNOW you are going to use&#x2e;<br></p>
 <h4><a href="#idx:Font" onclick="r('Font:LoadRange')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Font:Name">
-<h3>Font:Name</h3>
-<h4>Syntax:-</h4>
-<pre><u>Name</u> = Font:Name()</pre>
-<h4>Return Parameters:-</h4>
-<pre><u>Name</u> <i>(string)</i> = Name of the font.<br></pre>
-<h4>Synopsis:-</h4>
-<p>If this font was loaded by a filename or it was set with a custom id&#x2e;<br>This function returns that name which was assigned to it&#x2e;<br></p>
-<h4><a href="#idx:Font" onclick="r('Font:Name')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Font:Print">
 <h3>Font:Print</h3>
 <h4>Syntax:-</h4>
@@ -4647,24 +4708,132 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Same functionality as PrintWU but with the option to print glyphs&#x2e; You can do this by specifying \rthhhhhhhh anywhere in your text&#x2e; Where &#x27;h&#x27;<br>is a hexadecimal number between 00000000 and ffffffff to match the tile id of the texture&#x2e; You must zero pad the number as shown&#x2e;<br></p>
 <h4><a href="#idx:Font" onclick="r('Font:PrintWUT')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Font:SetAlpha">
-<h3>Font:SetAlpha</h3>
+<div id="Font:SetCA">
+<h3>Font:SetCA</h3>
 <h4>Syntax:-</h4>
-<pre>Font:SetAlpha(<i><u>Alpha</u></i>)</pre>
+<pre>Font:SetCA(<i><u>Alpha</u></i>)</pre>
 <h4>Function Parameters:-</h4>
 <pre><u>Alpha</u> <i>(number)</i> = The transparency of the texture (0-1).<br></pre>
 <h4>Synopsis:-</h4>
 <p>Sets the colour transparency of the texture&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
-<h4><a href="#idx:Font" onclick="r('Font:SetAlpha')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Font:SetBlue">
-<h3>Font:SetBlue</h3>
+<h4><a href="#idx:Font" onclick="r('Font:SetCA')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Font:SetCB">
+<h3>Font:SetCB</h3>
 <h4>Syntax:-</h4>
-<pre>Font:SetBlue(<i><u>Blue</u></i>)</pre>
+<pre>Font:SetCB(<i><u>Blue</u></i>)</pre>
 <h4>Function Parameters:-</h4>
 <pre><u>Blue</u> <i>(number)</i> = The colour intensity of the texture's blue component (0-1).<br></pre>
 <h4>Synopsis:-</h4>
 <p>Sets the colour intensity of the texture for the blue component&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
-<h4><a href="#idx:Font" onclick="r('Font:SetBlue')">&#x25B2; Return to table of contents</a></h4></div>
+<h4><a href="#idx:Font" onclick="r('Font:SetCB')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Font:SetCG">
+<h3>Font:SetCG</h3>
+<h4>Syntax:-</h4>
+<pre>Font:SetCG(<i><u>Green</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Green</u> <i>(number)</i> = The colour intensity of the texture's green component (0-1).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Sets the colour intensity of the texture for the green component&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
+<h4><a href="#idx:Font" onclick="r('Font:SetCG')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Font:SetCOA">
+<h3>Font:SetCOA</h3>
+<h4>Syntax:-</h4>
+<pre>Font:SetCOA(<i><u>Alpha</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Alpha</u> <i>(number)</i> = The transparency of the outline texture (0-1).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Sets the colour transparency of the outline texture&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
+<h4><a href="#idx:Font" onclick="r('Font:SetCOA')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Font:SetCOB">
+<h3>Font:SetCOB</h3>
+<h4>Syntax:-</h4>
+<pre>Font:SetCOB(<i><u>Blue</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Blue</u> <i>(number)</i> = The colour intensity of the blue outline component (0-1).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Sets the colour intensity of the outline for the blue component&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
+<h4><a href="#idx:Font" onclick="r('Font:SetCOB')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Font:SetCOG">
+<h3>Font:SetCOG</h3>
+<h4>Syntax:-</h4>
+<pre>Font:SetCOG(<i><u>Green</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Green</u> <i>(number)</i> = The colour intensity of green outline component (0-1).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Sets the colour intensity of the outline for the green component&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
+<h4><a href="#idx:Font" onclick="r('Font:SetCOG')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Font:SetCOR">
+<h3>Font:SetCOR</h3>
+<h4>Syntax:-</h4>
+<pre>Font:SetCOR(<i><u>Red</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Red</u> <i>(number)</i> = The colour intensity of red outline component (0-1).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Sets the colour intensity of the outline for the red component&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
+<h4><a href="#idx:Font" onclick="r('Font:SetCOR')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Font:SetCORGB">
+<h3>Font:SetCORGB</h3>
+<h4>Syntax:-</h4>
+<pre>Font:SetCORGB(<i><u>Red</u>, <u>Green</u>, <u>Blue</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Red</u> <i>(number)</i> = The colour intensity of the outline red component (0-1).<br><u>Green</u> <i>(number)</i> = The colour intensity of the outline green component (0-1).<br><u>Blue</u> <i>(number)</i> = The colour intensity of the outline blue omponent (0-1).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Sets the colour intensity of the outline for each component&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
+<h4><a href="#idx:Font" onclick="r('Font:SetCORGB')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Font:SetCORGBA">
+<h3>Font:SetCORGBA</h3>
+<h4>Syntax:-</h4>
+<pre>Font:SetCORGBA(<i><u>Red</u>, <u>Green</u>, <u>Blue</u>, <u>Alpha</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Red</u> <i>(number)</i> = The colour intensity of the outline red component (0-1).<br><u>Green</u> <i>(number)</i> = The colour intensity of the outline green component (0-1).<br><u>Blue</u> <i>(number)</i> = The colour intensity of the outline blue omponent (0-1).<br><u>Alpha</u> <i>(number)</i> = The transparency of the outline (0-1).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Sets the colour intensity of the outline for each component&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
+<h4><a href="#idx:Font" onclick="r('Font:SetCORGBA')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Font:SetCORGBAI">
+<h3>Font:SetCORGBAI</h3>
+<h4>Syntax:-</h4>
+<pre>Font:SetCORGBAI(<i><u>Colour</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Colour</u> <i>(integer)</i> = The entire colour to set as an integer (0xAARRGGBB)<br></pre>
+<h4>Synopsis:-</h4>
+<p>Sets the colour intensity of the font outline for each component using a 32 bit integer&#x2e;<br></p>
+<h4><a href="#idx:Font" onclick="r('Font:SetCORGBAI')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Font:SetCR">
+<h3>Font:SetCR</h3>
+<h4>Syntax:-</h4>
+<pre>Font:SetCR(<i><u>Red</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Red</u> <i>(number)</i> = The colour intensity of the texture's red component (0-1).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Sets the colour intensity of the texture for the red component&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
+<h4><a href="#idx:Font" onclick="r('Font:SetCR')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Font:SetCRGB">
+<h3>Font:SetCRGB</h3>
+<h4>Syntax:-</h4>
+<pre>Font:SetCRGB(<i><u>Red</u>, <u>Green</u>, <u>Blue</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Red</u> <i>(number)</i> = The colour intensity of the texture's red component (0-1).<br><u>Green</u> <i>(number)</i> = The colour intensity of the texture's green component (0-1).<br><u>Blue</u> <i>(number)</i> = The colour intensity of the texture's blue omponent (0-1).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Sets the colour intensity of the texture for each component&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
+<h4><a href="#idx:Font" onclick="r('Font:SetCRGB')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Font:SetCRGBA">
+<h3>Font:SetCRGBA</h3>
+<h4>Syntax:-</h4>
+<pre>Font:SetCRGBA(<i><u>Red</u>, <u>Green</u>, <u>Blue</u>, <u>Alpha</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Red</u> <i>(number)</i> = The colour intensity of the texture's red component (0-1).<br><u>Green</u> <i>(number)</i> = The colour intensity of the texture's green component (0-1).<br><u>Blue</u> <i>(number)</i> = The colour intensity of the texture's blue omponent (0-1).<br><u>Alpha</u> <i>(number)</i> = The transparency of the texture (0-1).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Sets the colour intensity of the texture for each component&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
+<h4><a href="#idx:Font" onclick="r('Font:SetCRGBA')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Font:SetCRGBAI">
+<h3>Font:SetCRGBAI</h3>
+<h4>Syntax:-</h4>
+<pre>Font:SetCRGBAI(<i><u>Colour</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Colour</u> <i>(integer)</i> = The entire colour to set as an integer (0xAARRGGBB)<br></pre>
+<h4>Synopsis:-</h4>
+<p>Sets the colour intensity of the font face for each component using a 32 bit integer&#x2e;<br></p>
+<h4><a href="#idx:Font" onclick="r('Font:SetCRGBAI')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Font:SetGSize">
 <h3>Font:SetGSize</h3>
 <h4>Syntax:-</h4>
@@ -4683,15 +4852,6 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>When using print functions with glyph texture addons&#x2c; this controls the Y padding&#x2e;<br></p>
 <h4><a href="#idx:Font" onclick="r('Font:SetGlyphPadding')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Font:SetGreen">
-<h3>Font:SetGreen</h3>
-<h4>Syntax:-</h4>
-<pre>Font:SetGreen(<i><u>Green</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Green</u> <i>(number)</i> = The colour intensity of the texture's green component (0-1).<br></pre>
-<h4>Synopsis:-</h4>
-<p>Sets the colour intensity of the texture for the green component&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
-<h4><a href="#idx:Font" onclick="r('Font:SetGreen')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Font:SetLSpacing">
 <h3>Font:SetLSpacing</h3>
 <h4>Syntax:-</h4>
@@ -4701,105 +4861,6 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Changes the line spacing adjustment </p>
 <h4><a href="#idx:Font" onclick="r('Font:SetLSpacing')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Font:SetOAlpha">
-<h3>Font:SetOAlpha</h3>
-<h4>Syntax:-</h4>
-<pre>Font:SetOAlpha(<i><u>Alpha</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Alpha</u> <i>(number)</i> = The transparency of the outline texture (0-1).<br></pre>
-<h4>Synopsis:-</h4>
-<p>Sets the colour transparency of the outline texture&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
-<h4><a href="#idx:Font" onclick="r('Font:SetOAlpha')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Font:SetOBlue">
-<h3>Font:SetOBlue</h3>
-<h4>Syntax:-</h4>
-<pre>Font:SetOBlue(<i><u>Blue</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Blue</u> <i>(number)</i> = The colour intensity of the blue outline component (0-1).<br></pre>
-<h4>Synopsis:-</h4>
-<p>Sets the colour intensity of the outline for the blue component&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
-<h4><a href="#idx:Font" onclick="r('Font:SetOBlue')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Font:SetOGreen">
-<h3>Font:SetOGreen</h3>
-<h4>Syntax:-</h4>
-<pre>Font:SetOGreen(<i><u>Green</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Green</u> <i>(number)</i> = The colour intensity of green outline component (0-1).<br></pre>
-<h4>Synopsis:-</h4>
-<p>Sets the colour intensity of the outline for the green component&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
-<h4><a href="#idx:Font" onclick="r('Font:SetOGreen')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Font:SetORGB">
-<h3>Font:SetORGB</h3>
-<h4>Syntax:-</h4>
-<pre>Font:SetORGB(<i><u>Red</u>, <u>Green</u>, <u>Blue</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Red</u> <i>(number)</i> = The colour intensity of the outline red component (0-1).<br><u>Green</u> <i>(number)</i> = The colour intensity of the outline green component (0-1).<br><u>Blue</u> <i>(number)</i> = The colour intensity of the outline blue omponent (0-1).<br></pre>
-<h4>Synopsis:-</h4>
-<p>Sets the colour intensity of the outline for each component&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
-<h4><a href="#idx:Font" onclick="r('Font:SetORGB')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Font:SetORGBA">
-<h3>Font:SetORGBA</h3>
-<h4>Syntax:-</h4>
-<pre>Font:SetORGBA(<i><u>Red</u>, <u>Green</u>, <u>Blue</u>, <u>Alpha</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Red</u> <i>(number)</i> = The colour intensity of the outline red component (0-1).<br><u>Green</u> <i>(number)</i> = The colour intensity of the outline green component (0-1).<br><u>Blue</u> <i>(number)</i> = The colour intensity of the outline blue omponent (0-1).<br><u>Alpha</u> <i>(number)</i> = The transparency of the outline (0-1).<br></pre>
-<h4>Synopsis:-</h4>
-<p>Sets the colour intensity of the outline for each component&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
-<h4><a href="#idx:Font" onclick="r('Font:SetORGBA')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Font:SetORGBAInt">
-<h3>Font:SetORGBAInt</h3>
-<h4>Syntax:-</h4>
-<pre>Font:SetORGBAInt(<i><u>Colour</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Colour</u> <i>(integer)</i> = The entire colour to set as an integer (0xAARRGGBB)<br></pre>
-<h4>Synopsis:-</h4>
-<p>Sets the colour intensity of the font outline for each component using a 32 bit integer&#x2e;<br></p>
-<h4><a href="#idx:Font" onclick="r('Font:SetORGBAInt')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Font:SetORed">
-<h3>Font:SetORed</h3>
-<h4>Syntax:-</h4>
-<pre>Font:SetORed(<i><u>Red</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Red</u> <i>(number)</i> = The colour intensity of red outline component (0-1).<br></pre>
-<h4>Synopsis:-</h4>
-<p>Sets the colour intensity of the outline for the red component&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
-<h4><a href="#idx:Font" onclick="r('Font:SetORed')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Font:SetRGB">
-<h3>Font:SetRGB</h3>
-<h4>Syntax:-</h4>
-<pre>Font:SetRGB(<i><u>Red</u>, <u>Green</u>, <u>Blue</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Red</u> <i>(number)</i> = The colour intensity of the texture's red component (0-1).<br><u>Green</u> <i>(number)</i> = The colour intensity of the texture's green component (0-1).<br><u>Blue</u> <i>(number)</i> = The colour intensity of the texture's blue omponent (0-1).<br></pre>
-<h4>Synopsis:-</h4>
-<p>Sets the colour intensity of the texture for each component&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
-<h4><a href="#idx:Font" onclick="r('Font:SetRGB')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Font:SetRGBA">
-<h3>Font:SetRGBA</h3>
-<h4>Syntax:-</h4>
-<pre>Font:SetRGBA(<i><u>Red</u>, <u>Green</u>, <u>Blue</u>, <u>Alpha</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Red</u> <i>(number)</i> = The colour intensity of the texture's red component (0-1).<br><u>Green</u> <i>(number)</i> = The colour intensity of the texture's green component (0-1).<br><u>Blue</u> <i>(number)</i> = The colour intensity of the texture's blue omponent (0-1).<br><u>Alpha</u> <i>(number)</i> = The transparency of the texture (0-1).<br></pre>
-<h4>Synopsis:-</h4>
-<p>Sets the colour intensity of the texture for each component&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
-<h4><a href="#idx:Font" onclick="r('Font:SetRGBA')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Font:SetRGBAInt">
-<h3>Font:SetRGBAInt</h3>
-<h4>Syntax:-</h4>
-<pre>Font:SetRGBAInt(<i><u>Colour</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Colour</u> <i>(integer)</i> = The entire colour to set as an integer (0xAARRGGBB)<br></pre>
-<h4>Synopsis:-</h4>
-<p>Sets the colour intensity of the font face for each component using a 32 bit integer&#x2e;<br></p>
-<h4><a href="#idx:Font" onclick="r('Font:SetRGBAInt')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Font:SetRed">
-<h3>Font:SetRed</h3>
-<h4>Syntax:-</h4>
-<pre>Font:SetRed(<i><u>Red</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Red</u> <i>(number)</i> = The colour intensity of the texture's red component (0-1).<br></pre>
-<h4>Synopsis:-</h4>
-<p>Sets the colour intensity of the texture for the red component&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
-<h4><a href="#idx:Font" onclick="r('Font:SetRed')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Font:SetSize">
 <h3>Font:SetSize</h3>
 <h4>Syntax:-</h4>
@@ -4823,10 +4884,9 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Syntax:-</h4>
 <pre><u>Codes</u> = Font.Flags</pre>
 <h4>Return Parameters:-</h4>
-<pre><u>Codes</u> <i>(table)</i> = The table of key/value pairs of available flags<br></pre>
+<pre><u>Codes</u> <i>(table)</i> = The table of key/value pairs of available flags for use with<br></pre>
 <h4>Synopsis:-</h4>
-<p>Returns possible flags for manuplating loading of freetype fonts&#x2e;<br></p>
-<pre>BIT  VALUE       ENUM          DESCRIPTION<br>&#x3d;&#x3d;&#x3d;  &#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;  &#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;  &#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;<br>  &#x2d;  0x00000000  NONE          No flags set<br>  1  0x00000001  USEGLYPHSIZE  Advance with glyph size not metadata&#x2e;<br>  2  0x00000002  FLOORADVANCE  floor&#x28;&#x29; the glyph advance sizes&#x2e;<br>  3  0x00000004  CEILADVANCE   ceil&#x28;&#x29; the glyph advance sizes&#x2e;<br>  4  0x00000008  ROUNDADVANCE  round&#x28;&#x29; the glyph advance sizes&#x2e;<br>  5  0x00000010  STROKETYPE2   More accurate and true outline&#x2e;<br>&#x3d;&#x3d;&#x3d;  &#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;  &#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;  &#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;<br></pre>
+<p>the InitFTFont function&#x2e;<br></p>
 <h4><a href="#idx:Font" onclick="r('Font.Flags')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Ftf"><h2>Ftf</h2>
 <p>This allows the programmer to maniuplate supported freetype fonts forms asynchronously and send the objects to a font rendering object&#x2e;<br></p><h4><a href="#idx:Ftf" onclick="r('Ftf')">&#x25B2; Return to table of contents</a></h4></div>
@@ -5688,7 +5748,7 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Syntax:-</h4>
 <pre><u>Handle</u> = Mask.Create(<i><u>Image</u>, <u>Count</u>, <u>Width</u>, <u>Height</u></i>)</pre>
 <h4>Function Parameters:-</h4>
-<pre><u>Image</u> <i>(image)</i> = The monochrome image or targa to open.<br><u>Count</u> <i>(integer)</i> = The number of tiles to grab from image.<br><u>Width</u> <i>(integer)</i> = The width of each tile.<br><u>Height</u> <i>(integer)</i> = The height of each tile.<br></pre>
+<pre><u>Image</u> <i>(image)</i> = The monochrome image to open.<br><u>Count</u> <i>(integer)</i> = The number of tiles to grab from image.<br><u>Width</u> <i>(integer)</i> = The width of each tile.<br><u>Height</u> <i>(integer)</i> = The height of each tile.<br></pre>
 <h4>Return Parameters:-</h4>
 <pre><u>Handle</u> <i>(Mask)</i> = The handle of the new mask created.<br></pre>
 <h4>Synopsis:-</h4>
@@ -5822,7 +5882,7 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Syntax:-</h4>
 <pre>Mask:Save(<i><u>Id</u>, <u>Filename</u></i>)</pre>
 <h4>Function Parameters:-</h4>
-<pre><u>Id</u> <i>(integer)</i> = The id number of the mask to dump.<br><u>Filename</u> <i>(string)</i> = The targa file to save to.<br></pre>
+<pre><u>Id</u> <i>(integer)</i> = The id number of the mask to dump.<br><u>Filename</u> <i>(string)</i> = The file to save to.<br></pre>
 <h4>Synopsis:-</h4>
 <p>Dumps the specified mask to disk for debugging purposes&#x2e;<br></p>
 <h4><a href="#idx:Mask" onclick="r('Mask:Save')">&#x25B2; Return to table of contents</a></h4></div>
@@ -5895,6 +5955,15 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Use this function to commit the new palette to the shader&#x2e;<br></p>
 <h4><a href="#idx:Palette" onclick="r('Palette:Commit')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:Copy">
+<h3>Palette:Copy</h3>
+<h4>Syntax:-</h4>
+<pre>Palette:Copy(<i><u>Count</u>, <u>DstId</u>, <u>Src</u>, <u>SrcId</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Count</u> <i>(integer)</i> = The number of values to copy.<br><u>DstId</u> <i>(integer)</i> = Index offset to copy the values to.<br><u>Src</u> <i>(Palette)</i> = The source palette to copy.<br><u>SrcId</u> <i>(integer)</i> = Index offset to copy the values from.<br></pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to copy palette data from another palette&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:Copy')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Palette:Destroy">
 <h3>Palette:Destroy</h3>
 <h4>Syntax:-</h4>
@@ -5902,6 +5971,17 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Destroys the palette and frees the memory associated with it&#x2e; This does not affect the active palette as this is stored on the GPU&#x2e;<br></p>
 <h4><a href="#idx:Palette" onclick="r('Palette:Destroy')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:Fill">
+<h3>Palette:Fill</h3>
+<h4>Syntax:-</h4>
+<pre><u>Red</u>, <u>Green</u>, <u>Blue</u>, <u>Alpha</u> = Palette:Fill(<i><u>Id</u>, <u>Count</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify from (0-255).<br><u>Count</u> <i>(integer)</i> = The number of indexes to fill<br></pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Red</u> <i>(number)</i> = The red intensity number (0.0-1.0).<br><u>Green</u> <i>(number)</i> = The green intensity number (0.0-1.0).<br><u>Blue</u> <i>(number)</i> = The blue intensity number (0.0-1.0).<br><u>Alpha</u> <i>(number)</i> = The alpha intensity number (0.0-1.0).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to fill the palette with the specified values&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:Fill')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Palette:GetA">
 <h3>Palette:GetA</h3>
 <h4>Syntax:-</h4>
@@ -5913,6 +5993,17 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Use this function to get the alpha palette entry&#x2e;<br></p>
 <h4><a href="#idx:Palette" onclick="r('Palette:GetA')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:GetAI">
+<h3>Palette:GetAI</h3>
+<h4>Syntax:-</h4>
+<pre><u>Red</u> = Palette:GetAI(<i><u>Id</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br></pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Red</u> <i>(integer)</i> = The alpha intensity integer (0-255).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to get the alpha palette entry&#x2e; This function is mainly for convenience only and has slightly more overhead than with &#x3a;GetA&#x28;&#x29; as the palette values have to be stored as GLfloats in the GPU and thus extra calculations are required as a result&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:GetAI')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Palette:GetB">
 <h3>Palette:GetB</h3>
 <h4>Syntax:-</h4>
@@ -5924,6 +6015,17 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Use this function to get the blue palette entry&#x2e;<br></p>
 <h4><a href="#idx:Palette" onclick="r('Palette:GetB')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:GetBI">
+<h3>Palette:GetBI</h3>
+<h4>Syntax:-</h4>
+<pre><u>Blue</u> = Palette:GetBI(<i><u>Id</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br></pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Blue</u> <i>(integer)</i> = The blue intensity integer (0-255).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to get the blue palette entry&#x2e; This function is mainly for convenience only and has slightly more overhead than with &#x3a;GetB&#x28;&#x29; as the palette values have to be stored as GLfloats in the GPU and thus extra calculations are required as a result&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:GetBI')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Palette:GetG">
 <h3>Palette:GetG</h3>
 <h4>Syntax:-</h4>
@@ -5935,61 +6037,26 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Use this function to get the green palette entry&#x2e;<br></p>
 <h4><a href="#idx:Palette" onclick="r('Palette:GetG')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Palette:GetIA">
-<h3>Palette:GetIA</h3>
+<div id="Palette:GetGI">
+<h3>Palette:GetGI</h3>
 <h4>Syntax:-</h4>
-<pre><u>Red</u> = Palette:GetIA(<i><u>Id</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br></pre>
-<h4>Return Parameters:-</h4>
-<pre><u>Red</u> <i>(integer)</i> = The alpha intensity integer (0-255).<br></pre>
-<h4>Synopsis:-</h4>
-<p>Use this function to get the alpha palette entry&#x2e; This function is mainly for convenience only and has slightly more overhead than with &#x3a;GetA&#x28;&#x29; as the palette values have to be stored as GLfloats in the GPU and thus extra calculations are required as a result&#x2e;<br></p>
-<h4><a href="#idx:Palette" onclick="r('Palette:GetIA')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Palette:GetIB">
-<h3>Palette:GetIB</h3>
-<h4>Syntax:-</h4>
-<pre><u>Blue</u> = Palette:GetIB(<i><u>Id</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br></pre>
-<h4>Return Parameters:-</h4>
-<pre><u>Blue</u> <i>(integer)</i> = The blue intensity integer (0-255).<br></pre>
-<h4>Synopsis:-</h4>
-<p>Use this function to get the blue palette entry&#x2e; This function is mainly for convenience only and has slightly more overhead than with &#x3a;GetB&#x28;&#x29; as the palette values have to be stored as GLfloats in the GPU and thus extra calculations are required as a result&#x2e;<br></p>
-<h4><a href="#idx:Palette" onclick="r('Palette:GetIB')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Palette:GetIG">
-<h3>Palette:GetIG</h3>
-<h4>Syntax:-</h4>
-<pre><u>Green</u> = Palette:GetIG(<i><u>Id</u></i>)</pre>
+<pre><u>Green</u> = Palette:GetGI(<i><u>Id</u></i>)</pre>
 <h4>Function Parameters:-</h4>
 <pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br></pre>
 <h4>Return Parameters:-</h4>
 <pre><u>Green</u> <i>(integer)</i> = The green intensity integer (0-255).<br></pre>
 <h4>Synopsis:-</h4>
 <p>Use this function to get the green palette entry&#x2e; This function is mainly for convenience only and has slightly more overhead than with &#x3a;GetG&#x28;&#x29; as the palette values have to be stored as GLfloats in the GPU and thus extra calculations are required as a result&#x2e;<br></p>
-<h4><a href="#idx:Palette" onclick="r('Palette:GetIG')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Palette:GetIR">
-<h3>Palette:GetIR</h3>
+<h4><a href="#idx:Palette" onclick="r('Palette:GetGI')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:GetName">
+<h3>Palette:GetName</h3>
 <h4>Syntax:-</h4>
-<pre><u>Red</u> = Palette:GetIR(<i><u>Id</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br></pre>
+<pre><u>Name</u> = Palette:GetName()</pre>
 <h4>Return Parameters:-</h4>
-<pre><u>Red</u> <i>(integer)</i> = The red intensity integer (0-255).<br></pre>
+<pre><u>Name</u> <i>(string)</i> = The identifier of the palette.<br></pre>
 <h4>Synopsis:-</h4>
-<p>Use this function to get the red palette entry&#x2e; This function is mainly for convenience only and has slightly more overhead than with &#x3a;GetR&#x28;&#x29; as the palette values have to be stored as GLfloats in the GPU and thus extra calculations are required as a result&#x2e;<br></p>
-<h4><a href="#idx:Palette" onclick="r('Palette:GetIR')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Palette:GetIRGBA">
-<h3>Palette:GetIRGBA</h3>
-<h4>Syntax:-</h4>
-<pre><u>Red</u>, <u>Green</u>, <u>Blue</u>, <u>Alpha</u> = Palette:GetIRGBA(<i><u>Id</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br></pre>
-<h4>Return Parameters:-</h4>
-<pre><u>Red</u> <i>(integer)</i> = The red intensity integer (0-255).<br><u>Green</u> <i>(integer)</i> = The green intensity integer (0-255).<br><u>Blue</u> <i>(integer)</i> = The blue intensity integer (0-255).<br><u>Alpha</u> <i>(integer)</i> = The alpha intensity integer (0-255).<br></pre>
-<h4>Synopsis:-</h4>
-<p>Use this function to get the palette entry&#x2e;<br></p>
-<h4><a href="#idx:Palette" onclick="r('Palette:GetIRGBA')">&#x25B2; Return to table of contents</a></h4></div>
+<p>Returns the palette identifier </p>
+<h4><a href="#idx:Palette" onclick="r('Palette:GetName')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Palette:GetR">
 <h3>Palette:GetR</h3>
 <h4>Syntax:-</h4>
@@ -6012,15 +6079,28 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Use this function to get the palette entry&#x2e;<br></p>
 <h4><a href="#idx:Palette" onclick="r('Palette:GetRGBA')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Palette:Name">
-<h3>Palette:Name</h3>
+<div id="Palette:GetRGBAI">
+<h3>Palette:GetRGBAI</h3>
 <h4>Syntax:-</h4>
-<pre><u>Name</u> = Palette:Name()</pre>
+<pre><u>Red</u>, <u>Green</u>, <u>Blue</u>, <u>Alpha</u> = Palette:GetRGBAI(<i><u>Id</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br></pre>
 <h4>Return Parameters:-</h4>
-<pre><u>Name</u> <i>(string)</i> = The identifier of the palette.<br></pre>
+<pre><u>Red</u> <i>(integer)</i> = The red intensity integer (0-255).<br><u>Green</u> <i>(integer)</i> = The green intensity integer (0-255).<br><u>Blue</u> <i>(integer)</i> = The blue intensity integer (0-255).<br><u>Alpha</u> <i>(integer)</i> = The alpha intensity integer (0-255).<br></pre>
 <h4>Synopsis:-</h4>
-<p>Returns the palette identifier </p>
-<h4><a href="#idx:Palette" onclick="r('Palette:Name')">&#x25B2; Return to table of contents</a></h4></div>
+<p>Use this function to get the palette entry&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:GetRGBAI')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:GetRI">
+<h3>Palette:GetRI</h3>
+<h4>Syntax:-</h4>
+<pre><u>Red</u> = Palette:GetRI(<i><u>Id</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br></pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Red</u> <i>(integer)</i> = The red intensity integer (0-255).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to get the red palette entry&#x2e; This function is mainly for convenience only and has slightly more overhead than with &#x3a;GetR&#x28;&#x29; as the palette values have to be stored as GLfloats in the GPU and thus extra calculations are required as a result&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:GetRI')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Palette:SetA">
 <h3>Palette:SetA</h3>
 <h4>Syntax:-</h4>
@@ -6030,6 +6110,15 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Use this function to set the alpha palette entry&#x2e;<br></p>
 <h4><a href="#idx:Palette" onclick="r('Palette:SetA')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:SetAI">
+<h3>Palette:SetAI</h3>
+<h4>Syntax:-</h4>
+<pre>Palette:SetAI(<i><u>Id</u>, <u>Alpha</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br><u>Alpha</u> <i>(integer)</i> = The alpha intensity integer (0-255).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to set the alpha palette entry&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:SetAI')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Palette:SetB">
 <h3>Palette:SetB</h3>
 <h4>Syntax:-</h4>
@@ -6039,6 +6128,15 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Use this function to set the blue palette entry&#x2e;<br></p>
 <h4><a href="#idx:Palette" onclick="r('Palette:SetB')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:SetBI">
+<h3>Palette:SetBI</h3>
+<h4>Syntax:-</h4>
+<pre>Palette:SetBI(<i><u>Id</u>, <u>Blue</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br><u>Blue</u> <i>(integer)</i> = The blue intensity integer (0-255).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to set the blue palette entry&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:SetBI')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Palette:SetG">
 <h3>Palette:SetG</h3>
 <h4>Syntax:-</h4>
@@ -6048,51 +6146,15 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Use this function to set the green palette entry&#x2e;<br></p>
 <h4><a href="#idx:Palette" onclick="r('Palette:SetG')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Palette:SetI">
-<h3>Palette:SetI</h3>
+<div id="Palette:SetGI">
+<h3>Palette:SetGI</h3>
 <h4>Syntax:-</h4>
-<pre>Palette:SetI(<i><u>Id</u>, <u>Red</u>, <u>Green</u>, <u>Blue</u>, <u>Alpha</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br><u>Red</u> <i>(integer)</i> = The red intensity integer (0-255).<br><u>Green</u> <i>(integer)</i> = The green intensity integer (0-255).<br><u>Blue</u> <i>(integer)</i> = The blue intensity integer (0-255).<br><u>Alpha</u> <i>(integer)</i> = The alpha intensity integer (0-255).<br></pre>
-<h4>Synopsis:-</h4>
-<p>Use this function to set the palette entry using integers&#x2e; This function is mainly for convenience only and has slightly more overhead than with &#x3a;Set&#x28;&#x29; as the palette values have to be stored as GLfloats in the GPU and thus extra calculations are required as a result&#x2e;<br></p>
-<h4><a href="#idx:Palette" onclick="r('Palette:SetI')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Palette:SetIA">
-<h3>Palette:SetIA</h3>
-<h4>Syntax:-</h4>
-<pre>Palette:SetIA(<i><u>Id</u>, <u>Alpha</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br><u>Alpha</u> <i>(integer)</i> = The alpha intensity integer (0-255).<br></pre>
-<h4>Synopsis:-</h4>
-<p>Use this function to set the alpha palette entry&#x2e;<br></p>
-<h4><a href="#idx:Palette" onclick="r('Palette:SetIA')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Palette:SetIB">
-<h3>Palette:SetIB</h3>
-<h4>Syntax:-</h4>
-<pre>Palette:SetIB(<i><u>Id</u>, <u>Blue</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br><u>Blue</u> <i>(integer)</i> = The blue intensity integer (0-255).<br></pre>
-<h4>Synopsis:-</h4>
-<p>Use this function to set the blue palette entry&#x2e;<br></p>
-<h4><a href="#idx:Palette" onclick="r('Palette:SetIB')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Palette:SetIG">
-<h3>Palette:SetIG</h3>
-<h4>Syntax:-</h4>
-<pre>Palette:SetIG(<i><u>Id</u>, <u>Green</u></i>)</pre>
+<pre>Palette:SetGI(<i><u>Id</u>, <u>Green</u></i>)</pre>
 <h4>Function Parameters:-</h4>
 <pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br><u>Green</u> <i>(integer)</i> = The green intensity integer (0-255).<br></pre>
 <h4>Synopsis:-</h4>
 <p>Use this function to set the green palette entry&#x2e;<br></p>
-<h4><a href="#idx:Palette" onclick="r('Palette:SetIG')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Palette:SetIR">
-<h3>Palette:SetIR</h3>
-<h4>Syntax:-</h4>
-<pre>Palette:SetIR(<i><u>Id</u>, <u>Red</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br><u>Red</u> <i>(integer)</i> = The red intensity integer (0-255).<br></pre>
-<h4>Synopsis:-</h4>
-<p>Use this function to set the red palette entry&#x2e;<br></p>
-<h4><a href="#idx:Palette" onclick="r('Palette:SetIR')">&#x25B2; Return to table of contents</a></h4></div>
+<h4><a href="#idx:Palette" onclick="r('Palette:SetGI')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Palette:SetR">
 <h3>Palette:SetR</h3>
 <h4>Syntax:-</h4>
@@ -6111,33 +6173,51 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Use this function to set the palette entry&#x2e;<br></p>
 <h4><a href="#idx:Palette" onclick="r('Palette:SetRGBA')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:SetRGBAI">
+<h3>Palette:SetRGBAI</h3>
+<h4>Syntax:-</h4>
+<pre>Palette:SetRGBAI(<i><u>Id</u>, <u>Red</u>, <u>Green</u>, <u>Blue</u>, <u>Alpha</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br><u>Red</u> <i>(integer)</i> = The red intensity integer (0-255).<br><u>Green</u> <i>(integer)</i> = The green intensity integer (0-255).<br><u>Blue</u> <i>(integer)</i> = The blue intensity integer (0-255).<br><u>Alpha</u> <i>(integer)</i> = The alpha intensity integer (0-255).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to set the palette entry using integers&#x2e; This function is mainly for convenience only and has slightly more overhead than with &#x3a;Set&#x28;&#x29; as the palette values have to be stored as GLfloats in the GPU and thus extra calculations are required as a result&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:SetRGBAI')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:SetRI">
+<h3>Palette:SetRI</h3>
+<h4>Syntax:-</h4>
+<pre>Palette:SetRI(<i><u>Id</u>, <u>Red</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Id</u> <i>(integer)</i> = Palette entry to modify (0-255).<br><u>Red</u> <i>(integer)</i> = The red intensity integer (0-255).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Use this function to set the red palette entry&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:SetRI')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Palette:Shift">
 <h3>Palette:Shift</h3>
 <h4>Syntax:-</h4>
-<pre>Palette:Shift(<i><u>Amount</u></i>)</pre>
+<pre>Palette:Shift(<i><u>Begin</u>, <u>End</u>, <u>Amount</u></i>)</pre>
 <h4>Function Parameters:-</h4>
-<pre><u>Amount</u> <i>(integer)</i> = Shift all palette entries backwards or forwards this much.<br></pre>
+<pre><u>Begin</u> <i>(integer)</i> = The starting palette index to shift up to.<br><u>End</u> <i>(integer)</i> = The ending palette index to shift up to.<br><u>Amount</u> <i>(integer)</i> = Amount to rotate by.<br></pre>
 <h4>Synopsis:-</h4>
-<p>Shifts all palette entries backwards or forwards this amount&#x2e;<br></p>
+<p>Shifts all palette entries backwards or forwards this amount from the specified palette index and limited to the specified number of indexes&#x2e;<br></p>
 <h4><a href="#idx:Palette" onclick="r('Palette:Shift')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Palette:ShiftL">
-<h3>Palette:ShiftL</h3>
+<div id="Palette:ShiftB">
+<h3>Palette:ShiftB</h3>
 <h4>Syntax:-</h4>
-<pre>Palette:ShiftL(<i><u>Amount</u></i>)</pre>
+<pre>Palette:ShiftB(<i><u>Begin</u>, <u>End</u>, <u>Amount</u></i>)</pre>
 <h4>Function Parameters:-</h4>
-<pre><u>Amount</u> <i>(integer)</i> = Shift all palette entries backwards this much.<br></pre>
+<pre><u>Begin</u> <i>(integer)</i> = The starting palette index to shift up to.<br><u>End</u> <i>(integer)</i> = The ending palette index to shift up to.<br><u>Amount</u> <i>(integer)</i> = Amount to rotate backwards by.<br></pre>
 <h4>Synopsis:-</h4>
-<p>Shifts all palette entries backwards this amount&#x2e;<br></p>
-<h4><a href="#idx:Palette" onclick="r('Palette:ShiftL')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Palette:ShiftR">
-<h3>Palette:ShiftR</h3>
+<p>Shifts all palette entries backwards this amount from the specified palette index and limited to the specified number of indexes&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:ShiftB')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Palette:ShiftF">
+<h3>Palette:ShiftF</h3>
 <h4>Syntax:-</h4>
-<pre>Palette:ShiftR(<i><u>Amount</u></i>)</pre>
+<pre>Palette:ShiftF(<i><u>Begin</u>, <u>End</u>, <u>Amount</u></i>)</pre>
 <h4>Function Parameters:-</h4>
-<pre><u>Amount</u> <i>(integer)</i> = Shift all palette entries forwards this much.<br></pre>
+<pre><u>Begin</u> <i>(integer)</i> = The starting palette index to shift up to.<br><u>End</u> <i>(integer)</i> = The ending palette index to shift up to.<br><u>Amount</u> <i>(integer)</i> = Amount to rotate forwards by.<br></pre>
 <h4>Synopsis:-</h4>
-<p>Shifts all palette entries forwards this amount&#x2e;<br></p>
-<h4><a href="#idx:Palette" onclick="r('Palette:ShiftR')">&#x25B2; Return to table of contents</a></h4></div>
+<p>Shifts all palette entries forwards this amount from the specified palette index and limited to the specified number of indexes&#x2e;<br></p>
+<h4><a href="#idx:Palette" onclick="r('Palette:ShiftF')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Pcm"><h2>Pcm</h2>
 <p>This allows the programmer to maniuplate pcm wave forms asynchronously and send the objects to the OpenAL if needed&#x2e;<br></p><h4><a href="#idx:Pcm" onclick="r('Pcm')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Pcm.ArrayAsync">
@@ -7222,6 +7302,15 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Stops and destroys the stream object and frees all the memory associated with it&#x2e; The object will no longer be useable after this call and an error will be generated if accessed&#x2e;<br></p>
 <h4><a href="#idx:Stream" onclick="r('Stream:Destroy')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Stream:GetBytes">
+<h3>Stream:GetBytes</h3>
+<h4>Syntax:-</h4>
+<pre><u>Total</u> = Stream:GetBytes()</pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Total</u> <i>(integer)</i> = Current stream total bytes.<br></pre>
+<h4>Synopsis:-</h4>
+<p>Returns the size of the file that is streaming&#x2e;<br></p>
+<h4><a href="#idx:Stream" onclick="r('Stream:GetBytes')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Stream:GetDuration">
 <h3>Stream:GetDuration</h3>
 <h4>Syntax:-</h4>
@@ -7254,18 +7343,18 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Syntax:-</h4>
 <pre><u>Count</u> = Stream:GetLoopBegin()</pre>
 <h4>Return Parameters:-</h4>
-<pre><u>Count</u> <i>(integer)</i> = The PCM position where loops begin<br></pre>
+<pre><u>Count</u> <i>(integer)</i> = Smaple position begin point<br></pre>
 <h4>Synopsis:-</h4>
-<p>Gets the current loop begin PCM point </p>
+<p>Gets the current loop begin sample&#x2e;<br></p>
 <h4><a href="#idx:Stream" onclick="r('Stream:GetLoopBegin')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Stream:GetLoopEnd">
 <h3>Stream:GetLoopEnd</h3>
 <h4>Syntax:-</h4>
 <pre><u>Count</u> = Stream:GetLoopEnd()</pre>
 <h4>Return Parameters:-</h4>
-<pre><u>Count</u> <i>(integer)</i> = The PCM position of where loops end and back to begin point<br></pre>
+<pre><u>Count</u> <i>(integer)</i> = Sample position end point<br></pre>
 <h4>Synopsis:-</h4>
-<p>Gets the current loop end PCM point </p>
+<p>Gets the current loop end sample&#x2e;<br></p>
 <h4><a href="#idx:Stream" onclick="r('Stream:GetLoopEnd')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Stream:GetMetaData">
 <h3>Stream:GetMetaData</h3>
@@ -7290,10 +7379,19 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Syntax:-</h4>
 <pre><u>Position</u> = Stream:GetPosition()</pre>
 <h4>Return Parameters:-</h4>
-<pre><u>Position</u> <i>(integer)</i> = PCM Position<br></pre>
+<pre><u>Position</u> <i>(integer)</i> = Sample position<br></pre>
 <h4>Synopsis:-</h4>
-<p>Returns the PCM index position elapsed of the stream&#x2e; This is the position of the codec and not the actual playback position&#x2e;<br></p>
+<p>Returns the sample position elapsed of the stream&#x2e;<br></p>
 <h4><a href="#idx:Stream" onclick="r('Stream:GetPosition')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Stream:GetSamples">
+<h3>Stream:GetSamples</h3>
+<h4>Syntax:-</h4>
+<pre><u>Total</u> = Stream:GetSamples()</pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Total</u> <i>(integer)</i> = Current stream total samples.<br></pre>
+<h4>Synopsis:-</h4>
+<p>Returns the duration of the stream in samples&#x2e;<br></p>
+<h4><a href="#idx:Stream" onclick="r('Stream:GetSamples')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Stream:GetVolume">
 <h3>Stream:GetVolume</h3>
 <h4>Syntax:-</h4>
@@ -7326,9 +7424,9 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Syntax:-</h4>
 <pre>Stream:Play(<i><u>Loops</u>, <u>Volume</u>, <u>Position</u></i>)</pre>
 <h4>Function Parameters:-</h4>
-<pre><u>Loops</u> <i>(integer)</i> = Number of loops.<br><u>Volume</u> <i>(number)</i> = Stream volume (0 to 1).<br><u>Position</u> <i>(integer)</i> = PCM position.<br></pre>
+<pre><u>Loops</u> <i>(integer)</i> = Number of loops.<br><u>Volume</u> <i>(number)</i> = Stream volume (0 to 1).<br><u>Position</u> <i>(integer)</i> = Sample position.<br></pre>
 <h4>Synopsis:-</h4>
-<p>Plays the specified stream at the specified PCM position&#x2e;<br></p>
+<p>Plays the specified stream at the specified sample position&#x2e;<br></p>
 <h4><a href="#idx:Stream" onclick="r('Stream:Play')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Stream:SetElapsed">
 <h3>Stream:SetElapsed</h3>
@@ -7362,45 +7460,45 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Syntax:-</h4>
 <pre>Stream:SetLoopBegin(<i><u>Begin</u></i>)</pre>
 <h4>Function Parameters:-</h4>
-<pre><u>Begin</u> <i>(integer)</i> = New beginning PCM playback position of loop.<br></pre>
+<pre><u>Begin</u> <i>(integer)</i> = New beginning sample playback position of loop.<br></pre>
 <h4>Synopsis:-</h4>
-<p>Sets the new playback beginning PCM position after stream loops&#x2e;<br></p>
+<p>Sets the new playback beginning sample position after stream loops&#x2e;<br></p>
 <h4><a href="#idx:Stream" onclick="r('Stream:SetLoopBegin')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Stream:SetLoopEnd">
 <h3>Stream:SetLoopEnd</h3>
 <h4>Syntax:-</h4>
 <pre>Stream:SetLoopEnd(<i><u>End</u></i>)</pre>
 <h4>Function Parameters:-</h4>
-<pre><u>End</u> <i>(integer)</i> = New ending PCM playback position of loop.<br></pre>
+<pre><u>End</u> <i>(integer)</i> = New ending sample playback position of loop.<br></pre>
 <h4>Synopsis:-</h4>
-<p>Sets the new playback ending PCM position before stream loops&#x2e;<br></p>
+<p>Sets the new playback ending sample position before stream loops&#x2e;<br></p>
 <h4><a href="#idx:Stream" onclick="r('Stream:SetLoopEnd')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Stream:SetLoopRange">
 <h3>Stream:SetLoopRange</h3>
 <h4>Syntax:-</h4>
 <pre>Stream:SetLoopRange(<i><u>Begin</u>, <u>End</u></i>)</pre>
 <h4>Function Parameters:-</h4>
-<pre><u>Begin</u> <i>(integer)</i> = New beginning PCM playback position of loop.<br><u>End</u> <i>(integer)</i> = New ending PCM playback position of loop.<br></pre>
+<pre><u>Begin</u> <i>(integer)</i> = New beginning sample playback position of loop.<br><u>End</u> <i>(integer)</i> = New ending sample playback position of loop.<br></pre>
 <h4>Synopsis:-</h4>
-<p>Sets the new playback beginning PCM position after stream loops and the ending PCM position&#x2e;<br></p>
+<p>Sets the new playback beginning sample position after stream loops and the ending sample position&#x2e;<br></p>
 <h4><a href="#idx:Stream" onclick="r('Stream:SetLoopRange')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Stream:SetPosition">
 <h3>Stream:SetPosition</h3>
 <h4>Syntax:-</h4>
 <pre>Stream:SetPosition(<i><u>Position</u></i>)</pre>
 <h4>Function Parameters:-</h4>
-<pre><u>Position</u> <i>(integer)</i> = PCM position.<br></pre>
+<pre><u>Position</u> <i>(integer)</i> = Sample position.<br></pre>
 <h4>Synopsis:-</h4>
-<p>Sets the current PCM position of playback&#x2e; This is not a precise PCM index and is optimised for speed&#x2e; Use Stream&#x2e;SetPositionP&#x28;&#x29; for precision&#x2e;<br></p>
+<p>Sets the precise specified sample position index of the stream&#x2e;<br></p>
 <h4><a href="#idx:Stream" onclick="r('Stream:SetPosition')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Stream:SetPositionPage">
 <h3>Stream:SetPositionPage</h3>
 <h4>Syntax:-</h4>
 <pre>Stream:SetPositionPage(<i><u>Position</u></i>)</pre>
 <h4>Function Parameters:-</h4>
-<pre><u>Position</u> <i>(integer)</i> = PCM position<br></pre>
+<pre><u>Position</u> <i>(integer)</i> = Sample position<br></pre>
 <h4>Synopsis:-</h4>
-<p>Sets the precise specified PCM position index of the stream&#x2e;<br></p>
+<p>Sets the current sample position of playback&#x2e; This is not a precise position is optimised for speed&#x2e; Use Stream&#x2e;SetPosition&#x28;&#x29; for precision&#x2e;<br></p>
 <h4><a href="#idx:Stream" onclick="r('Stream:SetPositionPage')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Stream:SetVolume">
 <h3>Stream:SetVolume</h3>
@@ -7706,7 +7804,7 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Syntax:-</h4>
 <pre>Texture:BlitX()</pre>
 <h4>Synopsis:-</h4>
-<p>Blits with the currently stored texture at position 0 with the stored texcoord &#x28;SetTexCoord&#x2a;&#x29;&#x2c; vertex &#x28;SetVertex&#x2a;&#x29; and colour &#x28;SetRGB&#x2a;&#x29;&#x2e; Note that the Blit&#x2a; functions will overwrite the stored values&#x2e;<br></p>
+<p>Blits with the currently stored texture at position 0 with the stored texcoord &#x28;SetTC&#x2a;&#x29;&#x2c; vertex &#x28;SetV&#x2a;&#x29; and colour &#x28;SetC&#x2a;&#x29;&#x2e; Note that the Blit&#x2a; functions will overwrite the stored values&#x2e;<br></p>
 <h4><a href="#idx:Texture" onclick="r('Texture:BlitX')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Texture:BlitXI">
 <h3>Texture:BlitXI</h3>
@@ -7715,7 +7813,7 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Function Parameters:-</h4>
 <pre><u>TexIndex</u> <i>(integer)</i> = The texture id number<br></pre>
 <h4>Synopsis:-</h4>
-<p>Blits with the currently stored texture at position &#x27;TexIndex&#x27; with the stored texcoord &#x28;SetTexCoord&#x2a;&#x29;&#x2c; vertex &#x28;SetVertex&#x2a;&#x29; and colour &#x28;SetRGB&#x2a;&#x29;&#x2e;<br>Note that the Blit&#x2a; functions will overwrite the stored values&#x2e;<br></p>
+<p>Blits with the currently stored texture at position &#x27;TexIndex&#x27; with the stored texcoord &#x28;SetTC&#x2a;&#x29;&#x2c; vertex &#x28;SetV&#x2a;&#x29; and colour &#x28;SetC&#x2a;&#x29;&#x2e;<br>Note that the Blit&#x2a; functions will overwrite the stored values&#x2e;<br></p>
 <h4><a href="#idx:Texture" onclick="r('Texture:BlitXI')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Texture:Destroy">
 <h3>Texture:Destroy</h3>
@@ -7740,7 +7838,7 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Syntax:-</h4>
 <pre>Texture:Dump()</pre>
 <h4>Synopsis:-</h4>
-<p>Dumps the texture to the specified file in TGA format&#x2e;<br></p>
+<p>Dumps the texture to the specified file in the specified format&#x2e;<br></p>
 <h4><a href="#idx:Texture" onclick="r('Texture:Dump')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Texture:GetHeight">
 <h3>Texture:GetHeight</h3>
@@ -7790,35 +7888,71 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Syntax:-</h4>
 <pre>Texture:PushColour()</pre>
 <h4>Synopsis:-</h4>
-<p>Saves the currently set colour by SetRGBA&#x2e; Use PopColour to restore it&#x2e;<br></p>
+<p>Saves the currently set colour by SetCRGBA&#x2e; Use PopColour to restore it&#x2e;<br></p>
 <h4><a href="#idx:Texture" onclick="r('Texture:PushColour')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Texture:SetAlpha">
-<h3>Texture:SetAlpha</h3>
+<div id="Texture:SetCA">
+<h3>Texture:SetCA</h3>
 <h4>Syntax:-</h4>
-<pre>Texture:SetAlpha(<i><u>Alpha</u></i>)</pre>
+<pre>Texture:SetCA(<i><u>Alpha</u></i>)</pre>
 <h4>Function Parameters:-</h4>
 <pre><u>Alpha</u> <i>(number)</i> = The transparency of the texture (0-1).<br></pre>
 <h4>Synopsis:-</h4>
 <p>Sets the colour transparency of the texture&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
-<h4><a href="#idx:Texture" onclick="r('Texture:SetAlpha')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Texture:SetBlue">
-<h3>Texture:SetBlue</h3>
+<h4><a href="#idx:Texture" onclick="r('Texture:SetCA')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Texture:SetCB">
+<h3>Texture:SetCB</h3>
 <h4>Syntax:-</h4>
-<pre>Texture:SetBlue(<i><u>Blue</u></i>)</pre>
+<pre>Texture:SetCB(<i><u>Blue</u></i>)</pre>
 <h4>Function Parameters:-</h4>
 <pre><u>Blue</u> <i>(number)</i> = The colour intensity of the texture's blue component (0-1).<br></pre>
 <h4>Synopsis:-</h4>
 <p>Sets the colour intensity of the texture for the blue component&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
-<h4><a href="#idx:Texture" onclick="r('Texture:SetBlue')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Texture:SetGreen">
-<h3>Texture:SetGreen</h3>
+<h4><a href="#idx:Texture" onclick="r('Texture:SetCB')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Texture:SetCG">
+<h3>Texture:SetCG</h3>
 <h4>Syntax:-</h4>
-<pre>Texture:SetGreen(<i><u>Green</u></i>)</pre>
+<pre>Texture:SetCG(<i><u>Green</u></i>)</pre>
 <h4>Function Parameters:-</h4>
 <pre><u>Green</u> <i>(number)</i> = The colour intensity of the texture's green component (0-1).<br></pre>
 <h4>Synopsis:-</h4>
 <p>Sets the colour intensity of the texture for the green component&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
-<h4><a href="#idx:Texture" onclick="r('Texture:SetGreen')">&#x25B2; Return to table of contents</a></h4></div>
+<h4><a href="#idx:Texture" onclick="r('Texture:SetCG')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Texture:SetCR">
+<h3>Texture:SetCR</h3>
+<h4>Syntax:-</h4>
+<pre>Texture:SetCR(<i><u>Red</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Red</u> <i>(number)</i> = The colour intensity of the texture's red component (0-1).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Sets the colour intensity of the texture for the red component&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
+<h4><a href="#idx:Texture" onclick="r('Texture:SetCR')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Texture:SetCRGB">
+<h3>Texture:SetCRGB</h3>
+<h4>Syntax:-</h4>
+<pre>Texture:SetCRGB(<i><u>Red</u>, <u>Green</u>, <u>Blue</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Red</u> <i>(number)</i> = The colour intensity of the texture's red component (0-1).<br><u>Green</u> <i>(number)</i> = The colour intensity of the texture's green component (0-1).<br><u>Blue</u> <i>(number)</i> = The colour intensity of the texture's blue omponent (0-1).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Sets the colour intensity of the texture for each component&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
+<h4><a href="#idx:Texture" onclick="r('Texture:SetCRGB')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Texture:SetCRGBA">
+<h3>Texture:SetCRGBA</h3>
+<h4>Syntax:-</h4>
+<pre>Texture:SetCRGBA(<i><u>Red</u>, <u>Green</u>, <u>Blue</u>, <u>Alpha</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Red</u> <i>(number)</i> = The colour intensity of the texture's red component (0-1).<br><u>Green</u> <i>(number)</i> = The colour intensity of the texture's green component (0-1).<br><u>Blue</u> <i>(number)</i> = The colour intensity of the texture's blue omponent (0-1).<br><u>Alpha</u> <i>(number)</i> = The transparency of the texture (0-1).<br></pre>
+<h4>Synopsis:-</h4>
+<p>Sets the colour intensity of the texture for each component&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
+<h4><a href="#idx:Texture" onclick="r('Texture:SetCRGBA')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Texture:SetCRGBAI">
+<h3>Texture:SetCRGBAI</h3>
+<h4>Syntax:-</h4>
+<pre>Texture:SetCRGBAI(<i><u>Colour</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>Colour</u> <i>(integer)</i> = The entire colour to set as an integer (0xAARRGGBB)<br></pre>
+<h4>Synopsis:-</h4>
+<p>Sets the colour intensity of the texture for each component using a 32 bit integer&#x2e;<br></p>
+<h4><a href="#idx:Texture" onclick="r('Texture:SetCRGBAI')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Texture:SetLTRB">
 <h3>Texture:SetLTRB</h3>
 <h4>Syntax:-</h4>
@@ -7837,96 +7971,60 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Presets the position for the next blit with angle&#x2e;<br></p>
 <h4><a href="#idx:Texture" onclick="r('Texture:SetLTRBA')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Texture:SetRGB">
-<h3>Texture:SetRGB</h3>
+<div id="Texture:SetTC">
+<h3>Texture:SetTC</h3>
 <h4>Syntax:-</h4>
-<pre>Texture:SetRGB(<i><u>Red</u>, <u>Green</u>, <u>Blue</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Red</u> <i>(number)</i> = The colour intensity of the texture's red component (0-1).<br><u>Green</u> <i>(number)</i> = The colour intensity of the texture's green component (0-1).<br><u>Blue</u> <i>(number)</i> = The colour intensity of the texture's blue omponent (0-1).<br></pre>
-<h4>Synopsis:-</h4>
-<p>Sets the colour intensity of the texture for each component&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
-<h4><a href="#idx:Texture" onclick="r('Texture:SetRGB')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Texture:SetRGBA">
-<h3>Texture:SetRGBA</h3>
-<h4>Syntax:-</h4>
-<pre>Texture:SetRGBA(<i><u>Red</u>, <u>Green</u>, <u>Blue</u>, <u>Alpha</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Red</u> <i>(number)</i> = The colour intensity of the texture's red component (0-1).<br><u>Green</u> <i>(number)</i> = The colour intensity of the texture's green component (0-1).<br><u>Blue</u> <i>(number)</i> = The colour intensity of the texture's blue omponent (0-1).<br><u>Alpha</u> <i>(number)</i> = The transparency of the texture (0-1).<br></pre>
-<h4>Synopsis:-</h4>
-<p>Sets the colour intensity of the texture for each component&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
-<h4><a href="#idx:Texture" onclick="r('Texture:SetRGBA')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Texture:SetRGBAEx">
-<h3>Texture:SetRGBAEx</h3>
-<h4>Syntax:-</h4>
-<pre>Texture:SetRGBAEx(<i><u>TriIndex</u>, <u>RV1</u>, <u>GV1</u>, <u>BV1</u>, <u>AV1</u>, <u>RV2</u>, <u>GV2</u>, <u>BV2</u>, <u>AV2</u>, <u>RV3</u>, <u>GV3</u>, <u>BV3</u>, <u>AV3</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>TriIndex</u> <i>(integer)</i> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<br><u>RV1</u> <i>(number)</i> = Red component of vertex #1 of the specified triangle.<br><u>GV1</u> <i>(number)</i> = Green component of vertex #1 of the specified triangle.<br><u>BV1</u> <i>(number)</i> = Blue component of vertex #1 of the specified triangle.<br><u>AV1</u> <i>(number)</i> = Alpha component of vertex #1 of the specified triangle.<br><u>RV2</u> <i>(number)</i> = Red component of vertex #2 of the specified triangle.<br><u>GV2</u> <i>(number)</i> = Green component of vertex #2 of the specified triangle.<br><u>BV2</u> <i>(number)</i> = Blue component of vertex #2 of the specified triangle.<br><u>AV2</u> <i>(number)</i> = Alpha component of vertex #2 of the specified triangle.<br><u>RV3</u> <i>(number)</i> = Red component of vertex #3 of the specified triangle.<br><u>GV3</u> <i>(number)</i> = Green component of vertex #3 of the specified triangle.<br><u>BV3</u> <i>(number)</i> = Blue component of vertex #3 of the specified triangle.<br><u>AV3</u> <i>(number)</i> = Alpha component of vertex #3 of the specified triangle.<br></pre>
-<h4>Synopsis:-</h4>
-<p>Allows you to full control over the colour of the texture&#x2e;<br></p>
-<h4><a href="#idx:Texture" onclick="r('Texture:SetRGBAEx')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Texture:SetRGBAInt">
-<h3>Texture:SetRGBAInt</h3>
-<h4>Syntax:-</h4>
-<pre>Texture:SetRGBAInt(<i><u>Colour</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Colour</u> <i>(integer)</i> = The entire colour to set as an integer (0xAARRGGBB)<br></pre>
-<h4>Synopsis:-</h4>
-<p>Sets the colour intensity of the texture for each component using a 32 bit integer&#x2e;<br></p>
-<h4><a href="#idx:Texture" onclick="r('Texture:SetRGBAInt')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Texture:SetRed">
-<h3>Texture:SetRed</h3>
-<h4>Syntax:-</h4>
-<pre>Texture:SetRed(<i><u>Red</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Red</u> <i>(number)</i> = The colour intensity of the texture's red component (0-1).<br></pre>
-<h4>Synopsis:-</h4>
-<p>Sets the colour intensity of the texture for the red component&#x2e; The change affects all subsequent calls to all blitting functions&#x2e;<br></p>
-<h4><a href="#idx:Texture" onclick="r('Texture:SetRed')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Texture:SetTexCoord">
-<h3>Texture:SetTexCoord</h3>
-<h4>Syntax:-</h4>
-<pre>Texture:SetTexCoord(<i><u>Left</u>, <u>Top</u>, <u>Right</u>, <u>Bottom</u></i>)</pre>
+<pre>Texture:SetTC(<i><u>Left</u>, <u>Top</u>, <u>Right</u>, <u>Bottom</u></i>)</pre>
 <h4>Function Parameters:-</h4>
 <pre><u>Left</u> <i>(number)</i> = The left co-ordinate.<br><u>Top</u> <i>(number)</i> = The top co-ordinate.<br><u>Right</u> <i>(number)</i> = The right co-ordinate.<br><u>Bottom</u> <i>(number)</i> = The bottom co-ordinate.<br></pre>
 <h4>Synopsis:-</h4>
 <p>Allows you to set basic texture co&#x2d;ordinates when blitting the fbo&#x2e; For a more advanced version of this function&#x2c; see Fbo&#x3a;SetTexCoordEx&#x28;&#x29;&#x2e;<br></p>
-<h4><a href="#idx:Texture" onclick="r('Texture:SetTexCoord')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Texture:SetTexCoordEx">
-<h3>Texture:SetTexCoordEx</h3>
+<h4><a href="#idx:Texture" onclick="r('Texture:SetTC')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Texture:SetV">
+<h3>Texture:SetV</h3>
 <h4>Syntax:-</h4>
-<pre>Texture:SetTexCoordEx(<i><u>TriIndex</u>, <u>C1V1</u>, <u>C2V2</u>, <u>C1V3</u>, <u>C2V1</u>, <u>C1V2</u>, <u>C2V3</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>TriIndex</u> <i>(integer)</i> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<br><u>C1V1</u> <i>(number)</i> = GLfloat for coord #1 of vertex #1 of the specified triangle.<br><u>C2V2</u> <i>(number)</i> = GLfloat for coord #2 of vertex #2 of the specified triangle.<br><u>C1V3</u> <i>(number)</i> = GLfloat for coord #1 of vertex #3 of the specified triangle.<br><u>C2V1</u> <i>(number)</i> = GLfloat for coord #2 of vertex #1 of the specified triangle.<br><u>C1V2</u> <i>(number)</i> = GLfloat for coord #1 of vertex #2 of the specified triangle.<br><u>C2V3</u> <i>(number)</i> = GLfloat for coord #2 of vertex #3 of the specified triangle.<br></pre>
-<h4>Synopsis:-</h4>
-<p>Allows you to full control over the texture co&#x2d;ordinates&#x2e;<br></p>
-<h4><a href="#idx:Texture" onclick="r('Texture:SetTexCoordEx')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Texture:SetVertex">
-<h3>Texture:SetVertex</h3>
-<h4>Syntax:-</h4>
-<pre>Texture:SetVertex(<i><u>Left</u>, <u>Top</u>, <u>Right</u>, <u>Bottom</u></i>)</pre>
+<pre>Texture:SetV(<i><u>Left</u>, <u>Top</u>, <u>Right</u>, <u>Bottom</u></i>)</pre>
 <h4>Function Parameters:-</h4>
 <pre><u>Left</u> <i>(number)</i> = The left co-ordinate.<br><u>Top</u> <i>(number)</i> = The top co-ordinate.<br><u>Right</u> <i>(number)</i> = The right co-ordinate.<br><u>Bottom</u> <i>(number)</i> = The bottom co-ordinate.<br></pre>
 <h4>Synopsis:-</h4>
-<p>Allows you to set basic vertex co&#x2d;ordinates when blitting the fbo&#x2e; For a more advanced version of this function&#x2c; see Fbo&#x3a;SetVertexEx&#x28;&#x29;&#x2e;<br></p>
-<h4><a href="#idx:Texture" onclick="r('Texture:SetVertex')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Texture:SetVertexA">
-<h3>Texture:SetVertexA</h3>
+<p>Allows you to set basic vertex co&#x2d;ordinates when blitting the fbo&#x2e; For a more advanced version of this function&#x2c; see Fbo&#x3a;SetVX&#x28;&#x29;&#x2e;<br></p>
+<h4><a href="#idx:Texture" onclick="r('Texture:SetV')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Texture:SetVA">
+<h3>Texture:SetVA</h3>
 <h4>Syntax:-</h4>
-<pre>Texture:SetVertexA(<i><u>Left</u>, <u>Top</u>, <u>Right</u>, <u>Bottom</u>, <u>Angle</u></i>)</pre>
+<pre>Texture:SetVA(<i><u>Left</u>, <u>Top</u>, <u>Right</u>, <u>Bottom</u>, <u>Angle</u></i>)</pre>
 <h4>Function Parameters:-</h4>
 <pre><u>Left</u> <i>(number)</i> = The left co-ordinate.<br><u>Top</u> <i>(number)</i> = The top co-ordinate.<br><u>Right</u> <i>(number)</i> = The right co-ordinate.<br><u>Bottom</u> <i>(number)</i> = The bottom co-ordinate.<br><u>Angle</u> <i>(number)</i> = The angle of the vertex<br></pre>
 <h4>Synopsis:-</h4>
 <p>Allows you to set basic vertex co&#x2d;ordinates when blitting the fbo with angle calculations&#x2e;<br></p>
-<h4><a href="#idx:Texture" onclick="r('Texture:SetVertexA')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Texture:SetVertexEx">
-<h3>Texture:SetVertexEx</h3>
+<h4><a href="#idx:Texture" onclick="r('Texture:SetVA')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Texture:SetVCRGBA">
+<h3>Texture:SetVCRGBA</h3>
 <h4>Syntax:-</h4>
-<pre>Texture:SetVertexEx(<i><u>TriIndex</u>, <u>C1V1</u>, <u>C2V2</u>, <u>C1V3</u>, <u>C2V1</u>, <u>C1V2</u>, <u>C2V3</u></i>)</pre>
+<pre>Texture:SetVCRGBA(<i><u>TriIndex</u>, <u>RV1</u>, <u>GV1</u>, <u>BV1</u>, <u>AV1</u>, <u>RV2</u>, <u>GV2</u>, <u>BV2</u>, <u>AV2</u>, <u>RV3</u>, <u>GV3</u>, <u>BV3</u>, <u>AV3</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>TriIndex</u> <i>(integer)</i> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<br><u>RV1</u> <i>(number)</i> = Red component of vertex #1 of the specified triangle.<br><u>GV1</u> <i>(number)</i> = Green component of vertex #1 of the specified triangle.<br><u>BV1</u> <i>(number)</i> = Blue component of vertex #1 of the specified triangle.<br><u>AV1</u> <i>(number)</i> = Alpha component of vertex #1 of the specified triangle.<br><u>RV2</u> <i>(number)</i> = Red component of vertex #2 of the specified triangle.<br><u>GV2</u> <i>(number)</i> = Green component of vertex #2 of the specified triangle.<br><u>BV2</u> <i>(number)</i> = Blue component of vertex #2 of the specified triangle.<br><u>AV2</u> <i>(number)</i> = Alpha component of vertex #2 of the specified triangle.<br><u>RV3</u> <i>(number)</i> = Red component of vertex #3 of the specified triangle.<br><u>GV3</u> <i>(number)</i> = Green component of vertex #3 of the specified triangle.<br><u>BV3</u> <i>(number)</i> = Blue component of vertex #3 of the specified triangle.<br><u>AV3</u> <i>(number)</i> = Alpha component of vertex #3 of the specified triangle.<br></pre>
+<h4>Synopsis:-</h4>
+<p>Allows you to full control over the colour of the texture&#x2e;<br></p>
+<h4><a href="#idx:Texture" onclick="r('Texture:SetVCRGBA')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Texture:SetVTC">
+<h3>Texture:SetVTC</h3>
+<h4>Syntax:-</h4>
+<pre>Texture:SetVTC(<i><u>TriIndex</u>, <u>C1V1</u>, <u>C2V2</u>, <u>C1V3</u>, <u>C2V1</u>, <u>C1V2</u>, <u>C2V3</u></i>)</pre>
+<h4>Function Parameters:-</h4>
+<pre><u>TriIndex</u> <i>(integer)</i> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<br><u>C1V1</u> <i>(number)</i> = GLfloat for coord #1 of vertex #1 of the specified triangle.<br><u>C2V2</u> <i>(number)</i> = GLfloat for coord #2 of vertex #2 of the specified triangle.<br><u>C1V3</u> <i>(number)</i> = GLfloat for coord #1 of vertex #3 of the specified triangle.<br><u>C2V1</u> <i>(number)</i> = GLfloat for coord #2 of vertex #1 of the specified triangle.<br><u>C1V2</u> <i>(number)</i> = GLfloat for coord #1 of vertex #2 of the specified triangle.<br><u>C2V3</u> <i>(number)</i> = GLfloat for coord #2 of vertex #3 of the specified triangle.<br></pre>
+<h4>Synopsis:-</h4>
+<p>Allows you to full control over the texture co&#x2d;ordinates&#x2e;<br></p>
+<h4><a href="#idx:Texture" onclick="r('Texture:SetVTC')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Texture:SetVX">
+<h3>Texture:SetVX</h3>
+<h4>Syntax:-</h4>
+<pre>Texture:SetVX(<i><u>TriIndex</u>, <u>C1V1</u>, <u>C2V2</u>, <u>C1V3</u>, <u>C2V1</u>, <u>C1V2</u>, <u>C2V3</u></i>)</pre>
 <h4>Function Parameters:-</h4>
 <pre><u>TriIndex</u> <i>(integer)</i> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<br><u>C1V1</u> <i>(number)</i> = GLfloat for coord #1 of vertex #1 of the specified triangle.<br><u>C2V2</u> <i>(number)</i> = GLfloat for coord #2 of vertex #2 of the specified triangle.<br><u>C1V3</u> <i>(number)</i> = GLfloat for coord #1 of vertex #3 of the specified triangle.<br><u>C2V1</u> <i>(number)</i> = GLfloat for coord #2 of vertex #1 of the specified triangle.<br><u>C1V2</u> <i>(number)</i> = GLfloat for coord #1 of vertex #2 of the specified triangle.<br><u>C2V3</u> <i>(number)</i> = GLfloat for coord #2 of vertex #3 of the specified triangle.<br></pre>
 <h4>Synopsis:-</h4>
 <p>Allows you to full control over the vertex co&#x2d;ordinates apart from the Z co&#x2d;ordinate which is not used in this 2D only engine&#x2e;<br></p>
-<h4><a href="#idx:Texture" onclick="r('Texture:SetVertexEx')">&#x25B2; Return to table of contents</a></h4></div>
+<h4><a href="#idx:Texture" onclick="r('Texture:SetVX')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Texture:TileA">
 <h3>Texture:TileA</h3>
 <h4>Syntax:-</h4>
@@ -8167,24 +8265,6 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Makes sure the specified number does not go under the minimum or maximum numbers specified&#x2e;<br></p>
 <h4><a href="#idx:Util" onclick="r('Util.ClampInt')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Util.ClipGet">
-<h3>Util.ClipGet</h3>
-<h4>Syntax:-</h4>
-<pre><u>Text</u> = Util.ClipGet()</pre>
-<h4>Return Parameters:-</h4>
-<pre><u>Text</u> <i>(string)</i> = The text in the clipboard.<br></pre>
-<h4>Synopsis:-</h4>
-<p>Retrieves text from the operating systems clipboard&#x2e; Returns a blank Returns a blank string if there is no string in the clipboard&#x2e;<br></p>
-<h4><a href="#idx:Util" onclick="r('Util.ClipGet')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Util.ClipSet">
-<h3>Util.ClipSet</h3>
-<h4>Syntax:-</h4>
-<pre>Util.ClipSet(<i><u>Text</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Text</u> <i>(string)</i> = The text to copy.<br></pre>
-<h4>Synopsis:-</h4>
-<p>Stores the specified text into the operating system&#x27;s clipboard&#x2e;<br></p>
-<h4><a href="#idx:Util" onclick="r('Util.ClipSet')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Util.CountOf">
 <h3>Util.CountOf</h3>
 <h4>Syntax:-</h4>
@@ -8917,15 +8997,15 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Returns the number of frames decoded </p>
 <h4><a href="#idx:Video" onclick="r('Video:GetFrames')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Video:GetFramesSkipped">
-<h3>Video:GetFramesSkipped</h3>
+<div id="Video:GetFramesLost">
+<h3>Video:GetFramesLost</h3>
 <h4>Syntax:-</h4>
-<pre><u>Frames</u> = Video:GetFramesSkipped()</pre>
+<pre><u>Frames</u> = Video:GetFramesLost()</pre>
 <h4>Return Parameters:-</h4>
 <pre><u>Frames</u> <i>(Integer)</i> = Returns the frames that were skipped<br></pre>
 <h4>Synopsis:-</h4>
 <p>Returns the number of skipped frames decoded </p>
-<h4><a href="#idx:Video" onclick="r('Video:GetFramesSkipped')">&#x25B2; Return to table of contents</a></h4></div>
+<h4><a href="#idx:Video" onclick="r('Video:GetFramesLost')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Video:GetHeight">
 <h3>Video:GetHeight</h3>
 <h4>Syntax:-</h4>
@@ -9108,6 +9188,6 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <p>Returns possible values for Video&#x3a;OnEvent&#x28;&#x29; event command&#x2e;<br></p>
 <h4><a href="#idx:Video" onclick="r('Video.Flags')">&#x25B2; Return to table of contents</a></h4></div>
 <address>Copyright &copy; 2023 MS-Design, All Rights Reserved.<br>
-This document was created at Sun Apr 02 01:06:17 2023 +0100</address>
+This document was created at Tue Apr 25 16:48:10 2023 +0100</address>
 </body>
 </html>

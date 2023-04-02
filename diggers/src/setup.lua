@@ -12,10 +12,11 @@
 -- Core function aliases --------------------------------------------------- --
 local tonumber<const>, tostring<const>, pairs<const>, insert<const>,
   remove<const>, format<const>, floor<const>, cos<const>, sin<const>,
-  min<const>, max<const>, rep<const>
+  min<const>, max<const>, rep<const>, len<const>, ipairs<const>
   = -- --------------------------------------------------------------------- --
   tonumber, tostring, pairs, table.insert, table.remove, string.format,
-  math.floor, math.cos, math.sin, math.min, math.max, string.rep;
+  math.floor, math.cos, math.sin, math.min, math.max, string.rep, utf8.len,
+  ipairs;
 -- M-Engine function aliases ----------------------------------------------- --
 local InfoMonitor<const>, InfoMonitorData<const>, InfoMonitors<const>,
   InfoVidModeData<const>, InfoVidModes<const>, InfoTime<const>,
@@ -39,12 +40,34 @@ local iKeyEscape<const>, iKeyPageUp<const>, iKeyPageDown<const>,
   = -- --------------------------------------------------------------------- --
   aKeys.ESCAPE, aKeys.PAGE_UP, aKeys.PAGE_DOWN, aKeys.HOME, aKeys.END,
   aKeys.UP, aKeys.DOWN;
+-- Read and prepare engine version information ----------------------------- --
+local sAppTitle, sAppVersion<const>, iAppMajor<const>, iAppMinor<const>,
+  iAppBuild<const>, iAppRevision<const>, _, _, sAppExeType =
+    InfoEngine();
+sAppTitle, sAppExeType = sAppTitle:upper(), sAppExeType:upper();
+-- Read game version information ------------------------------------------- --
+local sGameVersion<const>, sGameName<const>, sGameCopyr<const>,
+      sGameDescription<const>, sGameWebsite<const>
+      = -- ----------------------------------------------------------------- --
+      CVarsGet("app_version"):upper(), CVarsGet("app_longname"):upper(),
+      CVarsGet("app_copyright"):upper(), CVarsGet("app_description"):upper(),
+      CVarsGet("app_website"):upper();
+-- Other CVars used -------------------------------------------------------- --
+local sCVvidvsync<const>, sCVappdelay<const>, sCVtexfilter<const>,
+      sCVaudvol<const>, sCVaudstrvol<const>, sCVaudsamvol<const>,
+      sCVaudfmvvol<const>, sCVvidmonitor<const>, sCVwinwidth<const>,
+      sCVwinheight<const>, sCVvidfs<const>, sCVvidfsmode<const>,
+      sCVaudinterface
+      = -- ----------------------------------------------------------------- --
+      "vid_vsync", "app_delay", "vid_texfilter","aud_vol", "aud_strvol",
+      "aud_samvol", "aud_fmvvol", "vid_monitor", "win_width", "win_height",
+      "vid_fs", "vid_fsmode", "aud_interface";
 -- Diggers function and data aliases --------------------------------------- --
-local InitSetup, aButtonData, aCursorIdData, aSfxData, GetCallbacks, SetCallbacks,
-  LoadResources, PlayMusic, StopMusic, GetMusic, GetCursor, SetCursor,
-  IsMouseYGreaterEqualThan, IsMouseYLessThan, RenderFade, IsKeyPressed,
-  IsKeyRepeating, IsScrollingUp, IsScrollingDown, IsButtonPressed,
-  IsButtonHeld, IsMouseInBounds, GetMouseY, PlayStaticSound,
+local InitSetup, aButtonData, aCursorIdData, aSfxData, GetCallbacks,
+  SetCallbacks, LoadResources, PlayMusic, StopMusic, GetMusic, GetCursor,
+  SetCursor, IsMouseYGreaterEqualThan, IsMouseYLessThan, RenderFade,
+  IsKeyPressed, IsKeyRepeating, IsScrollingUp, IsScrollingDown,
+  IsButtonPressed, IsButtonHeld, IsMouseInBounds, GetMouseY, PlayStaticSound,
   texSpr, fontLarge, fontLittle, fontTiny, RegisterFBUCallback,
   RenderShadow, IsScrollingLeft, IsScrollingRight, IsFading;
 -- Frame-limiter types ----------------------------------------------------- --
@@ -85,7 +108,10 @@ local iFullScreenStateOriginal, iAudioDeviceIdOriginal;
 local iMonitorIdOriginal;
 local iCursorId, fcbTick, fcbRender, fcbInput;
 local aReadmeData, aReadmeVisibleLines, aReadmeColourData = { }, { }, { };
-local iReadmeIndexBegin, iReadmeIndexEnd, iReadmeLines = 1, 1, 29;
+local iReadmeIndexBegin, iReadmeIndexEnd, iReadmeRows, iReadmeCols,
+  iReadmeSpacing, iReadmePaddingX, iReadmePaddingY =
+   1, 1, 28, 77, 6, 8, 27;
+local iReadmeColsM1<const> = iReadmeCols - 1;
 local nRAMUsePercentage, nGPUFramesPerSecond, aOptionData;
 local iCatSize, iCatBottom, nTime = 15, nil, nil;
 local sStatusLineSave, nStatusLineSize, nStatusLinePos, nTipId;
@@ -163,6 +189,8 @@ local function FSResUp()
 end
 -- ------------------------------------------------------------------------- --
 local function WSizeUpdate()
+  -- Ignore if in full-screen
+  if iFullScreenState ~= 0 then return "Disabled" end;
   -- Custom resolution?
   if iWindowId == 0 then return "Custom" end;
   if iWindowId == 1 then return "Automatic" end;
@@ -182,49 +210,61 @@ local function WSizeUp()
   if iWindowId > #aWindowSizes then iWindowId = #aWindowSizes end;
 end
 -- ------------------------------------------------------------------------- --
-local function LimiterSet(iFrameLimiter)
-  -- Set frame limiter options
-  local iVSync, iDelay;
-  if iFrameLimiter >= 4 then iVSync, iDelay = -1 + (iFrameLimiter % 4), 1;
-  else iVSync, iDelay = -1 + iFrameLimiter, 0 end;
-  CVarsSet("vid_vsync", iVSync);
-  CVarsSet("app_delay", iDelay);
-end
+local function GetVarVidVsync() return tonumber(CVarsGet(sCVvidvsync)) end;
+-- ------------------------------------------------------------------------- --
+local function GetVarAppDelay() return tonumber(CVarsGet(sCVappdelay)) end;
 -- ------------------------------------------------------------------------- --
 local function LimiterGet()
   -- Get vsync value, thread delay and kernel tick rate
-  local iFrameLimiter = 1 + tonumber(CVarsGet("vid_vsync"));
+  local iFrameLimiter = 1 + GetVarVidVsync();
   -- Check for delay and if set? Set software category too
-  local iAddedDelay<const> = tonumber(CVarsGet("app_delay"));
-  if iAddedDelay > 0 then iFrameLimiter = iFrameLimiter + 4 end;
+  if GetVarAppDelay() > 0 then iFrameLimiter = iFrameLimiter + 4 end;
   -- Return value
   return iFrameLimiter;
 end
 -- ------------------------------------------------------------------------- --
 local function LimiterUpdate()
   -- Get vsync value, thread delay and kernel tick rate
-  local iFrameLimiter = 1 + tonumber(CVarsGet("vid_vsync"));
+  local iFrameLimiter = 1 + GetVarVidVsync();
   -- Check for delay and if set? Set software category too
-  local iAddedDelay<const> = tonumber(CVarsGet("app_delay"));
-  if iAddedDelay > 0 then iFrameLimiter = iFrameLimiter + 4 end;
+  if GetVarAppDelay() > 0 then iFrameLimiter = iFrameLimiter + 4 end;
   -- Set original value
   return aFrameLimiterLabels[LimiterGet()+1];
 end
+-- ------------------------------------------------------------------------- --
+local function LimiterSet(iFrameLimiter)
+  -- Set frame limiter options
+  local iVSync, iDelay;
+  if iFrameLimiter >= 4 then iVSync, iDelay = -1 + (iFrameLimiter % 4), 1;
+  else iVSync, iDelay = -1 + iFrameLimiter, 0 end;
+  CVarsSet(sCVvidvsync, iVSync);
+  CVarsSet(sCVappdelay, iDelay);
+end
+-- ------------------------------------------------------------------------- --
 local function LimiterDown()
   LimiterSet(UtilClampInt(LimiterGet()-1, 0, #aFrameLimiterLabels-1));
 end
+-- ------------------------------------------------------------------------- --
 local function LimiterUp()
   LimiterSet(UtilClampInt(LimiterGet()+1, 0, #aFrameLimiterLabels-1));
 end
 -- ------------------------------------------------------------------------- --
+local function GetVarTexFilter() return tonumber(CVarsGet(sCVtexfilter)) end;
+-- ------------------------------------------------------------------------- --
+local function SetVarTexFilter(iV) return CVarsSet(sCVtexfilter, iV) end;
+-- ------------------------------------------------------------------------- --
 local function FilterUpdate()
-  if CVarsGet("vid_texfilter") == "0" then
-    return "Point" end; return "Bilinear";
+  -- Point filtering if disabled
+  if GetVarTexFilter() == 0 then return "Point" end;
+  -- Anything else is bilinear
+  return "Bilinear";
 end
+-- ------------------------------------------------------------------------- --
 local function FilterSwap()
-  if CVarsGet("vid_texfilter") == "0" then
-    return CVarsSet("vid_texfilter", 3) end;
-  CVarsSet("vid_texfilter", 0);
+  -- Set enabled (GL_LINEAR) if was disabled
+  if GetVarTexFilter() == 0 then return SetVarTexFilter(3) end;
+  -- Set disabled (GL_NEAREST) if was enabled
+  SetVarTexFilter(0);
 end
 -- ------------------------------------------------------------------------- --
 local function AudioUpdate()
@@ -232,59 +272,59 @@ local function AudioUpdate()
   elseif iAudioDeviceId >= AudioGetNumPBDs() then
     return "Invalid Playback Device" end;
   local N = AudioGetPBDName(iAudioDeviceId);
-  local L = "OpenAL Soft on ";
+  local L<const> = "OpenAL Soft on ";
   if N:sub(1, #L) == L then N = N:sub(#L) end;
   if #N > 34 then return N:sub(0,30).."..." end;
   return N;
 end
+-- ------------------------------------------------------------------------- --
 local function AudioDown()
   if iAudioDeviceId == -1 then return end;
   iAudioDeviceId = iAudioDeviceId - 1;
 end
+-- ------------------------------------------------------------------------- --
 local function AudioUp()
   if iAudioDeviceId == AudioGetNumPBDs()-1 then return end;
   iAudioDeviceId = iAudioDeviceId + 1;
 end
 -- ------------------------------------------------------------------------- --
-local function VMasterUpdate()
-  return floor(CVarsGet("aud_vol")*100).."%";
-end
-local function VMasterDown()
-  CVarsSet("aud_vol",UtilClamp(tonumber(CVarsGet("aud_vol"))-0.05,0,1));
-end
-local function VMasterUp()
-  CVarsSet("aud_vol",UtilClamp(tonumber(CVarsGet("aud_vol"))+0.05,0,1));
+local function VPrepare(sCV) return floor(CVarsGet(sCV)*100).."%" end;
+-- ------------------------------------------------------------------------- --
+local function VSet(sCV, iAdj)
+  CVarsSet(sCV, UtilClamp(tonumber(CVarsGet(sCV)) + (iAdj*0.05), 0, 1));
 end
 -- ------------------------------------------------------------------------- --
-local function VStreamUpdate()
-  return floor(CVarsGet("aud_strvol") * 100).."%";
-end
-local function VStreamDown()
-  CVarsSet("aud_strvol",UtilClamp(tonumber(CVarsGet("aud_strvol"))-0.05,0,1));
-end
-local function VStreamUp()
-  CVarsSet("aud_strvol",UtilClamp(tonumber(CVarsGet("aud_strvol"))+0.05,0,1));
-end
+local function VMasterUpdate() return VPrepare(sCVaudvol) end;
 -- ------------------------------------------------------------------------- --
-local function VSampleUpdate()
-  return floor(CVarsGet("aud_samvol") * 100).."%";
-end
-local function VSampleDown()
-  CVarsSet("aud_samvol",UtilClamp(tonumber(CVarsGet("aud_samvol"))-0.05,0,1));
-end
-local function VSampleUp()
-  CVarsSet("aud_samvol",UtilClamp(tonumber(CVarsGet("aud_samvol"))+0.05,0,1));
-end
+local function VMasterSet(iAdj) VSet(sCVaudvol, iAdj) end;
 -- ------------------------------------------------------------------------- --
-local function VFMVUpdate()
-  return floor(CVarsGet("aud_fmvvol") * 100).."%";
-end
-local function VFMVDown()
-  CVarsSet("aud_fmvvol",UtilClamp(tonumber(CVarsGet("aud_fmvvol"))-0.05,0,1));
-end
-local function VFMVUp()
-  CVarsSet("aud_fmvvol",UtilClamp(tonumber(CVarsGet("aud_fmvvol"))+0.05,0,1));
-end
+local function VMasterDown() VMasterSet(-1) end;
+-- ------------------------------------------------------------------------- --
+local function VMasterUp() VMasterSet(1) end;
+-- ------------------------------------------------------------------------- --
+local function VStreamUpdate() return VPrepare(sCVaudstrvol) end;
+-- ------------------------------------------------------------------------- --
+local function VStreamSet(iAdj) VSet(sCVaudstrvol, iAdj) end;
+-- ------------------------------------------------------------------------- --
+local function VStreamDown() VStreamSet(-1) end;
+-- ------------------------------------------------------------------------- --
+local function VStreamUp() VStreamSet(1) end;
+-- ------------------------------------------------------------------------- --
+local function VSampleSet(iAdj) VSet(sCVaudsamvol, iAdj) end;
+-- ------------------------------------------------------------------------- --
+local function VSampleUpdate() return VPrepare(sCVaudsamvol) end;
+-- ------------------------------------------------------------------------- --
+local function VSampleDown() VSampleSet(-1) end;
+-- ------------------------------------------------------------------------- --
+local function VSampleUp() VSampleSet(1) end;
+-- ------------------------------------------------------------------------- --
+local function VFMVUpdate() return VPrepare(sCVaudfmvvol) end;
+-- ------------------------------------------------------------------------- --
+local function VFMVSet(iAdj) VSet(sCVaudfmvvol, iAdj) end;
+-- ------------------------------------------------------------------------- --
+local function VFMVDown() VFMVSet(-1) end;
+-- ------------------------------------------------------------------------- --
+local function VFMVUp() VFMVSet(1) end;
 -- ------------------------------------------------------------------------- --
 local function FlickerColour1()
   fontLarge:SetCRGBA(1, 1, 1, 1);
@@ -322,13 +362,17 @@ local function RenderBackgroundStart(nId)
   -- Render game background
   fcbRender();
   -- Draw background animation
+  local iStageLP6<const> = iStageL + 6;
+  local nTimeM2<const> = nTime * 2;
+  texSpr:SetCRGB(0, 0, 0);
   for iY = iStageT+6, iStageB, 16 do
-    for iX = iStageL+6, iStageR, 16 do
-      local nVal = (nTime*2) - (iX+iY);
-      nVal = (0.5+((cos(nVal)*sin(nVal)))) * 1;
-      texSpr:SetCA(nVal*0.5);
+    local nTimeM2SX<const> = nTimeM2 - iY;
+    for iX = iStageLP6, iStageR, 16 do
+      local nVal = nTimeM2SX - iX;
+      nVal = 0.5 + ((cos(nVal) * sin(nVal)));
+      texSpr:SetCA(nVal*0.75);
       local nVal2<const> = nVal * 16;
-      texSpr:BlitSLTRBA(1023, iX, iY, iX + nVal2, iY + nVal2, nVal);
+      texSpr:BlitSLTRBA(444, iX, iY, iX + nVal2, iY + nVal2, nVal);
     end
   end
   -- Draw background for text
@@ -386,15 +430,15 @@ local function Refresh()
   -- Refresh monitor settings
   local function RefreshMonitorSettings()
     -- Initialise monitor video modes and use primary monitor if invalid
-    iMonitorId = tonumber(CVarsGet("vid_monitor"));
+    iMonitorId = tonumber(CVarsGet(sCVvidmonitor));
     if iMonitorId < -1 or iMonitorId >= InfoMonitors() then
       iMonitorId = -1 end;
     iMonitorIdOriginal = iMonitorId;
     -- Initialise video resolution and use desktop resolution if invalid
-    iFullScreenState = tonumber(CVarsGet("vid_fs"));
+    iFullScreenState = tonumber(CVarsGet(sCVvidfs));
     if iFullScreenState < 0 or iFullScreenState > 1 then
       iFullScreenState = 0 end;
-    iFullScreenMode = tonumber(CVarsGet("vid_fsmode"));
+    iFullScreenMode = tonumber(CVarsGet(sCVvidfsmode));
     -- If full-screen mode is enabled?
     if iFullScreenState == 1 then
       -- If full-screen mode is -1 (Exclusive full-screen)?
@@ -416,8 +460,8 @@ local function Refresh()
   -- Refresh window settings
   local function RefreshWindowSettings()
     -- Get window size
-    local iWindowWidth = tonumber(CVarsGet("win_width"));
-    local iWindowHeight = tonumber(CVarsGet("win_height"));
+    local iWindowWidth = tonumber(CVarsGet(sCVwinwidth));
+    local iWindowHeight = tonumber(CVarsGet(sCVwinheight));
     -- Set to defaults if invalid
     if iWindowWidth < -1 then iWindowWidth = -1 end;
     if iWindowHeight < -1 then iWindowHeight = -1 end;
@@ -435,7 +479,7 @@ local function Refresh()
   end
   -- Refresh audio settings
   local function RefreshAudioSettings()
-    iAudioDeviceId = tonumber(CVarsGet("aud_interface"));
+    iAudioDeviceId = tonumber(CVarsGet(sCVaudinterface));
     iAudioDeviceIdOriginal = iAudioDeviceId;
   end
   -- Perform refreshes
@@ -447,23 +491,26 @@ local function Refresh()
 end
 -- ------------------------------------------------------------------------- --
 local function ApplySettings()
+  -- Do window reset?
+  local bWindowReset = false;
   -- Set window size
   if iWindowId >= 1 and iWindowId <= #aWindowSizes then
     local aData<const> = aWindowSizes[iWindowId];
-    CVarsSet("win_width", aData[1]);
-    CVarsSet("win_height", aData[2]);
+    if aData[1] == 0 and aData[2] == 0 then bWindowReset = true end;
+    CVarsSet(sCVwinwidth, aData[1]);
+    CVarsSet(sCVwinheight, aData[2]);
   end
   -- Set window variables if needed
-  if iFullScreenState == 2 then CVarsSet("vid_fs", 1)
-                           else CVarsSet("vid_fs", iFullScreenState) end;
+  if iFullScreenState == 2 then CVarsSet(sCVvidfs, 1)
+                           else CVarsSet(sCVvidfs, iFullScreenState) end;
   -- If full-screen mode is resetting?
   if iFullScreenMode == -3 then
     -- Now set to default mode
     iFullScreenMode = -2;
-    CVarsReset("vid_fsmode");
-  else CVarsSet("vid_fsmode", iFullScreenMode) end;
-  CVarsSet("vid_monitor", iMonitorId);
-  CVarsSet("aud_interface", iAudioDeviceId);
+    CVarsReset(sCVvidfsmode);
+  else CVarsSet(sCVvidfsmode, iFullScreenMode) end;
+  CVarsSet(sCVvidmonitor, iMonitorId);
+  CVarsSet(sCVaudinterface, iAudioDeviceId);
   -- Reset audio subsystem if interface changed
   if iAudioDeviceIdOriginal ~= iAudioDeviceId then AudioReset() end;
   -- If GPU related parameters changed from original then reset video
@@ -471,8 +518,8 @@ local function ApplySettings()
      iFullScreenStateOriginal ~= iFullScreenState or
      iMonitorIdOriginal ~= iMonitorId then DisplayVReset();
   -- If window parameters changed then just reset window
-  elseif iFullScreenState == 0 and iWindowId ~= iWindowIdOriginal then
-    DisplayReset() end;
+  elseif bWindowReset or iFullScreenState == 0 and
+         iWindowId ~= iWindowIdOriginal then DisplayReset() end;
   -- Refresh/update settings
   Refresh();
 end
@@ -485,14 +532,14 @@ local function SetDefaults()
   iAudioDeviceId = -1;
   iWindowId = 1;
   -- Other options
-  CVarsReset("app_delay");
-  CVarsReset("vid_vsync");
-  CVarsReset("vid_texfilter");
+  CVarsReset(sCVappdelay);
+  CVarsReset(sCVvidvsync);
+  CVarsReset(sCVtexfilter);
   -- Reset volumes
-  CVarsReset("aud_vol");
-  CVarsReset("aud_strvol");
-  CVarsReset("aud_samvol");
-  CVarsReset("aud_fmvvol");
+  CVarsReset(sCVaudvol);
+  CVarsReset(sCVaudstrvol);
+  CVarsReset(sCVaudsamvol);
+  CVarsReset(sCVaudfmvvol);
   -- Set new settings
   ApplySettings();
 end
@@ -544,16 +591,20 @@ end
 local function UpdateReadmeLines()
   -- Clear displayed lines
   aReadmeVisibleLines = { };
-  -- For each line in readme file. Add this line to the displayed lines list
+  -- For each line in readme file...
   for iIndex = iReadmeIndexBegin,
-    min(iReadmeIndexBegin + iReadmeLines, #aReadmeData) do
+    min(iReadmeIndexBegin + iReadmeRows, #aReadmeData) do
+    -- Get line and truncate it if it is too long
+    local sLine = aReadmeData[iIndex];
+    if #sLine > iReadmeColsM1 then  sLine = sLine:sub(1, iReadmeColsM1) end;
+    -- Insert visible line
     insert(aReadmeVisibleLines,
-      { 6, 24 + ((#aReadmeVisibleLines + 1) * 6),
-        aReadmeData[iIndex]:sub(1,77) });
+      { iReadmePaddingX, iReadmePaddingY + ((#aReadmeVisibleLines + 1) *
+        iReadmeSpacing), sLine });
   end
   -- Update statuses
   sStatusLine1 = "DISPLAYING LINE "..iReadmeIndexBegin.." TO "..
-    iReadmeIndexEnd.." OF "..#aReadmeData.." IN THIS README TEXT DOCUMENT";
+    iReadmeIndexEnd.." OF "..#aReadmeData.." OF THESE ACKNOWLEDGEMENTS";
   sStatusLine2 =
     "CURSORS+PGUP+PGDN+HOME+END+LMB+JB1:SCROLL  F2+RMB+JB2:SETUP  ESC:CANCEL";
   -- Remove marquee settings
@@ -562,18 +613,16 @@ local function UpdateReadmeLines()
 end
 -- ------------------------------------------------------------------------- --
 local function SetReadme(Line)
-  -- Readme line colour data count minus one
-  local iCountMinusOne<const> = #aReadmeColourData - 1;
   -- Get maximum lines
   local iMax<const> =
-    UtilClampInt(#aReadmeData - iCountMinusOne, 1, 0x7FFFFFFF);
+    UtilClampInt(#aReadmeData - #aReadmeColourData, 1, 0x7FFFFFFF);
   -- Set to end line?
   if Line == 0x7FFFFFFF then iReadmeIndexBegin = iMax;
   -- Set line?
   else iReadmeIndexBegin = UtilClampInt(Line, 1, iMax) end;
   -- Set ending line
   iReadmeIndexEnd = UtilClampInt(iReadmeIndexBegin +
-    iCountMinusOne, 1, #aReadmeData);
+    #aReadmeColourData, 1, #aReadmeData);
   -- Update displayed readme lines
   UpdateReadmeLines();
 end
@@ -610,31 +659,20 @@ local function InitReadme()
   SetCallbacks(ProcReadme, RenderReadme, nil);
   -- Init text colours
   aReadmeColourData = { };
-  for I = 1, 30 do insert(aReadmeColourData, (I/30)*0.25) end;
+  for I = 1, iReadmeRows do
+    insert(aReadmeColourData, (I/iReadmeRows)*0.25) end;
   -- Set title
-  sTitle = "HELP AND INFO";
-  -- Blank readme for now
-  aReadmeData = { "Loading..." };
-  UpdateReadmeLines();
+  sTitle = "ABOUT";
+  -- Set readme lines
+  aReadmeData = aCreditLines;
   -- At least one tick
   ProcReadme();
-  -- Readme text file loaded?
-  local function OnLoaded(aRes)
-    -- Arrow cursor
-    SetCursor(aCursorIdData.ARROW);
-    -- Load readme file into LUA array and then unload it
-    aReadmeData = UtilExplode(aRes[1].H:ToString():upper(), "\n");
-    -- Add credits
-    local iPosition = #aReadmeData-4;
-    for iLine = 1, #aCreditLines do
-      insert(aReadmeData, iPosition+iLine, aCreditLines[iLine]) end;
-    -- Update displayed readme lines
-    UpdateReadmeLines();
-    -- Allow input
-    SetCallbacks(ProcReadme, RenderReadme, ProcReadmeInput);
-  end
-  -- Load resources asynchronously (keep previous cache)
-  LoadResources("ReadMe", {{T=5,F="readme.txt",P={}}}, OnLoaded, true);
+  -- Arrow cursor
+  SetCursor(aCursorIdData.ARROW);
+  -- Update displayed readme lines
+  UpdateReadmeLines();
+  -- Allow input
+  SetCallbacks(ProcReadme, RenderReadme, ProcReadmeInput);
 end
 -- ----------------------------------------------------------------------- --
 local function SetTip(nNewTipId, sTip)
@@ -812,12 +850,10 @@ local function InitConfig()
   -- No option selected
   iSelectedOption = 0;
   -- Set title
-  sTitle = "CONFIGURATION";
+  sTitle = "SETUP";
   -- Initialise status bars
-  local AT, AV, AMAV, AMIV, ABV, ARV, _, _, ATA = InfoEngine();
-  sStatusLine1 = format("%s %s on %s %u.%u.%u.%u (%s)",
-    CVarsGet("app_longname"), CVarsGet("app_version"),
-    AT, AMAV, AMIV, ABV, ARV, ATA):upper();
+  sStatusLine1 = format("%s (%s) %s.%u.%u.%u.%u - %s", sGameName, sAppExeType,
+    sGameVersion, iAppMajor, iAppMinor, iAppBuild, iAppRevision, sGameWebsite);
   sStatusLine2 = "MS-DESIGN PROUDLY PRESENTS DIGGERS! A REMAKE FOR MODERN "..
     "OPERATING SYSTEMS AND HARDWARE FROM THE CLASSIC CD32 AND DOS DAYS. "..
     "THIS IS THE CONFIGURATION SCREEN. PRESS ESCAPE OR THE 'DONE' BUTTON "..
@@ -836,37 +872,81 @@ local function InitConfig()
 end
 -- ------------------------------------------------------------------------- --
 local function InitThirdPartyCredits()
-  -- Constants
-  local sLeft, sRight, sFmt = "## ", " ##", "%-71s";
-  local sRep = rep('#', 77);
-  -- Init credit lines
+  -- Initialise credit lines
   aCreditLines = { };
-  -- For each credit
-  for iIndex = 0, CreditTotal()-1 do
-    -- Get credit information
-    local sName, sVersion, bCopyright, sAuthor = CreditItem(iIndex);
-    -- Add empty line
-    insert(aCreditLines, "");
+  -- Box function
+  local function Header(sString)
+    -- Add elipsis
+    sString = sString.."...";
     -- Add titlebar for credit
-    insert(aCreditLines, sRep);
-    insert(aCreditLines, sLeft..format(sFmt,
-      "USES THIRD-PARTY API '"..sName:upper().."' VERSION "..
-        sVersion:upper()..".")..sRight);
-    insert(aCreditLines, sLeft..
-      format(sFmt, "BY "..sAuthor:upper().."...")..sRight);
-    insert(aCreditLines, sRep);
+    insert(aCreditLines, sString);
+    insert(aCreditLines, rep('=', len(sString)));
+    insert(aCreditLines, "");
+  end
+  -- Add game name header
+  Header(sGameName.." "..sGameVersion);
+  -- Write  game information
+  insert(aCreditLines, sGameDescription..".");
+  insert(aCreditLines, "COPYRIGHT (C) "..sGameCopyr:sub(14):upper()..".");
+  insert(aCreditLines, "RUNNING ON "..sAppTitle.." "..
+    iAppMajor.."."..iAppMinor.."."..iAppBuild.."."..iAppRevision.." FOR "..
+    sAppExeType..".");
+  insert(aCreditLines, "SEE HTTPS://"..sGameWebsite..
+    " FOR MORE INFORMATION AND UPDATES.");
+  insert(aCreditLines, "");
+  -- Add third party credits header
+  local iCredits<const> = CreditTotal();
+  Header("ACKNOWLEDGEMENT OF "..iCredits.." THIRD-PARTY CREDITS");
+  -- Enumerate credits so we can build a quick credits list
+  local iCreditsM1<const> = iCredits - 1;
+  for iIndex = 0, iCreditsM1, 2 do
+    -- Get credit information
+    local sName<const>, sVersion<const> = CreditItem(iIndex);
+    -- If we can show another?
+    iIndex = iIndex + 1;
+    if iIndex <= iCreditsM1 then
+      -- Get second credit information
+      local sName2<const>, sVersion2<const> = CreditItem(iIndex);
+      -- Insert both credits
+      insert(aCreditLines, format("%2d: %-15s %17s  %2d: %-17s %15s",
+        iIndex, sName:upper(), "(v"..sVersion:upper()..")",
+        iIndex+1, sName2:upper(), "(v"..sVersion2:upper()..")"));
+    -- Only one left so write last
+    else insert(aCreditLines, format("%2d: %-17s %15s", iIndex,
+      sName:upper(), "(v"..sVersion:upper()..")")) end;
+  end
+  -- Add space
+  insert(aCreditLines, "");
+  -- Add licences header
+  Header("LICENCES");
+  -- Now for all the other credits in detail
+  for iIndex = 0, iCreditsM1 do
+    -- Get credit information
+    local sName<const>, sVersion<const>, bCopyright, sAuthor<const> =
+      CreditItem(iIndex);
+    -- Set copyright
+    if bCopyright then bCopyright = "(C)";
+                  else bCopyright = "BY" end;
+    -- Line to write
+    Header((iIndex+1)..". USES "..sName:upper().." "..bCopyright.." "..
+      sAuthor:upper());
     -- Add credit licence
-    local aLines<const> = UtilExplode(CreditLicence(iIndex):upper(), "\n");
+    local aLines<const> = UtilExplode(CreditLicence(iIndex), "\n");
     for iI = 1, #aLines do
       local sLine<const> = aLines[iI];
       if #sLine > 78 then
-        local aWrappedLines<const> = UtilWordWrap(sLine, 78, 0);
+        local aWrappedLines<const> = UtilWordWrap(sLine, iReadmeCols, 0);
         for iWI = 1, #aWrappedLines do
-          insert(aCreditLines, aWrappedLines[iWI]);
+          insert(aCreditLines, aWrappedLines[iWI]:upper());
         end
-      else insert(aCreditLines, sLine) end;
+      else insert(aCreditLines, sLine:upper()) end;
     end
   end
+  -- Add third party credits header
+  insert(aCreditLines, "*** END-OF-FILE ***");
+  -- Truncate bottom empty lines
+  while #aCreditLines > 0 and #aCreditLines[#aCreditLines] == 0 do
+    remove(aCreditLines, #aCreditLines) end;
 end
 InitThirdPartyCredits();
 -- ------------------------------------------------------------------------- --
@@ -929,7 +1009,7 @@ return { A = { InitSetup = InitSetup }, F = function(GetAPI)
   IsScrollingDown, IsButtonPressed, IsButtonHeld, IsMouseInBounds, GetMouseY,
   PlayStaticSound, texSpr, fontLarge, fontLittle, fontTiny,
   RegisterFBUCallback, RenderShadow, aCursorIdData, IsScrollingLeft,
-  IsScrollingRight, IsFading
+  IsScrollingRight, IsFading, aButtonData, aOptionData
   = -- --------------------------------------------------------------------- --
   GetAPI("aSfxData", "GetCallbacks", "SetCallbacks",
     "LoadResources", "PlayMusic", "StopMusic", "GetMusic", "GetCursor",
@@ -938,61 +1018,28 @@ return { A = { InitSetup = InitSetup }, F = function(GetAPI)
     "IsButtonPressed", "IsButtonHeld", "IsMouseInBounds", "GetMouseY",
     "PlayStaticSound", "texSpr", "fontLarge", "fontLittle", "fontTiny",
     "RegisterFBUCallback", "RenderShadow", "aCursorIdData", "IsScrollingLeft",
-    "IsScrollingRight","IsFading");
+    "IsScrollingRight", "IsFading", "aSetupButtonData", "aSetupOptionData");
+  -- Apply functions to static button table -------------------------------- --
+  for sK, fCb in pairs({ APPLY = ApplySettings, DONE = Finish,
+    RESET = SetDefaults, ABOUT = InitReadme }) do aButtonData[sK][6] = fCb end;
+  -- Apply functions to static option table -------------------------------- --
+  for iI, aF in ipairs({
+    { MonitorUpdate, MonitorDown, MonitorUp  }, -- 1
+    { FSStateUpdate, FSStateDown, FSStateUp  }, -- 2
+    { FSResUpdate,   FSResDown,   FSResUp    }, -- 3
+    { WSizeUpdate,   WSizeDown,   WSizeUp    }, -- 4
+    { LimiterUpdate, LimiterDown, LimiterUp  }, -- 5
+    { FilterUpdate,  FilterSwap,  FilterSwap }, -- 6
+    { AudioUpdate,   AudioDown,   AudioUp    }, -- 7
+    { VMasterUpdate, VMasterDown, VMasterUp  }, -- 8
+    { VStreamUpdate, VStreamDown, VStreamUp  }, -- 9
+    { VSampleUpdate, VSampleDown, VSampleUp  }, -- 10
+    { VFMVUpdate,    VFMVDown,    VFMVUp     }, -- 11
+  }) do
+    aOptionData[iI][3] = aF[1];
+    aOptionData[iI][4] = aF[2];
+    aOptionData[iI][5] = aF[3];
+  end
   -- ----------------------------------------------------------------------- --
-  aButtonData = {
-    -- --------------------------------------------------------------------- --
-    APPLY = {   4, 193,  82, 212, aCursorIdData.OK,   ApplySettings, 101,
-      "CLICK TO APPLY ANY SYSTEM AFFECTING SETTINGS YOU HAVE CHANGED" },
-    -- --------------------------------------------------------------------- --
-    DONE  = {  82, 193, 160, 212, aCursorIdData.EXIT, Finish,        102,
-      "CLICK TO EXIT THIS SETUP WINDOW AND RETURN TO YOUR GAME. ANY "..
-      "CHANGED SETTINGS THAT NEED TO BE APPLIED WILL BE CANCELLED" },
-    -- --------------------------------------------------------------------- --
-    RESET = { 160, 193, 238, 212, aCursorIdData.OK,   SetDefaults,   103,
-      "CLICK TO RESET ALL VALUES TO DEFAULTS AND AUTOMATICALLY APPLY THE "..
-      "SETTINGS" },
-    -- --------------------------------------------------------------------- --
-    HELP  = { 238, 193, 316, 212, aCursorIdData.OK,   InitReadme,    104,
-      "CLICK TO VIEW THE DOCUMENTATION FOR THIS GAME" }
-  };-- --------------------------------------------------------------------- --
-  aOptionData =
-  { -- Option name -- Value -- UpdateFunc --- DownFunc --- UpFunc ---------- --
-    { "Monitor",         "", MonitorUpdate, MonitorDown, MonitorUp,
-      "CHANGES THE MONITOR THE GAME WILL APPEAR ON BY DEFAULT. PRESS "..
-      "APPLY WHEN YOU ARE HAPPY WITH THE SELECTION TO ACTIVATE IT", },
-    { "Display State",   "", FSStateUpdate, FSStateDown, FSStateUp,
-      "CHANGES THE DEFAULT WINDOW STYLE OF THE GAME. PRESS APPLY WHEN YOU "..
-      "ARE HAPPY WITH THE SELECTION TO ACTIVATE IT" },
-    { "Full-Resolution", "", FSResUpdate,   FSResDown,   FSResUp,
-      "ALLOWS YOU TO SET A CUSTOM DESKTOP RESOLUTION FOR EXCLUSIVE "..
-      "FULL-SCREEN MODE. PRESS APPLY WHEN YOU ARE HAPPY WITH THE SELECTION "..
-      "TO ACTIVATE IT" },
-    { "Window Size",     "", WSizeUpdate,   WSizeDown,   WSizeUp,
-      "ALLOWS YOU TO SET A CUSTOM WINDOW SIZE FOR DECORATED WINDOW ONLY "..
-      "MODE. PRESS APPLY WHEN YOU ARE HAPPY WITH THE SELECTION TO ACTIVATE "..
-      "IT" },
-    { "Frame Limiter",   "", LimiterUpdate, LimiterDown, LimiterUp,
-      "ALLOWS YOU TO CHOOSE FROM A RANGE OF FRAME-LIMITING OPTIONS TO "..
-      "BALANCE THE PERFORMANCE VERSUS POWER USAGE OF RENDERING. SOME VALUES "..
-      "MAY BE INEFFECTIVE WHEN THE VSYNC VALUE IS BEING OVERRIDDEN IN YOUR "..
-      "VIDEO ADAPTER SETTINGS OR WHEN YOUR SYSTEM IS UNDERPERFORMING. THE "..
-      "CHANGE IS INSTANTLY APPLIED" },
-    { "Texture Filter",  "", FilterUpdate,  FilterSwap,  FilterSwap,
-      "APPLY A BILINEAR UPSCALE FILTER TO THE MAIN FRAMEBUFFER. THE GAME IS "..
-      "RENDERED IN 320x240. THE CHANGE OF OPTION IS INSTANTLY APPLIED" },
-    { "Audio Device",    "", AudioUpdate,   AudioDown,   AudioUp,
-      "ALLOWS YOU TO SET THE DEFAULT AUDIO DEVICE TO USE FOR THE GAME. "..
-      "PRESS APPLY WHEN YOU ARE HAPPY WITH THE SELECTION TO ACTIVATE IT" },
-    { "Master Volume",   "", VMasterUpdate, VMasterDown, VMasterUp,
-      "CHANGES THE FINAL OUTPUT VOLUME OF ALL MUSIC, SOUND EFFECTS AND FMV "..
-      "MIXED TOGETHER. THE CHANGE OF OPTION IS INSTANTLY APPLIED" },
-    { "Music Volume",    "", VStreamUpdate, VStreamDown, VStreamUp,
-      "CHANGES THE MUSIC VOLUME. THE CHANGE OF OPTION IS INSTANTLY APPLIED" },
-    { "Effect Volume",   "", VSampleUpdate, VSampleDown, VSampleUp,
-      "CHANGES THE SFX VOLUME. THE CHANGE OF OPTION IS INSTANTLY APPLIED" },
-    { "Fmv Volume",      "", VFMVUpdate,    VFMVDown,    VFMVUp,
-      "CHANGES THE FMV VOLUME. THE CHANGE OF OPTION IS INSTANTLY APPLIED" },
-  };-- Option name -- Value -- UpdateFunc --- DownFunc --- UpFunc
 end };
 -- == End-of-File ========================================================== --

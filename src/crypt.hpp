@@ -260,12 +260,12 @@ template<class T>static const string CryptImplodeMapAndEncode(const T &ssData,
   // Iterate through each key pair and insert into vector whilst encoding
   transform(ssData.cbegin(), ssData.cend(), back_inserter(svRet),
     [](const auto &vI)
-      { return std::move(Append(CryptURLEncode(vI.first), '=',
+      { return StdMove(Append(CryptURLEncode(vI.first), '=',
           CryptURLEncode(vI.second))); });
   // Return vector
   return Implode(svRet, strSep);
 }
-/* -- Get error reason --------------------------------------------------- */
+/* -- Get error reason ----------------------------------------------------- */
 static string CryptGetErrorReason(const unsigned long ulErr)
 { // Clear and resize error buffer to maximum
   string strError; strError.resize(128);
@@ -278,16 +278,36 @@ static string CryptGetErrorReason(const unsigned long ulErr)
   return strError;
 }
 /* -- Get error reason --------------------------------------------------- */
-static string CryptGetError(void)
+static int CryptGetError(string &strError)
 { // Error to return
-  string strError;
+  strError.clear();
+  // Error code
+  int iError = -1;
   // Process errors... Only show errors we can actually report on
   // See ERR.H for actual error codes.
   while(const unsigned long ulErr = ERR_get_error())
-  { // If the operating system has the reason?
-    if(ERR_GET_LIB(ulErr) == ERR_LIB_SYS ||
-       ERR_GET_REASON(ulErr) == ERR_R_SYS_LIB)
+  { // Set error number and string
+    iError = static_cast<int>(ulErr);
+    // Some statics
+    static constexpr const unsigned int
+      // Replacement for ERR_SYSTEM_MASK which causes warnings
+      uiSystemMask = static_cast<unsigned int>(INT_MAX),
+      // Replacement for ERR_SYSTEM_FLAG which causes warnings
+      uiSystemFlag = uiSystemMask + 1;
+    // Is a system error?
+    const bool bSysErr = ulErr & uiSystemFlag;
+    // Get library and reason...
+    const unsigned int
+      // Replacement for ERR_GET_LIB in err.h which causes warnings
+      uiLib = bSysErr ?
+        ERR_LIB_SYS : ((ulErr >> ERR_LIB_OFFSET) & ERR_LIB_MASK),
+      // Replacement for ERR_GET_REASON in err.h which causes warning
+      uiReason = bSysErr ?
+        (ulErr & uiSystemFlag) : (ulErr & ERR_REASON_MASK);
+    // If the operating system has the reason?
+    if(uiLib == ERR_LIB_SYS || uiReason == ERR_R_SYS_LIB)
     { // Get system error and if no error set? Store what OpenSSL actually sent
+      iError = cSystem->LastSocketOrSysError();
       strError = SysError();
       if(strError.empty()) strError = CryptGetErrorReason(ulErr);
       // Remove the rest of the errors because system errors are best
@@ -300,12 +320,51 @@ static string CryptGetError(void)
       const size_t stColon = strError.find_last_of(':');
       if(stColon != string::npos)
         strError = Capitalise(strError.substr(stColon + 1));
-      // Free unused memory since the logevity of this value can be a while
-      strError.shrink_to_fit();
     }
-  } // Return the reason
-  return strError;
+  } // Free unused memory since the logevity of this value can be a while
+  strError.shrink_to_fit();
+  // Return the reason code
+  return iError;
 }
+/* -- Get error reason without code ---------------------------------------- */
+static string CryptGetError(void)
+  { string strOut; CryptGetError(strOut); return strOut; }
+/* -- Replacement for BIO_flush which causes warnings ---------------------- */
+static int CryptBIOFlush(BIO*const bBio)
+  { return static_cast<int>(BIO_ctrl(bBio, BIO_CTRL_FLUSH, 0, nullptr)); }
+/* -- Replacement for BIO_get_mem_ptr which causes warnings ---------------- */
+static void CryptBIOGetMemPtr(BIO*const bBio, BUF_MEM**const bmPtr)
+  { BIO_ctrl(bBio, BIO_C_GET_BUF_MEM_PTR, 0, reinterpret_cast<void*>(bmPtr)); }
+/* -- Replacement for BIO_get_fd which causes warnings --------------------- */
+static int CryptBIOGetFd(BIO*const bBio)
+  { return static_cast<int>(BIO_ctrl(bBio, BIO_C_GET_FD, 0, nullptr)); }
+/* -- Replacement for BIO_set_conn_hostname which causes warnings ---------- */
+static int CryptBIOSetConnHostname(BIO*const bBio, const char*const cpName)
+  { return static_cast<int>(BIO_ctrl(bBio, BIO_C_SET_CONNECT, 0,
+      ToNonConstCast<void*>(cpName))); }
+/* -- Replacement for BIO_get_conn_addres which causes warnings ------------ */
+static const BIO_ADDR *CryptBIOGetConnAddress(BIO*const bBio)
+  { return reinterpret_cast<const BIO_ADDR*>(
+      BIO_ptr_ctrl(bBio, BIO_C_GET_CONNECT, 2)); }
+/* -- Replacement for BIO_get_ssl which causes warnings -------------------- */
+static int CryptBIOGetSSL(BIO*const bBio, SSL**const sslDest)
+  { return static_cast<int>(BIO_ctrl(bBio, BIO_C_GET_SSL, 0,
+      reinterpret_cast<void*>(sslDest))); }
+/* -- Replacement for SSL_CTX_set_tlsext_status_cb which causes warnings --- */
+static int CryptSSLCtxSetTlsExtStatusCb(SSL_CTX*const sslCtx,
+  int(*fCB)(SSL*,void*))
+{ return static_cast<int>(SSL_CTX_callback_ctrl(sslCtx,
+    SSL_CTRL_SET_TLSEXT_STATUS_REQ_CB,
+      reinterpret_cast<void(*)(void)>(fCB))); }
+/* -- Replacement for SSL_set_tlsext_host_name which causes warnings ------- */
+static int CryptSSLSetTlsExtHostName(SSL*const sSSL, const char*const cpName)
+  { return static_cast<int>(SSL_ctrl(sSSL, SSL_CTRL_SET_TLSEXT_HOSTNAME,
+      TLSEXT_NAMETYPE_host_name, ToNonConstCast<void*>(cpName))); }
+/* -- Replacement for SSL_CTX_set1_verify_cert_store which causes warnings - */
+static int CryptSSLCtxSet1VerifyCertStore(SSL_CTX*const sslCtx,
+  X509_STORE*const x509dest)
+{ return static_cast<int>(SSL_CTX_ctrl(sslCtx, SSL_CTRL_SET_VERIFY_CERT_STORE,
+    1, reinterpret_cast<void*>(x509dest))); }
 /* ------------------------------------------------------------------------- */
 static const string CryptPTRtoB64(const void*const vpIn, const size_t stIn)
 { // To clean up when leaving scope unexpectedliy
@@ -324,10 +383,10 @@ static const string CryptPTRtoB64(const void*const vpIn, const size_t stIn)
         size_t stBytesWritten;
         if(BIO_write_ex(bRAM.get(), vpIn, stIn, &stBytesWritten))
         { // Do flush and if succeeded?
-          if(BIO_flush(bRAM.get()))
+          if(CryptBIOFlush(bRAM.get()))
           { // Get memory pointer (don't use *const, it will crash).
             BUF_MEM *bmPTR = nullptr;
-            BIO_get_mem_ptr(bRAM.get(), &bmPTR);
+            CryptBIOGetMemPtr(bRAM.get(), &bmPTR);
             // Done so return result
             return { bmPTR->data, bmPTR->length };
           } // Failed to flush stream
@@ -475,7 +534,7 @@ static Memory CryptHMACCall(const EVP_MD*const fFunc,
           return mbOut; } \
     static const string HashPtr(const unsigned char*const ucpIn, \
       const size_t stLen) \
-        { return CryptBin2Hex(std::move(HashPtrRaw(ucpIn, stLen))); } \
+        { return CryptBin2Hex(StdMove(HashPtrRaw(ucpIn, stLen))); } \
     static const string HashStr(const string &strIn) \
       { return HashPtr(reinterpret_cast<const unsigned char*>(strIn.data()), \
           strIn.length()); } \
@@ -491,7 +550,7 @@ static Memory CryptHMACCall(const EVP_MD*const fFunc,
           reinterpret_cast<const unsigned char*>(strIn.data()),\
           strIn.size()); } \
     static const string HashStr(const string &strKey, const string &strIn) \
-      { return CryptBin2Hex(std::move(HashStrRaw(strKey, strIn))); } \
+      { return CryptBin2Hex(StdMove(HashStrRaw(strKey, strIn))); } \
   };
 DEFINE_HASH_FUNCS(MD5,    MD5_DIGEST_LENGTH,    EVP_md5);    // Insecure
 DEFINE_HASH_FUNCS(SHA1,   SHA_DIGEST_LENGTH,    EVP_sha1);   // Insecure
@@ -571,13 +630,14 @@ static class Crypt final :
   static void OSSLFree(void*const vpPtr, const char*const, const int)
     { MemFree(vpPtr); }
   /* -- Private keys ----------------------------------------------- */ public:
-#define PK_KEY_COUNT                 4 // Number of quads in key (256bits)
-#define PK_IV_COUNT                  2 // Number of quads in iv key (128bits)
-#define PK_TOTAL_COUNT                 (PK_KEY_COUNT + PK_IV_COUNT)
+  static constexpr const size_t
+    stPkKeyCount   = 4,                // Number of quads in key (256bits)
+    stPkIvCount    = 2,                // Number of quads in iv key (128bits)
+    stPkTotalCount = (stPkKeyCount + stPkIvCount);
   /* ----------------------------------------------------------------------- */
-  typedef array<uint64_t, PK_KEY_COUNT>   QPKey;
-  typedef array<uint64_t, PK_IV_COUNT>    QIVKey;
-  typedef array<uint64_t, PK_TOTAL_COUNT> QKeys;
+  typedef array<uint64_t, stPkKeyCount>   QPKey;
+  typedef array<uint64_t, stPkIvCount>    QIVKey;
+  typedef array<uint64_t, stPkTotalCount> QKeys;
   /* ----------------------------------------------------------------------- */
   union PrivateKey                     // Private key data
   { // --------------------------------------------------------------------- */
@@ -658,7 +718,7 @@ static class Crypt final :
   }
   /* -- Constructor -------------------------------------------------------- */
   Crypt(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     IHelper{ __FUNCTION__ },
     csmEntList{
       { "Agrave",  "\xC0"           }, { "Aacute",  "\xC1"           },
@@ -678,9 +738,9 @@ static class Crypt final :
       { "Yacute",  "\xDD"           }, { "THORN",   "\xDE"           },
       { "aacute",  "\xE1"           }, { "acirc",   "\xE2"           },
       { "acute",   "\xB4"           }, { "aelig",   "\xE6"           },
-      { "agrave",  "\xE0"           }, { "alefsym", strBlank         },
+      { "agrave",  "\xE0"           }, { "alefsym", cCommon->Blank() },
       { "alpha",   "a"              }, { "amp",     "&"              },
-      { "and",     strBlank         }, { "ang",     strBlank         },
+      { "and",     cCommon->Blank() }, { "ang",     cCommon->Blank() },
       { "apos",    "'"              }, { "aring",   "\xE5"           },
       { "asymp",   "\x98"           }, { "atilde",  "\xE3"           },
       { "auml",    "\xE4"           }, { "bdquo",   "\x84"           },
@@ -688,88 +748,88 @@ static class Crypt final :
       { "bull",    "\x95"           }, { "cap",     "n"              },
       { "ccedil",  "\xE7"           }, { "cedil",   "\xB8"           },
       { "cent",    "\xA2"           }, { "chi",     "X"              },
-      { "circ",    "\x88"           }, { "clubs",   strBlank         },
-      { "cong",    strBlank         }, { "copy",    "\xA9"           },
-      { "crarr",   strBlank         }, { "cup",     strBlank         },
-      { "curren",  "\xA4"           }, { "dArr",    strBlank         },
-      { "dagger",  "\x86"           }, { "darr",    strBlank         },
+      { "circ",    "\x88"           }, { "clubs",   cCommon->Blank() },
+      { "cong",    cCommon->Blank() }, { "copy",    "\xA9"           },
+      { "crarr",   cCommon->Blank() }, { "cup",     cCommon->Blank() },
+      { "curren",  "\xA4"           }, { "dArr",    cCommon->Blank() },
+      { "dagger",  "\x86"           }, { "darr",    cCommon->Blank() },
       { "deg",     "\xB0"           }, { "delta",   "d"              },
-      { "diams",   strBlank         }, { "divide",  "\xF7"           },
+      { "diams",   cCommon->Blank() }, { "divide",  "\xF7"           },
       { "eacute",  "\xE9"           }, { "ecirc",   "\xEA"           },
       { "egrave",  "\xE8"           }, { "empty",   "\xD8"           },
-      { "emsp",    strSpace         }, { "ensp",    strSpace         },
+      { "emsp",    cCommon->Space() }, { "ensp",    cCommon->Space()         },
       { "epsilon", "e"              }, { "equiv",   "="              },
-      { "eta",     strBlank         }, { "eth",     "\xF0"           },
+      { "eta",     cCommon->Blank() }, { "eth",     "\xF0"           },
       { "euml",    "\xEB"           }, { "euro",    "\x80"           },
-      { "exist",   strBlank         }, { "fnof",    "\x83"           },
-      { "forall",  strBlank         }, { "frac12",  "\xBD"           },
+      { "exist",   cCommon->Blank() }, { "fnof",    "\x83"           },
+      { "forall",  cCommon->Blank() }, { "frac12",  "\xBD"           },
       { "frac14",  "\xBC"           }, { "frac34",  "\xBE"           },
-      { "frasl",   "/"              }, { "gamma",   strBlank         },
+      { "frasl",   "/"              }, { "gamma",   cCommon->Blank() },
       { "ge",      "="              }, { "gt",      ">"              },
-      { "hArr",    strBlank         }, { "harr",    strBlank         },
-      { "hearts",  strBlank         }, { "hellip",  "\x85"           },
+      { "hArr",    cCommon->Blank() }, { "harr",    cCommon->Blank() },
+      { "hearts",  cCommon->Blank() }, { "hellip",  "\x85"           },
       { "iacute",  "\xED"           }, { "icirc",   "\xEE"           },
       { "iexcl",   "\xA1"           }, { "igrave",  "\xEC"           },
       { "image",   "I"              }, { "infin",   "8"              },
-      { "int",     strBlank         }, { "iota",    strBlank         },
-      { "iquest",  "\xBF"           }, { "isin",    strBlank         },
-      { "iuml",    "\xEF"           }, { "kappa",   strBlank         },
-      { "lArr",    strBlank         }, { "lambda",  strBlank         },
+      { "int",     cCommon->Blank() }, { "iota",    cCommon->Blank() },
+      { "iquest",  "\xBF"           }, { "isin",    cCommon->Blank() },
+      { "iuml",    "\xEF"           }, { "kappa",   cCommon->Blank() },
+      { "lArr",    cCommon->Blank() }, { "lambda",  cCommon->Blank() },
       { "lang",    "<"              }, { "laquo",   "\xAB"           },
-      { "larr",    strBlank         }, { "lceil",   strBlank         },
+      { "larr",    cCommon->Blank() }, { "lceil",   cCommon->Blank() },
       { "ldquo",   "\x93"           }, { "le",      "="              },
-      { "lfloor",  strBlank         }, { "lowast",  "*"              },
-      { "loz",     strBlank         }, { "lrm",     "\xE2\x80\x8E"   },
+      { "lfloor",  cCommon->Blank() }, { "lowast",  "*"              },
+      { "loz",     cCommon->Blank() }, { "lrm",     "\xE2\x80\x8E"   },
       { "lsaquo",  "\x8B"           }, { "lsquo",   "\x91"           },
       { "lt",      "<"              }, { "macr",    "\xAF"           },
       { "mdash",   "\x97"           }, { "micro",   "\xB5"           },
       { "middot",  "\xB7"           }, { "minus",   "-"              },
-      { "mu",      "\xB5"           }, { "nabla",   strBlank         },
-      { "nbsp",    strSpace         }, { "ndash",   "\x96"           },
-      { "ne",      strBlank         }, { "ni",      strBlank         },
-      { "not",     "\xAC"           }, { "notin",   strBlank         },
-      { "nsub",    strBlank         }, { "ntilde",  "\xF1"           },
-      { "nu",      strBlank         }, { "oacute",  "\xF3"           },
+      { "mu",      "\xB5"           }, { "nabla",   cCommon->Blank() },
+      { "nbsp",    cCommon->Space() }, { "ndash",   "\x96"           },
+      { "ne",      cCommon->Blank() }, { "ni",      cCommon->Blank() },
+      { "not",     "\xAC"           }, { "notin",   cCommon->Blank() },
+      { "nsub",    cCommon->Blank() }, { "ntilde",  "\xF1"           },
+      { "nu",      cCommon->Blank() }, { "oacute",  "\xF3"           },
       { "ocirc",   "\xF4"           }, { "oelig",   "\x9C"           },
-      { "ograve",  "\xF2"           }, { "oline",   strBlank         },
-      { "omega",   strBlank         }, { "omicron", strBlank         },
-      { "oplus",   strBlank         }, { "or",      strBlank         },
+      { "ograve",  "\xF2"           }, { "oline",   cCommon->Blank() },
+      { "omega",   cCommon->Blank() }, { "omicron", cCommon->Blank() },
+      { "oplus",   cCommon->Blank() }, { "or",      cCommon->Blank() },
       { "ordf",    "\xAA"           }, { "ordm",    "\xBA"           },
       { "oslash",  "\xF8"           }, { "otilde",  "\xF5"           },
-      { "otimes",  strBlank         }, { "ouml",    "\xF6"           },
-      { "para",    "\xB6"           }, { "part",    strBlank         },
-      { "permil",  "\x89"           }, { "perp",    strBlank         },
+      { "otimes",  cCommon->Blank() }, { "ouml",    "\xF6"           },
+      { "para",    "\xB6"           }, { "part",    cCommon->Blank() },
+      { "permil",  "\x89"           }, { "perp",    cCommon->Blank() },
       { "phi",     "f"              }, { "pi",      "p"              },
-      { "piv",     strBlank         }, { "plusmn",  "\xB1"           },
+      { "piv",     cCommon->Blank() }, { "plusmn",  "\xB1"           },
       { "pound",   "\xA3"           }, { "prime",   "'"              },
-      { "prod",    strBlank         }, { "prop",    strBlank         },
-      { "psi",     strBlank         }, { "quot",    "\""             },
-      { "rArr",    strBlank         }, { "radic",   "v"              },
+      { "prod",    cCommon->Blank() }, { "prop",    cCommon->Blank() },
+      { "psi",     cCommon->Blank() }, { "quot",    "\""             },
+      { "rArr",    cCommon->Blank() }, { "radic",   "v"              },
       { "rang",    ">"              }, { "raquo",   "\xBB"           },
-      { "rarr",    strBlank         }, { "rceil",   strBlank         },
+      { "rarr",    cCommon->Blank() }, { "rceil",   cCommon->Blank() },
       { "rdquo",   "\x94"           }, { "real",    "R"              },
-      { "reg",     "\xAE"           }, { "rfloor",  strBlank         },
-      { "rho",     strBlank         }, { "rlm",     "\xE2\x80\x8F"   },
+      { "reg",     "\xAE"           }, { "rfloor",  cCommon->Blank() },
+      { "rho",     cCommon->Blank() }, { "rlm",     "\xE2\x80\x8F"   },
       { "rsaquo",  "\x9B"           }, { "rsquo",   "\x92"           },
       { "sbquo",   "\x82"           }, { "scaron",  "\x9A"           },
       { "sdot",    "\xB7"           }, { "sect",    "\xA7"           },
       { "shy",     "\xC2\xAD"       }, { "sigma",   "s"              },
-      { "sigmaf",  strBlank         }, { "sim",     "~"              },
-      { "spades",  strBlank         }, { "sub",     strBlank         },
-      { "sube",    strBlank         }, { "sum",     strBlank         },
-      { "sup",     strBlank         }, { "sup1",    "\xB9"           },
+      { "sigmaf",  cCommon->Blank() }, { "sim",     "~"              },
+      { "spades",  cCommon->Blank() }, { "sub",     cCommon->Blank() },
+      { "sube",    cCommon->Blank() }, { "sum",     cCommon->Blank() },
+      { "sup",     cCommon->Blank() }, { "sup1",    "\xB9"           },
       { "sup2",    "\xB2"           }, { "sup3",    "\xB3"           },
-      { "supe",    strBlank         }, { "szlig",   "\xDF"           },
-      { "tau",     "t"              }, { "there4",  strBlank         },
-      { "theta",   strBlank         }, { "thetasym",strBlank         },
-      { "thinsp",  strBlank         }, { "thorn",   "\xFE"           },
+      { "supe",    cCommon->Blank() }, { "szlig",   "\xDF"           },
+      { "tau",     "t"              }, { "there4",  cCommon->Blank() },
+      { "theta",   cCommon->Blank() }, { "thetasym",cCommon->Blank() },
+      { "thinsp",  cCommon->Blank() }, { "thorn",   "\xFE"           },
       { "tilde",   "\x98"           }, { "times",   "\xD7"           },
-      { "trade",   "\x99"           }, { "uArr",    strBlank         },
-      { "uacute",  "\xFA"           }, { "uarr",    strBlank         },
+      { "trade",   "\x99"           }, { "uArr",    cCommon->Blank() },
+      { "uacute",  "\xFA"           }, { "uarr",    cCommon->Blank() },
       { "ucirc",   "\xFB"           }, { "ugrave",  "\xF9"           },
-      { "uml",     "\xA8"           }, { "upsih",   strBlank         },
+      { "uml",     "\xA8"           }, { "upsih",   cCommon->Blank() },
       { "upsilon", "Y"              }, { "uuml",    "\xFC"           },
-      { "weierp",  "P"              }, { "xi",      strBlank         },
+      { "weierp",  "P"              }, { "xi",      cCommon->Blank() },
       { "yacute",  "\xFD"           }, { "yen",     "\xA5"           },
       { "yuml",    "\xFF"           }, { "zeta",    "Z"              },
       { "zwj",     "\xE2\x80\x8D"   }, { "zwnj",    "\xE2\x80\x8C"   },
@@ -808,7 +868,7 @@ static class Crypt final :
   // Done
   DTORHELPEREND(~Crypt)
   /* -- Macros ---------------------------------------------------- */ private:
-  DELETECOPYCTORS(Crypt);              // Do not need defaults
+  DELETECOPYCTORS(Crypt)               // Do not need defaults
   /* ----------------------------------------------------------------------- */
 } *cCrypt = nullptr;                   // Pointer to static class
 /* -- URL decode the specified string -------------------------------------- */

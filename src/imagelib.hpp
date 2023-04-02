@@ -16,7 +16,7 @@ using namespace IfImageDef;            // Using image definitions namespace
 using namespace IfCollector;           // Using collector namespace
 using namespace IfFileMap;             // Using filemap namespace
 /* == Image libraries collector class ====================================== */
-BEGIN_COLLECTOR(ImageFmts, ImageFmt, CLHelperUnsafe);
+BEGIN_COLLECTOR(ImageFmts, ImageFmt, CLHelperUnsafe)
 /* == Image libraries format object class ================================== */
 BEGIN_MEMBERCLASS(ImageFmts, ImageFmt, ICHelperUnsafe)
 { /* -- Typedefs -------------------------------------------------- */ private:
@@ -41,7 +41,7 @@ BEGIN_MEMBERCLASS(ImageFmts, ImageFmt, ICHelperUnsafe)
   /* -- Constructors ------------------------------------------------------- */
   explicit ImageFmt(const char*const cpN, const char*const cpE,
     CBLFunc &icL=NoLoader, CBSFunc &icS=NoSaver) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperImageFmt{ *cImageFmts,     // Register filter in filter list
       this },                          // Initialise filter parent
     IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
@@ -52,9 +52,9 @@ BEGIN_MEMBERCLASS(ImageFmts, ImageFmt, ICHelperUnsafe)
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(ImageFmt);           // Omit copy constructor for safety
+  DELETECOPYCTORS(ImageFmt)            // Omit copy constructor for safety
 };/* -- End of objects collector ------------------------------------------- */
-END_COLLECTOR(ImageFmts);
+END_COLLECTOR(ImageFmts)
 /* -- Save a image using a specific type ----------------------------------- */
 static void ImageSave(const size_t stFId, const string &strN,
   const ImageData &ifD, const ImageSlot &sData)

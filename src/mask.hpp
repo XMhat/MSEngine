@@ -190,46 +190,26 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
   }
   /* -- Dump a tile to disk ------------------------------------------------ */
   void Dump(const size_t stId, const string &strFile) const
-  { // Create file. It will be auto closed when we leave this scope
-    if(FStream fOut{ strFile, FStream::FM_W_B }) try
-    { // Memory to write as we need to reverse the bits
-      const DataConst &dcSrc = at(stId);
-      // Create targa header
-      Memory mDst{ CodecTGA::HL_MAX + dcSrc.Size() };
-      // Fill in file header data
-      mDst.WriteInt<uint8_t>(CodecTGA::HL_U08LE_LEN_AFTER_HEADER, 0);
-      mDst.WriteInt<uint8_t>(CodecTGA::HL_U08LE_COLOUR_MAP_TYPE, 0);
-      mDst.WriteInt<uint8_t>(CodecTGA::HL_U08LE_DATA_TYPE_CODE, 3);
-      mDst.WriteIntLE<uint16_t>(CodecTGA::HL_U16LE_COLOUR_MAP_ORIGIN, 0);
-      mDst.WriteIntLE<uint16_t>(CodecTGA::HL_U16LE_COLOUR_MAP_LENGTH, 0);
-      mDst.WriteInt<uint8_t>(CodecTGA::HL_U08LE_COLOUR_MAP_DEPTH, 0);
-      mDst.WriteIntLE<uint16_t>(CodecTGA::HL_U16LE_X_ORIGIN, 0);
-      mDst.WriteIntLE<uint16_t>(CodecTGA::HL_U16LE_Y_ORIGIN, 0);
-      mDst.WriteIntLE<uint16_t>(CodecTGA::HL_U16LE_WIDTH,
-        DimGetWidth<uint16_t>());
-      mDst.WriteIntLE<uint16_t>(CodecTGA::HL_U16LE_HEIGHT,
-        DimGetWidth<uint16_t>());
-      mDst.WriteInt<uint8_t>(CodecTGA::HL_U08LE_BITS_PER_PIXEL, 1);
-      mDst.WriteInt<uint8_t>(CodecTGA::HL_U08LE_IMAGE_DESCRIPTOR,
-        CodecTGA::IDF_FLIPPED);
-      // Read src, reverse bits and write to destination
-      for(size_t stSrcPos = 0; stSrcPos < dcSrc.Size(); ++stSrcPos)
-        mDst.WriteInt<uint8_t>(CodecTGA::HL_MAX + stSrcPos,
-          ReverseByte(dcSrc.ReadInt<uint8_t>(stSrcPos)));
-      // Write targa header
-      const size_t stHdrWritten = fOut.FStreamWriteBlock(mDst);
-      if(stHdrWritten != mDst.Size())
-        XCL("Could not write targa data mask!",
-            "File", strFile, "Expected", mDst.Size(), "Actual", stHdrWritten);
+  { // Get source slot
+    const DataConst &dcSrc = (*this)[stId];
+    // Copy the slot because the image init moves it
+    Memory mDst{ dcSrc.Size(), dcSrc.Ptr() };
+    // Byte swap it
+    mDst.ByteSwap8();
+    // Setup raw image
+    const Image imOut{ strFile, StdMove(mDst), DimGetWidth<unsigned int>(),
+      DimGetHeight<unsigned int>(), BD_BINARY, GL_NONE };
+    // Capture exceptions
+    try
+    { // Save bitmap to PNG
+      imOut.SaveFile(imOut.IdentGet(), 0, 0);
     } // exception occured?
     catch(const exception &)
     { // Close the file and delete it
-      fOut.FStreamClose();
-      DirFileUnlink(strFile);
+      DirFileUnlink(imOut.IdentGet());
       // Throw original error
       throw;
-    } // Failed to open file
-    else XCL("Could not open file for writing mask!", "File", strFile);
+    }
   }
   /* -- InitFromFile ------------------------------------------------------- */
   void InitFromImage(Image &iC, const unsigned int _uiTWidth,
@@ -237,7 +217,8 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
   { // Set texture name
     IdentSet(iC);
     // Must have slots
-    if(iC.empty()) XC("No data in image object!", "Identifier", IdentGet());
+    if(iC.IsNoSlots())
+      XC("No data in image object!", "Identifier", IdentGet());
     // Check dimensions. We're also working with ints for sizes so we have
     // to limit the size to signed int range so check for that too.
     if(!_uiTWidth || !_uiTHeight ||
@@ -245,7 +226,7 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
         XC("Invalid tile dimensions!",
            "Identifier", IdentGet(), "Width", _uiTWidth, "Height", _uiTHeight);
     // Get first image slot and show error as we are not reversing this.
-    ImageSlot &bData = iC.front();
+    ImageSlot &bData = iC.GetSlots().front();
     // Check bit depth
     if(iC.GetBitsPerPixel() != 1)
       XC("Image is not monochrome!",
@@ -269,7 +250,7 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     // Get reference to the image memory and if no tiling needed? We can just
     // add the full size texture.
     if(bData.DimGetWidth() == _uiTWidth && bData.DimGetHeight() == _uiTHeight)
-      { emplace_back(std::move(bData)); return; }
+      { emplace_back(StdMove(bData)); return; }
     // We're dealing with memory now so we need everything as size_t
     const size_t
       // Tile dimensions
@@ -345,16 +326,16 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
   size_t GetAlloc(void) const { return stAlloc; }
   /* -- Constructor -------------------------------------------------------- */
   Mask(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperMask{ *cMasks, this },     // Register this object in collector
     IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     stAlloc(0)                         // Uninitialised allocated size
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Mask);               // Omit copy constructor for safety
+  DELETECOPYCTORS(Mask)                // Omit copy constructor for safety
 };/* ----------------------------------------------------------------------- */
-END_COLLECTOR(Masks);
+END_COLLECTOR(Masks)
 /* ------------------------------------------------------------------------- */
 };                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

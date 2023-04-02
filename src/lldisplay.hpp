@@ -14,7 +14,7 @@
 /* ------------------------------------------------------------------------- */
 // ! The window class contains functions for manipulating the Window.
 /* ========================================================================= */
-LLNAMESPACEBEGIN(Display)              // Display namespace
+namespace NsDisplay {                  // Display namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfDisplay;             // Using display namespace
 /* ========================================================================= */
@@ -215,15 +215,15 @@ LLFUNCEX(Monitor, 1, LCPUSHINT(cDisplay->GetMonitorId()));
 // < Id:number=Monitor count.
 // ? Returns the total number of detected monitors on the system.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Monitors, 1, LCPUSHINT(GlFWGetMonitorCount()));
+LLFUNCEX(Monitors, 1, LCPUSHINT(cDisplay->GetMonitorsCount()));
 /* ========================================================================= */
 // $ Display.MonitorData
 // > Id:integer=Id of monitor to query.
 // < Name:string=Name of monitor.
 // ? Returns the name of the specified monitor.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(MonitorData, 1, LCPUSHSTR(GlFWGetMonitorNameById(
-  LCGETINTLG(int, 1, 0, GlFWGetMonitorCount(), "Id"))));
+LLFUNCEX(MonitorData, 1, LCPUSHXSTR(cDisplay->GetMonitors()[
+  LCGETINTLG(size_t, 1, 0, cDisplay->GetMonitorsCount(), "Id")].Name()));
 /* ========================================================================= */
 // $ Display.VidMode
 // < Id:number=Mode id.
@@ -235,8 +235,9 @@ LLFUNCEX(VidMode, 1, LCPUSHINT(cDisplay->GetVideoModeId()));
 // < Count:number=Total video modes.
 // ? Returns the total number of video modes supported by the GPU.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(VidModes, 1, LCPUSHINT(cDisplay->GetVideoModes(
-  LCGETINTLGE(int ,1, 0, GlFWGetMonitorCount(), "MonitorId"))));
+LLFUNCEX(VidModes, 1, LCPUSHINT(cDisplay->GetMonitors()[
+  LCGETINTLGE(size_t, 1, 0,
+    cDisplay->GetMonitorsCount(), "MonitorId")].size()));
 /* ========================================================================= */
 // $ Display.VidModeData
 // > MonitorId:integer=Id of monitor to query.
@@ -251,17 +252,14 @@ LLFUNCEX(VidModes, 1, LCPUSHINT(cDisplay->GetVideoModes(
 // ? Returns information about the specified video mode.
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(VidModeData)
-  const int iM = LCGETINTLG(int ,1, 0, GlFWGetMonitorCount(), "MonitorId");
-  const GLFWvidmode &vidMode =
-    cDisplay->GetVideoMode(iM, LCGETINTLGE(int ,2, 0,
-      cDisplay->GetVideoModes(iM), "VideoModeId"));
-  LCPUSHINT(vidMode.width);
-  LCPUSHINT(vidMode.height);
-  LCPUSHINT(vidMode.redBits+vidMode.greenBits+vidMode.blueBits);
-  LCPUSHNUM(vidMode.refreshRate);
-  LCPUSHINT(vidMode.redBits);
-  LCPUSHINT(vidMode.greenBits);
-  LCPUSHINT(vidMode.blueBits);
+  const GlFWMonitor &mItem = cDisplay->GetMonitors()[
+    LCGETINTLGE(size_t, 1, 0, cDisplay->GetMonitorsCount(), "MonitorId")];
+  const GlFWRes &rItem = mItem[
+    LCGETINTLGE(size_t, 2, 0, mItem.size(), "VideoModeId")];
+  LCPUSHINT(rItem.Width());            LCPUSHINT(rItem.Height());
+  LCPUSHINT(rItem.Depth());            LCPUSHNUM(rItem.Refresh());
+  LCPUSHINT(rItem.Red());              LCPUSHINT(rItem.Green());
+  LCPUSHINT(rItem.Blue());
 LLFUNCENDEX(7)
 /* ========================================================================= */
 // $ Display.GPUFPS
@@ -277,48 +275,26 @@ LLFUNCEX(GPUFPS, 1, LCPUSHNUM(cFboMain->dRTFPS));
 // ? detatched from GPU rendering which will always render as fast as possible.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(SetInterval, 1,
-   TimerSetInterval(LCGETNUMLG(double, 1, 1, 200, "Interval")));
+   cTimer->TimerSetInterval(LCGETNUMLG(double, 1, 1, 200, "Interval")));
 /* ========================================================================= */
 /* ######################################################################### */
 /* ## Display.* namespace functions structure                             ## */
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Display.* namespace func
-  LLRSFUNC(Attention),                 // Request window attention
-  LLRSFUNC(Centre),                    // Move window to centre
-  LLRSFUNC(Decorated),                 // Window is decorated?
-  LLRSFUNC(Floating),                  // Window is floating?
-  LLRSFUNC(Focused),                   // Window is focused?
-  LLRSFUNC(Focus),                     // Focus the window?
-  LLRSFUNC(GetPos),                    // Get window position
-  LLRSFUNC(GetSize),                   // Get window size
-  LLRSFUNC(GPU),                       // Get GPU info
-  LLRSFUNC(GPUFPS),                    // Get GPU frames per second
-  LLRSFUNC(Hovered),                   // Mouse is over the window?
-  LLRSFUNC(Iconified),                 // Window is iconified?
-  LLRSFUNC(Iconify),                   // Iconify window
-  LLRSFUNC(Maximise),                  // Maximise window
-  LLRSFUNC(Maximised),                 // Window is maximised?
-  LLRSFUNC(Monitor),                   // Get Monitor number
-  LLRSFUNC(MonitorData),               // Get specified monitor data
-  LLRSFUNC(Monitors),                  // Get monitors count
-  LLRSFUNC(OnFocused),                 // Window focus changed e
-  LLRSFUNC(Reset),                     // Reset dimensions
-  LLRSFUNC(Resizable),                 // Window is resizable?
-  LLRSFUNC(Restore),                   // Restore window
-  LLRSFUNC(SetInterval),               // Set game loop interval
-  LLRSFUNC(SetFullScreen),             // Set fullscreen mode
-  LLRSFUNC(SetMatrix),                 // Set 2d matrix mode
-  LLRSFUNC(SetPos),                    // Set window position
-  LLRSFUNC(SetSize),                   // Set window size
-  LLRSFUNC(Transparent),               // Window is transparent?
-  LLRSFUNC(VidMode),                   // Get VidMode number
-  LLRSFUNC(VidModeData),               // Get VidMode data
-  LLRSFUNC(VidModes),                  // Get VidModes count
-  LLRSFUNC(Visible),                   // Window is visible?
-  LLRSFUNC(VRAM),                      // Get VRAM info
-  LLRSFUNC(VReset),                    // Reset the renderer
+  LLRSFUNC(Attention),   LLRSFUNC(Centre),        LLRSFUNC(Decorated),
+  LLRSFUNC(Floating),    LLRSFUNC(Focus),         LLRSFUNC(Focused),
+  LLRSFUNC(GetPos),      LLRSFUNC(GetSize),       LLRSFUNC(GPU),
+  LLRSFUNC(GPUFPS),      LLRSFUNC(Hovered),       LLRSFUNC(Iconified),
+  LLRSFUNC(Iconify),     LLRSFUNC(Maximise),      LLRSFUNC(Maximised),
+  LLRSFUNC(Monitor),     LLRSFUNC(MonitorData),   LLRSFUNC(Monitors),
+  LLRSFUNC(OnFocused),   LLRSFUNC(Reset),         LLRSFUNC(Resizable),
+  LLRSFUNC(Restore),     LLRSFUNC(SetFullScreen), LLRSFUNC(SetInterval),
+  LLRSFUNC(SetMatrix),   LLRSFUNC(SetPos),        LLRSFUNC(SetSize),
+  LLRSFUNC(Transparent), LLRSFUNC(VidMode),       LLRSFUNC(VidModeData),
+  LLRSFUNC(VidModes),    LLRSFUNC(Visible),       LLRSFUNC(VRAM),
+  LLRSFUNC(VReset),
 LLRSEND                                // Display.* namespace functions end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of Display namespace
+}                                      // End of Display namespace
 /* == EoF =========================================================== EoF == */

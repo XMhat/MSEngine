@@ -12,7 +12,6 @@
 /* ------------------------------------------------------------------------- */
 namespace IfSystem {                   // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfLog;                 // Using log namespace
 using namespace IfEvtMain;             // Using event namespace
 using namespace IfConDef;              // Using condef namespace
 using namespace IfArgs;                // Using arguments namespace
@@ -21,14 +20,12 @@ using namespace IfArgs;                // Using arguments namespace
 /* ## Information about a module.                                         ## */
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
-class SysModuleData :
+class SysModuleData :                  // Members initially private
   /* -- Base classes ------------------------------------------------------- */
   private PathSplit                    // Path parts to mod name
 { /* -- Variables ---------------------------------------------------------- */
-  const unsigned int uiMajor,          // Major version of module
-                   uiMinor,            // Minor version of module
-                   uiBuild,            // Build version of module
-                   uiRevision;         // Revision version of module
+  const unsigned int uiMajor, uiMinor, // Major and minor version of module
+                  uiBuild, uiRevision; // Build and revision version of module
   const string     strVendor,          // Vendor of module
                    strDesc,            // Description of module
                    strComments,        // Comments of module
@@ -51,37 +48,37 @@ class SysModuleData :
   const string &GetVersion(void) const { return strVersion; }
   /* -- Move constructor --------------------------------------------------- */
   SysModuleData(SysModuleData &&smdO) :
-    /* -- Initialisation of members ---------------------------------------- */
-    PathSplit{ std::move(smdO) },                 // Copy filename
+    /* -- Initialisers ----------------------------------------------------- */
+    PathSplit{ StdMove(smdO) },                 // Copy filename
     uiMajor(smdO.GetMajor()),                     // Copy major version
     uiMinor(smdO.GetMinor()),                     // Copy minor version
     uiBuild(smdO.GetBuild()),                     // Copy build version
     uiRevision(smdO.GetRevision()),               // Copy revision version
-    strVendor{ std::move(smdO.GetVendor()) },     // Move vendor string
-    strDesc{ std::move(smdO.GetDesc()) },         // Move description string
-    strComments{ std::move(smdO.GetComments()) }, // Move comments string
-    strVersion{ std::move(smdO.GetVersion()) }    // Move version string
+    strVendor{ StdMove(smdO.GetVendor()) },     // Move vendor string
+    strDesc{ StdMove(smdO.GetDesc()) },         // Move description string
+    strComments{ StdMove(smdO.GetComments()) }, // Move comments string
+    strVersion{ StdMove(smdO.GetVersion()) }    // Move version string
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Initialise all members contructor ---------------------------------- */
   explicit SysModuleData(const string &strF, const unsigned int uiMa,
     const unsigned int uiMi, const unsigned int uiBu, const unsigned int uiRe,
     string &&strVen, string &&strDe, string &&strCo, string &&strVer) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     PathSplit{ strF },                 // Copy filename
     uiMajor(uiMa),                     // Copy major version
     uiMinor(uiMi),                     // Copy minor version
     uiBuild(uiBu),                     // Copy build version
     uiRevision(uiRe),                  // Copy revision version
-    strVendor{ std::move(strVen) },    // Move vendor string
-    strDesc{ std::move(strDe) },       // Move description string
-    strComments{ std::move(strCo) },   // Move comments string
-    strVersion{ std::move(strVer) }    // Move version string
+    strVendor{ StdMove(strVen) },    // Move vendor string
+    strDesc{ StdMove(strDe) },       // Move description string
+    strComments{ StdMove(strCo) },   // Move comments string
+    strVersion{ StdMove(strVer) }    // Move version string
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Initialise filename only constructor ------------------------------- */
   explicit SysModuleData(const string &strF) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     PathSplit{ strF },                 // Initialise path parts
     uiMajor(0),                        // Major version not initialised yet
     uiMinor(0),                        // Minor version not initialised yet
@@ -90,7 +87,7 @@ class SysModuleData :
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(SysModuleData);      // Disable copy constructor and operator
+  DELETECOPYCTORS(SysModuleData)       // Disable copy constructor and operator
 };/* ----------------------------------------------------------------------- */
 /* == System modules ======================================================= */
 /* ######################################################################### */
@@ -103,7 +100,7 @@ struct SysModules :
   /* -- Base classes ------------------------------------------------------- */
   public SysModList                    // System module list
 { /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(SysModules);         // Disable copy constructor and operator
+  DELETECOPYCTORS(SysModules)          // Disable copy constructor and operator
   /* -- Dump module list --------------------------------------------------- */
   CVarReturn DumpModuleList(const unsigned int uiShow)
   { // No modules? Return okay
@@ -125,14 +122,14 @@ struct SysModules :
   }
   /* -- Move constructor ---------------------------------------- */ protected:
   SysModules(SysModules &&smOther) :
-    /* -- Initialisation of members ---------------------------------------- */
-    SysModList{ std::move(smOther) }
+    /* -- Initialisers ----------------------------------------------------- */
+    SysModList{ StdMove(smOther) }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Init from SysModList ----------------------------------------------- */
   explicit SysModules(SysModList &&smlOther) :
-    /* -- Initialisation of members ---------------------------------------- */
-    SysModList{ std::move(smlOther) }
+    /* -- Initialisers ----------------------------------------------------- */
+    SysModList{ StdMove(smlOther) }
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */
@@ -147,7 +144,7 @@ class SysVersion :
 { /* ----------------------------------------------------------------------- */
   const SysModuleData &smdEng;         // Engine executable information
   /* --------------------------------------------------------------- */ public:
-  DELETECOPYCTORS(SysVersion);         // Disable copy constructor and operator
+  DELETECOPYCTORS(SysVersion)          // Disable copy constructor and operator
   /* -- Access to engine version data -------------------------------------- */
   const char      *ENGBuildType(void) const { return BUILD_TYPE_LABEL; }
   const char      *ENGCompiled(void)  const { return VER_DATE; }
@@ -183,16 +180,16 @@ class SysVersion :
   }
   /* -- Move constructor r ------------------------------------------------- */
   SysVersion(SysVersion &&svOther) :
-    /* -- Initialisation of members ---------------------------------------- */
-    SysModules{ std::move(svOther) },   // Move other version information
-    smdEng{ std::move(svOther.smdEng) } // Move engine exetuable information
+    /* -- Initialisers ----------------------------------------------------- */
+    SysModules{ StdMove(svOther) },   // Move other version information
+    smdEng{ StdMove(svOther.smdEng) } // Move engine exetuable information
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Init from SysModList ----------------------------------------------- */
   SysVersion(SysModList &&smlOther, const size_t stI) :
-    /* -- Initialisation of members ---------------------------------------- */
-    SysModules{ std::move(smlOther) },           // Move system modules list
-    smdEng{ std::move(FindBaseModuleInfo(stI)) } // Move engine executable info
+    /* -- Initialisers ----------------------------------------------------- */
+    SysModules{ StdMove(smlOther) },           // Move system modules list
+    smdEng{ StdMove(FindBaseModuleInfo(stI)) } // Move engine executable info
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */
@@ -323,13 +320,13 @@ class SysCommon                        // Common system structs and funcs
     { return static_cast<double>(RAMProcUse()) / 1048576; }
   size_t RAMProcPeak(void) const { return memData.stMProcPeak; }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(SysCommon);          // Disable copy constructor and operator
+  DELETECOPYCTORS(SysCommon)           // Disable copy constructor and operator
   /* -- Constructor --------------------------------------------- */ protected:
   SysCommon(ExeData &&edExe, OSData &&osdOS, CPUData &&cpudCPU) :
-    /* -- Initialisation of members ---------------------------------------- */
-    exeData{ std::move(edExe) },            // Move executable data
-    osData{ std::move(osdOS) },             // Move operating system data
-    cpuData{ std::move(cpudCPU) }           // Move processor data
+    /* -- Initialisers ----------------------------------------------------- */
+    exeData{ StdMove(edExe) },          // Move executable data
+    osData{ StdMove(osdOS) },           // Move operating system data
+    cpuData{ StdMove(cpudCPU) }         // Move processor data
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */
@@ -350,7 +347,7 @@ class SysPipeBase :
   int64_t SysPipeBaseGetStatus(void) const { return qwExitCode; }
   /* -- Constructor with init ---------------------------------------------- */
   SysPipeBase(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     qwExitCode(127)                    // Standard exit code
     /* -- No code ---------------------------------------------------------- */
     { }
@@ -381,7 +378,7 @@ class SysConBase :
   void SysConCanCloseNow(void) { cvExit.notify_one(); }
   /* -- Constructor --------------------------------------------- */ protected:
   SysConBase(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     SysConFlags{ SCO_NONE }            // Current flags
     /* -- No code ---------------------------------------------------------- */
     { }
@@ -406,8 +403,11 @@ class SysConBase :
 /* ------------------------------------------------------------------------- */
 static class System final :            // The main system class
   /* -- Base classes ------------------------------------------------------- */
-  public SysCore                       // Defined in 'sys*.hpp' headers
-{ /* ----------------------------------------------------------------------- */
+  public SysBase::SysCore              // Defined in 'sys*.hpp' headers
+{ /* -- Private typedefs --------------------------------------------------- */
+  typedef IdList<GM_HIGHEST> ModeList; // List of modes
+  /* ----------------------------------------------------------------------- */
+  const ModeList   mList;              // Modes list
   GuiMode          guimId;             // Current gui mode
   ClockInterval<CoreClock> tdhCPU;     // For getting cpu usage
   const size_t     stProcessId;        // Readable process id
@@ -520,22 +520,22 @@ static class System final :            // The main system class
     { // Build app bundle directory suffix and if we're calling from it from
       // the application bundle? Use the MacOS/../Resources directory instead.
       if(EXEBundled())
-        strWorkDir = std::move(PathSplit{
+        strWorkDir = StdMove(PathSplit{
           Append(ENGLoc(), "../Resources"), true }.strFull);
       // Use executable working directory
       else strWorkDir = ENGLoc();
     } // Directory specified so use that and build full path for it
-    else strWorkDir = std::move(PathSplit{ strP, true }.strFull);
+    else strWorkDir = StdMove(PathSplit{ strP, true }.strFull);
 #else
     // Build directory
     string strWorkDir{ strP.empty() ? ENGLoc() :
-      std::move(PathSplit{ strP, true }.strFull) };
+      StdMove(PathSplit{ strP, true }.strFull) };
 #endif
     // Set the directory and if failed? Throw the error
     if(!DirSetCWD(strWorkDir))
       XCL("Failed to set working directory!", "Directory", strWorkDir);
     // We are changing the value ourselves...
-    strV = std::move(strWorkDir);
+    strV = StdMove(strWorkDir);
     // ...so make sure the cvar system knows
     return ACCEPT_HANDLED;
   }
@@ -572,13 +572,7 @@ static class System final :            // The main system class
   const string &GetRoamingDir(void) const { return strRoamingDir; }
   /* ----------------------------------------------------------------------- */
   const string &GetGuiModeString(const GuiMode guiM) const
-  { // Lookup table of errors
-    static const IdList<GM_HIGHEST> ilModes{{
-      "text-only", "text+audio", "graphical"
-    }};
-    // Return looked up string
-    return ilModes.Get(guiM);
-  }
+    { return mList.Get(guiM); }
   /* ----------------------------------------------------------------------- */
   const string &GetGuiModeString(void) const
     { return GetGuiModeString(GetGuiMode()); }
@@ -591,7 +585,12 @@ static class System final :            // The main system class
   }
   /* -- Default constructor ------------------------------------------------ */
   System(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
+    mList{{                            // Initialise mode strings list
+      "text-only",                     // [0] (text only)
+      "text+audio",                    // [1] (text + audio mode)
+      "graphical"                      // [2] (graphical mode)
+    }},                                // Mode strings list initialised
     guimId(GM_TEXT_NOAUDIO),           // Guimode initially set by cvars
     tdhCPU{ seconds{ 1 } },            // Cpu refresh time is one seconds
     stProcessId(GetPid<size_t>()),     // Init readable proceess id
@@ -643,14 +642,14 @@ static class System final :            // The main system class
         CPUIdentifier(), hex, CPUFeatures(), dec,
       ToBytesStr(RAMTotal()), ToBytesStr(RAMFree()), ToBytesStr(RAMProcUse()),
       OSName(), OSMajor(), OSMinor(), OSBuild(), OSBits(), OSLocale(),
-        IsOSNameExSet() ? Append(" via ", OSNameEx()) : strBlank,
+        IsOSNameExSet() ? Append(" via ", OSNameEx()) : cCommon->Blank(),
       OSExpired() ? "d" : "s", FormatTimeTT(OSExpiry()),
       cmHiRes.ToDurationLongString(),
       cmSys.FormatTime(), cmSys.FormatTimeUTC(),
       TrueOrFalse(OSIsAdmin()), TrueOrFalse(EXEBundled()));
   }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(System);             // Disable copy constructor and operator
+  DELETECOPYCTORS(System)              // Disable copy constructor and operator
   /* ----------------------------------------------------------------------- */
 } *cSystem = nullptr;                  // Pointer to static class
 /* -- Default handler for std::unexpected ---------------------------------- */

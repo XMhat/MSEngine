@@ -145,7 +145,7 @@ local function InitLobby(aActiveObject, bNoSetMusic, iSaveMusicPos)
       -- Lobby closed render proc
       local function RenderLobbyClosed()
         -- Draw backdrop
-        texLobby:BlitLT(-96, 0);
+        texLobby:BlitLT(-54, 0);
         -- Render lobby
         texLobby:BlitSLT(1, 8, 8);
         -- Render lobby shadow

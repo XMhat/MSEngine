@@ -33,7 +33,7 @@ class Certs                            // Certificates store
     /* -- Destructor/Constructor ------------------------------------------- */
     LoadSerialised(void) { }           // Constructor not used
     /* --------------------------------------------------------------------- */
-    DELETECOPYCTORS(LoadSerialised);   // Disable copy constructor and operator
+    DELETECOPYCTORS(LoadSerialised)    // Disable copy constructor and operator
   };/* -- Class to load certificates in parallel --------------------------- */
   class LoadParallel                   // Parallel certificate installation
   { /* --------------------------------------------------------------------- */
@@ -46,7 +46,7 @@ class Certs                            // Certificates store
     ~LoadParallel(void) { if(bLocked) UnlockFunction(); }
     LoadParallel(void) : bLocked(false) { }
     /* --------------------------------------------------------------------- */
-    DELETECOPYCTORS(LoadParallel);     // Disable copy constructor and operator
+    DELETECOPYCTORS(LoadParallel)      // Disable copy constructor and operator
   };/* -- Variables -------------------------------------------------------- */
   SSL_CTX           *scStore;          // Context used for cerificate store
   X509_STORE        *xsCerts;          // Certificate store inside OpenSSL
@@ -318,7 +318,7 @@ class Certs                            // Certificates store
   /* -- Destructor that unloads all x509 certificates ---------------------- */
   ~Certs(void) { CertsEmpty(); }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Certs);              // Disable copy constructor and operator
+  DELETECOPYCTORS(Certs)               // Disable copy constructor and operator
 }; /* ---------------------------------------------------------------------- */
 /* ========================================================================= */
 static StdTimeT CertGetTime(const ASN1_TIME &atD)

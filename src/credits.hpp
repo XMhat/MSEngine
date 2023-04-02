@@ -38,16 +38,6 @@ class CreditLib :                      // Members initially private
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */
-/* -- Decompress a credit item --------------------------------------------- */
-static const string CreditGetItemText(const CreditLib &libItem) try
-{ // Decode the file and show the result
-  return Block<CoDecoder>{ libItem }.ToString();
-} // exception occured?
-catch(const exception &e)
-{ // Log failure and try to reset the initial var so this does not
-  XC("Failed to decode licence text!",
-     "Name", libItem.GetName(), "Reason", e, "Length", libItem.Size());
-}
 /* -- Credits list lookup table -------------------------------------------- */
 enum CreditEnums                       // Credit ids
 { /* ----------------------------------------------------------------------- */
@@ -76,80 +66,100 @@ enum CreditEnums                       // Credit ids
   CL_MAX                               // Item count. Don't remove
 };/* ----------------------------------------------------------------------- */
 typedef array<const CreditLib,CL_MAX> CreditLibList; // Library list typedef
-static const CreditLibList &CreditGetList(void)
-{ // Setup compressed licence data
-#define BEGINLICENCE(n, s)             static array<const uint8_t, s> l ## n{
+/* ------------------------------------------------------------------------- */
+static const class Credits final :     // Members initially private
+  /* -- Base classes ------------------------------------------------------- */
+  private CreditLibList                // Credits list
+{ /* -- Licence data ------------------------------------------------------- */
+#define BEGINLICENCE(n,s) static constexpr const array<const uint8_t,s> l ## n{
 #define ENDLICENCE };                  // Helper functions for licences header
 #include "licence.hpp"                 // Load up compressed licences
 #undef ENDLICENCE                      // Done with this macro
 #undef BEGINLICENCE                    // Done with this macro
-  // Setup compressed licence data list structure
-  static const CreditLibList libList{  // The library list
-  { // t = Title of dependency         v = Version of dependency
-    // n = licence variable name       c = is dependency copyrighted?
-    // a = Author of dependency
+  /* -- Get credits count ------------------------------------------ */ public:
+  size_t CreditGetItemCount(void) const { return size(); }
+  /* -- Get credit item ---------------------------------------------------- */
+  const CreditLib &CreditGetItem(const CreditEnums ceIndex) const
+    { return (*this)[ceIndex]; }
+  /* -- Decompress a credit item ------------------------------------------- */
+  const string CreditGetItemText(const CreditLib &libItem) const try
+  { // Decode the file and show the result
+    return Block<CoDecoder>{ libItem }.ToString();
+  } // exception occured?
+  catch(const exception &e)
+  { // Log failure and try to reset the initial var so this does not
+    XC("Failed to decode licence text!",
+       "Name", libItem.GetName(), "Reason", e, "Length", libItem.Size());
+  }
+  /* -- Decompress a credit ------------------------------------------------ */
+  const string CreditGetItemText(const CreditEnums ceIndex) const
+    { return CreditGetItemText(CreditGetItem(ceIndex)); }
+  /* -- Dump credits to log ------------------------------------------------ */
+  void CreditDumpList(void) const
+  { // Iterate through each entry and send library information to log
+    cLog->LogNLCInfoExSafe("Credits enumerating $ external libraries...",
+        CreditGetItemCount());
+    for(const CreditLib &lD : *this)
+      cLog->LogNLCInfoExSafe("- Using $ (v$) $$", lD.GetName(),
+        lD.GetVersion(), lD.IsCopyright() ? "\xC2\xA9 " : cCommon->Blank(),
+        lD.GetAuthor());
+  }
+  /* -- Dump credits to log (cvar version) --------------------------------- */
+  CVarReturn CreditDumpList(const bool bDoIt) const
+    { if(bDoIt) CreditDumpList(); return ACCEPT; }
+  /* -- Default constructor ------------------------------------------------ */
+  Credits(void) :                      // No parameters
+    /* -- Initialisers ----------------------------------------------------- */
+    CreditLibList{{                    // The library list
+      // t = Title of dependency         v = Version of dependency
+      // n = licence variable name       c = is dependency copyrighted?
+      // a = Author of dependency
 #define LD(t,v,c,a,n) { t, v, c, a, l ## n.data(), l ## n.size() }
-    // The credits data structure (Keep MS-Engine as the first)
-    LD(cSystem->ENGName(), cSystem->ENGVersion(), cSystem->ENGAuthor(), true,
-      MSENGINE),
-    LD("FreeType", STR(FREETYPE_MAJOR) "." STR(FREETYPE_MINOR) "."
-      STR(FREETYPE_PATCH), "The FreeType Project", true, FREETYPE),
-    LD("GLFW", STR(GLFW_VERSION_MAJOR) "." STR(GLFW_VERSION_MINOR) "."
-      STR(GLFW_VERSION_REVISION), "Marcus Geelnard & Camilla Löwy", true,
-      GLFW),
-    LD("JPEGTurbo", STR(LIBJPEG_TURBO_VERSION), "IJG/Contributing authors",
-      true, LIBJPEGTURBO),
-    LD("LibNSGif", "0.2.1", "Richard Wilson & Sean Fox", true, LIBNSGIF),
-    LD("LibPNG", PNG_LIBPNG_VER_STRING, "Contributing authors", true, LIBPNG),
-    LD("LUA", LUA_VERSION_MAJOR "." LUA_VERSION_MINOR "." LUA_VERSION_RELEASE,
-      "Lua.org, PUC-Rio", true, LUA),
-    LD("LZMA", MY_VERSION, "Igor Pavlov", false, 7ZIP),
-    LD("MiniMP3", "1.0", "Martin Fiedler", false, MINIMP3),
+      // The credits data structure (Keep MS-Engine as the first)
+      LD(cSystem->ENGName(), cSystem->ENGVersion(), cSystem->ENGAuthor(), true,
+        MSENGINE),
+      LD("FreeType", STR(FREETYPE_MAJOR) "." STR(FREETYPE_MINOR) "."
+        STR(FREETYPE_PATCH), "The FreeType Project", true, FREETYPE),
+      LD("GLFW", STR(GLFW_VERSION_MAJOR) "." STR(GLFW_VERSION_MINOR) "."
+        STR(GLFW_VERSION_REVISION), "Marcus Geelnard & Camilla Löwy", true,
+        GLFW),
+      LD("JPEGTurbo", STR(LIBJPEG_TURBO_VERSION), "IJG/Contributing authors",
+        true, LIBJPEGTURBO),
+      LD("LibNSGif", "0.2.1", "Richard Wilson & Sean Fox", true, LIBNSGIF),
+      LD("LibPNG", PNG_LIBPNG_VER_STRING, "Contributing authors", true,
+        LIBPNG),
+      LD("LUA", LUA_VERSION_MAJOR "." LUA_VERSION_MINOR "."
+        LUA_VERSION_RELEASE, "Lua.org, PUC-Rio", true, LUA),
+      LD("LZMA", MY_VERSION, "Igor Pavlov", false, 7ZIP),
+      LD("MiniMP3", "1.0", "Martin Fiedler", false, MINIMP3),
 #if !defined(WINDOWS)
-    LD("NCurses", NCURSES_VERSION, "Free Software Foundation", true, NCURSES),
+      LD("NCurses", NCURSES_VERSION, "Free Software Foundation", true,
+        NCURSES),
 #endif
-    LD("OggVorbis", IfAudio::vorbis_version_string()+19, "Xiph.Org", false,
-      OGGVORBISTHEORA),
-    LD("OpenALSoft", "1.23.0", "Chris Robinson", false, OPENALSOFT),
-    LD("OpenSSL", STR(OPENSSL_VERSION_MAJOR) "." STR(OPENSSL_VERSION_MINOR) "."
-      STR(OPENSSL_VERSION_PATCH), "OpenSSL Software Foundation", true,
-      OPENSSL),
-    LD("RapidJson", RAPIDJSON_VERSION_STRING,
-      "THL A29 Ltd., Tencent co. & Milo Yip", true, RAPIDJSON),
-    LD("SQLite", SQLITE_VERSION, "Contributing authors", false, SQLITE),
-    LD("Theora",
-      Format("$.$.$", IfVideo::theora_version_number() >> 16 & 0xFFFF,
-                      IfVideo::theora_version_number() >>  8 & 0x00FF,
-                      IfVideo::theora_version_number()       & 0x00FF),
-      "Xiph.Org", false, OGGVORBISTHEORA),
-    LD("Z-Lib", STR(ZLIB_VER_MAJOR) "." STR(ZLIB_VER_MINOR) "."
-      STR(ZLIB_VER_REVISION) "." STR(ZLIB_VER_SUBREVISION),
-      "Jean-loup Gailly & Mark Adler", true, ZLIB),
-    // End of credits data structure
+      LD("OggVorbis", IfAudio::vorbis_version_string()+19, "Xiph.Org", false,
+        OGGVORBISTHEORA),
+      LD("OpenALSoft", "1.23.1", "Chris Robinson", false, OPENALSOFT),
+      LD("OpenSSL", STR(OPENSSL_VERSION_MAJOR) "." STR(OPENSSL_VERSION_MINOR)
+        "." STR(OPENSSL_VERSION_PATCH), "OpenSSL Software Foundation", true,
+        OPENSSL),
+      LD("RapidJson", RAPIDJSON_VERSION_STRING,
+        "THL A29 Ltd., Tencent co. & Milo Yip", true, RAPIDJSON),
+      LD("SQLite", SQLITE_VERSION, "Contributing authors", false, SQLITE),
+      LD("Theora",
+        Format("$.$.$", IfVideo::theora_version_number() >> 16 & 0xFFFF,
+                        IfVideo::theora_version_number() >>  8 & 0x00FF,
+                        IfVideo::theora_version_number()       & 0x00FF),
+        "Xiph.Org", false, OGGVORBISTHEORA),
+      LD("Z-Lib", STR(ZLIB_VER_MAJOR) "." STR(ZLIB_VER_MINOR) "."
+        STR(ZLIB_VER_REVISION) "." STR(ZLIB_VER_SUBREVISION),
+        "Jean-loup Gailly & Mark Adler", true, ZLIB),
+      // End of credits data structure
 #undef LD                              // Done with this macro
-  } };
-  // Return list
-  return libList;
-}
-/* -- Get credit information ----------------------------------------------- */
-static size_t CreditGetItemCount(void) { return CreditGetList().size(); }
-static const CreditLib &CreditGetItem(const CreditEnums ceIndex)
-  { return CreditGetList()[ceIndex]; }
-/* -- Decompress a credit -------------------------------------------------- */
-static const string CreditGetItemText(const CreditEnums ceIndex)
-  { return CreditGetItemText(CreditGetItem(ceIndex)); }
-/* -- Dump credits to log -------------------------------------------------- */
-static void CreditDumpList(void)
-{ // Iterate through each entry and send library information to log
-  cLog->LogNLCInfoExSafe("Credits enumerating $ external libraries...",
-      CreditGetItemCount());
-  for(const CreditLib &lD : CreditGetList())
-    cLog->LogNLCInfoExSafe("- Using $ (v$) $$", lD.GetName(),
-      lD.GetVersion(), lD.IsCopyright() ? "\xC2\xA9 " : strBlank,
-      lD.GetAuthor());
-}
-static CVarReturn CreditDumpList(const bool bDoIt)
-  { if(bDoIt) CreditDumpList(); return ACCEPT; }
+    } }                                // End of credits list
+  /* -- No code ------------------------------------------------------------ */
+  { }
+} /* ----------------------------------------------------------------------- */
+*cCredits = nullptr;                   // Pointer to static class
 /* ------------------------------------------------------------------------- */
 };                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

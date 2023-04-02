@@ -29,9 +29,7 @@ template<class Plugin=ErrorPluginGeneric>class Error final :
   /* -- Derivced classes --------------------------------------------------- */
   public exception,                    // So we can capture as exception
   public string                        // String to store generated string
-{ /* -- exception class helper macro ------------------------------ */ private:
-# define XC(r,...) throw Error<>{ r, ## __VA_ARGS__ }
-  /* -- Private variables -------------------------------------------------- */
+{ /* -- Private variables -------------------------------------------------- */
   ostringstream osS;                   // Error message builder
   /* -- Write left part of var --------------------------------------------- */
   void Init(const char*const cpName, const char*const cpType)
@@ -174,6 +172,22 @@ template<class Plugin=ErrorPluginGeneric>class Error final :
     // Process more parameters
     Param(vVars...);
   }
+  /* -- Process C-String ------------------------------------------------- */
+  template<typename... V>void Param[[maybe_unused]](const char*const cpName,
+    const wchar_t*const wcpStr, const V... vVars)
+  { // Initialise start of string
+    Init(cpName, "WCStr");
+    // Get variable as a C-string
+    if(!wcpStr) osS << "<Null>.";
+    // Empty?
+    else if(!*wcpStr) osS << "<Empty>.";
+    // Displayable?
+    else if(*wcpStr < 32) osS << "<Invalid>.";
+    // Valid? Display and translation if neccesary
+    else osS << '\"' << IfUtf::FromWideStringPtr(wcpStr) << "\".";
+    // Process more parameters
+    Param(vVars...);
+  }
   /* -- Process exception object ------------------------------------------- */
   template<typename... V>void Param(const char*const cpName,
     const exception &e, const V... vVars)
@@ -214,6 +228,8 @@ template<class Plugin=ErrorPluginGeneric>class Error final :
   /* -- Prepare error message constructor with STL string ------------------ */
   template<typename... V>Error(const string &strErr, const V... vVars)
     { osS << strErr; Param(vVars...); }
-};/* ----------------------------------------------------------------------- */
+};/* -- Helper macro to trigger exceptions --------------------------------- */
+#define XC(r,...) throw IfError::Error<>(r, ## __VA_ARGS__)
+/* ------------------------------------------------------------------------- */
 };                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

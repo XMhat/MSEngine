@@ -122,6 +122,14 @@ local function InitScore()
       texTitle:BlitSLTRB(1, 320+Width,      Height+LY, 320,     LY);
       texTitle:BlitSLTRB(1, 320+Width,  240+Height+LY, 320, 240+LY);
       texTitle:BlitSLTRB(1, 320+Width,  480+Height+LY, 320, 480+LY);
+      LX = -LX;
+      LY = -LY - 240;
+      texTitle:BlitSLTRB(1,         X, -240+LX,    X+Width,-240+Height+LX);
+      texTitle:BlitSLTRB(1,         X,      LX,    X+Width,     Height+LX);
+      texTitle:BlitSLTRB(1,         X,  240+LX,    X+Width, 240+Height+LX);
+      texTitle:BlitSLTRB(1, 320+Width,      Height+LY, 320,     LY);
+      texTitle:BlitSLTRB(1, 320+Width,  240+Height+LY, 320, 240+LY);
+      texTitle:BlitSLTRB(1, 320+Width,  480+Height+LY, 320, 480+LY);
       -- Reset texlobby colour
       texTitle:SetCRGBA(1, 1, 1, 1);
     end

@@ -14,7 +14,7 @@
 /* ------------------------------------------------------------------------- */
 // ! The core class allows manipulation of the game engine itself.
 /* ========================================================================= */
-LLNAMESPACEBEGIN(Core)                 // Core namespace
+namespace NsCore {                     // Core namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfCore;                // Using core namespace
 /* ========================================================================= */
@@ -81,12 +81,12 @@ LLFUNC(LogEx,
 // > Miliseconds:integer=Time in seconds.
 // ? Delays the engine thread for this amount of time.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Delay, TimerSuspend(LCGETINT(unsigned int, 1, "Milliseconds")));
+LLFUNC(Delay, cTimer->TimerSuspend(LCGETINT(unsigned int, 1, "Milliseconds")));
 /* ========================================================================= */
 // $ Core.RestoreDelay
 // ? Restores the frame thread suspend value set via cvars
 /* ------------------------------------------------------------------------- */
-LLFUNC(RestoreDelay, TimerRestoreDelay());
+LLFUNC(RestoreDelay, cTimer->TimerRestoreDelay());
 /* ========================================================================= */
 // $ Core.SetDelay
 // > Time:integer=Milliseconds to delay by each tick
@@ -94,7 +94,8 @@ LLFUNC(RestoreDelay, TimerRestoreDelay());
 // ? is not updated and not saved.
 /* ------------------------------------------------------------------------- */
 LLFUNC(SetDelay,
-  TimerSetDelay(LCGETNUMLG(unsigned int, 1, 0, 1000, "Milliseconds")));
+  cTimer->TimerUpdateDelay(LCGETNUMLG(unsigned int, 1, 0, 1000,
+    "Milliseconds")));
 /* ========================================================================= */
 // $ Core.PidRunning
 // > Id:integer=The pid number to check
@@ -121,10 +122,9 @@ LLFUNCEX(KillPid, 1,
 // $ Core.SetIcon
 // > Filename:string=The filenames of the large icon to set.
 // ? Asks the operating system to set the specified icons of the programmers
-// ? choosing. Can be .bmp .jpg .png or .tga. Separate each filename with a
-// ? colon ':'. On Windows, anything but the first and the last icon are
-// ? dropped so make sure you list the first filename as the large icon and the
-// ? last filename as the small icon.
+// ? choosing. Separate each filename with a colon ':'. On Windows, anything
+// ? but the first and the last icon are dropped so make sure you list the
+// ? first filename as the large icon and the last filename as the small icon.
 /* ------------------------------------------------------------------------- */
 LLFUNC(SetIcon, cDisplay->SetIconFromLua(LCGETCPPSTRING(1, "Filenames")));
 /* ========================================================================= */
@@ -134,7 +134,7 @@ LLFUNC(SetIcon, cDisplay->SetIconFromLua(LCGETCPPSTRING(1, "Filenames")));
 // ? therefore this call should only really be used in emergencies. Sockets
 // ? are NOT synchronied. Use Sockets.CloseAll() to do that.
 /* ------------------------------------------------------------------------- */
-LLFUNC(WaitAsync, CoreWaitAllAsync());
+LLFUNC(WaitAsync, cCore->CoreWaitAllAsync());
 /* ========================================================================= */
 // $ Core.Stack
 // < Stack:string=The current stack trace
@@ -169,25 +169,13 @@ LLFUNC(OnEnd, LCSETEVENTCB(cLua->lrMainEnd));
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Core.* namespace functions begin
-  LLRSFUNC(Delay),                     // Delay execution
-  LLRSFUNC(Done),                      // Confirm exit
-  LLRSFUNC(End),                       // Restart LUA without init
-  LLRSFUNC(PidRunning),                // Process id is running?
-  LLRSFUNC(KillPid),                   // Kill a process pid safely
-  LLRSFUNC(Log),                       // Send text to log
-  LLRSFUNC(LogEx),                     // Send text to log with level
-  LLRSFUNC(Pause),                     // Pause LUA
-  LLRSFUNC(Quit),                      // Quit the application
-  LLRSFUNC(Reset),                     // Restart LUA
-  LLRSFUNC(Restart),                   // Restart engine completely
-  LLRSFUNC(RestartNP),                 //   " without command-line args
-  LLRSFUNC(RestoreDelay),              // Restore default tick sleep
-  LLRSFUNC(Stack),                     // Returns current stack
-  LLRSFUNC(SetDelay),                  // Set tick sleep
-  LLRSFUNC(SetIcon),                   // Set window icon
-  LLRSFUNC(WaitAsync),                 // Wait for all async events
-  LLRSFUNC(OnEnd),                     // Update main end tick
-  LLRSFUNC(OnTick),                    // Update main tick
+  LLRSFUNC(Delay),      LLRSFUNC(Done),      LLRSFUNC(End),
+  LLRSFUNC(KillPid),    LLRSFUNC(Log),       LLRSFUNC(LogEx),
+  LLRSFUNC(OnEnd),      LLRSFUNC(OnTick),    LLRSFUNC(Pause),
+  LLRSFUNC(PidRunning), LLRSFUNC(Quit),      LLRSFUNC(Reset),
+  LLRSFUNC(Restart),    LLRSFUNC(RestartNP), LLRSFUNC(RestoreDelay),
+  LLRSFUNC(SetDelay),   LLRSFUNC(SetIcon),   LLRSFUNC(Stack),
+  LLRSFUNC(WaitAsync),
 LLRSEND                                // Core.* namespace functions end
 /* ========================================================================= */
 /* ######################################################################### */
@@ -199,14 +187,14 @@ LLRSEND                                // Core.* namespace functions end
 // ? Returns a table of key/value pairs that identify possible log levels.
 /* ------------------------------------------------------------------------- */
 LLRSKTBEGIN(LogLevels)                 // Beginning of log levels
-LLRSKTITEM(LH_,DISABLED),              LLRSKTITEM(LH_,ERROR),
-LLRSKTITEM(LH_,WARNING),               LLRSKTITEM(LH_,INFO),
-LLRSKTITEM(LH_,DEBUG),                 LLRSKTITEM(LH_,MAX),
+  LLRSKTITEM(LH_,DISABLED),            LLRSKTITEM(LH_,ERROR),
+  LLRSKTITEM(LH_,WARNING),             LLRSKTITEM(LH_,INFO),
+  LLRSKTITEM(LH_,DEBUG),               LLRSKTITEM(LH_,MAX),
 LLRSKTEND                              // End of log levels
 /* ========================================================================= */
 LLRSCONSTBEGIN                         // Core.* namespace consts begin
-LLRSCONST(LogLevels),                  // Core log levels
+  LLRSCONST(LogLevels),
 LLRSCONSTEND                           // Core.* namespace consts end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of Core namespace
+}                                      // End of Core namespace
 /* == EoF =========================================================== EoF == */

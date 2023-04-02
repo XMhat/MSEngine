@@ -14,7 +14,7 @@
 /* ------------------------------------------------------------------------- */
 // ! The console class allows manipulation of the game console.
 /* ========================================================================= */
-LLNAMESPACEBEGIN(Console)              // Console namespace
+namespace NsConsole {                  // Console namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfConsole;             // Using console namespace
 /* ========================================================================= */
@@ -96,15 +96,9 @@ LLFUNC(ScrollUp, cConsole->MoveLogUp());
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Console.* namespace functions begin
-  LLRSFUNC(Exists),                    // Console command is registered?
-  LLRSFUNC(Register),                  // Create console command
-  LLRSFUNC(StatusLeft),                // Set console status (left side)
-  LLRSFUNC(StatusRight),               // Set console status (right side)
-  LLRSFUNC(ScrollDown),                // Scrolls the console down
-  LLRSFUNC(ScrollUp),                  // Scrolls the console up
-  LLRSFUNC(Unregister),                // Create console command
-  LLRSFUNC(Write),                     // Write message to console
-  LLRSFUNC(WriteEx),                   // Write message to console with colour
+  LLRSFUNC(Exists),      LLRSFUNC(Register),   LLRSFUNC(StatusLeft),
+  LLRSFUNC(StatusRight), LLRSFUNC(ScrollDown), LLRSFUNC(ScrollUp),
+  LLRSFUNC(Unregister),  LLRSFUNC(Write),      LLRSFUNC(WriteEx),
 LLRSEND                                // Console.* namespace functions end
 /* ========================================================================= */
 /* ######################################################################### */
@@ -116,20 +110,20 @@ LLRSEND                                // Console.* namespace functions end
 // ? Returns all the colour palette of colours.
 /* ------------------------------------------------------------------------- */
 LLRSKTBEGIN(Colours)                   // Beginning of console colours
-LLRSKTITEM(COLOUR_,BLACK),             LLRSKTITEM(COLOUR_,BLUE),
-LLRSKTITEM(COLOUR_,GREEN),             LLRSKTITEM(COLOUR_,CYAN),
-LLRSKTITEM(COLOUR_,RED),               LLRSKTITEM(COLOUR_,GRAY),
-LLRSKTITEM(COLOUR_,MAGENTA),           LLRSKTITEM(COLOUR_,BROWN),
-LLRSKTITEM(COLOUR_,LGRAY),             LLRSKTITEM(COLOUR_,LBLUE),
-LLRSKTITEM(COLOUR_,LGREEN),            LLRSKTITEM(COLOUR_,LCYAN),
-LLRSKTITEM(COLOUR_,LRED),              LLRSKTITEM(COLOUR_,LMAGENTA),
-LLRSKTITEM(COLOUR_,YELLOW),            LLRSKTITEM(COLOUR_,WHITE),
-LLRSKTITEM(COLOUR_,MAX),
+  LLRSKTITEM(COLOUR_,BLACK),           LLRSKTITEM(COLOUR_,BLUE),
+  LLRSKTITEM(COLOUR_,GREEN),           LLRSKTITEM(COLOUR_,CYAN),
+  LLRSKTITEM(COLOUR_,RED),             LLRSKTITEM(COLOUR_,GRAY),
+  LLRSKTITEM(COLOUR_,MAGENTA),         LLRSKTITEM(COLOUR_,BROWN),
+  LLRSKTITEM(COLOUR_,LGRAY),           LLRSKTITEM(COLOUR_,LBLUE),
+  LLRSKTITEM(COLOUR_,LGREEN),          LLRSKTITEM(COLOUR_,LCYAN),
+  LLRSKTITEM(COLOUR_,LRED),            LLRSKTITEM(COLOUR_,LMAGENTA),
+  LLRSKTITEM(COLOUR_,YELLOW),          LLRSKTITEM(COLOUR_,WHITE),
+  LLRSKTITEM(COLOUR_,MAX),
 LLRSKTEND                              // End of console colours
 /* ========================================================================= */
 LLRSCONSTBEGIN                         // Console.* namespace consts begin
-LLRSCONST(Colours),                    // Console colour palette
+  LLRSCONST(Colours),
 LLRSCONSTEND                           // Console.* namespace consts end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of Console namespace
+}                                      // End of Console namespace
 /* == EoF =========================================================== EoF == */

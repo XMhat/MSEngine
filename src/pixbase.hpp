@@ -28,6 +28,7 @@ static bool bSysBaseDataReady = false; // Is the data ready?
 /* -- We'll put all these calls in a namespace ----------------------------- */
 class SysBase :                        // Safe exception handler namespace
   /* -- Base classes ------------------------------------------------------- */
+  public SysVersion,                   // Version information class
   public Ident                         // Mutex name
 { /* ----------------------------------------------------------------------- */
   enum ExitState { ES_SAFE, ES_UNSAFE, ES_CRITICAL }; // Signal exit types
@@ -107,12 +108,12 @@ class SysBase :                        // Safe exception handler namespace
       }
     } // Now tokenise it with a maximum of four cells
     const Token tokData{ strLine, " ", 5 };
-    staData.Data(tokData.size() >= 2 ? tokData[1] : strBlank)
-           .Data(tokData.size() >= 5 ? tokData[4] : strBlank);
+    staData.Data(tokData.size() >= 2 ? tokData[1] : cCommon->Blank())
+           .Data(tokData.size() >= 5 ? tokData[4] : cCommon->Blank());
     // Get information about the item and if failed?
     if(!dladdr(vpStack, &diData))
     { // Get information about the item and if failed?
-      staData.Data(tokData.size() >= 4 ? tokData[3] : strBlank);
+      staData.Data(tokData.size() >= 4 ? tokData[3] : cCommon->Blank());
       // Done
       return;
     }
@@ -165,8 +166,27 @@ class SysBase :                        // Safe exception handler namespace
     staData.Finish(osS);
   }
   /* ----------------------------------------------------------------------- */
-  ExitState DebugMessage(const char*const cpSignal,
-    const char*const cpExtra=cpBlank)
+  void DumpMods(ostringstream &osS)
+  { // Ignore if no mods
+    if(empty()) return;
+    // Add mods header
+    osS << "\nShared objects:-\n"
+           "================\n";
+    // Prepare headers
+    Statistic staData;
+    staData.Header("DESCRIPTION").Header("VERSION", false)
+         .Header("VENDOR", false).Header("MODULE", false);
+    // list modules
+    for(const auto &mD : *this)
+    { // Get mod data
+      const SysModuleData &smdData = mD.second;
+      staData.Data(smdData.GetDesc()).Data(smdData.GetVersion())
+             .Data(smdData.GetVendor()).Data(smdData.GetFull());
+    } // Finished enumeration of modules
+    osS << staData.Finish();
+  }
+  /* ----------------------------------------------------------------------- */
+  ExitState DebugMessage(const char*const cpSignal, const char*const cpExtra)
   { // Build filename
     string strFileName{ cCmdLine ? Append(cCmdLine->GetCArgs()[0], ".dbg") :
       "/tmp/msengine-crash.txt" };
@@ -180,8 +200,11 @@ class SysBase :                        // Safe exception handler namespace
     if(*cpExtra) osS << "\n" << cpExtra << "\n";
     // Print it to stderr
     fputs(osS.str().c_str(), stderr);
+    // Dump mods to log
+    DumpMods(osS);
     // Add trace header
-    osS << "\nLog trace:-\n";
+    osS << "\nLog trace:-\n"
+           "===========\n";
     // Now add the buffer lines
     cLog->GetBufferLines(osS);
     // Write the output and close the log
@@ -192,7 +215,7 @@ class SysBase :                        // Safe exception handler namespace
          << ". This means that the engine must now terminate and we apologise "
             "for the inconvenience with the loss of any unsaved progress. ";
     // Create the debug log and exit if failed
-    if(const FStream fOut{ std::move(strFileName), FStream::FM_W_T })
+    if(const FStream fOut{ StdMove(strFileName), FStream::FM_W_T })
     { // Write to crash output file
       fOut.FStreamWriteString(strMsg);
       // We wrote the crash log
@@ -209,6 +232,9 @@ class SysBase :                        // Safe exception handler namespace
     // Send requested exit code
     return ES_CRITICAL;
   }
+  /* ----------------------------------------------------------------------- */
+  ExitState DebugMessage(const char*const cpSignal)
+    { return DebugMessage(cpSignal, cCommon->CBlank()); }
   /* ----------------------------------------------------------------------- */
   ExitState ConditionalExit(const string &strName, unsigned int &uiAttempts)
   { // If events system is available?
@@ -361,8 +387,73 @@ class SysBase :                        // Safe exception handler namespace
            (setsockopt(iFd, SOL_SOCKET, SO_SNDTIMEO,
               reinterpret_cast<void*>(&tWT), sizeof(tWT)) < 0 ? 2 : 0);
   }
+  /* ------------------------------------------------------------------------- */
+  static bool SysInitThread(const char*const cpName, const SysThread stLevel)
+  { // Get this thread handle
+    pthread_t ptHandle = pthread_self();
+    // Set thread name
+#if defined(MACOS)
+    pthread_setname_np(cpName);
+#else
+    pthread_setname_np(ptHandle, cpName);
+#endif
+    // Container for current scheduler parameters
+    struct sched_param spParam;
+    // Container for current policy level
+    int iPolicy;
+    // Get current thread settings
+    if(pthread_getschedparam(ptHandle, &iPolicy, &spParam)) return false;
+    // Get bounds
+    const int iMinPriority = sched_get_priority_min(iPolicy),
+              iMaxPriority = sched_get_priority_max(iPolicy);
+    // What level was requested?
+    switch(stLevel)
+    { // Reserved for main thread
+      case SysThread::Main:
+        // Use high priority parameters
+        spParam.sched_priority = iMinPriority+1;
+        iPolicy = SCHED_RR;
+        // Done
+        break;
+      // Reserved for engine thread
+      case SysThread::Engine:
+        // Use high priority parameters
+        spParam.sched_priority = iMinPriority;
+        iPolicy = SCHED_RR;
+        // Done
+        break;
+      // Reserved for audio thread
+      case SysThread::Audio:
+        // Use high priority parameters
+        spParam.sched_priority = iMinPriority+2;
+        iPolicy = SCHED_RR;
+        // Done
+        break;
+      // Aux thread high priority
+      case SysThread::High:
+        // Use high priority parameters
+        spParam.sched_priority = iMinPriority+3;
+        iPolicy = SCHED_RR;
+        // Done
+        break;
+      // Aux thread low priority
+      case SysThread::Low:
+        // Use high priority parameters
+        spParam.sched_priority = iMaxPriority;
+        iPolicy = SCHED_OTHER;
+        // Done
+        break;
+    } // Clamp the value
+    spParam.sched_priority =
+      IfUtil::Clamp(spParam.sched_priority, iMinPriority, iMaxPriority);
+    // Set the new parameters and return true if succeeded
+    return !pthread_setschedparam(ptHandle, iPolicy, &spParam);
+  }
   /* ----------------------------------------------------------------------- */
-  SysBase(void)
+  SysBase(SysModList &&svVersion, const size_t stI) :
+    /* -- Initialisers ----------------------------------------------------- */
+    SysVersion{ StdMove(svVersion), stI } // Initialise version info class
+    /* -- ------------------------------------------------------------------ */
   { // Now install all those signal handlers
     for(auto &aSignal : iaSignals)
     { // Set the signal and check for error
@@ -382,9 +473,9 @@ class SysBase :                        // Safe exception handler namespace
     DeleteGlobalMutex();
   }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(SysBase);            // Suppress copy constructor for safety
+  DELETECOPYCTORS(SysBase)             // Suppress copy constructor for safety
 };/* ----------------------------------------------------------------------- */
 #define MSENGINE_SYSBASE_CALLBACKS() \
-  void SysBase::HandleSignalStatic(int iSignal) \
+  void SysBase::SysBase::HandleSignalStatic(int iSignal) \
     { cSystem->HandleSignal(iSignal); }
 /* == EoF =========================================================== EoF == */

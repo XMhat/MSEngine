@@ -15,33 +15,33 @@ struct SysModule :
   public SysModuleData                 // System module data
 { /* -- Manual data (i.e. for executable) ---------------------------------- */
   explicit SysModule(const string &strModule) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     SysModuleData{ strModule }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Manual data (i.e. for executable) ---------------------------------- */
   explicit SysModule(string &&strModule) :
-    /* -- Initialisation of members ---------------------------------------- */
-    SysModuleData{ std::move(strModule) }
+    /* -- Initialisers ----------------------------------------------------- */
+    SysModuleData{ StdMove(strModule) }
     /* -- No code ---------------------------------------------------------- */
     { }
    /* -- Return data (move filename) --------------------------------------- */
   explicit SysModule(string &&strModule, const unsigned int uiMa,
     const unsigned int uiMi, const unsigned int uiBu, const unsigned int uiRe,
     string &&strVen, string &&strDe, string &&strCo, string &&strVer) :
-    /* -- Initialisation of members ---------------------------------------- */
-    SysModuleData{ std::move(strModule), uiMa, uiMi, uiBu, uiRe,
-      std::move(strVen), std::move(strDe), std::move(strCo),
-      std::move(strVer) }
+    /* -- Initialisers ----------------------------------------------------- */
+    SysModuleData{ StdMove(strModule), uiMa, uiMi, uiBu, uiRe,
+      StdMove(strVen), StdMove(strDe), StdMove(strCo),
+      StdMove(strVer) }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Return data (copy filename) ---------------------------------------- */
   explicit SysModule(const string &strModule, const unsigned int uiMa,
     const unsigned int uiMi, const unsigned int uiBu, const unsigned int uiRe,
     string &&strVen, string &&strDe, string &&strCo, string &&strVer) :
-    /* -- Initialisation of members ---------------------------------------- */
-    SysModuleData{ strModule, uiMa, uiMi, uiBu, uiRe, std::move(strVen),
-      std::move(strDe), std::move(strCo), std::move(strVer) }
+    /* -- Initialisers ----------------------------------------------------- */
+    SysModuleData{ strModule, uiMa, uiMi, uiBu, uiRe, StdMove(strVen),
+      StdMove(strDe), StdMove(strCo), StdMove(strVer) }
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* -- End ---------------------------------------------------------------- */

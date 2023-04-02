@@ -63,7 +63,7 @@ class LuaEvts :
     // Create a new params list with the class and the events list size
     cEvtMain->AddExParam(eCmd, qciItem, pData, vpClass, size(), vVars...);
     // Insert the iterator the new event.
-    emplace_back(std::move(qciItem));
+    emplace_back(StdMove(qciItem));
   }
   /* -- Deinit event store-------------------------------------------------- */
   void LuaEvtsDeInit(void)
@@ -88,7 +88,7 @@ class LuaEvts :
   /* -- Destructor --------------------------------------------------------- */
   ~LuaEvts(void) { LuaEvtsDeInit(); }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(LuaEvts);            // Disable copy operator and constructor
+  DELETECOPYCTORS(LuaEvts)             // Disable copy operator and constructor
 };/* ----------------------------------------------------------------------- */
 /* == Class type for master class (send parameters on event trigger) ======= */
 template<class MemberType>struct LuaEvtTypeParam
@@ -113,7 +113,7 @@ template<class MemberType>struct LuaEvtTypeParam
   /* -- Constructor (not interested) --------------------------------------- */
   LuaEvtTypeParam(void) { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(LuaEvtTypeParam);    // Remove Assignment operator/ctor
+  DELETECOPYCTORS(LuaEvtTypeParam)     // Remove Assignment operator/ctor
 };/* ----------------------------------------------------------------------- */
 /* == Class type for master class (send no parameters on event trigger) ==== */
 template<class MemberType>struct LuaEvtTypeAsync // Used in async class
@@ -138,7 +138,7 @@ template<class MemberType>struct LuaEvtTypeAsync // Used in async class
   /* -- Constructor (not interested) --------------------------------------- */
   LuaEvtTypeAsync(void) { }
   /* -- Delete defaults ---------------------------------------------------- */
-  DELETECOPYCTORS(LuaEvtTypeAsync);    // Remove Assignment operator/ctor
+  DELETECOPYCTORS(LuaEvtTypeAsync)     // Remove Assignment operator/ctor
 };/* ----------------------------------------------------------------------- */
 /* == Class for master class =============================================== */
 template<class MemberType,             // Member object type
@@ -157,7 +157,7 @@ class LuaEvtMaster :
   /* -- Unregister the event ----------------------------------------------- */
   ~LuaEvtMaster(void) { cEvtMain->Unregister(evtCmd); }
   /* -- Delete defaults ---------------------------------------------------- */
-  DELETECOPYCTORS(LuaEvtMaster);       // Remove Assignment operator/ctor
+  DELETECOPYCTORS(LuaEvtMaster)        // Remove Assignment operator/ctor
 };/* == Routines for a collectors child class ============================== */
 template<class MemberType,             // Member object type
          size_t Refs=1>                // Number of references to store
@@ -211,9 +211,55 @@ class LuaEvtSlave :
          "Params",     stMax);
     // Enumerate add the rest of the parameters
     for(size_t stIndex = 2; stIndex < stMax; ++stIndex)
-      PushInteger(this->LuaRefGetState(),
-        static_cast<lua_Integer>(epData.vParams[stIndex].ui));
-    // Call the callback function.
+    { // Using event core namespace
+      using namespace IfEvtCore;
+      // Get cell
+      const MVar &mvParam = epData.vParams[stIndex];
+      // Compare type
+      switch(mvParam.t)
+      { // Boolean?
+        case MVT_BOOL:
+          PushBoolean(this->LuaRefGetState(), mvParam.b);
+          break;
+        // C-String?
+        case MVT_CSTR:
+          PushString(this->LuaRefGetState(), mvParam.cp);
+          break;
+        // STL String?
+        case MVT_STR:
+          PushCppString(this->LuaRefGetState(), *mvParam.str);
+          break;
+        // Float?
+        case MVT_FLOAT:
+          PushNumber(this->LuaRefGetState(),
+            static_cast<lua_Number>(mvParam.f));
+          break;
+        // Double?
+        case MVT_DOUBLE:
+          PushNumber(this->LuaRefGetState(),
+            static_cast<lua_Number>(mvParam.d));
+          break;
+        // Signed or unsigned integer?
+        case MVT_UINT: [[fallthrough]]; case MVT_INT:
+          PushInteger(this->LuaRefGetState(),
+            static_cast<lua_Integer>(mvParam.i));
+          break;
+        // Signed or unsigned long long?
+        case MVT_ULONGLONG: [[fallthrough]]; case MVT_LONGLONG:
+          PushInteger(this->LuaRefGetState(),
+            static_cast<lua_Integer>(mvParam.ll));
+          break;
+        // Signed or unsigned long int?
+        case MVT_LONGUINT: [[fallthrough]]; case MVT_LONGINT:
+          PushInteger(this->LuaRefGetState(),
+            static_cast<lua_Integer>(mvParam.li));
+          break;
+        // Unsupported type? Push nil
+        default: [[fallthrough]]; case MVT_MAX:
+          PushNil(this->LuaRefGetState());
+          break;
+      }
+    } // Call the callback function.
     CallFuncEx(this->LuaRefGetState(),
       static_cast<int>(stMax - stMandatory));
   } // Exception occured? Disable lua callback and rethrow
@@ -263,8 +309,7 @@ class LuaEvtSlave :
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(LuaEvtSlave);        // Disable copy constructor
+  DELETECOPYCTORS(LuaEvtSlave)        // Disable copy constructor
 };/* ----------------------------------------------------------------------- */
-/* ------------------------------------------------------------------------- */
 };                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

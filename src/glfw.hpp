@@ -33,13 +33,15 @@ static class GlFW final :              // Root engine class
   /* -- DeInitialiser ---------------------------------------------- */ public:
   void DeInit(void)
   { // Ignore if class not initialised
-    if(IHNotDeInitialise()) return;
+    if(IHDeInitialise()) return;
     // Report de-initialisation attempt
     cLog->LogDebugSafe("GlFW subsystem de-initialising...");
     // Destroy window if created
     this->WinDeInit();
     // Terminate glfw
     glfwTerminate();
+    // Delete error handler
+    glfwSetErrorCallback(nullptr);
     // Report de-initialisation successful
     cLog->LogInfoSafe("GlFW subsystem de-initialised.");
   }
@@ -64,13 +66,13 @@ static class GlFW final :              // Root engine class
   DTORHELPER(~GlFW, DeInit())
   /* -- Constructor -------------------------------------------------------- */
   GlFW(void) :                         // Default constructor (No arguments)
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     IHelper{ __FUNCTION__ },           // Set class function name
     uiErrorLevel(0)                    // No errors occured
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(GlFW);               // Prevent copying for safety reasons
+  DELETECOPYCTORS(GlFW)                // Prevent copying for safety reasons
   /* ----------------------------------------------------------------------- */
 } *cGlFW = nullptr;                    // Pointer to static class
 /* == Process a glfw error ================================================= */

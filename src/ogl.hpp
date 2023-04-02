@@ -60,7 +60,7 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
                       idFormatModes,   // Pixel format modes (log detail)
                       idOGLCodes;      // OpenGL codes
   /* -- Macros ------------------------------------------------------------- */
-  DELETECOPYCTORS(Ogl);                // Do not need defaults
+  DELETECOPYCTORS(Ogl)                 // Do not need defaults
   /* -- Defines ------------------------------------------------------------ */
 #define IGLL(F,M,...) GLEX(CheckLogError, F, M, ## __VA_ARGS__)
 #define IGL(F,M,...)  GLEX(CheckExceptError, F, M, ## __VA_ARGS__)
@@ -158,7 +158,6 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
     PFNGLPIXELSTOREIPROC               glPixelStorei;
     PFNGLPOLYGONMODEPROC               glPolygonMode;
     PFNGLREADBUFFERPROC                glReadBuffer;
-    PFNGLREADPIXELSPROC                glReadPixels;
     PFNGLSHADERSOURCEPROC              glShaderSource;
     PFNGLTEXIMAGE2DPROC                glTexImage2D;
     PFNGLTEXPARAMETERIPROC             glTexParameteri;
@@ -232,7 +231,7 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
   /* -- Zero index to hint helper for cvars -------------------------------- */
   static GLenum SHIndexToEnum(const size_t stIndex)
   { // Parameters available to translate
-    typedef std::array<const GLenum, 4> Values;
+    typedef array<const GLenum, 4> Values;
     static const Values vaCmds{ GL_TRUE, GL_DONT_CARE, GL_FASTEST, GL_NICEST };
     // Return position or invalid
     return stIndex < vaCmds.size() ? vaCmds[stIndex] : GL_NONE;
@@ -266,7 +265,6 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
     GETPTR(glPixelStorei, PFNGLPIXELSTOREIPROC);
     GETPTR(glPolygonMode, PFNGLPOLYGONMODEPROC);
     GETPTR(glReadBuffer, PFNGLREADBUFFERPROC);
-    GETPTR(glReadPixels, PFNGLREADPIXELSPROC);
     GETPTR(glTexImage2D, PFNGLTEXIMAGE2DPROC);
     GETPTR(glTexParameteri, PFNGLTEXPARAMETERIPROC);
     GETPTR(glTexSubImage2D, PFNGLTEXSUBIMAGE2DPROC);
@@ -351,11 +349,6 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
   /* ----------------------------------------------------------------------- */
   void ReadBuffer(const GLenum uiBuffer) const
     { sAPI.glReadBuffer(uiBuffer); }
-  /* ----------------------------------------------------------------------- */
-  void ReadPixels(const GLint iLeft, const GLint iTop, const GLsizei stWidth,
-    const GLsizei stHeight, GLvoid*const vpBuffer) const
-      { sAPI.glReadPixels(iLeft, iTop, stWidth, stHeight, GL_RGB,
-          GL_UNSIGNED_BYTE, vpBuffer); }
   /* -- Texture functions -------------------------------------------------- */
   void ReadTexture(const GLenum eFormat, GLvoid*const vpBuffer) const
     { sAPI.glGetTexImage(GL_TEXTURE_2D, 0, eFormat, GL_UNSIGNED_BYTE,
@@ -401,7 +394,7 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
   { // If we're already the active texture then don't set it
     if(uiActiveTUnit == uiTexUnit) return;
     // Texture unit id lookup table
-    typedef std::array<const GLenum, 3> TexUnits;
+    typedef array<const GLenum, 3> TexUnits;
     static const TexUnits tuTexUnit{ GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2 };
     // Activate texture
     sAPI.glActiveTexture(tuTexUnit[uiTexUnit]);
@@ -719,7 +712,7 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
       { IGL(sAPI.glGetFloatv(eId, fpDest),
           "Get float array failed!", "Index", eId, "Count", stCount); }
   /* -- Get openGL float array --------------------------------------------- */
-  template<size_t stCount, class ArrayType = std::array<GLfloat, stCount>>
+  template<size_t stCount, class ArrayType = array<GLfloat, stCount>>
     const ArrayType GetFloatArray(const GLenum eId) const
   { // Create array to return
     ArrayType aData;
@@ -729,7 +722,7 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
     return aData;
   }
   /* -- Get openGL int array ----------------------------------------------- */
-  template<size_t stCount, class ArrayType = std::array<GLint, stCount>>
+  template<size_t stCount, class ArrayType = array<GLint, stCount>>
     const ArrayType GetIntegerArray(const GLenum eId) const
   { // Create array to return
     ArrayType aData;
@@ -891,8 +884,8 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
   /* -- Set texture mode by filter id -------------------------------------- */
   void SetFilterById(const size_t stId, GLint &iMin, GLint &iMag) const
   { // Filter table
-    typedef std::array<const GLint, 2> TwoGLints;
-    typedef std::array<const TwoGLints, OF_NM_MAX> TexFilterNMList;
+    typedef array<const GLint, 2> TwoGLints;
+    typedef array<const TwoGLints, OF_NM_MAX> TexFilterNMList;
     static const TexFilterNMList tfList{{
       // Point/Bilinear filtering options
       { GL_NEAREST, GL_NEAREST }, { GL_NEAREST, GL_LINEAR }, // 00-01
@@ -905,8 +898,8 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
   /* -- Set texture mode by filter id -------------------------------------- */
   void SetMipMapFilterById(const size_t stId, GLint &iMin, GLint &iMag) const
   { // Filter table
-    typedef std::array<const GLint, 2> TwoGLints;
-    typedef std::array<const TwoGLints, OF_MAX> TexFilterList;
+    typedef array<const GLint, 2> TwoGLints;
+    typedef array<const TwoGLints, OF_MAX> TexFilterList;
     static const TexFilterList tfList{
     { // Point/Bilinear filtering options
       { GL_NEAREST, GL_NEAREST }, { GL_NEAREST, GL_LINEAR }, // 00-01
@@ -1270,7 +1263,7 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
   }
   /* -- Constructor -------------------------------------------------------- */
   Ogl(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     IHelper{ __FUNCTION__ },           // Send name to InitHelper
     OglFlags{ GFL_NONE },              // Set no flags
     /* -- Const members ---------------------------------------------------- */
@@ -1308,7 +1301,7 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
 #endif                                 // End of Apple target check
       IDMAPSTR(GL_OUT_OF_MEMORY),
     }, "GL_ERROR_UNKNOWN" },           // Unknown error value
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     vsSetting{ VSYNC_OFF },            // Set no VSync
     uiActiveFbo(                       // Select back buffer
       numeric_limits<GLuint>::max()),  // Maxed so values commit properly
@@ -1331,7 +1324,7 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Destructor --------------------------------------------------------- */
-  DTORHELPER(~Ogl, DeInit(true));
+  DTORHELPER(~Ogl, DeInit(true))
   /* -- Undefines ---------------------------------------------------------- */
 #undef IGLC                            // This macro was only for this class
 #undef IGL                             // This macro was only for this class

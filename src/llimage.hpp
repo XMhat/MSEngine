@@ -19,7 +19,7 @@
 // ! notice. Type 'imgfmts' in the console to see the most up to date list of
 // ! formats supported.
 /* ========================================================================= */
-LLNAMESPACEBEGIN(Image)                // Image namespace
+namespace NsImage {                    // Image namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfImage;               // Using image namespace
 /* ========================================================================= */
@@ -109,7 +109,7 @@ LLFUNC(ArrayAsync, LCCLASSCREATE(Image)->InitAsyncArray(lS));
 // ? Returns the image object.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Asset, 1, LCCLASSCREATE(Image)->InitArray(
-  LCGETCPPSTRINGNE(1, "Identifier"), std::move(*LCGETPTR(2, Asset)),
+  LCGETCPPSTRINGNE(1, "Identifier"), StdMove(*LCGETPTR(2, Asset)),
   LCGETFLAGS(ImageFlagsConst, 3, IL_MASK, "Flags")));
 /* ======================================================================= */
 // $ Image.Raw
@@ -120,7 +120,7 @@ LLFUNCEX(Asset, 1, LCCLASSCREATE(Image)->InitArray(
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Raw, 1, LCCLASSCREATE(Image)->
   InitRaw(LCGETCPPSTRINGNE(1, "Identifier"),
-    std::move(*LCGETPTR(2, Asset)),
+    StdMove(*LCGETPTR(2, Asset)),
     LCGETINTLG(unsigned int, 3, 1, 65535, "Width"),
     LCGETINTLG(unsigned int, 4, 1, 65535, "Height"),
     LCGETINTLG(BitDepth, 5, BD_BINARY, BD_RGBA, "Depth"),
@@ -159,14 +159,9 @@ LLFUNC(WaitAsync, cImages->WaitAsync());
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Image.* namespace functions begin
-  LLRSFUNC(Asset),                     // Load from array asyncronously
-  LLRSFUNC(ArrayAsync),                //   "  asyncronously
-  LLRSFUNC(Blank),                     // Create a blank image
-  LLRSFUNC(Colour),                    // Create a single pixel solid
-  LLRSFUNC(File),                      // Load from specified file
-  LLRSFUNC(FileAsync),                 //   "  asyncronously
-  LLRSFUNC(Raw),                       // Load from raw data
-  LLRSFUNC(WaitAsync),                 // Wait for async events to complete
+  LLRSFUNC(ArrayAsync), LLRSFUNC(Asset),     LLRSFUNC(Blank),
+  LLRSFUNC(Colour),     LLRSFUNC(File),      LLRSFUNC(FileAsync),
+  LLRSFUNC(Raw),        LLRSFUNC(WaitAsync),
 LLRSEND                                // Image.* namespace functions end
 /* ========================================================================= */
 /* ######################################################################### */
@@ -179,25 +174,16 @@ LLRSEND                                // Image.* namespace functions end
 // ? value is a unique identifier to the flag.
 /* ------------------------------------------------------------------------- */
 LLRSKTBEGIN(Flags)                     // Beginning of cursor codes
-LLRSKTITEM(IL_,NONE),                  // No image loading flags
-LLRSKTITEM(IL_,TOGPU),                 // Force to be loadable by GPU
-LLRSKTITEM(IL_,TO24BPP),               // Force to 24-bits per pixel
-LLRSKTITEM(IL_,TO32BPP),               // Force to 32-bits per pixel
-LLRSKTITEM(IL_,TOBGR),                 // Force order to Blue/Green/Red
-LLRSKTITEM(IL_,TORGB),                 // Force order to Red/Green/Blue
-LLRSKTITEM(IL_,REVERSE),               // Reverse bitmap
-LLRSKTITEM(IL_,TOBINARY),              // Force to 1-bit per pixel
-LLRSKTITEM(IL_,ATLAS),                 // Create a texture atlas
-LLRSKTITEM(IL_,FCE_DDS),               // Source is a DDS bitmap
-LLRSKTITEM(IL_,FCE_GIF),               // Source is a GIF bitmap
-LLRSKTITEM(IL_,FCE_JPG),               // Source is a JPEG bitmap
-LLRSKTITEM(IL_,FCE_PNG),               // Source is a PNG bitmap
-LLRSKTITEM(IL_,FCE_TGA),               // Source is a TGA bitmap
+  LLRSKTITEM(IL_,NONE),    LLRSKTITEM(IL_,TOGPU),    LLRSKTITEM(IL_,TO24BPP),
+  LLRSKTITEM(IL_,TO32BPP), LLRSKTITEM(IL_,TOBGR),    LLRSKTITEM(IL_,TORGB),
+  LLRSKTITEM(IL_,REVERSE), LLRSKTITEM(IL_,TOBINARY), LLRSKTITEM(IL_,ATLAS),
+  LLRSKTITEM(IL_,FCE_DDS), LLRSKTITEM(IL_,FCE_GIF),  LLRSKTITEM(IL_,FCE_JPG),
+  LLRSKTITEM(IL_,FCE_PNG),
 LLRSKTEND                              // End of cursor codes
 /* ========================================================================= */
 LLRSCONSTBEGIN                         // Image.* namespace consts begin
-LLRSCONST(Flags),                      // Image loading flags
+  LLRSCONST(Flags),
 LLRSCONSTEND                           // Image.* namespace consts end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of Image namespace
+}                                      // End of Image namespace
 /* == EoF =========================================================== EoF == */

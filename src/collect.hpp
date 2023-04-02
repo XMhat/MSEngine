@@ -13,7 +13,6 @@ namespace IfCollector {                // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfCVarDef;             // Using cvardef namespace
 using namespace IfSysUtil;             // Using system utility namespace
-using namespace IfError;               // Using error namespace
 using namespace IfLog;                 // Using log namespace
 /* -- Collector header ----------------------------------------------------- */
 #define COLLECTHDR(PCR,                /* The collector class type          */\
@@ -28,10 +27,10 @@ using namespace IfLog;                 // Using log namespace
   static struct PCR final :            /* Begin collector object class      */\
     public PCR ## CLHelper             /* Derive by collector helper class  */\
     __VA_ARGS__                        /* Any other custom class derives    */\
-  { DELETECOPYCTORS(PCR);              /* Remove default functions          */\
-    PCR(void);                         /* Optional Constructor event        */\
-    ~PCR(void) noexcept(false);        /* Optional Destructor event         */\
-    PCV;                               /* Any extra variables? (no comma!)  */
+  { DELETECOPYCTORS(PCR)               /* Remove default functions          */\
+    PCR(void);                         /* Constructor prototype             */\
+    ~PCR(void) noexcept(false);        /* Destructor prototype              */\
+    PCV                                /* Any extra variables? (no comma!)  */
 /* -- Collector footer ----------------------------------------------------- */
 #define COLLECTFTR(PCR) } *c ## PCR = nullptr; /* Pointer to static class    */
 /* -- Build a collector class body (no comma) with custom derived classes -- */
@@ -41,30 +40,30 @@ using namespace IfLog;                 // Using log namespace
                           PCV,         /* Extra body (no commas allowed)    */\
                           ...)         /* User specified collector body     */\
   COLLECTHDR(PCR,SCR,CLHelper,         /* Insert standard header            */\
-    PCI,PCV,## __VA_ARGS__);           /*   with body and custom derives    */\
-  COLLECTFTR(PCR);                     /* Insert standard footer             */
+    PCI,PCV,## __VA_ARGS__)            /*   with body and custom derives    */\
+  COLLECTFTR(PCR)                      /* Insert standard footer             */
 /* -- Build a collector class body with a fully custom body ---------------- */
 #define BEGIN_COLLECTOREX2(PCR,        /* The collector type                */\
                            SCR,        /* The member type                   */\
                            PCI,        /* CLHelperSafe or CLHelperUnsafe    */\
                            ...)        /* User specified collector body     */\
-  COLLECTHDR(PCR,SCR,CLHelper,PCI,);   /* Begin standard header             */\
-  __VA_ARGS__;                         /* Insert user collector body        */\
-  COLLECTFTR(PCR);                     /* Insert standard footer             */
+  COLLECTHDR(PCR,SCR,CLHelper,PCI,)    /* Begin standard header             */\
+  __VA_ARGS__                          /* Insert user collector body        */\
+  COLLECTFTR(PCR)                      /* Insert standard footer             */
 /* -- Build a collector class body with no special parameters -------------- */
-#define BEGIN_COLLECTOR(PCR,SCR,PCI) BEGIN_COLLECTOREX(PCR,SCR,PCI,,);
+#define BEGIN_COLLECTOR(PCR,SCR,PCI) BEGIN_COLLECTOREX(PCR,SCR,PCI,,)
 /* -- Thread safe collector with user-defined variables or classes --------- */
 #define BEGIN_ASYNCCOLLECTOREX(PCR,SCR,CLH,PCV,...) \
   COLLECTHDR(PCR,SCR,CLHelperAsync,CLH,PCV,## __VA_ARGS__) \
-  COLLECTFTR(PCR);
+  COLLECTFTR(PCR)
 /* -- Thread safe collector with no user-defined variables or classes ------ */
 #define BEGIN_ASYNCCOLLECTOR(PCR,SCR,CLH) BEGIN_ASYNCCOLLECTOREX(PCR,SCR,CLH,,)
 /* -- Tailing collector class macro with init and deinit calls ------------- */
 #define END_COLLECTOREX2(PCR,CFI,CFD,...) \
   PCR::PCR(void) : __VA_ARGS__ { IHInitialise(); CFI; } \
-  DTORHELPER(PCR::~PCR, if(IHNotDeInitialise()) return; CFD);
+  DTORHELPER(PCR::~PCR, if(IHNotDeInitialise()) return; CFD)
 #define END_COLLECTOREX(PCR,CFI,CFD,...) \
-  END_COLLECTOREX2(PCR,CFI,CFD,CLHelper{ STR(PCR) } __VA_ARGS__);
+  END_COLLECTOREX2(PCR,CFI,CFD,CLHelper{ STR(PCR) } __VA_ARGS__)
 /* -- Tailing collector class macro with init and deinit calls ------------- */
 #define END_ASYNCCOLLECTOREX2(PCR,PCE,CFI,CFD,...) \
   END_COLLECTOREX2(PCR,CFI,CFD,\
@@ -147,14 +146,14 @@ class IHelper :                        // The Init Helper class
   bool IHNotDeInitialise(void) { return !IHDeInitialise(); }
   /* -- Constructors -------------------------------------------- */ protected:
   explicit IHelper(const string &strIdent) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     IdentConst(strIdent),              // Initialise name
     ctInitialised{seconds{0}},         // Clear initialised time
     ctDeinitialised{cmHiRes.GetTime()} // Set deinitialised time
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Default suppressions ----------------------------------------------- */
-  DELETECOPYCTORS(IHelper);            // Remove copy ctor/assign oper
+  DELETECOPYCTORS(IHelper)             // Remove copy ctor/assign oper
 };/* ----------------------------------------------------------------------- */
 /* == Collector class helper =============================================== */
 /* ######################################################################### */
@@ -212,14 +211,14 @@ class CLHelperBase :
   }
   /* -- Constructor -------------------------------------------------------- */
   explicit CLHelperBase(const string &strT) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     IHelper{ strT },                   // Set initialisation helper name
     stMaximum(                         // Initialise maximum objects
       numeric_limits<size_t>::max())   // " with maximum default objects
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(CLHelperBase);       // Don't need the default constructor
+  DELETECOPYCTORS(CLHelperBase)        // Don't need the default constructor
 };/* ----------------------------------------------------- Collector::End -- */
 template<class MemberType,
          class ListType = list<MemberType*>,
@@ -259,14 +258,14 @@ class CLHelperSafe :
       return this->CLBaseSetLimitUnsafe(stLimit); }
   /* -- Constructor -------------------------------------------------------- */
   explicit CLHelperSafe(const char*const cpT) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     BaseType{ cpT }                    // Initialise base type with name
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Destructor --------------------------------------------------------- */
   ~CLHelperSafe(void) { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(CLHelperSafe);       // Don't need the default constructor
+  DELETECOPYCTORS(CLHelperSafe)        // Don't need the default constructor
   /* -- Return the mutex ------------------------------------------- */ public:
   mutex &CollectorGetMutex(void) { return mMutex; }
 };/* ----------------------------------------------------------------------- */
@@ -296,14 +295,14 @@ class CLHelperUnsafe :                 // Members initially private
     { return this->CLBaseSetLimitUnsafe(stL); }
   /* -- Constructor -------------------------------------------------------- */
   explicit CLHelperUnsafe(const char*const cpT) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     BaseType{ cpT }                    // Initialise base type with name
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Destructor --------------------------------------------------------- */
   ~CLHelperUnsafe(void) { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(CLHelperUnsafe);     // Don't need the default constructor
+  DELETECOPYCTORS(CLHelperUnsafe)      // Don't need the default constructor
 };/* ----------------------------------------------------------------------- */
 template<class MemberType,
          class LockType,
@@ -343,14 +342,14 @@ struct CLHelper :                      // Members initially public
     { return this->CLSetLimit(stLimit); }
    /* -- Constructor ------------------------------------------------------- */
   explicit CLHelper(const char*const cpT) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     LockType{ cpT }                    // Initialise lock type with name
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Destructor --------------------------------------------------------- */
   ~CLHelper(void) { this->CLBaseCheckAndDestroyUnsafe(); }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(CLHelper);           // Don't need the default constructor
+  DELETECOPYCTORS(CLHelper)            // Don't need the default constructor
 }; /* ---------------------------------------------------------------------- */
 /* == MEMBER HELPERS ======================================================= */
 /* ######################################################################### */
@@ -430,15 +429,15 @@ struct ICHelperBase                    // Members initially public
   }
   /* ----------------------------------------------------------------------- */
   explicit ICHelperBase(CollectorType &ctObj, IteratorType &&itObj) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     cParent{ ctObj },
-    cIterator{ std::move(itObj) }
+    cIterator{ StdMove(itObj) }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
   ~ICHelperBase(void) { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(ICHelperBase);       // Remove default functions
+  DELETECOPYCTORS(ICHelperBase)        // Remove default functions
 };/* ----------------------------------------------------------------------- */
 /* == Collector class helper WITH locks ==================================== */
 /* ######################################################################### */
@@ -475,11 +474,11 @@ class ICHelperSafe :                   // Members initially private
       this->ICHelperBaseSwapRegistration(mtObj); }
   /* -- Constructors ------------------------------------------------------- */
   explicit ICHelperSafe(CollectorType &ctRef) :
-    BaseType(ctRef, std::move(ICHelperInit(ctRef))) { }
+    BaseType(ctRef, StdMove(ICHelperInit(ctRef))) { }
   explicit ICHelperSafe(CollectorType &ctRef, MemberType*const mtPtr) :
-    BaseType(ctRef, std::move(ICHelperInit(ctRef, mtPtr))) { }
+    BaseType(ctRef, StdMove(ICHelperInit(ctRef, mtPtr))) { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(ICHelperSafe);       // Remove default functions
+  DELETECOPYCTORS(ICHelperSafe)        // Remove default functions
 };/* ----------------------------------------------------------------------- */
 /* == Collector class helper without locks ================================= */
 /* ######################################################################### */
@@ -509,18 +508,18 @@ class ICHelperUnsafe :                 // Members initially private
     { this->ICHelperBaseSwapRegistration(mtObj); }
   /* -- Constructors without registration ---------------------------------- */
   explicit ICHelperUnsafe(CollectorType &ctRef) :
-    /* -- Initialisation of members ---------------------------------------- */
-    BaseType{ ctRef, std::move(ICHelperInit(ctRef)) }
+    /* -- Initialisers ----------------------------------------------------- */
+    BaseType{ ctRef, StdMove(ICHelperInit(ctRef)) }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor with registration -------------------------------------- */
   explicit ICHelperUnsafe(CollectorType &ctRef, MemberType*const mtPtr) :
-    /* -- Initialisation of members ---------------------------------------- */
-    BaseType{ ctRef, std::move(ICHelperInit(ctRef, mtPtr)) }
+    /* -- Initialisers ----------------------------------------------------- */
+    BaseType{ ctRef, StdMove(ICHelperInit(ctRef, mtPtr)) }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(ICHelperUnsafe);     // Remove default functions
+  DELETECOPYCTORS(ICHelperUnsafe)      // Remove default functions
 };/* ----------------------------------------------------------------------- */
 /* == Collector class ====================================================== */
 /* ######################################################################### */
@@ -548,24 +547,24 @@ struct ICHelper :                      // Members initially public
   ~ICHelper(void) { CollectorUnregister(); }
   /* -- Constructor (move) ------------------------------------------------- */
   explicit ICHelper(ICHelper &&icOther) :
-    /* -- Initialisation of members ---------------------------------------- */
-    LockType{ std::move(icOther) }
+    /* -- Initialisers ----------------------------------------------------- */
+    LockType{ StdMove(icOther) }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor (manual registration) ---------------------------------- */
   explicit ICHelper(CollectorType &ctObj) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     LockType{ ctObj }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor with automatic registration ---------------------------- */
   explicit ICHelper(CollectorType &ctObj, MemberType*const mtPtr) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     LockType{ ctObj, mtPtr }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(ICHelper);           // Remove default functions
+  DELETECOPYCTORS(ICHelper)            // Remove default functions
 };/* ----------------------------------------------------------------------- */
 /* == Lua userdata helper ================================================== */
 /* ######################################################################### */
@@ -593,12 +592,12 @@ class Lockable                         // Members initially private
   explicit Lockable(                   // Initialise with lock (def: false)
     /* -- Parameters ------------------------------------------------------- */
     const bool bState=false            // The user requested lock state
-    ): /* -- Initialisation of members ------------------------------------- */
+    ): /* -- Initialisers -------------------------------------------------- */
     bLocked(bState)                    // Set the initial lock state
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Lockable);           // Remove default functions
+  DELETECOPYCTORS(Lockable)            // Remove default functions
 };/* -- End ---------------------------------------------------------------- */
 };                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

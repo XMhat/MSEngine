@@ -69,11 +69,11 @@ template<class ClockType = CoreClock>struct ClockManager
   double TimePointToClampedDouble(const ClkTimePoint ctpTime) const
     { return Maximum(TimePointToDouble(ctpTime), 0); }
   /* -- Convert local time to string --------------------------------------- */
-  const string FormatTime(const char*const cpFormat = cpTimeFormat) const
-    { return FormatTimeTT(GetTimeS(), cpFormat); }
+  const string FormatTime(const char*const cpFormat = cpTimeFormat)
+    const { return FormatTimeTT(GetTimeS(), cpFormat); }
   /* -- Convert universal time to string ----------------------------------- */
-  const string FormatTimeUTC(const char*const cpFormat = cpTimeFormat) const
-    { return FormatTimeTTUTC(GetTimeS(), cpFormat); }
+  const string FormatTimeUTC(const char*const cpFormat =
+    cpTimeFormat) const { return FormatTimeTTUTC(GetTimeS(), cpFormat); }
   /* -- Convert time to short duration ------------------------------------- */
   const string ToDurationString(unsigned int uiPrecision = 6) const
     { return ToShortDuration(GetTimeDouble(), uiPrecision); }
@@ -87,9 +87,10 @@ template<class ClockType = CoreClock>struct ClockManager
       { return ToDurationRel(0, uiCompMax); }
   /* -- Unused constructor ------------------------------------------------- */
   ClockManager(void) { }
-};/* -- Global functors ---------------------------------------------------- */
-static const ClockManager<system_clock> cmSys;// System time clock functor
-static const ClockManager<CoreClock> cmHiRes; // High resolution clock functor
+};/* -- Global functors / System time clock functor ------------------------ */
+static const ClockManager<system_clock> cmSys;
+/* -- High resolution clock functor ---------------------------------------- */
+static const ClockManager<CoreClock> cmHiRes;
 /* -- Interval helper ------------------------------------------------------ */
 template<class CoreClockType = CoreClock,
          class ClockManagerType = ClockManager<CoreClockType>>
@@ -122,12 +123,15 @@ class ClockInterval :                  // Members initially private
   /* -- Reset trigger ------------------------------------------------------ */
   void CIReset(void) { ctpNext = this->GetTime() + cdLimit; }
   /* -- Returns if time not elapsed yet ------------------------------------ */
-  bool CINoTrigger(const ClkTimePoint tpT) const { return tpT < ctpNext; }
-  bool CINoTrigger(void) const { return CINoTrigger(this->GetTime()); }
+  bool CINoTrigger(const ClkTimePoint tpT) const
+    { return tpT < ctpNext; }
+  bool CINoTrigger(void) const
+    { return CINoTrigger(this->GetTime()); }
   /* -- Add time to next limit --------------------------------------------- */
   void CIAccumulate(void) { ctpNext += cdLimit; }
   /* -- Return time left --------------------------------------------------- */
-  const ClkDuration CIDelta(void) const { return this->GetTime() - ctpNext; }
+  const ClkDuration CIDelta(void) const
+    { return this->GetTime() - ctpNext; }
   /* -- Sync now ----------------------------------------------------------- */
   void CISync(void) { ctpNext = this->GetTime(); }
   /* -- Update limit and time now ------------------------------------------ */
@@ -136,14 +140,14 @@ class ClockInterval :                  // Members initially private
     { CISetLimit(duration_cast<ClkDuration>(duration<double>(fdL))); }
   /* -- Constructor -------------------------------------------------------- */
   ClockInterval(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     cdLimit{ seconds{ 0 } },           // Set limit to instant
     ctpNext{ this->GetTime() }         // Will trigger next check
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor (set limit by lvalue) ---------------------------------- */
   explicit ClockInterval(const ClkDuration duL) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     cdLimit{ duL },                    // Copy limit from other class
     ctpNext{ this->GetTime() }         // Will trigger next check
     /* -- No code ---------------------------------------------------------- */
@@ -181,10 +185,11 @@ class ClockChrono :                    // Members intially private
   /* -- Reset the start time ----------------------------------------------- */
   void CCReset(void) { ctpStart = this->ClockGetTime(); }
   /* -- Reset counter and return uptime as a double ------------------------ */
-  double CCResetDeltaToDouble(void) { CCReset(); return CCDeltaToDouble(); }
+  double CCResetDeltaToDouble(void)
+    { CCReset(); return CCDeltaToDouble(); }
   /* -- Constructor. Just initialise current time -------------------------- */
-  ClockChrono(void) :                  // No parameters
-    /* -- Initialisation of members ---------------------------------------- */
+  ClockChrono(void) :        // No parameters
+    /* -- Initialisers ----------------------------------------------------- */
     ctpStart{ this->GetTime() }        // Set start time
     /* -- No code ---------------------------------------------------------- */
     { }

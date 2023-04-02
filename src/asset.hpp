@@ -82,7 +82,7 @@ BEGIN_MEMBERCLASS(Assets, Asset, ICHelperUnsafe),
   void SwapAsset(Asset &aOther)
   { // Swap settings flags
     FlagSwap(aOther);
-    SwapMemory(std::move(aOther));
+    SwapMemory(StdMove(aOther));
     LockSwap(aOther);
     IdentSwap(aOther);
     CollectorSwapRegistration(aOther);
@@ -128,7 +128,7 @@ BEGIN_MEMBERCLASS(Assets, Asset, ICHelperUnsafe),
     CheckFunction(lS, 5, "ProgressFunc");
     CheckFunction(lS, 6, "SuccessFunc");
     // Init the specified string as an array asynchronously
-    AsyncInitArray(lS, strName, "assetstring", std::move(mData));
+    AsyncInitArray(lS, strName, "assetstring", StdMove(mData));
   }
   /* -- Load data from array asynchronously -------------------------------- */
   void InitAsyncArray(lua_State*const lS)
@@ -142,7 +142,7 @@ BEGIN_MEMBERCLASS(Assets, Asset, ICHelperUnsafe),
     CheckFunction(lS, 5, "ProgressFunc");
     CheckFunction(lS, 6, "SuccessFunc");
     // Init the specified string as an array asynchronously
-    AsyncInitArray(lS, strName, "assetdata", std::move(aData));
+    AsyncInitArray(lS, strName, "assetdata", StdMove(aData));
   }
   /* -- Load asset from file asynchronously -------------------------------- */
   void InitAsyncFile(lua_State*const lS)
@@ -206,7 +206,7 @@ BEGIN_MEMBERCLASS(Assets, Asset, ICHelperUnsafe),
   { // Set load flags
     FlagReset(lfS);
     // Set filename and flags
-    SyncInitArray(strN, std::move(aSrc));
+    SyncInitArray(strN, StdMove(aSrc));
   }
   /* -- Move assignment ---------------------------------------------------- */
   Asset& operator=(Asset &&aOther) { SwapAsset(aOther); return *this; }
@@ -214,7 +214,7 @@ BEGIN_MEMBERCLASS(Assets, Asset, ICHelperUnsafe),
   Asset(Asset &&aOther) : Asset() { SwapAsset(aOther); }
   /* -- For loading via LUA ------------------------------------------------ */
   Asset(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperAsset{ *cAssets },         // Initially unregistered
     IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     AsyncLoader<Asset>{ this,          // Initialise async class with this
@@ -225,7 +225,7 @@ BEGIN_MEMBERCLASS(Assets, Asset, ICHelperUnsafe),
   /* -- Destructor --------------------------------------------------------- */
   ~Asset(void) { AsyncCancel(); }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Asset);              // Disable copy constructor and operator
+  DELETECOPYCTORS(Asset)               // Disable copy constructor and operator
 };/* ======================================================================= */
 /* -- End-of-collector ---------------------------------------------- End -- */
 END_ASYNCCOLLECTOR(Assets, Asset, ASSET, bOverride(false));
@@ -240,15 +240,15 @@ struct AssetList :
   /* -- Return files in directories ---------------------------------------- */
   AssetList(const string &strDir, const bool bOnlyDirs) :
     /* -- Initialisers ----------------------------------------------------- */
-    StrSet{ bOnlyDirs ? std::move(Dir{ strDir }.DirsToSet()) :
-                        std::move(Dir{ strDir }.FilesToSet()) }
+    StrSet{ bOnlyDirs ? StdMove(Dir{ strDir }.DirsToSet()) :
+                        StdMove(Dir{ strDir }.FilesToSet()) }
     /* -- Add archive files to list ---------------------------------------- */
-    { ArchiveEnumerate(strDir, strBlank, bOnlyDirs, *this); }
+    { ArchiveEnumerate(strDir, cCommon->Blank(), bOnlyDirs, *this); }
   /* -- Return files in directories with extension matching ---------------- */
   AssetList(const string &strDir, const string &strExt, const bool bOnlyDirs) :
     /* -- Initialisers ----------------------------------------------------- */
-    StrSet{ bOnlyDirs ? std::move(Dir{ strDir, strExt }.DirsToSet()) :
-                        std::move(Dir{ strDir, strExt }.FilesToSet()) }
+    StrSet{ bOnlyDirs ? StdMove(Dir{ strDir, strExt }.DirsToSet()) :
+                        StdMove(Dir{ strDir, strExt }.FilesToSet()) }
     /* -- Add archive files to list ---------------------------------------- */
     { ArchiveEnumerate(strDir, strExt, bOnlyDirs, *this); }
 };/* ----------------------------------------------------------------------- */

@@ -11,19 +11,19 @@ namespace IfPalette {                  // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfFboBase;             // Using fbobase namespace
 using namespace IfImage;               // Using image namespace
-/* -- Typedefs ------------------------------------------------------------- */
-typedef array<FboColour, 256> PalData; // A palette of 256 colours
 /* ------------------------------------------------------------------------- */
-struct Pal :                          // Members initially public
+typedef array<FboColour, 256> PalData; // Palette data
+/* ------------------------------------------------------------------------- */
+struct Pal :                           // Members initially public
   /* -- Base classes ------------------------------------------------------- */
   public PalData                       // Palette data class
-{ /* -- Get PalData -- ----------------------------------------------------- */
+{ /* -- Get PalData -------------------------------------------------------- */
   const FboColour &GetSlotConst(const size_t stSlot) const
     { return (*this)[stSlot]; }
   FboColour &GetSlot(const size_t stSlot) { return (*this)[stSlot]; }
   /* -- Commit palette ----------------------------------------------------- */
   void Commit(void) const
-    { cFboBase->sh2D8Pal.UpdatePalette(sizeof(PalData),
+    { cFboBase->sh2D8Pal.UpdatePalette(size(),
         reinterpret_cast<const GLfloat*>(data())); }
   /* -- Set palette entry -------------------------------------------------- */
   void SetRGBA(const size_t stPos, const GLfloat fRed,
@@ -74,21 +74,46 @@ struct Pal :                          // Members initially public
     { GetSlot(stPos).SetColourAlpha(fAlpha); }
   void SetAlphaInt(const size_t stPos, const unsigned int uiAlpha)
     { GetSlot(stPos).SetColourAlphaInt(uiAlpha); }
-  /* -- Shift palette entries backwards ------------------------------------ */
-  void ShiftL(const size_t stAmount)
-    { rotate(begin(), begin() + stAmount, end()); }
-  /* -- Shift palette entries forwards ------------------------------------- */
-  void ShiftR(const size_t stAmount)
-    { rotate(rbegin(), rbegin() + stAmount, rend()); }
+  /* -- Size as signed size_t --------------------------------------------- */
+  ssize_t Size(void) const { return static_cast<ssize_t>(size()); }
+  ssize_t SizeM1(void) const { return Size()-1; }
+  ssize_t SizeN(void) const { return -Size(); }
+  /* -- Shift limited palette entries backwards ---------------------------- */
+  void ShiftBck(const ssize_t stBegin, const ssize_t stEnd,
+    const ssize_t stRot)
+  { // Get starting position and rotate backwards
+    const auto itStart{ rbegin() + (SizeM1() - stEnd) };
+    rotate(itStart, itStart + stRot, rbegin() + (Size() - stBegin));
+  }
+  /* -- Shift limited palette entries forwards ----------------------------- */
+  void ShiftFwd(const ssize_t stBegin, const ssize_t stEnd,
+    const ssize_t stRot)
+  { // Get starting position and rotate forwards
+    const auto itStart{ begin() + stBegin };
+    rotate(itStart, itStart + stRot, begin() + stEnd + 1);
+  }
   /* -- Shift palette entries backwards or forwards ------------------------ */
-  void Shift(const ssize_t stAmount)
-    { if(stAmount < 0) ShiftL(static_cast<size_t>(-stAmount));
-      else if(stAmount > 0) ShiftR(static_cast<size_t>(stAmount)); }
+  void Shift(const ssize_t stBegin, const ssize_t stLimit,
+    const ssize_t stRot)
+  { // Shift backwards?
+    if(stRot < 0) ShiftBck(stBegin, stLimit, -stRot);
+    // Shift forwards?
+    else if(stRot > 0) ShiftFwd(stBegin, stLimit, stRot);
+  }
+  /* -- Copy a from other palette ------------------------------------------ */
+  void Copy(const size_t stDstPos, const PalData &pdSrc, const size_t stSrcPos,
+    const size_t stSrcCount)
+  { // Get source data position and then copy it to output
+    const auto itBegin{ pdSrc.cbegin() + stSrcPos };
+    StdCopy(par_unseq, itBegin, itBegin + stSrcCount, begin() + stDstPos);
+  }
   /* -- Fill with specified value ------------------------------------------ */
   void Fill(const size_t stIndex, const size_t stCount,
     const GLfloat fRed=0.0f, const GLfloat fGreen=0.0f,
     const GLfloat fBlue=0.0f, const GLfloat fAlpha=0.0f)
-  { MYFILL(par_unseq, begin()+stIndex, begin()+stIndex+stCount,
+  { // Get start and fill in the array
+    const auto itStart{ begin() + stIndex };
+    StdFill(par_unseq, itStart, itStart + stCount,
       FboColour{ fRed, fGreen, fBlue, fAlpha }); }
   /* ----------------------------------------------------------------------- */
   Pal(void) :                          // No parameters
@@ -103,7 +128,7 @@ struct Pal :                          // Members initially public
     /* -- Code ------------------------------------------------------------- */
     { }                                // Do nothing else
 };/* ----------------------------------------------------------------------- */
-BEGIN_COLLECTOREX(Palettes, Palette, CLHelperUnsafe, const Pal palDefault);
+BEGIN_COLLECTOREX(Palettes, Palette, CLHelperUnsafe, const Pal palDefault;)
 /* ------------------------------------------------------------------------- */
 BEGIN_MEMBERCLASS(Palettes, Palette, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
@@ -124,12 +149,12 @@ BEGIN_MEMBERCLASS(Palettes, Palette, ICHelperUnsafe),
       XC("Image does not have a palette!",
          "Palette", strName, "Image", imOther.IdentGet());
     // Must have two images
-    if(imOther.size() != 2)
+    if(imOther.GetSlotCount() != 2)
       XC("Image must must have two slots!",
          "Palette", strName, "Image", imOther.IdentGet(),
-         "Slots", imOther.size());
+         "Slots",   imOther.GetSlotCount());
     // Get last item
-    const ImageSlot &isPalette = imOther.back();
+    const ImageSlot &isPalette = imOther.GetSlotsConst().back();
     // Dimensions must be valid
     if(isPalette.DimIsNotWidthSet() || isPalette.DimGetWidth() > size())
       XC("Image palette has invalid count!",
@@ -138,8 +163,8 @@ BEGIN_MEMBERCLASS(Palettes, Palette, ICHelperUnsafe),
     // Make sure palette entries are the same depth
     if(isPalette.DimGetHeight() != BY_RGB)
       XC("Image palette has invalid byte count!",
-         "Palette", strName,                 "Image",    imOther.IdentGet(),
-         "Actual", isPalette.DimGetHeight(), "Required", BY_RGB);
+         "Palette", strName,                  "Image",    imOther.IdentGet(),
+         "Actual",  isPalette.DimGetHeight(), "Required", BY_RGB);
     // Step through our palette and set values to zero
     for(size_t stIndex = 0; stIndex < isPalette.DimGetWidth(); ++stIndex)
     { // Calculate position and set the new value
@@ -154,7 +179,7 @@ BEGIN_MEMBERCLASS(Palettes, Palette, ICHelperUnsafe),
   }
   /* -- Default constructor ------------------------------------------------ */
   Palette(void) :                      // No parameters
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperPalette{*cPalettes,this},  // Register the object in collector
     IdentCSlave{ cParent.CtrNext() }   // Initialise identification number
     /* -- Code  ------------------------------------------------------------ */
@@ -241,6 +266,6 @@ END_COLLECTOREX(Palettes,,,,palDefault{{{ // Init default palette to VGA colour
 {  45,  65,  65 }, {  45,  61,  65 }, {  45,  53,  65 }, {  45,  49,  65 },
 {   0,   0,   0 }, {   0,   0,   0 }, {   0,   0,   0 }, {   0,   0,   0 },
 {   0,   0,   0 }, {   0,   0,   0 }, {   0,   0,   0 }, {   0,   0,   0 }
-}}});/* -------------------------------------------------------------------- */
+}}})/* --------------------------------------------------------------------- */
 };                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

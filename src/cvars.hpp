@@ -16,9 +16,12 @@ using namespace IfLua;                 // Using lua namespace
 /* == CVars class ========================================================== */
 static class CVars final               // Start of vars class
 { /* ----------------------------------------------------------------------- */
-#define CVAR_CONFIG_SIZE_MINIMUM       2
-#define CVAR_CONFIG_SIZE_MAXIMUM       1048576
-#define CVAR_CONFIG_MAX_LEVEL          10
+  constexpr static const size_t        // Some internal settings
+    stCVarConfigSizeMinimum = 2,       // Minimum config file size
+    stCVarConfigSizeMaximum = 1048576, // Maximum config file size
+    stCVarConfigMaxLevel    = 10,      // Maximum recursive level
+    stCVarMinLength         = 5,       // Minimum length of a cvar name
+    stCVarMaxLength         = 255;     // Maximum length of a cvar name
   /* --------------------------------------------------------------- */ public:
   enum DefaultsCommand                 // Flags when loaded from DB
   { /* -- (Note: Don't ever change these around) --------------------------- */
@@ -49,6 +52,7 @@ static class CVars final               // Start of vars class
   typedef array<const ItemMapPair,2> CVarList;   // CVarList type
   typedef CVarList::iterator         CVarListIt; // CVarList type
   const   CVarList                   impCVars;   // All variables lists
+  const   ItemStaticList            &cvEngList;  // Reference to default cvars
   /* ----------------------------------------------------------------------- */
   void UnregisterAllVars(void)
   { // Log result then dereg core variables, they don't need testing
@@ -58,7 +62,7 @@ static class CVars final               // Start of vars class
     { // If the variable falls into the current gui mode then unregister it
       if(cSystem->GetGuiMode() >= cvaR.guimMin &&
          cSystem->GetGuiMode() <= cvaR.guimMax)
-        UnregisterVarNoLog(cvaR.tcsVar.strN);
+        UnregisterVarNoLog(cvaR.strVar);
     } // if everything is unregistered? (This should always be true!)
     if(imActive.empty())
     { // Log that we are done and return
@@ -116,12 +120,12 @@ static class CVars final               // Start of vars class
   bool IsVarStrEmpty(const string &strVar) { return GetStr(strVar).empty(); }
   /* ----------------------------------------------------------------------- */
   template<typename T>const T GetInternal(const CVarEnums cvId)
-    { return std::move(ToNumber<T>(GetStrInternal(cvId))); }
+    { return StdMove(ToNumber<T>(GetStrInternal(cvId))); }
   /* -- Check that the variable name is valid ------------------------------ */
   bool IsValidVariableName(const string &strVar)
   { // Check minimum name length
-    if(strVar.length() < CVAR_MIN_LENGTH ||
-       strVar.length() > CVAR_MAX_LENGTH) return false;
+    if(strVar.length() < stCVarMinLength || strVar.length() > stCVarMaxLength)
+      return false;
     // Get address of string. The first character must be a letter
     const unsigned char *ucpPtr =
       reinterpret_cast<const unsigned char*>(strVar.c_str());
@@ -152,8 +156,8 @@ static class CVars final               // Start of vars class
     if(!IsValidVariableName(strVar))
       XC("CVar name is not valid!",
          "Variable", strVar,
-         "Minimum",  CVAR_MIN_LENGTH,
-         "Maximum",  CVAR_MAX_LENGTH);
+         "Minimum",  stCVarMinLength,
+         "Maximum",  stCVarMaxLength);
   }
   /* ----------------------------------------------------------------------- */
   bool IsTypeValidInFlags(const CVarFlagsConst &cFlags)
@@ -209,7 +213,7 @@ static class CVars final               // Start of vars class
     if(ciItem.FlagIsSet(COMMIT) ||
        ciItem.FlagIsSet(OSAVEFORCE) ||
        ciItem.FlagIsSet(LOADED))
-      imInactive.emplace(std::move(*itItem));
+      imInactive.emplace(StdMove(*itItem));
     // Erase variable
     imActive.erase(itItem);
   }
@@ -293,8 +297,8 @@ static class CVars final               // Start of vars class
   bool ParseBuffer(const string &strBuffer, const CVarFlagsConst &cF,
     const unsigned int uiLevel=0)
   { // Bail if size not acceptable
-    if(strBuffer.length() <= CVAR_CONFIG_SIZE_MINIMUM ||
-       strBuffer.length() > CVAR_CONFIG_SIZE_MAXIMUM)
+    if(strBuffer.length() <= stCVarConfigSizeMinimum||
+       strBuffer.length() > stCVarConfigSizeMaximum)
          return false;
     // Split characters and if nothing found?
     const string strSplit{ GetTextFormat(strBuffer) };
@@ -322,9 +326,9 @@ static class CVars final               // Start of vars class
         case '+':
         { // Get new level and if the limit is exceeded then throw error
           const unsigned int uiNewLevel = uiLevel + 1;
-          if(uiNewLevel >= CVAR_CONFIG_MAX_LEVEL)
+          if(uiNewLevel >= stCVarConfigMaxLevel)
             XC("CVar include nest level too deep!",
-               "File", vI.second, "Limit", CVAR_CONFIG_MAX_LEVEL);
+               "File", vI.second, "Limit", stCVarConfigMaxLevel);
           // Parse the buffer and strip spaces
           ParseBuffer(AssetExtract(Trim(vI.first.substr(1), ' ')).ToString(),
             cF, uiNewLevel);
@@ -382,7 +386,7 @@ static class CVars final               // Start of vars class
       } // Return iterator
       return liIter;
     } // Persistant var exists? Move into cvar list, remove persist & get data.
-    const ItemMapIt liIter{ imActive.emplace(std::move(*cvarPendItem)).first };
+    const ItemMapIt liIter{ imActive.emplace(StdMove(*cvarPendItem)).first };
     imInactive.erase(cvarPendItem);
     // Capture exceptions as we need to remove the variable if the value failed
     // to set for a multitude of reasons.
@@ -425,7 +429,7 @@ static class CVars final               // Start of vars class
   { // Overwrite engine variables with defaults
     cLog->LogDebugSafe("CVars forcing default engine settings...");
     cSql->Begin();
-    for(const ItemStatic &cvaR : cvEngList) cSql->CVarPurge(cvaR.tcsVar.strN);
+    for(const ItemStatic &cvaR : cvEngList) cSql->CVarPurge(cvaR.strVar);
     cSql->End();
     cLog->LogWarningSafe("CVars finished setting defaults.");
   }
@@ -488,7 +492,7 @@ static class CVars final               // Start of vars class
       avInternal[stIndex] =
         (cSystem->GetGuiMode() >= cvaR.guimMin &&
          cSystem->GetGuiMode() <= cvaR.guimMax) ?
-           DoRegisterVar(cvaR.tcsVar.strN, cvaR.tcsVar.strV, cvaR.cbTrigger,
+           DoRegisterVar(cvaR.strVar, cvaR.strValue, cvaR.cbTrigger,
              cvaR.cFlags, CSC_NOTHING) :
            imActive.end();
     } // Finished
@@ -671,11 +675,11 @@ static class CVars final               // Start of vars class
     return ACCEPT;
   }
   /* -- Return last error from callback (also moves it) -------------------- */
-  const string GetCBError(void) { return std::move(strCBError); }
+  const string GetCBError(void) { return StdMove(strCBError); }
   /* ----------------------------------------------------------------------- */
   template<typename T>T GetInternalSafe(const CVarEnums cvId)
     { const LockGuard lgCVarsSync{ mMutex };
-      return std::move(GetInternal<T>(cvId)); }
+      return StdMove(GetInternal<T>(cvId)); }
   /* ----------------------------------------------------------------------- */
   const string GetInitialVarSafe(const string &strVar)
     { const LockGuard lgCVarsSync{ mMutex };
@@ -720,10 +724,10 @@ static class CVars final               // Start of vars class
     // Total number of commits
     SafeSizeT stCommitted{0};
     // Enumerate the initial list and cvar list asyncronously
-    MYFOREACH(par_unseq, impCVars.cbegin(), impCVars.cend(),
+    StdForEach(par_unseq, impCVars.cbegin(), impCVars.cend(),
       [&stCommitted](const ItemMapPair &impStruct)
       { // Enumerate the cvars in each list asynchronously
-        MYFOREACH(par_unseq, impStruct.imList.begin(), impStruct.imList.end(),
+        StdForEach(par_unseq, impStruct.imList.begin(), impStruct.imList.end(),
             [&stCommitted](auto &imPair)
             { if(imPair.second.MarkEncodedVarAsCommit()) ++stCommitted; });
       });
@@ -743,14 +747,14 @@ static class CVars final               // Start of vars class
     // written by multiple threads.
     SafeSizeT stCommitTotal{0}, stPurgeTotal{0};
     // Enumerate the lists asyncronously
-    MYFOREACH(par_unseq, impCVars.cbegin(), impCVars.cend(),
+    StdForEach(par_unseq, impCVars.cbegin(), impCVars.cend(),
       [&stCommitTotal, &stPurgeTotal](const ItemMapPair &impData)
     { // Total number of commits attempted which may need to be read and
       // written by multiple threads.
       SafeSizeT stCommit{0}, stPurge{0};
       // Iterate through the initial list and try to commit the cvar. We might
       // as well try to do this as quick as possible
-      MYFOREACH(par_unseq,
+      StdForEach(par_unseq,
         impData.imList.begin(), impData.imList.end(),
           [&stCommit, &stPurge](auto &imPair)
             { imPair.second.Save(stCommit, stPurge); });
@@ -843,7 +847,7 @@ static class CVars final               // Start of vars class
       // For each record returned. Set each keypair returned, these are user
       // variables. We're using multithreading for this to accellerate
       // decryption and decompression routines.
-      MYFOREACH(par_unseq, vVars.cbegin(), vVars.cend(),
+      StdForEach(par_unseq, vVars.cbegin(), vVars.cend(),
         [this, &stLoaded](const Sql::Records &smmPairs)
       { // Get key and goto next record if not found, else set the key string
         const Sql::RecordsIt iRecKey{ smmPairs.find("K") };
@@ -941,23 +945,24 @@ static class CVars final               // Start of vars class
     const string strFN{ Append(strC, "." CFG_EXTENSION) };
     if(!LoadFromFile(strFN, PSYSTEM|SAPPCFG)) return DENY;
     // We are manually updating the value with the correct filename
-    strV = std::move(strFN);
+    strV = StdMove(strFN);
     return ACCEPT_HANDLED;
   }
   /* -- Default constructor ------------------------------------------------ */
-  CVars(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+  explicit CVars(const ItemStaticList &cvDefEngList) :
+    /* -- Initialisers ----------------------------------------------------- */
     stMaxInactiveCount(MAX_CVAR),      // Initially set to max cvar count
     stMaxActiveCount(MAX_CVAR),        // Initially set to max cvar count
     impCVars{{                         // Set combined lists
       { imInactive, "unregistered" },  // Inactive cvars list
-      { imActive,   "registered" } }}  // Active cvars list
+      { imActive,   "registered" } }}, // Active cvars list
+    cvEngList{ cvDefEngList }          // Default engine cvars list
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DTORHELPER(~CVars, Save(); UnregisterAllVars());
+  DTORHELPER(~CVars, Save(); UnregisterAllVars())
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(CVars);              // Disable copy constructor and operator
+  DELETECOPYCTORS(CVars)               // Disable copy constructor and operator
   /* ----------------------------------------------------------------------- */
 } *cCVars = nullptr;                   // Pointer to static class
 /* == Cvar lua callback ==================================================== */

@@ -13,7 +13,6 @@
 namespace IfMemory {                   // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfUtil;                // Using util namespace
-using namespace IfError;               // Using error namespace
 using namespace IfUtf;                 // Using utf namespace
 /* == Read only data class ================================================= */
 class DataConst                        // Start of const Data Block Class
@@ -156,28 +155,28 @@ class DataConst                        // Start of const Data Block Class
     { return IntWillOverflow<Type>(Size()); }
   /* -- Init from string (does not copy) ----------------------------------- */
   explicit DataConst(const string &strSrc) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     DataConst{ strSrc.length(),        // Copy string size and pointer over
       strSrc.data() }                  // from specified string
     /* -- Copy pointer and size over from string --------------------------- */
     { }
   /* -- Assignment constructor (rvalue) ------------------------------------ */
   explicit DataConst(DataConst &&dSrc) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     cpPtr(dSrc.Ptr<char>()),           // Copy pointer
     stSize(dSrc.Size())                // Copy size
     /* -- Code to clear other DataConst ------------------------------------ */
     { dSrc.ClearParams(); }
   /* -- Uninitialised constructor -- pointer ------------------------------- */
   DataConst(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     cpPtr(nullptr),                       // Start with null pointer
     stSize(0)                          // No size allocated yet
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Inherit an already allocated pointer ------------------------------- */
   DataConst(const size_t stNSize, const void*const vpSrc) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     cpPtr(ToNonConstCast               // Initialise memory
       <char*>(vpSrc)),                 // To specified pointer
     stSize(stNSize)                    // Set pointer size
@@ -186,7 +185,7 @@ class DataConst                        // Start of const Data Block Class
         XC("Null pointer with non-zero memory size requested!",
            "Size", Size()); }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(DataConst);          // Do not need defaults
+  DELETECOPYCTORS(DataConst)           // Do not need defaults
 };/* ----------------------------------------------------------------------- */
 /* == Read and write data class ============================================ */
 class Data :
@@ -201,7 +200,7 @@ class Data :
   { // Get address to start from
     char*const cpStart = DoRead(stPos);
     // Do the fill. This is supposedly faster than memset
-    fill(reinterpret_cast<Type*const>(cpStart),
+    StdFill(par_unseq, reinterpret_cast<Type*const>(cpStart),
       reinterpret_cast<Type*const>(cpStart + stBytes), tVal);
   }
   /* -- Fill with specified character at specifed position --------- */ public:
@@ -306,26 +305,26 @@ class Data :
   }
   /* -- Assignment constructor (rvalue) ------------------------------------ */
   Data(Data &&dSrc) :
-    /* -- Initialisation of members ---------------------------------------- */
-    DataConst{ std::move(dSrc) }            // Move other data object
+    /* -- Initialisers ----------------------------------------------------- */
+    DataConst{ StdMove(dSrc) }            // Move other data object
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Take ownership of pointer (rvalue) --------------------------------- */
   explicit Data(DataConst &&dcSrc) :
-    /* -- Initialisation of members ---------------------------------------- */
-    DataConst{ std::move(dcSrc) }           // Move other data const object
+    /* -- Initialisers ----------------------------------------------------- */
+    DataConst{ StdMove(dcSrc) }           // Move other data const object
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Inherit an already allocated pointer ------------------------------- */
   Data(const size_t stNSize, void*const vpSrc) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     DataConst{ stNSize, vpSrc }        // Assign pointer and pointer size
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Uninitialised constructor -- pointer ------------------------------- */
   Data(void) { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Data);               // Do not need defaults
+  DELETECOPYCTORS(Data)                // Do not need defaults
 };/* ----------------------------------------------------------------------- */
 /* == Read, write and allocation data class ================================ */
 class Memory :
@@ -340,7 +339,7 @@ class Memory :
     else XC("Re-alloc failed!", "OldSize", Size(), "NewSize", stNSize);
   }
   /* -- Swap memory with another memory block ---------------------- */ public:
-  void SwapMemory(Memory &&mOther) { SwapDataConst(std::move(mOther)); }
+  void SwapMemory(Memory &&mOther) { SwapDataConst(StdMove(mOther)); }
   /* -- Resize and preserve allocated memory ------------------------------- */
   void Resize(const size_t stNSize)
     { if(stNSize != Size()) DoResize(stNSize); }
@@ -441,7 +440,7 @@ class Memory :
     for(size_t stIndex = 0; stIndex < stBytes; ++stIndex)
       mDst.DoWrite(Size() - stIndex - 1, DoRead(stIndex), 1);
     // Assign new memory block
-    SwapMemory(std::move(mDst));
+    SwapMemory(StdMove(mDst));
   }
   /* -- Reverse the specified number of bytes------------------------------- */
   void Reverse(const size_t stBytes) { Reverse(0, stBytes); }
@@ -475,41 +474,41 @@ class Memory :
   void InitSafe(const size_t stS) { InitBlank(stS); Fill(); }
   /* -- Assignment operator (rvalue) ------------------------------------ -- */
   Memory &operator=(Memory &&mbSrc)
-    { SwapMemory(std::move(mbSrc)); return *this; }
+    { SwapMemory(StdMove(mbSrc)); return *this; }
   /* -- Assignment constructor (rvalue) ------------------------------------ */
   Memory(Memory &&mbSrc) :
-    /* -- Initialisation of members ---------------------------------------- */
-    Data(std::move(mbSrc))             // Move other memory object
+    /* -- Initialisers ----------------------------------------------------- */
+    Data(StdMove(mbSrc))             // Move other memory object
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Take ownership of pointer (must originally be malloc'd) ------------ */
   explicit Memory(Data &&dSrc) :
-    /* -- Initialisation of members ---------------------------------------- */
-    Data(std::move(dSrc))              // Move other data object
+    /* -- Initialisers ----------------------------------------------------- */
+    Data(StdMove(dSrc))              // Move other data object
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Take ownership of pointer (must originally be malloc'd) ------------ */
   explicit Memory(DataConst &&dcSrc) :
-    /* -- Initialisation of members ---------------------------------------- */
-    Data(std::move(dcSrc))             // Move other read only memory object
+    /* -- Initialisers ----------------------------------------------------- */
+    Data(StdMove(dcSrc))             // Move other read only memory object
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Init from string --------------------------------------------------- */
   explicit Memory(const string &strSrc) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     Memory{ strSrc.length(),           // Allocate memory and copy the string
       strSrc.data() }                  // over to our allocated memory
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Inherit an already allocated pointer ------------------------------- */
   Memory(const size_t stNSize, void*const vpSrc, const bool) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     Data{ stNSize, vpSrc }             // Take ownership of pointer
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Alloc uninitialised ------------------------------------------------ */
   explicit Memory(const size_t stNSize) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     Data{ stNSize,                     // Initialise data base class
       MemAlloc<char>                   // Allocate memory (checked by CTOR)
         (Maximum(stNSize, 1)) }        // Allocate requested size
@@ -517,13 +516,13 @@ class Memory :
     { }
   /* -- Alloc with fill ---------------------------------------------------- */
   Memory(const size_t stNSize, const bool) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     Memory{ stNSize }                  // Allocate memory
     /* -- Full memory with zeros ------------------------------------------- */
     { Fill(); }
   /* -- Alloc with copy ---------------------------------------------------- */
   Memory(const size_t stNSize, const void*const vpSrc) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     Memory{ stNSize }                  // Allocate size of pointer
     /* -- Code to initialise pointer --------------------------------------- */
     { if(vpSrc) DoWrite(0, vpSrc, stNSize); }
@@ -532,7 +531,7 @@ class Memory :
   /* -- Destructor (just a free() needed) ---------------------------------- */
   ~Memory(void) { FreePtrIfSet(); }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Memory);             // Do not need defaults
+  DELETECOPYCTORS(Memory)              // Do not need defaults
 };/* -- Useful types ------------------------------------------------------- */
 typedef list<Memory> MemoryList;       // List of memory blocks
 typedef vector<Memory> MemoryVector;   // A vector of memory classes

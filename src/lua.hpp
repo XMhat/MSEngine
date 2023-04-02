@@ -179,7 +179,7 @@ static class Lua final :
   void ExecuteMain(void) const { lrMainTick.LuaFuncPushAndCall(); }
   /* -- When lua enters the specified function ----------------------------- */
   static void OnInstructionCount(lua_State*const lS, lua_Debug*const)
-    { if(TimerIsTimedOut()) ProcessError(lS, "Frame timeout!"); }
+    { if(cTimer->TimerIsTimedOut()) ProcessError(lS, "Frame timeout!"); }
   /* -- When operations count have changed --------------------------------- */
   CVarReturn SetOpsInterval(const int iCount)
     { return CVarSimpleSetIntNL(iOperations, iCount, 1); }
@@ -350,8 +350,8 @@ static class Lua final :
     { // Set the hook
       SetHookCallback(GetState(), OnInstructionCount, iOperations);
       // Log that it was enabled
-      cLog->LogInfoExSafe("Lua timeout hook enabled (T:$;C:$).",
-        ToShortDuration(TimerGetTimeOut()), iOperations);
+      cLog->LogInfoExSafe("Lua timeout set to $ sec for every $ operations.",
+        ToShortDuration(cTimer->TimerGetTimeOut(), 1), iOperations);
     } // Show a warning to say the timeout hook is disabled
     else cLog->LogWarningSafe("Lua timeout hook disabled so use at own risk!");
     // Resume garbage collector
@@ -360,13 +360,15 @@ static class Lua final :
     cLog->LogInfoSafe("Lua registered core namespaces and functions.");
   }
   /* -- Enter sandbox mode ------------------------------------------------- */
-  void EnterSandbox(lua_CFunction cbFunc)
+  void EnterSandbox(lua_CFunction cbFunc, void*const vpPtr)
   { // Push and get error callback function id
     const int iParam = PushAndGetGenericErrorId(GetState());
     // Push function and parameters
     PushCFunction(GetState(), cbFunc);
-    // Call it! One user parameter and no returns
-    PCallSafe(GetState(), 0, 0, iParam);
+    // Push user parameter (core class)
+    PushPtr(GetState(), vpPtr);
+    // Call it! No parameters and no returns
+    PCallSafe(GetState(), 1, 0, iParam);
   }
   /* -- De-initialise LUA context ------------------------------------------ */
   void DeInit(void)
@@ -473,11 +475,11 @@ static class Lua final :
     /* --------------------------------------------------------------------- */
     { }                                // No code
   /* -- Destructor --------------------------------------------------------- */
-  DTORHELPER(~Lua, DeInit());
+  DTORHELPER(~Lua, DeInit())
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Lua);                // Do not need defaults
+  DELETECOPYCTORS(Lua)                 // Do not need defaults
   /* -- End ---------------------------------------------------------------- */
-} *cLua = nullptr;                        // Pointer to static class
+} *cLua = nullptr;                     // Pointer to static class
 /* ------------------------------------------------------------------------- */
 };                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

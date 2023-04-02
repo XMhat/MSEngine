@@ -15,7 +15,7 @@ using namespace IfLog;                 // Using log namespace
 using namespace IfLuaRef;              // Using luaref namespace
 using namespace IfCollector;           // Using collector namespace
 /* -- LuaFunc ollector class for collector data and custom variables ------- */
-BEGIN_COLLECTOREX(LuaFuncs, LuaFunc, CLHelperSafe, /**/,/**/,public LuaRef<1>);
+BEGIN_COLLECTOREX(LuaFuncs, LuaFunc, CLHelperSafe, /**/,/**/, public LuaRef<1>)
 /* -- LuaFunc class -------------------------------------------------------- */
 BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
@@ -97,13 +97,13 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
     LuaFunc ## Params(++iParams, vVars...); \
   }
   /* -- A function for each type ------------------------------------------- */
-  MP(signed long long,   "int64",  PushInteger);
-  MP(unsigned long long, "uint64", PushInteger);
-  MP(signed int,         "int",    PushInteger);
-  MP(unsigned int,       "uint",   PushInteger);
-  MP(float,              "float",  PushNumber);
-  MP(double,             "double", PushNumber);
-  MP(bool,               "bool",   PushBoolean);
+  MP(signed long long,   "int64",  PushInteger)
+  MP(unsigned long long, "uint64", PushInteger)
+  MP(signed int,         "int",    PushInteger)
+  MP(unsigned int,       "uint",   PushInteger)
+  MP(float,              "float",  PushNumber)
+  MP(double,             "double", PushNumber)
+  MP(bool,               "bool",   PushBoolean)
   /* -- Done with helper function ------------------------------------------ */
 #undef MP
   /* -- Send a function ---------------------------------------------------- */
@@ -213,11 +213,11 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
   void LuaFuncSetEmptyFunc(void) { iRef = cParent.LuaRefGetId(); }
   /* -- Move constructor --------------------------------------------------- */
   LuaFunc(LuaFunc &&lfOther) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperLuaFunc{ *cLuaFuncs,       // Set name in collector
       this },                          // Supply parent class to collector
     IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
-    Ident{ std::move(lfOther) },            // Move name
+    Ident{ StdMove(lfOther) },          // Move name
     iRef(lfOther.iRef),                // Copy other reference
     iRefS(lfOther.iRefS)               // Copy other saved reference
     /* -- Code ------------------------------------------------------------- */
@@ -228,7 +228,7 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
     }
   /* -- Disabled constructor without registration -------------------------- */
   explicit LuaFunc(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperLuaFunc{ *cLuaFuncs },     // Set parent for collector
     IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     iRef(LUA_REFNIL),                  // Reference not initialised
@@ -237,7 +237,7 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
     { }
   /* -- Name constructor --------------------------------------------------- */
   explicit LuaFunc(const string &strN, const bool bSet=false) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperLuaFunc{                   // Register in collector
       *cLuaFuncs, this },              // Collector and this object
     IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
@@ -248,11 +248,11 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
     { if(bSet) LuaFuncSet(); }
   /* -- Name(move) constructor --------------------------------------------- */
   explicit LuaFunc(string &&strN, const bool bSet=false) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperLuaFunc{                   // Register in collector
       *cLuaFuncs, this },              // Collector and this object
     IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
-    Ident{ std::move(strN) },               // Move name
+    Ident{ StdMove(strN) },             // Move name
     iRef(LUA_REFNIL),                  // Reference not initialised
     iRefS(LUA_REFNIL)                  // Saved reference not initialised
     /* -- Set if requested ------------------------------------------------- */
@@ -260,7 +260,7 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   ~LuaFunc(void) { LuaFuncDeInit(); }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(LuaFunc);             // Disable copy constructor/operator
+  DELETECOPYCTORS(LuaFunc)              // Disable copy constructor/operator
 };/* ----------------------------------------------------------------------- */
 /* -- De-init state and all references ------------------------------------- */
 static void LuaFuncDeInitRef(void)
@@ -328,7 +328,7 @@ static void LuaFuncEnableAllRefs(void)
   cLog->LogInfoExSafe("LuaFuncs enabled $ references...", cLuaFuncs->size());
 }
 /* ------------------------------------------------------------------------- */
-END_COLLECTOREX(LuaFuncs,,LuaFuncDeInitRef(),);
+END_COLLECTOREX(LuaFuncs,,LuaFuncDeInitRef(),) // Finish collector
 /* ------------------------------------------------------------------------- */
 };                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

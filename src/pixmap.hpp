@@ -59,7 +59,7 @@ class SysMap :
     } // File is empty
     else
     { // Set no data available
-      cpNewMem = const_cast<char*>(cpBlank);
+      cpNewMem = const_cast<char*>(cCommon->CBlank());
       // Close the file. Whats the point in keeping it open?
       if(!FStreamClose())
         XCS("Failed to close empty file!", "File", IdentGet());
@@ -71,7 +71,7 @@ class SysMap :
   /* -- Get members ------------------------------------------------ */ public:
   template<typename RT=char>RT *SysMapGetMemory(void) const
     { return reinterpret_cast<RT*>(cpMem); }
-  bool SysMapIsEmpty(void) const { return cpMem == cpBlank; }
+  bool SysMapIsEmpty(void) const { return cpMem == cCommon->CBlank(); }
   bool SysMapIsNotEmpty(void) const { return !SysMapIsEmpty(); }
   bool SysMapIsAvailable(void) const { return !!SysMapGetMemory(); }
   bool SysMapIsNotAvailable(void) const { return !SysMapIsAvailable(); }
@@ -136,15 +136,15 @@ class SysMap :
     { }
   /* ----------------------------------------------------------------------- */
   SysMap(SysMap &&smOther) :
-    /* -- Initialisation of members ---------------------------------------- */
-    FStream{ std::move(smOther) },          // Move stream over
-    sData{ std::move(smOther.sData) },      // Move file data over
+    /* -- Initialisers ----------------------------------------------------- */
+    FStream{ StdMove(smOther) },          // Move stream over
+    sData{ StdMove(smOther.sData) },      // Move file data over
     cpMem(smOther.cpMem)               // Move memory pointer over
     /* -- So other class doesn't destruct ---------------------------------- */
     { smOther.SysMapClearVarsInternal(); }
   /* -- Constructor -------------------------------------------------------- */
   explicit SysMap(const string &strF) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     FStream{ SysMapSetupFile(strF) },      // Iniitalise file handle
     sData{ SMSetupInfo() },            // Initialise file data
     cpMem(SMSetupMemory())             // Initialise file pointer
@@ -152,7 +152,7 @@ class SysMap :
     { }                                // Do nothing else
   /* -- Constructor -------------------------------------------------------- */
   SysMap(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     sData{},                           // No file data
     cpMem(nullptr)                     // No memory pointer
     /* --------------------------------------------------------------------- */
@@ -160,6 +160,6 @@ class SysMap :
   /* -- Destructor --------------------------------------------------------- */
   ~SysMap(void) { SysMapDeInitInternal(); }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(SysMap);             // Disable copy constructor and operator
+  DELETECOPYCTORS(SysMap)              // Disable copy constructor and operator
 };/* -- End ---------------------------------------------------------------- */
 /* == EoF =========================================================== EoF == */

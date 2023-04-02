@@ -15,7 +15,7 @@
 // ! The sample class allows loading of audio files into a single buffer.
 // ! Samples can also be played with 3D positional audio.
 /* ========================================================================= */
-LLNAMESPACEBEGIN(Sample)               // Sample namespace
+namespace NsSample {                   // Sample namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfSample;              // Using sample namespace
 /* ========================================================================= */
@@ -86,13 +86,8 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Sample));
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Sample:* member functions begin
-  LLRSFUNC(Destroy),                   // Destroy internal sample object
-  LLRSFUNC(Duration),                  // Return sample duration
-  LLRSFUNC(Name),                      // Name of the sample
-  LLRSFUNC(Play),                      // Play sample statically
-  LLRSFUNC(PlayEx),                    // Play sample and return source
-  LLRSFUNC(Spawn),                     // Spawn a new source from sample
-  LLRSFUNC(Stop),                      // Stop sample
+  LLRSFUNC(Destroy), LLRSFUNC(Duration), LLRSFUNC(Name), LLRSFUNC(Play),
+  LLRSFUNC(PlayEx),  LLRSFUNC(Spawn),   LLRSFUNC(Stop),
 LLRSEND                                // Sample:* member functions end
 /* ========================================================================= */
 // $ Sample.Create
@@ -107,8 +102,8 @@ LLFUNCEX(Create, 1, LCCLASSCREATE(Sample)->InitSample(*LCGETPTR(1, Pcm)));
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Sample.* namespace functions begin
-  LLRSFUNC(Create),                    // Create sample
+  LLRSFUNC(Create),
 LLRSEND                                // Sample.* namespace functions end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of Sample namespace
+}                                      // End of Sample namespace
 /* == EoF =========================================================== EoF == */

@@ -53,7 +53,7 @@ BEGIN_MEMBERCLASS(Cursors, Cursor, ICHelperUnsafe),
   }
   /* -- Constructor -------------------------------------------------------- */
   Cursor(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperCursor{ *cCursors, this }, // Register cursor in list
     IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     pCursor(nullptr),                  // Default character
@@ -62,7 +62,7 @@ BEGIN_MEMBERCLASS(Cursors, Cursor, ICHelperUnsafe),
     { }
   /* -- Constructor -------------------------------------------------------- */
   explicit Cursor(const int iId) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     Cursor()                           // Default parameters
     /* -- Init specified cursor -------------------------------------------- */
     { InitStandard(iId); }

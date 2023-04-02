@@ -15,7 +15,7 @@
 // ! The crypt class allows access to cryptographic, compression and
 // ! decompression functions.
 /* ========================================================================= */
-LLNAMESPACEBEGIN(Crypt)                // Crypt namespace
+namespace NsCrypt {                    // Crypt namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfCrypt;               // Using crypt namespace
 using namespace IfAsset;               // Using asset namespace
@@ -307,41 +307,19 @@ LLFUNCEX(EntEncode, 1,
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Crypt.* namespace functions begin
-  LLRSFUNC(B64D),                      // Decode Base64 to string
-  LLRSFUNC(B64DA),                     // Decode Base64 to array
-  LLRSFUNC(B64E),                      // Encode string to Base64
-  LLRSFUNC(B64EA),                     // Encode array to Base64
-  LLRSFUNC(CRCA),                      // CRC Checksum of array
-  LLRSFUNC(CRC),                       // CRC Checksum of string
-  LLRSFUNC(EntDecode),                 // Decode HTML entities
-  LLRSFUNC(EntEncode),                 // Encode HTML entities
-  LLRSFUNC(HexDecode),                 // Decode string to uppercase hex string
-  LLRSFUNC(HexDecodeA),                // Decode array to uppercase hex string
-  LLRSFUNC(HexEncode),                 // Encode string to uppercase hex string
-  LLRSFUNC(HexEncodeA),                // Encode array to uppercase hex string
-  LLRSFUNC(HexEncodeL),                // Encode string to lowercase hex string
-  LLRSFUNC(HexEncodeLA),               // Encode array to lowercase hex string
-  LLRSFUNC(HMMD5),                     // HMAC-MD5 Encryption of string
-  LLRSFUNC(HMSHA1),                    // HMAC-SHA1 Encryption of string
-  LLRSFUNC(HMSHA224),                  // HMAC-SHA224 Encryption of string
-  LLRSFUNC(HMSHA256),                  // HMAC-SHA256 Encryption of string
-  LLRSFUNC(HMSHA384),                  // HMAC-SHA384 Encryption of string
-  LLRSFUNC(HMSHA512),                  // HMAC-SHA512 Encryption of string
-  LLRSFUNC(MD5),                       // MD5 Checksum of string
-  LLRSFUNC(MD5A),                      // MD5 Checksum of array
-  LLRSFUNC(SHA1),                      // SHA1 Checksum of string
-  LLRSFUNC(SHA1A),                     // SHA1 Checksum of array
-  LLRSFUNC(SHA224),                    // SHA224 Checksum of string
-  LLRSFUNC(SHA224A),                   // SHA224 Checksum of array
-  LLRSFUNC(SHA256),                    // SHA256 Checksum of string
-  LLRSFUNC(SHA256A),                   // SHA256 Checksum of array
-  LLRSFUNC(SHA384),                    // SHA384 Checksum of string
-  LLRSFUNC(SHA384A),                   // SHA384 Checksum of array
-  LLRSFUNC(SHA512),                    // SHA512 Checksum of string
-  LLRSFUNC(SHA512A),                   // SHA512 Checksum of array
-  LLRSFUNC(UrlDecode),                 // URL decode string
-  LLRSFUNC(UrlEncode),                 // URL encode string
+  LLRSFUNC(B64D),       LLRSFUNC(B64DA),       LLRSFUNC(B64E),
+  LLRSFUNC(B64EA),      LLRSFUNC(CRC),         LLRSFUNC(CRCA),
+  LLRSFUNC(EntDecode),  LLRSFUNC(EntEncode),   LLRSFUNC(HexDecode),
+  LLRSFUNC(HexDecodeA), LLRSFUNC(HexEncode),   LLRSFUNC(HexEncodeA),
+  LLRSFUNC(HexEncodeL), LLRSFUNC(HexEncodeLA), LLRSFUNC(HMMD5),
+  LLRSFUNC(HMSHA1),     LLRSFUNC(HMSHA224),    LLRSFUNC(HMSHA256),
+  LLRSFUNC(HMSHA384),   LLRSFUNC(HMSHA512),    LLRSFUNC(MD5),
+  LLRSFUNC(MD5A),       LLRSFUNC(SHA1),        LLRSFUNC(SHA1A),
+  LLRSFUNC(SHA224),     LLRSFUNC(SHA224A),     LLRSFUNC(SHA256),
+  LLRSFUNC(SHA256A),    LLRSFUNC(SHA384),      LLRSFUNC(SHA384A),
+  LLRSFUNC(SHA512),     LLRSFUNC(SHA512A),     LLRSFUNC(UrlDecode),
+  LLRSFUNC(UrlEncode),
 LLRSEND                                // Crypt.* namespace functions end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of Crypt namespace
+}                                      // End of Crypt namespace
 /* == EoF =========================================================== EoF == */

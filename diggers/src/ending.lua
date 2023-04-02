@@ -33,7 +33,7 @@ local function InitEnding(iRaceId)
     -- Render callback
     local function Ending1Render()
       -- Blit background
-      texLobby:BlitSLT(1, -96, 0);
+      texLobby:BlitSLT(1, -54, 0);
       -- Blit text
       fontLittle:SetCRGBA(1,1,1,1);
       fontLittle:PrintC(160, 200, "MINING OPERATIONS COMPLETED!");
@@ -57,15 +57,14 @@ local function InitEnding(iRaceId)
           local function OnEnding2Loaded(aResources)
             -- Load texture and tiles
             local texEnding = aResources[1].H;
-            local iTileEnding<const> =
-              texEnding:TileA(aEndingItem[2], aEndingItem[3],
-                                   aEndingItem[4], aEndingItem[5]);
+            -- Set tile ending
+            local iTileEnding<const> = aEndingItem[2];
             -- Set custom race specific texts
-            local sText1, sText2 = aEndingItem[6], aEndingItem[7];
+            local sText1, sText2 = aEndingItem[3], aEndingItem[4];
             -- Render ending part 2
             local function Ending2Render()
               -- Blit background
-              texEnding:BlitSLT(iTileEnding, -96, 0);
+              texEnding:BlitSLT(iTileEnding, -54, 0);
               -- Blit text
               fontLittle:SetCRGBA(1, 1, 1, 1);
               fontLittle:PrintC(160, 200, sText1);
@@ -90,14 +89,12 @@ local function InitEnding(iRaceId)
                   local function OnEnding3Loaded(aResources)
                     -- Load stranger texture and tiles
                     local texStr = aResources[1].H;
-                    local iTileStrBg<const> =
-                      texStr:TileA(0, 0, 512, 240);
-                    local iTileStr<const> =
-                      texStr:TileA(0, 330, 113, 512);
+                    local iTileStrBg<const> = texStr:TileA(0, 0, 428, 240);
+                    local iTileStr<const> = texStr:TileA(0, 330, 113, 512);
                     -- Credits render callback
                     local function Ending3Render()
                       -- Blit background
-                      texStr:BlitSLT(iTileStrBg, -96, 0);
+                      texStr:BlitSLT(iTileStrBg, -54, 0);
                       -- Blit stranger
                       texStr:SetCA(iAlphaValue);
                       texStr:BlitSLT(iTileStr, 0, 68);
@@ -147,7 +144,8 @@ local function InitEnding(iRaceId)
             Fade(1, 0, 0.025, Ending2Render, OnEnding2FadeIn);
           end
           -- Load ending screen 2 resource
-          LoadResources("Ending2", {{T=2,F="ending"..aEndingItem[1],P={0}}},
+          LoadResources("Ending2",
+            {{T=1,F="ending"..aEndingItem[1],P={428,240,0,0,0}}},
             OnEnding2Loaded);
         end
         -- Fade out ending screen 1

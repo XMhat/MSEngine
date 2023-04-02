@@ -300,13 +300,13 @@ local aSfxData<const> = {
   MAX = 0x15
 };
 -- Level data types -------------------------------------------------------- --
-local aLevelTypeDesert<const>   = { i=0, f="desert",   n="DESERT"   };
-local aLevelTypeGrass<const>    = { i=1, f="grass",    n="GRASS"    };
-local aLevelTypeIslands<const>  = { i=2, f="islands",  n="ISLANDS"  };
-local aLevelTypeJungle<const>   = { i=3, f="jungle",   n="JUNGLE"   };
-local aLevelTypeMountain<const> = { i=4, f="mountain", n="MOUNTAIN" };
-local aLevelTypeRock<const>     = { i=5, f="rock",     n="ROCKY"    };
-local aLevelTypeWinter<const>   = { i=6, f="snow",     n="WINTER"   };
+local aLevelTypeDesert<const>   = { i=0, f="desert",   n="DESERTOUS"   };
+local aLevelTypeGrass<const>    = { i=1, f="grass",    n="TEMPERATE"   };
+local aLevelTypeIslands<const>  = { i=2, f="islands",  n="COASTAL"     };
+local aLevelTypeJungle<const>   = { i=3, f="jungle",   n="TROPICAL"    };
+local aLevelTypeMountain<const> = { i=4, f="mountain", n="MOUNTAINOUS" };
+local aLevelTypeRock<const>     = { i=5, f="rock",     n="BARRENOUS"   };
+local aLevelTypeWinter<const>   = { i=6, f="snow",     n="WINTEROUS"   };
 -- Level data types array -------------------------------------------------- --
 local aLevelTypesData<const>  = {
   aLevelTypeDesert,                    -- [1]
@@ -444,7 +444,7 @@ local aObjectData<const> = {
   [DIR.NONE]={ 74, 76},[DIR.R ]={ 74, 76},[DIR.DL]={ 77, 79},[DIR.D ]={ 74, 76},
   [DIR.DR  ]={ 74, 76},FLAGS=OFL.FALL|OFL.NOANIMLOOP|OFL.BUSY
  }, [ACT.DEATH] = { [DIR.NONE]={451,454},SOUND=aSfxData.DIEFTAR,FLAGS=OFL.BUSY },
- NAME="FTARG", DIGDELAY=60, TELEDELAY=120, STRENGTH=3, STAMINA=60, VALUE=1000,
+ NAME="F'TARG", DIGDELAY=60, TELEDELAY=120, STRENGTH=3, STAMINA=60, VALUE=1000,
  WEIGHT=0, LUNGS=4, FLAGS=OFL.DIGGER|OFL.PHASETARGET|OFL.DELICATE,
  MENU=MNU.MAIN, ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
  ANIMTIMER=aTimerData.ANIMNORMAL, AITYPE=AI.DIGGER,
@@ -538,50 +538,57 @@ local aObjectData<const> = {
 -- ------------------------------------------------------------------------- --
 }, [TYP.QUARRIOR] = {
  [ACT.HIDE] = {
-  [DIR.UL  ]={ 95, 95},[DIR.U ]={ 95, 95},[DIR.UR]={ 95, 95},[DIR.L ]={ 95, 95},
-  [DIR.NONE]={ 95, 95},[DIR.R ]={ 95, 95},[DIR.DL]={ 95, 95},[DIR.D ]={ 95, 95},
-  [DIR.DR  ]={ 95, 95},FLAGS=OFL.BUSY
+   [DIR.UL]={ 95, 95},[DIR.U   ]={ 95, 95},[DIR.UR]={ 95, 95},
+   [DIR.L ]={ 95, 95},[DIR.NONE]={ 95, 95},[DIR.R ]={ 95, 95},
+   [DIR.DL]={ 95, 95},[DIR.D   ]={ 95, 95},[DIR.DR]={ 95, 95}, FLAGS=OFL.BUSY
  }, [ACT.STOP] = {
-  [DIR.UL  ]={178,180},[DIR.U ]={178,180},[DIR.UR]={178,180},[DIR.L ]={178,180},
-  [DIR.NONE]={178,180},[DIR.R ]={178,180},[DIR.DL]={178,180},[DIR.D ]={178,180},
-  [DIR.DR  ]={178,180},FLAGS=OFL.FALL|OFL.REGENERATE
+   [DIR.UL]={178,180},[DIR.U   ]={178,180},[DIR.UR]={178,180},
+   [DIR.L ]={178,180},[DIR.NONE]={178,180},[DIR.R ]={178,180},
+   [DIR.DL]={178,180},[DIR.D   ]={178,180},[DIR.DR]={178,180},
+   FLAGS=OFL.FALL|OFL.REGENERATE
  }, [ACT.CREEP] = {
-  [DIR.UL  ]={160,163},[DIR.U ]={160,163},[DIR.UR]={156,159},[DIR.L ]={160,163},
-  [DIR.NONE]={160,163},[DIR.R ]={156,159},[DIR.DL]={160,163},[DIR.D ]={160,163},
-  [DIR.DR  ]={156,159},FLAGS=OFL.FALL
+   [DIR.UL]={160,163},[DIR.U   ]={160,163},[DIR.UR]={156,159},
+   [DIR.L ]={160,163},[DIR.NONE]={160,163},[DIR.R ]={156,159},
+   [DIR.DL]={160,163},[DIR.D   ]={160,163},[DIR.DR]={156,159}, FLAGS=OFL.FALL
  }, [ACT.WALK] = {
-  [DIR.UL  ]={160,163},[DIR.U ]={160,163},[DIR.UR]={156,159},[DIR.L ]={160,163},
-  [DIR.NONE]={160,163},[DIR.R ]={156,159},[DIR.DL]={160,163},[DIR.D ]={160,163},
-  [DIR.DR  ]={156,159},FLAGS=OFL.FALL
+   [DIR.UL]={160,163},[DIR.U   ]={160,163},[DIR.UR]={156,159},
+   [DIR.L ]={160,163},[DIR.NONE]={160,163},[DIR.R ]={156,159},
+   [DIR.DL]={160,163},[DIR.D   ]={160,163},[DIR.DR]={156,159}, FLAGS=OFL.FALL
  }, [ACT.RUN] = {
-  [DIR.UL  ]={168,171},[DIR.U ]={168,171},[DIR.UR]={164,167},[DIR.L ]={168,171},
-  [DIR.NONE]={168,171},[DIR.R ]={164,167},[DIR.DL]={168,171},[DIR.D ]={168,171},
-  [DIR.DR  ]={164,167},FLAGS=OFL.FALL
+   [DIR.UL]={168,171},[DIR.U   ]={168,171},[DIR.UR]={164,167},
+   [DIR.L ]={168,171},[DIR.NONE]={168,171},[DIR.R ]={164,167},
+   [DIR.DL]={168,171},[DIR.D   ]={168,171},[DIR.DR]={164,167}, FLAGS=OFL.FALL
  }, [ACT.DIG] = {
-  [DIR.UL  ]={234,236},[DIR.U ]={234,236},[DIR.UR]={231,233},[DIR.L ]={234,236},
-  [DIR.NONE]={234,236},[DIR.R ]={231,233},[DIR.DL]={234,236},[DIR.D ]={ 92, 94},
-  [DIR.DR  ]={231,233},SOUNDRP=aSfxData.DIG,FLAGS=OFL.FALL|OFL.SOUNDLOOP
+   [DIR.UL]={234,236},[DIR.U   ]={234,236},[DIR.UR]={231,233},
+   [DIR.L ]={234,236},[DIR.NONE]={234,236},[DIR.R ]={231,233},
+   [DIR.DL]={234,236},[DIR.D   ]={ 92, 94},[DIR.DR]={231,233},
+   SOUNDRP=aSfxData.DIG, FLAGS=OFL.FALL|OFL.SOUNDLOOP
  }, [ACT.PHASE] = {
-  [DIR.UL  ]={106,109},[DIR.U ]={106,109},[DIR.UR]={106,109},[DIR.L ]={106,109},
-  [DIR.NONE]={106,109},[DIR.R ]={106,109},[DIR.DL]={106,109},[DIR.D ]={106,109},
-  [DIR.DR  ]={106,109},SOUND=aSfxData.PHASE,FLAGS=OFL.BUSY
+   [DIR.UL]={106,109},[DIR.U   ]={106,109},[DIR.UR]={106,109},
+   [DIR.L ]={106,109},[DIR.NONE]={106,109},[DIR.R ]={106,109},
+   [DIR.DL]={106,109},[DIR.D   ]={106,109},[DIR.DR]={106,109},
+   SOUND=aSfxData.PHASE, FLAGS=OFL.BUSY
  }, [ACT.FIGHT] = {
-  [DIR.UL  ]={265,269},[DIR.U ]={260,264},[DIR.UR]={260,264},[DIR.L ]={265,269},
-  [DIR.NONE]={260,264},[DIR.R ]={260,264},[DIR.DL]={265,269},[DIR.D ]={260,264},
-  [DIR.DR  ]={260,264},FLAGS=OFL.FALL|OFL.RNGSPRITE
+   [DIR.UL  ]={265,269},[DIR.U   ]={260,264},[DIR.UR]={260,264},
+   [DIR.L   ]={265,269},[DIR.NONE]={260,264},[DIR.R ]={260,264},
+   [DIR.DL  ]={265,269},[DIR.D   ]={260,264},[DIR.DR]={260,264},
+   FLAGS=OFL.FALL|OFL.RNGSPRITE
  }, [ACT.EATEN] = {
-  [DIR.UL  ]={175,177},[DIR.U ]={172,174},[DIR.UR]={172,174},[DIR.L ]={175,177},
-  [DIR.NONE]={172,174},[DIR.R ]={172,174},[DIR.DL]={175,177},[DIR.D ]={172,174},
-  [DIR.DR  ]={172,174},FLAGS=OFL.FALL|OFL.NOANIMLOOP|OFL.BUSY
- }, [ACT.DEATH] = { [DIR.NONE]={451,454},SOUND=aSfxData.DIEQUAR,FLAGS=OFL.BUSY },
- NAME="QUARRIOR", DIGDELAY=80, TELEDELAY=180, STRENGTH=6, STAMINA=120, VALUE=1000,
- WEIGHT=0, LUNGS=16, FLAGS=OFL.DIGGER|OFL.PHASETARGET, MENU=MNU.MAIN,
- ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE, ANIMTIMER=aTimerData.ANIMNORMAL,
- AITYPE=AI.DIGGER,
+   [DIR.UL]={175,177},[DIR.U   ]={172,174},[DIR.UR]={172,174},
+   [DIR.L ]={175,177},[DIR.NONE]={172,174},[DIR.R ]={172,174},
+   [DIR.DL]={175,177},[DIR.D   ]={172,174},[DIR.DR]={172,174},
+   FLAGS=OFL.FALL|OFL.NOANIMLOOP|OFL.BUSY
+ }, [ACT.DEATH] = { [DIR.NONE]={451,454},SOUND=aSfxData.DIEQUAR,
+   FLAGS=OFL.BUSY },
+ NAME="QUARRIOR", DIGDELAY=80, TELEDELAY=180, STRENGTH=6, STAMINA=120,
+ VALUE=1000, WEIGHT=0, LUNGS=16, FLAGS=OFL.DIGGER|OFL.PHASETARGET,
+ MENU=MNU.MAIN, ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
+ ANIMTIMER=aTimerData.ANIMNORMAL, AITYPE=AI.DIGGER,
 -- ------------------------------------------------------------------------- --
 }, [TYP.JENNITE] = {
   [ACT.STOP]  = { [DIR.NONE]={315,318},FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.PHASE] = { [DIR.NONE]={106,109,0,7},SOUND=aSfxData.FIND,FLAGS=OFL.FALL|OFL.PICKUP },
+  [ACT.PHASE] = { [DIR.NONE]={106,109,0,7},SOUND=aSfxData.FIND,
+    FLAGS=OFL.FALL|OFL.PICKUP },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
   NAME="JENNITE", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=280,
   WEIGHT=1, FLAGS=OFL.SELLABLE|OFL.TREASURE|OFL.PHASETARGET|OFL.AQUALUNG,
@@ -590,7 +597,8 @@ local aObjectData<const> = {
 -- ------------------------------------------------------------------------- --
 }, [TYP.DIAMOND] = {
   [ACT.STOP]  = { [DIR.NONE]={428,431},FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.PHASE] = { [DIR.NONE]={106,109,0,7},SOUND=aSfxData.FIND,FLAGS=OFL.FALL|OFL.PICKUP },
+  [ACT.PHASE] = { [DIR.NONE]={106,109,0,7},SOUND=aSfxData.FIND,
+    FLAGS=OFL.FALL|OFL.PICKUP },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
   NAME="DIAMOND", DIGDELAY=1, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=100,
   WEIGHT=1, FLAGS=OFL.SELLABLE|OFL.TREASURE|OFL.PHASETARGET|OFL.AQUALUNG,
@@ -599,7 +607,8 @@ local aObjectData<const> = {
 -- ------------------------------------------------------------------------- --
 }, [TYP.GOLD] = {
   [ACT.STOP]  = { [DIR.NONE]={ 96, 99},FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.PHASE] = { [DIR.NONE]={106,109,0,7},SOUND=aSfxData.FIND,FLAGS=OFL.FALL|OFL.PICKUP },
+  [ACT.PHASE] = { [DIR.NONE]={106,109,0,7},SOUND=aSfxData.FIND,
+    FLAGS=OFL.FALL|OFL.PICKUP },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
   NAME="GOLD", DIGDELAY=2, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=80,
   WEIGHT=1, FLAGS=OFL.SELLABLE|OFL.TREASURE|OFL.PHASETARGET|OFL.AQUALUNG,
@@ -608,7 +617,8 @@ local aObjectData<const> = {
 -- ------------------------------------------------------------------------- --
 }, [TYP.EMERALD] = {
   [ACT.STOP]  = { [DIR.NONE]={432,435},FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.PHASE] = { [DIR.NONE]={106,109,0,7},SOUND=aSfxData.FIND,FLAGS=OFL.FALL|OFL.PICKUP },
+  [ACT.PHASE] = { [DIR.NONE]={106,109,0,7},SOUND=aSfxData.FIND,
+    FLAGS=OFL.FALL|OFL.PICKUP },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
   NAME="EMERALD", DIGDELAY=3, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=60,
   WEIGHT=1, FLAGS=OFL.SELLABLE|OFL.TREASURE|OFL.PHASETARGET|OFL.AQUALUNG,
@@ -617,7 +627,8 @@ local aObjectData<const> = {
 -- ------------------------------------------------------------------------- --
 }, [TYP.RUBY] = {
   [ACT.STOP] = { [DIR.NONE]={436,439},FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.PHASE] = { [DIR.NONE]={106,109,0,7},SOUND=aSfxData.FIND,FLAGS=OFL.FALL|OFL.PICKUP },
+  [ACT.PHASE] = { [DIR.NONE]={106,109,0,7},SOUND=aSfxData.FIND,
+    FLAGS=OFL.FALL|OFL.PICKUP },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
   NAME="RUBY", DIGDELAY=4, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=40,
   WEIGHT=1, FLAGS=OFL.SELLABLE|OFL.TREASURE|OFL.PHASETARGET|OFL.AQUALUNG,
@@ -635,9 +646,10 @@ local aObjectData<const> = {
 -- ------------------------------------------------------------------------- --
 }, [TYP.SLOWSKEL] = {
   [ACT.STOP] = {
-    [DIR.UL  ]={409,412},[DIR.U ]={413,416},[DIR.UR]={413,416},[DIR.L ]={409,412},
-    [DIR.NONE]={413,416},[DIR.R ]={413,416},[DIR.DL]={409,412},[DIR.D ]={413,416},
-    [DIR.DR  ]={413,416},FLAGS=OFL.HURTDIGGER },
+    [DIR.UL  ]={409,412},[DIR.U   ]={413,416},[DIR.UR]={413,416},
+    [DIR.L   ]={409,412},[DIR.NONE]={413,416},[DIR.R ]={413,416},
+    [DIR.DL  ]={409,412},[DIR.D   ]={413,416},[DIR.DR]={413,416},
+    FLAGS=OFL.HURTDIGGER },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
   NAME="SKELETON", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=0,
   WEIGHT=0, ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
@@ -645,9 +657,10 @@ local aObjectData<const> = {
 -- ------------------------------------------------------------------------- --
 }, [TYP.FASTSKEL] = {
   [ACT.STOP] = {
-    [DIR.UL  ]={147,148},[DIR.U ]={149,150},[DIR.UR]={149,150},[DIR.L ]={147,148},
-    [DIR.NONE]={149,150},[DIR.R ]={149,150},[DIR.DL]={147,148},[DIR.D ]={149,150},
-    [DIR.DR  ]={149,150},FLAGS=OFL.HURTDIGGER },
+    [DIR.UL]={147,148},[DIR.U   ]={149,150},[DIR.UR]={149,150},
+    [DIR.L ]={147,148},[DIR.NONE]={149,150},[DIR.R ]={149,150},
+    [DIR.DL]={147,148},[DIR.D   ]={149,150},[DIR.DR]={149,150},
+    FLAGS=OFL.HURTDIGGER },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
   NAME="ZOMBIE", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=0,
   WEIGHT=0, LUNGCAPACITY=64, ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
@@ -687,9 +700,10 @@ local aObjectData<const> = {
 -- ------------------------------------------------------------------------- --
 }, [TYP.FASTPHASE] = {
   [ACT.STOP] = {
-    [DIR.UL  ]={417,427},[DIR.U ]={417,427},[DIR.UR]={417,427},[DIR.L ]={417,427},
-    [DIR.NONE]={417,427},[DIR.R ]={417,427},[DIR.DL]={417,427},[DIR.D ]={417,427},
-    [DIR.DR  ]={417,427},FLAGS=OFL.PHASEDIGGER },
+    [DIR.UL]={417,427},[DIR.U   ]={417,427},[DIR.UR]={417,427},
+    [DIR.L ]={417,427},[DIR.NONE]={417,427},[DIR.R ]={417,427},
+    [DIR.DL]={417,427},[DIR.D   ]={417,427},[DIR.DR]={417,427},
+    FLAGS=OFL.PHASEDIGGER },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
   NAME="SWRLYPRT", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=0,
   WEIGHT=0, ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
@@ -703,7 +717,8 @@ local aObjectData<const> = {
     FLAGS=OFL.FALL|OFL.HURTDIGGER },
   NAME="PIRANA", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=0,
   WEIGHT=0, LUNGS=128, FLAGS=OFL.STATIONARY|OFL.PHASETARGET, ACTION=ACT.STOP,
-  AITYPE=AI.NONE, JOB=JOB.NONE, DIRECTION=DIR.NONE, ANIMTIMER=aTimerData.ANIMNORMAL
+  AITYPE=AI.NONE, JOB=JOB.NONE, DIRECTION=DIR.NONE,
+  ANIMTIMER=aTimerData.ANIMNORMAL
 -- ------------------------------------------------------------------------- --
 }, [TYP.BADROOTS] = {
   [ACT.STOP]  = { [DIR.L]={398,401},[DIR.NONE]={398,401},[DIR.R]={398,401},
@@ -713,7 +728,8 @@ local aObjectData<const> = {
     FLAGS=OFL.FALL|OFL.HURTDIGGER },
   NAME="FUNGUS", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=0,
   WEIGHT=0, FLAGS=OFL.STATIONARY|OFL.PHASETARGET|OFL.AQUALUNG, ACTION=ACT.STOP,
-  JOB=JOB.NONE, AITYPE=AI.NONE, DIRECTION=DIR.NONE, ANIMTIMER=aTimerData.ANIMNORMAL,
+  JOB=JOB.NONE, AITYPE=AI.NONE, DIRECTION=DIR.NONE,
+  ANIMTIMER=aTimerData.ANIMNORMAL,
 -- ------------------------------------------------------------------------- --
 }, [TYP.ALIEN] = {
   [ACT.RUN] = { [DIR.L]={102,105},[DIR.NONE]={112,115},[DIR.R ]={112,115},
@@ -726,7 +742,8 @@ local aObjectData<const> = {
 }, [TYP.ALIENEGG] = {
   [ACT.STOP]  = { [DIR.NONE]={ 71, 71}, FLAGS=OFL.FALL|OFL.CONSUME },
   [ACT.PHASE] = { [DIR.NONE]={ 68, 68}, FLAGS=OFL.FALL },
-  [ACT.DEATH] = { [DIR.NONE]={375,378}, FLAGS=OFL.FALL|OFL.NOANIMLOOP|OFL.BUSY },
+  [ACT.DEATH] = { [DIR.NONE]={375,378},
+    FLAGS=OFL.FALL|OFL.NOANIMLOOP|OFL.BUSY },
   NAME="EGG", DIGDELAY=0, TELEDELAY=3600, STRENGTH=0, STAMINA=-1, VALUE=0,
   WEIGHT=0, LUNGS=128, FLAGS=OFL.PHASETARGET, ACTION=ACT.PHASE, JOB=JOB.SPAWN,
   AITYPE=AI.NONE, DIRECTION=DIR.NONE, ANIMTIMER=aTimerData.ANIMNORMAL
@@ -790,8 +807,8 @@ local aObjectData<const> = {
     FLAGS=OFL.FALL|OFL.REGENERATE },
   [ACT.WALK]  = { [DIR.L]={321,324},[DIR.NONE]={321,324},[DIR.R]={325,328},
     FLAGS=OFL.FALL|OFL.REGENERATE },
-  [ACT.PHASE] = {
-    [DIR.NONE]={106,109},[DIR.D ]={106,109}, SOUND=aSfxData.PHASE,FLAGS=OFL.BUSY },
+  [ACT.PHASE] = { [DIR.NONE]={106,109},[DIR.D ]={106,109},SOUND=aSfxData.PHASE,
+    FLAGS=OFL.BUSY },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
   NAME="BIGFOOT", DIGDELAY=0, TELEDELAY=100, STRENGTH=100, STAMINA=-1, VALUE=0,
   WEIGHT=100, FLAGS=OFL.PHASETARGET|OFL.AQUALUNG, ACTION=ACT.STOP,
@@ -806,9 +823,10 @@ local aObjectData<const> = {
   [ACT.DIG]   = { [DIR.L]={284,287},[DIR.NONE]={280,283},[DIR.R]={280,283},
     SOUNDRP=aSfxData.DIG,FLAGS=OFL.FALL|OFL.PICKUP },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="SMALLTUN", DIGDELAY=30, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=150,
-  WEIGHT=2, LUNGS=1, FLAGS=OFL.SELLABLE|OFL.DEVICE|OFL.PHASETARGET|OFL.EXPLODE,
-  MENU=MNU.TUNNEL, ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
+  NAME="SMALLTUN", DIGDELAY=30, TELEDELAY=200, STRENGTH=0, STAMINA=-1,
+  VALUE=150, WEIGHT=2, LUNGS=1,
+  FLAGS=OFL.SELLABLE|OFL.DEVICE|OFL.PHASETARGET|OFL.EXPLODE, MENU=MNU.TUNNEL,
+  ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
   ANIMTIMER=aTimerData.ANIMNORMAL, AITYPE=AI.NONE, LONGNAME="SMALL TUNNELER",
   DESC="A MECHANICAL DIGGER\nTHAT DIGS HORIZONTALLY",
 -- ------------------------------------------------------------------------- --
@@ -820,11 +838,13 @@ local aObjectData<const> = {
   [ACT.DIG]   = { [DIR.L]={185,188},[DIR.R]={189,192},
     FLAGS=OFL.FALL|OFL.PICKUP, SOUNDRP=aSfxData.DIG },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="LARGETUN", DIGDELAY=10, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=230,
-  WEIGHT=3, LUNGS=1, FLAGS=OFL.SELLABLE|OFL.DEVICE|OFL.PHASETARGET|OFL.EXPLODE,
-  MENU=MNU.TUNNEL, ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
+  NAME="LARGETUN", DIGDELAY=10, TELEDELAY=200, STRENGTH=0, STAMINA=-1,
+  VALUE=230, WEIGHT=3, LUNGS=1,
+  FLAGS=OFL.SELLABLE|OFL.DEVICE|OFL.PHASETARGET|OFL.EXPLODE, MENU=MNU.TUNNEL,
+  ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
   ANIMTIMER=aTimerData.ANIMNORMAL, ATTACHMENT=TYP.LTUNNELB, AITYPE=AI.NONE,
-  LONGNAME="LARGE TUNNELER", DESC="A FAST MECHANICAL DIGGER\nTHAT DIGS HORIZONTALLY",
+  LONGNAME="LARGE TUNNELER",
+  DESC="A FAST MECHANICAL DIGGER\nTHAT DIGS HORIZONTALLY",
 -- ------------------------------------------------------------------------- --
 }, [TYP.LTUNNELB] = {
  [ACT.STOP ] = { [DIR.L]={181,181,-16,0},[DIR.NONE]={193,193,16,0},
@@ -842,21 +862,24 @@ local aObjectData<const> = {
     FLAGS=OFL.FALL|OFL.PICKUP },
   [ACT.CREEP] = { [DIR.L]={288,290},[DIR.R]={288,290},
     FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.DIG]   = { [DIR.D]={288,290},SOUNDRP=aSfxData.DIG,FLAGS=OFL.FALL|OFL.PICKUP },
+  [ACT.DIG]   = { [DIR.D]={288,290},SOUNDRP=aSfxData.DIG,
+    FLAGS=OFL.FALL|OFL.PICKUP },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="CORKSCRW", DIGDELAY=20, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=170,
-  WEIGHT=3, LUNGS=1, FLAGS=OFL.SELLABLE|OFL.DEVICE|OFL.PHASETARGET|OFL.EXPLODE,
-  MENU=MNU.CORK, ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
-  AITYPE=AI.NONE, ANIMTIMER=aTimerData.ANIMNORMAL, LONGNAME="CORKSCREW",
+  NAME="CORKSCRW", DIGDELAY=20, TELEDELAY=200, STRENGTH=0, STAMINA=-1,
+  VALUE=170, WEIGHT=3, LUNGS=1,
+  FLAGS=OFL.SELLABLE|OFL.DEVICE|OFL.PHASETARGET|OFL.EXPLODE, MENU=MNU.CORK,
+  ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE, AITYPE=AI.NONE,
+  ANIMTIMER=aTimerData.ANIMNORMAL, LONGNAME="CORKSCREW",
   DESC="A MECHANICAL DIGGER\nTHAT DIGS VERTICALLY DOWN",
 -- ------------------------------------------------------------------------- --
 }, [TYP.TELEPOLE] = {
   [ACT.STOP]  = { [DIR.NONE]={ 66, 67}, FLAGS=OFL.FALL|OFL.PICKUP },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="TELEPOLE", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=260,
-  WEIGHT=2, LUNGS=1, FLAGS=OFL.SELLABLE|OFL.DEVICE|OFL.EXPLODE, ACTION=ACT.STOP,
-  AITYPE=AI.NONE, JOB=JOB.NONE, DIRECTION=DIR.NONE, ANIMTIMER=aTimerData.ANIMNORMAL,
-  LONGNAME="TELEPOLE", DESC="SERVES AS A TELEPORT\nPOINT FOR YOUR DIGGERS",
+  NAME="TELEPOLE", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1,
+  VALUE=260, WEIGHT=2, LUNGS=1, FLAGS=OFL.SELLABLE|OFL.DEVICE|OFL.EXPLODE,
+  ACTION=ACT.STOP, AITYPE=AI.NONE, JOB=JOB.NONE, DIRECTION=DIR.NONE,
+  ANIMTIMER=aTimerData.ANIMNORMAL, LONGNAME="TELEPOLE",
+  DESC="SERVES AS A TELEPORT\nPOINT FOR YOUR DIGGERS",
 -- ------------------------------------------------------------------------- --
 }, [TYP.TNT] = {
   [ACT.STOP]  = { [DIR.NONE]={24,24},FLAGS=OFL.FALL|OFL.PICKUP },
@@ -917,8 +940,8 @@ local aObjectData<const> = {
   NAME="BRIDGE", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=25,
   WEIGHT=1, FLAGS=OFL.SELLABLE|OFL.DEVICE|OFL.PHASETARGET|OFL.AQUALUNG,
   AITYPE=AI.NONE, ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
-  ANIMTIMER=aTimerData.ANIMNORMAL,
-  LONGNAME="BRIDGE PIECE", DESC="A PLATFORM FOR GAPS\nFOR HARD TO REACH PLACES",
+  ANIMTIMER=aTimerData.ANIMNORMAL, LONGNAME="BRIDGE PIECE",
+  DESC="A PLATFORM FOR GAPS\nFOR HARD TO REACH PLACES",
 -- ------------------------------------------------------------------------- --
 }, [TYP.BOAT] = {
   [ACT.STOP]  = { [DIR.L]={154,155},[DIR.NONE]={154,155},[DIR.R]={154,155},
@@ -946,7 +969,8 @@ local aObjectData<const> = {
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
   NAME="GATE", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=0,
   WEIGHT=0, FLAGS=OFL.DEVICE|OFL.AQUALUNG, MENU=MNU.GATE, ACTION=ACT.STOP,
-  AITYPE=AI.NONE, JOB=JOB.NONE, DIRECTION=DIR.NONE, ANIMTIMER=aTimerData.ANIMNORMAL
+  AITYPE=AI.NONE, JOB=JOB.NONE, DIRECTION=DIR.NONE,
+  ANIMTIMER=aTimerData.ANIMNORMAL
 -- ------------------------------------------------------------------------- --
 }, [TYP.LIFT] = {
   [ACT.STOP] = { [DIR.NONE]={320,320},FLAGS=OFL.PICKUP|OFL.FALL },
@@ -1818,150 +1842,146 @@ local aFloodGateData<const> = {
 local aMenuData<const> = {
   --  ID         W H
   [MNU.MAIN]  = {8,1,{
-  -- BID FLAGS             SUBMENU   ACTION    JOB        DIREC    TIP
-    {765,0,                MNU.MOVE, 0,        0,         0,       "MOVE" },
-    {761,0,                MNU.DIG,  0,        0,         0,       "DIG" },
-    {755,0,                MNU.NONE, ACT.GRAB, JOB.KEEP,  DIR.KEEP,"GRAB" },
-    {756,0,                MNU.DROP, 0,        0,         0,       "INVENTORY" },
-    {762,MFL.BUSY,         MNU.NONE, ACT.KEEP, JOB.HOME,  DIR.HOME,"GO HOME" },
-    {760,MFL.BUSY,         MNU.NONE, ACT.STOP, JOB.NONE,  DIR.NONE,"HALT" },
-    {759,MFL.BUSY,         MNU.NONE, ACT.WALK, JOB.SEARCH,DIR.LR,  "SEARCH" },
-    {772,MFL.BUSY,         MNU.NONE, ACT.PHASE,JOB.PHASE, DIR.U,   "TELEPORT" },
-  -- BID FLAGS             SUBMENU   ACTION    JOB        DIREC    TIP
+  -- BID FLAGS     SUBMENU   ACTION    JOB        DIREC    TIP
+    {765,0,        MNU.MOVE, 0,        0,         0,       "MOVE" },
+    {761,0,        MNU.DIG,  0,        0,         0,       "DIG" },
+    {755,0,        MNU.NONE, ACT.GRAB, JOB.KEEP,  DIR.KEEP,"GRAB" },
+    {756,0,        MNU.DROP, 0,        0,         0,       "INVENTORY" },
+    {762,MFL.BUSY, MNU.NONE, ACT.KEEP, JOB.HOME,  DIR.HOME,"GO HOME" },
+    {760,MFL.BUSY, MNU.NONE, ACT.STOP, JOB.NONE,  DIR.NONE,"HALT" },
+    {759,MFL.BUSY, MNU.NONE, ACT.WALK, JOB.SEARCH,DIR.LR,  "SEARCH" },
+    {772,MFL.BUSY, MNU.NONE, ACT.PHASE,JOB.PHASE, DIR.U,   "TELEPORT" },
+  -- BID FLAGS     SUBMENU   ACTION    JOB        DIREC    TIP
                }    },
   --  ID        W H
   [MNU.MOVE]  ={4,2,{
-  -- BID FLAGS             SUBMENU   ACTION    JOB        DIREC    TIP
-    {750,MFL.BUSY,         MNU.NONE, ACT.WALK, JOB.KNDD,  DIR.L,   "WALK LEFT" },
-    {763,MFL.BUSY,         MNU.NONE, ACT.JUMP, JOB.KEEP,  DIR.KEEP,"JUMP" },
-    {751,MFL.BUSY,         MNU.NONE, ACT.WALK, JOB.KNDD,  DIR.R,   "WALK RIGHT" },
-    {760,MFL.BUSY,         MNU.NONE, ACT.STOP, JOB.NONE,  DIR.NONE,"HALT" },
-    {753,MFL.BUSY,         MNU.NONE, ACT.RUN,  JOB.KNDD,  DIR.L,   "RUN LEFT" },
-    {752,MFL.BUSY,         MNU.NONE, ACT.STOP, JOB.KNDD,  DIR.KEEP,"STOP" },
-    {754,MFL.BUSY,         MNU.NONE, ACT.RUN,  JOB.KNDD,  DIR.R,   "RUN RIGHT" },
-    {771,0,                MNU.MAIN, 0,        0,         0,       "MAIN MENU" },
-  -- BID FLAGS             SUBMENU   ACTION    JOB        DIREC    TIP
+  -- BID FLAGS     SUBMENU   ACTION    JOB        DIREC    TIP
+    {750,MFL.BUSY, MNU.NONE, ACT.WALK, JOB.KNDD,  DIR.L,   "WALK LEFT" },
+    {763,MFL.BUSY, MNU.NONE, ACT.JUMP, JOB.KEEP,  DIR.KEEP,"JUMP" },
+    {751,MFL.BUSY, MNU.NONE, ACT.WALK, JOB.KNDD,  DIR.R,   "WALK RIGHT" },
+    {760,MFL.BUSY, MNU.NONE, ACT.STOP, JOB.NONE,  DIR.NONE,"HALT" },
+    {753,MFL.BUSY, MNU.NONE, ACT.RUN,  JOB.KNDD,  DIR.L,   "RUN LEFT" },
+    {752,MFL.BUSY, MNU.NONE, ACT.STOP, JOB.KNDD,  DIR.KEEP,"STOP" },
+    {754,MFL.BUSY, MNU.NONE, ACT.RUN,  JOB.KNDD,  DIR.R,   "RUN RIGHT" },
+    {771,0,        MNU.MAIN, 0,        0,         0,       "MAIN MENU" },
+  -- BID FLAGS     SUBMENU   ACTION    JOB        DIREC    TIP
                }    },
   --  ID        W H
   [MNU.DIG]   ={4,2,{
-  -- BID FLAGS             SUBMENU   ACTION    JOB          DIREC    TIP
-    {773,MFL.BUSY,         MNU.NONE, ACT.WALK, JOB.DIG,     DIR.UL,  "DIG UP-LEFT" },
-    {750,MFL.BUSY,         MNU.NONE, ACT.WALK, JOB.DIG,     DIR.L,   "DIG LEFT" },
-    {751,MFL.BUSY,         MNU.NONE, ACT.WALK, JOB.DIG,     DIR.R,   "DIG RIGHT" },
-    {775,MFL.BUSY,         MNU.NONE, ACT.WALK, JOB.DIG,     DIR.UR,  "DIG UP-RIGHT" },
-    {774,MFL.BUSY,         MNU.NONE, ACT.WALK, JOB.DIG,     DIR.DL,  "DIG DN-LEFT" },
-    {764,MFL.BUSY,         MNU.NONE, ACT.WALK, JOB.DIGDOWN, DIR.TCTR,"DIG DOWN" },
-    {771,0,                MNU.MAIN, 0,        0,           0,       "MAIN MENU" },
-    {776,MFL.BUSY,         MNU.NONE, ACT.WALK, JOB.DIG,     DIR.DR,  "DIG DN-RIGHT" },
-  -- BID FLAGS             SUBMENU   ACTION    JOB          DIREC    TIP
+  -- BID FLAGS     SUBMENU   ACTION    JOB          DIREC    TIP
+    {773,MFL.BUSY, MNU.NONE, ACT.WALK, JOB.DIG,     DIR.UL,  "DIG UP-LEFT" },
+    {750,MFL.BUSY, MNU.NONE, ACT.WALK, JOB.DIG,     DIR.L,   "DIG LEFT" },
+    {751,MFL.BUSY, MNU.NONE, ACT.WALK, JOB.DIG,     DIR.R,   "DIG RIGHT" },
+    {775,MFL.BUSY, MNU.NONE, ACT.WALK, JOB.DIG,     DIR.UR,  "DIG UP-RIGHT" },
+    {774,MFL.BUSY, MNU.NONE, ACT.WALK, JOB.DIG,     DIR.DL,  "DIG DN-LEFT" },
+    {764,MFL.BUSY, MNU.NONE, ACT.WALK, JOB.DIGDOWN, DIR.TCTR,"DIG DOWN" },
+    {771,0,        MNU.MAIN, 0,        0,           0,       "MAIN MENU" },
+    {776,MFL.BUSY, MNU.NONE, ACT.WALK, JOB.DIG,     DIR.DR,  "DIG DN-RIGHT" },
+  -- BID FLAGS     SUBMENU   ACTION    JOB          DIREC    TIP
                }    },
   --  ID        W H
   [MNU.DROP]  ={3,2,{
-  -- BID FLAGS             SUBMENU   ACTION    JOB        DIREC    TIP
-    {777,0,                MNU.NONE, ACT.NEXT, JOB.KEEP,  DIR.KEEP,"NEXT ITEM" },
-    {779,0,                MNU.NONE, ACT.DROP, JOB.KEEP,  DIR.KEEP,"DROP ITEM" },
-    {780,0,                MNU.NONE, ACT.DROP, JOB.KEEP,  DIR.KEEP,"DROP ITEM" },
-    {778,0,                MNU.MAIN, 0,        0,         0,       "MAIN MENU" },
-    {781,0,                MNU.NONE, ACT.DROP, JOB.KEEP,  DIR.KEEP,"DROP ITEM" },
-    {782,0,                MNU.NONE, ACT.DROP, JOB.KEEP,  DIR.KEEP,"DROP ITEM" },
-  -- BID FLAGS             SUBMENU   ACTION    JOB        DIREC    TIP
+  -- BID FLAGS  SUBMENU   ACTION    JOB        DIREC    TIP
+    {777,0,     MNU.NONE, ACT.NEXT, JOB.KEEP,  DIR.KEEP,"NEXT ITEM" },
+    {779,0,     MNU.NONE, ACT.DROP, JOB.KEEP,  DIR.KEEP,"DROP ITEM" },
+    {780,0,     MNU.NONE, ACT.DROP, JOB.KEEP,  DIR.KEEP,"DROP ITEM" },
+    {778,0,     MNU.MAIN, 0,        0,         0,       "MAIN MENU" },
+    {781,0,     MNU.NONE, ACT.DROP, JOB.KEEP,  DIR.KEEP,"DROP ITEM" },
+    {782,0,     MNU.NONE, ACT.DROP, JOB.KEEP,  DIR.KEEP,"DROP ITEM" },
+  -- BID FLAGS  SUBMENU   ACTION    JOB        DIREC    TIP
                }    },
   --  ID        W H
   [MNU.TUNNEL]={3,1,{
-  -- BID FLAGS             SUBMENU   ACTION    JOB        DIREC    TIP
-    {750,MFL.BUSY,         MNU.NONE, ACT.WALK, JOB.DIG,   DIR.L,   "DIG LEFT" },
-    {752,MFL.BUSY,         MNU.NONE, ACT.STOP, JOB.NONE,  DIR.KEEP,"HALT" },
-    {751,MFL.BUSY,         MNU.NONE, ACT.WALK, JOB.DIG,   DIR.R,   "DIG RIGHT" },
-  -- BID FLAGS             SUBMENU   ACTION    JOB        DIREC    TIP
+  -- BID FLAGS     SUBMENU   ACTION    JOB        DIREC    TIP
+    {750,MFL.BUSY, MNU.NONE, ACT.WALK, JOB.DIG,   DIR.L,   "DIG LEFT" },
+    {752,MFL.BUSY, MNU.NONE, ACT.STOP, JOB.NONE,  DIR.KEEP,"HALT" },
+    {751,MFL.BUSY, MNU.NONE, ACT.WALK, JOB.DIG,   DIR.R,   "DIG RIGHT" },
+  -- BID FLAGS     SUBMENU   ACTION    JOB        DIREC    TIP
                }    },
   --  ID        W H
   [MNU.CORK]  ={2,2,{
-  -- BID FLAGS             SUBMENU   ACTION    JOB         DIREC    TIP
-    {750,MFL.BUSY,         MNU.NONE, ACT.CREEP,JOB.NONE,   DIR.L,   "GO LEFT" },
-    {751,MFL.BUSY,         MNU.NONE, ACT.CREEP,JOB.NONE,   DIR.R,   "GO RIGHT" },
-    {764,MFL.BUSY,         MNU.NONE, ACT.CREEP,JOB.DIGDOWN,DIR.TCTR,"DIG DOWN" },
-    {752,MFL.BUSY,         MNU.NONE, ACT.STOP, JOB.NONE,   DIR.KEEP,"HALT" },
-  -- BID FLAGS             SUBMENU   ACTION    JOB         DIREC    TIP
+  -- BID FLAGS     SUBMENU   ACTION    JOB         DIREC    TIP
+    {750,MFL.BUSY, MNU.NONE, ACT.CREEP,JOB.NONE,   DIR.L,   "GO LEFT" },
+    {751,MFL.BUSY, MNU.NONE, ACT.CREEP,JOB.NONE,   DIR.R,   "GO RIGHT" },
+    {764,MFL.BUSY, MNU.NONE, ACT.CREEP,JOB.DIGDOWN,DIR.TCTR,"DIG DOWN" },
+    {752,MFL.BUSY, MNU.NONE, ACT.STOP, JOB.NONE,   DIR.KEEP,"HALT" },
+  -- BID FLAGS     SUBMENU   ACTION    JOB         DIREC    TIP
                }    },
   --  ID        W H
   [MNU.TNT]   ={1,1,{
-  -- BID FLAGS             SUBMENU   ACTION    JOB       DIREC    TIP
-    {769,MFL.BUSY,         MNU.NONE, ACT.DYING,JOB.NONE, DIR.NONE,"DETONATE" },
-  -- BID FLAGS             SUBMENU   ACTION    JOB       DIREC    TIP
+  -- BID FLAGS     SUBMENU   ACTION    JOB       DIREC    TIP
+    {769,MFL.BUSY, MNU.NONE, ACT.DYING,JOB.NONE, DIR.NONE,"DETONATE" },
+  -- BID FLAGS     SUBMENU   ACTION    JOB       DIREC    TIP
                }    },
   --  ID        W H
   [MNU.MAP]   ={1,1,{
-    -- BID FLAGS           SUBMENU   ACTION    JOB       DIREC    TIP
-    {783,MFL.BUSY,         MNU.NONE, ACT.MAP,  JOB.NONE, DIR.NONE,"DISPLAY" },
-    -- BID FLAGS           SUBMENU   ACTION    JOB       DIREC    TIP
+    -- BID FLAGS   SUBMENU   ACTION    JOB       DIREC    TIP
+    {783,MFL.BUSY, MNU.NONE, ACT.MAP,  JOB.NONE, DIR.NONE,"DISPLAY" },
+    -- BID FLAGS   SUBMENU   ACTION    JOB       DIREC    TIP
                }          },
   --  ID        W H
   [MNU.TRAIN] ={3,2,{
-    -- BID FLAGS           SUBMENU   ACTION    JOB        DIREC    TIP
-    {750,MFL.BUSY,         MNU.NONE, ACT.WALK, JOB.NONE,  DIR.L,   "GO LEFT" },
-    {752,MFL.BUSY,         MNU.NONE, ACT.STOP, JOB.NONE,  DIR.KEEP,"HALT" },
-    {751,MFL.BUSY,         MNU.NONE, ACT.WALK, JOB.NONE,  DIR.R,   "GO RIGHT" },
-    {755,0,                MNU.NONE, ACT.GRAB, JOB.KEEP,  DIR.KEEP,"GRAB" },
-    {756,0,                MNU.NONE, ACT.DROP, JOB.KEEP,  DIR.KEEP,"INVENTORY" },
-    {759,MFL.BUSY,         MNU.NONE, ACT.WALK, JOB.SEARCH,DIR.LR,  "SEARCH" },
-    -- BID FLAGS           SUBMENU   ACTION    JOB        DIREC    TIP
+    -- BID FLAGS   SUBMENU   ACTION    JOB        DIREC    TIP
+    {750,MFL.BUSY, MNU.NONE, ACT.WALK, JOB.NONE,  DIR.L,   "GO LEFT" },
+    {752,MFL.BUSY, MNU.NONE, ACT.STOP, JOB.NONE,  DIR.KEEP,"HALT" },
+    {751,MFL.BUSY, MNU.NONE, ACT.WALK, JOB.NONE,  DIR.R,   "GO RIGHT" },
+    {755,0,        MNU.NONE, ACT.GRAB, JOB.KEEP,  DIR.KEEP,"GRAB" },
+    {756,0,        MNU.NONE, ACT.DROP, JOB.KEEP,  DIR.KEEP,"INVENTORY" },
+    {759,MFL.BUSY, MNU.NONE, ACT.WALK, JOB.SEARCH,DIR.LR,  "SEARCH" },
+    -- BID FLAGS   SUBMENU   ACTION    JOB        DIREC    TIP
                }    },
   --  ID        W H
   [MNU.TRDROP]={3,2,{
-    -- BID FLAGS           SUBMENU   ACTION    JOB        DIREC    TIP
-    {777,0,                MNU.NONE, ACT.NEXT, JOB.KEEP,  DIR.KEEP,"NEXT ITEM" },
-    {779,0,                MNU.NONE, ACT.DROP, JOB.KEEP,  DIR.KEEP,"DROP ITEM" },
-    {780,0,                MNU.NONE, ACT.DROP, JOB.KEEP,  DIR.KEEP,"DROP ITEM" },
-    {778,0,                MNU.TRAIN,0,        0,         0,       "MAIN CONTROL" },
-    {781,0,                MNU.NONE, ACT.DROP, JOB.KEEP,  DIR.KEEP,"DROP ITEM" },
-    {782,0,                MNU.NONE, ACT.DROP, JOB.KEEP,  DIR.KEEP,"DROP ITEM" },
-    -- BID FLAGS           SUBMENU   ACTION    JOB        DIREC    TIP
+    -- BID FLAGS  SUBMENU   ACTION    JOB        DIREC    TIP
+    {777,0,       MNU.NONE, ACT.NEXT, JOB.KEEP,  DIR.KEEP,"NEXT ITEM" },
+    {779,0,       MNU.NONE, ACT.DROP, JOB.KEEP,  DIR.KEEP,"DROP ITEM" },
+    {780,0,       MNU.NONE, ACT.DROP, JOB.KEEP,  DIR.KEEP,"DROP ITEM" },
+    {778,0,       MNU.TRAIN,0,        0,         0,       "MAIN CONTROL" },
+    {781,0,       MNU.NONE, ACT.DROP, JOB.KEEP,  DIR.KEEP,"DROP ITEM" },
+    {782,0,       MNU.NONE, ACT.DROP, JOB.KEEP,  DIR.KEEP,"DROP ITEM" },
+    -- BID FLAGS  SUBMENU   ACTION    JOB        DIREC    TIP
                }    },
   --  ID        W H
   [MNU.FLOAT] ={3,1,{
-    -- BID FLAGS           SUBMENU   ACTION    JOB        DIREC    TIP
-    {750,MFL.BUSY,         MNU.NONE, ACT.CREEP,JOB.NONE,  DIR.L,   "MOVE LEFT" },
-    {752,MFL.BUSY,         MNU.NONE, ACT.STOP, JOB.NONE,  DIR.KEEP,"HALT" },
-    {751,MFL.BUSY,         MNU.NONE, ACT.CREEP,JOB.NONE,  DIR.R,   "MOVE RIGHT" },
-    -- BID FLAGS           SUBMENU   ACTION    JOB        DIREC    TIP
+    -- BID FLAGS   SUBMENU   ACTION    JOB        DIREC    TIP
+    {750,MFL.BUSY, MNU.NONE, ACT.CREEP,JOB.NONE,  DIR.L,   "MOVE LEFT" },
+    {752,MFL.BUSY, MNU.NONE, ACT.STOP, JOB.NONE,  DIR.KEEP,"HALT" },
+    {751,MFL.BUSY, MNU.NONE, ACT.CREEP,JOB.NONE,  DIR.R,   "MOVE RIGHT" },
+    -- BID FLAGS   SUBMENU   ACTION    JOB        DIREC    TIP
                }    },
   --  ID        W H
   [MNU.GATE]  ={2,1,{
-    -- BID FLAGS           SUBMENU   ACTION    JOB        DIREC    TIP
-    {767,MFL.BUSY,         MNU.NONE, ACT.CLOSE,JOB.NONE,  DIR.NONE,"CLOSE" },
-    {768,MFL.BUSY,         MNU.NONE, ACT.OPEN, JOB.NONE,  DIR.NONE,"OPEN" },
-    -- BID FLAGS           SUBMENU   ACTION    JOB        DIREC    TIP
+    -- BID FLAGS   SUBMENU   ACTION    JOB        DIREC    TIP
+    {767,MFL.BUSY, MNU.NONE, ACT.CLOSE,JOB.NONE,  DIR.NONE,"CLOSE" },
+    {768,MFL.BUSY, MNU.NONE, ACT.OPEN, JOB.NONE,  DIR.NONE,"OPEN" },
+    -- BID FLAGS   SUBMENU   ACTION    JOB        DIREC    TIP
                }    },
   --  ID        W H
   [MNU.DEPLOY]={1,1,{
-    -- BID FLAGS           SUBMENU   ACTION     JOB       DIREC    TIP
-    {770,MFL.BUSY,         MNU.NONE, ACT.DEPLOY,JOB.NONE, DIR.NONE,"DEPLOY" },
-    -- BID FLAGS           SUBMENU   ACTION     JOB       DIREC    TIP
+    -- BID FLAGS   SUBMENU   ACTION     JOB       DIREC    TIP
+    {770,MFL.BUSY, MNU.NONE, ACT.DEPLOY,JOB.NONE, DIR.NONE,"DEPLOY" },
+    -- BID FLAGS   SUBMENU   ACTION     JOB       DIREC    TIP
                }    },
   --  ID        W H
   [MNU.LIFT]  ={3,1,{
-    -- BID FLAGS           SUBMENU   ACTION     JOB       DIREC    TIP
-    {763,MFL.BUSY,         MNU.NONE, ACT.CREEP, JOB.NONE, DIR.U,   "ASCEND" },
-    {752,MFL.BUSY,         MNU.NONE, ACT.CREEP, JOB.NONE, DIR.NONE,"STOP" },
-    {764,MFL.BUSY,         MNU.NONE, ACT.CREEP, JOB.NONE, DIR.D,   "DESCEND" },
-    -- BID FLAGS           SUBMENU   ACTION     JOB       DIREC    TIP
+    -- BID FLAGS   SUBMENU   ACTION     JOB       DIREC    TIP
+    {763,MFL.BUSY, MNU.NONE, ACT.CREEP, JOB.NONE, DIR.U,   "ASCEND" },
+    {752,MFL.BUSY, MNU.NONE, ACT.CREEP, JOB.NONE, DIR.NONE,"STOP" },
+    {764,MFL.BUSY, MNU.NONE, ACT.CREEP, JOB.NONE, DIR.D,   "DESCEND" },
+    -- BID FLAGS   SUBMENU   ACTION     JOB       DIREC    TIP
                }    },
   --  ID        W H
 };
 -- Endings data ------------------------------------------------------------ --
 local aEndingData<const> = {
-  [TYP.FTARG]    = { 1, 0,   0, 512, 240,
-    "THE F'TARGS CONSTRUCT THEIR OWN MUSEUM",
-    "OF METAL MARVELS WITH THEIR EARNINGS" },
-  [TYP.HABBISH]  = { 1, 0, 272, 512, 512,
-    "THE HABBISH CONSTRUCT A TEMPLE IN HONOUR OF",
-    "THE LORD HIGH HABBORG WITH THEIR EARNINGS" },
-  [TYP.GRABLIN]  = { 2, 0,   0, 512, 240,
-    "THE GRABLINS CONSTRUCT THEIR OWN GROK",
-    "BREWERY WITH THEIR EARNINGS" },
-  [TYP.QUARRIOR] = { 2, 0, 272, 512, 512,
-    "THE QUARRIORS CONSTRUCT AN IMPENETRABLE",
-    "FORTRESS WITH THEIR EARNINGS" }
+  [TYP.FTARG]    = { 1, 0, "THE F'TARGS CONSTRUCT THEIR OWN MUSEUM",
+                           "OF METAL MARVELS WITH THEIR EARNINGS" },
+  [TYP.HABBISH]  = { 1, 1, "THE HABBISH CONSTRUCT A TEMPLE IN HONOUR OF",
+                           "THE LORD HIGH HABBORG WITH THEIR EARNINGS" },
+  [TYP.GRABLIN]  = { 2, 0, "THE GRABLINS CONSTRUCT THEIR OWN GROK",
+                           "BREWERY WITH THEIR EARNINGS" },
+  [TYP.QUARRIOR] = { 2, 1, "THE QUARRIORS CONSTRUCT AN IMPENETRABLE",
+                           "FORTRESS WITH THEIR EARNINGS" }
 };
 -- Credits data ------------------------------------------------------------ --
 local aCreditsData<const> = {
@@ -2001,7 +2021,19 @@ local aCreditsData<const> = {
 -- Extra credits ----------------------------------------------------------- --
 local aCreditsXData<const> = {
   { "Complete conversion",             "MS-Design" },
-  { "Conversion powered by",           "M-Engine" },
+  { "Setup music loop",                "S.S. Secret Mission 1\n"..
+                                       "By PowerTrace\n"..
+                                       "Edited by MS-Design\n"..
+                                       "AmigaRemix.com" },
+  { "Credits music loop",              "4U 07:00 V2001\n"..
+                                       "By Enuo\n"..
+                                       "Edited by MS-Design\n"..
+                                       "ModArchive.org" },
+  { "Gameover music loop",             "1000 Years Of Funk\n"..
+                                       "By Dimitri D. L.\n"..
+                                       "Edited by MS-Design\n"..
+                                       "ModArchive.Org" },
+  { "Conversion powered by",           "MS-Engine" },
   { "GLFW OpenGL front-end",           "Marcus Geelnard\n"..
                                        "Camilla Berglund" },
   { "LUA scripting engine",            "Lua.org, PUC-Rio" },
@@ -2023,24 +2055,92 @@ local aCreditsXData<const> = {
   { "RapidJSON parsing engine",        "THL A29 Ltd.\n"..
                                        "Tencent co.\n"..
                                        "Milo Yip" },
-  { "Setup music loop",                "S.S. Secret Mission 1\n"..
-                                       "By PowerTrace\n"..
-                                       "Edited by MS-Design\n"..
-                                       "AmigaRemix.com" },
-  { "Credits music loop",              "4U 07:00 V2001\n"..
-                                       "By Enuo\n"..
-                                       "Edited by MS-Design\n"..
-                                       "ModArchive.org" },
-  { "Gameover music loop",             "1000 Years Of Funk\n"..
-                                       "By Dimitri D. L.\n"..
-                                       "Edited by MS-Design\n"..
-                                       "ModArchive.Org" },
   { "Special thanks",                  "ModArchive.Org\n"..
                                        "AmigaRemix.Com\n"..
                                        "Toby Simpson\n"..
                                        "You!" },
   { "Thank you for playing!",          "The End!" },
 };
+-- Setup buttons data ------------------------------------------------------ --
+local aSetupButtonData<const> = { -- nil's are filled in 'setup.lua' init
+  APPLY = {   4, 193,  82, 212, CID.OK,   nil, 101,
+    "CLICK TO APPLY ANY SYSTEM AFFECTING SETTINGS YOU HAVE CHANGED" },
+  DONE  = {  82, 193, 160, 212, CID.EXIT, nil, 102,
+    "CLICK TO EXIT THIS SETUP WINDOW AND RETURN TO YOUR GAME. ANY "..
+    "CHANGED SETTINGS THAT NEED TO BE APPLIED WILL BE CANCELLED" },
+  RESET = { 160, 193, 238, 212, CID.OK,   nil, 103,
+    "CLICK TO RESET ALL VALUES TO DEFAULTS AND AUTOMATICALLY APPLY THE "..
+    "SETTINGS" },
+  ABOUT = { 238, 193, 316, 212, CID.OK,   nil, 104,
+    "CLICK TO VIEW THE ACKNOWLEDGEMENTS FOR THIS GAME" }
+};-- Setup options data ---------------------------------------------------- --
+local aSetupOptionData<const> = { -- nil's are filled in 'setup.lua' init
+  -- Option name -- Value -- UpdateFunc --- DownFunc --- UpFunc ------------ --
+  { "Monitor",         "", nil,           nil,         nil,
+    "CHANGES THE MONITOR THE GAME WILL APPEAR ON BY DEFAULT. PRESS "..
+    "APPLY WHEN YOU ARE HAPPY WITH THE SELECTION TO ACTIVATE IT", },
+  { "Display State",   "", nil,           nil,         nil,
+    "CHANGES THE DEFAULT WINDOW STYLE OF THE GAME. PRESS APPLY WHEN YOU "..
+    "ARE HAPPY WITH THE SELECTION TO ACTIVATE IT" },
+  { "Full-Resolution", "", nil,           nil,         nil,
+    "ALLOWS YOU TO SET A CUSTOM DESKTOP RESOLUTION FOR EXCLUSIVE "..
+    "FULL-SCREEN MODE. PRESS APPLY WHEN YOU ARE HAPPY WITH THE SELECTION "..
+    "TO ACTIVATE IT" },
+  { "Window Size",     "", nil,           nil,         nil,
+    "ALLOWS YOU TO SET A CUSTOM WINDOW SIZE FOR DECORATED WINDOW ONLY "..
+    "MODE. PRESS APPLY WHEN YOU ARE HAPPY WITH THE SELECTION TO ACTIVATE "..
+    "IT" },
+  { "Frame Limiter",   "", nil,           nil,         nil,
+    "ALLOWS YOU TO CHOOSE FROM A RANGE OF FRAME-LIMITING OPTIONS TO "..
+    "BALANCE THE PERFORMANCE VERSUS POWER USAGE OF RENDERING. SOME VALUES "..
+    "MAY BE INEFFECTIVE WHEN THE VSYNC VALUE IS BEING OVERRIDDEN IN YOUR "..
+    "VIDEO ADAPTER SETTINGS OR WHEN YOUR SYSTEM IS UNDERPERFORMING. THE "..
+    "CHANGE IS INSTANTLY APPLIED" },
+  { "Texture Filter",  "", nil,           nil,         nil,
+    "APPLY A BILINEAR UPSCALE FILTER TO THE MAIN FRAMEBUFFER. THE GAME IS "..
+    "RENDERED IN 320x240. THE CHANGE OF OPTION IS INSTANTLY APPLIED" },
+  { "Audio Device",    "", nil,           nil,         nil,
+    "ALLOWS YOU TO SET THE DEFAULT AUDIO DEVICE TO USE FOR THE GAME. "..
+    "PRESS APPLY WHEN YOU ARE HAPPY WITH THE SELECTION TO ACTIVATE IT" },
+  { "Master Volume",   "", nil,           nil,         nil,
+    "CHANGES THE FINAL OUTPUT VOLUME OF ALL MUSIC, SOUND EFFECTS AND FMV "..
+    "MIXED TOGETHER. THE CHANGE OF OPTION IS INSTANTLY APPLIED" },
+  { "Music Volume",    "", nil,           nil,         nil,
+    "CHANGES THE MUSIC VOLUME. THE CHANGE OF OPTION IS INSTANTLY APPLIED" },
+  { "Effect Volume",   "", nil,           nil,         nil,
+    "CHANGES THE SFX VOLUME. THE CHANGE OF OPTION IS INSTANTLY APPLIED" },
+  { "Fmv Volume",      "", nil,           nil,         nil,
+    "CHANGES THE FMV VOLUME. THE CHANGE OF OPTION IS INSTANTLY APPLIED" },
+};-- Option name -- Value -- UpdateFunc --- DownFunc --- UpFunc ------------ --
+local aIntroSubTitles<const> = {
+  -- SHO - HID - LINES ----------------------------------------------------- --
+  {  380,  440, { "This is no ordinary day on the planet Zarg." } },
+  {  450,  510, { "Today is the glorious four-hundred and twelfth." } },
+  {  520,  640, { "The day that each year, signals the commencement",
+                  "of one months frenzied digging." } },
+  {  650,  770, { "Four races of diggers, are tunneling their way",
+                  "to the Zargon mineral trading centre." } },
+  {  780,  810, { "They each have an ambition..." } },
+  {  820,  930, { "That requires them to mine as much of the",
+                  "planets mineral wealth, as possible." } },
+  { 1150, 1280, { "Observing the quarrelsome diggers from afar,",
+                  "is a mysterious stranger." } },
+  { 1290, 1410, { "Each of the races are hoping that this 'stranger'",
+                  "will control their mining operations." } },
+  { 1420, 1550, { "His expertese, will be vital, in guiding",
+                  "them along the long, dangerous path..." } },
+  { 1560, 1620, { "...that leads them to their ultimate goal." } },
+  { 1630, 1790, { "His first step, is to register, at the",
+                  "Zargon mineral trading centre." } },
+  { 1900, 2040, { "As the diggers wait nervously, the stranger",
+                  "heads towards the trading centre." } },
+  { 2050, 2180, { "For him, the ultimate test. The greatest",
+                  "challenge of his life lies ahead." } },
+  { 2200, 2290, { "The rewards for success,",
+                  "will be wealth unlimited." } },
+  { 2310, 2440, { "The results of failure,",
+                  "are unthinkable!" } },
+};-- SHO - HID - LINES ----------------------------------------------------- --
 -- Imports and exports ----------------------------------------------------- --
 return { F = Util.Blank, A = {         -- Sending API to main loader
 -- Exports ----------------------------------------------------------------- --
@@ -2064,6 +2164,8 @@ aExplodeDirData   = aExplodeDirData,   aRaceStatData     = aRaceStatData,
 aShopData         = aShopData,         aAIBigFootData    = aAIBigFootData,
 aRaceData         = aRaceData,         aDugRandShaftData = aDugRandShaftData,
 aTrainTrackData   = aTrainTrackData,   aExplodeAboveData = aExplodeAboveData,
+aSetupButtonData  = aSetupButtonData,  aSetupOptionData  = aSetupOptionData,
+aIntroSubTitles   = aIntroSubTitles
 -- ------------------------------------------------------------------------- --
 } };                                   -- End of definitions to send to loader
 -- End-of-File ============================================================= --

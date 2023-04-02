@@ -72,7 +72,7 @@ class SysPipe :                        // Members initially private
       XC("Executable name is invalid!",
          "CmdLine", strCmdLine, "Program", strApp,
          "Code",    iVResult,
-         "Reason",  DirValidNameResultToString(iVResult));
+         "Reason",  cDirBase->VNRtoStr(iVResult));
     // De-init existing process
     Finish();
     // Show command and arguments
@@ -119,12 +119,12 @@ class SysPipe :                        // Members initially private
       hStdoutWrite                     // HANDLE hStdError (Using ours/stdout)
     };
     // Create the child process and if succeeded?
-    if(CreateProcess(ToNonConstCast<LPCWSTR>(UTFtoS16(strApp)),
-      ToNonConstCast<LPWSTR>(UTFtoS16(strCmdLine)), nullptr, nullptr, TRUE,
-      CREATE_SUSPENDED|CREATE_NO_WINDOW, nullptr, nullptr, &siStartInfo,
+    if(CreateProcess(ToNonConstCast<LPCWSTR>(UTFtoS16(strApp).c_str()),
+      ToNonConstCast<LPWSTR>(UTFtoS16(strCmdLine).c_str()), nullptr, nullptr,
+      TRUE, CREATE_SUSPENDED|CREATE_NO_WINDOW, nullptr, nullptr, &siStartInfo,
       &piProcInfo)) try
     { // Store name of executable
-      IdentSet(std::move(strApp));
+      IdentSet(StdMove(strApp));
       // Close handles to the stdin and stdout pipes no longer needed by the
       // child process. If they are not explicitly closed, there is no way to
       // recognize that the child process has ended.
@@ -153,7 +153,7 @@ class SysPipe :                        // Members initially private
     } // Create process failed
     else
     { // Store name of executable
-      IdentSet(std::move(strApp));
+      IdentSet(StdMove(strApp));
       // Throw error
       XCS("Failed to execute process!", "Executable", IdentGet());
     }
@@ -233,13 +233,13 @@ class SysPipe :                        // Members initially private
   unsigned int GetPid(void) { return static_cast<unsigned int>(dwPid); }
   /* -- Constructor with init ---------------------------------------------- */
   explicit SysPipe(const string &strF) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     SysPipe()                          // Start uninitialised
     /* --------------------------------------------------------------------- */
     { Init(strF); }                    // Initialise with filename
   /* -- Constructor with init ---------------------------------------------- */
   SysPipe(void) :                      // No parameters
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     hStdinRead(INVALID_HANDLE_VALUE),  // Stdin read handle uninitialised
     hStdinWrite(INVALID_HANDLE_VALUE), // Stdin write handle uninitialised
     hStdoutRead(INVALID_HANDLE_VALUE), // Stdout read handle uninitialised

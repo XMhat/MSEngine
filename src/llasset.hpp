@@ -16,7 +16,7 @@
 // ! use and manipulation of that data with codecs or manually by the
 // ! programmer.
 /* ========================================================================= */
-LLNAMESPACEBEGIN(Asset)                // Asset namespace
+namespace NsAsset {                    // Asset namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfAsset;               // Using asset namespace
 using namespace IfLuaCode;             // Using luacode namespace
@@ -356,94 +356,50 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Asset));
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Asset:* member functions begin
-  LLRSFUNC  (BitClear),                // Clear the specified bit
-  LLRSFUNC  (BitFlip),                 // Flip the specified bit
-  LLRSFUNC  (BitSet),                  // Set the specified bit
-  LLRSFUNC  (BitState),                // Return if the specified bit is set
-  LLRSFUNC  (Clear),                   // Clear array with specified char
-  LLRSFUNC  (Crop),                    // Crop (resize both ends) block
-  LLRSFUNC  (Destroy),                 // Destroy the internal asset object
-  LLRSFUNC  (Fill),                    // Fill entire array with specified char
-  LLRSFUNC  (Find),                    // Find first string in array
-  LLRSFUNC  (FindEx),                  //  " from the specified position
-  LLRSFUNCEX(I16, Invert<uint16_t>),   // Invert 16-bit int bits
-  LLRSFUNCEX(I16F, InvertEx<uint16_t>),//  " specific bits
-  LLRSFUNC  (I16FLE),                  //  " " (little endian)
-  LLRSFUNC  (I16FBE),                  //  " " (big endian)
-  LLRSFUNCEX(I32, Invert<uint32_t>),   // Invert 32-bit int bits
-  LLRSFUNCEX(I32F, InvertEx<uint32_t>),//  " specific bits
-  LLRSFUNC  (I32FLE),                  //  " " (little endian)
-  LLRSFUNC  (I32FBE),                  //  " " (big endian)
-  LLRSFUNCEX(I64, Invert<uint64_t>),   // Invert 64-bit int bits
-  LLRSFUNCEX(I64F, InvertEx<uint64_t>),//  " specific bits
-  LLRSFUNC  (I64FLE),                  //  " " (little endian)
-  LLRSFUNC  (I64FBE),                  //  " " (big endian)
-  LLRSFUNCEX(I8, Invert<uint8_t>),     // Invert 8-bit int bits
-  LLRSFUNCEX(I8F, InvertEx<uint8_t>),  //  " specific bits
-  LLRSFUNC  (Name),                    // Return filename associated with this
-  LLRSFUNCEX(RF32, ReadN<float>),      // Read 32-bit IEEE754 float
-  LLRSFUNC  (RF32BE),                  // " 32-bit float BE
-  LLRSFUNC  (RF32LE),                  // " 32-bit float LE
-  LLRSFUNCEX(RF64, ReadN<double>),     // " 64-bit IEEE754 float
-  LLRSFUNC  (RF64BE),                  // " 64-bit float BE
-  LLRSFUNC  (RF64LE),                  // " 64-bit float LE
-  LLRSFUNCEX(RI16, ReadI<int16_t>),    // " 16-bit signed integer
-  LLRSFUNCEX(RI16BE, RI16BE<int16_t>), // " 16-bit signed integer BE
-  LLRSFUNCEX(RI16LE, RI16LE<int16_t>), // " 16-bit signed integer LE
-  LLRSFUNCEX(RI32, ReadI<int32_t>),    // " 32-bit signed integer
-  LLRSFUNCEX(RI32BE, RI32BE<int32_t>), // " 32-bit signed integer BE
-  LLRSFUNCEX(RI32LE, RI32LE<int32_t>), // " 32-bit signed integer LE
-  LLRSFUNCEX(RI64, ReadI<int64_t>),    // " 64-bit signed integer
-  LLRSFUNCEX(RI64BE, RI64BE<int64_t>), // " 64-bit signed integer BE
-  LLRSFUNCEX(RI64LE, RI64LE<int64_t>), // " 64-bit signed integer LE
-  LLRSFUNCEX(RI8, ReadI<int8_t>),      // " 8-bit signed integer
-  LLRSFUNCEX(RU16, ReadI<uint16_t>),   // " 16-bit unsigned integer
-  LLRSFUNCEX(RU16BE, RI16BE<uint16_t>),// " 16-bit unsigned integer BE
-  LLRSFUNCEX(RU16LE, RI16LE<uint16_t>),// " 16-bit unsigned integer LE
-  LLRSFUNCEX(RU32, ReadI<uint32_t>),   // " 32-bit unsigned integer
-  LLRSFUNCEX(RU32BE, RI32BE<uint32_t>),// " 32-bit unsigned integer BE
-  LLRSFUNCEX(RU32LE, RI32LE<uint32_t>),// " 32-bit unsigned integer LE
-  LLRSFUNCEX(RU64, ReadI<uint64_t>),   // " 64-bit unsigned integer
-  LLRSFUNCEX(RU64BE, RI64BE<uint64_t>),// " 64-bit unsigned integer BE
-  LLRSFUNCEX(RU64LE, RI64LE<uint64_t>),// " 64-bit unsigned integer LE
-  LLRSFUNCEX(RU8, ReadI<uint8_t>),     // " 8-bit unsigned integer
-  LLRSFUNC  (Resize),                  // Resize data array
-  LLRSFUNC  (ResizeUp),                // Resize data array (only upwards)
-  LLRSFUNC  (Reverse),                 // Reverse data array
-  LLRSFUNC  (Set),                     // Fill array with specific character
-  LLRSFUNC  (Size),                    // Return size of array
-  LLRSFUNC  (S8),                      // Swap high/low 4-bits of a 8-bit int
-  LLRSFUNC  (S16),                     // Swap high/low 8-bits of a 16-bit int
-  LLRSFUNC  (S32),                     // Swap high/low 16-bits of a 32-bit int
-  LLRSFUNC  (S64),                     // Swap high/low 32-bits of a 64-bit int
-  LLRSFUNC  (ToFile),                  // Dump data array to file
-  LLRSFUNC  (ToString),                // Convert data array to string
-  LLRSFUNCEX(WF32, WriteN<float>),     // Write 32b IEEE754 float
-  LLRSFUNC  (WF32BE),                  // " 32-bit float BE
-  LLRSFUNC  (WF32LE),                  // " 32-bit float LE
-  LLRSFUNCEX(WF64, WriteN<double>),    // " 64-bit IEEE754 float
-  LLRSFUNC  (WF64BE),                  // " 64-bit float BE
-  LLRSFUNC  (WF64LE),                  // " 64-bit float LE
-  LLRSFUNCEX(WI16, WriteI<int16_t>),   // " 16-bit signed integer
-  LLRSFUNCEX(WI16BE, WI16BE<int16_t>), // " 16-bit signed integer BE
-  LLRSFUNCEX(WI16LE, WI16LE<int16_t>), // " 16-bit signed integer LE
-  LLRSFUNCEX(WI32, WriteI<int32_t>),   // " 32-bit signed integer
-  LLRSFUNCEX(WI32BE, WI32BE<int32_t>), // " 32-bit signed integer BE
-  LLRSFUNCEX(WI32LE, WI32LE<int32_t>), // " 32-bit signed integer LE
-  LLRSFUNCEX(WI64, WriteI<int64_t>),   // " 64-bit signed integer
-  LLRSFUNCEX(WI64BE, WI64BE<int64_t>), // " 64-bit signed integer BE
-  LLRSFUNCEX(WI64LE, WI64LE<int64_t>), // " 64-bit signed integer LE
-  LLRSFUNCEX(WI8, WriteI<int8_t>),     // " 8-bit signed integer
-  LLRSFUNCEX(WU16, WriteI<uint16_t>) , // " 16-bit unsigned integer
-  LLRSFUNCEX(WU16BE, WI16BE<uint16_t>),// " 16-bit unsigned integer BE
-  LLRSFUNCEX(WU16LE, WI16LE<uint16_t>),// " 16-bit unsigned integer LE
-  LLRSFUNCEX(WU32, WriteI<uint32_t>),  // " 32-bit unsigned integer
-  LLRSFUNCEX(WU32BE, WI32BE<uint32_t>),// " 32-bit unsigned integer BE
-  LLRSFUNCEX(WU32LE, WI32LE<uint32_t>),// " 32-bit unsigned integer LE
-  LLRSFUNCEX(WU64, WriteI<uint64_t>),  // " 64-bit unsigned integer
-  LLRSFUNCEX(WU64BE, WI64BE<uint64_t>),// " 64-bit unsigned integer BE
-  LLRSFUNCEX(WU64LE, WI64LE<uint64_t>),// " 64-bit unsigned integer LE
-  LLRSFUNCEX(WU8, WriteI<uint8_t>),    // " 8-bit unsigned integer
+  LLRSFUNC(BitClear),                  LLRSFUNC(BitFlip),
+  LLRSFUNC(BitSet),                    LLRSFUNC(BitState),
+  LLRSFUNC(Clear),                     LLRSFUNC(Crop),
+  LLRSFUNC(Destroy),                   LLRSFUNC(Fill),
+  LLRSFUNC(Find),                      LLRSFUNC(FindEx),
+  LLRSFUNCEX(I16,Invert<uint16_t>),    LLRSFUNCEX(I16F,InvertEx<uint16_t>),
+  LLRSFUNC(I16FBE),                    LLRSFUNC(I16FLE),
+  LLRSFUNCEX(I32,Invert<uint32_t>),    LLRSFUNCEX(I32F,InvertEx<uint32_t>),
+  LLRSFUNC(I32FBE),                    LLRSFUNC(I32FLE),
+  LLRSFUNCEX(I64,Invert<uint64_t>),    LLRSFUNCEX(I64F,InvertEx<uint64_t>),
+  LLRSFUNC(I64FBE),                    LLRSFUNC(I64FLE),
+  LLRSFUNCEX(I8,Invert<uint8_t>),      LLRSFUNCEX(I8F,InvertEx<uint8_t>),
+  LLRSFUNC(Name),                      LLRSFUNC(Resize),
+  LLRSFUNC(ResizeUp),                  LLRSFUNC(Reverse),
+  LLRSFUNCEX(RF32,ReadN<float>),       LLRSFUNC(RF32BE),
+  LLRSFUNC(RF32LE),                    LLRSFUNCEX(RF64,ReadN<double>),
+  LLRSFUNC(RF64BE),                    LLRSFUNC(RF64LE),
+  LLRSFUNCEX(RI16,ReadI<int16_t>),     LLRSFUNCEX(RI16BE,RI16BE<int16_t>),
+  LLRSFUNCEX(RI16LE,RI16LE<int16_t>),  LLRSFUNCEX(RI32,ReadI<int32_t>),
+  LLRSFUNCEX(RI32BE,RI32BE<int32_t>),  LLRSFUNCEX(RI32LE,RI32LE<int32_t>),
+  LLRSFUNCEX(RI64,ReadI<int64_t>),     LLRSFUNCEX(RI64BE,RI64BE<int64_t>),
+  LLRSFUNCEX(RI64LE,RI64LE<int64_t>),  LLRSFUNCEX(RI8,ReadI<int8_t>),
+  LLRSFUNCEX(RU16,ReadI<uint16_t>),    LLRSFUNCEX(RU16BE,RI16BE<uint16_t>),
+  LLRSFUNCEX(RU16LE,RI16LE<uint16_t>), LLRSFUNCEX(RU32,ReadI<uint32_t>),
+  LLRSFUNCEX(RU32BE,RI32BE<uint32_t>), LLRSFUNCEX(RU32LE,RI32LE<uint32_t>),
+  LLRSFUNCEX(RU64,ReadI<uint64_t>),    LLRSFUNCEX(RU64BE,RI64BE<uint64_t>),
+  LLRSFUNCEX(RU64LE,RI64LE<uint64_t>), LLRSFUNCEX(RU8,ReadI<uint8_t>),
+  LLRSFUNC(S16),                       LLRSFUNC(S32),
+  LLRSFUNC(S64),                       LLRSFUNC(S8),
+  LLRSFUNC(Set),                       LLRSFUNC(Size),
+  LLRSFUNC(ToFile),                    LLRSFUNC(ToString),
+  LLRSFUNCEX(WF32,WriteN<float>),      LLRSFUNC(WF32BE),
+  LLRSFUNC(WF32LE),                    LLRSFUNCEX(WF64,WriteN<double>),
+  LLRSFUNC(WF64BE),                    LLRSFUNC(WF64LE),
+  LLRSFUNCEX(WI16,WriteI<int16_t>),    LLRSFUNCEX(WI16BE,WI16BE<int16_t>),
+  LLRSFUNCEX(WI16LE,WI16LE<int16_t>),  LLRSFUNCEX(WI32,WriteI<int32_t>),
+  LLRSFUNCEX(WI32BE,WI32BE<int32_t>),  LLRSFUNCEX(WI32LE,WI32LE<int32_t>),
+  LLRSFUNCEX(WI64,WriteI<int64_t>),    LLRSFUNCEX(WI64BE,WI64BE<int64_t>),
+  LLRSFUNCEX(WI64LE,WI64LE<int64_t>),  LLRSFUNCEX(WI8,WriteI<int8_t>),
+  LLRSFUNCEX(WU16,WriteI<uint16_t>),   LLRSFUNCEX(WU16BE,WI16BE<uint16_t>),
+  LLRSFUNCEX(WU16LE,WI16LE<uint16_t>), LLRSFUNCEX(WU32,WriteI<uint32_t>),
+  LLRSFUNCEX(WU32BE,WI32BE<uint32_t>), LLRSFUNCEX(WU32LE,WI32LE<uint32_t>),
+  LLRSFUNCEX(WU64,WriteI<uint64_t>),   LLRSFUNCEX(WU64BE,WI64BE<uint64_t>),
+  LLRSFUNCEX(WU64LE,WI64LE<uint64_t>), LLRSFUNCEX(WU8,WriteI<uint8_t>),
 LLRSEND                                // Asset:* member functions end
 /* ========================================================================= */
 // $ Asset.Parse
@@ -629,7 +585,7 @@ LLFUNC(ExecEx, LCCLASSCREATE(Asset)->InitAsyncCmdLineEx(lS));
 // ? Loads an array on the main thread.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Asset, 1, LCCLASSCREATE(Asset)->InitArray(
-  LCGETCPPSTRINGNE(1, "Identifier"), std::move(*LCGETPTR(2, Asset)),
+  LCGETCPPSTRINGNE(1, "Identifier"), StdMove(*LCGETPTR(2, Asset)),
   LCGETFLAGS(AssetFlagsConst, 3, CD_MASK, "Flags")));
 /* ========================================================================= */
 // $ Asset.String
@@ -671,27 +627,13 @@ LLFUNCEX(Duplicate, 1, LCCLASSCREATE(Asset)->InitCopy(*LCGETPTR(1, Asset)));
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Asset.* namespace functions begin
-  LLRSFUNC(Asset),                     // Create data array from another array
-  LLRSFUNC(AssetAsync),                //  " asynchronously
-  LLRSFUNC(Compile),                   // Compile LUA code
-  LLRSFUNC(CompileBlock),              // Compile LUA asset
-  LLRSFUNC(CompileFunction),           // COmpile LUA function
-  LLRSFUNC(CompileString),             // Compile LUA string
-  LLRSFUNC(Create),                    // Create data array
-  LLRSFUNC(Duplicate),                 // Duplicate another array
-  LLRSFUNC(Enumerate),                 // Enumerate files
-  LLRSFUNC(EnumerateEx),               // Enumerate files with filter
-  LLRSFUNC(Exec),                      // Execute command, output in data array
-  LLRSFUNC(ExecEx),                    //  " with input sent to stdin
-  LLRSFUNC(File),                      // Create data array from file
-  LLRSFUNC(FileAsync),                 //  " asynchronously
-  LLRSFUNC(FileExists),                // File exists?
-  LLRSFUNC(Parse),                     // Parse LUA source
-  LLRSFUNC(ParseBlock),                // Execute LUA asset
-  LLRSFUNC(ParseString),               // Execute LUA string
-  LLRSFUNC(String),                    // Create data array from string
-  LLRSFUNC(StringAsync),               //  " asynchronously
-  LLRSFUNC(WaitAsync),                 // Wait for asset async events
+  LLRSFUNC(Asset),         LLRSFUNC(AssetAsync),      LLRSFUNC(Compile),
+  LLRSFUNC(CompileBlock),  LLRSFUNC(CompileFunction), LLRSFUNC(CompileString),
+  LLRSFUNC(Create),        LLRSFUNC(Duplicate),       LLRSFUNC(Enumerate),
+  LLRSFUNC(EnumerateEx),   LLRSFUNC(Exec),            LLRSFUNC(ExecEx),
+  LLRSFUNC(File),          LLRSFUNC(FileAsync),       LLRSFUNC(FileExists),
+  LLRSFUNC(Parse),         LLRSFUNC(ParseBlock),      LLRSFUNC(ParseString),
+  LLRSFUNC(String),        LLRSFUNC(StringAsync),     LLRSFUNC(WaitAsync),
 LLRSEND                                // Asset.* namespace functions end
 /* ========================================================================= */
 /* ######################################################################### */
@@ -704,19 +646,13 @@ LLRSEND                                // Asset.* namespace functions end
 // ? value is a unique identifier to the flag.
 /* ------------------------------------------------------------------------- */
 LLRSKTBEGIN(Flags)                     // Beginning of loading flags
-LLRSKTITEM(CD_,NONE),                  // Load normally
-LLRSKTITEM(CD_,DECODE),                // Decode a magic block
-LLRSKTITEM(CD_,ENCODE_RAW),            // Copy
-LLRSKTITEM(CD_,ENCODE_AES),            // Encrypt
-LLRSKTITEM(CD_,ENCODE_ZLIB),           // Deflate
-LLRSKTITEM(CD_,ENCODE_ZLIBAES),        // Deflate then encrypt
-LLRSKTITEM(CD_,ENCODE_LZMA),           // Compress
-LLRSKTITEM(CD_,ENCODE_LZMAAES),        // Compress then encrypt
-LLRSKTITEM(CD_,LEVEL_FASTEST),         // Fastest compression
-LLRSKTITEM(CD_,LEVEL_FAST),            // Fast compression
-LLRSKTITEM(CD_,LEVEL_MODERATE),        // Moderate compression
-LLRSKTITEM(CD_,LEVEL_SLOW),            // Slow compression
-LLRSKTITEM(CD_,LEVEL_SLOWEST),         // Slowest compression
+  LLRSKTITEM(CD_,DECODE),              LLRSKTITEM(CD_,ENCODE_AES),
+  LLRSKTITEM(CD_,ENCODE_LZMA),         LLRSKTITEM(CD_,ENCODE_LZMAAES),
+  LLRSKTITEM(CD_,ENCODE_RAW),          LLRSKTITEM(CD_,ENCODE_ZLIB),
+  LLRSKTITEM(CD_,ENCODE_ZLIBAES),      LLRSKTITEM(CD_,LEVEL_FAST),
+  LLRSKTITEM(CD_,LEVEL_FASTEST),       LLRSKTITEM(CD_,LEVEL_MODERATE),
+  LLRSKTITEM(CD_,LEVEL_SLOW),          LLRSKTITEM(CD_,LEVEL_SLOWEST),
+  LLRSKTITEM(CD_,NONE),
 LLRSKTEND                              // End of loading flags
 /* ========================================================================= */
 // @ Asset.Progress
@@ -725,15 +661,13 @@ LLRSKTEND                              // End of loading flags
 // ? in that callback is one of these.
 /* ------------------------------------------------------------------------- */
 LLRSKTBEGIN(Progress)                  // Beginning of progress flags
-LLRSKTITEM(APC_,EXECSTART),            // Execution started
-LLRSKTITEM(APC_,EXECDATAWRITE),        // Data written to child process
-LLRSKTITEM(APC_,FILESTART),            // File opened with information
+  LLRSKTITEM(APC_,EXECSTART), LLRSKTITEM(APC_,EXECDATAWRITE),
+  LLRSKTITEM(APC_,FILESTART),
 LLRSKTEND                              // End of progress flags
 /* ========================================================================= */
 LLRSCONSTBEGIN                         // Asset.* namespace consts begin
-LLRSCONST(Flags),                      // Asset loading flags
-LLRSCONST(Progress),                   // Asset loading flags
+  LLRSCONST(Flags), LLRSCONST(Progress),
 LLRSCONSTEND                           // Asset.* namespace consts end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of Asset namespace
+}                                      // End of Asset namespace
 /* == EoF =========================================================== EoF == */

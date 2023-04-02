@@ -141,7 +141,7 @@ static uint8_t ReverseByte(const uint8_t ucByte)
 //     { const LockGuard lgSync{ mMutex }; vdDst = vsSrc; }
 template<typename ValDst,typename ValSrc=ValDst>
   static void MoveVarSafe(mutex &mMutex, ValDst &vdDst, ValSrc &vsSrc)
-    { const LockGuard lgSync{ mMutex }; vdDst = std::move(vsSrc); }
+    { const LockGuard lgSync{ mMutex }; vdDst = StdMove(vsSrc); }
 /* -- Helper functions to force integer byte ordering ---------------------- */
 template<typename IntType>static IntType ToI16LE(const IntType itV)
   { static_assert(sizeof(IntType) == sizeof(uint16_t) &&
@@ -213,11 +213,6 @@ static double ToF64LE(const double dV)
   { return CastInt64ToDouble(ToI64LE(CastDoubleToInt64(dV))); }
 static double ToF64BE(const double dV)
   { return CastInt64ToDouble(ToI64BE(CastDoubleToInt64(dV))); }
-/* -- Check an enum's validity --------------------------------------------- */
-template<typename EnumType>
-  static EnumType TestEnumRange(const EnumType etValue,
-    const EnumType etMax, const EnumType etMin=static_cast<EnumType>(0))
-      { return etValue >= etMin && etValue < etMax ? etValue : etMax; }
 /* -- More helper functions for byte ordering ------------------------------ */
 static int16_t ToLittleEndian(const int16_t wV) { return ToI16LE(wV); }
 static int16_t ToBigEndian(const int16_t wV) { return ToI16BE(wV); }
@@ -265,15 +260,6 @@ template<typename RT=float,size_t SB=0,typename IT=uint8_t>
   // Extract the specified value and then normalise it
   return Normalise<RT>(Extract<IT,SB,IT>(uiV));
 }
-/* -- Returns if specified integer is negative ----------------------------- */
-template<bool is_signed, typename IntType>struct IsNegativeFunctor;
-template<typename IntType>struct IsNegativeFunctor<true, IntType>
-  { bool operator()(const IntType itVal) { return itVal < 0; } };
-template<typename IntType>struct IsNegativeFunctor<false, IntType>
-  { bool operator()(const IntType) { return false; } };
-template<typename IntType>static bool IsNegative(const IntType itVal)
-  { return IsNegativeFunctor<numeric_limits<IntType>::is_signed,
-      IntType>()(itVal); }
 /* -- Returns if specified integer would overflow specified type ----------- */
 template<typename TestIntType, typename ParamIntType>
   static bool IntWillOverflow(const ParamIntType pitVal)
@@ -289,10 +275,12 @@ template<typename TestIntType, typename ParamIntType>
     const intmax_t iVal = static_cast<intmax_t>(pitVal);
     return iVal < static_cast<intmax_t>(numeric_limits<TestIntType>::min()) ||
            iVal > static_cast<intmax_t>(numeric_limits<TestIntType>::max());
-  } // Unsigned so not as much checking needed. Return if out of bounds
-  return IsNegative(pitVal) ||
-    static_cast<uintmax_t>(pitVal) >
-      static_cast<uintmax_t>(numeric_limits<TestIntType>::max());
+  } // Unsigned so it would overflow is param value is signed and negative
+  if constexpr(numeric_limits<ParamIntType>::is_signed)
+    if(pitVal < 0) return true;
+  // Unsigned so not as much checking needed. Return if out of bounds
+  return static_cast<uintmax_t>(pitVal) >
+         static_cast<uintmax_t>(numeric_limits<TestIntType>::max());
 }
 /* -- Join two integers to make a bigger integer -------------------------- */
 template<typename IntTypeHigh,typename IntTypeLow>

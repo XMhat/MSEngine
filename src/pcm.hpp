@@ -25,7 +25,7 @@ BEGIN_ASYNCCOLLECTORDUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
     // If the right channel was already filled then we don't need to do it
     if(!aPcmR.Empty()) return;
     // Move pcm file data to a temporary array
-    const Memory aTemp{ std::move(aPcmL) };
+    const Memory aTemp{ StdMove(aPcmL) };
     // Initialise buffers, half the size since we're only splitting
     aPcmL.InitBlank(aTemp.Size()/2);
     aPcmR.InitBlank(aPcmL.Size());
@@ -86,7 +86,7 @@ BEGIN_ASYNCCOLLECTORDUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
     // Is dynamic because it was not loaded from disk
     SetDynamic();
     // Load sample from memory asynchronously
-    AsyncInitArray(lS, strF, "pcmarray", std::move(aData));
+    AsyncInitArray(lS, strF, "pcmarray", StdMove(aData));
   }
   /* -- Load pcm from file asynchronously ---------------------------------- */
   void InitAsyncFile(lua_State*const lS)
@@ -116,7 +116,7 @@ BEGIN_ASYNCCOLLECTORDUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
     // Set the loading flags
     FlagReset(lfLF);
     // Load the array normally
-    SyncInitArray(strName, std::move(mbD));
+    SyncInitArray(strName, StdMove(mbD));
   }
   /* -- Load audio file from raw memory ------------------------------------ */
   void InitRaw(const string &strN, Memory &&aData, const unsigned int uiR,
@@ -138,7 +138,7 @@ BEGIN_ASYNCCOLLECTORDUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
     // Set members
     IdentSet(strN);
     SetDynamic();
-    aPcmL.SwapMemory(std::move(aData));
+    aPcmL.SwapMemory(StdMove(aData));
     SetRate(uiR);
     SetChannels(uiC);
     SetBits(uiB);
@@ -162,7 +162,7 @@ BEGIN_ASYNCCOLLECTORDUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
   }
   /* -- Constructor -------------------------------------------------------- */
   Pcm(void) :                          // Default onstructor
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperPcm{ *cPcms },             // Initially unregistered
     IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     AsyncLoader<Pcm>{ this,            // Setup async loader with this class
@@ -180,7 +180,7 @@ BEGIN_ASYNCCOLLECTORDUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Destructor (override) ---------------------------------------------- */
   ~Pcm(void) { AsyncCancel(); }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Pcm);                // Disable copy constructor and operator
+  DELETECOPYCTORS(Pcm)                 // Disable copy constructor and operator
 };/* -- End-of-collector --------------------------------------------------- */
 END_ASYNCCOLLECTOR(Pcms, Pcm, PCM);
 /* ------------------------------------------------------------------------- */

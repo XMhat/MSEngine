@@ -14,7 +14,7 @@
 /* ------------------------------------------------------------------------- */
 // ! The cursor class contains functions to create custom hardware cursors.
 /* ========================================================================= */
-LLNAMESPACEBEGIN(Cursor)               // Cursor namespace
+namespace NsCursor {                   // Cursor namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfCursor;              // Using cursor namespace
 /* ========================================================================= */
@@ -37,8 +37,7 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Cursor));
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Cursor:* member functions begin
-  LLRSFUNC(Activate),                  // Activate the specified cursor
-  LLRSFUNC(Destroy),                   // Destroy the internal object
+  LLRSFUNC(Activate), LLRSFUNC(Destroy),
 LLRSEND                                // Cursor:* member functions end
 /* ========================================================================= */
 // $ Cursor.Reset
@@ -59,8 +58,7 @@ LLFUNCEX(Standard, 1, LCCLASSCREATE(Cursor)->
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Cursor.* namespace functions begin
-  LLRSFUNC(Reset),                     // Sets default cursor graphic
-  LLRSFUNC(Standard),                  // Create standard cursor
+  LLRSFUNC(Reset), LLRSFUNC(Standard),
 LLRSEND                                // Cursor.* namespace functions end
 /* ========================================================================= */
 /* ######################################################################### */
@@ -73,21 +71,18 @@ LLRSEND                                // Cursor.* namespace functions end
 // ? its corresponding GLFW code (for use with SetCursorShape).
 /* ------------------------------------------------------------------------- */
 LLRSKTBEGIN(Codes)                     // Beginning of cursor codes
-LLRSKTITEMEX(GLFW_,ARROW,_CURSOR),     // Arrow cursor
-LLRSKTITEMEX(GLFW_,IBEAM,_CURSOR),     // Ibeam 'text' cursor
-LLRSKTITEMEX(GLFW_,CROSSHAIR,_CURSOR), // Crosshair cursor
-LLRSKTITEMEX(GLFW_,HAND,_CURSOR),      // Hand cursor
-LLRSKTITEMEX(GLFW_,HRESIZE,_CURSOR),   // Horizontal resize cursor
-LLRSKTITEMEX(GLFW_,VRESIZE,_CURSOR),   // Vertical resize cursor
-// LLRSKTITEMEX(GLFW_,RESIZE_NWSE,_CURSOR),// NW to SE direction resize cursor
-// LLRSKTITEMEX(GLFW_,RESIZE_NESW,_CURSOR),// NE to SW direction resize cursor
-// LLRSKTITEMEX(GLFW_,RESIZE_ALL,_CURSOR), // All direction resize cursor
-// LLRSKTITEMEX(GLFW_,NOT_ALLOWED,_CURSOR),// Not allowed cursor
+  LLRSKTITEMEX(GLFW_,ARROW,_CURSOR),   LLRSKTITEMEX(GLFW_,IBEAM,_CURSOR),
+  LLRSKTITEMEX(GLFW_,CROSSHAIR,_CURSOR), LLRSKTITEMEX(GLFW_,HAND,_CURSOR),
+  LLRSKTITEMEX(GLFW_,HRESIZE,_CURSOR), LLRSKTITEMEX(GLFW_,VRESIZE,_CURSOR),
+// LLRSKTITEMEX(GLFW_,RESIZE_NWSE,_CURSOR),
+// LLRSKTITEMEX(GLFW_,RESIZE_NESW,_CURSOR),
+// LLRSKTITEMEX(GLFW_,RESIZE_ALL,_CURSOR),
+// LLRSKTITEMEX(GLFW_,NOT_ALLOWED,_CURSOR),
 LLRSKTEND                              // End of cursor codes
 /* ========================================================================= */
 LLRSCONSTBEGIN                         // Cursor.* namespace consts begin
-LLRSCONST(Codes),                      // Asset loading flags
+  LLRSCONST(Codes),
 LLRSCONSTEND                           // Cursor.* namespace consts end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of Cursor namespace
+}                                      // End of Cursor namespace
 /* == EoF =========================================================== EoF == */

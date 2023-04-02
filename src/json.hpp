@@ -241,7 +241,7 @@ BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
     CheckFunction(lS, 4, "ProgressFunc");
     CheckFunction(lS, 5, "SuccessFunc");
     // Init the specified string as an array asynchronously
-    AsyncInitArray(lS, strN, "jsonstring", std::move(mData));
+    AsyncInitArray(lS, strN, "jsonstring", StdMove(mData));
   }
   /* -- Init from LUA string ----------------------------------------------- */
   void InitString(lua_State*const lS)
@@ -261,16 +261,16 @@ BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
   ~Json(void) { AsyncCancel(); }
   /* ----------------------------------------------------------------------- */
   Json(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperJson(*cJsons),
     IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     AsyncLoader<Json>{ this, EMC_MP_JSON }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Json);               // Disable copy constructor and operator
+  DELETECOPYCTORS(Json)                // Disable copy constructor and operator
 };/* -- End ---------------------------------------------------------------- */
-END_ASYNCCOLLECTOR(Jsons, Json, JSON);
+END_ASYNCCOLLECTOR(Jsons, Json, JSON)
 /* ------------------------------------------------------------------------- */
 };                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

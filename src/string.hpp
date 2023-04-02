@@ -10,13 +10,33 @@
 namespace IfString {                   // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfStd;                 // Using std namespace
+/* -- Common class with common objects ------------------------------------- */
+static const class Common final        // Members initially private
+{ /* -- Private variables -------------------------------------------------- */
+  const string     strSpace;           // C++ string with whitespace
+  const string     strBlank;           // Empty c++ string
+  const char*const cpBlank;            // Blank C String
+  const locale     lLocaleCurrent;     // Current locale
+  /* --------------------------------------------------------------- */ public:
+  const locale &Locale(void) const { return lLocaleCurrent; }
+  /* ----------------------------------------------------------------------- */
+  const string &Blank(void) const { return strBlank; }
+  /* ----------------------------------------------------------------------- */
+  const char *CBlank(void) const { return cpBlank; }
+  /* ----------------------------------------------------------------------- */
+  const string &Space(void) const { return strSpace; }
+  /* -- Default Constructor ------------------------------------------------ */
+  Common(void) :                       // No parameters
+    /* -- Initialisers ----------------------------------------------------- */
+    strSpace{ " " },                   // Initialise whitespace character
+    cpBlank(strBlank.c_str()),         // Initialise blank C-String from STL
+    lLocaleCurrent{ strBlank }         // Initialise current locale
+    /* -- No code ---------------------------------------------------------- */
+    { }
+} /* ----------------------------------------------------------------------- */
+*cCommon;                              // Assigned in main function
 /* -- Some helpful globals so not to repeat anything ----------------------- */
-static const string     strBlank, strSpace{" "};     // Blank C++ String
-static const char*const cpBlank = strBlank.c_str(),  // Blank C String
-  *const cpTimeFormat = "%a %b %d %H:%M:%S %Y %z";   // Default time format
-/* -- Locale singleton ----------------------------------------------------- */
-static const locale &GetLocaleSingleton(void)
-  { static const locale lLocaleCurrent{ strBlank }; return lLocaleCurrent; }
+static const char*const cpTimeFormat = "%a %b %d %H:%M:%S %Y %z";
 /* -- Append final parameter (uses copy elision) --------------------------- */
 static void AppendParam(ostringstream&) { }
 /* -- Append a parameter (uses copy elision) ------------------------------- */
@@ -38,7 +58,7 @@ template<typename... V>static const string AppendImbued(const V... vV)
 { // Stream to write to
   ostringstream osS;
   // Imbue current locale
-  osS.imbue(GetLocaleSingleton());
+  osS.imbue(cCommon->Locale());
   // Build string
   AppendParam(osS, vV...);
   // Return appended string
@@ -61,7 +81,7 @@ template<typename T, typename... V>
       case 1: osS << *cpPos; cpPos += 2; break;
       // More than one character? Copy characters and stride over the '$'
       // we just processed. Better than storing single characters.
-      default: osS << std::move(string{ cpPos, stNum });
+      default: osS << StdMove(string{ cpPos, stNum });
                cpPos += stNum + 1;
                break;
       // Did not move? This can happen at the start of the string. Just
@@ -89,7 +109,7 @@ template<typename... V>
 /* == Format a number ====================================================== */
 template<typename T>
   static const string FormatNumber(const T tV, const int iP=0)
-    { return std::move(AppendImbued(fixed, setprecision(iP), tV)); }
+    { return StdMove(AppendImbued(fixed, setprecision(iP), tV)); }
 /* -- Trim specified characters from string -------------------------------- */
 static const string Trim(const string &strS, const char cC)
 { // Return empty string if source string is empty
@@ -103,7 +123,7 @@ static const string Trim(const string &strS, const char cC)
 /* -- Convert integer to string with padding and precision ----------------- */
 template<typename IntType>static const string ToString(const IntType itV,
   const int iW=0, const int iPrecision=numeric_limits<IntType>::digits10)
-    { return std::move(Append(setw(iW), fixed, setprecision(iPrecision),
+    { return StdMove(Append(setw(iW), fixed, setprecision(iPrecision),
         itV)); }
 /* -- Quickly convert numbered string to integer --------------------------- */
 template<typename IntType=int64_t>
@@ -131,7 +151,7 @@ template<typename IntType=int64_t>
 }
 /* -- Convert hex to string with zero padding ------------------------------ */
 template<typename T>static const string ToHex(const T tV, const int iP=0)
-  { return std::move(Append(setfill('0'), hex, setw(iP), tV)); }
+  { return StdMove(Append(setfill('0'), hex, setw(iP), tV)); }
 /* -- Return if specified string has numbers ------------------------------- */
 static bool IsAlpha(const string &strValue)
 { // Return if any value isn't an letter
@@ -223,7 +243,7 @@ static const string LocalError(const int iErrNo=errno)
 /* -- Helper plugin for C runtime errno checking --------------------------- */
 struct ErrorPluginStandard final
 { /* -- Exception class helper macro for C runtime errors ------------------ */
-#define XCL(r,...) throw Error<ErrorPluginStandard>(r, ## __VA_ARGS__)
+#define XCL(r,...) throw IfError::Error<ErrorPluginStandard>(r, ## __VA_ARGS__)
   /* -- Constructor to add C runtime error code ---------------------------- */
   explicit ErrorPluginStandard(ostringstream &osS)
     { osS << "\n+ Reason<" << GetErrNo() << "> = \""
@@ -271,7 +291,7 @@ static StdTimeT ParseTime(const string &strS,
 static string &ToUpperRef(string &strStr)
 { // If string is not empty
   if(!strStr.empty())
-    MYTRANSFORM(par_unseq, strStr.begin(), strStr.end(),
+    StdTransform(par_unseq, strStr.begin(), strStr.end(),
       strStr.begin(), [](char cChar)->char
         { return static_cast<char>(toupper(static_cast<int>(cChar))); });
   // Return output
@@ -281,7 +301,7 @@ static string &ToUpperRef(string &strStr)
 static string &ToLowerRef(string &strStr)
 { // If string is not empty
   if(!strStr.empty())
-    MYTRANSFORM(par_unseq, strStr.begin(), strStr.end(),
+    StdTransform(par_unseq, strStr.begin(), strStr.end(),
       strStr.begin(), [](char cChar)->char
         { return static_cast<char>(tolower(static_cast<int>(cChar))); });
   // Return output
@@ -358,12 +378,17 @@ static string Replace(const string &strIn, const string &strWhat,
 static const string SpaceEncode(const string &strText)
   { return Replace(strText, ' ', '+'); }
 /* ------------------------------------------------------------------------- */
-static const char *IfNull(const char*const cpIn,
-  const char*const cpAlt = cpBlank)
-    { return cpIn != nullptr ? cpIn : cpAlt; }
-static const char *IfBlank(const string &strIn,
-  const char*const cpAlt = cpBlank)
-    { return strIn.empty() ? cpAlt : strIn.c_str(); }
+static const char *IfNull(const char*const cpIn, const char*const cpAlt)
+  { return cpIn != nullptr ? cpIn : cpAlt; }
+/* ------------------------------------------------------------------------- */
+static const char *IfNull(const char*const cpStr)
+  { return IfNull(cpStr, cCommon->CBlank()); }
+/* ------------------------------------------------------------------------- */
+static const char *IfBlank(const string &strIn, const char*const cpAlt)
+  { return strIn.empty() ? cpAlt : strIn.c_str(); }
+/* ------------------------------------------------------------------------- */
+static const char *IfBlank(const string &strIn)
+  { return IfBlank(strIn, cCommon->CBlank()); }
 /* ------------------------------------------------------------------------- */
 template<typename T>static const char *Pluralise(const T tCount,
   const char*const cpSingular, const char*const cpPlural)
@@ -371,13 +396,13 @@ template<typename T>static const char *Pluralise(const T tCount,
 /* ------------------------------------------------------------------------- */
 template<typename T>static const string PluraliseNum(const T tCount,
   const char*const cpSingular, const char*const cpPlural)
-   { return std::move(Append(tCount, ' ',
-       std::move(Pluralise(tCount, cpSingular, cpPlural)))); }
+   { return StdMove(Append(tCount, ' ',
+       StdMove(Pluralise(tCount, cpSingular, cpPlural)))); }
 /* ------------------------------------------------------------------------- */
 template<typename T>static const string PluraliseNumEx(const T tCount,
   const char*const cpSingular, const char*const cpPlural)
-   { return std::move(Append(FormatNumber(tCount), ' ',
-       std::move(Pluralise(tCount, cpSingular, cpPlural)))); }
+   { return StdMove(Append(FormatNumber(tCount), ' ',
+       StdMove(Pluralise(tCount, cpSingular, cpPlural)))); }
 /* -- Convert time to long duration ---------------------------------------- */
 static const string ToDuration(const StdTimeT tDuration,
   unsigned int uiCompMax = numeric_limits<unsigned int>::max())
@@ -407,30 +432,30 @@ static const string ToDuration(const StdTimeT tDuration,
   } // Add months?
   if(tD.tm_mon && uiCompMax > 0)
   { // Do add months
-    osS << (osS.tellp() ? strSpace : strBlank)
+    osS << (osS.tellp() ? cCommon->Space() : cCommon->Blank())
         << PluraliseNum(tD.tm_mon, "month", "months");
     --uiCompMax;
   } // Add days? (removing the added 1)
   if(--tD.tm_mday && uiCompMax > 0)
   { // Do add days
-    osS << (osS.tellp() ? strSpace : strBlank)
+    osS << (osS.tellp() ? cCommon->Space() : cCommon->Blank())
         << PluraliseNum(tD.tm_mday, "day", "days");
     --uiCompMax;
   } // Add hours?
   if(tD.tm_hour && uiCompMax > 0)
   { // Do add hours
-    osS << (osS.tellp() ? strSpace : strBlank)
+    osS << (osS.tellp() ? cCommon->Space() : cCommon->Blank())
         << PluraliseNum(tD.tm_hour, "hour", "hours");
     --uiCompMax;
   } // Add Minutes?
   if(tD.tm_min && uiCompMax > 0)
   { // Do add minutes
-    osS << (osS.tellp() ? strSpace : strBlank)
+    osS << (osS.tellp() ? cCommon->Space() : cCommon->Blank())
         << PluraliseNum(tD.tm_min, "min", "mins");
     --uiCompMax;
   } // Check seconds
   if((tD.tm_sec || !tDuration) && uiCompMax > 0)
-    osS << (osS.tellp() ? strSpace : strBlank)
+    osS << (osS.tellp() ? cCommon->Space() : cCommon->Blank())
         << PluraliseNum(tD.tm_sec, "sec", "secs");
   // Return string
   return osS.str();
@@ -461,8 +486,8 @@ static const string Capitalise(const string &strStr)
 /* -- Evaluate a list of booleans and return a character value ------------- */
 static const string
   EvaluateTokens(const vector<pair<const bool,const char>> &etData)
-    { return etData.empty() ? strBlank :
-      accumulate(etData.cbegin(), etData.cend(), strBlank,
+    { return etData.empty() ? cCommon->Blank() :
+      accumulate(etData.cbegin(), etData.cend(), cCommon->Blank(),
         [](const string &strOut, const auto &bcpPair)
           { return bcpPair.first ? Append(strOut,
             bcpPair.second) : strOut; }); }
@@ -510,7 +535,7 @@ static const char *TrueOrFalse(const bool bCondition)
 static const char *YesOrNo(const bool bCondition)
   { return bCondition ? "X" : "-"; }
 /* ------------------------------------------------------------------------- */
-[[maybe_unused]] static size_t FindCharForwards(const string &strS,
+static size_t FindCharForwards[[maybe_unused]](const string &strS,
   size_t stStart, const size_t stEnd, const char*const cpChars)
 { // Ignore if invalid parameter
   if(!cpChars) return string::npos;
@@ -557,23 +582,24 @@ static const string GetTextFormat(const string &strIn)
   } // Nothing found
   return {};
 } /* -- Implode a stringdeque to a single string --------------------------- */
-template<typename T>
-  static const string Implode(const T&sdL, const string &strSep=strSpace)
+template<typename DequeType>static const string Implode(const DequeType &dtL,
+  const string &strSep=cCommon->Space())
 { // Done if empty or begin position is invalid
-  if(sdL.empty()) return {};
+  if(dtL.empty()) return {};
   // Create output only string stream which stays cached (safe in c++11)
   ostringstream osS;
   // Build command string from vector (this and next line don't seem optimal)
-  const typename T::const_iterator tLastButOne{ prev(sdL.cend(), 1) };
-  copy(sdL.cbegin(), tLastButOne,
+  const typename DequeType::const_iterator
+    dtitLastButOne{ prev(dtL.cend(), 1) };
+  copy(dtL.cbegin(), dtitLastButOne,
     ostream_iterator<string>{ osS, strSep.c_str() });
-  osS << *tLastButOne;
+  osS << *dtitLastButOne;
   // Done
   return osS.str();
 }
 /* -- Converts the key/value pairs to a stringvector ----------------------- */
 static const string ImplodeMap(const StrNCStrMap &ssmSrc,
-  const string &strLineSep=strSpace, const string &strKeyValSep="=",
+  const string &strLineSep=cCommon->Space(), const string &strKeyValSep="=",
   const string &strValEncaps="\"")
 { // Done if empty
   if(ssmSrc.empty()) return {};
@@ -582,13 +608,13 @@ static const string ImplodeMap(const StrNCStrMap &ssmSrc,
   StrVector svRet; svRet.reserve(ssmSrc.size());
   transform(ssmSrc.cbegin(), ssmSrc.cend(), back_inserter(svRet),
     [&strKeyValSep, &strValEncaps](const auto &vIter)
-      { return std::move(Append(vIter.first, strKeyValSep,
+      { return StdMove(Append(vIter.first, strKeyValSep,
           strValEncaps, vIter.second, strValEncaps)); });
   // Return vector imploded into a string
   return Implode(svRet, strLineSep);
 } /* -- Implode a stringdeque to a single string --------------------------- */
 template<typename T>static const string Implode(const T sdL,
-  const size_t &stBegin=0, const string &strSep=strSpace)
+  const size_t &stBegin=0, const string &strSep=cCommon->Space())
 { // Done if empty or begin position is invalid
   if(sdL.empty() || stBegin >= sdL.size()) return {};
   // If we have only one item, just return its string
@@ -606,18 +632,18 @@ template<typename T>static const string Implode(const T sdL,
 /* ------------------------------------------------------------------------- */
 template<typename T>
   static const string PlusOrMinus(const T tVal, const int iPrecision)
-    { return std::move(Append(showpos, fixed, setprecision(iPrecision),
+    { return StdMove(Append(showpos, fixed, setprecision(iPrecision),
         tVal)); }
 /* ------------------------------------------------------------------------- */
 template<typename T>
   static const string PlusOrMinusEx(const T tVal, const int iPrecision)
-    { return std::move(AppendImbued(showpos, fixed,
+    { return StdMove(AppendImbued(showpos, fixed,
         setprecision(iPrecision), tVal)); }
 /* ------------------------------------------------------------------------- */
 template<typename OutType, typename InType, class SuffixClass>
   static OutType MakeNumberReadable(const InType itValue,
     const char**const cpSuffix, int &iPrecision, const SuffixClass &scLookup,
-    const char*const cpDefault=cpBlank)
+    const char*const cpDefault)
 { // Check types
   static_assert(is_floating_point_v<OutType>, "OutType not floating point!");
   static_assert(is_integral_v<InType>, "InType not integral!");
@@ -645,13 +671,19 @@ template<typename OutType, typename InType, class SuffixClass>
   return otReturn;
 }
 /* ------------------------------------------------------------------------- */
+template<typename OutType, typename InType, class SuffixClass>
+  static OutType MakeNumberReadable(const InType itValue,
+    const char**const cpSuffix, int &iPrecision, const SuffixClass &scLookup)
+{ return MakeNumberReadable<OutType, InType, SuffixClass>(itValue,
+    cpSuffix, iPrecision, scLookup, cCommon->CBlank()); }
+/* ------------------------------------------------------------------------- */
 template<typename IntType>
   static double ToBytes(const IntType itBytes, const char**const cpSuffix,
     int &iPrecision)
 { // A test to perform
   struct ByteValue { const IntType vValue; const char*const cpSuf; };
   // If input value is 64-bit?
-  if constexpr(sizeof(IntType) == 8)
+  if constexpr(sizeof(IntType) == sizeof(uint64_t))
   { // Tests lookup table. This is all we can fit in a 64-bit integer
     static const array<const ByteValue,6> bvLookup{ {
       { 0x1000000000000000, "EB" }, { 0x0004000000000000, "PB" },
@@ -662,7 +694,7 @@ template<typename IntType>
     return MakeNumberReadable<double>(itBytes,
       cpSuffix, iPrecision, bvLookup, "B");
   } // If input value is 32-bit?
-  if constexpr(sizeof(IntType) == 4)
+  if constexpr(sizeof(IntType) == sizeof(uint32_t))
   { // Tests lookup table. This is all we can fit in a 32-bit integer
     static const array<const ByteValue,3> bvLookup{ {
       { 0x40000000, "GB" }, { 0x00100000, "MB" }, { 0x00000400, "KB" }
@@ -671,7 +703,7 @@ template<typename IntType>
     return MakeNumberReadable<double>(itBytes,
       cpSuffix, iPrecision, bvLookup, "B");
   } // If input value is 16-bit?
-  if constexpr(sizeof(IntType) == 2)
+  if constexpr(sizeof(IntType) == sizeof(uint16_t))
   { // Tests lookup table. This is all we can fit in a 16-bit integer
     static const array<const ByteValue,1> bvLookup{ { { 0x0400, "KB" } } };
     // Return result
@@ -709,7 +741,7 @@ template<typename IntType>
 { // A test to perform
   struct BitValue { const IntType vValue; const char*const cpSuf; };
   // If input value is 64-bit?
-  if constexpr(sizeof(IntType) == 8)
+  if constexpr(sizeof(IntType) == sizeof(uint64_t))
   { // Tests lookup table. This is all we can fit in a 64-bit integer.
     static const array<const BitValue,6> bvLookup{ {
       { 1000000000000000000, "Eb" }, { 1000000000000000, "Pb" },
@@ -720,7 +752,7 @@ template<typename IntType>
     return MakeNumberReadable<double>(itBits,
       cpSuffix, iPrecision, bvLookup, "b");
   } // If input value is 32-bit?
-  if constexpr(sizeof(IntType) == 4)
+  if constexpr(sizeof(IntType) == sizeof(uint32_t))
   { // Tests lookup table. This is all we can fit in a 32-bit integer.
     static const array<const BitValue,3> bvLookup{ {
       { 1000000000, "Gb" }, { 1000000, "Mb" }, { 1000, "Kb" },
@@ -729,7 +761,7 @@ template<typename IntType>
     return MakeNumberReadable<double>(itBits,
       cpSuffix, iPrecision, bvLookup, "b");
   } // If input value is 16-bit?
-  if constexpr(sizeof(IntType) == 2)
+  if constexpr(sizeof(IntType) == sizeof(uint16_t))
   { // Tests lookup table. This is all we can fit in a 16-bit integer.
     static const array<const BitValue,6> bvLookup{ { { 1000, "Kb" } } };
     // Return result
@@ -766,7 +798,7 @@ template<typename IntType>
 { // A test to perform
   struct Value { const IntType vValue; const char*const cpSuf; };
   // If input value is 64-bit?
-  if constexpr(sizeof(IntType) == 8)
+  if constexpr(sizeof(IntType) == sizeof(uint64_t))
   { // Tests lookup table. This is all we can fit in a 64-bit integer.
     static const array<const Value,4> vLookup{ {
       { 1000000000000, "T" }, { 1000000000, "B" },
@@ -775,7 +807,7 @@ template<typename IntType>
     // Return result
     return MakeNumberReadable<double>(itValue, cpSuffix, iPrecision, vLookup);
   } // If input value is 32-bit?
-  if constexpr(sizeof(IntType) == 4)
+  if constexpr(sizeof(IntType) == sizeof(uint32_t))
   { // Tests lookup table. This is all we can fit in a 64-bit integer.
     static const array<const Value,3> vLookup{ {
       { 1000000000, "B" }, { 1000000, "M" }, { 1000, "K" }
@@ -783,7 +815,7 @@ template<typename IntType>
     // Return result
     return MakeNumberReadable<double>(itValue, cpSuffix, iPrecision, vLookup);
   } // If input value is 16-bit?
-  if constexpr(sizeof(IntType) == 2)
+  if constexpr(sizeof(IntType) == sizeof(uint16_t))
   { // Tests lookup table. This is all we can fit in a 64-bit integer.
     static const array<const Value,1> vLookup{ { { 1000, "K" } } };
     // Return result
@@ -815,7 +847,7 @@ static size_t FindCharForwards(const string &strS, size_t stStart,
   return string::npos;
 }
 /* ------------------------------------------------------------------------- */
-[[maybe_unused]] static size_t FindCharBackwards(const string &strS,
+static size_t FindCharBackwards[[maybe_unused]](const string &strS,
   size_t stStart, const size_t stEnd, const char cpChar)
 { // Until we've reached the limit
   while(stStart >= stEnd && stStart != string::npos)
@@ -827,7 +859,7 @@ static size_t FindCharForwards(const string &strS, size_t stStart,
   return string::npos;
 }
 /* ------------------------------------------------------------------------- */
-[[maybe_unused]] static size_t FindCharNotForwards(const string &strS,
+static size_t FindCharNotForwards[[maybe_unused]](const string &strS,
   size_t stStart, const size_t stEnd, const char cpChar)
 { // Until we've reached the limit
   while(stStart < stEnd && stStart != string::npos)
@@ -851,7 +883,7 @@ static size_t FindCharNotForwards(const string &strS, size_t stStart,
   return string::npos;
 }
 /* ------------------------------------------------------------------------- */
-[[maybe_unused]] static size_t FindCharNotBackwards(const string &strS,
+static size_t FindCharNotBackwards[[maybe_unused]](const string &strS,
   size_t stStart, const size_t stEnd, const char cpChar)
 { // Until we've reached the limit
   while(stStart >= stEnd && stStart != string::npos)
@@ -924,7 +956,7 @@ template<typename FloatType>
     ceil(fdRight / fdDivisor));
 }
 /* -- Convert string to lower case ----------------------------------------- */
-[[maybe_unused]] static const string ToLower(const string &strSrc)
+static const string ToLower[[maybe_unused]](const string &strSrc)
 { // Create memory for destination string and copy the string over
   string strDst; strDst.resize(strSrc.length());
   for(size_t stI = 0; stI < strSrc.size(); ++stI)
@@ -933,7 +965,7 @@ template<typename FloatType>
   return strDst;
 }
 /* -- Convert string to upper case ----------------------------------------- */
-[[maybe_unused]] static const string ToUpper(const string &strSrc)
+static const string ToUpper[[maybe_unused]](const string &strSrc)
 { // Create memory for destination string and copy the string over
   string strDst; strDst.resize(strSrc.length());
   for(size_t stI = 0; stI < strSrc.size(); ++stI)

@@ -64,7 +64,7 @@ class FStream :
     };
     // Send it to the Windows file open call and accept it if successful
     if(FILE*const fNew =
-      _wfsopen(UTFtoS16(strFile), cplModes[mMode], _SH_DENYWR))
+      _wfsopen(UTFtoS16(strFile).c_str(), cplModes[mMode], _SH_DENYWR))
         return FStreamDoAccept(strFile, fNew);
 #else                                  // Using linux or MacOS?
     // The mode supported (in ansi string)
@@ -148,7 +148,7 @@ class FStream :
     const string strChunk{ FStreamReadString(stBufSize) };
     if(strChunk.empty()) return osS.str();
     // Accumulate the size
-    osS << std::move(strChunk);
+    osS << StdMove(strChunk);
     // Read another string
     goto ContinueReadingStrings;
   }
@@ -225,43 +225,42 @@ class FStream :
     { return FStreamReadBlock(FStreamSizeT()); }
   /* -- Basic constructor with no init ------------------------------------- */
   FStream(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     fStream{ nullptr }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor with optional checking --------------------------------- */
   FStream(const string &strF, const Mode mMode) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     FStream{}
     /* -- Open the file and throw error if failed -------------------------- */
     { if(FStreamOpen(strF, mMode))
         XCL("Failed to open file!", "File", strF, "Mode", mMode); }
   /* -- Constructor with rvalue name init, no open ------------------------- */
   explicit FStream(string &&strF) :
-    /* -- Initialisation of members ---------------------------------------- */
-    Ident{ std::move(strF) },
+    /* -- Initialisers ----------------------------------------------------- */
+    Ident{ StdMove(strF) },
     fStream{ nullptr }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor with lvalue name init, no open ------------------------- */
   explicit FStream(const string &strF) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     Ident{ strF },
     fStream{ nullptr }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- MOVE assignment constructor ---------------------------------------- */
   FStream(FStream &&fsOther) :
-    /* -- Initialisation of members ---------------------------------------- */
-    Ident{ std::move(fsOther) },
+    /* -- Initialisers ----------------------------------------------------- */
+    Ident{ StdMove(fsOther) },
     fStream{ fsOther.FStreamGetHandle() }
     /* -- Clear other handle ----------------------------------------------- */
     { fsOther.FStreamClearHandle(); }
   /* -- Destructor (Close the file) ---------------------------------------- */
   ~FStream(void) { FStreamDoClose(); }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(FStream);            // Disable copy constructor and operator
+  DELETECOPYCTORS(FStream)             // Disable copy constructor and operator
 };/* ----------------------------------------------------------------------- */
-/* ------------------------------------------------------------------------- */
 };                                     // End of module namespace
 /* == EoF =========================================================== EoF == */

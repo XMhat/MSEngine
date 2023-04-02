@@ -15,7 +15,7 @@
 // ! This allows the programmer to maniuplate pcm wave forms asynchronously
 // ! and send the objects to the OpenAL if needed.
 /* ========================================================================= */
-LLNAMESPACEBEGIN(Pcm)                  // Pcm namespace
+namespace NsPcm {                      // Pcm namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfPcm;                 // Using pcm namespace
 /* ========================================================================= */
@@ -84,7 +84,7 @@ LLFUNC(ArrayAsync, LCCLASSCREATE(Pcm)->InitAsyncArray(lS));
 // ? Loads an audio file on the main thread from the specified array object.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Asset, 1, LCCLASSCREATE(Pcm)->InitArray(
-  LCGETCPPSTRINGNE(1, "Identifier"), std::move(*LCGETPTR(2, Asset)),
+  LCGETCPPSTRINGNE(1, "Identifier"), StdMove(*LCGETPTR(2, Asset)),
   LCGETFLAGS(PcmFlagsConst, 3, PL_MASK, "Flags")));
 /* ======================================================================= */
 // $ Pcm.Raw
@@ -97,7 +97,7 @@ LLFUNCEX(Asset, 1, LCCLASSCREATE(Pcm)->InitArray(
 // ? Loads an audio file on the main thread from the specified array object.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Raw, 1, LCCLASSCREATE(Pcm)->InitRaw(
-  LCGETCPPSTRINGNE(1, "Identifier"), std::move(*LCGETPTR(2, Asset)),
+  LCGETCPPSTRINGNE(1, "Identifier"), StdMove(*LCGETPTR(2, Asset)),
   LCGETINT(unsigned int, 3, "Rate"), LCGETINT(unsigned int, 4, "Channel"),
   LCGETINT(unsigned int, 5, "Bits")));
 /* ========================================================================= */
@@ -111,12 +111,8 @@ LLFUNC(WaitAsync, cPcms->WaitAsync());
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Pcm.* namespace functions begin
-  LLRSFUNC(ArrayAsync),                //   "  asyncronously
-  LLRSFUNC(Asset),                     // Load from array asyncronously
-  LLRSFUNC(File),                      // Load from specified file
-  LLRSFUNC(FileAsync),                 //   "  asyncronously
-  LLRSFUNC(Raw),                       // Load from raw data
-  LLRSFUNC(WaitAsync),                 // Wait for async events to complete
+  LLRSFUNC(ArrayAsync), LLRSFUNC(Asset), LLRSFUNC(File),
+  LLRSFUNC(FileAsync),  LLRSFUNC(Raw),   LLRSFUNC(WaitAsync),
 LLRSEND                                // Pcm.* namespace functions end
 /* ========================================================================= */
 /* ######################################################################### */
@@ -129,16 +125,14 @@ LLRSEND                                // Pcm.* namespace functions end
 // ? value is a unique identifier to the flag.
 /* ------------------------------------------------------------------------- */
 LLRSKTBEGIN(Flags)                     // Beginning of pcm loading flags
-LLRSKTITEM(PL_,NONE),                  // No loading flags
-LLRSKTITEM(PL_,FCE_CAF),               // Load as CAF format
-LLRSKTITEM(PL_,FCE_MP3),               // Load as MP3 format
-LLRSKTITEM(PL_,FCE_OGG),               // Load as OGG format
-LLRSKTITEM(PL_,FCE_WAV),               // Load as WAV format
+  LLRSKTITEM(PL_,NONE),                LLRSKTITEM(PL_,FCE_CAF),
+  LLRSKTITEM(PL_,FCE_MP3),             LLRSKTITEM(PL_,FCE_OGG),
+  LLRSKTITEM(PL_,FCE_WAV),
 LLRSKTEND                              // End of pcm loading flags
 /* ========================================================================= */
 LLRSCONSTBEGIN                         // Pcm.* namespace consts begin
-LLRSCONST(Flags),                      // Pcm loading flags
+LLRSCONST(Flags),
 LLRSCONSTEND                           // Pcm.* namespace consts end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of Pcm namespace
+}                                      // End of Pcm namespace
 /* == EoF =========================================================== EoF == */

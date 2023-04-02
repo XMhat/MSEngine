@@ -7,7 +7,9 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* == Linux includes ======================================================= */
+/* ------------------------------------------------------------------------- */
+namespace SysBase {                    // Start of module namespace
+/* -- Includes ------------------------------------------------------------- */
 #include <elf.h>                       // Elf header file
 #include <link.h>                      // dlinfo() function
 #include <sys/ioctl.h>                 // Gettingterminal size
@@ -16,13 +18,13 @@
 #include <sys/time.h>                  // Getting time info
 #include <sys/times.h>                 // Getting cpu usage info
 #include <sys/wait.h>                  // For waiting for pid
-/* == Linux extras ========================================================= */
+/* -- Classes -------------------------------------------------------------- */
 #include "pixbase.hpp"                 // Base system class
 #include "pixcon.hpp"                  // Console terminal window class
 #include "pixmod.hpp"                  // Module information class
 #include "pixmap.hpp"                  // File mapping class
 #include "pixpip.hpp"                  // Process output piping class
-/* -- Includes ------------------------------------------------------------- */
+/* -- Namespaces ----------------------------------------------------------- */
 using namespace IfGlFW;                // Using glfw namespace
 using namespace IfVars;                // Using vars namespace
 using namespace IfFStream;             // Using fstream namespace
@@ -59,7 +61,7 @@ class SysProcess                       // Need this before of System init order
     { return static_cast<IntType>(vpThreadId); }
   /* ----------------------------------------------------------------------- */
   SysProcess(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     fsProcStat{ "/proc/stat",          // Open proc cpu stats stream
                 FStream::FM_R_B },     // - Read/Binary mode
     fsProcStatM{ "/proc/self/statm",   // Open proc memory stats stream
@@ -81,9 +83,8 @@ class SysProcess                       // Need this before of System init order
 };/* == Class ============================================================== */
 class SysCore :
   /* -- Base classes ------------------------------------------------------- */
-  public SysCon,                       // Defined in 'pixcon.hpp"
   public SysProcess,                   // System process object
-  public SysVersion,                   // System version object
+  public SysCon,                       // Defined in 'pixcon.hpp"
   public SysCommon                     // Common system object
 { /* -- Variables ------------------------------------------------- */ private:
   bool             bWindowInitialised; // Is window initialised?
@@ -101,7 +102,7 @@ class SysCore :
         // Reset memory value
         memData.stMProcUse = 0;
         // Grab tokens and enumerate them
-        TokenListNC tStats{ strStat, strSpace, 8 };
+        TokenListNC tStats{ strStat, cCommon->Space(), 8 };
         if(tStats.size() >= 3)
           memData.stMProcUse += ToNumber<size_t>(tStats[1]);
         // These are total pages, now lets multiply by the page size
@@ -153,7 +154,7 @@ class SysCore :
     if(dlinfo(vpModule, RTLD_DI_LINKMAP, &lmData) || !lmData)
       XCL("Failed to read info about shared object!", "File", cpAltName);
     // Get full pathname of file
-    return std::move(PathSplit{ lmData->l_name, true }.strFull);
+    return StdMove(PathSplit{ lmData->l_name, true }.strFull);
   }
   /* ----------------------------------------------------------------------- */
   void UpdateCPUUsageData(void)
@@ -169,7 +170,7 @@ class SysCore :
         // First item must be cpu and second should be empty. We created the
         // string so this tokeniser class is allowed to modify it for
         // increased performance of processing it.
-        TokenListNC tStats{ strStat, strSpace, 6 };
+        TokenListNC tStats{ strStat, cCommon->Space(), 6 };
         if(tStats.size() >= 5)
         { // Get idle time
           const clock_t cUserNow = ToNumber<clock_t>(tStats[2]);
@@ -336,7 +337,7 @@ class SysCore :
     SysModList mlData;
     mlData.emplace(make_pair(static_cast<size_t>(0),
       SysModule{ GetExeName(), VER_MAJOR, VER_MINOR, VER_BUILD, VER_REV,
-        VER_AUTHOR, VER_NAME, std::move(strVersion), VER_STR }));
+        VER_AUTHOR, VER_NAME, StdMove(strVersion), VER_STR }));
     // Module list which includes the executable module
     return mlData;
   }
@@ -362,11 +363,11 @@ class SysCore :
     } // Replace underscore with dash to be consistent with Windows
     if(strCode[2] == '_') strCode[2] = '-';
     // Return operating system info
-    return { utsnData.sysname, strBlank,
+    return { utsnData.sysname, cCommon->Blank(),
       tVersion.empty()    ? 0 : ToNumber<unsigned int>(tVersion[0]),
       tVersion.size() < 2 ? 0 : ToNumber<unsigned int>(tVersion[1]),
       tVersion.size() < 3 ? 0 : ToNumber<unsigned int>(tVersion[2]),
-      sizeof(void*)*8, std::move(strCode), DetectElevation(), false, 0,
+      sizeof(void*)*8, StdMove(strCode), DetectElevation(), false, 0,
       false };
   }
   /* ----------------------------------------------------------------------- */
@@ -382,21 +383,21 @@ class SysCore :
         VarsConst vVars(strFile, GetTextFormat(strFile), ':');
         if(!vVars.empty())
         { // Read variables
-          string strCpuId{ std::move(vVars["model name"]) },
-                 strSpeed{ std::move(vVars["cpu MHz"]) },
-                 strVendor{ std::move(vVars["vendor_id"]) },
-                 strFamily{ std::move(vVars["cpu family"]) },
-                 strModel{ std::move(vVars["model"]) },
-                 strStepping{ std::move(vVars["stepping"]) };
+          string strCpuId{ StdMove(vVars["model name"]) },
+                 strSpeed{ StdMove(vVars["cpu MHz"]) },
+                 strVendor{ StdMove(vVars["vendor_id"]) },
+                 strFamily{ StdMove(vVars["cpu family"]) },
+                 strModel{ StdMove(vVars["model"]) },
+                 strStepping{ StdMove(vVars["stepping"]) };
           // Return default data we could not read
-          return { strVendor.empty() ? "Unknown" : std::move(strVendor),
-                   strCpuId.empty() ? "Unknown" : std::move(strCpuId),
+          return { strVendor.empty() ? "Unknown" : StdMove(strVendor),
+                   strCpuId.empty() ? "Unknown" : StdMove(strCpuId),
                    strFamily.empty() &&
                    strModel.empty() &&
                    strStepping.empty() ? "Unknown" :
-                     std::move(Format("$ Family $ Model $ Stepping $",
-                       std::move(strVendor), std::move(strFamily),
-                       std::move(strModel), std::move(strStepping))),
+                     StdMove(Format("$ Family $ Model $ Stepping $",
+                       StdMove(strVendor), StdMove(strFamily),
+                       StdMove(strModel), StdMove(strStepping))),
                    thread::hardware_concurrency(),
                    strSpeed.empty() ? 0 : ToNumber<unsigned int>(strSpeed),
                    0, 0 };
@@ -462,8 +463,8 @@ class SysCore :
     { return cCmdLine->MakeEnvPath("HOME", "/.local"); }
   /* -- Constructor -------------------------------------------------------- */
   SysCore(void) :
-    /* -- Initialisation of members ---------------------------------------- */
-    SysVersion{ EnumModules(), 0 },
+    /* -- Initialisers ----------------------------------------------------- */
+    SysCon{ EnumModules(), 0 },
     SysCommon{ GetExecutableData(),
                GetOperatingSystememData(),
                GetProcessorData() },
@@ -473,4 +474,5 @@ class SysCore :
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(SysCore);            // Supress copy constructor for safety
 }; /* ---------------------------------------------------------------------- */
+}                                      // End of module namespace
 /* == EoF =========================================================== EoF == */

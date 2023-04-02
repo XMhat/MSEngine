@@ -75,7 +75,7 @@ static class Audio final :             // Audio manager class
   { // Enumerate...
     for(ResetCheckTime();              // Reset device list check time
         tThread.ThreadShouldNotExit(); // Enumerate until thread exit signalled
-        TimerSuspend(cdThreadDelay))   // Suspend thread for specified time
+        cTimer->TimerSuspend(cdThreadDelay)) // Suspend thread pecified time
     { // Manage all streams audio.
       StreamManage();
       // Verify the hardware setup and reset if there are any descreprencies.
@@ -83,7 +83,8 @@ static class Audio final :             // Audio manager class
       if(Verify()) continue;
       // Put in infinite loop and wait for the reinit function to request
       // termination of this thread
-      while(tThread.ThreadShouldNotExit()) TimerSuspend(milliseconds(100));
+      while(tThread.ThreadShouldNotExit())
+        cTimer->TimerSuspend(milliseconds(100));
       // Thread terminate request recieved, now break the loop.
       break;
     } // Terminate thread
@@ -244,7 +245,7 @@ static class Audio final :             // Audio manager class
     // Clear recording devices list
     dlCTDevices.clear();
     // Same rule applies, try 3 times...
-    for(size_t stIndex = 0; stIndex < 3; ++stIndex, TimerSuspend())
+    for(size_t stIndex = 0; stIndex < 3; ++stIndex, cTimer->TimerSuspend())
     { // Grab list of capture devices and break if succeeded
       cpList = cOal->GetNCString(ALC_CAPTURE_DEVICE_SPECIFIER);
       if(cpList) break;
@@ -281,7 +282,7 @@ static class Audio final :             // Audio manager class
     // For some reason, this call is sometimes failing, probably because
     // another process is enumerating the list, so we'll do a retry loop.
     // Try to grab list of playback devices three times before failing.
-    for(size_t stIndex = 0; stIndex < 3; ++stIndex, TimerSuspend())
+    for(size_t stIndex = 0; stIndex < 3; ++stIndex, cTimer->TimerSuspend())
     { // Get list of devices and break if succeeded
       if(const char *cpList = cOal->GetNCString(cOal->eQuery))
       { // For each playback device
@@ -314,7 +315,7 @@ static class Audio final :             // Audio manager class
   /* -- Set global volume -------------------------------------------------- */
   CVarReturn SetGlobalVolume(const ALfloat fVolume)
   { // Ignore if invalid value
-    if(fVolume < 0 || fVolume > 1) return DENY;
+    if(fVolume < 0.0f || fVolume > 1.0f) return DENY;
     // Store volume
     cSources->fGVolume = fVolume;
     // Update volumes on streams and videos
@@ -430,19 +431,20 @@ static class Audio final :             // Audio manager class
   }
   /* -- Default constructor ------------------------------------------------ */
   Audio(void) :                        // No parameters
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     IHelper{ __FUNCTION__ },           // Initialise class name
     AudioFlags{ AF_NONE },             // Initialise no audio flags
     tThread{ "audio",                  // Initialise thread name
+      SysThread::Audio,                // " high performance thread
       bind(&Audio::AudioThreadMain,    // " with reference to callback
         this, _1) },                   // " function
     cdCheckRate{ seconds{ 0 } }        // Initialise thread check time
     /* --------------------------------------------------------------------- */
     { }                                // Do nothing else
   /* -- Destructor --------------------------------------------------------- */
-  DTORHELPER(~Audio, DeInit());        // Destructor helper
+  DTORHELPER(~Audio, DeInit())         // Destructor helper
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Audio);              // Omit copy constructor for safety
+  DELETECOPYCTORS(Audio)               // Omit copy constructor for safety
   /* -- End ---------------------------------------------------------------- */
 } *cAudio = nullptr;                   // Pointer to static class
 /* ------------------------------------------------------------------------- */

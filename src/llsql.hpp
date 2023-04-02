@@ -15,7 +15,7 @@
 // ! The sql class allows manipulation of the engine database using the sqlite
 // ! library.
 /* ========================================================================= */
-LLNAMESPACEBEGIN(Sql)                  // Sql namespace
+namespace NsSql {                      // Sql namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfSql;                 // Using sql namespace
 /* ========================================================================= */
@@ -104,18 +104,10 @@ LLFUNCEX(End, 1, LCPUSHINT(cSql->End()));
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Sql.* namespace functions begin
-  LLRSFUNC(Active),                    // Transaction is active?
-  LLRSFUNC(Affected),                  // Return rows affected
-  LLRSFUNC(Begin),                     // Begins a new transaction
-  LLRSFUNC(End),                       // Ends and commits a new transaction
-  LLRSFUNC(Error),                     // Return error code
-  LLRSFUNC(ErrorStr),                  // Return error code as string
-  LLRSFUNC(Exec),                      // Execute sql command
-  LLRSFUNC(Reason),                    // Return error reason
-  LLRSFUNC(Records),                   // Return result records
-  LLRSFUNC(Reset),                     // Clean results
-  LLRSFUNC(Size),                      // Return size of database
-  LLRSFUNC(Time),                      // Return duration of last query
+  LLRSFUNC(Active),  LLRSFUNC(Affected),  LLRSFUNC(Begin),
+  LLRSFUNC(End),     LLRSFUNC(Error),     LLRSFUNC(ErrorStr),
+  LLRSFUNC(Exec),    LLRSFUNC(Reason),    LLRSFUNC(Records),
+  LLRSFUNC(Reset),   LLRSFUNC(Size),      LLRSFUNC(Time),
 LLRSEND                                // Sql.* namespace functions end
 /* ========================================================================= */
 // @ Sql.Codes
@@ -123,42 +115,26 @@ LLRSEND                                // Sql.* namespace functions end
 // ? Returns a table of key/value pairs that identify a SQL error code.
 /* ------------------------------------------------------------------------- */
 LLRSKTBEGIN(Codes)                     // Beginning of error codes
-LLRSKTITEM(SQLITE_,OK),                // Successful result
-LLRSKTITEM(SQLITE_,ERROR),             // Generic error
-LLRSKTITEM(SQLITE_,INTERNAL),          // Internal logic error in SQLite
-LLRSKTITEM(SQLITE_,PERM),              // Access permission denied
-LLRSKTITEM(SQLITE_,ABORT),             // Callback routine requested an abort
-LLRSKTITEM(SQLITE_,BUSY),              // The database file is locked
-LLRSKTITEM(SQLITE_,LOCKED),            // A table in the database is locked
-LLRSKTITEM(SQLITE_,NOMEM),             // A malloc() failed
-LLRSKTITEM(SQLITE_,READONLY),          // Attempt to write a readonly database
-LLRSKTITEM(SQLITE_,INTERRUPT),         // Op terminated by sqlite3_interrupt()
-LLRSKTITEM(SQLITE_,IOERR),             // Some kind of disk I/O error occurred
-LLRSKTITEM(SQLITE_,CORRUPT),           // The database disk image is malformed
-LLRSKTITEM(SQLITE_,NOTFOUND),          // Unknown op in sqlite3_file_control()
-LLRSKTITEM(SQLITE_,FULL),              // Insertion failed because db is full
-LLRSKTITEM(SQLITE_,CANTOPEN),          // Unable to open the database file
-LLRSKTITEM(SQLITE_,PROTOCOL),          // Database lock protocol error
-LLRSKTITEM(SQLITE_,EMPTY),             // Internal use only
-LLRSKTITEM(SQLITE_,SCHEMA),            // The database schema changed
-LLRSKTITEM(SQLITE_,TOOBIG),            // String or BLOB exceeds size limit
-LLRSKTITEM(SQLITE_,CONSTRAINT),        // Abort due to constraint violation
-LLRSKTITEM(SQLITE_,MISMATCH),          // Data type mismatch
-LLRSKTITEM(SQLITE_,MISUSE),            // Library used incorrectly
-LLRSKTITEM(SQLITE_,NOLFS),             // Uses OS features unsupported on host
-LLRSKTITEM(SQLITE_,AUTH),              // Authorization denied
-LLRSKTITEM(SQLITE_,FORMAT),            // Not used
-LLRSKTITEM(SQLITE_,RANGE),             // 2nd arg to sqlite3_bind out of range
-LLRSKTITEM(SQLITE_,NOTADB),            // File opened that is not a db file
-LLRSKTITEM(SQLITE_,NOTICE),            // Notifications from sqlite3_log()
-LLRSKTITEM(SQLITE_,WARNING),           // Warnings from sqlite3_log()
-LLRSKTITEM(SQLITE_,ROW),               // sqlite3_step() has another row ready
-LLRSKTITEM(SQLITE_,DONE),              // sqlite3_step() has finished executing
+LLRSKTITEM(SQLITE_,ABORT),             LLRSKTITEM(SQLITE_,BUSY),
+LLRSKTITEM(SQLITE_,CANTOPEN),          LLRSKTITEM(SQLITE_,CONSTRAINT),
+LLRSKTITEM(SQLITE_,CORRUPT),           LLRSKTITEM(SQLITE_,DONE),
+LLRSKTITEM(SQLITE_,EMPTY),             LLRSKTITEM(SQLITE_,ERROR),
+LLRSKTITEM(SQLITE_,FORMAT),            LLRSKTITEM(SQLITE_,FULL),
+LLRSKTITEM(SQLITE_,INTERNAL),          LLRSKTITEM(SQLITE_,INTERRUPT),
+LLRSKTITEM(SQLITE_,IOERR),             LLRSKTITEM(SQLITE_,LOCKED),
+LLRSKTITEM(SQLITE_,MISMATCH),          LLRSKTITEM(SQLITE_,MISUSE),
+LLRSKTITEM(SQLITE_,NOLFS),             LLRSKTITEM(SQLITE_,NOMEM),
+LLRSKTITEM(SQLITE_,NOTADB),            LLRSKTITEM(SQLITE_,NOTFOUND),
+LLRSKTITEM(SQLITE_,NOTICE),            LLRSKTITEM(SQLITE_,OK),
+LLRSKTITEM(SQLITE_,PERM),              LLRSKTITEM(SQLITE_,PROTOCOL),
+LLRSKTITEM(SQLITE_,RANGE),             LLRSKTITEM(SQLITE_,READONLY),
+LLRSKTITEM(SQLITE_,ROW),               LLRSKTITEM(SQLITE_,SCHEMA),
+LLRSKTITEM(SQLITE_,TOOBIG),            LLRSKTITEM(SQLITE_,WARNING),
 LLRSKTEND                              // End of error codes
 /* ========================================================================= */
 LLRSCONSTBEGIN                         // Sql.* namespace consts begin
-LLRSCONST(Codes),                      // Sqlite codes list
+LLRSCONST(Codes),
 LLRSCONSTEND                           // Sql.* namespace consts end
 /* ========================================================================= */
-LLNAMESPACEEND                         // End of Sql namespace
+}                                      // End of Sql namespace
 /* == EoF =========================================================== EoF == */

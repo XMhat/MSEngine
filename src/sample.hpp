@@ -13,27 +13,33 @@ namespace IfSample {                   // Start of module namespace
 using namespace IfPcm;                 // Using pcm namespace
 using namespace IfSource;              // Using source namespace
 /* -- Sample collector and member class ------------------------------------ */
-BEGIN_COLLECTOR(Samples, Sample, CLHelperUnsafe);
+BEGIN_COLLECTOR(Samples, Sample, CLHelperUnsafe)
 /* -- Sample member class -------------------------------------------------- */
 BEGIN_MEMBERCLASSEX(Samples, Sample, ICHelperUnsafe, /* n/a */),
   /* -- Base classes ------------------------------------------------------- */
   public ALUIntVector,                 // OpenAL buffer handle ids
   public Pcm                           // Loaded pcm data
 { /* -- Get AL buffer index from the specified physical buffer index */ public:
-  ALint GetBufferInt(const ALenum eP, const size_t stId=0) const
+  template<typename IntType=ALint>IntType GetBufferInt(const ALenum eP,
+    const size_t stId=0) const
   { // Hold state
     ALint iV;
     // Store state
     AL(cOal->GetBufferInt((*this)[stId], eP, &iV),
-      "Get buffer integer failed!", "Param", eP, "Id", stId);
+      "Get buffer integer failed!",
+      "Identifier", IdentGet(), "Param", eP, "Index", stId);
     // Return state
-    return iV;
+    return static_cast<IntType>(iV);
   }
   /* -- Get buffer frequency ----------------------------------------------- */
-  ALsizei GetFrequency(void) const { return GetBufferInt(AL_FREQUENCY); }
-  ALsizei GetBits(void) const { return GetBufferInt(AL_BITS); }
-  ALsizei GetChannels(void) const { return GetBufferInt(AL_CHANNELS); }
-  ALsizei GetSize(void) const { return GetBufferInt(AL_SIZE); }
+  ALsizei GetFrequency(void) const
+    { return GetBufferInt<ALsizei>(AL_FREQUENCY); }
+  ALsizei GetBits(void) const
+    { return GetBufferInt<ALsizei>(AL_BITS); }
+  ALsizei GetChannels(void) const
+    { return GetBufferInt<ALsizei>(AL_CHANNELS); }
+  ALsizei GetSize(void) const
+    { return GetBufferInt<ALsizei>(AL_SIZE); }
   ALdouble GetDuration(void) const
     { return (static_cast<ALdouble>(GetSize()) * 8 /
         (GetChannels() * GetBits())) / GetFrequency(); }
@@ -283,16 +289,16 @@ BEGIN_MEMBERCLASSEX(Samples, Sample, ICHelperUnsafe, /* n/a */),
   }
   /* -- Constructor -------------------------------------------------------- */
   Sample(void) :
-    /* -- Initialisation of members ---------------------------------------- */
+    /* -- Initialisers ----------------------------------------------------- */
     ICHelperSample{ *cSamples, this }  // Initialise collector class
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Destructor --------------------------------------------------------- */
   ~Sample(void) { UnloadBuffer(); }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Sample);             // Supress copy constructor for safety
+  DELETECOPYCTORS(Sample)              // Supress copy constructor for safety
 };/* -- End ---------------------------------------------------------------- */
-END_COLLECTOR(Samples);
+END_COLLECTOR(Samples)
 /* ========================================================================= */
 static void StopAllSamples(void)
 { // Stop all samples from playing
@@ -338,7 +344,7 @@ static void UpdateSampleVolume(void)
 /* == Set all streams base volume ========================================== */
 static CVarReturn SetSampleVolume(const ALfloat fVolume)
 { // Ignore if invalid value
-  if(fVolume < 0 || fVolume > 1) return DENY;
+  if(fVolume < 0.0f || fVolume > 1.0f) return DENY;
   // Store volume (SOURCES class keeps it)
   cSources->fSVolume = fVolume;
   // Update volumes on all streams

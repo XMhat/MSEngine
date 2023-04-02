@@ -27,7 +27,7 @@ local function InitCon()
     -- Setup lobby texture
     local texLobby = aResources[1].H;
     texLobby:TileSTC(1);
-    texLobby:TileS(0, 0, 272, 512, 512);
+    texLobby:TileS(0, 0, 272, 428, 512);
     -- Setup controller texture
     local texCon = aResources[2].H;
     local tileConAnim<const> = texCon:TileA(0,   0, 160,  84);
@@ -106,7 +106,7 @@ local function InitCon()
     -- Render callback
     local function RenderCon()
       -- Draw backdrop, controller screen and animated fish
-      texLobby:BlitLT(-96, 0);
+      texLobby:BlitLT(-54, 0);
       texCon:BlitSLT(tileCon, 8, 8);
       texCon:BlitSLT(tileFish+floor((InfoTicks()/10)%5), 9, 119);
       -- Render shadow
