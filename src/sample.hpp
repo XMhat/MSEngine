@@ -58,7 +58,7 @@ BEGIN_MEMBERCLASSEX(Samples, Sample, ICHelperUnsafe, /* n/a */),
     clear();
   }
   /* ----------------------------------------------------------------------- */
-  GLuint PrepareSource(Source &sCref, const ALuint uiBufId,
+  ALuint PrepareSource(Source &sCref, const ALuint uiBufId,
     const ALfloat fGain, const ALfloat fPan, const ALfloat fPitch,
     const bool bLoop, const bool bLuaManaged)
   { // Set parameters
@@ -73,7 +73,7 @@ BEGIN_MEMBERCLASSEX(Samples, Sample, ICHelperUnsafe, /* n/a */),
     return sCref.GetSource();
   }
   /* ----------------------------------------------------------------------- */
-  GLfloat GetAdjustedGain(const ALfloat fGain)
+  ALfloat GetAdjustedGain(const ALfloat fGain)
     { return fGain * cSources->fSVolume * cSources->fGVolume; }
   /* ----------------------------------------------------------------------- */
   void PlayStereoSource(ALfloat fGain, ALfloat fPan,  const ALfloat fPitch,

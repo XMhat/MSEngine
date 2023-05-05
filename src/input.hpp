@@ -598,14 +598,17 @@ static class Input final :             // Handles keyboard, mouse & controllers
   }
   bool JoystickExists(const size_t stId)
     { return GetJoyData(stId).IsConnected(); }
+  /* -- Dispatch connected event to lua ------------------------------------ */
+  void DispatchLuaEvent(const size_t stJoystickId, const bool bConnected)
+    { lfOnJoyState.LuaFuncDispatch(static_cast<lua_Integer>(stJoystickId),
+        bConnected); }
   /* -- DeInitialise a joystick -------------------------------------------- */
   void ClearJoystickAndDispatch(const size_t stJoystickId)
   { // Get joystick data and ign ore if joystick wasn't originally connected
     JoyInfo &jsData = GetJoyData(stJoystickId);
     if(jsData.IsDisconnected()) return;
     // Send lua event to let guest know joystick was disconnected
-    lfOnJoyState.LuaFuncDispatch(static_cast<lua_Integer>(stJoystickId),
-      false);
+    DispatchLuaEvent(stJoystickId, false);
     // Clear joystick, axis and button data
     jsData.Disconnect();
   }
@@ -614,7 +617,7 @@ static class Input final :             // Handles keyboard, mouse & controllers
   { // Detect if is gamepad?
     GetJoyData(stJoystickId).Connect();
     // Send lua event to let guest know joystick was connected and return
-    lfOnJoyState.LuaFuncDispatch(static_cast<lua_Integer>(stJoystickId), true);
+    DispatchLuaEvent(stJoystickId, true);
   }
   /* -- Return a joystick is present? -------------------------------------- */
   void AutoDetectJoystick(void)
@@ -738,7 +741,6 @@ static class Input final :             // Handles keyboard, mouse & controllers
     SetRawMouseEnabled(cCVars->GetInternalSafe<bool>(INP_RAWMOUSE));
     SetStickyKeyEnabled(cCVars->GetInternalSafe<bool>(INP_STICKYKEY));
     SetStickyMouseEnabled(cCVars->GetInternalSafe<bool>(INP_STICKYMOUSE));
-    SetJoystickEnabled(cCVars->GetInternalSafe<int>(INP_JOYSTICK));
     // Set/Restore cursor state
     SetCursor(FlagIsSet(IF_CURSOR));
     // Log progress

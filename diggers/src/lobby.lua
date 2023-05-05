@@ -15,9 +15,10 @@ local insert<const>, unpack<const> = table.insert, table.unpack;
 -- Diggers function and data aliases --------------------------------------- --
 local LoadResources, PlayMusic, Fade, SetCallbacks, IsButtonReleased,
   IsMouseInBounds, IsMouseNotInBounds, aCursorIdData, SetCursor, aSfxData,
-  PlayStaticSound, InitTitle, InitCon, InitScene, RenderFade, InitContinueGame,
+  PlayStaticSound, InitTitle, InitCon, InitScene, InitContinueGame,
   InitShop, InitBank, EndConditionsCheck, SetBottomRightTipAndShadow,
-  RenderInterface, GameProc, RegisterFBUCallback, RenderShadow, aGlobalData;
+  SetBottomRightTip, RenderInterface, GameProc, RegisterFBUCallback,
+  RenderShadow, aGlobalData;
 -- Init lobby function ----------------------------------------------------- --
 local function InitLobby(aActiveObject, bNoSetMusic, iSaveMusicPos)
   -- Active object must be specified or ommitted
@@ -65,14 +66,12 @@ local function InitLobby(aActiveObject, bNoSetMusic, iSaveMusicPos)
       local function RenderLobbyOpen()
         -- Render game interface
         RenderInterface();
-        -- Fade backdrop
-        RenderFade(0.5);
         -- Render backdrop
         texLobby:BlitLT(8, 8);
         -- Render backdrop shadow
         RenderShadow(8, 8, 312, 208);
         -- Render tip
-        SetBottomRightTipAndShadow(Tip);
+        SetBottomRightTip(Tip);
       end
       -- Some mouse tests
       local function MouseOverBank()
@@ -247,17 +246,18 @@ return { A = { InitLobby = InitLobby }, F = function(GetAPI)
   -- Imports --------------------------------------------------------------- --
   LoadResources, PlayMusic, Fade, SetCallbacks, IsButtonReleased,
   IsMouseInBounds, IsMouseNotInBounds, aCursorIdData, SetCursor, aSfxData,
-  PlayStaticSound, InitTitle, InitCon, InitScene, RenderFade, InitShop,
+  PlayStaticSound, InitTitle, InitCon, InitScene, InitShop,
   InitBank, InitContinueGame, EndConditionsCheck, SetBottomRightTipAndShadow,
-  RenderInterface, GameProc, RegisterFBUCallback, RenderShadow, aGlobalData
+  SetBottomRightTip, RenderInterface, GameProc, RegisterFBUCallback,
+  RenderShadow, aGlobalData
   = -- --------------------------------------------------------------------- --
   GetAPI("LoadResources", "PlayMusic", "Fade", "SetCallbacks",
     "IsButtonReleased", "IsMouseInBounds", "IsMouseNotInBounds",
     "aCursorIdData", "SetCursor", "aSfxData", "PlayStaticSound", "InitTitle",
-    "InitCon", "InitScene", "RenderFade", "InitShop", "InitBank",
+    "InitCon", "InitScene", "InitShop", "InitBank",
     "InitContinueGame", "EndConditionsCheck", "SetBottomRightTipAndShadow",
-    "RenderInterface", "GameProc", "RegisterFBUCallback", "RenderShadow",
-    "aGlobalData");
+    "SetBottomRightTip", "RenderInterface", "GameProc", "RegisterFBUCallback",
+    "RenderShadow", "aGlobalData");
   -- ----------------------------------------------------------------------- --
 end };
 -- End-of-File ============================================================= --

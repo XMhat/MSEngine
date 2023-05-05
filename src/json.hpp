@@ -10,8 +10,9 @@
 /* ------------------------------------------------------------------------- */
 namespace IfJson {                     // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace Library::RapidJson;    // Using rapidjson library functions
+using namespace Lib::RapidJson;        // Using rapidjson library functions
 using namespace IfAsset;               // Using asset namespace
+using Lib::RapidJson::Value;           // Need this to stop conflict with Lua
 /* == Json object collector and member class =============================== */
 BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */

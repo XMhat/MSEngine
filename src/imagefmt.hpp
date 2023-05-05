@@ -10,9 +10,9 @@
 /* ------------------------------------------------------------------------- */
 namespace IfImageFormat {              // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace Library::Png;          // Using libpng library functions
-using namespace Library::JpegTurbo;    // Using jpegturbo library functions
-using namespace Library::NSGif;        // Using libnsgif library functions
+using namespace Lib::Png;              // Using libpng library functions
+using namespace Lib::OS::JpegTurbo;    // Using jpegturbo library functions
+using namespace Lib::NSGif;            // Using libnsgif library functions
 using namespace IfImageLib;            // Using imagelib namespace
 using namespace IfCVar;                // Using cvar namespace
 /* ========================================================================= */

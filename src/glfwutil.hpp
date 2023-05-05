@@ -9,6 +9,7 @@
 /* ------------------------------------------------------------------------- */
 namespace IfGlFWUtil {                 // Start of module namespace
 /* ------------------------------------------------------------------------- */
+using namespace Lib::OS::GlFW;         // Using GlFW library functions
 using namespace IfEvtMain;             // Using event namespace
 /* -- Returns GLFW_TRUE or GLFW_FALSE depending on expression -------------- */
 static int GlFWBooleanToGBoolean(const bool bC)

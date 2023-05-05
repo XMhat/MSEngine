@@ -14,7 +14,7 @@
 /* ------------------------------------------------------------------------- */
 namespace IfOal {                      // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace Library::OpenAL;       // Using openal library functions
+using namespace Lib::OpenAL;           // Using openal library functions
 using namespace IfFlags;               // Using flags namespace
 using namespace IfIdent;               // Using identification namespace
 using namespace IfLog;                 // Using logging namespace

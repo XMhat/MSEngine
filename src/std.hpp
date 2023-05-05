@@ -13,7 +13,7 @@ namespace IfStd {                      // Start of module namespace
 /* ------------------------------------------------------------------------- */
 /* ######################################################################### */
 /* ## Because MacOS doesn't support execution policy yet, we need to make ## */
-/* ## functions that ignore the first parameter while allowing the        ## */
+/* ## functions that ignore the first parameter while allowing the        ## */
 /* ## same parameter to pass through on other targets.                    ## */
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
@@ -259,7 +259,7 @@ static void StdSRand(const unsigned int uiSeed) { srandom(uiSeed); }
 /* ------------------------------------------------------------------------- */
 /* ######################################################################### */
 /* ## Because some compilers may not allow me to alias ::std::move        ## */
-/* ## anymore with an error referring to being an 'unqualified call', the ## */
+/* ## anymore with an error referring to being an 'unqualified call', the ## */
 /* ## only workaround seems to be to use this constexpr function which    ## */
 /* ## does not appear to cause an increase of machine code.               ## */
 /* ######################################################################### */

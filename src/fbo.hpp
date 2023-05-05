@@ -195,9 +195,9 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
   void FinishQueue(void)
   { // Push the data we need to render the array
     fclActive.push_back({
-      uiTexUnitCache,                                          // uiTUId
-      uiTextureCache,                                          // uiTexId
-      uiShaderCache,                                           // uiPrgId
+      uiTexUnitCache,                                            // uiTUId
+      uiTextureCache,                                            // uiTexId
+      uiShaderCache,                                             // uiPrgId
       reinterpret_cast<GLvoid*>(stGLArrayOff + stOffsetTxcData), // vpTCOffset
       reinterpret_cast<GLvoid*>(stGLArrayOff + stOffsetPosData), // vpVOffset
       reinterpret_cast<GLvoid*>(stGLArrayOff + stOffsetColData), // vpCOffset

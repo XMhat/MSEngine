@@ -17,7 +17,7 @@ local InfoTicks<const>, UtilBlank<const> = Info.Ticks, Util.Blank;
 -- Diggers function and data aliases --------------------------------------- --
 local LoadResources, Fade, SetCallbacks, IsMouseInBounds, IsMouseNotInBounds,
   aCursorIdData, SetCursor, PlayStaticSound, aSfxData, InitCon, PlayMusic,
-  IsButtonPressed, IsScrollingDown, IsScrollingUp, RenderFade, aObjectData,
+  IsButtonPressed, IsScrollingDown, IsScrollingUp, aObjectData,
   aGemsAvailable, aObjectActions, aObjectJobs, aObjectDirections, aObjectTypes,
   InitLobby, texSpr, fontSpeech, GetGameTicks, SetBottomRightTip,
   RenderInterface, HaveZogsToWin, GameProc, SellSpecifiedItems, RenderShadow;
@@ -148,8 +148,6 @@ local function InitBank(aActiveObject)
     local function BankRender()
       -- Render original interface
       RenderInterface();
-      -- Fade backdrop
-      RenderFade(0.5);
       -- Draw backdrop with bankers and windows
       texBank:BlitSLT(tileBG, 8, 8);
       -- Render shadow
@@ -244,7 +242,7 @@ return { A = { InitBank = InitBank }, F = function(GetAPI)
   -- Imports --------------------------------------------------------------- --
   LoadResources, SetCallbacks, SetCursor, IsMouseInBounds, aCursorIdData,
   PlayStaticSound, Fade, IsMouseNotInBounds, aSfxData, InitCon, PlayMusic,
-  IsButtonPressed, IsScrollingDown, IsScrollingUp, RenderFade, aObjectData,
+  IsButtonPressed, IsScrollingDown, IsScrollingUp, aObjectData,
   aGemsAvailable, aObjectActions, aObjectJobs, aObjectDirections, aObjectTypes,
   InitLobby, texSpr, fontSpeech, GetGameTicks, SetBottomRightTip,
   RenderInterface, HaveZogsToWin, GameProc, SellSpecifiedItems, RenderShadow
@@ -252,7 +250,7 @@ return { A = { InitBank = InitBank }, F = function(GetAPI)
   GetAPI("LoadResources", "SetCallbacks", "SetCursor", "IsMouseInBounds",
     "aCursorIdData", "PlayStaticSound", "Fade", "IsMouseNotInBounds",
     "aSfxData", "InitCon", "PlayMusic", "IsButtonPressed", "IsScrollingDown",
-    "IsScrollingUp", "RenderFade", "aObjectData", "GemsAvailable",
+    "IsScrollingUp", "aObjectData", "GemsAvailable",
     "aObjectActions", "aObjectJobs", "aObjectDirections", "aObjectTypes",
     "InitLobby", "texSpr", "fontSpeech", "GetGameTicks", "SetBottomRightTip",
     "RenderInterface", "HaveZogsToWin", "GameProc", "SellSpecifiedItems",

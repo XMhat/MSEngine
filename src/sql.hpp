@@ -10,7 +10,7 @@
 /* ------------------------------------------------------------------------- */
 namespace IfSql {                      // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace Library::Sqlite;       // Using sqlite library functions
+using namespace Lib::Sqlite;           // Using sqlite library functions
 using namespace IfAsset;               // Using asset namespace
 using namespace IfTimer;               // Using timer namespace
 /* -- Sql cvar data types -------------------------------------------------- */

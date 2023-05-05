@@ -10,7 +10,6 @@
 /* ------------------------------------------------------------------------- */
 namespace IfSysUtil {                  // Start of module namespace
 /* ------------------------------------------------------------------------- */
-using namespace Library::GlFW;         // Using GlFW library functions
 using namespace IfUtf;                 // Using utf namespace
 using namespace IfString;              // Using string namespace
 /* ------------------------------------------------------------------------- */
@@ -23,6 +22,8 @@ enum class SysThread                   // Thread priority types
   Low                                  // Aux thread low priority
 };/* -- Includes ----------------------------------------------------------- */
 #if defined(WINDOWS)                   // Using windows?
+/* ------------------------------------------------------------------------- */
+using namespace Lib::OS;               // Using OS namespace
 /* -- System error formatter with specified error code --------------------- */
 static const string SysError(const int iError)
 { // Convert int to DWORD as we use the same function type across platforms
@@ -105,7 +106,9 @@ static bool SysInitThread(const char*const cpName, const SysThread stLevel)
 /* -- Actual interface to show a message box ----------------------------- */
 static unsigned int SysMessage(void*const, const string &strTitle,
   const string &strMessage, const unsigned int uiFlags)
-{ // Make an autorelease ptr for Apple strings. Not sure if Apple provides a
+{ // Need operating system functions
+  using namespace Lib::OS;
+  // Make an autorelease ptr for Apple strings. Not sure if Apple provides a
   // non-pointer based CStringRef so we'll just remove it instead!
   typedef unique_ptr<const void, function<decltype(CFRelease)>> CFAutoRelPtr;
   // Setup dialogue title string with autorelease and if succeeded?
@@ -188,10 +191,16 @@ static const string SysError(void) { return LocalError(SysErrorCode()); }
 static bool SysInitThread(const char*const cpName, const SysThread stLevel)
 { // Get this thread handle
   pthread_t ptHandle = pthread_self();
-  // Set thread name
+  // Using MacOS?
 #if defined(MACOS)
+  // Set thread name
   pthread_setname_np(cpName);
+  // Set qos
+  pthread_set_qos_class_self_np(stLevel <= SysThread::Engine ?
+    QOS_CLASS_USER_INTERACTIVE : QOS_CLASS_BACKGROUND, 0);
+  // Using Linux?
 #else
+  // Set thread name
   pthread_setname_np(ptHandle, cpName);
 #endif
   // Container for current scheduler parameters

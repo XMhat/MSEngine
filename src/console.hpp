@@ -51,7 +51,7 @@ static class Console final :           // Members initially private
   constexpr static const size_t
     stConCmdMinLength = 1,             // Minimum length of a console command
     stConCmdMaxLength = 255;           // Maximum length of a console command
-  /* -- Public typedefs -------------------------------------------- */ public:
+  /* -- Public typedefs ---------------------------------------------------- */
   AutoCompleteFlags acFlags;           // Flags for autocomplete
   /* ----------------------------------------------------------------------- */
   typedef map<const string,const ConLib> LibList; // Map of commands type
@@ -92,8 +92,184 @@ static class Console final :           // Members initially private
   size_t           stMaxCount;         // Maximum console commands allowed
   /* -- Lua ---------------------------------------------------------------- */
   LuaFunc::Map     lfList;             // Lua console callbacks list
+  /* -- Do console redraw -------------------------------------------------- */
+  void Redraw(void)
+  { // Get reference to console fbo
+    Fbo &fboC = cFboMain->fboConsole;
+    // Set main fbo to draw to
+    fboC.SetActive();
+    // Get reference to main fbo
+    Fbo &fboM = cFboMain->fboMain;
+    // Update ortho same as the main fbo
+    fboC.SetOrtho(0, 0, fboM.GetCoRight(), fboM.GetCoBottom());
+    // Set drawing position
+    const GLfloat fYAdj = fboM.fcStage.GetCoBottom() * (1 - fConsoleHeight);
+    fboC.SetVertex(fboM.fcStage.GetCoLeft(), fboM.fcStage.GetCoTop() - fYAdj,
+      fboM.fcStage.GetCoRight(), fboM.fcStage.GetCoBottom() - fYAdj);
+    // Set console texture colour and blit the console background
+    GetTextureRef().SetQuadRGBAInt(ulBgColour);
+    GetTextureRef().BlitLTRB(0, 0, fboC.fcStage.GetCoLeft(),
+      fboC.fcStage.GetCoTop(), fboC.fcStage.GetCoRight(),
+      fboC.fcStage.GetCoBottom());
+    // Set console input text colour
+    GetFontRef().SetQuadRGBAInt(ulFgColour);
+    // Restore spacing and scale as well
+    CommitLetterSpacing();
+    CommitLineSpacing();
+    CommitScale();
+    // Get below baseline height
+    const GLfloat fBL = (fboC.fcStage.GetCoBottom() -
+      GetFontRef().GetBaselineBelow('g')) + GetFontRef().fLineSpacing;
+    // Draw input text and subtract the height drawn from Y position
+    GLfloat fY = fBL - GetFontRef().PrintWU(fboC.fcStage.GetCoLeft(), fBL,
+      fboC.fcStage.GetCoRight(), GetFontRef().dfScale.DimGetWidth(),
+        reinterpret_cast<const GLubyte*>(Format(">$\rc000000ff$\rr$",
+        strConsoleBegin, cCursor, strConsoleEnd).c_str()));
+    // For each line or until we clip the top of the screen, print the text
+    for(ConLinesConstRevIt clI{ clriPosition }; clI!=crend() && fY>0; ++clI)
+    { // Get reference to console line data structure
+      const ConLine &clD = *clI;
+      // Set text foreground colour with opaqueness already set above
+      GetFontRef().SetQuadRGBInt(uiNDXtoRGB[clD.cColour]);
+      // Draw the text and move upwards of the height that was used
+      fY -= GetFontRef().PrintWU(fboC.fcStage.GetCoLeft(), fY,
+        fboC.fcStage.GetCoRight(),
+          GetFontRef().dfScale.DimGetWidth(), reinterpret_cast<const GLubyte*>
+            (clD.strLine.c_str()));
+    } // Finish and render
+    fboC.FinishAndRender();
+    // Redrawn as requested
+    ClearRedraw();
+    // Make sure the main fbo is updated
+    cFboMain->SetDraw();
+  }
+  /* -- Do clear console, clear history and reset position ----------------- */
+  void DoFlush(void) { clear(); clriPosition = rbegin(); }
+  /* -- Register command list ---------------------------------------------- */
+  void RegisterCommandList(void)
+  { // Say how many commands we are registering
+    cLog->LogDebugExSafe("Console registering $ built-in commands...",
+      conLibList.size());
+    // Iterate each item and register it
+    for(const ConLib &clD : conLibList)
+    { // The selected gui mode does not require this command?
+      if(cSystem->IsNotGuiMode(clD.guimMin))
+      { // Say that we ignored this library
+        cLog->LogDebugExSafe("Console ignoring registration of command '$'.",
+          clD.strName);
+        // Try next command
+        continue;
+      } // Register the command
+      RegisterCommand(clD.strName, clD.uiMinimum, clD.uiMaximum, clD.ccbFunc);
+    } // Say how many commands we registered
+    cLog->LogInfoExSafe("Console registered $ of $ built-in commands.",
+      llCmds.size(), conLibList.size());
+  }
+  /* -- Check that the console variable name is valid ---------------------- */
+  bool IsValidConsoleCommandName(const string &strName)
+  { // Check minimum name length
+    if(strName.length() < stConCmdMinLength ||
+       strName.length() > stConCmdMaxLength) return false;
+    // Get address of string. The first character must be a letter
+    const unsigned char *ucpPtr =
+      reinterpret_cast<const unsigned char*>(strName.c_str());
+    if(!isalpha(*ucpPtr)) return false;
+    // For each character in cvar name until end of string...
+    for(const unsigned char*const ucpPtrEnd = ucpPtr + strName.length();
+                                   ++ucpPtr < ucpPtrEnd;)
+      if(!isalnum(*ucpPtr) && *ucpPtr != '_') return false;
+    // Success!
+    return true;
+  }
+  /* -- Reserve history items ---------------------------------------------- */
+  void ReserveHistoryLines(const size_t stLines)
+  { // Calculate total lines when added
+    const size_t stTotal = slHistory.size() + stLines;
+    // Return if we don't need to remove lines
+    if(stTotal <= GetInputMaximum()) return;
+    // If too many lines would be written?
+    if(stLines >= GetInputMaximum()) return ClearHistory();
+    // Iterator to find
+    const StrListConstIt sliIt{ slriInputPosition.base() };
+    // Lines to prune to
+    const size_t stRemove = slHistory.size() - stLines;
+    // Repeat...
+    do
+    { // If this item is not selected in the history? Erase and next
+      if(slHistory.cbegin() != sliIt) { slHistory.pop_front(); continue; }
+      // Now we know that this iterator is selected we can erase the rest
+      slriInputPosition = StrListConstRevIt{
+        slHistory.erase(slHistory.cbegin(), next(slHistory.cbegin(),
+          static_cast<ssize_t>((slHistory.size() - 1) - GetInputMaximum()))) };
+      // Done
+      break;
+    } // ...Until we have cleared enough lines
+    while(size() > stRemove);
+  }
+  /* -- Delete lines at back of console log to make way for new entries ---- */
+  void ReserveLines(const size_t stLines)
+  { // Calculate total liens
+    const size_t stTotal = size() + stLines;
+    // If writing this many lines would fit in the log, then the log does not
+    // need pruning.
+    if(stTotal <= GetOutputMaximum()) return;
+    // If too many lines would be written?
+    if(stLines >= GetOutputMaximum()) return DoFlush();
+    // Iterator to find
+    const ConLinesConstIt cliIt{ clriPosition.base() };
+    // Lines to prune to
+    const size_t stRemove = size() - stLines;
+    // Repeat...
+    do
+    { // If this item is not selected in the output history? Erase and next
+      if(cbegin() != cliIt) { pop_front(); continue; }
+      // Get items remaining to remove
+      clriPosition = ConLinesConstRevIt{ erase(cbegin(),
+        next(cbegin(), static_cast<ssize_t>(size() - stRemove))) };
+      // Done
+      break;
+    } // ...Until we have cleared enough lines
+    while(size() > stRemove);
+  }
+  /* -- Calculate the number of triangles and commands for console fbo ----- */
+  void RecalculateFboListReserves(void)
+  { // Ignore if font not available (not in graphical mode).
+    if(GetFontRef().IsNotInitialised()) return;
+    // Get console fbo and font
+    Fbo &fboC = cFboMain->fboConsole;
+    // Set console text size so the scaled size is properly calculated
+    CommitScale();
+    // Estimate amount of triangles that would fit in the console and if
+    // we have a non-zero value?
+    if(const size_t stTriangles = static_cast<size_t>(
+      (ceilf(fboC.DimGetWidth<GLfloat>() /
+       ceilf(GetFontRef().dfScale.DimGetWidth())) *
+       ceilf(fboC.DimGetHeight<GLfloat>() /
+       ceilf(GetFontRef().dfScale.DimGetHeight()))) + 2))
+      // Try to reserve the triangles and 2 commands and log if failed!
+      if(!fboC.Reserve(stTriangles, 2))
+        cLog->LogWarningExSafe("Console fbo failed to reserve $ triangles!",
+          stTriangles);
+  }
   /* -- Events list -------------------------------------------------------- */
   const EvtMain::RegVec reEvents;       // Events list to register
+  /* -- Return commands list --------------------------------------- */ public:
+  const LibList &GetCmdsList(void) const { return llCmds; }
+  /* -- Return maximum number of output history lines ---------------------- */
+  size_t GetOutputMaximum(void) const { return stOutputMaximum; }
+  /* -- Return maximum number of input history lines ----------------------- */
+  size_t GetInputMaximum(void) const { return stInputMaximum; }
+  /* -- Return maximum number of input characters -------------------------- */
+  size_t GetMaximumChars(void) const { return stMaximumChars; }
+  /* -- Return number of pgup/dn lines ------------------------------------- */
+  int GetPageLines(void) const { return iPageLines; }
+  /* -- Return lua commands list ------------------------------------------- */
+  const LuaFunc::Map &GetLuaCmds(void) const { return lfList; }
+  /* -- Return information about a console command ------------------------- */
+  const ConLib &GetCommand(const IfConLib::ConCmdEnums cceId) const
+    { return conLibList[cceId]; }
+  /* -- Clear console and redraw ------------------------------------------- */
+  void Flush(void) { DoFlush(); SetRedraw(); }
   /* -- Find a virtual command and throw error if not found ---------------- */
   auto FindVirtualCommand(const string &strCmd)
   { // Find command in console command list and throw if we don't have it
@@ -281,7 +457,9 @@ static class Console final :           // Members initially private
       case GLFW_KEY_PAGE_DOWN : MoveLogPageDown(); break;
       case GLFW_KEY_HOME      : MoveLogHome(); break;
       case GLFW_KEY_END       : MoveLogEnd(); break;
+#if defined(MACOS) // Because MacOS keyboards don't have an 'insert' key.
       case GLFW_KEY_DELETE    : ToggleCursorMode(); break;
+#endif
       case GLFW_KEY_C         : CopyText(); break;
       case GLFW_KEY_V         : PasteText(); break;
     } // Normal key, which key?
@@ -394,10 +572,10 @@ static class Console final :           // Members initially private
     { if(clriPosition != crbegin()){ SetRedraw(); --clriPosition; }}
   void MoveLogPageUp(void)
     { MoveLogPage(clriPosition, crend(), crend(),
-        iPageLines, iPageLines); }
+        GetPageLines(), GetPageLines()); }
   void MoveLogPageDown(void)
     { MoveLogPage(crbegin(), clriPosition, crbegin(),
-        iPageLines, -iPageLines); }
+        GetPageLines(), -GetPageLines()); }
   /* -- OnLastItem event ---------------------- Selects last console item -- */
   void HistoryMoveBack(void)
   { // Ignore if no history lines or there is text after the cursor
@@ -455,7 +633,8 @@ static class Console final :           // Members initially private
   /* -- Input manipulation ------------------------------------------------- */
   void AddInputChar(const unsigned int uiChar)
   { // Make sure line is under max characters
-    if(strConsoleBegin.size() + strConsoleEnd.size() >= stMaximumChars) return;
+    if(strConsoleBegin.size() + strConsoleEnd.size() >= GetMaximumChars())
+      return;
     // Encode character to utf-8
     AppendString(uiChar, strConsoleBegin);
     // Redraw the buffer, it changed
@@ -476,11 +655,10 @@ static class Console final :           // Members initially private
   void ToggleCursorMode(void)
   { // Toggle cursor mode
     FlagToggle(CF_INSERT);
+    // Set new cursor depending of if enabled or not
+    if(GetFontRef().IsInitialised()) cCursor = FlagIsSet(CF_INSERT) ? '|' : '_';
     // Tell SysCon that the cursor changed if needed and return
-    if(cfConsole.IsNotInitialised())
-      return cSystem->SetCursorMode(FlagIsSet(CF_INSERT));
-    // Change graphical cursor to indicate insert or overwrite mode
-    else cCursor = FlagIsSet(CF_INSERT) ? '|' : '_';
+    else return cSystem->SetCursorMode(FlagIsSet(CF_INSERT));
     // Need to redraw too
     SetRedraw();
   }
@@ -491,7 +669,14 @@ static class Console final :           // Members initially private
   /* -- Clears redraw flag ------------------------------------------------- */
   void ClearRedraw(void) { FlagClear(CF_REDRAW); }
   /* -- Sets redraw flag so the console fbo is rerendered ------------------ */
-  void SetRedraw(void) { FlagSetOrClear(CF_REDRAW, IsVisible()); }
+  void SetRedraw(void)
+  { // If console is visible?
+    if(IsVisible())
+    { // Set redraw flag
+      FlagSet(CF_REDRAW);
+    } // Invisible so clear redraw flag
+    else FlagClear(CF_REDRAW);
+  }
   /* -- Returns if the console fbo should redraw --------------------------- */
   bool IsRedrawing(void) { return FlagIsSet(CF_REDRAW); }
   /* -- Returns if the console fbo should NOT redraw ----------------------- */
@@ -511,9 +696,9 @@ static class Console final :           // Members initially private
     Ftf fFTFont;
     fFTFont.InitFile(cCVars->GetInternalStrSafe(CON_FONT),
       fTextWidth, fTextHeight, 96, 96, 0.0);
-    cfConsole.InitFTFont(fFTFont,
+    GetFontRef().InitFTFont(fFTFont,
       cCVars->GetInternalSafe<GLuint>(CON_FONTTEXSIZE),
-      cCVars->GetInternalSafe<GLuint>(CON_FONTPADDING), 11, cfConsole);
+      cCVars->GetInternalSafe<GLuint>(CON_FONTPADDING), 11, GetFontRef());
     // Get minimum precache range and if valid?
     if(const unsigned int uiCharMin =
       cCVars->GetInternalSafe<unsigned int>(CON_FONTPCMIN))
@@ -522,11 +707,11 @@ static class Console final :           // Members initially private
         cCVars->GetInternalSafe<unsigned int>(CON_FONTPCMAX))
           // If maximum is above the minimum? Pre-cache the characters range
           if(uiCharMax >= uiCharMin)
-            cfConsole.InitFTCharRange(uiCharMin, uiCharMax);
+            GetFontRef().InitFTCharRange(uiCharMin, uiCharMax);
     // Set default font parameters
     RestoreDefaultProperties();
     // LUA not allowed to deallocate this font!
-    cfConsole.LockSet();
+    GetFontRef().LockSet();
   }
   /* -- Init console texture ----------------------------------------------- */
   void InitConsoleTexture(void)
@@ -535,14 +720,14 @@ static class Console final :           // Members initially private
     if(strCT.empty())
     { // Create simple image for solid colour and load it into a texture
       Image imgData{ 0xFFFFFFFF };
-      ctConsole.InitImage(imgData, 0, 0, 0, 0, 0);
+      GetTextureRef().InitImage(imgData, 0, 0, 0, 0, 0);
     } // Else filename specified so load it!
     else
     { // Load image from disk and load it into a texture
       Image imgData{ strCT, IL_NONE };
-      ctConsole.InitImage(imgData, 0, 0, 0, 0, 11);
+      GetTextureRef().InitImage(imgData, 0, 0, 0, 0, 11);
     } // LUA will not be allowed to garbage collect this texture class!
-    ctConsole.LockSet();
+    GetTextureRef().LockSet();
   }
   /* -- Execute arguments list --------------------------------------------- */
   void ExecuteArguments(const string &strCmd, const Arguments &aList)
@@ -667,107 +852,25 @@ static class Console final :           // Members initially private
   }
   /* -- Commit default text scale ------------------------------------------ */
   void CommitScale(void)
-    { cfConsole.SetSize(fTextScale); }
+    { GetFontRef().SetSize(fTextScale); }
   /* -- Commit default letter spacing -------------------------------------- */
   void CommitLetterSpacing(void)
-    { cfConsole.SetCharSpacing(fTextLetterSpacing); }
+    { GetFontRef().SetCharSpacing(fTextLetterSpacing); }
   /* -- Commit default line spacing ---------------------------------------- */
   void CommitLineSpacing(void)
-    { cfConsole.SetLineSpacing(fTextLineSpacing); }
+    { GetFontRef().SetLineSpacing(fTextLineSpacing); }
   /* -- Get console textures --------------------------------------- */ public:
-  Texture *GetTexture(void) { return &ctConsole; }
-  Font *GetFont(void) { return &cfConsole; }
+  Texture &GetTextureRef(void) { return ctConsole; }
+  Font &GetFontRef(void) { return cfConsole; }
+  Texture *GetTexture(void) { return &GetTextureRef(); }
+  Font *GetFont(void) { return &GetFontRef(); }
   /* -- SetRedraw ---------------------------------------------------------- */
   void SetRedrawIfEnabled(void) { if(IsVisible()) SetRedraw(); }
   /* -- Get console callbacks ---------------------------------------------- */
   size_t GetCmdCount(void) const { return llCmds.size(); }
-  /* -- Set page move count ------------------------------------------------ */
-  CVarReturn SetPageMoveCount(int iAmount)
-    { return CVarSimpleSetInt(iPageLines, iAmount); }
-  /* -- Set time format ---------------------------------------------------- */
-  CVarReturn SetTimeFormat(const string &strFmt, string &)
-  { // Verify the new time format and log it
-    cLog->LogInfoExSafe("Console time from format '$' is '$'.",
-      strFmt, cmSys.FormatTime(strFmt.c_str()));
-    // Accept the new time format
-    strTimeFormat = strFmt;
-    // Done
-    return ACCEPT;
-  }
   /* -- Get console lines -------------------------------------------------- */
   size_t GetOutputCount(void) { return size(); }
   size_t GetInputCount(void) { return slHistory.size(); }
-  /* -- Set maximum console line length ------------------------------------ */
-  CVarReturn SetMaxConLineChars(const size_t stChars)
-  { // Deny if out of range
-    if(stChars < 256 ||
-       stChars > Minimum(Minimum(strConsoleBegin.max_size(),
-                                 strConsoleEnd.max_size()), 16384))
-      return DENY;
-    // Reserve buffer sizes for console input
-    strConsoleBegin.reserve(stChars);
-    strConsoleEnd.reserve(stChars);
-    // Set new maximum length
-    stMaximumChars = stChars;
-    // Redraw the buffer, it changed
-    SetRedraw();
-    // Value allowed
-    return ACCEPT;
-  }
-  /* -- Set console buffers ------------------------------------------------ */
-  CVarReturn SetConsoleOutputLines(const size_t stLines)
-  { // Ignore if same value or invalid value or vector can't accept value
-    if(stLines < 1 || stLines > 1000000 || stLines > max_size()) return DENY;
-    // New value under previous amount? Remove excess lines
-    if(stLines < size())
-      clriPosition = ConLinesConstRevIt{ erase(cbegin(), next(cbegin(),
-        static_cast<ssize_t>(size() - stLines))) };
-    // Set new position
-    stOutputMaximum = stLines;
-    // Completed successfully
-    return ACCEPT;
-  }
-  /* -- Set console buffers ------------------------------------------------ */
-  CVarReturn SetConsoleInputLines(const size_t stLines)
-  { // OK if same value
-    if(stInputMaximum == stLines) return ACCEPT;
-    // Ignore if same value or invalid value or vector can't accept value
-    if(stLines < 1 || stLines > 1000000 || stLines > slHistory.max_size())
-      return DENY;
-    // New value under previous amount? Erase the rest
-    if(stLines < slHistory.size())
-      slriInputPosition =
-        StrListConstRevIt{ slHistory.erase(slHistory.cbegin(),
-          next(slHistory.cbegin(),
-            static_cast<ssize_t>(slHistory.size() - stLines))) };
-    // Set the new amount
-    stInputMaximum = stLines;
-    // Completed
-    return ACCEPT;
-  }
-  /* -- Set console auto complete flags ------------------------------------ */
-  CVarReturn SetAutoComplete(const unsigned int uiFlags)
-  { // Deny if flags are too much
-    if(uiFlags > AC_MASK.FlagGet()) return DENY;
-    // Set new flags
-    acFlags.FlagReset(AutoCompleteFlagsConst(uiFlags));
-    // OK
-    return ACCEPT;
-  }
-  /* -- Set console auto copy cvar state ----------------------------------- */
-  CVarReturn SetAutoCopyCVar(const bool bState)
-  { // Set autoscroll state
-    FlagSetOrClear(CF_AUTOCOPYCVAR, bState);
-    // Succeeded
-    return ACCEPT;
-  }
-  /* -- Set console autoscroll state --------------------------------------- */
-  CVarReturn SetAutoScroll(const bool bState)
-  { // Set autoscroll state
-    FlagSetOrClear(CF_AUTOSCROLL, bState);
-    // Succeeded
-    return ACCEPT;
-  }
   /* -- Set console input status bar (left and right) ---------------------- */
   void SetStatusLeft(const string &strValue) { strStatusLeft = strValue; }
   void SetStatusRight(const string &strValue) { strStatusRight = strValue; }
@@ -842,60 +945,6 @@ static class Console final :           // Members initially private
     // Commit buffer if we need to commit
     cSystem->CommitBuffer();
   }
-  /* -- Do console redraw -------------------------------------------------- */
-  void Redraw(void)
-  { // Get reference to console fbo
-    Fbo &fboC = cFboMain->fboConsole;
-    // Set main fbo to draw to
-    fboC.SetActive();
-    // Get reference to main fbo
-    Fbo &fboM = cFboMain->fboMain;
-    // Update ortho same as the main fbo
-    fboC.SetOrtho(0, 0, fboM.GetCoRight(), fboM.GetCoBottom());
-    // Set drawing position
-    const GLfloat fYAdj = fboM.fcStage.GetCoBottom() * (1 - fConsoleHeight);
-    fboC.SetVertex(fboM.fcStage.GetCoLeft(),
-                   fboM.fcStage.GetCoTop() - fYAdj,
-                   fboM.fcStage.GetCoRight(),
-                   fboM.fcStage.GetCoBottom() - fYAdj);
-    // Set console texture colour and blit the console background
-    ctConsole.SetQuadRGBAInt(ulBgColour);
-    ctConsole.BlitLTRB(0, 0, fboC.fcStage.GetCoLeft(),
-                             fboC.fcStage.GetCoTop(),
-                             fboC.fcStage.GetCoRight(),
-                             fboC.fcStage.GetCoBottom());
-    // Set console input text colour
-    cfConsole.SetQuadRGBAInt(ulFgColour);
-    // Restore spacing and scale as well
-    CommitLetterSpacing();
-    CommitLineSpacing();
-    CommitScale();
-    // Get below baseline height
-    const GLfloat fBL = (fboC.fcStage.GetCoBottom() -
-      cfConsole.GetBaselineBelow('g')) + cfConsole.fLineSpacing;
-    // Draw input text and subtract the height drawn from Y position
-    GLfloat fY = fBL - cfConsole.PrintWU(fboC.fcStage.GetCoLeft(), fBL,
-      fboC.fcStage.GetCoRight(), cfConsole.dfScale.DimGetWidth(),
-        reinterpret_cast<const GLubyte*>(Format(">$\rc000000ff$\rr$",
-          strConsoleBegin, cCursor, strConsoleEnd).c_str()));
-    // For each line or until we clip the top of the screen, print the text
-    for(ConLinesConstRevIt clI{ clriPosition }; clI!=crend() && fY>0; ++clI)
-    { // Get reference to console line data structure
-      const ConLine &clD = *clI;
-      // Set text foreground colour with opaqueness already set above
-      cfConsole.SetQuadRGBInt(uiNDXtoRGB[clD.cColour]);
-      // Draw the text and move upwards of the height that was used
-      fY -= cfConsole.PrintWU(fboC.fcStage.GetCoLeft(), fY,
-        fboC.fcStage.GetCoRight(),
-          cfConsole.dfScale.DimGetWidth(), reinterpret_cast<const GLubyte*>
-            (clD.strLine.c_str()));
-    } // Finish and render
-    fboC.FinishAndRender();
-    // Redrawn as requested
-    ClearRedraw();
-    // Make sure the main fbo is updated
-    cFboMain->SetDraw();
-  }
   /* -- Copy all console lines to log -------------------------------------- */
   size_t ToLog(void)
   { // Write all console lines to log
@@ -932,46 +981,6 @@ static class Console final :           // Members initially private
     llCmds.clear();
     // eport that we're removing all the commands quickly
     cLog->LogInfoExSafe("Console flushed $ commands.", stCount);
-  }
-  /* -- Do clear console, clear history and reset position ----------------- */
-  void DoFlush(void) { clear(); clriPosition = rbegin(); }
-  /* -- Clear console and redraw ------------------------------------------- */
-  void Flush(void) { DoFlush(); SetRedraw(); }
-  /* -- Register command list ---------------------------------------------- */
-  void RegisterCommandList(void)
-  { // Say how many commands we are registering
-    cLog->LogDebugExSafe("Console registering $ built-in commands...",
-      conLibList.size());
-    // Iterate each item and register it
-    for(const ConLib &clD : conLibList)
-    { // The selected gui mode does not require this command?
-      if(cSystem->IsNotGuiMode(clD.guimMin))
-      { // Say that we ignored this library
-        cLog->LogDebugExSafe("Console ignoring registration of command '$'.",
-          clD.strName);
-        // Try next command
-        continue;
-      } // Register the command
-      RegisterCommand(clD.strName, clD.uiMinimum, clD.uiMaximum, clD.ccbFunc);
-    } // Say how many commands we registered
-    cLog->LogInfoExSafe("Console registered $ of $ built-in commands.",
-      llCmds.size(), conLibList.size());
-  }
-  /* -- Check that the console variable name is valid ---------------------- */
-  bool IsValidConsoleCommandName(const string &strName)
-  { // Check minimum name length
-    if(strName.length() < stConCmdMinLength ||
-       strName.length() > stConCmdMaxLength) return false;
-    // Get address of string. The first character must be a letter
-    const unsigned char *ucpPtr =
-      reinterpret_cast<const unsigned char*>(strName.c_str());
-    if(!isalpha(*ucpPtr)) return false;
-    // For each character in cvar name until end of string...
-    for(const unsigned char*const ucpPtrEnd = ucpPtr + strName.length();
-                                   ++ucpPtr < ucpPtrEnd;)
-      if(!isalnum(*ucpPtr) && *ucpPtr != '_') return false;
-    // Success!
-    return true;
   }
   /* -- Register console command ------------------------------------------- */
   const LibListIt RegisterCommand(const string &strName,
@@ -1020,60 +1029,10 @@ static class Console final :           // Members initially private
     // Remove it
     llCmds.erase(ccbItem);
   }
-  /* -- Reserve history items ---------------------------------------------- */
-  void ReserveHistoryLines(const size_t stLines)
-  { // Calculate total lines when added
-    const size_t stTotal = slHistory.size() + stLines;
-    // Return if we don't need to remove lines
-    if(stTotal <= stInputMaximum) return;
-    // If too many lines would be written?
-    if(stLines >= stInputMaximum) return ClearHistory();
-    // Iterator to find
-    const StrListConstIt sliIt{ slriInputPosition.base() };
-    // Lines to prune to
-    const size_t stRemove = slHistory.size() - stLines;
-    // Repeat...
-    do
-    { // If this item is not selected in the history? Erase and next
-      if(slHistory.cbegin() != sliIt) { slHistory.pop_front(); continue; }
-      // Now we know that this iterator is selected we can erase the rest
-      slriInputPosition = StrListConstRevIt{
-        slHistory.erase(slHistory.cbegin(), next(slHistory.cbegin(),
-          static_cast<ssize_t>((slHistory.size() - 1) - stInputMaximum))) };
-      // Done
-      break;
-    } // ...Until we have cleared enough lines
-    while(size() > stRemove);
-  }
-  /* -- Delete lines at back of console log to make way for new entries ---- */
-  void ReserveLines(const size_t stLines)
-  { // Calculate total liens
-    const size_t stTotal = size() + stLines;
-    // If writing this many lines would fit in the log, then the log does not
-    // need pruning.
-    if(stTotal <= stOutputMaximum) return;
-    // If too many lines would be written?
-    if(stLines >= stOutputMaximum) return DoFlush();
-    // Iterator to find
-    const ConLinesConstIt cliIt{ clriPosition.base() };
-    // Lines to prune to
-    const size_t stRemove = size() - stLines;
-    // Repeat...
-    do
-    { // If this item is not selected in the output history? Erase and next
-      if(cbegin() != cliIt) { pop_front(); continue; }
-      // Get items remaining to remove
-      clriPosition = ConLinesConstRevIt{ erase(cbegin(),
-        next(cbegin(), static_cast<ssize_t>(size() - stRemove))) };
-      // Done
-      break;
-    } // ...Until we have cleared enough lines
-    while(size() > stRemove);
-  }
   /* -- Add line as string with specified text colour ----------------- */
   void AddLine(const string &strText, const Colour pColour)
   { // Tokenise lines into a list limited by the maximum number of lines.
-    const TokenList tLines{ strText, "\n", stOutputMaximum };
+    const TokenList tLines{ strText, "\n", GetOutputMaximum() };
     if(tLines.empty()) return;
     // Remove old lines if there are too many to fit this amount
     ReserveLines(tLines.size());
@@ -1103,23 +1062,11 @@ static class Console final :           // Members initially private
     const VarArgs &...vaArgs) { AddLine(Append(vaArgs...), pColour); }
   template<typename... VarArgs>void AddLineExA(const VarArgs &...vaArgs)
     { AddLineExC(cTextColour, vaArgs...); }
-  /* -- Set text-mode console refresh rate --------------------------------- */
-  CVarReturn RefreshModified(const unsigned int uiMS)
-  { // Ignore if invalid
-    if(uiMS < 100 || uiMS > 1000) return DENY;
-    // Set new rate
-    ciNextUpdate.CISetLimit(milliseconds(uiMS));
-    // Success
-    return ACCEPT;
-  }
-  /* -- Set console height ------------------------------------------------- */
-  CVarReturn SetHeight(const GLfloat fHeight)
-    { return CVarSimpleSetIntNLG(fConsoleHeight, fHeight, 0.1f, 1.0f); }
   /* -- Set Console status ------------------------------------------------- */
   void SetCantDisable(const bool bState)
   { // Ignore if not in graphical mode because CON_HEIGHT isn't defined in
     // bot mode as it is unneeded or the flag is already set as such.
-    if(cfConsole.IsNotInitialised()) return;
+    if(GetFontRef().IsNotInitialised()) return;
     // Return if state not changed
     if(FlagIsEqualToBool(CF_CANTDISABLE, bState)) return;
     // Set the state and if can no longer be disabled?
@@ -1173,26 +1120,6 @@ static class Console final :           // Members initially private
     // Do set enabled
     return DoSetVisible(bState);
   }
-  /* -- Calculate the number of triangles and commands for console fbo ----- */
-  void RecalculateFboListReserves(void)
-  { // Ignore if font not available (not in graphical mode).
-    if(cfConsole.IsNotInitialised()) return;
-    // Get console fbo and font
-    Fbo &fboC = cFboMain->fboConsole;
-    // Set console text size so the scaled size is properly calculated
-    CommitScale();
-    // Estimate amount of triangles that would fit in the console and if
-    // we have a non-zero value?
-    if(const size_t stTriangles = static_cast<size_t>(
-      (ceilf(fboC.DimGetWidth<GLfloat>() /
-       ceilf(cfConsole.dfScale.DimGetWidth())) *
-       ceilf(fboC.DimGetHeight<GLfloat>() /
-       ceilf(cfConsole.dfScale.DimGetHeight()))) + 2))
-      // Try to reserve the triangles and 2 commands and log if failed!
-      if(!fboC.Reserve(stTriangles, 2))
-        cLog->LogWarningExSafe("Console fbo failed to reserve $ triangles!",
-          stTriangles);
-  }
   /* -- Print version information ------------------------------------------ */
   void PrintVersion(void)
   { // Show engine version
@@ -1234,19 +1161,19 @@ static class Console final :           // Members initially private
   /* -- DeInit console texture and font ------------------------------------ */
   void DeInitTextureAndFont(void)
   { // Deinit console textures
-    ctConsole.DeInit();
-    cfConsole.DeInit();
+    GetTextureRef().DeInit();
+    GetFontRef().DeInit();
   }
   /* -- Reload console texture and font ------------------------------------ */
   void ReInitTextureAndFont(void)
   { // Reload console textures
-    ctConsole.ReloadTexture();
-    cfConsole.ReloadTexture();
+    GetTextureRef().ReloadTexture();
+    GetFontRef().ReloadTexture();
   }
   /* -- Init framebuffer object -------------------------------------------- */
   void InitFBO(void)
   { // Ignore if bot mode
-    if(cfConsole.IsNotInitialised()) return;
+    if(GetFontRef().IsNotInitialised()) return;
     // Get reference to main FBO and initialise it
     cFboMain->InitConsoleFBO();
     // Redraw FBO
@@ -1295,7 +1222,7 @@ static class Console final :           // Members initially private
     // Unload console texture and font.
     DeInitTextureAndFont();
     // Remove font ftf
-    cfConsole.ftfData.DeInit();
+    GetFontRef().ftfData.DeInit();
     // Clear input
     strConsoleBegin.clear();
     strConsoleEnd.clear();
@@ -1306,6 +1233,102 @@ static class Console final :           // Members initially private
     // Log progress
     cLog->LogInfoSafe("Console de-initialised successfully.");
   }
+  /* -- Set page move count ------------------------------------------------ */
+  CVarReturn SetPageMoveCount(int iAmount)
+    { return CVarSimpleSetInt(iPageLines, iAmount); }
+  /* -- Set time format ---------------------------------------------------- */
+  CVarReturn SetTimeFormat(const string &strFmt, string &)
+  { // Verify the new time format and log it
+    cLog->LogInfoExSafe("Console time from format '$' is '$'.",
+      strFmt, cmSys.FormatTime(strFmt.c_str()));
+    // Accept the new time format
+    strTimeFormat = strFmt;
+    // Done
+    return ACCEPT;
+  }
+  /* -- Set maximum console line length ------------------------------------ */
+  CVarReturn SetMaxConLineChars(const size_t stChars)
+  { // Deny if out of range
+    if(stChars < 256 ||
+       stChars > Minimum(Minimum(strConsoleBegin.max_size(),
+                                 strConsoleEnd.max_size()), 16384))
+      return DENY;
+    // Reserve buffer sizes for console input
+    strConsoleBegin.reserve(stChars);
+    strConsoleEnd.reserve(stChars);
+    // Set new maximum length
+    stMaximumChars = stChars;
+    // Redraw the buffer, it changed
+    SetRedraw();
+    // Value allowed
+    return ACCEPT;
+  }
+  /* -- Set console buffers ------------------------------------------------ */
+  CVarReturn SetConsoleOutputLines(const size_t stLines)
+  { // Ignore if same value or invalid value or vector can't accept value
+    if(stLines < 1 || stLines > 1000000 || stLines > max_size()) return DENY;
+    // New value under previous amount? Remove excess lines
+    if(stLines < size())
+      clriPosition = ConLinesConstRevIt{ erase(cbegin(), next(cbegin(),
+        static_cast<ssize_t>(size() - stLines))) };
+    // Set new position
+    stOutputMaximum = stLines;
+    // Completed successfully
+    return ACCEPT;
+  }
+  /* -- Set console buffers ------------------------------------------------ */
+  CVarReturn SetConsoleInputLines(const size_t stLines)
+  { // OK if same value
+    if(GetInputMaximum() == stLines) return ACCEPT;
+    // Ignore if same value or invalid value or vector can't accept value
+    if(stLines < 1 || stLines > 1000000 || stLines > slHistory.max_size())
+      return DENY;
+    // New value under previous amount? Erase the rest
+    if(stLines < slHistory.size())
+      slriInputPosition =
+        StrListConstRevIt{ slHistory.erase(slHistory.cbegin(),
+          next(slHistory.cbegin(),
+            static_cast<ssize_t>(slHistory.size() - stLines))) };
+    // Set the new amount
+    stInputMaximum = stLines;
+    // Completed
+    return ACCEPT;
+  }
+  /* -- Set console auto complete flags ------------------------------------ */
+  CVarReturn SetAutoComplete(const unsigned int uiFlags)
+  { // Deny if flags are too much
+    if(uiFlags > AC_MASK.FlagGet()) return DENY;
+    // Set new flags
+    acFlags.FlagReset(AutoCompleteFlagsConst(uiFlags));
+    // OK
+    return ACCEPT;
+  }
+  /* -- Set console auto copy cvar state ----------------------------------- */
+  CVarReturn SetAutoCopyCVar(const bool bState)
+  { // Set autoscroll state
+    FlagSetOrClear(CF_AUTOCOPYCVAR, bState);
+    // Succeeded
+    return ACCEPT;
+  }
+  /* -- Set console autoscroll state --------------------------------------- */
+  CVarReturn SetAutoScroll(const bool bState)
+  { // Set autoscroll state
+    FlagSetOrClear(CF_AUTOSCROLL, bState);
+    // Succeeded
+    return ACCEPT;
+  }
+  /* -- Set text-mode console refresh rate --------------------------------- */
+  CVarReturn RefreshModified(const unsigned int uiMS)
+  { // Ignore if invalid
+    if(uiMS < 100 || uiMS > 1000) return DENY;
+    // Set new rate
+    ciNextUpdate.CISetLimit(milliseconds(uiMS));
+    // Success
+    return ACCEPT;
+  }
+  /* -- Set console height ------------------------------------------------- */
+  CVarReturn SetHeight(const GLfloat fHeight)
+    { return CVarSimpleSetIntNLG(fConsoleHeight, fHeight, 0.1f, 1.0f); }
   /* -- Set Console status ------------------------------------------------- */
   CVarReturn CantDisableModified(const bool bState)
   { // Update flag and disabled status
@@ -1367,7 +1390,7 @@ static class Console final :           // Members initially private
   { // Check that flags are valid
     if(uiFlags & ~FF_MASK) return DENY;
     // Set console flags
-    cfConsole.FlagSet(static_cast<ImageFlags>(uiFlags));
+    GetFontRef().FlagSet(static_cast<ImageFlags>(uiFlags));
     // Success
     return ACCEPT;
   }

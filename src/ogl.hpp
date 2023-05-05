@@ -74,36 +74,35 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
     VSYNC_ON_HALFRATE,                 // ( 2) Verfical sync enabled (half)
     VSYNC_MAX                          // ( 3) Maximum Vertical Sync value
   } vsSetting;                         // Storage for setting
-  /* -- Bindings cache --------------------------------------------- */ public:
-  GLuint           uiActiveFbo;        // Currently selected FBO name cache
-  GLuint           uiActiveProgram;    // Currently active shader program
-  GLuint           uiActiveTexture;    // Currently bound texture
-  GLuint           uiActiveTUnit;      // Currently active texture unit
-  GLuint           uiActiveVao;        // Currently active vertex array object
-  GLuint           uiActiveVbo;        // Currently active vertex buffer object
-  /* -- Variables ------------------------------------------------- */ private:
-  GLuint           uiTexSize;          // Maximum reported texture size
-  GLuint           uiPackAlign;        // Default pack alignment
-  GLuint           uiUnpackAlign;      // Default Unpack alignment
+  /* -- Variables ---------------------------------------------------------- */
+  GLuint           uiActiveFbo,        // Currently selected FBO name cache
+                   uiActiveProgram,    // Currently active shader program
+                   uiActiveTexture,    // Currently bound texture
+                   uiActiveTUnit,      // Currently active texture unit
+                   uiActiveVao,        // Currently active vertex array object
+                   uiActiveVbo,        // Currently active vertex buffer object
+                   uiTexSize,          // Maximum reported texture size
+                   uiPackAlign,        // Default pack alignment
+                   uiUnpackAlign,      // Default Unpack alignment
+                   uiMaxVertexAttribs, // Maximum vertex attributes per shader
+                   uiTexUnits,         // Texture units count
+                   uiVAO,              // Vertex Array Object (only 1 needed)
+                   uiVBO;              // Vertex Buffer Object (only 1 needed)
   GLint            iUnpackRowLength;   // Default unpack row length
-  GLuint           uiMaxVertexAttribs; // Maximum vertex attributes per shader
-  GLuint           uiTexUnits;         // Texture units count
-  GLuint64         qwMinVRAM;          // Minimum VRAM required
-  GLuint64         qwTotalVRAM;        // Maximum VRAM supported
-  GLuint64         qwFreeVRAM;         // Current VRAM available
-  /* -- Information -------------------------------------------------------- */
-  string           strRenderer;        // GL renderer string
-  string           strVersion;         // GL version string
-  string           strVendor;          // GL vendor string
-  /* -- Handles ------------------------------------------------------------ */
-  GLuint           uiVAO, uiVBO;       // Default vertex array/buffer object
+  GLuint64         qwMinVRAM,          // Minimum VRAM required
+                   qwTotalVRAM,        // Maximum VRAM supported
+                   qwFreeVRAM;         // Current VRAM available
+  ClkDuration      cdLimit;            // Frame limit based on refresh rate
+  string           strRenderer,        // GL renderer string
+                   strVersion,         // GL version string
+                   strVendor;          // GL vendor string
   /* -- Delayed destruction ------------------------------------------------ */
   /* Because LUA garbage collection could zap a texture or fbo class at any  */
   /* time, we need to delay deletion of textures and FBO handles in OpenGL   */
   /* so that a framebuffer can select/draw without binding non-existant      */
   /* handles. Contents will be destroyed after all drawing is completed!     */
-  GLUIntVector     vTextures;          // Textures to destroy
-  GLUIntVector     vFbos;              // Fbos to destroy
+  GLUIntVector     vTextures,          // Textures to destroy
+                   vFbos;              // Fbos to destroy
   /* -- OpenGL functions (put in struct to zero easy) -------------- */ public:
   struct OpenGLAPI                     // OpenGL API functions
   { /* -- Callback type -------------- Function name ----------------------- */
@@ -690,6 +689,8 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
     { SetClearColourIfChanged(cCol); ClearBuffer(); }
   /* ----------------------------------------------------------------------- */
   GLenum GetError(void) const { return sAPI.glGetError(); }
+  /* -- Restore VSync setting ---------------------------------------------- */
+  void RestoreVSync(void) { GlFWSetVSync(vsSetting); }
   /* ----------------------------------------------------------------------- */
   void DrawArrays(const GLenum eMode, const GLint iFirst,
     const GLsizei stCount) const
@@ -929,6 +930,16 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
   const string &GetVendor(void) const { return strVendor; }
   const string &GetRenderer(void) const { return strRenderer; }
   const string &GetVersion(void) const { return strVersion; }
+  /* -- Setup VSync -------------------------------------------------------- */
+  CVarReturn SetVSyncMode(const int iValue)
+  { // Deny if the value is not valid
+    if(CVarSimpleSetIntNLGE(vsSetting, static_cast<VSyncMode>(iValue),
+      VSYNC_MIN, VSYNC_MAX) == DENY) return DENY;
+    // If opengl is already initalised then update the new value immediately
+    if(IsGLInitialised()) RestoreVSync();
+    // Done
+    return ACCEPT;
+  }
   /* -- Update texture destroy list size ----------------------------------- */
   CVarReturn SetTexDListReserve(const size_t stCount)
     { return BoolToCVarReturn(ReserveList(vTextures, stCount)); }
@@ -938,16 +949,6 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
   /* -- Update minimum VRAM ------------------------------------------------ */
   CVarReturn SetMinVRAM(const GLuint64 qwValue)
     { return CVarSimpleSetInt(qwMinVRAM, qwValue); }
-  /* -- Setup VSync -------------------------------------------------------- */
-  CVarReturn SetVSyncMode(const int iValue)
-  { // Deny if the value is not valid
-    if(CVarSimpleSetIntNLGE(vsSetting, static_cast<VSyncMode>(iValue),
-      VSYNC_MIN, VSYNC_MAX) == DENY) return DENY;
-    // If opengl is already initalised then update the new value immediately
-    if(IsGLInitialised()) GlFWSetVSync(vsSetting);
-    // Done
-    return ACCEPT;
-  }
   /* -- Update hints ------------------------------------------------------- */
   CVarReturn SetQCompressHint(const size_t stMode)
   { // Ignore if no context, but still succeeded
@@ -1137,8 +1138,10 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
   /* --------------------------------------------------------------- */ public:
   template<typename IntType>const string &GetGLErr(const IntType itCode) const
     { return idOGLCodes.Get(static_cast<GLenum>(itCode)); }
+  /* -- Return limit ------------------------------------------------------- */
+  double GetLimit(void) const { return ClockDurationToDouble(cdLimit); }
   /* -- Initialise --------------------------------------------------------- */
-  void Init(const int, const bool bForce=false)
+  void Init(const int iRefresh, const bool bForce=false)
   { // Class initialised
     if(!bForce) IHInitialise();
     // Log class initialising
@@ -1152,12 +1155,15 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
     if(const GLenum eError = sAPI.glGetError())
       cLog->LogDebugExSafe("Ogl cleared host caused error code! ($/$$).",
         GetGLErr(eError), hex, eError);
+    // Set frame limit
+    cdLimit = duration_cast<ClkDuration>(
+      duration<double>{ 1.0 / static_cast<double>(iRefresh) });
     // OpenGL is now initialised
     SetInitialised(true, bForce);
     // Check that there is enough VRAM available if requested
     VerifyVRAMConstraints();
     // Init vsync
-    GlFWSetVSync(vsSetting);
+    RestoreVSync();
     // Enable extensions
     EnableExtension(GL_BLEND);
     EnableExtension(GL_DITHER);
@@ -1313,14 +1319,15 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
     uiTexSize(0),                      // No maximum texture size
     uiPackAlign(0),                    // No pack align
     uiUnpackAlign(0),                  // No unpack align
-    iUnpackRowLength(0),               // No unpack row length
     uiMaxVertexAttribs(0),             // No maximum vertex attributes
     uiTexUnits(0),                     // No maximum texture units
+    uiVAO(0),                          // No default vertex array object
+    uiVBO(0),                          // No default vertex buffer object
+    iUnpackRowLength(0),               // No unpack row length
     qwMinVRAM(0),                      // No minimum vram
     qwTotalVRAM(0),                    // No total vram
     qwFreeVRAM(0),                     // No free vram
-    uiVAO(0),                          // No default vertex array object
-    uiVBO(0)                           // No default vertex buffer object
+    cdLimit{ milliseconds{0} }         // Init frame duration
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Destructor --------------------------------------------------------- */

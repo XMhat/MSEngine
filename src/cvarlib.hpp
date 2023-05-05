@@ -71,9 +71,9 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 { GM_TEXT_NOAUDIO, GM_HIGHEST, "ast_fsoverride",
 /* ------------------------------------------------------------------------- */
 #if defined(RELEASE)                   // Default disabled in release builds
-  "0",
+  cCommon->Zero(),
 #else                                  // Default enabled in other builds
-  "1",
+  cCommon->One(),
 #endif                                 // Build type check
   /* ----------------------------------------------------------------------- */
   CB(AssetSetFSOverride, bool), TBOOLEAN|PSYSTEM },
@@ -83,7 +83,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? 7-zip archive and use that to load guest assets. This is only supported
 // ? on Windows architectures right now and ignored on others.
 /* ------------------------------------------------------------------------- */
-{ GM_TEXT_NOAUDIO, GM_HIGHEST, "ast_exebundle", "1",
+{ GM_TEXT_NOAUDIO, GM_HIGHEST, "ast_exebundle", cCommon->One(),
   CB(ArchiveInitExe, bool), TBOOLEAN|PBOOT },
 /* ------------------------------------------------------------------------- */
 // ! APP_BASEDIR
@@ -142,7 +142,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ! SQL_ERASEEMPTY
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_TEXT_NOAUDIO, GM_HIGHEST, "sql_eraseempty", "1",
+{ GM_TEXT_NOAUDIO, GM_HIGHEST, "sql_eraseempty", cCommon->One(),
   CB(cSql->DeleteEmptyDBModified, bool), TBOOLEAN|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! SQL_TEMPSTORE
@@ -154,43 +154,43 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ! SQL_SYNCHRONOUS
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_TEXT_NOAUDIO, GM_HIGHEST, "sql_synchronous", "0",
+{ GM_TEXT_NOAUDIO, GM_HIGHEST, "sql_synchronous", cCommon->Zero(),
   CB(cSql->SynchronousModified, bool), TBOOLEAN|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! SQL_JOURNALMODE
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_TEXT_NOAUDIO, GM_HIGHEST, "sql_journalmode", "0",
+{ GM_TEXT_NOAUDIO, GM_HIGHEST, "sql_journalmode", cCommon->Zero(),
   CB(cSql->JournalModeModified, bool), TBOOLEAN|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! SQL_AUTOVACUUM
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_TEXT_NOAUDIO, GM_HIGHEST, "sql_autovacuum", "1",
+{ GM_TEXT_NOAUDIO, GM_HIGHEST, "sql_autovacuum", cCommon->One(),
   CB(cSql->AutoVacuumModified, bool), TBOOLEAN|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! SQL_FOREIGNKEYS
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_TEXT_NOAUDIO, GM_HIGHEST, "sql_foreignkeys", "1",
+{ GM_TEXT_NOAUDIO, GM_HIGHEST, "sql_foreignkeys", cCommon->One(),
   CB(cSql->ForeignKeysModified, bool), TBOOLEAN|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! SQL_INCVACUUM
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_TEXT_NOAUDIO, GM_HIGHEST, "sql_incvacuum", "0",
+{ GM_TEXT_NOAUDIO, GM_HIGHEST, "sql_incvacuum", cCommon->Zero(),
   CB(cSql->IncVacuumModified, uint64_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! SQL_DEFAULTS
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_TEXT_NOAUDIO, GM_HIGHEST, "sql_defaults", "0",
+{ GM_TEXT_NOAUDIO, GM_HIGHEST, "sql_defaults", cCommon->Zero(),
   CB(cCVars->SetDefaults, unsigned int), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! SQL_LOADCONFIG
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_TEXT_NOAUDIO, GM_HIGHEST, "sql_loadconfig", "1",
+{ GM_TEXT_NOAUDIO, GM_HIGHEST, "sql_loadconfig", cCommon->One(),
   CB(cCVars->LoadSettings, bool), TBOOLEAN|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! APP_GUIMODE
@@ -206,7 +206,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? hidden and shown depending on this value. It can only be set in the guest
 // ? app.cfg file.
 /* ------------------------------------------------------------------------- */
-{ GM_TEXT_NOAUDIO, GM_HIGHEST, "app_guimode", "0",
+{ GM_TEXT_NOAUDIO, GM_HIGHEST, "app_guimode", cCommon->Zero(),
   CB(cSystem->SetGUIMode, unsigned int), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! LOG_LINES
@@ -241,9 +241,9 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 { GM_TEXT_NOAUDIO, GM_HIGHEST, "app_clearmutex",
   /* ----------------------------------------------------------------------- */
 #if !defined(WINDOWS) && defined(ALPHA)
-  "1",
+  cCommon->One(),
 #else
-  "0",
+  cCommon->Zero(),
 #endif
   /* ----------------------------------------------------------------------- */
   CB(cCore->CoreClearMutex, bool), TBOOLEAN|PBOOT },
@@ -254,7 +254,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? crash but not on Linux and OSX. So just simply remove the app name from
 // ? /dev/shm and the engine should run again.
 /* ------------------------------------------------------------------------- */
-{ GM_TEXT_NOAUDIO, GM_HIGHEST, "err_instance", "1",
+{ GM_TEXT_NOAUDIO, GM_HIGHEST, "err_instance", cCommon->One(),
   CB(cCore->CoreSetOneInstance, bool), TBOOLEAN|PSYSTEM },
 /* == Object cvars ========================================================= */
 // ! OBJ_CLIPMAX
@@ -538,7 +538,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? is ignored on interactive mode because a one millisecond delay is forced
 // ? for every frame under the target rate.
 /* ------------------------------------------------------------------------- */
-{ GM_TEXT_NOAUDIO, GM_HIGHEST, "app_delay", "1",
+{ GM_TEXT_NOAUDIO, GM_HIGHEST, "app_delay", cCommon->One(),
   CB(cTimer->TimerSetDelay, unsigned int), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! APP_TITLE
@@ -573,9 +573,9 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 { GM_TEXT_NOAUDIO, GM_HIGHEST, "err_checksum",
   /* ----------------------------------------------------------------------- */
 #if defined(RELEASE)
-  "1",
+  cCommon->One(),
 #else
-  "0",
+  cCommon->Zero(),
 #endif
   /* ----------------------------------------------------------------------- */
   CB(cSystem->CheckChecksumModified, bool), TBOOLEAN|PSYSTEM },
@@ -587,9 +587,9 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 { GM_TEXT_NOAUDIO, GM_HIGHEST, "err_debugger",
   /* ----------------------------------------------------------------------- */
 #if defined(RELEASE)
-  "1",
+  cCommon->One(),
 #else
-  "0",
+  cCommon->Zero(),
 #endif
   /* ----------------------------------------------------------------------- */
   CB(cSystem->CheckDebuggerDetected, bool), TBOOLEAN|PSYSTEM },
@@ -632,7 +632,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? The engine fails to run if the system does not have this amount of VRAM
 // ? available.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "err_minvram", "0",
+{ GM_GRAPHICS, GM_HIGHEST, "err_minvram", cCommon->Zero(),
   CB(cOgl->SetMinVRAM, uint64_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! ERR_MINRAM
@@ -642,7 +642,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? speed of the clear is reported in the log then the memory is freed. The
 // ? default value is zero.
 /* ------------------------------------------------------------------------- */
-{ GM_TEXT_NOAUDIO, GM_HIGHEST, "err_minram", "0",
+{ GM_TEXT_NOAUDIO, GM_HIGHEST, "err_minram", cCommon->Zero(),
   CB(cSystem->SetMinRAM, uint64_t), TUINTEGER|PSYSTEM },
 /* == Lua cvars ============================================================ */
 // ! LUA_TICKTIMEOUT
@@ -660,7 +660,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ! LUA_CACHE
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_TEXT_NOAUDIO, GM_HIGHEST, "lua_cache", "1",
+{ GM_TEXT_NOAUDIO, GM_HIGHEST, "lua_cache", cCommon->One(),
   CB(LuaCodeSetCache, unsigned int), TUINTEGER|PANY },
 /* ------------------------------------------------------------------------- */
 // ! LUA_SIZESTACK
@@ -684,7 +684,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ! LUA_RANDOMSEED
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_TEXT_NOAUDIO, GM_HIGHEST, "lua_randomseed", "0",
+{ GM_TEXT_NOAUDIO, GM_HIGHEST, "lua_randomseed", cCommon->Zero(),
   CB(cLua->SetSeed, lua_Integer), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! LUA_APIFLAGS
@@ -739,7 +739,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? CPU usage but increases the chances of errors if too many sources are
 // ? requested.
 /* ------------------------------------------------------------------------- */
-{ GM_TEXT_AUDIO, GM_HIGHEST, "aud_numsources", "0",
+{ GM_TEXT_AUDIO, GM_HIGHEST, "aud_numsources", cCommon->Zero(),
   CB(SourceSetCount, size_t), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! AUD_SAMVOL
@@ -785,7 +785,8 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? Specifies whether to use HRTF dynamics on audio output. This could cause
 // ? strange audio stereo quality issues so it is recommended to disable.
 /* ------------------------------------------------------------------------- */
-{ GM_TEXT_AUDIO, GM_HIGHEST, "aud_hrtf", "0", NoOp, TUINTEGERSAVE|PANY },
+{ GM_TEXT_AUDIO, GM_HIGHEST, "aud_hrtf", cCommon->Zero(),
+  NoOp, TUINTEGERSAVE|PANY },
 /* == Console cvars ======================================================== */
 // ! CON_KEYPRIMARY
 // ? The primary GLFW console key virtual key code to use to toggle console
@@ -815,14 +816,14 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? A boolean that specifies whether to autoscroll the console to the last
 // ? newly printed message.
 /* ------------------------------------------------------------------------- */
-{ GM_TEXT_NOAUDIO, GM_HIGHEST, "con_autoscroll", "1",
+{ GM_TEXT_NOAUDIO, GM_HIGHEST, "con_autoscroll", cCommon->One(),
   CB(cConsole->SetAutoScroll, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_AUTOCOPYCVAR
 // ? A boolean that specifies whether to automatically copy the variable
 // ? name and value when a cvar name is typed in the console.
 /* ------------------------------------------------------------------------- */
-{ GM_TEXT_NOAUDIO, GM_HIGHEST, "con_autocopycvar", "1",
+{ GM_TEXT_NOAUDIO, GM_HIGHEST, "con_autocopycvar", cCommon->One(),
   CB(cConsole->SetAutoCopyCVar, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_HEIGHT
@@ -852,9 +853,9 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 { GM_GRAPHICS, GM_HIGHEST, "con_disabled",
   /* ----------------------------------------------------------------------- */
 #if defined(RELEASE)
-  "1",
+  cCommon->One(),
 #else
-  "0",
+  cCommon->Zero(),
 #endif
   /* ----------------------------------------------------------------------- */
   CB(cConsole->CantDisableModified, bool), TBOOLEAN|PBOOT|PSYSTEM },
@@ -866,7 +867,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? SF_CONFIDENTIAL (1): Show cvars marked as private.
 // ? SF_PROTECTED    (2): Show cvars marked as protected.
 /* ------------------------------------------------------------------------- */
-{ GM_TEXT_NOAUDIO, GM_HIGHEST, "con_cvshowflags", "0",
+{ GM_TEXT_NOAUDIO, GM_HIGHEST, "con_cvshowflags", cCommon->Zero(),
   CB(cCVars->SetDisplayFlags, unsigned int), TUINTEGER|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_BGCOLOUR
@@ -894,7 +895,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? Specifies manipulation of the loaded font. See the 'Char.Flags' for
 // ? possible values
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "con_fontflags", "0",
+{ GM_GRAPHICS, GM_HIGHEST, "con_fontflags", cCommon->Zero(),
   CB(cConsole->ConsoleFontFlagsModified, unsigned int), TUINTEGER|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_FONTCOLOUR
@@ -916,7 +917,8 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? Specifies any extra padding to add to each FreeType font glyph to prevent
 // ? pixels from other glyphs spilling into the render due to filtering.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "con_fontpadding", "0", NoOp, TUINTEGER|PSYSTEM },
+{ GM_GRAPHICS, GM_HIGHEST, "con_fontpadding", cCommon->Zero(),
+  NoOp, TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! CON_FONTPCMIN
 // ? Specifies the minimum character code to start precaching from
@@ -932,19 +934,19 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? Specifies the scale adjust of the font. A value not equal to one will
 // ? cause interpolation to occur so filtering is advised.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "con_fontscale", "1",
+{ GM_GRAPHICS, GM_HIGHEST, "con_fontscale", cCommon->One(),
   CB(cConsole->TextScaleModified, GLfloat), TUFLOATSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_FONTSPACING
 // ? Specifies the amount of padding to add after each cahracter rendered.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "con_fontspacing", "0",
+{ GM_GRAPHICS, GM_HIGHEST, "con_fontspacing", cCommon->Zero(),
   CB(cConsole->TextLetterSpacingModified, GLfloat), TFLOAT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! CON_FONTLSPACING
 // ? Specifies the amount of padding to add below each line of text rendered.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "con_fontlspacing", "0",
+{ GM_GRAPHICS, GM_HIGHEST, "con_fontlspacing", cCommon->Zero(),
   CB(cConsole->TextLineSpacingModified, GLfloat), TFLOAT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! CON_FONTWIDTH
@@ -959,7 +961,8 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? this value. An exception is thrown if not. Zero means start with enough
 // ? size for one character.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "con_fonttexsize", "0", NoOp, TUINTEGER|PSYSTEM },
+{ GM_GRAPHICS, GM_HIGHEST, "con_fonttexsize", cCommon->Zero(),
+  NoOp, TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! CON_INPUTMAX
 // ? Specifies the maximum number of characters that are allowed to be typed
@@ -1004,7 +1007,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? Disables the X button and close in the application context menu. This does
 // ? not prevent CONTROL+C/BREAK keys.
 /* ------------------------------------------------------------------------- */
-{ GM_TEXT_NOAUDIO, GM_TEXT_MAX, "con_tmcnoclose", "1", NoOp,
+{ GM_TEXT_NOAUDIO, GM_TEXT_MAX, "con_tmcnoclose", cCommon->One(), NoOp,
   TBOOLEAN|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! CON_TMCTFORMAT
@@ -1040,37 +1043,37 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ! INP_FSTOGGLER
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "inp_fstoggler", "1",
+{ GM_GRAPHICS, GM_HIGHEST, "inp_fstoggler", cCommon->One(),
   CB(cInput->SetFSTogglerEnabled, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! INP_RAWMOUSE
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "inp_rawmouse", "1",
+{ GM_GRAPHICS, GM_HIGHEST, "inp_rawmouse", cCommon->One(),
   CB(cInput->SetRawMouseEnabled, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! INP_STICKYKEY
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "inp_stickykey", "1",
+{ GM_GRAPHICS, GM_HIGHEST, "inp_stickykey", cCommon->One(),
   CB(cInput->SetStickyKeyEnabled, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! INP_STICKYMOUSE
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "inp_stickymouse", "1",
+{ GM_GRAPHICS, GM_HIGHEST, "inp_stickymouse", cCommon->One(),
   CB(cInput->SetStickyMouseEnabled, bool), TBOOLEANSAVE|PANY },
 /* == Network cvars ======================================================== */
 // ! NET_CBPFLAG1
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_TEXT_NOAUDIO, GM_HIGHEST, "net_cbpflag1", "0",
+{ GM_TEXT_NOAUDIO, GM_HIGHEST, "net_cbpflag1", cCommon->Zero(),
   CB(cSockets->CertsSetBypassFlags1, uint64_t), TUINTEGER|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! NET_CBPFLAG2
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_TEXT_NOAUDIO, GM_HIGHEST, "net_cbpflag2", "0",
+{ GM_TEXT_NOAUDIO, GM_HIGHEST, "net_cbpflag2", cCommon->Zero(),
   CB(cSockets->CertsSetBypassFlags2, uint64_t), TUINTEGER|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! NET_BUFFER
@@ -1112,7 +1115,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ! NET_OCSP
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_TEXT_NOAUDIO, GM_HIGHEST, "net_ocsp", "1",
+{ GM_TEXT_NOAUDIO, GM_HIGHEST, "net_ocsp", cCommon->One(),
   CB(SocketOCSPModified, int), TUINTEGER|PANY },
 /* ------------------------------------------------------------------------- */
 // ! NET_USERAGENT
@@ -1124,31 +1127,31 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ! VID_ALPHA
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "vid_alpha", "0",
+{ GM_GRAPHICS, GM_HIGHEST, "vid_alpha", cCommon->Zero(),
   CB(cDisplay->SetWindowTransparency, bool), TBOOLEAN|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_CLEAR
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "vid_clear", "1",
+{ GM_GRAPHICS, GM_HIGHEST, "vid_clear", cCommon->One(),
   CB(cFboMain->SetBackBufferClear, bool), TBOOLEAN|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_CLEARCOLOUR
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "vid_clearcolour", "0",
+{ GM_GRAPHICS, GM_HIGHEST, "vid_clearcolour", cCommon->Zero(),
   CB(cFboMain->SetBackBufferClearColour, unsigned int), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_DEBUG
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "vid_debug", "0",
+{ GM_GRAPHICS, GM_HIGHEST, "vid_debug", cCommon->Zero(),
   CB(cDisplay->SetGLDebugMode, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_FS
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "vid_fs", "0",
+{ GM_GRAPHICS, GM_HIGHEST, "vid_fs", cCommon->Zero(),
   CB(cDisplay->FullScreenStateChanged, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_FSMODE
@@ -1171,7 +1174,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ! VID_LOCK
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "vid_lock", "0",
+{ GM_GRAPHICS, GM_HIGHEST, "vid_lock", cCommon->Zero(),
   CB(cFboMain->SetLockViewport, bool), TBOOLEAN|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_MONITOR
@@ -1183,7 +1186,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ! VID_GAMMA
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "vid_gamma", "1",
+{ GM_GRAPHICS, GM_HIGHEST, "vid_gamma", cCommon->One(),
   CB(cDisplay->GammaChanged, GLfloat), TUFLOATSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_FSAA
@@ -1198,7 +1201,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
   { GM_GRAPHICS, GM_HIGHEST, "vid_bpp",
   /* ----------------------------------------------------------------------- */
 #if defined(WINDOWS)
-  "0",                                 // Win32 doesn't need forcing depth
+  cCommon->Zero(),                     // Win32 doesn't need forcing depth
 #else
   "16",                                // For better bit-depth quality
 #endif
@@ -1208,25 +1211,25 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ! VID_HIDPI
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "vid_hidpi", "1",
+{ GM_GRAPHICS, GM_HIGHEST, "vid_hidpi", cCommon->One(),
   CB(cDisplay->HiDPIChanged, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_STEREO
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "vid_stereo", "0" ,
+{ GM_GRAPHICS, GM_HIGHEST, "vid_stereo", cCommon->Zero() ,
   CB(cDisplay->SetStereoMode, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_NOERRORS
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "vid_noerrors", "0",
+{ GM_GRAPHICS, GM_HIGHEST, "vid_noerrors", cCommon->Zero(),
   CB(cDisplay->SetNoErrorsMode, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_SRGB
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "vid_srgb", "1",
+{ GM_GRAPHICS, GM_HIGHEST, "vid_srgb", cCommon->One(),
   CB(cDisplay->SRGBColourSpaceChanged, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_AUXBUFFERS
@@ -1238,7 +1241,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ! VID_SIMPLEMATRIX
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "vid_simplematrix", "0",
+{ GM_GRAPHICS, GM_HIGHEST, "vid_simplematrix", cCommon->Zero(),
   CB(cFboMain->SetSimpleMatrix, bool), TBOOLEAN|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_TEXFILTER
@@ -1250,20 +1253,20 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ! VID_VSYNC
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "vid_vsync", "1",
+{ GM_GRAPHICS, GM_HIGHEST, "vid_vsync", cCommon->One(),
   CB(cOgl->SetVSyncMode, int), TINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_GASWITCH
 // ? Set to 0 (default) to disable MacOS graphics switching, or 1 to allow
 // ? MacOS to switch between integral and dedicated graphics.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "vid_gaswitch", "0",
+{ GM_GRAPHICS, GM_HIGHEST, "vid_gaswitch", cCommon->Zero(),
   CB(cDisplay->GraphicsSwitchingChanged, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_WIREFRAME
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "vid_wireframe", "0",
+{ GM_GRAPHICS, GM_HIGHEST, "vid_wireframe", cCommon->Zero(),
   CB(cOgl->SetPolygonMode, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_ORWIDTH
@@ -1323,13 +1326,13 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ! VID_SSTYPE
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "vid_sstype", "0",
+{ GM_GRAPHICS, GM_HIGHEST, "vid_sstype", cCommon->Zero(),
   CB(cSShot->SetScreenShotType, size_t), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_SUBPIXROUND
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "vid_subpixround", "0",
+{ GM_GRAPHICS, GM_HIGHEST, "vid_subpixround", cCommon->Zero(),
   CB(SetSPRoundingMethod, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_QSHADER
@@ -1341,13 +1344,13 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ! VID_QLINE
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "vid_qline", "0",
+{ GM_GRAPHICS, GM_HIGHEST, "vid_qline", cCommon->Zero(),
   CB(cOgl->SetQLineHint, size_t), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_QPOLYGON
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "vid_qpolygon", "0",
+{ GM_GRAPHICS, GM_HIGHEST, "vid_qpolygon", cCommon->Zero(),
   CB(cOgl->SetQPolygonHint, size_t), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_QCOMPRESS
@@ -1361,55 +1364,57 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? number. i.e. 16.9 for 16:9 or 4.3 for 4:3, etc. or 0 for numeric and/or
 // ? denominator for freedom for the end user to resize at will.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "win_aspect", "0", NoOp, TUFLOAT|PSYSTEM },
+{ GM_GRAPHICS, GM_HIGHEST, "win_aspect", cCommon->Zero(),
+  NoOp, TUFLOAT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! WIN_BORDER
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "win_border", "1",
+{ GM_GRAPHICS, GM_HIGHEST, "win_border", cCommon->One(),
   CB(cDisplay->BorderChanged, bool), TBOOLEAN|PANY },
 /* ------------------------------------------------------------------------- */
 // ! WIN_CLOSEABLE
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "win_closeable", "1",
+{ GM_GRAPHICS, GM_HIGHEST, "win_closeable", cCommon->One(),
   CB(cDisplay->CloseableChanged, bool), TBOOLEAN|PANY },
 /* ------------------------------------------------------------------------- */
 // ! WIN_FLOATING
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "win_floating", "0",
+{ GM_GRAPHICS, GM_HIGHEST, "win_floating", cCommon->Zero(),
   CB(cDisplay->FloatingChanged, bool), TBOOLEAN|PANY },
 /* ------------------------------------------------------------------------- */
 // ! WIN_FOCUSED
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "win_focused", "1",
+{ GM_GRAPHICS, GM_HIGHEST, "win_focused", cCommon->One(),
   CB(cDisplay->AutoFocusChanged, bool), TBOOLEAN|PANY },
 /* ------------------------------------------------------------------------- */
 // ! WIN_HEIGHT
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "win_height", "0",
+{ GM_GRAPHICS, GM_HIGHEST, "win_height", cCommon->Zero(),
   CB(cDisplay->HeightChanged, int), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! WIN_HEIGHTMIN
 // ? Not explained yet.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "win_heightmin", "0", NoOp, TUINTEGER|PSYSTEM },
+{ GM_GRAPHICS, GM_HIGHEST, "win_heightmin", cCommon->Zero(),
+  NoOp, TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! WIN_MAXIMISED
 // ? Specify 1 to have the window automatically maximised on creation or 0
 // ? to not. The default value is 0.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "win_maximised", "0",
+{ GM_GRAPHICS, GM_HIGHEST, "win_maximised", cCommon->Zero(),
   CB(cDisplay->SetMaximisedMode, bool), TBOOLEAN|PANY },
 /* ------------------------------------------------------------------------- */
 // ! WIN_MINIMISEAUTO
 // ? Specify 1 to have the window automatically minimise when it is not active
 // ? or 0 to not. The default value is 1.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "win_minimiseauto", "1",
+{ GM_GRAPHICS, GM_HIGHEST, "win_minimiseauto", cCommon->One(),
   CB(cDisplay->AutoIconifyChanged, bool), TBOOLEAN|PANY },
 /* ------------------------------------------------------------------------- */
 // ! WIN_POSX
@@ -1432,7 +1437,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? Specify 1 if the window is allowed to be resized or 0 if not. The default
 // ? value is 1.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "win_sizable", "1",
+{ GM_GRAPHICS, GM_HIGHEST, "win_sizable", cCommon->One(),
   CB(cDisplay->SizableChanged, bool), TBOOLEAN|PANY },
 /* ------------------------------------------------------------------------- */
 // ! WIN_THREAD
@@ -1445,10 +1450,10 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "win_thread",
   /* ----------------------------------------------------------------------- */
-#if defined(WINDOWS)
-  "1",
+#if !defined(LINUX)
+  cCommon->One(),
 #else
-  "0",                                 // Fix temporary bug in GLFW
+  cCommon->Zero(),                                 // Fix temporary bug in GLFW
 #endif
   /* ----------------------------------------------------------------------- */
   NoOp, TBOOLEANSAVE|PANY },
@@ -1457,25 +1462,26 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? Sets the initial width of the window. This value is saved to the
 // ? persistence database when changed.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "win_width", "0",
+{ GM_GRAPHICS, GM_HIGHEST, "win_width", cCommon->Zero(),
   CB(cDisplay->WidthChanged, int), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! WIN_WIDTHMIN
 // ? Sets the minimum width of the window. This is only changable at the
 // ? application configuration file and is not saved to persistence database.
 /* ------------------------------------------------------------------------- */
-{ GM_GRAPHICS, GM_HIGHEST, "win_widthmin", "0", NoOp, TUINTEGER|PSYSTEM },
+{ GM_GRAPHICS, GM_HIGHEST, "win_widthmin", cCommon->Zero(),
+  NoOp, TUINTEGER|PSYSTEM },
 /* == Logging cvars ======================================================== */
 // ! LOG_CREDITS
 // ? Specifies to include credits in the log at startup.
 /* ------------------------------------------------------------------------- */
-{ GM_TEXT_NOAUDIO, GM_HIGHEST, "log_credits", "0",
+{ GM_TEXT_NOAUDIO, GM_HIGHEST, "log_credits", cCommon->Zero(),
   CB(cCredits->CreditDumpList, bool), TBOOLEAN|PANY },
 /* ------------------------------------------------------------------------- */
 // ! LOG_DYLIBS
 // ? Specifies to include shared libraries in the log at startup.
 /* ------------------------------------------------------------------------- */
-{ GM_TEXT_NOAUDIO, GM_HIGHEST, "log_dylibs", "0",
+{ GM_TEXT_NOAUDIO, GM_HIGHEST, "log_dylibs", cCommon->Zero(),
   CB(cSystem->DumpModuleList, bool), TBOOLEAN|PANY },
 /* -- Undefines ------------------------------------------------------------ */
 #undef CBSTR                           // Done with string function callback

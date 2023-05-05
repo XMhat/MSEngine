@@ -82,7 +82,7 @@ local function InitCon()
       -- Zone not selected?
       if not aGlobalData.gSelectedLevel then
         -- Tell player to pick diggers race and zone
-        AddSpeechItem("WELCOME, MASTER MINER");
+        AddSpeechItem("WELCOME, MASTER MINER", tileFile);
         AddSpeechItem("YOU'LL NEED TO PICK DIGGERS", tileRace);
         AddSpeechItem("YOU'LL WANT TO PICK A ZONE", tileMap);
       -- Level selected? Tell player to pick diggers

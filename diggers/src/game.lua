@@ -812,11 +812,13 @@ local function DoSetAction(O, A, J, D)
   assert(A, "Action not specified!");
   assert(J, "Job not specified!");
   assert(D, "Direction not specified!");
-  -- Console.Write("O:"..O.OD.NAME..
-  --  " A:"..A.." J:"..J.." D:"..D.."! "..
-  --    (debug.getinfo(2).name or "?")..":"..debug.getinfo(2).linedefined);
-  -- Dying? Force normal timer speed for animation
-  if A == ACT.DEATH then O.ANT = aTimerData.ANIMNORMAL;
+  -- Dying or eaten requested?
+  if A == ACT.DEATH or A == ACT.EATEN then
+    -- Remove jump and fall flags or if the digger is jumping then busy will
+    -- be unset and they will be able to instantly come out of phasing.
+    O.F = O.F & ~(OFL.JUMPRISE | OFL.JUMPFALL);
+    -- Force normal timer speed for animation
+    O.ANT = aTimerData.ANIMNORMAL;
   -- Display map? Display map
   elseif A == ACT.MAP then
     -- Remove play sound function
@@ -970,9 +972,7 @@ local function DoSetAction(O, A, J, D)
             -- Deduct funds
             aPlayer.M = iMoney - 1000;
             -- Sale of the century!
-            PlaySound(aSfxData.TRADE);
-            -- Done!
-            return;
+            return PlaySound(aSfxData.TRADE);
           end
         end
       end
@@ -987,8 +987,8 @@ local function DoSetAction(O, A, J, D)
     if O.A ~= ACT.FIGHT and            -- ...not fighting -and-
        O.F & OFL.BUSY == 0 and         -- ...not busy -and-
        O.F & OFL.JUMPRISE == 0 and     -- ...not jumping -and-
-       O.F & OFL.JUMPFALL == 0 and     -- ...not falling -and-
-       O.FS == 1 and                   -- ...not falling -and-
+       O.F & OFL.JUMPFALL == 0 and     -- ...not jump falling -and-
+       O.FS == 1 and                   -- ...not actually falling -and-
        O.FD == 0 then                  -- ...not accumulating fall damage
       -- Remove fall flag and add busy and jumping flags
       O.F = (O.F | OFL.BUSY | OFL.JUMPRISE) & ~OFL.FALL;
@@ -1038,13 +1038,14 @@ local function DoSetAction(O, A, J, D)
     if O.P.M == 0 or O.H == 100 then PlayStaticSound(aSfxData.ERROR) return
     -- Rest!
     else A, J, D = ACT.PHASE, JOB.PHASE, DIR.R end;
-  -- Job phasing home? Refuse action if not enough health
-  elseif A == ACT.PHASE and
-         J == JOB.PHASE and
-         D == DIR.U and
-         O.H <= 5 and
-         O.F & OFL.TPMASTER == 0 then
-    return;
+  -- Phasing?
+  elseif A == ACT.PHASE then
+    -- Phasing home? Refuse action if not enough health
+    if J == JOB.PHASE and D == DIR.U and O.H <= 5 and
+      O.F & OFL.TPMASTER == 0 then return end;
+    -- Remove jump and fall flags or if the digger is jumping then busy will
+    -- be unset and they will be able to instantly come out of phasing.
+    O.F = O.F & ~(OFL.JUMPRISE | OFL.JUMPFALL);
   end
   -- Reset action timer
   O.AT = 0;
@@ -1102,8 +1103,12 @@ local function DoSetAction(O, A, J, D)
     if O.J == JOB.DIGDOWN then J = JOB.NONE else J = O.J end;
   -- Keep existing job?
   elseif J == JOB.KEEP then J = O.J end;
-  -- Compare action. Stop requested? Keep busy unset!
-  if A == ACT.STOP then O.F = O.F & ~OFL.BUSY;
+  -- Compare action. Stop requested?
+  if A == ACT.STOP then
+    -- If object can stop? Keep busy unset!
+    if O.CS then O.F = O.F & ~OFL.BUSY;
+    -- Can't stop? Set default action and move in opposite direction
+    else return DoSetAction(O, O.OD.ACTION, JOB.KEEP, DIR.OPPOSITE) end;
   -- Keep existing job? Keep existing action!
   elseif A == ACT.KEEP then A = O.A end;
   -- Action, direction and job change not required?
@@ -1584,11 +1589,21 @@ local function RenderInterface()
     -- Digger is not alive! Show dimmed button
     else texSpr:BlitSLT(803+I, 128+(I*16), 216) end;
   end
-  -- If an object...
-  if aActiveObject and                     -- ...is selected?
-     aActiveObject.H > 0 and               -- ...alive?
-     aActiveObject.P == aActivePlayer then -- ...owned by me?
-    texSpr:BlitSLTRB(1022, 61, 227, 61+aActiveObject.H/2, 229);
+  -- Object selected and belongs to me?
+  if aActiveObject and aActiveObject.P == aActivePlayer then
+    -- Get digger health and if object alive and player is mine?
+    local iHealth<const> = aActiveObject.H;
+    if iHealth > 25 then
+      texSpr:BlitSLTRB(1022, 61, 227, 61+iHealth/2, 229);
+    elseif iHealth > 10 then
+      texSpr:SetCRGB(1, 1, 0);
+      texSpr:BlitSLTRB(1022, 61, 227, 61+iHealth/2, 229);
+      texSpr:SetCRGB(1, 1 ,1);
+    elseif iHealth > 0 then
+      texSpr:SetCRGB(1, 0, 0);
+      texSpr:BlitSLTRB(1022, 61, 227, 61+iHealth/2, 229);
+      texSpr:SetCRGB(1, 1 ,1);
+    end
   end
   -- Draw object status tile
   texSpr:BlitSLT(T, 120, 216);
@@ -1597,207 +1612,244 @@ local function RenderInterface()
   fontLittle:SetCRGB(1, 1, 1);
   -- Draw utility button
   texSpr:BlitSLT(814, 232, 216);
-  -- If a tip was set? Draw it
-  if TIP then TIP = SetBottomRightTip(TIP);
-  -- No tip was set?
-  else
-    -- Draw digger inventory button
-    if iInfoScreen == 1 then
-      -- Draw frame and title
-      DrawInfoFrameAndTitle("DIGGER INVENTORY");
-      -- For each digger
-      for iDigIndex = 1, #aActivePlayer.D do
-        -- Print id number of digger
-        fontLarge:Print(16, iDigIndex*32+8, iDigIndex);
-        -- Draw health bar background
-        texSpr:BlitSLTRB(1023, 24, iDigIndex*32+30, 124, iDigIndex*32+32);
-        -- Get Digger data and if it exists?
-        local aDigger<const> = aActivePlayer.D[iDigIndex];
-        if aDigger then
-          -- Draw health bar
+  -- Inventory button pressed?
+  if iInfoScreen == 1 then
+    -- Draw frame and title
+    DrawInfoFrameAndTitle("DIGGER INVENTORY");
+    -- For each digger
+    for iDigIndex = 1, #aActivePlayer.D do
+      -- Print id number of digger
+      fontLarge:Print(16, iDigIndex*32+8, iDigIndex);
+      -- Draw health bar background
+      texSpr:BlitSLTRB(1023, 24, iDigIndex*32+30, 124, iDigIndex*32+32);
+      -- Get Digger data and if it exists?
+      local aDigger<const> = aActivePlayer.D[iDigIndex];
+      if aDigger then
+        -- Get health and draw health bar
+        local iHealth<const> = aDigger.H;
+        if iHealth > 25 then
           texSpr:BlitSLTRB(1022, 24, iDigIndex*32+30,
-            24+aDigger.H, iDigIndex*32+32);
-          -- Draw digger item data
-          fontLittle:Print(48, iDigIndex*32+8, format("%03u%%\n%04u",
-            floor(aDigger.IW/aDigger.STR*100), aDigger.IW));
-          -- Draw digger portrait
-          texSpr:BlitSLT(aDigger.S, 31, iDigIndex*32+8);
-          -- Draw health percentage, dirt dug and gems found value
-          fontLittle:Print(132, iDigIndex*32+28,
-            format("%03u%%    %05u    %03u     %03u%%",
-              aDigger.H, aDigger.DUG, aDigger.GEM,
-                floor(aDigger.LDT/iGameTicks*100)));
-          -- Digger has items?
-          if aDigger.IW > 0 then
-            -- Get digger inventory and enumerate through it and draw it
-            local aInventory<const> = aDigger.I;
-            for iInvIndex = 1, #aInventory do
-              local aInvObj<const> = aInventory[iInvIndex];
-              texSpr:BlitSLT(aInvObj.S, iInvIndex*16+62, iDigIndex*32+8);
-            end
-          -- No inventory. Print no inventory message
-          else fontTiny:Print(78, iDigIndex*32+13,
-            "THIS "..aDigger.OD.NAME.." IS NOT CARRYING ANYTHING");
+            24+iHealth, iDigIndex*32+32);
+        elseif iHealth > 10 then
+          texSpr:SetCRGB(1, 1, 0);
+          texSpr:BlitSLTRB(1022, 24, iDigIndex*32+30,
+            24+iHealth, iDigIndex*32+32);
+          texSpr:SetCRGB(1, 1 ,1);
+        elseif iHealth > 0 then
+          texSpr:SetCRGB(1, 0, 0);
+          texSpr:BlitSLTRB(1022, 24, iDigIndex*32+30,
+            24+iHealth, iDigIndex*32+32);
+          texSpr:SetCRGB(1, 1 ,1);
+        end
+        -- Draw digger item data
+        fontLittle:Print(48, iDigIndex*32+8, format("%03u%%\n%04u",
+          floor(aDigger.IW/aDigger.STR*100), aDigger.IW));
+        -- Draw digger portrait
+        texSpr:BlitSLT(aDigger.S, 31, iDigIndex*32+8);
+        -- Draw health percentage, dirt dug and gems found value
+        fontLittle:Print(132, iDigIndex*32+28,
+          format("%03u%%    %05u    %03u     %03u%%",
+            aDigger.H, aDigger.DUG, aDigger.GEM,
+              floor(aDigger.LDT/iGameTicks*100)));
+        -- Digger has items?
+        if aDigger.IW > 0 then
+          -- Get digger inventory and enumerate through it and draw it
+          local aInventory<const> = aDigger.I;
+          for iInvIndex = 1, #aInventory do
+            local aInvObj<const> = aInventory[iInvIndex];
+            texSpr:BlitSLT(aInvObj.S, iInvIndex*16+62, iDigIndex*32+8);
           end
-        -- Digger is dead
-        else
-          -- Draw grave icon
-          texSpr:BlitSLT(319, 31, iDigIndex*32+8);
-          -- Draw dashes for unavailable digger item data
-          fontLittle:Print(48, iDigIndex*32+8, "---%\n----");
-          -- Draw health percentage, dirt dug and gems found value
-          fontLittle:Print(132, iDigIndex*32+28,
-            "---%    -----    ----     ---%");
+        -- No inventory. Print no inventory message
+        else fontTiny:Print(78, iDigIndex*32+13,
+          "THIS "..aDigger.OD.NAME.." IS NOT CARRYING ANYTHING");
         end
-        fontTiny:SetCRGB(0, 0.75, 1);
-        fontTiny:Print(162, iDigIndex*32+29, "DUG          GEMS       EFFI%");
+      -- Digger is dead
+      else
+        -- Draw grave icon
+        texSpr:BlitSLT(319, 31, iDigIndex*32+8);
+        -- Draw dashes for unavailable digger item data
+        fontLittle:Print(48, iDigIndex*32+8, "---%\n----");
+        -- Draw health percentage, dirt dug and gems found value
+        fontLittle:Print(132, iDigIndex*32+28,
+          "---%    -----    ----     ---%");
       end
-      -- Draw on button
-      texSpr:BlitSLT(816, 248, 216);
-    else texSpr:BlitSLT(815, 248, 216) end;
-    if iInfoScreen == 2 then
-      -- Draw frame and title
-      DrawInfoFrameAndTitle("DIGGER LOCATIONS");
-      -- Draw map grid. For each Y position
-      for Y = 38, 188, 15 do
-        for X = 141, 291, 15 do
-          texSpr:BlitSLT(864, X, Y);
+      fontTiny:SetCRGB(0, 0.75, 1);
+      fontTiny:Print(162, iDigIndex*32+29, "DUG          GEMS       EFFI%");
+    end
+    -- Draw on button
+    texSpr:BlitSLT(816, 248, 216);
+  -- Inventory button released?
+  else texSpr:BlitSLT(815, 248, 216) end;
+  -- Locations button pressed?
+  if iInfoScreen == 2 then
+    -- Draw frame and title
+    DrawInfoFrameAndTitle("DIGGER LOCATIONS");
+    -- Draw map grid of level
+    for Y = 38, 188, 15 do for X = 141, 291, 15 do
+      texSpr:BlitSLT(864, X, Y);
+    end end
+    -- For each digger
+    for iDigIndex = 1, #aActivePlayer.D do
+      -- Print id number of digger
+      fontLarge:Print(16, iDigIndex*32+8, iDigIndex);
+      -- Draw colour key of digger
+      texSpr:BlitSLT(858+iDigIndex, 31, iDigIndex*32+11);
+      -- Draw X and Y letters
+      fontTiny:SetCRGB(0, 0.75, 1);
+      fontTiny:Print(64, iDigIndex*32+8, "X:       Y:");
+      -- Draw health bar background
+      texSpr:BlitSLTRB(1023, 24, iDigIndex*32+30, 124, iDigIndex*32+32);
+      -- Get digger and if it exists?
+      local aDigger<const> = aActivePlayer.D[iDigIndex];
+      if aDigger then
+        -- Get health and draw health bar
+        local iHealth<const> = aDigger.H;
+        if iHealth > 25 then
+          texSpr:BlitSLTRB(1022, 24, iDigIndex*32+30,
+            24+iHealth, iDigIndex*32+32);
+        elseif iHealth > 10 then
+          texSpr:SetCRGB(1, 1, 0);
+          texSpr:BlitSLTRB(1022, 24, iDigIndex*32+30,
+            24+iHealth, iDigIndex*32+32);
+          texSpr:SetCRGB(1, 1 ,1);
+        elseif iHealth > 0 then
+          texSpr:SetCRGB(1, 0, 0);
+          texSpr:BlitSLTRB(1022, 24, iDigIndex*32+30,
+            24+iHealth, iDigIndex*32+32);
+          texSpr:SetCRGB(1, 1 ,1);
         end
-      end
-      -- For each digger
-      for I = 1, #aActivePlayer.D do
-        -- Print id number of digger
-        fontLarge:Print(16, I*32+8, I);
-        -- Draw colour key of digger
-        texSpr:BlitSLT(858+I, 31, I*32+11);
-        -- Draw X and Y letters
-        fontTiny:SetCRGB(0, 0.75, 1);
-        fontTiny:Print(64, I*32+8, "X:       Y:");
-        -- Draw health bar background
-        texSpr:BlitSLTRB(1023, 24, I*32+30, 124, I*32+32);
-        -- Get digger and if it exists?
-        local D<const> = aActivePlayer.D[I];
-        if D then
-          -- Draw health bar
-          texSpr:BlitSLTRB(1022, 24, I*32+30, 24+D.H, I*32+32);
-          -- Draw digger item data
-          fontLittle:Print(72, I*32+8, format(
-            "%04u  %04u\n\\%03u  \\%03u", D.X, D.Y, D.AX, D.AY));
-          -- Draw digger portrait
-          texSpr:BlitSLT(D.S, 43, I*32+8);
-          -- Draw colour key of digger
-          texSpr:BlitSLT(858+I, 141+(D.AX*1.25), 38+(D.AY*1.25));
-        -- Digger is dead
-        else
-          -- Draw grave icon
-          texSpr:BlitSLT(319, 43, I*32+8);
-          -- Draw dashes for unavailable digger item data
-          fontLittle:Print(72, I*32+8, "----  ----\n\\---  \\---");
-        end
-      end
-      -- Draw on button
-      texSpr:BlitSLT(818, 264, 216);
-    else texSpr:BlitSLT(817, 264, 216) end;
-    if iInfoScreen == 3 then
-      -- Set font colours
-      fontLarge:SetCRGB(1, 1, 1);
-      fontLittle:SetCRGB(1, 1, 1);
-      -- Draw frame and title
-      DrawInfoFrameAndTitle("ZONE STATUS");
-      -- Score
-      local ScoreAP, ScoreOP = 0, 0;
-      -- Print level info
-      fontLarge:Print(16, 40, sLevelName);
-      fontLittle:Print(16, 56, sLevelType.." TERRAIN");
-      fontLarge:PrintR(304, 40, format("%02u:%02u:%02u",
-        floor(iGameTicks/216000%24),
-        floor(iGameTicks/3600%60),
-        floor(iGameTicks/60%60)));
-      fontLittle:PrintR(304, 56, "OPERATIONS TIME");
-      fontLarge:PrintC(160, 72,
-        aActivePlayer.RD.NAME.." VS "..aOpponentPlayer.RD.NAME);
-      fontLittle:PrintC(160, 88,
-        "YOU HAVE "..aActivePlayer.DC.." OF "..
-        aActivePlayer.DT.." DIGGERS REMAINING");
-      if aActivePlayer.DC > aOpponentPlayer.DC then
-        fontLittle:PrintC(160, 96, "YOU HAVE MORE DIGGERS THEN YOUR OPPONENT");
-        ScoreAP = ScoreAP + 1;
-      elseif aActivePlayer.DC < aOpponentPlayer.DC then
-        fontLittle:PrintC(160, 96, "YOUR OPPONENT HAS MORE DIGGERS");
-        ScoreOP = ScoreOP + 1;
+        -- Draw digger item data
+        fontLittle:Print(72, iDigIndex*32+8,
+          format("%04u  %04u\n\\%03u  \\%03u",
+            aDigger.X, aDigger.Y, aDigger.AX, aDigger.AY));
+        -- Draw digger portrait
+        texSpr:BlitSLT(aDigger.S, 43, iDigIndex*32+8);
+        -- Draw position of digger
+        texSpr:BlitSLT(858+iDigIndex, 141+(aDigger.AX*1.25),
+          38+(aDigger.AY*1.25));
+      -- Digger is dead
       else
-        fontLittle:PrintC(160,  96, "YOU AND YOUR OPPONENT HAVE EQUAL DIGGERS");
+        -- Draw grave icon
+        texSpr:BlitSLT(319, 43, iDigIndex*32+8);
+        -- Draw dashes for unavailable digger item data
+        fontLittle:Print(72, iDigIndex*32+8, "----  ----\n\\---  \\---");
       end
-      fontLittle:PrintC(160, 112, "YOU MINED "..aActivePlayer.GEM..
-        " GEMS AND "..aActivePlayer.DUG.." GROADS OF TERRAIN");
-      if aActivePlayer.DUG > aOpponentPlayer.DUG then
-        fontLittle:PrintC(160, 120, "YOU HAVE MINED THE MOST TERRAIN");
-      elseif aActivePlayer.DUG < aOpponentPlayer.DUG then
-        fontLittle:PrintC(160, 120, "YOUR OPPONENT HAS MINED THE MOST TERRAIN");
-      else
-        fontLittle:PrintC(160, 120,
-          "YOU AND YOUR OPPONENT HAVE MINED EQUAL TERRAIN");
-      end
-      if aActivePlayer.GEM > aOpponentPlayer.GEM then
-        fontLittle:PrintC(160, 128, "YOU HAVE FOUND THE MOST GEMS");
-      elseif aActivePlayer.GEM < aOpponentPlayer.GEM then
-        fontLittle:PrintC(160, 128, "YOUR OPPONENT HAS FOUND THE MOST GEMS");
-      else
-        fontLittle:PrintC(160, 128,
-          "YOU AND YOUR OPPONENT HAVE FOUND EQUAL GEMS");
-      end
-      fontLittle:PrintC(160,  146, "YOU HAVE RAISED "..aActivePlayer.M..
-        " OF "..iWinLimit.." ZOGS");
-      if aActivePlayer.M > aOpponentPlayer.M then
-        fontLittle:PrintC(160, 154, "YOU HAVE THE MOST ZOGS");
-        ScoreAP = ScoreAP + 1;
-      elseif aActivePlayer.M < aOpponentPlayer.M then
-        fontLittle:PrintC(160, 154, "YOUR OPPONENT HAS MORE ZOGS");
-        ScoreOP = ScoreOP + 1;
-      else
-        fontLittle:PrintC(160, 154, "YOU AND YOUR OPPONENT HAVE EQUAL ZOGS");
-      end
-      fontLittle:PrintC(160, 162,
-        "RAISE "..(iWinLimit-aActivePlayer.M).." MORE ZOGS TO WIN");
-      fontLittle:PrintC(160, 178, "THE TRADE CENTRE HAS PREDICTED");
-      if ScoreAP > ScoreOP then
-        fontLarge:PrintC(160, 186, aActivePlayer.RD.NAME.." IS WINNING");
-      elseif ScoreAP < ScoreOP then
-        fontLarge:PrintC(160, 186, aOpponentPlayer.RD.NAME.." IS WINNING");
-      else
-        fontLarge:PrintC(160, 186, "NOBODY IS WINNING");
-      end
-      -- Draw on button
-      texSpr:BlitSLT(803, 280, 216);
-    else texSpr:BlitSLT(802, 280, 216) end;
-    if iInfoScreen == 4 then
-      texSpr:BlitSLT(820, 296, 216);
-    else texSpr:BlitSLT(819, 296, 216) end;
-  end
+    end
+    -- Draw on button
+    texSpr:BlitSLT(818, 264, 216);
+  -- Locations button released?
+  else texSpr:BlitSLT(817, 264, 216) end;
+  -- Status button pressed?
+  if iInfoScreen == 3 then
+    -- Set font colours
+    fontLarge:SetCRGB(1, 1, 1);
+    fontLittle:SetCRGB(1, 1, 1);
+    -- Draw frame and title
+    DrawInfoFrameAndTitle("ZONE STATUS");
+    -- Score
+    local ScoreAP, ScoreOP = 0, 0;
+    -- Print level info
+    fontLarge:Print(16, 40, sLevelName);
+    fontLittle:Print(16, 56, sLevelType.." TERRAIN");
+    fontLarge:PrintR(304, 40, format("%02u:%02u:%02u",
+      floor(iGameTicks/216000%24),
+      floor(iGameTicks/3600%60),
+      floor(iGameTicks/60%60)));
+    fontLittle:PrintR(304, 56, "OPERATIONS TIME");
+    fontLarge:PrintC(160, 72,
+      aActivePlayer.RD.NAME.." VS "..aOpponentPlayer.RD.NAME);
+    fontLittle:PrintC(160, 88,
+      "YOU HAVE "..aActivePlayer.DC.." OF "..
+      aActivePlayer.DT.." DIGGERS REMAINING");
+    if aActivePlayer.DC > aOpponentPlayer.DC then
+      fontLittle:PrintC(160, 96, "YOU HAVE MORE DIGGERS THEN YOUR OPPONENT");
+      ScoreAP = ScoreAP + 1;
+    elseif aActivePlayer.DC < aOpponentPlayer.DC then
+      fontLittle:PrintC(160, 96, "YOUR OPPONENT HAS MORE DIGGERS");
+      ScoreOP = ScoreOP + 1;
+    else
+      fontLittle:PrintC(160,  96, "YOU AND YOUR OPPONENT HAVE EQUAL DIGGERS");
+    end
+    fontLittle:PrintC(160, 112, "YOU MINED "..aActivePlayer.GEM..
+      " GEMS AND "..aActivePlayer.DUG.." GROADS OF TERRAIN");
+    if aActivePlayer.DUG > aOpponentPlayer.DUG then
+      fontLittle:PrintC(160, 120, "YOU HAVE MINED THE MOST TERRAIN");
+    elseif aActivePlayer.DUG < aOpponentPlayer.DUG then
+      fontLittle:PrintC(160, 120, "YOUR OPPONENT HAS MINED THE MOST TERRAIN");
+    else
+      fontLittle:PrintC(160, 120,
+        "YOU AND YOUR OPPONENT HAVE MINED EQUAL TERRAIN");
+    end
+    if aActivePlayer.GEM > aOpponentPlayer.GEM then
+      fontLittle:PrintC(160, 128, "YOU HAVE FOUND THE MOST GEMS");
+    elseif aActivePlayer.GEM < aOpponentPlayer.GEM then
+      fontLittle:PrintC(160, 128, "YOUR OPPONENT HAS FOUND THE MOST GEMS");
+    else
+      fontLittle:PrintC(160, 128,
+        "YOU AND YOUR OPPONENT HAVE FOUND EQUAL GEMS");
+    end
+    fontLittle:PrintC(160,  146, "YOU HAVE RAISED "..aActivePlayer.M..
+      " OF "..iWinLimit.." ZOGS");
+    if aActivePlayer.M > aOpponentPlayer.M then
+      fontLittle:PrintC(160, 154, "YOU HAVE THE MOST ZOGS");
+      ScoreAP = ScoreAP + 1;
+    elseif aActivePlayer.M < aOpponentPlayer.M then
+      fontLittle:PrintC(160, 154, "YOUR OPPONENT HAS MORE ZOGS");
+      ScoreOP = ScoreOP + 1;
+    else
+      fontLittle:PrintC(160, 154, "YOU AND YOUR OPPONENT HAVE EQUAL ZOGS");
+    end
+    fontLittle:PrintC(160, 162,
+      "RAISE "..(iWinLimit-aActivePlayer.M).." MORE ZOGS TO WIN");
+    fontLittle:PrintC(160, 178, "THE TRADE CENTRE HAS PREDICTED");
+    if ScoreAP > ScoreOP then
+      fontLarge:PrintC(160, 186, aActivePlayer.RD.NAME.." IS WINNING");
+    elseif ScoreAP < ScoreOP then
+      fontLarge:PrintC(160, 186, aOpponentPlayer.RD.NAME.." IS WINNING");
+    else
+      fontLarge:PrintC(160, 186, "NOBODY IS WINNING");
+    end
+    -- Draw on button
+    texSpr:BlitSLT(803, 280, 216);
+  -- Status button released?
+  else texSpr:BlitSLT(802, 280, 216) end;
+  -- Book button pressed?
+  if iInfoScreen == 4 then texSpr:BlitSLT(820, 296, 216);
+  -- Book button released?
+  else texSpr:BlitSLT(819, 296, 216) end;
+  -- If a tip was set? Draw it and unset tip
+  if TIP then TIP = SetBottomRightTip(TIP) end;
   -- Done if no context menu selected
   if not aActiveMenu then return end;
   -- Button lookup id and reference to menu data
-  local I, MD<const>, MY<const>, MX<const> =
+  local iIndex, aMData<const>, iMaxY<const>, iMaxX<const> =
     1, aActiveMenu[3], aActiveMenu[2], aActiveMenu[1];
   -- Object is busy?
-  local BZ<const> = aActiveObject.F & OFL.BUSY ~= 0;
-  -- For each button
-  for Y = 1, MY do
-    for X = 1, MX do
-      -- Calculate position
-      local R<const>, B<const> = iMenuLeft+X*16, iMenuTop+Y*16;
-      local L<const>, T<const> = R-16, B-16;
-      -- Get reference to table tile data
-      local D<const> = MD[I];
+  local bBusy<const> = aActiveObject.F & OFL.BUSY ~= 0;
+  -- For each menu button row
+  for iY = 1, iMaxY do
+    -- Calculate bottom menu position
+    local iBottom<const> = iMenuTop + iY * 16;
+    -- Calculate top menu position;
+    local iTop<const> = iBottom - 16;
+    -- For each menu buttonc column
+    for iX = 1, iMaxX do
+      -- Calculate right menu position
+      local iRight<const> = iMenuLeft + iX * 16;
+      -- Calculate left menu position
+      local iLeft<const> = iRight - 16;
+      -- Get sub-menu data
+      local aSMData<const> = aMData[iIndex];
       -- Render the button
-      BCBlit(texSpr, D[1], L, T, R, B);
+      BCBlit(texSpr, aSMData[1], iLeft, iTop, iRight, iBottom);
       -- Render a dim if object is busy and tile data says we should
-      if BZ and D[2] & MFL.BUSY ~= 0 then
-        BCBlit(texSpr, 801, L, T, R, B);
+      if bBusy and aSMData[2] & MFL.BUSY ~= 0 then
+        BCBlit(texSpr, 801, iLeft, iTop, iRight, iBottom);
       -- If mouse over this button? Set the tip for this object
-      elseif IsMouseInBounds(L, T, R, B) then TIP = D[7] end;
+      elseif IsMouseInBounds(iLeft, iTop, iRight, iBottom) then
+        TIP = aSMData[7] end;
       -- Increment button lookup id
-      I = I + 1;
+      iIndex = iIndex + 1;
     end
   end
   -- Draw context menu shadow
@@ -1903,71 +1955,87 @@ local function CheckObjectCollision(aObject)
     local aTarget<const> = aObjects[iIndex];
     -- if target object...
     if aObject ~= aTarget and                -- ...is not me?
-       aTarget.F & OFL.DIGGER ~= 0 and       -- -and- is a digger?
-       aTarget.F & OFL.WATERBASED == 0 and   -- -and- is not waterbased?
-       aTarget.F & OFL.BUSY == 0 and         -- -and- is not busy?
-       maskSpr:IsCollideEx(                  -- -and- if target object collides
-         477, aObject.X, aObject.Y, maskSpr, --       us?
+       aTarget.F & OFL.DIGGER ~= 0 and       -- -and- target is a digger?
+       aTarget.F & OFL.WATERBASED == 0 and   -- -and- target is not waterbased?
+       aObject.H > 0 and                     -- -and- source is alive?
+       aTarget.H > 0 and                     -- -and- target is alive?
+       aTarget.A ~= ACT.PHASE and            -- -and- target not teleporting?
+       maskSpr:IsCollideEx(                  -- -and- target collides source?
+         477, aObject.X, aObject.Y, maskSpr, --
          477, aTarget.X, aTarget.Y) then
-      -- If object can consume the object and target is not eaten?
-      if aObject.F & OFL.CONSUME ~= 0 and aTarget.A ~= ACT.EATEN then
-        -- Kill egg
-        AdjustObjectHealth(aObject, -100)
-        -- Eat digger and set it to busy
-        SetAction(aTarget, ACT.EATEN, JOB.NONE, DIR.KEEP);
-        -- This digger is selected by the client? Unset control menu
-        if aActiveObject == aTarget then aActiveMenu = nil end;
-      -- If object can phase the digger
-      elseif aObject.F & OFL.PHASEDIGGER ~= 0 then
-        -- Make object phase to some other object
-        SetAction(aTarget, ACT.PHASE, JOB.PHASE, DIR.D);
-      -- If object can hurt the Digger
-      elseif aObject.F & OFL.HURTDIGGER ~= 0 then
-        -- Object is stationary? Make me fight and face the digger
-        if aObject.F & OFL.STATIONARY ~= 0 then
-          SetAction(aObject, ACT.FIGHT, JOB.NONE,
+      -- If object can consume the object?
+      if aObject.F & OFL.CONSUME ~= 0 then
+        -- Target is not eaten?
+        if aTarget.A ~= ACT.EATEN then
+          -- Kill egg
+          AdjustObjectHealth(aObject, -100)
+          -- Eat digger and set it to busy
+          SetAction(aTarget, ACT.EATEN, JOB.NONE, DIR.KEEP);
+          -- This digger is selected by the client? Unset control menu
+          if aActiveObject == aTarget then aActiveMenu = nil end;
+        end
+      -- If object is not eaten?
+      elseif aObject.A ~= ACT.EATEN then
+        -- If object can phase the digger
+        if aObject.F & OFL.PHASEDIGGER ~= 0 then
+          -- Make object phase to some other object
+          SetAction(aTarget, ACT.PHASE, JOB.PHASE, DIR.D);
+        -- If object can hurt the Digger
+        elseif aObject.F & OFL.HURTDIGGER ~= 0 then
+          -- Object is stationary? Make me fight and face the digger
+          if aObject.F & OFL.STATIONARY ~= 0 then
+            SetAction(aObject, ACT.FIGHT, JOB.NONE,
+              GetTargetDirection(aObject, aTarget));
+          -- Change to objects direction if object moving parallel to Digger
+          elseif aObject.F & OFL.PURSUEDIGGER ~= 0 then
+            SetAction(aObject, ACT.KEEP, JOB.KEEP,
+              GetTargetDirection(aObject, aTarget)) end;
+          -- Target is not jumping?
+          if aTarget.F & (OFL.JUMPRISE|OFL.JUMPFALL) == 0 then
+            -- Digger isn't running? Make him run!
+            if aTarget.A ~= ACT.RUN then
+              SetAction(aTarget, ACT.RUN, JOB.INDANGER, DIR.LR);
+            else
+              SetAction(aTarget, ACT.KEEP, JOB.INDANGER, DIR.KEEP);
+            end
+          -- Target in danger
+          else aTarget.J = JOB.INDANGER end;
+          -- Reduce health
+          AdjustObjectHealth(aTarget, -1);
+        -- Object is dangerous and target is not jumping?
+        elseif aObject.F & OFL.DANGEROUS ~= 0 then
+          -- Target is not jumping?
+          if aTarget.F & (OFL.JUMPRISE|OFL.JUMPFALL) == 0 then
+            -- Digger isn't running?
+            if aTarget.A ~= ACT.RUN then
+              -- Digger not moving in any direction?
+              if aTarget.D ~= DIR.NONE then
+                SetAction(aTarget, ACT.RUN, JOB.INDANGER, DIR.KEEP);
+              -- No direction? so run in opposite direction
+              else SetAction(aTarget, ACT.RUN, JOB.INDANGER, DIR.LR) end;
+            -- Object is not moving and direction set? Keep direction, set danger
+            elseif aTarget.D ~= DIR.NONE then
+              SetAction(aTarget, ACT.KEEP, JOB.INDANGER, DIR.KEEP);
+            -- No direction? so run in opposite direction of object
+            else SetAction(aTarget, ACT.RUN, JOB.INDANGER,
+              GetTargetDirection(aTarget, aObject)) end;
+          end
+        -- Else if object...
+        elseif aObject.F & OFL.DIGGER ~= 0 and -- Object touching is digger?
+               aTarget.F & OFL.BUSY == 0 and   -- Object target not busy?
+               aObject.F & OFL.BUSY == 0 and   -- -and- is not busy?
+               aObject.P ~= aTarget.P and      -- -and- not same owner?
+               aTarget.A ~= ACT.JUMP and       -- -and- target not jumping
+           not aObject.FT then                 -- -and- has no fight target?
+          -- Make us face the target and fight and set objects fight target
+          SetAction(aObject, ACT.FIGHT, JOB.INDANGER,
             GetTargetDirection(aObject, aTarget));
-        -- Change to objects direction if object moving parallel to Digger
-        elseif aObject.F & OFL.PURSUEDIGGER ~= 0 then
-          SetAction(aObject, ACT.KEEP, JOB.KEEP,
-            GetTargetDirection(aObject, aTarget)) end;
-        -- Digger isn't running? Make him run!
-        if aTarget.A ~= ACT.RUN then
-          SetAction(aTarget, ACT.RUN, JOB.INDANGER, DIR.LR);
-        else
-          SetAction(aTarget, ACT.KEEP, JOB.INDANGER, DIR.KEEP);
+          aObject.FT = aTarget;
+          -- Make target object face us and fight and set targets fight target
+          SetAction(aTarget, ACT.FIGHT, JOB.INDANGER,
+            GetTargetDirection(aTarget, aObject));
+          aTarget.FT = aObject;
         end
-        -- Reduce health
-        AdjustObjectHealth(aTarget, -1);
-      -- Object is dangerous
-      elseif aObject.F & OFL.DANGEROUS ~= 0 then
-        -- Digger isn't running? Make him run away!
-        if aTarget.A ~= ACT.RUN then
-          SetAction(aTarget, ACT.RUN, JOB.INDANGER, DIR.LR);
-        else
-          SetAction(aTarget, ACT.KEEP, JOB.INDANGER, DIR.KEEP);
-        end
-      -- Object is dangerous, object is not running, object isnt dead.
-      elseif aObject.F & OFL.DANGEROUS ~= 0 and aTarget.A ~= ACT.RUN then
-        -- Object is moving? Make the object run in the same direction
-        if aTarget.D ~= DIR.NONE then
-          SetAction(aTarget, ACT.RUN, JOB.INDANGER, DIR.KEEP);
-        -- Object is not moving? Run in opposite direction?
-        else SetAction(aTarget, ACT.RUN, JOB.INDANGER,
-          GetTargetDirection(aTarget, aObject)) end;
-      -- Else if object...
-      elseif aObject.F & OFL.DIGGER ~= 0 and -- ...is a digger?
-             aObject.F & OFL.BUSY == 0 and   -- -and- is not busy?
-             aObject.P ~= aTarget.P and      -- -and- not same owner?
-         not aObject.FT then                 -- -and- has no fight target?
-        -- Make us face the target and fight and set objects fight target
-        SetAction(aObject, ACT.FIGHT, JOB.INDANGER,
-          GetTargetDirection(aObject, aTarget));
-        aObject.FT = aTarget;
-        -- Make target object face us and fight and set targets fight target
-        SetAction(aTarget, ACT.FIGHT, JOB.INDANGER,
-          GetTargetDirection(aTarget, aObject));
-        aTarget.FT = aObject;
       end
     end
   end
@@ -2085,11 +2153,15 @@ local function InitMoveOtherObjects()
       -- Get target object and if it...
       local aTarget<const> = aObjects[iTargetIndex];
       if aTarget ~= aObject and           -- ...target object isn't me?
-         aTarget.F & OFL.BLOCK == 0 and   -- -and- target object blocks?
+         aTarget.F & OFL.BLOCK == 0 and   -- -and- target object doesn't block?
          aTarget.A ~= ACT.PHASE and       -- -and- is not phasing?
          aTarget.A ~= ACT.DEATH and       -- -and- is not dying?
            maskSpr:IsCollideEx(aObject.S, -- -and- doesn't collide with object?
              aObject.X, aObject.Y, maskSpr, 478, aTarget.X, aTarget.Y) then
+        -- If falling from above and? Target is not a device and is not falling
+        -- too? Then the object can be considered crushed and die!
+        if nY >= 1 and aObject.FD >= 1 and aTarget.F & OFL.DEVICE == 0 and
+           aTarget.FS == 1 then AdjustObjectHealth(aTarget, -aObject.FD) end;
         -- Move that object too
         MoveX(aTarget, nX);
         MoveY(aTarget, nY);
@@ -2410,6 +2482,7 @@ local function InitCreateObject()
       AT   = 0,                          -- Action timer
       AX   = 0,                          -- Tile X position clamped to 16
       AY   = 0,                          -- Tile Y position clamped to 16
+      CS   = not not aObjData[ACT.STOP], -- Object can stop?
       D    = aObjData.DIRECTION,         -- Direction object is going in
       DA   = false,                      -- Attachment direction data
       DD   = { },                        -- Reference to direction data
@@ -2802,13 +2875,15 @@ local function GameProc()
         -- Object has finished phasing so set normal stance mode. Keep the
         -- direction which is used to tell AI to not phase again.
         else SetAction(O, ACT.STOP, JOB.NONE, DIR.KEEP) end;
-      -- Object is hidden and object is resting?
+      -- Object is hidden and object is in the trade-centre?
       elseif O.A == ACT.HIDE and O.J == JOB.PHASE then
-        -- Health at full then re-appear the object
-        if O.H == 100 then SetAction(O, ACT.PHASE, JOB.NONE, DIR.R);
-        -- Else deduct 1 zog for every few seconds
-        -- elseif O.AT % RESTTIME == 1 and O.P then O.P.M = O.P.M - 1;
-        -- Health not full? Regenerate health faster
+        -- Health at full?
+        if O.H >= 100 then
+          -- Re-appear the object if is not the player otherwise wait for the
+          -- real player to exit the trade centre.
+          if O.P ~= aActivePlayer then
+            SetAction(O, ACT.PHASE, JOB.NONE, DIR.R) end;
+        -- Health not full? Regenerate health
         elseif O.AT % 10 == 0 then AdjustObjectHealth(O, 1) end;
       -- Object has been eaten
       elseif O.A == ACT.EATEN and O.AT >= aTimerData.MUTATEWAIT then

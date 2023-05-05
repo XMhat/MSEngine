@@ -10,14 +10,7 @@
 /* ------------------------------------------------------------------------- */
 namespace SysBase {                    // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-#include <elf.h>                       // Elf header file
-#include <link.h>                      // dlinfo() function
-#include <sys/ioctl.h>                 // Gettingterminal size
-#include <sys/resource.h>              // Getting process memory info
-#include <sys/sysinfo.h>               // Getting system memory info
-#include <sys/time.h>                  // Getting time info
-#include <sys/times.h>                 // Getting cpu usage info
-#include <sys/wait.h>                  // For waiting for pid
+using namespace Lib::OS;               // Need operating system functions
 /* -- Classes -------------------------------------------------------------- */
 #include "pixbase.hpp"                 // Base system class
 #include "pixcon.hpp"                  // Console terminal window class
@@ -25,7 +18,6 @@ namespace SysBase {                    // Start of module namespace
 #include "pixmap.hpp"                  // File mapping class
 #include "pixpip.hpp"                  // Process output piping class
 /* -- Namespaces ----------------------------------------------------------- */
-using namespace IfGlFW;                // Using glfw namespace
 using namespace IfVars;                // Using vars namespace
 using namespace IfFStream;             // Using fstream namespace
 /* == System intialisation helper ========================================== */
@@ -150,7 +142,7 @@ class SysCore :
   { // Return nothing if no module
     if(!vpModule) return {};
     // Get information about the shared object
-    struct link_map *lmData;
+    struct Lib::OS::link_map *lmData;
     if(dlinfo(vpModule, RTLD_DI_LINKMAP, &lmData) || !lmData)
       XCL("Failed to read info about shared object!", "File", cpAltName);
     // Get full pathname of file
@@ -236,8 +228,6 @@ class SysCore :
 # define ELFDATANATIVE ELFDATA2LSB
 #elif defined(BIG_ENDIAN)
 # define ELFDATANATIVE ELFDATA2MSB
-#else
-# error Unknown Endianness!
 #endif
     // Open exe file and return on error
     if(FStream fExe{ strFile, FStream::FM_R_B })
@@ -450,7 +440,7 @@ class SysCore :
   /* ----------------------------------------------------------------------- */
   void *GetWindowHandle(void) const { return nullptr; }
   /* -- A window was created ----------------------------------------------- */
-  void WindowInitialised(GLFWwindow*const gwWindow)
+  void WindowInitialised(GlFW::GLFWwindow*const gwWindow)
     { bWindowInitialised = !!gwWindow; }
   /* -- Window was destroyed, nullify handles ------------------------------ */
   void SetWindowDestroyed(void) { bWindowInitialised = false; }

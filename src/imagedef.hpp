@@ -9,10 +9,10 @@
 /* ------------------------------------------------------------------------- */
 namespace IfImageDef {                 // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
+using namespace Lib::OS::GlFW;         // Access to OpenGL headers
 using namespace IfFlags;               // Using flags namespace
 using namespace IfMemory;              // Using memory namespace
 using namespace IfDim;                 // Using dimensions namespace
-using namespace Library::GlFW;         // Access to OpenGL headers
 /* -- Shared image flags --------------------------------------------------- */
 BUILD_FLAGS(Image,
   /* -- Note --------------------------------------------------------------- */

@@ -439,7 +439,13 @@ class Item :                           // Members initially private
           return SetValue(strNValue, scFlags, mLock, strCBError);
         // Invalid value
         default: break;
-      } // If we should not abort? Just return error else throw exception
+      } // True?
+      else if(strNValue.size() == 4 && ToLower(strNValue) == cCommon->Tru())
+        return SetValue(cCommon->One(), scFlags, mLock, strCBError);
+      // False?
+      else if(strNValue.size() == 5 && ToLower(strNValue) == cCommon->Fals())
+        return SetValue(cCommon->Zero(), scFlags, mLock, strCBError);
+      // If we should not abort? Just return error else throw exception
       if(scFlags.FlagIsClear(CSC_THROWONERROR)) return CVS_NOTBOOLEAN;
       XC("CVar specified is not a valid boolean!",
          "Variable", GetVar(), "Value", strNValue);

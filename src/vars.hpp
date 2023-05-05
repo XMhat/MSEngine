@@ -85,7 +85,7 @@ template<class MapType>struct VarsBase :
         }  // Could not prune prefixed whitespaces on value.
       }  // Could not prune suffixed whitespaces on key.
     } // Could not prune prefixed whitespaces on key. Add full value for debug
-    return VarsPushPair(Append('#', this->size()),
+    return VarsPushPair(Append('\255', this->size()),
       StdMove(strS.substr(stSegStart, stSegEnd-stSegStart)));
   }
   /* -- Initialise or add entries from a string ---------------------------- */

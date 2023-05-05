@@ -9,7 +9,7 @@
 /* ------------------------------------------------------------------------- */
 namespace IfFbo {                      // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace Library::GlFW;         // Using GLFW library functions
+using namespace Lib::OS::GlFW;         // Using GLFW library functions
 using namespace IfDim;                 // Using dimensions namespace
 using namespace IfUtil;                // Using utility namespace
 /* -- Defines -------------------------------------------------------------- */

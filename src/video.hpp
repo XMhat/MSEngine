@@ -9,7 +9,7 @@
 /* ------------------------------------------------------------------------- */
 namespace IfVideo {                    // Start of module namespace
 /* ------------------------------------------------------------------------- */
-using namespace Library::Theora;       // Using Theora library functions
+using namespace Lib::Theora;           // Using Theora library functions
 using namespace IfStream;              // Using source namespace
 using namespace IfFbo;                 // Using fbo namespace
 /* -- Video collector class for collector data and custom variables -------- */

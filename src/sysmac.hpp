@@ -10,26 +10,7 @@
 /* ------------------------------------------------------------------------- */
 namespace SysBase {                    // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-#include <sys/sysctl.h>                // Kernel info stuff
-#include <mach/mach_init.h>            // For getting cpu and memory usage
-#include <mach/mach_error.h>           // For getting cpu usage
-#include <mach/mach_host.h>            // For getting cpu and memory usage
-#include <mach/vm_map.h>               // For getting cpu usage
-#include <mach/vm_statistics.h>        // For getting memory usage
-#include <mach/mach_types.h>           // For getting memory usage
-#include <mach/mach.h>                 // For getting process memory usage
-#include <mach/kern_return.h>          // For getting process memory usage
-#include <mach/task_info.h>            // For getting process memory usage
-#include <mach/mach_time.h>            // For getting system uptime
-#include <mach-o/dyld.h>               // For enumerating shared objects
-#include <mach-o/loader.h>             // For getting mach-o header format
-#include <mach-o/fat.h>                // For getting mach-o fat header format
-/* ------------------------------------------------------------------------- */
-#include <termios.h>                   // For changing terminal settings
-#include <libproc.h>                   // For getting program executable
-/* ------------------------------------------------------------------------- */
-#define _XOPEN_SOURCE_EXTENDED         // Unlock extended ncurses functionality
-typedef void (*__sighandler_t)(int);   // For signal() on MacOS
+using namespace Lib::OS;               // Need operating system functions
 /* -- Dependiencies -------------------------------------------------------- */
 #include "pixbase.hpp"                 // Base system class
 #include "pixcon.hpp"                  // Console emulation class
@@ -39,7 +20,6 @@ typedef void (*__sighandler_t)(int);   // For signal() on MacOS
 /* ------------------------------------------------------------------------- */
 #undef _XOPEN_SOURCE_EXTENDED          // Done with this macro
 /* -- Includes ------------------------------------------------------------- */
-using namespace IfGlFW;                // Using glfw namespace
 using namespace IfVars;                // Using vars namespace
 /* == System intialisation helper ========================================== */
 /* ######################################################################### */
@@ -425,8 +405,6 @@ class SysCore :
 # define MACHO_FAT_LE64 FAT_CIGAM_64
 # define MACHO_FAT_BE32 FAT_MAGIC
 # define MACHO_FAT_BE64 FAT_MAGIC_64
-#else
-# error Unknown Endianness!
 #endif
       // Load magic directly into integer
       unsigned int uiMagic;
@@ -754,7 +732,7 @@ class SysCore :
   /* ----------------------------------------------------------------------- */
   void *GetWindowHandle(void) const { return nullptr; }
   /* -- A window was created ----------------------------------------------- */
-  void WindowInitialised(GLFWwindow*const gwWindow)
+  void WindowInitialised(GlFW::GLFWwindow*const gwWindow)
     { bWindowInitialised = !!gwWindow; }
   /* -- Window was destroyed, nullify handles ------------------------------ */
   void SetWindowDestroyed(void) { bWindowInitialised = false; }

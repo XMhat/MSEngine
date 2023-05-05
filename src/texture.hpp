@@ -88,13 +88,11 @@ class TextureVars :                    // All members initially private
 BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
   /* -- Base classes ------------------------------------------------------- */
   public TextureVars                   // Texture class variables
-{ /* -- Return padding width --------------------------------------- */ public:
+{ /* -- Return padding dimensions ---------------------------------- */ public:
   GLfloat GetPaddingWidth(void) const { return dfPad.DimGetWidth(); }
-  /* -- Return padding height ---------------------------------------------- */
   GLfloat GetPaddingHeight(void) const { return dfPad.DimGetHeight(); }
-  /* -- Return tile width -------------------------------------------------- */
+  /* -- Return tile dimensions --------------------------------------------- */
   GLuint GetTileWidth(void) const { return duTile.DimGetWidth(); }
-  /* -- Return tile height ------------------------------------------------- */
   GLuint GetTileHeight(void) const { return duTile.DimGetHeight(); }
   /* -- Return number of tiles --------------------------------------------- */
   size_t GetTileCount(const size_t stSubTexId=0) const
@@ -102,9 +100,8 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
   /* -- Set tile count ----------------------------------------------------- */
   void SetTileCount(const size_t stCount, const size_t stSubTexId=0)
     { clTiles[stSubTexId].resize(stCount); }
-  /* -- Return image width float value ------------------------------------- */
+  /* -- Return image float value dimensions -------------------------------- */
   GLfloat GetFWidth(void) const { return dfImage.DimGetWidth(); }
-  /* -- Return image height float value ------------------------------------ */
   GLfloat GetFHeight(void) const { return dfImage.DimGetHeight(); }
   /* -- Return the number of mipmaps in the texture ------------------------ */
   GLint GetMipmaps(void) const { return iMipmaps; }
@@ -624,10 +621,13 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
       "Failed to update VRAM with image!",
       "Identifier", IdentGet(), "OffsetX", iX,
       "OffsetY",    iY,         "Width",   uiW,
-      "Height",     uiH,        "SrcType", ePixType);
+      "Height",     uiH,        "SrcType", cOgl->GetPixelFormat(ePixType));
     // Whats the minification value? We might need to regenerate mipmaps! If
     // we already had mipmaps, they will be overwritten.
     ReGenerateMipmaps();
+    // Write that we updated the VRAM
+    cLog->LogDebugExSafe("Texture '$'[$<$x$>] updated at $x$ with type $!",
+      IdentGet(), uiTexId, uiW, uiH, iX, iY, cOgl->GetPixelFormat(ePixType));
   }
   /* -- Replace partial texture in VRAM from partial raw data -------------- */
   void UpdateEx(const GLuint uiTexId, const GLint iX, const GLint iY,
@@ -650,7 +650,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
   { // Do the update
     UpdateEx(GetSubName(stSubTexId), iX, iY, imS.DimGetWidth<GLsizei>(),
       imS.DimGetHeight<GLsizei>(), imS.GetPixelType(),
-      GetSlotsConst().front().Ptr());
+      imS.GetSlotsConst().front().Ptr());
   }
   /* -- Replace texture in VRAM from array --------------------------------- */
   void Update(Image &imOther)
@@ -672,7 +672,8 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
     Memory mOut{ DimGetWidth() * DimGetHeight() * byDDepth };
     GL(cOgl->ReadTexture(ePixType, mOut.Ptr<GLvoid>()),
       "Download texture failed!",
-      "Identifier", IdentGet(), "Index", stSubTexId, "Format", ePixType);
+      "Identifier", IdentGet(), "Index", stSubTexId,
+      "Format",     cOgl->GetPixelFormat(ePixType));
     // Return a newly created image class containing this data
     return Image{ IdentGet(), StdMove(mOut), DimGetWidth(), DimGetHeight(),
       bdDDepth, ePixType };
@@ -682,6 +683,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
     { Download(stSubTexId).SaveFile(strFileName, stSubTexId, 0); }
   /* -- Check if texture is initialised ------------------------------------ */
   bool IsNotInitialised(void) const { return vTexture.empty(); }
+  bool IsInitialised(void) const { return !IsNotInitialised(); }
   /* -- Reload texture array as normal texture ----------------------------- */
   void ReloadTexture(void)
   { // If image was not loaded from disk? Just (re)load the image data

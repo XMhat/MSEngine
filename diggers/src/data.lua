@@ -261,18 +261,18 @@ local AI<const> = {
 };
 -- Timers and animation consts --------------------------------------------- --
 local aTimerData<const> = {
-  ANIMTERRAIN   =      10, -- Game ticks to wait before animating next terrain
-  ANIMNORMAL    =       8, -- Delay before anim next sprite for normal objects
-  ANIMFAST      =       2, -- Delay before anim next sprite for fast objects
-  PICKUPDELAY   =      10, -- Game ticks to wait before checking for pickups
-  DEADWAIT      =     600, -- Wait time before removing ACT_DEATH objects
-  MUTATEWAIT    =    3600, -- Wait time before full digger mutation occurs
-  DANGERTIMEOUT =     600, -- Timeout before removing the danger flag
-  TARGETTIME    =    1800, -- Timeout before selecting another target (AI)
-  RESTTIME      =     150, -- Ticks to wait before deducting 1 zog for resting
-  GEMCHANCE     =   0.025, -- Chance of getting a gem after each dig. (2.5%)
-  GEMDEPTHEXTRA =    1024, -- Chance to double chance based on this depth
-  ROAMDIRCHANGE =  0.0025, -- Chance of roaming AI switching direction
+  ANIMTERRAIN   =     10, -- Game ticks to wait before animating next terrain
+  ANIMNORMAL    =      8, -- Delay before anim next sprite for normal objects
+  ANIMFAST      =      2, -- Delay before anim next sprite for fast objects
+  PICKUPDELAY   =     10, -- Game ticks to wait before checking for pickups
+  DEADWAIT      =    600, -- Wait time before removing ACT_DEATH objects
+  MUTATEWAIT    =   3600, -- Wait time before full digger mutation occurs
+  DANGERTIMEOUT =    600, -- Timeout before removing the danger flag
+  TARGETTIME    =   1800, -- Timeout before selecting another target (AI)
+  RESTTIME      =    150, -- Ticks to wait before deducting 1 zog for resting
+  GEMCHANCE     =  0.025, -- Chance of getting a gem after each dig. (2.5%)
+  GEMDEPTHEXTRA =   1024, -- Chance to double chance based on this depth
+  ROAMDIRCHANGE = 0.0025, -- Chance of roaming AI switching direction
 };
 -- Sound id's array -------------------------------------------------------- --
 local aSfxData<const> = {
@@ -308,21 +308,13 @@ local aLevelTypeMountain<const> = { i=4, f="mountain", n="MOUNTAINOUS" };
 local aLevelTypeRock<const>     = { i=5, f="rock",     n="BARRENOUS"   };
 local aLevelTypeWinter<const>   = { i=6, f="snow",     n="WINTEROUS"   };
 -- Level data types array -------------------------------------------------- --
-local aLevelTypesData<const>  = {
-  aLevelTypeDesert,                    -- [1]
-  aLevelTypeGrass,                     -- [2]
-  aLevelTypeIslands,                   -- [3]
-  aLevelTypeJungle,                    -- [4]
-  aLevelTypeMountain,                  -- [5]
-  aLevelTypeRock,                      -- [6]
-  aLevelTypeWinter,                    -- [7]
+local aLevelTypesData<const> = {
+  aLevelTypeDesert,   aLevelTypeGrass, aLevelTypeIslands, aLevelTypeJungle,
+  aLevelTypeMountain, aLevelTypeRock,  aLevelTypeWinter,
 };
 -- Skill levels ------------------------------------------------------------ --
-local iSkillEasiest<const> = 600;
-local iSkillEasy<const>    = 1000;
-local iSkillMedium<const>  = 1300;
-local iSkillHard<const>    = 1500;
-local iSkillHardest<const> = 2100;
+local iSkillEasiest<const>, iSkillEasy<const>, iSkillMedium<const>,
+  iSkillHard<const>, iSkillHardest<const> = 600, 1000, 1300, 1500, 2100;
 -- Level data types array -------------------------------------------------- --
 local aLevelData<const> =
 { -- Name --------- WinReq - Filename ----- Terrain type ------------------- --

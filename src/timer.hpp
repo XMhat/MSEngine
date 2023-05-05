@@ -28,7 +28,7 @@ static class Timer final               // Members initially private
   bool             bWait;              // Force wait?
   /* -- Set engine tick rate --------------------------------------- */ public:
   void TimerSetInterval(const double fdNInt)
-    { cdLimit = duration_cast<ClkDuration>(duration<double>{ 1 / fdNInt }); }
+    { cdLimit = duration_cast<ClkDuration>(duration<double>{ 1.0 / fdNInt }); }
   /* -- Set global target fps ---------------------------------------------- */
   CVarReturn TimerTickRateModified(const unsigned int uiNewInterval)
   { // Ignore invalid values
@@ -58,6 +58,8 @@ static class Timer final               // Members initially private
     // Success
     return ACCEPT;
   }
+  /* -- Get start time ----------------------------------------------------- */
+  const ClkTimePoint TimerGetStartTime(void) const { return ctStart; }
   /* -- Do time calculations ----------------------------------------------- */
   void TimerCalculateTime(void)
   { // Set end time
@@ -114,7 +116,7 @@ static class Timer final               // Members initially private
     ++qTicks;
     // We are no longer forced to wait
     bWait = false;
-    // Tick loop should wait more
+    // Tick loop should render a frame
     return true;
   }
   /* -- Reset counters and re-initialise start and end time ---------------- */

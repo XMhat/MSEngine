@@ -10,8 +10,8 @@
 /* ------------------------------------------------------------------------- */
 namespace IfCrypt {                    // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace Library::OpenSSL;      // Using OpenSSL library functions
-using namespace Library::SevenZip;     // Using 7Zip library functions
+using namespace Lib::OS::OpenSSL;      // Using OpenSSL library functions
+using namespace Lib::OS::SevenZip;     // Using 7Zip library functions
 using namespace IfMemory;              // Using memory namespace
 using namespace IfLog;                 // Using log namespace
 using namespace IfUtf;                 // Using utf namespace

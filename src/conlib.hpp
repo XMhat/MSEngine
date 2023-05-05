@@ -302,11 +302,11 @@ cConsole->Flush();
 { "cmds", 1, 2, GM_TEXT_NOAUDIO, [](const Arguments &aList){
 /* ------------------------------------------------------------------------- */
 // Setup iterator to find items and return if no commands.
-const Console::LibList &cbCmds = cConsole->llCmds;
+const auto &cbCmds = cConsole->GetCmdsList();
 if(cbCmds.empty()) return cConsole->AddLine("No commands are found!");
 // Set filter if specified and look for command and if we found one?
 const string &strFilter = aList.size() > 1 ? aList[1] : cCommon->Blank();
-Console::LibList::const_iterator ciItem{ cbCmds.lower_bound(strFilter) };
+auto ciItem{ cbCmds.lower_bound(strFilter) };
 if(ciItem != cbCmds.cend())
 { // Output string
   ostringstream osS;
@@ -350,10 +350,10 @@ cConsole->AddLineEx("Console flags are currently 0x$$$ ($).\n"
     { cConsole->FlagIsSet(CF_INSERT),      'I' },
     { cConsole->FlagIsSet(CF_ENABLED),     'E' }
   }),
-  cConsole->GetOutputCount(), cConsole->stOutputMaximum,
-  cConsole->GetInputCount(), cConsole->stInputMaximum,
-  cConsole->stMaximumChars, cConsole->iPageLines,
-  cConsole->llCmds.size(), cConsole->lfList.size());
+  cConsole->GetOutputCount(), cConsole->GetOutputMaximum(),
+  cConsole->GetInputCount(), cConsole->GetInputMaximum(),
+  cConsole->GetMaximumChars(), cConsole->GetPageLines(),
+  cConsole->GetCmdsList().size(), cConsole->GetLuaCmds().size());
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'con' function
 /* ========================================================================= */
@@ -577,7 +577,7 @@ else cConsole->AddLine("Failed to create new private key!");
 // here is to access this list from the 'CVars' class since it keeps a
 // reference to this list. Compiler will most probably just optimise this away
 // anyway to a direct access.
-cConsole->conLibList[CC_CVARS].ccbFunc(aList);
+cConsole->GetCommand(CC_CVARS).ccbFunc(aList);
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'cvpend' function
 /* ========================================================================= */
@@ -814,7 +814,7 @@ Statistic tData;
 tData.Header("ID").Header("R").Header("FLAG").Header("SCALE")
      .Header("TEXOCPCY").Header("CC").Header("NAME", false);
 // Include console font
-ShowFontInfo(tData, cConsole->cfConsole);
+ShowFontInfo(tData, cConsole->GetFontRef());
 // Walk through textures classes
 for(const Font*const fCptr : *cFonts) ShowFontInfo(tData, *fCptr);
 // Log counts including the static console font class
@@ -855,13 +855,12 @@ cConsole->AddLineEx(
   "Renderer: $ on $.\n"
   "Version: $ by $.\n"
   "$" // Memory (optional)
-  "Window: $x$ ($) @ $x$ (*$x$); Flags: 0x$$.\n"
-  "- Viewport size: $$x$ ($).\n"
-  "- Ortho matrix: $x$ ($); total: $x$ ($).\n"
-  "- Stage: $$; $; $; $.\n"
-  "- Main Framebuffer: $x$; Maximum: $^2; Flags: 0x$$.\n"
+  "Window: $x$ ($) @ $x$ (*$x$); DFlags: 0x$$.\n"
+  "- Maximum: $$^2; Viewport: $x$ ($).\n"
+  "- Ortho: $x$ ($); Total: $x$ ($).\n"
+  "- Stage: $,$,$,$; Fbo: $x$; OFlags: 0x$$.\n"
   "- Polygons: $$/$; Commands: $/$.\n"
-  "FPS: $$/s ($/s); Eff: $% ($%).",
+  "FPS: $$/s ($/s); Eff: $%; Limit: $.",
   cOgl->GetRenderer(), cDisplay->GetMonitorName(),
   cOgl->GetVersion(), cOgl->GetVendor(),
   cOgl->FlagIsSet(GFL_HAVEMEM) ?
@@ -873,26 +872,24 @@ cConsole->AddLineEx(
     cDisplay->GetWindowPosX(), cDisplay->GetWindowPosY(),
     cDisplay->GetWindowScaleWidth(), cDisplay->GetWindowScaleHeight(),
     hex, cDisplay->FlagGet(),
-  dec, cFboMain->GetCoRight(), cFboMain->GetCoBottom(),
+  dec, cOgl->MaxTexSize(), cFboMain->GetCoRight(), cFboMain->GetCoBottom(),
     ToRatio(cFboMain->GetCoRight(), cFboMain->GetCoBottom()),
     cFboMain->GetOrthoWidth(), cFboMain->GetOrthoHeight(),
     ToRatio(cFboMain->GetOrthoWidth(), cFboMain->GetOrthoHeight()),
     cFboMain->fboMain.GetCoRight(), cFboMain->fboMain.GetCoBottom(),
-    ToRatio(cFboMain->fboMain.GetCoRight(),
-      cFboMain->fboMain.GetCoBottom()), fixed,
-    cFboMain->fboMain.fcStage.GetCoLeft(),
-      cFboMain->fboMain.fcStage.GetCoTop(),
-      cFboMain->fboMain.fcStage.GetCoRight(),
-      cFboMain->fboMain.fcStage.GetCoBottom(),
-  cFboMain->fboMain.DimGetWidth(), cFboMain->fboMain.DimGetHeight(),
-    cOgl->MaxTexSize(), hex, cOgl->FlagGet(),
+    ToRatio(cFboMain->fboMain.GetCoRight(), cFboMain->fboMain.GetCoBottom()),
+  cFboMain->fboMain.fcStage.GetCoLeft(), cFboMain->fboMain.fcStage.GetCoTop(),
+    cFboMain->fboMain.fcStage.GetCoRight(),
+    cFboMain->fboMain.fcStage.GetCoBottom(),
+    cFboMain->fboMain.DimGetWidth(), cFboMain->fboMain.DimGetHeight(),
+    hex, cOgl->FlagGet(),
   dec, cFboMain->fboMain.GetTris(),
     cFboMain->fboMain.GetTrisReserved(),
     cFboMain->fboMain.GetCmds(),
     cFboMain->fboMain.GetCmdsReserved(),
   fixed, cFboMain->dRTFPS, cDisplay->GetRefreshRate(),
   cFboMain->dRTFPS / cDisplay->GetRefreshRate() * 100,
-  cTimer->TimerGetSecond() / cFboMain->dRTFPS * 100);
+  cOgl->GetLimit());
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'gpu' function
 /* ========================================================================= */
@@ -1911,8 +1908,8 @@ tData.Header("ID").Header("D").Header("SC").Header("MM").Header("TF")
      .Header("TLT").Header("TSSX").Header("TSSY").Header("TSPX")
      .Header("TSPY").Header("IDENTIFIER", false);
 // Include console texture and font
-ShowTextureInfo(tData, cConsole->ctConsole);
-ShowTextureInfo(tData, cConsole->cfConsole);
+ShowTextureInfo(tData, cConsole->GetTextureRef());
+ShowTextureInfo(tData, cConsole->GetFontRef());
 // Walk through font textures and textures classes
 for(const Font*const fCptr : *cFonts) ShowTextureInfo(tData, *fCptr);
 for(const Texture*const tCptr : *cTextures) ShowTextureInfo(tData, *tCptr);

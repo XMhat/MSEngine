@@ -16,9 +16,9 @@ local ClampInt<const> = Util.ClampInt;
 -- Diggers function and data aliases --------------------------------------- --
 local LoadResources, Fade, SetCallbacks, IsMouseInBounds, IsMouseNotInBounds,
   SetCursor, PlayStaticSound, aSfxData, InitCon, PlayMusic, IsButtonPressed,
-  IsButtonReleased, IsScrollingDown, IsScrollingUp, RenderFade,
-  SetBottomRightTip, SetBottomRightTipAndShadow, RenderInterface,
-  InitContinueGame, RenderShadow, GameProc, aCursorIdData;
+  IsButtonReleased, IsScrollingDown, IsScrollingUp, SetBottomRightTip,
+  SetBottomRightTipAndShadow, RenderInterface, InitContinueGame, RenderShadow,
+  GameProc, aCursorIdData;
 -- Locals ------------------------------------------------------------------ --
 local iBookPage = 0;                   -- Book current page (persisted)
 local bIntroPage = false;              -- Intro page was displayed?
@@ -68,8 +68,6 @@ local function InitBook(bFromInGame)
       if bFromInGame then
         -- Render game interface
         RenderInterface();
-        -- Fade backdrop
-        RenderFade(0.5);
         -- Draw tip
         SetBottomRightTip(strTip);
       else
@@ -285,13 +283,13 @@ return { A = { InitBook = InitBook }, F = function(GetAPI)
   LoadResources, SetCallbacks, SetCursor, IsMouseInBounds, PlayStaticSound,
   Fade, IsMouseNotInBounds, aCursorIdData, aSfxData, InitCon, PlayMusic,
   IsButtonPressed, IsButtonReleased, IsScrollingDown, IsScrollingUp,
-  RenderFade, SetBottomRightTip, SetBottomRightTipAndShadow, RenderInterface,
+  SetBottomRightTip, SetBottomRightTipAndShadow, RenderInterface,
   InitContinueGame, RenderShadow, GameProc
   = -- --------------------------------------------------------------------- --
   GetAPI("LoadResources", "SetCallbacks", "SetCursor", "IsMouseInBounds",
     "PlayStaticSound", "Fade", "IsMouseNotInBounds", "aCursorIdData",
     "aSfxData", "InitCon", "PlayMusic", "IsButtonPressed", "IsButtonReleased",
-    "IsScrollingDown", "IsScrollingUp", "RenderFade", "SetBottomRightTip",
+    "IsScrollingDown", "IsScrollingUp", "SetBottomRightTip",
     "SetBottomRightTipAndShadow", "RenderInterface", "InitContinueGame",
     "RenderShadow", "GameProc");
   -- ----------------------------------------------------------------------- --

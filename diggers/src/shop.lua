@@ -19,7 +19,7 @@ local InfoTicks<const> = Info.Ticks;
 local LoadResources, Fade, SetCallbacks, IsMouseInBounds, IsMouseNotInBounds,
   aCursorIdData, SetCursor, aSfxData, PlayStaticSound, aSfxData, InitCon,
   PlayMusic, IsButtonPressed, IsButtonReleased, IsScrollingDown, IsScrollingUp,
-  RenderFade, aObjectActions, aObjectJobs, aObjectDirections, aObjectData,
+  aObjectActions, aObjectJobs, aObjectDirections, aObjectData,
   StopSound, LoopStaticSound, InitLobby, fontSpeech, fontLittle, fontTiny,
   SetBottomRightTip, RenderInterface, BuyItem, GameProc, RenderShadow,
   aShopData, ApplyObjectInventoryPerks;
@@ -144,8 +144,6 @@ local function InitShop(aActiveObject)
     local function ShopRender()
       -- Render original interface
       RenderInterface();
-      -- Fade backdrop
-      RenderFade(0.5);
       -- Draw backdrop
       texShop:BlitSLT(iTileBG, 8, 8);
       -- Render shadow
@@ -278,7 +276,7 @@ return { A = { InitShop = InitShop }, F = function(GetAPI)
   LoadResources, SetCallbacks, SetCursor, IsMouseInBounds, aSfxData,
   PlayStaticSound, Fade, IsMouseNotInBounds, aCursorIdData, InitCon, PlayMusic,
   IsButtonPressed, IsButtonReleased, IsScrollingDown, IsScrollingUp,
-  RenderFade, aObjectActions, aObjectJobs, aObjectDirections, aObjectData,
+  aObjectActions, aObjectJobs, aObjectDirections, aObjectData,
   StopSound, LoopStaticSound, InitLobby, fontSpeech, fontLittle, fontTiny,
   SetBottomRightTip, RenderInterface, BuyItem, GameProc, RenderShadow,
   aShopData, ApplyObjectInventoryPerks
@@ -286,7 +284,7 @@ return { A = { InitShop = InitShop }, F = function(GetAPI)
   GetAPI("LoadResources", "SetCallbacks", "SetCursor", "IsMouseInBounds",
     "aSfxData", "PlayStaticSound", "Fade", "IsMouseNotInBounds",
     "aCursorIdData", "InitCon", "PlayMusic", "IsButtonPressed",
-    "IsButtonReleased", "IsScrollingDown", "IsScrollingUp", "RenderFade",
+    "IsButtonReleased", "IsScrollingDown", "IsScrollingUp",
     "aObjectActions", "aObjectJobs", "aObjectDirections", "aObjectData",
     "StopSound", "LoopStaticSound", "InitLobby", "fontSpeech", "fontLittle",
     "fontTiny", "SetBottomRightTip", "RenderInterface", "BuyItem", "GameProc",

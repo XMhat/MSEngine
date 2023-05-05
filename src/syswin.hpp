@@ -9,6 +9,8 @@
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
 namespace SysBase {                    // Start of module namespace
+/* -- Includes ------------------------------------------------------------- */
+using namespace Lib::OS;               // Need operating system functions
 /* == Win32 extras ========================================================= */
 #include "winmod.hpp"                  // Module information class
 #include "winreg.hpp"                  // Registry class
@@ -969,12 +971,12 @@ class SysCore :
     return meData;
   }
   /* ---------------------------------------------------------------------- */
-  void WindowInitialised(GLFWwindow*const wClass)
+  void WindowInitialised(GlFW::GLFWwindow*const gwWindow)
   { // If we don't have a GlFW window?
-    if(!wClass) return;
+    if(!gwWindow) return;
     // Set handles to the GLFW window that was created, or the console. The
     // handle should be valid 100% of the time but check just incase
-    SetWindowHandle(glfwGetWin32Window(wClass));
+    SetWindowHandle(GlFW::glfwGetWin32Window(gwWindow));
     if(IsNotWindowHandleSet()) XC("Failed to get window handle from GlFW!");
     // Because GLFW has a horrible white background, let's make it a better
     // colour from the windows theme to not blind people.

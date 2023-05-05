@@ -13,6 +13,10 @@ using namespace IfStd;                 // Using std namespace
 /* -- Common class with common objects ------------------------------------- */
 static const class Common final        // Members initially private
 { /* -- Private variables -------------------------------------------------- */
+  const string     strTrue;            // C++ string as "true"
+  const string     strFalse;           // C++ string as "false"
+  const string     strZero;            // C++ string as "0"
+  const string     strOne;             // C++ string as "1"
   const string     strSpace;           // C++ string with whitespace
   const string     strBlank;           // Empty c++ string
   const char*const cpBlank;            // Blank C String
@@ -24,11 +28,23 @@ static const class Common final        // Members initially private
   /* ----------------------------------------------------------------------- */
   const char *CBlank(void) const { return cpBlank; }
   /* ----------------------------------------------------------------------- */
+  const string &Tru(void) const { return strTrue; }
+  /* ----------------------------------------------------------------------- */
+  const string &Fals(void) const { return strFalse; }
+  /* ----------------------------------------------------------------------- */
+  const string &Zero(void) const { return strZero; }
+  /* ----------------------------------------------------------------------- */
+  const string &One(void) const { return strOne; }
+  /* ----------------------------------------------------------------------- */
   const string &Space(void) const { return strSpace; }
   /* -- Default Constructor ------------------------------------------------ */
   Common(void) :                       // No parameters
     /* -- Initialisers ----------------------------------------------------- */
-    strSpace{ " " },                   // Initialise whitespace character
+    strTrue{ "true" },                 // Initialise commonly used string
+    strFalse{ "false" },               // Initialise commonly used string
+    strZero{ "0" },                    // Initialise commonly used string
+    strOne{ "1" },                     // Initialise commonly used string
+    strSpace{ " " },                   // Initialise commonly used string
     cpBlank(strBlank.c_str()),         // Initialise blank C-String from STL
     lLocaleCurrent{ strBlank }         // Initialise current locale
     /* -- No code ---------------------------------------------------------- */
@@ -530,8 +546,8 @@ static const string ToShortDuration(const double fdDuration,
   return osS.str();
 }
 /* -- Return true of false ------------------------------------------------- */
-static const char *TrueOrFalse(const bool bCondition)
-  { return bCondition ? "true" : "false"; }
+static const string &TrueOrFalse(const bool bCondition)
+  { return bCondition ? cCommon->Tru() : cCommon->Fals(); }
 static const char *YesOrNo(const bool bCondition)
   { return bCondition ? "X" : "-"; }
 /* ------------------------------------------------------------------------- */

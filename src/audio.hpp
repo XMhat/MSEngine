@@ -100,53 +100,53 @@ static class Audio final :             // Audio manager class
   bool Verify(void)
   { // Ignore if next check time not met
     if(cmHiRes.GetTime() < tpNextCheck) return true;
-    // Number of discreprencies found
-    size_t stDiscreprencies = 0;
+    // Number of discrepancies found
+    size_t stDiscrepancies = 0;
     // Grab list of playback devices and if we found them?
     if(const char *cpList = cOal->GetNCString(cOal->eQuery))
     { // Number of new items detected
       size_t stIndex;
       // For each playback device. If there is no such device in the current
       // list, or the current device item does not equal to the newly detected
-      // item, then that is a discreprency.
+      // item, then that is a discrepancy.
       for(stIndex = 0; *cpList; ++stIndex, cpList += strlen(cpList) + 1)
       { // Is index valid?
         if(stIndex >= dlPBDevices.size())
-        { // Log warning and add to discreprency list
-          ++stDiscreprencies;
-          cLog->LogWarningExSafe("Audio thread discreprency $: "
+        { // Log warning and add to discrepancy list
+          ++stDiscrepancies;
+          cLog->LogDebugExSafe("Audio thread discrepancy $: "
             "Device index $ over limit of $!",
-              stDiscreprencies, stIndex, dlPBDevices.size());
+              stDiscrepancies, stIndex, dlPBDevices.size());
         } // Is the device name the same
         else if(dlPBDevices[stIndex] != cpList)
         { // Log warning and add to discreprency list
-          ++stDiscreprencies;
-          cLog->LogWarningExSafe("Audio thread discreprency $: "
+          ++stDiscrepancies;
+          cLog->LogDebugExSafe("Audio thread discrepancy $: "
             "Expected device '$' at $, not '$'!",
-              stDiscreprencies, dlPBDevices[stIndex], stIndex, cpList);
+              stDiscrepancies, dlPBDevices[stIndex], stIndex, cpList);
         }
       }
       // If the number of items in the newly detected list doesn't match
       // the number of items in the current list then that is another
-      // discreprency.
+      // discrepancy.
       if(stIndex != dlPBDevices.size())
-      { // Log warning and add to discreprency list
-        ++stDiscreprencies;
-        cLog->LogWarningExSafe("Audio thread discreprency $: "
+      { // Log warning and add to discrepancy list
+        ++stDiscrepancies;
+        cLog->LogDebugExSafe("Audio thread discrepancy $: "
           "Detected $ devices and had $ before!",
-            stDiscreprencies, stIndex, stIndex != dlPBDevices.size());
+            stDiscrepancies, stIndex, dlPBDevices.size());
       }
     } // No newly detected list and have items in current list? Fail!
     else if(dlPBDevices.size())
-    { // Log warning and add to discreprency list
-      ++stDiscreprencies;
-      cLog->LogWarningExSafe("Audio thread discreprency $: "
-        "$ new devices detected!", stDiscreprencies, dlPBDevices.size());
-    } // If there are discreprencies, then we need to restart the subsystem.
-    if(stDiscreprencies)
+    { // Log warning and add to discrepancy list
+      ++stDiscrepancies;
+      cLog->LogDebugExSafe("Audio thread discrepancy $: "
+        "$ new devices detected!", stDiscrepancies, dlPBDevices.size());
+    } // If there are discrepancies, then we need to restart the subsystem.
+    if(stDiscrepancies)
     { // Send message to log
       cLog->LogWarningExSafe(
-        "Audio thread detected $ hardware discreprencies!", stDiscreprencies);
+        "Audio thread restarting on $ device discrepancies!", stDiscrepancies);
       // Send event to reset audio
       cEvtMain->Add(EMC_AUD_REINIT);
       // Terminate this thread

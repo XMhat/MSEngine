@@ -57,6 +57,12 @@ LLFUNCEX(Name, 1, LCPUSHXSTR(LCGETPTR(1, Image)->IdentGet()));
 /* ------------------------------------------------------------------------- */
 LLFUNC(Destroy, LCCLASSDESTROY(1, Image));
 /* ========================================================================= */
+// $ Image:Save
+// < File:string=The filename to save to.
+// ? Saves the file to disk.
+/* ------------------------------------------------------------------------- */
+LLFUNC(Save, LCGETPTR(1, Image)->SaveFile(LCGETCPPFILE(2, "File"), 0, 0));
+/* ========================================================================= */
 /* ######################################################################### */
 /* ## Image:* member functions structure                                  ## */
 /* ######################################################################### */
@@ -67,6 +73,7 @@ LLRSMFBEGIN                            // Image:* member functions begin
   LLRSFUNC(Name),                      // Get image identifier
   LLRSFUNC(Width),                     // Get image width
   LLRSFUNC(Height),                    // Get image height
+  LLRSFUNC(Save),                      // Save image to disk
 LLRSEND                                // Image:* member functions end
 /* ========================================================================= */
 // $ Image.FileAsync

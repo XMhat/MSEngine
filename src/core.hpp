@@ -238,6 +238,9 @@ class Core                             // Members initially private
           // to handle the error and try to recover. The actual loops will set
           // this to something different when they cleanly exit their loops.
           cEvtMain->SetExitReason(EMC_LUA_ERROR);
+          // Scan for game controllers and inform scripts if enabled
+          cInput->SetJoystickEnabled(
+            cCVars->GetInternalSafe<int>(INP_JOYSTICK));
           // Execute startup script
           LuaCodeExecFile(lS, cCVars->GetInternalStrSafe(LUA_SCRIPT));
           // Done
@@ -341,7 +344,13 @@ class Core                             // Members initially private
   }
   /* -- Get core pointer and call the entry function ----------------------- */
   static int CoreThreadSandboxStatic(lua_State*const lS)
-    { return GetSimplePtr<Core>(lS, 1)->CoreThreadSandbox(lS); }
+  { // Get pointer to class
+    Core*const cPtr = GetSimplePtr<Core>(lS, 1);
+    // Remove light user data pointer
+    RemoveStack(lS);
+    // Call sandbox function
+    return cPtr->CoreThreadSandbox(lS);
+  }
   /* -- Lua deinitialiser helper which updates all the classes that use it - */
   void CoreLuaDeInitHelper(void)
   { // Unregister all lua cvars and console commands
@@ -433,6 +442,8 @@ class Core                             // Members initially private
     cLog->LogInfoExSafe("Core engine thread started (C:$;M:$<$>).",
       cEvtMain->GetExitReason(), cSystem->GetGuiModeString(),
       cSystem->GetGuiMode());
+    // Register exit events
+    cEvtMain->Init();
     // Non-interactive mode?
     if(cSystem->IsNotGuiMode(GM_GRAPHICS))
     { // If we're not initialising for the first time?
@@ -471,9 +482,7 @@ class Core                             // Members initially private
         cAudio->Init();
         cInput->Init();
       }
-    } // Register exit events
-    cEvtMain->Init();
-    // Lua loop with initialisation. Compare event code
+    } // Lua loop with initialisation. Compare event code
     SandBoxInit: switch(cEvtMain->GetExitReason())
     { // Ignore LUA initialisation if we're re-initialising other components
       case EMC_QUIT_THREAD: break;
@@ -621,14 +630,14 @@ class Core                             // Members initially private
         goto SandBoxInit;
       // Unknown value so report it and fall through.
       default: cLog->LogWarningExSafe("Core has unknown error behaviour of $!",
-        ebErrorMode);
+        ebErrorMode); [[fallthrough]];
       // Execution ended because of error. Shouldn't get here. Fall through.
-      case EMC_LUA_ERROR:
+      case EMC_LUA_ERROR: [[fallthrough]];
       // Restarting engine completely? Fall through.
-      case EMC_QUIT_RESTART:
-      case EMC_QUIT_RESTART_NP:
+      case EMC_QUIT_RESTART: [[fallthrough]];
+      case EMC_QUIT_RESTART_NP: [[fallthrough]];
       // Quitting the engine completely? De-initialise lua and fall through.
-      case EMC_QUIT:
+      case EMC_QUIT: [[fallthrough]];
       // Restarting engine subsystems. i.e. 'vreset'? Fall through.
       case EMC_QUIT_THREAD: break;
     } // De-initilise everything
@@ -653,8 +662,8 @@ class Core                             // Members initially private
   { // Compare exit value
     switch(cEvtMain->GetExitReason())
     { // Engine was requested to quit or restart? NO!
-      case EMC_QUIT:
-      case EMC_QUIT_RESTART:
+      case EMC_QUIT: [[fallthrough]];
+      case EMC_QUIT_RESTART: [[fallthrough]];
       case EMC_QUIT_RESTART_NP: return false;
       // Systems were just re-initialising? YES!
       default: return true;
@@ -809,17 +818,18 @@ class Core                             // Members initially private
         INITHELPER(GlFWIH, cGlFW->Init(), cGlFW->DeInit());
         // Until engine should terminate.
         while(CoreShouldEngineContinue()) try
-        { // Init window and de-init lua envifonment and window on scope exit
+        { // Tell display class if window threading is enabled
+          cDisplay->FlagSetOrClear(DF_THREADED,
+            cCVars->GetInternalSafe<bool>(WIN_THREAD));
+          // Init window and de-init lua envifonment and window on scope exit
           INITHELPER(DIH, cDisplay->Init(),
             cEvtMain->ThreadDeInit();
             cDisplay->DeInit());
           // Clear window manager events list
           cEvtWin->Flush();
           // If threading enabled
-          if(cCVars->GetInternalSafe<bool>(WIN_THREAD))
-          { // Using window threading
-            cDisplay->FlagSet(DF_THREADED);
-            // Setup main thread and start it
+          if(cDisplay->FlagIsSet(DF_THREADED))
+          { // Setup main thread and start it
             cEvtMain->ThreadInit(bind(&Core::CoreThreadMain, this, _1),
               nullptr);
             // Loop until window should close
@@ -829,13 +839,8 @@ class Core                             // Members initially private
               // Wait for more window events
               GlFWWaitEvents();
             }
-          } // Threading disabled?
-          else
-          { // Not using window threading
-            cDisplay->FlagClear(DF_THREADED);
-            // Enter sandbox and process scripts
-            CoreThreadMain(*cEvtMain);
-          } // Window will reopen at this point
+          } // Threading disabled? Enter sandbox and process scripts
+          else CoreThreadMain(*cEvtMain);
         } // Error occured
         catch(const exception &E)
         { // Send to log and show error message to user

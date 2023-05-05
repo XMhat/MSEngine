@@ -9,10 +9,6 @@
 /* ######################################################################### */
 /* ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Includes ------------------------------------------------------------- */
-#include <sys/mman.h>                  // For shm_* functions
-#include <fcntl.h>                     // File control macros
-#include <sys/socket.h>                // Socket functions and types
 /* -- STL Includes --------------------------------------------------------- */
 using namespace IfStat;                // Using stat namespace
 /* -- Signals to support --------------------------------------------------- */
@@ -387,7 +383,7 @@ class SysBase :                        // Safe exception handler namespace
            (setsockopt(iFd, SOL_SOCKET, SO_SNDTIMEO,
               reinterpret_cast<void*>(&tWT), sizeof(tWT)) < 0 ? 2 : 0);
   }
-  /* ------------------------------------------------------------------------- */
+  /* ----------------------------------------------------------------------- */
   static bool SysInitThread(const char*const cpName, const SysThread stLevel)
   { // Get this thread handle
     pthread_t ptHandle = pthread_self();

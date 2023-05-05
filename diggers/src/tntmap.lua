@@ -17,7 +17,7 @@ local TextureCreateTS<const>, ImageRaw<const>, AssetCreate<const>
 -- Diggers function and data aliases --------------------------------------- --
 local LoadResources, Fade, SetCallbacks, IsMouseInBounds, IsMouseNotInBounds,
   aCursorIdData, SetCursor, aSfxData, PlayStaticSound, aSfxData, IsButtonPressed,
-  IsButtonHeld, RenderFade, aTileData, aTileFlags, InitTitle, texSpr,
+  IsButtonHeld, aTileData, aTileFlags, InitTitle, texSpr,
   SetBottomRightTip, RenderInterface, GameProc, InitContinueGame, GetLevelData,
   aObjects, RenderShadow;
 -- Init TNT map screen function -------------------------------------------- --
@@ -146,8 +146,6 @@ local function InitTNTMap()
     local function RenderProc()
       -- Render everything
       RenderInterface();
-      -- Render a fade
-      RenderFade(0.5);
       -- Blit appropriate background
       texTNTMap:BlitLT(8, 8);
       -- Render shadow
@@ -173,15 +171,15 @@ end
 return { A = { InitTNTMap = InitTNTMap }, F = function(GetAPI)
   -- Imports --------------------------------------------------------------- --
   LoadResources, SetCallbacks, SetCursor, aCursorIdData, aSfxData,
-  PlayStaticSound, Fade, InitTitle, IsButtonHeld, RenderFade, IsMouseInBounds,
+  PlayStaticSound, Fade, InitTitle, IsButtonHeld, IsMouseInBounds,
   IsMouseNotInBounds, aTileData, aTileFlags, texSpr, SetBottomRightTip,
   RenderInterface, InitContinueGame, GameProc, GetLevelData, aObjects,
   RenderShadow
   = -- --------------------------------------------------------------------- --
   GetAPI("LoadResources", "SetCallbacks", "SetCursor", "aCursorIdData",
    "aSfxData", "PlayStaticSound", "Fade", "InitTitle", "IsButtonHeld",
-   "RenderFade", "IsMouseInBounds", "IsMouseNotInBounds", "aTileData",
-   "aTileFlags", "texSpr", "SetBottomRightTip", "RenderInterface",
+   "IsMouseInBounds", "IsMouseNotInBounds", "aTileData", "aTileFlags",
+   "texSpr", "SetBottomRightTip", "RenderInterface",
    "InitContinueGame", "GameProc", "GetLevelData", "aObjects", "RenderShadow");
   -- ----------------------------------------------------------------------- --
 end };

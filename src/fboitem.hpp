@@ -13,20 +13,13 @@ using namespace IfUtil;                // Using util namespace
 /* == Fbo item class ======================================================= */
 class FboItem
 { /* -- Typedefs for types we need --------------------------------- */ public:
-  typedef array<GLfloat, stFloatsPerCoord>
-    TriCoordData;                      // Triangle TexCoords
-  typedef array<TriCoordData, stTrisPerQuad>
-    QuadCoordData;                     // Quad tex-coord
-  typedef array<GLfloat, stFloatsPerPos>
-    TriPosData;                        // Triangle positions
-  typedef array<TriPosData, stTrisPerQuad>
-    QuadPosData;                       // Quad position data
-  typedef array<GLfloat, stFloatsPerColour>
-    TriColData;                        // Triangl intensities
-  typedef array<TriColData, stTrisPerQuad>
-    QuadColData;                       // Quad colour data
-  typedef array<GLfloat, stFloatsPerQuad>
-    AllData;                           // All data elements
+  typedef array<GLfloat, stFloatsPerCoord> TriCoordData; // Triangle TexCoords
+  typedef array<TriCoordData, stTrisPerQuad> QuadCoordData; // Quad tex-coord
+  typedef array<GLfloat, stFloatsPerPos> TriPosData; // Triangle positions
+  typedef array<TriPosData, stTrisPerQuad> QuadPosData; // Quad position data
+  typedef array<GLfloat, stFloatsPerColour> TriColData; // Triangle intensities
+  typedef array<TriColData, stTrisPerQuad> QuadColData; // Quad colour data
+  typedef array<GLfloat, stFloatsPerQuad> AllData; // All data elements
   /* -- Variables ------------------------------------------------- */ private:
   union Quad                           // Render to texture Vertex array data
   { AllData        faData;             // Vertices to upload to VBO
@@ -83,14 +76,13 @@ class FboItem
   }
   /* -- Set vertex bounds with modified left and right bounds and get ------ */
   const QuadPosData &SetAndGetVertex(const GLfloat fX1, const GLfloat fY1,
-                                     const GLfloat fX2, const GLfloat fY2,
-                                     const GLfloat fML, const GLfloat fMR)
-    { SetVertex(fX1, fY1, fX2, fY2, fML, fMR); return GetVData(); }
+    const GLfloat fX2, const GLfloat fY2, const GLfloat fML, const GLfloat fMR)
+  { SetVertex(fX1, fY1, fX2, fY2, fML, fMR); return GetVData(); }
   /* -- Set vertex bounds with angle --------------------------------------- */
   void SetVertex(const GLfloat fX1, const GLfloat fY1,
      const GLfloat fX2, const GLfloat fY2, const GLfloat fA)
   { // Denormalise the angle to radians                             (M_PI)
-    const GLfloat fAR = fA * 2 * 3.141592653589793238462643383279502884F,
+    const GLfloat fAR = fA * 2.0f * 3.141592653589793238462643383279502884f,
     // Calculate centre
     fXC = (fX2-fX1)/2, fYC = (fY2-fY1)/2,
     // Rotate vertices
@@ -187,18 +179,18 @@ class FboItem
     // - SetRGBA(1, 1, 1, 1);
     static const Quad qData{{
       // QuadCoordData qdCoord (render the entire texture on the triangles)
-      0.0, 0.0,  1.0, 0.0,  0.0, 1.0,  // Triangle 1/2 (Vertice 1, 2 and 3)
-      1.0, 1.0,  0.0, 1.0,  1.0, 0.0,  //      "   2/2 (X,Y,    X,Y    X,Y)
+      0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, // Triangle 1/2 (Vertice 1, 2 and 3)
+      1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, //      "   2/2 (X,Y,    X,Y    X,Y)
       // QuadPosData qdPos (render the two triangles full-screen)
-     -1.0, 1.0,  1.0, 1.0, -1.0,-1.0,  // Triangle 1/2 (Vertice 1, 2 and 3)
-      1.0,-1.0, -1.0,-1.0,  1.0, 1.0,  //      "   2/2 (X,Y,    X,Y    X,Y)
+     -1.0f, 1.0f, 1.0f, 1.0f,-1.0f,-1.0f, // Triangle 1/2 (Vertice 1, 2 and 3)
+      1.0f,-1.0f,-1.0f,-1.0f, 1.0f, 1.0f, //      "   2/2 (X,Y,    X,Y    X,Y)
       // QuadColData qdColour (all solid white intensity with no alpha)
-      1.0, 1.0, 1.0, 1.0,              // Triangle 1/2 (R,G,B,A, Vertice 1/3)
-      1.0, 1.0, 1.0, 1.0,              //      "       (   "        "    2/3)
-      1.0, 1.0, 1.0, 1.0,              //      "       (   "        "    3/3)
-      1.0, 1.0, 1.0, 1.0,              // Triangle 2/2 (R,G,B,A, Vertice 1/3)
-      1.0, 1.0, 1.0, 1.0,              //      "       (   "        "    2/3)
-      1.0, 1.0, 1.0, 1.0               //      "       (   "        "    3/3)
+      1.0f, 1.0f, 1.0f, 1.0f,          // Triangle 1/2 (R,G,B,A, Vertice 1/3)
+      1.0f, 1.0f, 1.0f, 1.0f,          //      "       (   "        "    2/3)
+      1.0f, 1.0f, 1.0f, 1.0f,          //      "       (   "        "    3/3)
+      1.0f, 1.0f, 1.0f, 1.0f,          // Triangle 2/2 (R,G,B,A, Vertice 1/3)
+      1.0f, 1.0f, 1.0f, 1.0f,          //      "       (   "        "    2/3)
+      1.0f, 1.0f, 1.0f, 1.0f           //      "       (   "        "    3/3)
     }}; // Return the lookup table
     return qData;
   }
@@ -206,13 +198,20 @@ class FboItem
   void SetDefaults(void) { sBuffer = GetDefaultLookup(); }
   /* -- Set colour components (0xAARRGGBB) --------------------------------- */
   void SetQuadRGBAInt(const unsigned int uiC)
-    { SetQuadRGBA(NormaliseEx<GLfloat,16>(uiC), NormaliseEx<GLfloat, 8>(uiC),
-                  NormaliseEx<GLfloat>(uiC), NormaliseEx<GLfloat,24>(uiC)); }
+    { SetQuadRGBA(
+        NormaliseEx<GLfloat, sizeof(uint16_t)*8>(uiC),
+        NormaliseEx<GLfloat, sizeof(uint8_t)*8>(uiC),
+        NormaliseEx<GLfloat>(uiC),
+        NormaliseEx<GLfloat, (sizeof(uint16_t)+sizeof(uint8_t))*8>(uiC)); }
+  /* -- Set colour components (0xRRGGBB) ----------------------------------- */
   void SetQuadRGB(const GLfloat fR, const GLfloat fG, const GLfloat fB)
     { SetQuadRed(fR); SetQuadGreen(fG); SetQuadBlue(fB); }
+  /* -- Set colour components by integer ----------------------------------- */
   void SetQuadRGBInt(const unsigned int uiC)
-    { SetQuadRGB(NormaliseEx<GLfloat,16>(uiC), NormaliseEx<GLfloat,8>(uiC),
-                 NormaliseEx<GLfloat>(uiC)); }
+    { SetQuadRGB(
+        NormaliseEx<GLfloat, sizeof(uint16_t)*8>(uiC),
+        NormaliseEx<GLfloat, sizeof(uint8_t)*8>(uiC),
+        NormaliseEx<GLfloat>(uiC)); }
   /* -- Update red component ----------------------------------------------- */
   void SetQuadRed(const GLfloat fRed)
   { // Get references to triangle colour data and modify the red values

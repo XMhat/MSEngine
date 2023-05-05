@@ -9,6 +9,7 @@
 /* ------------------------------------------------------------------------- */
 namespace IfGlFWMonitor {              // Start of module namespace
 /* ------------------------------------------------------------------------- */
+using namespace Lib::OS::GlFW;         // Using GlFW library functions
 using namespace IfDim;                 // Using dimensions namespace
 using namespace IfLog;                 // Using logging namespace
 /* ------------------------------------------------------------------------- */

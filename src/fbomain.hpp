@@ -35,11 +35,15 @@ static class FboMain final :           // The main fbo operations manager
   double           dRTFPS;             // Rendered frames per second
   /* -- Draw flags --------------------------------------------------------- */
   bool CanDraw(void) const { return bDraw; }
+  bool CannotDraw(void) const { return !CanDraw(); }
   void SetDraw(void) { bDraw = true; }
   void ClearDraw(void) { bDraw = false; }
   /* -- Get members -------------------------------------------------------- */
   GLfloat GetOrthoWidth(void) const { return fOrthoWidth; }
   GLfloat GetOrthoHeight(void) const { return fOrthoHeight; }
+  /* -- Set backbuffer viewport by width and height ------------------------ */
+  void SetViewportWH(const GLsizei stW, const GLsizei stH)
+    { SetCoLeft(0); SetCoTop(0); SetCoRight(stW); SetCoBottom(stH); }
   /* -- Set backbuffer viewport -------------------------------------------- */
   void SetViewport(const GLint iL, const GLint iT,
                    const GLsizei stW, const GLsizei stH)
@@ -80,7 +84,7 @@ static class FboMain final :           // The main fbo operations manager
       fboMain.GetCIndex());
     // Blit the two triangles
     cOgl->DrawArraysTriangles(stTwoTriangles);
-    // Flip buffers which also causes a finish and waits for vsync
+    // Swap buffers
     cGlFW->WinSwapGLBuffers();
     // Update memory
     cOgl->UpdateVRAMAvailable();
@@ -101,7 +105,7 @@ static class FboMain final :           // The main fbo operations manager
     // at least wait if the timer isn't already waiting or the GPU is going to
     // be locked at 100% in situations where the engine is in standby mode with
     // an empty tick function.
-    if(!CanDraw()) return cTimer->TimerForceWait();
+    if(CannotDraw()) return cTimer->TimerForceWait();
     // Clear redraw flag
     ClearDraw();
     // Swap the buffers
@@ -165,16 +169,13 @@ static class FboMain final :           // The main fbo operations manager
       // For some unknown reason we could be sent invalid values so we need to
       // make sure we ignore this value to prevent error handlers triggering.
       if(fAspect != fAspect) fAspect = 1.0f;
-      // For some reason, a 4:3 viewport may not calculate the ratio to 1
-      // we need to hack a bit. If we also don't keep the size divisble by two.
-      // We'll get floating point accuracy problems when drawing.
-      fAddWidth =
-        Maximum(roundf((((fWidth * fAspect) - fWidth) / 2.0f) / 2.0f) * 2.0f,
-          0.0f);
+      // Calculate additional width over the 4:3 aspect ratio
+      fAddWidth = Maximum(((fWidth * fAspect) - fWidth) / 2.0f, 0.0f);
       // Calculate bounds for stage
-      fLeft = -fAddWidth;
+      fLeft = floorf(-fAddWidth);
+      fRight = floorf(fWidth + fAddWidth);
+      // Set top and bottom stage bounds
       fTop = 0.0f;
-      fRight = fWidth + fAddWidth;
       fBottom = fHeight;
     } // If the viewport didn't change?
     if(IsFloatEqual(fLeft, fboMain.fcStage.GetCoLeft()) &&
@@ -221,7 +222,7 @@ static class FboMain final :           // The main fbo operations manager
   /* -- Sent when the window is resized ------------------------------------ */
   bool DoAutoViewport(const GLsizei stWidth, const GLsizei stHeight)
   { // Set the viewport
-    SetViewport(0, 0, stWidth, stHeight);
+    SetViewportWH(stWidth, stHeight);
     // Log event
     cLog->LogDebugExSafe(
       "Fbo processing automatrix size of $x$ to backbuffer...",
@@ -280,11 +281,7 @@ static class FboMain final :           // The main fbo operations manager
     { return CVarSimpleSetInt(bClearBuffer, bState); }
   /* -- Set back buffer clear colour --------------------------------------- */
   CVarReturn SetBackBufferClearColour(const unsigned int uiColour)
-  { // Set new clear colour setting
-    SetColourInt(uiColour);
-    // Success
-    return ACCEPT;
-  }
+    { SetColourInt(uiColour); return ACCEPT; }
   /* -- Set minimum orthagonal matrix ratio -------------------------------- */
   CVarReturn SetMinOrtho(const GLfloat fMinimum)
     { return CVarSimpleSetIntNLG(fOrthoMinimum,

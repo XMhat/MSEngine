@@ -10,8 +10,8 @@
 /* ------------------------------------------------------------------------- */
 namespace IfPcmFormat {                // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace Library::Ogg;          // Using LibOgg library functions
-using namespace Library::MiniMP3;      // Using MiniMP3 library functions
+using namespace Lib::Ogg;              // Using LibOgg library functions
+using namespace Lib::MiniMP3;          // Using MiniMP3 library functions
 using namespace IfPcmLib;              // Using pcmlib namespace
 /* ========================================================================= */
 /* ######################################################################### */

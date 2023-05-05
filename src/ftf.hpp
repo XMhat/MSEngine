@@ -21,7 +21,8 @@
 /* ------------------------------------------------------------------------- */
 namespace IfFtf {                      // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace Library::FreeType;     // Using freetype library functions
+using namespace Lib::FreeType;         // Using freetype library functions
+using namespace Lib::OS::GlFW;         // Using GlFW library functions
 using namespace IfAsset;               // Using asset namespace
 using namespace IfDim;                 // Using dimensions namespace
 /* -- Freetype core class -------------------------------------------------- */

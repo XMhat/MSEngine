@@ -150,7 +150,8 @@ local function InitScore()
       local strScoreC, strScore, iColourIndex = "", "0", 1;
       -- Rank data
       local aRanks<const> = {
-        { 500000, "Master"       }, {     450000, "Professional" },
+        { 600000, "Grand Master" }, {     550000, "Master"       },
+        { 500000, "Professional" }, {     450000, "Genius"       },
         { 400000, "Expert"       }, {     350000, "Advanced"     },
         { 300000, "Intermediate" }, {     250000, "Adept"        },
         { 200000, "Ameteur"      }, {     150000, "Apprentice"   },

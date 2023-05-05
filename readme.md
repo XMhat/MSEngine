@@ -1,8 +1,4 @@
 # MS-Engine
-![Code Quality](https://img.shields.io/codefactor/grade/github/xmhat/msengine?label=Quality&logo=github)
-![Code Size](https://img.shields.io/github/languages/code-size/xmhat/msengine?label=Code&logo=github)
-![Downloads Count](https://img.shields.io/github/downloads/xmhat/msengine/total?label=Downloads&logo=github)
-![Activity This Month](https://img.shields.io/github/commit-activity/4w/xmhat/msengine?label=Activity&logo=github)
 
 ## About…
 MS-Engine (*Mhat'S Engine*) attempts to be a safe, simple and fast [cross-platform](https://en.wikipedia.org/wiki/Cross-platform_software) [2-D](https://en.wikipedia.org/wiki/2D_computer_graphics) [multimedia](https://en.wikipedia.org/wiki/Multimedia) [engine](https://en.wikipedia.org/wiki/Game_engine) written in [C++20](https://en.wikipedia.org/wiki/C%2B%2B20) for [Visual C++](https://en.wikipedia.org/wiki/Microsoft_Visual_C%2B%2B), [C-Lang](https://en.wikipedia.org/wiki/Clang) and [GNU C++](https://en.wikipedia.org/wiki/GNU_Compiler_Collection) Compilers. MS-Engine brings together many [open-source](https://en.wikipedia.org/wiki/Open_source) [libraries](https://en.wikipedia.org/wiki/Library_(computing)) into one easy-to-use environment controlled by the [LUA interpreter](https://en.wikipedia.org/wiki/Lua_(programming_language)). Right now MS-Engine aims to operate on [Windows XP](https://en.wikipedia.org/wiki/Windows_XP) and [better](https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions) (x86 plus [x86-64](https://en.wikipedia.org/wiki/Windows_XP_Professional_x64_Edition)), [MacOS](https://en.wikipedia.org/wiki/MacOS) ([x86-64](https://en.wikipedia.org/wiki/OS_X_Mountain_Lion) plus [Arm64](https://en.wikipedia.org/wiki/MacOS_Big_Sur)) and [Linux](https://en.wikipedia.org/wiki/Linux) ([Ubuntu](https://en.wikipedia.org/wiki/Ubuntu) x86-64).
@@ -43,7 +39,7 @@ When the scripts are compiled, the resulting function is cached inside the ``<ex
 ### Writable directory locations…
 | System | Location |
 | --- | --- |
-| Windows | ``C:\Users\<UserName>\Application Data\Roaming\<AuthorName>\<AppShortName>`` |
+| Windows | ``C:\Users\<UserName>\AppData\Roaming\<AuthorName>\<AppShortName>`` |
 | MacOS | ``/Users/<UserName>/Library/Application Support/<AuthorName>/<AppShortName>`` |
 | Linux | ``/home/<UserName>/.local/<AuthorName>/<AppShortName>`` |
 

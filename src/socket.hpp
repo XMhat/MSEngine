@@ -37,11 +37,12 @@ BEGIN_COLLECTOREX(Sockets, Socket, CLHelperUnsafe,
 /* binary text because it is impossible for the http server to return       */\
 /* header key names in binary! C++ and LUA can still store keys in binary   */\
 /* as well so this should be safe! ----------------------------------------- */
-const string       strRegVarREQ;         /* Registry key name for req data    */\
-const string       strRegVarBODY;        /* " for http body data              */\
-const string       strRegVarPROTO;       /* " for http protocol data          */\
-const string       strRegVarCODE;        /* " for http status code data       */\
-const string       strRegVarMETHOD;      /* " for http method string          */\
+const string       strRegVarREQ;       /* Registry key name for req data    */\
+const string       strRegVarBODY;      /* " for http body data              */\
+const string       strRegVarPROTO;     /* " for http protocol data          */\
+const string       strRegVarCODE;      /* " for http status code data       */\
+const string       strRegVarMETHOD;    /* " for http method string          */\
+const string       strRegVarRESPONSE;  /* HTTP response string              */\
 /* -- Variables ------------------------------------------------------------ */
 SafeInt            iOCSP;              /* Use OCSP (0=Off;1=On;2=Strict)    */\
 SafeSizeT          stBufferSize;       /* Default recv/send buffer size     */\
@@ -779,7 +780,8 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       strHeaders.clear();
       strHeaders.shrink_to_fit();
       // Find initial reponse (should be #0 set by VARS class)
-      const StrNCStrMapConstIt vlR{ vlRegistry.find("#0") };
+      const StrNCStrMapConstIt
+        vlR{ vlRegistry.find(cParent.strRegVarRESPONSE) };
       if(vlR == vlRegistry.cend()) return SetErrorStaticSafe("Bad response");
       // Split into words. We should have got at least three words
       const Token tWords{ vlR->second, cCommon->Space() };
@@ -1288,7 +1290,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     // Get and check parameters
     const string strA{ GetCppStringNE(lS, 1, "Address") };
     const unsigned int uiP = GetIntLG<unsigned int>(lS, 2, 1, 65535, "Port");
-    const string strC{ GetCppStringNE(lS, 3, "Cipher") };
+    const string strC{ GetCppString(lS, 3, "Cipher") };
     CheckFunction(lS, 4, "Callback");
     // Set address and port and TLS cipher
     SetAddress(strA, uiP);
@@ -1305,7 +1307,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   { // Need 9 parameters
     CheckParams(lS, 9);
     // Get and check parameters
-    const string strC{ GetCppStringNE(lS, 1, "Cipher") },
+    const string strC{ GetCppString(lS, 1, "Cipher") },
                  strA{ GetCppStringNE(lS, 2, "Address") };
     const unsigned int uiP = GetIntLG<unsigned int>(lS, 3, 1, 65535, "Port");
     const string strR{ GetCppStringNE(lS, 4, "Request") },
@@ -1314,10 +1316,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
                  strB{ GetCppString(lS, 7, "Body") };
     CheckFunction(lS, 8, "EventFunc");
     // Request must begin with a forward slash
-    if(strR.empty() || strR[0] != '/')
-      XC("Resource is invalid!", "Resource", strR);
-    // Scheme must be specified
-    if(strS.empty()) XC("Scheme is empty!");
+    if(strR[0] != '/') XC("Resource is invalid!", "Resource", strR);
     // Set address and TLS cipher
     SetAddress(strA, uiP);
     SetupCipher(strC);
@@ -1421,6 +1420,7 @@ END_COLLECTOREX(Sockets, InitSockets(), DeInitSockets(),,
   strRegVarPROTO{ "\003" },            // " for http protocol data
   strRegVarCODE{ "\004" },             // " for http status code data
   strRegVarMETHOD{ "\005" },           // " for http method string
+  strRegVarRESPONSE{ "\255" "0" },     // " for http response string
   strCipherDefault{ "-" },             // Default cipher
   qRX(0), qTX(0),                      // Init received and sent bytes
   qRXp(0), qTXp(0),                    // Init received and sent packets

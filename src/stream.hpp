@@ -162,6 +162,8 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
     if(sCptr) sCptr->StopAndUnQueueAllBuffers();
     // Grab and lock a new free source if need be return if we can't
     else if(!LockSource()) return;
+    // Update volume
+    UpdateVolume();
     // If we didn't rebuffer anything then no point playing
     if(!FullRebuffer()) return;
     // Play the buffers
@@ -574,7 +576,8 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
           ssMetaData.insert(ssMetaData.cend(), { cpStr, cpStrPtr+1 });
           *cpStrPtr = '=';
         } // We at least have a string so add it as key with empty value
-        else ssMetaData.insert(ssMetaData.cend(), { cpStr, cCommon->CBlank() });
+        else ssMetaData.insert(ssMetaData.cend(),
+          { cpStr, cCommon->CBlank() });
       } // Generate buffers, recommending this amount
     GenerateBuffers();
     // Log ogg loaded

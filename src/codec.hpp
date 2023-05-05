@@ -10,7 +10,7 @@
 /* ------------------------------------------------------------------------- */
 namespace IfCodec {                    // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
-using namespace Library::ZLib;         // Using z-lib library functions
+using namespace Lib::OS::ZLib;         // Using z-lib library functions
 using namespace IfCrypt;               // Using crypt namespace
 /* ------------------------------------------------------------------------- */
 enum EncMode                           // Encoding flags (DONT REORDER!!!)

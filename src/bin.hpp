@@ -276,7 +276,7 @@ class Pack :
 BEGIN_COLLECTORDUO(Bins, Bin, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
   public Lockable,                     // Lua garbage collector instruction
-  public Pack<GLint>                   // Base Pack class with GLint's
+  public Pack<int>                     // Base Pack class with GLint's
 { /* -- Default constructor ---------------------------------------- */ public:
   Bin(void) :
     /* -- Initialisers ----------------------------------------------------- */

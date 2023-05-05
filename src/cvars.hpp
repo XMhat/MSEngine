@@ -295,9 +295,9 @@ static class CVars final               // Start of vars class
   }
   /* ----------------------------------------------------------------------- */
   bool ParseBuffer(const string &strBuffer, const CVarFlagsConst &cF,
-    const unsigned int uiLevel=0)
+    const unsigned int uiLevel)
   { // Bail if size not acceptable
-    if(strBuffer.length() <= stCVarConfigSizeMinimum||
+    if(strBuffer.length() <= stCVarConfigSizeMinimum ||
        strBuffer.length() > stCVarConfigSizeMaximum)
          return false;
     // Split characters and if nothing found?
@@ -312,27 +312,35 @@ static class CVars final               // Start of vars class
     { // Log the issue and return failure
       cLog->LogWarningSafe("CVars detected no readable variables!");
       return false;
-    } // Thread safety
-    const LockGuard lgCVarsSync{ mMutex };
-    // Total variables parsed, good vars and bad vars.
+    } // Total variables parsed, good vars and bad vars.
     size_t stGood = 0, stBad = 0;
     // For each item. Set variable or save for future reference.
     for(const auto &vI : varLoaded)
     { // If first string is not empty then check first character
       if(!vI.first.empty()) switch(vI.first[0])
-      { // Comment? Ignore
+      { // Comment?
         case '#': break;
-        // Include?
-        case '+':
-        { // Get new level and if the limit is exceeded then throw error
-          const unsigned int uiNewLevel = uiLevel + 1;
-          if(uiNewLevel >= stCVarConfigMaxLevel)
-            XC("CVar include nest level too deep!",
-               "File", vI.second, "Limit", stCVarConfigMaxLevel);
-          // Parse the buffer and strip spaces
-          ParseBuffer(AssetExtract(Trim(vI.first.substr(1), ' ')).ToString(),
-            cF, uiNewLevel);
-          // Done
+        // No key was parsed?
+        case '\255':
+        { // Test value
+          if(!vI.second.empty()) switch(vI.second[0])
+          { // Comment?
+            case '#': break;
+            // Include?
+            case '+':
+            { // Get new level and if the limit is exceeded then throw error
+              const unsigned int uiNewLevel = uiLevel + 1;
+              if(uiNewLevel >= stCVarConfigMaxLevel)
+                XC("CVar include nest level too deep!",
+                   "File", vI.second, "Limit", stCVarConfigMaxLevel);
+              // Log the include and parse it
+              if(ParseBuffer(AssetExtract(Trim(vI.second.substr(1), ' ')).
+                ToString(), cF, uiNewLevel)) ++stGood; else ++stBad;
+              // Done
+              break;
+            } // Something else?
+            default: ++stBad; break;
+          } // Done
           break;
         } // Something else?
         default:
@@ -596,6 +604,14 @@ static class CVars final               // Start of vars class
       { const LockGuard lgCVarsSync{ mMutex };
         return Reset(strVar, cAcc, cF|CSC_SAFECALL); }
   /* ----------------------------------------------------------------------- */
+  bool ParseBufferSafe(const string &strBuffer, const CVarFlagsConst &cF,
+    const unsigned int uiLevel=0)
+      { const LockGuard lgCVarsSync{ mMutex };
+        return ParseBuffer(strBuffer, cF, uiLevel); }
+  /* ----------------------------------------------------------------------- */
+  bool LoadFromFile(const string &strFile, const CVarFlagsConst &cF)
+    { return ParseBufferSafe(AssetExtract(strFile).ToString(), cF); }
+  /* ----------------------------------------------------------------------- */
   bool SetInitialVar(const string &strVar, const string &strVal,
     const CVarFlagsConst &cFlags, const CVarConditionFlagsConst &scFlags)
   { // Check that the variable name is valid.
@@ -828,9 +844,6 @@ static class CVars final               // Start of vars class
     // Return number of rows affected
     return stCommit;
   }
-  /* ----------------------------------------------------------------------- */
-  bool LoadFromFile(const string &strFile, const CVarFlagsConst &cF)
-    { return ParseBuffer(AssetExtract(strFile).ToString(), cF); }
   /* ----------------------------------------------------------------------- */
   size_t LoadFromDatabase(void)
   { // Return if table is not already created or not available

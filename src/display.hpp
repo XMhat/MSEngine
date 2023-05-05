@@ -36,7 +36,9 @@ BUILD_FLAGS(Display,
   // OpenGL debug context?             Stereo mode enabled?
   DF_DEBUG               {0x00020000}, DF_STEREO              {0x00040000},
   // No opengl errors?                 Window maximised at start?
-  DF_NOERRORS            {0x00080000}, DF_MAXIMISED           {0x00100000}
+  DF_NOERRORS            {0x00080000}, DF_MAXIMISED           {0x00100000},
+  // Ignore resize function?
+  DF_IGNORERESIZE        {0x00200000}
 );/* == Display class ====================================================== */
 static class Display final :
   /* -- Base classes ------------------------------------------------------- */
@@ -400,8 +402,17 @@ static class Display final :
     // cGlFW->SetCocoaMenuBarEnabled();
     // Instruct glfw to change to window mode
     cGlFW->WinSetMonitor(nullptr, iWinPosX, iWinPosY, iW, iH, 0);
-    // Window mode so update users window border and resize setting
+    // Window mode so update users window border
     cGlFW->WinSetDecoratedAttrib(FlagIsSet(DF_BORDER));
+    // Using MacOS?
+#if defined(MACOS)
+    // Window is threaded and using MacOS 12? Force disable resize to prevent
+    // crash when resizing the window.
+    if(FlagIsSet(DF_THREADED) && cSystem->OSMajor() >= 12)
+      cGlFW->WinSetResizableAttribDisabled();
+    // Else set resize as normal
+    else
+#endif
     cGlFW->WinSetResizableAttrib(FlagIsSet(DF_SIZABLE));
     // Log that we switched to window mode
     cLog->LogInfoExSafe("Display switched to desktop window $x$ at $x$.",
@@ -512,14 +523,14 @@ static class Display final :
     // Return if hidpi not enabled
     if(FlagIsClear(DF_HIDPI))
     { // Update the main fbo viewport size without scale
-      cFboMain->SetViewport(0, 0,
+      cFboMain->SetViewportWH(
         static_cast<GLsizei>(cInput->GetWindowWidth()),
         static_cast<GLsizei>(cInput->GetWindowHeight()));
       // Done
       return;
     } // Get window scale
     // Update the main fbo viewport size with scale
-    cFboMain->SetViewport(0, 0,
+    cFboMain->SetViewportWH(
       static_cast<GLsizei>(cInput->GetWindowWidth()) *
         static_cast<GLsizei>(fWinScaleWidth),
       static_cast<GLsizei>(cInput->GetWindowHeight()) *
@@ -527,7 +538,7 @@ static class Display final :
     // Windows and linux doesn't need the scale
 #else
     // Update the main fbo viewport size without scale
-    cFboMain->SetViewport(0, 0,
+    cFboMain->SetViewportWH(
       static_cast<GLsizei>(cInput->GetWindowWidth()),
       static_cast<GLsizei>(cInput->GetWindowHeight()));
 #endif
