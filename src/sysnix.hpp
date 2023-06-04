@@ -380,11 +380,11 @@ class SysCore :
                  strModel{ StdMove(vVars["model"]) },
                  strStepping{ StdMove(vVars["stepping"]) };
           // Return default data we could not read
-          return { strVendor.empty() ? "Unknown" : StdMove(strVendor),
-                   strCpuId.empty() ? "Unknown" : StdMove(strCpuId),
+          return { strVendor.empty() ? cCommon->Unknown() : StdMove(strVendor),
+                   strCpuId.empty() ? cCommon->Unknown() : StdMove(strCpuId),
                    strFamily.empty() &&
                    strModel.empty() &&
-                   strStepping.empty() ? "Unknown" :
+                   strStepping.empty() ? cCommon->Unknown() :
                      StdMove(Format("$ Family $ Model $ Stepping $",
                        StdMove(strVendor), StdMove(strFamily),
                        StdMove(strModel), StdMove(strStepping))),

@@ -190,8 +190,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     } // Decoding succeeded?
     else
     { // Set pointers to planes and we will be drawing this frame
-      for(size_t stI = 0; stI < fI.aP.size(); ++stI)
-        fI.aP[stI].tipP = tYB[stI];
+      for(auto &aP : fI.aP) aP.tipP = tYB[aP.stI];
       fI.bDraw = true;
       // We processed this frame
       ++uiVideoFrames;
@@ -374,9 +373,13 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
         // Check reason for unblocking
         switch(ubReason)
         { // Re-initialising, stopping or pausing?
-          case UB_REINIT: case UB_STOP: case UB_PAUSE: return 1;
+          case UB_REINIT: [[fallthrough]];
+          case UB_STOP: [[fallthrough]];
+          case UB_PAUSE: return 1;
           // Just for data reasons or for playing?
-          case UB_DATA: case UB_PLAY: case UB_BLOCK: break;
+          case UB_DATA: [[fallthrough]];
+          case UB_PLAY: [[fallthrough]];
+          case UB_BLOCK: break;
         } // Reset unlock flag
         ubReason = UB_BLOCK;
       }
@@ -497,10 +500,9 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     } // Verify chroma subsampling type
     switch(GetPixelFormat())
     { // Valid chroma types
-      case TH_PF_420:                  // YUV 4:2:0
-      case TH_PF_422:                  // YUV 4:2:2
-      case TH_PF_444:                  // YUV 4:4:4
-        break;
+      case TH_PF_420: [[fallthrough]]; // YUV 4:2:0
+      case TH_PF_422: [[fallthrough]]; // YUV 4:2:2
+      case TH_PF_444: break;           // YUV 4:4:4
       // Invalid chroma type
       default: XC("Only 420, 422 or 444 pixel format is supported!",
                   "Identifier", IdentGet(), "PixelFormat", GetPixelFormat());
@@ -520,7 +522,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     FlagSet(FL_GLINIT);
     // Init fbo
     fboC.Init(IdentGet(), static_cast<GLsizei>(tIN.pic_width),
-                       static_cast<GLsizei>(tIN.pic_height));
+                          static_cast<GLsizei>(tIN.pic_height));
     fboC.CollectorRegister();
     fboC.SetOrtho(0, 0, 0, 0);
     fboC.LockSet();
@@ -718,11 +720,11 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     { // Upload texture data. This is quite safe because this data isnt
       // written to until the decoding routine thread has finished setting
       // these values.
-      for(size_t stI = 0; stI < fI.aP.size(); ++stI)
+      for(auto &aP : fI.aP)
       { // Bind the texture for this colour component
-        cOgl->BindTexture(uiYUV[stI]);
+        cOgl->BindTexture(uiYUV[aP.stI]);
         // Get data
-        th_img_plane &tipD = fI.aP[stI].tipP;
+        th_img_plane &tipD = aP.tipP;
         // Set unpack row length because of how the image data is formatted by
         // the vorbis api
         cOgl->SetUnpackRowLength(tipD.stride);
@@ -828,48 +830,77 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     // Set the reason for stopping
     ubReason = ubNewReason;
     // Deinit texture and reset parameters
-    DeInitTexture();
-    ClearTextures();
-    shProgram = nullptr;
-    // De-init fbo
-    fboC.DeInit();
-    fboC.CollectorUnregister();
-    // Clean up theora, vorbis and ogg stuff. Don't modify order or mem leaks!
+    if(FlagIsSet(FL_GLINIT))
+    { // Remove opengl related initialisations
+      FlagClear(FL_GLINIT);
+      DeInitTexture();
+      shProgram = nullptr;
+      fboC.DeInit();
+      fboC.CollectorUnregister();
+    } // Vorbis audio stream was initialised?
     if(FlagIsSet(FL_VORBIS))
-      { ogg_stream_clear(&vSS); FlagClear(FL_VORBIS); }
+    { // Clear and reset it
+      FlagClear(FL_VORBIS);
+      ogg_stream_clear(&vSS);
+      ClearStatic(vSS);
+    } // Vorbis block data initialised?
     if(FlagIsSet(FL_VBINIT))
-      { vorbis_block_clear(&vBL); FlagClear(FL_VBINIT); }
+    { // Clear and reset it
+      FlagClear(FL_VBINIT);
+      vorbis_block_clear(&vBL);
+      ClearStatic(vBL);
+    } // Vorbis is dsp data initialised?
     if(FlagIsSet(FL_VDINIT))
-      { vorbis_dsp_clear(&vDS); FlagClear(FL_VDINIT); }
+    { // Clear and reset it
+      FlagClear(FL_VDINIT);
+      vorbis_dsp_clear(&vDS);
+      ClearStatic(vDS);
+    } // Vorbis info data initialised?
     if(FlagIsSet(FL_VIINIT))
-      { vorbis_info_clear(&vIN); FlagClear(FL_VIINIT); }
+    { // Clear and reset it
+      FlagClear(FL_VIINIT);
+      vorbis_info_clear(&vIN);
+      ClearStatic(vIN);
+    } // Vorbis comment data initialised?
     if(FlagIsSet(FL_VCINIT))
-      { vorbis_comment_clear(&vCO); FlagClear(FL_VCINIT); }
+    { // Clear and reset it
+      FlagClear(FL_VCINIT);
+      vorbis_comment_clear(&vCO);
+      ClearStatic(vCO);
+    } // Theora video stream initialised?
     if(FlagIsSet(FL_THEORA))
-      { ogg_stream_clear(&tSS); FlagClear(FL_THEORA); }
+    { // Clear and reset it
+      FlagClear(FL_THEORA);
+      ogg_stream_clear(&tSS);
+      ClearStatic(tSS);
+    } // Free theora decoding data if initialised
     if(tDC) th_decode_free(tDC);
+    // Free theora setup data if initialised
     if(tSI) th_setup_free(tSI);
+    // Theora info data initialised?
     if(FlagIsSet(FL_TIINIT))
-      { th_info_clear(&tIN); FlagClear(FL_TIINIT); }
+    { // Clear and reset it
+      FlagClear(FL_TIINIT);
+      th_info_clear(&tIN);
+      ClearStatic(tIN);
+    } // Theora comment data initialised?
     if(FlagIsSet(FL_TCINIT))
-      { th_comment_clear(&tCO); FlagClear(FL_TCINIT); }
+    { // Clear and reset it
+      FlagClear(FL_TCINIT);
+      th_comment_clear(&tCO);
+      ClearStatic(tCO);
+    } // Ogg synchronisation data initialised?
     if(FlagIsSet(FL_OSINIT))
-      { ogg_sync_clear(&oSS); FlagClear(FL_OSINIT); }
-    // Remove initialisation flags
-    FlagClear(FL_THEORA|FL_VORBIS|FL_VDINIT|FL_VBINIT|FL_OSINIT|
-      FL_TCINIT|FL_TIINIT|FL_VCINIT|FL_VIINIT|FL_GLINIT);
-    // De-init audio buffer
+    { // Clear and reset it
+      FlagClear(FL_OSINIT);
+      ogg_sync_clear(&oSS);
+      ClearStatic(oSS);
+    } // De-init audio buffer
     mbAudio.DeInit();
     // Clear frame data
     for(Frame &fFrame : fData) fFrame.Reset();
-    // Reset structs
-    memset(&oSS, '\0', sizeof(oSS));   memset(&oPG, '\0', sizeof(oPG));
-    memset(&oPK, '\0', sizeof(oPK));   memset(&tSS, '\0', sizeof(tSS));
-    memset(&oPG, '\0', sizeof(oPG));   memset(&tIN, '\0', sizeof(tIN));
-    memset(&tCO, '\0', sizeof(tCO));   memset(&tYB, '\0', sizeof(tYB));
-    memset(&vSS, '\0', sizeof(vSS));   memset(&vIN, '\0', sizeof(vIN));
-    memset(&vCO, '\0', sizeof(vCO));   memset(&vDS, '\0', sizeof(vDS));
-    memset(&vBL, '\0', sizeof(vBL));
+    // Reset other structs
+    ClearStatic(oPG); ClearStatic(oPK); ClearStatic(oPG); ClearStatic(tYB);
     // Reset Theora stuff
     tSI = nullptr;
     tDC = nullptr;
@@ -1019,7 +1050,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
   }
   /* -- Looping functions -------------------------------------------------- */
   size_t GetLoop(void) const { return stLoop; }
-  void SetLoop(const size_t _stLoop) { stLoop = _stLoop; }
+  void SetLoop(const size_t stL) { stLoop = stL; }
   /* -- Colour key functions ----------------------------------------------- */
   bool GetKeyed(void) const
     { return FlagIsSet(FL_KEYED); }

@@ -564,7 +564,7 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
     // Set default loop position to the end
     SetLoopRange(0, GetSamples());
     // Build a formatted table of meta data we can quickly access
-    if(vorbis_comment*const vcStrings = ov_comment(&ovfContext, -1))
+    if(const vorbis_comment*const vcStrings = ov_comment(&ovfContext, -1))
       for(char*const *clpPtr = vcStrings->user_comments;
           char*const cpStr = *clpPtr; ++clpPtr)
       { // Ignore if string is valid but empty

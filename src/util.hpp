@@ -177,14 +177,14 @@ template<typename IntType>static IntType BitsToMask(size_t stCount)
   return itValue;
 }
 /* -- Swap class functors -------------------------------------------------- */
-struct Swap32LEFunctor { uint32_t v; explicit Swap32LEFunctor(uint32_t dwV) :
-  v(ToI32LE(dwV)) { } };
-struct Swap32BEFunctor { uint32_t v; explicit Swap32BEFunctor(uint32_t dwV) :
-  v(ToI32BE(dwV)) { } };
-struct Swap64LEFunctor { uint64_t v; explicit Swap64LEFunctor(uint64_t qwV) :
-  v(ToI64LE(qwV)) { } };
-struct Swap64BEFunctor { uint64_t v; explicit Swap64BEFunctor(uint64_t qwV) :
-  v(ToI64BE(qwV)) { } };
+struct Swap32LEFunctor                 // Swap 32-bit little <-> big integer
+  { uint32_t v; explicit Swap32LEFunctor(uint32_t dwV) : v(ToI32LE(dwV)) { } };
+struct Swap32BEFunctor                 // Swap 32-bit big <-> little integer
+  { uint32_t v; explicit Swap32BEFunctor(uint32_t dwV) : v(ToI32BE(dwV)) { } };
+struct Swap64LEFunctor                 // Swap 64-bit little <-> big integer
+  { uint64_t v; explicit Swap64LEFunctor(uint64_t qwV) : v(ToI64LE(qwV)) { } };
+struct Swap64BEFunctor                 // Swap 64-bit big <-> little integer
+  { uint64_t v; explicit Swap64BEFunctor(uint64_t qwV) : v(ToI64BE(qwV)) { } };
 /* -- Convert const object to non-const ------------------------------------ */
 template<typename Type>static Type &ToNonConst(const Type &tSrc)
   { return const_cast<Type&>(tSrc); }
@@ -363,6 +363,9 @@ template<typename FloatType>
 template<typename FloatType>
   static bool IsFloatNotEqual(const FloatType f1, const FloatType f2)
     { return !IsFloatEqual<FloatType>(f1, f2); }
+/* -- Clear any static data of any size ------------------------------------ */
+template<typename StaticType>void ClearStatic(StaticType &stData)
+  { memset(&stData, '\0', sizeof(stData)); }
 /* ------------------------------------------------------------------------- */
 namespace Bit {                        // Bit functions namespace
 /* -- Bits handling functions ---------------------------------------------- */

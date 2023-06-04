@@ -148,11 +148,18 @@ local function InitTitle()
       else
         -- VRAM available callback
         local function VRAM()
-          -- Get and display RAM and VRAM
-          local _, _, nFree<const> = InfoRAM();
-          local _, _, nVFree<const> = DisplayVRAM();
-          strSubTitle = strVersion..UtilBytes(nFree,1).."(S)/"..
-                                    UtilBytes(nVFree,1).. "(V) FREE";
+          -- Get VRAM available and if is shared memory?
+          local _, _, nVFree<const>, _, bIsShared<const> = DisplayVRAM();
+          if bIsShared then
+            strSubTitle = strVersion..UtilBytes(nVFree,1).. "(S+V) FREE";
+          -- Is dedicated memory?
+          else
+            -- Get free main memory
+            local _, _, nFree<const> = InfoRAM();
+            -- If both the same the memory is shared
+            strSubTitle = strVersion..UtilBytes(nFree,1).."(S)/"..
+                                      UtilBytes(nVFree,1).. "(V) FREE";
+          end
         end
         -- Set VRAM available callback
         fcbRC = VRAM;

@@ -77,6 +77,13 @@ LLFUNC(LogEx,
   cLog->LogExSafe(LCGETINTLGE(LHLevel, 2, LH_DISABLED, LH_MAX, "Level"),
     "(Lua) $", LCGETSTRING(char, 1, "String")));
 /* ========================================================================= */
+// $ Core.Events
+// < Events:integer=Number of events in the engine events system.
+// ? Returns the number of events in the engine event system. Helps with
+// ? synchronising Video or Stream class events.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(Events, 1, LCPUSHINT(cEvtMain->SizeSafe()));
+/* ========================================================================= */
 // $ Core.Delay
 // > Miliseconds:integer=Time in seconds.
 // ? Delays the engine thread for this amount of time.
@@ -169,13 +176,13 @@ LLFUNC(OnEnd, LCSETEVENTCB(cLua->lrMainEnd));
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Core.* namespace functions begin
-  LLRSFUNC(Delay),      LLRSFUNC(Done),      LLRSFUNC(End),
-  LLRSFUNC(KillPid),    LLRSFUNC(Log),       LLRSFUNC(LogEx),
-  LLRSFUNC(OnEnd),      LLRSFUNC(OnTick),    LLRSFUNC(Pause),
-  LLRSFUNC(PidRunning), LLRSFUNC(Quit),      LLRSFUNC(Reset),
-  LLRSFUNC(Restart),    LLRSFUNC(RestartNP), LLRSFUNC(RestoreDelay),
-  LLRSFUNC(SetDelay),   LLRSFUNC(SetIcon),   LLRSFUNC(Stack),
-  LLRSFUNC(WaitAsync),
+  LLRSFUNC(Delay),        LLRSFUNC(Done),       LLRSFUNC(End),
+  LLRSFUNC(Events),       LLRSFUNC(KillPid),    LLRSFUNC(Log),
+  LLRSFUNC(LogEx),        LLRSFUNC(OnEnd),      LLRSFUNC(OnTick),
+  LLRSFUNC(Pause),        LLRSFUNC(PidRunning), LLRSFUNC(Quit),
+  LLRSFUNC(Reset),        LLRSFUNC(Restart),    LLRSFUNC(RestartNP),
+  LLRSFUNC(RestoreDelay), LLRSFUNC(SetDelay),   LLRSFUNC(SetIcon),
+  LLRSFUNC(Stack),        LLRSFUNC(WaitAsync),
 LLRSEND                                // Core.* namespace functions end
 /* ========================================================================= */
 /* ######################################################################### */

@@ -50,10 +50,10 @@ class SysModuleData :                  // Members initially private
   SysModuleData(SysModuleData &&smdO) :
     /* -- Initialisers ----------------------------------------------------- */
     PathSplit{ StdMove(smdO) },                 // Copy filename
-    uiMajor(smdO.GetMajor()),                     // Copy major version
-    uiMinor(smdO.GetMinor()),                     // Copy minor version
-    uiBuild(smdO.GetBuild()),                     // Copy build version
-    uiRevision(smdO.GetRevision()),               // Copy revision version
+    uiMajor(smdO.GetMajor()),                   // Copy major version
+    uiMinor(smdO.GetMinor()),                   // Copy minor version
+    uiBuild(smdO.GetBuild()),                   // Copy build version
+    uiRevision(smdO.GetRevision()),             // Copy revision version
     strVendor{ StdMove(smdO.GetVendor()) },     // Move vendor string
     strDesc{ StdMove(smdO.GetDesc()) },         // Move description string
     strComments{ StdMove(smdO.GetComments()) }, // Move comments string
@@ -70,10 +70,10 @@ class SysModuleData :                  // Members initially private
     uiMinor(uiMi),                     // Copy minor version
     uiBuild(uiBu),                     // Copy build version
     uiRevision(uiRe),                  // Copy revision version
-    strVendor{ StdMove(strVen) },    // Move vendor string
-    strDesc{ StdMove(strDe) },       // Move description string
-    strComments{ StdMove(strCo) },   // Move comments string
-    strVersion{ StdMove(strVer) }    // Move version string
+    strVendor{ StdMove(strVen) },      // Move vendor string
+    strDesc{ StdMove(strDe) },         // Move description string
+    strComments{ StdMove(strCo) },     // Move comments string
+    strVersion{ StdMove(strVer) }      // Move version string
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Initialise filename only constructor ------------------------------- */
@@ -114,8 +114,8 @@ struct SysModules :
       // Log the module data
       cLog->LogNLCInfoExSafe("- $ <$> '$' by '$' from '$'.",
         smdData.GetFileExt(), smdData.GetVersion(),
-        smdData.GetDesc().empty() ? "Unknown" : smdData.GetDesc(),
-        smdData.GetVendor().empty() ? "Unknown" : smdData.GetVendor(),
+        smdData.GetDesc().empty() ? cCommon->Unknown() : smdData.GetDesc(),
+        smdData.GetVendor().empty() ? cCommon->Unknown() : smdData.GetVendor(),
         smdData.GetLoc());
     } // Done
     return ACCEPT;
@@ -585,7 +585,7 @@ static class System final :            // The main system class
   }
   /* -- Default constructor ------------------------------------------------ */
   System(void) :
-    /* -- Initialisers ----------------------------------------------------- */
+  /* -- Initialisers ----------------------------------------------------- */
     mList{{                            // Initialise mode strings list
       "text-only",                     // [0] (text only)
       "text+audio",                    // [1] (text + audio mode)
@@ -608,27 +608,26 @@ static class System final :            // The main system class
     UpdateMemoryUsageData();
     // Log information about the environment
     cLog->LogNLCInfoExSafe("$ v$.$.$.$ ($) for $.\n"
-       "+ Executable: $.\n"
-       "+ Created...: $.\n"
-       "+ Compiler..: $ v$.\n"
-       "+ Checksum..: $; Got: $<0x$$$>; Expect: $<0x$$$>.\n"
-       "+ Working...: $.\n"
-       "+ Roaming...: $.\n"
-       "+ Process...: $<0x$$$>; Thread: $<0x$$$>.\n"
-       "+ Priority..: $<0x$$$>; Affinity: $<0x$$$>; Mask: $<0x$$$>.\n"
-       "+ Processor.: $ <$ x $ MHz>.\n"
-       "+ Type......: $<0x$$$>.\n"
-       "+ Memory....: $; Free: $; Initial: $.\n"
-       "+ System....: $ v$.$.$ ($-bit) in $$.\n"
-       "+ Expire$...: $.\n"
-       "+ Uptime....: $.\n"
-       "+ Clock.....: $.\n"
-       "+ Universal.: $.\n"
-       "+ Admin.....: $; Bundled: $.",
+       "+ Executable is $.\n"
+       "+ Created at $ with $ v$.\n"
+       "+ Checksum $ with $<0x$$$> expecting $<0x$$$>.\n"
+       "+ Working directory is $.\n"
+       "+ Persistent directory is $.\n"
+       "+ Process id is $<0x$$$> with main thread id of $<0x$$$>.\n"
+       "+ Priority is $<0x$$$> with affinity $<0x$$$> and mask $<0x$$$>.\n"
+       "+ Processor is $ <$ x $ MHz>.\n"
+       "+ Type is $<0x$$$>.\n"
+       "+ Memory has $ with $ free and $ Initial.\n"
+       "+ System is $ v$.$.$ ($-bit) in $$.\n"
+       "+ Expire$ at $.\n"
+       "+ Uptime is $.\n"
+       "+ Clock is $.\n"
+       "+ UTC clock is $.\n"
+       "+ Admin is $ and Bundled is $.",
       ENGName(), ENGMajor(), ENGMinor(), ENGBuild(), ENGRevision(),
         ENGBuildType(), ENGTarget(),
       ENGFull(), ENGCompiled(), ENGCompiler(), ENGCompVer(),
-      EXEModified() ? "Fail" : "Pass",
+      EXEModified() ? "failed" : "verified",
         exeData.ulHeaderSum, hex, exeData.ulHeaderSum, dec,
         exeData.ulCheckSum, hex, exeData.ulCheckSum, dec,
       cCmdLine->GetStartupCWD(),

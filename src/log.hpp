@@ -104,9 +104,9 @@ static class Log final :
   }
   /* -- Write string to log. Line feed creates multiple lines -------------- */
   void WriteString(const LHLevel lhL, const string &strL) noexcept(true)
-    { WriteLines(lhL, { strL, "\n", stMaximum }); }
+    { WriteLines(lhL, { strL, cCommon->Lf(), stMaximum }); }
   void WriteString(const LHLevel lhL, string &&strL) noexcept(true)
-    { WriteLines(lhL, { StdMove(strL), "\n", stMaximum }); }
+    { WriteLines(lhL, { StdMove(strL), cCommon->Lf(), stMaximum }); }
   /* ----------------------------------------------------------------------- */
   void WriteString(const string &strL) { WriteString(LH_DISABLED, strL); }
   /* ----------------------------------------------------------------------- */

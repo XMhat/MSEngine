@@ -29,12 +29,12 @@ static class FboBase final
     cLog->LogDebugExSafe(
       "FboBase de-initialising $ built-in 3D shader objects...",
       sh3DBuiltIns.size());
-    for_each(sh3DBuiltIns.rbegin(), sh3DBuiltIns.rend(),
+    StdForEach(seq, sh3DBuiltIns.rbegin(), sh3DBuiltIns.rend(),
       [](Shader &shS) { shS.DeInit(); });
     cLog->LogDebugExSafe(
       "FboBase de-initialising $ built-in 2D shader objects...",
       sh2DBuiltIns.size());
-    for_each(sh2DBuiltIns.rbegin(), sh2DBuiltIns.rend(),
+    StdForEach(seq, sh2DBuiltIns.rbegin(), sh2DBuiltIns.rend(),
       [](Shader &shS) { shS.DeInit(); });
     cLog->LogInfoExSafe("FboBase de-initialised $ built-in shader objects.",
       sh3DBuiltIns.size() + sh2DBuiltIns.size());

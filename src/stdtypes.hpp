@@ -86,6 +86,7 @@ using ::std::set_terminate;            // Set terminate handler
 #if !defined(MACOS)                    // Using apple compiler?
 using ::std::execution::par_unseq;     // Parallel unserialised operation
 using ::std::execution::par;           // Parallel serialised operation
+using ::std::execution::seq;           // Serialised operation
 #endif                                 // Apple check
 /* -- Asynchronisation ----------------------------------------------------- */
 using ::std::atomic;                   // atomic variables (synchronising)

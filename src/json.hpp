@@ -51,14 +51,14 @@ BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
         break;
       // Json entry is an array[] type?
       case kArrayType:
-        if(GetStackCount(lS)) ToTableArray(lS, vValue);
+        ToTableArray(lS, vValue);
         break;
       // Json entry is an object{} type?
       case kObjectType:
         ToTableObject(lS, vValue);
         break;
       // Json entry is a null type?
-      case kNullType:
+      case kNullType: [[fallthrough]];
       // Unknown type?
       default:
         PushNil(lS);
@@ -145,8 +145,8 @@ BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
   static void ToTableObject(lua_State*const lS, const Value &rjvVal)
   { // Create the table, we're creating non-indexed key/value pairs
     PushTable(lS, 0, rjvVal.MemberCount());
-    // We need one more free item on the stack, leave empty if not
-    if(!StackHasCapacity(lS, 1)) return;
+    // We need two more free item on the stack, leave empty if not
+    if(!StackHasCapacity(lS, 2)) return;
     // For each table item
     for(const auto &rjvRef : rjvVal.GetObject())
     { // What type is the value?

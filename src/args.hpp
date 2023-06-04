@@ -19,47 +19,56 @@ struct Arguments :                     // Arguments list
   Arguments(void) { }
   /* -- Constructor with string argument ----------------------------------- */
   explicit Arguments(const string &strArgs)
-  { // The current character position in the arguments string
+  { // Common characters used when parsing
+    static constexpr const char
+      cSpace      = ' ',  // Argument seperator unless enclosed on quotes
+      cApostrophy = '\'', // First possible encapsulation character
+      cQuotation  = '"',  // Second possible encapsulation character
+      cNull       = '\0'; // Null termination of a string
+    // The current character position in the arguments string
     size_t stPos = 0;
     // Ignore the prefixed whitespace characters
-    while(strArgs[stPos] == ' ') if(++stPos >= strArgs.length()) return;
+    while(strArgs[stPos] == cSpace) if(++stPos >= strArgs.length()) return;
     // This is the length of the usable string
     size_t stLength = strArgs.length();
     // Ignore all suffixed whitespace characters
-    for(; strArgs[stLength-1] == ' '; --stLength);
+    for(; strArgs[stLength-1] == cSpace; --stLength);
     // This tells us if we're in a argument that started with a separator
     bool bQuote;
     // Set if we're starting an argument with a valid separator character
-    switch(strArgs[stPos]) { case '\'': case '"': bQuote = true; break;
-                                         default: bQuote = false; break; }
-    // Set starting position because this current character is valid
+    switch(strArgs[stPos])
+    { case cApostrophy: [[fallthrough]];
+      case cQuotation: bQuote = true; break;
+      default: bQuote = false; break;
+    } // Set starting position because this current character is valid
     size_t stStart = stPos;
     // Until we reach end of string
-    for(char cSepChar = '\0'; stPos < stLength; ++stPos)
+    for(char cSepChar = cNull; stPos < stLength; ++stPos)
     { // Store and check current character
       Again: switch(const char cChar = strArgs[stPos])
       { // Whitespace?
-        case ' ':
+        case cSpace:
         { // Break if we already have a seperator character because whitespaces
           // are allowed until we find the end of it.
-          if(cSepChar != '\0') break;
+          if(cSepChar != cNull) break;
           // If we have an argument to save?
           if(stPos > stStart)
             emplace_back(strArgs.substr(stStart, stPos-stStart));
           // Skip spaces and return the list if we've run out of characters
-          while(strArgs[stPos] == ' ') if(++stPos >= stLength) return;
+          while(strArgs[stPos] == cSpace) if(++stPos >= stLength) return;
           // Reset starting and ending position
           stStart = stPos;
           // Set if we're in quotation marks
           switch(strArgs[stPos])
-            { case '\'' : case '"': bQuote = true; break;
-                           default: bQuote = false; break; }
-          // Test current character, don't move position ahead
+          { case cApostrophy: [[fallthrough]];
+            case cQuotation: bQuote = true; break;
+            default: bQuote = false; break;
+          } // Test current character, don't move position ahead
           goto Again;
         } // Apostrophe or quotation mark?
-        case '\'' : case '"':
+        case cApostrophy : case cQuotation:
         { // Have a separator character?
-          if(cSepChar != '\0')
+          if(cSepChar != cNull)
           { // Its the seperator char? Reset seperator character
             if(cChar == cSepChar)
             { // Get position plus one
@@ -73,12 +82,11 @@ struct Arguments :                     // Arguments list
                   // Add new entry
                   emplace_back(strArgs.substr(stStart, stPos-stStart));
                 } // Not in quotation marks? Add new entry
-                else emplace_back(strArgs.substr(stStart,
-                  stPosP1-stStart));
+                else emplace_back(strArgs.substr(stStart, stPosP1-stStart));
                 // Return the list
                 return;
               } // Is a space character?
-              if(strArgs[stPosP1] == ' ')
+              if(strArgs[stPosP1] == cSpace)
               { // If we're in quotation marks
                 if(bQuote)
                 { // Move start forward to ignore the starting quote character
@@ -86,18 +94,19 @@ struct Arguments :                     // Arguments list
                   // Add new entry
                   emplace_back(strArgs.substr(stStart, stPos-stStart));
                 } // Not in quotation marks? Add new entry
-                else emplace_back(
-                  strArgs.substr(stStart, stPosP1-stStart));
+                else emplace_back(strArgs.substr(stStart, stPosP1-stStart));
                 // Skip spaces
-                while(strArgs[++stPos] == ' ')
+                while(strArgs[++stPos] == cSpace)
                   if(stPos >= stLength) return;
                 // Reset starting and ending position
                 stStart = stPos;
                 // Set if we're in quotation marks
-                switch(strArgs[stPos]) { case '\'': case '"': bQuote = true;
-                  break; default: bQuote = false; break; }
-                // Reset separator character
-                cSepChar = '\0';
+                switch(strArgs[stPos])
+                { case cApostrophy: [[fallthrough]];
+                  case cQuotation: bQuote = true; break;
+                  default: bQuote = false; break;
+                } // Reset separator character
+                cSepChar = cNull;
                 // Test current character, don't move position ahead
                 goto Again;
               } // Not at end of string and not a space character
@@ -110,8 +119,7 @@ struct Arguments :                     // Arguments list
         default: break;
       } // Character check
     } // If we have an argument to save then add the final argument to the list
-    if(stPos > stStart)
-      emplace_back(strArgs.substr(stStart, stPos-stStart));
+    if(stPos > stStart) emplace_back(strArgs.substr(stStart, stPos-stStart));
   }
 };
 /* -- Build an array of arguments from a string ---------------------------- */

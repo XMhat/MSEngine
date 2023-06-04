@@ -168,6 +168,7 @@ class GlFWUtil                         // Members initially private
       IDMAPSTR(GLFW_STENCIL_BITS), IDMAPSTR(GLFW_STEREO),
       IDMAPSTR(GLFW_TRANSPARENT_FRAMEBUFFER), IDMAPSTR(GLFW_VISIBLE),
       IDMAPSTR(GLFW_X11_CLASS_NAME), IDMAPSTR(GLFW_X11_INSTANCE_NAME),
+      IDMAPSTR(GLFW_CONNECTED), IDMAPSTR(GLFW_DISCONNECTED),
     }, "GLFW_UNKNOWN" }                // End of initialisation of hint strings
   /* -- No code ------------------------------------------------------------ */
   { }

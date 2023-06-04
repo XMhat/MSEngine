@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="robots" content="index, follow">
 <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="description" content="Reference for the MS-Engine API version 23.4.25.43">
+<meta name="description" content="Reference for the MS-Engine API version 23.6.13.3">
 <meta name="author" content="MS-Design">
-<meta name="generator" content="MS-Engine Project Management Utility version 23.4.25.43">
+<meta name="generator" content="MS-Engine Project Management Utility version 23.6.13.3">
 <meta name="format-detection" content="telephone=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="MS-Engine API">
-<title>MS-Engine 23.4.25.43 API reference</title>
+<title>MS-Engine 23.6.13.3 API reference</title>
 <style type="text/css" media="screen">
 body { background-color:gray; color:black; padding:0px; margin:0px; border:0px; font-family:Helvetica; }
 a,a:visited { color:white; text-decoration:none; font-weight:bold; }
@@ -36,10 +36,10 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 </style>
 </head>
 <body id="top">
-<h1>MS-Engine 23.4.25.43 API reference</h1>
+<h1>MS-Engine 23.6.13.3 API reference</h1>
 <div id="index">
 <h2>Table of contents:-</h2>
-<p>A total of 377 members, 386 methods, 22 consts (763 functions) in 32 namespaces with 193 cvars.</p>
+<p>A total of 377 members, 392 methods, 22 consts (769 functions) in 32 namespaces with 193 cvars.</p>
 <ol><li id="cvidx"><a href="#cvars">CVars</a> <i>(193 cvars)</i><ul>
 <li><a href="#cv.app_author">app_author</a></li>
 <li><a href="#cv.app_basedir">app_basedir</a></li>
@@ -528,7 +528,7 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#Fbo.OnRedraw">OnRedraw</a></li>
 <li><a href="#Fbo.Viewport">Viewport</a></li>
 </ul></li>
-<li id="idxm:Fbo"><a href="#Fbo">Fbo methods</a> <i>(21 methods)</i><ul>
+<li id="idxm:Fbo"><a href="#Fbo">Fbo methods</a> <i>(22 methods)</i><ul>
 <li><a href="#Fbo:Activate">Activate</a></li>
 <li><a href="#Fbo:Blit">Blit</a></li>
 <li><a href="#Fbo:BlitT">BlitT</a></li>
@@ -538,6 +538,7 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#Fbo:GetFloatCount">GetFloatCount</a></li>
 <li><a href="#Fbo:GetLastFloatCount">GetLastFloatCount</a></li>
 <li><a href="#Fbo:GetMatrix">GetMatrix</a></li>
+<li><a href="#Fbo:IsFinished">IsFinished</a></li>
 <li><a href="#Fbo:Reserve">Reserve</a></li>
 <li><a href="#Fbo:SetClear">SetClear</a></li>
 <li><a href="#Fbo:SetClearColour">SetClearColour</a></li>
@@ -678,11 +679,12 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#Image.Raw">Raw</a></li>
 <li><a href="#Image.WaitAsync">WaitAsync</a></li>
 </ul></li>
-<li id="idxm:Image"><a href="#Image">Image methods</a> <i>(5 methods)</i><ul>
+<li id="idxm:Image"><a href="#Image">Image methods</a> <i>(6 methods)</i><ul>
 <li><a href="#Image:Depth">Depth</a></li>
 <li><a href="#Image:Destroy">Destroy</a></li>
 <li><a href="#Image:Height">Height</a></li>
 <li><a href="#Image:Name">Name</a></li>
+<li><a href="#Image:Save">Save</a></li>
 <li><a href="#Image:Width">Width</a></li>
 </ul></li>
 <li id="idxc:Image"><a href="#idx:Image">Image consts</a> <i>(1 const)</i><ul>
@@ -969,9 +971,11 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#Stream.FileAsync">FileAsync</a></li>
 <li><a href="#Stream.WaitAsync">WaitAsync</a></li>
 </ul></li>
-<li id="idxm:Stream"><a href="#Stream">Stream methods</a> <i>(25 methods)</i><ul>
+<li id="idxm:Stream"><a href="#Stream">Stream methods</a> <i>(29 methods)</i><ul>
 <li><a href="#Stream:Destroy">Destroy</a></li>
+<li><a href="#Stream:GetBitRate">GetBitRate</a></li>
 <li><a href="#Stream:GetBytes">GetBytes</a></li>
+<li><a href="#Stream:GetChannels">GetChannels</a></li>
 <li><a href="#Stream:GetDuration">GetDuration</a></li>
 <li><a href="#Stream:GetElapsed">GetElapsed</a></li>
 <li><a href="#Stream:GetLoop">GetLoop</a></li>
@@ -980,7 +984,9 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <li><a href="#Stream:GetMetaData">GetMetaData</a></li>
 <li><a href="#Stream:GetName">GetName</a></li>
 <li><a href="#Stream:GetPosition">GetPosition</a></li>
+<li><a href="#Stream:GetRate">GetRate</a></li>
 <li><a href="#Stream:GetSamples">GetSamples</a></li>
+<li><a href="#Stream:GetVersion">GetVersion</a></li>
 <li><a href="#Stream:GetVolume">GetVolume</a></li>
 <li><a href="#Stream:IsPlaying">IsPlaying</a></li>
 <li><a href="#Stream:OnEvent">OnEvent</a></li>
@@ -3648,11 +3654,11 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <div id="Display.VRAM">
 <h3>Display.VRAM</h3>
 <h4>Syntax:-</h4>
-<pre><u>Available</u>, <u>Total</u> = Display.VRAM()</pre>
+<pre><u>Available</u>, <u>Total</u>, <u>Used</u>, <u>Dedicated</u> = Display.VRAM()</pre>
 <h4>Return Parameters:-</h4>
-<pre><u>Available</u> <i>(integer)</i> = Available video memory in bytes<br><u>Total</u> <i>(integer)</i> = Total video memory in bytes<br></pre>
+<pre><u>Available</u> <i>(integer)</i> = Available video memory in bytes<br><u>Total</u> <i>(integer)</i> = Total video memory in bytes<br><u>Used</u> <i>(integer)</i> = Used video memory in bytes<br><u>Dedicated</u> <i>(boolean)</i> = Is video memory separate from main memory<br></pre>
 <h4>Synopsis:-</h4>
-<p>Returns info about the GPU&#x27;s video memory&#x2e; This call is quite expensive so you might want to restrict the frequency of this call if used in a loop&#x2e;<br></p>
+<p>Returns info about the GPU&#x27;s video memory&#x2e;<br></p>
 <h4><a href="#idx:Display" onclick="r('Display.VRAM')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Display.VReset">
 <h3>Display.VReset</h3>
@@ -3873,6 +3879,15 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Returns the current matrix information for the specified fbo&#x2e;<br></p>
 <h4><a href="#idx:Fbo" onclick="r('Fbo:GetMatrix')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Fbo:IsFinished">
+<h3>Fbo:IsFinished</h3>
+<h4>Syntax:-</h4>
+<pre><u>State</u> = Fbo:IsFinished()</pre>
+<h4>Return Parameters:-</h4>
+<pre><u>State</u> <i>(boolean)</i> = Is the fbo finished<br></pre>
+<h4>Synopsis:-</h4>
+<p>Returns if the fbo has been finished&#x2e;<br></p>
+<h4><a href="#idx:Fbo" onclick="r('Fbo:IsFinished')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Fbo:Reserve">
 <h3>Fbo:Reserve</h3>
 <h4>Syntax:-</h4>
@@ -5096,6 +5111,15 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>If this font was loaded by a filename or it was set with a custom id&#x2e;<br>This function returns that name which was assigned to it&#x2e;<br></p>
 <h4><a href="#idx:Image" onclick="r('Image:Name')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Image:Save">
+<h3>Image:Save</h3>
+<h4>Syntax:-</h4>
+<pre><u>File</u> = Image:Save()</pre>
+<h4>Return Parameters:-</h4>
+<pre><u>File</u> <i>(string)</i> = The filename to save to.<br></pre>
+<h4>Synopsis:-</h4>
+<p>Saves the file to disk&#x2e;<br></p>
+<h4><a href="#idx:Image" onclick="r('Image:Save')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Image:Width">
 <h3>Image:Width</h3>
 <h4>Syntax:-</h4>
@@ -7302,6 +7326,15 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Stops and destroys the stream object and frees all the memory associated with it&#x2e; The object will no longer be useable after this call and an error will be generated if accessed&#x2e;<br></p>
 <h4><a href="#idx:Stream" onclick="r('Stream:Destroy')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Stream:GetBitRate">
+<h3>Stream:GetBitRate</h3>
+<h4>Syntax:-</h4>
+<pre><u>Upper</u>, <u>Nominal</u>, <u>Lower</u>, <u>Window</u> = Stream:GetBitRate()</pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Upper</u> <i>(integer)</i> = The upper bitrate<br><u>Nominal</u> <i>(integer)</i> = The nominal bitrate<br><u>Lower</u> <i>(integer)</i> = The lower bitrate<br><u>Window</u> <i>(integer)</i> = The window bitrate<br></pre>
+<h4>Synopsis:-</h4>
+<p>Returns bitrate information for the audio file&#x2e;<br></p>
+<h4><a href="#idx:Stream" onclick="r('Stream:GetBitRate')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Stream:GetBytes">
 <h3>Stream:GetBytes</h3>
 <h4>Syntax:-</h4>
@@ -7311,6 +7344,15 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Returns the size of the file that is streaming&#x2e;<br></p>
 <h4><a href="#idx:Stream" onclick="r('Stream:GetBytes')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Stream:GetChannels">
+<h3>Stream:GetChannels</h3>
+<h4>Syntax:-</h4>
+<pre><u>Rate</u> = Stream:GetChannels()</pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Rate</u> <i>(integer)</i> = The number of channels<br></pre>
+<h4>Synopsis:-</h4>
+<p>Returns the number of channels in the audio file&#x2e;<br></p>
+<h4><a href="#idx:Stream" onclick="r('Stream:GetChannels')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Stream:GetDuration">
 <h3>Stream:GetDuration</h3>
 <h4>Syntax:-</h4>
@@ -7383,6 +7425,15 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Returns the sample position elapsed of the stream&#x2e;<br></p>
 <h4><a href="#idx:Stream" onclick="r('Stream:GetPosition')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Stream:GetRate">
+<h3>Stream:GetRate</h3>
+<h4>Syntax:-</h4>
+<pre><u>Rate</u> = Stream:GetRate()</pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Rate</u> <i>(integer)</i> = The sample rate<br></pre>
+<h4>Synopsis:-</h4>
+<p>Returns the sample rate per second in samples&#x2e;<br></p>
+<h4><a href="#idx:Stream" onclick="r('Stream:GetRate')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Stream:GetSamples">
 <h3>Stream:GetSamples</h3>
 <h4>Syntax:-</h4>
@@ -7392,6 +7443,15 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <h4>Synopsis:-</h4>
 <p>Returns the duration of the stream in samples&#x2e;<br></p>
 <h4><a href="#idx:Stream" onclick="r('Stream:GetSamples')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="Stream:GetVersion">
+<h3>Stream:GetVersion</h3>
+<h4>Syntax:-</h4>
+<pre><u>Version</u> = Stream:GetVersion()</pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Version</u> <i>(integer)</i> = The ogg version<br></pre>
+<h4>Synopsis:-</h4>
+<p>Returns the version of the ogg file </p>
+<h4><a href="#idx:Stream" onclick="r('Stream:GetVersion')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Stream:GetVolume">
 <h3>Stream:GetVolume</h3>
 <h4>Syntax:-</h4>
@@ -9188,6 +9248,6 @@ hr { border:1px solid white; margin:10px; padding:0px; box-shadow: 5px 5px rgba(
 <p>Returns possible values for Video&#x3a;OnEvent&#x28;&#x29; event command&#x2e;<br></p>
 <h4><a href="#idx:Video" onclick="r('Video.Flags')">&#x25B2; Return to table of contents</a></h4></div>
 <address>Copyright &copy; 2023 MS-Design, All Rights Reserved.<br>
-This document was created at Tue Apr 25 16:48:10 2023 +0100</address>
+This document was created at Wed Jun 14 00:55:03 2023 +0100</address>
 </body>
 </html>

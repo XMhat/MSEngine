@@ -26,10 +26,10 @@ class ThreadVariables                  // Thread variables class
   SafeInt          iExitCode;          // Callback exit code
   void            *vpParam;            // User parameter
   CBFunc           threadCallback;     // Thread callback function
-  SafeBool         bShouldExit;        // Thread should exit
-  SafeBool         bRunning;           // Thread is running?
-  SafeClkDuration  duStartTime;        // Thread start time
-  SafeClkDuration  duEndTime;          // Thread end time
+  SafeBool         bShouldExit,        // Thread should exit
+                   bRunning;           // Thread is running?
+  SafeClkDuration  duStartTime,        // Thread start time
+                   duEndTime;          // Thread end time
   const SysThread  stPerf;             // Thread is high performance?
   /* -- Constructor -------------------------------------------------------- */
   ThreadVariables(const SysThread stP, // Thread is high performance?
@@ -269,11 +269,11 @@ BEGIN_MEMBERCLASS(Threads, Thread, ICHelperUnsafe),
     /* --------------------------------------------------------------------- */
     { }                                // Do nothing else
   /* -- Standby constructor ------------------------------------------------ */
-  Thread(const SysThread stP) :        // Thread needs high performance?
+  explicit Thread(const SysThread sP) : // Thread needs high performance?
     /* -- Initialisers ----------------------------------------------------- */
     ICHelperThread{ *cThreads },       // No automatic registration
     IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
-    ThreadVariables{ stP,
+    ThreadVariables{ sP,
       nullptr,
       nullptr }                        // Initialise nothing else
     /* --------------------------------------------------------------------- */

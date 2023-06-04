@@ -17,7 +17,7 @@ namespace IfStd {                      // Start of module namespace
 /* ## same parameter to pass through on other targets.                    ## */
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
-constexpr static bool par_unseq = false, par = false;
+constexpr static bool par_unseq = false, par = false, seq = false;
 /* ------------------------------------------------------------------------- */
 constexpr static auto StdFill(auto&, auto &&...aArgs)
   { return ::std::fill(::std::forward<decltype(aArgs)>(aArgs)... ); }
@@ -28,8 +28,14 @@ constexpr static auto StdTransform(auto&, auto &&...aArgs)
 constexpr static auto StdForEach(auto&, auto &&...aArgs)
   { return ::std::for_each(::std::forward<decltype(aArgs)>(aArgs)... ); }
 /* ------------------------------------------------------------------------- */
+constexpr static auto StdFindIf(auto&, auto &&...aArgs)
+  { return ::std::find_if(::std::forward<decltype(aArgs)>(aArgs)... ); }
+/* ------------------------------------------------------------------------- */
 constexpr static auto StdCopy(auto&, auto &&...aArgs)
   { return ::std::copy(::std::forward<decltype(aArgs)>(aArgs)... ); }
+/* ------------------------------------------------------------------------- */
+constexpr static auto StdAllOf(auto&, auto &&...aArgs)
+  { return ::std::all_of(::std::forward<decltype(aArgs)>(aArgs)... ); }
 /* ------------------------------------------------------------------------- */
 #else                                  // Windows or Posix target?
 /* ------------------------------------------------------------------------- */
@@ -42,8 +48,14 @@ constexpr static auto StdTransform(auto &&...aArgs)
 constexpr static auto StdForEach(auto &&...aArgs)
   { return ::std::for_each(::std::forward<decltype(aArgs)>(aArgs)... ); }
 /* ------------------------------------------------------------------------- */
+constexpr static auto StdFindIf(auto &&...aArgs)
+  { return ::std::find_if(::std::forward<decltype(aArgs)>(aArgs)... ); }
+/* ------------------------------------------------------------------------- */
 constexpr static auto StdCopy(auto &&...aArgs)
   { return ::std::copy(::std::forward<decltype(aArgs)>(aArgs)... ); }
+/* ------------------------------------------------------------------------- */
+constexpr static auto StdAllOf(auto &&...aArgs)
+  { return ::std::all_of(::std::forward<decltype(aArgs)>(aArgs)... ); }
 /* ------------------------------------------------------------------------- */
 #endif                                 // MacOS check
 /* ------------------------------------------------------------------------- */

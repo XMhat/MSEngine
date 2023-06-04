@@ -66,7 +66,7 @@ template<class MapType>struct VarsBase :
     { // Find start of keyname and if found?
       const size_t stKeyStart =
         FindCharNotForwards(strS, stSegStart, stSepLoc);
-      if(stSepLoc != string::npos)
+      if(stKeyStart != string::npos)
       { // Find end of keyname and if found?
         const size_t stKeyEnd =
           FindCharNotBackwards(strS, stSepLoc-1, stSegStart);

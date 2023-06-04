@@ -234,6 +234,12 @@ LLFUNCEX(GetLFloatCount, 1, LCPUSHINT(LCGETPTR(1, Fbo)->GetTris()));
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(GetFloatCount, 1, LCPUSHINT(LCGETPTR(1, Fbo)->GetTrisNow()));
 /* ========================================================================= */
+// $ Fbo:IsFinished
+// < State:boolean=Is the fbo finished
+// ? Returns if the fbo has been finished.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(IsFinished, 1, LCPUSHBOOL(!!LCGETPTR(1, Fbo)->GetFinishCount()));
+/* ========================================================================= */
 // $ Fbo:GetMatrix
 // < Width:number=Total count of horizontal viewable pixels.
 // < Height:number=Total count of vertical viewable pixels.
@@ -288,14 +294,14 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Fbo));
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Fbo:* member functions begin
-  LLRSFUNC(Activate),       LLRSFUNC(Blit),           LLRSFUNC(BlitT),
-  LLRSFUNC(Destroy),        LLRSFUNC(Dump),           LLRSFUNC(Finish),
-  LLRSFUNC(GetFloatCount),  LLRSFUNC(GetLFloatCount), LLRSFUNC(GetMatrix),
-  LLRSFUNC(Reserve),        LLRSFUNC(SetBlend),       LLRSFUNC(SetClear),
-  LLRSFUNC(SetClearColour), LLRSFUNC(SetColour),      LLRSFUNC(SetColourEx),
-  LLRSFUNC(SetFilter),      LLRSFUNC(SetOrtho),       LLRSFUNC(SetTexCoord),
-  LLRSFUNC(SetTexCoordEx),  LLRSFUNC(SetVertex),      LLRSFUNC(SetVertexA),
-  LLRSFUNC(SetVertexEx),
+  LLRSFUNC(Activate),      LLRSFUNC(Blit),           LLRSFUNC(BlitT),
+  LLRSFUNC(Destroy),       LLRSFUNC(Dump),           LLRSFUNC(Finish),
+  LLRSFUNC(GetFloatCount), LLRSFUNC(GetLFloatCount), LLRSFUNC(GetMatrix),
+  LLRSFUNC(IsFinished),    LLRSFUNC(Reserve),        LLRSFUNC(SetBlend),
+  LLRSFUNC(SetClear),      LLRSFUNC(SetClearColour), LLRSFUNC(SetColour),
+  LLRSFUNC(SetColourEx),   LLRSFUNC(SetFilter),      LLRSFUNC(SetOrtho),
+  LLRSFUNC(SetTexCoord),   LLRSFUNC(SetTexCoordEx),  LLRSFUNC(SetVertex),
+  LLRSFUNC(SetVertexA),    LLRSFUNC(SetVertexEx),
 LLRSEND                                // Fbo:* member functions end
 /* ========================================================================= */
 // $ Fbo.Main

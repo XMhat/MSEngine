@@ -87,8 +87,8 @@ class Core                             // Members initially private
       const string &strAuthor = cCVars->GetInternalStrSafe(APP_AUTHOR),
                    &strShortName = cCVars->GetInternalStrSafe(APP_SHORTNAME);
       strNP = Format("$/$/$/", strRDir,
-        strAuthor.empty() ? "Unknown" : strAuthor,
-        strShortName.empty() ? "Unknown" : strShortName);
+        strAuthor.empty() ? cCommon->Unknown() : strAuthor,
+        strShortName.empty() ? cCommon->Unknown() : strShortName);
     } // Use what the user specified
     else strNP = strP;
     // Replace backslashes with forward slashes because backslashes are ugly

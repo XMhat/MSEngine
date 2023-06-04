@@ -460,36 +460,43 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       // * Check all ceritificates against CRL.
       // * Strict X509 certificate formats.
       // * Check root CA (self-signed) certificates.
-      if(!X509_VERIFY_PARAM_set_flags(x509vp.get(), X509_V_FLAG_CRL_CHECK_ALL |
+      if(X509_VERIFY_PARAM_set_flags(x509vp.get(), X509_V_FLAG_CRL_CHECK_ALL |
         X509_V_FLAG_X509_STRICT | X509_V_FLAG_CHECK_SS_SIGNATURE))
-          SocketLogSafe(LH_WARNING, "Failed to set verification flags");
-      // Always check subject line in certificate
-      X509_VERIFY_PARAM_set_hostflags(x509vp.get(),
-        X509_CHECK_FLAG_ALWAYS_CHECK_SUBJECT);
-      // Want good encryption
-      X509_VERIFY_PARAM_set_auth_level(x509vp.get(), 0);
-      // Our certificate chain is full of server CA certificates
-      if(!X509_VERIFY_PARAM_set_purpose(x509vp.get(), X509_PURPOSE_SSL_SERVER))
-        SocketLogSafe(LH_WARNING, "Failed to set purpose");
-      // Ceritificate must match this domain
-      if(!X509_VERIFY_PARAM_set1_host(x509vp.get(), strAddr.data(),
-        strAddr.length()))
-          SocketLogSafe(LH_WARNING, "Failed to set matching hostname");
-      // Apply to context
-      if(!SSL_CTX_set1_param(cContext, x509vp.get()))
-        SocketLogSafe(LH_WARNING,
-          "Failed to assign verification parameters to context");
-    } // Success
-    return 0;
+      { // Always check subject line in certificate
+        X509_VERIFY_PARAM_set_hostflags(x509vp.get(),
+          X509_CHECK_FLAG_ALWAYS_CHECK_SUBJECT);
+        // Want good encryption
+        X509_VERIFY_PARAM_set_auth_level(x509vp.get(), 0);
+        // Our certificate chain is full of server CA certificates
+        if(X509_VERIFY_PARAM_set_purpose(x509vp.get(),
+          X509_PURPOSE_SSL_SERVER))
+        { // Ceritificate must match this domain
+          if(X509_VERIFY_PARAM_set1_host(x509vp.get(), strAddr.data(),
+            strAddr.length()))
+          { // Apply to context and return success
+            if(SSL_CTX_set1_param(cContext, x509vp.get())) return 0;
+            // Log failure message
+            SocketLogSafe(LH_WARNING,
+              "Failed to assign verification parameters to context");
+          } // Failed setting host
+          else SocketLogSafe(LH_WARNING, "Failed to set matching hostname");
+        } // Failed setting purpose
+        else SocketLogSafe(LH_WARNING, "Failed to set purpose");
+      } // Failed setting verification flags
+      else SocketLogSafe(LH_WARNING, "Failed to set verification flags");
+    } // Failed creating context
+    else SocketLogSafe(LH_WARNING, "Failed to create verification context");
+    // Failed result so disconnect
+    return -1;
   }
   /* -- OCSP verification result ------------------------------------------- */
-  int OCSPVerificationResponse(SSL *sOSSL)
+  int OCSPVerificationResponse(SSL*const sOSSL)
   { // Allocate memory for response and get size of response. We actually need
     // the response to not be nullptr too or there is no response
     const unsigned char *cpResp = nullptr;
     const long lLength = SSL_get_tlsext_status_ocsp_resp(sOSSL, &cpResp);
     if(lLength != -1 && IsCStringValid(cpResp))
-    { // OK! Data (bug: OCSP_RESPONSE not defined for some reason [?!])
+    { // Got a response so make sure it is freed on leaving the scope
       typedef unique_ptr<ocsp_response_st,
         function<decltype(OCSP_RESPONSE_free)>> OcspResponsePtr;
       if(OcspResponsePtr orpResp{ d2i_OCSP_RESPONSE(nullptr, &cpResp,
@@ -584,7 +591,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
         if(!SSL_set_tlsext_status_type(sSSL, TLSEXT_STATUSTYPE_ocsp))
           SocketLogSafe(LH_WARNING, "Failed to setup OCSP verification!");
         // Set callback and argument
-        int(*fCB)(SSL*,void*) = [](SSL *sO, void *vpS)->int
+        int(*fCB)(SSL*,void*) = [](SSL*const sO, void*const vpS)->int
           { return reinterpret_cast<Socket*>(vpS)->
             OCSPVerificationResponse(sO); };
         if(!CryptSSLCtxSetTlsExtStatusCb(cContext, fCB))
@@ -693,7 +700,8 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     const string strProtocol{ GetRegistry(cParent.strRegVarREQ) };
     const string strBody{ GetRegistry(cParent.strRegVarBODY) };
     const string strReq{ Append(strProtocol,
-      vlRegistry.VarsImplodeEx(": ", "\r\n"), "\r\n", strBody) };
+      vlRegistry.VarsImplodeEx(": ",
+        cCommon->CrLf()), cCommon->CrLf(), strBody) };
     // Clear registry as we don't need anything in there anymore
     vlRegistry.clear();
     // Send request. Kill thread on error. Error already set by SockWrite().
@@ -748,7 +756,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       // but it does not matter
       string strResp{ aPacket.Ptr<char>(), uiBX };
       // Find end of headers marker and if we do not have it yet?
-      const size_t stEnd = strResp.find("\r\n\r\n");
+      const size_t stEnd = strResp.find(cCommon->CrLf2());
       if(stEnd == string::npos)
       { // Check for binary data and if we found binary data? Bail out!
         if(!ValidHeaderPacket(strResp))
@@ -774,7 +782,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       // Add rest of response to headers
       strHeaders += strResp;
       // Split header string
-      vlRegistry = Vars(strHeaders, "\r\n", ':');
+      vlRegistry = Vars(strHeaders, cCommon->CrLf(), ':');
       if(vlRegistry.empty()) return SetErrorStaticSafe("No response");
       // Done with the headers string
       strHeaders.clear();
@@ -1321,7 +1329,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     SetAddress(strA, uiP);
     SetupCipher(strC);
     // Initialise registry with headers
-    vlRegistry = { strH, "\n", ':' };
+    vlRegistry = { strH, cCommon->Lf(), ':' };
     // Push default user agent if not specified already
     vlRegistry.VarsPushIfNotExist("user-agent",
       cCVars->GetInternalStrSafe(NET_USERAGENT));
@@ -1483,7 +1491,7 @@ static CVarReturn SocketAgentModified(const string &strN, string &strV)
 }
 /* == Find socket (Lock the mutex before using) ============================ */
 static const Sockets::const_iterator SocketFind(const unsigned int uiId)
-  { return find_if(cSockets->cbegin(), cSockets->cend(),
+  { return StdFindIf(par_unseq, cSockets->cbegin(), cSockets->cend(),
       [uiId](const Socket*const sCptr)
         { return sCptr->CtrGet() == uiId; }); }
 /* ------------------------------------------------------------------------- */
@@ -1491,7 +1499,7 @@ static StrNCStrMap SocketOAuth11(const string &strMethod,
   const string &strScheme, const string &strHost, const string &strPort,
   const string &strReq, const string &strURLparams, const string &strParams)
 { // Input varlist and split params into it
-  Vars vaIn{ strParams, "\n", '=' };
+  Vars vaIn{ strParams, cCommon->Lf(), '=' };
   // Get consumer key
   const string strCK{ vaIn.Extract("oauth_consumer_key") };
   if(strCK.empty())

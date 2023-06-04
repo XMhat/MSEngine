@@ -18,6 +18,10 @@ using namespace IfCVar;                // Using cvar namespace
 #define GLL(F,M,...)      GLEX(cOgl->CheckLogError, F, M, ## __VA_ARGS__)
 #define GL(F,M,...)       GLEX(cOgl->CheckExceptError, F, M, ## __VA_ARGS__)
 #define GLC(M,...)        GLEX(cOgl->CheckExceptError, , M, ## __VA_ARGS__)
+/* -- Define compressed formats manually ----------------------------------- */
+#define GL_RGBA_DXT1            0x83F1 // GL_COMPRESSED_RGBA_S3TC_DXT1_EXT
+#define GL_RGBA_DXT3            0x83F2 // GL_COMPRESSED_RGBA_S3TC_DXT3_EXT
+#define GL_RGBA_DXT5            0x83F3 // GL_COMPRESSED_RGBA_S3TC_DXT5_EXT
 /* -- OpenGL flags --------------------------------------------------------- */
 BUILD_FLAGS(Ogl,
   /* ----------------------------------------------------------------------- */
@@ -892,9 +896,11 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
       { GL_NEAREST, GL_NEAREST }, { GL_NEAREST, GL_LINEAR }, // 00-01
       { GL_LINEAR,  GL_NEAREST }, { GL_LINEAR,  GL_LINEAR }, // 02-03
     }};
+    // Get filter lookup id
+    const TwoGLints &tfItem = tfList[stId];
     // Lookup table and set values
-    iMag = tfList[stId][0];
-    iMin = tfList[stId][1];
+    iMag = tfItem[0];
+    iMin = tfItem[1];
   }
   /* -- Set texture mode by filter id -------------------------------------- */
   void SetMipMapFilterById(const size_t stId, GLint &iMin, GLint &iMag) const
@@ -1295,9 +1301,12 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
       IDMAPSTR(GL_DONT_CARE)
     }, "GL_HINT_MODE_UNKNOWN"},        // Unknown hint mode name
     idFormatModes{{                    // Pixel format modes
+      IDMAPSTR(GL_RGBA8),              IDMAPSTR(GL_RGB8),
       IDMAPSTR(GL_RED),                IDMAPSTR(GL_RG),
       IDMAPSTR(GL_RGB),                IDMAPSTR(GL_BGR),
-      IDMAPSTR(GL_RGBA),               IDMAPSTR(GL_BGRA)
+      IDMAPSTR(GL_RGBA),               IDMAPSTR(GL_BGRA),
+      IDMAPSTR(GL_RGBA_DXT1),          IDMAPSTR(GL_RGBA_DXT3),
+      IDMAPSTR(GL_RGBA_DXT5)
     }, "GL_FORMAT_UNKNOWN"},           // Unknown pixel format mode
     idOGLCodes{{                       // Init error codes
       IDMAPSTR(GL_NO_ERROR),           IDMAPSTR(GL_INVALID_ENUM),

@@ -662,6 +662,7 @@ class SysCore :
     typedef array<const unsigned int, 2> UIntDouble;
     const UIntDouble uidM1{ { 2064, 3228 } }, // Apple M1
                      uidM2{ { 2420, 3480 } }; // Apple M2
+//                   uidM3{ { ????, ???? } }; // Apple M3
     // Processor table with speeds. This is because there is no API to get
     // the speed of Apple branded processors.
     const map<const string, const UIntDouble&> smList{
@@ -669,6 +670,8 @@ class SysCore :
       { "Apple M1 Max",   uidM1 }, { "Apple M1 Ultra", uidM1 },
       { "Apple M2",       uidM2 }, { "Apple M2 Pro",   uidM2 },
       { "Apple M2 Max",   uidM2 }, { "Apple M2 Ultra", uidM2 }
+//    { "Apple M3",       uidM3 }, { "Apple M3 Pro",   uidM3 },
+//    { "Apple M3 Max",   uidM3 }, { "Apple M3 Ultra", uidM3 }
     };
     // Find processor name to speed table and if we found it? Then copy the
     // value from the table as the actual speed.

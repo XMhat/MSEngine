@@ -13,12 +13,18 @@ using namespace IfStd;                 // Using std namespace
 /* -- Common class with common objects ------------------------------------- */
 static const class Common final        // Members initially private
 { /* -- Private variables -------------------------------------------------- */
-  const string     strTrue;            // C++ string as "true"
-  const string     strFalse;           // C++ string as "false"
-  const string     strZero;            // C++ string as "0"
-  const string     strOne;             // C++ string as "1"
-  const string     strSpace;           // C++ string with whitespace
-  const string     strBlank;           // Empty c++ string
+  const string     strTrue,            // C++ string as "true"
+                   strFalse,           // C++ string as "false"
+                   strZero,            // C++ string as "0"
+                   strOne,             // C++ string as "1"
+                   strSpace,           // C++ string with whitespace
+                   strBlank,           // Empty c++ string
+                   strCr,              // Carriage return c++ string
+                   strLf,              // Linefeed c++ string
+                   strCrLf,            // CR and LF c++ string
+                   strCrLf2,           // Double CR and LF c++ string
+                   strLfCr,            // LF and CR c++ string
+                   strUnknown;         // C++ string as "Unknown"
   const char*const cpBlank;            // Blank C String
   const locale     lLocaleCurrent;     // Current locale
   /* --------------------------------------------------------------- */ public:
@@ -36,16 +42,28 @@ static const class Common final        // Members initially private
   /* ----------------------------------------------------------------------- */
   const string &One(void) const { return strOne; }
   /* ----------------------------------------------------------------------- */
+  const string &Cr(void) const { return strCr; }
+  /* ----------------------------------------------------------------------- */
+  const string &Lf(void) const { return strLf; }
+  /* ----------------------------------------------------------------------- */
+  const string &CrLf(void) const { return strCrLf; }
+  /* ----------------------------------------------------------------------- */
+  const string &CrLf2(void) const { return strCrLf2; }
+  /* ----------------------------------------------------------------------- */
+  const string &LfCr(void) const { return strLfCr; }
+  /* ----------------------------------------------------------------------- */
   const string &Space(void) const { return strSpace; }
+  /* ----------------------------------------------------------------------- */
+  const string &Unknown(void) const { return strUnknown; }
   /* -- Default Constructor ------------------------------------------------ */
   Common(void) :                       // No parameters
     /* -- Initialisers ----------------------------------------------------- */
-    strTrue{ "true" },                 // Initialise commonly used string
-    strFalse{ "false" },               // Initialise commonly used string
-    strZero{ "0" },                    // Initialise commonly used string
-    strOne{ "1" },                     // Initialise commonly used string
-    strSpace{ " " },                   // Initialise commonly used string
-    cpBlank(strBlank.c_str()),         // Initialise blank C-String from STL
+    strTrue{ "true" },                 strFalse{ "false" },
+    strZero{ "0" },                    strOne{ "1" },
+    strSpace{ " " },                   strCr{ "\r" },
+    strLf{ "\n" },                     strCrLf{ strCr + strLf },
+    strCrLf2{ strCrLf + strCrLf },     strLfCr{ strLf + strCr },
+    strUnknown{ "Unknown" },           cpBlank(strBlank.c_str()),
     lLocaleCurrent{ strBlank }         // Initialise current locale
     /* -- No code ---------------------------------------------------------- */
     { }
@@ -170,20 +188,12 @@ template<typename T>static const string ToHex(const T tV, const int iP=0)
   { return StdMove(Append(setfill('0'), hex, setw(iP), tV)); }
 /* -- Return if specified string has numbers ------------------------------- */
 static bool IsAlpha(const string &strValue)
-{ // Return if any value isn't an letter
-  for(const char cValue : strValue)
-    if(!isalpha(static_cast<int>(cValue))) return false;
-  // Success
-  return true;
-}
+  { return StdAllOf(par_unseq, strValue.cbegin(), strValue.cend(),
+      [](const char cValue) { return isalpha(static_cast<int>(cValue)); }); }
 /* -- Return if specified string has numbers ------------------------------- */
 static bool IsAlphaNumeric(const string &strValue)
-{ // Return if any value isn't an letter
-  for(const char cValue : strValue)
-    if(!isalnum(static_cast<int>(cValue))) return false;
-  // Success
-  return true;
-}
+  { return StdAllOf(par_unseq, strValue.cbegin(), strValue.cend(),
+      [](const char cValue) { return isalnum(static_cast<int>(cValue)); }); }
 /* -- Return if specified string is a valid integer ------------------------ */
 template<typename IntType=int64_t>static bool IsNumber(const string &strValue)
 { // Get string stream
@@ -588,10 +598,12 @@ static const string GetTextFormat(const string &strIn)
     switch(*ciC)
     { // Carriage-return found
       case '\r':
-        return find(ciC, strIn.cend(), '\n') != strIn.cend() ? "\r\n" : "\r";
+        return find(ciC, strIn.cend(), '\n') != strIn.cend() ?
+           cCommon->CrLf() : cCommon->Cr();
       // Line-feed found
       case '\n':
-        return find(ciC, strIn.cend(), '\r') != strIn.cend() ? "\n\r" : "\n";
+        return find(ciC, strIn.cend(), '\r') != strIn.cend() ?
+           cCommon->LfCr() : cCommon->Lf();
       // Anything else is ignored
       default: break;
     }
@@ -629,32 +641,32 @@ static const string ImplodeMap(const StrNCStrMap &ssmSrc,
   // Return vector imploded into a string
   return Implode(svRet, strLineSep);
 } /* -- Implode a stringdeque to a single string --------------------------- */
-template<typename T>static const string Implode(const T sdL,
+template<typename AnyArray>static const string Implode(const AnyArray aArray,
   const size_t &stBegin=0, const string &strSep=cCommon->Space())
 { // Done if empty or begin position is invalid
-  if(sdL.empty() || stBegin >= sdL.size()) return {};
+  if(aArray.empty() || stBegin >= aArray.size()) return {};
   // If we have only one item, just return its string
-  if(sdL.size()-stBegin == 1) return sdL[stBegin];
+  if(aArray.size()-stBegin == 1) return aArray[stBegin];
   // Create output only string stream which stays cached (safe in c++11)
   ostringstream osS;
   // Build command string from vector
-  copy(next(sdL.cbegin(), static_cast<ssize_t>(stBegin)), prev(sdL.cend(), 1),
-    ostream_iterator<string>(osS, strSep.c_str()));
+  copy(next(aArray.cbegin(), static_cast<ssize_t>(stBegin)),
+    prev(aArray.cend(), 1), ostream_iterator<string>(osS, strSep.c_str()));
   // Add last item without a separator
-  osS << sdL.back();
+  osS << aArray.back();
   // Done
   return osS.str();
 }
 /* ------------------------------------------------------------------------- */
-template<typename T>
-  static const string PlusOrMinus(const T tVal, const int iPrecision)
+template<typename AnyType>
+  static const string PlusOrMinus(const AnyType atVal, const int iPrecision)
     { return StdMove(Append(showpos, fixed, setprecision(iPrecision),
-        tVal)); }
+        atVal)); }
 /* ------------------------------------------------------------------------- */
-template<typename T>
-  static const string PlusOrMinusEx(const T tVal, const int iPrecision)
-    { return StdMove(AppendImbued(showpos, fixed,
-        setprecision(iPrecision), tVal)); }
+template<typename AnyType>
+  static const string PlusOrMinusEx(const AnyType atVal, const int iPrecision)
+    { return StdMove(AppendImbued(showpos, fixed, setprecision(iPrecision),
+        atVal)); }
 /* ------------------------------------------------------------------------- */
 template<typename OutType, typename InType, class SuffixClass>
   static OutType MakeNumberReadable(const InType itValue,

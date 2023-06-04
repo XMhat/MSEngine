@@ -197,13 +197,15 @@ LLFUNCENDEX(3)
 // $ Display.VRAM
 // < Available:integer=Available video memory in bytes
 // < Total:integer=Total video memory in bytes
-// ? Returns info about the GPU's video memory. This call is quite expensive so
-// ? you might want to restrict the frequency of this call if used in a loop.
+// < Used:integer=Used video memory in bytes
+// < Dedicated:boolean=Is video memory separate from main memory
+// ? Returns info about the GPU's video memory.
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(VRAM)
   LCPUSHNUM(cOgl->GetVRAMFreePC());    LCPUSHINT(cOgl->GetVRAMTotal());
   LCPUSHINT(cOgl->GetVRAMFree());      LCPUSHINT(cOgl->GetVRAMUsed());
-LLFUNCENDEX(4)
+  LCPUSHBOOL(cOgl->FlagIsSet(GFL_SHARERAM));
+LLFUNCENDEX(5)
 /* ========================================================================= */
 // $ Display.Monitor
 // < Id:number=Monitor index.

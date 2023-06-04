@@ -58,7 +58,7 @@ class Statistic
     // Get headers size minus one
     const size_t stHM1 = hdHeaders.size() - 1;
     // Create string for gap
-    const string strGap(stG, ' '), strLF{ "\n" };
+    const string strGap(stG, ' '), &strLF = cCommon->Lf();
     // Proc headers except the last header item
     for(size_t stHIndex = 0; stHIndex < stHM1; ++stHIndex)
       ProcHdrSuf(osS, hdHeaders[stHIndex], strGap);

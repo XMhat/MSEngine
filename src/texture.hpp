@@ -88,105 +88,46 @@ class TextureVars :                    // All members initially private
 BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
   /* -- Base classes ------------------------------------------------------- */
   public TextureVars                   // Texture class variables
-{ /* -- Return padding dimensions ---------------------------------- */ public:
-  GLfloat GetPaddingWidth(void) const { return dfPad.DimGetWidth(); }
-  GLfloat GetPaddingHeight(void) const { return dfPad.DimGetHeight(); }
-  /* -- Return tile dimensions --------------------------------------------- */
-  GLuint GetTileWidth(void) const { return duTile.DimGetWidth(); }
-  GLuint GetTileHeight(void) const { return duTile.DimGetHeight(); }
-  /* -- Return number of tiles --------------------------------------------- */
-  size_t GetTileCount(const size_t stSubTexId=0) const
-    { return clTiles[stSubTexId].size(); }
-  /* -- Set tile count ----------------------------------------------------- */
-  void SetTileCount(const size_t stCount, const size_t stSubTexId=0)
-    { clTiles[stSubTexId].resize(stCount); }
-  /* -- Return image float value dimensions -------------------------------- */
-  GLfloat GetFWidth(void) const { return dfImage.DimGetWidth(); }
-  GLfloat GetFHeight(void) const { return dfImage.DimGetHeight(); }
-  /* -- Return the number of mipmaps in the texture ------------------------ */
-  GLint GetMipmaps(void) const { return iMipmaps; }
-  /* -- Return the current texture filter index setting -------------------- */
-  size_t GetTexFilter(void) const { return stTexFilter; }
-  /* -- Return the OpenGL texture name for the specified sub-textures ------ */
-  GLuint GetSubName(const size_t stSubTexId=0) const
-    { return vTexture[stSubTexId]; }
-  /* -- Return number of sub-textures -------------------------------------- */
-  size_t GetSubCount(void) const { return vTexture.size(); }
-  /* -- Return a new tile -------------------------------------------------- */
-  const CoordData NewTile(const GLfloat fL, const GLfloat fT, const GLfloat fR,
-    const GLfloat fB, const GLfloat fW, const GLfloat fH)
-  { const GLfloat fLeft =      fL/GetFWidth(),  fRight  =      fR/GetFWidth(),
-                  fTop  = 1.0f-fT/GetFHeight(), fBottom = 1.0f-fB/GetFHeight();
-    return { fW, fH, fLeft, fTop, fRight, fBottom }; }
-  /* -- Set the texture co-ordinates of a tile ----------------------------- */
-  void SetTile(const size_t stSubTexId, const size_t stTileId,
-    const GLfloat fL, const GLfloat fT, const GLfloat fR, const GLfloat fB,
-    const GLfloat fW, const GLfloat fH)
-  { clTiles[stSubTexId][stTileId] = NewTile(fL, fT, fR, fB, fW, fH); }
-  /* -- Set the texture co-ordinates of a tile ----------------------------- */
-  void SetTile(const size_t stSubTexId, const size_t stTileId,
-    const GLfloat fL, const GLfloat fT, const GLfloat fR, const GLfloat fB)
-  { SetTile(stSubTexId, stTileId, fL, fT, fR, fB, fR-fL, fB-fT); }
-  /* -- Set the texture co-ordinates of a tile that has reversed scanlines - */
-  void SetTileR(const size_t stSubTexId, const size_t stTileId,
-    const GLfloat fL,const GLfloat fT, const GLfloat fR,const GLfloat fB)
-  { const GLfloat fNT = GetFHeight()-fT, fNB = GetFHeight()-fB;
-    SetTile(stSubTexId, stTileId, fL, fNT, fR, fNB, fR-fL, fNT-fNB); }
-  /* -- Set a tile based on reversal --------------------------------------- */
-  void SetTileDOR(const size_t stSubTexId, const size_t stTileId,
-    const GLfloat fL, const GLfloat fT, const GLfloat fR, const GLfloat fB)
-  { if(IsReversed()) SetTileR(stSubTexId, stTileId, fL, fT, fR, fB);
-                else SetTile(stSubTexId, stTileId, fL, fT, fR, fB); }
-  /* -- Add a tile with width and height ----------------------------------- */
-  void SetTileWH(const size_t stSubTexId, const size_t stTileId,
-    const GLfloat fL, const GLfloat fT, const GLfloat fW, const GLfloat fH)
-  { const GLfloat fNR = fL+fW, fNB = fT+fH;
-    SetTile(stSubTexId, stTileId, fL, fT, fNR, fNB, fNR-fL, fNB-fT); }
-  /* -- Add a reversed tile with width and height setting ------------------ */
-  void SetTileRWH(const size_t stSubTexId, const size_t stTileId,
-    const GLfloat fL, const GLfloat fT, const GLfloat fW, const GLfloat fH)
-  { // Calculate new top, right and bottom and add the tile
-    const GLfloat fNT = GetFHeight()-fT, fNB = fNT+fH, fNR = fL+fW;
-    SetTile(stSubTexId, stTileId, fL, fT, fNR, fNB, fNR-fL, fNT-fNB);
-  }
-  /* -- Set a tile based on reversal with width and height setting --------- */
-  void SetTileDORWH(const size_t stSubTexId, const size_t stTileId,
-    const GLfloat fL, const GLfloat fT, const GLfloat fW, const GLfloat fH)
-  { if(IsReversed()) SetTileRWH(stSubTexId, stTileId, fL, fT, fW, fH);
-                else SetTileWH(stSubTexId, stTileId, fL, fT, fW, fH); }
-  /* -- Do add a tile with custom width and height setting ----------------- */
-  void AddTile(const size_t stSubTexId, const GLfloat fL, const GLfloat fT,
-    const GLfloat fR, const GLfloat fB, const GLfloat fW, const GLfloat fH)
-  { clTiles[stSubTexId].emplace_back(NewTile(fL, fT, fR, fB, fW, fH)); }
-  /* -- Add a tile --------------------------------------------------------- */
-  void AddTile(const size_t stSubTexId, const GLfloat fL, const GLfloat fT,
-    const GLfloat fR, const GLfloat fB)
-  { AddTile(stSubTexId, fL, fT, fR, fB, fR-fL, fB-fT); }
-  /* -- Add a reversed tile ------------------------------------------------ */
-  void AddTileR(const size_t stSubTexId, const GLfloat fL, const GLfloat fT,
-    const GLfloat fR, const GLfloat fB)
-  { const GLfloat fNT = GetFHeight()-fT, fNB = GetFHeight()-fB;
-    AddTile(stSubTexId, fL, fNT, fR, fNB, fR-fL, fNT-fNB); }
-  /* -- Add a tile based on reversal setting ------------------------------- */
-  void AddTileDOR(const size_t stSubTexId, const GLfloat fL, const GLfloat fT,
-    const GLfloat fR, const GLfloat fB)
-  { if(IsReversed()) AddTileR(stSubTexId, fL, fT, fR, fB);
-                else AddTile(stSubTexId, fL, fT, fR, fB); }
-  /* -- Add a tile with width and height ----------------------------------- */
-  void AddTileWH(const size_t stSubTexId, const GLfloat fL, const GLfloat fT,
-    const GLfloat fW, const GLfloat fH)
-  { const GLfloat fNR = fL+fW, fNB = fT+fH;
-    AddTile(stSubTexId, fL, fT, fNR, fNB, fNR-fL, fNB-fT); }
-  /* -- Add a reversed tile with width and height -------------------------- */
-  void AddTileRWH(const size_t stSubTexId, const GLfloat fL, const GLfloat fT,
-    const GLfloat fW, const GLfloat fH)
-  { const GLfloat fNT = GetFHeight()-fT, fNB = fNT+fH, fNR = fL+fW;
-    AddTile(stSubTexId, fL, fT, fNR, fNB, fNR-fL, fNT-fNB); }
-  /* -- Add a tile with width and height based on reversal ----------------- */
-  void AddTileDORWH(const size_t stSubTexId, const GLfloat fL,
-    const GLfloat fT, const GLfloat fW, const GLfloat fH)
-  { if(IsReversed()) AddTileRWH(stSubTexId, fL, fT, fW, fH);
-                else AddTileWH(stSubTexId, fL, fT, fW, fH); }
+{ /* -- Functors for upload texture function ------------------------------- */
+  struct TexCompFtor                   // Keep functors categorised
+  { /* -- Load as raw uncompressed pixels ---------------------------------- */
+    struct RAW                         // Uniform pixels (R,RG,RGB,RGBA, etc.)
+    { /* -- Default constructor -------------------------------------------- */
+      RAW(Texture &tRef, const size_t stSubTexId,
+        const GLint iMipLevel, const GLint iNICFormat,
+        const GLenum eNXCFormat, const ImageSlot &sData)
+      { // Upload uncompressed texture to video ram
+        GL(cOgl->UploadTexture(iMipLevel, sData.DimGetWidth<GLsizei>(),
+          sData.DimGetHeight<GLsizei>(), iNICFormat, eNXCFormat, sData.Ptr()),
+            "Could not upload uncompressed texture to video ram!",
+            "Identifier", tRef.IdentGet(),     "Index",  stSubTexId,
+            "TexId",      tRef.GetSubName(stSubTexId), "Level", iMipLevel,
+            "Width",      sData.DimGetWidth(), "Height", sData.DimGetHeight(),
+            "XCFormat",   cOgl->GetPixelFormat(tRef.GetPixelType()),
+            "NICFormat",  cOgl->GetPixelFormat(iNICFormat),
+            "NXCFormat",  cOgl->GetPixelFormat(eNXCFormat),
+            "Size",       sData.Size(),        "Data",   sData.Ptr<void>());
+      }
+    };
+    /* -- Load as compressed dxt pixels ------------------------------------ */
+    struct DXT                         // DXT1, DXT3 or DXT5
+    { /* -- Default constructor -------------------------------------------- */
+      DXT(Texture &tRef, const size_t stSubTexId,
+        const GLint iMipLevel, const GLint,
+        const GLenum, const ImageSlot &sData)
+      { // Upload pre-compressed texture to video ram
+        GL(cOgl->UploadCompressedTexture(iMipLevel, tRef.GetPixelType(),
+          sData.DimGetWidth<GLsizei>(), sData.DimGetHeight<GLsizei>(),
+          sData.Size<GLsizei>(), sData.Ptr()),
+            "Could not upload compressed texture to video ram!",
+            "Identifier", tRef.IdentGet(),     "Index",  stSubTexId,
+            "TexId",      tRef.GetSubName(stSubTexId), "Level", iMipLevel,
+            "Width",      sData.DimGetWidth(), "Height", sData.DimGetHeight(),
+            "XCFormat",   cOgl->GetPixelFormat(tRef.GetPixelType()),
+            "Size",       sData.Size(),        "Data",   sData.Ptr<void>());
+      }
+    };
+  };
   /* -- Generate mipmaps if needed ----------------------------------------- */
   void ReGenerateMipmaps(void)
   { // Only need to generate mipmaps if we're actually using mipmapping
@@ -200,67 +141,10 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
       default: break;
     }
   }
-  /* -- Configure the specified texture id --------------------------------- */
-  void ConfigureTexture(const size_t stSubTexId=0)
-  { // Start configuring the texture.
-    GL(cOgl->SetTexParam(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE),
-      "Could not set texture wrapping S!",
-      "Identifier", IdentGet(), "Index", stSubTexId);
-    GL(cOgl->SetTexParam(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE),
-      "Could not set texture wrapping T!",
-      "Identifier", IdentGet(), "Index", stSubTexId);
-    GL(cOgl->SetTexParam(GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE),
-      "Could not set texture wrapping R!",
-      "Identifier", IdentGet(), "Index", stSubTexId);
-    // Set filtering based on developers setting
-    GL(cOgl->SetTexParam(GL_TEXTURE_MIN_FILTER, iTexMinFilter),
-      "Could not set texture minifaction filter!",
-      "Identifier", IdentGet(), "Index", stSubTexId,
-      "MinFilter",  iTexMinFilter);
-    GL(cOgl->SetTexParam(GL_TEXTURE_MAG_FILTER, iTexMagFilter),
-      "Could not set texture magnification filter!",
-      "Identifier", IdentGet(), "Index", stSubTexId,
-      "MagFilter",  iTexMagFilter);
-  }
-  /* -- Load the specified compressed image -------------------------------- */
-  void LoadCompressedTexture(const size_t stSubTexId, const GLint iMipLevel,
-    const ImageSlot &sData)
-  { // Upload pre-compressed texture to video ram
-    GL(cOgl->UploadCompressedTexture(iMipLevel, GetPixelType(),
-      sData.DimGetWidth<GLsizei>(), sData.DimGetHeight<GLsizei>(),
-      sData.Size<GLsizei>(), sData.Ptr()),
-        "Could not upload compressed texture to video ram!",
-        "Identifier", IdentGet(),             "Index",  stSubTexId,
-        "TexId",      GetSubName(stSubTexId), "Level",  iMipLevel,
-        "Width",      sData.DimGetWidth(),    "Height", sData.DimGetHeight(),
-        "XCFormat",   GetPixelType(),         "Size",   sData.Size(),
-        "Data",       sData.Ptr<void>());
-  }
-  /* -- Load the specified image ------------------------------------------- */
-  void LoadUncompressedTexture(const size_t stSubTexId, const GLint iMipLevel,
-    const GLint iNICFormat, const GLenum eNXCFormat, const ImageSlot &sData)
-  { // Upload uncompressed texture to video ram
-    GL(cOgl->UploadTexture(iMipLevel, sData.DimGetWidth<GLsizei>(),
-      sData.DimGetHeight<GLsizei>(), iNICFormat, eNXCFormat, sData.Ptr()),
-        "Could not upload uncompressed texture to video ram!",
-        "Identifier", IdentGet(),             "Index",     stSubTexId,
-        "TexId",      GetSubName(stSubTexId), "Level",     iMipLevel,
-        "Width",      sData.DimGetWidth(),    "Height",   sData.DimGetHeight(),
-        "XCFormat",   GetPixelType(),         "NICFormat", iNICFormat,
-        "NXCFormat",  eNXCFormat,             "Size",      sData.Size(),
-        "Data",       sData.Ptr<void>());
-  }
-  /* -- Do create textures ------------------------------------------------- */
-  void CreateTextureHandles(const size_t stCount)
-  { // Resize array to fit texture names
-    vTexture.resize(stCount);
-    // Make OpenGL to generate texture names and throw error if failed
-    GL(cOgl->CreateTextures(vTexture), "Failed to generate textures!",
-      "Identifier", IdentGet(), "Count", stCount);
-  }
   /* -- Do load texture from image class ----------------------------------- */
-  void UploadTexture(const size_t stSlots, const bool bCompressed,
-    const ImageSlot &sData, const GLint iNICFormat, const GLenum eNXCFormat)
+  template<class TexCompFtor>
+    void UploadTexture(const size_t stSlots, const ImageSlot &sData,
+      const GLint iNICFormat, const GLenum eNXCFormat)
   { // Reset previous marked for deletion flag
     FlagClear(TF_DELETE);
     // If no mipmaps in this bitmap?
@@ -288,137 +172,145 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
         // Configure the texture
         ConfigureTexture(stSubTexId);
         // Load the image
-        if(bCompressed)
-          LoadCompressedTexture(stSubTexId, 0, sSlot);
-        else
-          LoadUncompressedTexture(stSubTexId, 0, iNICFormat,
-            eNXCFormat, sSlot);
+        TexCompFtor(*this, stSubTexId, 0, iNICFormat, eNXCFormat, sSlot);
         // Automatically generate mipmaps if requested. This has to be done
         // for each uploaded texture
         ReGenerateMipmaps();
-      } // Done
-      return;
-    } // Bitmap has mipmaps so record number of mipmaps we have
-    iMipmaps = IntOrMax<GLint>(stSlots);
-    // Create only one texture handle as other slots are for mipmaps
-    CreateTextureHandles(1);
-    // Get texture id
-    const unsigned int uiTexId = GetSubName();
-    // Bind the texture id
-    GL(cOgl->BindTexture(uiTexId), "Mipmapped texture failed to bind!",
-      "Identifier", IdentGet(), "TexId", uiTexId);
-    // Initialise mipmap counter
-    GL(cOgl->SetTexParam(GL_TEXTURE_BASE_LEVEL, 0),
-      "Failed to set max mipmap base level on texture!",
-      "Identifier", IdentGet(), "TexId", uiTexId);
-    GL(cOgl->SetTexParam(GL_TEXTURE_MAX_LEVEL, GetMipmaps()),
-      "Failed to set max mipmap max level on texture!",
-      "Identifier", IdentGet(), "TexId", uiTexId, "Count", GetMipmaps());
-    // Configure the texture
-    ConfigureTexture();
-    // Upload first mipmap
-    if(bCompressed) LoadCompressedTexture(0, 0, sData);
-    else LoadUncompressedTexture(0, 0, iNICFormat, eNXCFormat, sData);
-    // Done if there more slots to load
-    if(stSlots <= 1) return;
-    // Last mipmap size
-    unsigned int uiLWidth = DimGetWidth(), uiLHeight = DimGetHeight();
-    // Load all the other mipmaps
-    for(size_t stSubTexId = 1; stSubTexId < stSlots; ++stSubTexId)
-    { // Get next slot
-      const ImageSlot &sSlot = GetSlotsConst()[stSubTexId];
-      // Make sure size is smaller than the last
-      if(sSlot.DimGetWidth() >= uiLWidth || sSlot.DimGetHeight() >= uiLHeight)
-        XC("Specified mipmap is not smaller than the last!",
-           "Identifier", IdentGet(), "LastWidth", uiLWidth,
-           "LastHeight", uiLHeight,  "ThisWidth", sSlot.DimGetWidth(),
-           "ThisHeight", sSlot.DimGetHeight());
-      // Get mipmap level for opengl
-      const GLint iMLevel = static_cast<GLint>(stSubTexId);
-      // Load the mipmap
-      if(bCompressed)
-        LoadCompressedTexture(0, iMLevel, sSlot);
-      else
-        LoadUncompressedTexture(0, iMLevel, iNICFormat, eNXCFormat, sSlot);
-      // Update last mipmap size
-      uiLWidth = DimGetWidth();
-      uiLHeight = DimGetHeight();
-    }
+      }
+    } // Bitmap has mipmaps?
+    else
+    { // Record number of mipmaps we have
+      iMipmaps = IntOrMax<GLint>(stSlots);
+      // Create only one texture handle as other slots are for mipmaps
+      CreateTextureHandles(1);
+      // Get texture id
+      const unsigned int uiTexId = GetSubName();
+      // Bind the texture id
+      GL(cOgl->BindTexture(uiTexId), "Mipmapped texture failed to bind!",
+        "Identifier", IdentGet(), "TexId", uiTexId);
+      // Initialise mipmap counter
+      GL(cOgl->SetTexParam(GL_TEXTURE_BASE_LEVEL, 0),
+        "Failed to set max mipmap base level on texture!",
+        "Identifier", IdentGet(), "TexId", uiTexId);
+      GL(cOgl->SetTexParam(GL_TEXTURE_MAX_LEVEL, GetMipmaps()),
+        "Failed to set max mipmap max level on texture!",
+        "Identifier", IdentGet(), "TexId", uiTexId, "Count", GetMipmaps());
+      // Configure the texture
+      ConfigureTexture(0);
+      // Upload first mipmap
+      TexCompFtor(*this, 0, 0, iNICFormat, eNXCFormat, sData);
+      // Done if there more slots to load
+      if(stSlots <= 1) return;
+      // Last mipmap size
+      unsigned int uiLWidth = DimGetWidth(), uiLHeight = DimGetHeight();
+      // Load all the other mipmaps
+      for(size_t stSubTexId = 1; stSubTexId < stSlots; ++stSubTexId)
+      { // Get next slot
+        const ImageSlot &sSlot = GetSlotsConst()[stSubTexId];
+        // Make sure size is smaller than the last
+        if(sSlot.DimGetWidth() >= uiLWidth ||
+           sSlot.DimGetHeight() >= uiLHeight)
+          XC("Specified mipmap is not smaller than the last!",
+             "Identifier", IdentGet(), "LastWidth", uiLWidth,
+             "LastHeight", uiLHeight,  "ThisWidth", sSlot.DimGetWidth(),
+             "ThisHeight", sSlot.DimGetHeight());
+        // Load the mipmap
+        TexCompFtor(*this, 0, static_cast<GLint>(stSubTexId), iNICFormat,
+          eNXCFormat, sSlot);
+        // Update last mipmap size
+        uiLWidth = DimGetWidth();
+        uiLHeight = DimGetHeight();
+      }
+    } // Log progress
+    cLog->LogDebugExSafe("Texture '$'[S:$;F:$/$;M:$;D:$x$] uploaded.",
+      IdentGet(), stSlots, cOgl->GetPixelFormat(eNXCFormat),
+      cOgl->GetPixelFormat(iNICFormat), GetMipmaps(), sData.DimGetWidth(),
+      sData.DimGetHeight());
   }
-  /* -- Generate a generic tileset ----------------------------------------- */
-  void GenerateTileset(void)
-  { // Resize co-ords list to the number of usable slots we loaded
-    clTiles.resize(GetSubCount());
-    // Set override tile size from Image loader if specified
-    if(duTileOR.DimIsSet()) duTile.DimSet(duTileOR);
-    // Else clamp bounds to image size if unspecified or invalid size
-    else if(duTile.DimIsNotSet() ||
-       duTile.DimGetWidth() > DimGetWidth() ||
-       duTile.DimGetHeight() > DimGetHeight())
-      duTile.DimSet(*this);
-    // Set tile dimensions as opengl float
-    dfTile.DimSet(duTile.DimGetWidth<GLfloat>(),
-                  duTile.DimGetHeight<GLfloat>());
-    // Create clamped image size
-    const GLfloat
-      fTPSizeX = dfTile.DimGetWidth() + GetPaddingWidth(),
-      fTPSizeY = dfTile.DimGetHeight() + GetPaddingHeight(),
-      fBTSizeX = floorf(GetFWidth() / fTPSizeX) * fTPSizeX,
-      fBTSizeY = floorf(GetFHeight() / fTPSizeY) * fTPSizeY;
-    // Calculate number of tile needed
-    const size_t stTilesMax = static_cast<size_t>(
-      floorf(fBTSizeX / fTPSizeX) * floorf(fBTSizeY / fTPSizeY));
-    // If there are a limited number of tiles? Enumerate slots...
-    if(stTiles) for(size_t stSubTexId = 0;
-                           stSubTexId < GetSubCount();
-                         ++stSubTexId)
-    { // Make sure theres enough memory allocated for each coord data
-      clTiles[stSubTexId].reserve(stTiles);
-      // Image is reversed?
-      if(IsReversed())
-        for(GLfloat fY = 0;
-                    fY < fBTSizeY && GetTileCount(stSubTexId) < stTiles;
-                    fY += fTPSizeY)
-          for(GLfloat fX = 0;
-                      fX < fBTSizeX && GetTileCount(stSubTexId) < stTiles;
-                      fX += fTPSizeX)
-            AddTileR(stSubTexId, fX, fY,
-              fX + dfTile.DimGetWidth(), fY + dfTile.DimGetHeight());
-      // Not reversed
-      else for(GLfloat fY = 0;
-                       fY < fBTSizeY && GetTileCount(stSubTexId) < stTiles;
-                       fY += fTPSizeY)
-        for(GLfloat fX = 0;
-                    fX < fBTSizeX && GetTileCount(stSubTexId) < stTiles;
-                    fX += fTPSizeX)
-          AddTile(stSubTexId, fX, fY,
-            fX + dfTile.DimGetWidth(), fY + dfTile.DimGetHeight());
-      // Recover memory
-      clTiles[stSubTexId].shrink_to_fit();
-    } // No tiles overwrite
-    else for(size_t stSubTexId = 0;
-                    stSubTexId < GetSubCount();
-                  ++stSubTexId)
-    { // Make sure theres enough memory allocated for each coord data
-      clTiles[stSubTexId].reserve(stTilesMax);
-      // Image is reversed?
-      if(IsReversed())
-        for(GLfloat fY = 0; fY < fBTSizeY; fY += fTPSizeY)
-          for(GLfloat fX = 0; fX < fBTSizeX; fX += fTPSizeX)
-            AddTileR(stSubTexId, fX, fY,
-              fX + dfTile.DimGetWidth(), fY + dfTile.DimGetHeight());
-      // Not reversed
-      else for(GLfloat fY = 0; fY < fBTSizeY; fY += fTPSizeY)
-        for(GLfloat fX = 0; fX < fBTSizeX; fX += fTPSizeX)
-          AddTile(stSubTexId, fX, fY,
-            fX + dfTile.DimGetWidth(), fY + dfTile.DimGetHeight());
-      // Recover memory
-      clTiles[stSubTexId].shrink_to_fit();
-    } // Log tiling data
-    cLog->LogDebugExSafe("- Tile data: $/$ (B=$$x$;T=$x$;TP=$x$;BT=$x$).",
-      GetTileCount(), GetSubCount(), fixed, setprecision(0), GetTileCount(),
-      GetFWidth(), GetFHeight(), dfTile.DimGetWidth(),
-      dfTile.DimGetHeight(), fTPSizeX, fTPSizeY, fBTSizeX, fBTSizeY);
+  /* -- Return a new tile -------------------------------------------------- */
+  const CoordData NewTile(const GLfloat fL, const GLfloat fT, const GLfloat fR,
+    const GLfloat fB, const GLfloat fW, const GLfloat fH)
+  { const GLfloat fLeft =      fL/GetFWidth(),  fRight  =      fR/GetFWidth(),
+                  fTop  = 1.0f-fT/GetFHeight(), fBottom = 1.0f-fB/GetFHeight();
+    return { fW, fH, fLeft, fTop, fRight, fBottom }; }
+  /* -- Set the texture co-ordinates of a tile ----------------------------- */
+  void SetTile(const size_t stSubTexId, const size_t stTileId,
+    const GLfloat fL, const GLfloat fT, const GLfloat fR, const GLfloat fB,
+    const GLfloat fW, const GLfloat fH)
+  { clTiles[stSubTexId][stTileId] = NewTile(fL, fT, fR, fB, fW, fH); }
+  /* -- Set the texture co-ordinates of a tile ----------------------------- */
+  void SetTile(const size_t stSubTexId, const size_t stTileId,
+    const GLfloat fL, const GLfloat fT, const GLfloat fR, const GLfloat fB)
+  { SetTile(stSubTexId, stTileId, fL, fT, fR, fB, fR-fL, fB-fT); }
+  /* -- Set the texture co-ordinates of a tile that has reversed scanlines - */
+  void SetTileR(const size_t stSubTexId, const size_t stTileId,
+    const GLfloat fL,const GLfloat fT, const GLfloat fR,const GLfloat fB)
+  { const GLfloat fNT = GetFHeight()-fT, fNB = GetFHeight()-fB;
+    SetTile(stSubTexId, stTileId, fL, fNT, fR, fNB, fR-fL, fNT-fNB); }
+  /* -- Add a tile with width and height ----------------------------------- */
+  void SetTileWH(const size_t stSubTexId, const size_t stTileId,
+    const GLfloat fL, const GLfloat fT, const GLfloat fW, const GLfloat fH)
+  { const GLfloat fNR = fL+fW, fNB = fT+fH;
+    SetTile(stSubTexId, stTileId, fL, fT, fNR, fNB, fNR-fL, fNB-fT); }
+  /* -- Add a reversed tile with width and height setting ------------------ */
+  void SetTileRWH(const size_t stSubTexId, const size_t stTileId,
+    const GLfloat fL, const GLfloat fT, const GLfloat fW, const GLfloat fH)
+  { // Calculate new top, right and bottom and add the tile
+    const GLfloat fNT = GetFHeight()-fT, fNB = fNT+fH, fNR = fL+fW;
+    SetTile(stSubTexId, stTileId, fL, fT, fNR, fNB, fNR-fL, fNT-fNB);
+  }
+  /* -- Do add a tile with custom width and height setting ----------------- */
+  void AddTile(const size_t stSubTexId, const GLfloat fL, const GLfloat fT,
+    const GLfloat fR, const GLfloat fB, const GLfloat fW, const GLfloat fH)
+  { clTiles[stSubTexId].emplace_back(NewTile(fL, fT, fR, fB, fW, fH)); }
+  /* -- Add a tile --------------------------------------------------------- */
+  void AddTile(const size_t stSubTexId, const GLfloat fL, const GLfloat fT,
+    const GLfloat fR, const GLfloat fB)
+  { AddTile(stSubTexId, fL, fT, fR, fB, fR-fL, fB-fT); }
+  /* -- Add a reversed tile ------------------------------------------------ */
+  void AddTileR(const size_t stSubTexId, const GLfloat fL, const GLfloat fT,
+    const GLfloat fR, const GLfloat fB)
+  { const GLfloat fNT = GetFHeight()-fT, fNB = GetFHeight()-fB;
+    AddTile(stSubTexId, fL, fNT, fR, fNB, fR-fL, fNT-fNB); }
+  /* -- Add a tile with width and height ----------------------------------- */
+  void AddTileWH(const size_t stSubTexId, const GLfloat fL, const GLfloat fT,
+    const GLfloat fW, const GLfloat fH)
+  { const GLfloat fNR = fL+fW, fNB = fT+fH;
+    AddTile(stSubTexId, fL, fT, fNR, fNB, fNR-fL, fNB-fT); }
+  /* -- Add a reversed tile with width and height -------------------------- */
+  void AddTileRWH(const size_t stSubTexId, const GLfloat fL, const GLfloat fT,
+    const GLfloat fW, const GLfloat fH)
+  { const GLfloat fNT = GetFHeight()-fT, fNB = fNT+fH, fNR = fL+fW;
+    AddTile(stSubTexId, fL, fT, fNR, fNB, fNR-fL, fNT-fNB); }
+  /* -- Configure the specified texture id --------------------------------- */
+  void ConfigureTexture(const size_t stSubTexId)
+  { // Start configuring the texture.
+    GL(cOgl->SetTexParam(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE),
+      "Could not set texture wrapping S!",
+      "Identifier", IdentGet(), "Index", stSubTexId);
+    GL(cOgl->SetTexParam(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE),
+      "Could not set texture wrapping T!",
+      "Identifier", IdentGet(), "Index", stSubTexId);
+    GL(cOgl->SetTexParam(GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE),
+      "Could not set texture wrapping R!",
+      "Identifier", IdentGet(), "Index", stSubTexId);
+    // Set filtering based on developers setting
+    GL(cOgl->SetTexParam(GL_TEXTURE_MIN_FILTER, iTexMinFilter),
+      "Could not set texture minifaction filter!",
+      "Identifier", IdentGet(), "Index", stSubTexId,
+      "MinFilter",  iTexMinFilter);
+    GL(cOgl->SetTexParam(GL_TEXTURE_MAG_FILTER, iTexMagFilter),
+      "Could not set texture magnification filter!",
+      "Identifier", IdentGet(), "Index", stSubTexId,
+      "MagFilter",  iTexMagFilter);
+  }
+  /* -- Do create textures ------------------------------------------------- */
+  void CreateTextureHandles(const size_t stCount)
+  { // Resize array to fit texture names
+    vTexture.resize(stCount);
+    // Make OpenGL to generate texture names and throw error if failed
+    GL(cOgl->CreateTextures(vTexture), "Failed to generate textures!",
+      "Identifier", IdentGet(), "Count", stCount);
   }
   /* -- Load texture from image class -------------------------------------- */
   void LoadFromImage(void)
@@ -434,11 +326,9 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
     const unsigned int uiMaxSize = cOgl->MaxTexSize();
     if(sData.DimIsNotSet() || sData.DimGetWidth() > uiMaxSize ||
                               sData.DimGetHeight() > uiMaxSize)
-      XC("Image size not supported by graphics hardware!",
+      XC("Image dimensions not supported by graphics hardware!",
          "Identifier", IdentGet(),           "Width",   sData.DimGetWidth(),
          "Height",     sData.DimGetHeight(), "Maximum", uiMaxSize);
-    // Texture is uncompressed by default
-    bool bCompressed = false;
     // Internal pixel type chosen
     GLint iICFormat;
     // What is the colour type as we need to handle it differently
@@ -452,7 +342,9 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
       default: XC("Unsupported texture colour type!",
         "Identifier",   IdentGet(), "BytesPerPixel", GetBytesPerPixel(),
         "BitsPerPixel", GetBitsPerPixel());
-    } // Calculated internal and external format
+    } // Get usable slots
+    const size_t stSlots = GetSlotCount() - static_cast<size_t>(IsPalette());
+    // Calculated internal and external format
     GLenum eNXCFormat;
     // Because we're using shaders we can trick OpenGL into giving it a
     // non-standard colour encoded raster image and the shaders can decode
@@ -472,58 +364,109 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
         else shProgram = &cFboBase->sh2D8;
         // Set requested external format
         eNXCFormat = GetPixelType();
+        // Break to upload raw pixels
         break;
       // Texture is 16-bpp?
       case GL_RG:
         // Set GL_LUMINANCE_ALPHA decoding shader
         shProgram = &cFboBase->sh2D16;
         eNXCFormat = GetPixelType();
+        // Break to upload raw pixels
         break;
-      // Texture is 24 or 32-bpp? Whats the external format?
-      case GL_RGB: case GL_RGBA: switch(GetPixelType())
-      { // Compressed texture?
-        case 0x83F1: case 0x83F2: case 0x83F3:
-          // Set compressed texture
-          eNXCFormat = GetPixelType();
-          shProgram = &cFboBase->sh2D;
-          bCompressed = true;
-          break;
-        // BGRA colour order type?
-        case GL_BGRA:
-          // Use BGR shader and redefine to RGBA.
-          shProgram = &cFboBase->sh2DBGR;
-          eNXCFormat = GL_RGBA;
-          break;
-        // BGR colour order type?
-        case GL_BGR:
-          // Use BGR shader and redefine to RGB.
-          shProgram = &cFboBase->sh2DBGR;
-          eNXCFormat = GL_RGB;
-          break;
-        // RGBA or RGB (Normal image).
-        case GL_RGB: case GL_RGBA:
-          // Use RGB shader. No format change.
-          shProgram = &cFboBase->sh2D;
-          eNXCFormat = GetPixelType();
-          break;
-        // Unknown external format
-        default: XC("External colour type not acceptable!",
-          "Identifier", IdentGet(), "XCFormat", GetPixelType());
-      } // The pixel type is valid so break
-      break;
+      // Texture is 24 or 32-bpp?
+      case GL_RGB: case GL_RGBA:
+        // Whats the external format?
+        switch(GetPixelType())
+        { // Compressed texture?
+          case GL_RGBA_DXT1: case GL_RGBA_DXT3: case GL_RGBA_DXT5:
+            // Set compressed texture
+            eNXCFormat = GetPixelType();
+            shProgram = &cFboBase->sh2D;
+            // Upload as compressed texture
+            UploadTexture<TexCompFtor::DXT>(stSlots,
+              sData, iICFormat, eNXCFormat);
+            // Return because we uploaded compressed pixels
+            return;
+          // BGRA colour order type?
+          case GL_BGRA:
+            // Use BGR shader and redefine to RGBA.
+            shProgram = &cFboBase->sh2DBGR;
+            eNXCFormat = GL_RGBA;
+            // Break to upload raw pixels
+            break;
+          // BGR colour order type?
+          case GL_BGR:
+            // Use BGR shader and redefine to RGB.
+            shProgram = &cFboBase->sh2DBGR;
+            eNXCFormat = GL_RGB;
+            // Break to upload raw pixels
+            break;
+          // RGBA or RGB (Normal image).
+          case GL_RGB: case GL_RGBA:
+            // Use RGB shader. No format change.
+            shProgram = &cFboBase->sh2D;
+            eNXCFormat = GetPixelType();
+            // Break to upload raw pixels
+            break;
+          // Unknown external format
+          default: XC("External colour type not acceptable!",
+            "Identifier", IdentGet(), "XCFormat", GetPixelType());
+        } // Done
+        break;
       // Unknown internal format
       default: XC("Internal colour type not acceptable!",
         "Identifier", IdentGet(), "ICFormat", iICFormat,
         "XCFormat", GetPixelType());
-    } // Set usable slots
-    const size_t stSlots = GetSlotCount() - static_cast<size_t>(IsPalette());
-    // Upload the texture
-    UploadTexture(stSlots, bCompressed, sData, iICFormat, eNXCFormat);
-    // Log progress
-    cLog->LogDebugExSafe("Texture '$'[$:$;M:$;D:$x$] uploaded.", IdentGet(),
-      bCompressed ? 'C' : 'U', stSlots, GetMipmaps(), sData.DimGetWidth(),
-      sData.DimGetHeight());
+    } // The pixel type is raw uniform pixels so upload them
+    UploadTexture<TexCompFtor::RAW>(stSlots, sData, iICFormat, eNXCFormat);
   }
+  /* -- Return padding dimensions ---------------------------------- */ public:
+  GLfloat GetPaddingWidth(void) const { return dfPad.DimGetWidth(); }
+  GLfloat GetPaddingHeight(void) const { return dfPad.DimGetHeight(); }
+  /* -- Return tile dimensions --------------------------------------------- */
+  GLuint GetTileWidth(void) const { return duTile.DimGetWidth(); }
+  GLuint GetTileHeight(void) const { return duTile.DimGetHeight(); }
+  /* -- Return number of tiles --------------------------------------------- */
+  size_t GetTileCount(const size_t stSubTexId=0) const
+    { return clTiles[stSubTexId].size(); }
+  /* -- Set tile count ----------------------------------------------------- */
+  void SetTileCount(const size_t stCount, const size_t stSubTexId=0)
+    { clTiles[stSubTexId].resize(stCount); }
+  /* -- Return image float value dimensions -------------------------------- */
+  GLfloat GetFWidth(void) const { return dfImage.DimGetWidth(); }
+  GLfloat GetFHeight(void) const { return dfImage.DimGetHeight(); }
+  /* -- Return the number of mipmaps in the texture ------------------------ */
+  GLint GetMipmaps(void) const { return iMipmaps; }
+  /* -- Return the current texture filter index setting -------------------- */
+  size_t GetTexFilter(void) const { return stTexFilter; }
+  /* -- Return the OpenGL texture name for the specified sub-textures ------ */
+  GLuint GetSubName(const size_t stSubTexId=0) const
+    { return vTexture[stSubTexId]; }
+  /* -- Return number of sub-textures -------------------------------------- */
+  size_t GetSubCount(void) const { return vTexture.size(); }
+  /* -- Check if texture is initialised ------------------------------------ */
+  bool IsNotInitialised(void) const { return vTexture.empty(); }
+  bool IsInitialised(void) const { return !IsNotInitialised(); }
+  /* -- Set a tile based on reversal --------------------------------------- */
+  void SetTileDOR(const size_t stSubTexId, const size_t stTileId,
+    const GLfloat fL, const GLfloat fT, const GLfloat fR, const GLfloat fB)
+  { if(IsReversed()) SetTileR(stSubTexId, stTileId, fL, fT, fR, fB);
+                else SetTile(stSubTexId, stTileId, fL, fT, fR, fB); }
+  /* -- Set a tile based on reversal with width and height setting --------- */
+  void SetTileDORWH(const size_t stSubTexId, const size_t stTileId,
+    const GLfloat fL, const GLfloat fT, const GLfloat fW, const GLfloat fH)
+  { if(IsReversed()) SetTileRWH(stSubTexId, stTileId, fL, fT, fW, fH);
+                else SetTileWH(stSubTexId, stTileId, fL, fT, fW, fH); }
+  /* -- Add a tile based on reversal setting ------------------------------- */
+  void AddTileDOR(const size_t stSubTexId, const GLfloat fL, const GLfloat fT,
+    const GLfloat fR, const GLfloat fB)
+  { if(IsReversed()) AddTileR(stSubTexId, fL, fT, fR, fB);
+                else AddTile(stSubTexId, fL, fT, fR, fB); }
+  /* -- Add a tile with width and height based on reversal ----------------- */
+  void AddTileDORWH(const size_t stSubTexId, const GLfloat fL,
+    const GLfloat fT, const GLfloat fW, const GLfloat fH)
+  { if(IsReversed()) AddTileRWH(stSubTexId, fL, fT, fW, fH);
+                else AddTileWH(stSubTexId, fL, fT, fW, fH); }
   /* -- Blit a triangle ---------------------------------------------------- */
   void BlitTri(const GLuint uiGLTexId, const TriCoordData &tcoData,
     const TriPosData &tpData, const TriColData &tcData)
@@ -605,10 +548,6 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
       BlitLTRB(0, stI, fLeft, fTop, fLeft+fNewWidth, fTop+fNewHeight);
     }
   }
-  /* -- Convert co-ordinates to absolute position -------------------------- */
-  static size_t CoordsToAbsolute(const size_t stPosX, const size_t stPosY,
-    const size_t stWidth, const size_t stBytesPerColumn=1)
-  { return ((stPosY * stWidth) + stPosX) * stBytesPerColumn; }
   /* -- Replace partial texture in VRAM from raw data ---------------------- */
   void UpdateEx(const GLuint uiTexId, const GLint iX, const GLint iY,
     const GLsizei uiW, const GLsizei uiH, const GLenum ePixType,
@@ -681,9 +620,6 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
   /* -- Download texture and dump it to disk ------------------------------- */
   void Dump(const size_t stSubTexId, const string &strFileName) const
     { Download(stSubTexId).SaveFile(strFileName, stSubTexId, 0); }
-  /* -- Check if texture is initialised ------------------------------------ */
-  bool IsNotInitialised(void) const { return vTexture.empty(); }
-  bool IsInitialised(void) const { return !IsNotInitialised(); }
   /* -- Reload texture array as normal texture ----------------------------- */
   void ReloadTexture(void)
   { // If image was not loaded from disk? Just (re)load the image data
@@ -727,13 +663,84 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
     // Set filter
     stTexFilter = stFilter;
     cOgl->SetMipMapFilterById(stFilter, iTexMinFilter, iTexMagFilter);
-    // Set default tint
-    SetQuadRGBA(1, 1, 1, 1);
     // Initialise
     LoadFromImage();
     // Set specified tile dimensions and generate default tileset if needed
     duTile.DimSet(uiTileWidth, uiTileHeight);
-    if(bGenerateTileset) GenerateTileset();
+    if(bGenerateTileset)
+    { // Resize co-ords list to the number of usable slots we loaded
+      clTiles.resize(GetSubCount());
+      // Set override tile size from Image loader if specified
+      if(duTileOR.DimIsSet()) duTile.DimSet(duTileOR);
+      // Else clamp bounds to image size if unspecified or invalid size
+      else if(duTile.DimIsNotSet() ||
+         duTile.DimGetWidth() > DimGetWidth() ||
+         duTile.DimGetHeight() > DimGetHeight())
+        duTile.DimSet(*this);
+      // Set tile dimensions as opengl float
+      dfTile.DimSet(duTile.DimGetWidth<GLfloat>(),
+                    duTile.DimGetHeight<GLfloat>());
+      // Create clamped image size
+      const GLfloat
+        fTPSizeX = dfTile.DimGetWidth() + GetPaddingWidth(),
+        fTPSizeY = dfTile.DimGetHeight() + GetPaddingHeight(),
+        fBTSizeX = floorf(GetFWidth() / fTPSizeX) * fTPSizeX,
+        fBTSizeY = floorf(GetFHeight() / fTPSizeY) * fTPSizeY;
+      // Calculate number of tile needed
+      const size_t stTilesMax = static_cast<size_t>(
+        floorf(fBTSizeX / fTPSizeX) * floorf(fBTSizeY / fTPSizeY));
+      // If there are a limited number of tiles? Enumerate slots...
+      if(stTiles) for(size_t stSubTexId = 0;
+                             stSubTexId < GetSubCount();
+                           ++stSubTexId)
+      { // Make sure theres enough memory allocated for each coord data
+        clTiles[stSubTexId].reserve(stTiles);
+        // Image is reversed?
+        if(IsReversed())
+          for(GLfloat fY = 0;
+                      fY < fBTSizeY && GetTileCount(stSubTexId) < stTiles;
+                      fY += fTPSizeY)
+            for(GLfloat fX = 0;
+                        fX < fBTSizeX && GetTileCount(stSubTexId) < stTiles;
+                        fX += fTPSizeX)
+              AddTileR(stSubTexId, fX, fY,
+                fX + dfTile.DimGetWidth(), fY + dfTile.DimGetHeight());
+        // Not reversed
+        else for(GLfloat fY = 0;
+                         fY < fBTSizeY && GetTileCount(stSubTexId) < stTiles;
+                         fY += fTPSizeY)
+          for(GLfloat fX = 0;
+                      fX < fBTSizeX && GetTileCount(stSubTexId) < stTiles;
+                      fX += fTPSizeX)
+            AddTile(stSubTexId, fX, fY,
+              fX + dfTile.DimGetWidth(), fY + dfTile.DimGetHeight());
+        // Recover memory
+        clTiles[stSubTexId].shrink_to_fit();
+      } // No tiles overwrite
+      else for(size_t stSubTexId = 0;
+                      stSubTexId < GetSubCount();
+                    ++stSubTexId)
+      { // Make sure theres enough memory allocated for each coord data
+        clTiles[stSubTexId].reserve(stTilesMax);
+        // Image is reversed?
+        if(IsReversed())
+          for(GLfloat fY = 0; fY < fBTSizeY; fY += fTPSizeY)
+            for(GLfloat fX = 0; fX < fBTSizeX; fX += fTPSizeX)
+              AddTileR(stSubTexId, fX, fY,
+                fX + dfTile.DimGetWidth(), fY + dfTile.DimGetHeight());
+        // Not reversed
+        else for(GLfloat fY = 0; fY < fBTSizeY; fY += fTPSizeY)
+          for(GLfloat fX = 0; fX < fBTSizeX; fX += fTPSizeX)
+            AddTile(stSubTexId, fX, fY,
+              fX + dfTile.DimGetWidth(), fY + dfTile.DimGetHeight());
+        // Recover memory
+        clTiles[stSubTexId].shrink_to_fit();
+      } // Log tiling data
+      cLog->LogDebugExSafe("- Tile data: $/$ (B=$$x$;T=$x$;TP=$x$;BT=$x$).",
+        GetTileCount(), GetSubCount(), fixed, setprecision(0), GetTileCount(),
+        GetFWidth(), GetFHeight(), dfTile.DimGetWidth(),
+        dfTile.DimGetHeight(), fTPSizeX, fTPSizeY, fBTSizeX, fBTSizeY);
+    }
     // Remove all image data because we can just load it from file again
     // and theres no point taking up precious memory for it.
     if(IsNotDynamic()) ClearSlots();

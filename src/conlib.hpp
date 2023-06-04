@@ -486,7 +486,7 @@ if(ciItem != cimList.cend())
     lCats.emplace_back(Format("- $<$> = $.", cItem.first, lDest.size(),
       lDest.empty() ? string{ "None" } : Implode(lDest, ", ")));
   } // Print data about the cvar
-  return cConsole->AddLine(Implode(lCats, "\n"));
+  return cConsole->AddLine(Implode(lCats, cCommon->Lf()));
 } // Try as a lower bound check?
 ciItem = cimList.lower_bound(strFilter);
 #else

@@ -57,13 +57,13 @@ class GlFWMonitor :                    // Members initially private
 { /* -- Private typedefs --------------------------------------------------- */
   typedef Dimensions<double> DimDouble;
   /* -- Private variables -------------------------------------------------- */
-  int            iIndex;               // Monitor index
+  const int      iIndex;               // Monitor index
   GLFWmonitor   *mContext;             // Monitor context
   const GlFWRes *rPrimary;             // Monitor primary resolution
-  DimDouble      ddInches;             // Monitor size in inches
-  double         fdDiagonal,           // Diagonal millimetre length
+  const DimDouble ddInches;            // Monitor size in inches
+  const double   fdDiagonal,           // Diagonal millimetre length
                  fdDiagonalInches;     // Diagonal inches length
-  string         strName;              // Monitor name
+  const string   strName;              // Monitor name
   /* -- Get monitor position ----------------------------------------------- */
   DimCoInt Dim(GLFWmonitor*const mC) const
   { // Get monitor position and physical dimensions and return them
@@ -147,6 +147,15 @@ struct GlFWMonitors :
   public GlFWMonitorList               // Monitors list
 { /* ----------------------------------------------------------------------- */
   const GlFWMonitor *moPrimary;        // Primary monitor
+  /* -- Find a match from specified glfw monitor context ------------------- */
+  const GlFWMonitor *Find(GLFWmonitor*const moCptr)
+  { // Find the GLFW context in our structured classes
+    const auto moitIt{ StdFindIf(par_unseq, cbegin(), cend(),
+      [moCptr](const GlFWMonitor &moIt)
+        { return moIt.Context() == moCptr; }) };
+    // Return the pointer to it or NULL if not found
+    return moitIt != cend() ? &(*moitIt) : nullptr;
+  }
   /* ----------------------------------------------------------------------- */
   void Refresh(void)
   { // Reset primary monitor

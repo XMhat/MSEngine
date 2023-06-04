@@ -240,12 +240,12 @@ BEGIN_MEMBERCLASSEX(Samples, Sample, ICHelperUnsafe, /* n/a */),
           "Format",     pcmSrc.GetFormat(), "MFormat", pcmSrc.GetSFormat(),
           "Rate",       pcmSrc.GetRate(),   "Size",    pcmSrc.aPcmR.Size());
       // Log progress
-      cLog->LogInfoExSafe(
+      cLog->LogDebugExSafe(
         "Sample '$' uploaded as L:$[$] and R:$[$] at $Hz as format 0x$$.",
         pcmSrc.IdentGet(), front(), pcmSrc.aPcmL.Size(), (*this)[1],
         pcmSrc.aPcmR.Size(), pcmSrc.GetRate(), hex, pcmSrc.GetFormat());
     } // Log progress
-    else cLog->LogInfoExSafe(
+    else cLog->LogDebugExSafe(
       "Sample '$' uploaded as $[$] at $Hz as format 0x$$.",
       pcmSrc.IdentGet(), front(), pcmSrc.aPcmL.Size(), pcmSrc.GetRate(),
       hex, pcmSrc.GetFormat());
@@ -303,7 +303,7 @@ END_COLLECTOR(Samples)
 static void StopAllSamples(void)
 { // Stop all samples from playing
   if(cSamples->empty()) return;
-  for(Sample*const sCptr : *cSamples) sCptr->Stop();
+  for(const Sample*const sCptr : *cSamples) sCptr->Stop();
 }
 /* ========================================================================= */
 static void DeInitAllSamples(void)

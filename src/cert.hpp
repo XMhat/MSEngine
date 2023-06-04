@@ -169,7 +169,7 @@ class Certs                            // Certificates store
     // Create async method class
     LoadParallel ccaASync;
     // Now initialising certificate store
-    for_each(par_unseq, aList.cbegin(), aList.cend(),
+    StdForEach(par_unseq, aList.cbegin(), aList.cend(),
       [this, &ccaASync, &strD](const string &strF)
         { CertsLoad(ccaASync, strD, strF); });
 #endif

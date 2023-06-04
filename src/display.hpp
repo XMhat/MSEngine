@@ -36,9 +36,7 @@ BUILD_FLAGS(Display,
   // OpenGL debug context?             Stereo mode enabled?
   DF_DEBUG               {0x00020000}, DF_STEREO              {0x00040000},
   // No opengl errors?                 Window maximised at start?
-  DF_NOERRORS            {0x00080000}, DF_MAXIMISED           {0x00100000},
-  // Ignore resize function?
-  DF_IGNORERESIZE        {0x00200000}
+  DF_NOERRORS            {0x00080000}, DF_MAXIMISED           {0x00100000}
 );/* == Display class ====================================================== */
 static class Display final :
   /* -- Base classes ------------------------------------------------------- */
@@ -73,9 +71,8 @@ static class Display final :
   LuaFunc          lrClipboard;        // Clipboard function callback
   /* -- Window moved request -------------------------------------- */ private:
   void OnMoved(const EvtMain::Cell &ewcArgs)
-  { // Get new values
-    const int iNewX = ewcArgs.vParams[1].i,
-              iNewY = ewcArgs.vParams[2].i;
+  { // Get new window position
+    const int iNewX = ewcArgs.vParams[1].i, iNewY = ewcArgs.vParams[2].i;
     // If position not changed?
     if(iWinPosX == iNewX && iWinPosY == iNewY)
     { // Report event
@@ -264,41 +261,81 @@ static class Display final :
   /* -- Monitor changed ---------------------------------------------------- */
   static void OnMonitorStatic(GLFWmonitor*const, const int);
   void OnMonitor(GLFWmonitor*const mAffected, const int iAction)
-  { // Get monitor name and if we got it? Compare state
-    if(const char*const cpName = glfwGetMonitorName(mAffected)) switch(iAction)
+  { // Get monitor state
+    switch(iAction)
     { // Device was connected?
       case GLFW_CONNECTED:
-        // Log the event and return
-        cLog->LogInfoExSafe("Display detected monitor '$'.", cpName);
-        // Nothing else needs to be done
+        // Ignore if null context
+        if(!mAffected)
+          cLog->LogWarningSafe(
+            "Display connected monitor event with null context!");
+        // We shouldn't already have this monitor in our structured list
+        else if(const GlFWMonitor*const moAffected = mlData.Find(mAffected))
+          cLog->LogWarningExSafe(
+            "Display already connected monitor '$'...", moAffected->Name());
+        // We don't have this context in our list already, good!
+        else
+        { // Report confirmation and break to restart
+          cLog->LogInfoExSafe(
+          "Display connected monitor '$', refreshing device list...",
+            glfwGetMonitorName(mAffected));
+          // Re-enumerate monitors and video modes
+          EnumerateMonitorsAndVideoModes();
+        } // Break to return
         break;
       // Device was disconnected?
       case GLFW_DISCONNECTED:
-        // If this is our active montior?
-        if(mAffected == moSelected->Context())
-        { // Log disconnection
-          cLog->LogInfoExSafe(
-            "Display disconnected monitor '$', re-initialising...", cpName);
-          // We need to re-initialise the opengl context
-          cEvtMain->Add(EMC_QUIT_THREAD);
-        } // Not our active monitor but still report it
-        else cLog->LogInfoExSafe("Display disconnected monitor '$'.", cpName);
-        // Continue normally
+        // Ignore if null context
+        if(!mAffected)
+          cLog->LogWarningSafe(
+            "Display disconnected monitor event with null context!");
+        // We should have this monitor in our structured list
+        else if(const GlFWMonitor*const moAffected = mlData.Find(mAffected))
+        { // If this was our monitor?
+          if(moAffected == moSelected)
+          { // We recognise it so we can savely disconnect it
+            cLog->LogInfoExSafe(
+              "Display disconnected monitor '$', re-initialising...",
+                moAffected->Name());
+            // The selected device is no longer valid so make sure it is
+            // cleared so DeInit() doesn't try to restore gamma and crash the
+            // whole engine with an exception.
+            moSelected = nullptr;
+            // We need to re-initialise the opengl context
+            cEvtMain->Add(EMC_QUIT_THREAD);
+          } // This is not our monitor?
+          else
+          { // We don't need to do anything but refresh the list
+            cLog->LogInfoExSafe(
+             "Display disconnected monitor '$', refreshing device list...",
+               moAffected->Name());
+            // Re-enumerate monitors and video modes
+            EnumerateMonitorsAndVideoModes();
+          }
+        } // We don't have it so ignore it
+        else cLog->LogWarningExSafe(
+          "Display already disconnected monitor '$'...",
+            glfwGetMonitorName(mAffected));
+        // Break to return
         break;
       // Unknown state?
       default:
-        // Log the bad state
-        cLog->LogWarningExSafe(
-          "Display sent bad state of 0x$$ for monitor '$'!",
-          hex, iAction, cpName);
-        // Continue as normal
+        // Ignore if null context
+        if(!mAffected)
+          cLog->LogWarningExSafe(
+            "Display sent bad state of 0x$$ with null context!",
+            hex, iAction);
+        // Not a null context?
+        else
+        { // Find this monitor context, log the failure and ignore event
+          const GlFWMonitor*const moAffected = mlData.Find(mAffected);
+          cLog->LogWarningExSafe(
+            "Display sent bad state of 0x$$ for monitor '$'!",
+            hex, iAction,
+            moAffected ? moAffected->Name() : glfwGetMonitorName(mAffected));
+        } // Break to return
         break;
-    } // Unknown monitor name
-    else cLog->LogWarningExSafe(
-      "Display sent state $$ with invalid monitor at 0x$!",
-      hex, iAction, reinterpret_cast<void*>(mAffected));
-    // Enumerate monitors again
-    EnumerateMonitorsAndVideoModes();
+    }
   }
   /* == Call to reset the fbo ============================================== */
   void DoResizeFbo(const GLsizei stWidth, const GLsizei stHeight)
@@ -398,21 +435,16 @@ static class Display final :
     // Trnslate user specified window size
     int iW, iH; TranslateUserSize(iW, iH);
     TranslateUserCoords(iWinPosX, iWinPosY, iW, iH);
+    // We need to adjust to the position of the currently selected monitor so
+    // it actually appears on that monitor.
+    iWinPosX += moSelected->CoordGetX();
+    iWinPosY += moSelected->CoordGetY();
     // Set menu bar on MacOS
     // cGlFW->SetCocoaMenuBarEnabled();
     // Instruct glfw to change to window mode
     cGlFW->WinSetMonitor(nullptr, iWinPosX, iWinPosY, iW, iH, 0);
     // Window mode so update users window border
     cGlFW->WinSetDecoratedAttrib(FlagIsSet(DF_BORDER));
-    // Using MacOS?
-#if defined(MACOS)
-    // Window is threaded and using MacOS 12? Force disable resize to prevent
-    // crash when resizing the window.
-    if(FlagIsSet(DF_THREADED) && cSystem->OSMajor() >= 12)
-      cGlFW->WinSetResizableAttribDisabled();
-    // Else set resize as normal
-    else
-#endif
     cGlFW->WinSetResizableAttrib(FlagIsSet(DF_SIZABLE));
     // Log that we switched to window mode
     cLog->LogInfoExSafe("Display switched to desktop window $x$ at $x$.",
@@ -906,7 +938,7 @@ static class Display final :
     // Have window?
     if(cGlFW->WinIsAvailable())
     { // If we have monitor?
-      if(moSelected->Context())
+      if(moSelected)
       { // Restore gamma (this fails if theres no window).
         GlFWSetGamma(moSelected->Context(), 1.0);
         // Monitor no longer valid

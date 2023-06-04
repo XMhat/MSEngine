@@ -121,7 +121,11 @@ class FontVariables :                  // Members initially private
 BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
   /* -- Base classes ------------------------------------------------------- */
   public FontVariables                 // Font variables class
-{ /* -- Stroker functors for DoInitFTChar() -------------------------------- */
+{  /* -- Convert co-ordinates to absolute position -------------------------- */
+  static size_t CoordsToAbsolute(const size_t stPosX, const size_t stPosY,
+    const size_t stWidth, const size_t stBytesPerColumn=1)
+  { return ((stPosY * stWidth) + stPosX) * stBytesPerColumn; }
+  /* -- Stroker functors for DoInitFTChar() -------------------------------- */
 #include "fontglph.hpp"                // Include glyph loading members inline
 #include "fontblit.hpp"                // Include glyph blitting members inline
   /* -- Check if texture reload required -------------------------- */ private:

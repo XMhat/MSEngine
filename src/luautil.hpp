@@ -93,7 +93,7 @@ static const string GetVarStack(lua_State*const lS)
           << iIndex - iCount - 1
           << "] (" << GetStackTokens(lS, iIndex) << ") "
           << GetStackType(lS, iIndex)
-          << "\n";
+          << cCommon->Lf();
     // Return string
     return osS.str();
   } // No elements in variable stack

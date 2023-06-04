@@ -297,7 +297,7 @@ static unsigned int SourceStop(const ALUIntVector &uiBuffers)
     // Get sources buffer id and ignore if it is not set
     if(const ALuint uiSB = sCref.GetBuffer())
     { // Find a matching buffer and skip if source doesn't have this buffer id
-      if(find_if(uiBuffers.cbegin(), uiBuffers.cend(),
+      if(StdFindIf(par_unseq, uiBuffers.cbegin(), uiBuffers.cend(),
         [uiSB](const ALuint &uiB) { return uiSB == uiB; }) == uiBuffers.cend())
           continue;
       // Stop buffer and add to stopped counter if succeeded

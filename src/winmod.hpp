@@ -55,7 +55,7 @@ class SysModule :                      // Members initially private
       // Retrieve file description for language and code page "i".
       if(!VerQueryValueW(wstrValue.c_str(), wstrBlock.c_str(),
         reinterpret_cast<LPVOID*>(&wcpTitle), &uiStrSize))
-          return "Unknown";
+          return cCommon->Unknown();
       // Set string
       return S16toUTF(wcpTitle);
     }

@@ -29,7 +29,7 @@ You might wonder why I decided to write this software using a 3-D sound and rend
 * Better optimised binaries from *semi-amalgamated* source code.
 
 ## Using…
-All MS-Engine needs to run is an ``app.cfg`` file in the directory, a 7-zip archive (ending in ``.adb`` not ``.7z``) in the directory or a ``.7z`` archive appended to the engine executable. This text file contains a list of CVars that configure the engine the way you want. Example ``app.cfg`` files are available in [the examples repository](examples).
+All MS-Engine needs to run is an ``app.cfg`` file in the directory, a 7-zip archive (ending in ``.adb`` not ``.7z``) in the directory or a ``.7z`` archive appended to the engine executable. This text file contains a list of CVars that configure the engine the way you want.
 
 ## Scripts…
 The engine looks for the specified file named via the ``lua_script`` variable which is ``main.lua`` by default, compiles it and then executes it and waits for a termination request either via a console command, operating system or the script itself and will by default execute continuously based on the ``app_tickrate`` variable. By default, this is every 1/60th of a second (16.6msec) regardless of hardware limitations.
@@ -48,9 +48,7 @@ MS-Engine does not allow the use of ``..`` (*parent*) nor the use of a root dire
 See this [automatically generated document](https://xmhat.github.io/MSEngine) for a complete rundown of all configuration variables and scripting functions. LUA core reference manual is [here](https://www.lua.org/manual/5.4/).
 
 ## Examples…
-There are [example scripts and configuration files](examples) available in this repository.
-
-A remake of the classic Amiga and DOS game [Diggers](diggers) was made with this engine and available to play.
+A remake of the classic Amiga and DOS game [Diggers](diggers) was made with this engine and available to play. You can open up the executable (Win32 or Linux) or ``.adb`` archive (MacOS) with ``7-Zip``.
 
 ## Credits…
 This engine makes use of the following open-source and commercially distributable components that are always updated to the latest versions...

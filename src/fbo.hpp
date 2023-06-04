@@ -60,14 +60,14 @@ class FboVariables :                   // Fbo variables class
   FboTriList       ftlActive;          // Triangles list
   FboCmdList       fclActive;          // Commands list
   /* -- Buffers ------------------------------------------------------------ */
-  size_t           stGLArrayOff;       // Current rendering offset
-  GLuint           uiTextureCache;     // Last GL texture id used
-  GLuint           uiTexUnitCache;     // Last GL multi-texture unit id used
-  GLuint           uiShaderCache;      // Shader currently selected
-  size_t           stTrianglesLast;    // Triangles before last cache change
-  size_t           stTrianglesFrame;   // Triangles this frame
-  size_t           stCommandsFrame;    // Commands this frame
-  size_t           stRenderCounter;    // Times rendered
+  GLuint           uiTextureCache,     // Last GL texture id used
+                   uiTexUnitCache,     // Last GL multi-texture unit id used
+                   uiShaderCache;      // Shader currently selected
+  size_t           stGLArrayOff,       // Current rendering offset
+                   stTrianglesLast,    // Triangles before last cache change
+                   stTrianglesFrame,   // Triangles this frame
+                   stCommandsFrame,    // Commands this frame
+                   stFinishCounter;    // Times fbo added to render queue
   /* -- Variables ---------------------------------------------------------- */
   GLuint           uiFBOtex;           // Frame buffer texture name
   FboFloatCoords   fcStage;            // Stage co-ordinates
@@ -76,11 +76,11 @@ class FboVariables :                   // Fbo variables class
     /* -- Initialisers ----------------------------------------------------- */
     stFilterId(0),                     iMinFilter(GL_NEAREST),
     iMagFilter(GL_NEAREST),            iWrapMode(GL_CLAMP_TO_EDGE),
-    iPixFormat(iPF),                   stGLArrayOff(0),
-    uiTextureCache(0),                 uiTexUnitCache(0),
-    uiShaderCache(0),                  stTrianglesLast(0),
+    iPixFormat(iPF),                   uiTextureCache(0),
+    uiTexUnitCache(0),                 uiShaderCache(0),
+    stGLArrayOff(0),                   stTrianglesLast(0),
     stTrianglesFrame(0),               stCommandsFrame(0),
-    stRenderCounter(0),                uiFBOtex(0)
+    stFinishCounter(0),                uiFBOtex(0)
     /* --------------------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
@@ -143,6 +143,8 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
   size_t GetTrisNow(void) const { return ftlActive.size(); }
   size_t GetTris(void) const { return stTrianglesFrame; }
   size_t GetTrisReserved(void) const { return ftlActive.capacity(); }
+  /* -- Return number of times fbo was added to the render list ------------ */
+  size_t GetFinishCount(void) const { return stFinishCounter; }
   /* -- Activate this fbo -------------------------------------------------- */
   void SetActive(void) { cParent.fboActive = this; }
   /* -- Perform rendering inside the FBO to the texture -------------------- */
@@ -189,7 +191,7 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
   { // Render the fbo
     Render(oiRef);
     // Flush lists if reference is zero
-    if(!--stRenderCounter) Flush();
+    if(!--stFinishCounter) Flush();
   }
   /* -- Finished with drawing in the FBO ----------------------------------- */
   void FinishQueue(void)
@@ -215,10 +217,18 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
     cParent.ovActive.push_back({ *this, this,
       static_cast<GLsizei>(stTrianglesFrame * sizeof(FboTri)),
       IntOrMax<ssize_t>(stCommandsFrame) });
-    // Incrememnt number of times this fbo is referenced in the active list,
+    // Increment number of times this fbo is referenced in the active list,
     // this is so when the reference counter is reduced the zero, the triangles
-    // and command lists are permitted to clear on FboRender().
-    ++stRenderCounter;
+    // and command lists are permitted to clear on FboRender(). Return if it
+    // was added for the first time this frame.
+    if(++stFinishCounter == 1) return;
+    // Throw an error because it is not optimal to finish an fbo more than once
+    // in the same frame. We still need to finish this fbo though as we've
+    // probably already added data for it with Blit() functions so do not try
+    // to raise the order of this check.
+    XC("FBO already finished!",
+       "Identifier", IdentGet(), "Count", stFinishCounter,
+       "Frame",      cTimer->TimerGetTicks());
   }
   /* -- Finish the queue without checking and reset cache ------------------ */
   void FinishAndReset(const GLuint uiT, const GLuint uiTU, const GLuint uiSC)
@@ -404,8 +414,8 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
       // Done with this fbo handle
       uiFBO = 0;
     } // Return if fbo is not in the fbo order list
-    if(!stRenderCounter) return;
-    stRenderCounter = 0;
+    if(!stFinishCounter) return;
+    stFinishCounter = 0;
     // Get reference to order list and return if empty
     FboOrderVec &fpvList = cParent.ovActive;
     if(fpvList.empty()) return;
@@ -469,9 +479,9 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
     CommitFilter();
     CommitWrap();
     // Say we've initialised the frame buffer
-    cLog->LogDebugExSafe("Fbo initialised '$' at $ (S=$x$;A=$;T=$).",
+    cLog->LogDebugExSafe("Fbo initialised '$' at $ (S=$x$;A=$;T=$;F=$).",
       IdentGet(), uiFBO, DimGetWidth(), DimGetHeight(), ToRatio(GetCoRight(),
-      GetCoBottom()), uiFBOtex);
+      GetCoBottom()), uiFBOtex, cOgl->GetPixelFormat(iPixFormat));
   }
   /* -- Constructor -------------------------------------------------------- */
   Fbo(void) :                          // No parameters

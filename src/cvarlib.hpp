@@ -1450,7 +1450,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "win_thread",
   /* ----------------------------------------------------------------------- */
-#if !defined(LINUX)
+#if defined(WINDOWS)
   cCommon->One(),
 #else
   cCommon->Zero(),                                 // Fix temporary bug in GLFW
