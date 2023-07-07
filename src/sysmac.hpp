@@ -556,9 +556,10 @@ class SysCore :
     };
     // Handy converter at https://www.unixtimestamp.com/ and OS list data at...
     // https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions.
-    static const array<const OSListItem,20>osList{ {
+    static const array<const OSListItem,21>osList{ {
       //   cpLevel       uiHi  uiLo  ttExp           Note
-      {cCommon->CBlank(),14,   0,    1798675200 }, // ~31/12/2026
+      {cCommon->CBlank(),15,   0,    1830211200 }, // ~31/12/2027
+      { "Sonoma",        14,   0,    1798675200 }, // ~31/12/2026
       { "Ventura",       13,   0,    1767139200 }, // ~31/12/2025
       { "Monterey",      12,   0,    1735603200 }, // ~31/12/2024
       { "Big Sur",       11,   0,    1703980800 }, // ~31/12/2023
@@ -621,12 +622,12 @@ class SysCore :
     // Return operating system info
     return {
       osS.str(),                       // Version string
-      StdMove(strExtra),                  // Extra version string
+      StdMove(strExtra),               // Extra version string
       uiMajor,                         // Major OS version
       uiMinor,                         // Minor OS version
       uiBuild,                         // OS build version
       sizeof(void*)*8,                 // 32 or 64 OS arch
-      StdMove(strCode),                   // Get locale
+      StdMove(strCode),                // Get locale
       DetectElevation(),               // Elevated?
       false,                           // Wine or Old OS?
       ttExpiry,                        // OS expiry
@@ -696,9 +697,9 @@ class SysCore :
        strVendorId{ GetSysCTLInfoString("machdep.cpu.vendor") };
 #endif
     // Return default data we could not read
-    return { StdMove(strVendorId),        StdMove(strProcessorName),
-             StdMove(strIdentifier),      stCpuCount,
-             uiSpeed,                  ulFeatureSet,
+    return { StdMove(strVendorId),   StdMove(strProcessorName),
+             StdMove(strIdentifier), stCpuCount,
+             uiSpeed,                ulFeatureSet,
              ulPlatformId };
   }
   /* ----------------------------------------------------------------------- */

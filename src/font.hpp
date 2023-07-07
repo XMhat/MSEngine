@@ -121,7 +121,7 @@ class FontVariables :                  // Members initially private
 BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
   /* -- Base classes ------------------------------------------------------- */
   public FontVariables                 // Font variables class
-{  /* -- Convert co-ordinates to absolute position -------------------------- */
+{  /* -- Convert co-ordinates to absolute position ------------------------- */
   static size_t CoordsToAbsolute(const size_t stPosX, const size_t stPosY,
     const size_t stWidth, const size_t stBytesPerColumn=1)
   { return ((stPosY * stWidth) + stPosX) * stBytesPerColumn; }

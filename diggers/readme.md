@@ -131,7 +131,7 @@ Press `F1` at any time in the game to access the setup screen and `F2` to show t
   - Show the acknowledgements (readme.txt).
 
 ### About…
-This screen allows you to read this document.
+This screen shows the third party licences for this game.
 
 * **Basic control…**
   - Move the cursor to the top of the screen with the mouse or joystick and hit the left button or button 1 to scroll the text up.
@@ -157,7 +157,7 @@ This screen allows you to read this document.
 ## [Controls](#controls)…
 You mostly control the game with a mouse, but a joystick will basicly emulate the mouse too like the Amiga CD32 version of the game did. You can also use the keyboard to perform some basic tasks.
 
-If you're using a high video resolution (i.e. 1080 or 1440p) and the mouse appears slow, you may need to increase the sensetivity in your mouse control panel or on specific mice (such as a Logitech G-series), increase the DPI with the dedicated button.
+If you're using a high video resolution (i.e. 1080/1440/3128p, etc.) and the mouse appears slow, you may need to increase the sensitivity in your mouse control panel or on specific mice (such as a Logitech G-series), increase the DPI with the dedicated button.
 
 If you move the cursor and the cursor becomes anything but an arrow graphic, then than particular item on the screen is selectable, e.g.
 * 4 small arrows pointing to the centre…
@@ -168,6 +168,31 @@ If you move the cursor and the cursor becomes anything but an arrow graphic, the
   - Accept/Select/Perform action/Go here.
 * Arrow cursor pointing up/down/left or right…
   - Scroll.
+
+### In-game hud…
+The hud is explained as follows from left to right…
+
+* Money (4 digits)…
+  - Shows how much currency you have. You must grab gems by digging for them, stealing them from your opponent, and then ordering the digger home to enter the trade centre, entering the bank, and selling your gems. Making enough currency wins the zone. You can also spend currency at the shop to buy items that will assist you on your operations.
+* Inventory and health…
+  - This part of the hud displays the gems and other items in your inventory which you can drop at any time by going to the digger inventory menu.
+  - The health bar shows the health of your digger. It maxes out at 100% and will slowly regenerate if you stand still. It will turn orange if low and then turn red on imminent death. The heart changes speed depending on amount of health.
+* Digger status…
+  - This part of the hud shows what the selected digger is doing. This corresponds to the menu operation chosen.
+* Digger buttons and indicators…
+  - The numbers are clickable buttons which will quickly centre the view around the specified digger. You cannot click on the button if the corresponding digger has perished.
+  - The indicators above the buttons indicate what the digger is doing…
+    * Green: Digger is stopped and doing nothing.
+    * Orange: Digger is moving.
+    * Red: Digger is busy and cannot take orders until the current job is complete or is in danger.
+    * Blue: The digger is in danger and the player must take action to save them from imminent death.
+    * Black: The digger is impatient and the player must take action before they decide to do something else on their own.
+* Utility buttons…
+  - Cog: Centres around all your dropped and deployed inventory.
+  - Hand: Shows all your diggers stats and inventory.
+  - Arrows: Shows the position of all your diggers and what they're doing.
+  - Question: Shows statistics and prediction information about the current zone operations.
+  - Page: Displays the book.
 
 ### Aliases…
 These aliases are for the explanations below.

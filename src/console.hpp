@@ -656,7 +656,8 @@ static class Console final :           // Members initially private
   { // Toggle cursor mode
     FlagToggle(CF_INSERT);
     // Set new cursor depending of if enabled or not
-    if(GetFontRef().IsInitialised()) cCursor = FlagIsSet(CF_INSERT) ? '|' : '_';
+    if(GetFontRef().IsInitialised())
+      cCursor = FlagIsSet(CF_INSERT) ? '|' : '_';
     // Tell SysCon that the cursor changed if needed and return
     else return cSystem->SetCursorMode(FlagIsSet(CF_INSERT));
     // Need to redraw too

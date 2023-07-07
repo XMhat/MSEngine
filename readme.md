@@ -27,6 +27,7 @@ You might wonder why I decided to write this software using a 3-D sound and rend
 * (De)Compression supporting ZIP, LZMA, RAW and AES encryption.
 * Very fast JSon support via RapidJson.
 * Better optimised binaries from *semi-amalgamated* source code.
+* Less than half-a-second startup time to usable on a modern device.
 
 ## Using…
 All MS-Engine needs to run is an ``app.cfg`` file in the directory, a 7-zip archive (ending in ``.adb`` not ``.7z``) in the directory or a ``.7z`` archive appended to the engine executable. This text file contains a list of CVars that configure the engine the way you want.
@@ -55,23 +56,23 @@ This engine makes use of the following open-source and commercially distributabl
 
 | Library | Version | Author | Purpose |
 | --- | --- | --- | --- |
-| [7-Zip](https://7-zip.org/sdk.html) | 22 | Igor Pavlov | LZMA (De/En)coder and support .7Z archives. |
+| [7-Zip](https://7-zip.org/sdk.html) | 22 | Igor Pavlov | Powerful general data codec. |
 | [FreeType](https://github.com/freetype/freetype) | 2.13 | © The FreeType Project | Load and render TTF fonts. |
 | [GLFW](https://github.com/glfw/glfw) | 3.3 | © Marcus Geelnard & Camilla Löwy | Interface to Window, OpenGL and input. |
-| [LibJPEGTurbo](https://github.com/libjpeg-turbo/libjpeg-turbo) | 2.1 | © IJG/Contributing authors | (De/En)code JPEG's. |
-| [LibNSGif](https://github.com/netsurf-browser/libnsgif) | 0.2 | © Richard Wilson & Sean Fox | Decode GIF's. |
-| [LibPNG](https://github.com/glennrp/libpng) | 1.6 | © Contributing authors | (De/En)code PNG's. |
-| [LUA](https://github.com/lua/lua) | 5.4 | © Lua.org, PUC-Rio | User code interpreter. |
-| [MiniMP3](https://www.pschatzmann.ch/home/2022/05/14/the-minimp3-codec-on-an-esp32/) | 1.0 | Martin Fiedler | Decode .MP3 files. |
+| [LibJPEGTurbo](https://github.com/libjpeg-turbo/libjpeg-turbo) | 3.0 | © IJG/Contributing authors | Codec/container for YUV pixel data. |
+| [LibNSGif](https://github.com/netsurf-browser/libnsgif) | 0.2 | © Richard Wilson & Sean Fox | Codec/container for motion paletted RGB pixel data. |
+| [LibPNG](https://github.com/glennrp/libpng) | 1.6 | © Contributing authors | Codec/container for RGB pixel data. |
+| [LUA](https://github.com/lua/lua) | 5.4 | © Lua.org, PUC-Rio | User command interpreter. |
+| [MiniMP3](https://www.pschatzmann.ch/home/2022/05/14/the-minimp3-codec-on-an-esp32/) | 1.0 | Martin Fiedler | Codec/Container for PCM audio data. |
 | [NCurses](https://linux.die.net/man/3/ncurses) | 5.7 | © Free Software Foundation | Unix and MacOS text mode support. |
-| [Ogg](https://github.com/xiph/ogg) | 1.3 | Xiph.Org | Read .OGG files. |
+| [Ogg](https://github.com/xiph/ogg) | 1.3 | Xiph.Org | Container for Vorbis and Theora data. |
 | [OpenALSoft](https://github.com/kcat/openal-soft) | 1.23 | Chris Robinson | 3-D audio API. |
 | [OpenSSL](https://github.com/openssl/openssl) | 3.1 | OpenSSL Software Foundation | Basic SSL networking and (de/en)cryption. |
-| [RapidJson](https://github.com/Tencent/rapidjson) | 1.1 | © THL A29 Ltd., Tencent co. & Milo Yip | Read/write JSON objects. |
-| [SQLite](https://github.com/sqlite/sqlite) | 3.41 | Contributing authors | Store user non-volatile data. |
-| [Theora](https://github.com/xiph/theora) | 3.2 | Xiph.Org | Read and render .OGV full-motion movies. |
-| [Vorbis](https://github.com/xiph/vorbis) | 1.3 | Xiph.Org | Decode vorbis encoded PCM data. |
-| [Z-Lib](https://github.com/madler/zlib) | 1.2 | © Jean-loup Gailly & Mark Adler | (De/In)flate data. |
+| [RapidJson](https://github.com/Tencent/rapidjson) | 1.1 | © THL A29 Ltd., Tencent co. & Milo Yip | Store and access JSON objects. |
+| [SQLite](https://github.com/sqlite/sqlite) | 3.41 | Contributing authors | Store and access user non-volatile data. |
+| [Theora](https://github.com/xiph/theora) | 3.2 | Xiph.Org | Codec for motion YUV and PCM audio data. |
+| [Vorbis](https://github.com/xiph/vorbis) | 1.3 | Xiph.Org | Codec for PCM audio data. |
+| [Z-Lib](https://github.com/madler/zlib) | 1.2 | © Jean-loup Gailly & Mark Adler | Common general data codec. |
 
 ## Licence & Disclaimer…
 Please read [this document](licence.md) for the licence and disclaimer for use of this software.

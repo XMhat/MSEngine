@@ -7,7 +7,7 @@
 -- 888---d88'--888--`88.---.88'-`88.---.88'-888-----o--888-`88b.--oo----.d8P --
 -- 888bd8P'--oo888oo-`Y8bod8P'---`Y8bod8P'-o888ooood8-o888o-o888o-8""8888P'- --
 -- ========================================================================= --
--- Copyr. © MS-Design, 2023       Copyr. © Millennium Interactive Ltd., 1994 --
+-- Copyr. (c) MS-Design, 2023   Copyr. (c) Millennium Interactive Ltd., 1994 --
 -- ========================================================================= --
 -- Core function aliases --------------------------------------------------- --
 local format<const>, insert<const>, remove<const>, random<const>, ceil<const>,
@@ -28,17 +28,16 @@ local function GameLuaModule()
 -- Diggers shared functions and data --------------------------------------- --
 local TYP, aLevelData, LoadResources, aObjectData, ACT, JOB, iPosX, iPosY, DIR,
   aTimerData, AI, OFL, aDigTileData, PlayMusic, aTileData, aTileFlags,
-  aAIData, Fade, aAIChoicesData, BCBlit, SetCallbacks,
-  IsMouseInBounds, aDigData, DF, aSfxData, aJumpRiseData,
-  aJumpFallData, IsKeyPressed, IsButtonPressed, IsKeyHeld, IsButtonHeld,
-  GetMouseX, GetMouseY, PlayStaticSound, PlaySound, IsButtonPressedNoRelease,
-  aMenuData, MFL, MNU, IsMouseXLessThan, InitBook, aObjToUIData,
-  GetMusic, StopMusic, RenderFade, IsJoyPressed, InitWin, InitWinDead,
-  InitLose, InitLoseDead, InitTNTMap, InitLobby, texSpr, fontLarge,
-  fontLittle, fontTiny, aDigBlockData, aExplodeDirData, SetCursor,
+  Fade, BCBlit, SetCallbacks, IsMouseInBounds, aDigData, DF, aSfxData,
+  aJumpRiseData, aJumpFallData, IsKeyPressed, IsButtonPressed, IsKeyHeld,
+  IsButtonHeld, GetMouseX, GetMouseY, PlayStaticSound, PlaySound,
+  IsButtonPressedNoRelease, aMenuData, MFL, MNU, IsMouseXLessThan, InitBook,
+  aObjToUIData, GetMusic, StopMusic, RenderFade, IsJoyPressed, InitWin,
+  InitWinDead, InitLose, InitLoseDead, InitTNTMap, InitLobby, texSpr,
+  fontLarge, fontLittle, fontTiny, aDigBlockData, aExplodeDirData, SetCursor,
   aCursorIdData, RegisterFBUCallback, GetCallbacks, GetTestMode, RenderShadow,
-  SetBottomRightTip, aAIBigFootData, aDugRandShaftData, aFloodGateData,
-  aTrainTrackData, aExplodeAboveData, aGlobalData;
+  SetBottomRightTip, aDugRandShaftData, aFloodGateData, aTrainTrackData,
+  aExplodeAboveData, aGlobalData, aShopData;
 -- Prototype functions (assigned later) ------------------------------------ --
 local CreateObject, MoveOtherObjects, PlaySoundAtObject, SetAction;
 -- Locals ------------------------------------------------------------------ --
@@ -626,33 +625,6 @@ local function SellSpecifiedItems(aObj, iItemId)
   -- Return if we sold something
   return iItemsSold;
 end
--- Sell all inventory ------------------------------------------------------ --
-local function SellAllItems(aObj)
-  -- Check parameter
-  assert(type(aObj)=="table", "Object not specified!");
-  -- Get object inventory and return if inventory failed
-  local aInventory<const> = aObj.I;
-  if #aInventory <= 0 then return -1 end;
-  -- Flag for checking for ending conditons
-  local iItemsSold = 0;
-  -- Get owner of this object
-  local aParent<const> = aObj.P;
-  -- For each item in digger inventory. We have to use a while loop as we
-  -- need to remove items from the inventory.
-  local iObj = 1 while iObj <= #aInventory do
-    -- Get the inventory object and if the gem is sellable or the object
-    -- has a owner and doesn't belong to this objects owner? Then try to
-    -- sell the item and if succeeded? Increment the items sold.
-    local aInvObj<const> = aInventory[iObj];
-    local aInvParent<const> = aInvObj.P;
-    if (CanSellGem(aInvObj.ID) or (aInvParent and aInvParent ~= aParent)) and
-      SellItem(aObj, aInvObj) then iItemsSold = iItemsSold + 1;
-    -- Conditions fail so try next inventory item.
-    else iObj = iObj + 1 end;
-  end
-  -- Return items sold
-  return iItemsSold;
-end
 -- Sprite collides with another sprite ------------------------------------- --
 local function IsSpriteCollide(S1, X1, Y1, S2, X2, Y2)
   return maskSpr:IsCollideEx(S1, X1, Y1, maskSpr, S2, X2, Y2);
@@ -681,6 +653,45 @@ local function PickupObjects(aObj, bOnlyTreasure)
   end
   -- Failed!
   return false;
+end
+-- Set a random action, job and direction ---------------------------------- --
+local function SetRandomJob(...)
+  -- AI decisions data
+  local aAIChoicesData<const> = {
+    {FDD = DIR.L,  F = { ACT.WALK, JOB.DIGDOWN, DIR.TCTR },
+                   S = { ACT.WALK, JOB.DIG,     DIR.L    } },
+    {FDD = DIR.R,  F = { ACT.WALK, JOB.DIGDOWN, DIR.TCTR },
+                   S = { ACT.WALK, JOB.DIG,     DIR.R    } },
+    {FDD = DIR.UL, F = { ACT.WALK, JOB.DIG,     DIR.L    },
+                   S = { ACT.WALK, JOB.DIG,     DIR.UL   } },
+    {FDD = DIR.UR, F = { ACT.WALK, JOB.DIG,     DIR.R    },
+                   S = { ACT.WALK, JOB.DIG,     DIR.UR   } },
+    {FDD = DIR.DL, F = { ACT.WALK, JOB.DIG,     DIR.L    },
+                   S = { ACT.WALK, JOB.DIG,     DIR.DL   } },
+    {FDD = DIR.DR, F = { ACT.WALK, JOB.DIG,     DIR.R    },
+                   S = { ACT.WALK, JOB.DIG,     DIR.DR   } },
+    {FDD = DIR.L,  F = { ACT.WALK, JOB.DIGDOWN, DIR.TCTR },
+                   S = { ACT.WALK, JOB.SEARCH,  DIR.L    } },
+    {FDD = DIR.R,  F = { ACT.WALK, JOB.DIGDOWN, DIR.TCTR },
+                   S = { ACT.WALK, JOB.SEARCH,  DIR.R    } },
+    {FDD = DIR.D,  F = { ACT.WALK, JOB.DIG,     DIR.LR   },
+                   S = { ACT.WALK, JOB.DIGDOWN, DIR.TCTR } },
+  };
+  -- Actual function
+  local function DoSetRandomJob(aObject, bUser)
+    -- Select a random choice
+    local aChoice = aAIChoicesData[random(#aAIChoicesData)];
+    -- Failed direction matches then try something else
+    if aChoice.FDD == aObject.FDD then aChoice = aChoice.F;
+    -- We're not blocked from digging so try digging in that direction
+    else aChoice = aChoice.S end;
+    -- Set new AI choice and return
+    SetAction(aObject, aChoice[1], aChoice[2], aChoice[3], bUser);
+  end
+  -- Call function
+  DoSetRandomJob(...);
+  -- Set actual funtion
+  SetRandomJob = DoSetRandomJob;
 end
 -- Add player -------------------------------------------------------------- --
 local function CreatePlayer(iX, iY, iId, iRace, bIsAI)
@@ -758,6 +769,20 @@ local function CreatePlayer(iX, iY, iId, iRace, bIsAI)
     aGlobalData.gCapitalCarried = 0;
   -- Opponent player? Set Opponent
   elseif iId == 2 then aOpponentPlayer = aPlayer end;
+  -- AI player override patience logic
+  local function AIPatienceLogic(aObject)
+    -- Return if...
+    if (aObject.F & OFL.BUSY ~= 0 and -- Digger is busy? -AND-
+       aObject.A ~= ACT.REST) or      -- Digger is NOT resting? -OR-
+       aObject.JT < aObject.PL then   -- Digger is not at impatience limit?
+      return end;
+    -- If have rest ability? (25% chance to execute). Use it and return
+    if aObject.OD[ACT.REST] and random() < 0.25 then
+      return SetAction(aObject, ACT.REST, JOB.NONE, DIR.NONE);
+    end
+    -- Do something casual
+    SetRandomJob(aObject, true);
+  end
   -- For each digger of the player
   local iIndex = 0;
   while iIndex < iNumDiggers do
@@ -767,8 +792,21 @@ local function CreatePlayer(iX, iY, iId, iRace, bIsAI)
     if aDigger then
       -- Insert digger into playfield
       insert(aDiggers, aDigger);
-      -- Digger is player controlled? Clear default AI for digger
-      if not bIsAI then aDigger.AI = AI.NONE end;
+      -- Digger is player controlled?
+      if not bIsAI then
+        -- Set patience AI for player controlled digger
+        aDigger.AI, aDigger.AIF = AI.PATIENCE, AIPatienceLogic;
+        -- Set and verify patience warning value
+        aDigger.PW = aDigger.OD.PATIENCE;
+        assert(aDigger.PW,
+          "Digger "..iIndex.." has no patience warning value!");
+        -- Randomise patience by +/- 25%
+        local iOffset = random(floor(aDigger.PW * 0.25));
+        if random() < 0.5 then iOffset = -iOffset end;
+        -- Digger will stray after 60 seconds of indicated impatience
+        aDigger.PW = aDigger.PW + iOffset;
+        aDigger.PL = aDigger.PW + 3600;
+      end
     -- Failed so show map maker in console that the objid is invalid
     else ConsoleWrite("Warning! Digger "..iIndex..
       " not created for player "..iId.."! Id="..iRace..", X="..iX..
@@ -788,25 +826,8 @@ local function ObjectIsAtHome(aObject)
   assert(aObject.P, "Object specified is an orphan!");
   return aObject.X == aObject.P.HX and aObject.Y == aObject.P.HY;
 end
--- Returns all diggers ----------------------------------------------------- --
-local function GetAllPlayersDiggers()
-  -- Holds potential targets
-  local aTargets<const> = { };
-  -- For each player
-  for iPlayer = 1, #aPlayers do
-    -- Get player data and enumerate their diggers
-    local aDiggers<const> = aPlayers[iPlayer].D;
-    for iDiggerId = 1, #aDiggers do
-      -- Get digger object and insert it in target list
-      local aDigger<const> = aDiggers[iDiggerId];
-      if aDigger then insert(aTargets, aDigger) end;
-    end
-  end
-  -- Return targets
-  return aTargets;
-end
 -- Set object action ------------------------------------------------------- --
-local function DoSetAction(O, A, J, D)
+local function DoSetAction(O, A, J, D, U)
   assert(O, "Object not specified!");
   assert(type(O)=="table", "Object not a table!");
   assert(A, "Action not specified!");
@@ -972,7 +993,7 @@ local function DoSetAction(O, A, J, D)
             -- Deduct funds
             aPlayer.M = iMoney - 1000;
             -- Sale of the century!
-            return PlaySound(aSfxData.TRADE);
+            return PlayStaticSound(aSfxData.TRADE);
           end
         end
       end
@@ -1032,12 +1053,6 @@ local function DoSetAction(O, A, J, D)
     PlayStaticSound(aSfxData.ERROR);
     -- Do nothing else
     return;
-  -- Rest?
-  elseif A == ACT.REST then
-    -- Owner doesnt have enough money or already is full health
-    if O.P.M == 0 or O.H == 100 then PlayStaticSound(aSfxData.ERROR) return
-    -- Rest!
-    else A, J, D = ACT.PHASE, JOB.PHASE, DIR.R end;
   -- Phasing?
   elseif A == ACT.PHASE then
     -- Phasing home? Refuse action if not enough health
@@ -1111,8 +1126,13 @@ local function DoSetAction(O, A, J, D)
     else return DoSetAction(O, O.OD.ACTION, JOB.KEEP, DIR.OPPOSITE) end;
   -- Keep existing job? Keep existing action!
   elseif A == ACT.KEEP then A = O.A end;
-  -- Action, direction and job change not required?
-  if A == O.A and D == O.D and J == O.J then return end;
+  -- Get if action, direction or job changed?
+  if A == O.A and J == O.J and D == O.D then
+    -- Reset job timer if user initiated
+    if U then O.JT = 0 end;
+    -- Done
+    return;
+  end
   -- Set new action, direction and job
   O.A, O.D, O.J = A, D, J;
   -- Remove all flags that are related to object actions
@@ -1120,6 +1140,14 @@ local function DoSetAction(O, A, J, D)
   -- Set action data according to lookup table
   O.AD = O.OD[A];
   assert(O.AD, O.OD.NAME.." actdata for "..A.." not found!");
+  -- If object has patience?
+  if O.PW then
+    -- Object starts as impatient? Set impatient
+    if O.AD.FLAGS and O.AD.FLAGS & OFL.IMPATIENT ~= 0 then O.JT = O.PW;
+    -- Reset value if the user made this action
+    elseif U then O.JT = 0 end;
+  -- Patience disabled
+  else O.JT = 0 end;
   -- Set directional data according to lookup table
   O.DD = O.AD[D];
   assert(O.DD, O.OD.NAME.." dirdata for "..A.."->"..D.." not found!");
@@ -1171,10 +1199,10 @@ local function RollTheDice(nX, nY)
   local nChance = aTimerData.GEMCHANCE;
   -- Add up to double chance depending on depth
   if nY >= aTimerData.GEMDEPTHEXTRA then
-    nChance = ((nY - aTimerData.GEMDEPTHEXTRA) /
-      aTimerData.GEMDEPTHEXTRA) * nChance end;
+    nChance = nChance + (((nY - aTimerData.GEMDEPTHEXTRA) /
+      aTimerData.GEMDEPTHEXTRA) * nChance) end;
   -- 5% chance to spawn a teasure
-  if random() > aTimerData.GEMCHANCE then return end;
+  if random() > nChance then return end
   -- Spawn a random object from the treasure data array and return success
   return not not CreateObject(aDigTileData[random(#aDigTileData)], nX, nY);
 end
@@ -1483,6 +1511,19 @@ local function DrawInfoFrameAndTitle(iTileId)
   RenderShadow(8, 8, 312, 24);
   RenderShadow(8, 32, 312, 208);
 end
+-- Draw health bar --------------------------------------------------------- --
+local function DrawHealthBar(iHealth, iDivisor, iL, iT, iR, iB)
+  -- Red if health danger
+  if iHealth >= 50 then
+    texSpr:SetCRGB(1, 1, (iHealth-50)/50)
+    texSpr:BlitSLTRB(1022, iL, iT, iR + iHealth / iDivisor, iB);
+    texSpr:SetCRGB(1, 1 ,1);
+  elseif iHealth > 0 then
+    texSpr:SetCRGB(1, iHealth/50, 0);
+    texSpr:BlitSLTRB(1022, iL, iT, iR + iHealth / iDivisor, iB);
+    texSpr:SetCRGB(1, 1 ,1);
+  end
+end
 -- Render Interface -------------------------------------------------------- --
 local function RenderInterface()
   -- Render terrain
@@ -1517,7 +1558,7 @@ local function RenderInterface()
       iStageT+PosPYC+aActiveObject.Y-iPosY*16-16);
   end
   -- Digger status tile to blit
-  local T = 833;
+  local T = 867;
   -- Draw digger buttons and activity
   for I = 1, 5 do
     -- Get digger data and if Digger is alive?
@@ -1576,8 +1617,10 @@ local function RenderInterface()
       if aDigger.J == JOB.INDANGER then
         -- Every seond? Play error sound each second
         if floor(iGameTicks%60) == 0 then PlayStaticSound(aSfxData.ERROR) end;
-        -- Every different second set a different blue indicator.
+        -- Every even second set a different blue indicator.
         if iGameTicks%120 < 60 then Tile = 831 else Tile = 832 end;
+      -- Digger is in impatient and every even second?
+      elseif aDigger.JT >= aDigger.PW and iGameTicks%120 < 60 then Tile = 833;
       -- Not in danger but busy?
       elseif aDigger.F & OFL.BUSY ~= 0 then Tile = 830;
       -- Not in danger, not busy but doing something?
@@ -1589,21 +1632,9 @@ local function RenderInterface()
     -- Digger is not alive! Show dimmed button
     else texSpr:BlitSLT(803+I, 128+(I*16), 216) end;
   end
-  -- Object selected and belongs to me?
+  -- Object selected and belongs to me? Draw health bar for it
   if aActiveObject and aActiveObject.P == aActivePlayer then
-    -- Get digger health and if object alive and player is mine?
-    local iHealth<const> = aActiveObject.H;
-    if iHealth > 25 then
-      texSpr:BlitSLTRB(1022, 61, 227, 61+iHealth/2, 229);
-    elseif iHealth > 10 then
-      texSpr:SetCRGB(1, 1, 0);
-      texSpr:BlitSLTRB(1022, 61, 227, 61+iHealth/2, 229);
-      texSpr:SetCRGB(1, 1 ,1);
-    elseif iHealth > 0 then
-      texSpr:SetCRGB(1, 0, 0);
-      texSpr:BlitSLTRB(1022, 61, 227, 61+iHealth/2, 229);
-      texSpr:SetCRGB(1, 1 ,1);
-    end
+    DrawHealthBar(aActiveObject.H, 2, 61, 227, 61, 229);
   end
   -- Draw object status tile
   texSpr:BlitSLT(T, 120, 216);
@@ -1616,68 +1647,53 @@ local function RenderInterface()
   if iInfoScreen == 1 then
     -- Draw frame and title
     DrawInfoFrameAndTitle("DIGGER INVENTORY");
+    -- Set tiny font spacing
+    fontTiny:SetLSpacing(2);
     -- For each digger
     for iDigIndex = 1, #aActivePlayer.D do
+      -- Calculate Y position
+      local iY<const> = iDigIndex * 32;
       -- Print id number of digger
-      fontLarge:Print(16, iDigIndex*32+8, iDigIndex);
+      fontLarge:Print(16, iY+8, iDigIndex);
       -- Draw health bar background
-      texSpr:BlitSLTRB(1023, 24, iDigIndex*32+30, 124, iDigIndex*32+32);
+      texSpr:BlitSLTRB(1023, 24, iY+30, 291, iY+32);
       -- Get Digger data and if it exists?
       local aDigger<const> = aActivePlayer.D[iDigIndex];
       if aDigger then
-        -- Get health and draw health bar
-        local iHealth<const> = aDigger.H;
-        if iHealth > 25 then
-          texSpr:BlitSLTRB(1022, 24, iDigIndex*32+30,
-            24+iHealth, iDigIndex*32+32);
-        elseif iHealth > 10 then
-          texSpr:SetCRGB(1, 1, 0);
-          texSpr:BlitSLTRB(1022, 24, iDigIndex*32+30,
-            24+iHealth, iDigIndex*32+32);
-          texSpr:SetCRGB(1, 1 ,1);
-        elseif iHealth > 0 then
-          texSpr:SetCRGB(1, 0, 0);
-          texSpr:BlitSLTRB(1022, 24, iDigIndex*32+30,
-            24+iHealth, iDigIndex*32+32);
-          texSpr:SetCRGB(1, 1 ,1);
-        end
-        -- Draw digger item data
-        fontLittle:Print(48, iDigIndex*32+8, format("%03u%%\n%04u",
-          floor(aDigger.IW/aDigger.STR*100), aDigger.IW));
+        -- Draw digger health bar
+        DrawHealthBar(aDigger.H, 0.375, 24, iY+30, 24, iY+32);
         -- Draw digger portrait
-        texSpr:BlitSLT(aDigger.S, 31, iDigIndex*32+8);
-        -- Draw health percentage, dirt dug and gems found value
-        fontLittle:Print(132, iDigIndex*32+28,
-          format("%03u%%    %05u    %03u     %03u%%",
-            aDigger.H, aDigger.DUG, aDigger.GEM,
-              floor(aDigger.LDT/iGameTicks*100)));
+        texSpr:BlitSLT(aDigger.S, 31, iY+8);
         -- Digger has items?
         if aDigger.IW > 0 then
           -- Get digger inventory and enumerate through it and draw it
           local aInventory<const> = aDigger.I;
           for iInvIndex = 1, #aInventory do
-            local aInvObj<const> = aInventory[iInvIndex];
-            texSpr:BlitSLT(aInvObj.S, iInvIndex*16+62, iDigIndex*32+8);
+            texSpr:BlitSLT(aInventory[iInvIndex].S, iInvIndex*16+32, iY+8);
           end
         -- No inventory. Print no inventory message
-        else fontTiny:Print(78, iDigIndex*32+13,
-          "THIS "..aDigger.OD.NAME.." IS NOT CARRYING ANYTHING");
-        end
+        else fontTiny:Print(48, iY+13, "NOT CARRYING ANYTHING") end;
+        -- Draw weight and impatience
+        fontLittle:PrintR(308, iY+4, format("%03u%%          %03u%%\n%03u%%         %05u\n%04u          %03u%%",
+            aDigger.H, floor(aDigger.IW/aDigger.STR*100),
+            floor(aDigger.JT/aDigger.PL*100),
+            aDigger.DUG, aDigger.GEM, ceil(aDigger.LDT/iGameTicks*100)));
       -- Digger is dead
       else
         -- Draw grave icon
-        texSpr:BlitSLT(319, 31, iDigIndex*32+8);
-        -- Draw dashes for unavailable digger item data
-        fontLittle:Print(48, iDigIndex*32+8, "---%\n----");
-        -- Draw health percentage, dirt dug and gems found value
-        fontLittle:Print(132, iDigIndex*32+28,
-          "---%    -----    ----     ---%");
+        texSpr:BlitSLT(319, 31, iY+8);
+        -- Draw dead labels
+        fontLittle:PrintR(308, iY+4, "---%          ---%\n---%         -----\n----          ---%");
       end
+      -- Draw labels
       fontTiny:SetCRGB(0, 0.75, 1);
-      fontTiny:Print(162, iDigIndex*32+29, "DUG          GEMS       EFFI%");
+      fontTiny:SetLSpacing(2);
+      fontTiny:PrintR(308, iY+5, "HEALTH:             WEIGHT:        \nIMPATIENCE:         GROADS DUG:        \nGEMS FOUND:         EFFICIENCY:        ");
     end
     -- Draw on button
     texSpr:BlitSLT(816, 248, 216);
+    -- Reset tiny font spacing
+    fontTiny:SetLSpacing(1);
   -- Inventory button released?
   else texSpr:BlitSLT(815, 248, 216) end;
   -- Locations button pressed?
@@ -1690,49 +1706,37 @@ local function RenderInterface()
     end end
     -- For each digger
     for iDigIndex = 1, #aActivePlayer.D do
+      -- Calculate Y position
+      local iY<const> = iDigIndex * 32;
       -- Print id number of digger
-      fontLarge:Print(16, iDigIndex*32+8, iDigIndex);
+      fontLarge:Print(16, iY+8, iDigIndex);
       -- Draw colour key of digger
-      texSpr:BlitSLT(858+iDigIndex, 31, iDigIndex*32+11);
+      texSpr:BlitSLT(858+iDigIndex, 31, iY+11);
       -- Draw X and Y letters
       fontTiny:SetCRGB(0, 0.75, 1);
-      fontTiny:Print(64, iDigIndex*32+8, "X:       Y:");
+      fontTiny:Print(64, iY+8, "X:       Y:");
       -- Draw health bar background
-      texSpr:BlitSLTRB(1023, 24, iDigIndex*32+30, 124, iDigIndex*32+32);
+      texSpr:BlitSLTRB(1023, 24, iY+30, 124, iY+32);
       -- Get digger and if it exists?
       local aDigger<const> = aActivePlayer.D[iDigIndex];
       if aDigger then
-        -- Get health and draw health bar
-        local iHealth<const> = aDigger.H;
-        if iHealth > 25 then
-          texSpr:BlitSLTRB(1022, 24, iDigIndex*32+30,
-            24+iHealth, iDigIndex*32+32);
-        elseif iHealth > 10 then
-          texSpr:SetCRGB(1, 1, 0);
-          texSpr:BlitSLTRB(1022, 24, iDigIndex*32+30,
-            24+iHealth, iDigIndex*32+32);
-          texSpr:SetCRGB(1, 1 ,1);
-        elseif iHealth > 0 then
-          texSpr:SetCRGB(1, 0, 0);
-          texSpr:BlitSLTRB(1022, 24, iDigIndex*32+30,
-            24+iHealth, iDigIndex*32+32);
-          texSpr:SetCRGB(1, 1 ,1);
-        end
+        -- Draw digger health bar
+        DrawHealthBar(aDigger.H, 1, 24, iY+30, 24, iY+32);
         -- Draw digger item data
-        fontLittle:Print(72, iDigIndex*32+8,
+        fontLittle:Print(72, iY+8,
           format("%04u  %04u\n\\%03u  \\%03u",
             aDigger.X, aDigger.Y, aDigger.AX, aDigger.AY));
         -- Draw digger portrait
-        texSpr:BlitSLT(aDigger.S, 43, iDigIndex*32+8);
+        texSpr:BlitSLT(aDigger.S, 43, iY+8);
         -- Draw position of digger
         texSpr:BlitSLT(858+iDigIndex, 141+(aDigger.AX*1.25),
           38+(aDigger.AY*1.25));
       -- Digger is dead
       else
         -- Draw grave icon
-        texSpr:BlitSLT(319, 43, iDigIndex*32+8);
+        texSpr:BlitSLT(319, 43, iY+8);
         -- Draw dashes for unavailable digger item data
-        fontLittle:Print(72, iDigIndex*32+8, "----  ----\n\\---  \\---");
+        fontLittle:Print(72, iY+8, "----  ----\n\\---  \\---");
       end
     end
     -- Draw on button
@@ -1960,27 +1964,32 @@ local function CheckObjectCollision(aObject)
        aObject.H > 0 and                     -- -and- source is alive?
        aTarget.H > 0 and                     -- -and- target is alive?
        aTarget.A ~= ACT.PHASE and            -- -and- target not teleporting?
+       aTarget.A ~= ACT.HIDE and             -- -and- target not hidden?
+       aObject.A ~= ACT.EATEN and            -- -and- source object not eaten?
        maskSpr:IsCollideEx(                  -- -and- target collides source?
-         477, aObject.X, aObject.Y, maskSpr, --
+         477, aObject.X, aObject.Y, maskSpr,
          477, aTarget.X, aTarget.Y) then
       -- If object can consume the object?
       if aObject.F & OFL.CONSUME ~= 0 then
-        -- Target is not eaten?
-        if aTarget.A ~= ACT.EATEN then
-          -- Kill egg
-          AdjustObjectHealth(aObject, -100)
-          -- Eat digger and set it to busy
-          SetAction(aTarget, ACT.EATEN, JOB.NONE, DIR.KEEP);
-          -- This digger is selected by the client? Unset control menu
-          if aActiveObject == aTarget then aActiveMenu = nil end;
-        end
-      -- If object is not eaten?
-      elseif aObject.A ~= ACT.EATEN then
+        -- Kill egg
+        AdjustObjectHealth(aObject, -100);
+        -- Eat digger and set it to busy
+        SetAction(aTarget, ACT.EATEN, JOB.NONE, DIR.KEEP);
+        -- This digger is selected by the client? Unset control menu
+        if aActiveObject == aTarget then aActiveMenu = nil end;
+        -- Don't need to test collision anymore since we killed the egg
+        return;
+      -- If target object is not eaten?
+      elseif aTarget.A ~= ACT.EATEN then
         -- If object can phase the digger
         if aObject.F & OFL.PHASEDIGGER ~= 0 then
           -- Make object phase to some other object
           SetAction(aTarget, ACT.PHASE, JOB.PHASE, DIR.D);
-        -- If object can hurt the Digger
+        -- If object can heal the Digger?
+        elseif aObject.F & OFL.HEALNEARBY ~= 0 then
+          -- Increase health
+          AdjustObjectHealth(aTarget, 1);
+        -- If object can hurt the Digger?
         elseif aObject.F & OFL.HURTDIGGER ~= 0 then
           -- Object is stationary? Make me fight and face the digger
           if aObject.F & OFL.STATIONARY ~= 0 then
@@ -2022,8 +2031,8 @@ local function CheckObjectCollision(aObject)
           end
         -- Else if object...
         elseif aObject.F & OFL.DIGGER ~= 0 and -- Object touching is digger?
-               aTarget.F & OFL.BUSY == 0 and   -- Object target not busy?
-               aObject.F & OFL.BUSY == 0 and   -- -and- is not busy?
+               aTarget.F & OFL.BUSY == 0 and   -- -and- Target object not busy?
+               aObject.F & OFL.BUSY == 0 and   -- -and- Source object not busy?
                aObject.P ~= aTarget.P and      -- -and- not same owner?
                aTarget.A ~= ACT.JUMP and       -- -and- target not jumping
            not aObject.FT then                 -- -and- has no fight target?
@@ -2036,6 +2045,10 @@ local function CheckObjectCollision(aObject)
             GetTargetDirection(aTarget, aObject));
           aTarget.FT = aObject;
         end
+      -- Target is eaten? If object can phase the digger
+      elseif aObject.F & OFL.PHASEDIGGER ~= 0 then
+        -- Make eaten digger phase to some other object and troll it!
+        SetAction(aTarget, ACT.PHASE, JOB.PHASE, DIR.DR);
       end
     end
   end
@@ -2183,11 +2196,25 @@ local function InitCreateObject()
   };
   -- Process find target logic --------------------------------------------- --
   local function AIFindTarget(aObject)
+    -- Return if busy
+    if aObject.F & OFL.BUSY ~= 0 then return end;
     -- Object aquires a target or target's time expired?
     local aTarget = aObject.T;
     if aObject.AT > aTimerData.TARGETTIME or not aTarget then
-      -- Get potential targets and just return if there is none
-      local aTargets<const> = GetAllPlayersDiggers();
+      -- Holds potential targets
+      local aTargets<const> = { };
+      -- For each player
+      for iPlayer = 1, #aPlayers do
+        -- Get player data and enumerate their diggers
+        local aDiggers<const> = aPlayers[iPlayer].D;
+        for iDiggerId = 1, #aDiggers do
+          -- Get digger object and insert it in target list if not hidden
+          local aDigger<const> = aDiggers[iDiggerId];
+          if aDigger and aDigger.A ~= ACT.HIDE then
+            insert(aTargets, aDigger) end;
+        end
+      end
+      -- Return if no targets found
       if #aTargets == 0 then return end;
       -- Pick a random target and set it
       aTarget = aTargets[random(#aTargets)];
@@ -2224,7 +2251,11 @@ local function InitCreateObject()
   end
   -- Process find target logic (slow --------------------------------------- --
   local function AIFindTargetSlow(aObject)
-    if aObject.AT % 2 == 0 then AIFindTarget(aObject) end end;
+    -- Return if busy
+    if aObject.F & OFL.BUSY ~= 0 then return end;
+    -- Move closer to selected target every even action frame
+    if aObject.AT % 2 == 0 then AIFindTarget(aObject) end;
+  end
   -- Returns if object has sellable items----------------------------------- --
   local function ObjectHasValuables(aObject)
     -- Get object inventory and enumerate it
@@ -2264,8 +2295,44 @@ local function InitCreateObject()
     -- Object didn't jump
     return false;
   end
+  -- Digger AI choices ----------------------------------------------------- --
+  local aAIData<const> = {
+    -- Ai is stopped?
+    [ACT.STOP] = {
+      -- No job set?
+      [JOB.NONE] = { [DIR.UL] = 0.02,  [DIR.U]    = 0.1,  [DIR.UR] = 0.02,
+                     [DIR.L]  = 0.02,  [DIR.NONE] = 0.1,  [DIR.R]  = 0.02,
+                     [DIR.DL] = 0.02,  [DIR.D]    = 0.02, [DIR.DR] = 0.02 },
+      -- Job is to dig?
+      [JOB.DIG] = { [DIR.UL] = 0.02,  [DIR.U]    = 0.02, [DIR.UR] = 0.02,
+                    [DIR.L]  = 0.02,  [DIR.NONE] = 0.02, [DIR.R]  = 0.02,
+                    [DIR.DL] = 0.02,  [DIR.D]    = 0.02, [DIR.DR] = 0.02 },
+    -- Ai is walking?
+    }, [ACT.WALK] = {
+      -- Job is bouncing around?
+      [JOB.BOUNCE] = { [DIR.UL] = 0.001, [DIR.UR] = 0.001,  [DIR.L]  = 0.001,
+                       [DIR.R]  = 0.001, [DIR.DL] = 0.02,   [DIR.D]  = 0.002,
+                       [DIR.DR] = 0.02 },
+      -- Job is digging?
+      [JOB.DIG] = { [DIR.UL] = 0.002, [DIR.UR] = 0.002,  [DIR.L]  = 0.001,
+                    [DIR.R]  = 0.001, [DIR.DL] = 0.02,   [DIR.D]  = 0.75,
+                    [DIR.DR] = 0.05 },
+      -- Job is digging down?
+      [JOB.DIGDOWN] = { [DIR.D]  = 0.75 },
+      -- Job is searching for treasure?
+      [JOB.SEARCH] = { [DIR.L]  = 0.002, [DIR.R]  = 0.002 },
+    -- Ai is running?
+    }, [ACT.RUN] = {
+      -- Job is bouncing around?
+      [JOB.BOUNCE] = { [DIR.L]  = 0.01,  [DIR.R]  = 0.01 },
+      -- Job is in danger?
+      [JOB.INDANGER] = { [DIR.L]  = 0.002, [DIR.R]  = 0.002 },
+    },
+  };
   -- AI digger logic ------------------------------------------------------- --
   local function AIDiggerLogic(aObject)
+    -- Return if busy
+    if aObject.F & OFL.BUSY ~= 0 then return end;
     -- Teleport home to safely regain health if these conditions are met...
     if (aObject.F & OFL.FALL ~= 0 and  -- (Object is falling? -and-
         aObject.FD >= aObject.H and    --  Falling damage would kill? -and-
@@ -2312,6 +2379,36 @@ local function InitCreateObject()
       -- Teleport home in hope the digger will find a new direction
       return SetAction(aObject, ACT.PHASE, JOB.PHASE, DIR.U);
     end
+    -- Digger is walking?
+    if aObject.A == ACT.WALK then
+      -- Every 1/2 sec and digger isnt searching? Try to pick up any treasure!
+      if iGameTicks % 30 == 0 and aObject.J ~= JOB.SEARCH then
+        PickupObjects(aObject, false)
+      -- Check for jump and return if we did
+      elseif ObjectJumped(aObject) then return end;
+    -- Digger is running?
+    elseif aObject.A == ACT.RUN then
+      -- Check for jump and return if we did
+      if ObjectJumped(aObject) then return end;
+    end
+    -- A 0.1% chance occured each frame?
+    if random() < 0.001 then
+      -- Get digger inventory and if we have inventory?
+      local aInventory<const> = aObject.I;
+      if #aInventory > 0 then
+        -- Walk Digger inventory
+        for iInvIndex = 1, #aInventory do
+          -- Get inventory object and if it is not treasure?
+          local aInvObj<const> = aInventory[iInvIndex];
+          if aInvObj.F & OFL.TREASURE == 0 then
+            -- Drop it
+            DropObject(aObject, aInvObj);
+            -- Do not drop anything else
+            break;
+          end
+        end
+      end
+    end
     -- Get AI data for action and if we have it
     local aAIDataAction<const> = aAIData[aObject.A];
     if aAIDataAction then
@@ -2321,24 +2418,11 @@ local function InitCreateObject()
         -- Get chance to change job and if that chance is triggered?
         local nAIDataDirection<const> = aAIDataJob[aObject.D];
         if nAIDataDirection and random() <= nAIDataDirection then
-          -- Select a random number between 0 and 9
-          local aChoice = aAIChoicesData[random(#aAIChoicesData)];
-          -- Failed direction matches then try something else
-          if aChoice.FDD == aObject.FDD then aChoice = aChoice.F;
-          -- We're not blocked from digging so try digging in that direction
-          else aChoice = aChoice.S end;
-          -- Set new AI choice and return
-          return SetAction(aObject, aChoice[1], aChoice[2], aChoice[3]);
+          -- Set a random job
+          return SetRandomJob(aObject);
         end
       end
     end
-    -- Return if digger is not walking
-    if aObject.A ~= ACT.WALK then return end;
-    -- Every 1/2 sec and digger isnt searching? Try to pick up any treasure!
-    if iGameTicks % 30 == 0 and aObject.J ~= JOB.SEARCH then
-      return PickupObjects(aObject, false) end;
-    -- Check for jump and return if we did
-    if ObjectJumped(aObject) then return end;
   end
   -- AI random direction logic initialisation data ------------------------- --
   local aAIRandomLogicInitData<const> = { DIR.U, DIR.D, DIR.L, DIR.R };
@@ -2372,6 +2456,8 @@ local function InitCreateObject()
   };
   -- AI random direction logic --------------------------------------------- --
   local function AIRandomLogic(aObject)
+    -- Return if busy
+    if aObject.F & OFL.BUSY ~= 0 then return end;
     -- Set new direction if object has no direction
     local iDirection = aObject.D;
     if iDirection == DIR.NONE then
@@ -2409,8 +2495,17 @@ local function InitCreateObject()
     -- Pick a new direction from eligable directions
     SetAction(aObject, ACT.KEEP, JOB.KEEP, iDirection);
   end
+  -- Bigfoot AI data ------------------------------------------------------- --
+  local aAIBigFootData<const> = {
+    { ACT.WALK,  JOB.BOUNCE, DIR.L    }, -- Chance to walk left
+    { ACT.WALK,  JOB.BOUNCE, DIR.R    }, -- Chance to walk right
+    { ACT.PHASE, JOB.PHASE,  DIR.D    }, -- Chance to phase randomly
+    { ACT.STOP,  JOB.NONE,   DIR.NONE }, -- Chance to stop
+  };
   -- Bigfoot AI ------------------------------------------------------------ --
   local function AIBigfoot(aObject)
+    -- Return if busy
+    if aObject.F & OFL.BUSY ~= 0 then return end;
     -- Return if object is busy
     if aObject.F & OFL.BUSY ~= 0 then return end;
     -- Jump if we can
@@ -2425,6 +2520,8 @@ local function InitCreateObject()
   end
   -- Basic AI roaming ------------------------------------------------------ --
   local function AIRoam(aObject)
+    -- Return if busy
+    if aObject.F & OFL.BUSY ~= 0 then return end;
     -- Direction to go in
     local iAdjX;
     if aObject.D == DIR.L then iAdjX = -1 else iAdjX = 1 end;
@@ -2438,15 +2535,24 @@ local function InitCreateObject()
   end
   -- Basic AI roaming (slow) ----------------------------------------------- --
   local function AIRoamSlow(aObject)
-    if aObject.AT % 4 == 0 then AIRoam(aObject) end end;
+    -- Return if busy
+    if aObject.F & OFL.BUSY ~= 0 then return end;
+    -- Move around every 4th frame
+    if aObject.AT % 4 == 0 then AIRoam(aObject) end;
+  end
+  -- Basic AI roaming (normal) --------------------------------------------- --
   local function AIRoamNormal(aObject)
-    if aObject.AT % 2 == 0 then AIRoam(aObject) end end;
+    -- Return if busy
+    if aObject.F & OFL.BUSY ~= 0 then return end;
+    -- Move around every odd frame
+    if aObject.AT % 2 == 0 then AIRoam(aObject) end;
+  end
   -- AI id to function list ------------------------------------------------ --
   local aAIFuncs<const> = {
     [AI.NONE]        = false,            [AI.DIGGER]  = AIDiggerLogic,
     [AI.RANDOM]      = AIRandomLogic,    [AI.FIND]    = AIFindTarget,
     [AI.FINDSLOW]    = AIFindTargetSlow, [AI.CRITTER] = AIRoamNormal,
-    [AI.CRITTERSLOW] = AIRoamSlow,       [AI.BIGFOOT] = AIBigfoot,
+    [AI.CRITTERSLOW] = AIRoamSlow,       [AI.BIGFOOT]  = AIBigfoot,
   }; ----------------------------------------------------------------------- --
   local function CreateObject(iObjId, iX, iY, aParent)
     -- Check parameters
@@ -2471,7 +2577,7 @@ local function InitCreateObject()
     -- Get and test AI type
     local iAI<const> = aObjData.AITYPE;
     if type(iAI) ~= "number" then error("Invalid AI type #"..
-      tostring(aObjData.AITYPE).." for "..sName.."["..iObjId.."]!") end
+      tostring(iAI).." for "..sName.."["..iObjId.."]!") end
     -- Build new object array
     local aObject<const> = {
       A    = ACT.NONE,                   -- Object action (ACT.*
@@ -2500,13 +2606,16 @@ local function InitCreateObject()
       IW   = 0,                          -- Weight of inventory
       J    = JOB.NONE,                   -- Object job (JOB.*)
       JD   = { },                        -- Reference to job data
+      JT   = 0,                          -- Job timer
       LC   = aObjData.LUNGS,             -- Lung capacity
-      LDT  = iGameTicks,                  -- Last successful dig time
+      LDT  = iGameTicks,                 -- Last successful dig time
       LH   = 0,                          -- Last hit sprite
       OD   = aObjData,                   -- Object data table
       OFX  = 0, OFY  = 0,                -- Blitting offset
       OFXA = 0, OFYA = 0,                -- Attachment blitting offset
       P    = aParent,                    -- Parent of object
+      PW   = 0,                          -- Patience warning
+      PL   = 0,                          -- Patience limit
       S    = 0,                          -- Current sprite frame #
       S1   = 0,                          -- Start sprite frame #
       S1A  = 0,                          -- Start attachment sprite frame #
@@ -2712,7 +2821,7 @@ local function GameProc()
     -- Get object data
     local O<const> = aObjects[iObjId];
     -- If AI function set, not dying and not phasing then call AI function!
-    if O.AI ~= AI.NONE and O.F & OFL.BUSY == 0 then O.AIF(O) end;
+    if O.AI ~= AI.NONE then O.AIF(O) end;
     -- If object can't fall or it finished falling and isn't floating?
     if not CheckObjectFalling(O) then
       -- If fall damage is set then object fell and now we must reduce its
@@ -2775,18 +2884,53 @@ local function GameProc()
             -- Deselect it. Opponents are not allowed to see where they went!
             aActiveObject = nil
           end
-          -- Direction set to the right
+          -- Direction set to the right to sell all items?
           if O.D == DIR.R then
             -- Hide the digger
             SetAction(O, ACT.HIDE, JOB.PHASE, DIR.R);
-            -- Sell all items and check ending conditions if successful
-            if SellAllItems(O) > 0 then EndConditionsCheck() end;
+            -- Number of items sold
+            local iItemsSold = 0;
+            -- Get object inventory and if inventory held
+            local aInventory<const> = O.I;
+            if #aInventory > 0 then
+              -- Get owner of this object
+              local aParent<const> = O.P;
+              -- For each item in digger inventory. We have to use a while loop
+              -- as we need to remove items from the inventory.
+              local iObj = 1 while iObj <= #aInventory do
+                -- Get the inventory object and if the gem is sellable or the
+                -- object has a owner and doesn't belong to this objects owner?
+                -- Then try to sell the item and if succeeded? Increment the
+                -- items sold.
+                local aInvObj<const> = aInventory[iObj];
+                local aInvParent<const> = aInvObj.P;
+                if (CanSellGem(aInvObj.ID) or
+                   (aInvParent and aInvParent ~= aParent)) and
+                  SellItem(O, aInvObj) then iItemsSold = iItemsSold + 1;
+                -- Conditions fail so try next inventory item.
+                else iObj = iObj + 1 end;
+              end
+              -- If items were sold?
+              if iItemsSold > 0 then
+                -- If object...
+                if #aInventory > 0 and                -- Still has inventory?
+                   random() < 0.01 and                -- Triggers 1% chance?
+                   O.P.M > aActivePlayer.M + 400 then -- Way more cash?
+                  -- Purchase something random to keep the scores fair
+                  BuyItem(O, aShopData[random(#aShopData)])
+                end
+                -- Check if any player won
+                EndConditionsCheck();
+              end
+            end
           -- Phase home
           elseif O.D == DIR.U then
             -- Reduce health as a cost for teleporting
             if O.F & OFL.TPMASTER == 0 then AdjustObjectHealth(O, -5) end;
             -- Go home?
             local bGoingHome = true;
+            -- Is teleport master?
+            local bIsTeleMaster<const> = O.F & OFL.TPMASTER ~= 0;
             -- For each object
             for TI = 1, #aObjects do
               -- Get object
@@ -2794,8 +2938,8 @@ local function GameProc()
               -- If object is a telepole and object is owned by this object
               -- or object is a teleport master and telepole status nominal?
               if TO.ID == TYP.TELEPOLE and
-                (TO.P == O.P or O.F & OFL.TPMASTER ~= 0)
-                  and TO.A == ACT.STOP then
+                 (TO.P == O.P or bIsTeleMaster) and
+                 TO.A == ACT.STOP then
                 -- Ignore telepole?
                 local bIgnoreTelepole = false;
                 -- Enumerate teleport destinations...
@@ -2827,7 +2971,7 @@ local function GameProc()
               -- Set position of object to player's home
               SetPosition(O, O.P.HX, O.P.HY);
               -- Re-phase back into stance
-              SetAction(O, ACT.PHASE, JOB.NONE, DIR.NONE);
+              SetAction(O, ACT.PHASE, JOB.NONE, DIR.KEEP);
             end
           -- Going into trade centre
           elseif O.D == DIR.UL then
@@ -2840,7 +2984,7 @@ local function GameProc()
             -- Init lobby
             InitLobby(aActiveObject, false, 1);
           -- Phase random target?
-          elseif O.D == DIR.DR or O.D == DIR.D then
+          elseif O.D == DIR.D or O.D == DIR.DR then
             -- Valid targets
             local TA = { };
             -- Walk objects list
@@ -2848,11 +2992,8 @@ local function GameProc()
               -- Get object and if the object isnt this object and object is
               -- a valid phase target? Insert into valid phase targets list.
               local TO<const> = aObjects[TI];
-              if TO ~= O and
-                 TO.F & OFL.PHASETARGET ~= 0 and
-                (O.D == DIR.D or (O.D == DIR.DR and
-                                  TO.F & OFL.DIGGER ~= 0)) then
-                 insert(TA, TO);
+              if TO ~= O and TO.F & OFL.PHASETARGET ~= 0 then
+                insert(TA, TO);
               end
             end
             -- List has items?
@@ -2862,19 +3003,23 @@ local function GameProc()
               -- Set this objects position to the object
               SetPosition(O, TA.X, TA.Y);
               -- Re-phase back into stance
-              SetAction(O, ACT.PHASE, JOB.NONE, DIR.NONE);
+              SetAction(O, ACT.PHASE, JOB.NONE, DIR.KEEP);
             -- Else if object has owner, teleport home
             elseif O.P then
               -- Set position of object to player's home
               SetPosition(O, O.P.HX, O.P.HY);
               -- Re-phase back into stance
-              SetAction(O, ACT.PHASE, JOB.NONE, DIR.NONE);
+              SetAction(O, ACT.PHASE, JOB.NONE, DIR.KEEP);
             -- No owner = no home, just de-phase
-            else SetAction(O, ACT.STOP, JOB.NONE, DIR.NONE) end;
+            else SetAction(O, ACT.STOP, JOB.NONE, DIR.KEEP) end;
           end
-        -- Object has finished phasing so set normal stance mode. Keep the
-        -- direction which is used to tell AI to not phase again.
-        else SetAction(O, ACT.STOP, JOB.NONE, DIR.KEEP) end;
+        -- Object has finished phasing?
+        else
+          -- Object was teleported eaten? Respawn as eaten!
+          if O.D == DIR.DR then SetAction(O, ACT.EATEN, JOB.NONE, DIR.LR);
+          -- Object not eaten?
+          else SetAction(O, ACT.STOP, JOB.NONE, DIR.KEEP) end;
+        end
       -- Object is hidden and object is in the trade-centre?
       elseif O.A == ACT.HIDE and O.J == JOB.PHASE then
         -- Health at full?
@@ -2979,8 +3124,8 @@ local function GameProc()
     end
     -- Process animations
     AnimateObject(O);
-    -- Increase action timer
-    O.AT = O.AT + 1;
+    -- Increase action and job timer
+    O.AT, O.JT = O.AT + 1, O.JT + 1;
     -- Process next object
     iObjId = iObjId + 1;
     -- Label for skipping to next object
@@ -3106,7 +3251,7 @@ local function ProcessMenuClick()
     PlayStaticSound(aSfxData.SELECT);
   -- New action specified? Set new action and play sound
   elseif aMIData[4] ~= 0 and aMIData[5] ~= 0 and aMIData[6] ~= 0 then
-    SetAction(aActiveObject, aMIData[4], aMIData[5], aMIData[6]);
+    SetAction(aActiveObject, aMIData[4], aMIData[5], aMIData[6], true);
     PlayStaticSound(aSfxData.SELECT);
   end
 end
@@ -3255,13 +3400,13 @@ local function ProcInput()
       return SelectAdjacentDigger(1) end;
     -- Stop digger?
     if IsKeyPressed(iKeyBackspace) and SelectedDiggerIsMovable() then
-      return SetAction(aActiveObject, ACT.STOP, JOB.NONE, DIR.NONE) end;
+      return SetAction(aActiveObject, ACT.STOP, JOB.NONE, DIR.NONE, true) end;
     -- Grab items?
     if IsKeyPressed(iKeySpacebar) and SelectedDiggerIsMovable() then
-      return SetAction(aActiveObject, ACT.GRAB, JOB.KEEP, DIR.KEEP) end;
+      return SetAction(aActiveObject, ACT.GRAB, JOB.KEEP, DIR.KEEP, true) end;
     -- Teleport?
     if IsKeyPressed(iKeyKp0) and SelectedDiggerIsMovable() then
-      return SetAction(aActiveObject, ACT.PHASE, JOB.PHASE, DIR.U) end;
+      return SetAction(aActiveObject, ACT.PHASE, JOB.PHASE, DIR.U, true) end;
     -- Key to select a device?
     if IsKeyPressed(iKeyReturn) then return SelectDevice() end;
     -- Book? Load the book
@@ -3276,45 +3421,45 @@ local function ProcInput()
     if IsKeyPressed(iKeyUp) and SelectedDiggerIsMovable() then
       -- If we're digging left then dig up-left instead
       if aActiveObject.A == ACT.DIG and aActiveObject.D == DIR.L then
-        return SetAction(aActiveObject, ACT.DIG, JOB.DIG, DIR.UL) end;
+        return SetAction(aActiveObject, ACT.DIG, JOB.DIG, DIR.UL, true) end;
       -- If we're digging right then dig up-right instead
       if aActiveObject.A == ACT.DIG and aActiveObject.D == DIR.R then
-        return SetAction(aActiveObject, ACT.DIG, JOB.DIG, DIR.UR) end;
+        return SetAction(aActiveObject, ACT.DIG, JOB.DIG, DIR.UR, true) end;
       -- Jump otherwise
-      return SetAction(aActiveObject, ACT.JUMP, JOB.KEEP, DIR.KEEP);
+      return SetAction(aActiveObject, ACT.JUMP, JOB.KEEP, DIR.KEEP, true);
     end
     -- Down key pressed?
     if IsKeyPressed(iKeyDown) and SelectedDiggerIsMovable() then
       -- If digging left then dig down- left
       if aActiveObject.A == ACT.DIG and aActiveObject.D == DIR.L then
-        return SetAction(aActiveObject, ACT.DIG, JOB.DIG, DIR.DL) end;
+        return SetAction(aActiveObject, ACT.DIG, JOB.DIG, DIR.DL, true) end;
       -- If digging right then dig down-right
       if aActiveObject.A == ACT.DIG and aActiveObject.D == DIR.R then
-        return SetAction(aActiveObject, ACT.DIG, JOB.DIG, DIR.DR) end;
+        return SetAction(aActiveObject, ACT.DIG, JOB.DIG, DIR.DR, true) end;
       -- Otherwise dig down
-      return SetAction(aActiveObject, ACT.WALK, JOB.DIGDOWN, DIR.TCTR);
+      return SetAction(aActiveObject, ACT.WALK, JOB.DIGDOWN, DIR.TCTR, true);
     end
     -- Left key pressed?
     if IsKeyPressed(iKeyLeft) and SelectedDiggerIsMovable() then
       -- If running left then set digger to dig left
       if aActiveObject.A == ACT.RUN and aActiveObject.D == DIR.L then
-        return SetAction(aActiveObject, ACT.RUN, JOB.DIG, DIR.L) end;
+        return SetAction(aActiveObject, ACT.RUN, JOB.DIG, DIR.L, true) end;
       -- If walking left then set digger to run left
       if aActiveObject.A == ACT.WALK and aActiveObject.D == DIR.L then
-        return SetAction(aActiveObject, ACT.RUN, JOB.KNDD, DIR.L) end;
+        return SetAction(aActiveObject, ACT.RUN, JOB.KNDD, DIR.L, true) end;
       -- Otherwise walk left
-      return SetAction(aActiveObject, ACT.WALK, JOB.KNDD, DIR.L);
+      return SetAction(aActiveObject, ACT.WALK, JOB.KNDD, DIR.L, true);
     end
     -- Right key pressed?
     if IsKeyPressed(iKeyRight) and SelectedDiggerIsMovable() then
       -- If running right then set digger to dig right
       if aActiveObject.A == ACT.RUN and aActiveObject.D == DIR.R then
-        return SetAction(aActiveObject, ACT.RUN, JOB.DIG, DIR.R) end;
+        return SetAction(aActiveObject, ACT.RUN, JOB.DIG, DIR.R, true) end;
       -- If walking right then set digger to righ right
       if aActiveObject.A == ACT.WALK and aActiveObject.D == DIR.R then
-        return SetAction(aActiveObject, ACT.RUN, JOB.KNDD, DIR.R) end;
+        return SetAction(aActiveObject, ACT.RUN, JOB.KNDD, DIR.R, true) end;
       -- Otherwise walk right
-      return SetAction(aActiveObject, ACT.WALK, JOB.KNDD, DIR.R);
+      return SetAction(aActiveObject, ACT.WALK, JOB.KNDD, DIR.R, true);
     end
     -- If pause key or button pressed?
     if IsKeyPressed(iKeyEscape) or IsButtonPressed(9) then
@@ -3790,35 +3935,34 @@ return { A = {                         -- Exports
   }, F = function(GetAPI)              -- Imports
   -- Imports --------------------------------------------------------------- --
   TYP, aLevelData, LoadResources, aObjectData, ACT, JOB, DIR, aTimerData, AI,
-  OFL, aDigTileData, PlayMusic, aTileData, aTileFlags, aAIData, Fade,
-  aAIChoicesData, BCBlit, SetCallbacks, IsMouseInBounds, aDigData, DF,
-  aSfxData, aJumpRiseData, aJumpFallData, IsKeyPressed, IsButtonPressed,
-  IsKeyHeld, IsButtonHeld, GetMouseX, GetMouseY, PlayStaticSound, PlaySound,
-  IsButtonPressedNoRelease, aMenuData, MFL, MNU, IsMouseXLessThan, InitBook,
-  aObjToUIData, GetMusic, StopMusic, RenderFade, IsJoyPressed, InitWin,
-  InitWinDead, InitLose, InitLoseDead, InitTNTMap, InitLobby, texSpr,
-  fontLarge, fontLittle, fontTiny, aDigBlockData, aExplodeDirData, SetCursor,
-  aCursorIdData, RegisterFBUCallback, GetCallbacks, GetTestMode, RenderShadow,
-  SetBottomRightTip, aAIBigFootData, aRaceData, aDugRandShaftData,
-  aFloodGateData, aTrainTrackData, aExplodeAboveData, maskLev, maskSpr,
-  aGlobalData
+  OFL, aDigTileData, PlayMusic, aTileData, aTileFlags, Fade, BCBlit,
+  SetCallbacks, IsMouseInBounds, aDigData, DF, aSfxData, aJumpRiseData,
+  aJumpFallData, IsKeyPressed, IsButtonPressed, IsKeyHeld, IsButtonHeld,
+  GetMouseX, GetMouseY, PlayStaticSound, PlaySound, IsButtonPressedNoRelease,
+  aMenuData, MFL, MNU, IsMouseXLessThan, InitBook, aObjToUIData, GetMusic,
+  StopMusic, RenderFade, IsJoyPressed, InitWin, InitWinDead, InitLose,
+  InitLoseDead, InitTNTMap, InitLobby, texSpr, fontLarge, fontLittle, fontTiny,
+  aDigBlockData, aExplodeDirData, SetCursor, aCursorIdData,
+  RegisterFBUCallback, GetCallbacks, GetTestMode, RenderShadow,
+  SetBottomRightTip, aRaceData, aDugRandShaftData, aFloodGateData,
+  aTrainTrackData, aExplodeAboveData, maskLev, maskSpr, aGlobalData, aShopData
   = -- --------------------------------------------------------------------- --
   GetAPI("aObjectTypes", "aLevelData", "LoadResources", "aObjectData",
     "aObjectActions", "aObjectJobs", "aObjectDirections", "aTimerData",
     "aAITypesData", "aObjectFlags", "aDigTileData", "PlayMusic", "aTileData",
-    "aTileFlags", "aAIData", "Fade", "aAIChoicesData", "BCBlit",
-    "SetCallbacks", "IsMouseInBounds", "aDigData", "aDigTileFlags", "aSfxData",
-    "aJumpRiseData", "aJumpFallData", "IsKeyPressed", "IsButtonPressed",
-    "IsKeyHeld", "IsButtonHeld", "GetMouseX", "GetMouseY", "PlayStaticSound",
-    "PlaySound", "IsButtonPressedNoRelease", "aMenuData", "aMenuFlags",
-    "aMenuIds", "IsMouseXLessThan", "InitBook", "aObjToUIData", "GetMusic",
-    "StopMusic", "RenderFade", "IsJoyPressed", "InitWin", "InitWinDead",
-    "InitLose", "InitLoseDead", "InitTNTMap", "InitLobby", "texSpr",
-    "fontLarge", "fontLittle", "fontTiny", "aDigBlockData", "aExplodeDirData",
-    "SetCursor", "aCursorIdData", "RegisterFBUCallback", "GetCallbacks",
-    "GetTestMode", "RenderShadow", "SetBottomRightTip", "aAIBigFootData",
-    "aRaceData", "aDugRandShaftData", "aFloodGateData", "aTrainTrackData",
-    "aExplodeAboveData", "maskLevel", "maskSprites", "aGlobalData");
+    "aTileFlags", "Fade", "BCBlit", "SetCallbacks", "IsMouseInBounds",
+    "aDigData", "aDigTileFlags", "aSfxData", "aJumpRiseData", "aJumpFallData",
+    "IsKeyPressed", "IsButtonPressed", "IsKeyHeld", "IsButtonHeld",
+    "GetMouseX", "GetMouseY", "PlayStaticSound", "PlaySound",
+    "IsButtonPressedNoRelease", "aMenuData", "aMenuFlags", "aMenuIds",
+    "IsMouseXLessThan", "InitBook", "aObjToUIData", "GetMusic", "StopMusic",
+    "RenderFade", "IsJoyPressed", "InitWin", "InitWinDead", "InitLose",
+    "InitLoseDead", "InitTNTMap", "InitLobby", "texSpr", "fontLarge",
+    "fontLittle", "fontTiny", "aDigBlockData", "aExplodeDirData", "SetCursor",
+    "aCursorIdData", "RegisterFBUCallback", "GetCallbacks", "GetTestMode",
+    "RenderShadow", "SetBottomRightTip", "aRaceData", "aDugRandShaftData",
+    "aFloodGateData", "aTrainTrackData", "aExplodeAboveData", "maskLevel",
+    "maskSprites", "aGlobalData", "aShopData");
   -- ----------------------------------------------------------------------- --
   CreateObject = InitCreateObject();
   MoveOtherObjects = InitMoveOtherObjects();

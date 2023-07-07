@@ -7,7 +7,7 @@
 -- 888---d88'--888--`88.---.88'-`88.---.88'-888-----o--888-`88b.--oo----.d8P --
 -- 888bd8P'--oo888oo-`Y8bod8P'---`Y8bod8P'-o888ooood8-o888o-o888o-8""8888P'- --
 -- ========================================================================= --
--- Copyr. © MS-Design, 2023       Copyr. © Millennium Interactive Ltd., 1994 --
+-- Copyr. (c) MS-Design, 2023   Copyr. (c) Millennium Interactive Ltd., 1994 --
 -- ========================================================================= --
 -- Core function aliases --------------------------------------------------- --
 -- M-Engine function aliases ----------------------------------------------- --
@@ -16,8 +16,8 @@ local TextureCreateTS<const>, ImageRaw<const>, AssetCreate<const>
       Texture.CreateTS, Image.Raw, Asset.Create;
 -- Diggers function and data aliases --------------------------------------- --
 local LoadResources, Fade, SetCallbacks, IsMouseInBounds, IsMouseNotInBounds,
-  aCursorIdData, SetCursor, aSfxData, PlayStaticSound, aSfxData, IsButtonPressed,
-  IsButtonHeld, aTileData, aTileFlags, InitTitle, texSpr,
+  aCursorIdData, SetCursor, aSfxData, PlayStaticSound, aSfxData,
+  IsButtonPressed, IsButtonHeld, aTileData, aTileFlags, InitTitle, texSpr,
   SetBottomRightTip, RenderInterface, GameProc, InitContinueGame, GetLevelData,
   aObjects, RenderShadow;
 -- Init TNT map screen function -------------------------------------------- --

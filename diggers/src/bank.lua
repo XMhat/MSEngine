@@ -7,7 +7,7 @@
 -- 888---d88'--888--`88.---.88'-`88.---.88'-888-----o--888-`88b.--oo----.d8P --
 -- 888bd8P'--oo888oo-`Y8bod8P'---`Y8bod8P'-o888ooood8-o888o-o888o-8""8888P'- --
 -- ========================================================================= --
--- Copyr. © MS-Design, 2023       Copyr. © Millennium Interactive Ltd., 1994 --
+-- Copyr. (c) MS-Design, 2023   Copyr. (c) Millennium Interactive Ltd., 1994 --
 -- ========================================================================= --
 -- Core function aliases --------------------------------------------------- --
 local floor<const>, format<const>, unpack<const>, insert<const> =
@@ -79,7 +79,7 @@ local function InitBank(aActiveObject)
             iTreasureValueModifier,
           aGemObjData[aObjectActions.STOP]        -- [04] Gem sprite
                      [aObjectDirections.NONE][1],
-          aGemObjData.NAME,                       -- [05] Gem name
+          aGemObjData.LONGNAME,                   -- [05] Gem name
           aFuncData[1],                           -- [06] Mouse over sell func
           aFuncData[2],                           -- [07] Mouse over gem func
           aFuncData[3],                           -- [08] Gem position X
@@ -132,13 +132,13 @@ local function InitBank(aActiveObject)
       local iMoney<const>, strName = aPlayer.M, nil;
       -- Sell all Jennite first before trying to sell anything else
       if SellSpecifiedItems(aActiveObject, aObjectTypes.JENNITE) > 0 then
-        strName = aObjectData[aObjectTypes.JENNITE].NAME;
+        strName = aObjectData[aObjectTypes.JENNITE].LONGNAME;
       -- No Jennite found so try what the banker is trading
       elseif SellSpecifiedItems(aActiveObject, iGemId) > 0 then
-        strName = aObjectData[iGemId].NAME end;
+        strName = aObjectData[iGemId].LONGNAME end;
       -- Money changed hands? Set succeded message and check for win
-      if strName then SetSpeech(iBankerId, 60, aSfxData.TRADE,
-        strName.." SOLD FOR $"..
+      if strName then
+        SetSpeech(iBankerId, 60, aSfxData.TRADE, strName.." SOLD FOR $"..
           format("%03u", aPlayer.M - iMoney), HasBeatenGame);
       -- Set failed speech bubble
       else SetSpeech(iBankerId, 60, aSfxData.ERROR,

@@ -7,7 +7,7 @@
 -- 888---d88'--888--`88.---.88'-`88.---.88'-888-----o--888-`88b.--oo----.d8P --
 -- 888bd8P'--oo888oo-`Y8bod8P'---`Y8bod8P'-o888ooood8-o888o-o888o-8""8888P'- --
 -- ========================================================================= --
--- Copyr. © MS-Design, 2023       Copyr. © Millennium Interactive Ltd., 1994 --
+-- Copyr. (c) MS-Design, 2023   Copyr. (c) Millennium Interactive Ltd., 1994 --
 -- ========================================================================= --
 -- Menu data types array --------------------------------------------------- --
 local MNU<const> = {                   -- Menu ids
@@ -121,8 +121,9 @@ local TYP<const> = {
   LIFT      = 0x29, -- Elevator
   LIFTB     = 0x2A, -- Deployed elevator
   LIFTC     = 0x2B, -- Deployed elevator attachment
-  MAX       = 0x2C, -- Maximum
-  DIGRANDOM = 0x2D  -- For LoadLevel(). Select a random race
+  CAMPFIRE  = 0x2C, -- Campfire
+  MAX       = 0x2D, -- Maximum
+  DIGRANDOM = 0xFF  -- For LoadLevel(). Select a random race
 };
 -- Races available list ---------------------------------------------------- --
 local aRaceData<const> = { TYP.FTARG, TYP.GRABLIN, TYP.HABBISH, TYP.QUARRIOR };
@@ -200,6 +201,8 @@ local OFL<const> = {          -- Max 64-bits
   RNGSPRITE    = 0x040000000, -- Object selects a random sprite in animation.
   PURSUEDIGGER = 0x080000000, -- Object follows a digger when colliding
   RESPAWN      = 0x100000000, -- Object respawns where it was created
+  HEALNEARBY   = 0x200000000, -- Object heals nearby Diggers
+  IMPATIENT    = 0x400000000, -- Object is a digger and becoming impatient
 };
 -- Jumping ----------------------------------------------------------------- --
 local aJumpRiseData<const> =
@@ -252,12 +255,13 @@ local aObjToUIData<const> = {
 local AI<const> = {
   NONE        = 0x0, -- Object has no AI
   DIGGER      = 0x1, -- Object is a digger and does many things
-  CRITTER     = 0x2, -- Object does nothing but go left and right
-  CRITTERSLOW = 0x3, -- Object does nothing but go left and right slowly
-  FIND        = 0x4, -- Object speedily homes in on a digger
-  FINDSLOW    = 0x5, -- Object slowly homes in on a digger
-  RANDOM      = 0x6, -- Object moves in 4 directions finding a digger
-  BIGFOOT     = 0x7, -- Object moves around like a digger and steals items
+  PATIENCE    = 0x2, -- Object is a digger controlled by the player
+  CRITTER     = 0x3, -- Object does nothing but go left and right
+  CRITTERSLOW = 0x4, -- Object does nothing but go left and right slowly
+  FIND        = 0x5, -- Object speedily homes in on a digger
+  FINDSLOW    = 0x6, -- Object slowly homes in on a digger
+  RANDOM      = 0x7, -- Object moves in 4 directions finding a digger
+  BIGFOOT     = 0x8, -- Object moves around like a digger and steals items
 };
 -- Timers and animation consts --------------------------------------------- --
 local aTimerData<const> = {
@@ -269,7 +273,6 @@ local aTimerData<const> = {
   MUTATEWAIT    =   3600, -- Wait time before full digger mutation occurs
   DANGERTIMEOUT =    600, -- Timeout before removing the danger flag
   TARGETTIME    =   1800, -- Timeout before selecting another target (AI)
-  RESTTIME      =    150, -- Ticks to wait before deducting 1 zog for resting
   GEMCHANCE     =  0.025, -- Chance of getting a gem after each dig. (2.5%)
   GEMDEPTHEXTRA =   1024, -- Chance to double chance based on this depth
   ROAMDIRCHANGE = 0.0025, -- Chance of roaming AI switching direction
@@ -436,16 +439,19 @@ local aObjectData<const> = {
   [DIR.NONE]={ 74, 76},[DIR.R ]={ 74, 76},[DIR.DL]={ 77, 79},[DIR.D ]={ 74, 76},
   [DIR.DR  ]={ 74, 76},FLAGS=OFL.FALL|OFL.NOANIMLOOP|OFL.BUSY
  }, [ACT.DEATH] = { [DIR.NONE]={451,454},SOUND=aSfxData.DIEFTAR,FLAGS=OFL.BUSY },
- NAME="F'TARG", DIGDELAY=60, TELEDELAY=120, STRENGTH=3, STAMINA=60, VALUE=1000,
- WEIGHT=0, LUNGS=4, FLAGS=OFL.DIGGER|OFL.PHASETARGET|OFL.DELICATE,
+ NAME="FTARG", LONGNAME="F'TARG", DIGDELAY=60, TELEDELAY=120, STRENGTH=3,
+ STAMINA=60, VALUE=1000, WEIGHT=0, LUNGS=4,
+ FLAGS=OFL.DIGGER|OFL.PHASETARGET|OFL.DELICATE,
  MENU=MNU.MAIN, ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
- ANIMTIMER=aTimerData.ANIMNORMAL, AITYPE=AI.DIGGER,
+ ANIMTIMER=aTimerData.ANIMNORMAL, AITYPE=AI.DIGGER, PATIENCE=9600
 -- ------------------------------------------------------------------------- --
 }, [TYP.HABBISH] = {
  [ACT.HIDE] = {
   [DIR.UL  ]={ 95, 95},[DIR.U ]={ 95, 95},[DIR.UR]={ 95, 95},[DIR.L ]={ 95, 95},
   [DIR.NONE]={ 95, 95},[DIR.R ]={ 95, 95},[DIR.DL]={ 95, 95},[DIR.D ]={ 95, 95},
   [DIR.DR  ]={ 95, 95},FLAGS=OFL.BUSY
+ }, [ACT.REST] = {
+  [DIR.NONE]={132,132},FLAGS=OFL.BUSY|OFL.IMPATIENT
  }, [ACT.STOP] = {
   [DIR.UL  ]={135,137},[DIR.U ]={135,137},[DIR.UR]={135,137},[DIR.L ]={135,137},
   [DIR.NONE]={135,137},[DIR.R ]={135,137},[DIR.DL]={135,137},[DIR.D ]={135,137},
@@ -479,11 +485,11 @@ local aObjectData<const> = {
   [DIR.NONE]={141,143},[DIR.R ]={141,143},[DIR.DL]={151,153},[DIR.D ]={141,143},
   [DIR.DR  ]={141,143},FLAGS=OFL.FALL|OFL.NOANIMLOOP|OFL.BUSY
  }, [ACT.DEATH] = { [DIR.NONE]={451,454},SOUND=aSfxData.DIEHABB,FLAGS=OFL.BUSY },
- NAME="HABBISH", DIGDELAY=70, TELEDELAY=60, STRENGTH=5, STAMINA=120, VALUE=1000,
- WEIGHT=0, LUNGS=12,
+ NAME="HABBISH", LONGNAME="HABBISH", DIGDELAY=70, TELEDELAY=60, STRENGTH=5,
+ STAMINA=120, VALUE=1000, WEIGHT=0, LUNGS=12,
  FLAGS=OFL.DIGGER|OFL.PHASETARGET|OFL.DELICATE|OFL.TPMASTER,
  MENU=MNU.MAIN, ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
- ANIMTIMER=aTimerData.ANIMNORMAL, AITYPE=AI.DIGGER,
+ ANIMTIMER=aTimerData.ANIMNORMAL, AITYPE=AI.DIGGER, PATIENCE=7500
 -- ------------------------------------------------------------------------- --
 }, [TYP.GRABLIN] = {
  [ACT.HIDE] = {
@@ -523,10 +529,11 @@ local aObjectData<const> = {
   [DIR.NONE]={216,218},[DIR.R ]={216,218},[DIR.DL]={219,221},[DIR.D ]={216,218},
   [DIR.DR  ]={216,218},FLAGS=OFL.FALL|OFL.NOANIMLOOP|OFL.BUSY
  }, [ACT.DEATH] = { [DIR.NONE]={451,454},SOUND=aSfxData.DIEGRAB,FLAGS=OFL.BUSY },
- NAME="GRABLIN", DIGDELAY=50, TELEDELAY=120, STRENGTH=4, STAMINA=120, VALUE=1000,
- WEIGHT=0, LUNGS=8,
+ NAME="GRABLIN", LONGNAME="GRABLIN", DIGDELAY=50, TELEDELAY=120, STRENGTH=4,
+ STAMINA=120, VALUE=1000, WEIGHT=0, LUNGS=8,
  FLAGS=OFL.DIGGER|OFL.PHASETARGET|OFL.DELICATE, MENU=MNU.MAIN, ACTION=ACT.STOP,
- JOB=JOB.NONE, DIRECTION=DIR.NONE, ANIMTIMER=aTimerData.ANIMNORMAL, AITYPE=AI.DIGGER,
+ JOB=JOB.NONE, DIRECTION=DIR.NONE, ANIMTIMER=aTimerData.ANIMNORMAL,
+ AITYPE=AI.DIGGER, PATIENCE=10500
 -- ------------------------------------------------------------------------- --
 }, [TYP.QUARRIOR] = {
  [ACT.HIDE] = {
@@ -572,18 +579,19 @@ local aObjectData<const> = {
    FLAGS=OFL.FALL|OFL.NOANIMLOOP|OFL.BUSY
  }, [ACT.DEATH] = { [DIR.NONE]={451,454},SOUND=aSfxData.DIEQUAR,
    FLAGS=OFL.BUSY },
- NAME="QUARRIOR", DIGDELAY=80, TELEDELAY=180, STRENGTH=6, STAMINA=120,
- VALUE=1000, WEIGHT=0, LUNGS=16, FLAGS=OFL.DIGGER|OFL.PHASETARGET,
+ NAME="QUARRIOR", LONGNAME="QUARRIOR", DIGDELAY=80, TELEDELAY=180, STRENGTH=6,
+ STAMINA=120, VALUE=1000, WEIGHT=0, LUNGS=16, FLAGS=OFL.DIGGER|OFL.PHASETARGET,
  MENU=MNU.MAIN, ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
- ANIMTIMER=aTimerData.ANIMNORMAL, AITYPE=AI.DIGGER,
+ ANIMTIMER=aTimerData.ANIMNORMAL, AITYPE=AI.DIGGER, PATIENCE=15000
 -- ------------------------------------------------------------------------- --
 }, [TYP.JENNITE] = {
   [ACT.STOP]  = { [DIR.NONE]={315,318},FLAGS=OFL.FALL|OFL.PICKUP },
   [ACT.PHASE] = { [DIR.NONE]={106,109,0,7},SOUND=aSfxData.FIND,
     FLAGS=OFL.FALL|OFL.PICKUP },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="JENNITE", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=280,
-  WEIGHT=1, FLAGS=OFL.SELLABLE|OFL.TREASURE|OFL.PHASETARGET|OFL.AQUALUNG,
+  NAME="JENNITE", LONGNAME="JENNITE", DIGDELAY=0, TELEDELAY=200, STRENGTH=0,
+  STAMINA=-1, VALUE=280, WEIGHT=1,
+  FLAGS=OFL.SELLABLE|OFL.TREASURE|OFL.PHASETARGET|OFL.AQUALUNG,
   AITYPE=AI.NONE, ACTION=ACT.PHASE, JOB=JOB.SPAWN, DIRECTION=DIR.NONE,
   ANIMTIMER=aTimerData.ANIMNORMAL
 -- ------------------------------------------------------------------------- --
@@ -592,8 +600,9 @@ local aObjectData<const> = {
   [ACT.PHASE] = { [DIR.NONE]={106,109,0,7},SOUND=aSfxData.FIND,
     FLAGS=OFL.FALL|OFL.PICKUP },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="DIAMOND", DIGDELAY=1, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=100,
-  WEIGHT=1, FLAGS=OFL.SELLABLE|OFL.TREASURE|OFL.PHASETARGET|OFL.AQUALUNG,
+  NAME="DIAMOND", LONGNAME="DIAMOND", DIGDELAY=1, TELEDELAY=200, STRENGTH=0,
+  STAMINA=-1, VALUE=100, WEIGHT=1,
+  FLAGS=OFL.SELLABLE|OFL.TREASURE|OFL.PHASETARGET|OFL.AQUALUNG,
   AITYPE=AI.NONE, ACTION=ACT.PHASE, JOB=JOB.SPAWN, DIRECTION=DIR.NONE,
   ANIMTIMER=aTimerData.ANIMNORMAL
 -- ------------------------------------------------------------------------- --
@@ -602,8 +611,9 @@ local aObjectData<const> = {
   [ACT.PHASE] = { [DIR.NONE]={106,109,0,7},SOUND=aSfxData.FIND,
     FLAGS=OFL.FALL|OFL.PICKUP },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="GOLD", DIGDELAY=2, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=80,
-  WEIGHT=1, FLAGS=OFL.SELLABLE|OFL.TREASURE|OFL.PHASETARGET|OFL.AQUALUNG,
+  NAME="GOLD", LONGNAME="GOLD", DIGDELAY=2, TELEDELAY=200, STRENGTH=0,
+  STAMINA=-1, VALUE=80, WEIGHT=1,
+  FLAGS=OFL.SELLABLE|OFL.TREASURE|OFL.PHASETARGET|OFL.AQUALUNG,
   AITYPE=AI.NONE, ACTION=ACT.PHASE, JOB=JOB.SPAWN, DIRECTION=DIR.NONE,
   ANIMTIMER=aTimerData.ANIMNORMAL
 -- ------------------------------------------------------------------------- --
@@ -612,8 +622,9 @@ local aObjectData<const> = {
   [ACT.PHASE] = { [DIR.NONE]={106,109,0,7},SOUND=aSfxData.FIND,
     FLAGS=OFL.FALL|OFL.PICKUP },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="EMERALD", DIGDELAY=3, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=60,
-  WEIGHT=1, FLAGS=OFL.SELLABLE|OFL.TREASURE|OFL.PHASETARGET|OFL.AQUALUNG,
+  NAME="EMERALD", LONGNAME="EMERALD", DIGDELAY=3, TELEDELAY=200, STRENGTH=0,
+  STAMINA=-1, VALUE=60, WEIGHT=1,
+  FLAGS=OFL.SELLABLE|OFL.TREASURE|OFL.PHASETARGET|OFL.AQUALUNG,
   AITYPE=AI.NONE, ACTION=ACT.PHASE, JOB=JOB.SPAWN, DIRECTION=DIR.NONE,
   ANIMTIMER=aTimerData.ANIMNORMAL
 -- ------------------------------------------------------------------------- --
@@ -622,8 +633,9 @@ local aObjectData<const> = {
   [ACT.PHASE] = { [DIR.NONE]={106,109,0,7},SOUND=aSfxData.FIND,
     FLAGS=OFL.FALL|OFL.PICKUP },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="RUBY", DIGDELAY=4, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=40,
-  WEIGHT=1, FLAGS=OFL.SELLABLE|OFL.TREASURE|OFL.PHASETARGET|OFL.AQUALUNG,
+  NAME="RUBY", LONGNAME="RUBY", DIGDELAY=4, TELEDELAY=200, STRENGTH=0,
+  STAMINA=-1, VALUE=40, WEIGHT=1,
+  FLAGS=OFL.SELLABLE|OFL.TREASURE|OFL.PHASETARGET|OFL.AQUALUNG,
   AITYPE=AI.NONE, ACTION=ACT.PHASE, JOB=JOB.SPAWN, DIRECTION=DIR.NONE,
   ANIMTIMER=aTimerData.ANIMNORMAL
 -- ------------------------------------------------------------------------- --
@@ -632,9 +644,10 @@ local aObjectData<const> = {
     [DIR.U]={442,445},[DIR.L]={442,445},[DIR.NONE]={446,449},[DIR.R]={446,449},
     [DIR.D]={446,449},FLAGS=OFL.HURTDIGGER },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="PHANTOM", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=0,
-  WEIGHT=0, ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
-  AITYPE=AI.RANDOM, ANIMTIMER=aTimerData.ANIMFAST, FLAGS=OFL.AQUALUNG
+  NAME="PHANTOM", LONGNAME="PHANTOM", DIGDELAY=0, TELEDELAY=200, STRENGTH=0,
+  STAMINA=-1, VALUE=0, WEIGHT=0, ACTION=ACT.STOP, JOB=JOB.NONE,
+  DIRECTION=DIR.NONE, AITYPE=AI.RANDOM, ANIMTIMER=aTimerData.ANIMFAST,
+  FLAGS=OFL.AQUALUNG
 -- ------------------------------------------------------------------------- --
 }, [TYP.SLOWSKEL] = {
   [ACT.STOP] = {
@@ -643,9 +656,10 @@ local aObjectData<const> = {
     [DIR.DL  ]={409,412},[DIR.D   ]={413,416},[DIR.DR]={413,416},
     FLAGS=OFL.HURTDIGGER },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="SKELETON", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=0,
-  WEIGHT=0, ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
-  AITYPE=AI.FINDSLOW, ANIMTIMER=aTimerData.ANIMNORMAL, FLAGS=OFL.AQUALUNG
+  NAME="SKELETON", LONGNAME="SKELETON", DIGDELAY=0, TELEDELAY=200, STRENGTH=0,
+  STAMINA=-1, VALUE=0, WEIGHT=0, ACTION=ACT.STOP, JOB=JOB.NONE,
+  DIRECTION=DIR.NONE, AITYPE=AI.FINDSLOW, ANIMTIMER=aTimerData.ANIMNORMAL,
+  FLAGS=OFL.AQUALUNG
 -- ------------------------------------------------------------------------- --
 }, [TYP.FASTSKEL] = {
   [ACT.STOP] = {
@@ -654,12 +668,13 @@ local aObjectData<const> = {
     [DIR.DL]={147,148},[DIR.D   ]={149,150},[DIR.DR]={149,150},
     FLAGS=OFL.HURTDIGGER },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="ZOMBIE", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=0,
-  WEIGHT=0, LUNGCAPACITY=64, ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
-  AITYPE=AI.FIND, ANIMTIMER=aTimerData.ANIMNORMAL, FLAGS=OFL.AQUALUNG
+  NAME="ZOMBIE", LONGNAME="ZOMBIE", DIGDELAY=0, TELEDELAY=200, STRENGTH=0,
+  STAMINA=-1, VALUE=0, WEIGHT=0, LUNGCAPACITY=64, ACTION=ACT.STOP,
+  JOB=JOB.NONE, DIRECTION=DIR.NONE, AITYPE=AI.FIND,
+  ANIMTIMER=aTimerData.ANIMNORMAL, FLAGS=OFL.AQUALUNG
 -- ------------------------------------------------------------------------- --
 }, [TYP.SLOWGHOST] = {
-  NAME      = "GHOST",     FLAGS     = OFL.AQUALUNG,
+  NAME      = "GHOST",     LONGNAME  = "GHOST",     FLAGS     = OFL.AQUALUNG,
   DIGDELAY  = 0,           TELEDELAY = 200,         STRENGTH  = 0,
   STAMINA   = -1,          VALUE     = 0,           WEIGHT    = 0,
   ACTION    = ACT.STOP,    JOB       = JOB.NONE,    DIRECTION = DIR.NONE,
@@ -675,7 +690,7 @@ local aObjectData<const> = {
   },
 -- ------------------------------------------------------------------------- --
 }, [TYP.SLOWPHASE] = {
-  NAME      = "ZIPPER",    FLAGS     = OFL.AQUALUNG,
+  NAME      = "ZIPPER",    LONGNAME  = "ZIPPER",    FLAGS     = OFL.AQUALUNG,
   DIGDELAY  = 0,           TELEDELAY = 200,         STRENGTH  = 0,
   STAMINA   = -1,          VALUE     = 0,           WEIGHT    = 0,
   ACTION    = ACT.STOP,    JOB       = JOB.NONE,    DIRECTION = DIR.NONE,
@@ -697,9 +712,10 @@ local aObjectData<const> = {
     [DIR.DL]={417,427},[DIR.D   ]={417,427},[DIR.DR]={417,427},
     FLAGS=OFL.PHASEDIGGER },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="SWRLYPRT", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=0,
-  WEIGHT=0, ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
-  AITYPE=AI.FIND, ANIMTIMER=aTimerData.ANIMFAST, FLAGS=OFL.AQUALUNG
+  NAME="SWRLYPRT", LONGNAME="SWIRLYPORT", DIGDELAY=0, TELEDELAY=200,
+  STRENGTH=0, STAMINA=-1, VALUE=0, WEIGHT=0, ACTION=ACT.STOP, JOB=JOB.NONE,
+  DIRECTION=DIR.NONE, AITYPE=AI.FIND, ANIMTIMER=aTimerData.ANIMFAST,
+  FLAGS=OFL.AQUALUNG
 -- ------------------------------------------------------------------------- --
 }, [TYP.PIRANA] = {
   [ACT.STOP]  = { [DIR.L]={388,388},[DIR.NONE]={393,393},[DIR.R]={393,393},
@@ -707,10 +723,10 @@ local aObjectData<const> = {
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
   [ACT.FIGHT] = { [DIR.L]={389,392},[DIR.R]={394,397},
     FLAGS=OFL.FALL|OFL.HURTDIGGER },
-  NAME="PIRANA", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=0,
-  WEIGHT=0, LUNGS=128, FLAGS=OFL.STATIONARY|OFL.PHASETARGET, ACTION=ACT.STOP,
-  AITYPE=AI.NONE, JOB=JOB.NONE, DIRECTION=DIR.NONE,
-  ANIMTIMER=aTimerData.ANIMNORMAL
+  NAME="PIRANA", LONGNAME="PIRANA PLANT", DIGDELAY=0, TELEDELAY=200,
+  STRENGTH=0, STAMINA=-1, VALUE=0, WEIGHT=0, LUNGS=128,
+  FLAGS=OFL.STATIONARY|OFL.PHASETARGET, ACTION=ACT.STOP, AITYPE=AI.NONE,
+  JOB=JOB.NONE, DIRECTION=DIR.NONE, ANIMTIMER=aTimerData.ANIMNORMAL
 -- ------------------------------------------------------------------------- --
 }, [TYP.BADROOTS] = {
   [ACT.STOP]  = { [DIR.L]={398,401},[DIR.NONE]={398,401},[DIR.R]={398,401},
@@ -718,8 +734,9 @@ local aObjectData<const> = {
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
   [ACT.FIGHT] = { [DIR.L]={402,408},[DIR.NONE]={402,408},[DIR.R]={402,408},
     FLAGS=OFL.FALL|OFL.HURTDIGGER },
-  NAME="FUNGUS", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=0,
-  WEIGHT=0, FLAGS=OFL.STATIONARY|OFL.PHASETARGET|OFL.AQUALUNG, ACTION=ACT.STOP,
+  NAME="FUNGUS", LONGNAME="FUNGUS", DIGDELAY=0, TELEDELAY=200, STRENGTH=0,
+  STAMINA=-1, VALUE=0, WEIGHT=0,
+  FLAGS=OFL.STATIONARY|OFL.PHASETARGET|OFL.AQUALUNG, ACTION=ACT.STOP,
   JOB=JOB.NONE, AITYPE=AI.NONE, DIRECTION=DIR.NONE,
   ANIMTIMER=aTimerData.ANIMNORMAL,
 -- ------------------------------------------------------------------------- --
@@ -727,40 +744,42 @@ local aObjectData<const> = {
   [ACT.RUN] = { [DIR.L]={102,105},[DIR.NONE]={112,115},[DIR.R ]={112,115},
     FLAGS=OFL.FALL|OFL.HURTDIGGER },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="ALIEN", DIGDELAY=0, TELEDELAY=20, STRENGTH=0, STAMINA=-1, VALUE=0,
-  WEIGHT=0, LUNGS=32, FLAGS=OFL.PHASETARGET, ACTION=ACT.RUN, JOB=JOB.BOUNCE,
-  AITYPE=AI.NONE, DIRECTION=DIR.LR, ANIMTIMER=aTimerData.ANIMNORMAL
+  NAME="ALIEN", LONGNAME="ALIEN", DIGDELAY=0, TELEDELAY=20, STRENGTH=0,
+  STAMINA=-1, VALUE=0, WEIGHT=0, LUNGS=32, FLAGS=OFL.PHASETARGET,
+  ACTION=ACT.RUN, JOB=JOB.BOUNCE, AITYPE=AI.NONE, DIRECTION=DIR.LR,
+  ANIMTIMER=aTimerData.ANIMNORMAL
 -- ------------------------------------------------------------------------- --
 }, [TYP.ALIENEGG] = {
   [ACT.STOP]  = { [DIR.NONE]={ 71, 71}, FLAGS=OFL.FALL|OFL.CONSUME },
   [ACT.PHASE] = { [DIR.NONE]={ 68, 68}, FLAGS=OFL.FALL },
   [ACT.DEATH] = { [DIR.NONE]={375,378},
     FLAGS=OFL.FALL|OFL.NOANIMLOOP|OFL.BUSY },
-  NAME="EGG", DIGDELAY=0, TELEDELAY=3600, STRENGTH=0, STAMINA=-1, VALUE=0,
-  WEIGHT=0, LUNGS=128, FLAGS=OFL.PHASETARGET, ACTION=ACT.PHASE, JOB=JOB.SPAWN,
-  AITYPE=AI.NONE, DIRECTION=DIR.NONE, ANIMTIMER=aTimerData.ANIMNORMAL
+  NAME="EGG", LONGNAME="MYSTERIOUS EGG", DIGDELAY=0, TELEDELAY=3600,
+  STRENGTH=0, STAMINA=-1, VALUE=0, WEIGHT=0, LUNGS=128, FLAGS=OFL.PHASETARGET,
+  ACTION=ACT.PHASE, JOB=JOB.SPAWN, AITYPE=AI.NONE, DIRECTION=DIR.NONE,
+  ANIMTIMER=aTimerData.ANIMNORMAL
 -- ------------------------------------------------------------------------- --
 }, [TYP.BIRD] = {
   [ACT.STOP]  = { [DIR.L]={297,301},[DIR.R]={302,306} },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="BIRD", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=0,
-  WEIGHT=0, LUNGS=2, ACTION=ACT.STOP, JOB=JOB.BOUNCE, DIRECTION=DIR.LR,
-  AITYPE=AI.CRITTER, ANIMTIMER=aTimerData.ANIMNORMAL
+  NAME="BIRD", LONGNAME="BIRD", DIGDELAY=0, TELEDELAY=200, STRENGTH=0,
+  STAMINA=-1, VALUE=0, WEIGHT=0, LUNGS=2, ACTION=ACT.STOP, JOB=JOB.BOUNCE,
+  DIRECTION=DIR.LR, AITYPE=AI.CRITTER, ANIMTIMER=aTimerData.ANIMNORMAL
 -- ------------------------------------------------------------------------- --
 }, [TYP.FISH] = {
   [ACT.STOP]  = { [DIR.L]={58,59},[DIR.R]={56,57} },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="FISH", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=0,
-  WEIGHT=0, ACTION=ACT.STOP, JOB=JOB.BOUNCE, DIRECTION=DIR.LR,
-  AITYPE=AI.CRITTERSLOW, ANIMTIMER=aTimerData.ANIMNORMAL,
+  NAME="FISH", LONGNAME="GOLDFISH", DIGDELAY=0, TELEDELAY=200, STRENGTH=0,
+  STAMINA=-1, VALUE=0, WEIGHT=0, ACTION=ACT.STOP, JOB=JOB.BOUNCE,
+  DIRECTION=DIR.LR, AITYPE=AI.CRITTERSLOW, ANIMTIMER=aTimerData.ANIMNORMAL,
   FLAGS=OFL.AQUALUNG|OFL.WATERBASED
 -- ------------------------------------------------------------------------- --
 }, [TYP.DINOFAST] = {
   [ACT.RUN]   = { [DIR.L ]={362,365},[DIR.R ]={366,369},
     FLAGS=OFL.FALL|OFL.HURTDIGGER|OFL.PURSUEDIGGER },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="VRAPTOR", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=0,
-  WEIGHT=0, LUNGS=16, FLAGS=OFL.PHASETARGET,
+  NAME="VRAPTOR", LONGNAME="VELOCIRAPTOR", DIGDELAY=0, TELEDELAY=200,
+  STRENGTH=0, STAMINA=-1, VALUE=0, WEIGHT=0, LUNGS=16, FLAGS=OFL.PHASETARGET,
   AITYPE=AI.NONE, ACTION=ACT.RUN, JOB=JOB.BOUNCE, DIRECTION=DIR.LR,
   ANIMTIMER=aTimerData.ANIMNORMAL
 -- ------------------------------------------------------------------------- --
@@ -768,19 +787,19 @@ local aObjectData<const> = {
   [ACT.WALK]  = { [DIR.L ]={380,383},[DIR.R ]={384,387},
     FLAGS=OFL.FALL|OFL.HURTDIGGER|OFL.PURSUEDIGGER },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="RTRYSRUS", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=0,
-  AITYPE=AI.NONE, WEIGHT=0, LUNGS=16, FLAGS=OFL.PHASETARGET,
-  ACTION=ACT.WALK, JOB=JOB.BOUNCE, DIRECTION=DIR.LR,
+  NAME="RTRYSRUS", LONGNAME="ROTARYSAURUS", DIGDELAY=0, TELEDELAY=200,
+  STRENGTH=0, STAMINA=-1, VALUE=0, AITYPE=AI.NONE, WEIGHT=0, LUNGS=16,
+  FLAGS=OFL.PHASETARGET, ACTION=ACT.WALK, JOB=JOB.BOUNCE, DIRECTION=DIR.LR,
   ANIMTIMER=aTimerData.ANIMNORMAL
 -- ------------------------------------------------------------------------- --
 }, [TYP.STEGO] = {
   [ACT.CREEP] = { [DIR.L]={29,32,3,0},[DIR.R]={39,42,-3,0},
     FLAGS=OFL.FALL|OFL.HURTDIGGER|OFL.PURSUEDIGGER },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="STEGSAUR", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=0,
-  WEIGHT=0, LUNGS=16, FLAGS=OFL.PHASETARGET, AITYPE=AI.NONE, ACTION=ACT.CREEP,
-  JOB=JOB.BOUNCE, DIRECTION=DIR.LR, ANIMTIMER=aTimerData.ANIMNORMAL,
-  ATTACHMENT=TYP.STEGOB
+  NAME="STEGSAUR", LONGNAME="STEGOSAURUS", DIGDELAY=0, TELEDELAY=200,
+  STRENGTH=0, STAMINA=-1, VALUE=0, WEIGHT=0, LUNGS=16, FLAGS=OFL.PHASETARGET,
+  AITYPE=AI.NONE, ACTION=ACT.CREEP, JOB=JOB.BOUNCE, DIRECTION=DIR.LR,
+  ANIMTIMER=aTimerData.ANIMNORMAL, ATTACHMENT=TYP.STEGOB
 -- ------------------------------------------------------------------------- --
 }, [TYP.STEGOB] = {
   [ACT.CREEP] = { [DIR.L]={25,28,-16,0},[DIR.R]={43,46,16,0} },
@@ -789,20 +808,26 @@ local aObjectData<const> = {
 }, [TYP.TURTLE] = {
   [ACT.STOP]  = { [DIR.L ]={307,310},[DIR.R ]={311,314} },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="TURTLE", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=0,
-  WEIGHT=0, FLAGS=OFL.AQUALUNG|OFL.WATERBASED, ACTION=ACT.STOP, JOB=JOB.BOUNCE,
-  DIRECTION=DIR.LR, AITYPE=AI.CRITTER, ANIMTIMER=aTimerData.ANIMNORMAL
+  NAME="TURTLE", LONGNAME="TURTLE", DIGDELAY=0, TELEDELAY=200, STRENGTH=0,
+  STAMINA=-1, VALUE=0, WEIGHT=0, FLAGS=OFL.AQUALUNG|OFL.WATERBASED,
+  ACTION=ACT.STOP, JOB=JOB.BOUNCE, DIRECTION=DIR.LR, AITYPE=AI.CRITTER,
+  ANIMTIMER=aTimerData.ANIMNORMAL
 -- ------------------------------------------------------------------------- --
 }, [TYP.BIGFOOT] = {
   [ACT.HIDE]  = { [DIR.NONE]={95,95},FLAGS=OFL.BUSY },
-  [ACT.STOP]  = { [DIR.L]={329,331},[DIR.NONE]={329,331},[DIR.R]={329,331},
+  [ACT.STOP]  = { [DIR.UL]={329,331},[DIR.U]   ={329,331},[DIR.UR]={329,331},
+                  [DIR.L] ={329,331},[DIR.NONE]={329,331},[DIR.R] ={329,331},
+                  [DIR.DL]={329,331},[DIR.D]   ={329,331},[DIR.DR]={329,331},
     FLAGS=OFL.FALL|OFL.REGENERATE },
-  [ACT.WALK]  = { [DIR.L]={321,324},[DIR.NONE]={321,324},[DIR.R]={325,328},
+  [ACT.WALK]  = { [DIR.UL]={321,324},[DIR.U]   ={321,324},[DIR.UR]={325,328},
+                  [DIR.L] ={321,324},[DIR.NONE]={321,324},[DIR.R] ={325,328},
+                  [DIR.DL]={321,324},[DIR.D]   ={321,324},[DIR.DR]={325,328},
     FLAGS=OFL.FALL|OFL.REGENERATE },
   [ACT.PHASE] = { [DIR.NONE]={106,109},[DIR.D ]={106,109},SOUND=aSfxData.PHASE,
     FLAGS=OFL.BUSY },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="BIGFOOT", DIGDELAY=0, TELEDELAY=100, STRENGTH=100, STAMINA=-1, VALUE=0,
+  NAME="BIGFOOT", LONGNAME="SKINWALKER", DIGDELAY=0, TELEDELAY=100,
+  STRENGTH=100, STAMINA=-1, VALUE=0,
   WEIGHT=100, FLAGS=OFL.PHASETARGET|OFL.AQUALUNG, ACTION=ACT.STOP,
   JOB=JOB.BOUNCE, DIRECTION=DIR.LR, AITYPE=AI.BIGFOOT,
   ANIMTIMER=aTimerData.ANIMNORMAL
@@ -979,8 +1004,9 @@ local aObjectData<const> = {
   [ACT.CREEP] = { [DIR.U]={0,0},[DIR.NONE]={0,0},[DIR.D]={0,0},
     FLAGS=OFL.BLOCK },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.NONE|OFL.BUSY },
-  NAME="ELEVATOR", DIGDELAY=0, TELEDELAY=0, STRENGTH=0, STAMINA=-1, VALUE=0,
-  WEIGHT=0, FLAGS=OFL.DEVICE|OFL.PHASETARGET|OFL.EXPLODE|OFL.AQUALUNG,
+  NAME="ELEVATOR", LONGNAME="ELEVATOR", DIGDELAY=0, TELEDELAY=0, STRENGTH=0,
+  STAMINA=-1, VALUE=0, WEIGHT=0,
+  FLAGS=OFL.DEVICE|OFL.PHASETARGET|OFL.EXPLODE|OFL.AQUALUNG,
   MENU=MNU.LIFT, ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.D,
   AITYPE=AI.NONE, ANIMTIMER=aTimerData.ANIMNORMAL, ATTACHMENT=TYP.LIFTC
 -- ------------------------------------------------------------------------- --
@@ -990,66 +1016,20 @@ local aObjectData<const> = {
   [ACT.CREEP] = { [DIR.U]={1,1,0,-16},[DIR.NONE]={1,1,0,-16},[DIR.D]={1,1,0,-16},
     FLAGS=OFL.NONE },
   [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="LIFTC", DIGDELAY=0, TELEDELAY=0, STRENGTH=0, STAMINA=-1, VALUE=0,
-  WEIGHT=0, FLAGS=OFL.DEVICE|OFL.EXPLODE|OFL.AQUALUNG,
+  NAME="LIFTC", LONGNAME="ELEVATOR", DIGDELAY=0, TELEDELAY=0, STRENGTH=0,
+  STAMINA=-1, VALUE=0, WEIGHT=0, FLAGS=OFL.DEVICE|OFL.EXPLODE|OFL.AQUALUNG,
   MENU=MNU.LIFT, ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
   ANIMTIMER=aTimerData.ANIMNORMAL, ATTACHMENT=TYP.LIFT
+-- ------------------------------------------------------------------------- --
+}, [TYP.CAMPFIRE] = {
+  [ACT.STOP]  = { [DIR.NONE]={133,134}, FLAGS=OFL.BUSY|OFL.HEALNEARBY },
+  [ACT.DEATH] = { [DIR.NONE]={133,134}, FLAGS=OFL.BUSY },
+  NAME="CAMPFIRE", DIGDELAY=0, TELEDELAY=0, STRENGTH=0, STAMINA=-1, VALUE=110,
+  WEIGHT=0, FLAGS=OFL.DEVICE|OFL.EXPLODE, ACTION=ACT.STOP, JOB=JOB.NONE,
+  AITYPE=AI.NONE, DIRECTION=DIR.NONE, ANIMTIMER=aTimerData.ANIMNORMAL,
+  LONGNAME="CAMPFIRE", DESC="HEALS YOUR DIGGERS FASTER WHEN NEARBY",
 }
 -- ------------------------------------------------------------------------- --
-};
--- AI decisions data ------------------------------------------------------- --
-local aAIChoicesData<const> = {
-  -- ----------------------------------------------------------------------- --
-  {FDD = DIR.L,  F = { ACT.WALK, JOB.DIGDOWN, DIR.TCTR },
-                 S = { ACT.WALK, JOB.DIG,     DIR.L    } },
-  {FDD = DIR.R,  F = { ACT.WALK, JOB.DIGDOWN, DIR.TCTR },
-                 S = { ACT.WALK, JOB.DIG,     DIR.R    } },
-  {FDD = DIR.UL, F = { ACT.WALK, JOB.DIG,     DIR.L    },
-                 S = { ACT.WALK, JOB.DIG,     DIR.UL   } },
-  {FDD = DIR.UR, F = { ACT.WALK, JOB.DIG,     DIR.R    },
-                 S = { ACT.WALK, JOB.DIG,     DIR.UR   } },
-  {FDD = DIR.DL, F = { ACT.WALK, JOB.DIG,     DIR.L    },
-                 S = { ACT.WALK, JOB.DIG,     DIR.DL   } },
-  {FDD = DIR.DR, F = { ACT.WALK, JOB.DIG,     DIR.R    },
-                 S = { ACT.WALK, JOB.DIG,     DIR.DR   } },
-  {FDD = DIR.L,  F = { ACT.WALK, JOB.DIGDOWN, DIR.TCTR },
-                 S = { ACT.WALK, JOB.SEARCH,  DIR.L    } },
-  {FDD = DIR.R,  F = { ACT.WALK, JOB.DIGDOWN, DIR.TCTR },
-                 S = { ACT.WALK, JOB.SEARCH,  DIR.R    } },
-  {FDD = DIR.D,  F = { ACT.WALK, JOB.DIG,     DIR.LR   },
-                 S = { ACT.WALK, JOB.DIGDOWN, DIR.TCTR } },
-  -- ----------------------------------------------------------------------- --
-};
--- Bigfoot data ------------------------------------------------------------ --
-local aAIBigFootData<const> = {
-  { ACT.WALK,  JOB.BOUNCE, DIR.L    }, -- Chance to walk left
-  { ACT.WALK,  JOB.BOUNCE, DIR.R    }, -- Chance to walk right
-  { ACT.PHASE, JOB.PHASE,  DIR.D    }, -- Chance to phase randomly
-  { ACT.STOP,  JOB.NONE,   DIR.NONE }, -- Chance to stop
-}
--- AI data ----------------------------------------------------------------- --
-local aAIData<const> = {
-  -- ----------------------------------------------------------------------- --
-  [ACT.STOP]       = {
-    [JOB.NONE]     = { [DIR.UL] = 0.02,  [DIR.UR]  = 0.02,  [DIR.L]  = 0.02,
-                       [DIR.R]  = 0.02,  [DIR.DL]  = 0.02,  [DIR.D]  = 0.02,
-                       [DIR.DR] = 0.02, [DIR.NONE] = 0.1 },
-    [JOB.DIG]      = { [DIR.UL] = 0.02,  [DIR.UR]  = 0.02,  [DIR.L]  = 0.02,
-                       [DIR.R]  = 0.02,  [DIR.DL]  = 0.02,  [DIR.D]  = 0.02,
-                       [DIR.DR] = 0.02, [DIR.NONE] = 0.02 },
-  }, [ACT.WALK]    = {
-    [JOB.BOUNCE]   = { [DIR.UL] = 0.001, [DIR.UR] = 0.001, [DIR.L]  = 0.001,
-                       [DIR.R]  = 0.001, [DIR.DL] = 0.02,  [DIR.D]  = 0.002,
-                       [DIR.DR] = 0.02 },
-    [JOB.DIG]      = { [DIR.UL] = 0.002, [DIR.UR] = 0.002, [DIR.L]  = 0.001,
-                       [DIR.R]  = 0.001, [DIR.DL] = 0.02,  [DIR.D]  = 0.75,
-                       [DIR.DR] = 0.05 },
-    [JOB.DIGDOWN]  = { [DIR.D]  = 0.75 },
-    [JOB.SEARCH]   = { [DIR.L]  = 0.002, [DIR.R]  = 0.002 },
-  }, [ACT.RUN]     = {
-    [JOB.BOUNCE]   = { [DIR.L]  = 0.01,  [DIR.R]  = 0.01 },
-    [JOB.INDANGER] = { [DIR.L]  = 0.002, [DIR.R]  = 0.002 },
-  },
 };
 -- Digging tile flags ------------------------------------------------------ --
 local DF<const> = {
@@ -2027,7 +2007,7 @@ local aCreditsXData<const> = {
                                        "ModArchive.Org" },
   { "Conversion powered by",           "MS-Engine" },
   { "GLFW OpenGL front-end",           "Marcus Geelnard\n"..
-                                       "Camilla Berglund" },
+                                       "Camilla Lowy" },
   { "LUA scripting engine",            "Lua.org, PUC-Rio" },
   { "OpenALSoft audio manager",        "Chris Robinson\n"..
                                        "Creative Technology" },
@@ -2146,18 +2126,16 @@ aJumpRiseData     = aJumpRiseData,     aJumpFallData     = aJumpFallData,
 aDigTileData      = aDigTileData,      aObjToUIData      = aObjToUIData,
 aSfxData          = aSfxData,          aLevelTypesData   = aLevelTypesData,
 aLevelData        = aLevelData,        aObjectData       = aObjectData,
-aAIChoicesData    = aAIChoicesData,    aAIData           = aAIData,
 aDigData          = aDigData,          aTileData         = aTileData,
 aFloodGateData    = aFloodGateData,    aMenuData         = aMenuData,
 aCreditsData      = aCreditsData,      aCreditsXData     = aCreditsXData,
 aEndingData       = aEndingData,       aTimerData        = aTimerData,
 aZoneData         = aZoneData,         aDigBlockData     = aDigBlockData,
 aExplodeDirData   = aExplodeDirData,   aRaceStatData     = aRaceStatData,
-aShopData         = aShopData,         aAIBigFootData    = aAIBigFootData,
-aRaceData         = aRaceData,         aDugRandShaftData = aDugRandShaftData,
-aTrainTrackData   = aTrainTrackData,   aExplodeAboveData = aExplodeAboveData,
-aSetupButtonData  = aSetupButtonData,  aSetupOptionData  = aSetupOptionData,
-aIntroSubTitles   = aIntroSubTitles
+aShopData         = aShopData,         aRaceData         = aRaceData,
+aDugRandShaftData = aDugRandShaftData, aTrainTrackData   = aTrainTrackData,
+aExplodeAboveData = aExplodeAboveData, aSetupButtonData  = aSetupButtonData,
+aSetupOptionData  = aSetupOptionData,  aIntroSubTitles   = aIntroSubTitles
 -- ------------------------------------------------------------------------- --
 } };                                   -- End of definitions to send to loader
 -- End-of-File ============================================================= --

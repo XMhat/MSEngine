@@ -386,7 +386,7 @@ namespace Lib                          // LIBRARY OF EXTERNAL API FUNCTIONS
 #endif                                 // Operating system check
     /* --------------------------------------------------------------------- */
     namespace OpenSSL                  // OPENSSL API FUNCTIONS
-    { /* --------------------------------------------------------------------- */
+    { /* ------------------------------------------------------------------- */
 #define OPENSSL_SUPPRESS_DEPRECATED    // Want deprecated functions
 #include <openssl/conf.h>              // Conf header
 #include <openssl/evp.h>               // EVP header
@@ -422,7 +422,7 @@ namespace Lib                          // LIBRARY OF EXTERNAL API FUNCTIONS
 # include <jpeg/jerror.h>              // Our error handling
 # include <jpeg/jversion.h>            // Our version information
 #endif                                 // Linux check
-    };/* --------------------------------------------------------------------- */
+    };/* ------------------------------------------------------------------- */
     namespace ZLib                     // ZLIB API FUNCTIONS
     { /* ------------------------------------------------------------------- */
 #include <zlib/zlib.h>                 // Main header
