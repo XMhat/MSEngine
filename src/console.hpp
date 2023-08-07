@@ -145,26 +145,6 @@ static class Console final :           // Members initially private
   }
   /* -- Do clear console, clear history and reset position ----------------- */
   void DoFlush(void) { clear(); clriPosition = rbegin(); }
-  /* -- Register command list ---------------------------------------------- */
-  void RegisterCommandList(void)
-  { // Say how many commands we are registering
-    cLog->LogDebugExSafe("Console registering $ built-in commands...",
-      conLibList.size());
-    // Iterate each item and register it
-    for(const ConLib &clD : conLibList)
-    { // The selected gui mode does not require this command?
-      if(cSystem->IsNotGuiMode(clD.guimMin))
-      { // Say that we ignored this library
-        cLog->LogDebugExSafe("Console ignoring registration of command '$'.",
-          clD.strName);
-        // Try next command
-        continue;
-      } // Register the command
-      RegisterCommand(clD.strName, clD.uiMinimum, clD.uiMaximum, clD.ccbFunc);
-    } // Say how many commands we registered
-    cLog->LogInfoExSafe("Console registered $ of $ built-in commands.",
-      llCmds.size(), conLibList.size());
-  }
   /* -- Check that the console variable name is valid ---------------------- */
   bool IsValidConsoleCommandName(const string &strName)
   { // Check minimum name length
@@ -251,6 +231,8 @@ static class Console final :           // Members initially private
         cLog->LogWarningExSafe("Console fbo failed to reserve $ triangles!",
           stTriangles);
   }
+  /* -- Clear console line ------------------------------------------------- */
+  void DoClearInput(void) { strConsoleBegin.clear(); strConsoleEnd.clear(); }
   /* -- Events list -------------------------------------------------------- */
   const EvtMain::RegVec reEvents;       // Events list to register
   /* -- Return commands list --------------------------------------- */ public:
@@ -616,8 +598,7 @@ static class Console final :           // Members initially private
   /* -- Clear console line ------------------------------------------------- */
   void ClearInput(void)
   { // Clear text before and after cursor
-    strConsoleBegin.clear();
-    strConsoleEnd.clear();
+    DoClearInput();
     // Redraw the buffer, it changed
     SetRedraw();
   }
@@ -670,14 +651,7 @@ static class Console final :           // Members initially private
   /* -- Clears redraw flag ------------------------------------------------- */
   void ClearRedraw(void) { FlagClear(CF_REDRAW); }
   /* -- Sets redraw flag so the console fbo is rerendered ------------------ */
-  void SetRedraw(void)
-  { // If console is visible?
-    if(IsVisible())
-    { // Set redraw flag
-      FlagSet(CF_REDRAW);
-    } // Invisible so clear redraw flag
-    else FlagClear(CF_REDRAW);
-  }
+  void SetRedraw(void) { FlagSetOrClear(CF_REDRAW, IsVisible()); }
   /* -- Returns if the console fbo should redraw --------------------------- */
   bool IsRedrawing(void) { return FlagIsSet(CF_REDRAW); }
   /* -- Returns if the console fbo should NOT redraw ----------------------- */
@@ -966,23 +940,6 @@ static class Console final :           // Members initially private
     // Blit console to main fbo
     cFboMain->BlitConsoleToMain();
   }
-  /* -- Unregister all console commands ------------------------------------ */
-  void UnregisterAllCommands(void)
-  { // Ignore if no commands registered
-    if(llCmds.empty())
-    { // Report that we're not unregistered
-      cLog->LogWarningSafe("Console unregistering no commands!");
-      // Done
-      return;
-    } // Unregister all commands quickly
-    const size_t stCount = llCmds.size();
-    // Report that we're removing all the commands quickly
-    cLog->LogDebugExSafe("Console flushing $ commands...", stCount);
-    // Remove all commands quickly
-    llCmds.clear();
-    // eport that we're removing all the commands quickly
-    cLog->LogInfoExSafe("Console flushed $ commands.", stCount);
-  }
   /* -- Register console command ------------------------------------------- */
   const LibListIt RegisterCommand(const string &strName,
     const unsigned int uiMin, const unsigned int uiMax,
@@ -1192,9 +1149,8 @@ static class Console final :           // Members initially private
   { // Class intiialised
     IHInitialise();
     // Log progress
-    cLog->LogDebugSafe("Console initialising...");
-    // Register core commands
-    RegisterCommandList();
+    cLog->LogDebugExSafe("Console initialising with $ built-in commands...",
+      conLibList.size());
     // Reset cursor position
     clriPosition = rbegin();
     // Load console texture
@@ -1203,10 +1159,22 @@ static class Console final :           // Members initially private
     FlagSet(CF_CANTDISABLE|CF_ENABLED|CF_REDRAW|CF_INSERT);
     // Register lua events
     cEvtMain->RegisterEx(reEvents);
-    // Log progress
-    cLog->LogInfoSafe("Console created.");
     // Show version information
     PrintVersion();
+    // Iterate each item and register it
+    for(const ConLib &clD : conLibList)
+    { // The selected gui mode does not require this command?
+      if(cSystem->IsNotGuiMode(clD.guimMin))
+      { // Say that we ignored this library
+        cLog->LogDebugExSafe("Console ignoring registration of command '$'.",
+          clD.strName);
+        // Try next command
+        continue;
+      } // Register the command
+      RegisterCommand(clD.strName, clD.uiMinimum, clD.uiMaximum, clD.ccbFunc);
+    } // Say how many commands we registered
+    cLog->LogInfoExSafe("Console initialised with $ of $ built-in commands.",
+      llCmds.size(), conLibList.size());
   }
   /* -- DeInit ------------------------------------------------------------- */
   void DeInit(void)
@@ -1218,15 +1186,24 @@ static class Console final :           // Members initially private
     cEvtMain->UnregisterEx(reEvents);
     // Initially shown and not closable. All other flags removed.
     FlagReset(CF_CANTDISABLE|CF_ENABLED|CF_INSERT);
-    // Unregister all commands
-    UnregisterAllCommands();
-    // Unload console texture and font.
+    // If commands registered?
+    switch(const size_t stCount = llCmds.size())
+    { // Impossible?
+      case 0: break;
+      // Anything else?
+      default:
+        // Remove all commands quickly and report it
+        cLog->LogDebugExSafe("Console flushing $ commands...", stCount);
+        llCmds.clear();
+        cLog->LogDebugExSafe("Console flushed $ commands.", stCount);
+        // Done
+        break;
+    } // Unload console texture and font.
     DeInitTextureAndFont();
     // Remove font ftf
     GetFontRef().ftfData.DeInit();
     // Clear input
-    strConsoleBegin.clear();
-    strConsoleEnd.clear();
+    DoClearInput();
     // Clear console history
     ClearHistory();
     // Clear lines

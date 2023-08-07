@@ -83,14 +83,14 @@ struct Pal :                           // Members initially public
     const ssize_t stRot)
   { // Get starting position and rotate backwards
     const auto itStart{ rbegin() + (SizeM1() - stEnd) };
-    rotate(itStart, itStart + stRot, rbegin() + (Size() - stBegin));
+    StdRotate(seq, itStart, itStart + stRot, rbegin() + (Size() - stBegin));
   }
   /* -- Shift limited palette entries forwards ----------------------------- */
   void ShiftFwd(const ssize_t stBegin, const ssize_t stEnd,
     const ssize_t stRot)
   { // Get starting position and rotate forwards
     const auto itStart{ begin() + stBegin };
-    rotate(itStart, itStart + stRot, begin() + stEnd + 1);
+    StdRotate(seq, itStart, itStart + stRot, begin() + stEnd + 1);
   }
   /* -- Shift palette entries backwards or forwards ------------------------ */
   void Shift(const ssize_t stBegin, const ssize_t stLimit,

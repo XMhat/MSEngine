@@ -76,7 +76,7 @@ class SysPipe :                        // Members initially private
     // De-init existing process
     Finish();
     // Show command and arguments
-    cLog->LogInfoExSafe("System opening pipe to '$' with $ args '$'.",
+    cLog->LogDebugExSafe("System opening pipe to '$' with $ args '$'.",
       strApp, aList.size(), strCmdLine);
     // Security attributes
     SECURITY_ATTRIBUTES saAttr{ sizeof(SECURITY_ATTRIBUTES), nullptr, TRUE };

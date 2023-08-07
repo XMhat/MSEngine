@@ -154,7 +154,7 @@ local function InitScore()
         { 500000, "Professional" }, {     450000, "Genius"       },
         { 400000, "Expert"       }, {     350000, "Advanced"     },
         { 300000, "Intermediate" }, {     250000, "Adept"        },
-        { 200000, "Ameteur"      }, {     150000, "Apprentice"   },
+        { 200000, "Amateur"      }, {     150000, "Apprentice"   },
         { 100000, "Novice"       }, {      50000, "Beginner"     },
         {      0, "Newbie"       }, { mininteger, "Slug"         }
       };

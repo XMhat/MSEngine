@@ -38,7 +38,7 @@ static class FreeType final            // Members initially private
     // Unload freetype library
     cLog->LogDebugSafe("FreeType subsystem deinitialising...");
     FT_Done_Library(ftLibrary);
-    cLog->LogInfoSafe("FreeType subsystem deinitialised.");
+    cLog->LogDebugSafe("FreeType subsystem deinitialised.");
     // Success
     return true;
   }
@@ -96,7 +96,7 @@ static class FreeType final            // Members initially private
     // https://www.freetype.org/freetype2/docs/design/design-4.html
     FT_Add_Default_Modules(ftLibrary);
     // Log successful initialisation
-    cLog->LogInfoSafe("FreeType subsystem initialised.");
+    cLog->LogDebugSafe("FreeType subsystem initialised.");
   }
   /* ----------------------------------------------------------------------- */
   void DeInit(void) { if(DoDeInit()) ftLibrary = nullptr; }

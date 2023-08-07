@@ -50,11 +50,11 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
   mutex            mExtract;           // mutex for condition variable
   SafeSizeT        stInUse;            // API in use reference count
   /* ----------------------------------------------------------------------- */
-  StrUIntMap       lFiles, lDirs;      // Files and directories as a map means
-                                       // quick access to assets via filenames
+  StrUIntMap       lFiles,             // Files and directories as a map means
+                   lDirs;              // quick access to assets via filenames
   /* ----------------------------------------------------------------------- */
-  StrUIntMapConstItVector vFiles, vDirs;  // Indexed list of referenced string
-                                       // Ref to all data in lFiles/lDirs
+  StrUIntMapConstItVector vFiles,      // Indexed list of referenced string...
+                          vDirs;       // ...ref to all data in lFiles/lDirs
   /* ----------------------------------------------------------------------- */
   uint64_t         qwArchPos;          // Position of archive in file
   CFileInStream    cfisData;           // LZMA file stream data
@@ -88,8 +88,7 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
       if(!ucpData)
       { // Allocate a zero-byte array to a new class. Remember we need to send
         // a valid allocated pointer to the file map.
-        FileMap fmFile{ strFile, Memory{ 0 },
-          GetCreatedTime(uiSrcId),
+        FileMap fmFile{ strFile, Memory{ 0 }, GetCreatedTime(uiSrcId),
           GetModifiedTime(uiSrcId) };
         // Log progress
         cLog->LogInfoExSafe("Archive extracted empty '$' from '$'.",

@@ -378,19 +378,6 @@ LLFUNCEX(ConEnabled, 1, LCPUSHBOOL(cConsole->IsVisible()));
 /* ------------------------------------------------------------------------- */
 LLFUNC(ConLock, cConsole->SetCantDisable(LCGETBOOL(1, "State")));
 /* ========================================================================= */
-// $ Fbo.Viewport
-// > Left:number=The left co-ordinate.
-// > Top:number=The top co-ordinate.
-// > Right:number=The right co-ordinate.
-// > Bottom:number=The bottom co-ordinate.
-// ? Sets the viewport of the back buffer, meaning, these are the bounds of
-// ? what can be seen. Same as glViewport().
-// ? See: https://www.khronos.org/opengles/sdk/docs/man/xhtml/glViewport.xml
-/* ------------------------------------------------------------------------- */
-LLFUNC(Viewport, cFboMain->SetViewport(
-  LCGETINT(GLint,   1, "Left"),  LCGETINT(GLint,   2, "Top"),
-  LCGETINT(GLsizei, 3, "Right"), LCGETINT(GLsizei, 4, "Bottom")));
-/* ========================================================================= */
 /* ######################################################################### */
 /* ## Fbo.* namespace functions structure                                 ## */
 /* ######################################################################### */
@@ -399,7 +386,6 @@ LLRSBEGIN                              // Fbo.* namespace functions begin
   LLRSFUNC(ConEnabled), LLRSFUNC(ConHeight), LLRSFUNC(ConLock),
   LLRSFUNC(ConSet),     LLRSFUNC(Create),    LLRSFUNC(Draw),
   LLRSFUNC(IsDrawing),  LLRSFUNC(Main),      LLRSFUNC(OnRedraw),
-  LLRSFUNC(Viewport),
 LLRSEND                                // Fbo.* namespace functions end
 /* ========================================================================= */
 /* ######################################################################### */

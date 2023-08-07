@@ -1065,91 +1065,105 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
   CB(cInput->SetStickyMouseEnabled, bool), TBOOLEANSAVE|PANY },
 /* == Network cvars ======================================================== */
 // ! NET_CBPFLAG1
-// ? Not explained yet.
+// ? Specifies the certificate error ignore flags.
 /* ------------------------------------------------------------------------- */
 { GM_TEXT_NOAUDIO, GM_HIGHEST, "net_cbpflag1", cCommon->Zero(),
   CB(cSockets->CertsSetBypassFlags1, uint64_t), TUINTEGER|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! NET_CBPFLAG2
-// ? Not explained yet.
+// ? Specifies the extended certificate error ignore flags.
 /* ------------------------------------------------------------------------- */
 { GM_TEXT_NOAUDIO, GM_HIGHEST, "net_cbpflag2", cCommon->Zero(),
   CB(cSockets->CertsSetBypassFlags2, uint64_t), TUINTEGER|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! NET_BUFFER
-// ? Not explained yet.
+// ? Specifies the amount of memory in bytes to reserve for each recv() or
+// ? send() call. Default is 64k.
 /* ------------------------------------------------------------------------- */
 { GM_TEXT_NOAUDIO, GM_HIGHEST, "net_buffer", "65536",
   CB(SocketSetBufferSize, size_t), TUINTEGER|CPOW2|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! NET_RTIMEOUT
-// ? Not explained yet.
+// ? Specifies a socket recv() command timeout in seconds.
+// ? Default is 2 minutes.
 /* ------------------------------------------------------------------------- */
 { GM_TEXT_NOAUDIO, GM_HIGHEST, "net_rtimeout", "120",
   CB(SocketSetRXTimeout, double), TUFLOAT|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! NET_STIMEOUT
-// ? Not explained yet.
+// ? Specifies a socket send() command timeout in seconds.
+// ? Default is 30 seconds.
 /* ------------------------------------------------------------------------- */
 { GM_TEXT_NOAUDIO, GM_HIGHEST, "net_stimeout", "30",
   CB(SocketSetTXTimeout, double), TUFLOAT|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! NET_CIPHERTLSv1
-// ? Not explained yet.
+// ? Specifies the default settings for TLSv1.x connections. The default is
+// ? use only maximum strength ciphers.
 /* ------------------------------------------------------------------------- */
 { GM_TEXT_NOAUDIO, GM_HIGHEST, "net_ciphertlsv1", "HIGH:!DSS:!aNULL@STRENGTH",
   NoOp, MTRIM|TSTRING|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! NET_CIPHERTLSv13
-// ? Not explained yet.
+// ? Specifies the default settings for TLSv3 connections. The default is empty
+// ? which lets OpenSSL decide.
 /* ------------------------------------------------------------------------- */
 { GM_TEXT_NOAUDIO, GM_HIGHEST, "net_ciphertlsv13", cCommon->Blank(), NoOp,
   MTRIM|TSTRING|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! NET_CASTORE
-// ? Not explained yet.
+// ? Specifies the relative directory to the client certificate store. These
+// ? are required CA certificates that are used for the basis of every SSL
+// ? connection. These certificates are loaded and checked at startup and
+// ? a log warning message is generated if the certificate is not usable.
 /* ------------------------------------------------------------------------- */
 { GM_TEXT_NOAUDIO, GM_HIGHEST, "net_castore", cCommon->Blank(),
   CBSTR(cSockets->CertsFileModified), TSTRING|CFILENAME|MTRIM|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! NET_OCSP
-// ? Not explained yet.
+// ? Informs OpenSSL to verify server certificates via OCSP.
 /* ------------------------------------------------------------------------- */
 { GM_TEXT_NOAUDIO, GM_HIGHEST, "net_ocsp", cCommon->One(),
   CB(SocketOCSPModified, int), TUINTEGER|PANY },
 /* ------------------------------------------------------------------------- */
 // ! NET_USERAGENT
-// ? Not explained yet.
+// ? When using the built-in simple HTTP client, this string is sent as the
+// ? default 'User-Agent' variable. It is automatically generated if left empty
+// ? to "Mozilla/5.0 (<EngineName>; <EngineBits>-bit; v<EngineVersion>)
+// ? <AppName>/<AppVersion>".
 /* ------------------------------------------------------------------------- */
 { GM_TEXT_NOAUDIO, GM_HIGHEST, "net_useragent", cCommon->Blank(),
   CBSTR(SocketAgentModified), TSTRING|MTRIM|PBOOT|PSYSTEM },
 /* == Video cvars ========================================================== */
 // ! VID_ALPHA
-// ? Not explained yet.
+// ? Specifies that the main frame buffer has alpha (GL_RGBA) which is needed
+// ? for transparent windows. Default is 0 to use GL_RGB.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_alpha", cCommon->Zero(),
   CB(cDisplay->SetWindowTransparency, bool), TBOOLEAN|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_CLEAR
-// ? Not explained yet.
+// ? Specifies to clear the main frame buffer every frame.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_clear", cCommon->One(),
   CB(cFboMain->SetBackBufferClear, bool), TBOOLEAN|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_CLEARCOLOUR
-// ? Not explained yet.
+// ? Specifies the 32-bit integer (0xAARRGGBB) as the default clear value.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_clearcolour", cCommon->Zero(),
   CB(cFboMain->SetBackBufferClearColour, unsigned int), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_DEBUG
-// ? Not explained yet.
+// ? Sets 'GLFW_OPENGL_DEBUG_CONTEXT'. Default is 0 (disabled).
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_debug", cCommon->Zero(),
   CB(cDisplay->SetGLDebugMode, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_FS
-// ? Not explained yet.
+// ? Specifies what full-screen type to use. Specify 0 to keep the engine in
+// ? a normal window, 1 for exclusive full-screen mode (specified by
+// ? 'vid_fsmode') or 2 for borderless full-screen mode.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_fs", cCommon->Zero(),
   CB(cDisplay->FullScreenStateChanged, bool), TBOOLEANSAVE|PANY },
@@ -1172,34 +1186,42 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
   CB(cDisplay->FullScreenModeChanged, int), TINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_LOCK
-// ? Not explained yet.
+// ? Locks the main frame buffer size to the app author values specified by
+// ? 'vid_orwidth' and 'vid_orheight' instead of resizing it to the windows
+// ? size.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_lock", cCommon->Zero(),
   CB(cFboMain->SetLockViewport, bool), TBOOLEAN|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_MONITOR
-// ? Not explained yet.
+// ? Specifies the monitor id to use. Use the 'mlist' console command to see
+// ? possible values or just use -1 to let the operating system decide.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_monitor", "-1",
   CB(cDisplay->MonitorChanged, int), TINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_GAMMA
-// ? Not explained yet.
+// ? Overrides the gamma level. The default is 1 which is to keep the desktop
+// ? gamma level.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_gamma", cCommon->One(),
   CB(cDisplay->GammaChanged, GLfloat), TUFLOATSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_FSAA
-// ? Not explained yet.
+// ? Enables full-scene anti-aliasing. Only needed to smooth the edges of
+// ? textures if you frequently blit textures at an different angles other than
+// ? 0, 90, 180 or 270 degrees.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_fsaa", "-1",
   CB(cDisplay->FsaaChanged, int), TINTEGERSAVE|CPOW2Z|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_BPP
-// ? Not explained yet.
+// ? Set default bits-per-pixel. On Windows, the driver can decide properly
+// ? what depth to use, but on others the bit depth is forced to RGBA161616 to
+// ? resolve gradient banding issues but you can override that if you like.
 /* ------------------------------------------------------------------------- */
-  { GM_GRAPHICS, GM_HIGHEST, "vid_bpp",
-  /* ----------------------------------------------------------------------- */
+{ GM_GRAPHICS, GM_HIGHEST, "vid_bpp",
+/* ------------------------------------------------------------------------- */
 #if defined(WINDOWS)
   cCommon->Zero(),                     // Win32 doesn't need forcing depth
 #else
@@ -1209,49 +1231,58 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
   CB(cDisplay->SetForcedBitDepth, int), TUINTEGER|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_HIDPI
-// ? Not explained yet.
+// ? Enables or disables HiDPI support.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_hidpi", cCommon->One(),
   CB(cDisplay->HiDPIChanged, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_STEREO
-// ? Not explained yet.
+// ? Enables 3D glasses support.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_stereo", cCommon->Zero() ,
   CB(cDisplay->SetStereoMode, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_NOERRORS
-// ? Not explained yet.
+// ? Sets GLFW_CONTEXT_NO_ERROR. Default is 0 (disabled).
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_noerrors", cCommon->Zero(),
   CB(cDisplay->SetNoErrorsMode, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_SRGB
-// ? Not explained yet.
+// ? Enables SRGB colour space.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_srgb", cCommon->One(),
   CB(cDisplay->SRGBColourSpaceChanged, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_AUXBUFFERS
-// ? Not explained yet.
+// ? Specified the number of auxiliary swap chain buffers to use. Specify 0
+// ? for double-buffering, 1 for triple-buffering or -1 to let the OpenGL
+// ? driver decide.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_auxbuffers", "-1",
   CB(cDisplay->AuxBuffersChanged, int), TINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_SIMPLEMATRIX
-// ? Not explained yet.
+// ? Set to 0 to not maintain frame buffer aspect ratio, or 1 to allow the
+// ? main frame buffer to stick to the users preferred aspect ratio (see
+// ? 'vid_oraspmin' and 'vid_oraspmax).
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_simplematrix", cCommon->Zero(),
   CB(cFboMain->SetSimpleMatrix, bool), TBOOLEAN|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_TEXFILTER
-// ? Not explained yet.
+// ? Sets the texture filter id and equates to the values of the 'Fbo.Filters'
+// ? table.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_texfilter", "3",
   CB(cFboMain->SetFilter, size_t), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_VSYNC
-// ? Not explained yet.
+// ? Enables vertical synchronisation which helps smooth the frame rate. Set to
+// ? 0 if you don't care about the longevity of your GPU and make it draw as
+// ? fast as possible, or 1 to keep it synchronised to your monitors vertical
+// ? refresh rate. You can also use -1 to use adaptive sync, and 2 to half the
+// ? refresh rate if you like.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_vsync", cCommon->One(),
   CB(cOgl->SetVSyncMode, int), TINTEGERSAVE|PANY },
@@ -1264,97 +1295,120 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
   CB(cDisplay->GraphicsSwitchingChanged, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_WIREFRAME
-// ? Not explained yet.
+// ? Do not fill triangles with textures. Useless mainly.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_wireframe", cCommon->Zero(),
   CB(cOgl->SetPolygonMode, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_ORWIDTH
-// ? Not explained yet.
+// ? Specifies the width of the main frame buffer.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_orwidth", "640",
   CB(cDisplay->SetOrthoWidth, GLfloat), TUFLOAT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_ORHEIGHT
-// ? Not explained yet.
+// ? Specifies the height of the main frame buffer.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_orheight", "480",
   CB(cDisplay->SetOrthoHeight, GLfloat), TUFLOAT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_ORASPMIN
-// ? Not explained yet.
+// ? Specifies the minmum aspect ratio allowed in the main frame buffer. For
+// ? example, 1.333333 is 4:3 and 1.777778 is 16:9. Only applies when the
+// ? 'vid_simplematrix' cvar is set to 0.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_oraspmin", "1.25",
   CB(cFboMain->SetMinOrtho, GLfloat), TUFLOAT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_ORASPMAX
-// ? Not explained yet.
+// ? Specifies the maximum aspect ratio allowed in the main frame buffer. For
+// ? example, 1.333333 is 4:3 and 1.777778 is 16:9. Only applies when the
+// ? 'vid_simplematrix' cvar is set to 0.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_oraspmax", "1.777778",
   CB(cFboMain->SetMaxOrtho, GLfloat), TUFLOAT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_RFBO
-// ? Not explained yet.
+// ? Pre-allocates space for the specified number of frame buffer names. By
+// ? default we allocate enough room for the main frame buffer and the console
+// ? frame buffer. There could be FPS issues initially if this value is set too
+// ? low and many frame buffers are used. Only the app author needs to be
+// ? concerned with this value and can only be set in the application manifest.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_rfbo", "2",
   CB(FboSetOrderReserve, size_t), TINTEGER|PSYSTEM|CUNSIGNED|PBOOT },
 /* ------------------------------------------------------------------------- */
 // ! VID_RFLOATS
-// ? Not explained yet.
+// ? Pre-allocates buffer space for the specified number of GLfloats. There
+// ? could be FPS issues initially if this value is set too low. Only the
+// ? app author needs to be concerned with this value and can only be set in
+// ? the application manifest.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_rfloats", "10000",
   CB(cFboMain->SetFloatReserve, size_t), TINTEGER|PSYSTEM|CUNSIGNED|PBOOT },
 /* ------------------------------------------------------------------------- */
 // ! VID_RCMDS
-// ? Not explained yet.
+// ? Pre-allocates space for the specified number of OpenGL command structures.
+// ? There could be FPS issues initially if this value is set too low. Only the
+// ? app author needs to be concerned with this value and can only be set in
+// ? the application manifest.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_rcmds", "1000",
   CB(cFboMain->SetCommandReserve, size_t), TINTEGER|PSYSTEM|CUNSIGNED|PBOOT },
 /* ------------------------------------------------------------------------- */
 // ! VID_RDTEX
-// ? Not explained yet.
+// ? Pre-allocates the specified number of texture names to reserve in the
+// ? pending texture names deletion list. Only the app author needs to be
+// ? concerned with this value and can only be set in the application manifest.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_rdtex", "10",
   CB(cOgl->SetTexDListReserve, size_t), TINTEGER|PSYSTEM|CUNSIGNED|PBOOT },
 /* ------------------------------------------------------------------------- */
 // ! VID_RDFBO
-// ? Not explained yet.
+// ? Pre-allocates the specified number of frame buffer names to reserve in the
+// ? pending frame buffer names deletion list. Only the app author needs to be
+// ? concerned with this value and can only be set in the application manifest.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_rdfbo", "10",
   CB(cOgl->SetFboDListReserve, size_t), TINTEGER|PSYSTEM|CUNSIGNED|PBOOT },
 /* ------------------------------------------------------------------------- */
 // ! VID_SSTYPE
-// ? Not explained yet.
+// ? Specifies the screenshot type, see the command output of 'imgfmts' to see
+// ? the image types supported and the id's for them. Only entries marked with
+// ? the 'S' (saveable) token can be used.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_sstype", cCommon->Zero(),
   CB(cSShot->SetScreenShotType, size_t), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_SUBPIXROUND
-// ? Not explained yet.
+// ? Specifies the type of sub-pixel rounding function on the main frame-buffer
+// ? GLSL shader. Specify 0 for no sub-pixel rounding, 1 to use the floor()
+// ? function, 2 to use the ceil() function, 3 to use the round() function or
+// ? 4 to use the roundEven() function.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_subpixround", cCommon->Zero(),
   CB(SetSPRoundingMethod, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_QSHADER
-// ? Not explained yet.
+// ? Specifies shader quality. Default is maximum.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_qshader", "3",
   CB(cOgl->SetQShaderHint, size_t), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_QLINE
-// ? Not explained yet.
+// ? Specifies line quality. Default is maximum.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_qline", cCommon->Zero(),
   CB(cOgl->SetQLineHint, size_t), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_QPOLYGON
-// ? Not explained yet.
+// ? Specifies polygon quality. Default is maximum.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_qpolygon", cCommon->Zero(),
   CB(cOgl->SetQPolygonHint, size_t), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_QCOMPRESS
-// ? Not explained yet.
+// ? Specifies texture compression quality. Default is maximum.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "vid_qcompress", "3",
   CB(cOgl->SetQCompressHint, size_t), TUINTEGERSAVE|PANY },
@@ -1368,37 +1422,49 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
   NoOp, TUFLOAT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! WIN_BORDER
-// ? Not explained yet.
+// ? Specifies if the window should have a titlebar and a border.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "win_border", cCommon->One(),
   CB(cDisplay->BorderChanged, bool), TBOOLEAN|PANY },
 /* ------------------------------------------------------------------------- */
 // ! WIN_CLOSEABLE
-// ? Not explained yet.
+// ? Specifies if the window is closable by the user.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "win_closeable", cCommon->One(),
   CB(cDisplay->CloseableChanged, bool), TBOOLEAN|PANY },
 /* ------------------------------------------------------------------------- */
 // ! WIN_FLOATING
-// ? Not explained yet.
+// ? Specifies to lock the visibility of the window, otherwise known as 'always
+// ? on top' or 'Topmost'.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "win_floating", cCommon->Zero(),
   CB(cDisplay->FloatingChanged, bool), TBOOLEAN|PANY },
 /* ------------------------------------------------------------------------- */
 // ! WIN_FOCUSED
-// ? Not explained yet.
+// ? Specifies to automatically focus the window on creation.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "win_focused", cCommon->One(),
   CB(cDisplay->AutoFocusChanged, bool), TBOOLEAN|PANY },
 /* ------------------------------------------------------------------------- */
 // ! WIN_HEIGHT
-// ? Not explained yet.
+// ? Sets the initial height of the window. This value is saved to the
+// ? persistence database when changed.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "win_height", cCommon->Zero(),
   CB(cDisplay->HeightChanged, int), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
+// ! WIN_HEIGHTMAX
+// ? Sets the maximum height of the window. This is only changable at the
+// ? application configuration file and is not saved to persistence database.
+// ? The upper value is clamped by the GPU's maximum texture size which is
+// ? normally 16384 on all modern GPU's. Specify 0 to use the GPU maximum.
+/* ------------------------------------------------------------------------- */
+{ GM_GRAPHICS, GM_HIGHEST, "win_heightmax", cCommon->Zero(),
+  NoOp, TUINTEGER|PSYSTEM },
+/* ------------------------------------------------------------------------- */
 // ! WIN_HEIGHTMIN
-// ? Not explained yet.
+// ? Sets the minimum height of the window. This is only changable at the
+// ? application configuration file and is not saved to persistence database.
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "win_heightmin", cCommon->Zero(),
   NoOp, TUINTEGER|PSYSTEM },
@@ -1464,6 +1530,15 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 /* ------------------------------------------------------------------------- */
 { GM_GRAPHICS, GM_HIGHEST, "win_width", cCommon->Zero(),
   CB(cDisplay->WidthChanged, int), TUINTEGERSAVE|PANY },
+/* ------------------------------------------------------------------------- */
+// ! WIN_WIDTHMAX
+// ? Sets the maximum width of the window. This is only changable at the
+// ? application configuration file and is not saved to persistence database.
+// ? The upper value is clamped by the GPU's maximum texture size which is
+// ? normally 16384 on all modern GPU's. Specify 0 to use the GPU maximum.
+/* ------------------------------------------------------------------------- */
+{ GM_GRAPHICS, GM_HIGHEST, "win_widthmax", cCommon->Zero(),
+  NoOp, TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! WIN_WIDTHMIN
 // ? Sets the minimum width of the window. This is only changable at the

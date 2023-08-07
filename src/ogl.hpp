@@ -10,6 +10,7 @@
 namespace IfOgl {                      // Start of module namespace
 /* -- Includes ------------------------------------------------------------- */
 using namespace IfCollector;           // Using collector namespace
+using namespace IfEvtWin;              // Using window events namespace
 using namespace IfFbo;                 // Using fbo namespace
 using namespace IfGlFW;                // Using glfw namespace
 using namespace IfCVar;                // Using cvar namespace
@@ -53,7 +54,6 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
   private IHelper,                     // Initialisation helper
   public FboColour,                    // OpenGL colour
   public FboBlend,                     // OpenGL blend
-  public FboViewport,                  // OpenGL viewport
   public OglFlags                      // OpenGL init flags
 { /* -- String defines ----------------------------------------------------- */
   const IdMap<GLenum> idPolyFaces,     // Polygon face names (log detail)
@@ -217,12 +217,6 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
     uiPackAlign = GetInteger<GLuint>(GL_PACK_ALIGNMENT);
     uiUnpackAlign = GetInteger<GLuint>(GL_UNPACK_ALIGNMENT);
     iUnpackRowLength = GetInteger<GLint>(GL_UNPACK_ROW_LENGTH);
-    // Cache current default viewport
-    const auto aViewport{ GetIntegerArray<4>(GL_VIEWPORT) };
-    SetCoLeft(aViewport[0]);
-    SetCoTop(aViewport[1]);
-    SetCoRight(static_cast<GLsizei>(aViewport[2]));
-    SetCoBottom(static_cast<GLsizei>(aViewport[3]));
     // Load current clear colour
     GetFloatArray<4>(GL_COLOR_CLEAR_VALUE, GetColourMemory());
     // Load current blending settings
@@ -411,7 +405,7 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
     { // Keep scanning until we find a bound texture
       if(uiActiveTexture != uipTexture[stIndex]) continue;
       // Reset currently bound texture
-      uiActiveTexture = 0;
+      uiActiveTexture = numeric_limits<GLuint>::max();
       // No need to check any others
       break;
     } // Delete the textures
@@ -447,7 +441,7 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
     { // Keep scanning until we find a cached fbo
       if(uipFbo[stIndex] != uiActiveFbo) continue;
       // Reset currently selected fbo
-      uiActiveFbo = 0;
+      uiActiveFbo = numeric_limits<GLuint>::max();
       // No need to check any others
       break;
     } // Delete the fbo
@@ -568,7 +562,8 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
   { // Delete the program
     sAPI.glDeleteProgram(uiProgram);
     // If it was the active program then reset the cache
-    if(uiActiveProgram == uiProgram) uiActiveProgram = 0;
+    if(uiActiveProgram == uiProgram)
+      uiActiveProgram = numeric_limits<GLuint>::max();
   }
   /* ----------------------------------------------------------------------- */
   void LinkProgram(const GLuint uiProgram) const
@@ -629,7 +624,7 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
     { // Keep scanning until we find a bound vbo
       if(uipVbo[stIndex] != uiActiveVbo) continue;
       // Reset currently bound vbo
-      uiActiveVbo = 0;
+      uiActiveVbo = numeric_limits<GLuint>::max();
       // No need to check any others
       break;
     } // Delete the vbo's
@@ -660,7 +655,7 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
     { // Keep scanning until we find a bound vao
       if(uipVao[stIndex] != uiActiveVao) continue;
       // Reset currently bound vao
-      uiActiveVao = 0;
+      uiActiveVao = numeric_limits<GLuint>::max();
       // No need to check any others
       break;
     } // Delete the vao's
@@ -703,14 +698,8 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
   void DrawArraysTriangles(const GLsizei stCount) const
     { DrawArrays(GL_TRIANGLES, 0, stCount); }
   /* ----------------------------------------------------------------------- */
-  void CommitViewport(void)
-    { sAPI.glViewport(GetCoLeft(), GetCoTop(), GetCoRight(), GetCoBottom()); }
-  /* ----------------------------------------------------------------------- */
-  void SetViewportWH(const GLsizei stWidth, const GLsizei stHeight)
-    { if(SetCoords(0, 0, stWidth, stHeight)) CommitViewport(); }
-  /* ----------------------------------------------------------------------- */
-  void SetViewport(const FboViewport &fcData)
-    { if(SetCoords(fcData)) CommitViewport(); }
+  void SetViewport(const GLsizei stWidth, const GLsizei stHeight)
+    { sAPI.glViewport(0, 0, stWidth, stHeight); }
   /* -- Get openGL float array --------------------------------------------- */
   template<size_t stCount>
     void GetFloatArray(const GLenum eId, GLfloat *const fpDest) const
@@ -860,15 +849,14 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
       const GLuint uiExts = GetExtensionCount();
       // Report device selected and basic capabilities
       cLog->LogNLCDebugExSafe(
-        "- Clear colour: $,$,$,$; " "Blend: $,$,$,$.\n"
-        "- Viewport: $,$,$,$; "     "Maximum texture size: $$^2.\n"
-        "- Pack alignment: $; "     "Unpack alignment: $.\n"
-        "- Unpack row length: $; "  "Vertex attributes: $.\n"
-        "- Texture units: $; "      "Extensions count: $.",
+        "- Clear colour: $,$,$,$"      "Blend: $,$,$,$.\n"
+        "- Maximum texture size: $$^2" "Pack alignment: $.\n"
+        "- Unpack alignment: $"        "Unpack row length: $.\n"
+        "- Vertex attributes: $"       "Texture units: $.\n"
+        "- Extensions count: $.",
         GetColourRed(),     GetColourGreen(),   GetColourBlue(),
         GetColourAlpha(),   GetSrcRGB(),        GetDstRGB(),
-        GetSrcAlpha(),      GetDstAlpha(),      GetCoLeft(),
-        GetCoTop(),         GetCoRight(),       GetCoBottom(),
+        GetSrcAlpha(),      GetDstAlpha(),
         dec,                MaxTexSize(),       PackAlign(),
         UnpackAlign(),      UnpackRowLength(),  MaxVertexAttribs(),
         uiTexUnits,         uiExts);
@@ -1146,6 +1134,19 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
     { return idOGLCodes.Get(static_cast<GLenum>(itCode)); }
   /* -- Return limit ------------------------------------------------------- */
   double GetLimit(void) const { return ClockDurationToDouble(cdLimit); }
+  /* -- Update window size limits ------------------------------------------ */
+  void UpdateWindowSizeLimits(void)
+  { // Get app specified minimums and maximums
+    const int iWMin = cCVars->GetInternalSafe<int>(WIN_WIDTHMIN),
+              iWMax = cCVars->GetInternalSafe<int>(WIN_HEIGHTMIN),
+              iHMin = cCVars->GetInternalSafe<int>(WIN_WIDTHMAX),
+              iHMax = cCVars->GetInternalSafe<int>(WIN_HEIGHTMAX);
+    // Set the window size limits. The specified maximum must not exceed the
+    // video cards maximum texture size or perhaps BOOM! (not tested though).
+    cEvtWin->Add(EWC_WIN_LIMITS, iWMin, iWMax,
+      iHMin ? Minimum(iHMin, MaxTexSize()) : MaxTexSize(),
+      iHMax ? Minimum(iHMax, MaxTexSize()) : MaxTexSize());
+  }
   /* -- Initialise --------------------------------------------------------- */
   void Init(const int iRefresh, const bool bForce=false)
   { // Class initialised
@@ -1154,7 +1155,7 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
     cLog->LogDebugSafe("OGL subsystem initialising...");
     // Set context
     cGlFW->WinSetContext();
-    // Load GL functions
+    // Load GL functions and throw exception with reason if not all loaded
     if(const char*const cpErr = LoadFunctions())
       XCS("Failed to load OpenGL export!", "Function", cpErr);
     // Clear error that Wine or GLFW might have caused
@@ -1194,12 +1195,8 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
     SetQCompressHint(cCVars->GetInternalSafe<size_t>(VID_QCOMPRESS));
     // Set polygon mode
     SetPolygonMode(cCVars->GetInternalSafe<bool>(VID_WIREFRAME));
-    // Set window size limits. Let the guest choose the minimum and the maximum
-    // must not exceed the video cards maximum texture size or possibly BOOM!
-    cEvtMain->Add(EMC_WIN_LIMITS,
-      cCVars->GetInternalSafe<int>(WIN_WIDTHMIN),
-      cCVars->GetInternalSafe<int>(WIN_HEIGHTMIN),
-      MaxTexSize(), MaxTexSize());
+    // Setup window size limits
+    UpdateWindowSizeLimits();
     // Set pack alignment for grabbing screenshots and unpack alignment for
     // uploading odd sized textures.
     IGL(SetPackAlignment(1), "Set byte pack alignment failed!");
@@ -1264,8 +1261,6 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
     uiActiveFbo = uiActiveProgram = uiActiveTexture = uiActiveTUnit =
       uiActiveVao = uiActiveVbo = numeric_limits<GLuint>::max();
     uiPackAlign = uiTexUnits = uiMaxVertexAttribs = 0;
-    // Reset viewport co-ordinates
-    ResetCoords();
     // Set blank generic text for strings
     strVendor.clear();
     strVersion.clear();

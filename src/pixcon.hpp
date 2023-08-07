@@ -14,7 +14,11 @@
 /* Curses API in it's own namespace to prevent ambiguity problems.           */
 /* ------------------------------------------------------------------------- */
 namespace IfCurses {                   // Start of Curses interface
-#include <ncurses.h>                   // Using Curses for fancy term effects
+#ifdef MACOS                           // Using MacOS? (Built-in is buggy)
+# include <curses/curses.h>            // Using our static curses library
+#else                                  // Using Linux? (Built-in is OK)
+# include <ncurses.h>                  // Using Curses for fancy term effects
+#endif                                 // End of POSIX OS detection
 }                                      // End of Curses interface
 /* == Console Class ======================================================== */
 class SysCon :                         // All members initially private
@@ -52,22 +56,39 @@ class SysCon :                         // All members initially private
   { // Include curses namespace
     using namespace IfCurses;
     // Build character with specified colour
-    const cchar_t ccChar{ aColour, { static_cast<wchar_t>(uiChar) },
-#if defined(LINUX)
-      0
-#endif
-    };
-    // Print character and throw error if failed and if it was because we
-    // tried to write the bottom-right most character? Then ignore
-    // reporting because MacOS is returning error for this but actually
-    // changing the colour for us. So that's obviously a bug!
-    const int iResultAdd = add_wch(&ccChar);
-    if(iResultAdd != OK && (CoordGetX() != diSizeM1.DimGetWidth() ||
-                            CoordGetY() != diSizeM1.DimGetHeight()))
-      cLog->LogWarningExSafe(
-        "SysCon set character failed! (C:$<$$>;A:$$<$$>;P:$$x$;R:$)",
-        uiChar, hex, uiChar, dec, aColour, hex, aColour, dec, CoordGetX(),
-        CoordGetY(), iResultAdd);
+    const cchar_t ccChar{ aColour, { static_cast<wchar_t>(uiChar) }, 0 };
+    // Print character and get result
+    switch(const int iResult = add_wch(&ccChar))
+    { // If failed?
+      default:
+        // If it was because we tried to write the bottom-right most character?
+        // Then ignore reporting because MacOS is returning error for this but
+        // actually changing the colour for us. So that's obviously a bug!
+        if(CoordGetX() != diSizeM1.DimGetWidth() ||
+           CoordGetY() != diSizeM1.DimGetHeight())
+          cLog->LogWarningExSafe(
+            "SysCon set character failed! (C:$<$$>;A:$$<$$>;P:$$x$;R:$)",
+            uiChar, hex, uiChar, dec, aColour, hex, aColour, dec, CoordGetX(),
+            CoordGetY(), iResult);
+        // Fall through to break
+        [[fallthrough]];
+      // Succeeded?
+      case OK: break;
+    }
+  }
+  /* -- Redraw screen and check for error ---------------------------------- */
+  void CommitScreen(void)
+  { // Commit all settings and buffer
+    switch(const int iResult = IfCurses::refresh())
+    { // Unknown result?
+      default:
+        // Log the result
+        cLog->LogWarningExSafe("SysCon refresh result $!", iResult);
+        // Fall through to break
+        [[fallthrough]];
+      // Success? Break
+      case OK: break;
+    }
   }
   /* -- Set maximum console line length ---------------------------- */ public:
   CVarReturn RowsModified(const size_t stRows)
@@ -109,7 +130,7 @@ class SysCon :                         // All members initially private
     if(ciCursor.CoordGetY() >= DimGetHeight())
       ciCursor.CoordSetY(diSizeM1.DimGetHeight());
     // Refresh the window which stops failures of other routines
-    refresh();
+    CommitScreen();
   }
   /* -- Check keys ------------------------------------------------- */ public:
   KeyType GetKey(int &iKey, int &iMods)
@@ -154,16 +175,20 @@ class SysCon :                         // All members initially private
         // Test key
         switch(wChar)
         { // Control+Home pressed?
-          case 531: /* MacOS \033[1;5H */ case 535: /* Linux default */
+          case 531: case 532: /* MacOS \033[1;5H */
+          case 535: /* Linux default */
             iMods = GLFW_MOD_CONTROL; iKey = GLFW_KEY_HOME; break;
           // Control+End pressed?
-          case 526: /* MacOS \033[1;5F */ case 530: /* Linux default */
+          case 526: case 527: /* MacOS \033[1;5F */
+          case 530: /* Linux default */
             iMods = GLFW_MOD_CONTROL; iKey = GLFW_KEY_END; break;
           // Control+PageUp pressed?
-          case 551: /* MacOS \033[5;5~ */ case 555: /* Linux default */
+          case 551: case 552: /* MacOS \033[5;5~ */
+          case 555: /* Linux default */
             iMods = GLFW_MOD_CONTROL; iKey = GLFW_KEY_PAGE_UP; break;
           // Control+PageDown pressed?
-          case 546: /* MacOS \033[6;5~ */ case 550: /* Linux default */
+          case 546: case 547: /* MacOS \033[6;5~ */
+          case 550: /* Linux default */
             iMods = GLFW_MOD_CONTROL; iKey = GLFW_KEY_PAGE_DOWN; break;
           // Control+Delete (MacOS KB) or Insert (PC KB) pressed?
           case 515: case KEY_IC: iMods = 0; iKey = GLFW_KEY_INSERT; break;
@@ -205,7 +230,7 @@ class SysCon :                         // All members initially private
                  iCursor, iResult);
                // Fall through to break
                [[fallthrough]];
-      // Record new value and break if okay
+      // Break if cursor set was ok
       case 0: case 1: case 2: break;
     }
   }
@@ -251,35 +276,32 @@ class SysCon :                         // All members initially private
     } // Commit cursor if not changed
     CommitCursor();
     // Commit all settings and buffer
-    switch(const int iResult = refresh())
-    { // Unknown result?
-      default:
-        // Log the result
-        cLog->LogWarningExSafe("SysCon refresh result $!", iResult);
-        // Fall through to break
-        [[fallthrough]];
-      // Success? Break
-      case OK: break;
-    }
+    CommitScreen();
   }
   /* -- Set a character at the current position ---------------------------- */
   void SetChar(const unsigned int uiChar=' ')
   { // Include curses namespace
     using namespace IfCurses;
-    // Move to the specified position and if succeeded?
-    const int iResultMove = move(CoordGetY(), CoordGetX());
-    if(iResultMove == OK)
-    { // If size of unsigned int isn't equal to wchar_t? We will need to check
-      // for overflow and print a '?' if so.
-      if constexpr(sizeof(uiChar) != sizeof(wchar_t))
-        DoSetChar(uiChar > numeric_limits<wchar_t>::max() ? '?' : uiChar);
-      // Size is equal to wchar_t?
-      else DoSetChar(uiChar);
-    } // Failed so write error to log
-    else cLog->LogWarningExSafe(
-      "SysCon move cursor failed! (C:$<$$>;A:$$<$$>;P:$$x$;R:$)",
-        uiChar, hex, uiChar, dec, aColour, hex, aColour, dec, CoordGetX(),
-        CoordGetY(), iResultMove);
+    // Move to the specified position and get result
+    switch(const int iResult = move(CoordGetY(), CoordGetX()))
+    { // If successful?
+      case OK:
+        // If size of unsigned int isn't equal to wchar_t? We will need to
+        // check for overflow and print a '?' if so.
+        if constexpr(sizeof(uiChar) != sizeof(wchar_t))
+          DoSetChar(uiChar > numeric_limits<wchar_t>::max() ? '?' : uiChar);
+        // Size is equal to wchar_t?
+        else DoSetChar(uiChar);
+        // Done
+        break;
+      // Failed so write error to log
+      default: cLog->LogWarningExSafe(
+        "SysCon move cursor failed! (C:$<$$>;A:$$<$$>;P:$$x$;R:$)",
+          uiChar, hex, uiChar, dec, aColour, hex, aColour, dec, CoordGetX(),
+          CoordGetY(), iResult);
+        // Done
+        break;
+    }
   }
   /* -- Set a character at the specified screen buffer position ------------ */
   void SetCharPos(const int iNX, const int iNY, const unsigned int uiC=' ')
@@ -687,7 +709,7 @@ class SysCon :                         // All members initially private
       } // Restore terminal settings
       endwin();
     } // System console is de-initialised
-    cLog->LogInfoSafe("SysCon de-initialised!");
+    cLog->LogDebugSafe("SysCon de-initialised!");
   }
   /* -- Initialise --------------------------------------------------------- */
   void SysConInit(const char*const, const size_t, const size_t, const bool)
@@ -703,21 +725,21 @@ class SysCon :                         // All members initially private
     else XCL("Failed to initialse default locale!");
     // Init ncurses
     if(!initscr()) XC("Failed to initialise terminal window!");
-    // Disable echo
-    if(noecho() == ERR) XC("Failed to disable echo!");
     // No newlines on writing output
     if(nonl() == ERR) XC("Failed to disable newline mode!");
     // No delay to getch() please
     if(nodelay(stdscr, true) == ERR) XC("Failed to enable nodelay mode!");
     // Disable ctrl+c?
     if(cbreak() == ERR) XC("Failed to set cbreak mode!");
+    // Disable echo
+    if(noecho() == ERR) XC("Failed to disable echo!");
     // Enable raw mode
     if(raw() == ERR) XC("Failed to set raw mode!");
-    // Enable special keys
-    if(keypad(stdscr, TRUE) == ERR) XC("Failed to enable special keys!");
-    // Disable interrupt fluash
+    // Disable interrupt flush
     if(intrflush(stdscr, FALSE) == ERR)
       XC("Failed to disable interrupt flush!");
+    // Enable special keys
+    if(keypad(stdscr, TRUE) == ERR) XC("Failed to enable special keys!");
     // If we can use colour?
     if(can_change_color())
     { // Using colour
@@ -759,8 +781,8 @@ class SysCon :                         // All members initially private
           { // Save old foreground and background palette entry
             ShortPair &spEntry = ptPairs[stPalette];
             if(pair_content(static_cast<short>(stPairs),
-              &spEntry[0], &spEntry[1]) == ERR)
-                spEntry[0] = spEntry[1] = -1;
+                 &spEntry[0], &spEntry[1]) == ERR)
+              spEntry[0] = spEntry[1] = -1;
             // Calculate foreground and background positions
             const size_t stIndexBG = stPairs / COLOUR_MAX,
                          stIndexFG = stPairs % COLOUR_MAX,
@@ -796,7 +818,7 @@ class SysCon :                         // All members initially private
     // Update size
     CheckAndUpdateSize();
     // System console is initialised
-    cLog->LogInfoSafe("SysCon initialised.");
+    cLog->LogDebugSafe("SysCon initialised.");
   }
   /* -- Constructor -------------------------------------------------------- */
   SysCon(SysModList &&svVersion, const size_t stI) : // No parameters
@@ -820,3 +842,4 @@ class SysCon :                         // All members initially private
 };/* ----------------------------------------------------------------------- */
 #define MSENGINE_SYSCON_CALLBACKS()    // Not required
 /* == EoF =========================================================== EoF == */
+

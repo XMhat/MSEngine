@@ -208,9 +208,12 @@ static bool GlFWProcExists(const char*const cpFunction)
 /* -- Get internal name of key --------------------------------------------- */
 static const char *GlFWGetKeyName(const int iK, const int iSC)
   { return glfwGetKeyName(iK, iSC); }
-/* - Return if raw mouse is supported? ------------------------------------- */
+/* -- Return if raw mouse is supported? ------------------------------------ */
 static bool GlFWIsRawMouseMotionSupported(void)
   { return GlFWGBooleanToBoolean(glfwRawMouseMotionSupported()); }
+/* -- Return monitor name -------------------------------------------------- */
+static const char *GlFWGetMonitorName(GLFWmonitor*const mDevice)
+  { return glfwGetMonitorName(mDevice); }
 /* ------------------------------------------------------------------------- */
 static GLFWglproc GlFWGetProcAddress(const char*const cpFunction)
 { // Get function and return it if we have it

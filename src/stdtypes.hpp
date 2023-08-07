@@ -42,7 +42,6 @@ using ::std::next;                     // Traverse iterator forward
 using ::std::prev;                     // Traverse iterator backwards
 /* -- String streams ------------------------------------------------------- */
 using ::std::dec;                      // Display integral value as decimal
-using ::std::rotate;                   // Wrap data across boundaries
 using ::std::fixed;                    // Show real numbers as non-scientific
 using ::std::get_time;                 // Parse a time string
 using ::std::hex;                      // Display integral value as hex

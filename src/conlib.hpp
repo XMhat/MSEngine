@@ -722,8 +722,10 @@ cConsole->AddLineExA(tData.Finish(),
 /* ========================================================================= */
 { "events", 1, 1, GM_TEXT_NOAUDIO, [](const Arguments &){
 /* ------------------------------------------------------------------------- */
-// Log event count
-cConsole->AddLine(PluraliseNum(cEvtMain->SizeSafe(), "event.", "events."));
+// Log event counts
+cConsole->AddLineExA("$ and $.",
+  PluraliseNum(cEvtMain->SizeSafe(), "engine event", "engine events"),
+  PluraliseNum(cEvtWin->SizeSafe(), "window event", "window events"));
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'events' function
 /* ========================================================================= */
@@ -856,7 +858,7 @@ cConsole->AddLineEx(
   "Version: $ by $.\n"
   "$" // Memory (optional)
   "Window: $x$ ($) @ $x$ (*$x$); DFlags: 0x$$.\n"
-  "- Maximum: $$^2; Viewport: $x$ ($).\n"
+  "- State: $$ ($); Max: $^2; Viewport: $x$ ($).\n"
   "- Ortho: $x$ ($); Total: $x$ ($).\n"
   "- Stage: $,$,$,$; Fbo: $x$; OFlags: 0x$$.\n"
   "- Polygons: $$/$; Commands: $/$.\n"
@@ -872,8 +874,9 @@ cConsole->AddLineEx(
     cDisplay->GetWindowPosX(), cDisplay->GetWindowPosY(),
     cDisplay->GetWindowScaleWidth(), cDisplay->GetWindowScaleHeight(),
     hex, cDisplay->FlagGet(),
-  dec, cOgl->MaxTexSize(), cFboMain->GetCoRight(), cFboMain->GetCoBottom(),
-    ToRatio(cFboMain->GetCoRight(), cFboMain->GetCoBottom()),
+  dec, cDisplay->GetFSType(), cDisplay->GetFSTypeString(),
+  cOgl->MaxTexSize(), cFboMain->DimGetWidth(), cFboMain->DimGetHeight(),
+    ToRatio(cFboMain->DimGetWidth(), cFboMain->DimGetHeight()),
     cFboMain->GetOrthoWidth(), cFboMain->GetOrthoHeight(),
     ToRatio(cFboMain->GetOrthoWidth(), cFboMain->GetOrthoHeight()),
     cFboMain->fboMain.GetCoRight(), cFboMain->fboMain.GetCoBottom(),

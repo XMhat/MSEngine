@@ -37,49 +37,48 @@ enum EvtMainCmd                        // Render thread event commands
   EMC_WIN_REFRESH,                     // 16: Window content needs refresh
   EMC_WIN_ICONIFY,                     // 17: Window was minimised or restored
   EMC_WIN_CLOSE,                       // 18: Window wants to be closed
-  EMC_WIN_LIMITS,                      // 19: Window limits change
   /* -- OpenGL events ------------------------------------------------------ */
-  EMC_VID_FB_REINIT,                   // 20: Reset frame buffer
-  EMC_VID_MATRIX_REINIT,               // 21: Reset matrix
+  EMC_VID_FB_REINIT,                   // 19: Reset frame buffer
+  EMC_VID_MATRIX_REINIT,               // 20: Reset matrix
   /* -- Audio events ------------------------------------------------------- */
-  EMC_AUD_REINIT,                      // 22: Re-initialise audio
+  EMC_AUD_REINIT,                      // 21: Re-initialise audio
   /* -- Input events ------------------------------------------------------- */
-  EMC_INP_PASTE,                       // 23: Paste into input from clipboard
+  EMC_INP_PASTE,                       // 22: Paste into input from clipboard
   /* ----------------------------------------------------------------------- */
-  EMC_NOLOG,                           // 24: Events after this aren't logged
+  EMC_NOLOG,                           // 23: Events after this aren't logged
   /* -- Console events ----------------------------------------------------- */
-  EMC_CON_UPDATE = EMC_NOLOG,          // 25: Force a syscon display update
-  EMC_CON_RESIZE,                      // 26: Syscon resized event
-  EMC_CON_KEYPRESS,                    // 27: Console key pressed
+  EMC_CON_UPDATE = EMC_NOLOG,          // 24: Force a syscon display update
+  EMC_CON_RESIZE,                      // 25: Syscon resized event
+  EMC_CON_KEYPRESS,                    // 26: Console key pressed
   /* -- Input events ------------------------------------------------------- */
-  EMC_INP_KEYPRESS,                    // 28: Unfiltered key pressed
-  EMC_INP_CHAR,                        // 29: Filtered key pressed
-  EMC_INP_DRAG_DROP,                   // 30: Files dragged and dropped
-  EMC_INP_MOUSE_FOCUS,                 // 31: Mouse moved outside/inside window
-  EMC_INP_MOUSE_MOVE,                  // 32: Mouse cursor moved
-  EMC_INP_MOUSE_CLICK,                 // 33: Mouse button clicked
-  EMC_INP_MOUSE_SCROLL,                // 34: Mouse wheel scrolled
-  EMC_INP_JOY_STATE,                   // 35: Joystick status changed
-  EMC_INP_SET_CUR_POS,                 // 36: Set cursor position
+  EMC_INP_KEYPRESS,                    // 27: Unfiltered key pressed
+  EMC_INP_CHAR,                        // 28: Filtered key pressed
+  EMC_INP_DRAG_DROP,                   // 29: Files dragged and dropped
+  EMC_INP_MOUSE_FOCUS,                 // 30: Mouse moved outside/inside window
+  EMC_INP_MOUSE_MOVE,                  // 31: Mouse cursor moved
+  EMC_INP_MOUSE_CLICK,                 // 32: Mouse button clicked
+  EMC_INP_MOUSE_SCROLL,                // 33: Mouse wheel scrolled
+  EMC_INP_JOY_STATE,                   // 34: Joystick status changed
+  EMC_INP_SET_CUR_POS,                 // 35: Set cursor position
   /* -- Async events ------------------------------------------------------- */
-  EMC_MP_ARCHIVE,                      // 37: Archive async event occured
-  EMC_MP_ASSET,                        // 38: Asset async event occured
-  EMC_MP_FONT,                         // 39: Char async event occured
-  EMC_MP_IMAGE,                        // 40: Image async event occured
-  EMC_MP_JSON,                         // 41: Json async event occured
-  EMC_MP_PCM,                          // 42: Pcm async event occured
-  EMC_MP_PROCESS,                      // 43: Process async event occured
-  EMC_MP_SOCKET,                       // 44: Socket async event occured
-  EMC_MP_STREAM,                       // 45: Stream async event occured
-  EMC_MP_VIDEO,                        // 46: Video async event occured
+  EMC_MP_ARCHIVE,                      // 36: Archive async event occured
+  EMC_MP_ASSET,                        // 37: Asset async event occured
+  EMC_MP_FONT,                         // 38: Char async event occured
+  EMC_MP_IMAGE,                        // 39: Image async event occured
+  EMC_MP_JSON,                         // 40: Json async event occured
+  EMC_MP_PCM,                          // 41: Pcm async event occured
+  EMC_MP_PROCESS,                      // 42: Process async event occured
+  EMC_MP_SOCKET,                       // 43: Socket async event occured
+  EMC_MP_STREAM,                       // 44: Stream async event occured
+  EMC_MP_VIDEO,                        // 45: Video async event occured
   /* -- Other async events ------------------------------------------------- */
-  EMC_STR_EVENT,                       // 47: Stream event occured
-  EMC_VID_EVENT,                       // 48: Video event occured
-  EMC_CB_EVENT,                        // 49: Clipboard event occured
+  EMC_STR_EVENT,                       // 46: Stream event occured
+  EMC_VID_EVENT,                       // 47: Video event occured
+  EMC_CB_EVENT,                        // 48: Clipboard event occured
   /* ----------------------------------------------------------------------- */
-  EMC_MAX,                             // 50: Below are just codes
+  EMC_MAX,                             // 49: Below are just codes
   /* ----------------------------------------------------------------------- */
-  EMC_LUA_ERROR,                       // 51: Error in LUA exec (not an event)
+  EMC_LUA_ERROR,                       // 50: Error in LUA exec (not an event)
   /* ----------------------------------------------------------------------- */
 };
 /* ------------------------------------------------------------------------- */
@@ -131,7 +130,14 @@ static class EvtMain final :           // Event list for render thread
   /* -- Get exit reason code --------------------------------------- */ public:
   EvtMainCmd GetExitReason(void) const { return emcExit; }
   /* -- Set exit reason code ----------------------------------------------- */
-  void SetExitReason(const EvtMainCmd emcReason) { emcExit = emcReason; }
+  void SetExitReason(const EvtMainCmd emcReason)
+  { // Ignore if this is already the code
+    if(emcExit == emcReason) return;
+    // Set the code
+    emcExit = emcReason;
+    // Log the change
+    cLog->LogDebugExSafe("EvtMain set exit reason to $!", emcReason);
+  }
   /* -- Check exit reason -------------------------------------------------- */
   bool IsExitReason(const EvtMainCmd emcReason) const
     { return emcExit == emcReason; }

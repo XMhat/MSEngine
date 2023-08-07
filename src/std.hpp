@@ -22,6 +22,9 @@ constexpr static bool par_unseq = false, par = false, seq = false;
 constexpr static auto StdFill(auto&, auto &&...aArgs)
   { return ::std::fill(::std::forward<decltype(aArgs)>(aArgs)... ); }
 /* ------------------------------------------------------------------------- */
+constexpr static auto StdRotate(auto&, auto &&...aArgs)
+  { return ::std::rotate(::std::forward<decltype(aArgs)>(aArgs)... ); }
+/* ------------------------------------------------------------------------- */
 constexpr static auto StdTransform(auto&, auto &&...aArgs)
   { return ::std::transform(::std::forward<decltype(aArgs)>(aArgs)... ); }
 /* ------------------------------------------------------------------------- */
@@ -41,6 +44,9 @@ constexpr static auto StdAllOf(auto&, auto &&...aArgs)
 /* ------------------------------------------------------------------------- */
 constexpr static auto StdFill(auto &&...aArgs)
   { return ::std::fill(::std::forward<decltype(aArgs)>(aArgs)... ); }
+/* ------------------------------------------------------------------------- */
+constexpr static auto StdRotate(auto &&...aArgs)
+  { return ::std::rotate(::std::forward<decltype(aArgs)>(aArgs)... ); }
 /* ------------------------------------------------------------------------- */
 constexpr static auto StdTransform(auto &&...aArgs)
   { return ::std::transform(::std::forward<decltype(aArgs)>(aArgs)... ); }
@@ -291,19 +297,12 @@ template<class AnyType>
   x(const x&) = delete; const x &operator=(const x&) = delete;
 /* == Static class try/catch helpers ======================================= */
 /* ######################################################################### */
-/* ## Remember that if you put try/catch block on the function level, the ## */
-/* ## memory for the members is not cleaned up and we get memory leaks.   ## */
-/* ## C++ (ISO/IEC JTC 1/SC 22 N 4411). The process of calling            ## */
-/* ## destructors for automatic objects constructed on the path from a    ## */
-/* ## try block to a throw- expression is called 'stack unwinding.'. If a ## */
-/* ## destructor called during stack unwinding exits with an exception,   ## */
-/* ## std::terminate is called (15.5.1). So destructors should generally  ## */
-/* ## catch exceptions and not let them propagate out of the destructor.  ## */
+/* ## Don't put try/catch on func level. (C++ ISO/IEC JTC 1/SC 22 N 4411) ## */
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
-#define DTORHELPERBEGIN(c) c(void) noexcept(false) try {
+#define DTORHELPERBEGIN(c) c(void) noexcept(false) { try {
 #define DTORHELPEREND(c) } catch(const exception &E) \
-  { SysMessage(STR(c) " Shutdown Exception", E.what(), MB_ICONSTOP); }
+  { SysMessage(STR(c) " Shutdown Exception", E.what(), MB_ICONSTOP); } }
 #define DTORHELPER(c,...) DTORHELPERBEGIN(c) __VA_ARGS__; DTORHELPEREND(c)
 /* == Init helper ========================================================== */
 /* ######################################################################### */

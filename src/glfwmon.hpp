@@ -100,7 +100,8 @@ class GlFWMonitor :                    // Members initially private
       DimGetHeight())),
     fdDiagonalInches(                // Initialise diagonal length in inches
       MillimetresToInches(fdDiagonal)),
-    strName{glfwGetMonitorName(mC)}  // Initialise monitor name
+    strName{ IfGlFW::                // Initialise monitor name
+      GlFWGetMonitorName(mC) }
   /* -- No code ------------------------------------------------------------ */
   { // Get primary video mode information
     if(const GLFWvidmode*const vPrimary = glfwGetVideoMode(mC))

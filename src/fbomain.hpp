@@ -17,7 +17,7 @@ static class FboMain final :           // The main fbo operations manager
   /* -- Base classes ------------------------------------------------------- */
   public FboColour,                    // Backbuffer clear colour
   public FboBlend,                     // Default blending mode
-  public FboViewport                   // Viewport co-ordinates
+  public DimGLInt                      // Fbo dimensions
 { /* -- Private variables ----------------------------------------- */ private:
   GLfloat          fOrthoMinimum,      // Minimum orthangal matrix ratio
                    fOrthoMaximum,      // Maximum orthangal matrix ratio
@@ -41,13 +41,6 @@ static class FboMain final :           // The main fbo operations manager
   /* -- Get members -------------------------------------------------------- */
   GLfloat GetOrthoWidth(void) const { return fOrthoWidth; }
   GLfloat GetOrthoHeight(void) const { return fOrthoHeight; }
-  /* -- Set backbuffer viewport by width and height ------------------------ */
-  void SetViewportWH(const GLsizei stW, const GLsizei stH)
-    { SetCoLeft(0); SetCoTop(0); SetCoRight(stW); SetCoBottom(stH); }
-  /* -- Set backbuffer viewport -------------------------------------------- */
-  void SetViewport(const GLint iL, const GLint iT,
-                   const GLsizei stW, const GLsizei stH)
-    { SetCoLeft(iL); SetCoTop(iT); SetCoRight(stW); SetCoBottom(stH); }
   /* -- Reset backbuffer clear colour to colour stored in cvar ------------- */
   void ResetClearColour(void)
   { // Set main backbuffer colour
@@ -68,7 +61,7 @@ static class FboMain final :           // The main fbo operations manager
     // Select our basic 3D transform shader
     cOgl->UseProgram(cFboBase->sh3D.GetProgram());
     // Set the viewport of the FBO size
-    cOgl->SetViewport(*this);
+    cOgl->SetViewport(DimGetWidth(), DimGetHeight());
     // Set the default alpha blending mode
     cOgl->SetBlendIfChanged(*this);
     // Clear back buffer if main fbo has alpha
@@ -163,8 +156,8 @@ static class FboMain final :           // The main fbo operations manager
       // specified minimum and maximum aspect ratio and to also keep the size
       // within the specified multiple value to prevent cracks appearing in
       // between tiles.
-      fAspect = Clamp(static_cast<GLfloat>(GetCoRight()) /
-                      static_cast<GLfloat>(GetCoBottom()),
+      fAspect = Clamp(static_cast<GLfloat>(DimGetWidth()) /
+                      static_cast<GLfloat>(DimGetHeight()),
                       fOrthoMinimum, fOrthoMaximum) / 1.333333f;
       // For some unknown reason we could be sent invalid values so we need to
       // make sure we ignore this value to prevent error handlers triggering.
@@ -220,33 +213,34 @@ static class FboMain final :           // The main fbo operations manager
     return false;
   }
   /* -- Sent when the window is resized ------------------------------------ */
-  bool DoAutoViewport(const GLsizei stWidth, const GLsizei stHeight)
-  { // Set the viewport
-    SetViewportWH(stWidth, stHeight);
+  bool AutoViewport(const GLsizei stWidth, const GLsizei stHeight,
+    const bool bForce=false)
+  { // Return if the viewport size did not change
+    if(DimGetWidth() == stWidth && DimGetHeight() == stHeight) return false;
+    // Chosen viewport to store
+    GLsizei stUseWidth, stUseHeight;
+    // Lock viewport to ortho?
+    if(bLockViewport)
+    { // Lock viewport to ortho
+      stUseWidth = static_cast<GLsizei>(GetOrthoWidth());
+      stUseHeight = static_cast<GLsizei>(GetOrthoHeight());
+    } // Lock viewport to requested size?
+    else
+    { // Lock viewport to requested size clamped to a minimum of 1x1.
+      stUseWidth = Maximum(1, stWidth);
+      stUseHeight = Maximum(1, stHeight);
+    } // Set the new viewport
+    DimSet(stUseWidth, stUseHeight);
     // Log event
     cLog->LogDebugExSafe(
       "Fbo processing automatrix size of $x$ to backbuffer...",
-      stWidth, stHeight);
+      stUseWidth, stUseHeight);
     // Update matrix because the window's aspect ratio may have changed
-    const bool bResult = AutoMatrix(GetOrthoWidth(), GetOrthoHeight(), false);
+    const bool bResult = AutoMatrix(GetOrthoWidth(), GetOrthoHeight(), bForce);
     // Inform lua scripts that they should redraw the framebuffer
     if(bResult) cEvtMain->Add(EMC_LUA_REDRAW);
     // Return result
     return bResult;
-  }
-  /* -- Sent when the window is resized ------------------------------------ */
-  bool AutoViewport(const GLsizei stWidth, const GLsizei stHeight)
-  { // If the viewport size changed?
-    return GetCoRight() == stWidth && GetCoBottom() == stHeight ?
-      // Return nothing changed
-      false :
-      // Else if the viewport is locked?
-      (bLockViewport ?
-        // Use current ortho width and height
-        DoAutoViewport(static_cast<GLsizei>(GetOrthoWidth()),
-                       static_cast<GLsizei>(GetOrthoHeight())) :
-        // Do what the user wants instead but clamp the width and height
-        DoAutoViewport(Maximum(1, stWidth), Maximum(1, stHeight)));
   }
   /* -- Init console fbo --------------------------------------------------- */
   void InitConsoleFBO(void)

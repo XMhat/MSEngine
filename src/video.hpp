@@ -88,8 +88,8 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
   /* -- Concurrency -------------------------------------------------------- */
   Thread           tThread;            // Video Decoding Thread
   condition_variable cvBuffer;         // Re-buffer unblocker
-  mutex            mBuffer;            // mutex for rebuffering CV
-  mutex            mUpload;            // mutex for uploading data
+  mutex            mBuffer,            // mutex for rebuffering CV
+                   mUpload;            // mutex for uploading data
   Unblock          ubReason;           // Unlock condition variable
   SafeSizeT        stLoop;             // Loops count
   SafeBool         bPause;             // Only pause the stream?
@@ -112,9 +112,9 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
   SafeUInt         uiVideoFrames,      // Frames rendered
                    uiVideoFramesLost;  // Frames skipped
   array<Frame,2>   fData;              // Frame data
-  size_t           stFActive;          // Currently active frame
-  size_t           stFNext;            // Next frame to process
-  size_t           stFWaiting;         // Frames waiting to be processed
+  size_t           stFActive,          // Currently active frame
+                   stFNext,            // Next frame to process
+                   stFWaiting;         // Frames waiting to be processed
   SafeSizeT        stFFree;            // Frames free to be processed
   /* -- Vorbis ------------------------------------------------------------- */
   ogg_stream_state vSS;                // Ogg (Vorbis) stream states
@@ -1283,7 +1283,7 @@ static void VideoReInitTextures(void)
   cLog->LogDebugExSafe("Videos re-initialising $ video textures...",
     cVideos->CollectorCountUnsafe());
   for(Video*const vCptr : *cVideos) vCptr->InitTexture();
-  cLog->LogInfoExSafe("Videos re-initialised $ video textures!",
+  cLog->LogDebugExSafe("Videos re-initialised $ video textures!",
     cVideos->CollectorCountUnsafe());
 }
 /* == De-init video textures (after thread shutdown) ======================= */
@@ -1293,7 +1293,7 @@ static void VideoDeInitTextures(void)
   cLog->LogDebugExSafe("Videos de-initialising $ video textures...",
     cVideos->CollectorCountUnsafe());
   for(Video*const vCptr : *cVideos) vCptr->DeInitTexture();
-  cLog->LogInfoExSafe("Videos de-initialised $ video textures!",
+  cLog->LogDebugExSafe("Videos de-initialised $ video textures!",
     cVideos->CollectorCountUnsafe());
 }
 /* == Clear event callbacks on all videos (must be synchronised) =========== */
@@ -1304,7 +1304,7 @@ static void VideoClearEvents(void)
   cLog->LogDebugExSafe("Videos clearing events from $ video objects...",
     cVideos->CollectorCountUnsafe());
   for(Video*const vCptr : *cVideos) vCptr->LuaEvtDeInit();
-  cLog->LogInfoExSafe("Videos cleared events from $ video objects!",
+  cLog->LogDebugExSafe("Videos cleared events from $ video objects!",
     cVideos->CollectorCountUnsafe());
 }
 /* == Stop all videos (must be sychronised) ================================ */
@@ -1320,7 +1320,7 @@ static void VideoDeInit(void)
   cLog->LogDebugExSafe("Videos de-initialising $ videos...",
     cVideos->CollectorCountUnsafe());
   for(Video*const vCptr : *cVideos) vCptr->DeInitAudio();
-  cLog->LogInfoExSafe("Videos de-initialised $ videos!",
+  cLog->LogDebugExSafe("Videos de-initialised $ videos!",
     cVideos->CollectorCountUnsafe());
 }
 /* == ReInit all videos (after engine thread shutdown) ===================== */
@@ -1330,7 +1330,7 @@ static void VideoReInit(void)
   cLog->LogDebugExSafe("Videos re-initialising $ videos...",
     cVideos->CollectorCountUnsafe());
   for(Video*const vCptr : *cVideos) vCptr->InitAudio();
-  cLog->LogInfoExSafe("Videos re-initialised $ videos!",
+  cLog->LogDebugExSafe("Videos re-initialised $ videos!",
     cVideos->CollectorCountUnsafe());
 }
 /* == Render all videos ==================================================== */

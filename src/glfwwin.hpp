@@ -17,6 +17,8 @@ class GlFWWindow :                     // GLFW window class
 { /* -- Private variables -------------------------------------------------- */
   GLFWwindow      *wClass;             // GLFW window context
   StrVector        vFiles;             // Drag and drop file list
+  /* -- Return the window handle ------------------------------------------- */
+  GLFWwindow *WinGetHandle(void) const { return wClass; }
   /* -- Get window data pointer -------------------------------------------- */
   template<typename AnyCast=void*>AnyCast WinGetData(void) const
     { return GlFWGetWindowUserPointer<AnyCast>(WinGetHandle()); }
@@ -48,95 +50,111 @@ class GlFWWindow :                     // GLFW window class
     // Now dispatch the event
     cEvtMain->Add(EMC_INP_DRAG_DROP);
   }
-  /* -- Return the window handle ----------------------------------- */ public:
-  GLFWwindow *WinGetHandle(void) const { return wClass; }
-  /* -- Is the window handle set? ------------------------------------------ */
-  bool WinIsAvailable(void) const { return !!WinGetHandle(); }
-  bool WinIsNotAvailable(void) const { return !WinIsAvailable(); }
-  /* -- Get files ---------------------------------------------------------- */
-  StrVector &WinGetFiles(void) { return vFiles; }
-  /* -- Set window icon ---------------------------------------------------- */
-  void WinSetIcon(const int iCount, const GLFWimage*const giImages) const
-    { glfwSetWindowIcon(WinGetHandle(), iCount, giImages); }
-  /* -- Update monitor ----------------------------------------------------- */
-  void WinSetMonitor(GLFWmonitor*const mM, const int iX, const int iY,
-    const int iW, const int iH, const int iR) const
-      { glfwSetWindowMonitor(WinGetHandle(), mM, iX, iY, iW, iH, iR); }
+  /* -- Event handler for 'glfwSetCharCallback' ---------------------------- */
+  static void WinOnInputChar(GLFWwindow*const wC, unsigned int uiChar)
+    { cEvtMain->Add(EMC_INP_CHAR, reinterpret_cast<void*>(wC), uiChar); }
+  /* -- Event handler for 'glfwSetCursorEnterCallback' --------------------- */
+  static void WinOnMouseFocus(GLFWwindow*const wC, int iOnStage)
+    { cEvtMain->Add(EMC_INP_MOUSE_FOCUS,
+        reinterpret_cast<void*>(wC), iOnStage); }
+  /* -- Event handler for 'glfwSetCursorPosCallback' ----------------------- */
+  static void WinOnMouseMove(GLFWwindow*const wC, double dX, double dY)
+    { cEvtMain->Add(EMC_INP_MOUSE_MOVE, reinterpret_cast<void*>(wC), dX, dY); }
+  /* -- Event handler for 'glfwSetDropCallback' ---------------------------- */
+  static void WinOnDragDrop(GLFWwindow*const wC, int iC,
+    const char**const cpaFiles)
+  { GlFWGetWindowUserPointer<GlFWWindow*>(wC)->
+      WinOnDrop(wC, static_cast<unsigned int>(iC), cpaFiles); }
+  /* -- Event handler for 'glfwSetFramebufferSizeCallback' ----------------- */
+  static void WinOnFrameBufferSize(GLFWwindow*const wC, int iW, int iH)
+  { // On Mac?
+#ifdef MACOS
+    // Note that there is literally no chance for this to be false but it's not
+    // really time critical and only a programming error we make could cause it
+    // so we shall check it anyway.
+    // Get the window class pointer from the glfw window contact and if got it?
+    if(const GlFWWindow*const wPtr = GlFWGetWindowUserPointer<GlFWWindow*>(wC))
+    { // The user could use native full-screen and this is the only event we
+      // get for it so we will send the window position and size to the event
+      // callback can check if screen is actually full.
+      int iWX, iWY; wPtr->WinGetPos(iWX, iWY);
+      int iWW, iWH; wPtr->WinGetSize(iWW, iWH);
+      cEvtMain->Add(EMC_VID_FB_REINIT,
+        reinterpret_cast<void*>(wC), iW, iH, iWX, iWY, iWW, iWH);
+    } // Log null window class pointer
+    else cLog->LogWarningExSafe("GlFW got a resize frame buffer event for $x$ "
+      "with a NULL window context pointer!", iW, iH);
+    // On Windows or Linux?
+#else
+    // Just send new frame buffer dimensions
+    cEvtMain->Add(EMC_VID_FB_REINIT,
+      reinterpret_cast<void*>(wC), iW, iH);
+#endif
+  }
+  /* -- Event handler for 'glfwSetKeyCallback' ----------------------------- */
+  static void WinOnKeyPress(GLFWwindow*const wC, int iKey, int iScanCode,
+    int iAction, int iMods)
+  { cEvtMain->Add(EMC_INP_KEYPRESS,
+      reinterpret_cast<void*>(wC), iKey, iScanCode, iAction, iMods); }
+  /* -- Event handler for 'glfwSetMouseButtonCallback' --------------------- */
+  static void WinOnMousePress(GLFWwindow*const wC, int iButton, int iAction,
+    int iMods)
+  { cEvtMain->Add(EMC_INP_MOUSE_CLICK,
+      reinterpret_cast<void*>(wC), iButton, iAction, iMods); }
+  /* -- Event handler for 'glfwSetScrollCallback' -------------------------- */
+  static void WinOnMouseScroll(GLFWwindow*const wC, double dX, double dY)
+    { cEvtMain->Add(EMC_INP_MOUSE_SCROLL,
+        reinterpret_cast<void*>(wC), dX, dY); }
+  /* -- Event handler for 'glfwSetWindowCloseCallback' --------------------- */
+  static void WinOnWindowClose(GLFWwindow*const wC)
+  { // GLFW must be denied because we will close the window instead.
+    glfwSetWindowShouldClose(wC, GL_FALSE);
+    // Dispatch the event to handle this ourselve.
+    cEvtMain->Add(EMC_WIN_CLOSE, reinterpret_cast<void*>(wC));
+  }
+  /* -- Event handler for 'glfwSetWindowContentScaleCallback' -------------- */
+  static void WinOnWindowScale(GLFWwindow*const wC, const float fX,
+    const float fY)
+  { cEvtMain->Add(EMC_WIN_SCALE, reinterpret_cast<void*>(wC), fX, fY); }
+  /* -- Event handler for 'glfwSetWindowFocusCallback' --------------------- */
+  static void WinOnWindowFocus(GLFWwindow*const wC, int iFocused)
+    { cEvtMain->Add(EMC_WIN_FOCUS, reinterpret_cast<void*>(wC), iFocused); }
+  /* -- Event handler for 'glfwSetWindowIconifyCallback' ------------------- */
+  static void WinOnWindowIconify(GLFWwindow*const wC, int iIconified)
+    { cEvtMain->Add(EMC_WIN_ICONIFY,
+        reinterpret_cast<void*>(wC), iIconified); }
+  /* -- Event handler for 'glfwSetWindowPosCallback' ----------------------- */
+  static void WinOnWindowMove(GLFWwindow*const wC, int iX, int iY)
+    { cEvtMain->Add(EMC_WIN_MOVED, reinterpret_cast<void*>(wC), iX, iY); }
+  /* -- Event handler for 'glfwSetWindowRefreshCallback' ------------------- */
+  static void WinOnWindowRefresh(GLFWwindow*const wC)
+    { cEvtMain->Add(EMC_WIN_REFRESH, reinterpret_cast<void*>(wC)); }
+  /* -- Event handler for 'glfwSetWindowSizeCallback' ---------------------- */
+  static void WinOnWindowResize(GLFWwindow*const wC, int iW, int iH)
+    { cEvtMain->Add(EMC_WIN_RESIZED, reinterpret_cast<void*>(wC), iW, iH); }
   /* -- Register window events --------------------------------------------- */
   void WinRegisterEvents(void) const
-  { // Register glfw event callbacks which will use our event system to process
-    // these events.
-    glfwSetCharCallback(WinGetHandle(),
-      [](GLFWwindow*const wC, unsigned int uiChar)
-        { cEvtMain->Add(EMC_INP_CHAR,
-            reinterpret_cast<void*>(wC), uiChar); });
-    glfwSetCursorEnterCallback(WinGetHandle(),
-      [](GLFWwindow*const wC, int iOnStage)
-        { cEvtMain->Add(EMC_INP_MOUSE_FOCUS,
-            reinterpret_cast<void*>(wC), iOnStage); });
-    glfwSetCursorPosCallback(WinGetHandle(),
-      [](GLFWwindow*const wC, double dX, double dY)
-        { cEvtMain->Add(EMC_INP_MOUSE_MOVE,
-            reinterpret_cast<void*>(wC), dX, dY); });
-    glfwSetDropCallback(WinGetHandle(),
-      [](GLFWwindow*const wC, int iC, const char**const cpaFiles)
-        { GlFWGetWindowUserPointer<GlFWWindow*>(wC)->
-            WinOnDrop(wC, static_cast<unsigned int>(iC), cpaFiles); });
-    glfwSetFramebufferSizeCallback(WinGetHandle(),
-      [](GLFWwindow*const wC, int iW, int iH)
-        { cEvtMain->Add(EMC_VID_FB_REINIT,
-            reinterpret_cast<void*>(wC), iW, iH); });
-    glfwSetJoystickCallback(
-      [](int iJId, int iEvent)
-        { cEvtMain->Add(EMC_INP_JOY_STATE, iJId, iEvent); });
-    glfwSetKeyCallback(WinGetHandle(),
-      [](GLFWwindow*const wC, int iKey, int iScanCode, int iAction, int iMods)
-        { cEvtMain->Add(EMC_INP_KEYPRESS, reinterpret_cast<void*>(wC), iKey,
-            iScanCode, iAction, iMods); });
-    glfwSetMouseButtonCallback(WinGetHandle(),
-      [](GLFWwindow*const wC, int iButton, int iAction, int iMods)
-        { cEvtMain->Add(EMC_INP_MOUSE_CLICK, reinterpret_cast<void*>(wC),
-            iButton, iAction, iMods); });
-    glfwSetScrollCallback(WinGetHandle(),
-      [](GLFWwindow*const wC, double dX, double dY)
-        { cEvtMain->Add(EMC_INP_MOUSE_SCROLL,
-            reinterpret_cast<void*>(wC), dX, dY); });
-    glfwSetWindowCloseCallback(WinGetHandle(),
-      [](GLFWwindow*const wC)
-    { // GLFW must be denied because we will close the window instead.
-      glfwSetWindowShouldClose(wC, GL_FALSE);
-      // Dispatch the event to handle this ourselve.
-      cEvtMain->Add(EMC_WIN_CLOSE, reinterpret_cast<void*>(wC));
-    });
-    glfwSetWindowContentScaleCallback(WinGetHandle(),
-      [](GLFWwindow*const wC, const float fX, const float fY)
-        { cEvtMain->Add(EMC_WIN_SCALE,
-            reinterpret_cast<void*>(wC), fX, fY); });
-    glfwSetWindowFocusCallback(WinGetHandle(),
-      [](GLFWwindow*const wC, int iFocused)
-        { cEvtMain->Add(EMC_WIN_FOCUS,
-            reinterpret_cast<void*>(wC), iFocused); });
-    glfwSetWindowIconifyCallback(WinGetHandle(),
-      [](GLFWwindow*const wC, int iIconified)
-        { cEvtMain->Add(EMC_WIN_ICONIFY,
-            reinterpret_cast<void*>(wC), iIconified); });
-    glfwSetWindowPosCallback(WinGetHandle(),
-      [](GLFWwindow*const wC, int iX, int iY)
-        { cEvtMain->Add(EMC_WIN_MOVED, reinterpret_cast<void*>(wC), iX, iY);});
-    glfwSetWindowRefreshCallback(WinGetHandle(),
-      [](GLFWwindow*const wC)
-        { cEvtMain->Add(EMC_WIN_REFRESH, reinterpret_cast<void*>(wC)); });
-    glfwSetWindowSizeCallback(WinGetHandle(),
-      [](GLFWwindow*const wC, int iW, int iH)
-        { cEvtMain->Add(EMC_WIN_RESIZED,
-            reinterpret_cast<void*>(wC), iW, iH); });
+  { // Register glfw event callbacks which will use our event system to
+    // process these events.
+    glfwSetCharCallback(WinGetHandle(), WinOnInputChar);
+    glfwSetCursorEnterCallback(WinGetHandle(), WinOnMouseFocus);
+    glfwSetCursorPosCallback(WinGetHandle(), WinOnMouseMove);
+    glfwSetDropCallback(WinGetHandle(), WinOnDragDrop);
+    glfwSetFramebufferSizeCallback(WinGetHandle(), WinOnFrameBufferSize);
+    glfwSetKeyCallback(WinGetHandle(), WinOnKeyPress);
+    glfwSetMouseButtonCallback(WinGetHandle(), WinOnMousePress);
+    glfwSetScrollCallback(WinGetHandle(), WinOnMouseScroll);
+    glfwSetWindowCloseCallback(WinGetHandle(), WinOnWindowClose);
+    glfwSetWindowContentScaleCallback(WinGetHandle(), WinOnWindowScale);
+    glfwSetWindowFocusCallback(WinGetHandle(), WinOnWindowFocus);
+    glfwSetWindowIconifyCallback(WinGetHandle(), WinOnWindowIconify);
+    glfwSetWindowPosCallback(WinGetHandle(), WinOnWindowMove);
+    glfwSetWindowRefreshCallback(WinGetHandle(), WinOnWindowRefresh);
+    glfwSetWindowSizeCallback(WinGetHandle(), WinOnWindowResize);
   }
   /* -- Unregister window events ------------------------------------------- */
   void WinUnregisterEvents(void) const
-  { // Unregister global GLFW events
-    glfwSetJoystickCallback(nullptr);
-    glfwSetMonitorCallback(nullptr);
-    // Done if theres no window class
+  { // Done if theres no window class
     if(WinIsNotAvailable()) return;
     // Remove other callbacks
     glfwSetWindowSizeCallback(WinGetHandle(), nullptr);
@@ -155,6 +173,18 @@ class GlFWWindow :                     // GLFW window class
     glfwSetCursorEnterCallback(WinGetHandle(), nullptr);
     glfwSetCharCallback(WinGetHandle(), nullptr);
   }
+  /* -- Is the window handle set? ---------------------------------- */ public:
+  bool WinIsAvailable(void) const { return !!WinGetHandle(); }
+  bool WinIsNotAvailable(void) const { return !WinIsAvailable(); }
+  /* -- Get files ---------------------------------------------------------- */
+  StrVector &WinGetFiles(void) { return vFiles; }
+  /* -- Set window icon ---------------------------------------------------- */
+  void WinSetIcon(const int iCount, const GLFWimage*const giImages) const
+    { glfwSetWindowIcon(WinGetHandle(), iCount, giImages); }
+  /* -- Update monitor ----------------------------------------------------- */
+  void WinSetMonitor(GLFWmonitor*const mM, const int iX, const int iY,
+    const int iW, const int iH, const int iR) const
+      { glfwSetWindowMonitor(WinGetHandle(), mM, iX, iY, iW, iH, iR); }
   /* -- Tell GLFW if it should close the window ---------------------------- */
   void WinSetClose(const int iS) const
     { glfwSetWindowShouldClose(WinGetHandle(), iS); }

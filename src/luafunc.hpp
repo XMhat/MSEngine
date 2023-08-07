@@ -281,7 +281,7 @@ static void LuaFuncDeInitRef(void)
     "LuaFuncs de-initialised empty function refid." :
     "LuaFuncs failed to de-init empty function refid.");
   // Write to log that we're deinitialising
-  cLog->LogInfoSafe("LuaFuncs de-initialised.");
+  cLog->LogDebugSafe("LuaFuncs de-initialised.");
 }
 /* -- Empty function ------------------------------------------------------- */
 static int LuaFuncEmptyCFunction(lua_State*const) { return 0; }
@@ -306,7 +306,7 @@ static void LuaFuncInitRef(lua_State*const lS)
      cLog->LogDebugExSafe("LuaFuncs initialised $ engine event refids.",
        cLuaFuncs->size());
   } // Write to log that we're deinitialising
-  cLog->LogInfoSafe("LuaFuncs manager initialised!");
+  cLog->LogDebugSafe("LuaFuncs manager initialised!");
 }
 /* -- Disable all references and add to errors if it didn't work ----------- */
 static void LuaFuncDisableAllRefs(void)
@@ -316,7 +316,7 @@ static void LuaFuncDisableAllRefs(void)
   cLog->LogDebugExSafe("LuaFuncs disabling $ references...",
     cLuaFuncs->size());
   for(LuaFunc*const lCptr : *cLuaFuncs) lCptr->LuaFuncDisable();
-  cLog->LogInfoExSafe("LuaFuncs disabled $ references...", cLuaFuncs->size());
+  cLog->LogDebugExSafe("LuaFuncs disabled $ references...", cLuaFuncs->size());
 }
 /* -- Mass enable all references ------------------------------------------- */
 static void LuaFuncEnableAllRefs(void)
@@ -325,7 +325,7 @@ static void LuaFuncEnableAllRefs(void)
   // Enable all references and add to errors if it didn't work
   cLog->LogDebugExSafe("LuaFuncs enabling $ references...", cLuaFuncs->size());
   for(LuaFunc*const lCptr : *cLuaFuncs) lCptr->LuaFuncEnable();
-  cLog->LogInfoExSafe("LuaFuncs enabled $ references...", cLuaFuncs->size());
+  cLog->LogDebugExSafe("LuaFuncs enabled $ references...", cLuaFuncs->size());
 }
 /* ------------------------------------------------------------------------- */
 END_COLLECTOREX(LuaFuncs,,LuaFuncDeInitRef(),) // Finish collector

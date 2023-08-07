@@ -2151,6 +2151,8 @@ local function MoveX(aObj, iX)
   for iY = 2, -2, -1 do
     if not IsCollide(aObj, iX, iY) then AdjustPos(aObj, iX, iY) return end;
   end
+  -- Ignore if falling
+  if aObj.FD > 0 then return end;
   -- Get object job and set action for it because it was blocked
   local aBlockData<const> = aDigBlockData[aObj.J];
   SetAction(aObj, aBlockData[1], aBlockData[2], aBlockData[3]);
@@ -3096,6 +3098,8 @@ local function GameProc()
         else
           -- Update failed dig direction
           O.FDD = O.D;
+          -- Set impatient
+          O.JT = O.PW;
           -- stop the object's actions completly
           SetAction(O, ACT.STOP, JOB.NONE, DIR.KEEP);
         end;

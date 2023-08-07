@@ -239,8 +239,9 @@ class Core                             // Members initially private
           // this to something different when they cleanly exit their loops.
           cEvtMain->SetExitReason(EMC_LUA_ERROR);
           // Scan for game controllers and inform scripts if enabled
-          cInput->SetJoystickEnabled(
-            cCVars->GetInternalSafe<int>(INP_JOYSTICK));
+          if(cSystem->IsGuiMode(GM_GRAPHICS))
+            cInput->SetJoystickEnabled(
+              cCVars->GetInternalSafe<int>(INP_JOYSTICK));
           // Execute startup script
           LuaCodeExecFile(lS, cCVars->GetInternalStrSafe(LUA_SCRIPT));
           // Done
@@ -439,7 +440,7 @@ class Core                             // Members initially private
   /* -- Engine thread (member function) ------------------------------------ */
   int CoreThreadMain(Thread&) try
   { // Log reason for init
-    cLog->LogInfoExSafe("Core engine thread started (C:$;M:$<$>).",
+    cLog->LogDebugExSafe("Core engine thread started (C:$;M:$<$>).",
       cEvtMain->GetExitReason(), cSystem->GetGuiModeString(),
       cSystem->GetGuiMode());
     // Register exit events
@@ -739,11 +740,11 @@ class Core                             // Members initially private
       INITSS(Samples);                 // cppcheck-suppress danglingLifetime
       INITSS(Streams);                 // cppcheck-suppress danglingLifetime
       // Graphics rendering and window subsystems
+      INITSS(EvtWin);                  // cppcheck-suppress danglingLifetime
       INITSS(Ogl);                     // cppcheck-suppress danglingLifetime
       INITSS(ImageFmts);               // cppcheck-suppress danglingLifetime
       INITSS(Images);                  // cppcheck-suppress danglingLifetime
       INITSS(Shaders);                 // cppcheck-suppress danglingLifetime
-      INITSS(EvtWin);                  // cppcheck-suppress danglingLifetime
       INITSS(Clips);                   // cppcheck-suppress danglingLifetime
       INITSS(Display);                 // cppcheck-suppress danglingLifetime
       INITSS(Cursors);                 // cppcheck-suppress danglingLifetime

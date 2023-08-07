@@ -332,7 +332,7 @@ static class Lua final :
       // Load default libraries
       luaL_openlibs(GetState());
       // Log progress
-      cLog->LogInfoSafe("Lua registered core namespaces.");
+      cLog->LogDebugSafe("Lua registered core namespaces.");
       // Initialise random number generator and if pre-defined?
       if(liSeed)
       { // Init pre-defined seed
@@ -350,14 +350,14 @@ static class Lua final :
     { // Set the hook
       SetHookCallback(GetState(), OnInstructionCount, iOperations);
       // Log that it was enabled
-      cLog->LogInfoExSafe("Lua timeout set to $ sec for every $ operations.",
+      cLog->LogDebugExSafe("Lua timeout set to $ sec for every $ operations.",
         ToShortDuration(cTimer->TimerGetTimeOut(), 1), iOperations);
     } // Show a warning to say the timeout hook is disabled
     else cLog->LogWarningSafe("Lua timeout hook disabled so use at own risk!");
     // Resume garbage collector
     StartGC();
     // Report completion
-    cLog->LogInfoSafe("Lua registered core namespaces and functions.");
+    cLog->LogDebugSafe("Lua environment initialised.");
   }
   /* -- Enter sandbox mode ------------------------------------------------- */
   void EnterSandbox(lua_CFunction cbFunc, void*const vpPtr)
@@ -389,7 +389,7 @@ static class Lua final :
     // No longer paused or exited
     bLuaPaused = bExiting = false;
     // Report progress
-    cLog->LogInfoSafe("Lua subsystem successfully deinitialised.");
+    cLog->LogDebugSafe("Lua subsystem successfully deinitialised.");
   }
   /* -- Default allocator that uses malloc() ------------------------------- */
   static void *LuaDefaultAllocator(void*const, void*const vpAddr,
@@ -449,7 +449,7 @@ static class Lua final :
     // Register callback events
     cEvtMain->RegisterEx(*this);
     // Report progress
-    cLog->LogInfoSafe("Lua subsystem successfully initialised.");
+    cLog->LogDebugSafe("Lua subsystem successfully initialised.");
   }
   /* -- Constructor -------------------------------------------------------- */
   Lua(void) :

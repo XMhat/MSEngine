@@ -36,8 +36,11 @@ BUILD_FLAGS(Display,
   // OpenGL debug context?             Stereo mode enabled?
   DF_DEBUG               {0x00020000}, DF_STEREO              {0x00040000},
   // No opengl errors?                 Window maximised at start?
-  DF_NOERRORS            {0x00080000}, DF_MAXIMISED           {0x00100000}
-);/* == Display class ====================================================== */
+  DF_NOERRORS            {0x00080000}, DF_MAXIMISED           {0x00100000},
+  // Full-screen locked?
+  DF_NATIVEFS            {0x00200000}
+);
+/* == Display class ======================================================== */
 static class Display final :
   /* -- Base classes ------------------------------------------------------- */
   private IHelper,                     // Initialisation helper
@@ -69,11 +72,22 @@ static class Display final :
   /* -- Macros ----------------------------------------------------- */ public:
   LuaFunc          lrFocused;          // Window focused lua event
   LuaFunc          lrClipboard;        // Clipboard function callback
-  /* -- Window moved request -------------------------------------- */ private:
-  void OnMoved(const EvtMain::Cell &ewcArgs)
-  { // Get new window position
-    const int iNewX = ewcArgs.vParams[1].i, iNewY = ewcArgs.vParams[2].i;
-    // If position not changed?
+  /* -- Public typedefs ---------------------------------------------------- */
+  enum FSType {                        // Available window types
+    /* --------------------------------------------------------------------- */
+    FST_WINDOW,                        // [0] Window/desktop mode
+    FST_EXCLUSIVE,                     // [1] Exclusive full-screen mode
+    FST_BORDERLESS,                    // [2] Borderless full-screen mode
+    FST_NATIVE,                        // [3] Native full-screen mode (MacOS)
+    FST_MAX                            // [4] Maximum supported values
+    /* --------------------------------------------------------------------- */
+  } fsType;                            // Current value
+  /* -- Display class ------------------------------------------------------ */
+  typedef IfIdent::IdList<FST_MAX> FSTStrings;
+  const FSTStrings    fstStrings;      // Human readable full-screen types
+  /* -- Check if window moved ------------------------------------- */ private:
+  void CheckWindowMoved(const int iNewX, const int iNewY)
+  { // If position not changed?
     if(iWinPosX == iNewX && iWinPosY == iNewY)
     { // Report event
       cLog->LogDebugExSafe("Display received window position of $x$.",
@@ -87,6 +101,9 @@ static class Display final :
     iWinPosX = iNewX;
     iWinPosY = iNewY;
   }
+  /* -- Window moved request ----------------------------------------------- */
+  void OnMoved(const EvtMain::Cell &ewcArgs)
+    { CheckWindowMoved(ewcArgs.vParams[1].i, ewcArgs.vParams[2].i); }
   /* -- Window set icon request -------------------------------------------- */
   void OnSetIcon(const EvtWin::Cell&) { UpdateIcons(); }
   /* -- Window scale change request ---------------------------------------- */
@@ -110,7 +127,7 @@ static class Display final :
     fWinScaleHeight = fNewHeight;
   }
   /* -- Window limits change request --------------------------------------- */
-  void OnLimits(const EvtMain::Cell &ewcArgs)
+  void OnLimits(const EvtWin::Cell &ewcArgs)
   { // Get the new limits
     const int iMinW = ewcArgs.vParams[0].i, iMinH = ewcArgs.vParams[1].i,
               iMaxW = ewcArgs.vParams[2].i, iMaxH = ewcArgs.vParams[3].i;
@@ -159,11 +176,9 @@ static class Display final :
     // Set to force redraw the next frame
     cFboMain->SetDraw();
   }
-  /* -- On window resized callback ----------------------------------------- */
-  void OnResized(const EvtMain::Cell &ewcArgs)
-  { // Get width and height
-    const int iWidth = ewcArgs.vParams[1].i, iHeight = ewcArgs.vParams[2].i;
-    // If position not changed? Report event and return
+  /* == Check if window resized ============================================ */
+  void CheckWindowResized(const int iWidth, const int iHeight) const
+  { // If position not changed? Report event and return
     if(cInput->GetWindowWidth() == iWidth &&
        cInput->GetWindowHeight() == iHeight)
       return cLog->LogDebugExSafe("Display received window size of $x$.",
@@ -174,6 +189,9 @@ static class Display final :
     // Update position
     cInput->SetWindowSize(iWidth, iHeight);
   }
+  /* -- On window resized callback ----------------------------------------- */
+  void OnResized(const EvtMain::Cell &ewcArgs)
+    { CheckWindowResized(ewcArgs.vParams[1].i, ewcArgs.vParams[2].i); }
   /* -- On window closed callback ------------------------------------------ */
   void OnClose(const EvtMain::Cell&)
   { // If window is not closable then ignore the event
@@ -278,7 +296,7 @@ static class Display final :
         { // Report confirmation and break to restart
           cLog->LogInfoExSafe(
           "Display connected monitor '$', refreshing device list...",
-            glfwGetMonitorName(mAffected));
+            GlFWGetMonitorName(mAffected));
           // Re-enumerate monitors and video modes
           EnumerateMonitorsAndVideoModes();
         } // Break to return
@@ -315,7 +333,7 @@ static class Display final :
         } // We don't have it so ignore it
         else cLog->LogWarningExSafe(
           "Display already disconnected monitor '$'...",
-            glfwGetMonitorName(mAffected));
+            GlFWGetMonitorName(mAffected));
         // Break to return
         break;
       // Unknown state?
@@ -332,21 +350,10 @@ static class Display final :
           cLog->LogWarningExSafe(
             "Display sent bad state of 0x$$ for monitor '$'!",
             hex, iAction,
-            moAffected ? moAffected->Name() : glfwGetMonitorName(mAffected));
+            moAffected ? moAffected->Name() : GlFWGetMonitorName(mAffected));
         } // Break to return
         break;
     }
-  }
-  /* == Call to reset the fbo ============================================== */
-  void DoResizeFbo(const GLsizei stWidth, const GLsizei stHeight)
-  { // Log new viewport
-    cLog->LogDebugExSafe("Display received new framebuffer size of $x$.",
-      stWidth, stHeight);
-    // Resize main viewport and if it changed, re-initialise the console fbo
-    // and redraw the console
-    if(cFboMain->AutoViewport(stWidth, stHeight)) cConsole->InitFBO();
-    // Else redraw the console if enabled
-    else cConsole->SetRedrawIfEnabled();
   }
   /* == Matrix reset requested ============================================= */
   void OnMatrixReset(const EvtMain::Cell&) { ReInitMatrix(); }
@@ -355,29 +362,66 @@ static class Display final :
   { // Get new frame buffer size
     const GLsizei stWidth = ewcArgs.vParams[1].i,
                   stHeight = ewcArgs.vParams[2].i;
+    // On Mac?
+#ifdef MACOS
+    // Get addition position and window size data
+    const GLsizei stWinX = ewcArgs.vParams[3].i,
+                  stWinY = ewcArgs.vParams[4].i,
+                  stWinWidth = ewcArgs.vParams[5].i,
+                  stWinHeight = ewcArgs.vParams[6].i;
     // Log new viewport
+    cLog->LogDebugExSafe(
+      "Display received new framebuffer size of $x$ (P:$x$;W:$x$).",
+        stWidth, stHeight, stWinX, stWinY, stWinWidth, stWinHeight);
+    // If is a full-screen window?
+    if(!stWinX && !stWinY && rSelected->Width() == stWinWidth &&
+                             rSelected->Height() == stWinHeight)
+    { // We don't recognise the full-screen?
+      if(FlagIsClear(DF_INFULLSCREEN))
+      { // Log non-standard full-screen switch
+        cLog->LogDebugExSafe("Display received external full-screen switch!");
+        // In native full-screen mode, also re-init the console fbo as well.
+        FlagSet(DF_INFULLSCREEN|DF_NATIVEFS);
+        // Update viewport and check if window moved/resized as glfw wont send
+        goto UpdateViewport;
+      }
+    } // Is a desktop window and we were in full-screen?
+    else if(FlagIsSet(DF_INFULLSCREEN))
+    { // Log non-standard full-screen switch
+      cLog->LogDebugExSafe("Display received external desktop switch!");
+      // Not in native full-screen mode and re-init console fbo
+      FlagClear(DF_INFULLSCREEN|DF_NATIVEFS);
+      // Update viewport
+      UpdateViewport: cEvtMain->Add(EMC_VID_MATRIX_REINIT);
+      // Check if window moved/resized as glfw wont send these
+      CheckWindowMoved(stWinX, stWinY);
+      CheckWindowResized(stWinWidth, stWinHeight);
+    } // Anything but Mac?
+#else
+    // Just log new viewport
     cLog->LogDebugExSafe("Display received new framebuffer size of $x$.",
       stWidth, stHeight);
+#endif
+    // Cache full-screen type. Is in full-screen?
+    fsType = FlagIsSet(DF_INFULLSCREEN) ?
+      // Is detected native full-screen?
+      (FlagIsSet(DF_NATIVEFS) ? FST_NATIVE :
+        // Else is exclusive mode? Borderless mode if not
+        (FlagIsSet(DF_EXCLUSIVE) ? FST_EXCLUSIVE : FST_BORDERLESS))
+      // Else is window mode
+      : FST_WINDOW;
     // Resize main viewport and if it changed, re-initialise the console fbo
     // and redraw the console
     if(cFboMain->AutoViewport(stWidth, stHeight)) cConsole->InitFBO();
-    // Else redraw the console if enabled
+    // Redraw the console if enabled
     else cConsole->SetRedrawIfEnabled();
   }
   /* == Window size requested ============================================== */
   void OnResize(const EvtWin::Cell &ewcArgs)
-  { // Set requested window size
-    cGlFW->WinSetSize(ewcArgs.vParams[0].i, ewcArgs.vParams[1].i);
-    // Done
-    return;
-  }
+    { cGlFW->WinSetSize(ewcArgs.vParams[0].i, ewcArgs.vParams[1].i); }
   /* == Window move requested ============================================== */
   void OnMove(const EvtWin::Cell &ewcArgs)
-  { // Set requested window size
-    cGlFW->WinMove(ewcArgs.vParams[0].i, ewcArgs.vParams[1].i);
-    // Done
-    return;
-  }
+    { cGlFW->WinMove(ewcArgs.vParams[0].i, ewcArgs.vParams[1].i); }
   /* -- Window centre request ---------------------------------------------- */
   void OnCentre(const EvtWin::Cell&)
   { // If in full screen mode, don't resize or move anything
@@ -408,9 +452,9 @@ static class Display final :
     { cCVars->SetInternalSafe<bool>(VID_FS, bState); }
   /* -- Toggle full-screen event (Engine thread) --------------------------- */
   void OnToggleFS(const EvtWin::Cell &ewcArgs)
-  { // Ignore further requests if already restarting or toggle is locked
-    if(FlagIsSet(DF_RESTARTING)) return;
-    // Changing window settings, except no more events of this type
+  { // Ignore further requests if already restarting or using native fullscreen
+    if(FlagIsSet(DF_RESTARTING) || FlagIsSet(DF_NATIVEFS)) return;
+    // Changing window settings, accept no more events of this type
     FlagSet(DF_RESTARTING);
     // If an argument was not specified?
     if(ewcArgs.vParams.empty())
@@ -555,24 +599,23 @@ static class Display final :
     // Return if hidpi not enabled
     if(FlagIsClear(DF_HIDPI))
     { // Update the main fbo viewport size without scale
-      cFboMain->SetViewportWH(
-        static_cast<GLsizei>(cInput->GetWindowWidth()),
-        static_cast<GLsizei>(cInput->GetWindowHeight()));
+      cFboMain->DimSet(static_cast<GLsizei>(cInput->GetWindowWidth()),
+                       static_cast<GLsizei>(cInput->GetWindowHeight()));
       // Done
       return;
     } // Get window scale
     // Update the main fbo viewport size with scale
-    cFboMain->SetViewportWH(
-      static_cast<GLsizei>(cInput->GetWindowWidth()) *
-        static_cast<GLsizei>(fWinScaleWidth),
-      static_cast<GLsizei>(cInput->GetWindowHeight()) *
-        static_cast<GLsizei>(fWinScaleHeight));
+    cFboMain->DimSet(static_cast<GLsizei>(cInput->GetWindowWidth()) *
+                       static_cast<GLsizei>(fWinScaleWidth),
+                     static_cast<GLsizei>(cInput->GetWindowHeight()) *
+                       static_cast<GLsizei>(fWinScaleHeight));
+    // Remove native flag since GLFW canno set or detect this directly.
+    FlagClear(DF_NATIVEFS);
     // Windows and linux doesn't need the scale
 #else
     // Update the main fbo viewport size without scale
-    cFboMain->SetViewportWH(
-      static_cast<GLsizei>(cInput->GetWindowWidth()),
-      static_cast<GLsizei>(cInput->GetWindowHeight()));
+    cFboMain->DimSet(static_cast<GLsizei>(cInput->GetWindowWidth()),
+                     static_cast<GLsizei>(cInput->GetWindowHeight()));
 #endif
     // Show and focus the window
     cGlFW->WinShow();
@@ -822,19 +865,19 @@ static class Display final :
       }
     } // Not in interactive mode?
     else
-    { // Only Win32 terminal windows can change the icon afaik
+    { // Only Win32 terminal windows can change the icon
 #if defined(WINDOWS)
       // Have two icons at least?
       if(tIcons.size() >= 2)
       { // Get string
         // Set small icon from the last icon specified
-        string &strFile = *tIcons.end();
+        string &strFile = tIcons.back();
         const Image imC{ StdMove(strFile), IL_REVERSE|IL_TOBGR };
         const ImageSlot &imsD = imC.GetSlotsConst().front();
         cSystem->SetSmallIcon(imC.IdentGet(), imsD.DimGetWidth(),
           imsD.DimGetHeight(), imC.GetBitsPerPixel(), imsD);
       } // Set large icon from the first icon specified
-      string &strFile = *tIcons.begin();
+      string &strFile = tIcons.front();
       const Image imC{ StdMove(strFile), IL_REVERSE|IL_TOBGR };
       const ImageSlot &imsD = imC.GetSlotsConst().front();
       cSystem->SetLargeIcon(imC.IdentGet(), imsD.DimGetWidth(),
@@ -851,6 +894,11 @@ static class Display final :
   /* -- Update icons and refresh icon if succeeded ------------------------- */
   void SetIconFromLua(const string &strNames)
     { if(SetIcon(strNames)) return cEvtWin->Add(EWC_WIN_SETICON); }
+  /* -- Get window full-screen type ---------------------------------------- */
+  FSType GetFSType(void) const { return fsType; }
+  const string &GetFSTypeString(const FSType fsT) const
+    { return fstStrings.Get(fsT); }
+  const string &GetFSTypeString(void) const { return GetFSTypeString(fsType); }
   /* -- Get window position ------------------------------------------------ */
   int GetWindowPosX(void) const { return iWinPosX; }
   int GetWindowPosY(void) const { return iWinPosY; }
@@ -972,7 +1020,6 @@ static class Display final :
       { EMC_WIN_CLOSE,         bind(&Display::OnClose,       this, _1) },
       { EMC_WIN_FOCUS,         bind(&Display::OnFocus,       this, _1) },
       { EMC_WIN_ICONIFY,       bind(&Display::OnIconify,     this, _1) },
-      { EMC_WIN_LIMITS,        bind(&Display::OnLimits,      this, _1) },
       { EMC_WIN_MOVED,         bind(&Display::OnMoved,       this, _1) },
       { EMC_WIN_REFRESH,       bind(&Display::OnRefresh,     this, _1) },
       { EMC_WIN_RESIZED,       bind(&Display::OnResized,     this, _1) },
@@ -983,6 +1030,7 @@ static class Display final :
       { EWC_WIN_TOGGLE_FS, bind(&Display::OnToggleFS, this, _1) },
       { EWC_WIN_CENTRE,    bind(&Display::OnCentre,   this, _1) },
       { EWC_WIN_RESIZE,    bind(&Display::OnResize,   this, _1) },
+      { EWC_WIN_LIMITS,    bind(&Display::OnLimits,   this, _1) },
       { EWC_WIN_MOVE,      bind(&Display::OnMove,     this, _1) },
       { EWC_WIN_SETICON,   bind(&Display::OnSetIcon,  this, _1) },
       { EWC_WIN_SETICON,   bind(&Display::OnSetIcon,  this, _1) },
@@ -1001,7 +1049,11 @@ static class Display final :
     fWinScaleHeight(1.0),              // No initial scale height
     iAuxBuffers(0),                    // No auxiliary buffers specified
     iSamples(0),                       // No anti-aliasing samples specified
-    lrFocused{ "OnFocused" }           // Set name for OnFocused lua event
+    lrFocused{ "OnFocused" },          // Set name for OnFocused lua event
+    fsType(FST_WINDOW),                // Full-screen type
+    fstStrings{{                       // Init full-screen type strings
+      "FST_WINDOW", "FST_EXCLUSIVE", "FST_BORDERLESS", "FST_NATIVE"
+    }, "FST_UNKNOWN"}                  // End of full-screen type strings list
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Destructor --------------------------------------------------------- */

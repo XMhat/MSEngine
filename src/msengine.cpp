@@ -72,6 +72,7 @@ namespace Engine {                     // Start of engine namespace
 #include "pcmfmt.hpp"                  // Pcm format support plugins header
 #include "pcm.hpp"                     // Pcm loader class header
 #include "fbodef.hpp"                  // Frambuffer object definitions header
+#include "evtwin.hpp"                  // Window thread events system header
 #include "ogl.hpp"                     // OpenGL graphics management header
 #include "imagedef.hpp"                // Image data definitions header
 #include "imagelib.hpp"                // Image codecs handling header
@@ -91,7 +92,6 @@ namespace Engine {                     // Start of engine namespace
 #include "file.hpp"                    // FStream+FileMap class header
 #include "cert.hpp"                    // X509 certificate store class header
 #include "socket.hpp"                  // Socket handling class header
-#include "evtwin.hpp"                  // Window thread events system header
 #include "clip.hpp"                    // Clipboard class header
 #include "console.hpp"                 // Console handling header
 #include "mask.hpp"                    // BitMask system header

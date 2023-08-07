@@ -200,9 +200,10 @@ enum CVarEnums : size_t
   VID_RDTEX,        VID_RDFBO,           VID_SSTYPE,          VID_SUBPIXROUND,
   VID_QSHADER,      VID_QLINE,           VID_QPOLYGON,        VID_QCOMPRESS,
   WIN_ASPECT,       WIN_BORDER,          WIN_CLOSEABLE,       WIN_FLOATING,
-  WIN_FOCUSED,      WIN_HEIGHT,          WIN_HEIGHTMIN,       WIN_MAXIMISED,
-  WIN_MINIMISEAUTO, WIN_POSX,            WIN_POSY,            WIN_SIZABLE,
-  WIN_THREAD,       WIN_WIDTH,           WIN_WIDTHMIN,
+  WIN_FOCUSED,      WIN_HEIGHT,          WIN_HEIGHTMAX,       WIN_HEIGHTMIN,
+  WIN_MAXIMISED,    WIN_MINIMISEAUTO,    WIN_POSX,            WIN_POSY,
+  WIN_SIZABLE,      WIN_THREAD,          WIN_WIDTH,           WIN_WIDTHMAX,
+  WIN_WIDTHMIN,
   /* -- Logging cvars ------------------------------------------------------ */
   LOG_CREDITS,      LOG_DYLIBS,
   /* -- Other -------------------------------------------------------------- */

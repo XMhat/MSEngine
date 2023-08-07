@@ -320,7 +320,7 @@ template<typename Type1 = GLfloat, typename Type2 = Type1>class FboCoords
   /* ----------------------------------------------------------------------- */
   void ResetCoords(void) { tXY1.CoordSet(); tXY2.CoordSet(); }
   /* ----------------------------------------------------------------------- */
-  bool SetCoords(const Type1 tNLeft, const Type1 tNTop,
+  void SetCoords(const Type1 tNLeft, const Type1 tNTop,
                  const Type2 tNRight, const Type2 tNBottom)
   { // Viewport X origin different from cached?
     if(GetCoLeft() != tNLeft)
@@ -342,15 +342,11 @@ template<typename Type1 = GLfloat, typename Type2 = Type1>class FboCoords
       if(GetCoBottom() != tNBottom) SetCoBottom(tNBottom);
     } // Viewport height different from cached? Update it
     else if(GetCoBottom() != tNBottom) SetCoBottom(tNBottom);
-    // No value was changed so return
-    else return false;
-    // Commit the new viewport
-    return true;
   }
   /* ----------------------------------------------------------------------- */
-  bool SetCoords(const FboCoords &fcData)
-    { return SetCoords(fcData.GetCoLeft(), fcData.GetCoTop(),
-                       fcData.GetCoRight(), fcData.GetCoBottom()); }
+  void SetCoords(const FboCoords &fcData)
+    { SetCoords(fcData.GetCoLeft(), fcData.GetCoTop(),
+                fcData.GetCoRight(), fcData.GetCoBottom()); }
   /* -- Init constructor --------------------------------------------------- */
   FboCoords(const Type1 tNLeft,        // Left (X1) co-ordinate
             const Type1 tNTop,         // Top (Y1) co-ordinate
@@ -368,7 +364,6 @@ template<typename Type1 = GLfloat, typename Type2 = Type1>class FboCoords
     /* --------------------------------------------------------------------- */
     { }                                // Do nothing else
 };/* ----------------------------------------------------------------------- */
-typedef FboCoords<GLint,GLsizei> FboViewport;    // Viewport co-ordinates
 typedef FboCoords<GLfloat>       FboFloatCoords; // Coords made of floats
 typedef Dimensions<GLsizei>      DimGLInt;       // Dimension of GLints
 /* == Data required to complete a render of an fbo ========================= */

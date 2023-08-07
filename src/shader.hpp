@@ -328,7 +328,7 @@ BEGIN_MEMBERCLASS(Shaders, Shader, ICHelperUnsafe),
 END_COLLECTOREX(Shaders,,,,            // Finish shaders collector
   /* -- Initialisers ------------------------------------------------------- */
   rList{{                              // Initialise rounding strings list
-    cCommon->Blank(),                          // [0] No rounding
+    cCommon->Blank(),                  // [0] No rounding
     "floor",                           // [1] Floor rounding
     "ceil",                            // [2] Ceil rounding
     "round",                           // [3] Nearest whole number

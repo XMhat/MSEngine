@@ -769,6 +769,8 @@ class SysCon :                         // Members initially private
   void SysConDeInit(void)
   { // Done if console not opened
     if(IsNotWindowHandleSet()) return;
+    // System console is de-initialising
+    cLog->LogDebugSafe("SysCon de-initialising...");
     // Unset control and break handler
     if(!SetConsoleCtrlHandler(CtrlHandlerStatic, FALSE))
       cLog->LogErrorExSafe(
@@ -781,12 +783,16 @@ class SysCon :                         // Members initially private
     SetWindowDestroyed();
     // Clear screen buffer
     civBuf.clear();
+    // System console is de-initialised
+    cLog->LogDebugSafe("SysCon de-initialised.");
   }
   /* -- Initialise --------------------------------------------------------- */
   void SysConInit(const char*const cpTitle, const size_t _stW,
     const size_t _stH, const bool bNoClose)
   { // Console class initialised
     if(IsWindowHandleSet()) XC("System console already allocated!");
+    // System console is initialising
+    cLog->LogDebugSafe("SysCon initialising...");
     // Create a console window and if failed and the error is it not because
     // 'access denied' or no wine running? Then throw error. Wine cannot
     // AllocConsole() but can still run on the existing terminal screen if we
@@ -825,6 +831,8 @@ class SysCon :                         // Members initially private
       if(const HMENU hMenu = GetSystemMenu(GetWindowHandle(), FALSE))
         if(!DeleteMenu(hMenu, SC_CLOSE, MF_BYCOMMAND))
           XCS("Failed to delete close menu option!");
+    // System console is initialised
+    cLog->LogDebugSafe("SysCon initialised.");
   }
   /* -- Constructor -------------------------------------------------------- */
   SysCon(const string &strW) :         // Wine version if applicable

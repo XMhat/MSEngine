@@ -25,14 +25,15 @@ local InfoMonitor<const>, InfoMonitorData<const>, InfoMonitors<const>,
   UtilExplode<const>, AudioGetNumPBDs<const>, AudioGetPBDName<const>,
   AudioReset<const>, CVarsGet<const>, CVarsSet<const>, DisplayVReset<const>,
   DisplayReset<const>, CreditItem<const>, CreditLicence<const>,
-  CreditTotal<const>, CVarsReset<const>, UtilWordWrap<const>
+  CreditTotal<const>, CVarsReset<const>, UtilWordWrap<const>,
+  DisplayFSType<const>
   = -- --------------------------------------------------------------------- --
   Display.Monitor, Display.MonitorData, Display.Monitors, Display.VidModeData,
   Display.VidModes, Info.Time, Info.CPUUsage, Info.RAM, Display.GPUFPS,
   Info.Engine, Util.GetRatio, Util.ClampInt, Util.Clamp, Util.Explode,
   Audio.GetNumPBDevices, Audio.GetPBDeviceName, Audio.Reset, CVars.Get,
   CVars.Set, Display.VReset, Display.Reset, Credit.Item, Credit.Licence,
-  Credit.Total, CVars.Reset, Util.WordWrap;
+  Credit.Total, CVars.Reset, Util.WordWrap, Display.FSType;
 -- Constants --------------------------------------------------------------- --
 local aKeys<const> = Input.KeyCodes;
 local iKeyEscape<const>, iKeyPageUp<const>, iKeyPageDown<const>,
@@ -40,6 +41,7 @@ local iKeyEscape<const>, iKeyPageUp<const>, iKeyPageDown<const>,
   = -- --------------------------------------------------------------------- --
   aKeys.ESCAPE, aKeys.PAGE_UP, aKeys.PAGE_DOWN, aKeys.HOME, aKeys.END,
   aKeys.UP, aKeys.DOWN;
+local iNativeMode<const> = Display.FSTypes.NATIVE;
 -- Read and prepare engine version information ----------------------------- --
 local sAppTitle, sAppVersion<const>, iAppMajor<const>, iAppMinor<const>,
   iAppBuild<const>, iAppRevision<const>, _, _, sAppExeType =
@@ -83,7 +85,8 @@ local aFrameLimiterLabels<const> = {
 };
 -- Window types ------------------------------------------------------------ --
 local aWindowLabels<const> = {
-  "Windowed Mode", "Borderless Full-screen Mode", "Exclusive Full-screen Mode"
+  "Windowed Mode", "Borderless Full-screen Mode", "Exclusive Full-screen Mode",
+  "Native Full-screen Mode"
 };
 -- Window sizes ----------------------------------------------------------- --
 local aWindowSizes<const> = {          -- Keep to arbitrary aspect ratios
@@ -152,23 +155,27 @@ local function MonitorUp()
 end
 -- ------------------------------------------------------------------------- --
 local function FSStateUpdate()
+  if DisplayFSType() == iNativeMode then return aWindowLabels[4] end;
   return aWindowLabels[iFullScreenState + 1];
 end
 local function FSStateDown()
-  if iFullScreenState <= 0 then return end;
+  if iFullScreenState <= 0 or
+     DisplayFSType() == iNativeMode then return end;
   iFullScreenState = iFullScreenState - 1;
   if iFullScreenState < 2 then iFullScreenMode = -2 end;
   UpdateLabels()
 end
 local function FSStateUp()
-  if iFullScreenState >= #aWindowLabels-1 then return end;
+  if iFullScreenState >= #aWindowLabels-2 or
+     DisplayFSType() == iNativeMode then return end;
   iFullScreenState = iFullScreenState + 1;
   if iFullScreenState == 2 then iFullScreenMode = -1 end;
   UpdateLabels()
 end
 -- ------------------------------------------------------------------------- --
 local function FSResUpdate()
-  if iFullScreenMode == -2 then return "Disabled" end;
+  if iFullScreenMode == -2 or
+     DisplayFSType() == iNativeMode then return "Disabled" end;
   if iFullScreenMode == -1 then return "Automatic" end;
   -- Which one
   local iWidth<const>, iHeight<const>, iBits<const>, nRefresh<const> =
@@ -178,19 +185,24 @@ local function FSResUpdate()
     UtilGetRatio(iWidth, iHeight)..")";
 end
 local function FSResDown()
-  if iFullScreenMode <= -1 then return end;
+  if iFullScreenMode <= -1 or
+     DisplayFSType() == iNativeMode then
+    return end;
   iFullScreenMode = iFullScreenMode - 1;
 end
 local function FSResUp()
   if iFullScreenMode <= -2 or
-    iFullScreenMode >= InfoVidModes(GetMonitorIdOrPrimary())-1 then
-      return end;
+     DisplayFSType() == iNativeMode or
+     iFullScreenMode >= InfoVidModes(GetMonitorIdOrPrimary())-1 then
+    return end;
   iFullScreenMode = iFullScreenMode + 1;
 end
 -- ------------------------------------------------------------------------- --
 local function WSizeUpdate()
   -- Ignore if in full-screen
-  if iFullScreenState ~= 0 then return "Disabled" end;
+  if iFullScreenState ~= 0 or
+     DisplayFSType() == iNativeMode then
+    return "Disabled" end;
   -- Custom resolution?
   if iWindowId == 0 then return "Custom" end;
   if iWindowId == 1 then return "Automatic" end;
@@ -202,10 +214,14 @@ local function WSizeUpdate()
     UtilGetRatio(aData[1], aData[2])..")";
 end
 local function WSizeDown()
+  if iFullScreenState ~= 0 or
+     DisplayFSType() == iNativeMode then return end;
   iWindowId = iWindowId - 1;
   if iWindowId < 1 then iWindowId = 1 end;
 end
 local function WSizeUp()
+  if iFullScreenState ~= 0 or
+     DisplayFSType() == iNativeMode then return end;
   iWindowId = iWindowId + 1;
   if iWindowId > #aWindowSizes then iWindowId = #aWindowSizes end;
 end

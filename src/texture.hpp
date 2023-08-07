@@ -783,7 +783,7 @@ static void TextureDeInitTextures(void)
   cLog->LogDebugExSafe("Textures de-initialising $ objects...",
     cTextures->size());
   for(Texture*const tCptr : *cTextures) tCptr->DeInit();
-  cLog->LogInfoExSafe("Textures de-initialised $ objects.",
+  cLog->LogDebugExSafe("Textures de-initialised $ objects.",
     cTextures->size());
 }
 /* -- Reload Textures ------------------------------------------------------ */
@@ -794,7 +794,7 @@ static void TextureReInitTextures(void)
   cLog->LogDebugExSafe("Textures re-initialising $ objects...",
     cTextures->size());
   for(Texture*const tCptr : *cTextures) tCptr->ReloadTexture();
-  cLog->LogInfoExSafe("Textures re-initialised $ objects.",
+  cLog->LogDebugExSafe("Textures re-initialised $ objects.",
     cTextures->size());
 }
 /* ------------------------------------------------------------------------- */

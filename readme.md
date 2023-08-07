@@ -64,7 +64,7 @@ This engine makes use of the following open-source and commercially distributabl
 | [LibPNG](https://github.com/glennrp/libpng) | 1.6 | © Contributing authors | Codec/container for RGB pixel data. |
 | [LUA](https://github.com/lua/lua) | 5.4 | © Lua.org, PUC-Rio | User command interpreter. |
 | [MiniMP3](https://www.pschatzmann.ch/home/2022/05/14/the-minimp3-codec-on-an-esp32/) | 1.0 | Martin Fiedler | Codec/Container for PCM audio data. |
-| [NCurses](https://linux.die.net/man/3/ncurses) | 5.7 | © Free Software Foundation | Unix and MacOS text mode support. |
+| [NCurses](https://linux.die.net/man/3/ncurses) | 6.4 | © Free Software Foundation | Unix and MacOS text mode support. |
 | [Ogg](https://github.com/xiph/ogg) | 1.3 | Xiph.Org | Container for Vorbis and Theora data. |
 | [OpenALSoft](https://github.com/kcat/openal-soft) | 1.23 | Chris Robinson | 3-D audio API. |
 | [OpenSSL](https://github.com/openssl/openssl) | 3.1 | OpenSSL Software Foundation | Basic SSL networking and (de/en)cryption. |
@@ -72,7 +72,7 @@ This engine makes use of the following open-source and commercially distributabl
 | [SQLite](https://github.com/sqlite/sqlite) | 3.41 | Contributing authors | Store and access user non-volatile data. |
 | [Theora](https://github.com/xiph/theora) | 3.2 | Xiph.Org | Codec for motion YUV and PCM audio data. |
 | [Vorbis](https://github.com/xiph/vorbis) | 1.3 | Xiph.Org | Codec for PCM audio data. |
-| [Z-Lib](https://github.com/madler/zlib) | 1.2 | © Jean-loup Gailly & Mark Adler | Common general data codec. |
+| [Z-Lib](https://github.com/madler/zlib) | 1.3 | © Jean-loup Gailly & Mark Adler | Common general data codec. |
 
 ## Licence & Disclaimer…
 Please read [this document](licence.md) for the licence and disclaimer for use of this software.

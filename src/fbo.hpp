@@ -152,7 +152,7 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
   { // Select our FBO as render target
     cOgl->BindFBO(oiRef.uiFBO);
     // Set the viewport of the framebuffer to the total visible pixels
-    cOgl->SetViewportWH(oiRef.DimGetWidth(), oiRef.DimGetHeight());
+    cOgl->SetViewport(oiRef.DimGetWidth(), oiRef.DimGetHeight());
     // Set blending mode
     cOgl->SetBlendIfChanged(oiRef);
     // Clear the fbo if requested
@@ -393,7 +393,7 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
   /* -- DeInitialise ------------------------------------------------------- */
   void DeInit(void)
   { // Remove as active fbo if set
-    if(cFbos->fboActive == this) cFbos->fboMain->SetActive();;
+    if(cFbos->fboActive == this) cFbos->fboMain->SetActive();
     // Flush active triangle and command lists
     Flush();
     // Have FBO texture?

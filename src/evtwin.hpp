@@ -24,14 +24,15 @@ enum EvtWinCmd                         // Render thread event commands
   EWC_WIN_MOVE,                        // 04: Move window
   EWC_WIN_RESIZE,                      // 05: Resize window
   EWC_WIN_SETICON,                     // 06: Set window icon
+  EWC_WIN_LIMITS,                      // 07: Window limits change
   /* -- Clipboard events --------------------------------------------------- */
-  EWC_CB_GET,                          // 07: Get clipboard (via Clip class)
-  EWC_CB_SET,                          // 08: Set clipboard (via Clip class)
-  EWC_CB_SETNR,                        // 09: " but no callback
+  EWC_CB_GET,                          // 08: Get clipboard (via Clip class)
+  EWC_CB_SET,                          // 09: Set clipboard (via Clip class)
+  EWC_CB_SETNR,                        // 10: " but no callback
   /* ----------------------------------------------------------------------- */
-  EWC_NOLOG,                           // 10: Events after this aren't logged
+  EWC_NOLOG,                           // 11: Events after this aren't logged
   /* ----------------------------------------------------------------------- */
-  EWC_MAX = EWC_NOLOG,                 // 11: Below are just codes
+  EWC_MAX = EWC_NOLOG,                 // 12: Below are just codes
 };/* ----------------------------------------------------------------------- */
 static class EvtWin final :            // Event list for window thread
   /* -- Dependencies ------------------------------------------------------- */

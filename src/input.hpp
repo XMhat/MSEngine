@@ -521,6 +521,9 @@ static class Input final :             // Handles keyboard, mouse & controllers
   /* -- Update half window ------------------------------------------------- */
   void UpdateWindowSizeD2(void) { iWinWidthD2 = GetWindowWidth()/2;
                                   iWinHeightD2 = GetWindowHeight()/2; }
+  /* -- Event handler for 'glfwSetJoystickCallback' ------------------------ */
+  static void OnGamePad(int iJId, int iEvent)
+    { cEvtMain->Add(EMC_INP_JOY_STATE, iJId, iEvent); }
   /* -- Set default negative deadzone ------------------------------ */ public:
   CVarReturn SetDefaultJoyRevDZ(const float fNewDeadZone)
     { return SetDefaultJoyDZ(fNewDeadZone, [fNewDeadZone](JoyInfo &jiItem)
@@ -743,8 +746,10 @@ static class Input final :             // Handles keyboard, mouse & controllers
     SetStickyMouseEnabled(cCVars->GetInternalSafe<bool>(INP_STICKYMOUSE));
     // Set/Restore cursor state
     SetCursor(FlagIsSet(IF_CURSOR));
+    // Register joystick callback
+    glfwSetJoystickCallback(OnGamePad);
     // Log progress
-    cLog->LogInfoExSafe("Input interface initialised (R:$;J:$).",
+    cLog->LogDebugExSafe("Input interface initialised (R:$;J:$).",
       TrueOrFalse(GlFWIsRawMouseMotionSupported()), GetJoyCount());
   }
   /* -- DeInit ------------------------------------------------------------- */
@@ -753,10 +758,12 @@ static class Input final :             // Handles keyboard, mouse & controllers
     if(IHNotDeInitialise()) return;
     // Log progress
     cLog->LogDebugSafe("Input interface deinitialising...");
+    // Unregister joystick callback
+    glfwSetJoystickCallback(nullptr);
     // Deinit engine events in the order they were registered
     cEvtMain->UnregisterEx(*this);
     // Log progress
-    cLog->LogInfoSafe("Input interface deinitialised.");
+    cLog->LogDebugSafe("Input interface deinitialised.");
   }
   /* -- Constructor -------------------------------------------------------- */
   Input(void) :

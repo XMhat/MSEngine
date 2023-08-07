@@ -205,7 +205,7 @@ const LuaLibStatic luaLibList[] =
   LLSMC(Fbo,     GM_GRAPHICS),         LLSXC(Core,    GM_TEXT_NOAUDIO),
   LLSXX(Credit,  GM_TEXT_NOAUDIO),     LLSXC(CVars,   GM_TEXT_NOAUDIO),
   LLSXC(Console, GM_TEXT_NOAUDIO),     LLSXX(Crypt,   GM_TEXT_NOAUDIO),
-  LLSMC(Cursor,  GM_GRAPHICS),         LLSXX(Display, GM_GRAPHICS),
+  LLSMC(Cursor,  GM_GRAPHICS),         LLSXC(Display, GM_GRAPHICS),
   LLSMC(Fbo,     GM_GRAPHICS),         LLSMC(File,    GM_TEXT_NOAUDIO),
   LLSMC(Font,    GM_GRAPHICS),         LLSMX(Ftf,     GM_TEXT_NOAUDIO),
   LLSMC(Image,   GM_TEXT_NOAUDIO),     LLSXX(Info,    GM_TEXT_NOAUDIO),

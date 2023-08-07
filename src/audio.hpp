@@ -161,14 +161,14 @@ static class Audio final :             // Audio manager class
   { // Stop and de-init the thread and log progress
     cLog->LogDebugSafe("Audio monitoring thread de-initialising...");
     tThread.ThreadDeInit();
-    cLog->LogInfoSafe("Audio monitoring thread de-initialised.");
+    cLog->LogDebugSafe("Audio monitoring thread de-initialised.");
   }
   /* -- Init thread -------------------------------------------------------- */
   void InitThread(void)
   { // Initialise and start thread and log progress
     cLog->LogDebugSafe("Audio monitoring thread initialising...");
     tThread.ThreadStart(this);
-    cLog->LogInfoExSafe("Audio monitoring thread initialised (D:$;C:$)!",
+    cLog->LogDebugExSafe("Audio monitoring thread initialised (D:$;C:$)!",
       ToShortDuration(ClockDurationToDouble(cdThreadDelay)),
       ToShortDuration(ClockDurationToDouble(cdCheckRate)));
   }
@@ -399,7 +399,7 @@ static class Audio final :             // Audio manager class
     // Init thread
     InitThread();
     // Log status
-    cLog->LogInfoSafe("Audio class started successfully.");
+    cLog->LogDebugSafe("Audio class started successfully.");
   }
   /* -- Stop all sounds ---------------------------------------------------- */
   void Stop(void)
@@ -427,7 +427,7 @@ static class Audio final :             // Audio manager class
     dlPBDevices.clear();
     dlCTDevices.clear();
     // Report error code
-    cLog->LogInfoSafe("Audio class shutdown finished.");
+    cLog->LogDebugSafe("Audio class shutdown finished.");
   }
   /* -- Default constructor ------------------------------------------------ */
   Audio(void) :                        // No parameters

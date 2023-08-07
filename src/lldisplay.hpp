@@ -277,7 +277,14 @@ LLFUNCEX(GPUFPS, 1, LCPUSHNUM(cFboMain->dRTFPS));
 // ? detatched from GPU rendering which will always render as fast as possible.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(SetInterval, 1,
-   cTimer->TimerSetInterval(LCGETNUMLG(double, 1, 1, 200, "Interval")));
+  cTimer->TimerSetInterval(LCGETNUMLG(double, 1, 1, 200, "Interval")));
+/* ========================================================================= */
+// $ Display.FSType
+// < Type:integer=Type of full-screen
+// ? This function returns the type of full-screen currently engaged. Check
+// ? Display.FSTypes table for a list of possible values.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(FSType, 1, LCPUSHINT(cDisplay->GetFSType()));
 /* ========================================================================= */
 /* ######################################################################### */
 /* ## Display.* namespace functions structure                             ## */
@@ -286,17 +293,30 @@ LLFUNCEX(SetInterval, 1,
 LLRSBEGIN                              // Display.* namespace func
   LLRSFUNC(Attention),   LLRSFUNC(Centre),        LLRSFUNC(Decorated),
   LLRSFUNC(Floating),    LLRSFUNC(Focus),         LLRSFUNC(Focused),
-  LLRSFUNC(GetPos),      LLRSFUNC(GetSize),       LLRSFUNC(GPU),
-  LLRSFUNC(GPUFPS),      LLRSFUNC(Hovered),       LLRSFUNC(Iconified),
-  LLRSFUNC(Iconify),     LLRSFUNC(Maximise),      LLRSFUNC(Maximised),
-  LLRSFUNC(Monitor),     LLRSFUNC(MonitorData),   LLRSFUNC(Monitors),
-  LLRSFUNC(OnFocused),   LLRSFUNC(Reset),         LLRSFUNC(Resizable),
-  LLRSFUNC(Restore),     LLRSFUNC(SetFullScreen), LLRSFUNC(SetInterval),
-  LLRSFUNC(SetMatrix),   LLRSFUNC(SetPos),        LLRSFUNC(SetSize),
-  LLRSFUNC(Transparent), LLRSFUNC(VidMode),       LLRSFUNC(VidModeData),
-  LLRSFUNC(VidModes),    LLRSFUNC(Visible),       LLRSFUNC(VRAM),
-  LLRSFUNC(VReset),
+  LLRSFUNC(FSType),      LLRSFUNC(GetPos),        LLRSFUNC(GetSize),
+  LLRSFUNC(GPU),         LLRSFUNC(GPUFPS),        LLRSFUNC(Hovered),
+  LLRSFUNC(Iconified),   LLRSFUNC(Iconify),       LLRSFUNC(Maximise),
+  LLRSFUNC(Maximised),   LLRSFUNC(Monitor),       LLRSFUNC(MonitorData),
+  LLRSFUNC(Monitors),    LLRSFUNC(OnFocused),     LLRSFUNC(Reset),
+  LLRSFUNC(Resizable),   LLRSFUNC(Restore),       LLRSFUNC(SetFullScreen),
+  LLRSFUNC(SetInterval), LLRSFUNC(SetMatrix),     LLRSFUNC(SetPos),
+  LLRSFUNC(SetSize),     LLRSFUNC(Transparent),   LLRSFUNC(VidMode),
+  LLRSFUNC(VidModeData), LLRSFUNC(VidModes),      LLRSFUNC(Visible),
+  LLRSFUNC(VRAM),        LLRSFUNC(VReset),
 LLRSEND                                // Display.* namespace functions end
+/* ========================================================================= */
+// @ Display.FSTypes
+// < Data:table=The available full-screen types
+// ? Returns a table of key/value pairs that identify the states of the window.
+/* ------------------------------------------------------------------------- */
+LLRSKTBEGIN(FSTypes)                   // Beginning of full-screen types
+  LLRSKTITEM(Display::FST_,WINDOW),    LLRSKTITEM(Display::FST_,EXCLUSIVE),
+  LLRSKTITEM(Display::FST_,BORDERLESS),LLRSKTITEM(Display::FST_,NATIVE),
+LLRSKTEND                              // End of mouse codes
+/* ========================================================================= */
+LLRSCONSTBEGIN                         // Display.* namespace consts begin
+  LLRSCONST(FSTypes),
+LLRSCONSTEND                           // Display.* namespace consts end
 /* ========================================================================= */
 }                                      // End of Display namespace
 /* == EoF =========================================================== EoF == */
