@@ -53,17 +53,17 @@ template<typename AnyToType, typename AnyFromType, typename AnyRangeType>
     const AnyRangeType artNGE)
       { return atFrom < artNL || atFrom >= artNGE ?
           DENY : CVarSimpleSetInt(atTo, atFrom); }
-/* ------------------------------------------------------------------------- */
-enum GuiMode                           // Main loop modes supported
-{ /* ----------------------------------------------------------------------- */
-  GM_TEXT_NOAUDIO,                     // [0] Botmode with no audio
-  GM_TEXT_AUDIO,                       // [1] Botmode with audio
-  GM_GRAPHICS,                         // [2] Interactive video mode
+/* -- Gui mode flags ------------------------------------------------------- */
+BUILD_FLAGS(Core,
   /* ----------------------------------------------------------------------- */
-  GM_HIGHEST,                          // [3] Maximum GUI mode allowed
-  GM_TEXT_MAX = GM_TEXT_AUDIO          // [1] Maximum TEXT mode
-};/* ----------------------------------------------------------------------- */
-/* ========================================================================= */
+  // No flags?                         Want text mode console?
+  CF_NOTHING             {0x00000000}, CF_TERMINAL            {0x00000001},
+  // Want audio sub-system?            Want opengl window?
+  CF_AUDIO               {0x00000002}, CF_VIDEO               {0x00000004},
+  /* ----------------------------------------------------------------------- */
+  CF_AUDIOVIDEO{ CF_AUDIO|CF_VIDEO },
+  CF_MASK{ CF_TERMINAL|CF_AUDIOVIDEO }
+);/* -- CVar flags --------------------------------------------------------- */
 BUILD_FLAGS(CVar,
   /* -- Types (T) ---------------------------------------------------------- */
   // Variable is a string?             Variable is a integer?
@@ -147,7 +147,7 @@ enum CVarEnums : size_t
   APP_CONFIG,       APP_AUTHOR,          APP_SHORTNAME,       APP_HOMEDIR,
   SQL_DB,           SQL_ERASEEMPTY,      SQL_TEMPSTORE,       SQL_SYNCHRONOUS,
   SQL_JOURNALMODE,  SQL_AUTOVACUUM,      SQL_FOREIGNKEYS,     SQL_INCVACUUM,
-  SQL_DEFAULTS,     SQL_LOADCONFIG,      APP_GUIMODE,         LOG_LINES,
+  SQL_DEFAULTS,     SQL_LOADCONFIG,      APP_CFLAGS,          LOG_LINES,
   LOG_FILE,         APP_LONGNAME,        APP_CLEARMUTEX,      ERR_INSTANCE,
   /* -- Object cvars ------------------------------------------------------- */
   OBJ_CLIPMAX,      OBJ_CMDMAX,          OBJ_CVARMAX,         OBJ_CVARIMAX,
@@ -181,7 +181,7 @@ enum CVarEnums : size_t
   CON_INPUTMAX,     CON_PAGELINES,       CON_TMCCOLS,         CON_TMCROWS,
   CON_TMCREFRESH,   CON_TMCNOCLOSE,      CON_TMCTFORMAT,
   /* -- Fmv cvars ---------------------------------------------------------- */
-  FMV_IOBUFFER,
+  FMV_IOBUFFER,     FMV_MAXDRIFT,
   /* -- Input cvars -------------------------------------------------------- */
   INP_JOYDEFFDZ,    INP_JOYDEFRDZ,       INP_JOYSTICK,        INP_FSTOGGLER,
   INP_RAWMOUSE,     INP_STICKYKEY,       INP_STICKYMOUSE,
@@ -211,8 +211,7 @@ enum CVarEnums : size_t
 };/* ----------------------------------------------------------------------- */
 struct ItemStatic                      // Start of CVar static struct
 { /* ----------------------------------------------------------------------- */
-  const GuiMode         guimMin;       // Minimum gui mode for this cvar
-  const GuiMode         guimMax;       // Maximum gui mode for this cvar
+  const CoreFlagsConst cfRequired;     // Required core flags
   const string         &strVar;        // Variable name
   const string         &strValue;      // Variable default value
   const CbFunc          cbTrigger;     // Callback trigger event

@@ -405,10 +405,10 @@ static class System final :            // The main system class
   /* -- Base classes ------------------------------------------------------- */
   public SysBase::SysCore              // Defined in 'sys*.hpp' headers
 { /* -- Private typedefs --------------------------------------------------- */
-  typedef IdList<GM_HIGHEST> ModeList; // List of modes
+  typedef IdList<8> ModeList;          // List of possible combinations
   /* ----------------------------------------------------------------------- */
   const ModeList   mList;              // Modes list
-  GuiMode          guimId;             // Current gui mode
+  CoreFlags        cfMode;             // Requested core subsystem flags
   ClockInterval<CoreClock> tdhCPU;     // For getting cpu usage
   const size_t     stProcessId;        // Readable process id
   const size_t     stThreadId;         // Readable thread id
@@ -468,24 +468,28 @@ static class System final :            // The main system class
             "Percent", MakePercentage(RAMFree(), RAMTotal()),
             "Needed",  stMemory - RAMFree());
         } // Initialise the memory and record time spent
-        const ClockChrono<> tpStart;
+        const ClockChrono<CoreClock> tpStart;
         mbData.Fill();
         fdDuration = tpStart.CCDeltaToDouble();
       } // Show result of test in log
       cLog->LogInfoExSafe("System heap init of $ ($+$) in $ ($/s).",
         ToBytesStr(stMemory), ToBytesStr(RAMProcUse()),
         ToBytesStr(stActualMemory), ToShortDuration(fdDuration),
-          ToBytesStr(static_cast<uint64_t>
-            (static_cast<double>(1) / fdDuration * stMemory)));
+          ToBytesStr(static_cast<uint64_t>(1.0 / fdDuration * stMemory)));
     } // Success
     return ACCEPT;
   }
   /* -- Restore old unexpected and termination handlers -------------------- */
   ~System(void) { set_unexpected(uhHandler); set_terminate(thHandler); }
   /* -- Set/Get GUI mode status -------------------------------------------- */
-  CVarReturn SetGUIMode(const unsigned int uiNGM)
-    { return CVarSimpleSetIntNGE(guimId,
-        static_cast<GuiMode>(uiNGM), GM_HIGHEST); }
+  CVarReturn SetCoreFlags(const unsigned int uiNGM)
+  { // Failed if bad value
+    if(uiNGM > CF_MASK) return DENY;
+    // Set new value
+    cfMode.FlagReset(static_cast<CoreFlags>(uiNGM));
+    // Accepted
+    return ACCEPT;
+  }
   /* -- Set throw error on executable checksum mismatch -------------------- */
   CVarReturn CheckChecksumModified(const bool bEnabled)
   { // Ignore if we don't care that executabe checksum was modified
@@ -563,19 +567,26 @@ static class System final :            // The main system class
        "restart this software with reduced privileges.");
   }
   /* ----------------------------------------------------------------------- */
-  bool IsNotGuiMode(const GuiMode guimCId) const { return guimId < guimCId; }
-  /* ----------------------------------------------------------------------- */
-  bool IsGuiMode(const GuiMode guimCId) const { return guimId >= guimCId; }
-  /* ----------------------------------------------------------------------- */
-  GuiMode GetGuiMode(void) const { return guimId; }
+  const CoreFlagsConst GetCoreFlags(void) const { return cfMode; }
+  bool IsCoreFlagsHave(const CoreFlagsConst cfFlags) const
+    { return !cfFlags || GetCoreFlags().FlagIsSet(cfFlags); }
+  bool IsGraphicalMode(void) const
+    { return GetCoreFlags().FlagIsSet(CF_VIDEO); }
+  bool IsNotGraphicalMode(void) const { return !IsGraphicalMode(); }
+  bool IsTextMode(void) const
+    { return GetCoreFlags().FlagIsSet(CF_TERMINAL); }
+  bool IsNotTextMode(void) const { return !IsTextMode(); }
+  bool IsAudioMode(void) const
+    { return GetCoreFlags().FlagIsSet(CF_AUDIO); }
+  bool IsNotAudioMode(void) const { return !IsAudioMode(); }
   /* -- Return users roaming directory ------------------------------------- */
   const string &GetRoamingDir(void) const { return strRoamingDir; }
   /* ----------------------------------------------------------------------- */
-  const string &GetGuiModeString(const GuiMode guiM) const
-    { return mList.Get(guiM); }
+  const string &GetCoreFlagsString(const CoreFlagsConst cfFlags) const
+    { return mList.Get(cfFlags); }
   /* ----------------------------------------------------------------------- */
-  const string &GetGuiModeString(void) const
-    { return GetGuiModeString(GetGuiMode()); }
+  const string &GetCoreFlagsString(void) const
+    { return GetCoreFlagsString(GetCoreFlags()); }
   /* -- Default error handler ---------------------------------------------- */
   static void CriticalHandler[[noreturn]](const char*const cpMessage)
   { // Show message box with error
@@ -587,11 +598,16 @@ static class System final :            // The main system class
   System(void) :
   /* -- Initialisers ----------------------------------------------------- */
     mList{{                            // Initialise mode strings list
-      "text-only",                     // [0] (text only)
-      "text+audio",                    // [1] (text + audio mode)
-      "graphical"                      // [2] (graphical mode)
+      "nothing",                       // [0<    0>] (nothing)
+      "text",                          // [1<    1>] (text)
+      "audio",                         // [2<    2>] (audio)
+      "text+audio",                    // [3<  1|2>] (text+audio)
+      "video",                         // [4<    4>] (video)
+      "text+video",                    // [5<  1|4>] (video+text)
+      "audio+video",                   // [6<  2|4>] (video+audio)
+      "text+audio+video",              // [7<1|2|4>] (text+audio+video)
     }},                                // Mode strings list initialised
-    guimId(GM_TEXT_NOAUDIO),           // Guimode initially set by cvars
+    cfMode(CF_MASK),                   // Guimode initially set by cvars
     tdhCPU{ seconds{ 1 } },            // Cpu refresh time is one seconds
     stProcessId(GetPid<size_t>()),     // Init readable proceess id
     stThreadId(GetTid<size_t>()),      // Init readable thread id

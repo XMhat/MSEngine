@@ -60,8 +60,7 @@ static class CVars final               // Start of vars class
     // Unregister each built-in engine cvar
     for(const ItemStatic &cvaR : cvEngList)
     { // If the variable falls into the current gui mode then unregister it
-      if(cSystem->GetGuiMode() >= cvaR.guimMin &&
-         cSystem->GetGuiMode() <= cvaR.guimMax)
+      if(cSystem->IsCoreFlagsHave(cvaR.cfRequired))
         UnregisterVarNoLog(cvaR.strVar);
     } // if everything is unregistered? (This should always be true!)
     if(imActive.empty())
@@ -497,16 +496,13 @@ static class CVars final               // Start of vars class
       // Register the variable if the guimode is valid. Note that we might not
       // get the gui mode which is default 0, but when it is set, it will set
       // &guimId automatically (since it was passed as ref by core).
-      avInternal[stIndex] =
-        (cSystem->GetGuiMode() >= cvaR.guimMin &&
-         cSystem->GetGuiMode() <= cvaR.guimMax) ?
-           DoRegisterVar(cvaR.strVar, cvaR.strValue, cvaR.cbTrigger,
-             cvaR.cFlags, CSC_NOTHING) :
-           imActive.end();
+      avInternal[stIndex] = cSystem->IsCoreFlagsHave(cvaR.cfRequired) ?
+        DoRegisterVar(cvaR.strVar, cvaR.strValue, cvaR.cbTrigger,
+          cvaR.cFlags, CSC_NOTHING) : imActive.end();
     } // Finished
     cLog->LogInfoExSafe("CVars registered $ of $ built-in variables for "
       "$ mode $.", imActive.size(), cvEngList.size(),
-      cSystem->GetGuiModeString(), cSystem->GetGuiMode());
+      cSystem->GetCoreFlagsString(), cSystem->GetCoreFlags());
   }
   /* -- Register console variable  ----------------------------------------- */
   void RegisterLuaVar(lua_State*const lS)

@@ -552,7 +552,6 @@ static Memory CryptHMACCall(const EVP_MD*const fFunc,
     static const string HashStr(const string &strKey, const string &strIn) \
       { return CryptBin2Hex(StdMove(HashStrRaw(strKey, strIn))); } \
   };
-DEFINE_HASH_FUNCS(MD5,    MD5_DIGEST_LENGTH,    EVP_md5);    // Insecure
 DEFINE_HASH_FUNCS(SHA1,   SHA_DIGEST_LENGTH,    EVP_sha1);   // Insecure
 DEFINE_HASH_FUNCS(SHA224, SHA224_DIGEST_LENGTH, EVP_sha224); // Secure
 DEFINE_HASH_FUNCS(SHA256, SHA256_DIGEST_LENGTH, EVP_sha256); // Secure

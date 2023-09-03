@@ -241,8 +241,8 @@ static class Lua final :
         iTotalMethods += llRef.iLLMFCount;
         iTotalTables += llRef.iLLKICount;
         ++iTotal;
-        // Is GUI mode enabled and we're not allowed this library in GUI mode?
-        if(llRef.guimMin > cSystem->GetGuiMode()) continue;
+        // Ignore if this API is not allowed in the current operation mode
+        if(!cSystem->IsCoreFlagsHave(llRef.cfRequired)) continue;
         // Increment used statistics
         iMembers += llRef.iLLCount;
         iMethods += llRef.iLLMFCount;

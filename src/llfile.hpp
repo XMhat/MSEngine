@@ -26,7 +26,7 @@ using namespace IfAsset;               // Using asset namespace
 // < State:boolean=Error in stream?
 // ? Returns the file stream encounted an error.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(FError, 1, LCPUSHBOOL(LCGETPTR(1, File)->FStreamFError()));
+LLFUNCEX(FError, 1, LCPUSHBOOL(LCGETPTR(1, File)->FStreamFErrorSafe()));
 /* ========================================================================= */
 // $ File:Opened
 // < State:boolean=Error in stream?
@@ -38,19 +38,19 @@ LLFUNCEX(Opened, 1, LCPUSHBOOL(LCGETPTR(1, File)->FStreamOpened()));
 // < State:boolean=File is at EOF?
 // ? Calls feof() and returns if the file pointer is at EOF.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(End, 1, LCPUSHBOOL(LCGETPTR(1, File)->FStreamIsEOF()));
+LLFUNCEX(End, 1, LCPUSHBOOL(LCGETPTR(1, File)->FStreamIsEOFSafe()));
 /* ========================================================================= */
 // $ File:Flush
 // < State:boolean=Succeeded?
 // ? By default writing to a file stream is buffered. This calls fflush() and
 // ? makes sure that any unwritten data to disk is written straight away.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Flush, 1, LCPUSHBOOL(LCGETPTR(1, File)->FStreamFlush()));
+LLFUNCEX(Flush, 1, LCPUSHBOOL(LCGETPTR(1, File)->FStreamFlushSafe()));
 /* ========================================================================= */
 // $ File:Rewind
 // ? Calls frewind() to sets the file stream pointer to position 0.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Rewind, LCGETPTR(1, File)->FStreamRewind());
+LLFUNC(Rewind, LCGETPTR(1, File)->FStreamRewindSafe());
 /* ========================================================================= */
 // $ File:Seek
 // < State:boolean=Succeeded?
@@ -59,7 +59,7 @@ LLFUNC(Rewind, LCGETPTR(1, File)->FStreamRewind());
 // ? from the start of the stream.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Seek, 1, LCPUSHBOOL(LCGETPTR(1, File)->
-  FStreamSetPosition(LCGETINT(int64_t, 1, "Position"), SEEK_SET)));
+  FStreamSetPositionSafe(LCGETINT(int64_t, 1, "Position"), SEEK_SET)));
 /* ========================================================================= */
 // $ File:SeekEnd
 // < State:boolean=Succeeded?
@@ -68,7 +68,7 @@ LLFUNCEX(Seek, 1, LCPUSHBOOL(LCGETPTR(1, File)->
 // ? from the end of the stream.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(SeekEnd, 1, LCPUSHBOOL(LCGETPTR(1, File)->
-  FStreamSetPosition(LCGETINT(int64_t, 1, "Position"), SEEK_END)));
+  FStreamSetPositionSafe(LCGETINT(int64_t, 1, "Position"), SEEK_END)));
 /* ========================================================================= */
 // $ File:SeekCur
 // < State:boolean=Succeeded?
@@ -77,7 +77,7 @@ LLFUNCEX(SeekEnd, 1, LCPUSHBOOL(LCGETPTR(1, File)->
 // ? of the stream.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(SeekCur, 1, LCPUSHBOOL(LCGETPTR(1, File)->
-  FStreamSetPosition(LCGETINT(int64_t, 1, "Position"), SEEK_CUR)));
+  FStreamSetPositionSafe(LCGETINT(int64_t, 1, "Position"), SEEK_CUR)));
 /* ========================================================================= */
 // $ File:Read
 // < Data:array=The data read.
@@ -86,7 +86,7 @@ LLFUNCEX(SeekCur, 1, LCPUSHBOOL(LCGETPTR(1, File)->
 // ? data is returned as an array class.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Read, 1, LCCLASSCREATE(Asset)->SwapMemory(LCGETPTR(1, File)->
-  FStreamReadBlock(LCGETINT(size_t, 2, "Bytes"))));
+  FStreamReadBlockSafe(LCGETINT(size_t, 2, "Bytes"))));
 /* ========================================================================= */
 // $ File:Write
 // < Count:integer=Number of bytes written.
@@ -94,7 +94,7 @@ LLFUNCEX(Read, 1, LCCLASSCREATE(Asset)->SwapMemory(LCGETPTR(1, File)->
 // ? Uses fwrite() to write the specified data array to the specified file.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Write, 1,
-  LCPUSHINT(LCGETPTR(1, File)->FStreamWriteBlock(*LCGETPTR(2, Asset))));
+  LCPUSHINT(LCGETPTR(1, File)->FStreamWriteBlockSafe(*LCGETPTR(2, Asset))));
 /* ========================================================================= */
 // $ File:ReadStr
 // < Bytes:integer=Maximum number of bytes to read.
@@ -103,7 +103,7 @@ LLFUNCEX(Write, 1,
 // ? at the specified maximum number of bytes to read or until it reaches an
 // ? end-of-line character.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ReadStr, 1, LCPUSHXSTR(LCGETPTR(1, File)->FStreamReadString(
+LLFUNCEX(ReadStr, 1, LCPUSHXSTR(LCGETPTR(1, File)->FStreamReadStringSafe(
   LCGETINTLGE(size_t, 2, 0, UINT_MAX, "Bytes"))));
 /* ========================================================================= */
 // $ File:WriteStr
@@ -112,25 +112,25 @@ LLFUNCEX(ReadStr, 1, LCPUSHXSTR(LCGETPTR(1, File)->FStreamReadString(
 // ? Writes the specified string to the file.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(WriteStr, 1, LCPUSHINT(LCGETPTR(1, File)->
-  FStreamWriteString(LCGETCPPSTRING(2, "String"))));
+  FStreamWriteStringSafe(LCGETCPPSTRING(2, "String"))));
 /* ========================================================================= */
 // $ File:Tell
 // < Position:integer=Position
 // ? Returns the current position in file
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Tell, 1, LCPUSHINT(LCGETPTR(1, File)->FStreamGetPosition()));
+LLFUNCEX(Tell, 1, LCPUSHINT(LCGETPTR(1, File)->FStreamGetPositionSafe()));
 /* ========================================================================= */
 // $ File:Size
 // < Size:integer=Size in bytes
 // ? Returns the current sie of the file
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Size, 1, LCPUSHINT(LCGETPTR(1, File)->FStreamSize()));
+LLFUNCEX(Size, 1, LCPUSHINT(LCGETPTR(1, File)->FStreamSizeSafe()));
 /* ========================================================================= */
 // $ File:Close
 // < Result:boolean=If file was closed
 // ? Closes the file
 /* ========================================================================= */
-LLFUNCEX(Close, 1, LCPUSHBOOL(LCGETPTR(1, File)->FStreamClose()));
+LLFUNCEX(Close, 1, LCPUSHBOOL(LCGETPTR(1, File)->FStreamCloseSafe()));
 /* ========================================================================= */
 // $ File:Name
 // < Name:string=Name of the file.
@@ -145,6 +145,18 @@ LLFUNCEX(Name, 1, LCPUSHXSTR(LCGETPTR(1, File)->IdentGet()));
 /* ------------------------------------------------------------------------- */
 LLFUNC(Destroy, LCCLASSDESTROY(1, File));
 /* ========================================================================= */
+// $ File:Error
+// < ErrNo:integer=Error code returned
+// ? Returns the last recorded errno.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(Error, 1, LCPUSHINT(LCGETPTR(1, File)->FStreamGetErrNo()));
+/* ========================================================================= */
+// $ File:ErrorStr
+// < Error:string=Error string returned
+// ? Returns the last recorded errno as a human readable string.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(ErrorStr, 1, LCPUSHXSTR(LCGETPTR(1, File)->FStreamGetErrStr()));
+/* ========================================================================= */
 /* ######################################################################### */
 /* ## File:* member functions structure                                   ## */
 /* ######################################################################### */
@@ -153,6 +165,8 @@ LLRSMFBEGIN                            // File:* member functions begin
   LLRSFUNC(Close),                     // Close the file
   LLRSFUNC(Destroy),                   // Destroys the internal file object
   LLRSFUNC(End),                       // File stream is at eof
+  LLRSFUNC(Error),                     // The last errno
+  LLRSFUNC(ErrorStr),                  // The last errno string
   LLRSFUNC(FError),                    // Last error code from file
   LLRSFUNC(Flush),                     // Flush current stream output
   LLRSFUNC(Name),                      // Name of the opened file
@@ -347,66 +361,60 @@ LLFUNCBEGIN(EnumerateEx)
   LCTOTABLE(dData.dDirs);
 LLFUNCENDEX(2)
 /* ========================================================================= */
-// $ File.Error
-// < ErrNo:integer=Error code returned
-// ? Returns the last system error number.
-// ? See: https://en.hppreference.com/w/cpp/error/errno_macros
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(Error, 1, LCPUSHINT(GetErrNo()));
-/* ========================================================================= */
 // $ File.AppendOneStr
-// > Source:string=Filename to append string to.
-// > String:string=The string to append.
-// < Bytes:integer=Number of bytes written.
-// ? Opens/Creates the specified file, appends the specified string and closes
-// ? the file.
+// > Source:string=Filename to append string to
+// > String:string=The string to append
+// < Result:multi=Result of operation
+// < Reason:string=(Conditional) Error reason
+// ? Appends the specified string to the specified file. Returns 'false' if
+// ? failed or bytes written if succeeded. If 'Result' is false then the second
+// ? argument 'Reason' returned is the error reason string.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(AppendOneStr, 1,
-  LCPUSHINT(FStream(LCGETCPPFILE(1, "File"), FStream::FM_A_B).
-    FStreamWriteString(LCGETCPPSTRING(2, "String"))));
+LLFUNCEX(AppendOneStr, 2, FileAppendString(lS));
 /* ========================================================================= */
 // $ File.AppendOne
 // > Source:string=Filename to append asset to
-// > Data:Asset=The asset to write to the file.
-// < Bytes:integer=Number of bytes written
-// ? Create or open existing file, appends the specified asset and closes
-// ? the file.
+// > Data:Asset=The asset to write to the file
+// < Result:multi=Result of operation
+// < Reason:string=(Conditional) Error reason
+// ? Appends the specified data to the specified file. Returns 'false' if
+// ? failed or bytes written if succeeded. If 'Result' is false then the second
+// ? argument 'Reason' returned is the error reason string.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(AppendOne, 1,
-  LCPUSHINT(FStream(LCGETCPPFILE(1, "File"), FStream::FM_A_B).
-    FStreamWriteBlock(*LCGETPTR(2, Asset))));
+LLFUNCEX(AppendOne, 2, FileAppendBlock(lS));
 /* ========================================================================= */
 // $ File.ReadOneStr
 // > Source:string=Filename to read string from
-// < Mode:integer=The mode to use
-// ? Opens the specified file in 'text' mode, reads a line of text into a
-// ? string. To read the whole file to a string, use the 'Asset.String(Async)'
+// < Result:multi=Result of operation
+// < Reason:string=(Conditional) Error reason
+// ? Reads the specified string from the the file in text-mode only. Please use
+// ? Asset.String(Async) to read a file in binary form. Returns 'false' if
+// ? failed or the string that was read if succeeded. If 'Result' is false then
+// ? the second argument 'Reason' returned is the error reason string.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ReadOneStr, 1,
-  LCPUSHXSTR(FStream(LCGETCPPFILE(1, "File"), FStream::FM_R_T).
-    FStreamReadString()));
+LLFUNCEX(ReadOneStr, 2, FileReadString(lS));
 /* ========================================================================= */
 // $ File.WriteOne
 // > Source:string=Filename to append asset to
-// > Data:Asset=The asset to write to the file.
-// < Bytes:integer=Number of bytes written
+// > Data:Asset=The binary data from memory to write
+// < Result:multi=Result of operation
+// < Reason:string=(Conditional) Error reason
 // ? Create or open existing file, and write the specified asset and closes
-// ? the file.
+// ? the file. Returns the number of bytes written (integer) if succeeded or
+// ? 'false' (boolean) if fails, and sets 'Reason' as the error reason.
 // ------------------------------------------------------------------------- */
-LLFUNCEX(WriteOne, 1,
-  LCPUSHINT(FStream(LCGETCPPFILE(1, "File"), FStream::FM_W_B).
-    FStreamWriteBlock(*LCGETPTR(2, Asset))));
+LLFUNCEX(WriteOne, 2, FileWriteBlock(lS));
 /* ========================================================================= */
 // $ File.WriteOneStr
 // > Source:string=Filename to write string to
 // > String:string=The string to write.
-// < Bytes:integer=Number of bytes written
+// < Result:multi=Result of operation
+// < Reason:string=(Conditional) Error reason
 // ? Opens/Creates the specified file, writes the specified string and closes
-// ? the file.
+// ? the file. Returns the number of bytes written (integer) if succeeded or
+// ? 'false' (boolean) if fails, and sets 'Reason' as the error reason.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(WriteOneStr, 1,
-  LCPUSHINT(FStream(LCGETCPPFILE(1, "File"), FStream::FM_W_B).
-    FStreamWriteString(LCGETCPPSTRING(2, "String"))));
+LLFUNCEX(WriteOneStr, 2, FileWriteString(lS));
 /* ========================================================================= */
 // $ File.ValidName
 // > Source:string=Filename to check
@@ -420,14 +428,14 @@ LLFUNCEX(ValidName, 1, LCPUSHINT(DirValidName(LCGETCPPSTRING(1, "File"))));
 /* ######################################################################### */
 /* ------------------------------------------------------------------------- */
 LLRSBEGIN                              // File.* namespace functions begin
-  LLRSFUNC(AppendOne),    LLRSFUNC(AppendOneStr), LLRSFUNC(DirExists),
-  LLRSFUNC(Enumerate),    LLRSFUNC(EnumerateEx),  LLRSFUNC(Error),
-  LLRSFUNC(Executable),   LLRSFUNC(Exists),       LLRSFUNC(FileExists),
-  LLRSFUNC(Info),         LLRSFUNC(MkDir),        LLRSFUNC(MkDirEx),
-  LLRSFUNC(Open),         LLRSFUNC(Readable),     LLRSFUNC(ReadOneStr),
-  LLRSFUNC(ReadWritable), LLRSFUNC(Rename),       LLRSFUNC(RmDir),
-  LLRSFUNC(RmDirEx),      LLRSFUNC(Unlink),       LLRSFUNC(ValidName),
-  LLRSFUNC(Writable),     LLRSFUNC(WriteOne),     LLRSFUNC(WriteOneStr),
+  LLRSFUNC(AppendOne), LLRSFUNC(AppendOneStr), LLRSFUNC(DirExists),
+  LLRSFUNC(Enumerate), LLRSFUNC(EnumerateEx),  LLRSFUNC(Executable),
+  LLRSFUNC(Exists),    LLRSFUNC(FileExists),   LLRSFUNC(Info),
+  LLRSFUNC(MkDir),     LLRSFUNC(MkDirEx),      LLRSFUNC(Open),
+  LLRSFUNC(Readable),  LLRSFUNC(ReadOneStr),   LLRSFUNC(ReadWritable),
+  LLRSFUNC(Rename),    LLRSFUNC(RmDir),        LLRSFUNC(RmDirEx),
+  LLRSFUNC(Unlink),    LLRSFUNC(ValidName),    LLRSFUNC(Writable),
+  LLRSFUNC(WriteOne),  LLRSFUNC(WriteOneStr),
 LLRSEND                                // File.* namespace functions end
 /* ------------------------------------------------------------------------- */
 LLRSKTBEGIN(Flags)                     // Beginning of open mode flags

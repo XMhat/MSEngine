@@ -228,7 +228,7 @@ class SysCore :
     fExe.FStreamRewind();
     // Load specified header
     HdrType mhData;
-    if(const size_t stRead = fExe.FStreamRead(&mhData, sizeof(mhData)))
+    if(const size_t stRead = fExe.FStreamReadSafe(&mhData, sizeof(mhData)))
     { // We read enough bytes?
       if(stRead == sizeof(mhData))
       { // Make sure byte order is correct
@@ -245,7 +245,7 @@ class SysCore :
           // Create memory to store segment data
           load_command lcData;
           if(const size_t stReadCmd =
-            fExe.FStreamRead(&lcData, sizeof(lcData)))
+            fExe.FStreamReadSafe(&lcData, sizeof(lcData)))
           { // We read enough bytes?
             if(stReadCmd == sizeof(lcData))
             { // Format command data
@@ -259,7 +259,7 @@ class SysCore :
                   fExe.FStreamSetPosition(qwCmdPos, SEEK_SET);
                   // Read segment data
                   segment_command_64 scItem;
-                  if(const size_t stReadSeg = fExe.FStreamRead(&scItem,
+                  if(const size_t stReadSeg = fExe.FStreamReadSafe(&scItem,
                     sizeof(scItem)))
                   { // We read enough bytes?
                     if(stReadSeg == sizeof(scItem))
@@ -288,7 +288,7 @@ class SysCore :
                   fExe.FStreamSetPosition(qwCmdPos, SEEK_SET);
                   // Read segment data
                   segment_command scItem;
-                  if(const size_t stReadSeg = fExe.FStreamRead(&scItem,
+                  if(const size_t stReadSeg = fExe.FStreamReadSafe(&scItem,
                     sizeof(scItem)))
                   { // We read enough bytes?
                     if(stReadSeg == sizeof(scItem))
@@ -341,7 +341,7 @@ class SysCore :
     fExe.FStreamRewind();
     // Load specified header
     fat_header fhData;
-    if(const size_t stReadFat = fExe.FStreamRead(&fhData, sizeof(fhData)))
+    if(const size_t stReadFat = fExe.FStreamReadSafe(&fhData, sizeof(fhData)))
     { // We read enough bytes?
       if(stReadFat == sizeof(fhData))
       { // Highest executable position
@@ -354,7 +354,7 @@ class SysCore :
         { // Read archive header
           ArchHdr faData;
           if(const size_t stReadArch =
-            fExe.FStreamRead(&faData, sizeof(faData)))
+            fExe.FStreamReadSafe(&faData, sizeof(faData)))
           { // We read enough bytes?
             if(stReadArch == sizeof(faData))
             { // Format needed segment data
@@ -409,7 +409,7 @@ class SysCore :
       // Load magic directly into integer
       unsigned int uiMagic;
       switch(const size_t stMagicBytes =
-        fExe.FStreamRead(&uiMagic, sizeof(uiMagic)))
+        fExe.FStreamReadSafe(&uiMagic, sizeof(uiMagic)))
       { // Read enough bytes? Compare magic value
         case sizeof(uiMagic): switch(uiMagic)
         { // Little-endian 32-bit format executable
@@ -732,7 +732,7 @@ class SysCore :
   /* -- Return data from /dev/random -------------------------------------- */
   Memory GetEntropy(void) const
     { return FStream{ "/dev/random", FStream::FM_R_B }.
-        FStreamReadBlock(1024); }
+        FStreamReadBlockSafe(1024); }
   /* ----------------------------------------------------------------------- */
   void *GetWindowHandle(void) const { return nullptr; }
   /* -- A window was created ----------------------------------------------- */

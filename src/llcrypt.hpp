@@ -40,25 +40,6 @@ LLFUNCEX(CRC, 1, LCPUSHINT(CryptToCRC32(LCGETCPPSTRING(1, "String"))));
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(CRCA, 1, LCPUSHINT(CryptToCRC32(*LCGETPTR(1, Asset))));
 /* ========================================================================= */
-// $ Crypt.MD5
-// > Data:string=The string to hash.
-// < Hash:string=The calculated MD5 hash.
-// ? Calculates a MD5 hash from a string. This hashing algorithm is obsolete
-// ? and insecure and should no longer be used and is here only for
-// ? compatibility reasons only.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(MD5, 1,
-  LCPUSHXSTR(MD5functions::HashStr(LCGETCPPSTRING(1, "String"))));
-/* ========================================================================= */
-// $ Crypt.MD5A
-// > Data:array=The data to hash.
-// < Hash:string=The calculated MD5 hash.
-// ? Calculates a MD5 hash from an array class. This hashing algorithm is
-// ? obsolete and insecure and should no longer be used and is here only for
-// ? compatibility reasons only.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(MD5A, 1, LCPUSHXSTR(MD5functions::HashMB(*LCGETPTR(1, Asset))));
-/* ========================================================================= */
 // $ Crypt.SHA1
 // > Data:string=The string to hash.
 // < Hash:string=The calculated SHA1 hash.
@@ -138,16 +119,6 @@ LLFUNCEX(SHA512, 1,
 // ? Calculates a SHA384 hash from an array class.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(SHA512A, 1, LCPUSHXSTR(SHA512functions::HashMB(*LCGETPTR(1, Asset))));
-/* ========================================================================= */
-// $ Crypt.HMMD5
-// > Key:string=The entropy to use.
-// > Data:string=The string to hash.
-// < Hash:string=The calculated MD5 hash.
-// ? Calculates a MD5 hash from a string using the specifiy entropy. Insecure,
-// ? only use for hashing of insignificant data.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(HMMD5, 1, LCPUSHXSTR(MD5functions::HashStr(
-  LCGETCPPSTRING(1, "Key"), LCGETCPPSTRING(2, "Data"))));
 /* ========================================================================= */
 // $ Crypt.HMSHA1
 // > Key:string=The entropy to use.
@@ -311,10 +282,9 @@ LLRSBEGIN                              // Crypt.* namespace functions begin
   LLRSFUNC(B64EA),      LLRSFUNC(CRC),         LLRSFUNC(CRCA),
   LLRSFUNC(EntDecode),  LLRSFUNC(EntEncode),   LLRSFUNC(HexDecode),
   LLRSFUNC(HexDecodeA), LLRSFUNC(HexEncode),   LLRSFUNC(HexEncodeA),
-  LLRSFUNC(HexEncodeL), LLRSFUNC(HexEncodeLA), LLRSFUNC(HMMD5),
-  LLRSFUNC(HMSHA1),     LLRSFUNC(HMSHA224),    LLRSFUNC(HMSHA256),
-  LLRSFUNC(HMSHA384),   LLRSFUNC(HMSHA512),    LLRSFUNC(MD5),
-  LLRSFUNC(MD5A),       LLRSFUNC(SHA1),        LLRSFUNC(SHA1A),
+  LLRSFUNC(HexEncodeL), LLRSFUNC(HexEncodeLA), LLRSFUNC(HMSHA1),
+  LLRSFUNC(HMSHA224),   LLRSFUNC(HMSHA256),    LLRSFUNC(HMSHA384),
+  LLRSFUNC(HMSHA512),   LLRSFUNC(SHA1),        LLRSFUNC(SHA1A),
   LLRSFUNC(SHA224),     LLRSFUNC(SHA224A),     LLRSFUNC(SHA256),
   LLRSFUNC(SHA256A),    LLRSFUNC(SHA384),      LLRSFUNC(SHA384A),
   LLRSFUNC(SHA512),     LLRSFUNC(SHA512A),     LLRSFUNC(UrlDecode),

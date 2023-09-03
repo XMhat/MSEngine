@@ -82,7 +82,7 @@ using ::std::set_unexpected;           // Set unexpected exception handler
 #endif                                 // Not windows check
 using ::std::terminate_handler;        // Terminate handler
 using ::std::set_terminate;            // Set terminate handler
-#if !defined(MACOS)                    // Using apple compiler?
+#if !defined(MACOS)                    // Not using apple compiler?
 using ::std::execution::par_unseq;     // Parallel unserialised operation
 using ::std::execution::par;           // Parallel serialised operation
 using ::std::execution::seq;           // Serialised operation
@@ -138,8 +138,8 @@ typedef map<const string, const unsigned int> StrUIntMap;
 typedef StrUIntMap::const_iterator            StrUIntMapConstIt;
 typedef vector<StrUIntMapConstIt>             StrUIntMapConstItVector;
 /* -- map of strings and signed ints --------------------------------------- */
-typedef map<const string, const int>  StrIntMap;
-typedef StrIntMap::const_iterator     StrIntMapConstIt;
+typedef map<const string, const int> StrIntMap;
+typedef StrIntMap::const_iterator    StrIntMapConstIt;
 /* -- map of key and value strings ----------------------------------------- */
 typedef map<const string, const string> StrStrMap;
 typedef StrStrMap::iterator             StrStrMapIt;

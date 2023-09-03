@@ -107,8 +107,8 @@ class SysMap :                         // Members initially private
   bool SysMapIsAvailable(void) const { return !!SysMapGetMemory(); }
   bool SysMapIsNotAvailable(void) const { return !SysMapIsAvailable(); }
   uint64_t SysMapGetSize(void) const { return qSize; }
-  StdTimeT SysMapGetCreation(void) const { return atTime[0]; }
-  StdTimeT SysMapGetModified(void) const { return atTime[1]; }
+  StdTimeT SysMapGetCreation(void) const { return atTime.front(); }
+  StdTimeT SysMapGetModified(void) const { return atTime.back(); }
   /* -- Init object from class --------------------------------------------- */
   void SysMapSwap(SysMap &smOther)
   { // Swap members

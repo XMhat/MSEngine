@@ -83,28 +83,31 @@ class SysCore :
   /* --------------------------------------------------------------- */ public:
   void UpdateMemoryUsageData(void)
   { // If the stat file is opened
-    if(fsProcStatM.FStreamOpened())
+    if(fsProcStatM.FStreamIsReadyRead())
     { // Read string from stat
       string strStat{ fsProcStatM.FStreamReadStringChunked() };
-      // Find line feed
-      const size_t stLF = strStat.find('\n');
-      if(stLF != string::npos)
-      { // Truncate the end of string. We only care about the top line.
-        strStat.resize(stLF);
-        // Reset memory value
-        memData.stMProcUse = 0;
-        // Grab tokens and enumerate them
-        TokenListNC tStats{ strStat, cCommon->Space(), 8 };
-        if(tStats.size() >= 3)
-          memData.stMProcUse += ToNumber<size_t>(tStats[1]);
-        // These are total pages, now lets multiply by the page size
-        memData.stMProcUse *= stPageSize;
-        // Check for new process peak
-        if(memData.stMProcUse > memData.stMProcPeak)
-          memData.stMProcPeak = memData.stMProcUse;
-      } // Go back to start for next read
+      if(!strStat.empty())
+      { // Find line feed
+        const size_t stLF = strStat.find('\n');
+        if(stLF != string::npos)
+        { // Truncate the end of string. We only care about the top line.
+          strStat.resize(stLF);
+          // Grab tokens and if we have enough?
+          const TokenListNC tStats{ strStat, cCommon->Space(), 8 };
+          if(tStats.size() >= 3)
+          { // We're only interested in the first value
+            memData.stMProcUse = ToNumber<size_t>(tStats[1]) * stPageSize;
+            // Check for new process peak
+            if(memData.stMProcUse > memData.stMProcPeak)
+              memData.stMProcPeak = memData.stMProcUse;
+          } // Token count mismatch so reset memory value
+          else memData.stMProcUse = 0;
+        }
+      } // Failed to read file
+      else memData.stMProcUse = 0;
+      // Go back to start for next read
       fsProcStatM.FStreamRewind();
-    } // Failed
+    } // Stat file is closed
     else memData.stMProcUse = 0;
     // Grab system memory information and if successful?
     struct sysinfo siData;
@@ -151,62 +154,65 @@ class SysCore :
   /* ----------------------------------------------------------------------- */
   void UpdateCPUUsageData(void)
   { // If the stat file is opened
-    if(fsProcStat.FStreamOpened())
-    { // Read string from stat
+    if(fsProcStatM.FStreamIsReadyRead())
+    { // Read string from stat and if succeeded?
       string strStat{ fsProcStat.FStreamReadStringChunked() };
-      // Find line feed
-      const size_t stLF = strStat.find('\n');
-      if(stLF != string::npos)
-      { // Truncate the end of string. We only care about the top line.
-        strStat.resize(stLF);
-        // First item must be cpu and second should be empty. We created the
-        // string so this tokeniser class is allowed to modify it for
-        // increased performance of processing it.
-        TokenListNC tStats{ strStat, cCommon->Space(), 6 };
-        if(tStats.size() >= 5)
-        { // Get idle time
-          const clock_t cUserNow = ToNumber<clock_t>(tStats[2]);
-          const clock_t cLowNow = ToNumber<clock_t>(tStats[3]);
-          const clock_t cSystemNow = ToNumber<clock_t>(tStats[4]);
-          const clock_t cIdleNow = ToNumber<clock_t>(tStats[5]);
-          // Check for valid time
-          if(cUserNow < ctUser || cLowNow < ctLow ||
-             cSystemNow < ctSystem || cIdleNow < ctIdle)
-               cpuUData.fdSystem = -1;
-          // Valid time
-          else
-          { // Grab cpu usage jiffies
-            clock_t cTotal = ((cUserNow - ctUser) + (cLowNow - ctLow) +
-              (cSystemNow - ctSystem));
-            // Set the percent to this
-            cpuUData.fdSystem = cTotal;
-            // Add the idle jiffies to the total jiffies
-            cTotal += (cIdleNow - ctIdle);
-            // Now we can calculate the true percent
-            cpuUData.fdSystem = MakePercentage(cpuUData.fdSystem, cTotal);
-          } // Update new times;
-          ctUser = cUserNow, ctLow = cLowNow, ctSystem = cSystemNow,
-            ctIdle = cIdleNow;
-        } // No header
-        else cpuUData.fdSystem = -2;
-      } // No line feed
-      else cpuUData.fdSystem = -3;
+      if(!strStat.empty())
+      { // Find line feed
+        const size_t stLF = strStat.find('\n');
+        if(stLF != string::npos)
+        { // Truncate the end of string. We only care about the top line.
+          strStat.resize(stLF);
+          // First item must be cpu and second should be empty. We created the
+          // string so this tokeniser class is allowed to modify it for
+          // increased performance of processing it.
+          const TokenListNC tStats{ strStat, cCommon->Space(), 6 };
+          if(tStats.size() >= 5)
+          { // Get idle time
+            const clock_t cUserNow = ToNumber<clock_t>(tStats[2]);
+            const clock_t cLowNow = ToNumber<clock_t>(tStats[3]);
+            const clock_t cSystemNow = ToNumber<clock_t>(tStats[4]);
+            const clock_t cIdleNow = ToNumber<clock_t>(tStats[5]);
+            // Check for valid time
+            if(cUserNow < ctUser || cLowNow < ctLow ||
+               cSystemNow < ctSystem || cIdleNow < ctIdle)
+                 cpuUData.fdSystem = -1;
+            // Valid time
+            else
+            { // Grab cpu usage jiffies
+              clock_t cTotal = ((cUserNow - ctUser) + (cLowNow - ctLow) +
+                (cSystemNow - ctSystem));
+              // Set the percent to this
+              cpuUData.fdSystem = cTotal;
+              // Add the idle jiffies to the total jiffies
+              cTotal += (cIdleNow - ctIdle);
+              // Now we can calculate the true percent
+              cpuUData.fdSystem = MakePercentage(cpuUData.fdSystem, cTotal);
+            } // Update new times;
+            ctUser = cUserNow, ctLow = cLowNow, ctSystem = cSystemNow,
+              ctIdle = cIdleNow;
+          } // No header
+          else cpuUData.fdSystem = -2;
+        } // No line feed
+        else cpuUData.fdSystem = -3;
+      } // Read failed
+      else cpuUData.fdSystem = -4;
       // Go back to start for next read
       fsProcStat.FStreamRewind();
     } // Stat file is not opened
-    else cpuUData.fdSystem = -3;
+    else cpuUData.fdSystem = -5;
     // Get cpu times
     struct tms tmsData;
     const clock_t cProcNow = times(&tmsData);
     // If times are not valid? Show percent as error
     if(cProcNow <= ctProc || tmsData.tms_stime < ctProcSys ||
-                            tmsData.tms_utime < ctProcUser)
+                             tmsData.tms_utime < ctProcUser)
       cpuUData.fdProcess = -1;
     // Times are valid
     else
     { // Caclulate total time
       cpuUData.fdProcess = (tmsData.tms_stime - ctProcSys) +
-                          (tmsData.tms_utime - ctProcUser);
+                           (tmsData.tms_utime - ctProcUser);
       // Divide by total cpu time
       cpuUData.fdProcess /= (cProcNow - ctProc);
       cpuUData.fdProcess /= thread::hardware_concurrency();
@@ -233,7 +239,7 @@ class SysCore :
     if(FStream fExe{ strFile, FStream::FM_R_B })
     { // Read in the header
       Elf64_Ehdr ehData;
-      if(const size_t stRead = fExe.FStreamRead(&ehData, sizeof(ehData)))
+      if(const size_t stRead = fExe.FStreamReadSafe(&ehData, sizeof(ehData)))
       { // We read enough bytes?
         if(stRead == sizeof(ehData))
         { // Rewind back to start
@@ -248,7 +254,7 @@ class SysCore :
             { // Read in 32-bit header
               Elf32_Ehdr ehData32;
               if(const size_t stRead2 =
-                fExe.FStreamRead(&ehData32, sizeof(ehData32)))
+                fExe.FStreamReadSafe(&ehData32, sizeof(ehData32)))
               { // We read enough bytes?
                 if(stRead2 == sizeof(ehData32))
                 { // Reverse bytes if not native
@@ -271,7 +277,7 @@ class SysCore :
             { // Read in 64-bit header
               Elf64_Ehdr ehData64;
               if(const size_t stRead2 =
-                   fExe.FStreamRead(&ehData64, sizeof(ehData64)))
+                   fExe.FStreamReadSafe(&ehData64, sizeof(ehData64)))
               { // We read enough bytes?
                 if(stRead2 == sizeof(ehData64))
                 { // Reverse bytes if not native
@@ -436,7 +442,7 @@ class SysCore :
   /* -- Return data from /dev/urandom -------------------------------------- */
   Memory GetEntropy(void) const
     { return FStream{ "/dev/random", FStream::FM_R_B }.
-        FStreamReadBlock(1024); }
+        FStreamReadBlockSafe(1024); }
   /* ----------------------------------------------------------------------- */
   void *GetWindowHandle(void) const { return nullptr; }
   /* -- A window was created ----------------------------------------------- */

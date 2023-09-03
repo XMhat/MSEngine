@@ -548,7 +548,7 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
     // Get info about ogg and copy it into our static buffer if succeeded,
     // else show an exception if failed. This removes dereferencing of the
     // vorbis info struct.
-    if(vorbis_info*const viPtr = ov_info(&ovfContext, -1))
+    if(const vorbis_info*const viPtr = ov_info(&ovfContext, -1))
       memcpy(&viData, viPtr, sizeof(viData));
     else XC("Failed to get vorbis info!", "Identifier", IdentGet());
     // Only 1-2 channels supported

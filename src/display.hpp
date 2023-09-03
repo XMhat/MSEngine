@@ -804,7 +804,7 @@ static class Display final :
   { // This functionality throws a GLFW api error on MacOS so just NullOp it
 #if !defined(MACOS)
     // If using interactive mode?
-    if(cSystem->IsGuiMode(GM_GRAPHICS))
+    if(cSystem->IsGraphicalMode())
     { // Ignore if no icons
       if(gilIcons.empty()) return;
       // Capture exceptions and ask GLFW to set the icon
@@ -844,7 +844,7 @@ static class Display final :
     Token tIcons{ strNames, ":" };
     if(tIcons.empty() || tIcons.size() > 3) return false;
     // If using interactive mode?
-    if(cSystem->IsGuiMode(GM_GRAPHICS))
+    if(cSystem->IsGraphicalMode())
     { // Clear images and icons
       gilIcons.clear();
       ilIcons.clear();

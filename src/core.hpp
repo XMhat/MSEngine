@@ -169,7 +169,7 @@ class Core                             // Members initially private
     // Reset all SQL error codes and stored results and records.
     cSql->Reset();
     // If using graphical inteactive mode?
-    if(cSystem->IsGuiMode(GM_GRAPHICS))
+    if(cSystem->IsGraphicalMode())
     { // Reset main fbo and back clear colour
       cFboMain->ResetClearColour();
       // Reset texture unit and shader program if in GUI mode
@@ -190,7 +190,7 @@ class Core                             // Members initially private
       // Restore console font properties
       cConsole->RestoreDefaultProperties();
     } // Bot mode? Clear status texts
-    else cConsole->ClearStatus();
+    if(cSystem->IsTextMode()) cConsole->ClearStatus();
     // Reset timer
     cTimer->TimerReset(bLeaving);
     // Clear lingering events
@@ -198,6 +198,70 @@ class Core                             // Members initially private
     // Log that we've reset the environment
     cLog->LogDebugExSafe("Core environment $!",
       bLeaving ? "reset" : "prepared");
+  }
+  /* -- Graphical core unthreaded tick ------------------------------------- */
+  void CoreUnthreadedTick(void)
+  { // Is it time to execute a game tick?
+    if(cTimer->TimerShouldTick())
+    { // Render the console fbo (if update requested)
+      cConsole->Render();
+      // Render video textures (if any)
+      VideoRender();
+      // Loop point incase we need to catchup game ticks
+      TimerCatchupThreaded:
+      { // Set main fbo by default on each frame
+        cFboMain->ActivateMain();
+        // Poll joysticks
+        cInput->PollJoysticks();
+        // Execute a tick for each frame missed
+        cLua->ExecuteMain();
+        // If we should keep catching up frames?
+        if(cTimer->TimerShouldTick())
+        { // Flush the main fbo as we're not drawing it yet
+          cFboMain->RenderFbosAndFlushMain();
+          // Render again until we've caught up
+          goto TimerCatchupThreaded;
+        } // We've completed catching up at this point
+      } // Add console fbo to render list
+      cConsole->RenderToMain();
+      // Render all fbos and copy the main fbo to screen
+      cFboMain->Render();
+    } // Update timer
+    cTimer->TimerUpdateInteractive();
+  }
+  /* -- Graphical core threaded tick --------------------------------------- */
+  void CoreThreadedTick(void)
+  { // Process window event manager commands from other threads
+    cEvtWin->ManageUnsafe();
+    // Is it time to execute a game tick?
+    if(cTimer->TimerShouldTick())
+    { // Render the console fbo (if update requested)
+      cConsole->Render();
+      // Render video textures (if any)
+      VideoRender();
+      // Loop point incase we need to catchup game ticks
+      TimerCatchupUnthreaded:
+      { // Process window events
+        GlFWPollEvents();
+        // Set main fbo by default on each frame
+        cFboMain->ActivateMain();
+        // Poll joysticks
+        cInput->PollJoysticks();
+        // Execute a tick for each frame missed
+        cLua->ExecuteMain();
+        // If we should keep catching up frames?
+        if(cTimer->TimerShouldTick())
+        { // Flush the main fbo as we're not drawing it yet
+          cFboMain->RenderFbosAndFlushMain();
+          // Render again until we've caught up
+          goto TimerCatchupUnthreaded;
+        } // We've completed catching up at this point
+      } // Add console fbo to render list
+      cConsole->RenderToMain();
+      // Render all fbos and copy the main fbo to screen
+      cFboMain->Render();
+    } // Update timer
+    cTimer->TimerUpdateInteractive();
   }
   /* -- Fired when Lua enters the sandbox ---------------------------------- */
   int CoreThreadSandbox(lua_State*const lS)
@@ -239,100 +303,54 @@ class Core                             // Members initially private
           // this to something different when they cleanly exit their loops.
           cEvtMain->SetExitReason(EMC_LUA_ERROR);
           // Scan for game controllers and inform scripts if enabled
-          if(cSystem->IsGuiMode(GM_GRAPHICS))
+          if(cSystem->IsGraphicalMode())
             cInput->SetJoystickEnabled(
               cCVars->GetInternalSafe<int>(INP_JOYSTICK));
           // Execute startup script
           LuaCodeExecFile(lS, cCVars->GetInternalStrSafe(LUA_SCRIPT));
           // Done
           break;
-      } // Which gui mode are we in?
-      switch(cSystem->GetGuiMode())
-      { // Bot mode or bot mode with audio selected?
-        case GM_TEXT_NOAUDIO: case GM_TEXT_AUDIO:
-        { // Until thread says we should break loop.
-          while(cEvtMain->HandleSafe())
-          { // Calculate time elapsed in this tick
-            cTimer->TimerUpdateBot();
-            // Execute the main tick
-            cLua->ExecuteMain();
-            // Process bot console
-            cConsole->FlushToLog();
-          } // Done
-          break;
-        }// Interactive mode with accumulator?
-        case GM_GRAPHICS:
+      } // Terminal mode requested?
+      if(cSystem->IsTextMode())
+      { // Graphical mode requested too?
+        if(cSystem->IsGraphicalMode())
         { // Initialise accumulator for first time
           cTimer->TimerUpdateInteractive();
           // Threading not enabled?
           if(cDisplay->FlagIsClear(DF_THREADED))
           { // Loop until event manager says we should break
             while(cEvtMain->HandleSafe() && !cGlFW->WinShouldClose())
-            { // Process window event manager commands from other threads
-              cEvtWin->ManageUnsafe();
-              // Is it time to execute a game tick?
-              if(cTimer->TimerShouldTick())
-              { // Render the console fbo (if update requested)
-                cConsole->Render();
-                // Render video textures (if any)
-                VideoRender();
-                // Loop point incase we need to catchup game ticks
-                TimerCatchupUnthreaded:
-                { // Process window events
-                  GlFWPollEvents();
-                  // Set main fbo by default on each frame
-                  cFboMain->ActivateMain();
-                  // Poll joysticks
-                  cInput->PollJoysticks();
-                  // Execute a tick for each frame missed
-                  cLua->ExecuteMain();
-                  // If we should keep catching up frames?
-                  if(cTimer->TimerShouldTick())
-                  { // Flush the main fbo as we're not drawing it yet
-                    cFboMain->RenderFbosAndFlushMain();
-                    // Render again until we've caught up
-                    goto TimerCatchupUnthreaded;
-                  } // We've completed catching up at this point
-                } // Add console fbo to render list
-                cConsole->RenderToMain();
-                // Render all fbos and copy the main fbo to screen
-                cFboMain->Render();
-              } // Update timer
-              cTimer->TimerUpdateInteractive();
+            { // Execute threaded tick
+              CoreThreadedTick();
+              // Process bot console
+              cConsole->FlushToLog();
             }
           } // Loop until event manager says we should break
           else while(cEvtMain->HandleSafe())
-          { // Is it time to execute a game tick?
-            if(cTimer->TimerShouldTick())
-            { // Render the console fbo (if update requested)
-              cConsole->Render();
-              // Render video textures (if any)
-              VideoRender();
-              // Loop point incase we need to catchup game ticks
-              TimerCatchupThreaded:
-              { // Set main fbo by default on each frame
-                cFboMain->ActivateMain();
-                // Poll joysticks
-                cInput->PollJoysticks();
-                // Execute a tick for each frame missed
-                cLua->ExecuteMain();
-                // If we should keep catching up frames?
-                if(cTimer->TimerShouldTick())
-                { // Flush the main fbo as we're not drawing it yet
-                  cFboMain->RenderFbosAndFlushMain();
-                  // Render again until we've caught up
-                  goto TimerCatchupThreaded;
-                } // We've completed catching up at this point
-              } // Add console fbo to render list
-              cConsole->RenderToMain();
-              // Render all fbos and copy the main fbo to screen
-              cFboMain->Render();
-            } // Update timer
-            cTimer->TimerUpdateInteractive();
-          } // Done
-          break;
-        } // What?
-        default: XC("Unknown UI mode!", "Mode", cSystem->GetGuiMode());
+          { // Execute unthreaded tick
+            CoreUnthreadedTick();
+            // Process bot console
+            cConsole->FlushToLog();
+          }
+        } // Terminal mode only so loop until thread says we should break loop.
+        else while(cEvtMain->HandleSafe())
+        { // Calculate time elapsed in this tick
+          cTimer->TimerUpdateBot();
+          // Execute the main tick
+          cLua->ExecuteMain();
+          // Process bot console
+          cConsole->FlushToLog();
+        }
+      } // Graphical mode requested?
+      else if(cSystem->IsGraphicalMode())
+      { // Initialise accumulator for first time
+        cTimer->TimerUpdateInteractive();
+        // Threading not enabled? Loop until event manager says we should break
+        if(cDisplay->FlagIsClear(DF_THREADED))
+          while(cEvtMain->HandleSafe() && !cGlFW->WinShouldClose())
+            CoreThreadedTick();
+        // Else loop until event manager says we should break
+        else while(cEvtMain->HandleSafe()) CoreUnthreadedTick();
       }
     } // exception occured so throw LUA stackdump and leave the sandbox
     catch(const exception &E)
@@ -374,7 +392,7 @@ class Core                             // Members initially private
     { // Quitting thread?
       case EMC_QUIT_THREAD:
         // Not interactive mode? Nothing to de-initialise
-        if(cSystem->IsNotGuiMode(GM_GRAPHICS)) return;
+        if(cSystem->IsNotGraphicalMode()) return;
         // Unload console background and font textures
         cConsole->DeInitTextureAndFont();
         // Unload font, texture, videos and curor textures
@@ -392,14 +410,10 @@ class Core                             // Members initially private
         cConsole->DeInit();
         // DeInitialise freetype
         cFreeType->DeInit();
-        // Return if audio subsystem not enabled
-        if(cSystem->IsNotGuiMode(GM_TEXT_AUDIO)) return;
-        // DeInitialise audio class
-        cAudio->DeInit();
-        // Return if not interactive mode
-        if(cSystem->IsNotGuiMode(GM_GRAPHICS)) return;
-        // De-initialise input
-        cInput->DeInit();
+        // De-init audio
+        if(cSystem->IsAudioMode()) cAudio->DeInit();
+        // De-init input
+        if(cSystem->IsGraphicalMode()) cInput->DeInit();
         // Done
         break;
     } // Unload all fbos (NOT destroy);
@@ -418,7 +432,9 @@ class Core                             // Members initially private
   /* -- Redraw the frame buffer when error occurs -------------------------- */
   void CoreForceRedrawFrameBuffer(const bool bAndConsole)
   { // Flush log and return if in bot mode
-    if(cSystem->IsNotGuiMode(GM_GRAPHICS)) return cConsole->FlushToLog();
+    if(cSystem->IsTextMode()) cConsole->FlushToLog();
+    // Return if no graphical mode
+    if(cSystem->IsNotGraphicalMode()) return;
     // Reset opengl binds to defaults just incase any were selected
     cOgl->ResetBinds();
     // Render the console?
@@ -431,59 +447,66 @@ class Core                             // Members initially private
   { // De-initialise components
     CoreDeInitComponents();
     // If not in graphical mode, we're done
-    if(cSystem->IsNotGuiMode(GM_GRAPHICS)) return;
+    if(cSystem->IsNotGraphicalMode()) return;
     // Window should close as well
     cGlFW->WinSetClose(GLFW_TRUE);
     // Unblock the window thread
     GlFWForceEventHack();
   }
+  /* -- Initoialise graphics subsystems ------------------------------------ */
+  void CoreInitGraphicalSubsystems(void)
+  { // Set context current and pass selected refresh rate
+    cOgl->Init(cDisplay->GetRefreshRate());
+    // Initialise core shaders
+    cFboBase->InitShaders();
+    // If we're initialising for the first time?
+    if(cEvtMain->IsExitReason(EMC_NONE))
+    { // Initialise freetype, console, audio and input classes
+      cFreeType->Init();
+      cConsole->Init();
+      cInput->Init();
+      // Done
+      return;
+    } // Initialising for the first time so reconfigure matrix
+    cDisplay->ForceReInitMatrix();
+    // Reset window icon
+    cDisplay->UpdateIcons();
+    // Reload cursor, fbo, console, fonts, textures and videos objects
+    CursorReInit();
+    FboReInit();
+    cConsole->ReInitTextureAndFont();
+    FontReInitTextures();
+    TextureReInitTextures();
+    VideoReInitTextures();
+  }
   /* -- Engine thread (member function) ------------------------------------ */
   int CoreThreadMain(Thread&) try
   { // Log reason for init
     cLog->LogDebugExSafe("Core engine thread started (C:$;M:$<$>).",
-      cEvtMain->GetExitReason(), cSystem->GetGuiModeString(),
-      cSystem->GetGuiMode());
+      cEvtMain->GetExitReason(), cSystem->GetCoreFlagsString(),
+      cSystem->GetCoreFlags());
     // Register exit events
     cEvtMain->Init();
     // Non-interactive mode?
-    if(cSystem->IsNotGuiMode(GM_GRAPHICS))
-    { // If we're not initialising for the first time?
-      if(cEvtMain->IsExitReason(EMC_NONE))
+    if(cSystem->IsTextMode())
+    { // And interactive mode?
+      if(cSystem->IsGraphicalMode())
+        CoreInitGraphicalSubsystems();
+      // No interactive mode so if we're not initialising for the first time?
+      else if(cEvtMain->IsExitReason(EMC_NONE))
       { // Initialise freetype and console
         cFreeType->Init();
-        cConsole->Init(false);
+        cConsole->Init();
       } // Initialising for first time? Just update window icons
       else cDisplay->UpdateIcons();
-      // With audio mode enabled? Initialise audio class.
-      if(cSystem->IsGuiMode(GM_TEXT_AUDIO)) cAudio->Init();
-    } // Init interactive console
-    else
-    { // Set context current and pass selected refresh rate
-      cOgl->Init(cDisplay->GetRefreshRate());
-      // Initialise core shaders
-      cFboBase->InitShaders();
-      // If we're not initialising for the first time?
-      if(cEvtMain->IsNotExitReason(EMC_NONE))
-      { // Reconfigure matrix
-        cDisplay->ForceReInitMatrix();
-        // Reset window icon
-        cDisplay->UpdateIcons();
-        // Reload cursor, fbo, console, fonts, textures and videos objects
-        CursorReInit();
-        FboReInit();
-        cConsole->ReInitTextureAndFont();
-        FontReInitTextures();
-        TextureReInitTextures();
-        VideoReInitTextures();
-      } // Not initialising for first time
-      else
-      { // Initialise freetype, console, audio and input classes
-        cFreeType->Init();
-        cConsole->Init(true);
+    } // Init interactive console?
+    else if(cSystem->IsGraphicalMode())
+      CoreInitGraphicalSubsystems();
+    // With audio mode enabled? Initialise audio class.
+    if(cSystem->IsAudioMode() &&
+      cEvtMain->IsExitReason(EMC_NONE))
         cAudio->Init();
-        cInput->Init();
-      }
-    } // Lua loop with initialisation. Compare event code
+    // Lua loop with initialisation. Compare event code
     SandBoxInit: switch(cEvtMain->GetExitReason())
     { // Ignore LUA initialisation if we're re-initialising other components
       case EMC_QUIT_THREAD: break;
@@ -670,6 +693,46 @@ class Core                             // Members initially private
       default: return true;
     }
   }
+  /* -- Initialise graphical mode ------------------------------------------ */
+  void CoreEnterGraphicalMode(void)
+  { // Initialise Glfw mode and de-init it when exiting
+    INITHELPER(GlFWIH, cGlFW->Init(), cGlFW->DeInit());
+    // Until engine should terminate.
+    while(CoreShouldEngineContinue()) try
+    { // Tell display class if window threading is enabled
+      cDisplay->FlagSetOrClear(DF_THREADED,
+        cCVars->GetInternalSafe<bool>(WIN_THREAD));
+      // Init window and de-init lua envifonment and window on scope exit
+      INITHELPER(DIH, cDisplay->Init(),
+        cEvtMain->ThreadDeInit();
+        cDisplay->DeInit());
+      // Clear window manager events list
+      cEvtWin->Flush();
+      // If threading enabled
+      if(cDisplay->FlagIsSet(DF_THREADED))
+      { // Setup main thread and start it
+        cEvtMain->ThreadInit(bind(&Core::CoreThreadMain, this, _1),
+          nullptr);
+        // Loop until window should close
+        while(!cGlFW->WinShouldClose())
+        { // Process window event manager commands from other threads
+          cEvtWin->ManageSafe();
+          // Wait for more window events
+          GlFWWaitEvents();
+        }
+      } // Threading disabled? Enter sandbox and process scripts
+      else CoreThreadMain(*cEvtMain);
+    } // Error occured
+    catch(const exception &E)
+    { // Send to log and show error message to user
+      cLog->LogErrorExSafe("(WINDOW LOOP EXCEPTION) $", E.what());
+      // Exit loop so we don't infinite loop
+      cEvtMain->SetExitReason(EMC_QUIT);
+      // Show error and try to carry on and clean everything up
+      cSystem->SysMsgEx("Window Loop Fatal Exception",
+        E.what(), MB_ICONSTOP);
+   } // Engine should terminate from here-on
+  }
   /* -- Wait async on all systems ---------------------------------- */ public:
   void CoreWaitAllAsync(void)
   { // Wait for all asyncronous operations to complete. Bad stuff can happen
@@ -777,8 +840,8 @@ class Core                             // Members initially private
       // Register default cvars and pass over the current gui mode by ref. All
       // the core parts of the engine are initialised from cvar callbacks.
       cCVars->RegisterDefaults();
-      // Enter text mode if ui mode id is below the one specified
-      if(cSystem->IsNotGuiMode(GM_GRAPHICS))
+      // Text mode requested?
+      if(cSystem->IsTextMode())
       { // Bail out if logging to standard output because this will prevent
         // the text mode from working properly
         if(cLog->IsRedirectedToDevice())
@@ -793,17 +856,22 @@ class Core                             // Members initially private
           cEvtMain->ThreadDeInit();
           cSystem->SetWindowDestroyed();
           cSystem->SysConDeInit());
-        // Update icons if cvars callbacks loaded any.
-        cDisplay->UpdateIcons();
         // Perform the initial draw of the console.
         cConsole->FlushToLog();
-        // Execute main function until EMC_QUIT or EMC_QUIT_RESTART is passed.
-        // We are using the system's main thread so we just need to name this
-        // thread properly. We won't actually be spawning a new thread with
-        // this though, it's just used as simple exit condition flag to be
-        // compatible with the GUI mode.
-        while(CoreShouldEngineContinue()) CoreThreadMain(*cEvtMain);
-        // Return if system says we don't have to close as quickly as possible
+        // Graphical mode requested too?
+        if(cSystem->IsGraphicalMode())
+          CoreEnterGraphicalMode();
+        // Only text mode requested?
+        else
+        { // Reset window icon
+          cDisplay->UpdateIcons();
+          // Execute main function until EMC_QUIT or EMC_QUIT_RESTART is
+          // passed. We are using the system's main thread so we just need to
+          // name this thread properly. We won't actually be spawning a new
+          // thread with this though, it's just used as simple exit condition
+          // flag to be compatible with the GUI mode.
+          while(CoreShouldEngineContinue()) CoreThreadMain(*cEvtMain);
+        } // If system says we have to close as quickly as possible?
         if(cSystem->SysConIsClosing())
         { // Quickly save cvars, database and log, this is the priority since
           // Windows has a hardcoded termination time for console apps.
@@ -814,45 +882,11 @@ class Core                             // Members initially private
           cSystem->SysConCanCloseNow();
         }
       } // Else were in graphical interactive mode
-      else
-      { // Initialise Glfw mode and de-init it when exiting
-        INITHELPER(GlFWIH, cGlFW->Init(), cGlFW->DeInit());
-        // Until engine should terminate.
-        while(CoreShouldEngineContinue()) try
-        { // Tell display class if window threading is enabled
-          cDisplay->FlagSetOrClear(DF_THREADED,
-            cCVars->GetInternalSafe<bool>(WIN_THREAD));
-          // Init window and de-init lua envifonment and window on scope exit
-          INITHELPER(DIH, cDisplay->Init(),
-            cEvtMain->ThreadDeInit();
-            cDisplay->DeInit());
-          // Clear window manager events list
-          cEvtWin->Flush();
-          // If threading enabled
-          if(cDisplay->FlagIsSet(DF_THREADED))
-          { // Setup main thread and start it
-            cEvtMain->ThreadInit(bind(&Core::CoreThreadMain, this, _1),
-              nullptr);
-            // Loop until window should close
-            while(!cGlFW->WinShouldClose())
-            { // Process window event manager commands from other threads
-              cEvtWin->ManageSafe();
-              // Wait for more window events
-              GlFWWaitEvents();
-            }
-          } // Threading disabled? Enter sandbox and process scripts
-          else CoreThreadMain(*cEvtMain);
-        } // Error occured
-        catch(const exception &E)
-        { // Send to log and show error message to user
-          cLog->LogErrorExSafe("(WINDOW LOOP EXCEPTION) $", E.what());
-          // Exit loop so we don't infinite loop
-          cEvtMain->SetExitReason(EMC_QUIT);
-          // Show error and try to carry on and clean everything up
-          cSystem->SysMsgEx("Window Loop Fatal Exception",
-            E.what(), MB_ICONSTOP);
-        } // Engine should terminate from here-on
-      } // Compare engine exit code...
+      else if(cSystem->IsGraphicalMode()) CoreEnterGraphicalMode();
+      // No front-end requested
+      else XC("No front-end specified in core flags!",
+        "Flags", cSystem->GetCoreFlags());
+      // Compare engine exit code...
       switch(cEvtMain->GetExitReason())
       { // If we're to restart process with parameters? Set to do so
         case EMC_QUIT_RESTART:
@@ -861,7 +895,7 @@ class Core                             // Members initially private
             "Core signalled to restart with $ parameters!",
             cCmdLine->GetTotalCArgs());
           // Set exit procedure
-          cCmdLine->SetRestart(cSystem->IsGuiMode(GM_GRAPHICS) ?
+          cCmdLine->SetRestart(cSystem->IsGraphicalMode() ?
             CmdLine::EcId::RestartUI : CmdLine::EcId::Restart);
           // Have debugging enabled?
           if(cLog->HasLevel(LH_DEBUG))
@@ -879,7 +913,7 @@ class Core                             // Members initially private
           cLog->LogWarningSafe(
             "Core signalled to restart without parameters!");
           // Set exit procedure
-          cCmdLine->SetRestart(cSystem->IsGuiMode(GM_GRAPHICS) ?
+          cCmdLine->SetRestart(cSystem->IsGraphicalMode() ?
             CmdLine::EcId::RestartNoParamUI : CmdLine::EcId::RestartNoParam);
           // Clean-up and restart
           return 4;

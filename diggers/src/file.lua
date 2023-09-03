@@ -53,6 +53,60 @@ local function InitNewGame()
     0,                             0,
     0,                             0;
 end
+-- Read, verify and return save data --------------------------------------- --
+local function LoadSaveData()
+  -- Data to return
+  local aFileData<const>, aNameData<const> = { }, { };
+  -- Get game data cvars
+  for iIndex = 1, 4 do
+    -- Get cvar and if not empty
+    local sData<const> = CVarsGet("gam_data"..iIndex);
+    if #sData > 0 then
+      -- Get data for num
+      -- We need 5 comma seperated values (Last value optional)
+      local T, TTT, R, B, C, TSP, TC, TDE, TD, TGS, TGF, TI,
+        TDG, TPE, TP, LC, L = sData:match(sFileMatchText);
+      -- Convert everything to integers
+      T, TTT, R, B, C, TSP, TC, TDE, TD, TGS, TGF, TI, TDG, TPE, TP, LC =
+        tonumber(T), tonumber(TTT), tonumber(R), tonumber(B), tonumber(C),
+        tonumber(TSP), tonumber(TC), tonumber(TDE), tonumber(TD),
+        tonumber(TGS), tonumber(TGF), tonumber(TI), tonumber(TDG),
+        tonumber(TPE), tonumber(TP), tonumber(LC);
+      -- Check variables and if they are all good?
+      if TTT and T and R and B and C and TSP and TC and TDE and TD and
+         TGS and TGF and TI and TDG and TPE and TP and LC and L and
+         T >= 1 and TTT >= 0 and R >= 0 and R <= 3 and
+         B <= aGlobalData.gZogsToWinGame and C >= 0 and C <= 9999 and
+         TSP >= 0 and TC >= 0 and TDE >= 0 and TD >= 0 and TGS >= 0 and
+         TGF >= 0 and TI >= 0 and TDG >= 0 and TPE >= 0 and TP >= 0 and
+         LC >= 0 and LC <= #aLevelData then
+        -- Parse levels completed
+        local CL<const>, LA = { }, 0;
+        for LI in L:gmatch("(%d+)") do
+          -- Convert to number and if valid number?
+          LI = tonumber(LI);
+          if LI and LI >= 1 and LI <= #aLevelData then
+            -- Push valid level
+            CL[LI], LA = true, LA + 1;
+          end
+        end
+        -- Levels added and valid number of levels?
+        if LA > 0 and LA <= #aLevelData and LA == LC then
+          -- Level data OK! file and name data
+          aFileData[iIndex], aNameData[iIndex] =
+            { T, TTT, R, B, C, TSP, TC, TDE, TD, TGS,
+              TGF, TI, TDG, TPE, TP, CL },
+            format("%s (%s) %u%% (%05u$)",
+              UtilFormatTime(T, "%a %b %d %H:%M:%S %Y"):upper(),
+              aObjectData[aObjectTypes.FTARG+R].NAME,
+              floor(B/aGlobalData.gZogsToWinGame*100), B);
+        else aNameData[iIndex] = "CORRUPTED SLOT "..iIndex.." (E#2)" end;
+      else aNameData[iIndex] = "CORRUPTED SLOT "..iIndex.." (E#1)" end;
+    else aNameData[iIndex] = "EMPTY SLOT "..iIndex end;
+  end
+  -- Return data
+  return aFileData, aNameData;
+end
 -- Init load/save screen function ------------------------------------------ --
 local function InitFile()
   -- When file assets have loaded?
@@ -65,59 +119,7 @@ local function InitFile()
     texLobby:TileSTC(1);
     texLobby:TileS(0, 0, 272, 428, 512);
     -- Display data
-    local aFileData<const>, aNameData<const> = { }, { };
-    -- Data refresh function
-    local function Refresh()
-      -- Get game data cvars
-      for iIndex = 1, 4 do
-        -- Get cvar and if not empty
-        local sData<const> = CVarsGet("gam_data"..iIndex);
-        if #sData > 0 then
-          -- Get data for num
-          -- We need 5 comma seperated values (Last value optional)
-          local T, TTT, R, B, C, TSP, TC, TDE, TD, TGS, TGF, TI,
-            TDG, TPE, TP, LC, L = sData:match(sFileMatchText);
-          -- Convert everything to integers
-          T, TTT, R, B, C, TSP, TC, TDE, TD, TGS, TGF, TI, TDG, TPE, TP, LC =
-            tonumber(T), tonumber(TTT), tonumber(R), tonumber(B), tonumber(C),
-            tonumber(TSP), tonumber(TC), tonumber(TDE), tonumber(TD),
-            tonumber(TGS), tonumber(TGF), tonumber(TI), tonumber(TDG),
-            tonumber(TPE), tonumber(TP), tonumber(LC);
-          -- Check variables and if they are all good?
-          if TTT and T and R and B and C and TSP and TC and TDE and TD and
-             TGS and TGF and TI and TDG and TPE and TP and LC and L and
-             T >= 1 and TTT >= 0 and R >= 0 and R <= 3 and
-             B <= aGlobalData.gZogsToWinGame and C >= 0 and C <= 9999 and
-             TSP >= 0 and TC >= 0 and TDE >= 0 and TD >= 0 and TGS >= 0 and
-             TGF >= 0 and TI >= 0 and TDG >= 0 and TPE >= 0 and TP >= 0 and
-             LC >= 0 and LC <= #aLevelData then
-            -- Parse levels completed
-            local CL<const>, LA = { }, 0;
-            for LI in L:gmatch("(%d+)") do
-              -- Convert to number and if valid number?
-              LI = tonumber(LI);
-              if LI and LI >= 1 and LI <= #aLevelData then
-                -- Push valid level
-                CL[LI], LA = true, LA + 1;
-              end
-            end
-            -- Levels added and valid number of levels?
-            if LA > 0 and LA <= #aLevelData and LA == LC then
-              -- Level data OK! file and name data
-              aFileData[iIndex], aNameData[iIndex] =
-                { T, TTT, R, B, C, TSP, TC, TDE, TD, TGS,
-                  TGF, TI, TDG, TPE, TP, CL },
-                format("%s (%s) %u%% (%05u$)",
-                  UtilFormatTime(T, "%a %b %d %H:%M:%S %Y"):upper(),
-                  aObjectData[aObjectTypes.FTARG+R].NAME,
-                  floor(B/aGlobalData.gZogsToWinGame*100), B);
-            else aNameData[iIndex] = "CORRUPTED SLOT "..iIndex.." (E#2)" end;
-          else aNameData[iIndex] = "CORRUPTED SLOT "..iIndex.." (E#1)" end;
-        else aNameData[iIndex] = "EMPTY SLOT "..iIndex end;
-      end
-    end
-    -- Refresh data
-    Refresh();
+    local aFileData, aNameData = LoadSaveData();
     -- Top message, selected file and bottom-right tip
     local sMsg, iSelected, sTip = "SELECT FILE", nil, nil;
     -- Set tip and cursor
@@ -279,7 +281,7 @@ local function InitFile()
           -- Commit cvars on the game engine to persistant storage
           CVarsSave();
           -- Refresh data
-          Refresh();
+          aFileData, aNameData = LoadSaveData();
         -- File 1 clicked?
         elseif MouseOverFile1() then Select(1);
         -- File 2 clicked?
@@ -318,7 +320,8 @@ return {
   -- Exports --------------------------------------------------------------- --
   A = { InitFile = InitFile,
         InitNewGame = InitNewGame,
-        aGlobalData = aGlobalData },
+        aGlobalData = aGlobalData,
+        LoadSaveData = LoadSaveData },
   -- Imports --------------------------------------------------------------- --
   F = function(GetAPI)
     -- --------------------------------------------------------------------- --

@@ -133,18 +133,36 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
   }
   /* -- Pixel conversion process ------------------------------------------- */
   template<class PixelConversionFunction, size_t stSrcStep, size_t stDstStep,
-    BitDepth bdNewBPP, GLenum glNewPixelType>void ConvertPixels(void)
-  { // Set new bits and bytes
+    BitDepth bdNewBPP, GLenum glNewPixelType>
+      void ConvertPixels(const char*const cpFilter)
+  { // Some basic checks of parameters
+    static_assert(stSrcStep > 0 && stSrcStep <= 2, "Invalid source step!");
+    static_assert(stDstStep > 0 && stDstStep <= 32, "Invalid dest step!");
+    // Set new bits and bytes
     SetBitsAndBytesPerPixel(bdNewBPP);
     SetPixelType(glNewPixelType);
     // New allocation size
     size_t stNewAlloc = 0;
     // For each slot
     for(ImageSlot &sItem : GetSlots())
-    { // Make a new memblock for the destinaiton pixels
-      Memory mDst{ sItem.DimGetWidth() * sItem.DimGetHeight() *
-        GetBytesPerPixel() };
-      // Iterate through the array
+    { // Calculate total pixels
+      const size_t stTotal = sItem.DimGetWidth() * sItem.DimGetHeight();
+      // Make a new memblock for the destinaiton pixels
+      Memory mDst{ stTotal * GetBytesPerPixel() };
+      // Quick sanity check to make sure the filters don't read/write OOB
+      if(const size_t stUnpadded = sItem.Size() % stSrcStep)
+        XC("Source image dimensions not acceptable for filter!",
+           "File",   IdentGet(),           "Width",    sItem.DimGetWidth(),
+           "Height", sItem.DimGetHeight(), "Total",    stTotal,
+           "Depth",  GetBytesPerPixel(),   "Filter",   cpFilter,
+           "Step",   stSrcStep,            "Unpadded", stUnpadded);
+      if(const size_t stUnpadded = mDst.Size() % stDstStep)
+        XC("Destination image dimensions not acceptable for filter!",
+           "File",   IdentGet(),           "Width",    sItem.DimGetWidth(),
+           "Height", sItem.DimGetHeight(), "Total",    stTotal,
+           "Depth",  GetBytesPerPixel(),   "Filter",   cpFilter,
+           "Step",   stDstStep,            "Unpadded", stUnpadded);
+      // Enumerate and filter through each pixel
       for(uint8_t *cpSrc = sItem.Ptr<uint8_t>(),
          *const cpSrcEnd = sItem.PtrEnd<uint8_t>(),
                   *cpDst = mDst.Ptr<uint8_t>();
@@ -170,7 +188,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
       *reinterpret_cast<uint8_t*>(cpDst+1) = 0xFF;
     } };
     // Do the conversion of luminance alpha to RGB
-    ConvertPixels<Filter, 2, 3, BD_RGB, GL_RGB>();
+    ConvertPixels<Filter, 2, 3, BD_RGB, GL_RGB>("LUMA>RGB");
   }
   /* -- Force luminance pixel to RGB pixel type ---------------------------- */
   void ConvertLuminanceToRGB(void)
@@ -181,7 +199,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
       *reinterpret_cast<uint8_t*>(cpDst+2) = *cpSrc;
     } };
     // Do the conversion of luminance to RGB
-    ConvertPixels<Filter, 1, 3, BD_RGB, GL_RGB>();
+    ConvertPixels<Filter, 1, 3, BD_RGB, GL_RGB>("LUM>RGB");
   }
   /* -- Force luminance alpha pixel to RGBA pixel type --------------------- */
   void ConvertLuminanceAlphaToRGBA(void)
@@ -193,7 +211,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
         (static_cast<uint32_t>(*(cpSrc+1)) * 0x01000000);
     } };
     // Do the conversion of luminance alpha to RGBA
-    ConvertPixels<Filter, 2, 4, BD_RGBA, GL_RGBA>();
+    ConvertPixels<Filter, 2, 4, BD_RGBA, GL_RGBA>("LUMA>RGBA");
   }
   /* -- Force luminance pixel to RGBA pixel type --------------------------- */
   void ConvertLuminanceToRGBA(void)
@@ -203,7 +221,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
       *reinterpret_cast<uint32_t*>(cpDst) = (*cpSrc * 0x01010100) | 0xFF;
     } };
     // Do the conversion of luminance alpha to RGBA
-    ConvertPixels<Filter, 1, 4, BD_RGBA, GL_RGBA>();
+    ConvertPixels<Filter, 1, 4, BD_RGBA, GL_RGBA>("LUM>RGBA");
   }
   /* -- Force binary pixel to luminance pixel type ------------------------- */
   void ConvertBinaryToLuminance(void)
@@ -211,19 +229,19 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     struct Filter{inline Filter(const uint8_t*const cpSrc, uint8_t*const cpDst)
     { // Get the packed eight pixels
       const unsigned int uiPixels = *cpSrc;
-      // Unpack eight binary pixels into eight luminance pixels
+      // Unpack eight binary pixels into eight luminance (white) pixels
       *reinterpret_cast<uint64_t*>(cpDst) =
-        (uiPixels & 0x01 ? 0xff00000000000000 : 0) |
-        (uiPixels & 0x02 ? 0x00ff000000000000 : 0) |
-        (uiPixels & 0x04 ? 0x0000ff0000000000 : 0) |
-        (uiPixels & 0x08 ? 0x000000ff00000000 : 0) |
-        (uiPixels & 0x10 ? 0x00000000ff000000 : 0) |
-        (uiPixels & 0x20 ? 0x0000000000ff0000 : 0) |
-        (uiPixels & 0x40 ? 0x000000000000ff00 : 0) |
-        (uiPixels & 0x80 ? 0x00000000000000ff : 0);
+        (uiPixels & 0x01 ? 0xff00000000000000 : 0) | // Bit 1/8 -> Byte 1
+        (uiPixels & 0x02 ? 0x00ff000000000000 : 0) | // Bit 2/8 -> Byte 2
+        (uiPixels & 0x04 ? 0x0000ff0000000000 : 0) | // Bit 3/8 -> Byte 3
+        (uiPixels & 0x08 ? 0x000000ff00000000 : 0) | // Bit 4/8 -> Byte 4
+        (uiPixels & 0x10 ? 0x00000000ff000000 : 0) | // Bit 5/8 -> Byte 5
+        (uiPixels & 0x20 ? 0x0000000000ff0000 : 0) | // Bit 6/8 -> Byte 6
+        (uiPixels & 0x40 ? 0x000000000000ff00 : 0) | // Bit 7/8 -> Byte 7
+        (uiPixels & 0x80 ? 0x00000000000000ff : 0);  // Bit 8/8 -> Byte 8
     } };
     // Do the conversion of binary to luminance
-    ConvertPixels<Filter, 1, 8, BD_GRAY, GL_RED>();
+    ConvertPixels<Filter, 1, 8, BD_GRAY, GL_RED>("BIN>LUM");
   }
   /* -- Force binary pixel to RGB pixel type ------------------------------- */
   void ConvertBinaryToRGB(void)
@@ -231,23 +249,26 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     struct Filter{inline Filter(const uint8_t*const cpSrc, uint8_t*const cpDst)
     { // Get the packed eight pixels
       const unsigned int uiPixels = *cpSrc;
-      // Unpack eight BINARY pixels into right RGB pixels
-      *reinterpret_cast<uint64_t*>(cpDst) =
-        (uiPixels & 0x80 ? 0xffffff0000000000 : 0) |
-        (uiPixels & 0x40 ? 0x000000ffffff0000 : 0) |
-        (uiPixels & 0x20 ? 0x000000000000ffff : 0);
-      *(reinterpret_cast<uint64_t*>(cpDst)+1) =
-        (uiPixels & 0x20 ? 0xff00000000000000 : 0) |
-        (uiPixels & 0x10 ? 0x00ffffff00000000 : 0) |
-        (uiPixels & 0x08 ? 0x00000000ffffff00 : 0) |
-        (uiPixels & 0x04 ? 0x00000000000000ff : 0);
-      *(reinterpret_cast<uint64_t*>(cpDst)+2) =
-        (uiPixels & 0x04 ? 0xffff000000000000 : 0) |
-        (uiPixels & 0x02 ? 0x0000ffffff000000 : 0) |
-        (uiPixels & 0x01 ? 0x0000000000ffffff : 0);
+      // Unpack eight BINARY (1-bit) pixels into eight RGB (24-bit) pixels.
+      *reinterpret_cast<uint64_t*>(cpDst) =          // Pixels 1 to 3A
+        // Pixel order       RRGGBBRRGGBBRRGG (R=RED, G=GREEN, B=BLUE)
+        (uiPixels & 0x80 ? 0xffffff0000000000 : 0) | // * Bit 8/8 -> Byte 1-3
+        (uiPixels & 0x40 ? 0x000000ffffff0000 : 0) | // * Bit 7/8 -> Byte 4-6
+        (uiPixels & 0x20 ? 0x000000000000ffff : 0);  // * Bit 6/8 -> Byte 7-8
+      *(reinterpret_cast<uint64_t*>(cpDst)+1) =      // Pixels 3B to 6A
+        // Pixel order       BBRRGGBBRRGGBBRR (R=RED, G=GREEN, B=BLUE)
+        (uiPixels & 0x20 ? 0xff00000000000000 : 0) | // * Bit 6/8 -> Byte 9
+        (uiPixels & 0x10 ? 0x00ffffff00000000 : 0) | // * Bit 5/8 -> Byte 10-12
+        (uiPixels & 0x08 ? 0x00000000ffffff00 : 0) | // * Bit 4/8 -> Byte 13-15
+        (uiPixels & 0x04 ? 0x00000000000000ff : 0);  // * Bit 3/8 -> Byte 16
+      *(reinterpret_cast<uint64_t*>(cpDst)+2) =      // Pixels 6B to 8
+        // Pixel order       GGBBRRGGBBRRGGBB (R=RED, G=GREEN, B=BLUE)
+        (uiPixels & 0x04 ? 0xffff000000000000 : 0) | // * Bit 3/8 -> Byte 17-18
+        (uiPixels & 0x02 ? 0x0000ffffff000000 : 0) | // * Bit 2/8 -> Byte 19-21
+        (uiPixels & 0x01 ? 0x0000000000ffffff : 0);  // * Bit 1/8 -> Byte 22-24
     } };
     // Do the conversion of binary to RGBA
-    ConvertPixels<Filter, 1, 24, BD_RGB, GL_RGB>();
+    ConvertPixels<Filter, 1, 24, BD_RGB, GL_RGB>("BIN>RGB");
   }
   /* -- Force binary pixel to RGBA pixel type ------------------------------ */
   void ConvertBinaryToRGBA(void)
@@ -255,22 +276,26 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     struct Filter{inline Filter(const uint8_t*const cpSrc, uint8_t*const cpDst)
     { // Get the packed eight pixels
       const unsigned int uiPixels = *cpSrc;
-      // Unpack eight BINARY pixels into eight RGBA pixels
-      *reinterpret_cast<uint64_t*>(cpDst) =
-        (uiPixels & 0x80 ? 0xffffffff00000000 : 0) |
-        (uiPixels & 0x40 ? 0x00000000ffffffff : 0);
-      *(reinterpret_cast<uint64_t*>(cpDst)+1) =
-        (uiPixels & 0x20 ? 0xffffffff00000000 : 0) |
-        (uiPixels & 0x10 ? 0x00000000ffffffff : 0);
-      *(reinterpret_cast<uint64_t*>(cpDst)+2) =
-        (uiPixels & 0x08 ? 0xffffffff00000000 : 0) |
-        (uiPixels & 0x04 ? 0x00000000ffffffff : 0);
-      *(reinterpret_cast<uint64_t*>(cpDst)+3) =
-        (uiPixels & 0x02 ? 0xffffffff00000000 : 0) |
-        (uiPixels & 0x01 ? 0x00000000ffffffff : 0);
+      // Unpack eight BINARY pixels into eight RGBA (32-bit) pixels
+      *reinterpret_cast<uint64_t*>(cpDst) =          // Pixel 1-2
+        // Pixel order       RRGGBBAARRGGBBAA (R=RED, G=GREEN, B=BLUE, A=ALPHA)
+        (uiPixels & 0x80 ? 0xffffffff00000000 : 0) | // * Bit 8/8 -> DWord 1
+        (uiPixels & 0x40 ? 0x00000000ffffffff : 0);  // * Bit 7/8 -> DWord 2
+      *(reinterpret_cast<uint64_t*>(cpDst)+1) =      // Pixel 3-4
+        // Pixel order       RRGGBBAARRGGBBAA (R=RED, G=GREEN, B=BLUE, A=ALPHA)
+        (uiPixels & 0x20 ? 0xffffffff00000000 : 0) | // * Bit 6/8 -> DWord 3
+        (uiPixels & 0x10 ? 0x00000000ffffffff : 0);  // * Bit 5/8 -> DWord 4
+      *(reinterpret_cast<uint64_t*>(cpDst)+2) =      // Pixel 5-6
+        // Pixel order       RRGGBBAARRGGBBAA (R=RED, G=GREEN, B=BLUE, A=ALPHA)
+        (uiPixels & 0x08 ? 0xffffffff00000000 : 0) | // * Bit 4/8 -> DWord 5
+        (uiPixels & 0x04 ? 0x00000000ffffffff : 0);  // * Bit 3/8 -> DWord 6
+      *(reinterpret_cast<uint64_t*>(cpDst)+3) =      // Pixel 7-8
+        // Pixel order       RRGGBBAARRGGBBAA (R=RED, G=GREEN, B=BLUE, A=ALPHA)
+        (uiPixels & 0x02 ? 0xffffffff00000000 : 0) | // * Bit 2/8 -> DWord 7
+        (uiPixels & 0x01 ? 0x00000000ffffffff : 0);  // * Bit 1/8 -> DWord 8
     } };
     // Do the conversion of binary to RGBA
-    ConvertPixels<Filter, 1, 32, BD_RGBA, GL_RGBA>();
+    ConvertPixels<Filter, 1, 32, BD_RGBA, GL_RGBA>("BIN>RGBA");
   }
   /* -- Concatenate tiles into a single texture ---------------------------- */
   bool MakeAtlas(void)
@@ -672,7 +697,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     // Apply filters if image has no special circumstances
     if(IsNotCompressed() && IsNotMipmaps()) ApplyFilters();
     // Recover slots memory if they were modified
-    CompactSlots();;
+    CompactSlots();
   }
   /* -- Reload specified image --------------------------------------------- */
   void ReloadData(void)
@@ -744,10 +769,15 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     const BitDepth bdBitsPP, const GLenum ePixType)
   { // Error if no data specified
     if(mSrc.Empty()) XC("Image data is empty!", "File", strName);
+    // Limit maximum size of images to 65535 pixels in either direction. Some
+    // formats have this restriction and some don't so this is considered a
+    // the safest hard-constraint.
+    const unsigned int uiMSize = 0xFFFF;
     // Check that the range is valid
-    if(!uiBWidth || !uiBHeight || uiBWidth > 0xFFFF || uiBHeight > 0xFFFF)
-      XC("Image dimensions are not valid!",
-        "File", strName, "Width", uiBWidth, "Height", uiBHeight);
+    if(!uiBWidth || !uiBHeight || uiBWidth > uiMSize || uiBHeight > uiMSize)
+      XC("Image dimensions are not acceptable!",
+        "File",   strName,   "Width",   uiBWidth,
+        "Height", uiBHeight, "Maximum", uiMSize);
     // Set bits per pixel
     SetBitsAndBytesPerPixel(bdBitsPP);
     // Set the dimensions
@@ -757,24 +787,24 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     // Check bitrate
     switch(GetBitsPerPixel())
     { // Allowed bit-rates are...
-      case BD_BINARY:                  // 1bpp (binary)
-        // Set image bytes expected
+      case BD_BINARY:                  // 1bpp? (binary)
+      { // Set image bytes expected
         stExpect = TotalPixels() / CHAR_BIT;
         // Not loadable by OpenGL
         SetPixelType(GL_NONE);
         // Done
         break;
-      // 8bpp (gray NOT palette)       16bpp (gray+alpha NOT palette)
+      } // 8bpp? (gray NOT palette)    16bpp? (gray+alpha NOT palette)
       case BD_GRAY:                    case BD_GRAYALPHA:
-      // 24bpp (rgb or bgr)            32bpp (rgba or bgra)
+      // 24bpp? (rgb or bgr)           32bpp? (rgba or bgra)
       case BD_RGB:                     case BD_RGBA:
-        // Set image bytes expected
+      { // Set image bytes expected
         stExpect = TotalPixels() * GetBytesPerPixel();
         // Loadable by OpenGL
         SetPixelType(ePixType);
         // Done
         break;
-      // Error
+      } // Error
       default: XC("Image bit-depth is not valid!",
         "File", strName, "Depth", bdBitsPP);
     } // Check that the size matches

@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="robots" content="index, follow">
 <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="description" content="Reference for the MS-Engine API version 23.8.31.19">
+<meta name="description" content="Reference for the MS-Engine API version 23.10.24.6">
 <meta name="author" content="MS-Design">
-<meta name="generator" content="MS-Engine Project Management Utility version 23.8.31.19">
+<meta name="generator" content="MS-Engine Project Management Utility version 23.10.24.6">
 <meta name="format-detection" content="telephone=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="MS-Engine API">
-<title>MS-Engine 23.8.31.19 API reference</title>
+<title>MS-Engine 23.10.24.6 API reference</title>
 <style type="text/css" media="screen">
 * { margin:0px; padding:0px; }
 body { background-color:gray; color:black; border:0px; font-family:Helvetica; }
@@ -41,9 +41,9 @@ hr { border:1px solid white; margin:10px; box-shadow: 5px 5px rgba(0, 0, 0, 0.5)
 </style>
 </head>
 <body id="top">
-<h1>MS-Engine 23.8.31.19 API reference</h1>
+<h1>MS-Engine 23.10.24.6 API reference</h1>
 <h2>Table of contents:-</h2>
-<p>A total of 378 members, 392 methods, 23 consts (770 functions) in 32 namespaces with 195 cvars.</p>
+<p>A total of 374 members, 394 methods, 23 consts (768 functions) in 32 namespaces with 196 cvars.</p>
 <ol id="toc"><li id="idx"><a href="#idx">Namespaces</a> <i>(32 namespaces)</i>
 <ol>
 <li><p>Categorised functions that interact with the engine.</p></li>
@@ -285,7 +285,7 @@ hr { border:1px solid white; margin:10px; box-shadow: 5px 5px rgba(0, 0, 0, 0.5)
 </ol>
 <li id="idx:Crypt"><a href="#idx:Crypt">Crypt namespace</a><ol>
 <li><p>The crypt class allows access to cryptographic&#x2c; compression and decompression functions&#x2e;<br></p></li>
-<li><b>Members</b> <i>(34 members)</i><ol>
+<li><b>Members</b> <i>(31 members)</i><ol>
 <li><a href="#Crypt.B64D">B64D</a></li>
 <li><a href="#Crypt.B64DA">B64DA</a></li>
 <li><a href="#Crypt.B64E">B64E</a></li>
@@ -294,7 +294,6 @@ hr { border:1px solid white; margin:10px; box-shadow: 5px 5px rgba(0, 0, 0, 0.5)
 <li><a href="#Crypt.CRCA">CRCA</a></li>
 <li><a href="#Crypt.EntDecode">EntDecode</a></li>
 <li><a href="#Crypt.EntEncode">EntEncode</a></li>
-<li><a href="#Crypt.HMMD5">HMMD5</a></li>
 <li><a href="#Crypt.HMSHA1">HMSHA1</a></li>
 <li><a href="#Crypt.HMSHA224">HMSHA224</a></li>
 <li><a href="#Crypt.HMSHA256">HMSHA256</a></li>
@@ -306,8 +305,6 @@ hr { border:1px solid white; margin:10px; box-shadow: 5px 5px rgba(0, 0, 0, 0.5)
 <li><a href="#Crypt.HexEncodeA">HexEncodeA</a></li>
 <li><a href="#Crypt.HexEncodeL">HexEncodeL</a></li>
 <li><a href="#Crypt.HexEncodeLA">HexEncodeLA</a></li>
-<li><a href="#Crypt.MD5">MD5</a></li>
-<li><a href="#Crypt.MD5A">MD5A</a></li>
 <li><a href="#Crypt.SHA1">SHA1</a></li>
 <li><a href="#Crypt.SHA1A">SHA1A</a></li>
 <li><a href="#Crypt.SHA224">SHA224</a></li>
@@ -428,13 +425,12 @@ hr { border:1px solid white; margin:10px; box-shadow: 5px 5px rgba(0, 0, 0, 0.5)
 </ol>
 <li id="idx:File"><a href="#idx:File">File namespace</a><ol>
 <li><p>The file class allows the programmer to read and write files from the game directory&#x2e;<br></p></li>
-<li><b>Members</b> <i>(24 members)</i><ol>
+<li><b>Members</b> <i>(23 members)</i><ol>
 <li><a href="#File.AppendOne">AppendOne</a></li>
 <li><a href="#File.AppendOneStr">AppendOneStr</a></li>
 <li><a href="#File.DirExists">DirExists</a></li>
 <li><a href="#File.Enumerate">Enumerate</a></li>
 <li><a href="#File.EnumerateEx">EnumerateEx</a></li>
-<li><a href="#File.Error">Error</a></li>
 <li><a href="#File.Executable">Executable</a></li>
 <li><a href="#File.Exists">Exists</a></li>
 <li><a href="#File.FileExists">FileExists</a></li>
@@ -454,10 +450,12 @@ hr { border:1px solid white; margin:10px; box-shadow: 5px 5px rgba(0, 0, 0, 0.5)
 <li><a href="#File.WriteOne">WriteOne</a></li>
 <li><a href="#File.WriteOneStr">WriteOneStr</a></li>
 </ol></li>
-<li><b>Methods</b> <i>(17 methods)</i><ol>
+<li><b>Methods</b> <i>(19 methods)</i><ol>
 <li><a href="#File:Close">Close</a></li>
 <li><a href="#File:Destroy">Destroy</a></li>
 <li><a href="#File:End">End</a></li>
+<li><a href="#File:Error">Error</a></li>
+<li><a href="#File:ErrorStr">ErrorStr</a></li>
 <li><a href="#File:FError">FError</a></li>
 <li><a href="#File:Flush">Flush</a></li>
 <li><a href="#File:Name">Name</a></li>
@@ -1135,19 +1133,19 @@ hr { border:1px solid white; margin:10px; box-shadow: 5px 5px rgba(0, 0, 0, 0.5)
 </ol></li>
 <li><a href="#idx:Video">&#x25B2; Return to summary</a> / <a href="#toc">top</a></li>
 </ol>
-<li id="cvidx"><a href="#cvars">CVars</a> <i>(195 cvars)</i>
+<li id="cvidx"><a href="#cvars">CVars</a> <i>(196 cvars)</i>
 <ol>
 <li><p>Variables that change the behaviour of the engine.</p></li>
 <li><ol>
 <li><a href="#cv.app_author">app_author</a></li>
 <li><a href="#cv.app_basedir">app_basedir</a></li>
+<li><a href="#cv.app_cflags">app_cflags</a></li>
 <li><a href="#cv.app_clearmutex">app_clearmutex</a></li>
 <li><a href="#cv.app_cmdline">app_cmdline</a></li>
 <li><a href="#cv.app_config">app_config</a></li>
 <li><a href="#cv.app_copyright">app_copyright</a></li>
 <li><a href="#cv.app_delay">app_delay</a></li>
 <li><a href="#cv.app_description">app_description</a></li>
-<li><a href="#cv.app_guimode">app_guimode</a></li>
 <li><a href="#cv.app_homedir">app_homedir</a></li>
 <li><a href="#cv.app_icon">app_icon</a></li>
 <li><a href="#cv.app_longname">app_longname</a></li>
@@ -1212,6 +1210,7 @@ hr { border:1px solid white; margin:10px; box-shadow: 5px 5px rgba(0, 0, 0, 0.5)
 <li><a href="#cv.err_minram">err_minram</a></li>
 <li><a href="#cv.err_minvram">err_minvram</a></li>
 <li><a href="#cv.fmv_iobuffer">fmv_iobuffer</a></li>
+<li><a href="#cv.fmv_maxdrift">fmv_maxdrift</a></li>
 <li><a href="#cv.inp_fstoggler">inp_fstoggler</a></li>
 <li><a href="#cv.inp_joydeffdz">inp_joydeffdz</a></li>
 <li><a href="#cv.inp_joydefrdz">inp_joydefrdz</a></li>
@@ -2637,17 +2636,6 @@ hr { border:1px solid white; margin:10px; box-shadow: 5px 5px rgba(0, 0, 0, 0.5)
 <h4>Synopsis:-</h4>
 <p>Encodes HTML entities into the spcified string&#x2e;<br></p>
 <h4><a href="#idx:Crypt" onclick="r('Crypt.EntEncode')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Crypt.HMMD5">
-<h3>Crypt.HMMD5</h3>
-<h4>Syntax:-</h4>
-<pre><u>Hash</u> = Crypt.HMMD5(<i><u>Key</u>, <u>Data</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Key</u> <i>(string)</i> = The entropy to use.<br><u>Data</u> <i>(string)</i> = The string to hash.<br></pre>
-<h4>Return Parameters:-</h4>
-<pre><u>Hash</u> <i>(string)</i> = The calculated MD5 hash.<br></pre>
-<h4>Synopsis:-</h4>
-<p>Calculates a MD5 hash from a string using the specifiy entropy&#x2e; Insecure&#x2c;<br>only use for hashing of insignificant data&#x2e;<br></p>
-<h4><a href="#idx:Crypt" onclick="r('Crypt.HMMD5')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Crypt.HMSHA1">
 <h3>Crypt.HMSHA1</h3>
 <h4>Syntax:-</h4>
@@ -2769,28 +2757,6 @@ hr { border:1px solid white; margin:10px; box-shadow: 5px 5px rgba(0, 0, 0, 0.5)
 <h4>Synopsis:-</h4>
 <p>Encodes the specified data array to lowercase hexadecimal&#x2e;<br></p>
 <h4><a href="#idx:Crypt" onclick="r('Crypt.HexEncodeLA')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Crypt.MD5">
-<h3>Crypt.MD5</h3>
-<h4>Syntax:-</h4>
-<pre><u>Hash</u> = Crypt.MD5(<i><u>Data</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Data</u> <i>(string)</i> = The string to hash.<br></pre>
-<h4>Return Parameters:-</h4>
-<pre><u>Hash</u> <i>(string)</i> = The calculated MD5 hash.<br></pre>
-<h4>Synopsis:-</h4>
-<p>Calculates a MD5 hash from a string&#x2e; This hashing algorithm is obsolete and insecure and should no longer be used and is here only for compatibility reasons only&#x2e;<br></p>
-<h4><a href="#idx:Crypt" onclick="r('Crypt.MD5')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="Crypt.MD5A">
-<h3>Crypt.MD5A</h3>
-<h4>Syntax:-</h4>
-<pre><u>Hash</u> = Crypt.MD5A(<i><u>Data</u></i>)</pre>
-<h4>Function Parameters:-</h4>
-<pre><u>Data</u> <i>(array)</i> = The data to hash.<br></pre>
-<h4>Return Parameters:-</h4>
-<pre><u>Hash</u> <i>(string)</i> = The calculated MD5 hash.<br></pre>
-<h4>Synopsis:-</h4>
-<p>Calculates a MD5 hash from an array class&#x2e; This hashing algorithm is obsolete and insecure and should no longer be used and is here only for compatibility reasons only&#x2e;<br></p>
-<h4><a href="#idx:Crypt" onclick="r('Crypt.MD5A')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="Crypt.SHA1">
 <h3>Crypt.SHA1</h3>
 <h4>Syntax:-</h4>
@@ -3591,24 +3557,24 @@ hr { border:1px solid white; margin:10px; box-shadow: 5px 5px rgba(0, 0, 0, 0.5)
 <div id="File.AppendOne">
 <h3>File.AppendOne</h3>
 <h4>Syntax:-</h4>
-<pre><u>Bytes</u> = File.AppendOne(<i><u>Source</u>, <u>Data</u></i>)</pre>
+<pre><u>Result</u>, <u>Reason</u> = File.AppendOne(<i><u>Source</u>, <u>Data</u></i>)</pre>
 <h4>Function Parameters:-</h4>
-<pre><u>Source</u> <i>(string)</i> = Filename to append asset to<br><u>Data</u> <i>(Asset)</i> = The asset to write to the file.<br></pre>
+<pre><u>Source</u> <i>(string)</i> = Filename to append asset to<br><u>Data</u> <i>(Asset)</i> = The asset to write to the file<br></pre>
 <h4>Return Parameters:-</h4>
-<pre><u>Bytes</u> <i>(integer)</i> = Number of bytes written<br></pre>
+<pre><u>Result</u> <i>(multi)</i> = Result of operation<br><u>Reason</u> <i>(string)</i> = (Conditional) Error reason<br></pre>
 <h4>Synopsis:-</h4>
-<p>Create or open existing file&#x2c; appends the specified asset and closes the file&#x2e;<br></p>
+<p>Appends the specified data to the specified file&#x2e; Returns &#x27;false&#x27; if failed or bytes written if succeeded&#x2e; If &#x27;Result&#x27; is false then the second argument &#x27;Reason&#x27; returned is the error reason string&#x2e;<br></p>
 <h4><a href="#idx:File" onclick="r('File.AppendOne')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="File.AppendOneStr">
 <h3>File.AppendOneStr</h3>
 <h4>Syntax:-</h4>
-<pre><u>Bytes</u> = File.AppendOneStr(<i><u>Source</u>, <u>String</u></i>)</pre>
+<pre><u>Result</u>, <u>Reason</u> = File.AppendOneStr(<i><u>Source</u>, <u>String</u></i>)</pre>
 <h4>Function Parameters:-</h4>
-<pre><u>Source</u> <i>(string)</i> = Filename to append string to.<br><u>String</u> <i>(string)</i> = The string to append.<br></pre>
+<pre><u>Source</u> <i>(string)</i> = Filename to append string to<br><u>String</u> <i>(string)</i> = The string to append<br></pre>
 <h4>Return Parameters:-</h4>
-<pre><u>Bytes</u> <i>(integer)</i> = Number of bytes written.<br></pre>
+<pre><u>Result</u> <i>(multi)</i> = Result of operation<br><u>Reason</u> <i>(string)</i> = (Conditional) Error reason<br></pre>
 <h4>Synopsis:-</h4>
-<p>Opens&#x2f;Creates the specified file&#x2c; appends the specified string and closes the file&#x2e;<br></p>
+<p>Appends the specified string to the specified file&#x2e; Returns &#x27;false&#x27; if failed or bytes written if succeeded&#x2e; If &#x27;Result&#x27; is false then the second argument &#x27;Reason&#x27; returned is the error reason string&#x2e;<br></p>
 <h4><a href="#idx:File" onclick="r('File.AppendOneStr')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="File.DirExists">
 <h3>File.DirExists</h3>
@@ -3643,15 +3609,6 @@ hr { border:1px solid white; margin:10px; box-shadow: 5px 5px rgba(0, 0, 0, 0.5)
 <h4>Synopsis:-</h4>
 <p>Dumps all the files ending in the specified extension in the specified directory to two tables&#x2e;<br></p>
 <h4><a href="#idx:File" onclick="r('File.EnumerateEx')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="File.Error">
-<h3>File.Error</h3>
-<h4>Syntax:-</h4>
-<pre><u>ErrNo</u> = File.Error()</pre>
-<h4>Return Parameters:-</h4>
-<pre><u>ErrNo</u> <i>(integer)</i> = Error code returned<br></pre>
-<h4>Synopsis:-</h4>
-<p>Returns the last system error number&#x2e;<br>See&#x3a; https&#x3a;&#x2f;&#x2f;en&#x2e;hppreference&#x2e;com&#x2f;w&#x2f;cpp&#x2f;error&#x2f;errno_macros </p>
-<h4><a href="#idx:File" onclick="r('File.Error')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="File.Executable">
 <h3>File.Executable</h3>
 <h4>Syntax:-</h4>
@@ -3732,13 +3689,13 @@ hr { border:1px solid white; margin:10px; box-shadow: 5px 5px rgba(0, 0, 0, 0.5)
 <div id="File.ReadOneStr">
 <h3>File.ReadOneStr</h3>
 <h4>Syntax:-</h4>
-<pre><u>Mode</u> = File.ReadOneStr(<i><u>Source</u></i>)</pre>
+<pre><u>Result</u>, <u>Reason</u> = File.ReadOneStr(<i><u>Source</u></i>)</pre>
 <h4>Function Parameters:-</h4>
 <pre><u>Source</u> <i>(string)</i> = Filename to read string from<br></pre>
 <h4>Return Parameters:-</h4>
-<pre><u>Mode</u> <i>(integer)</i> = The mode to use<br></pre>
+<pre><u>Result</u> <i>(multi)</i> = Result of operation<br><u>Reason</u> <i>(string)</i> = (Conditional) Error reason<br></pre>
 <h4>Synopsis:-</h4>
-<p>Opens the specified file in &#x27;text&#x27; mode&#x2c; reads a line of text into a string&#x2e; To read the whole file to a string&#x2c; use the &#x27;Asset&#x2e;String&#x28;Async&#x29;&#x27;<br></p>
+<p>Reads the specified string from the the file in text&#x2d;mode only&#x2e; Please use Asset&#x2e;String&#x28;Async&#x29; to read a file in binary form&#x2e; Returns &#x27;false&#x27; if failed or the string that was read if succeeded&#x2e; If &#x27;Result&#x27; is false then the second argument &#x27;Reason&#x27; returned is the error reason string&#x2e;<br></p>
 <h4><a href="#idx:File" onclick="r('File.ReadOneStr')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="File.ReadWritable">
 <h3>File.ReadWritable</h3>
@@ -3831,24 +3788,24 @@ hr { border:1px solid white; margin:10px; box-shadow: 5px 5px rgba(0, 0, 0, 0.5)
 <div id="File.WriteOne">
 <h3>File.WriteOne</h3>
 <h4>Syntax:-</h4>
-<pre><u>Bytes</u> = File.WriteOne(<i><u>Source</u>, <u>Data</u></i>)</pre>
+<pre><u>Result</u>, <u>Reason</u> = File.WriteOne(<i><u>Source</u>, <u>Data</u></i>)</pre>
 <h4>Function Parameters:-</h4>
-<pre><u>Source</u> <i>(string)</i> = Filename to append asset to<br><u>Data</u> <i>(Asset)</i> = The asset to write to the file.<br></pre>
+<pre><u>Source</u> <i>(string)</i> = Filename to append asset to<br><u>Data</u> <i>(Asset)</i> = The binary data from memory to write<br></pre>
 <h4>Return Parameters:-</h4>
-<pre><u>Bytes</u> <i>(integer)</i> = Number of bytes written<br></pre>
+<pre><u>Result</u> <i>(multi)</i> = Result of operation<br><u>Reason</u> <i>(string)</i> = (Conditional) Error reason<br></pre>
 <h4>Synopsis:-</h4>
-<p>Create or open existing file&#x2c; and write the specified asset and closes the file&#x2e;<br></p>
+<p>Create or open existing file&#x2c; and write the specified asset and closes the file&#x2e; Returns the number of bytes written &#x28;integer&#x29; if succeeded or &#x27;false&#x27; &#x28;boolean&#x29; if fails&#x2c; and sets &#x27;Reason&#x27; as the error reason&#x2e;<br></p>
 <h4><a href="#idx:File" onclick="r('File.WriteOne')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="File.WriteOneStr">
 <h3>File.WriteOneStr</h3>
 <h4>Syntax:-</h4>
-<pre><u>Bytes</u> = File.WriteOneStr(<i><u>Source</u>, <u>String</u></i>)</pre>
+<pre><u>Result</u>, <u>Reason</u> = File.WriteOneStr(<i><u>Source</u>, <u>String</u></i>)</pre>
 <h4>Function Parameters:-</h4>
 <pre><u>Source</u> <i>(string)</i> = Filename to write string to<br><u>String</u> <i>(string)</i> = The string to write.<br></pre>
 <h4>Return Parameters:-</h4>
-<pre><u>Bytes</u> <i>(integer)</i> = Number of bytes written<br></pre>
+<pre><u>Result</u> <i>(multi)</i> = Result of operation<br><u>Reason</u> <i>(string)</i> = (Conditional) Error reason<br></pre>
 <h4>Synopsis:-</h4>
-<p>Opens&#x2f;Creates the specified file&#x2c; writes the specified string and closes the file&#x2e;<br></p>
+<p>Opens&#x2f;Creates the specified file&#x2c; writes the specified string and closes the file&#x2e; Returns the number of bytes written &#x28;integer&#x29; if succeeded or &#x27;false&#x27; &#x28;boolean&#x29; if fails&#x2c; and sets &#x27;Reason&#x27; as the error reason&#x2e;<br></p>
 <h4><a href="#idx:File" onclick="r('File.WriteOneStr')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="File:Close">
 <h3>File:Close</h3>
@@ -3875,6 +3832,24 @@ hr { border:1px solid white; margin:10px; box-shadow: 5px 5px rgba(0, 0, 0, 0.5)
 <h4>Synopsis:-</h4>
 <p>Calls feof&#x28;&#x29; and returns if the file pointer is at EOF&#x2e;<br></p>
 <h4><a href="#idx:File" onclick="r('File:End')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="File:Error">
+<h3>File:Error</h3>
+<h4>Syntax:-</h4>
+<pre><u>ErrNo</u> = File:Error()</pre>
+<h4>Return Parameters:-</h4>
+<pre><u>ErrNo</u> <i>(integer)</i> = Error code returned<br></pre>
+<h4>Synopsis:-</h4>
+<p>Returns the last recorded errno&#x2e;<br></p>
+<h4><a href="#idx:File" onclick="r('File:Error')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="File:ErrorStr">
+<h3>File:ErrorStr</h3>
+<h4>Syntax:-</h4>
+<pre><u>Error</u> = File:ErrorStr()</pre>
+<h4>Return Parameters:-</h4>
+<pre><u>Error</u> <i>(string)</i> = Error string returned<br></pre>
+<h4>Synopsis:-</h4>
+<p>Returns the last recorded errno as a human readable string&#x2e;<br></p>
+<h4><a href="#idx:File" onclick="r('File:ErrorStr')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="File:FError">
 <h3>File:FError</h3>
 <h4>Syntax:-</h4>
@@ -8775,6 +8750,9 @@ hr { border:1px solid white; margin:10px; box-shadow: 5px 5px rgba(0, 0, 0, 0.5)
 <div id="cv.app_basedir"><h3>app_basedir</h3>
 <p>Specifies the base directory of where the executable was started from. It is only readable by the end-user and the host, but not the guest.</p>
 <h4><a href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="cv.app_cflags"><h3>app_cflags</h3>
+<p>Specifies how the host wants to be run with the following flags... 0x1 (CF_TEXT)     = Opens (Win32) or reuses (Unix) a console window. 0x2 (CF_AUDIO)    = Initialises an OpenAL audio context and exposes API. 0x4 (CF_VIDEO) = Initialises an OpenGL context+window and exposes API.</p>
+<h4><a href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="cv.app_clearmutex"><h3>app_clearmutex</h3>
 <p>Asks the system to delete the global mutex in Linux and MacOS so the engine can startup. You only need to do this if the engine crashes. On Windows the mutex is freed on process termination so there is never any need to use this on Windows.</p>
 <h4><a href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</a></h4></div>
@@ -8793,9 +8771,6 @@ hr { border:1px solid white; margin:10px; box-shadow: 5px 5px rgba(0, 0, 0, 0.5)
 <div id="cv.app_description"><h3>app_description</h3>
 <p>Specifies a description for the guest application. It is purely for display purposes only to the end-user. It can be requested by the guest and only set in the app.cfg file.</p>
 <h4><a href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</a></h4></div>
-<div id="cv.app_guimode"><h3>app_guimode</h3>
-<p>Specifies how the host wants to be run... 0 (GM_TEXT_NOAUDIO) = Botmode with no audio. 1 (GM_TEXT_AUDIO)   = Botmode with audio. 2 (GM_GRAPHICS)     = Interactive mode. Bot modes will show a terminal console window instead of an OpenGL window when the gpu is not needed by the guest. In interactive mode, you must use Fbo.Draw() in Lua to allow the engine draw the frame at the end of the frame which is useful for preserving cpu/gpu cycles when the screen does. not need to be redrawn. Certain commands, cvars, lua api functions are hidden and shown depending on this value. It can only be set in the guest app.cfg file.</p>
-<h4><a href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="cv.app_homedir"><h3>app_homedir</h3>
 <p>Species the users home directory where files are written to if they cannot be written to the working directory. It is only readable by the end-user and the host, but not the guest.</p>
 <h4><a href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</a></h4></div>
@@ -8809,7 +8784,7 @@ hr { border:1px solid white; margin:10px; box-shadow: 5px 5px rgba(0, 0, 0, 0.5)
 <p>Specifies a short title name for the guest application. It is purely for display purposes only to the end-user. It can be requested by the guest and only set in the app.cfg file.</p>
 <h4><a href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="cv.app_tickrate"><h3>app_tickrate</h3>
-<p>Specifies the base tick rate of the guest application in ticks when using the timer accumulator (GuImode=GM_INT_ACCU||GM_INT_MF_ACCU). The engine locks to this tick rate regardless of lag. It can also be changed dynamically with Lua.</p>
+<p>Specifies the base tick rate of the guest application in ticks when using the timer accumulator. The engine locks to this tick rate regardless of lag. It can also be changed dynamically with Lua.</p>
 <h4><a href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="cv.app_title"><h3>app_title</h3>
 <p>Sets a custom title for the window. This can only be changed at the command-line or the application configuration file and not saved to the persistence database. It only applies to the Win32 terminal window (not MacOS nor Linux terminal windows) and to any OS desktop windows. If not specified, the default is used in the format of 'L V (T)' where 'L' is the value of 'app_longname', where 'V' is the value of 'app_version' and 'T' is the target executable architechture.</p>
@@ -8986,6 +8961,9 @@ hr { border:1px solid white; margin:10px; box-shadow: 5px 5px rgba(0, 0, 0, 0.5)
 <p>The engine fails to run if the system does not have this amount of VRAM available.</p>
 <h4><a href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="cv.fmv_iobuffer"><h3>fmv_iobuffer</h3>
+<p>Not explained yet.</p>
+<h4><a href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</a></h4></div>
+<div id="cv.fmv_maxdrift"><h3>fmv_maxdrift</h3>
 <p>Not explained yet.</p>
 <h4><a href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</a></h4></div>
 <div id="cv.inp_fstoggler"><h3>inp_fstoggler</h3>
@@ -9355,6 +9333,6 @@ hr { border:1px solid white; margin:10px; box-shadow: 5px 5px rgba(0, 0, 0, 0.5)
 <p>Sets the minimum width of the window. This is only changable at the application configuration file and is not saved to persistence database.</p>
 <h4><a href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</a></h4></div>
 <address>Copyright &copy; 2023 MS-Design, All Rights Reserved.<br>
-This document was created at Thu Aug 31 02:01:31 2023 +0100</address>
+This document was created at Tue Oct 24 19:06:18 2023 +0100</address>
 </body>
 </html>

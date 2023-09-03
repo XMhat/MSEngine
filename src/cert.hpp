@@ -191,10 +191,10 @@ class Certs                            // Certificates store
   }
   /* --------------------------------------------------------------- */ public:
   CVarReturn CertsSetBypassFlags1(const uint64_t uiFlags)
-    { return CVarSimpleSetInt(qCertBypass[0], uiFlags); }
+    { return CVarSimpleSetInt(qCertBypass.front(), uiFlags); }
   /* ----------------------------------------------------------------------- */
   CVarReturn CertsSetBypassFlags2(const uint64_t uiFlags)
-  { return CVarSimpleSetInt(qCertBypass[1], uiFlags); }
+  { return CVarSimpleSetInt(qCertBypass.back(), uiFlags); }
   /* ----------------------------------------------------------------------- */
   X509_STORE *CertsGetStore(void) const { return xsCerts; }
   /* ----------------------------------------------------------------------- */

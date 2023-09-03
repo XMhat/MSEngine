@@ -19,7 +19,8 @@ typedef IfIdent::IdList<TH_CS_NSPACES> CSStrings;
 const CSStrings    csStrings;          /* Colour space strings list         */\
 typedef IfIdent::IdList<TH_PF_NFORMATS> PFStrings;
 const PFStrings    pfStrings;          /* Pixel format strings list         */\
-SafeLong           lBufferSize;,,      /* Default buffer size               */\
+SafeLong           lBufferSize;        /* Default buffer size               */\
+SafeDouble         fdMaxDrift;,,       /* Maximum drift before drop frames  */\
 /* -- Derived classes ------------------------------------------------------ */
 private LuaEvtMaster<Video, LuaEvtTypeParam<Video>>); // Lua event
 /* ------------------------------------------------------------------------- */
@@ -92,6 +93,8 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
                    mUpload;            // mutex for uploading data
   Unblock          ubReason;           // Unlock condition variable
   SafeSizeT        stLoop;             // Loops count
+  double           fdDrift,            // Drift between audio and video
+                   fdMaxDrift;         // Maximum allowed drift
   SafeBool         bPause;             // Only pause the stream?
   /* -- Ogg ---------------------------------------------------------------- */
   ogg_sync_state   oSS;                // Ogg sync state
@@ -136,14 +139,13 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
   ALenum           eFormat;            // Internal format
   /* == Buffer more data for OGG decoder ========================== */ private:
   bool IOBuffer(void)
-  { // If we're not EOF? Get some memory from ogg which can fail and if it
-    // didn't? Read data info buffer and if we read data? Tell ogg how much we
-    // wrote.
-    if(fmFile.FileMapIsNotEOF())
-      if(char*const cpBuffer = ogg_sync_buffer(&oSS, lIOBuf))
-        if(const size_t stCount =
-          fmFile.FileMapReadToAddr(cpBuffer, static_cast<size_t>(lIOBuf)))
-            return ogg_sync_wrote(&oSS, static_cast<long>(stCount)) == -1;
+  { // Get some memory from ogg which we have to do every time we need to read
+    // data into it and if succeeded? Read data info buffer and if we read
+    // some bytes? Tell ogg how much we wrote and return.
+    if(char*const cpBuffer = ogg_sync_buffer(&oSS, lIOBuf))
+      if(const size_t stCount =
+        fmFile.FileMapReadToAddr(cpBuffer, static_cast<size_t>(lIOBuf)))
+          return ogg_sync_wrote(&oSS, static_cast<long>(stCount)) == -1;
     // EOF or buffer invalid so return error
     return true;
   }
@@ -227,11 +229,10 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
         ALL(cOal->DeleteBuffer(uiBuffer),
           "Video failed to delete unqueued buffer $ in '$'!",
              uiBuffer, IdentGet());
-      } // No need to process more if we have more than 1 sec of audio.
-      if(fdAudioBuffer >= 1.0) break;
-      // If audio time is ahead of video by two seconds then we don't need any
-      // more data.
-      if(FlagIsSet(FL_THEORA) && fdAudioTime > fdVideoTime + 1) break;
+      } // No need to process more if we have more than 1 sec of audio...
+      if(fdAudioBuffer >= 1.0 ||
+        // ... or audio time is ahead of video by 1 second
+        (FlagIsSet(FL_THEORA) && fdAudioTime > fdVideoTime + 1)) break;
       // Get PCM data stored as float
       ALfloat **fpPCM;
       const size_t stFrames =
@@ -349,60 +350,72 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
             break;
         }
       }
-    }
-    // If was saw a video frame wait a little bit. We put this here and not
-    // in the parent main thread loop because we want to get audio as fast as
-    // possible, but with the video stream, we can.
+    } // If we processed a video frame?
     if(afStatus.FlagIsSet(AF_VIDEO))
-    { // If stream has audio, audio is buffered and video is behind audio by
-      // one-tenth of a second?
-      if(FlagIsSet(FL_VORBIS) && fdAudioTime >= 0.0 &&
-        fdVideoTime < fdAudioTime - 0.1)
-      { // Catch up and if succeeded? Update video position
-        if(TimerCatchup()) UpdateVideoPosition();
-        // Next frame can show immediately
-        CISync();
-      } // No audio or not drifting so we can wait for engine thread
-      else
-      { // Setup lock for condition variable
-        UniqueLock uLock{ mBuffer };
-        // Wait for main thread to say we should rebuffer or when this thread
-        // is requested to terminate.
-        cvBuffer.wait(uLock, [this]{
-          return ubReason != UB_BLOCK || tThread.ThreadShouldExit(); });
-        // Check reason for unblocking
-        switch(ubReason)
-        { // Re-initialising, stopping or pausing?
-          case UB_REINIT: [[fallthrough]];
-          case UB_STOP: [[fallthrough]];
-          case UB_PAUSE: return 1;
-          // Just for data reasons or for playing?
-          case UB_DATA: [[fallthrough]];
-          case UB_PLAY: [[fallthrough]];
-          case UB_BLOCK: break;
-        } // Reset unlock flag
-        ubReason = UB_BLOCK;
-      }
-    } // Video frame and audio frame not ready?
+    { // If stream has audio and not at the beginning?
+      if(FlagIsSet(FL_VORBIS) && fdAudioTime > 0.0)
+      { // Update drift and if drifting too much?
+        fdDrift = fdVideoTime - fdAudioTime;
+        if(abs(fdDrift) >= fdMaxDrift)
+        { // Catch up and if succeeded? Update video position
+          if(TimerCatchup()) UpdateVideoPosition();
+          // Next frame can show immediately
+          CISync();
+        }
+      } // Setup lock for condition variable
+      UniqueLock uLock{ mBuffer };
+      // Wait for main thread to say we should rebuffer or when this thread
+      // is requested to terminate.
+      cvBuffer.wait(uLock, [this]{
+        return ubReason != UB_BLOCK || tThread.ThreadShouldExit(); });
+      // Check reason for unblocking
+      switch(ubReason)
+      { // Re-initialising, stopping or pausing?
+        case UB_REINIT: [[fallthrough]];
+        case UB_STOP: [[fallthrough]];
+        case UB_PAUSE: return 1;
+        // Just for data reasons or for playing?
+        case UB_DATA: [[fallthrough]];
+        case UB_PLAY: [[fallthrough]];
+        case UB_BLOCK: break;
+      } // Reset unlock flag
+      ubReason = UB_BLOCK;
+    } // Didn't process a video frame or audio frame?
     else if(afStatus.FlagIsClear(AF_AUDIO))
-    { // We didn't read anything or we're at end-of-file!
-      if(IOBuffer())
-      { // Rewind video
-        Rewind();
-        // We should loop?
-        if(stLoop > 0)
-        { // Reduce loops if not infinity
-          if(stLoop != string::npos) --stLoop;
-          // Send looping event
-          LuaEvtDispatch(VE_LOOP);
-        } // We should pause? Pause playback and stop the thread
-        else return 2;
-      } // Read data until we get something useful
-      while(ogg_sync_pageout(&oSS, &oPG) > 0)
-      { // Find theora data
-        if(FlagIsSet(FL_THEORA)) ogg_stream_pagein(&tSS, &oPG);
-        // Find vorbis data
-        if(FlagIsSet(FL_VORBIS)) ogg_stream_pagein(&vSS, &oPG);
+    { // Break apart file data to useful packets
+      switch(ogg_sync_pageout(&oSS, &oPG))
+      { // Need more data?
+        case 0:
+          // Is end of file?
+          if(fmFile.FileMapIsEOF())
+          { // We should loop?
+            if(stLoop > 0)
+            { // Rewind video
+              Rewind();
+              // Reduce loops if not infinity
+              if(stLoop != string::npos) --stLoop;
+              // Send looping event
+              LuaEvtDispatch(VE_LOOP);
+            } // No more loops so we're done if everything is played
+            else if(fdAudioBuffer <= 0.0) return 2;
+            // Wait until all buffers are empty
+            break;
+          } // Break if we read or still have useful data
+          else if(IOBuffer())
+            XC("Read OGG data error!",
+              "Identifier", IdentGet(), "Reason", LocalError());
+          // Fall through to break
+          [[fallthrough]];
+        // Bytes skipped? Ignore
+        case -1: break;
+        // Page is ready?
+        case 1:
+          // Find theora data
+          if(FlagIsSet(FL_THEORA)) ogg_stream_pagein(&tSS, &oPG);
+          // Find vorbis data
+          if(FlagIsSet(FL_VORBIS)) ogg_stream_pagein(&vSS, &oPG);
+          // Done
+          break;
       }
     } // Keep thread loop alive
     return 0;
@@ -460,6 +473,10 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     // Show what we allocated
     cLog->LogDebugExSafe("Video pre-allocated $ bytes for audio decoder.",
       mbAudio.Size());
+    // Init maximum drift if have theora data too
+    if(FlagIsSet(FL_THEORA)) fdMaxDrift = cParent.fdMaxDrift;
+    // Reset audio position and drift
+    fdAudioTime = fdDrift = 0.0;
   }
   /* -- Initialise video stream portion of file ---------------------------- */
   void InitVideoStream(void)
@@ -509,7 +526,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     } // Set buffer id's
     stFActive = stFWaiting = stFNext = 0;
     stFFree = fData.size();
-    fdVideoTime = 0;
+    fdVideoTime = fdDrift = 0;
     // Update frame immediately
     CISetLimit(1.0 / fdFPS);
   }
@@ -561,10 +578,10 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     vorbis_info_init(&vIN);    FlagSet(FL_VIINIT);
     // Which headers did we get?
     int iGotTheoraPage = 0, iGotVorbisPage = 0;
-    // Ogg file open; parse the headers. Theora (like Vorbis) depends on some
-    // initial header packets for decoder setup and initialization. We retrieve
-    // these first before entering the main decode loop.
-    for(bool bDone = IOBuffer(); !bDone; )
+    // Finished buffering?
+    bool bDone = false;
+    // Loop.
+    do
     { // This function takes the data stored in the buffer of the
       // ogg_sync_state struct and inserts them into an ogg_page. In an actual
       // decoding loop, this function should be called first to ensure that the
@@ -574,10 +591,13 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
       switch(const int iPageOutResult = ogg_sync_pageout(&oSS, &oPG))
       { // Returned if more data needed or an internal error occurred.
         case 0:
-        { // Try to rebuffer more data and throw error if no more data
-          bDone = IOBuffer();
-          if(bDone)
+        { // If we're end of file then it wasn't a valid stream
+          if(fmFile.FileMapIsEOF())
             XC("Not a valid ogg/theora stream!", "Identifier", IdentGet());
+          // Try to rebuffer more data and throw error if error reading
+          if(IOBuffer())
+            XC("Read ogg/theora stream error!",
+               "Identifier", IdentGet(), "Reason", LocalError());
           // Done
           break;
         } // Indicated a page was synced and returned.
@@ -612,7 +632,9 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
         default: XC("Unknown OGG pageout result!",
                    "Identifier", IdentGet(), "Result", iPageOutResult); break;
       } // fall through tSS non-bos page parsing
-    } // We're expecting more header packets
+    } // ...until done
+    while(!bDone);
+    // We're expecting more header packets
     while((iGotTheoraPage && iGotTheoraPage < 3) ||
           (iGotVorbisPage && iGotVorbisPage < 3))
     { // look for further theora headers
@@ -659,7 +681,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
   /* -- Video properties ------------------------------------------- */ public:
   double GetVideoTime(void) const { return fdVideoTime; }
   double GetAudioTime(void) const { return fdAudioTime; }
-  double GetDrift(void) const { return fdVideoTime-fdAudioTime; }
+  double GetDrift(void) const { return fdDrift; }
   double GetFPS(void) const { return fdFPS; }
   unsigned int GetFrame(void) const
     { return static_cast<unsigned int>(GetVideoTime() * GetFPS()); }
@@ -907,7 +929,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     // Reset counters
     uiVideoFrames = uiVideoFramesLost = 0;
     iVideoGranulePos = -1;
-    fdVideoTime = fdAudioTime = fdAudioBuffer = fdFPS = 0.0;
+    fdVideoTime = fdAudioTime = fdAudioBuffer = fdFPS = fdDrift = 0.0;
     // Reset buffer status
     stFActive = stFNext = stFWaiting = stFFree = stLoop = 0;
     // Reset OpenAL stuff
@@ -996,7 +1018,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     // Unload any playing buffers
     StopAudioAndUnloadBuffers(false);
     // Reset counters
-    fdVideoTime = fdAudioTime = fdAudioBuffer = 0.0;
+    fdVideoTime = fdAudioTime = fdDrift = fdAudioBuffer = 0.0;
     // Flush current video data
     FlushVideoData();
     // Tell the thread to continue rebuffering
@@ -1231,6 +1253,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
         this, _1) },
     ubReason(UB_BLOCK),
     stLoop(0),
+    fdDrift(0.0),
     oSS{},
     oPG{},
     oPK{},
@@ -1275,7 +1298,9 @@ END_ASYNCCOLLECTOR(Videos, Video, VIDEO, // Finish Videos collector class
   pfStrings{{                          // Init pixel format strings list
     "TH_PF_420", "TH_PF_RSVD",         // 0-1
     "TH_PF_422", "TH_PF_444",          // 2-3
-  }, "TH_PF_UNSUPPORTED"}              // End of pixel format strings list
+  }, "TH_PF_UNSUPPORTED" },            // End of pixel format strings list
+  lBufferSize{0},                      // Buffer size initialised by cvar
+  fdMaxDrift{0.0}                      // Max drift initialised by cvar
 )/* == Reinit textures (after engine thread shutdown) ====================== */
 static void VideoReInitTextures(void)
 { // Ignore if no videos otherwise re-initialise ogl textures on all videos
@@ -1342,6 +1367,9 @@ static void VideoCommitVolume(void)
 /* == Set buffer size ====================================================== */
 static CVarReturn VideoSetBufferSize(const long lSize)
   { return CVarSimpleSetIntNLG(cVideos->lBufferSize, lSize, 4096, 16777216); }
+/* == Set drift length maximum ============================================= */
+static CVarReturn VideoSetMaximumDrift(const double fdMax)
+  { return CVarSimpleSetIntNLG(cVideos->fdMaxDrift, fdMax, 0.01, 1.00); }
 /* == Set all streams base volume ========================================== */
 static CVarReturn VideoSetVolume(const ALfloat fVolume)
 { // Ignore if invalid value

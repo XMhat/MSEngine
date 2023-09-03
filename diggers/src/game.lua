@@ -37,7 +37,7 @@ local TYP, aLevelData, LoadResources, aObjectData, ACT, JOB, iPosX, iPosY, DIR,
   fontLarge, fontLittle, fontTiny, aDigBlockData, aExplodeDirData, SetCursor,
   aCursorIdData, RegisterFBUCallback, GetCallbacks, GetTestMode, RenderShadow,
   SetBottomRightTip, aDugRandShaftData, aFloodGateData, aTrainTrackData,
-  aExplodeAboveData, aGlobalData, aShopData;
+  aExplodeAboveData, aGlobalData, aShopData, IsScrollingDown, IsScrollingUp;
 -- Prototype functions (assigned later) ------------------------------------ --
 local CreateObject, MoveOtherObjects, PlaySoundAtObject, SetAction;
 -- Locals ------------------------------------------------------------------ --
@@ -826,6 +826,23 @@ local function ObjectIsAtHome(aObject)
   assert(aObject.P, "Object specified is an orphan!");
   return aObject.X == aObject.P.HX and aObject.Y == aObject.P.HY;
 end
+-- Cycle object inventory -------------------------------------------------- --
+local function CycleObjInventory(aObject, iDirection)
+  -- Get object inventory and enumerate through them
+  local aInv<const> = aObject.I;
+  for iInvIndex = 1, #aInv do
+    -- Get inventory object and if we got it
+    local aInvObj<const> = aInv[iInvIndex];
+    if aInvObj == aObject.IS then
+      -- Cycle object wrapping on low or high
+      aObject.IS = aInv[(((iInvIndex - 1) + iDirection) % #aInv) + 1];
+      -- Success
+      return true;
+    end
+  end
+  -- Failure
+  return false;
+end
 -- Set object action ------------------------------------------------------- --
 local function DoSetAction(O, A, J, D, U)
   assert(O, "Object not specified!");
@@ -1032,26 +1049,17 @@ local function DoSetAction(O, A, J, D, U)
     if not DropObject(O, O.IS) then PlayStaticSound(aSfxData.ERROR) end;
     -- Do nothing else
     return;
-  -- Cycle items?
+  -- Cycle next inventory item?
   elseif A == ACT.NEXT then
-    -- For each object in inventory
-    local aInv<const> = O.I;
-    for iInvIndex = 1, #aInv do
-      -- Get inventory object and if we got it
-      local aInvObj<const> = aInv[iInvIndex];
-      if aInvObj == O.IS then
-        -- Set next object
-        O.IS = aInv[iInvIndex+1];
-        -- Invalid object? Select first object! No need to check if this is
-        -- valid because 'nil' is valid for 'no more items'.
-        if not O.IS then O.IS = aInv[1] end;
-        -- Done
-        return;
-      end
-    end
     -- No items so play failed sound
-    PlayStaticSound(aSfxData.ERROR);
-    -- Do nothing else
+    if not CycleObjInventory(O, 1) then PlayStaticSound(aSfxData.ERROR) end;
+    -- Done
+    return;
+  -- Cycle previous inventory item?
+  elseif A == ACT.PREV then CycleObjectInventory(O, -1);
+    -- No items so play failed sound
+    if not CycleObjInventory(O, -1) then PlayStaticSound(aSfxData.ERROR) end;
+    -- Done
     return;
   -- Phasing?
   elseif A == ACT.PHASE then
@@ -1506,7 +1514,18 @@ local function DrawInfoFrameAndTitle(iTileId)
   -- Print the title bar text
   fontLittle:PrintC(160, 12, iTileId);
   -- Draw transparent backdrop
-  texSpr:BlitSLTRB(857, 8, 32, 312, 208);
+  RenderFade(0.75, 8, 32, 312, 208);
+  -- Draw frame
+  texSpr:BlitSLT(850, 8, 32);
+  for iX = 24, 280, 16 do texSpr:BlitSLT(851, iX, 32) end;
+  texSpr:BlitSLT(852, 296, 32);
+  for iY = 48, 176, 16 do
+    texSpr:BlitSLT(856, 8, iY);
+    texSpr:BlitSLT(858, 296, iY);
+  end
+  texSpr:BlitSLT(853, 8, 192);
+  for iX = 24, 280, 16 do texSpr:BlitSLT(854, iX, 192) end;
+  texSpr:BlitSLT(855, 296, 192);
   -- Draw shadows
   RenderShadow(8, 8, 312, 24);
   RenderShadow(8, 32, 312, 208);
@@ -1652,16 +1671,16 @@ local function RenderInterface()
     -- For each digger
     for iDigIndex = 1, #aActivePlayer.D do
       -- Calculate Y position
-      local iY<const> = iDigIndex * 32;
+      local iY<const> = iDigIndex * 33;
       -- Print id number of digger
       fontLarge:Print(16, iY+8, iDigIndex);
       -- Draw health bar background
-      texSpr:BlitSLTRB(1023, 24, iY+30, 291, iY+32);
+      texSpr:BlitSLTRB(1023, 24, iY+31, 291, iY+33);
       -- Get Digger data and if it exists?
       local aDigger<const> = aActivePlayer.D[iDigIndex];
       if aDigger then
         -- Draw digger health bar
-        DrawHealthBar(aDigger.H, 0.375, 24, iY+30, 24, iY+32);
+        DrawHealthBar(aDigger.H, 0.375, 24, iY+31, 24, iY+33);
         -- Draw digger portrait
         texSpr:BlitSLT(aDigger.S, 31, iY+8);
         -- Digger has items?
@@ -1701,13 +1720,13 @@ local function RenderInterface()
     -- Draw frame and title
     DrawInfoFrameAndTitle("DIGGER LOCATIONS");
     -- Draw map grid of level
-    for Y = 38, 188, 15 do for X = 141, 291, 15 do
+    for Y = 37, 188, 15 do for X = 141, 291, 15 do
       texSpr:BlitSLT(864, X, Y);
     end end
     -- For each digger
     for iDigIndex = 1, #aActivePlayer.D do
       -- Calculate Y position
-      local iY<const> = iDigIndex * 32;
+      local iY<const> = iDigIndex * 31;
       -- Print id number of digger
       fontLarge:Print(16, iY+8, iDigIndex);
       -- Draw colour key of digger
@@ -3397,11 +3416,25 @@ local function ProcInput()
     if IsKeyPressed(iKey5) or IsKeyPressed(iKeyKp5) then
       return SelectDigger(5) end;
     -- Left button pressed?
-    if IsKeyPressed(iKeyMinus) or IsButtonPressed(6) then
-      return SelectAdjacentDigger(-1) end;
+    if IsKeyPressed(iKeyMinus) or IsButtonPressed(6) or IsScrollingDown() then
+      -- Cycle to previous item if digger inventory menu open?
+      if aActiveMenu and aActiveMenu == aMenuData[MNU.DROP] then
+        CycleObjInventory(aActiveObject, -1);
+      -- Else select previous digger
+      else SelectAdjacentDigger(-1) end;
+      -- Done
+      return;
+    end
     -- Right button pressed?
-    if IsKeyPressed(iKeyEquals) or IsButtonPressed(7) then
-      return SelectAdjacentDigger(1) end;
+    if IsKeyPressed(iKeyEquals) or IsButtonPressed(7) or IsScrollingUp() then
+      -- Cycle to next item if digger inventory menu open?
+      if aActiveMenu and aActiveMenu == aMenuData[MNU.DROP] then
+        CycleObjInventory(aActiveObject, 1);
+      -- Else select next digger
+      else SelectAdjacentDigger(1) end;
+      -- Done
+      return;
+    end
     -- Stop digger?
     if IsKeyPressed(iKeyBackspace) and SelectedDiggerIsMovable() then
       return SetAction(aActiveObject, ACT.STOP, JOB.NONE, DIR.NONE, true) end;
@@ -3949,7 +3982,8 @@ return { A = {                         -- Exports
   aDigBlockData, aExplodeDirData, SetCursor, aCursorIdData,
   RegisterFBUCallback, GetCallbacks, GetTestMode, RenderShadow,
   SetBottomRightTip, aRaceData, aDugRandShaftData, aFloodGateData,
-  aTrainTrackData, aExplodeAboveData, maskLev, maskSpr, aGlobalData, aShopData
+  aTrainTrackData, aExplodeAboveData, maskLev, maskSpr, aGlobalData, aShopData,
+  IsScrollingDown, IsScrollingUp
   = -- --------------------------------------------------------------------- --
   GetAPI("aObjectTypes", "aLevelData", "LoadResources", "aObjectData",
     "aObjectActions", "aObjectJobs", "aObjectDirections", "aTimerData",
@@ -3966,7 +4000,8 @@ return { A = {                         -- Exports
     "aCursorIdData", "RegisterFBUCallback", "GetCallbacks", "GetTestMode",
     "RenderShadow", "SetBottomRightTip", "aRaceData", "aDugRandShaftData",
     "aFloodGateData", "aTrainTrackData", "aExplodeAboveData", "maskLevel",
-    "maskSprites", "aGlobalData", "aShopData");
+    "maskSprites", "aGlobalData", "aShopData", "IsScrollingDown",
+    "IsScrollingUp");
   -- ----------------------------------------------------------------------- --
   CreateObject = InitCreateObject();
   MoveOtherObjects = InitMoveOtherObjects();

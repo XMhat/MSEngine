@@ -137,7 +137,7 @@ static struct CmdLine final            // Members initially public
       Token tokParam{ S16toUTF(atStr), "=", 2 };
       if(tokParam.empty()) continue;
       // Find key and insert it if not found then erase the EcId value
-      string &strKey = ToUpperRef(tokParam[0]);
+      string &strKey = ToUpperRef(tokParam.front());
       const StrStrMapConstIt itArg{ ssmRet.find(strKey) };
       if(itArg != ssmRet.cend()) ssmRet.erase(itArg);
       // Insert new key/value into list

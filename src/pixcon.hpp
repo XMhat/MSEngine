@@ -175,20 +175,16 @@ class SysCon :                         // All members initially private
         // Test key
         switch(wChar)
         { // Control+Home pressed?
-          case 531: case 532: /* MacOS \033[1;5H */
-          case 535: /* Linux default */
+          case 537: /* MacOS14 \033[1;5H */ case 535: /* Ubuntu default */
             iMods = GLFW_MOD_CONTROL; iKey = GLFW_KEY_HOME; break;
           // Control+End pressed?
-          case 526: case 527: /* MacOS \033[1;5F */
-          case 530: /* Linux default */
+          case 532: /* MacOS14 \033[1;5F */ case 530: /* Ubuntu default */
             iMods = GLFW_MOD_CONTROL; iKey = GLFW_KEY_END; break;
           // Control+PageUp pressed?
-          case 551: case 552: /* MacOS \033[5;5~ */
-          case 555: /* Linux default */
+          case 557: /* MacOS14 \033[5;5~ */ case 555: /* Ubuntu default */
             iMods = GLFW_MOD_CONTROL; iKey = GLFW_KEY_PAGE_UP; break;
           // Control+PageDown pressed?
-          case 546: case 547: /* MacOS \033[6;5~ */
-          case 550: /* Linux default */
+          case 552: /* MacOS14 \033[6;5~ */ case 550: /* Ubuntu default */
             iMods = GLFW_MOD_CONTROL; iKey = GLFW_KEY_PAGE_DOWN; break;
           // Control+Delete (MacOS KB) or Insert (PC KB) pressed?
           case 515: case KEY_IC: iMods = 0; iKey = GLFW_KEY_INSERT; break;
@@ -842,4 +838,3 @@ class SysCon :                         // All members initially private
 };/* ----------------------------------------------------------------------- */
 #define MSENGINE_SYSCON_CALLBACKS()    // Not required
 /* == EoF =========================================================== EoF == */
-

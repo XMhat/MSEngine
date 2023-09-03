@@ -750,10 +750,10 @@ static struct Sql final :              // Members initially public
   int Affected(void)
     { return sqlite3_changes(sqlDB); }
   /* -- Process a count(*) requested --------------------------------------- */
-  size_t GetRecordCount(const string &strWhat)
+  size_t GetRecordCount(const string &strWhat, const string &strCondition="")
   { // Do a table count lookup. If succeeded and have records?
-    if(Execute(Format("SELECT count(*) FROM `$`", strWhat)) == SQLITE_OK &&
-      !vKeys.empty())
+    if(Execute(Format("SELECT count(*) FROM `$`$", strWhat, strCondition))
+      == SQLITE_OK && !vKeys.empty())
     { // Get reference to keys list and if we have one result?
       const Records &smmPairs = *vKeys.cbegin();
       if(smmPairs.size() == 1)
@@ -773,7 +773,8 @@ static struct Sql final :              // Members initially public
   }
   /* -- Get number of tables in database ----------------------------------- */
   size_t GetTableCount(void)
-    { return GetRecordCount("sqlite_master AS tables WHERE type='table'"); }
+    { return GetRecordCount("sqlite_master",
+        " AS tables WHERE type='table'"); }
   /* -- Flush all orphan statements ---------------------------------------- */
   size_t Finalise(void) const
   { // Number of orphan transactions

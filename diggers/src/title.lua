@@ -10,7 +10,9 @@
 -- Copyr. (c) MS-Design, 2023   Copyr. (c) Millennium Interactive Ltd., 1994 --
 -- ========================================================================= --
 -- Core function aliases --------------------------------------------------- --
-local floor<const>, random<const> = math.floor, math.random;
+local floor<const>, random<const>, insert<const>
+      = -- ----------------------------------------------------------------- --
+      math.floor, math.random, table.insert;
 -- M-Engine function aliases ----------------------------------------------- --
 local CVarsGet<const>, InfoRAM<const>, DisplayVRAM<const>, UtilBytes<const>
       = -- ----------------------------------------------------------------- --
@@ -44,7 +46,7 @@ local function InitTitle()
       "ORIGINAL VERSIONS BY TOBY SIMPSON AND MIKE FROGGATT\n"..
       "(C) 1994 MILLENNIUM INTERACTIVE LTD. ALL RIGHTS RESERVED\n\rcffffff4f"..
       "POWERED BY MS-ENGINE (C) 2023 MS-DESIGN. ALL RIGHTS RESERVED\n"..
-      "PRESS F1 FOR HELP OR F2 TO SETUP MS-ENGINE AT ANY TIME"
+      "PRESS F1 TO SETUP MS-ENGINE OR F2 FOR ACKNOWLEDGEMENTS AT ANY TIME"
     -- Main demo level loader
     local function LoadDemoLevel(strMusic);
       -- Setup framebuffer updated callback
@@ -308,9 +310,17 @@ local function InitTitle()
         -- Show arrow
         SetCursor(aCursorIdData.ARROW);
       end
-      -- Load demo level
-      LoadLevel(random(#aLevelData), strMusic, aObjectTypes.DIGRANDOM, true,
-        aObjectTypes.DIGRANDOM, true, DemoLevelProc, DemoLevelRender,
+      -- Levels completed
+      local aZones = { };
+      -- Build array of all the completed levels from every save slot
+      for iSlotId, aSlotData in pairs(LoadSaveData()) do
+        for iZoneId in pairs(aSlotData[16]) do insert(aZones, iZoneId) end;
+      end
+      -- If zero or one zone completed then allow showing the first two zones
+      if #aZones <= 1 then aZones = { 1, 2 } end;
+      -- Load AI vs AI and use random zone
+      LoadLevel(aZones[random(#aZones)], strMusic, aObjectTypes.DIGRANDOM,
+        true, aObjectTypes.DIGRANDOM, true, DemoLevelProc, DemoLevelRender,
         DemoLevelInput);
     end
     -- Load demonstration level with title music
@@ -327,7 +337,7 @@ return { A = { InitTitle = InitTitle }, F = function(GetAPI)
   Fade, aCreditsData, IsKeyReleased, InitLobby, DeInitLevel, InitNewGame,
   fontTiny, fontLittle, fontLarge, GetGameTicks, RenderTerrain, RenderObjects,
   SelectObject, GameProc, RegisterFBUCallback, aObjects, GetActivePlayer,
-  GetOpponentPlayer
+  GetOpponentPlayer, LoadSaveData
   = -- --------------------------------------------------------------------- --
   GetAPI("LoadResources", "SetCallbacks", "SetCursor", "aLevelData",
     "aObjectTypes", "LoadLevel", "IsMouseInBounds", "aCursorIdData", "aSfxData",
@@ -335,7 +345,7 @@ return { A = { InitTitle = InitTitle }, F = function(GetAPI)
     "IsKeyReleased", "InitLobby", "DeInitLevel", "InitNewGame", "fontTiny",
     "fontLittle", "fontLarge", "GetGameTicks", "RenderTerrain",
     "RenderObjects", "SelectObject", "GameProc", "RegisterFBUCallback",
-    "aObjects", "GetActivePlayer", "GetOpponentPlayer");
+    "aObjects", "GetActivePlayer", "GetOpponentPlayer", "LoadSaveData");
   -- ----------------------------------------------------------------------- --
 end };
 -- End-of-File ============================================================= --

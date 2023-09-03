@@ -84,11 +84,11 @@ typedef void (*ConCbFunc)(const Arguments&); // Cmd callback
 /* ------------------------------------------------------------------------- */
 struct ConLib                          // Console library command structure
 { /* ----------------------------------------------------------------------- */
-  const string       strName;          // Function name
-  const unsigned int uiMinimum;        // Minimum parameters
-  const unsigned int uiMaximum;        // Maximum parameters
-  const GuiMode      guimMin;          // Minimum guimode id required
-  const ConCbFunc    ccbFunc;          // Callback function
+  const string         strName;        // Function name
+  const unsigned int   uiMinimum,      // Minimum parameters
+                       uiMaximum;      // Maximum parameters
+  const CoreFlagsConst cfRequired;     // Required core flags
+  const ConCbFunc      ccbFunc;        // Callback function
 };/* ----------------------------------------------------------------------- */
 typedef array<const ConLib, MAX_CONCMD> ConCmdStaticList;
 /* ------------------------------------------------------------------------- */

@@ -113,8 +113,8 @@ class PcmData :                        // Audio data structure
     eFormat(AL_NONE),                  // Format not initialised
     eSFormat(AL_NONE),                 // Singal channel format not initialised
     stAlloc(0),                        // No memory allocated
-    aPcmL(aPcm[0]),                    // Alias of first pcm channel
-    aPcmR(aPcm[1])                     // Alias of second pcm channel
+    aPcmL(aPcm.front()),               // Alias of first pcm channel
+    aPcmR(aPcm.back())                 // Alias of second pcm channel
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */

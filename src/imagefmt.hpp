@@ -509,7 +509,7 @@ class CodecPNG final :                 // Members initially private
         // Check to make sure info struct is valid
         if(!piData) XC("Create PNG info struct failed!");
         // Assign file stream handle
-        png_init_io(psData, fsC.FStreamGetHandle());
+        png_init_io(psData, fsC.FStreamGetCtx());
       } // Destructor that cleans up the libpng context
       ~PngWriter(void) { png_destroy_write_struct(&psData, &piData); }
     } // Send file stream to constructor
@@ -859,7 +859,7 @@ class CodecJPG final :                 // Members initially private
         jpeg_CreateCompress(&ciData, JPEG_LIB_VERSION,
           sizeof(struct jpeg_compress_struct));
         // first time for this JPEG object?
-        jpeg_stdio_dest(&ciData, fsC.FStreamGetHandle());
+        jpeg_stdio_dest(&ciData, fsC.FStreamGetCtx());
       } // Destructor that cleans up libjpeg
       ~JpegWriter(void) { jpeg_destroy_compress(&ciData); }
     } // Send file map to class

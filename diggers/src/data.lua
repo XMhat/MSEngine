@@ -49,13 +49,14 @@ local ACT<const> = {    -- Object actions array
   JUMP    = 0x0D, -- Object should jump
   GRAB    = 0x0E, -- Object should grab the nearest object
   DROP    = 0x0F, -- Object should drop the selected object
-  NEXT    = 0x10, -- Object should cycle to the next item in it's inventory
-  REST    = 0x11, -- Object should rest at the trade-centre
-  REC     = 0x12, -- Object should recruit a new digger
-  DEPLOY  = 0x13, -- Object should be deployed
-  OPEN    = 0x14, -- Object should open (flood gate)
-  CLOSE   = 0x15, -- Object should close (flood gate)
-  MAP     = 0x16, -- Object should show TNT map
+  PREV    = 0x10, -- Object should cycle to the previous held item
+  NEXT    = 0x11, -- Object should cycle to the next held item
+  REST    = 0x12, -- Object should rest at the trade-centre
+  REC     = 0x13, -- Object should recruit a new digger
+  DEPLOY  = 0x14, -- Object should be deployed
+  OPEN    = 0x15, -- Object should open (flood gate)
+  CLOSE   = 0x16, -- Object should close (flood gate)
+  MAP     = 0x17, -- Object should show TNT map
 };
 -- Jobs -------------------------------------------------------------------- --
 local JOB<const> = {     -- Job data array
@@ -361,7 +362,7 @@ local aLevelData<const> =
 local aZoneData<const> = {
   -- L -- T -- R -- B - FPX  FPY - DEPENDENCY -------------------------- (1-10)
   { 188,  50, 245,  78, 221,  56, {                   } }, -- Azerg        [01]
-  { 106,  63, 172,  88, 127,  54, {                   } }, -- Dhobbs       [02]
+  { 106,  63, 172,  90, 127,  54, {                   } }, -- Dhobbs       [02]
   {  48, 137,  92, 167,  48, 140, {  2, 4, 5          } }, -- Eleevate     [03]
   {  47, 192,  95, 245,  80, 210, {  3, 5, 9          } }, -- Deena        [04]
   {  96, 154, 138, 185, 110, 129, {  2, 3, 4, 6, 8, 9 } }, -- Justyn       [05]

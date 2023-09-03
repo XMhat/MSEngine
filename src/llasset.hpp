@@ -220,7 +220,7 @@ LLFUNCEX(ToString, 1, LCPUSHXSTR(LCGETPTR(1, Asset)->ToString()));
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(ToFile, 1,
   LCPUSHINT(FStream(LCGETCPPFILE(2, "File"), FStream::FM_W_B).
-    FStreamWriteBlock(*LCGETPTR(1, Asset))));
+    FStreamWriteBlockSafe(*LCGETPTR(1, Asset))));
 /* ========================================================================= */
 // $ Asset:Size
 // < Size:integer=Size of the array in bytes.

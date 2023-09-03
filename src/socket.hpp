@@ -795,7 +795,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       const Token tWords{ vlR->second, cCommon->Space() };
       if(tWords.size() < 3) return SetErrorStaticSafe("Unknown response");
       // Get protocol and if it is not valid?
-      const string strProtocol{ tWords[0] };
+      const string strProtocol{ tWords.front() };
       if(strProtocol != "HTTP/1.0" && strProtocol != "HTTP/1.1")
         return SetErrorStaticSafe(Format("Bad protocol '$'", strProtocol));
       // Get http status code string and if not a valid number?
@@ -1266,7 +1266,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       // Only one token specified?
       case 1:
       { // Set TLSv1.3 cipher suite
-        const string &strSuite = tData[0];
+        const string &strSuite = tData.front();
         strCipherSuite = strSuite == cParent.strCipherDefault ?
           cCVars->GetInternalStrSafe(NET_CIPHERTLSv13) : strSuite;
         // Set <=TLSv1.2 cipher list
@@ -1276,7 +1276,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       } // Two tokens specified?
       case 2:
       { // Set TLSv1.3 cipher suite
-        const string &strSuite = tData[0];
+        const string &strSuite = tData.front();
         strCipherSuite = strSuite == cParent.strCipherDefault ?
           cCVars->GetInternalStrSafe(NET_CIPHERTLSv13) : strSuite;
         // Set <= TLSv1.2 cipher list
@@ -1324,7 +1324,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
                  strB{ GetCppString(lS, 7, "Body") };
     CheckFunction(lS, 8, "EventFunc");
     // Request must begin with a forward slash
-    if(strR[0] != '/') XC("Resource is invalid!", "Resource", strR);
+    if(strR.front() != '/') XC("Resource is invalid!", "Resource", strR);
     // Set address and TLS cipher
     SetAddress(strA, uiP);
     SetupCipher(strC);
@@ -1538,11 +1538,11 @@ static StrNCStrMap SocketOAuth11(const string &strMethod,
   // you cant use string& with cstrings, so use CSTR*PAIR's instead.
   StrNCStrMap vaOA{{
     { "oauth_consumer_key",                       StdMove(strCK) },
-    { "oauth_nonce", MD5functions::HashMB(CryptRandomBlock(64)) },
-    { "oauth_timestamp",             ToString(cmSys.GetTimeS()) },
+    { "oauth_nonce", SHA1functions::HashMB(CryptRandomBlock(64)) },
+    { "oauth_timestamp",              ToString(cmSys.GetTimeS()) },
     { "oauth_token",                             StdMove(strTok) },
-    { "oauth_signature_method",                     "HMAC-SHA1" },
-    { "oauth_version",                                    "1.0" }
+    { "oauth_signature_method",                      "HMAC-SHA1" },
+    { "oauth_version",                                     "1.0" }
   }};
   // Copy config vars and oauth vars into unsigned params map
   StrNCStrMap vaUP{ vaOA };

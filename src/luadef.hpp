@@ -13,8 +13,8 @@ using namespace IfCVarDef;             // Using util namespace
 /* == Typedefs ============================================================= */
 struct LuaKeyInt                       // Lua key/value pairs C
 { /* ----------------------------------------------------------------------- */
-  const char*const      cpName;        // Name of const table
-  const lua_Integer     liValue;       // Integer value for this const
+  const char*const  cpName;            // Name of const table
+  const lua_Integer liValue;           // Integer value for this const
 };/* ----------------------------------------------------------------------- */
 struct LuaTable                        // Lua table as C
 { /* ----------------------------------------------------------------------- */
@@ -30,15 +30,15 @@ using namespace IfLuaDef;              // Using cvardef namespace
 /* == Variables ============================================================ */
 extern const struct LuaLibStatic       // Name of struct
 { /* ----------------------------------------------------------------------- */
-  const char*const      cpName;        // Name of library
-  const GuiMode         guimMin;       // Minimum gui mode required
-  const luaL_Reg*const  libList;       // Library functions
-  const int             iLLCount;      // Size of library functions
-  const luaL_Reg*const  libmfList;     // Member library functions
-  const int             iLLMFCount;    // Size of member library functions
-  const lua_CFunction   lcfpDestroy;   // Destruction function
-  const LuaTable*const  lkiList;       // Table of key/values to define
-  const int             iLLKICount;    // Size of member library functions
+  const char*const     cpName;         // Name of library
+  const CoreFlagsConst cfRequired;     // Required core flags to register
+  const luaL_Reg*const libList;        // Library functions
+  const int            iLLCount;       // Size of library functions
+  const luaL_Reg*const libmfList;      // Member library functions
+  const int            iLLMFCount;     // Size of member library functions
+  const lua_CFunction  lcfpDestroy;    // Destruction function
+  const LuaTable*const lkiList;        // Table of key/values to define
+  const int            iLLKICount;     // Size of member library functions
   /* --------------------------------------------------------------------- */
 } luaLibList[];                        // Library list in lualib.hpp
 /* ------------------------------------------------------------------------- */

@@ -105,12 +105,12 @@ static ValidResult DirValidName(const string &strName,
   { // Full sandbox. Do not leave .exe directory
     case VT_UNTRUSTED:
     { // Root directory not allowed
-      if(strChosen[0] == '/') return VR_NOROOT;
+      if(strChosen.front() == '/') return VR_NOROOT;
       // Get parts from pathname and return if empty.
       const Token tParts{ strChosen, "/" };
       // Get first iterator and string.
       StrVectorConstIt svciPart{ tParts.cbegin() };
-      const string &strFirst = tParts[0];
+      const string &strFirst = tParts.front();
       // If we have a length of 2 or more?
       if(strFirst.length() > 1)
       { // No parent directory or drive letter allowed
@@ -138,7 +138,7 @@ static ValidResult DirValidName(const string &strName,
       const Token tParts{ strChosen, "/" };
       // Get first string item and iterator.
       StrVectorConstIt svciPart{ tParts.cbegin() };
-      const string &strFirst = tParts[0];
+      const string &strFirst = tParts.front();
       // Check drive letter is valid
       if(strFirst.length() > 1 && strFirst[1] == ':')
       { // Get first character and make sure the drive letter is valid

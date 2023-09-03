@@ -884,11 +884,10 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
       { GL_NEAREST, GL_NEAREST }, { GL_NEAREST, GL_LINEAR }, // 00-01
       { GL_LINEAR,  GL_NEAREST }, { GL_LINEAR,  GL_LINEAR }, // 02-03
     }};
-    // Get filter lookup id
+    // Get filter lookup id and set values
     const TwoGLints &tfItem = tfList[stId];
-    // Lookup table and set values
-    iMag = tfItem[0];
-    iMin = tfItem[1];
+    iMag = tfItem.front();
+    iMin = tfItem.back();
   }
   /* -- Set texture mode by filter id -------------------------------------- */
   void SetMipMapFilterById(const size_t stId, GLint &iMin, GLint &iMag) const
@@ -909,9 +908,10 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
       { GL_NEAREST, GL_LINEAR_MIPMAP_LINEAR },   // 10
       { GL_LINEAR,  GL_LINEAR_MIPMAP_LINEAR }    // 11
     } };
-    // Lookup table and set values
-    iMag = tfList[stId][0];
-    iMin = tfList[stId][1];
+    // Get filter lookup id and set values
+    const TwoGLints &iaPair = tfList[stId];
+    iMag = iaPair.front();
+    iMin = iaPair.back();
   }
   /* -- Extensions --------------------------------------------------------- */
   GLuint GetExtensionCount(void) const

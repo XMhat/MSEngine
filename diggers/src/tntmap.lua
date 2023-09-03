@@ -19,70 +19,13 @@ local LoadResources, Fade, SetCallbacks, IsMouseInBounds, IsMouseNotInBounds,
   aCursorIdData, SetCursor, aSfxData, PlayStaticSound, aSfxData,
   IsButtonPressed, IsButtonHeld, aTileData, aTileFlags, InitTitle, texSpr,
   SetBottomRightTip, RenderInterface, GameProc, InitContinueGame, GetLevelData,
-  aObjects, RenderShadow;
+  aObjects, RenderShadow, GetGameTicks;
 -- Init TNT map screen function -------------------------------------------- --
 local function InitTNTMap()
   -- On assets loaded event
   local function OnLoaded(aResources)
     -- Set tntmap graphic
     local texTNTMap = aResources[1].H;
-    -- Calculate bitmap size (24-bit RGB colours)
-    local iBSize<const> = 128 * 128 * 3;
-    -- Create storage for bitmap data (128x128xRGB)
-    local asBData<const> = AssetCreate(iBSize)
-    -- Get water tile flags
-    local iWFlags<const> = aTileFlags.W;
-    -- Get solid tile flags
-    local iSFlags<const> = aTileFlags.D + aTileFlags.AD;
-    -- Get level data
-    local binLevel<const> = GetLevelData();
-    -- For each pixel row
-    for iY = 0, 127 do
-      -- Calculate Y position in destination bitmap
-      local iBYPos<const> = (iBSize - ((iY + 1) * 384)) + 3;
-      -- Calculate Y position from level data
-      local iLYPos<const> = iY * 256;
-      -- For each pixel column
-      for iX = 0, 127 do
-        -- Get tile at level position
-        local iTId<const> = binLevel:RU16LE(iLYPos + (iX * 2));
-        -- Get tile flags
-        local iTFlags<const> = aTileData[1 + iTId];
-        -- Get bitmap position and then the locations of the components
-        local iBPos<const> = iBYPos + (iX * 3);
-        local iBPosGB<const> = iBPos - 2; -- Green/Blue (16-bit write)
-        local iBPosR<const> = iBPos - 3; -- Red (8-bit write)
-        -- Pixel values to write (Green/Blue + Red)
-        local iIGB, iIR;
-        -- Tile is clear?
-        if iTId == 0 then iIGB, iIR = 0xFACE, 0x87;
-        -- Tile is solid diggable block?
-        elseif iTId == 3 then iIGB, iIR = 0x1A7F, 0x00;
-        -- Tile is water?
-        elseif iTFlags & iWFlags ~= 0 then iIGB, iIR = 0xFF00, 0x00;
-        -- Tile is not destructable and not dug?
-        elseif iTFlags & iSFlags == 0 then iIGB, iIR = 0x7F70, 0x7F;
-        -- Other tiles
-        else iIGB, iIR = 0x0000, 0x00 end;
-        -- Apply pixel
-        asBData:WU16LE(iBPosGB, iIGB);
-        asBData:WU8(iBPosR, iIR);
-      end
-    end
-    -- For each object, treat as POI
-    for iObjectId = 1, #aObjects do
-      -- Get object
-      local aObj<const> = aObjects[iObjectId];
-      -- Get position in pixel in bitmap for object
-      local iPos<const> =
-        (iBSize - ((aObj.AY + 1) * 384)) + (aObj.AX * 3) + 3;
-      -- Make a white RGB dot
-      asBData:WU16LE(iPos - 2, 0xFFFF);
-      asBData:WU8(iPos - 3, 0xFF);
-    end
-    -- Push array as texture
-    local texTerrain = TextureCreateTS(ImageRaw("TNTMap", asBData,
-      128, 128, 24, 0x1907), 128, 64, 0, 0, 0);
     -- POI testing
     local function MouseOverExit()
       return IsMouseNotInBounds(8, 8, 312, 208) end;
@@ -142,6 +85,8 @@ local function InitTNTMap()
       -- Mouse over something else?
       else SetTipAndCursor("TNT MAP", aCursorIdData.ARROW) end;
     end
+    -- Dynamic terrain texture
+    local texTerrain;
     -- Render callback
     local function RenderProc()
       -- Render everything
@@ -161,8 +106,77 @@ local function InitTNTMap()
       -- Draw tip
       SetBottomRightTip(sTip);
     end
+    -- Next map update (updates on first tick)
+    local nNextUpdate = 0;
+    -- Calculate bitmap size (24-bit RGB colours)
+    local iBSize<const> = 128 * 128 * 3;
+    -- Get water tile flags
+    local iWFlags<const> = aTileFlags.W;
+    -- Get solid tile flags
+    local iSFlags<const> = aTileFlags.D + aTileFlags.AD;
+    -- Get level data
+    local binLevel<const> = GetLevelData();
+    -- TNT map procedure
+    local function MapProc()
+      -- Perform game actions
+      GameProc();
+      -- Done if map update interval not reached
+      if GetGameTicks() < nNextUpdate then return end;
+      -- Wait about another five seconds
+      nNextUpdate = GetGameTicks() + 300;
+      -- Create storage for bitmap data (128x128xRGB). The asset will be moved
+      -- into the engine so we need to allocate it every time.
+      local asBData<const> = AssetCreate(iBSize)
+      -- For each pixel row
+      for iY = 0, 127 do
+        -- Calculate Y position in destination bitmap
+        local iBYPos<const> = (iBSize - ((iY + 1) * 384)) + 3;
+        -- Calculate Y position from level data
+        local iLYPos<const> = iY * 256;
+        -- For each pixel column
+        for iX = 0, 127 do
+          -- Get tile at level position
+          local iTId<const> = binLevel:RU16LE(iLYPos + (iX * 2));
+          -- Get tile flags
+          local iTFlags<const> = aTileData[1 + iTId];
+          -- Get bitmap position and then the locations of the components
+          local iBPos<const> = iBYPos + (iX * 3);
+          local iBPosGB<const> = iBPos - 2; -- Green/Blue (16-bit write)
+          local iBPosR<const> = iBPos - 3; -- Red (8-bit write)
+          -- Pixel values to write (Green/Blue + Red)
+          local iIGB, iIR;
+          -- Tile is clear?
+          if iTId == 0 then iIGB, iIR = 0xFACE, 0x87;
+          -- Tile is solid diggable block?
+          elseif iTId == 3 then iIGB, iIR = 0x1A7F, 0x00;
+          -- Tile is water?
+          elseif iTFlags & iWFlags ~= 0 then iIGB, iIR = 0xFF00, 0x00;
+          -- Tile is not destructable and not dug?
+          elseif iTFlags & iSFlags == 0 then iIGB, iIR = 0x7F70, 0x7F;
+          -- Other tiles
+          else iIGB, iIR = 0x0000, 0x00 end;
+          -- Apply pixel
+          asBData:WU16LE(iBPosGB, iIGB);
+          asBData:WU8(iBPosR, iIR);
+        end
+      end
+      -- For each object, treat as POI
+      for iObjectId = 1, #aObjects do
+        -- Get object
+        local aObj<const> = aObjects[iObjectId];
+        -- Get position in pixel in bitmap for object
+        local iPos<const> =
+          (iBSize - ((aObj.AY + 1) * 384)) + (aObj.AX * 3) + 3;
+        -- Make a white RGB dot
+        asBData:WU16LE(iPos - 2, 0xFFFF);
+        asBData:WU8(iPos - 3, 0xFF);
+      end
+      -- Push array as texture
+      texTerrain = TextureCreateTS(ImageRaw("TNTMap", asBData,
+        128, 128, 24, 0x1907), 128, 64, 0, 0, 0);
+    end
     -- Set callbacks
-    SetCallbacks(GameProc, RenderProc, InputProc);
+    SetCallbacks(MapProc, RenderProc, InputProc);
   end
   -- Load tntmap resources
   LoadResources("TNT Map", {{T=2,F="tntmap",P={0}}}, OnLoaded);
@@ -174,13 +188,14 @@ return { A = { InitTNTMap = InitTNTMap }, F = function(GetAPI)
   PlayStaticSound, Fade, InitTitle, IsButtonHeld, IsMouseInBounds,
   IsMouseNotInBounds, aTileData, aTileFlags, texSpr, SetBottomRightTip,
   RenderInterface, InitContinueGame, GameProc, GetLevelData, aObjects,
-  RenderShadow
+  RenderShadow, GetGameTicks
   = -- --------------------------------------------------------------------- --
   GetAPI("LoadResources", "SetCallbacks", "SetCursor", "aCursorIdData",
    "aSfxData", "PlayStaticSound", "Fade", "InitTitle", "IsButtonHeld",
    "IsMouseInBounds", "IsMouseNotInBounds", "aTileData", "aTileFlags",
    "texSpr", "SetBottomRightTip", "RenderInterface",
-   "InitContinueGame", "GameProc", "GetLevelData", "aObjects", "RenderShadow");
+   "InitContinueGame", "GameProc", "GetLevelData", "aObjects", "RenderShadow",
+   "GetGameTicks");
   -- ----------------------------------------------------------------------- --
 end };
 -- End-of-File ============================================================= --

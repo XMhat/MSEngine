@@ -26,17 +26,15 @@ local CoreLog<const>, UtilDuration<const>, InputClearStates<const>,
   UtilBlank<const>, CoreStack<const>, CVarsGet<const>, InputSetCursor<const>,
   InputKeyState<const>, InputSetCursorPos<const>, FboConEnabled<const>,
   AssetParseBlock<const>, UtilExplode<const>, UtilImplode<const>,
-  InfoTicks<const>, CVarsRegister<const>, TextureCreate<const>,
-  CoreOnTick<const>, InfoCatchup<const>, InfoTime<const>,
-  InputGetNumJoyAxises<const>
+  CVarsRegister<const>, TextureCreate<const>, CoreOnTick<const>,
+  InfoCatchup<const>, InfoTime<const>, InputGetNumJoyAxises<const>
   = -- --------------------------------------------------------------------- --
   Core.Log, Util.Duration, Input.ClearStates, Util.Clamp, Input.GetJoyAxis,
   Input.aMouseState, Util.RoundInt, Input.GetJoyButton, Display.Reset,
   Info.Ticks, Asset.Parse, Fbo.Draw, Console.Write, Util.Blank, Core.Stack,
   CVars.Get, Input.SetCursor, Input.KeyState, Input.SetCursorPos,
-  Fbo.ConEnabled, Asset.ParseBlock, Util.Explode, Util.Implode, Info.Ticks,
-  CVars.Register, Texture.Create, Core.OnTick, Info.Catchup, Info.Time,
-  Input.GetNumJoyAxises;
+  Fbo.ConEnabled, Asset.ParseBlock, Util.Explode, Util.Implode, CVars.Register,
+  Texture.Create, Core.OnTick, Info.Catchup, Info.Time, Input.GetNumJoyAxises;
 -- Globals ----------------------------------------------------------------- --
 local fboMain<const> = Fbo.Main();     -- Main fbo class
 local fFont<const> = Font.Console();   -- Main console class

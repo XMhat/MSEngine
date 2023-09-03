@@ -202,15 +202,8 @@ BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
   }
   /* ----------------------------------------------------------------------- */
   template<typename T>int ToFile(const string &strFile) const
-  { // Create output file and if succeeded?
-    if(FStream fsOut{ strFile, FStream::FM_W_T })
-    { // Write the output file
-      fsOut.FStreamWriteString(ToString<T>());
-      // Success
-      return 0;
-    } // Create output file failed so return reason for failure
-    else return fsOut.FStreamFError();
-  }
+    { return FStream{ strFile, FStream::FM_W_T }.
+        FStreamWriteStringSafe(ToString<T>()) ? 0 : GetErrNo(); }
   /* ----------------------------------------------------------------------- */
   void AsyncReady(FileMap &fC)
   { // Parse the string and return if succeeded

@@ -580,7 +580,7 @@ class SysCore :
       const size_t stMinimum =
         sizeof(IMAGE_DOS_HEADER) + sizeof(IMAGE_NT_HEADERS32);
       // Read data into file and if failed? Report it
-      const size_t stActual = fExe.FStreamRead(mExe.Ptr(), mExe.Size());
+      const size_t stActual = fExe.FStreamReadSafe(mExe.Ptr(), mExe.Size());
       if(stActual < stMinimum)
         XCL("Failed to read enough data in executable!",
             "File",    strFile,       "Maximum", mExe.Size(),
@@ -742,7 +742,7 @@ class SysCore :
     static const array<const OSListItem,37>osList{ {
       //   cpLevel  uiHi  uiLo  uiBl  uiSp  ttExp           Note
       { "11 22H2+", 10,   0,   22621, 0,      1728860400 }, // 14/10/2024
-      { "11 21H2",  10,   0,   22000, 0,      1696892400 }, // 10/10/2023
+      { "11 21H2",  10,   0,   22000, 0,      1728342600 }, // 08/10/2024
       { "10 22H2",  10,   0,   19045, 0,      1760396400 }, // 14/10/2025
       { "10 21H2",  10,   0,   19044, 0,      1686610800 }, // 13/06/2023 (EoL)
       { "10 21H1",  10,   0,   19043, 0,      1670889600 }, // 13/12/2022 (EoL)

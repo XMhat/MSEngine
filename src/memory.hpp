@@ -316,7 +316,7 @@ class Data :
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Inherit an already allocated pointer ------------------------------- */
-  Data(const size_t stNSize, void*const vpSrc) :
+  Data(const size_t stNSize, const void*const vpSrc) :
     /* -- Initialisers ----------------------------------------------------- */
     DataConst{ stNSize, vpSrc }        // Assign pointer and pointer size
     /* -- No code ---------------------------------------------------------- */
@@ -501,7 +501,7 @@ class Memory :
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Inherit an already allocated pointer ------------------------------- */
-  Memory(const size_t stNSize, void*const vpSrc, const bool) :
+  Memory(const size_t stNSize, const void*const vpSrc, const bool) :
     /* -- Initialisers ----------------------------------------------------- */
     Data{ stNSize, vpSrc }             // Take ownership of pointer
     /* -- No code ---------------------------------------------------------- */
@@ -510,7 +510,7 @@ class Memory :
   explicit Memory(const size_t stNSize) :
     /* -- Initialisers ----------------------------------------------------- */
     Data{ stNSize,                     // Initialise data base class
-      MemAlloc<char>                   // Allocate memory (checked by CTOR)
+      MemAlloc<void>                   // Allocate memory (checked by CTOR)
         (Maximum(stNSize, 1)) }        // Allocate requested size
     /* -- No code ---------------------------------------------------------- */
     { }

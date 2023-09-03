@@ -24,12 +24,12 @@ BUILD_FLAGS(Console,                   // Console flags classes
   CF_NONE                {0x00000000}, CF_CANTDISABLE         {0x00000001},
   // Ignore first key on show console? Autoscroll on message?
   CF_IGNOREKEY           {0x00000002}, CF_AUTOSCROLL          {0x00000004},
-  // Redraw console?                   Automatically copy cvar on check?
-  CF_REDRAW              {0x00000008}, CF_AUTOCOPYCVAR        {0x00000010},
-  // Character insert mode?            Console displayed?
-  CF_INSERT              {0x00000020}, CF_ENABLED             {0x00000040},
-  // Ignore escape key?                Can't disable console? (guest setting)
-  CF_IGNOREESC           {0x00000080}, CF_CANTDISABLEGLOBAL   {0x00000100}
+  // Automatically copy cvar on check? Character insert mode?
+  CF_AUTOCOPYCVAR        {0x00000008}, CF_INSERT              {0x00000010},
+  // Console displayed?                Ignore escape key?
+  CF_ENABLED             {0x00000020}, CF_IGNOREESC           {0x00000040},
+  // Can't disable console? (guest setting)
+  CF_CANTDISABLEGLOBAL   {0x00000080}
 );/* ======================================================================= */
 BUILD_FLAGS(AutoComplete,              // Autocomplete flags classes
   /* ----------------------------------------------------------------------- */
@@ -39,6 +39,15 @@ BUILD_FLAGS(AutoComplete,              // Autocomplete flags classes
   AC_CVARS               {0x00000002},
   /* ----------------------------------------------------------------------- */
   AC_MASK{ AC_COMMANDS|AC_CVARS }      // All flags
+);/* ======================================================================= */
+BUILD_FLAGS(Redraw,
+  /* ----------------------------------------------------------------------- */
+  // Redraw nothing                    Redraw text console
+  RD_NONE                {0x00000000}, RD_TEXT                {0x00000001},
+  // Redraw graphical console
+  RD_GRAPHICS            {0x00000002},
+  /* ----------------------------------------------------------------------- */
+  RD_BOTH{ RD_TEXT|RD_GRAPHICS }       // All flags
 );/* ======================================================================= */
 static class Console final :           // Members initially private
   /* -- Base classes ------------------------------------------------------- */
@@ -67,6 +76,8 @@ static class Console final :           // Members initially private
   string           strConsoleBegin,    // Console input line (before cursor)
                    strConsoleEnd;      // Console input line (after cursor)
   int              iPageLines;         // Lines to move when paging up or down
+  RedrawFlags      rfDefault,          // Default redraw type
+                   rfFlags;            // Redraw flags
   /* -- Text mode ---------------------------------------------------------- */
   ClockInterval<CoreClock> ciNextUpdate,   // Next screen buffer update time
                            ciInputRefresh; // Time to wait before next peek
@@ -139,7 +150,7 @@ static class Console final :           // Members initially private
     } // Finish and render
     fboC.FinishAndRender();
     // Redrawn as requested
-    ClearRedraw();
+    rfFlags.FlagClear(RD_GRAPHICS);
     // Make sure the main fbo is updated
     cFboMain->SetDraw();
   }
@@ -390,7 +401,8 @@ static class Console final :           // Members initially private
     // The mainmanual* functions will consume 100% of the thread load
     // when it doesn't request a request to redraw so make sure to
     // throttle it.
-    if(cSystem->IsNotGuiMode(GM_GRAPHICS)) cTimer->TimerSetDelayIfZero();
+    if(cSystem->IsNotGraphicalMode())
+      cTimer->TimerSetDelayIfZero();
     // Can't disable console while paused
     SetCantDisable(true);
     // Write to console
@@ -402,7 +414,7 @@ static class Console final :           // Members initially private
     if(!cLua->ResumeExecution())
       return AddLine("Execution already in progress.");
     // Refresh stored delay because of manual render mode
-    if(cSystem->IsNotGuiMode(GM_GRAPHICS))
+    if(cSystem->IsNotGraphicalMode())
       cTimer->TimerSetDelay(cCVars->GetInternalSafe<unsigned int>(APP_DELAY));
     // Console can now be disabled
     SetCantDisable(false);
@@ -648,14 +660,10 @@ static class Console final :           // Members initially private
   bool IsVisible(void) { return FlagIsSet(CF_ENABLED); }
   /* -- Returns if the console should NOT be visible ----------------------- */
   bool IsNotVisible(void) { return !IsVisible(); }
-  /* -- Clears redraw flag ------------------------------------------------- */
-  void ClearRedraw(void) { FlagClear(CF_REDRAW); }
-  /* -- Sets redraw flag so the console fbo is rerendered ------------------ */
-  void SetRedraw(void) { FlagSetOrClear(CF_REDRAW, IsVisible()); }
-  /* -- Returns if the console fbo should redraw --------------------------- */
-  bool IsRedrawing(void) { return FlagIsSet(CF_REDRAW); }
-  /* -- Returns if the console fbo should NOT redraw ----------------------- */
-  bool IsNotRedrawing(void) { return !IsRedrawing(); }
+  /* -- Sets redraw flag so the console fbo or terminal buffer is redrawn -- */
+  void SetRedraw(void)
+    { rfFlags.FlagReset(rfDefault.FlagIsSet(RD_TEXT) || IsVisible() ?
+        rfDefault : RD_NONE); }
   /* -- Reset defaults (for lreset) ---------------------------------------- */
   void RestoreDefaultProperties(void)
   { // Restore default settings from cvar registry
@@ -713,10 +721,6 @@ static class Console final :           // Members initially private
     AddLineExC(COLOUR_YELLOW, '>', strCmd);
     // Reset scrolling position if flag set and not at the bottom.
     if(FlagIsSet(CF_AUTOSCROLL)) MoveLogEnd();
-    // If console is not actually enabled ignore the command. We will just add
-    // this as a little security feature so commands cannot be issued when the
-    // console is closed.
-    if(IsNotVisible()) return;
     // Push entire text input to recall history
     AddHistory(strCmd);
     // Find console callback function and function not found?
@@ -900,7 +904,7 @@ static class Console final :           // Members initially private
         ToShortDuration(cLog->CCDeltaToDouble(), 0)),
         cmSys.FormatTime(strTimeFormat.c_str()));
       // Not redrawing?
-      if(IsNotRedrawing())
+      if(rfFlags.FlagIsClear(RD_TEXT))
       { // Redraw status if imput empty. Input status doesn't need redrawing
         if(InputEmpty())
           cSystem->RedrawStatusBar(strStatusLeft, strStatusRight);
@@ -908,9 +912,9 @@ static class Console final :           // Members initially private
         return cSystem->CommitBuffer();
       }
     } // Done if not redrawing
-    else if(IsNotRedrawing()) return;
+    else if(rfFlags.FlagIsClear(RD_TEXT)) return;
     // Reset redraw flag as we're about to draw
-    ClearRedraw();
+    rfFlags.FlagClear(RD_TEXT);
     // Redraw the main text buffer
     cSystem->RedrawBuffer(*this, clriPosition);
     // If no text is inputted? Redraw customised status bar
@@ -928,7 +932,7 @@ static class Console final :           // Members initially private
     return size();
   }
   /* -- Redraw the console fbo if the console contents changed ------------- */
-  void Render(void) { if(IsRedrawing()) Redraw(); }
+  void Render(void) { if(rfFlags.FlagIsSet(RD_GRAPHICS)) Redraw(); }
   /* -- Render the console to main fbo if visible -------------------------- */
   void RenderToMain(void) { if(IsVisible()) cFboMain->BlitConsoleToMain(); }
   /* -- Show the console and render it and render the fbo to main fbo ------ */
@@ -971,7 +975,7 @@ static class Console final :           // Members initially private
          "Command", strName, "Maximum", stMaxCount);
     // Checks passed. Now add it
     return llCmds.insert({ strName,
-      { strName, uiMin, uiMax, GM_TEXT_NOAUDIO, ccbFunc } }).first;
+      { strName, uiMin, uiMax, CF_NOTHING, ccbFunc } }).first;
   }
   /* -- Command exists? ---------------------------------------------------- */
   bool CommandIsRegistered(const string &strName) const
@@ -1048,13 +1052,17 @@ static class Console final :           // Members initially private
   { // Enabling and not enabled?
     if(bState && IsNotVisible())
     { // Set console enabled and redraw the buffer
-      FlagSet(CF_REDRAW|CF_ENABLED);
+      FlagSet(CF_ENABLED);
+      // Redraw console
+      SetRedraw();
       // Log that the console has been enabled
       cLog->LogDebugSafe("Console has been enabled.");
     } // Disabled and not disabled?
     else if(!bState && IsVisible())
     { // Set console disabled and clear redraw flag
-      FlagClear(CF_REDRAW|CF_ENABLED);
+      FlagClear(CF_ENABLED);
+      // Redraw console
+      SetRedraw();
       // We'll need to force a final draw in order to visibly hide the console
       cFboMain->SetDraw();
       // Log that the console has been disabled
@@ -1145,7 +1153,7 @@ static class Console final :           // Members initially private
     InitConsoleTexture();
   }
   /* -- Print a string using textures -------------------------------------- */
-  void Init(const bool bInteractive)
+  void Init(void)
   { // Class intiialised
     IHInitialise();
     // Log progress
@@ -1153,26 +1161,34 @@ static class Console final :           // Members initially private
       conLibList.size());
     // Reset cursor position
     clriPosition = rbegin();
-    // Load console texture
-    if(bInteractive) InitConsoleFontAndTexture();
+    // Graphical mode?
+    if(cSystem->IsGraphicalMode())
+    { // If we have terminal console as well we refresh both console otherwise
+      // we refresh only the graphical console
+      rfDefault.FlagReset(cSystem->IsTextMode() ?
+        RD_GRAPHICS|RD_TEXT : RD_GRAPHICS);
+      // Load console texture
+      InitConsoleFontAndTexture();
+    } // Only text console is redrawn
+    else rfDefault.FlagReset(RD_TEXT);
+    // Redraw the console
+    SetRedraw();
     // Initially shown and not closable
-    FlagSet(CF_CANTDISABLE|CF_ENABLED|CF_REDRAW|CF_INSERT);
+    FlagSet(CF_CANTDISABLE|CF_ENABLED|CF_INSERT);
     // Register lua events
     cEvtMain->RegisterEx(reEvents);
     // Show version information
     PrintVersion();
     // Iterate each item and register it
     for(const ConLib &clD : conLibList)
-    { // The selected gui mode does not require this command?
-      if(cSystem->IsNotGuiMode(clD.guimMin))
-      { // Say that we ignored this library
-        cLog->LogDebugExSafe("Console ignoring registration of command '$'.",
-          clD.strName);
-        // Try next command
-        continue;
-      } // Register the command
-      RegisterCommand(clD.strName, clD.uiMinimum, clD.uiMaximum, clD.ccbFunc);
-    } // Say how many commands we registered
+      // Register command if the required core flags are set
+      if(cSystem->IsCoreFlagsHave(clD.cfRequired))
+        RegisterCommand(clD.strName, clD.uiMinimum, clD.uiMaximum,
+          clD.ccbFunc);
+      // Write in log to say we skipped registration of this command
+      else cLog->LogDebugExSafe(
+        "Console ignoring registration of command '$'.", clD.strName);
+    // Say how many commands we registered
     cLog->LogInfoExSafe("Console initialised with $ of $ built-in commands.",
       llCmds.size(), conLibList.size());
   }
@@ -1385,6 +1401,8 @@ static class Console final :           // Members initially private
     stOutputMaximum(0),                // No maximum output lines
     stMaximumChars(0),                 // No maximum characters per line
     iPageLines(0),                     // No page up/down lines setting
+    rfDefault{RD_NONE},                // Default redraw initially set by Init
+    rfFlags{RD_NONE},                  // Redraw type
     ciInputRefresh{                    // Init text mode refresh rate to...
       microseconds{ 31250 } },         // ...0.031sec
     ulFgColour(                        // Set input text colour

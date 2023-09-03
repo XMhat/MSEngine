@@ -11,14 +11,15 @@
 -- ========================================================================= --
 -- Core function aliases --------------------------------------------------- --
 local insert<const>, unpack<const> = table.insert, table.unpack;
--- M-Engine function aliases ----------------------------------------------- --
+-- M-Engine aliases (optimisation) ----------------------------------------- --
+local InfoTicks<const> = Info.Ticks;
 -- Diggers function and data aliases --------------------------------------- --
 local LoadResources, PlayMusic, Fade, SetCallbacks, IsButtonReleased,
   IsMouseInBounds, IsMouseNotInBounds, aCursorIdData, SetCursor, aSfxData,
-  PlayStaticSound, InitTitle, InitCon, InitScene, InitContinueGame,
-  InitShop, InitBank, EndConditionsCheck, SetBottomRightTipAndShadow,
-  SetBottomRightTip, RenderInterface, GameProc, RegisterFBUCallback,
-  RenderShadow, aGlobalData;
+  PlayStaticSound, InitTitle, InitCon, InitScene, InitContinueGame, InitShop,
+  InitBank, EndConditionsCheck, SetBottomRightTipAndShadow, SetBottomRightTip,
+  RenderInterface, GameProc, RegisterFBUCallback, RenderShadow, aGlobalData,
+  fontSpeech;
 -- Init lobby function ----------------------------------------------------- --
 local function InitLobby(aActiveObject, bNoSetMusic, iSaveMusicPos)
   -- Active object must be specified or ommitted
@@ -43,7 +44,7 @@ local function InitLobby(aActiveObject, bNoSetMusic, iSaveMusicPos)
     -- Register framebuffer update
     local iStageL, iStageR;
     local function OnFrameBufferUpdate(...)
-      local _ _, _, iStageL, _, iStageR, _ = ...;
+      local _; _, _, iStageL, _, iStageR, _ = ...;
     end
     RegisterFBUCallback("lobby", OnFrameBufferUpdate);
     -- Play lobby music if requested
@@ -70,6 +71,10 @@ local function InitLobby(aActiveObject, bNoSetMusic, iSaveMusicPos)
         texLobby:BlitLT(8, 8);
         -- Render backdrop shadow
         RenderShadow(8, 8, 312, 208);
+        -- Render fire
+        local iFrame<const> = InfoTicks() % 9;
+        if iFrame >= 6 then texLobby:BlitSLT(1, 113, 74);
+        elseif iFrame >= 3 then texLobby:BlitSLT(2, 113, 74) end;
         -- Render tip
         SetBottomRightTip(Tip);
       end
@@ -135,12 +140,20 @@ local function InitLobby(aActiveObject, bNoSetMusic, iSaveMusicPos)
       -- Cache texure co-ordinates for background. We make sure we have one
       -- tile incase the texture was already cached and therefore the values
       -- will be overwritten
-      texLobby:TileSTC(1);
-      texLobby:TileS(0, 208, 312, 512, 512);
+      texLobby:TileSTC(3);
+      texLobby:TileS(0, 208, 312, 512, 512); -- Lobby open graphic
+      texLobby:TileS(1, 305, 185, 398, 258); -- Fire animation graphic B
+      texLobby:TileS(2, 400, 185, 493, 258); -- Fire animation graphic C
       -- Change render procs
       SetCallbacks(ProcLobbyOpen, RenderLobbyOpen, InputLobbyOpen);
     -- Lobby is closed?
     else
+      -- Ready to play boolean
+      local bReadyToPlay<const> = aGlobalData.gSelectedLevel ~= nil and
+                                  aGlobalData.gSelectedRace ~= nil;
+      local bGameSaved<const> = aGlobalData.gGameSaved;
+      -- Set speech colour to white
+      fontSpeech:SetCRGBAI(0xFFFFFFFF);
       -- Lobby closed render proc
       local function RenderLobbyClosed()
         -- Draw backdrop
@@ -149,6 +162,12 @@ local function InitLobby(aActiveObject, bNoSetMusic, iSaveMusicPos)
         texLobby:BlitSLT(1, 8, 8);
         -- Render lobby shadow
         RenderShadow(8, 8, 312, 208);
+        -- Render fire
+        local iFrame<const> = InfoTicks() % 9;
+        if iFrame >= 6 then texLobby:BlitSLT(5, 113, 74);
+        elseif iFrame >= 3 then texLobby:BlitSLT(4, 113, 74);
+        -- Flash if not ready to play
+        else fontSpeech:Print(157, 115, "!") end;
         -- Draw foliage
         texLobby:BlitSLT(2, iStageR-238, 183);
         texLobby:BlitSLT(3, iStageL,      56);
@@ -211,11 +230,10 @@ local function InitLobby(aActiveObject, bNoSetMusic, iSaveMusicPos)
         -- Mouse is over exit?
         if MouseOverExit() then
           -- Level and race selected?
-          if aGlobalData.gSelectedLevel ~= nil and
-             aGlobalData.gSelectedRace ~= nil then
+          if bReadyToPlay then
             SetTipAndCursor("BEGIN", aCursorIdData.OK);
           -- Game saved?
-          elseif aGlobalData.gGameSaved then
+          elseif bGameSaved then
             SetTipAndCursor("CANCEL", aCursorIdData.EXIT);
           end
         -- Mouse over controller?
@@ -225,18 +243,20 @@ local function InitLobby(aActiveObject, bNoSetMusic, iSaveMusicPos)
         else SetTipAndCursor("LOBBY", aCursorIdData.ARROW) end;
       end
       -- Cache background (same rule as above)
-      texLobby:TileSTC(4);
-      texLobby:TileS(0,   0, 272, 512, 512);
-      texLobby:TileS(1,   0,   0, 304, 200);
-      texLobby:TileS(2,   0, 214, 238, 271);
-      texLobby:TileS(3, 305,   0, 512, 184);
+      texLobby:TileSTC(6);
+      texLobby:TileS(0,   0, 272, 512, 512); -- Background graphic
+      texLobby:TileS(1,   0,   0, 304, 200); -- Lobby graphic
+      texLobby:TileS(2,   0, 214, 238, 271); -- Foilage graphic left
+      texLobby:TileS(3, 305,   0, 512, 184); -- Foilage graphic right
+      texLobby:TileS(4, 305, 185, 398, 258); -- Fire animation graphic B
+      texLobby:TileS(5, 400, 185, 493, 258); -- Fire animation graphic C
       -- When closed lobby has faded in? Set lobby callbacks
       local function OnFadeIn()
         SetCallbacks(ProcLobbyClosed, RenderLobbyClosed, InputLobbyClosed);
       end
       -- Fade In a closed lobby
       Fade(1, 0, 0.04, RenderLobbyClosed, OnFadeIn);
-   end
+    end
   end
   -- Load closed lobby texture
   LoadResources("Lobby", aToLoad, OnLoaded);
@@ -246,18 +266,18 @@ return { A = { InitLobby = InitLobby }, F = function(GetAPI)
   -- Imports --------------------------------------------------------------- --
   LoadResources, PlayMusic, Fade, SetCallbacks, IsButtonReleased,
   IsMouseInBounds, IsMouseNotInBounds, aCursorIdData, SetCursor, aSfxData,
-  PlayStaticSound, InitTitle, InitCon, InitScene, InitShop,
-  InitBank, InitContinueGame, EndConditionsCheck, SetBottomRightTipAndShadow,
+  PlayStaticSound, InitTitle, InitCon, InitScene, InitShop, InitBank,
+  InitContinueGame, EndConditionsCheck, SetBottomRightTipAndShadow,
   SetBottomRightTip, RenderInterface, GameProc, RegisterFBUCallback,
-  RenderShadow, aGlobalData
+  RenderShadow, aGlobalData, fontSpeech
   = -- --------------------------------------------------------------------- --
   GetAPI("LoadResources", "PlayMusic", "Fade", "SetCallbacks",
     "IsButtonReleased", "IsMouseInBounds", "IsMouseNotInBounds",
     "aCursorIdData", "SetCursor", "aSfxData", "PlayStaticSound", "InitTitle",
-    "InitCon", "InitScene", "InitShop", "InitBank",
-    "InitContinueGame", "EndConditionsCheck", "SetBottomRightTipAndShadow",
-    "SetBottomRightTip", "RenderInterface", "GameProc", "RegisterFBUCallback",
-    "RenderShadow", "aGlobalData");
+    "InitCon", "InitScene", "InitShop", "InitBank", "InitContinueGame",
+    "EndConditionsCheck", "SetBottomRightTipAndShadow", "SetBottomRightTip",
+    "RenderInterface", "GameProc", "RegisterFBUCallback", "RenderShadow",
+   "aGlobalData", "fontSpeech");
   -- ----------------------------------------------------------------------- --
 end };
 -- End-of-File ============================================================= --

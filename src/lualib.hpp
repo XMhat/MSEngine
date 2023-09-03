@@ -177,7 +177,7 @@ using namespace IfLuaUtil;             // Using luautil namespace
 /* v (variable) = The fully qualified name of the array to use.              */
 /* n (name)     = The name of the namespace.                                 */
 /* t (type)     = The variable type (Statics, Methods or Consts).            */
-/* l (level)    = The minimum gui level. See cvardef.hpp->GuiMode.           */
+/* l (level)    = The required core flags. See cvardef.hpp->CoreFlags.       */
 /* m (methods)  = Method function list. LLMETHODS(name) or LLNOMETHODS.      */
 /* c (consts)   = Const key/value list. LLCONSTS(name) or LLNOCONSTS.        */
 /* -- Helps build the pointer to the list and the length of the list ------- */
@@ -199,25 +199,25 @@ using namespace IfLuaUtil;             // Using luautil namespace
 /* -- Define the ms-engine api list loaded at startup ---------------------- */
 const LuaLibStatic luaLibList[] =
 { /* -- Use the above macros to define namespaces -------------------------- */
-  LLSMX(Archive, GM_TEXT_NOAUDIO),     LLSMC(Asset,   GM_TEXT_NOAUDIO),
-  LLSXX(Audio,   GM_TEXT_AUDIO),       LLSMX(Bin,     GM_TEXT_NOAUDIO),
-  LLSMX(Clip,    GM_GRAPHICS),         LLSXX(Display, GM_GRAPHICS),
-  LLSMC(Fbo,     GM_GRAPHICS),         LLSXC(Core,    GM_TEXT_NOAUDIO),
-  LLSXX(Credit,  GM_TEXT_NOAUDIO),     LLSXC(CVars,   GM_TEXT_NOAUDIO),
-  LLSXC(Console, GM_TEXT_NOAUDIO),     LLSXX(Crypt,   GM_TEXT_NOAUDIO),
-  LLSMC(Cursor,  GM_GRAPHICS),         LLSXC(Display, GM_GRAPHICS),
-  LLSMC(Fbo,     GM_GRAPHICS),         LLSMC(File,    GM_TEXT_NOAUDIO),
-  LLSMC(Font,    GM_GRAPHICS),         LLSMX(Ftf,     GM_TEXT_NOAUDIO),
-  LLSMC(Image,   GM_TEXT_NOAUDIO),     LLSXX(Info,    GM_TEXT_NOAUDIO),
-  LLSXC(Input,   GM_GRAPHICS),         LLSMX(Json,    GM_TEXT_NOAUDIO),
-  LLSMX(Mask,    GM_TEXT_NOAUDIO),     LLSMX(Palette, GM_GRAPHICS),
-  LLSMC(Pcm,     GM_TEXT_NOAUDIO),     LLSMX(Sample,  GM_TEXT_AUDIO),
-  LLSMX(Stat,    GM_TEXT_NOAUDIO),     LLSMC(Socket,  GM_TEXT_NOAUDIO),
-  LLSMX(Source,  GM_TEXT_AUDIO),       LLSXC(Sql,     GM_TEXT_NOAUDIO),
-  LLSMC(Stream,  GM_TEXT_AUDIO),       LLSMX(Texture, GM_GRAPHICS),
-  LLSXX(Util,    GM_TEXT_NOAUDIO),     LLSMC(Video,   GM_GRAPHICS),
+  LLSMX(Archive, CF_NOTHING),          LLSMC(Asset,   CF_NOTHING),
+  LLSXX(Audio,   CF_AUDIO),            LLSMX(Bin,     CF_NOTHING),
+  LLSMX(Clip,    CF_VIDEO),            LLSXX(Display, CF_VIDEO),
+  LLSMC(Fbo,     CF_VIDEO),            LLSXC(Core,    CF_NOTHING),
+  LLSXX(Credit,  CF_NOTHING),          LLSXC(CVars,   CF_NOTHING),
+  LLSXC(Console, CF_NOTHING),          LLSXX(Crypt,   CF_NOTHING),
+  LLSMC(Cursor,  CF_VIDEO),            LLSXC(Display, CF_VIDEO),
+  LLSMC(Fbo,     CF_VIDEO),            LLSMC(File,    CF_NOTHING),
+  LLSMC(Font,    CF_VIDEO),            LLSMX(Ftf,     CF_NOTHING),
+  LLSMC(Image,   CF_NOTHING),          LLSXX(Info,    CF_NOTHING),
+  LLSXC(Input,   CF_VIDEO),            LLSMX(Json,    CF_NOTHING),
+  LLSMX(Mask,    CF_NOTHING),          LLSMX(Palette, CF_VIDEO),
+  LLSMC(Pcm,     CF_NOTHING),          LLSMX(Sample,  CF_AUDIO),
+  LLSMX(Stat,    CF_NOTHING),          LLSMC(Socket,  CF_NOTHING),
+  LLSMX(Source,  CF_AUDIO),            LLSXC(Sql,     CF_NOTHING),
+  LLSMC(Stream,  CF_AUDIO),            LLSMX(Texture, CF_VIDEO),
+  LLSXX(Util,    CF_NOTHING),          LLSMC(Video,   CF_AUDIOVIDEO),
   /* -- Last item, do not delete ------------------------------------------- */
-  { nullptr, GM_HIGHEST, LLNOCONSTS(), LLNOMETHODS(), LLNOCONSTS() }
+  { nullptr, CF_NOTHING, LLNOCONSTS(), LLNOMETHODS(), LLNOCONSTS() }
 };/* -- Done with these macros --------------------------------------------- */
 #undef LLSXC
 #undef LLSMC

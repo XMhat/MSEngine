@@ -211,7 +211,7 @@ class SysBase :                        // Safe exception handler namespace
          << ". This means that the engine must now terminate and we apologise "
             "for the inconvenience with the loss of any unsaved progress. ";
     // Create the debug log and exit if failed
-    if(const FStream fOut{ StdMove(strFileName), FStream::FM_W_T })
+    if(FStream fOut{ StdMove(strFileName), FStream::FM_W_T })
     { // Write to crash output file
       fOut.FStreamWriteString(strMsg);
       // We wrote the crash log
@@ -220,7 +220,8 @@ class SysBase :                        // Safe exception handler namespace
               "problem so it does not reoccur again.";
     } // Exit write log failure? We wrote the crash log
     else osTS << "We unfortunately could not write an error log to '"
-              << fOut.IdentGet() << "' because " << LocalError() << '!';
+              << fOut.IdentGet() << "' because " << fOut.FStreamGetErrStr()
+              << '!';
     // Finish string
     osTS << " Please press OK to terminate.";
     // Show message box
