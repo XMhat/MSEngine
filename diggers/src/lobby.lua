@@ -167,7 +167,7 @@ local function InitLobby(aActiveObject, bNoSetMusic, iSaveMusicPos)
         if iFrame >= 6 then texLobby:BlitSLT(5, 113, 74);
         elseif iFrame >= 3 then texLobby:BlitSLT(4, 113, 74);
         -- Flash if not ready to play
-        else fontSpeech:Print(157, 115, "!") end;
+        elseif not bReadyToPlay then fontSpeech:Print(157, 115, "!") end;
         -- Draw foliage
         texLobby:BlitSLT(2, iStageR-238, 183);
         texLobby:BlitSLT(3, iStageL,      56);
