@@ -1,25 +1,37 @@
-/* == SYSCORE.HPP ========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This is the header to the system class which allows the engine to   ## */
-/* ## interface with the operating system. Since all operating systems    ## */
-/* ## are different, we need to have seperate modules for them because    ## */
-/* ## they will be huge amounts of different code to work properly!       ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == SYSCORE.HPP ========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This is the header to the system class which allows the engine to   ## **
+** ## interface with the operating system. Since all operating systems    ## **
+** ## are different, we need to have seperate modules for them because    ## **
+** ## they will be huge amounts of different code to work properly!       ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfSystem {                   // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfEvtMain;             // Using event namespace
-using namespace IfConDef;              // Using condef namespace
-using namespace IfArgs;                // Using arguments namespace
-/* == System module data =================================================== */
-/* ######################################################################### */
-/* ## Information about a module.                                         ## */
-/* ######################################################################### */
+namespace ISystem {                    // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IArgs;                 using namespace IClock::P;
+using namespace ICmdLine::P;           using namespace ICollector::P;
+using namespace IConDef::P;            using namespace ICVarDef::P;
+using namespace IDim;                  using namespace IDir::P;
+using namespace IError::P;             using namespace IEvtMain::P;
+using namespace IFlags;                using namespace IFStream::P;
+using namespace IIdent::P;             using namespace ILog::P;
+using namespace IMemory::P;            using namespace IPSplit::P;
+using namespace IStat::P;              using namespace IStd::P;
+using namespace IString::P;            using namespace ISysUtil::P;
+using namespace IToken::P;             using namespace IUtf;
+using namespace IUtil::P;              using namespace IVars::P;
+using namespace Lib::OS;
 /* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
+/* == System module data =================================================== **
+** ######################################################################### **
+** ## Information about a module.                                         ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 class SysModuleData :                  // Members initially private
   /* -- Base classes ------------------------------------------------------- */
   private PathSplit                    // Path parts to mod name
@@ -89,11 +101,11 @@ class SysModuleData :                  // Members initially private
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(SysModuleData)       // Disable copy constructor and operator
 };/* ----------------------------------------------------------------------- */
-/* == System modules ======================================================= */
-/* ######################################################################### */
-/* ## Storage for all the modules loaded to this executable.              ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == System modules ======================================================= **
+** ######################################################################### **
+** ## Storage for all the modules loaded to this executable.              ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 typedef map<const size_t,const SysModuleData> SysModList; // Map of mod datas
 /* ------------------------------------------------------------------------- */
 struct SysModules :
@@ -114,8 +126,8 @@ struct SysModules :
       // Log the module data
       cLog->LogNLCInfoExSafe("- $ <$> '$' by '$' from '$'.",
         smdData.GetFileExt(), smdData.GetVersion(),
-        smdData.GetDesc().empty() ? cCommon->Unknown() : smdData.GetDesc(),
-        smdData.GetVendor().empty() ? cCommon->Unknown() : smdData.GetVendor(),
+        smdData.GetDesc().empty() ? cCommon->Unspec() : smdData.GetDesc(),
+        smdData.GetVendor().empty() ? cCommon->Unspec() : smdData.GetVendor(),
         smdData.GetLoc());
     } // Done
     return ACCEPT;
@@ -133,11 +145,11 @@ struct SysModules :
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */
-/* == System version ======================================================= */
-/* ######################################################################### */
-/* ## Information about the engine executable and modules loaded.         ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == System version ======================================================= **
+** ######################################################################### **
+** ## Information about the engine executable and modules loaded.         ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 class SysVersion :
   /* -- Base classes ------------------------------------------------------- */
   public SysModules                    // System modules
@@ -193,12 +205,12 @@ class SysVersion :
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */
-/* == System common ======================================================== */
-/* ######################################################################### */
-/* ## The operating specific modules populate their data inside this      ## */
-/* ## class to maintain a common access for operating system information. ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == System common ======================================================== **
+** ######################################################################### **
+** ## The operating specific modules populate their data inside this      ## **
+** ## class to maintain a common access for operating system information. ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 class SysCommon                        // Common system structs and funcs
 { /* -- Typedefs ------------------------------------------------ */ protected:
   const struct ExeData                 // Executable data
@@ -221,8 +233,6 @@ class SysCommon                        // Common system structs and funcs
     const string       strLocale;      // Os locale
     const bool         bIsAdmin;       // Os user has elevated privileges
     const bool         bIsAdminDef;    // Os uses admin accounts by default
-    const StdTimeT     ttExpiry;       // Os expiry time
-    const bool         bIsExpired;     // Os has reached end-of-life?
   } /* --------------------------------------------------------------------- */
   osData;                              // Operating system data
   /* ----------------------------------------------------------------------- */
@@ -291,8 +301,6 @@ class SysCommon                        // Common system structs and funcs
   const string &OSLocale(void) const { return osData.strLocale; }
   bool OSIsAdmin(void) const { return osData.bIsAdmin; }
   bool OSIsAdminDefault(void) const { return osData.bIsAdminDef; }
-  StdTimeT OSExpiry(void) const { return osData.ttExpiry; }
-  bool OSExpired(void) const { return osData.bIsExpired; }
   /* ----------------------------------------------------------------------- */
   const string &CPUVendor(void) const { return cpuData.sVendorId; }
   const string &CPUName(void) const { return cpuData.sProcessorName; }
@@ -330,11 +338,11 @@ class SysCommon                        // Common system structs and funcs
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */
-/* == SysPipeBase class ==================================================== */
-/* ######################################################################### */
-/* ## Base class for SysPipe                                              ## */
-/* ######################################################################### */
-/* == System pipe base class ===========================================-=== */
+/* == SysPipeBase class ==================================================== **
+** ######################################################################### **
+** ## Base class for SysPipe                                              ## **
+** ######################################################################### **
+** == System pipe base class =============================================== */
 class SysPipeBase :
   /* -- Base classes ------------------------------------------------------- */
   public Ident                         // Name of the pipe
@@ -352,11 +360,11 @@ class SysPipeBase :
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* -- End ---------------------------------------------------------------- */
-/* == SysConBase class ===================================================== */
-/* ######################################################################### */
-/* ## Base class for SysCon                                               ## */
-/* ######################################################################### */
-/* -- Typedefs ------------------------------------------------------------- */
+/* == SysConBase class ===================================================== **
+** ######################################################################### **
+** ## Base class for SysCon                                               ## **
+** ######################################################################### **
+** -- Typedefs ------------------------------------------------------------- */
 BUILD_FLAGS(SysCon,                    // Console flags classes
   /* ----------------------------------------------------------------------- */
   // No settings?                      Cursor is visible?
@@ -383,11 +391,11 @@ class SysConBase :
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */
-/* == Includes ============================================================= */
-/* ######################################################################### */
-/* ## Here we include data for the specific operating system.             ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == Includes ============================================================= **
+** ######################################################################### **
+** ## Here we include data for the specific operating system.             ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 #if defined(WINDOWS)                   // Using windows?
 # include "syswin.hpp"                 // Include windows system core
 #elif defined(MACOS)                   // Using mac?
@@ -395,12 +403,12 @@ class SysConBase :
 #elif defined(LINUX)                   // Using linux?
 # include "sysnix.hpp"                 // Include Linux system core
 #endif                                 // Done checking OS
-/* ------------------------------------------------------------------------- */
-/* ######################################################################### */
-/* ## The actual system class which we build using all the other classes  ## */
-/* ## we already defined above.                                           ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- **
+** ######################################################################### **
+** ## The actual system class which we build using all the other classes  ## **
+** ## we already defined above.                                           ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 static class System final :            // The main system class
   /* -- Base classes ------------------------------------------------------- */
   public SysBase::SysCore              // Defined in 'sys*.hpp' headers
@@ -440,12 +448,12 @@ static class System final :            // The main system class
   /* -- Show message box with window handle (thiscall) --------------------- */
   unsigned int SysMsgEx(const string &strReason, const string &strMessage,
     unsigned int uiFlags = MB_ICONSTOP) const
-      { return SysMessage(GetWindowHandle(), Append(ENGName(), ' ', strReason),
-          strMessage, uiFlags); }
+      { return SysMessage(GetWindowHandle(),
+          StrAppend(ENGName(), ' ', strReason), strMessage, uiFlags); }
   /* -- Update minimum RAM ------------------------------------------------- */
   CVarReturn SetMinRAM(const uint64_t qwMinValue)
   { // If we're to check for minimum memory free
-    if(const size_t stMemory = IntOrMax<size_t>(qwMinValue))
+    if(const size_t stMemory = UtilIntOrMax<size_t>(qwMinValue))
     { // Store duration of fill here later
       double fdDuration;
       // Update memory usage data
@@ -465,7 +473,7 @@ static class System final :            // The main system class
             "running applications consuming it and try running again!",
             "Error",   e,          "Available", RAMFree(),
             "Total",   RAMTotal(), "Required",  stMemory,
-            "Percent", MakePercentage(RAMFree(), RAMTotal()),
+            "Percent", UtilMakePercentage(RAMFree(), RAMTotal()),
             "Needed",  stMemory - RAMFree());
         } // Initialise the memory and record time spent
         const ClockChrono<CoreClock> tpStart;
@@ -473,9 +481,9 @@ static class System final :            // The main system class
         fdDuration = tpStart.CCDeltaToDouble();
       } // Show result of test in log
       cLog->LogInfoExSafe("System heap init of $ ($+$) in $ ($/s).",
-        ToBytesStr(stMemory), ToBytesStr(RAMProcUse()),
-        ToBytesStr(stActualMemory), ToShortDuration(fdDuration),
-          ToBytesStr(static_cast<uint64_t>(1.0 / fdDuration * stMemory)));
+        StrToBytes(stMemory), StrToBytes(RAMProcUse()),
+        StrToBytes(stActualMemory), StrShortFromDuration(fdDuration),
+          StrToBytes(static_cast<uint64_t>(1.0 / fdDuration * stMemory)));
     } // Success
     return ACCEPT;
   }
@@ -525,7 +533,7 @@ static class System final :            // The main system class
       // the application bundle? Use the MacOS/../Resources directory instead.
       if(EXEBundled())
         strWorkDir = StdMove(PathSplit{
-          Append(ENGLoc(), "../Resources"), true }.strFull);
+          StrAppend(ENGLoc(), "../Resources"), true }.strFull);
       // Use executable working directory
       else strWorkDir = ENGLoc();
     } // Directory specified so use that and build full path for it
@@ -626,16 +634,17 @@ static class System final :            // The main system class
     cLog->LogNLCInfoExSafe("$ v$.$.$.$ ($) for $.\n"
        "+ Executable is $.\n"
        "+ Created at $ with $ v$.\n"
+#ifdef WINDOWS
        "+ Checksum $ with $<0x$$$> expecting $<0x$$$>.\n"
+#endif
        "+ Working directory is $.\n"
        "+ Persistent directory is $.\n"
        "+ Process id is $<0x$$$> with main thread id of $<0x$$$>.\n"
        "+ Priority is $<0x$$$> with affinity $<0x$$$> and mask $<0x$$$>.\n"
        "+ Processor is $ <$ x $ MHz>.\n"
        "+ Type is $<0x$$$>.\n"
-       "+ Memory has $ with $ free and $ Initial.\n"
+       "+ Memory has $ with $ free and $ initial.\n"
        "+ System is $ v$.$.$ ($-bit) in $$.\n"
-       "+ Expire$ at $.\n"
        "+ Uptime is $.\n"
        "+ Clock is $.\n"
        "+ UTC clock is $.\n"
@@ -643,9 +652,11 @@ static class System final :            // The main system class
       ENGName(), ENGMajor(), ENGMinor(), ENGBuild(), ENGRevision(),
         ENGBuildType(), ENGTarget(),
       ENGFull(), ENGCompiled(), ENGCompiler(), ENGCompVer(),
+#ifdef WINDOWS
       EXEModified() ? "failed" : "verified",
         exeData.ulHeaderSum, hex, exeData.ulHeaderSum, dec,
         exeData.ulCheckSum, hex, exeData.ulCheckSum, dec,
+#endif
       cCmdLine->GetStartupCWD(),
       GetRoamingDir(),
       GetReadablePid(), hex, GetReadablePid(), dec,
@@ -655,13 +666,12 @@ static class System final :            // The main system class
         GetAffinity(true), hex, GetAffinity(true), dec,
       CPUName(), CPUCount(), CPUSpeed(),
         CPUIdentifier(), hex, CPUFeatures(), dec,
-      ToBytesStr(RAMTotal()), ToBytesStr(RAMFree()), ToBytesStr(RAMProcUse()),
+      StrToBytes(RAMTotal()), StrToBytes(RAMFree()), StrToBytes(RAMProcUse()),
       OSName(), OSMajor(), OSMinor(), OSBuild(), OSBits(), OSLocale(),
-        IsOSNameExSet() ? Append(" via ", OSNameEx()) : cCommon->Blank(),
-      OSExpired() ? "d" : "s", FormatTimeTT(OSExpiry()),
+        IsOSNameExSet() ? StrAppend(" via ", OSNameEx()) : cCommon->Blank(),
       cmHiRes.ToDurationLongString(),
       cmSys.FormatTime(), cmSys.FormatTimeUTC(),
-      TrueOrFalse(OSIsAdmin()), TrueOrFalse(EXEBundled()));
+      StrFromBoolTF(OSIsAdmin()), StrFromBoolTF(EXEBundled()));
   }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(System)              // Disable copy constructor and operator
@@ -680,5 +690,7 @@ MSENGINE_SYSBASE_CALLBACKS();          // Parse requested SysBase callbacks
 MSENGINE_SYSCON_CALLBACKS();           // Parse requested SysCon callbacks
 #undef MSENGINE_SYSCON_CALLBACKS       // Done with this
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

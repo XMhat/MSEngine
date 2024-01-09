@@ -1,17 +1,20 @@
-/* == EVTMAIN.HPP ========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This is the engine events class where the engine can queue messages ## */
-/* ## to be executed in the engine thread.                                ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == EVTMAIN.HPP ========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This is the engine events class where the engine can queue messages ## **
+** ## to be executed in the engine thread.                                ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfEvtMain {                  // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfLog;                 // Using log namespace
-using namespace IfThread;              // Using thread namespace
+namespace IEvtMain {                   // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace ICollector::P;         using namespace IEvtCore::P;
+using namespace ILog::P;               using namespace IStd::P;
+using namespace ISysUtil::P;           using namespace IThread::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Available engine commands -------------------------------------------- */
 enum EvtMainCmd                        // Render thread event commands
 { /* -- Main events -------------------------------------------------------- */
@@ -84,8 +87,8 @@ enum EvtMainCmd                        // Render thread event commands
 /* ------------------------------------------------------------------------- */
 static class EvtMain final :           // Event list for render thread
   /* -- Dependencies ------------------------------------------------------- */
-  private IfCollector::IHelper,        // Initialisation helper
-  public IfEvtCore::EvtCore            // Events common class
+  private IHelper,                     // Initialisation helper
+  public EvtCore                       // Events common class
    <EvtMainCmd,                        // The enum list of events supported
     EMC_MAX,                           // Maximum events allowed
     EMC_NONE,                          // Event id for NONE
@@ -232,5 +235,7 @@ static class EvtMain final :           // Event list for render thread
   /* -- End ---------------------------------------------------------------- */
 } *cEvtMain = nullptr;                 // Pointer to static class
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+};                                     // End of public module namespace
+/* ------------------------------------------------------------------------- */
+};                                     // End of private module namespace
 /* == EoF =========================================================== EoF == */

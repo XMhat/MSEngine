@@ -1,16 +1,14 @@
-/* == SYSWIN.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This is a Windows specific module that allows the engine to talk    ## */
-/* ## to, and manipulate operating system procedures and funtions.        ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == SYSWIN.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This is a Windows specific module that allows the engine to talk    ## **
+** ## to, and manipulate operating system procedures and funtions.        ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
 namespace SysBase {                    // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace Lib::OS;               // Need operating system functions
 /* == Win32 extras ========================================================= */
 #include "winmod.hpp"                  // Module information class
 #include "winreg.hpp"                  // Registry class
@@ -18,15 +16,15 @@ using namespace Lib::OS;               // Need operating system functions
 #include "winpip.hpp"                  // Process output piping class
 #include "winbase.hpp"                 // Base system class
 #include "wincon.hpp"                  // Console terminal window class
-/* == System intialisation helper ========================================== */
-/* ######################################################################### */
-/* ## Because we want to try and statically init const data as much as    ## */
-/* ## possible, we need this class to derive by the System class so we    ## */
-/* ## can make sure these functions are initialised first. Also making    ## */
-/* ## this private prevents us from accessing these functions because     ## */
-/* ## again - they are only for initialisation.                           ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == System intialisation helper ========================================== **
+** ######################################################################### **
+** ## Because we want to try and statically init const data as much as    ## **
+** ## possible, we need this class to derive by the System class so we    ## **
+** ## can make sure these functions are initialised first. Also making    ## **
+** ## this private prevents us from accessing these functions because     ## **
+** ## again - they are only for initialisation.                           ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 class SysProcess                       // Need this before of System init order
 { /* ------------------------------------------------------------ */ protected:
   uint64_t         qwSKL,              // Kernel kernel time
@@ -55,7 +53,7 @@ class SysProcess                       // Need this before of System init order
     // Get path to executable. The base module filename info struct may not be
     // available so we'll keep it simple and use the full path name to
     // the executable.
-    wstrName.resize(Maximum(GetModuleFileName(nullptr,
+    wstrName.resize(UtilMaximum(GetModuleFileName(nullptr,
       const_cast<LPWSTR>(wstrName.c_str()),
       static_cast<DWORD>(wstrName.capacity())) - 4, 0));
     wstrName.append(L".crt");
@@ -79,7 +77,7 @@ class SysProcess                       // Need this before of System init order
   /* -- Set heap information helper ---------------------------------------- */
   template<typename Type = ULONG>static void HeapSetInfo(const HANDLE hH,
     const HEAP_INFORMATION_CLASS hicData, const Type &tVal)
-      { HeapSetInformation(hH, hicData, ToNonConstCast<PVOID>(&tVal),
+      { HeapSetInformation(hH, hicData, UtfToNonConstCast<PVOID>(&tVal),
           sizeof(tVal)); }
   /* ----------------------------------------------------------------------- */
   void ReconfigureMemoryModel(void) const
@@ -246,7 +244,7 @@ class SysCore :
   size_t GetLocaleData(const LCTYPE lcType, const void*const vpData,
     const size_t stSize, const LCID lcidLocale)
   { return GetLocaleInfo(lcidLocale, lcType,
-      ToNonConstCast<LPWSTR>(vpData), IntOrMax<int>(stSize)); }
+      UtfToNonConstCast<LPWSTR>(vpData), UtilIntOrMax<int>(stSize)); }
   /* ----------------------------------------------------------------------- */
   const wstring GetLocaleString(const LCTYPE lcType,
     const LCID lcidLocale=LOCALE_USER_DEFAULT)
@@ -528,7 +526,7 @@ class SysCore :
                    qcpuSKernel = qwK - qwSKL,
                    qcpuSysTot  = qcpuSKernel + qcpuSUser;
     // Set system cpu usage
-    cpuUData.fdSystem = MakePercentage(qcpuSKernel, qcpuSysTot);
+    cpuUData.fdSystem = UtilMakePercentage(qcpuSKernel, qcpuSysTot);
     // Update last system times
     qwSUL = qwU, qwSKL = qwK;
     // Get process CPU times
@@ -547,7 +545,7 @@ class SysCore :
     qwPUL = qwU, qwPKL = qwK, qwPTL = qwX;
     // Set process cpu usage
     cpuUData.fdProcess =
-      MakePercentage(static_cast<double>(qcpuProcTot) / qcpuPTime,
+      UtilMakePercentage(static_cast<double>(qcpuProcTot) / qcpuPTime,
         ::std::thread::hardware_concurrency());
   }
   /* -- Seek to position in specified handle ------------------------------- */
@@ -560,12 +558,12 @@ class SysCore :
     // anyway.
     const UINT64 qwP = static_cast<UINT64>(itP);
     // High-order 64-bit value will be sent and returned in this
-    DWORD dwNH = HighDWord(qwP);
+    DWORD dwNH = UtilHighDWord(qwP);
     // Set file pointer
-    const DWORD dwNL = SetFilePointer(hH, LowDWord(qwP),
+    const DWORD dwNL = SetFilePointer(hH, UtilLowDWord(qwP),
       reinterpret_cast<PLONG>(&dwNH), FILE_BEGIN);
     // Build new 64-bit position integer
-    const UINT64 qwNP = MakeQWord(dwNH, dwNL);
+    const UINT64 qwNP = UtilMakeQWord(dwNH, dwNL);
     // Return zero if failed or new position
     return qwNP == qwP ?
       static_cast<IntType>(qwNP) : numeric_limits<IntType>::max();
@@ -709,7 +707,7 @@ class SysCore :
   const string GetLocale(const LCID lcidLocale)
   { // Build language and country code from system and return it
     return
-      Append(WS16toUTF(GetLocaleString(LOCALE_SISO639LANGNAME, lcidLocale)),
+      StrAppend(WS16toUTF(GetLocaleString(LOCALE_SISO639LANGNAME, lcidLocale)),
         '-', WS16toUTF(GetLocaleString(LOCALE_SISO3166CTRYNAME, lcidLocale)));
   }
   /* ----------------------------------------------------------------------- */
@@ -734,54 +732,29 @@ class SysCore :
       const char*const cpLabel;
       // Major, minor and service pack of OS which applies to this label
       const unsigned int uiHi, uiLo, uiBd, uiSp;
-      // Expiry date
-      const StdTimeT ttExp;
     };
-    // Handy converter at https://www.unixtimestamp.com/ and OS list data at...
-    // https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions.
-    static const array<const OSListItem,37>osList{ {
-      //   cpLevel  uiHi  uiLo  uiBl  uiSp  ttExp           Note
-      { "11 22H2+", 10,   0,   22621, 0,      1728860400 }, // 14/10/2024
-      { "11 21H2",  10,   0,   22000, 0,      1728342600 }, // 08/10/2024
-      { "10 22H2",  10,   0,   19045, 0,      1760396400 }, // 14/10/2025
-      { "10 21H2",  10,   0,   19044, 0,      1686610800 }, // 13/06/2023 (EoL)
-      { "10 21H1",  10,   0,   19043, 0,      1670889600 }, // 13/12/2022 (EoL)
-      { "10 20H2",  10,   0,   19042, 0,      1683586800 }, // 09/05/2023 (EoL)
-      { "10 20H1",  10,   0,   19041, 0,      1639440000 }, // 14/12/2021 (EoL)
-      { "10 19H2",  10,   0,   18363, 0,      1652137200 }, // 10/05/2022 (EoL)
-      { "10 19H1",  10,   0,   18362, 0,      1607385600 }, // 08/12/2020 (EoL)
-      { "10 RS5",   10,   0,   17763, 0,      1604966400 }, // 10/11/2020 (EoL)
-      { "10 RS4",   10,   0,   17134, 0,      1573516800 }, // 12/11/2019 (EoL)
-      { "10 RS3",   10,   0,   16299, 0,      1554764400 }, // 09/04/2019 (EoL)
-      { "10 RS2",   10,   0,   15063, 0,      1539039600 }, // 09/10/2018 (EoL)
-      { "10 RS1",   10,   0,   14393, 0,      1523314800 }, // 10/04/2018 (EoL)
-      { "10 T2",    10,   0,   10586, 0,      1507590000 }, // 10/10/2017 (EoL)
-      { "10 T1",    10,   0,   10240, 0,      1494284400 }, // 09/05/2017 (EoL)
-      { "10",       10,   0,       0, 0,      1494284400 }, // 09/05/2017 (EoL)
-      { "8.1",       6,   3,       0, 0,      1673308800 }, // 10/01/2023 (EoL)
-      { "8",         6,   2,       0, 0,      1452556800 }, // 12/01/2016 (EoL)
-      { "7 SP1",     6,   1,       0, 1,      1578960000 }, // 14/01/2020 (EoL)
-      { "7",         6,   1,       0, 0,      1578960000 }, // 14/01/2020 (EoL)
-      { "Vista SP2", 6,   0,       0, 2,      1491865200 }, // 11/04/2017 (EoL)
-      { "Vista SP1", 6,   0,       0, 1,      1491865200 }, // 11/04/2017 (EoL)
-      { "Vista",     6,   0,       0, 0,      1491865200 }, // 11/04/2017 (EoL)
-      { "2003 SP3",  5,   2,       0, 3,      1436828400 }, // 14/07/2015 (EoL)
-      { "2003 SP2",  5,   2,       0, 2,      1436828400 }, // 14/07/2015 (EoL)
-      { "2003 SP1",  5,   2,       0, 1,      1436828400 }, // 14/07/2015 (EoL)
-      { "2003",      5,   2,       0, 0,      1436828400 }, // 14/07/2015 (EoL)
-      { "XP SP3",    5,   1,       0, 3,      1396911600 }, // 08/04/2014 (EoL)
-      { "XP SP2",    5,   1,       0, 2,      1396911600 }, // 08/04/2014 (EoL)
-      { "XP SP1",    5,   1,       0, 1,      1396911600 }, // 08/04/2014 (EoL)
-      { "XP",        5,   1,       0, 0,      1396911600 }, // 08/04/2014 (EoL)
-      { "2K SP4",    5,   0,       0, 4,      1278975600 }, // 13/07/2010 (EoL)
-      { "2K SP3",    5,   0,       0, 3,      1278975600 }, // 13/07/2010 (EoL)
-      { "2K SP2",    5,   0,       0, 2,      1278975600 }, // 13/07/2010 (EoL)
-      { "2K SP1",    5,   0,       0, 1,      1278975600 }, // 13/07/2010 (EoL)
-      { "2K",        5,   0,       0, 0,      1278975600 }  // 13/07/2010 (EoL)
-      //   cpLevel  uiHi  uiLo  uiBl  uiSp  ttExp           Note
+    // List of recognised Windows versions
+    static const array<const OSListItem,38>osList{ {
+      { "11 23H2+", 10, 0, 22631, 0 }, { "11 22H2",  10, 0, 22621, 0 },
+      { "11 21H2",  10, 0, 22000, 0 }, { "10 22H2",  10, 0, 19045, 0 },
+      { "10 21H2",  10, 0, 19044, 0 }, { "10 21H1",  10, 0, 19043, 0 },
+      { "10 20H2",  10, 0, 19042, 0 }, { "10 20H1",  10, 0, 19041, 0 },
+      { "10 19H2",  10, 0, 18363, 0 }, { "10 19H1",  10, 0, 18362, 0 },
+      { "10 RS5",   10, 0, 17763, 0 }, { "10 RS4",   10, 0, 17134, 0 },
+      { "10 RS3",   10, 0, 16299, 0 }, { "10 RS2",   10, 0, 15063, 0 },
+      { "10 RS1",   10, 0, 14393, 0 }, { "10 T2",    10, 0, 10586, 0 },
+      { "10 T1",    10, 0, 10240, 0 }, { "10",       10, 0,     0, 0 },
+      { "8.1",       6, 3,     0, 0 }, { "8",         6, 2,     0, 0 },
+      { "7 SP1",     6, 1,     0, 1 }, { "7",         6, 1,     0, 0 },
+      { "Vista SP2", 6, 0,     0, 2 }, { "Vista SP1", 6, 0,     0, 1 },
+      { "Vista",     6, 0,     0, 0 }, { "2003 SP3",  5, 2,     0, 3 },
+      { "2003 SP2",  5, 2,     0, 2 }, { "2003 SP1",  5, 2,     0, 1 },
+      { "2003",      5, 2,     0, 0 }, { "XP SP3",    5, 1,     0, 3 },
+      { "XP SP2",    5, 1,     0, 2 }, { "XP SP1",    5, 1,     0, 1 },
+      { "XP",        5, 1,     0, 0 }, { "2K SP4",    5, 0,     0, 4 },
+      { "2K SP3",    5, 0,     0, 3 }, { "2K SP2",    5, 0,     0, 2 },
+      { "2K SP1",    5, 0,     0, 1 }, { "2K",        5, 0,     0, 0 },
     } };
-    // Operating system expiry time
-    StdTimeT ttExpiry;
     // Iterate through the versions and try to find a match for the
     // versions above. 'Unknown' is caught if none are found.
     for(const OSListItem &osItem : osList)
@@ -792,13 +765,9 @@ class SysCore :
          osviData.wServicePackMajor < osItem.uiSp) continue;
       // Set operating system version
       osOS << osItem.cpLabel;
-      // Set expiry time
-      ttExpiry = osItem.ttExp;
       // Skip adding version numbers
       goto SkipNumericalVersionNumber;
-    } // No expiry time
-    ttExpiry = 0;
-    // Nothing was found so add version number detected
+    } // Nothing was found so add version number detected
     osOS << osviData.dwMajorVersion << '.' << osviData.dwMinorVersion;
     // Label for when we found the a matching version
     SkipNumericalVersionNumber:
@@ -811,7 +780,7 @@ class SysCore :
       typedef const char *(WINAPI*const LPWINEGETVERSION)(void);
       if(LPWINEGETVERSION fcbWGV =
         GetSharedFunc<LPWINEGETVERSION>(hDLL, "wine_get_version"))
-          strExtra = Append("Wine ", fcbWGV()), bExtra = true;
+          strExtra = StrAppend("Wine ", fcbWGV()), bExtra = true;
       else bExtra = false;
     } // Store if we have extra info because strExtra is being StdMove()'d
     else bExtra = false;
@@ -825,9 +794,7 @@ class SysCore :
       DetectWindowsArchitechture(),          // 32 or 64 OS arch
       GetLocale(GetUserDefaultUILanguage()), // Get locale
       DetectElevation(),                     // Elevated?
-      bExtra || osviData.dwMajorVersion < 6, // Wine or Old OS?
-      ttExpiry,                              // OS expiry
-      cmSys.GetTimeS() >= ttExpiry           // OS has expired?
+      bExtra || osviData.dwMajorVersion < 6  // Wine or Old OS?
     };
   }
   /* ----------------------------------------------------------------------- */
@@ -881,12 +848,12 @@ class SysCore :
     memData.qMUsed = msD.ullTotalPhys - msD.ullAvailPhys;
 #if defined(X64)                       // 64-bit?
     memData.stMFree =
-      static_cast<size_t>(Minimum(msD.ullAvailPhys, 0xFFFFFFFF));
+      static_cast<size_t>(UtilMinimum(msD.ullAvailPhys, 0xFFFFFFFF));
 #elif defined(X86)                     // 32-bit?
     memData.stMFree = msD.ullAvailPhys <= 0xFFFFFFFF ?
       static_cast<size_t>(msD.ullAvailPhys) : 0 - pmcData.WorkingSetSize;
 #endif                                 // Bits check
-    memData.dMLoad = MakePercentage(memData.qMUsed, msD.ullTotalPhys);
+    memData.dMLoad = UtilMakePercentage(memData.qMUsed, msD.ullTotalPhys);
     memData.stMProcUse = pmcData.WorkingSetSize;
     memData.stMProcPeak = pmcData.PeakWorkingSetSize;
   }

@@ -1,25 +1,30 @@
-/* == CREDITS.HPP ========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This file is a consolidation of libraries information used in the   ## */
-/* ## engine which is logged at startup and can be read by the guest and  ## */
-/* ## the end-user.                                                       ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == CREDITS.HPP ========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This file is a consolidation of libraries information used in the   ## **
+** ## engine which is logged at startup and can be read by the guest and  ## **
+** ## the end-user.                                                       ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfCredit {                   // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfCVarDef;             // Using cvardef namespace
+namespace ICredit {                    // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace ICodec::P;             using namespace ICVarDef::P;
+using namespace IError::P;             using namespace ILog::P;
+using namespace IMemory::P;            using namespace IString::P;
+using namespace ISystem::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Credit library class ------------------------------------------------- */
 class CreditLib :                      // Members initially private
   /* -- Base classes ------------------------------------------------------- */
   public DataConst                     // Licence data memory
 { /* ----------------------------------------------------------------------- */
-  const string     strName;            // Name of library
-  const string     strVersion;         // String version
-  const string     strAuthor;          // Author of library
+  const string     strName,            // Name of library
+                   strVersion,         // String version
+                   strAuthor;          // Author of library
   const bool       bCopyright;         // Is copyrighted library
   /* --------------------------------------------------------------- */ public:
   const string &GetName(void) const { return strName; }
@@ -83,7 +88,8 @@ static const class Credits final :     // Members initially private
     { return (*this)[ceIndex]; }
   /* -- Decompress a credit item ------------------------------------------- */
   const string CreditGetItemText(const CreditLib &libItem) const try
-  { // Decode the file and show the result
+  { // Using codec namespace
+    using namespace ICodec;
     return Block<CoDecoder>{ libItem }.ToString();
   } // exception occured?
   catch(const exception &e)
@@ -125,19 +131,20 @@ static const class Credits final :     // Members initially private
         GLFW),
       LD("JPEGTurbo", STR(LIBJPEG_TURBO_VERSION), "IJG/Contributing authors",
         true, LIBJPEGTURBO),
-      LD("LibNSGif", "0.2.1", "Richard Wilson & Sean Fox", true, LIBNSGIF),
+      LD("LibNSGif", "1.0.0", "Richard Wilson & Sean Fox", true,
+        LIBNSGIF),
       LD("LibPNG", PNG_LIBPNG_VER_STRING, "Contributing authors", true,
         LIBPNG),
-      LD("LUA", LUA_VERSION_MAJOR "." LUA_VERSION_MINOR "."
-        LUA_VERSION_RELEASE, "Lua.org, PUC-Rio", true, LUA),
+      LD("LUA", LUA_VDIR "." LUA_VERSION_RELEASE, "Lua.org, PUC-Rio", true,
+        LUA),
       LD("LZMA", MY_VERSION, "Igor Pavlov", false, 7ZIP),
       LD("MiniMP3", "1.0", "Martin Fiedler", false, MINIMP3),
 #if !defined(WINDOWS)
       LD("NCurses", NCURSES_VERSION, "Free Software Foundation", true,
         NCURSES),
 #endif
-      LD("OggVorbis", IfAudio::vorbis_version_string()+19, "Xiph.Org", false,
-        OGGVORBISTHEORA),
+      LD("OggVorbis", Lib::Ogg::vorbis_version_string()+19, "Xiph.Org",
+        false, OGGVORBISTHEORA),
       LD("OpenALSoft", "1.23.1", "Chris Robinson", false, OPENALSOFT),
       LD("OpenSSL", STR(OPENSSL_VERSION_MAJOR) "." STR(OPENSSL_VERSION_MINOR)
         "." STR(OPENSSL_VERSION_PATCH), "OpenSSL Software Foundation", true,
@@ -146,9 +153,10 @@ static const class Credits final :     // Members initially private
         "THL A29 Ltd., Tencent co. & Milo Yip", true, RAPIDJSON),
       LD("SQLite", SQLITE_VERSION, "Contributing authors", false, SQLITE),
       LD("Theora",
-        Format("$.$.$", IfVideo::theora_version_number() >> 16 & 0xFFFF,
-                        IfVideo::theora_version_number() >>  8 & 0x00FF,
-                        IfVideo::theora_version_number()       & 0x00FF),
+        StrFormat("$.$.$",
+          Lib::Ogg::Theora::theora_version_number() >> 16 & 0xFFFF,
+          Lib::Ogg::Theora::theora_version_number() >>  8 & 0x00FF,
+          Lib::Ogg::Theora::theora_version_number()       & 0x00FF),
         "Xiph.Org", false, OGGVORBISTHEORA),
       LD("Z-Lib", STR(ZLIB_VER_MAJOR) "." STR(ZLIB_VER_MINOR) "."
         STR(ZLIB_VER_REVISION) "." STR(ZLIB_VER_SUBREVISION),
@@ -161,5 +169,7 @@ static const class Credits final :     // Members initially private
 } /* ----------------------------------------------------------------------- */
 *cCredits = nullptr;                   // Pointer to static class
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

@@ -1,27 +1,39 @@
-/* == CORE.HPP ============================================================= */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This module is the core class which is created by main/WinMain on   ## */
-/* ## startup. It is pretty much the game-engine main routines.           ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == CORE.HPP ============================================================= **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This module is the core class which is created by main/WinMain on   ## **
+** ## startup. It is pretty much the game-engine main routines.           ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfCore {                     // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfJson;                // Using json namespace
-using namespace IfCursor;              // Using cursor namespace
-using namespace IfMask;                // Using mask namespace
-using namespace IfDisplay;             // Using display namespace
-using namespace IfAudio;               // Using audio namespace
-using namespace IfFile;                // Using file namespace
-using namespace IfPalette;             // Using palette namespace
-using namespace IfSShot;               // Using sshot namespace
-using namespace IfStat;                // Using statistic namespace
-using namespace IfCredit;              // Using credit namespace
-using namespace IfClipboard;           // Using clipboard namespace
-using namespace IfConLib;              // Using conlib namespace
+namespace ICore {                      // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IArchive::P;           using namespace IAsset::P;
+using namespace IAudio::P;             using namespace ICmdLine::P;
+using namespace IConDef::P;            using namespace IConsole::P;
+using namespace ICursor::P;            using namespace ICVar::P;
+using namespace ICVarDef::P;           using namespace ICVarLib::P;
+using namespace IDir::P;               using namespace IDisplay::P;
+using namespace IError::P;             using namespace IEvtMain::P;
+using namespace IEvtWin::P;            using namespace IFbo::P;
+using namespace IFboBase::P;           using namespace IFboMain::P;
+using namespace IFont::P;              using namespace IFtf::P;
+using namespace IGlFW::P;              using namespace IGlFWUtil::P;
+using namespace IImage::P;             using namespace IInput::P;
+using namespace IJson::P;              using namespace ILog::P;
+using namespace ILua::P;               using namespace ILuaCode::P;
+using namespace ILuaUtil::P;           using namespace IOgl::P;
+using namespace IPalette::P;           using namespace IPcm::P;
+using namespace IPSplit::P;            using namespace ISql::P;
+using namespace IStd::P;               using namespace IStream::P;
+using namespace IString::P;            using namespace ISystem::P;
+using namespace ISysUtil::P;           using namespace ITexture::P;
+using namespace IThread::P;            using namespace ITimer::P;
+using namespace IToken::P;             using namespace IVideo::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Prototype ------------------------------------------------------------ */
 class Core;                            // Core class prototype
 static Core *cCore = nullptr;          // Pointer to static class
@@ -49,7 +61,7 @@ class Core                             // Members initially private
   { // Do not allow user to set this variable, only empty is allowed
     if(!strN.empty()) return DENY;
     // Set the title
-    strV = Append(cCVars->GetInternalStrSafe(APP_LONGNAME), ' ',
+    strV = StrAppend(cCVars->GetInternalStrSafe(APP_LONGNAME), ' ',
       cCVars->GetInternalStrSafe(APP_VERSION), " (", cSystem->ENGTarget(),
       ")");
     // We changed the value
@@ -86,9 +98,9 @@ class Core                             // Members initially private
       // only get the app name and author from the initial vars.
       const string &strAuthor = cCVars->GetInternalStrSafe(APP_AUTHOR),
                    &strShortName = cCVars->GetInternalStrSafe(APP_SHORTNAME);
-      strNP = Format("$/$/$/", strRDir,
-        strAuthor.empty() ? cCommon->Unknown() : strAuthor,
-        strShortName.empty() ? cCommon->Unknown() : strShortName);
+      strNP = StrFormat("$/$/$/", strRDir,
+        strAuthor.empty() ? cCommon->Unspec() : strAuthor,
+        strShortName.empty() ? cCommon->Unspec() : strShortName);
     } // Use what the user specified
     else strNP = strP;
     // Replace backslashes with forward slashes because backslashes are ugly
@@ -135,7 +147,7 @@ class Core                             // Members initially private
           // from the command line. Also show an error if the variable could
           // not be set.
           else if(cCVars->SetVarOrInitial(tKeyVal[0], tKeyVal.size() <= 1 ?
-            cCommon->Blank() : tKeyVal[1], SCMDLINE|PBOOT, CSC_NOTHING))
+            cCommon->Blank() : tKeyVal[1], SCMDLINE|PBOOT, CCF_NOTHING))
           { // Append argument to accepted command line and add a space
             strV.append(strArg);
             strV.append(cCommon->Space());
@@ -199,8 +211,8 @@ class Core                             // Members initially private
     cLog->LogDebugExSafe("Core environment $!",
       bLeaving ? "reset" : "prepared");
   }
-  /* -- Graphical core unthreaded tick ------------------------------------- */
-  void CoreUnthreadedTick(void)
+  /* -- Graphical core window thread tick ---------------------------------- */
+  void CoreWinThreadTick(void)
   { // Is it time to execute a game tick?
     if(cTimer->TimerShouldTick())
     { // Render the console fbo (if update requested)
@@ -208,7 +220,7 @@ class Core                             // Members initially private
       // Render video textures (if any)
       VideoRender();
       // Loop point incase we need to catchup game ticks
-      TimerCatchupThreaded:
+      TimerCatchupWinThread:
       { // Set main fbo by default on each frame
         cFboMain->ActivateMain();
         // Poll joysticks
@@ -220,7 +232,7 @@ class Core                             // Members initially private
         { // Flush the main fbo as we're not drawing it yet
           cFboMain->RenderFbosAndFlushMain();
           // Render again until we've caught up
-          goto TimerCatchupThreaded;
+          goto TimerCatchupWinThread;
         } // We've completed catching up at this point
       } // Add console fbo to render list
       cConsole->RenderToMain();
@@ -229,8 +241,8 @@ class Core                             // Members initially private
     } // Update timer
     cTimer->TimerUpdateInteractive();
   }
-  /* -- Graphical core threaded tick --------------------------------------- */
-  void CoreThreadedTick(void)
+  /* -- Graphical core main thread tick ------------------------------------ */
+  void CoreMainThreadTick(void)
   { // Process window event manager commands from other threads
     cEvtWin->ManageUnsafe();
     // Is it time to execute a game tick?
@@ -240,7 +252,7 @@ class Core                             // Members initially private
       // Render video textures (if any)
       VideoRender();
       // Loop point incase we need to catchup game ticks
-      TimerCatchupUnthreaded:
+      TimerCatchupMainThread:
       { // Process window events
         GlFWPollEvents();
         // Set main fbo by default on each frame
@@ -254,7 +266,7 @@ class Core                             // Members initially private
         { // Flush the main fbo as we're not drawing it yet
           cFboMain->RenderFbosAndFlushMain();
           // Render again until we've caught up
-          goto TimerCatchupUnthreaded;
+          goto TimerCatchupMainThread;
         } // We've completed catching up at this point
       } // Add console fbo to render list
       cConsole->RenderToMain();
@@ -307,7 +319,7 @@ class Core                             // Members initially private
             cInput->SetJoystickEnabled(
               cCVars->GetInternalSafe<int>(INP_JOYSTICK));
           // Execute startup script
-          LuaCodeExecFile(lS, cCVars->GetInternalStrSafe(LUA_SCRIPT));
+          LuaCodeExecuteFile(lS, cCVars->GetInternalStrSafe(LUA_SCRIPT));
           // Done
           break;
       } // Terminal mode requested?
@@ -317,18 +329,18 @@ class Core                             // Members initially private
         { // Initialise accumulator for first time
           cTimer->TimerUpdateInteractive();
           // Threading not enabled?
-          if(cDisplay->FlagIsClear(DF_THREADED))
+          if(cDisplay->FlagIsClear(DF_WINTHREADED))
           { // Loop until event manager says we should break
-            while(cEvtMain->HandleSafe() && !cGlFW->WinShouldClose())
+            while(cEvtMain->HandleSafe() && cGlFW->WinShouldNotClose())
             { // Execute threaded tick
-              CoreThreadedTick();
+              CoreMainThreadTick();
               // Process bot console
               cConsole->FlushToLog();
             }
           } // Loop until event manager says we should break
           else while(cEvtMain->HandleSafe())
           { // Execute unthreaded tick
-            CoreUnthreadedTick();
+            CoreWinThreadTick();
             // Process bot console
             cConsole->FlushToLog();
           }
@@ -346,27 +358,27 @@ class Core                             // Members initially private
       { // Initialise accumulator for first time
         cTimer->TimerUpdateInteractive();
         // Threading not enabled? Loop until event manager says we should break
-        if(cDisplay->FlagIsClear(DF_THREADED))
-          while(cEvtMain->HandleSafe() && !cGlFW->WinShouldClose())
-            CoreThreadedTick();
+        if(cDisplay->FlagIsClear(DF_WINTHREADED))
+          while(cEvtMain->HandleSafe() && cGlFW->WinShouldNotClose())
+            CoreMainThreadTick();
         // Else loop until event manager says we should break
-        else while(cEvtMain->HandleSafe()) CoreUnthreadedTick();
+        else while(cEvtMain->HandleSafe()) CoreWinThreadTick();
       }
     } // exception occured so throw LUA stackdump and leave the sandbox
     catch(const exception &E)
     { // Allow Lue to process error. WARNING!! This prevents destructors on
       // all statically initialised classes to NEVER call so make sure we do
       // not statically create something above!
-      ProcessError(lS, E.what());
+      LuaUtilPushErr(lS, E.what());
     } // Returning nothing
     return 0;
   }
   /* -- Get core pointer and call the entry function ----------------------- */
   static int CoreThreadSandboxStatic(lua_State*const lS)
   { // Get pointer to class
-    Core*const cPtr = GetSimplePtr<Core>(lS, 1);
+    Core*const cPtr = LuaUtilGetSimplePtr<Core>(lS, 1);
     // Remove light user data pointer
-    RemoveStack(lS);
+    LuaUtilRmStack(lS);
     // Call sandbox function
     return cPtr->CoreThreadSandbox(lS);
   }
@@ -422,8 +434,8 @@ class Core                             // Members initially private
     cFboBase->DeInitShaders();
     // OpenGL de-initialised (do not throw error if de-initialised)
     cOgl->DeInit(true);
-    // Close window
-    cGlFW->WinHide();
+    // Request to close window
+    cDisplay->RequestClose();
   } // exception occured?
   catch(const exception &E)
   { // Make sure the exception is logged
@@ -700,7 +712,7 @@ class Core                             // Members initially private
     // Until engine should terminate.
     while(CoreShouldEngineContinue()) try
     { // Tell display class if window threading is enabled
-      cDisplay->FlagSetOrClear(DF_THREADED,
+      cDisplay->FlagSetOrClear(DF_WINTHREADED,
         cCVars->GetInternalSafe<bool>(WIN_THREAD));
       // Init window and de-init lua envifonment and window on scope exit
       INITHELPER(DIH, cDisplay->Init(),
@@ -708,19 +720,18 @@ class Core                             // Members initially private
         cDisplay->DeInit());
       // Clear window manager events list
       cEvtWin->Flush();
-      // If threading enabled
-      if(cDisplay->FlagIsSet(DF_THREADED))
+      // If window threading enabled
+      if(cDisplay->FlagIsSet(DF_WINTHREADED))
       { // Setup main thread and start it
-        cEvtMain->ThreadInit(bind(&Core::CoreThreadMain, this, _1),
-          nullptr);
+        cEvtMain->ThreadInit(bind(&Core::CoreThreadMain, this, _1), nullptr);
         // Loop until window should close
-        while(!cGlFW->WinShouldClose())
+        while(cGlFW->WinShouldNotClose())
         { // Process window event manager commands from other threads
           cEvtWin->ManageSafe();
           // Wait for more window events
           GlFWWaitEvents();
         }
-      } // Threading disabled? Enter sandbox and process scripts
+      } // Window threading disabled? Enter sandbox and process scripts
       else CoreThreadMain(*cEvtMain);
     } // Error occured
     catch(const exception &E)
@@ -729,8 +740,7 @@ class Core                             // Members initially private
       // Exit loop so we don't infinite loop
       cEvtMain->SetExitReason(EMC_QUIT);
       // Show error and try to carry on and clean everything up
-      cSystem->SysMsgEx("Window Loop Fatal Exception",
-        E.what(), MB_ICONSTOP);
+      cSystem->SysMsgEx("Window Loop Fatal Exception", E.what(), MB_ICONSTOP);
    } // Engine should terminate from here-on
   }
   /* -- Wait async on all systems ---------------------------------- */ public:
@@ -743,8 +753,7 @@ class Core                             // Members initially private
     cStreams->WaitAsync();             cVideos->WaitAsync();
   }
   /* -- Main function ------------------------------------------------------ */
-  int CoreMain(const int iArgs, ArgType**const lArgs,
-    ArgType**const lEnv) try
+  int CoreMain(const int iArgs, ArgType**const lArgs, ArgType**const lEnv) try
   { // Set this thread's name for debugger and that it is high performance
     SysInitThread("main", SysThread::Main);
     // Due to limitations in C++ right now we don't want to initialise our
@@ -767,7 +776,24 @@ class Core                             // Members initially private
     INITSS(Log);                       // cppcheck-suppress danglingLifetime
     // Capture exceptions so we can log any errors
     try
-    { // Include cvar varaiables array that we will send to CVars class
+    { // Dependencies
+      using namespace IArgs;           using namespace IBin::P;
+      using namespace ICert::P;        using namespace IClipboard::P;
+      using namespace ICmdLine::P;     using namespace IClock::P;
+      using namespace IConLib::P;      using namespace ICredit::P;
+      using namespace ICrypt::P;       using namespace IFile::P;
+      using namespace IGlFWMonitor::P; using namespace IImageDef::P;
+      using namespace IImageFormat::P; using namespace IImageLib::P;
+      using namespace ILuaFunc::P;     using namespace IMask::P;
+      using namespace IMemory::P;      using namespace IOal::P;
+      using namespace IPcmFormat::P;   using namespace IPcmLib::P;
+      using namespace ISample::P;      using namespace IShader::P;
+      using namespace ISocket::P;      using namespace ISource::P;
+      using namespace ISShot::P;       using namespace IStat::P;
+      using namespace IUtil::P;        using namespace IUtf;
+      using namespace IVars::P;        using namespace Lib::OpenAL;
+      using namespace Lib::OS::GlFW;   using namespace Lib::Sqlite;
+      // Include cvar varaiables array that we will send to CVars class
 #include "cvarlib.hpp"
       // Include console commands array that we will send to Console class
 #include "conlib.hpp"
@@ -779,6 +805,7 @@ class Core                             // Members initially private
       INITSS(EvtMain);                 // cppcheck-suppress danglingLifetime
       INITSS(System);                  // cppcheck-suppress danglingLifetime
       INITSS(LuaFuncs);                // cppcheck-suppress danglingLifetime
+      INITSS(Credits);                 // cppcheck-suppress danglingLifetime
       INITSS(Archives);                // cppcheck-suppress danglingLifetime
       INITSS(Assets);                  // cppcheck-suppress danglingLifetime
       INITSS(Crypt);                   // cppcheck-suppress danglingLifetime
@@ -793,7 +820,6 @@ class Core                             // Members initially private
       INITSS(Jsons);                   // cppcheck-suppress danglingLifetime
       INITSS(Sockets);                 // cppcheck-suppress danglingLifetime
       INITSS(Bins);                    // cppcheck-suppress danglingLifetime
-      INITSS(Credits);                 // cppcheck-suppress danglingLifetime
       // Audio rendering subsystems
       INITSS(Oal);                     // cppcheck-suppress danglingLifetime
       INITSS(PcmFmts);                 // cppcheck-suppress danglingLifetime
@@ -948,5 +974,7 @@ class Core                             // Members initially private
   /* -- Destructor that clears the core pointer ---------------------------- */
   ~Core(void) { cCore = nullptr; }
 };/* ----------------------------------------------------------------------- */
-};                                     // End of module namespace
+};                                     // End of public module namespace
+/* ------------------------------------------------------------------------- */
+};                                     // End of private module namespace
 /* == EoF =========================================================== EoF == */

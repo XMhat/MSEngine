@@ -1,23 +1,38 @@
-/* == VIDEO.HPP ============================================================ */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This file handles streaming from .OGV files and playing to OpenAL.  ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == VIDEO.HPP ============================================================ **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This file handles streaming from .OGV files and playing to OpenAL.  ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfVideo {                    // Start of module namespace
+namespace IVideo {                     // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IAsset::P;             using namespace IASync::P;
+using namespace IClock::P;             using namespace ICollector::P;
+using namespace ICVarDef::P;           using namespace IError::P;
+using namespace IEvtMain::P;           using namespace IFbo::P;
+using namespace IFboBase::P;           using namespace IFileMap::P;
+using namespace IFlags;                using namespace IIdent::P;
+using namespace ILog::P;               using namespace ILuaEvt::P;
+using namespace ILuaUtil::P;           using namespace IMemory::P;
+using namespace IOal::P;               using namespace IOgl::P;
+using namespace IPcmLib::P;            using namespace IShader::P;
+using namespace ISource::P;            using namespace IStd::P;
+using namespace IStream::P;            using namespace IString::P;
+using namespace ISysUtil::P;           using namespace IThread::P;
+using namespace IUtil::P;              using namespace Lib::Ogg;
+using namespace Lib::Ogg::Theora;      using namespace Lib::OpenAL;
+using namespace Lib::OS::GlFW;
 /* ------------------------------------------------------------------------- */
-using namespace Lib::Theora;           // Using Theora library functions
-using namespace IfStream;              // Using source namespace
-using namespace IfFbo;                 // Using fbo namespace
+namespace P {                          // Start of public module namespace
 /* -- Video collector class for collector data and custom variables -------- */
 BEGIN_ASYNCCOLLECTOREX(Videos, Video, CLHelperSafe,
 /* -- Public variables ----------------------------------------------------- */
-typedef IfIdent::IdList<TH_CS_NSPACES> CSStrings;
+typedef IdList<TH_CS_NSPACES> CSStrings;
 const CSStrings    csStrings;          /* Colour space strings list         */\
-typedef IfIdent::IdList<TH_PF_NFORMATS> PFStrings;
+typedef IdList<TH_PF_NFORMATS> PFStrings;
 const PFStrings    pfStrings;          /* Pixel format strings list         */\
 SafeLong           lBufferSize;        /* Default buffer size               */\
 SafeDouble         fdMaxDrift;,,       /* Maximum drift before drop frames  */\
@@ -151,30 +166,6 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
   }
   /* -- Clear textures array ----------------------------------------------- */
   void ClearTextures(void) { uiYUV.fill(0); }
-  /* -- TimerCatchup a frame but don't render it --------------------------- */
-  bool TimerCatchup(void)
-  { // Wait until uploading is done
-    const LockGuard lgWaitForUpload{ mUpload };
-    // Reset buffer statistics. Don't reset buffer id though
-    stFFree = fData.size();
-    stFWaiting = 0;
-    // Create a counter to hold skipped frames. Since the counter in the class
-    // is atomic, we'll just make sure we modify it once.
-    unsigned int uiSkipped = 0;
-    // For each frame...
-    for(Frame &fSlot : fData)
-    { // Ignore if not set to draw
-      if(!fSlot.bDraw) continue;
-      // Reset the frame data
-      fSlot.Reset();
-      // Increment skipped frames counter
-      ++uiSkipped;
-    } // Add to frames lost
-    uiVideoFramesLost += uiSkipped;
-    // Read and decode a new packet and return if succeeded
-    return ogg_stream_packetout(&tSS, &oPK) > 0
-        && th_decode_packetin(tDC, &oPK, &iVideoGranulePos) >= 0;
-  }
   /* -- Decode data and assign it ------------------------------------------ */
   void AssignDecodedData(void)
   { // Wait until uploading is done
@@ -223,7 +214,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
         if(cOal->HaveError()) continue;
         // Remove buffer time
         fdAudioBuffer -=
-          Maximum(cOal->GetBufferInt<ALdouble>(uiBuffer, AL_SIZE) /
+          UtilMaximum(cOal->GetBufferInt<ALdouble>(uiBuffer, AL_SIZE) /
             vIN.rate, 0);
         // Delete the buffer that was returned continue if successful
         ALL(cOal->DeleteBuffer(uiBuffer),
@@ -235,10 +226,9 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
         (FlagIsSet(FL_THEORA) && fdAudioTime > fdVideoTime + 1)) break;
       // Get PCM data stored as float
       ALfloat **fpPCM;
-      const size_t stFrames =
-        static_cast<size_t>(vorbis_synthesis_pcmout(&vDS, &fpPCM));
       // If frames are available, but we're way behind the video?
-      if(stFrames > 0)
+      if(const size_t stFrames =
+        static_cast<size_t>(vorbis_synthesis_pcmout(&vDS, &fpPCM)))
       { // Get channels as size_t
         const size_t stChannels = static_cast<size_t>(vIN.channels);
         // Length of data
@@ -335,7 +325,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
             ++uiVideoFrames;
             // Update position
             UpdateVideoPosition();
-            // Set next frome time and fall through to break
+            // Set next frame time and fall through to break
             CIAccumulate();
             // Done
             break;
@@ -356,9 +346,29 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
       if(FlagIsSet(FL_VORBIS) && fdAudioTime > 0.0)
       { // Update drift and if drifting too much?
         fdDrift = fdVideoTime - fdAudioTime;
-        if(abs(fdDrift) >= fdMaxDrift)
-        { // Catch up and if succeeded? Update video position
-          if(TimerCatchup()) UpdateVideoPosition();
+        if(fdDrift >= fdMaxDrift)
+        { // Wait until uploading is done
+          const LockGuard lgWaitForUpload{ mUpload };
+          // Reset buffer statistics. Don't reset buffer id though
+          stFFree = fData.size();
+          stFWaiting = 0;
+          // Create a counter to hold skipped frames. Since the counter in the
+          // class is atomic, we'll just make sure we modify it once.
+          unsigned int uiSkipped = 0;
+          // For each frame...
+          for(Frame &fSlot : fData)
+          { // Ignore if not set to draw
+            if(!fSlot.bDraw) continue;
+            // Reset the frame data
+            fSlot.Reset();
+            // Increment skipped frames counter
+            ++uiSkipped;
+          } // Add to frames lost
+          uiVideoFramesLost += uiSkipped;
+          // Read and decode a new packet and return if succeeded
+          if(ogg_stream_packetout(&tSS, &oPK) > 0
+            && th_decode_packetin(tDC, &oPK, &iVideoGranulePos) >= 0)
+              UpdateVideoPosition();
           // Next frame can show immediately
           CISync();
         }
@@ -388,22 +398,23 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
         case 0:
           // Is end of file?
           if(fmFile.FileMapIsEOF())
-          { // We should loop?
-            if(stLoop > 0)
-            { // Rewind video
-              Rewind();
-              // Reduce loops if not infinity
-              if(stLoop != string::npos) --stLoop;
-              // Send looping event
-              LuaEvtDispatch(VE_LOOP);
-            } // No more loops so we're done if everything is played
-            else if(fdAudioBuffer <= 0.0) return 2;
-            // Wait until all buffers are empty
-            break;
+          { // Is all audio and frames been rendered?
+            if(fdAudioBuffer <= 0.0 && stFWaiting == 0)
+            { // We should loop?
+              if(stLoop > 0)
+              { // Rewind video
+                Rewind();
+                // Reduce loops if not infinity
+                if(stLoop != StdMaxSizeT) --stLoop;
+                // Send looping event
+                LuaEvtDispatch(VE_LOOP);
+              } // No more loops so we're done if everything is played
+              else return 2;
+            }
           } // Break if we read or still have useful data
           else if(IOBuffer())
             XC("Read OGG data error!",
-              "Identifier", IdentGet(), "Reason", LocalError());
+              "Identifier", IdentGet(), "Reason", StrFromErrNo());
           // Fall through to break
           [[fallthrough]];
         // Bytes skipped? Ignore
@@ -461,7 +472,8 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     // Calculate memory required for buffering audio and verify the size since
     // we don't know if someone's sending us dodgy bitrate values
     const double fdMem =
-      NearestPow2<double>(Maximum(vIN.bitrate_upper, vIN.bitrate_nominal) / 8);
+      UtilNearestPow2<double>(UtilMaximum(vIN.bitrate_upper,
+        vIN.bitrate_nominal) / 8);
     if(fdMem < 0 || fdMem > 1048576)
       XC("Calculated erroneous memory size for audio buffer!",
         "Identifier", IdentGet(),        "Amount",  fdMem,
@@ -597,7 +609,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
           // Try to rebuffer more data and throw error if error reading
           if(IOBuffer())
             XC("Read ogg/theora stream error!",
-               "Identifier", IdentGet(), "Reason", LocalError());
+               "Identifier", IdentGet(), "Reason", StrFromErrNo());
           // Done
           break;
         } // Indicated a page was synced and returned.
@@ -799,7 +811,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     Play(UB_REINIT);
   }
   /* -- Stop and unload audio buffers -------------------------------------- */
-  void StopAudioAndUnloadBuffers(const bool bReset)
+  void StopAudioAndUnloadBuffers(void)
   { // Ignore if no source or no vorbis stream
     if(!sCptr || FlagIsClear(FL_VORBIS)) return;
     // Stop from playing so all buffers are unqueued and wait for stop
@@ -807,8 +819,6 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     sCptr->StopUnQueueAndDeleteAllBuffers();
     // Audio buffers are empty
     fdAudioBuffer = 0.0;
-    // We need to free the source?
-    if(!bReset) return;
     // Unlock the source so the source manager can recycle it
     sCptr->Unlock();
     sCptr = nullptr;
@@ -835,7 +845,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     // Wait for the thread to stop
     tThread.ThreadStop();
     // Stop and unload buffers
-    StopAudioAndUnloadBuffers(true);
+    StopAudioAndUnloadBuffers();
     // Flush video data
     FlushVideoData();
   }
@@ -864,37 +874,37 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     { // Clear and reset it
       FlagClear(FL_VORBIS);
       ogg_stream_clear(&vSS);
-      ClearStatic(vSS);
+      UtilClearStatic(vSS);
     } // Vorbis block data initialised?
     if(FlagIsSet(FL_VBINIT))
     { // Clear and reset it
       FlagClear(FL_VBINIT);
       vorbis_block_clear(&vBL);
-      ClearStatic(vBL);
+      UtilClearStatic(vBL);
     } // Vorbis is dsp data initialised?
     if(FlagIsSet(FL_VDINIT))
     { // Clear and reset it
       FlagClear(FL_VDINIT);
       vorbis_dsp_clear(&vDS);
-      ClearStatic(vDS);
+      UtilClearStatic(vDS);
     } // Vorbis info data initialised?
     if(FlagIsSet(FL_VIINIT))
     { // Clear and reset it
       FlagClear(FL_VIINIT);
       vorbis_info_clear(&vIN);
-      ClearStatic(vIN);
+      UtilClearStatic(vIN);
     } // Vorbis comment data initialised?
     if(FlagIsSet(FL_VCINIT))
     { // Clear and reset it
       FlagClear(FL_VCINIT);
       vorbis_comment_clear(&vCO);
-      ClearStatic(vCO);
+      UtilClearStatic(vCO);
     } // Theora video stream initialised?
     if(FlagIsSet(FL_THEORA))
     { // Clear and reset it
       FlagClear(FL_THEORA);
       ogg_stream_clear(&tSS);
-      ClearStatic(tSS);
+      UtilClearStatic(tSS);
     } // Free theora decoding data if initialised
     if(tDC) th_decode_free(tDC);
     // Free theora setup data if initialised
@@ -904,25 +914,28 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     { // Clear and reset it
       FlagClear(FL_TIINIT);
       th_info_clear(&tIN);
-      ClearStatic(tIN);
+      UtilClearStatic(tIN);
     } // Theora comment data initialised?
     if(FlagIsSet(FL_TCINIT))
     { // Clear and reset it
       FlagClear(FL_TCINIT);
       th_comment_clear(&tCO);
-      ClearStatic(tCO);
+      UtilClearStatic(tCO);
     } // Ogg synchronisation data initialised?
     if(FlagIsSet(FL_OSINIT))
     { // Clear and reset it
       FlagClear(FL_OSINIT);
       ogg_sync_clear(&oSS);
-      ClearStatic(oSS);
+      UtilClearStatic(oSS);
     } // De-init audio buffer
     mbAudio.DeInit();
     // Clear frame data
     for(Frame &fFrame : fData) fFrame.Reset();
     // Reset other structs
-    ClearStatic(oPG); ClearStatic(oPK); ClearStatic(oPG); ClearStatic(tYB);
+    UtilClearStatic(oPG);
+    UtilClearStatic(oPK);
+    UtilClearStatic(oPG);
+    UtilClearStatic(tYB);
     // Reset Theora stuff
     tSI = nullptr;
     tDC = nullptr;
@@ -1005,22 +1018,23 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
   }
   /* -- Rewind video ------------------------------------------------------- */
   void Rewind(void)
-  { // Rewind video to start
+  { // We have audio element?
+    if(FlagIsSet(FL_VORBIS))
+    { // Clear all buffers
+      sCptr->StopUnQueueAndDeleteAllBuffers();
+      // Tell vorbis we reset to the start
+//      vorbis_synthesis_restart(&vDS);
+    } // Flush current video data if we have a video element
+    if(FlagIsSet(FL_THEORA)) FlushVideoData();
+    // Rewind video to start
     fmFile.FileMapRewind();
     // Reset granule position and frames rendered
     iVideoGranulePos = 0;
     uiVideoFrames = uiVideoFramesLost = 0;
     // Tell theora we reset the video position
     SetParameter<ogg_int64_t>(TH_DECCTL_SET_GRANPOS, 0);
-    // Tell vorbis we reset the audio position. We have to call this whenever
-    // we are seeking in the file.
-    if(FlagIsSet(FL_VORBIS)) vorbis_synthesis_restart(&vDS);
-    // Unload any playing buffers
-    StopAudioAndUnloadBuffers(false);
     // Reset counters
     fdVideoTime = fdAudioTime = fdDrift = fdAudioBuffer = 0.0;
-    // Flush current video data
-    FlushVideoData();
     // Tell the thread to continue rebuffering
     Unsuspend(UB_DATA);
   }
@@ -1142,21 +1156,21 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
         static_cast<int>(tIN.version_subminor),
       tSS.serialno, hex, tSS.serialno, dec,
       tIN.pic_width, tIN.pic_height,
-        ToRatio(tIN.pic_width, tIN.pic_height),
+        StrFromRatio(tIN.pic_width, tIN.pic_height),
       tIN.frame_width, tIN.frame_height,
-        ToRatio(tIN.frame_width, tIN.frame_height),
+        StrFromRatio(tIN.frame_width, tIN.frame_height),
       tIN.aspect_numerator, tIN.aspect_denominator,
       tIN.pic_x, tIN.pic_y,
       PixelFormatToString(GetPixelFormat()), GetPixelFormat(),
       ColourSpaceToString(GetColourSpace()), GetColourSpace(), fdFPS,
       vIN.version,
       vIN.channels,
-      vIN.rate, ToBitsStr(vIN.rate),
-      tIN.target_bitrate, ToBitsStr(tIN.target_bitrate),
-      vIN.bitrate_upper, ToBitsStr(vIN.bitrate_upper),
-      vIN.bitrate_nominal, ToBitsStr(vIN.bitrate_nominal),
-      vIN.bitrate_lower, ToBitsStr(vIN.bitrate_lower),
-      vIN.bitrate_window, ToBitsStr(vIN.bitrate_window));
+      vIN.rate, StrToBits(vIN.rate),
+      tIN.target_bitrate, StrToBits(tIN.target_bitrate),
+      vIN.bitrate_upper, StrToBits(vIN.bitrate_upper),
+      vIN.bitrate_nominal, StrToBits(vIN.bitrate_nominal),
+      vIN.bitrate_lower, StrToBits(vIN.bitrate_lower),
+      vIN.bitrate_window, StrToBits(vIN.bitrate_window));
   }
   /* -- When data has asynchronously loaded -------------------------------- */
   void AsyncReady(FileMap &fClass)
@@ -1170,25 +1184,21 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
   /* -- Load video from memory asynchronously ------------------------------ */
   void InitAsyncArray(lua_State*const lS)
   { // Need 5 parameters (class pointer was already pushed onto the stack);
-    CheckParams(lS, 6);
+    LuaUtilCheckParams(lS, 6);
     // Get and check parameters
-    const string strF{ GetCppStringNE(lS, 1, "Identifier") };
-    Asset &aData = *GetPtr<Asset>(lS, 2, "Data");
-    CheckFunction(lS, 3, "ErrorFunc");
-    CheckFunction(lS, 4, "ProgressFunc");
-    CheckFunction(lS, 5, "SuccessFunc");
+    const string strF{ LuaUtilGetCppStrNE(lS, 1, "Identifier") };
+    Asset &aData = *LuaUtilGetPtr<Asset>(lS, 2, "Data");
+    LuaUtilCheckFuncs(lS, 3, "ErrorFunc", 4, "ProgressFunc", 5, "SuccessFunc");
     // Set base parameters
     AsyncInitArray(lS, strF, "videoarray", StdMove(aData));
   }
   /* -- Load stream from file asynchronously ------------------------------- */
   void InitAsyncFile(lua_State*const lS)
   { // Need 4 parameters (class pointer was already pushed onto the stack);
-    CheckParams(lS, 5);
+    LuaUtilCheckParams(lS, 5);
     // Get and check parameters
-    const string strF{ GetCppFileName(lS, 1, "File") };
-    CheckFunction(lS, 2, "ErrorFunc");
-    CheckFunction(lS, 3, "ProgressFunc");
-    CheckFunction(lS, 4, "SuccessFunc");
+    const string strF{ LuaUtilGetCppFile(lS, 1, "File") };
+    LuaUtilCheckFuncs(lS, 2, "ErrorFunc", 3, "ProgressFunc", 4, "SuccessFunc");
     // Load sample from file asynchronously
     AsyncInitFile(lS, strF, "videofile");
   }
@@ -1254,6 +1264,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     ubReason(UB_BLOCK),
     stLoop(0),
     fdDrift(0.0),
+    fdMaxDrift(0.0),
     oSS{},
     oPG{},
     oPK{},
@@ -1382,5 +1393,7 @@ static CVarReturn VideoSetVolume(const ALfloat fVolume)
   return ACCEPT;
 }
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

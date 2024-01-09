@@ -1,16 +1,23 @@
-/* == SHADER.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This allows programs and shaders to be easily compiled, linked and  ## */
-/* ## used.                                                               ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == SHADER.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This allows programs and shaders to be easily compiled, linked and  ## **
+** ## used.                                                               ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfShader {                   // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfOgl;                 // Using ogl namespace
+namespace IShader {                    // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace ICollector::P;         using namespace ICVarDef::P;
+using namespace IError::P;             using namespace IFbo::P;
+using namespace IIdent::P;             using namespace ILog::P;
+using namespace IOgl::P;               using namespace IStd::P;
+using namespace IString::P;            using namespace ISysUtil::P;
+using namespace Lib::OS::GlFW;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Public typedefs ------------------------------------------------------ */
 enum ShaderUniformId {                 // Mandatory uniforms
   /* ----------------------------------------------------------------------- */
@@ -170,7 +177,7 @@ BEGIN_MEMBERCLASS(Shaders, Shader, ICHelperUnsafe),
     // destructor can clean up any created data.
     const size_t stIndex = size();
     const ShaderCell &scItem = *insert(cend(), { strName,
-      Append("#version 150\n", strC), eT, cOgl->CreateShader(eT) });
+      StrAppend("#version 150\n", strC), eT, cOgl->CreateShader(eT) });
     // Check the shader
     if(!scItem.GetHandle())
       XC("Failed to create GL shader!",
@@ -209,8 +216,8 @@ BEGIN_MEMBERCLASS(Shaders, Shader, ICHelperUnsafe),
   /* -- Shader initialiser helper ------------------------------------------ */
   template<typename ...VarArgs>
     void AddShaderEx(const string &strName, const GLenum eT,
-      const char*const cpFormat, const VarArgs& ...vaArgs)
-  { AddShader(strName, eT, Format(cpFormat, vaArgs...)); }
+      const char*const cpFormat, const VarArgs &...vaArgs)
+  { AddShader(strName, eT, StrFormat(cpFormat, vaArgs...)); }
   /* -- Add vertex shader with template and extra code --------------------- */
   void AddVertexShaderWith3DTemplate(const string &strName,
     const char*const cpCode)
@@ -268,7 +275,7 @@ BEGIN_MEMBERCLASS(Shaders, Shader, ICHelperUnsafe),
   void AddVertexShaderWith2DTemplate(const string &strName,
     const char*const cpCode)
   { // Add vertex shader program
-    AddVertexShaderWith3DTemplate(strName, Format("$"
+    AddVertexShaderWith3DTemplate(strName, StrFormat("$"
       "v[0] = -1.0+(((ortho[0]+$(v[0]))/ortho[2])*2.0);"  // X-coord
       "v[1] = -1.0+(((ortho[1]+$(v[1]))/ortho[3])*2.0);", // Y-coord
         cpCode, cShaders->strSPRMethod, cShaders->strSPRMethod).c_str());
@@ -450,5 +457,7 @@ static CVarReturn SetSPRoundingMethod(const size_t stMethod)
   return ACCEPT;
 }
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

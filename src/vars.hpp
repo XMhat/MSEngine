@@ -1,17 +1,20 @@
-/* == VARS.HPP ============================================================= */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This class will take a string and split it into tokens seperated by ## */
-/* ## the specified delimiter and split again into sorted key/value pairs ## */
-/* ## for fast access by key name.                                        ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == VARS.HPP ============================================================= **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This class will take a string and split it into tokens seperated by ## **
+** ## the specified delimiter and split again into sorted key/value pairs ## **
+** ## for fast access by key name.                                        ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfVars {                     // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfString;              // Using string namespace
+namespace IVars {                      // Start of private module namespace
+/* ------------------------------------------------------------------------- */
+using namespace IError::P;             using namespace IStd::P;
+using namespace IString::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Vars class ----------------------------------------------------------- */
 template<class MapType>struct VarsBase :
   /* -- Base classes ------------------------------------------------------- */
@@ -61,23 +64,23 @@ template<class MapType>struct VarsBase :
     const size_t stSegEnd, const char cDelimiter)
   { // Look for separator and if found?
     const size_t stSepLoc =
-      FindCharForwards(strS, stSegStart, stSegEnd, cDelimiter);
+      StrFindCharForwards(strS, stSegStart, stSegEnd, cDelimiter);
     if(stSepLoc != string::npos)
     { // Find start of keyname and if found?
       const size_t stKeyStart =
-        FindCharNotForwards(strS, stSegStart, stSepLoc);
+        StrFindCharNotForwards(strS, stSegStart, stSepLoc);
       if(stKeyStart != string::npos)
       { // Find end of keyname and if found?
         const size_t stKeyEnd =
-          FindCharNotBackwards(strS, stSepLoc-1, stSegStart);
+          StrFindCharNotBackwards(strS, stSepLoc-1, stSegStart);
         if(stKeyEnd != string::npos)
         { // Find start of value name and if found?
           const size_t stValStart =
-            FindCharNotForwards(strS, stSepLoc+1, stSegEnd);
+            StrFindCharNotForwards(strS, stSepLoc+1, stSegEnd);
           if(stValStart != string::npos)
           { // Find end of value name and if found? We can grab key/value
             const size_t stValEnd =
-              FindCharNotBackwards(strS, stSegEnd-1, stValStart);
+              StrFindCharNotBackwards(strS, stSegEnd-1, stValStart);
             if(stValEnd != string::npos) return VarsPushPair(
               StdMove(strS.substr(stKeyStart, stKeyEnd-stKeyStart+1)),
               StdMove(strS.substr(stValStart, stValEnd-stValStart+1)));
@@ -85,7 +88,7 @@ template<class MapType>struct VarsBase :
         }  // Could not prune prefixed whitespaces on value.
       }  // Could not prune suffixed whitespaces on key.
     } // Could not prune prefixed whitespaces on key. Add full value for debug
-    return VarsPushPair(Append('\255', this->size()),
+    return VarsPushPair(StrAppend('\255', this->size()),
       StdMove(strS.substr(stSegStart, stSegEnd-stSegStart)));
   }
   /* -- Initialise or add entries from a string ---------------------------- */
@@ -194,6 +197,8 @@ struct VarsConst :
     { }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(VarsConst)           // Disable copy constructor/operator
-};/* -- End of module namespace -------------------------------------------- */
-};                                     // End of module namespace
+};/* ----------------------------------------------------------------------- */
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

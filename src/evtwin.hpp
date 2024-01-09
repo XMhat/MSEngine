@@ -1,18 +1,20 @@
-/* == EVTWIN.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This is the engine events class where the engine can queue messages ## */
-/* ## to be executed in the engine thread.                                ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == EVTWIN.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This is the engine events class where the engine can queue messages ## **
+** ## to be executed in the engine thread.                                ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfEvtWin {                   // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfGlFW;                // Using glfw namespace
-using namespace IfLog;                 // Using log namespace
-using namespace IfThread;              // Using thread namespace
+namespace IEvtWin {                    // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IEvtCore::P;           using namespace IGlFWUtil::P;
+using namespace ILog::P;               using namespace IStd::P;
+using namespace ISysUtil::P;           using namespace IThread::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Available engine commands -------------------------------------------- */
 enum EvtWinCmd                         // Render thread event commands
 { /* -- Main events -------------------------------------------------------- */
@@ -25,26 +27,28 @@ enum EvtWinCmd                         // Render thread event commands
   EWC_WIN_RESIZE,                      // 05: Resize window
   EWC_WIN_SETICON,                     // 06: Set window icon
   EWC_WIN_LIMITS,                      // 07: Window limits change
+  EWC_WIN_HIDE,                        // 08: Hide the window
   /* -- Clipboard events --------------------------------------------------- */
-  EWC_CB_GET,                          // 08: Get clipboard (via Clip class)
-  EWC_CB_SET,                          // 09: Set clipboard (via Clip class)
-  EWC_CB_SETNR,                        // 10: " but no callback
+  EWC_CB_GET,                          // 09: Get clipboard (via Clip class)
+  EWC_CB_SET,                          // 10: Set clipboard (via Clip class)
+  EWC_CB_SETNR,                        // 11: " but no callback
   /* ----------------------------------------------------------------------- */
-  EWC_NOLOG,                           // 11: Events after this aren't logged
+  EWC_NOLOG,                           // 12: Events after this aren't logged
   /* ----------------------------------------------------------------------- */
-  EWC_MAX = EWC_NOLOG,                 // 12: Below are just codes
+  EWC_MAX = EWC_NOLOG,                 // 13: Below are just codes
 };/* ----------------------------------------------------------------------- */
 static class EvtWin final :            // Event list for window thread
   /* -- Dependencies ------------------------------------------------------- */
-  public IfEvtCore::EvtCore            // Events common class
+  public EvtCore                       // Events common class
    <EvtWinCmd,                         // The enum list of events supported
     EWC_MAX,                           // Maximum events allowed
     EWC_NONE,                          // Event id for NONE
     EWC_NOLOG>                         // Event id for NOLOG
 { /* -- Add with copy parameter semantics (starter) ---------------- */ public:
-  template<typename... V>void AddUnblock(const EvtWinCmd ewcCmd, V... vVars)
+  template<typename ...V>void AddUnblock(const EvtWinCmd ewcCmd,
+    const V &...vaVars)
   { // Prepare parameters list and add a new event
-    Add(ewcCmd, vVars...);
+    Add(ewcCmd, vaVars...);
     // Unblock the window thread
     GlFWForceEventHack();
   }
@@ -61,5 +65,7 @@ static class EvtWin final :            // Event list for window thread
   /* -- End ---------------------------------------------------------------- */
 } *cEvtWin = nullptr;                  // Pointer to static class
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

@@ -1,22 +1,32 @@
-/* == STREAM.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This file handles streaming from .OGG files and playing to OpenAL.  ## */
-/* ## Note on OggVorbis thread safety: Documentation states that all ov_* ## */
-/* ## operations on the _SAME_ 'OggVorbis_File' struct must be serialised ## */
-/* ## and protected with mutexes if they are to be used in multiple       ## */
-/* ## threads and in our case, we do as the audio thread must manage the  ## */
-/* ## stream and the engine thread must be able to control it!            ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == STREAM.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This file handles streaming from .OGG files and playing to OpenAL.  ## **
+** ## Note on OggVorbis thread safety: Documentation states that all ov_* ## **
+** ## operations on the _SAME_ 'OggVorbis_File' struct must be serialised ## **
+** ## and protected with mutexes if they are to be used in multiple       ## **
+** ## threads and in our case, we do as the audio thread must manage the  ## **
+** ## stream and the engine thread must be able to control it!            ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfStream {                   // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfSource;              // Using source namespace
-using namespace IfPcmFormat;           // Using codec namespace
-using namespace IfAsset;               // Using asset namespace
+namespace IStream {                    // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IAsset::P;             using namespace IASync::P;
+using namespace ICollector::P;         using namespace ICVarDef::P;
+using namespace IError::P;             using namespace IEvtMain::P;
+using namespace IFileMap::P;           using namespace IIdent::P;
+using namespace ILog::P;               using namespace ILuaEvt::P;
+using namespace ILuaUtil::P;           using namespace IMemory::P;
+using namespace IOal::P;               using namespace IPcmFormat::P;
+using namespace IPcmLib::P;            using namespace ISource::P;
+using namespace IStd::P;               using namespace IString::P;
+using namespace ISysUtil::P;           using namespace IUtil::P;
+using namespace Lib::Ogg;              using namespace Lib::OpenAL;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* ------------------------------------------------------------------------- */
 enum StreamEvents { SE_PLAY, SE_STOP }; // Playback events
 /* ------------------------------------------------------------------------- */
@@ -36,7 +46,6 @@ enum StreamStopReason { SR_STOPNOUNQ,  // Successful stop with no unqueue
                         SR_LUA,        // Requested by Lua (guest).
                         SR_MAX };      // Maximum number of stop reasons
 typedef IdList<SR_MAX> SRList;         // Stop reason strings
-/* ------------------------------------------------------------------------- */
 /* -- Stream collector class for collector data and custom variables ------- */
 BEGIN_ASYNCCOLLECTOREX(Streams, Stream, CLHelperSafe,
 /* -- Public variables ----------------------------------------------------- */
@@ -101,7 +110,7 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
   { // Convert ogg frames data to native PCM integer 16-bit audio
     for(size_t stFrameIndex = 0; stFrameIndex < stFrames; ++stFrameIndex)
       for(size_t stChanIndex = 0; stChanIndex < stChannels; ++stChanIndex)
-        *(wPCMOut++) = Clamp(static_cast<ALshort>
+        *(wPCMOut++) = UtilClamp(static_cast<ALshort>
           (rint(fpFramesIn[stChanIndex][stFrameIndex]*32767.f)),
             -32767, 32767);
   }
@@ -241,7 +250,7 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
     // We cannot play the next part of the audio due to loop end position
     else
     { // Restrict number of samples to play, but don't go over the buffer size
-      stBSize = Minimum(Size(),
+      stBSize = UtilMinimum(Size(),
         static_cast<size_t>(qLoopEnd - qDecPos) * stBpc * stChannels);
       // Push forward
       qDecPos += stBSize;
@@ -252,7 +261,7 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
       static_cast<ALsizei>(stBSize), static_cast<ALsizei>(GetRate())),
       "Failed to buffer ogg stream data!",
       "Identifier", IdentGet(),  "BufferId",   uiBufferId,
-      "Format",     GetFormat(), "BufferData", Ptr<void>(),
+      "StrFormat",     GetFormat(), "BufferData", Ptr<void>(),
       "BufferSize", stBSize,     "Rate",       GetRate());
     // Return status
     return true;
@@ -543,7 +552,7 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
     // then Rebuffer() will not fill all the buffers and subsequent OpenAL
     // calls will fail. We'll add a minimum value of 1 too just incase we get
     // a stream with no data.
-    vBuffers.resize(Clamp(static_cast<size_t>(ceil(static_cast<ALdouble>
+    vBuffers.resize(UtilClamp(static_cast<size_t>(ceil(static_cast<ALdouble>
       (GetSamples()) / cParent.stBufSize)), 1, cParent.stBufCount));
     // Get info about ogg and copy it into our static buffer if succeeded,
     // else show an exception if failed. This removes dereferencing of the
@@ -591,25 +600,21 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
   /* -- Load stream from memory asynchronously ----------------------------- */
   void InitAsyncArray(lua_State*const lS)
   { // Need 5 parameters (class pointer was already pushed onto the stack);
-    CheckParams(lS, 6);
+    LuaUtilCheckParams(lS, 6);
     // Get and check parameters
-    const string strF{ GetCppStringNE(lS, 1, "Identifier") };
-    Asset &aData = *GetPtr<Asset>(lS, 2, "Asset");
-    CheckFunction(lS, 3, "ErrorFunc");
-    CheckFunction(lS, 4, "ProgressFunc");
-    CheckFunction(lS, 5, "SuccessFunc");
+    const string strF{ LuaUtilGetCppStrNE(lS, 1, "Identifier") };
+    Asset &aData = *LuaUtilGetPtr<Asset>(lS, 2, "Asset");
+    LuaUtilCheckFuncs(lS, 3, "ErrorFunc", 4, "ProgressFunc", 5, "SuccessFunc");
     // Load stream from memory
     AsyncInitArray(lS, strF, "streamarray", StdMove(aData));
   }
   /* -- Load stream from file asynchronously ------------------------------- */
   void InitAsyncFile(lua_State*const lS)
   { // Need 4 parameters (class pointer was already pushed onto the stack);
-    CheckParams(lS, 5);
+    LuaUtilCheckParams(lS, 5);
     // Get and check parameters
-    const string strF{ GetCppFileName(lS, 1, "File") };
-    CheckFunction(lS, 2, "ErrorFunc");
-    CheckFunction(lS, 3, "ProgressFunc");
-    CheckFunction(lS, 4, "SuccessFunc");
+    const string strF{ LuaUtilGetCppFile(lS, 1, "File") };
+    LuaUtilCheckFuncs(lS, 2, "ErrorFunc", 3, "ProgressFunc", 4, "SuccessFunc");
     // Load stream from file
     AsyncInitFile(lS, strF, "streamfile");
   }
@@ -742,5 +747,7 @@ static CVarReturn StreamSetBufferSize(const size_t stNewSize)
   { return CVarSimpleSetIntNLG(cStreams->stBufSize, stNewSize,
       static_cast<size_t>(4096), static_cast<size_t>(65536)); }
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

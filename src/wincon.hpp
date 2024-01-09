@@ -1,11 +1,11 @@
-/* == WINCON.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This is a Windows specific module that handles text only mode       ## */
-/* ## output which is needed by the engines bot-mode.                     ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == WINCON.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This is a Windows specific module that handles text only mode       ## **
+** ## output which is needed by the engines bot-mode.                     ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 // -- Palette entry to WIN32 colour lookup --------------------------------- */
 typedef array<const WORD, COLOUR_MAX> ColourList;
@@ -65,11 +65,11 @@ class SysCon :                         // Members initially private
   size_t           stX2, stY2;         // been updated in the last frame
   /* -- Reset drawing bounds ----------------------------------------------- */
   void ResetDrawingBounds(void)
-    { stX1 = stY1 = string::npos; stX2 = stY2 = 0; }
+    { stX1 = stY1 = StdMaxSizeT; stX2 = stY2 = 0; }
   /* -- Set maximum console line length ------------------------------------ */
   CVarReturn RowsModified(const size_t stRows)
   { // Deny if out of range. The maximum value is a SHORT from Win32 API.
-    if(stRows < 25 || IntWillOverflow<SHORT>(stRows)) return DENY;
+    if(stRows < 25 || UtilIntWillOverflow<SHORT>(stRows)) return DENY;
     // Update the buffer size if console is opened
     if(IsWindowHandleSet()) UpdateSize(stW, stRows);
     // Value allowed
@@ -78,7 +78,7 @@ class SysCon :                         // Members initially private
   /* -- Set maximum console line length ------------------------------------ */
   CVarReturn ColsModified(const size_t stCols)
   { // Deny if out of range. The maximum value is a SHORT from Win32 API.
-    if(stCols < 80 || IntWillOverflow<SHORT>(stCols)) return DENY;
+    if(stCols < 80 || UtilIntWillOverflow<SHORT>(stCols)) return DENY;
     // Update the buffer size
     if(IsWindowHandleSet()) UpdateSize(stCols, stH);
     // Value allowed
@@ -209,7 +209,7 @@ class SysCon :                         // Members initially private
     if(iData.EventType & MOUSE_EVENT &&
       iData.Event.MouseEvent.dwEventFlags & MOUSE_WHEELED)
     { // Get scroll amount
-      const short wAmount = HighWord(iData.Event.MouseEvent.dwButtonState);
+      const short wAmount = UtilHighWord(iData.Event.MouseEvent.dwButtonState);
       // If wheel went backgrounds. Scroll downwards else upwards
       if(wAmount < 0) iKey = GLFW_KEY_PAGE_DOWN;
       else if(wAmount > 0) iKey = GLFW_KEY_PAGE_UP;
@@ -224,7 +224,8 @@ class SysCon :                         // Members initially private
   size_t GetPos(void) const { return (stY * stW) + stX; }
   size_t GetPosEOL(void) const { return (stY * stW) + stW; }
   size_t EndPos(void) const { return stEndPos; }
-  size_t SafeEnd(const size_t _stP) const { return Minimum(_stP, EndPos()); }
+  size_t SafeEnd(const size_t _stP) const
+    { return UtilMinimum(_stP, EndPos()); }
   void SetColour(const WORD wNewCol) { wColour = wNewCol; }
   /* -- Set cursor size ---------------------------------------------------- */
   void SetCursorMode(const bool bInsert)
@@ -253,7 +254,7 @@ class SysCon :                         // Members initially private
     // Show error in log for failure
     cLog->LogErrorExSafe(
       "SysCon failed to set cursor visibility from $ to $: $!",
-      TrueOrFalse(FlagIsSet(SCO_CURVISIBLE)), TrueOrFalse(bVisible),
+      StrFromBoolTF(FlagIsSet(SCO_CURVISIBLE)), StrFromBoolTF(bVisible),
       SysError());
   }
   /* -- Set cursor position ------------------------------------------------ */
@@ -272,7 +273,7 @@ class SysCon :                         // Members initially private
   /* -- Commit buffer ------------------------------------------------------ */
   void CommitBuffer(void)
   { // Done if no bounds changed
-    if(stX1 == string::npos || stY1 == string::npos) return;
+    if(stX1 == StdMaxSizeT || stY1 == StdMaxSizeT) return;
     // Set drawing region
     SMALL_RECT srBounds = {static_cast<SHORT>(stX1),static_cast<SHORT>(stY1),
                            static_cast<SHORT>(stX2),static_cast<SHORT>(stY2)};
@@ -362,7 +363,7 @@ class SysCon :                         // Members initially private
     { SetColourInteger(uiColour, BACKGROUND_RED|BACKGROUND_GREEN|
         BACKGROUND_BLUE|BACKGROUND_INTENSITY, wNDXtoW32BC); }
   /* -- Handle print control character ------------------------------------- */
-  void HandlePrintControl(Decoder &utfStr, const bool bSimulation)
+  void HandlePrintControl(UtfDecoder &utfStr, const bool bSimulation)
   { // Get next character
     switch(utfStr.Next())
     { // Colour selection
@@ -392,7 +393,7 @@ class SysCon :                         // Members initially private
     }
   }
   /* -- Locate a supported character while checking if word can be printed - */
-  bool PrintGetWord(Decoder &utfStr, size_t stXp, const size_t stWi)
+  bool PrintGetWord(UtfDecoder &utfStr, size_t stXp, const size_t stWi)
   { // Save position because we're not drawing anything
     const unsigned char *ucpPtr = utfStr.GetCPtr();
     // Until null character. Which control token?
@@ -419,7 +420,7 @@ class SysCon :                         // Members initially private
     return false;
   }
   /* -- Handle return on print --------------------------------------------- */
-  void HandleReturnSimulated(Decoder &utfStr, size_t &stXp, size_t &stYp,
+  void HandleReturnSimulated(UtfDecoder &utfStr, size_t &stXp, size_t &stYp,
     const size_t stIn)
   { // Go down own line and set indentation
     stXp = stIn;
@@ -430,7 +431,7 @@ class SysCon :                         // Members initially private
   /* -- If co-ordinates are in valid range to draw ------------------------- */
   bool ValidY(const size_t stYp) { return stYp >= 1 && stYp <= stHm1; }
   /* -- Handle return on print --------------------------------------------- */
-  void HandleReturn(Decoder &utfStr, const size_t stIn)
+  void HandleReturn(UtfDecoder &utfStr, const size_t stIn)
   { // If we can draw on this Y? Clear up till the end
     if(ValidY(stY)) ClearLine();
     // If we can draw on the next line too? Clear up to indentation
@@ -441,7 +442,7 @@ class SysCon :                         // Members initially private
     utfStr.Ignore(' ');
   }
   /* -- Write data upwards and wrapping (same as what Char::* does) -------- */
-  size_t WriteLineWU(Decoder &&utfStr)
+  size_t WriteLineWU(UtfDecoder &&utfStr)
   { // Check the string is valid
     if(!utfStr.Valid()) return 1;
     // Save current colour
@@ -526,21 +527,21 @@ class SysCon :                         // Members initially private
     return stYp;
   }
   /* -- Write data --------------------------------------------------------- */
-  void WriteLine(Decoder &&utfString, const size_t stMax, const bool bClrEOL)
+  void WriteLine(UtfDecoder &&utfStr, const size_t stMax, const bool bClrEOL)
   { // Get current absolute character position in screen buffer
     size_t stPos = GetPos();
     // Get end of line position
     const size_t stPosEOL = SafeEnd(GetPosEOL());
     // Get absolute end position in screen buffer to protect from overrun
-    const size_t stEnd = Minimum(stPosEOL, SafeEnd(stPos + stMax));
+    const size_t stEnd = UtilMinimum(stPosEOL, SafeEnd(stPos + stMax));
     // For each character index in the buffer
-    while(const unsigned int uiChar = utfString.Next())
+    while(const unsigned int uiChar = utfStr.Next())
     { // Compare character
       switch(uiChar)
       { // Carriage return? (impossible).
         case '\n': break;
         // Is a control character?
-        case '\r': HandlePrintControl(utfString, false); break;
+        case '\r': HandlePrintControl(utfStr, false); break;
         // Get pointer to character ata
         default : SetCharPos(stPos++, uiChar); break;
       } // Increase position in screen buffer and break if at end of string/buf
@@ -564,11 +565,12 @@ class SysCon :                         // Members initially private
     // Have left side text?
     if(!strIL.empty())
     { // Put left text in a UTF container
-      Decoder utfString{ strIL };
+      UtfDecoder utfString{ strIL };
       // Set length
       stLen = utfString.Length();
       // Reset at scrolled position
-      utfString.Reset(strIL.c_str() + abs(Maximum(0, (int)stLen-(int)stWm2)));
+      utfString.Reset(strIL.c_str() +
+        abs(UtilMaximum(0, (int)stLen-(int)stWm2)));
       // Draw start of input text
       WriteLine(StdMove(utfString), stWm2, false);
     } // Left size of text is zero long
@@ -578,9 +580,9 @@ class SysCon :                         // Members initially private
     { // Set cursor position
       stX = 1 + stLen, stY = stHm1;
       // Reset again and write the string
-      WriteLine(Decoder(strIR), stWm2 - stLen, false);
+      WriteLine(UtfDecoder(strIR), stWm2 - stLen, false);
     } // Set cursor position
-    SetCursor({ static_cast<SHORT>(Minimum(stWm1, 1 + stLen)),
+    SetCursor({ static_cast<SHORT>(UtilMinimum(stWm1, 1 + stLen)),
                 static_cast<SHORT>(stHm1) });
     // Set cursor visiiblity
     SetCursorVisibility(true);
@@ -602,9 +604,9 @@ class SysCon :                         // Members initially private
     SetColour(FOREGROUND_RED|FOREGROUND_GREEN|FOREGROUND_BLUE|
       FOREGROUND_INTENSITY|BACKGROUND_BLUE);
     // Get length of left and right part of string
-    Decoder utfL{ strL }, utfR{ strR };
-    const size_t stL = utfL.Length(), stLC = Minimum(stL, stWm2),
-                 stR = utfR.Length(), stRC = Minimum(stR, stWm2);
+    UtfDecoder utfL{ strL }, utfR{ strR };
+    const size_t stL = utfL.Length(), stLC = UtilMinimum(stL, stWm2),
+                 stR = utfR.Length(), stRC = UtilMinimum(stR, stWm2);
     // If we have left status text length?
     if(stLC)
     { // If the right text would not completely obscure the left text?
@@ -631,7 +633,7 @@ class SysCon :                         // Members initially private
     else SetWhitespace();
     // Both texts can only share 'stWm2' characters so they need to share
     // this limited space. If there is enough space for both?
-    const size_t stTotal = Minimum(stWm2, stLC + stRC);
+    const size_t stTotal = UtilMinimum(stWm2, stLC + stRC);
     if(stTotal < stWm2)
     { // Get position to write at
       size_t stPos = GetPos();
@@ -672,7 +674,7 @@ class SysCon :                         // Members initially private
       // we can make sure we don't access any OOB memory by just checking that
       // the co-ordinates while drawing, we don't have to worry about the
       // integer wrapping at all we are not drawing.
-      stY -= WriteLineWU(Decoder(lD.strLine)) - 1;
+      stY -= WriteLineWU(UtfDecoder(lD.strLine)) - 1;
     } // Done if there is no lines to clear up to the top
     if(!ValidY(stY)) return;
     // Goto beginning so we can clear lines

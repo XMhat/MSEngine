@@ -1,15 +1,17 @@
-/* == STRING.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Miscaelennias string utility functions.                             ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == STRING.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Miscaelennias string utility functions.                             ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfString {                   // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfStd;                 // Using std namespace
+namespace IString {                    // Start of private module namespace
+/* ------------------------------------------------------------------------- */
+using namespace IStd::P;               using namespace IUtf;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Common class with common objects ------------------------------------- */
 static const class Common final        // Members initially private
 { /* -- Private variables -------------------------------------------------- */
@@ -24,14 +26,15 @@ static const class Common final        // Members initially private
                    strCrLf,            // CR and LF c++ string
                    strCrLf2,           // Double CR and LF c++ string
                    strLfCr,            // LF and CR c++ string
-                   strUnknown;         // C++ string as "Unknown"
-  const char*const cpBlank;            // Blank C String
+                   strFSlash,          // C++ string as forward-slash '/'
+                   strUnspec,          // C++ string as "<Unspecified>"
+                   strNull;            // C++ string as "<NullPtr>"
+  const char*const cpBlank;            // Blank C-String
   const locale     lLocaleCurrent;     // Current locale
   /* --------------------------------------------------------------- */ public:
   const locale &Locale(void) const { return lLocaleCurrent; }
   /* ----------------------------------------------------------------------- */
   const string &Blank(void) const { return strBlank; }
-  /* ----------------------------------------------------------------------- */
   const char *CBlank(void) const { return cpBlank; }
   /* ----------------------------------------------------------------------- */
   const string &Tru(void) const { return strTrue; }
@@ -54,7 +57,11 @@ static const class Common final        // Members initially private
   /* ----------------------------------------------------------------------- */
   const string &Space(void) const { return strSpace; }
   /* ----------------------------------------------------------------------- */
-  const string &Unknown(void) const { return strUnknown; }
+  const string &FSlash(void) const { return strFSlash; }
+  /* ----------------------------------------------------------------------- */
+  const string &Unspec(void) const { return strUnspec; }
+  /* ----------------------------------------------------------------------- */
+  const string &Null(void) const { return strNull; }
   /* -- Default Constructor ------------------------------------------------ */
   Common(void) :                       // No parameters
     /* -- Initialisers ----------------------------------------------------- */
@@ -63,8 +70,9 @@ static const class Common final        // Members initially private
     strSpace{ " " },                   strCr{ "\r" },
     strLf{ "\n" },                     strCrLf{ strCr + strLf },
     strCrLf2{ strCrLf + strCrLf },     strLfCr{ strLf + strCr },
-    strUnknown{ "Unknown" },           cpBlank(strBlank.c_str()),
-    lLocaleCurrent{ strBlank }         // Initialise current locale
+    strFSlash{ "/" },
+    strUnspec{ "<Unspecified>" },      strNull{ "<NullPtr>" },
+    cpBlank(strBlank.c_str()),         lLocaleCurrent{ strBlank }
     /* -- No code ---------------------------------------------------------- */
     { }
 } /* ----------------------------------------------------------------------- */
@@ -72,39 +80,41 @@ static const class Common final        // Members initially private
 /* -- Some helpful globals so not to repeat anything ----------------------- */
 static const char*const cpTimeFormat = "%a %b %d %H:%M:%S %Y %z";
 /* -- Append final parameter (uses copy elision) --------------------------- */
-static void AppendParam(ostringstream&) { }
+static void StrAppendHelper(ostringstream&) { }
 /* -- Append a parameter (uses copy elision) ------------------------------- */
-template<typename AnyType, typename... VarArgsType>
-  static void AppendParam(ostringstream &osS, const AnyType &atVal,
-    const VarArgsType... vatArgs)
-      { osS << atVal; AppendParam(osS, vatArgs...); }
+template<typename AnyType, typename ...VarArgs>
+  static void StrAppendHelper(ostringstream &osS, const AnyType &atVal,
+    const VarArgs &...vatArgs)
+      { osS << atVal; StrAppendHelper(osS, vatArgs...); }
 /* -- Append main function ------------------------------------------------- */
-template<typename... V>static const string Append(const V... vV)
+template<typename ...VarArgs>
+  static const string StrAppend(const VarArgs &...vaVars)
 { // Stream to write to
   ostringstream osS;
   // Build string
-  AppendParam(osS, vV...);
+  StrAppendHelper(osS, vaVars...);
   // Return string
   return osS.str();
 }
 /* -- Append with formatted numbers ---------------------------------------- */
-template<typename... V>static const string AppendImbued(const V... vV)
+template<typename ...VarArgs>
+  static const string StrAppendImbue(const VarArgs &...vaVars)
 { // Stream to write to
   ostringstream osS;
   // Imbue current locale
   osS.imbue(cCommon->Locale());
   // Build string
-  AppendParam(osS, vV...);
+  StrAppendHelper(osS, vaVars...);
   // Return appended string
   return osS.str();
 }
 /* -- Append final parameter (uses copy elision) --------------------------- */
-static void FormatParam(ostringstream &osS, const char *cpPos)
+static void StrFormatHelper(ostringstream &osS, const char *cpPos)
   { if(*cpPos) osS << cpPos; }
 /* -- Process any value ------------------------------------------------- -- */
-template<typename T, typename... V>
-  static void FormatParam(ostringstream &osS, const char *cpPos,
-    const T& tVal, const V... vV)
+template<typename AnyType, typename ...VarArgs>
+  static void StrFormatHelper(ostringstream &osS, const char *cpPos,
+    const AnyType &atVal, const VarArgs &...vaVars)
 { // Find the mark that will be replaced by this parameter and if we
   // find the character?
   if(const char*const cpNewPos = strchr(cpPos, '$'))
@@ -122,46 +132,48 @@ template<typename T, typename... V>
       // move over the first '$'.
       case 0: ++cpPos; break;
     } // Push the value we are supposed to replace the matched '$' with.
-    osS << tVal;
+    osS << atVal;
     // Process more parameters if we can.
-    FormatParam(osS, cpPos, vV...);
+    StrFormatHelper(osS, cpPos, vaVars...);
   } // Return the rest of the string.
-  else FormatParam(osS, cpPos);
+  else StrFormatHelper(osS, cpPos);
 }
 /* -- Prepare message from c-string format --------------------------------- */
-template<typename... V>
-  static const string Format(const char*const cpP, const V... vV)
+template<typename ...VarArgs>
+  static const string StrFormat(const char*const cpFmt,
+    const VarArgs &...vaVars)
 { // Return if string empty of invalid
-  if(!IfUtf::IsCStringValid(cpP)) return {};
+  if(UtfIsCStringNotValid(cpFmt)) return {};
   // Stream to write to
   ostringstream osS;
-  // Format the text
-  FormatParam(osS, cpP, vV...);
+  // StrFormat the text
+  StrFormatHelper(osS, cpFmt, vaVars...);
   // Return formated text
   return osS.str();
 }
 /* == Format a number ====================================================== */
-template<typename T>
-  static const string FormatNumber(const T tV, const int iP=0)
-    { return StdMove(AppendImbued(fixed, setprecision(iP), tV)); }
+template<typename IntType>
+  static const string StrReadableFromNum(const IntType itVal,
+    const int iPrec=0)
+      { return StdMove(StrAppendImbue(fixed, setprecision(iPrec), itVal)); }
 /* -- Trim specified characters from string -------------------------------- */
-static const string Trim(const string &strS, const char cC)
+static const string StrTrim(const string &strStr, const char cChar)
 { // Return empty string if source string is empty
-  if(strS.empty()) return strS;
+  if(strStr.empty()) return strStr;
   // Calculate starting misoccurance of character. Return original if not found
-  const size_t stBegin = strS.find_first_not_of(cC);
-  if(stBegin == string::npos) return strS;
+  const size_t stBegin = strStr.find_first_not_of(cChar);
+  if(stBegin == string::npos) return strStr;
   // Calculate ending misoccurance of character then copy and return the string
-  return strS.substr(stBegin, strS.find_last_not_of(cC) - stBegin + 1);
+  return strStr.substr(stBegin, strStr.find_last_not_of(cChar) - stBegin + 1);
 }
 /* -- Convert integer to string with padding and precision ----------------- */
-template<typename IntType>static const string ToString(const IntType itV,
+template<typename IntType>static const string StrFromNum(const IntType itV,
   const int iW=0, const int iPrecision=numeric_limits<IntType>::digits10)
-    { return StdMove(Append(setw(iW), fixed, setprecision(iPrecision),
-        itV)); }
+    { return StdMove(StrAppend(setw(iW), fixed,
+        setprecision(iPrecision), itV)); }
 /* -- Quickly convert numbered string to integer --------------------------- */
 template<typename IntType=int64_t>
-  static const IntType ToNumber(const string &strValue)
+  static const IntType StrToNum(const string &strValue)
 { // Value to store into
   IntType itN;
   // Put value into input string stream
@@ -173,7 +185,7 @@ template<typename IntType=int64_t>
 }
 /* -- Quickly convert hex string to integer ------------------------------== */
 template<typename IntType=int64_t>
-  static const IntType HexToNumber(const string &strValue)
+  static const IntType StrHexToInt(const string &strValue)
 { // Value to store into
   IntType itN;
   // Put value into input string stream
@@ -184,18 +196,19 @@ template<typename IntType=int64_t>
   return itN;
 }
 /* -- Convert hex to string with zero padding ------------------------------ */
-template<typename T>static const string ToHex(const T tV, const int iP=0)
-  { return StdMove(Append(setfill('0'), hex, setw(iP), tV)); }
+template<typename IntType>
+  static const string StrHexFromInt(const IntType itVal, const int iPrec=0)
+    { return StdMove(StrAppend(setfill('0'), hex, setw(iPrec), itVal)); }
 /* -- Return if specified string has numbers ------------------------------- */
-static bool IsAlpha(const string &strValue)
+static bool StrIsAlpha(const string &strValue)
   { return StdAllOf(par_unseq, strValue.cbegin(), strValue.cend(),
       [](const char cValue) { return isalpha(static_cast<int>(cValue)); }); }
 /* -- Return if specified string has numbers ------------------------------- */
-static bool IsAlphaNumeric(const string &strValue)
+static bool StrIsAlphaNum(const string &strValue)
   { return StdAllOf(par_unseq, strValue.cbegin(), strValue.cend(),
       [](const char cValue) { return isalnum(static_cast<int>(cValue)); }); }
 /* -- Return if specified string is a valid integer ------------------------ */
-template<typename IntType=int64_t>static bool IsNumber(const string &strValue)
+template<typename IntType=int64_t>static bool StrIsInt(const string &strValue)
 { // Get string stream
   istringstream isS{ strValue };
   // Test with string stream
@@ -204,40 +217,22 @@ template<typename IntType=int64_t>static bool IsNumber(const string &strValue)
   return isS.eof() && !isS.fail();
 }
 /* -- Return if specified string is a valid float -------------------------- */
-static bool IsFloat(const string &strValue)
-  { return IsNumber<double>(strValue); }
-/* -- Returns if the specified number is a power of two -------------------- */
-template<typename IntType=int64_t>static bool IsPow2(const IntType itVal)
-    { return !((itVal & (itVal - 1)) && itVal); }
-/* -- Return absolute number ----------------------------------------------- */
-template<typename IntType=int64_t>
-  static IntType Absolute(const IntType itVal)
-{ // Check if supplied argument is signed and negate it if true
-  if constexpr(is_signed_v<IntType>) return (itVal < 0) ? -itVal : itVal;
-  // Else just return the value without any processing
-  else return itVal;
-}
+static bool StrIsFloat(const string &strValue)
+  { return StrIsInt<double>(strValue); }
 /* -- Return true if string is a value number to the power of 2 ------------ */
-static bool IsNumberPOW2(const string &strValue)
-  { return !strValue.empty() && IsPow2(Absolute(ToNumber(strValue))); }
+static bool StrIsNumPOW2(const string &strValue)
+  { return !strValue.empty() &&
+      StdIntIsPOW2(StdAbsolute(StrToNum(strValue))); }
 /* -- Return true if string is a value number to the power of 2 ------------ */
-static bool IsNumberPOW2Zero(const string &strValue)
+static bool StrIsNumPOW2Zero(const string &strValue)
 { // Failed if empty
   if(strValue.empty()) return false;
   // Convert string to number and return positive if value is zero or power 2
-  const int64_t qwVal = Absolute(ToNumber(strValue));
-  return !qwVal || IsPow2(qwVal);
+  const int64_t qwVal = StdAbsolute(StrToNum(strValue));
+  return !qwVal || StdIntIsPOW2(qwVal);
 }
-/* -- Set error number ----------------------------------------------------- */
-static void SetErrNo(const int iValue) { errno = iValue; }
-/* -- Get error number ----------------------------------------------------- */
-static int GetErrNo(void) { return errno; }
-/* -- Is error number equal to --------------------------------------------- */
-static bool IsErrNo(const int iValue) { return GetErrNo() == iValue; }
-/* -- Is error number not equal to ----------------------------------------- */
-static bool IsNotErrNo(const int iValue) { return !IsErrNo(iValue); }
 /* -- Convert error number to string --------------------------------------- */
-static const string LocalError(const int iErrNo=errno)
+static const string StrFromErrNo(const int iErrNo=errno)
 { // Buffer to store error message into
   string strErr; strErr.resize(128);
   // Windows?
@@ -245,18 +240,18 @@ static const string LocalError(const int iErrNo=errno)
   // 'https://msdn.microsoft.com/en-us/library/51sah927.aspx' says:
   // "Your string message can be, at most, 94 characters long."
   if(strerror_s(const_cast<char*>(strErr.c_str()), strErr.capacity(), iErrNo))
-    strErr.assign(Append("Error ", iErrNo));
+    strErr.assign(StrAppend("Error ", iErrNo));
   // OSX?
 #elif defined(MACOS)
   // Grab the error result and if failed? Just put in the error number continue
   if(strerror_r(iErrNo, const_cast<char*>(strErr.c_str()), strErr.capacity()))
-    strErr.assign(Append("Error ", iErrNo));
+    strErr.assign(StrAppend("Error ", iErrNo));
   // Linux?
 #elif defined(LINUX)
   // Grab the error result and if failed? Set a error and continue
   const char*const cpResult =
     strerror_r(iErrNo, const_cast<char*>(strErr.c_str()), strErr.capacity());
-  if(!cpResult) strErr = Append("Error ", iErrNo);
+  if(!cpResult) strErr = StrAppend("Error ", iErrNo);
   // We got a message but if was not put in our buffer just return as is
   else if(cpResult != strErr.c_str()) return cpResult;
 #endif
@@ -269,14 +264,14 @@ static const string LocalError(const int iErrNo=errno)
 /* -- Helper plugin for C runtime errno checking --------------------------- */
 struct ErrorPluginStandard final
 { /* -- Exception class helper macro for C runtime errors ------------------ */
-#define XCL(r,...) throw IfError::Error<ErrorPluginStandard>(r, ## __VA_ARGS__)
+#define XCL(r,...) throw Error<ErrorPluginStandard>(r, ## __VA_ARGS__)
   /* -- Constructor to add C runtime error code ---------------------------- */
   explicit ErrorPluginStandard(ostringstream &osS)
-    { osS << "\n+ Reason<" << GetErrNo() << "> = \""
-          << LocalError() << "\"."; }
+    { osS << "\n+ Reason<" << StdGetError() << "> = \""
+          << StrFromErrNo() << "\"."; }
 };/* ----------------------------------------------------------------------- */
 /* -- Convert special formatted string to unix timestamp ------------------- */
-static StdTimeT ParseTime2(const string &strS)
+static StdTimeT StrParseTime2(const string &strS)
 { // Time structure
   StdTMStruct tData;
   // Scan timestamp into time structure (Don't care about day name). We'll
@@ -299,7 +294,7 @@ static StdTimeT ParseTime2(const string &strS)
     ((tData.tm_wday / 100) * 3600)));
 }
 /* -- Convert ISO 8601 string to unix timestamp ---------------------------- */
-static StdTimeT ParseTime(const string &strS,
+static StdTimeT StrParseTime(const string &strS,
   const char*const cpF="%Y-%m-%dT%TZ")
 { // Time structure
   StdTMStruct tData;
@@ -314,7 +309,7 @@ static StdTimeT ParseTime(const string &strS,
   return StdMkTime(&tData);
 }
 /* -- Convert writable reference string to uppercase ----------------------- */
-static string &ToUpperRef(string &strStr)
+static string &StrToUpCaseRef(string &strStr)
 { // If string is not empty
   if(!strStr.empty())
     StdTransform(par_unseq, strStr.begin(), strStr.end(),
@@ -324,7 +319,7 @@ static string &ToUpperRef(string &strStr)
   return strStr;
 }
 /* -- Convert writable referenced string to lowercase ---------------------- */
-static string &ToLowerRef(string &strStr)
+static string &StrToLowCaseRef(string &strStr)
 { // If string is not empty
   if(!strStr.empty())
     StdTransform(par_unseq, strStr.begin(), strStr.end(),
@@ -335,7 +330,7 @@ static string &ToLowerRef(string &strStr)
 }
 /* -- Basic multiple replace of text in string ----------------------------- */
 template<class ListType=StrPairList>
-  static string &ReplaceEx(string &strDest, const ListType &ltList)
+  static string &StrReplaceEx(string &strDest, const ListType &ltList)
 { // Return original string if empty
   if(strDest.empty() || ltList.empty()) return strDest;
   // Current index to scan
@@ -367,7 +362,7 @@ template<class ListType=StrPairList>
   return strDest;
 }
 /* -- Basic replace of text in string -------------------------------------- */
-static string &Replace(string &strStr, const char cWhat, const char cWith)
+static string &StrReplace(string &strStr, const char cWhat, const char cWith)
 { // Return original string if empty
   if(strStr.empty()) return strStr;
   // For each occurence of 'strWhat' with 'strWith'.
@@ -378,10 +373,11 @@ static string &Replace(string &strStr, const char cWhat, const char cWith)
   return strStr;
 }
 /* -- Basic replace of text in string -------------------------------------- */
-static string Replace(const string &strStr, const char cWhat, const char cWith)
-  { string strDst{ strStr }; return Replace(strDst, cWhat, cWith); }
+static string StrReplace(const string &strStr, const char cWhat,
+  const char cWith)
+    { string strDst{ strStr }; return StrReplace(strDst, cWhat, cWith); }
 /* ------------------------------------------------------------------------- */
-static string &Replace(string &strDest, const string &strWhat,
+static string &StrReplace(string &strDest, const string &strWhat,
   const string &strWith)
 { // Return original string if empty
   if(strDest.empty()) return strDest;
@@ -397,41 +393,35 @@ static string &Replace(string &strDest, const string &strWhat,
   return strDest;
 }
 /* -- Basic replace of text in string -------------------------------------- */
-static string Replace(const string &strIn, const string &strWhat,
+static string StrReplace(const string &strIn, const string &strWhat,
   const string &strWith)
-    { string strOut{ strIn }; return Replace(strOut, strWhat, strWith); }
+    { string strOut{ strIn }; return StrReplace(strOut, strWhat, strWith); }
 /* -- Replace all occurences of whitespace with plus ----------------------- */
-static const string SpaceEncode(const string &strText)
-  { return Replace(strText, ' ', '+'); }
+static const string StrUrlEncodeSpaces(const string &strText)
+  { return StrReplace(strText, ' ', '+'); }
 /* ------------------------------------------------------------------------- */
-static const char *IfNull(const char*const cpIn, const char*const cpAlt)
-  { return cpIn != nullptr ? cpIn : cpAlt; }
+static const string &StrIsBlank(const string &strIn, const string &strAlt)
+  { return strIn.empty() ? strAlt : strIn; }
 /* ------------------------------------------------------------------------- */
-static const char *IfNull(const char*const cpStr)
-  { return IfNull(cpStr, cCommon->CBlank()); }
+static const string &StrIsBlank(const string &strIn)
+  { return StrIsBlank(strIn, cCommon->Blank()); }
 /* ------------------------------------------------------------------------- */
-static const char *IfBlank(const string &strIn, const char*const cpAlt)
-  { return strIn.empty() ? cpAlt : strIn.c_str(); }
-/* ------------------------------------------------------------------------- */
-static const char *IfBlank(const string &strIn)
-  { return IfBlank(strIn, cCommon->CBlank()); }
-/* ------------------------------------------------------------------------- */
-template<typename T>static const char *Pluralise(const T tCount,
+template<typename T>static const char *StrCPluralise(const T tCount,
   const char*const cpSingular, const char*const cpPlural)
     { return tCount == 1 ? cpSingular : cpPlural; }
 /* ------------------------------------------------------------------------- */
-template<typename T>static const string PluraliseNum(const T tCount,
+template<typename T>static const string StrPluraliseNum(const T tCount,
   const char*const cpSingular, const char*const cpPlural)
-   { return StdMove(Append(tCount, ' ',
-       StdMove(Pluralise(tCount, cpSingular, cpPlural)))); }
+   { return StdMove(StrAppend(tCount, ' ',
+       StdMove(StrCPluralise(tCount, cpSingular, cpPlural)))); }
 /* ------------------------------------------------------------------------- */
-template<typename T>static const string PluraliseNumEx(const T tCount,
+template<typename T>static const string StrPluraliseNumEx(const T tCount,
   const char*const cpSingular, const char*const cpPlural)
-   { return StdMove(Append(FormatNumber(tCount), ' ',
-       StdMove(Pluralise(tCount, cpSingular, cpPlural)))); }
+   { return StdMove(StrAppend(StrReadableFromNum(tCount), ' ',
+       StdMove(StrCPluralise(tCount, cpSingular, cpPlural)))); }
 /* -- Convert time to long duration ---------------------------------------- */
-static const string ToDuration(const StdTimeT tDuration,
-  unsigned int uiCompMax = numeric_limits<unsigned int>::max())
+static const string StrLongFromDuration(const StdTimeT tDuration,
+  unsigned int uiCompMax = StdMaxUInt)
 { // Time buffer
   StdTMStruct tD;
   // Lets convert the duration as a time then it will be properly formated
@@ -453,41 +443,41 @@ static const string ToDuration(const StdTimeT tDuration,
   // Add years?
   if(tD.tm_year && uiCompMax > 0)
   { // Do add years
-    osS << PluraliseNum(tD.tm_year, "year", "years");
+    osS << StrPluraliseNum(tD.tm_year, "year", "years");
     --uiCompMax;
   } // Add months?
   if(tD.tm_mon && uiCompMax > 0)
   { // Do add months
     osS << (osS.tellp() ? cCommon->Space() : cCommon->Blank())
-        << PluraliseNum(tD.tm_mon, "month", "months");
+        << StrPluraliseNum(tD.tm_mon, "month", "months");
     --uiCompMax;
   } // Add days? (removing the added 1)
   if(--tD.tm_mday && uiCompMax > 0)
   { // Do add days
     osS << (osS.tellp() ? cCommon->Space() : cCommon->Blank())
-        << PluraliseNum(tD.tm_mday, "day", "days");
+        << StrPluraliseNum(tD.tm_mday, "day", "days");
     --uiCompMax;
   } // Add hours?
   if(tD.tm_hour && uiCompMax > 0)
   { // Do add hours
     osS << (osS.tellp() ? cCommon->Space() : cCommon->Blank())
-        << PluraliseNum(tD.tm_hour, "hour", "hours");
+        << StrPluraliseNum(tD.tm_hour, "hour", "hours");
     --uiCompMax;
   } // Add Minutes?
   if(tD.tm_min && uiCompMax > 0)
   { // Do add minutes
     osS << (osS.tellp() ? cCommon->Space() : cCommon->Blank())
-        << PluraliseNum(tD.tm_min, "min", "mins");
+        << StrPluraliseNum(tD.tm_min, "min", "mins");
     --uiCompMax;
   } // Check seconds
   if((tD.tm_sec || !tDuration) && uiCompMax > 0)
     osS << (osS.tellp() ? cCommon->Space() : cCommon->Blank())
-        << PluraliseNum(tD.tm_sec, "sec", "secs");
+        << StrPluraliseNum(tD.tm_sec, "sec", "secs");
   // Return string
   return osS.str();
 }
 /* ------------------------------------------------------------------------- */
-static const char *ToPosition(const uint64_t qPosition)
+static const char *StrGetPositionSuffix(const uint64_t qPosition)
 { // Get value as base 100
   const uint64_t qVb100 = qPosition % 100;
   // Number not in teens? Compare value as base 10 instead
@@ -497,10 +487,10 @@ static const char *ToPosition(const uint64_t qPosition)
   } // Everything else is 'th'
   return "th";
 } /* -- Get position of number as a string --------------------------------- */
-static const string ToPositionStr(const uint64_t qPosition)
-  { return Append(qPosition, ToPosition(qPosition)); }
+static const string StrFromPosition(const uint64_t qPosition)
+  { return StrAppend(qPosition, StrGetPositionSuffix(qPosition)); }
 /* -- Capitalise a string -------------------------------------------------- */
-static const string Capitalise(const string &strStr)
+static const string StrCapitalise(const string &strStr)
 { // Capitalise first character if string not nullptr or empty
   if(strStr.empty()) return strStr;
   // Duplicate the string anad uppercase the first character
@@ -511,14 +501,14 @@ static const string Capitalise(const string &strStr)
 }
 /* -- Evaluate a list of booleans and return a character value ------------- */
 static const string
-  EvaluateTokens(const vector<pair<const bool,const char>> &etData)
+  StrFromEvalTokens(const vector<pair<const bool,const char>> &etData)
     { return etData.empty() ? cCommon->Blank() :
       accumulate(etData.cbegin(), etData.cend(), cCommon->Blank(),
         [](const string &strOut, const auto &bcpPair)
-          { return bcpPair.first ? Append(strOut,
+          { return bcpPair.first ? StrAppend(strOut,
             bcpPair.second) : strOut; }); }
 /* -- Convert time to short duration --------------------------------------- */
-static const string ToShortDuration(const double fdDuration,
+static const string StrShortFromDuration(const double fdDuration,
   const int iPrecision=6)
 { // Output string
   ostringstream osS;
@@ -556,29 +546,14 @@ static const string ToShortDuration(const double fdDuration,
   return osS.str();
 }
 /* -- Return true of false ------------------------------------------------- */
-static const string &TrueOrFalse(const bool bCondition)
+static const string &StrFromBoolTF(const bool bCondition)
   { return bCondition ? cCommon->Tru() : cCommon->Fals(); }
-static const char *YesOrNo(const bool bCondition)
+static const char *StrFromBoolYN(const bool bCondition)
   { return bCondition ? "X" : "-"; }
-/* ------------------------------------------------------------------------- */
-static size_t FindCharForwards[[maybe_unused]](const string &strS,
-  size_t stStart, const size_t stEnd, const char*const cpChars)
-{ // Ignore if invalid parameter
-  if(!cpChars) return string::npos;
-  // Until we've reached the limit
-  while(stStart < stEnd && stStart != string::npos)
-  { // Return position if we find the character
-    for(const char*cpPtr = cpChars; *cpPtr != '\0'; ++cpPtr)
-      if(strS[stStart] == *cpPtr) return stStart;
-    // Goto next index and try again
-    ++stStart;
-  } // Failed so return so
-  return string::npos;
-}
 /* -- Count occurence of string -------------------------------------------- */
-static size_t CountOccurences(const string &strStr, const string &strWhat)
+static size_t StrCountOccurences(const string &strStr, const string &strWhat)
 { // Zero if string is empty
-  if(strStr.empty()) return 0;
+  if(strStr.empty() || strWhat.empty()) return 0;
   // Matching occurences
   size_t stCount = 0;
   // Find occurences
@@ -587,31 +562,36 @@ static size_t CountOccurences(const string &strStr, const string &strWhat)
              stIndex = strStr.find(strWhat, stIndex + 1)) ++stCount;
   // Return occurences
   return stCount;
-} /* -- Get return character format of text string ------------------------- */
-static const string GetTextFormat(const string &strIn)
-{ // Enumerate each character if there are characters to check
+}
+/* -- Get return character format of text string --------------------------- */
+static const string StrGetReturnFormat(const string &strIn)
+{ // String is not empty?
   if(!strIn.empty())
+  { // Enumerate each character...
     for(string::const_iterator ciC{ strIn.cbegin() };
                                ciC != strIn.cend();
                              ++ciC)
-  { // Test character
-    switch(*ciC)
-    { // Carriage-return found
-      case '\r':
-        return find(ciC, strIn.cend(), '\n') != strIn.cend() ?
-           cCommon->CrLf() : cCommon->Cr();
-      // Line-feed found
-      case '\n':
-        return find(ciC, strIn.cend(), '\r') != strIn.cend() ?
-           cCommon->LfCr() : cCommon->Lf();
-      // Anything else is ignored
-      default: break;
-    }
-  } // Nothing found
+    { // Test character
+      switch(*ciC)
+      { // Carriage-return found
+        case '\r':
+          return find(ciC, strIn.cend(), '\n') != strIn.cend() ?
+             cCommon->CrLf() : cCommon->Cr();
+        // Line-feed found
+        case '\n':
+          return find(ciC, strIn.cend(), '\r') != strIn.cend() ?
+             cCommon->LfCr() : cCommon->Lf();
+        // Anything else is ignored
+        default: break;
+      }
+    } // Nothing found
+  } // Return blank string
   return {};
-} /* -- Implode a stringdeque to a single string --------------------------- */
-template<typename DequeType>static const string Implode(const DequeType &dtL,
-  const string &strSep=cCommon->Space())
+}
+/* -- Implode a stringdeque to a single string ----------------------------- */
+template<typename DequeType>
+  static const string StrImplode(const DequeType &dtL,
+    const string &strSep=cCommon->Space())
 { // Done if empty or begin position is invalid
   if(dtL.empty()) return {};
   // Create output only string stream which stays cached (safe in c++11)
@@ -636,13 +616,14 @@ static const string ImplodeMap(const StrNCStrMap &ssmSrc,
   StrVector svRet; svRet.reserve(ssmSrc.size());
   transform(ssmSrc.cbegin(), ssmSrc.cend(), back_inserter(svRet),
     [&strKeyValSep, &strValEncaps](const auto &vIter)
-      { return StdMove(Append(vIter.first, strKeyValSep,
+      { return StdMove(StrAppend(vIter.first, strKeyValSep,
           strValEncaps, vIter.second, strValEncaps)); });
   // Return vector imploded into a string
-  return Implode(svRet, strLineSep);
+  return StrImplode(svRet, strLineSep);
 } /* -- Implode a stringdeque to a single string --------------------------- */
-template<typename AnyArray>static const string Implode(const AnyArray aArray,
-  const size_t &stBegin=0, const string &strSep=cCommon->Space())
+template<typename AnyArray>
+  static const string StrImplode(const AnyArray aArray,
+    const size_t &stBegin=0, const string &strSep=cCommon->Space())
 { // Done if empty or begin position is invalid
   if(aArray.empty() || stBegin >= aArray.size()) return {};
   // If we have only one item, just return its string
@@ -659,17 +640,19 @@ template<typename AnyArray>static const string Implode(const AnyArray aArray,
 }
 /* ------------------------------------------------------------------------- */
 template<typename AnyType>
-  static const string PlusOrMinus(const AnyType atVal, const int iPrecision)
-    { return StdMove(Append(showpos, fixed, setprecision(iPrecision),
-        atVal)); }
+  static const string StrPrefixPosNeg(const AnyType atVal,
+    const int iPrecision)
+      { return StdMove(StrAppend(showpos, fixed, setprecision(iPrecision),
+          atVal)); }
 /* ------------------------------------------------------------------------- */
 template<typename AnyType>
-  static const string PlusOrMinusEx(const AnyType atVal, const int iPrecision)
-    { return StdMove(AppendImbued(showpos, fixed, setprecision(iPrecision),
-        atVal)); }
+  static const string StrPrefixPosNegReadable(const AnyType atVal,
+    const int iPrecision)
+      { return StdMove(StrAppendImbue(showpos, fixed, setprecision(iPrecision),
+          atVal)); }
 /* ------------------------------------------------------------------------- */
 template<typename OutType, typename InType, class SuffixClass>
-  static OutType MakeNumberReadable(const InType itValue,
+  static OutType StrToReadableSuffix(const InType itValue,
     const char**const cpSuffix, int &iPrecision, const SuffixClass &scLookup,
     const char*const cpDefault)
 { // Check types
@@ -683,7 +666,7 @@ template<typename OutType, typename InType, class SuffixClass>
     [&otReturn, itValue, &cpSuffix](const auto &aItem)
   { // Calculate best measurement to show
     if(itValue < aItem.vValue) return false;
-    // Set suffix that was sent. Just helps us just one line ToBits/Bytes
+    // Set suffix that was sent
     *cpSuffix = aItem.cpSuf;
     otReturn = static_cast<OutType>(itValue) / aItem.vValue;
     // Success
@@ -700,14 +683,14 @@ template<typename OutType, typename InType, class SuffixClass>
 }
 /* ------------------------------------------------------------------------- */
 template<typename OutType, typename InType, class SuffixClass>
-  static OutType MakeNumberReadable(const InType itValue,
+  static OutType StrToReadableSuffix(const InType itValue,
     const char**const cpSuffix, int &iPrecision, const SuffixClass &scLookup)
-{ return MakeNumberReadable<OutType, InType, SuffixClass>(itValue,
+{ return StrToReadableSuffix<OutType, InType, SuffixClass>(itValue,
     cpSuffix, iPrecision, scLookup, cCommon->CBlank()); }
 /* ------------------------------------------------------------------------- */
 template<typename IntType>
-  static double ToBytes(const IntType itBytes, const char**const cpSuffix,
-    int &iPrecision)
+  static double StrToBytesHelper(const IntType itBytes,
+    const char**const cpSuffix, int &iPrecision)
 { // A test to perform
   struct ByteValue { const IntType vValue; const char*const cpSuf; };
   // If input value is 64-bit?
@@ -719,7 +702,7 @@ template<typename IntType>
       { 0x0000000000100000, "MB" }, { 0x0000000000000400, "KB" }
     } };
     // Return result
-    return MakeNumberReadable<double>(itBytes,
+    return StrToReadableSuffix<double>(itBytes,
       cpSuffix, iPrecision, bvLookup, "B");
   } // If input value is 32-bit?
   if constexpr(sizeof(IntType) == sizeof(uint32_t))
@@ -728,44 +711,46 @@ template<typename IntType>
       { 0x40000000, "GB" }, { 0x00100000, "MB" }, { 0x00000400, "KB" }
     } };
     // Return result
-    return MakeNumberReadable<double>(itBytes,
+    return StrToReadableSuffix<double>(itBytes,
       cpSuffix, iPrecision, bvLookup, "B");
   } // If input value is 16-bit?
   if constexpr(sizeof(IntType) == sizeof(uint16_t))
   { // Tests lookup table. This is all we can fit in a 16-bit integer
     static const array<const ByteValue,1> bvLookup{ { { 0x0400, "KB" } } };
     // Return result
-    return MakeNumberReadable<double>(itBytes,
+    return StrToReadableSuffix<double>(itBytes,
       cpSuffix, iPrecision, bvLookup, "B");
   } // Input value is not 64, 32 nor 16 bit? Use a empty table
   static const array<const ByteValue,0> bvLookup{ { } };
   // Show error
-  return MakeNumberReadable<double>(itBytes,
+  return StrToReadableSuffix<double>(itBytes,
     cpSuffix, iPrecision, bvLookup, "B");
 }
 /* ------------------------------------------------------------------------- */
 template<typename IntType>
-  static const string ToBytesStr(const IntType itBytes, int iPrecision=2)
+  static const string StrToBytes(const IntType itBytes, int iPrecision=2)
 { // Process a human readable value for the specified number of bytes
   const char *cpSuffix = nullptr;
-  const double dVal = ToBytes<IntType>(itBytes, &cpSuffix, iPrecision);
+  const double dVal =
+    StrToBytesHelper<IntType>(itBytes, &cpSuffix, iPrecision);
   // Move the stringstreams output string into the return value.
-  return Append(fixed, setprecision(iPrecision), dVal, cpSuffix);
+  return StrAppend(fixed, setprecision(iPrecision), dVal, cpSuffix);
 }
 /* ------------------------------------------------------------------------- */
 template<typename IntType>
-  static const string ToImbuedBytesStr(const IntType itBytes,
+  static const string StrToReadableBytes(const IntType itBytes,
   int iPrecision=2)
 { // Process a human readable value for the specified number of bytes
   const char *cpSuffix = nullptr;
-  const double dVal = ToBytes<IntType>(itBytes, &cpSuffix, iPrecision);
+  const double dVal =
+    StrToBytesHelper<IntType>(itBytes, &cpSuffix, iPrecision);
   // Move the stringstreams output string into the return value.
-  return AppendImbued(fixed, setprecision(iPrecision), dVal, cpSuffix);
+  return StrAppendImbue(fixed, setprecision(iPrecision), dVal, cpSuffix);
 }
 /* ------------------------------------------------------------------------- */
 template<typename IntType>
-  static double ToBits(const IntType itBits, const char**const cpSuffix,
-  int &iPrecision)
+  static double StrToReadableBitsHelper(const IntType itBits,
+    const char**const cpSuffix, int &iPrecision)
 { // A test to perform
   struct BitValue { const IntType vValue; const char*const cpSuf; };
   // If input value is 64-bit?
@@ -777,7 +762,7 @@ template<typename IntType>
       {             1000000, "Mb" }, {             1000, "Kb" },
     } };
     // Return result
-    return MakeNumberReadable<double>(itBits,
+    return StrToReadableSuffix<double>(itBits,
       cpSuffix, iPrecision, bvLookup, "b");
   } // If input value is 32-bit?
   if constexpr(sizeof(IntType) == sizeof(uint32_t))
@@ -786,43 +771,45 @@ template<typename IntType>
       { 1000000000, "Gb" }, { 1000000, "Mb" }, { 1000, "Kb" },
     } };
     // Return result
-    return MakeNumberReadable<double>(itBits,
+    return StrToReadableSuffix<double>(itBits,
       cpSuffix, iPrecision, bvLookup, "b");
   } // If input value is 16-bit?
   if constexpr(sizeof(IntType) == sizeof(uint16_t))
   { // Tests lookup table. This is all we can fit in a 16-bit integer.
     static const array<const BitValue,6> bvLookup{ { { 1000, "Kb" } } };
     // Return result
-    return MakeNumberReadable<double>(itBits,
+    return StrToReadableSuffix<double>(itBits,
       cpSuffix, iPrecision, bvLookup, "b");
   } // Input value is not 64, 32 nor 16 bit? Use a empty table
   static const array<const BitValue,0> bvLookup{ { } };
   // Show error
-  return MakeNumberReadable<double>(itBits,
+  return StrToReadableSuffix<double>(itBits,
     cpSuffix, iPrecision, bvLookup, "b");
 }
 /* ------------------------------------------------------------------------- */
 template<typename IntType>
-  static const string ToBitsStr(const IntType itBits, int iPrecision=2)
+  static const string StrToBits(const IntType itBits, int iPrecision=2)
 { // Process a human readable value for the specified number of bits
   const char *cpSuffix = nullptr;
-  const double dVal = ToBits<IntType>(itBits, &cpSuffix, iPrecision);
+  const double dVal =
+    StrToReadableBitsHelper<IntType>(itBits, &cpSuffix, iPrecision);
   // Move the stringstreams output string into the return value.
-  return Append(fixed, setprecision(iPrecision), dVal, cpSuffix);
+  return StrAppend(fixed, setprecision(iPrecision), dVal, cpSuffix);
 }
 /* ------------------------------------------------------------------------- */
 template<typename IntType>
-  static const string ToImbuedBitsStr(const IntType itBits, int iPrecision)
+  static const string StrToReadableBits(const IntType itBits, int iPrecision)
 { // Process a human readable value for the specified number of bits
   const char *cpSuffix = nullptr;
-  const double dVal = ToBits<IntType>(itBits, &cpSuffix, iPrecision);
+  const double dVal =
+    StrToReadableBitsHelper<IntType>(itBits, &cpSuffix, iPrecision);
   // Move the stringstreams output string into the return value.
-  return AppendImbued(fixed, setprecision(iPrecision), dVal, cpSuffix);
+  return StrAppendImbue(fixed, setprecision(iPrecision), dVal, cpSuffix);
 }
 /* ------------------------------------------------------------------------- */
 template<typename IntType>
-  static double ToGrouped(const IntType itValue, const char**const cpSuffix,
-    int &iPrecision)
+  static double StrToReadableHelper(const IntType itValue,
+    const char**const cpSuffix, int &iPrecision)
 { // A test to perform
   struct Value { const IntType vValue; const char*const cpSuf; };
   // If input value is 64-bit?
@@ -833,7 +820,7 @@ template<typename IntType>
       { 1000000,       "M" }, { 1000,       "K" }
     } };
     // Return result
-    return MakeNumberReadable<double>(itValue, cpSuffix, iPrecision, vLookup);
+    return StrToReadableSuffix<double>(itValue, cpSuffix, iPrecision, vLookup);
   } // If input value is 32-bit?
   if constexpr(sizeof(IntType) == sizeof(uint32_t))
   { // Tests lookup table. This is all we can fit in a 64-bit integer.
@@ -841,29 +828,30 @@ template<typename IntType>
       { 1000000000, "B" }, { 1000000, "M" }, { 1000, "K" }
     } };
     // Return result
-    return MakeNumberReadable<double>(itValue, cpSuffix, iPrecision, vLookup);
+    return StrToReadableSuffix<double>(itValue, cpSuffix, iPrecision, vLookup);
   } // If input value is 16-bit?
   if constexpr(sizeof(IntType) == sizeof(uint16_t))
   { // Tests lookup table. This is all we can fit in a 64-bit integer.
     static const array<const Value,1> vLookup{ { { 1000, "K" } } };
     // Return result
-    return MakeNumberReadable<double>(itValue, cpSuffix, iPrecision, vLookup);
+    return StrToReadableSuffix<double>(itValue, cpSuffix, iPrecision, vLookup);
   } // Input value is not 64, 32 nor 16 bit? Use a empty table
   static const array<const Value,0> vLookup{ { } };
   // Show error
-  return MakeNumberReadable<double>(itValue, cpSuffix, iPrecision, vLookup);
+  return StrToReadableSuffix<double>(itValue, cpSuffix, iPrecision, vLookup);
 }
 /* ------------------------------------------------------------------------- */
 template<typename IntType>
-  static const string ToImbuedGroupedStr(const IntType itValue, int iPrecision)
+  static const string StrToReadable(const IntType itValue, int iPrecision)
 { // Process a human readable value for the specified number of bits
   const char *cpSuffix = nullptr;
-  const double dVal = ToGrouped<IntType>(itValue, &cpSuffix, iPrecision);
+  const double dVal =
+    StrToReadableHelper<IntType>(itValue, &cpSuffix, iPrecision);
   // Move the FORMATTED stringstreams output string into the return value.
-  return AppendImbued(fixed, setprecision(iPrecision), dVal, cpSuffix);
+  return StrAppendImbue(fixed, setprecision(iPrecision), dVal, cpSuffix);
 }
 /* ------------------------------------------------------------------------- */
-static size_t FindCharForwards(const string &strS, size_t stStart,
+static size_t StrFindCharForwards(const string &strS, size_t stStart,
   const size_t stEnd, const char cpChar)
 { // Until we've reached the limit
   while(stStart < stEnd && stStart != string::npos)
@@ -875,7 +863,7 @@ static size_t FindCharForwards(const string &strS, size_t stStart,
   return string::npos;
 }
 /* ------------------------------------------------------------------------- */
-static size_t FindCharBackwards[[maybe_unused]](const string &strS,
+static size_t StrFindCharBackwards[[maybe_unused]](const string &strS,
   size_t stStart, const size_t stEnd, const char cpChar)
 { // Until we've reached the limit
   while(stStart >= stEnd && stStart != string::npos)
@@ -887,7 +875,7 @@ static size_t FindCharBackwards[[maybe_unused]](const string &strS,
   return string::npos;
 }
 /* ------------------------------------------------------------------------- */
-static size_t FindCharNotForwards[[maybe_unused]](const string &strS,
+static size_t StrFindCharNotForwards[[maybe_unused]](const string &strS,
   size_t stStart, const size_t stEnd, const char cpChar)
 { // Until we've reached the limit
   while(stStart < stEnd && stStart != string::npos)
@@ -899,7 +887,7 @@ static size_t FindCharNotForwards[[maybe_unused]](const string &strS,
   return string::npos;
 }
 /* ------------------------------------------------------------------------- */
-static size_t FindCharNotForwards(const string &strS, size_t stStart,
+static size_t StrFindCharNotForwards(const string &strS, size_t stStart,
   const size_t stEnd)
 { // Until we've reached the limit
   while(stStart < stEnd && stStart != string::npos)
@@ -911,7 +899,7 @@ static size_t FindCharNotForwards(const string &strS, size_t stStart,
   return string::npos;
 }
 /* ------------------------------------------------------------------------- */
-static size_t FindCharNotBackwards[[maybe_unused]](const string &strS,
+static size_t StrFindCharNotBackwards[[maybe_unused]](const string &strS,
   size_t stStart, const size_t stEnd, const char cpChar)
 { // Until we've reached the limit
   while(stStart >= stEnd && stStart != string::npos)
@@ -923,7 +911,7 @@ static size_t FindCharNotBackwards[[maybe_unused]](const string &strS,
   return string::npos;
 }
 /* ------------------------------------------------------------------------- */
-static size_t FindCharNotBackwards(const string &strS, size_t stStart,
+static size_t StrFindCharNotBackwards(const string &strS, size_t stStart,
   const size_t stEnd)
 { // Until we've reached the limit
   while(stStart >= stEnd && stStart != string::npos)
@@ -935,18 +923,18 @@ static size_t FindCharNotBackwards(const string &strS, size_t stStart,
   return string::npos;
 }
 /* -- Do convert the specified structure to string ------------------------= */
-static const string FormatTimeTM(const StdTMStruct &tmData,
-  const char*const cpF) { return Append(put_time(&tmData, cpF)); }
+static const string StrFromTimeTM(const StdTMStruct &tmData,
+  const char*const cpF) { return StrAppend(put_time(&tmData, cpF)); }
 /* -- Convert specified timestamp to string -------------------------------- */
-static const string FormatTimeTT(const StdTimeT ttTimestamp,
+static const string StrFromTimeTT(const StdTimeT ttTimestamp,
   const char*const cpFormat = cpTimeFormat)
 { // Convert it to local time in a structure
   StdTMStruct tmData; StdLocalTime(&tmData, &ttTimestamp);
   // Do the parse and return the string
-  return FormatTimeTM(tmData, cpFormat);
+  return StrFromTimeTM(tmData, cpFormat);
 }
 /* -- Remove suffixing carriage return and line feed ----------------------- */
-static string &Chop(string &strStr)
+static string &StrChop(string &strStr)
 { // Error message should have a carriage return/line feed so remove it
   while(!strStr.empty() && (strStr.back() == '\r' || strStr.back() == '\n'))
     strStr.pop_back();
@@ -954,25 +942,26 @@ static string &Chop(string &strStr)
   return strStr;
 }
 /* -- Convert specified timestamp to string (UTC) -------------------------- */
-static const string FormatTimeTTUTC(const StdTimeT ttTimestamp,
+static const string StrFromTimeTTUTC(const StdTimeT ttTimestamp,
   const char*const cpFormat = cpTimeFormat)
 { // Convert it to local time
   StdTMStruct tmData; StdGMTime(&tmData, &ttTimestamp);
   // Do the parse and return the string
-  return FormatTimeTM(tmData, cpFormat);
+  return StrFromTimeTM(tmData, cpFormat);
 }
 /* ------------------------------------------------------------------------- */
 template<typename FloatType>
-  static const string ToRatio(const FloatType ftLeft, const FloatType ftRight)
+  static const string StrFromRatio(const FloatType ftAntecedent,
+    const FloatType ftConsequent)
 { // Convert to double if neccesary
-  const double fdLeft = static_cast<double>(ftLeft),
-               fdRight = static_cast<double>(ftRight);
+  const double fdAntecedent = static_cast<double>(ftAntecedent),
+               fdConsequent = static_cast<double>(ftConsequent);
   // Return if invalid number or the below loop can infinitely enumerate
-  if(fdLeft <= 0.0 || fdRight <= 0.0) return "N/A";
+  if(fdAntecedent <= 0.0 || fdConsequent <= 0.0) return "N/A";
   // Divisor to use
   double fdDivisor;
   // Loop until common denominator found
-  for(double fdNumerator = fdLeft, fdDenominator = fdRight; ; )
+  for(double fdNumerator = fdAntecedent, fdDenominator = fdConsequent; ; )
   { // Find the lowest numerator and break if we find it
     fdNumerator = fmod(fdNumerator, fdDenominator);
     if(fdNumerator == 0.0) { fdDivisor = fdDenominator; break; }
@@ -980,11 +969,11 @@ template<typename FloatType>
     fdDenominator = fmod(fdDenominator, fdNumerator);
     if(fdDenominator == 0.0) { fdDivisor = fdNumerator; break; }
   } // Return lowest numerator and denominator
-  return Append(fixed, setprecision(0), ceil(fdLeft / fdDivisor), ':',
-    ceil(fdRight / fdDivisor));
+  return StrAppend(fixed, setprecision(0), ceil(fdAntecedent / fdDivisor), ':',
+    ceil(fdConsequent / fdDivisor));
 }
 /* -- Convert string to lower case ----------------------------------------- */
-static const string ToLower[[maybe_unused]](const string &strSrc)
+static const string StrToLowCase[[maybe_unused]](const string &strSrc)
 { // Create memory for destination string and copy the string over
   string strDst; strDst.resize(strSrc.length());
   for(size_t stI = 0; stI < strSrc.size(); ++stI)
@@ -993,7 +982,7 @@ static const string ToLower[[maybe_unused]](const string &strSrc)
   return strDst;
 }
 /* -- Convert string to upper case ----------------------------------------- */
-static const string ToUpper[[maybe_unused]](const string &strSrc)
+static const string StrToUpCase[[maybe_unused]](const string &strSrc)
 { // Create memory for destination string and copy the string over
   string strDst; strDst.resize(strSrc.length());
   for(size_t stI = 0; stI < strSrc.size(); ++stI)
@@ -1002,5 +991,7 @@ static const string ToUpper[[maybe_unused]](const string &strSrc)
   return strDst;
 }
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

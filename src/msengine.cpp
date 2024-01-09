@@ -14,7 +14,7 @@
 /* ========================================================================= */
 #include "setup.hpp"                   // Setup the compilation environment
 /* ------------------------------------------------------------------------- */
-namespace Engine {                     // Start of engine namespace
+namespace E {                          // Start of engine namespace
 /* ------------------------------------------------------------------------- */
 #include "msengine.hpp"                // Engine version information header
 #include "stdtypes.hpp"                // Engine STL types used header
@@ -57,6 +57,7 @@ namespace Engine {                     // Start of engine namespace
 #include "crypt.hpp"                   // Cryptography utilities header
 #include "uuid.hpp"                    // UuId parsing header
 #include "codec.hpp"                   // Codec classes header
+#include "credits.hpp"                 // Credits handling class header
 #include "archive.hpp"                 // Archive handling class header
 #include "asset.hpp"                   // Asset handling class header
 #include "timer.hpp"                   // Timing utilities header
@@ -91,6 +92,7 @@ namespace Engine {                     // Start of engine namespace
 #include "font.hpp"                    // Font loading and printing header
 #include "file.hpp"                    // FStream+FileMap class header
 #include "cert.hpp"                    // X509 certificate store class header
+#include "url.hpp"                     // Url parsing library
 #include "socket.hpp"                  // Socket handling class header
 #include "clip.hpp"                    // Clipboard class header
 #include "console.hpp"                 // Console handling header
@@ -105,13 +107,13 @@ namespace Engine {                     // Start of engine namespace
 #include "input.hpp"                   // Input handling class header
 #include "glfwmon.hpp"                 // GLFW monitor class header
 #include "display.hpp"                 // Window handling class header
-#include "credits.hpp"                 // Credits handling class header
 #include "core.hpp"                    // Core class header
-#include "url.hpp"                     // Url parsing library
 #include "lualib.hpp"                  // Lua lua function api library
 /* ------------------------------------------------------------------------- */
 };                                     // End of engine namespace
-/* == The main entry point (defined in 'core.cpp') ========================= */
-int ENTRYFUNC { Engine::IfCore::Core engCore;
-                return engCore.CoreMain(__argc, __wargv, _wenviron); }
+/* == The main entry point ================================================= */
+int ENTRYFUNC                          // Macro defined in 'setup.hpp'
+{ // Create and run the engine and return its exit result
+  return E::ICore::P::Core{}.CoreMain(__argc, __wargv, _wenviron);
+}
 /* == End-of-File ========================================================== */

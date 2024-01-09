@@ -1,18 +1,25 @@
-/* == TEXTURE.HPP ========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This module handles the loading and uploading of textures into      ## */
-/* ## OpenGL. It will also handle some core drawing procedures inside the ## */
-/* ## collector class too.                                                ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == TEXTURE.HPP ========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This module handles the loading and uploading of textures into      ## **
+** ## OpenGL. It will also handle some core drawing procedures inside the ## **
+** ## collector class too.                                                ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfTexture {                  // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfFbo;                 // Using fbo namespace
-using namespace IfImage;               // Using image namespace
+namespace ITexture {                   // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace ICollector::P;         using namespace IError::P;
+using namespace IFbo::P;               using namespace IFboBase::P;
+using namespace IImage::P;             using namespace IImageDef::P;
+using namespace ILog::P;               using namespace IMemory::P;
+using namespace IOgl::P;               using namespace IShader::P;
+using namespace IStd::P;               using namespace ISysUtil::P;
+using namespace IUtil::P;              using namespace Lib::OS::GlFW;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Texture collector class for collector data and custom variables ------ */
 BEGIN_COLLECTOR(Textures, Texture, CLHelperUnsafe)
 /* ------------------------------------------------------------------------- */
@@ -180,7 +187,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
     } // Bitmap has mipmaps?
     else
     { // Record number of mipmaps we have
-      iMipmaps = IntOrMax<GLint>(stSlots);
+      iMipmaps = UtilIntOrMax<GLint>(stSlots);
       // Create only one texture handle as other slots are for mipmaps
       CreateTextureHandles(1);
       // Get texture id
@@ -570,14 +577,14 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
   }
   /* -- Replace partial texture in VRAM from partial raw data -------------- */
   void UpdateEx(const GLuint uiTexId, const GLint iX, const GLint iY,
-    const GLsizei stW, const GLsizei stH, const GLenum ePixType,
-    const GLvoid*const vpData, const GLsizei stStride)
+    const GLsizei siW, const GLsizei siH, const GLenum ePixType,
+    const GLvoid*const vpData, const GLsizei siStride)
   { // Set stride and alignment
-    GL(cOgl->SetUnpackRowLength(stStride),
+    GL(cOgl->SetUnpackRowLength(siStride),
       "Failed to set unpack row length!",
-      "Texture", IdentGet(), "Stride", stStride);
+      "Texture", IdentGet(), "Stride", siStride);
     // Update the texture
-    UpdateEx(uiTexId, iX, iY, stW, stH, ePixType, vpData);
+    UpdateEx(uiTexId, iX, iY, siW, siH, ePixType, vpData);
     // Reset stride and alignment
     GL(cOgl->SetUnpackRowLength(cOgl->UnpackRowLength()),
       "Failed to restore unpack row length!",
@@ -612,7 +619,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
     GL(cOgl->ReadTexture(ePixType, mOut.Ptr<GLvoid>()),
       "Download texture failed!",
       "Identifier", IdentGet(), "Index", stSubTexId,
-      "Format",     cOgl->GetPixelFormat(ePixType));
+      "StrFormat",     cOgl->GetPixelFormat(ePixType));
     // Return a newly created image class containing this data
     return Image{ IdentGet(), StdMove(mOut), DimGetWidth(), DimGetHeight(),
       bdDDepth, ePixType };
@@ -798,5 +805,7 @@ static void TextureReInitTextures(void)
     cTextures->size());
 }
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

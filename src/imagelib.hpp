@@ -1,20 +1,25 @@
-/* == IMAGELIB.HPP ========================================================= */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This file manages all the different image types we support in the   ## */
-/* ## engine. The actual image class will query this manager to test      ## */
-/* ## To use this, you build your class and derive your class with this   ## */
-/* ## class to enable the plugin to be used by the Image class            ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == IMAGELIB.HPP ========================================================= **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This file manages all the different image types we support in the   ## **
+** ## engine. The actual image class will query this manager to test      ## **
+** ## To use this, you build your class and derive your class with this   ## **
+** ## class to enable the plugin to be used by the Image class            ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfImageLib {                 // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfImageDef;            // Using image definitions namespace
-using namespace IfCollector;           // Using collector namespace
-using namespace IfFileMap;             // Using filemap namespace
+namespace IImageLib {                  // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace ICollector::P;         using namespace IDir::P;
+using namespace IError::P;             using namespace IFileMap::P;
+using namespace IFStream::P;           using namespace IIdent::P;
+using namespace IImageDef::P;          using namespace ILog::P;
+using namespace IStd::P;               using namespace IString::P;
+using namespace ISysUtil::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* == Image libraries collector class ====================================== */
 BEGIN_COLLECTOR(ImageFmts, ImageFmt, CLHelperUnsafe)
 /* == Image libraries format object class ================================== */
@@ -60,13 +65,13 @@ static void ImageSave(const size_t stFId, const string &strN,
   const ImageData &ifD, const ImageSlot &sData)
 { // Ignore if plugin is invalid
   if(stFId >= cImageFmts->size())
-    XC("Format invalid!",
+    XC("StrFormat invalid!",
        "Identifier", strN, "FormatId", stFId, "Maximum", cImageFmts->size());
   // Get plugin class
   const ImageFmt &iCref = **next(cImageFmts->cbegin(),
     static_cast<ssize_t>(stFId));
   // Set filename so we can delete it if it fails
-  const string strNX{ Append(strN, '.', iCref.GetExt()) };
+  const string strNX{ StrAppend(strN, '.', iCref.GetExt()) };
   bool bCreated = false;
   // Capture exceptions
   try
@@ -171,5 +176,7 @@ static int ImageSwapPixels(char*const cpSrc, const size_t stSrc,
   return 0;
 }
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

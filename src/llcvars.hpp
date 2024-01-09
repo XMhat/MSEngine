@@ -1,26 +1,28 @@
-/* == LLCVARS.HPP ========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Defines the 'CVars' namespace and methods for the guest to use in   ## */
-/* ## Lua. This file is invoked by 'lualib.hpp'.                          ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == LLCVARS.HPP ========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Defines the 'CVars' namespace and methods for the guest to use in   ## **
+** ## Lua. This file is invoked by 'lualib.hpp'.                          ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 #pragma once                           // Only one incursion allowed
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ========================================================================= */
 // % CVars
 /* ------------------------------------------------------------------------- */
 // ! The cvars class allows the programmer to create their own cvars and to
-// ! retrieve and modify their own or built-in cCVars->
+// ! retrieve and modify their own or built-in CVars.
 /* ========================================================================= */
-namespace NsCVars {                    // CVars namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfCVar;                // Using cvar namespace
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+namespace LLCVars {                    // CVars namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace ICVar::P;              using namespace ICVarDef::P;
+/* ========================================================================= **
+** ######################################################################### **
+** ## CVars.* namespace functions                                         ## **
+** ######################################################################### **
+** ========================================================================= */
 // $ CVars.Get
 // > Name:string=The engine cvar name.
 // < Value:mixed=The engine cvar value.
@@ -28,7 +30,7 @@ using namespace IfCVar;                // Using cvar namespace
 // ? the specified cvar does not exist.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Get, 1,
-  LCPUSHXSTR(cCVars->LuaGetStrSafe(LCGETCPPSTRINGNE(1, "Variable"))));
+  LCPUSHVAR(cCVars->LuaGetStrSafe(LCGETCPPSTRINGNE(1, "Variable"))));
 /* ========================================================================= */
 // $ CVars.Empty
 // > Name:string=The engine cvar name.
@@ -37,7 +39,7 @@ LLFUNCEX(Get, 1,
 // ? CVars.Get which builds a new string, especially if the string is long.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Empty, 1,
-  LCPUSHBOOL(cCVars->IsVarStrEmptySafe(LCGETCPPSTRINGNE(1, "Variable"))));
+  LCPUSHVAR(cCVars->IsVarStrEmptySafe(LCGETCPPSTRINGNE(1, "Variable"))));
 /* ========================================================================= */
 // $ CVars.Set
 // > Name:string=The engine cvar name.
@@ -46,7 +48,7 @@ LLFUNCEX(Empty, 1,
 // ? raised if any error occurds. See CVars.Result to see the possible
 // ? results.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Set, 1, LCPUSHINT(cCVars->SetSafe(LCGETCPPSTRINGNE(1, "Variable"),
+LLFUNCEX(Set, 1, LCPUSHVAR(cCVars->SetSafe(LCGETCPPSTRINGNE(1, "Variable"),
   LCGETCPPSTRING(2, "Value"), PUSR)));
 /* ========================================================================= */
 // $ CVars.Reset
@@ -57,7 +59,7 @@ LLFUNC(Reset, cCVars->ResetSafe(LCGETCPPSTRINGNE(1, "Variable"), PUSR));
 /* ========================================================================= */
 // $ CVars.Unregister
 // > Name:string=The engine cvar name.
-// ? Unregisters the specified cvar name created with cCVars->Register().
+// ? Unregisters the specified cvar name created with CVars.Register().
 /* ------------------------------------------------------------------------- */
 LLFUNC(Unregister,
   cCVars->UnregisterLuaVarSafe(LCGETCPPSTRINGNE(1, "Variable")));
@@ -86,32 +88,32 @@ LLFUNC(Register, cCVars->RegisterLuaVar(lS));
 // ? allows you to make sure the cvar exists before you peform that operation.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Exists, 1,
-  LCPUSHBOOL(cCVars->VarExistsSafe(LCGETCPPSTRINGNE(1, "Identifier"))));
+  LCPUSHVAR(cCVars->VarExistsSafe(LCGETCPPSTRINGNE(1, "Identifier"))));
 /* ========================================================================= */
 // $ CVars.Save
 // < Count:number=Number of items saved
 // ? Commits all modified variables to database. Returns number of items
 // ? written.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Save, 1, LCPUSHINT(cCVars->Save()));
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## CVars.* namespace functions structure                               ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+LLFUNCEX(Save, 1, LCPUSHVAR(cCVars->Save()));
+/* ========================================================================= **
+** ######################################################################### **
+** ## CVars.* namespace functions structure                               ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSBEGIN                              // CVars.* namespace functions begin
   LLRSFUNC(Get),   LLRSFUNC(Empty), LLRSFUNC(Exists), LLRSFUNC(Register),
   LLRSFUNC(Reset), LLRSFUNC(Save),  LLRSFUNC(Set),    LLRSFUNC(Unregister),
 LLRSEND                                // CVars.* namespace functions end
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## CVars.* namespace constants structure                               ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ## CVars.* namespace constants                                         ## **
+** ######################################################################### **
+** ========================================================================= */
 // @ CVars.Flags
 // < Data:table=A table of const string/int key pairs
 // ? Returns all the cvar flags supported by the engine in the form of a
-// ? string/int key pairs which can be used with the cCVars->Register() command
+// ? string/int key pairs which can be used with the CVars.Register() command
 /* ------------------------------------------------------------------------- */
 LLRSKTBEGIN(Flags)                     // Beginning of cvar register flags
   LLRSKTITEM(T,STRING),                LLRSKTITEM(T,INTEGER),
@@ -136,7 +138,11 @@ LLRSKTEND                              // End of cvar register status flags
 LLRSKTBEGIN(Result)                    // Beginning of cvar result flags
   LLRSKTITEM(CVS_,OK),                 LLRSKTITEM(CVS_,OKNOTCHANGED),
 LLRSKTEND                              // End of cvar result flags
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ## CVars.* namespace constants structure                               ## **
+** ######################################################################### **
+** ========================================================================= */
 LLRSCONSTBEGIN                         // CVars.* namespace consts begin
   LLRSCONST(Flags), LLRSCONST(Result),
 LLRSCONSTEND                           // CVars.* namespace consts end

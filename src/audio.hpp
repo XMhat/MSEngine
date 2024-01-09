@@ -1,16 +1,26 @@
-/* == AUDIO.HPP ============================================================ */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This the file handles audio management of sources and streams       ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == AUDIO.HPP ============================================================ **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This the file handles audio management of sources and streams       ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfAudio {                    // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfSample;              // Using sample namespace
-using namespace IfVideo;               // Using video namespace
+namespace IAudio {                     // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IClock::P;             using namespace ICollector::P;
+using namespace ICVar::P;              using namespace ICVarDef::P;
+using namespace ICVarLib::P;           using namespace IError::P;
+using namespace IEvtMain::P;           using namespace IFlags;
+using namespace ILog::P;               using namespace IOal::P;
+using namespace ISample::P;            using namespace ISource::P;
+using namespace IStd::P;               using namespace IStream::P;
+using namespace IString::P;            using namespace ISysUtil::P;
+using namespace IThread::P;            using namespace ITimer::P;
+using namespace IVideo::P;             using namespace Lib::OpenAL;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* == Typedefs ============================================================= */
 BUILD_FLAGS(Audio,                     // Audio flags classes
   /* ----------------------------------------------------------------------- */
@@ -20,15 +30,15 @@ BUILD_FLAGS(Audio,                     // Audio flags classes
 static class Audio final :             // Audio manager class
   /* -- Base classes ------------------------------------------------------- */
   private IHelper,                     // Initialisation helper class
-  public AudioFlags                    // Audio flags
-{ /* -------------------------------------------------------------- */ private:
-  Thread           tThread;            // Thread monitor
+  public AudioFlags,                   // Audio flags
+  private Thread                       // Audio monitoring thread
+{ /* -- Monitoring thread timers ---------------------------------- */ private:
   ClkTimePoint     tpNextCheck;        // Next check for hardware changes
-  SafeClkDuration  cdCheckRate;        // Check rate
-  SafeClkDuration  cdThreadDelay;      // Thread sleep time
+  SafeClkDuration  cdCheckRate,        // Check rate
+                   cdThreadDelay;      // Thread sleep time
   /* -- Devices ------------------------------------------------------------ */
-  StrVector        dlPBDevices;        // list of playback devices
-  StrVector        dlCTDevices;        // list of capture devices
+  StrVector        dlPBDevices,        // list of playback devices
+                   dlCTDevices;        // list of capture devices
   /* -- ReInit requested --------------------------------------------------- */
   void OnReInit(const EvtMain::Cell &)
   { // Capture exceptions
@@ -36,22 +46,22 @@ static class Audio final :             // Audio manager class
     { // Log status
       cLog->LogDebugSafe("Audio class re-initialising...");
       // De-Init thread
-      ThreadDeInit();
+      DeInitThread();
       // Unload all buffers for streams and samples and destroy all sources
       StreamDeInit();
-      DeInitAllSamples();
+      SampleDeInit();
       VideoDeInit();
       cSources->CollectorDestroyUnsafe();
-      // Deinit and reinit AL context
+      // Deinit and reinit context
       DeInitContext();
       InitContext();
-      // Initialise volumes
-      SetGlobalVolume(cCVars->GetInternalSafe<ALfloat>(AUD_VOL));
-      SetSampleVolume(cCVars->GetInternalSafe<ALfloat>(AUD_SAMVOL));
-      StreamSetVolume(cCVars->GetInternalSafe<ALfloat>(AUD_STRVOL));
-      VideoSetVolume(cCVars->GetInternalSafe<ALfloat>(AUD_FMVVOL));
+      // Re-initialise volume levels
+      SetGlobalVolume(cSources->fGVolume);
+      SampleSetVolume(cSources->fSVolume);
+      StreamSetVolume(cSources->fMVolume);
+      VideoSetVolume(cSources->fVVolume);
       // Re-create all buffers for streams and samples
-      ReInitAllSamples();
+      SampleReInit();
       StreamReInit();
       VideoReInit();
       // Init monitoring thread
@@ -74,7 +84,7 @@ static class Audio final :             // Audio manager class
   int AudioThreadMain(Thread &) try
   { // Enumerate...
     for(ResetCheckTime();              // Reset device list check time
-        tThread.ThreadShouldNotExit(); // Enumerate until thread exit signalled
+        ThreadShouldNotExit();         // Enumerate until thread exit signalled
         cTimer->TimerSuspend(cdThreadDelay)) // Suspend thread pecified time
     { // Manage all streams audio.
       StreamManage();
@@ -83,8 +93,7 @@ static class Audio final :             // Audio manager class
       if(Verify()) continue;
       // Put in infinite loop and wait for the reinit function to request
       // termination of this thread
-      while(tThread.ThreadShouldNotExit())
-        cTimer->TimerSuspend(milliseconds(100));
+      while(ThreadShouldNotExit()) cTimer->TimerSuspend(milliseconds(100));
       // Thread terminate request recieved, now break the loop.
       break;
     } // Terminate thread
@@ -157,20 +166,20 @@ static class Audio final :             // Audio manager class
     return true;
   }
   /* -- DeInit thread ------------------------------------------------------ */
-  void ThreadDeInit(void)
+  void DeInitThread(void)
   { // Stop and de-init the thread and log progress
     cLog->LogDebugSafe("Audio monitoring thread de-initialising...");
-    tThread.ThreadDeInit();
+    ThreadDeInit();
     cLog->LogDebugSafe("Audio monitoring thread de-initialised.");
   }
   /* -- Init thread -------------------------------------------------------- */
   void InitThread(void)
   { // Initialise and start thread and log progress
     cLog->LogDebugSafe("Audio monitoring thread initialising...");
-    tThread.ThreadStart(this);
+    ThreadStart(this);
     cLog->LogDebugExSafe("Audio monitoring thread initialised (D:$;C:$)!",
-      ToShortDuration(ClockDurationToDouble(cdThreadDelay)),
-      ToShortDuration(ClockDurationToDouble(cdCheckRate)));
+      StrShortFromDuration(ClockDurationToDouble(cdThreadDelay)),
+      StrShortFromDuration(ClockDurationToDouble(cdCheckRate)));
   }
   /* -- Init context ------------------------------------------------------- */
   void InitContext(void)
@@ -213,17 +222,13 @@ static class Audio final :             // Audio manager class
     if(!cOal->InitContext())
       XC("Failed to create al context!",
          "Identifier", strDevice, "Index", stDevice);
-    // Activate the context (Use alGetError() from now on)
-    AL(cOal->SetContext(),
-      "Failed to make al context current!",
-      "Identifier", strDevice, "Index", stDevice);
-    // Now fully initialised
-    cOal->SetInitialised(true);
+    // Have the context
+    cOal->Init();
     // Allocate sources data
     SourceAlloc(cCVars->GetInternalSafe<ALuint>(AUD_NUMSOURCES));
     // Register engine events
     cEvtMain->Register(EMC_AUD_REINIT, bind(&Audio::OnReInit, this, _1));
-    // Set parameters
+    // Set parameters and check for errors
     SetDistanceModel(AL_NONE);
     SetPosition(0, 0, 0);
     SetVelocity(0, 0, 0);
@@ -321,7 +326,7 @@ static class Audio final :             // Audio manager class
     // Update volumes on streams and videos
     StreamCommitVolume();
     VideoCommitVolume();
-    UpdateSampleVolume();
+    SampleUpdateVolume();
     // Done
     return ACCEPT;
   }
@@ -388,26 +393,8 @@ static class Audio final :             // Audio manager class
     // Event sent
     return true;
   }
-  /* -- Init --------------------------------------------------------------- */
-  void Init(void)
-  { // Class initialised
-    IHInitialise();
-    // Log subsystem
-    cLog->LogDebugSafe("Audio class starting up...");
-    // Init context
-    InitContext();
-    // Init thread
-    InitThread();
-    // Log status
-    cLog->LogDebugSafe("Audio class started successfully.");
-  }
   /* -- Stop all sounds ---------------------------------------------------- */
-  void Stop(void)
-  { // Stop all videos, streams and samples from playing
-    VideoStop();
-    StreamStop();
-    StopAllSamples();
-  }
+  void Stop(void) { VideoStop(); StreamStop(); SampleStop(); }
   /* -- Init --------------------------------------------------------------- */
   void DeInit(void)
   { // Ignore if class already de-initialised
@@ -415,7 +402,7 @@ static class Audio final :             // Audio manager class
     // Log subsystem
     cLog->LogDebugSafe("Audio class shutting down...");
     // DeInit thread
-    ThreadDeInit();
+    DeInitThread();
     // Unload all Stream, Sample and Source classes
     cStreams->CollectorDestroyUnsafe();
     cSamples->CollectorDestroyUnsafe();
@@ -429,12 +416,24 @@ static class Audio final :             // Audio manager class
     // Report error code
     cLog->LogDebugSafe("Audio class shutdown finished.");
   }
+  /* -- Init --------------------------------------------------------------- */
+  void Init(void)
+  { // Class initialised
+    IHInitialise();
+    // Log subsystem
+    cLog->LogDebugSafe("Audio class starting up...");
+    // Init context and thread
+    InitContext();
+    InitThread();
+    // Log status
+    cLog->LogDebugSafe("Audio class started successfully.");
+  }
   /* -- Default constructor ------------------------------------------------ */
   Audio(void) :                        // No parameters
     /* -- Initialisers ----------------------------------------------------- */
     IHelper{ __FUNCTION__ },           // Initialise class name
     AudioFlags{ AF_NONE },             // Initialise no audio flags
-    tThread{ "audio",                  // Initialise thread name
+    Thread{ "audio",                   // Initialise thread name
       SysThread::Audio,                // " high performance thread
       bind(&Audio::AudioThreadMain,    // " with reference to callback
         this, _1) },                   // " function
@@ -448,5 +447,7 @@ static class Audio final :             // Audio manager class
   /* -- End ---------------------------------------------------------------- */
 } *cAudio = nullptr;                   // Pointer to static class
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

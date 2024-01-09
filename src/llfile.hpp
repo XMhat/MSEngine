@@ -1,51 +1,54 @@
-/* == LLFILE.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Defines the 'File' namespace and methods for the guest to use in    ## */
-/* ## Lua. This file is invoked by 'lualib.hpp'.                          ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == LLFILE.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Defines the 'File' namespace and methods for the guest to use in    ## **
+** ## Lua. This file is invoked by 'lualib.hpp'.                          ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 #pragma once                           // Only one incursion allowed
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ========================================================================= */
 // % File
 /* ------------------------------------------------------------------------- */
 // ! The file class allows the programmer to read and write files from the
 // ! game directory.
 /* ========================================================================= */
-namespace NsFile {                     // File namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfFile;                // Using file namespace
-using namespace IfAsset;               // Using asset namespace
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+namespace LLFile {                     // File namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IAsset::P;             using namespace IDir::P;
+using namespace IFile::P;              using namespace IFStream::P;
+using namespace IPSplit::P;            using namespace IStd::P;
+/* ========================================================================= **
+** ######################################################################### **
+** ## File:* member functions                                             ## **
+** ######################################################################### **
+** ========================================================================= */
 // $ File:FError
 // < State:boolean=Error in stream?
 // ? Returns the file stream encounted an error.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(FError, 1, LCPUSHBOOL(LCGETPTR(1, File)->FStreamFErrorSafe()));
+LLFUNCEX(FError, 1, LCPUSHVAR(LCGETPTR(1, File)->FStreamFErrorSafe()));
 /* ========================================================================= */
 // $ File:Opened
 // < State:boolean=Error in stream?
 // ? Returns if the file was successfully opened.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Opened, 1, LCPUSHBOOL(LCGETPTR(1, File)->FStreamOpened()));
+LLFUNCEX(Opened, 1, LCPUSHVAR(LCGETPTR(1, File)->FStreamOpened()));
 /* ========================================================================= */
 // $ File:End
 // < State:boolean=File is at EOF?
 // ? Calls feof() and returns if the file pointer is at EOF.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(End, 1, LCPUSHBOOL(LCGETPTR(1, File)->FStreamIsEOFSafe()));
+LLFUNCEX(End, 1, LCPUSHVAR(LCGETPTR(1, File)->FStreamIsEOFSafe()));
 /* ========================================================================= */
 // $ File:Flush
 // < State:boolean=Succeeded?
 // ? By default writing to a file stream is buffered. This calls fflush() and
 // ? makes sure that any unwritten data to disk is written straight away.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Flush, 1, LCPUSHBOOL(LCGETPTR(1, File)->FStreamFlushSafe()));
+LLFUNCEX(Flush, 1, LCPUSHVAR(LCGETPTR(1, File)->FStreamFlushSafe()));
 /* ========================================================================= */
 // $ File:Rewind
 // ? Calls frewind() to sets the file stream pointer to position 0.
@@ -58,7 +61,7 @@ LLFUNC(Rewind, LCGETPTR(1, File)->FStreamRewindSafe());
 // ? Calls fseek() to set the file stream pointer to the specified position.
 // ? from the start of the stream.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Seek, 1, LCPUSHBOOL(LCGETPTR(1, File)->
+LLFUNCEX(Seek, 1, LCPUSHVAR(LCGETPTR(1, File)->
   FStreamSetPositionSafe(LCGETINT(int64_t, 1, "Position"), SEEK_SET)));
 /* ========================================================================= */
 // $ File:SeekEnd
@@ -67,7 +70,7 @@ LLFUNCEX(Seek, 1, LCPUSHBOOL(LCGETPTR(1, File)->
 // ? Calls fseek() to set the file stream pointer to the specified position.
 // ? from the end of the stream.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(SeekEnd, 1, LCPUSHBOOL(LCGETPTR(1, File)->
+LLFUNCEX(SeekEnd, 1, LCPUSHVAR(LCGETPTR(1, File)->
   FStreamSetPositionSafe(LCGETINT(int64_t, 1, "Position"), SEEK_END)));
 /* ========================================================================= */
 // $ File:SeekCur
@@ -76,7 +79,7 @@ LLFUNCEX(SeekEnd, 1, LCPUSHBOOL(LCGETPTR(1, File)->
 // ? Calls fseek() to adjust the file stream pointer from the current position
 // ? of the stream.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(SeekCur, 1, LCPUSHBOOL(LCGETPTR(1, File)->
+LLFUNCEX(SeekCur, 1, LCPUSHVAR(LCGETPTR(1, File)->
   FStreamSetPositionSafe(LCGETINT(int64_t, 1, "Position"), SEEK_CUR)));
 /* ========================================================================= */
 // $ File:Read
@@ -94,7 +97,7 @@ LLFUNCEX(Read, 1, LCCLASSCREATE(Asset)->SwapMemory(LCGETPTR(1, File)->
 // ? Uses fwrite() to write the specified data array to the specified file.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Write, 1,
-  LCPUSHINT(LCGETPTR(1, File)->FStreamWriteBlockSafe(*LCGETPTR(2, Asset))));
+  LCPUSHVAR(LCGETPTR(1, File)->FStreamWriteBlockSafe(*LCGETPTR(2, Asset))));
 /* ========================================================================= */
 // $ File:ReadStr
 // < Bytes:integer=Maximum number of bytes to read.
@@ -103,7 +106,7 @@ LLFUNCEX(Write, 1,
 // ? at the specified maximum number of bytes to read or until it reaches an
 // ? end-of-line character.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ReadStr, 1, LCPUSHXSTR(LCGETPTR(1, File)->FStreamReadStringSafe(
+LLFUNCEX(ReadStr, 1, LCPUSHVAR(LCGETPTR(1, File)->FStreamReadStringSafe(
   LCGETINTLGE(size_t, 2, 0, UINT_MAX, "Bytes"))));
 /* ========================================================================= */
 // $ File:WriteStr
@@ -111,32 +114,32 @@ LLFUNCEX(ReadStr, 1, LCPUSHXSTR(LCGETPTR(1, File)->FStreamReadStringSafe(
 // > Text:string=Text to write.
 // ? Writes the specified string to the file.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(WriteStr, 1, LCPUSHINT(LCGETPTR(1, File)->
+LLFUNCEX(WriteStr, 1, LCPUSHVAR(LCGETPTR(1, File)->
   FStreamWriteStringSafe(LCGETCPPSTRING(2, "String"))));
 /* ========================================================================= */
 // $ File:Tell
 // < Position:integer=Position
 // ? Returns the current position in file
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Tell, 1, LCPUSHINT(LCGETPTR(1, File)->FStreamGetPositionSafe()));
+LLFUNCEX(Tell, 1, LCPUSHVAR(LCGETPTR(1, File)->FStreamGetPositionSafe()));
 /* ========================================================================= */
 // $ File:Size
 // < Size:integer=Size in bytes
 // ? Returns the current sie of the file
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Size, 1, LCPUSHINT(LCGETPTR(1, File)->FStreamSizeSafe()));
+LLFUNCEX(Size, 1, LCPUSHVAR(LCGETPTR(1, File)->FStreamSizeSafe()));
 /* ========================================================================= */
 // $ File:Close
 // < Result:boolean=If file was closed
 // ? Closes the file
 /* ========================================================================= */
-LLFUNCEX(Close, 1, LCPUSHBOOL(LCGETPTR(1, File)->FStreamCloseSafe()));
+LLFUNCEX(Close, 1, LCPUSHVAR(LCGETPTR(1, File)->FStreamCloseSafe()));
 /* ========================================================================= */
 // $ File:Name
 // < Name:string=Name of the file.
 // ? Returns the name of the loaded file.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Name, 1, LCPUSHXSTR(LCGETPTR(1, File)->IdentGet()));
+LLFUNCEX(Name, 1, LCPUSHVAR(LCGETPTR(1, File)->IdentGet()));
 /* ========================================================================= */
 // $ File:Destroy
 // ? Closes and destroys the file stream and frees all the memory associated
@@ -149,18 +152,18 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, File));
 // < ErrNo:integer=Error code returned
 // ? Returns the last recorded errno.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Error, 1, LCPUSHINT(LCGETPTR(1, File)->FStreamGetErrNo()));
+LLFUNCEX(Error, 1, LCPUSHVAR(LCGETPTR(1, File)->FStreamGetErrNo()));
 /* ========================================================================= */
 // $ File:ErrorStr
 // < Error:string=Error string returned
 // ? Returns the last recorded errno as a human readable string.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ErrorStr, 1, LCPUSHXSTR(LCGETPTR(1, File)->FStreamGetErrStr()));
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## File:* member functions structure                                   ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+LLFUNCEX(ErrorStr, 1, LCPUSHVAR(LCGETPTR(1, File)->FStreamGetErrStr()));
+/* ========================================================================= **
+** ######################################################################### **
+** ## File:* member functions structure                                   ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // File:* member functions begin
   LLRSFUNC(Close),                     // Close the file
   LLRSFUNC(Destroy),                   // Destroys the internal file object
@@ -182,7 +185,11 @@ LLRSMFBEGIN                            // File:* member functions begin
   LLRSFUNC(Write),                     // Write array to stream
   LLRSFUNC(WriteStr),                  // Write string to stream
 LLRSEND                                // File:* member functions end
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ## File:* namespace functions                                          ## **
+** ######################################################################### **
+** ========================================================================= */
 // $ File.Open
 // < Handle:File=The handle to the file stream created.
 // > Filename:string=File to open or create.
@@ -200,7 +207,7 @@ LLFUNCEX(Open, 1, LCCLASSCREATE(File)->FStreamOpen(LCGETCPPFILE(1, "File"),
 // ? Creates the specified directory. Only allowed as a child of the working
 // ? executable directory.
 // * ----------------------------------------------------------------------- */
-LLFUNCEX(MkDir, 1, LCPUSHINT(DirMkDir(LCGETCPPFILE(1, "Directory"))?0:errno));
+LLFUNCEX(MkDir, 1, LCPUSHVAR(DirMkDir(LCGETCPPFILE(1, "Directory"))?0:errno));
 /* ========================================================================= */
 // $ File.MkDirEx
 // > Directory:string=Directory to create
@@ -210,7 +217,7 @@ LLFUNCEX(MkDir, 1, LCPUSHINT(DirMkDir(LCGETCPPFILE(1, "Directory"))?0:errno));
 // ? exist. If the directory already exists than the function returns success.
 // * ----------------------------------------------------------------------- */
 LLFUNCEX(MkDirEx, 1,
-  LCPUSHINT(DirMkDirEx(LCGETCPPFILE(1, "Directory"))?0:errno));
+  LCPUSHVAR(DirMkDirEx(LCGETCPPFILE(1, "Directory"))?0:errno));
 /* ========================================================================= */
 // $ File.RmDir
 // > Directory:string=Directory to create
@@ -218,7 +225,7 @@ LLFUNCEX(MkDirEx, 1,
 // ? Creates the specified directory. Only allowed as a child of the working
 // ? executable directory.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(RmDir, 1, LCPUSHINT(DirRmDir(LCGETCPPFILE(1, "Directory"))?0:errno));
+LLFUNCEX(RmDir, 1, LCPUSHVAR(DirRmDir(LCGETCPPFILE(1, "Directory"))?0:errno));
 /* ========================================================================= */
 // $ File.RmDirEx
 // > Directory:string=Directories to remove
@@ -228,7 +235,7 @@ LLFUNCEX(RmDir, 1, LCPUSHINT(DirRmDir(LCGETCPPFILE(1, "Directory"))?0:errno));
 // ? directories that are empty.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(RmDirEx, 1,
-  LCPUSHINT(DirRmDirEx(LCGETCPPFILE(1, "Directory"))?0:errno));
+  LCPUSHVAR(DirRmDirEx(LCGETCPPFILE(1, "Directory"))?0:errno));
 /* ========================================================================= */
 // $ File.Unlink
 // > File:string=File to delete
@@ -237,7 +244,7 @@ LLFUNCEX(RmDirEx, 1,
 // ? executable directory.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Unlink, 1,
-  LCPUSHINT(DirFileUnlink(LCGETCPPFILE(1, "File"))?0:errno));
+  LCPUSHVAR(DirFileUnlink(LCGETCPPFILE(1, "File"))?0:errno));
 /* ========================================================================= */
 // $ File.Rename
 // > Source:string=Source filename
@@ -246,7 +253,7 @@ LLFUNCEX(Unlink, 1,
 // ? Renames the specified file or directory. Only allowed as a child of the
 // ? working executable directory for both parameters.
 // * ----------------------------------------------------------------------- */
-LLFUNCEX(Rename, 1, LCPUSHINT(DirFileRename(
+LLFUNCEX(Rename, 1, LCPUSHVAR(DirFileRename(
   LCGETCPPFILE(1, "Source"), LCGETCPPFILE(2, "Destination"))));
 /* ========================================================================= */
 // $ File.DirExists
@@ -254,7 +261,7 @@ LLFUNCEX(Rename, 1, LCPUSHINT(DirFileRename(
 // < Result:Boolean=Directory exists?
 // ? Returns if the specified directory exists and is actually a directory.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(DirExists, 1, LCPUSHBOOL(DirLocalDirExists(LCGETCPPFILE(1,"Dir"))));
+LLFUNCEX(DirExists, 1, LCPUSHVAR(DirLocalDirExists(LCGETCPPFILE(1,"Dir"))));
 /* ========================================================================= */
 // $ File.FileExists
 // > Source:string=Filename
@@ -262,7 +269,7 @@ LLFUNCEX(DirExists, 1, LCPUSHBOOL(DirLocalDirExists(LCGETCPPFILE(1,"Dir"))));
 // ? Returns if the specified directory exists and is actually a directory.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(FileExists, 1,
-  LCPUSHBOOL(DirLocalFileExists(LCGETCPPFILE(1,"File"))));
+  LCPUSHVAR(DirLocalFileExists(LCGETCPPFILE(1,"File"))));
 /* ========================================================================= */
 // $ File.Executable
 // > Source:string=Filename
@@ -271,7 +278,7 @@ LLFUNCEX(FileExists, 1,
 // ? working executable directory. Should always return 'false' on Windows.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Executable, 1,
-  LCPUSHBOOL(DirIsFileExecutable(LCGETCPPFILE(1, "File"))));
+  LCPUSHVAR(DirIsFileExecutable(LCGETCPPFILE(1, "File"))));
 /* ========================================================================= */
 // $ File.Exists
 // > Source:string=File name or directory name
@@ -279,7 +286,7 @@ LLFUNCEX(Executable, 1,
 // ? Returns if the specified file or directory exists on disk.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Exists, 1,
-  LCPUSHBOOL(DirLocalResourceExists(LCGETCPPFILE(1,"Resource"))));
+  LCPUSHVAR(DirLocalResourceExists(LCGETCPPFILE(1,"Resource"))));
 /* ========================================================================= */
 // $ File.Readable
 // > Source:string=Filename
@@ -287,7 +294,7 @@ LLFUNCEX(Exists, 1,
 // ? Returns if the file on disk is readable. Only allowed as a child of the
 // ? working executable directory.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Readable, 1, LCPUSHBOOL(DirIsFileReadable(LCGETCPPFILE(1, "File"))));
+LLFUNCEX(Readable, 1, LCPUSHVAR(DirIsFileReadable(LCGETCPPFILE(1, "File"))));
 /* ========================================================================= */
 // $ File.Writable
 // > Source:string=Filename
@@ -296,7 +303,7 @@ LLFUNCEX(Readable, 1, LCPUSHBOOL(DirIsFileReadable(LCGETCPPFILE(1, "File"))));
 // ? working executable directory.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Writable, 1,
-  LCPUSHBOOL(DirIsFileWritable(LCGETCPPFILE(1, "File"))));
+  LCPUSHVAR(DirIsFileWritable(LCGETCPPFILE(1, "File"))));
 /* ========================================================================= */
 // $ File.ReadWritable
 // > Source:string=Filename
@@ -305,7 +312,7 @@ LLFUNCEX(Writable, 1,
 // ? child of the working executable directory.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(ReadWritable, 1,
-  LCPUSHBOOL(DirIsFileReadWriteable(LCGETCPPFILE(1, "File"))));
+  LCPUSHVAR(DirIsFileReadWriteable(LCGETCPPFILE(1, "File"))));
 /* ========================================================================= */
 // $ File.Info
 // > Source:string=Filename
@@ -325,14 +332,26 @@ LLFUNCEX(ReadWritable, 1,
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(Info)
   StdFStatStruct stData;
-  LCPUSHINT(DirFileSize(LCGETCPPFILE(1, "File"), stData));
-  LCPUSHINT(stData.st_size);           LCPUSHINT(stData.st_mode);
-  LCPUSHINT(stData.st_ctime);          LCPUSHINT(stData.st_mtime);
-  LCPUSHINT(stData.st_atime);          LCPUSHINT(stData.st_nlink);
-  LCPUSHINT(stData.st_uid);            LCPUSHINT(stData.st_gid);
-  LCPUSHINT(stData.st_dev);            LCPUSHINT(stData.st_rdev);
-  LCPUSHINT(stData.st_ino);
+  LCPUSHVAR(DirFileSize(LCGETCPPFILE(1, "File"), stData),
+            stData.st_size,  stData.st_mode,  stData.st_ctime,
+            stData.st_mtime, stData.st_atime, stData.st_nlink,
+            stData.st_uid,   stData.st_gid,   stData.st_dev,
+            stData.st_rdev,  stData.st_ino);
 LLFUNCENDEX(12)
+/* ========================================================================= */
+// $ File.Parts
+// > Source:string=Filename to break apart
+// < Directory:string=The directory part
+// < File:string=The filename part
+// < Extension:string=The filename extension
+// < Full:string=The fully qualified filename to the file
+// ? Splits apart a filename and return its parts.
+/* ------------------------------------------------------------------------- */
+LLFUNCBEGIN(Parts)
+  const PathSplit psData{ LCGETCPPFILE(1, "File") };
+  LCPUSHVAR(psData.strDir,     psData.strFile, psData.strExt,
+            psData.strFileExt, psData.strFull);
+LLFUNCENDEX(5)
 /* ========================================================================= */
 // $ File.Enumerate
 // > Source:string=Directory to enumerate
@@ -421,22 +440,53 @@ LLFUNCEX(WriteOneStr, 2, FileWriteString(lS));
 // < Result:integer=The result of the check
 // ? Returns 0 if the filename is valid, non-zero if not.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ValidName, 1, LCPUSHINT(DirValidName(LCGETCPPSTRING(1, "File"))));
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## File.* namespace functions structure                                ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+LLFUNCEX(ValidName, 1, LCPUSHVAR(DirValidName(LCGETCPPSTRING(1, "File"))));
+/* ========================================================================= **
+** ######################################################################### **
+** ## File.* namespace functions structure                                ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSBEGIN                              // File.* namespace functions begin
-  LLRSFUNC(AppendOne), LLRSFUNC(AppendOneStr), LLRSFUNC(DirExists),
-  LLRSFUNC(Enumerate), LLRSFUNC(EnumerateEx),  LLRSFUNC(Executable),
-  LLRSFUNC(Exists),    LLRSFUNC(FileExists),   LLRSFUNC(Info),
-  LLRSFUNC(MkDir),     LLRSFUNC(MkDirEx),      LLRSFUNC(Open),
-  LLRSFUNC(Readable),  LLRSFUNC(ReadOneStr),   LLRSFUNC(ReadWritable),
-  LLRSFUNC(Rename),    LLRSFUNC(RmDir),        LLRSFUNC(RmDirEx),
-  LLRSFUNC(Unlink),    LLRSFUNC(ValidName),    LLRSFUNC(Writable),
-  LLRSFUNC(WriteOne),  LLRSFUNC(WriteOneStr),
+  LLRSFUNC(AppendOne),    LLRSFUNC(AppendOneStr), LLRSFUNC(DirExists),
+  LLRSFUNC(Enumerate),    LLRSFUNC(EnumerateEx),  LLRSFUNC(Executable),
+  LLRSFUNC(Exists),       LLRSFUNC(FileExists),   LLRSFUNC(Info),
+  LLRSFUNC(MkDir),        LLRSFUNC(MkDirEx),      LLRSFUNC(Open),
+  LLRSFUNC(Parts),        LLRSFUNC(Readable),     LLRSFUNC(ReadOneStr),
+  LLRSFUNC(ReadWritable), LLRSFUNC(Rename),       LLRSFUNC(RmDir),
+  LLRSFUNC(RmDirEx),      LLRSFUNC(Unlink),       LLRSFUNC(ValidName),
+  LLRSFUNC(Writable),     LLRSFUNC(WriteOne),     LLRSFUNC(WriteOneStr),
 LLRSEND                                // File.* namespace functions end
+/* ========================================================================= **
+** ######################################################################### **
+** ## File.* namespace constants                                          ## **
+** ######################################################################### **
+** ========================================================================= */
+// @ File.Flags
+// < Codes:table=The table of key/value pairs of available open flags
+// ? A table containing all the possible file open modes available...
+// ? ID    Keyname  FOpen  Operation
+// ? ====  =======  =====  ====================================================
+// ? [00]  R_T      "rt"   Read  + Exists + Text
+// ? [01]  W_T      "wt"   Write + New    + Truncate + Text
+// ? [02]  A_T      "at"   Write + Append + New      + Text
+// ? [03]  R_P_T    "r+t"  Read  + Write  + Exists   + Text
+// ? [04]  W_P_T    "w+t"  Read  + Write  + New      + Truncate + Text
+// ? [05]  A_P_T    "a+t"  Read  + Write  + Append   + New      + Text
+// ? [06]  R_B      "rb"   Read  + Exists + Binary
+// ? [07]  W_B      "wb"   Write + New    + Truncate + Binary
+// ? [08]  A_B      "ab"   Write + Append + New      + Binary
+// ? [09]  R_P_B    "r+b"  Read  + Write  + Exists   + Binary
+// ? [10]  W_P_B    "w+b"  Read  + Write  + New      + Truncate + Binary
+// ? [11]  A_P_B    "a+b"  Read  + Append + New      + Binary
+// ? ====  =======  =====  ====================================================
+// ? Read     = File must have permission to read.
+// ? Write    = File must have permission to write.
+// ? Exists   = File must exist.
+// ? New      = Create file if it does not exist.
+// ? Truncate = Truncate size to zero.
+// ? Append   = Place the file pointer at the end of file.
+// ? Binary   = Open in binary mode with no line ending conversions.
+// ? Text     = Open in text mode and convert to OS specific line endings.
 /* ------------------------------------------------------------------------- */
 LLRSKTBEGIN(Flags)                     // Beginning of open mode flags
   LLRSKTITEM(FStream::FM_,R_T),        LLRSKTITEM(FStream::FM_,W_T),
@@ -447,7 +497,11 @@ LLRSKTBEGIN(Flags)                     // Beginning of open mode flags
   LLRSKTITEM(FStream::FM_,W_P_B),      LLRSKTITEM(FStream::FM_,A_P_B),
   LLRSKTITEM(FStream::FM_,MAX),
 LLRSKTEND                              // End of open mode flags
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ## File.* namespace constants structure                                ## **
+** ######################################################################### **
+** ========================================================================= */
 LLRSCONSTBEGIN                         // File.* namespace consts begin
   LLRSCONST(Flags),
 LLRSCONSTEND                           // File.* namespace consts end

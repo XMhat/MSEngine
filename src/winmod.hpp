@@ -1,11 +1,11 @@
-/* == WINVER.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This is a Windows specific module that parses executable files to   ## */
-/* ## reveal information about it.                                        ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == WINVER.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This is a Windows specific module that parses executable files to   ## **
+** ## reveal information about it.                                        ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* -- System module class -------------------------------------------------- */
 class SysModule :                      // Members initially private
@@ -25,17 +25,17 @@ class SysModule :                      // Members initially private
         reinterpret_cast<LPVOID*>(&lpFfi), &uiLength))
       { // Clear version numbers
         uiMajor = SysErrorCode();
-        uiMinor = uiRevision = uiBuild = static_cast<unsigned int>(-1);
+        uiMinor = uiRevision = uiBuild = StdMaxUInt;
         // Done
         return;
       } // Return if we did not read enough data
       if(uiLength < sizeof(VS_FIXEDFILEINFO)) return;
       // Create reference to version information
       const VS_FIXEDFILEINFO &rFfi = *lpFfi;
-      uiMajor = HighWord(rFfi.dwFileVersionMS);
-      uiMinor = LowWord(rFfi.dwFileVersionMS);
-      uiBuild = HighWord(rFfi.dwFileVersionLS);
-      uiRevision = LowWord(rFfi.dwFileVersionLS);
+      uiMajor = UtilHighWord(rFfi.dwFileVersionMS);
+      uiMinor = UtilLowWord(rFfi.dwFileVersionMS);
+      uiBuild = UtilHighWord(rFfi.dwFileVersionLS);
+      uiRevision = UtilLowWord(rFfi.dwFileVersionLS);
     }
     /* -- VersionNumbers::End ---------------------------------------------- */
   };                                   // End of VersionNumbers class
@@ -55,7 +55,7 @@ class SysModule :                      // Members initially private
       // Retrieve file description for language and code page "i".
       if(!VerQueryValueW(wstrValue.c_str(), wstrBlock.c_str(),
         reinterpret_cast<LPVOID*>(&wcpTitle), &uiStrSize))
-          return cCommon->Unknown();
+          return cCommon->Unspec();
       // Set string
       return S16toUTF(wcpTitle);
     }
@@ -70,7 +70,7 @@ class SysModule :                      // Members initially private
       if(!VerQueryValueW(wstrValue.c_str(), wcpLang,
         reinterpret_cast<LPVOID*>(&lcpData), &uiLength))
       { // Put error into data
-        strDescription = Append("!E#", SysErrorCode());
+        strDescription = StrAppend("!E#", SysErrorCode());
         strVendor = S16toUTF(wcpLang);
         strCopyright = SysError();
         // Done
@@ -85,10 +85,11 @@ class SysModule :                      // Members initially private
       for(size_t stIndex = 0; stIndex < stLimit; ++stIndex)
       { // Get reference to version data struct and make language id from it
         const LANGANDCODEPAGE &lacpData = lcpData[stIndex];
-        const LONG lLng = MakeDWord(lacpData.wLanguage, lacpData.wCodePage);
+        const LONG lLng =
+          UtilMakeDWord(lacpData.wLanguage, lacpData.wCodePage);
         // To help with retreiving some values
 #define GSV(v,n) v = GetStringValue(UTFtoS16( \
-          Format("\\StringFileInfo\\$$$$$\\" n, \
+          StrFormat("\\StringFileInfo\\$$$$$\\" n, \
             right, hex, setw(8), setfill('0'), lLng)), \
               wstrValue);
         // Get version, vendor and comments strings from module
@@ -120,7 +121,7 @@ class SysModule :                      // Members initially private
   { // Allocate memory for string and read data. Return string if succeeded!
     wstring wstrVI(dwSize, 0);
     if(GetFileVersionInfoW(UTFtoS16(strModule).c_str(), 0, dwSize,
-      ToNonConstCast<LPVOID>(wstrVI.data())))
+      UtfToNonConstCast<LPVOID>(wstrVI.data())))
         return wstrVI;
     // Failed to throw error
     XCS("Unable to query version information from the specified module!",
@@ -135,7 +136,7 @@ class SysModule :                      // Members initially private
       VersionNumbers vnData{ wstrVersionInfo };
       VersionStrings vsData{ wstrVersionInfo };
       // Version numbers together has string
-      string strVersionNumbers{ Format("$.$.$.$",
+      string strVersionNumbers{ StrFormat("$.$.$.$",
         vnData.uiMajor, vnData.uiMinor, vnData.uiBuild, vnData.uiRevision) };
       // Return data
       return SysModuleData{ strModule, vnData.uiMajor, vnData.uiMinor,
@@ -154,7 +155,7 @@ class SysModule :                      // Members initially private
       VersionNumbers vnData{ wstrVersionInfo };
       VersionStrings vsData{ wstrVersionInfo };
       // Version numbers together has string
-      string strVersionNumbers{ Format("$.$.$.$",
+      string strVersionNumbers{ StrFormat("$.$.$.$",
         vnData.uiMajor, vnData.uiMinor, vnData.uiBuild, vnData.uiRevision) };
       // Return data
       return SysModuleData{ StdMove(strModule), vnData.uiMajor,

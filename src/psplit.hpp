@@ -1,35 +1,36 @@
-/* == PSPLIT.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This is a simple C++ wrapper for splitting components of a path     ## */
-/* ## name.                                                               ## */
-/* ######################################################################### */
-/* ## UNIX PATH LAYOUT                                                    ## */
-/* ######################################################################### */
-/* ## Path      ## MAX_PATH   #### /Directory/SubDirectory/File.Extension ## */
-/* ## Directory ## MAX_DIR    #### ^^^^^^^^^^^^^^^^^^^^^^^^-------------- ## */
-/* ## FileMap   ## MAX_FNAME  #### ------------------------^^^^---------- ## */
-/* ## Extension ## MAX_EXT    #### ----------------------------^^^^^^^^^^ ## */
-/* ######################################################################### */
-/* ## WIN32 PATH LAYOUT                                                   ## */
-/* ######################################################################### */
-/* ## Path      ## _MAX_PATH  ## C:\Directory\SubDirectory\File.Extension ## */
-/* ## Drive     ## _MAX_DRIVE ## ^^-------------------------------------- ## */
-/* ## Directory ## _MAX_DIR   ## --^^^^^^^^^^^^^^^^^^^^^^^^-------------- ## */
-/* ## FileMap   ## _MAX_FNAME ## --------------------------^^^^---------- ## */
-/* ## Extension ## _MAX_EXT   ## ------------------------------^^^^^^^^^^ ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == PSPLIT.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This is a simple C++ wrapper for splitting components of a path     ## **
+** ## name.                                                               ## **
+** ######################################################################### **
+** ## UNIX PATH LAYOUT                                                    ## **
+** ######################################################################### **
+** ## Path      ## MAX_PATH   #### /Directory/SubDirectory/File.Extension ## **
+** ## Directory ## MAX_DIR    #### ^^^^^^^^^^^^^^^^^^^^^^^^-------------- ## **
+** ## FileMap   ## MAX_FNAME  #### ------------------------^^^^---------- ## **
+** ## Extension ## MAX_EXT    #### ----------------------------^^^^^^^^^^ ## **
+** ######################################################################### **
+** ## WIN32 PATH LAYOUT                                                   ## **
+** ######################################################################### **
+** ## Path      ## _MAX_PATH  ## C:\Directory\SubDirectory\File.Extension ## **
+** ## Drive     ## _MAX_DRIVE ## ^^-------------------------------------- ## **
+** ## Directory ## _MAX_DIR   ## --^^^^^^^^^^^^^^^^^^^^^^^^-------------- ## **
+** ## FileMap   ## _MAX_FNAME ## --------------------------^^^^---------- ## **
+** ## Extension ## _MAX_EXT   ## ------------------------------^^^^^^^^^^ ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfPSplit {                   // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfUtf;                 // Using utf namespace
-using namespace IfString;              // Using string namespace
+namespace IPSplit {                    // Start of private module namespace
+/* ------------------------------------------------------------------------- */
+using namespace IStd::P;               using namespace IString::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Convert back slashes to forward slashes ------------------------------ */
 static string &PSplitBackToForwardSlashes(string &strText)
-  { return Replace(strText, '\\', '/'); }
+  { return StrReplace(strText, '\\', '/'); }
 static const string PSplitBackToForwardSlashes(const string &strIn)
   { string strOut{ strIn }; return PSplitBackToForwardSlashes(strOut); }
 #if defined(WINDOWS)
@@ -133,7 +134,7 @@ class PathSplit :
       else strDir.resize(strlen(strDir.c_str()));
       // Finalise directory and append slash if there is not one to match how
       // Win32's splitpath works which is better really.
-      if(strDir.back() != '/') strDir.append("/");
+      if(strDir.back() != '/') strDir.append(cCommon->FSlash());
     } // Fiailed so clear the directory name
     else strDir.clear();
     // This is the final directory string so compact it
@@ -151,7 +152,7 @@ class PathSplit :
     else strFile.clear();
     // Prepare extension and save extension and if found?
     const size_t stSlashPos = strFile.find_last_of('/'),
-    stDotPos = FindCharBackwards(strFile, strFile.length() - 1,
+    stDotPos = StrFindCharBackwards(strFile, strFile.length() - 1,
       stSlashPos != string::npos ? (stSlashPos + 1) : 0, '.');
     if(stDotPos != string::npos)
     { // Update filename
@@ -182,6 +183,8 @@ class PathSplit :
     { }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(PathSplit)           // Disable copy constructor and operator
-};/* -- End of module namespace -------------------------------------------- */
-};                                     // End of module namespace
+};/* ----------------------------------------------------------------------- */
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

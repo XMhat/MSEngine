@@ -1,27 +1,31 @@
-/* == LLFONT.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Defines the 'Font' namespace and methods for the guest to use in    ## */
-/* ## Lua. This file is invoked by 'lualib.hpp'.                          ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == LLFONT.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Defines the 'Font' namespace and methods for the guest to use in    ## **
+** ## Lua. This file is invoked by 'lualib.hpp'.                          ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 #pragma once                           // Only one incursion allowed
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ========================================================================= */
 // % Font
 /* ------------------------------------------------------------------------- */
 // ! The font class allows dynamic creation from font files using the FREETYPE
 // ! library.
 /* ========================================================================= */
-namespace NsFont {                     // Font namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfFont;                // Using font namespace
-using namespace IfConsole;             // Using console namespace
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+namespace LLFont {                     // Font namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IConsole::P;           using namespace IFont::P;
+using namespace IFtf::P;               using namespace IImage::P;
+using namespace IImageDef::P;          using namespace IOgl::P;
+using namespace ITexture::P;           using namespace Lib::OS::GlFW;
+/* ========================================================================= **
+** ######################################################################### **
+** ## Font:* member functions                                             ## **
+** ######################################################################### **
+** ========================================================================= */
 // $ Font:SetSize
 // > Scale:number=The new scale of the font.
 // ? Changes the scale of the font.
@@ -243,7 +247,7 @@ LLFUNC(PrintMT, LCGETPTR(1, Font)->PrintMT(
 // ? and returns the width of the string printed
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(PrintS, 1,
-  LCPUSHNUM(LCGETPTR(1, Font)->PrintS(LCGETSTRING(GLubyte, 2, "String"))));
+  LCPUSHVAR(LCGETPTR(1, Font)->PrintS(LCGETSTRING(GLubyte, 2, "String"))));
 /* ========================================================================= */
 // $ Font:PrintTS
 // > Text:string=The string to simulate printing.
@@ -252,7 +256,7 @@ LLFUNCEX(PrintS, 1,
 // ? Simluates printing of the specified string on screen with left alignment
 // ? and returns the width of the string printed
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(PrintTS, 1, LCPUSHNUM(LCGETPTR(1, Font)->PrintTS(
+LLFUNCEX(PrintTS, 1, LCPUSHVAR(LCGETPTR(1, Font)->PrintTS(
   LCGETSTRING(GLubyte, 2, "String"), LCGETPTR(3, Texture))));
 /* ========================================================================= */
 // $ Font:PrintW
@@ -266,7 +270,7 @@ LLFUNCEX(PrintTS, 1, LCPUSHNUM(LCGETPTR(1, Font)->PrintTS(
 // ? the text will cleanly wrap if it cannot draw any word past the specified
 // ? 'Right' position and position the cursor at the specified 'Indent'.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(PrintW, 1, LCPUSHNUM(LCGETPTR(1, Font)->PrintW(
+LLFUNCEX(PrintW, 1, LCPUSHVAR(LCGETPTR(1, Font)->PrintW(
   LCGETNUM(GLfloat, 2, "X"),      LCGETNUM(GLfloat, 3, "Y"),
   LCGETNUMLGE(GLfloat, 4, 0, FLT_MAX, "Width"),
   LCGETNUM(GLfloat, 5, "Indent"), LCGETSTRING(GLubyte, 6,"String"))));
@@ -283,7 +287,7 @@ LLFUNCEX(PrintW, 1, LCPUSHNUM(LCGETPTR(1, Font)->PrintW(
 // ? is a hexadecimal number between 00000000 and ffffffff to match the tile
 // ? id of the texture. You must zero pad the number as shown.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(PrintWUT, 1, LCPUSHNUM(LCGETPTR(1, Font)->PrintWUT(
+LLFUNCEX(PrintWUT, 1, LCPUSHVAR(LCGETPTR(1, Font)->PrintWUT(
   LCGETNUM   (GLfloat, 2, "X"),                 LCGETNUM(GLfloat, 3, "Y"),
   LCGETNUMLGE(GLfloat, 4, 0, FLT_MAX, "Width"), LCGETNUM(GLfloat, 5, "Indent"),
   LCGETSTRING(GLubyte, 6, "String"),              LCGETPTR(7, Texture))));
@@ -300,7 +304,7 @@ LLFUNCEX(PrintWUT, 1, LCPUSHNUM(LCGETPTR(1, Font)->PrintWUT(
 // ? is a hexadecimal number between 00000000 and ffffffff to match the tile
 // ? id of the texture. You must zero pad the number as shown.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(PrintWT, 1, LCPUSHNUM(LCGETPTR(1, Font)->PrintWT(
+LLFUNCEX(PrintWT, 1, LCPUSHVAR(LCGETPTR(1, Font)->PrintWT(
   LCGETNUM   (GLfloat, 2, "X"),                 LCGETNUM(GLfloat, 3, "Y"),
   LCGETNUMLGE(GLfloat, 4, 0, FLT_MAX, "Width"), LCGETNUM(GLfloat, 5, "Indent"),
   LCGETSTRING(GLubyte, 6, "String"),              LCGETPTR(7, Texture))));
@@ -315,7 +319,7 @@ LLFUNCEX(PrintWT, 1, LCPUSHNUM(LCGETPTR(1, Font)->PrintWT(
 // ? is a hexadecimal number between 00000000 and ffffffff to match the tile
 // ? id of the texture. You must zero pad the number as shown.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(PrintWTS, 1, LCPUSHNUM(LCGETPTR(1, Font)->PrintWTS(
+LLFUNCEX(PrintWTS, 1, LCPUSHVAR(LCGETPTR(1, Font)->PrintWTS(
   LCGETNUMLGE(GLfloat, 2, 0, FLT_MAX, "Width"), LCGETNUM(GLfloat, 3, "Indent"),
   LCGETSTRING(GLubyte, 4, "String"),              LCGETPTR(5, Texture))));
 /* ========================================================================= */
@@ -330,7 +334,7 @@ LLFUNCEX(PrintWTS, 1, LCPUSHNUM(LCGETPTR(1, Font)->PrintWTS(
 // ? if X exceeds the specified Width, the text is wrapped with the specified
 // ? indent size on the following line.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(PrintWU, 1, LCPUSHNUM(LCGETPTR(1, Font)->PrintWU(
+LLFUNCEX(PrintWU, 1, LCPUSHVAR(LCGETPTR(1, Font)->PrintWU(
   LCGETNUM   (GLfloat, 2, "X"),                 LCGETNUM(GLfloat, 3, "Y"),
   LCGETNUMLGE(GLfloat, 4, 0, FLT_MAX, "Width"), LCGETNUM(GLfloat, 5, "Indent"),
   LCGETSTRING(GLubyte, 6, "String"))));
@@ -352,7 +356,7 @@ LLFUNC(PrintU, LCGETPTR(1, Font)->PrintU(
 // ? Simulates printing a string. Returns height.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(PrintUS, 1,
-  LCPUSHNUM(LCGETPTR(1, Font)->PrintSU(LCGETSTRING(GLubyte, 2, "String"))));
+  LCPUSHVAR(LCGETPTR(1, Font)->PrintSU(LCGETSTRING(GLubyte, 2, "String"))));
 /* ========================================================================= */
 // $ Font:PrintWS
 // > WrapX:number=The X position to wrap the text at.
@@ -361,7 +365,7 @@ LLFUNCEX(PrintUS, 1,
 // < Height:number=The height of the text printed on screen.
 // ? Simulates printing a string with word-wrap. Returns height.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(PrintWS, 1, LCPUSHNUM(LCGETPTR(1, Font)->PrintWS(
+LLFUNCEX(PrintWS, 1, LCPUSHVAR(LCGETPTR(1, Font)->PrintWS(
   LCGETNUMLGE(GLfloat, 2, 0, FLT_MAX, "WrapX"), LCGETNUM(GLfloat, 3, "Indent"),
   LCGETSTRING(GLubyte, 4, "String"))));
 /* ========================================================================= */
@@ -410,21 +414,21 @@ LLFUNCEND
 // ? Returns height of the font tile. If this font is a free-type font, this
 // ? will just be the height of the white-space character only.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetHeight, 1, LCPUSHINT(LCGETPTR(1, Font)->duTile.DimGetHeight()));
+LLFUNCEX(GetHeight, 1, LCPUSHVAR(LCGETPTR(1, Font)->duTile.DimGetHeight()));
 /* ========================================================================= */
 // $ Font:GetName
 // < Name:string=Name of the font.
 // ? If this font was loaded by a filename or it was set with a custom id.
 // ? This function returns that name which was assigned to it.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetName, 1, LCPUSHXSTR(LCGETPTR(1, Font)->IdentGet()));
+LLFUNCEX(GetName, 1, LCPUSHVAR(LCGETPTR(1, Font)->IdentGet()));
 /* ========================================================================= */
 // $ Font:GetWidth
 // < Width:integer=The tile width of the font.
 // ? Returns width of the font tile. If this font is a free-type font, this
 // ? will just be the width of the white-space character only.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetWidth, 1, LCPUSHINT(LCGETPTR(1, Font)->duTile.DimGetWidth()));
+LLFUNCEX(GetWidth, 1, LCPUSHVAR(LCGETPTR(1, Font)->duTile.DimGetWidth()));
 /* ========================================================================= */
 // $ Font:SetGlyphPadding
 // > Padding:number=The top side Y padding to add to glyphs
@@ -461,11 +465,11 @@ LLFUNC(LoadChars,
 // ? error will be generated if accessed.
 /* ------------------------------------------------------------------------- */
 LLFUNC(Destroy, LCCLASSDESTROY(1, Font));
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Font:* member functions structure                                   ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Font:* member functions structure                                   ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Font:* member functions begin
   LLRSFUNC(Destroy),   LLRSFUNC(Dump),       LLRSFUNC(GetHeight),
   LLRSFUNC(GetName),   LLRSFUNC(GetWidth),   LLRSFUNC(LoadChars),
@@ -491,8 +495,8 @@ LLRSEND                                // Font:* member functions end
 // ? the same name as 'filename' with the .txt extension which explains the
 // ? parameters for the font tileset. These parameters are as follows...
 // ?
-// ? rangestart = The ASCII character to represent the first tile..
-// ? range = The number of ASCII characters in the tileset..
+// ? rangestart = The ASCII character to represent the first tile.
+// ? range = The number of ASCII characters in the tileset.
 // ? tilewidth = The width of the tile.
 // ? tileheight = The height of the tile.
 // ? tilespacingwidth = The horizontal spacing between each tile.
@@ -507,6 +511,7 @@ LLFUNCEX(Image, 1, LCCLASSCREATE(Font)->InitFont(*LCGETPTR(1, Image)));
 /* ========================================================================= */
 // $ Font.Create
 // > Font:Ftf=An ftf object of a loaded freetype font.
+// > Size:integer=The initial canvas size of the texture.
 // > Padding:integer=Amount of padding to use to prevent texture spilling.
 // > Filter:integer=Font texture filtering mode to use.
 // > Flags:integer=Font flags.
@@ -528,19 +533,19 @@ LLFUNCEX(Create, 1, LCCLASSCREATE(Font)->InitFTFont(
 // ? font in your application. Careful not to mess around with it's properties!
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Console, 1, LCCLASSCREATEPTR(Font, cConsole->GetFont()));
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Font.* namespace functions structure                                ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Font.* namespace functions structure                                ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Font.* namespace functions begin
   LLRSFUNC(Create), LLRSFUNC(Image), LLRSFUNC(Console),
 LLRSEND                                // Font.* namespace functions end
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Font.* namespace constants structure                                ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Font.* namespace constants                                          ## **
+** ######################################################################### **
+** ========================================================================= */
 // @ Font.Flags
 // < Codes:table=The table of key/value pairs of available flags for use with
 // ? the InitFTFont function.
@@ -550,7 +555,11 @@ LLRSKTBEGIN(Flags)                     // Beginning of ft font loading flags
   LLRSKTITEM(FF_,FLOORADVANCE),        LLRSKTITEM(FF_,CEILADVANCE),
   LLRSKTITEM(FF_,ROUNDADVANCE),        LLRSKTITEM(FF_,STROKETYPE2),
 LLRSKTEND                              // End of ft font loading flags
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Font.* namespace constants structure                                ## **
+** ######################################################################### **
+** ========================================================================= */
 LLRSCONSTBEGIN                         // Font.* namespace consts begin
   LLRSCONST(Flags),
 LLRSCONSTEND                           // Font.* namespace consts end

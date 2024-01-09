@@ -1,17 +1,21 @@
-/* == CODEC.HPP ============================================================ */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This file provides a class structure that can unify many codecs     ## */
-/* ## into a simple magic block for use with Lua.                         ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == CODEC.HPP ============================================================ **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This file provides a class structure that can unify many codecs     ## **
+** ## into a simple magic block for use with Lua.                         ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfCodec {                    // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace Lib::OS::ZLib;         // Using z-lib library functions
-using namespace IfCrypt;               // Using crypt namespace
+namespace ICodec {                     // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace ICrypt::P;             using namespace IError::P;
+using namespace IMemory::P;            using namespace IStd::P;
+using namespace Lib::OS::OpenSSL;      using namespace Lib::OS::SevenZip;
+using namespace Lib::OS::ZLib;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* ------------------------------------------------------------------------- */
 enum EncMode                           // Encoding flags (DONT REORDER!!!)
 { /* ----------------------------------------------------------------------- */
@@ -502,11 +506,11 @@ template<class EncPlugin>class CoEncoder :
     { InitHeader(); }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(CoEncoder)           // Omit copy constructor for safety
-};/* ======================================================================= */
-/* ######################################################################### */
-/* ## Encoder helpers                                                     ## */
-/* ######################################################################### */
-/* -- Command helper interface to a class with encoder data ---------------- */
+};/* ======================================================================= **
+** ######################################################################### **
+** ## Encoder helpers                                                     ## **
+** ######################################################################### **
+** -- Command helper interface to a class with encoder data ---------------- */
 #define CODEC_HELPER(n,...) namespace CodecHelper { \
   class n ## Encoder : public EncData { \
     DELETECOPYCTORS(n ## Encoder) \
@@ -545,19 +549,21 @@ CODEC_PLUGINEX(RAW, 0)
 /* == Main interface class ================================================= */
 template<class EncoderType>class Block final : public EncoderType
 { /* -- Initialise by data array ----------------------------------- */ public:
-  explicit Block(const DataConst &dIn, const size_t stUser=string::npos) :
+  explicit Block(const DataConst &dIn, const size_t stUser=StdMaxSizeT) :
     /* -- Initialisers ----------------------------------------------------- */
     EncoderType{ dIn, stUser }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Initialise by string ----------------------------------------------- */
-  explicit Block(const string &strIn, const size_t stUser=string::npos) :
+  explicit Block(const string &strIn, const size_t stUser=StdMaxSizeT) :
     /* -- Initialisers ----------------------------------------------------- */
     EncoderType{ StdMove(DataConst(strIn)), stUser }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Block)               // Omit copy constructor for safety
-};/* -- End of class ------------------------------------------------------- */
-};                                     // End of module namespace
+};/* ----------------------------------------------------------------------- */
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

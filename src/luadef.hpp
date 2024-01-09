@@ -1,15 +1,13 @@
-/* == LUADEF.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Some definitions specific to Lua.                                   ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == LUADEF.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Some definitions specific to Lua.                                   ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* ------------------------------------------------------------------------- */
-namespace IfLuaDef {                   // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfCVarDef;             // Using util namespace
+/* == LuaDef interface namespace =========================================== */
+namespace ILuaDef {                    // Start of module namespace
 /* == Typedefs ============================================================= */
 struct LuaKeyInt                       // Lua key/value pairs C
 { /* ----------------------------------------------------------------------- */
@@ -22,11 +20,13 @@ struct LuaTable                        // Lua table as C
   const LuaKeyInt*const kiList;        // Key value list
   const int             iCount;        // Number of items in this list
 };/* ----------------------------------------------------------------------- */
-};                                     // End of luadef interface
+};                                     // End of module namespace
 /* == LibLua interface namespace =========================================== */
-namespace IfLuaLib {                   // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfLuaDef;              // Using cvardef namespace
+namespace ILuaLib {                    // Start of private module namespace
+/* ------------------------------------------------------------------------- */
+using namespace ICVarDef::P;           using namespace ILuaDef;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* == Variables ============================================================ */
 extern const struct LuaLibStatic       // Name of struct
 { /* ----------------------------------------------------------------------- */
@@ -42,5 +42,7 @@ extern const struct LuaLibStatic       // Name of struct
   /* --------------------------------------------------------------------- */
 } luaLibList[];                        // Library list in lualib.hpp
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

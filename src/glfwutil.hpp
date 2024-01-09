@@ -1,16 +1,19 @@
-/* == GLFWUTIL.HPP ========================================================= */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Some GLFW related utilities                                         ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == GLFWUTIL.HPP ========================================================= **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Some GLFW related utilities                                         ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfGlFWUtil {                 // Start of module namespace
+namespace IGlFWUtil {                  // Start of private module namespace
 /* ------------------------------------------------------------------------- */
-using namespace Lib::OS::GlFW;         // Using GlFW library functions
-using namespace IfEvtMain;             // Using event namespace
+using namespace IError::P;             using namespace IEvtMain::P;
+using namespace IIdent::P;             using namespace ILog::P;
+using namespace Lib::OS::GlFW;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Returns GLFW_TRUE or GLFW_FALSE depending on expression -------------- */
 static int GlFWBooleanToGBoolean(const bool bC)
   { return bC ? GLFW_TRUE : GLFW_FALSE; }
@@ -108,7 +111,7 @@ class GlFWUtil                         // Members initially private
   /* ---------------------------------------------------------------------- */\
   void GlFWSet ## nc(const bool bState) \
     { GlFWSetHintBoolean(GLFW_ ## nu, bState); } \
-   void GlFWSet ## nc ## Enabled(void) \
+  void GlFWSet ## nc ## Enabled(void) \
     { GlFWSetHintEnabled(GLFW_ ## nu); } \
   void GlFWSet ## nc ## Disabled(void) \
     { GlFWSetHintDisabled(GLFW_ ## nu); } \
@@ -135,7 +138,6 @@ class GlFWUtil                         // Members initially private
 #if defined(MACOS)                     // Using Apple compiler?
   /* ----------------------------------------------------------------------- */
   SET(GPUSwitching, COCOA_GRAPHICS_SWITCHING) // Set graphics switching?
-  SET(MenuBar,      COCOA_MENUBAR)     // Set MacOS menu bar?
   SET(RetinaMode,   COCOA_RETINA_FRAMEBUFFER) // Set retina framebuffer?
   /* ----------------------------------------------------------------------- */
 #endif                                 // End of Apple check
@@ -151,7 +153,7 @@ class GlFWUtil                         // Members initially private
       IDMAPSTR(GLFW_AUX_BUFFERS), IDMAPSTR(GLFW_BLUE_BITS),
       IDMAPSTR(GLFW_CENTER_CURSOR), IDMAPSTR(GLFW_CLIENT_API),
       IDMAPSTR(GLFW_COCOA_FRAME_NAME), IDMAPSTR(GLFW_COCOA_GRAPHICS_SWITCHING),
-      IDMAPSTR(GLFW_COCOA_MENUBAR), IDMAPSTR(GLFW_COCOA_RETINA_FRAMEBUFFER),
+      IDMAPSTR(GLFW_COCOA_RETINA_FRAMEBUFFER),
       IDMAPSTR(GLFW_CONTEXT_CREATION_API), IDMAPSTR(GLFW_CONTEXT_NO_ERROR),
       IDMAPSTR(GLFW_CONTEXT_RELEASE_BEHAVIOR), IDMAPSTR(GLFW_CONTEXT_REVISION),
       IDMAPSTR(GLFW_CONTEXT_ROBUSTNESS), IDMAPSTR(GLFW_CONTEXT_VERSION_MAJOR),
@@ -214,6 +216,8 @@ static bool GlFWIsRawMouseMotionSupported(void)
 /* -- Return monitor name -------------------------------------------------- */
 static const char *GlFWGetMonitorName(GLFWmonitor*const mDevice)
   { return glfwGetMonitorName(mDevice); }
+/* -- Is the context not set ----------------------------------------------- */
+static GLFWwindow *GlFWContext(void) { return glfwGetCurrentContext(); }
 /* ------------------------------------------------------------------------- */
 static GLFWglproc GlFWGetProcAddress(const char*const cpFunction)
 { // Get function and return it if we have it
@@ -226,5 +230,8 @@ static GLFWglproc GlFWGetProcAddress(const char*const cpFunction)
       "else fails, you will need to upgrade your graphics hardware!",
       "Function", cpFunction);
 }
-};                                     // End of module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

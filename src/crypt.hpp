@@ -1,22 +1,23 @@
-/* == CRYPT.HPP ============================================================ */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This file handles all the cryptographic and co/decompression        ## */
-/* ## routines and sets up the environment for OpenSSL library.           ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == CRYPT.HPP ============================================================ **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This file handles all the cryptographic and co/decompression        ## **
+** ## routines and sets up the environment for OpenSSL library.           ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfCrypt {                    // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace Lib::OS::OpenSSL;      // Using OpenSSL library functions
-using namespace Lib::OS::SevenZip;     // Using 7Zip library functions
-using namespace IfMemory;              // Using memory namespace
-using namespace IfLog;                 // Using log namespace
-using namespace IfUtf;                 // Using utf namespace
-using namespace IfVars;                // Using vars namespace
-using namespace IfSystem;              // Using system namespace
+namespace ICrypt {                     // Start of private module namespace
+/* -- Dependencies ---------------------------------------------------------- */
+using namespace ICollector::P;         using namespace IError::P;
+using namespace ILog::P;               using namespace IMemory::P;
+using namespace IStd::P;               using namespace IString::P;
+using namespace ISystem::P;            using namespace ISysUtil::P;
+using namespace IUtf;                  using namespace IUtil::P;
+using namespace Lib::OS::OpenSSL;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Convert the specified character to hexadecimal ----------------------- */
 static char CryptHex2Char(const uint8_t ucChar)
 { // Hex lookup table
@@ -40,7 +41,7 @@ static char CryptHex2Char(const uint8_t ucChar)
   }; // Return character
   return caLookup[ucChar];
 }
-/* -- Convert the specified hexadecimanl string to 8-bit array ----------- */
+/* -- Convert the specified hexadecimanl string to 8-bit array ------------- */
 static void CryptHexDecodePtr(const char*const cpSrc, const size_t stSrcLen,
   char*const cpDst)
 { // Build 8-bit value from two ASCII characters
@@ -51,7 +52,7 @@ static void CryptHexDecodePtr(const char*const cpSrc, const size_t stSrcLen,
       ((CryptHex2Char(static_cast<uint8_t>(cpSrc[stInPos])) << 4) +
         CryptHex2Char(static_cast<uint8_t>(cpSrc[stInPos + 1])));
 }
-/* -- Convert the specified hexadecimanl string to 8-bit array ----------- */
+/* -- Convert the specified hexadecimanl string to 8-bit array ------------- */
 static Memory CryptHexDecodeA(const string &strSrc)
 { // Must not be empty and a multiple of two to comply
   if(strSrc.empty() || strSrc.size() % 2) return {};
@@ -70,7 +71,7 @@ static string CryptHexDecodeStr(const string &strSrc)
   string strDst; strDst.resize(strSrc.size() / 2);
   // Build 8-bit value from two ASCII characters
   CryptHexDecodePtr(strSrc.c_str(), strSrc.length(),
-    ToNonConstCast<char*>(strDst.data()));
+    UtfToNonConstCast<char*>(strDst.data()));
   // Return memory
   return strDst;
 }
@@ -119,7 +120,7 @@ static const auto &CryptChar2HexU(const uint8_t ucP)
   // Return the string. Remember there is no null terminator
   return cHexTabUC[ucP];
 }
-/* -- Convert the specified 8-bit array to a hexadecmial string (upcase) -- */
+/* -- Convert the specified 8-bit array to a hexadecmial string (upcase) --- */
 static const string CryptBin2Hex(const uint8_t*const ucStr,
   const size_t stSize)
 { // The output string and we know what the size of the output will be so
@@ -226,15 +227,17 @@ template<typename AnyType>static const AnyType CryptRandom(void)
 }
 /* -- URL encode the specified c-string ------------------------------------ */
 static const string CryptURLEncode(const char*const cpURL)
-{ // Bail if null
-  if(!cpURL) return {};
+{ // Bail if passed string is invalid
+  if(UtfIsCStringNotValid(cpURL)) return {};
   // We will use a ostringstream to build this as we do not know what the
   // size of the output will be.
   ostringstream osS;
-  // For each character
-  for(const char*cpSrc = const_cast<char*>(cpURL); *cpSrc; ++cpSrc)
+  // Movable pointer to input string
+  const char *cpPtr = cpURL;
+  // Perform these action for each character...
+  do
   { // Get character
-    const uint8_t ucC = static_cast<uint8_t>(*cpSrc);
+    const uint8_t ucC = static_cast<uint8_t>(*cpPtr);
     // Normal character? Append to string
     if(isalnum(ucC)) osS << static_cast<char>(ucC);
     // Test individual character
@@ -245,8 +248,9 @@ static const string CryptURLEncode(const char*const cpURL)
       // Any other character? Encode it!
       default: osS << '%' << CryptChar2HexU(ucC)[0]
                           << CryptChar2HexU(ucC)[1]; break;
-    }
-  } // Done
+    } // ...until null terminator
+  } while(*(++cpPtr));
+  // End of string so return it
   return osS.str();
 }
 /* -- URL encode the specified string -------------------------------------- */
@@ -260,10 +264,10 @@ template<class T>static const string CryptImplodeMapAndEncode(const T &ssData,
   // Iterate through each key pair and insert into vector whilst encoding
   transform(ssData.cbegin(), ssData.cend(), back_inserter(svRet),
     [](const auto &vI)
-      { return StdMove(Append(CryptURLEncode(vI.first), '=',
+      { return StdMove(StrAppend(CryptURLEncode(vI.first), '=',
           CryptURLEncode(vI.second))); });
   // Return vector
-  return Implode(svRet, strSep);
+  return StrImplode(svRet, strSep);
 }
 /* -- Get error reason ----------------------------------------------------- */
 static string CryptGetErrorReason(const unsigned long ulErr)
@@ -277,7 +281,7 @@ static string CryptGetErrorReason(const unsigned long ulErr)
   // Return error
   return strError;
 }
-/* -- Get error reason --------------------------------------------------- */
+/* -- Get error reason ----------------------------------------------------- */
 static int CryptGetError(string &strError)
 { // Error to return
   strError.clear();
@@ -319,7 +323,7 @@ static int CryptGetError(string &strError)
       // If theres a colon in it, delete everything up to that colon
       const size_t stColon = strError.find_last_of(':');
       if(stColon != string::npos)
-        strError = Capitalise(strError.substr(stColon + 1));
+        strError = StrCapitalise(strError.substr(stColon + 1));
     }
   } // Free unused memory since the logevity of this value can be a while
   strError.shrink_to_fit();
@@ -341,7 +345,7 @@ static int CryptBIOGetFd(BIO*const bBio)
 /* -- Replacement for BIO_set_conn_hostname which causes warnings ---------- */
 static int CryptBIOSetConnHostname(BIO*const bBio, const char*const cpName)
   { return static_cast<int>(BIO_ctrl(bBio, BIO_C_SET_CONNECT, 0,
-      ToNonConstCast<void*>(cpName))); }
+      UtfToNonConstCast<void*>(cpName))); }
 /* -- Replacement for BIO_get_conn_addres which causes warnings ------------ */
 static const BIO_ADDR *CryptBIOGetConnAddress(BIO*const bBio)
   { return reinterpret_cast<const BIO_ADDR*>(
@@ -359,7 +363,7 @@ static int CryptSSLCtxSetTlsExtStatusCb(SSL_CTX*const sslCtx,
 /* -- Replacement for SSL_set_tlsext_host_name which causes warnings ------- */
 static int CryptSSLSetTlsExtHostName(SSL*const sSSL, const char*const cpName)
   { return static_cast<int>(SSL_ctrl(sSSL, SSL_CTRL_SET_TLSEXT_HOSTNAME,
-      TLSEXT_NAMETYPE_host_name, ToNonConstCast<void*>(cpName))); }
+      TLSEXT_NAMETYPE_host_name, UtfToNonConstCast<void*>(cpName))); }
 /* -- Replacement for SSL_CTX_set1_verify_cert_store which causes warnings - */
 static int CryptSSLCtxSet1VerifyCertStore(SSL_CTX*const sslCtx,
   X509_STORE*const x509dest)
@@ -443,14 +447,14 @@ static const string CryptMBtoB64(const DataConst &dcIn)
   { return CryptPTRtoB64(dcIn.Ptr<void>(), dcIn.Size()); }
 /* ------------------------------------------------------------------------- */
 static const string CryptStoB64(const string &strIn)
-  { return CryptPTRtoB64(ToNonConstCast<void*>(strIn.data()),
+  { return CryptPTRtoB64(UtfToNonConstCast<void*>(strIn.data()),
       strIn.length()); }
 /* ------------------------------------------------------------------------- */
 static Memory CryptB64toMB(const string &strIn)
 { // Output buffer
   Memory aData{ strIn.length() };
   // Do conversion and resize string after
-  aData.Resize(CryptB64toPTR(ToNonConstCast<void*>(strIn.data()),
+  aData.Resize(CryptB64toPTR(UtfToNonConstCast<void*>(strIn.data()),
     strIn.length(), aData.Ptr(), aData.Size()));
   // Return data
   return aData;
@@ -460,8 +464,9 @@ static const string CryptB64toS(const string &strIn)
 { // Create output buffer with enough size for output
   string strOut; strOut.resize(strIn.length());
   // Do conversion and resize string after
-  strOut.resize(CryptB64toPTR(ToNonConstCast<void*>(strIn.data()),
-    strIn.length(), ToNonConstCast<void*>(strOut.data()), strOut.length()));
+  strOut.resize(CryptB64toPTR(UtfToNonConstCast<void*>(strIn.data()),
+    strIn.length(), UtfToNonConstCast<void*>(strOut.data()),
+    strOut.length()));
   // Return string
   return strOut;
 }
@@ -475,7 +480,7 @@ static const string CryptEntEncode(const string &strS)
   ostringstream osS; osS << hex;
   // For each entity. Find it in the string
   // Until null character. Which control token?
-  for(Decoder utfSrc{ strS }; unsigned int uiChar = utfSrc.Next();)
+  for(UtfDecoder utfSrc{ strS }; unsigned int uiChar = utfSrc.Next();)
   { // Characters not these character ranges will be encoded
     if(uiChar <= 31                  || // Control characters
       (uiChar >= 33 && uiChar <= 47) || // Symbols before numbers
@@ -500,10 +505,10 @@ static Memory CryptHMACCall(const EVP_MD*const fFunc,
   const void         *const vpSalt, const size_t stSaltSize,
   const unsigned char*const cpSrc,  const size_t stSrcSize)
 { // Check sizes to make sure they can be converted to integer
-  if(IntWillOverflow<int>(stSaltSize))
+  if(UtilIntWillOverflow<int>(stSaltSize))
     XC("Size of salt data too big!",
        "Requested", stSaltSize, "Maximum", numeric_limits<int>::max());
-  if(IntWillOverflow<int>(stSrcSize))
+  if(UtilIntWillOverflow<int>(stSrcSize))
     XC("Size of source data to hash too big!",
        "Requested", stSrcSize,  "Maximum", numeric_limits<int>::max());
   // Create output for HMAC-SHA hash
@@ -560,47 +565,51 @@ DEFINE_HASH_FUNCS(SHA512, SHA512_DIGEST_LENGTH, EVP_sha512); // Really secure
 #undef DEFINE_HASH_FUNCS
 /* -- Create CRC32 hash of specified string using LZMA API ----------------- */
 static unsigned int CryptToCRC32(const string &strIn)
-  { return CrcCalc(strIn.data(), strIn.length()); }
+  { return Lib::OS::SevenZip::CrcCalc(strIn.data(), strIn.length()); }
 /* -- Create CRC32 hash of specified memory block using LZMA API ----------- */
 static unsigned int CryptToCRC32(const DataConst &dcIn)
-  { return CrcCalc(dcIn.Ptr<void>(), dcIn.Size()); }
+  { return Lib::OS::SevenZip::CrcCalc(dcIn.Ptr<void>(), dcIn.Size()); }
 /* -- URL decode the specified c-string ------------------------------------ */
 static const string CryptURLDecode(const char*const cpURL)
-{ // Bail if null
-  if(!cpURL) return {};
+{ // Bail if passed string is invalid
+  if(UtfIsCStringNotValid(cpURL)) return {};
   // We will use a ostringstream to build this as we do not know what the
   // size of the output will be.
   ostringstream osS;
-  // For each character
-  for(char *cpPtr = const_cast<char*>(cpURL); *cpPtr; ++cpPtr)
-  { // Get and test character
-    switch(unsigned char &ucC = *reinterpret_cast<unsigned char*>(cpPtr))
+  // Movable pointer to input string
+  const char *cpPtr = cpURL;
+  // Perform these action for each character...
+  do
+  { // Get character and compare it
+    switch(unsigned char ucC = static_cast<unsigned char>(*cpPtr))
     { // % symbol denoting a custom value
       case '%':
-      { // Convert hex to number and if not valid? Next character
-        unsigned char &uc1 = *reinterpret_cast<unsigned char*>(++cpPtr);
-        if(!isxdigit(uc1)) continue;
-        // Get second hex character and if not valid? Next character
-        unsigned char &uc2 = *reinterpret_cast<unsigned char*>(++cpPtr);
-        if(!isxdigit(uc2)) continue;
-        // Is lowecase 'a'
-        if(uc1 >= 'a') uc1 -= 'a'-'A';
-        uc1 -= uc1 >= 'A' ? ('A' - 10) : '0';
-        if(uc2 >= 'a') uc2 -= 'a'-'A';
-        uc2 -= uc2 >= 'A' ? ('A' - 10) : '0';
-        // Set new character and fall through to default
-        ucC = 16 * uc1 + uc2;
+        // Convert hex to number and if not at end of string?
+        if(unsigned char uc1 = static_cast<unsigned char>(*(++cpPtr)))
+        { // Goto next character if not a valid digit
+          if(!isxdigit(uc1)) continue;
+          // Get second hex character and if not at end of string?
+          if(unsigned char uc2 = static_cast<unsigned char>(*(++cpPtr)))
+          { // Goto next character if not a valid digit
+            if(!isxdigit(uc2)) continue;
+            // Is lowecase 'a'
+            if(uc1 >= 'a') uc1 -= 'a'-'A';
+            uc1 -= uc1 >= 'A' ? ('A' - 10) : '0';
+            if(uc2 >= 'a') uc2 -= 'a'-'A';
+            uc2 -= uc2 >= 'A' ? ('A' - 10) : '0';
+            // Set new character and fall through to default
+            ucC = 16 * uc1 + uc2;
+          } // End of string so return it
+          else return osS.str();
+        } // End of string so return it
+        else return osS.str();
         // Fall through
         [[fallthrough]];
-      } // Normal character? (Do not move this as '%' falls through to this)
-      default:
-      { // Push normal character
-        osS << ucC;
-        // Done
-        break;
-      }
-    }
-  } // Done
+      // Normal character? Push normal character
+      default: osS << ucC; break;
+    } // ...until null terminator
+  } while(*(++cpPtr));
+  // End of string so return it
   return osS.str();
 }
 /* ------------------------------------------------------------------------- */
@@ -620,14 +629,14 @@ static class Crypt final :
   const StrStrMap  csmEntList;         // Html entity decoding lookup table
   /* ----------------------------------------------------------------------- */
   static void *OSSLAlloc(size_t stSize, const char*const, const int)
-    { return MemAlloc<void>(stSize); }
+    { return UtilMemAlloc<void>(stSize); }
   /* ----------------------------------------------------------------------- */
   static void *OSSLReAlloc(void*const vpPtr, size_t stSize,
     const char*const, const int)
-      { return MemReAlloc(vpPtr, stSize); }
+      { return UtilMemReAlloc(vpPtr, stSize); }
   /* ----------------------------------------------------------------------- */
   static void OSSLFree(void*const vpPtr, const char*const, const int)
-    { MemFree(vpPtr); }
+    { UtilMemFree(vpPtr); }
   /* -- Private keys ----------------------------------------------- */ public:
   static constexpr const size_t
     stPkKeyCount   = 4,                // Number of quads in key (256bits)
@@ -689,16 +698,16 @@ static class Crypt final :
         unsigned int uiVal;
         // Have more than 2 characters and hex character specified?
         if(strT.length() > 2 && (strT[1] == 'x' || strT[1] == 'X'))
-          uiVal = HexToNumber<unsigned int>
+          uiVal = StrHexToInt<unsigned int>
             (strT.substr(2, string::npos));
         // Not hex but is a number? Normal number
         else if(isdigit(static_cast<unsigned char>(strT[1])))
-          uiVal = ToNumber<unsigned int>
+          uiVal = StrToNum<unsigned int>
             (strT.substr(1, string::npos));
         // Shouldn't be anything else. Ignore insertations, goto next entity
         else continue;
         // Encoder character
-        const EncoderEx utfCode{ EncodeEx(uiVal) };
+        const UtfEncoderEx utfCode{ UtfEncodeEx(uiVal) };
         // Insert utf-8 string
         strS.insert(stAPos, utfCode.u.c);
         // Go forward the number of unicode bytes written
@@ -763,7 +772,7 @@ static class Crypt final :
       { "exist",   cCommon->Blank() }, { "fnof",    "\x83"           },
       { "forall",  cCommon->Blank() }, { "frac12",  "\xBD"           },
       { "frac14",  "\xBC"           }, { "frac34",  "\xBE"           },
-      { "frasl",   "/"              }, { "gamma",   cCommon->Blank() },
+      { "frasl",   cCommon->FSlash()}, { "gamma",   cCommon->Blank() },
       { "ge",      "="              }, { "gt",      ">"              },
       { "hArr",    cCommon->Blank() }, { "harr",    cCommon->Blank() },
       { "hearts",  cCommon->Blank() }, { "hellip",  "\x85"           },
@@ -842,7 +851,7 @@ static class Crypt final :
       if(!CRYPTO_set_mem_functions(OSSLAlloc, OSSLReAlloc, OSSLFree))
         XC("Failed to setup allocator for crypto interface!");
       // Generate CRC table (for lzma lib)
-      CrcGenerateTable();
+      Lib::OS::SevenZip::CrcGenerateTable();
       // Init openSSL
       OPENSSL_init();
       // Class initialised
@@ -874,5 +883,7 @@ static class Crypt final :
 static const string CryptURLDecode(const string &strS)
   { return CryptURLDecode(strS.c_str()); }
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

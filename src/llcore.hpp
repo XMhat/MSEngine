@@ -1,25 +1,30 @@
-/* == LLCORE.hPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Defines the 'Core' namespace and methods for the guest to use in    ## */
-/* ## Lua. This file is invoked by 'lualib.hpp'.                          ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == LLCORE.hPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Defines the 'Core' namespace and methods for the guest to use in    ## **
+** ## Lua. This file is invoked by 'lualib.hpp'.                          ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 #pragma once                           // Only one incursion allowed
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ========================================================================= */
 // % Core
 /* ------------------------------------------------------------------------- */
 // ! The core class allows manipulation of the game engine itself.
 /* ========================================================================= */
-namespace NsCore {                     // Core namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfCore;                // Using core namespace
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+namespace LLCore {                     // Core namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace ICore::P;              using namespace IDisplay::P;
+using namespace IEvtMain::P;           using namespace ILog::P;
+using namespace ILua::P;               using namespace IStd::P;
+using namespace ISystem::P;            using namespace ITimer::P;
+/* ========================================================================= **
+** ######################################################################### **
+** ## Core.* namespace functions                                          ## **
+** ######################################################################### **
+** ========================================================================= */
 // $ Core.Done
 // ? Confirms that you want the engine to exit. This is so you can perform
 // ? clean up actions in your own time by setting Core.SetEnd(), then calling
@@ -37,7 +42,7 @@ LLFUNC(Quit, cEvtMain->Add(EMC_QUIT));
 // ? Ends LUA execution, clears the context, and restarts LUA execution. It
 // ? will return 'false' if Lua is already re-initialising.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Reset, 1, LCPUSHBOOL(cLua->ReInit()));
+LLFUNCEX(Reset, 1, LCPUSHVAR(cLua->ReInit()));
 /* ========================================================================= */
 // $ Core.Pause
 // ? Pauses LUA execution. Obviously, you can't resume and must do it manually!
@@ -82,7 +87,7 @@ LLFUNC(LogEx,
 // ? Returns the number of events in the engine event system. Helps with
 // ? synchronising Video or Stream class events.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Events, 1, LCPUSHINT(cEvtMain->SizeSafe()));
+LLFUNCEX(Events, 1, LCPUSHVAR(cEvtMain->SizeSafe()));
 /* ========================================================================= */
 // $ Core.Delay
 // > Miliseconds:integer=Time in seconds.
@@ -112,8 +117,8 @@ LLFUNC(SetDelay,
 // ? pid zero will cause an exception.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(PidRunning, 1,
-  LCPUSHBOOL(cSystem->IsPidRunning(LCGETINTLG(unsigned int, 1,
-    1, numeric_limits<unsigned int>::max(), "Pid"))));
+  LCPUSHVAR(cSystem->IsPidRunning(LCGETINTLG(unsigned int, 1,
+    1, StdMaxUInt, "Pid"))));
 /* ========================================================================= */
 // $ Core.KillPid
 // > Pid:integer=The pid of the executable to kill
@@ -123,8 +128,8 @@ LLFUNCEX(PidRunning, 1,
 // ? pid zero will cause an exception.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(KillPid, 1,
-  LCPUSHBOOL(cSystem->TerminatePid(LCGETINTLG(unsigned int, 1,
-    1, numeric_limits<unsigned int>::max(), "Pid"))));
+  LCPUSHVAR(cSystem->TerminatePid(LCGETINTLG(unsigned int, 1,
+    1, StdMaxUInt, "Pid"))));
 /* ========================================================================= */
 // $ Core.SetIcon
 // > Filename:string=The filenames of the large icon to set.
@@ -150,7 +155,7 @@ LLFUNC(WaitAsync, cCore->CoreWaitAllAsync());
 // ? This is needed for example when you use xpcall() with an error handler
 // ? Note that pcall() error messages do not include the stack.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Stack, 1, LCPUSHXSTR(LCGETCPPSTRING(1, "Message") + GetStack(lS)));
+LLFUNCEX(Stack, 1, LCPUSHVAR(LCGETCPPSTRING(1, "Message") + LuaUtilStack(lS)));
 /* ========================================================================= */
 // $ Core.OnTick
 // > Func:function=The main tick function to change to
@@ -170,11 +175,11 @@ LLFUNC(OnTick, LCSETEVENTCB(cLua->lrMainTick));
 // ? instead if you want to change to a new main tick function.
 /* ------------------------------------------------------------------------- */
 LLFUNC(OnEnd, LCSETEVENTCB(cLua->lrMainEnd));
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Core.* namespace functions structure                                ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Core.* namespace functions structure                                ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Core.* namespace functions begin
   LLRSFUNC(Delay),        LLRSFUNC(Done),       LLRSFUNC(End),
   LLRSFUNC(Events),       LLRSFUNC(KillPid),    LLRSFUNC(Log),
@@ -184,11 +189,11 @@ LLRSBEGIN                              // Core.* namespace functions begin
   LLRSFUNC(RestoreDelay), LLRSFUNC(SetDelay),   LLRSFUNC(SetIcon),
   LLRSFUNC(Stack),        LLRSFUNC(WaitAsync),
 LLRSEND                                // Core.* namespace functions end
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Core.* namespace constants structure                                ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Core.* namespace constants                                          ## **
+** ######################################################################### **
+** ========================================================================= */
 // @ Core.LogLevels
 // < Data:table=The entire list of possible log levels.
 // ? Returns a table of key/value pairs that identify possible log levels.
@@ -198,7 +203,11 @@ LLRSKTBEGIN(LogLevels)                 // Beginning of log levels
   LLRSKTITEM(LH_,WARNING),             LLRSKTITEM(LH_,INFO),
   LLRSKTITEM(LH_,DEBUG),               LLRSKTITEM(LH_,MAX),
 LLRSKTEND                              // End of log levels
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Core.* namespace constants structure                                ## **
+** ######################################################################### **
+** ========================================================================= */
 LLRSCONSTBEGIN                         // Core.* namespace consts begin
   LLRSCONST(LogLevels),
 LLRSCONSTEND                           // Core.* namespace consts end

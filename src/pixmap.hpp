@@ -1,13 +1,13 @@
-/* == PIXMAP.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This is a POSIX specific module that handles mapping files in       ## */
-/* ## memory. It will be derived by the FileMap class. Since we support   ## */
-/* ## MacOS and Linux, we can support both systems very simply with POSIX ## */
-/* ## compatible calls.                                                   ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == PIXMAP.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This is a POSIX specific module that handles mapping files in       ## **
+** ## memory. It will be derived by the FileMap class. Since we support   ## **
+** ## MacOS and Linux, we can support both systems very simply with POSIX ## **
+** ## compatible calls.                                                   ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* == Windows file mapping class =========================================== */
 class SysMap :

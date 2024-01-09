@@ -1,15 +1,15 @@
-/* == LLSTREAM.HPP ========================================================= */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Defines the 'Stream' namespace and methods for the guest to use in  ## */
-/* ## Lua. This file is invoked by 'lualib.hpp'.                          ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == LLSTREAM.HPP ========================================================= **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Defines the 'Stream' namespace and methods for the guest to use in  ## **
+** ## Lua. This file is invoked by 'lualib.hpp'.                          ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 #pragma once                           // Only one incursion allowed
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ========================================================================= */
 // % Stream
 /* ------------------------------------------------------------------------- */
 // ! The stream class allows loading of large audio files such as ambience
@@ -26,12 +26,16 @@
 // ! Since playback is done in separate threads, there is not much need to
 // ! modify any of the above settings.
 /* ========================================================================= */
-namespace NsStream {                   // Stream namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfStream;              // Using stream namespace
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+namespace LLStream {                   // Stream namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IAsset::P;             using namespace IStd::P;
+using namespace IStream::P;            using namespace Lib::Ogg;
+using namespace Lib::OpenAL;
+/* ========================================================================= **
+** ######################################################################### **
+** ## Stream:* member functions                                           ## **
+** ######################################################################### **
+** ========================================================================= */
 // $ Stream:OnEvent
 // > Func:function=The callback function to call when an event occurs.
 // ? This function is called when the stream stops, starts or loops. The
@@ -57,14 +61,14 @@ LLFUNC(Play, LCGETPTR(1, Stream)->PlaySafe());
 // < Duration:number=Duration in seconds
 // ? Returns the duration of the specified stream in seconds.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetDuration, 1, LCPUSHNUM(LCGETPTR(1, Stream)->GetDurationSafe()));
+LLFUNCEX(GetDuration, 1, LCPUSHVAR(LCGETPTR(1, Stream)->GetDurationSafe()));
 /* ========================================================================= */
 // $ Stream:GetElapsed
 // < Duration:number=Elapsed time in seconds
 // ? Returns the time elapsed of the stream. This is the position of the codec
 // ? and not the actual playback position.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetElapsed, 1, LCPUSHNUM(LCGETPTR(1, Stream)->GetElapsedSafe()));
+LLFUNCEX(GetElapsed, 1, LCPUSHVAR(LCGETPTR(1, Stream)->GetElapsedSafe()));
 /* ========================================================================= */
 // $ Stream:SetElapsed
 // > Duration:number=Duration in seconds
@@ -92,7 +96,7 @@ LLFUNCEND
 // ? Returns the sample position elapsed of the stream.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(GetPosition, 1,
-  LCPUSHINT(static_cast<lua_Integer>(LCGETPTR(1, Stream)->GetPositionSafe())));
+  LCPUSHVAR(static_cast<lua_Integer>(LCGETPTR(1, Stream)->GetPositionSafe())));
 /* ========================================================================= */
 // $ Stream:SetPosition
 // > Position:integer=Sample position.
@@ -125,33 +129,33 @@ LLFUNC(Stop, LCGETPTR(1, Stream)->StopSafe(SR_LUA));
 // < State:boolean=Stream is playing?
 // ? Returns true if the stream is playing or false if the stream is stopped.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(IsPlaying, 1, LCPUSHBOOL(LCGETPTR(1, Stream)->IsPlaying()));
+LLFUNCEX(IsPlaying, 1, LCPUSHVAR(LCGETPTR(1, Stream)->IsPlaying()));
 /* ========================================================================= */
 // $ Stream:GetLoop
 // < Count:integer=Number of loops left.
 // ? Returns the number of loops remaining of playback.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(GetLoop, 1,
-  LCPUSHINT(static_cast<lua_Integer>(LCGETPTR(1, Stream)->GetLoopSafe())));
+  LCPUSHVAR(static_cast<lua_Integer>(LCGETPTR(1, Stream)->GetLoopSafe())));
 /* ========================================================================= */
 // $ Stream:GetName
 // < Name:string=Filename of stream
 // ? Returns the stream indentifier or filename
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetName, 1, LCPUSHXSTR(LCGETPTR(1, Stream)->IdentGet()));
+LLFUNCEX(GetName, 1, LCPUSHVAR(LCGETPTR(1, Stream)->IdentGet()));
 /* ========================================================================= */
 // $ Stream:GetLoopBegin
 // < Count:integer=Smaple position begin point
 // ? Gets the current loop begin sample.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetLoopBegin, 1, LCPUSHINT(static_cast<lua_Integer>
+LLFUNCEX(GetLoopBegin, 1, LCPUSHVAR(static_cast<lua_Integer>
   (LCGETPTR(1, Stream)->GetLoopBeginSafe())));
 /* ========================================================================= */
 // $ Stream:GetLoopEnd
 // < Count:integer=Sample position end point
 // ? Gets the current loop end sample.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetLoopEnd, 1, LCPUSHINT(static_cast<lua_Integer>
+LLFUNCEX(GetLoopEnd, 1, LCPUSHVAR(static_cast<lua_Integer>
   (LCGETPTR(1, Stream)->GetLoopEndSafe())));
 /* ========================================================================= */
 // $ Stream:SetLoop
@@ -207,19 +211,19 @@ LLFUNC(SetVolume,
 // < Volume:number=Current stream volume (0 to 1).
 // ? Returns the volume of the stream class.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetVolume, 1, LCPUSHNUM(LCGETPTR(1, Stream)->GetVolume()));
+LLFUNCEX(GetVolume, 1, LCPUSHVAR(LCGETPTR(1, Stream)->GetVolume()));
 /* ========================================================================= */
 // $ Stream:GetBytes
 // < Total:integer=Current stream total bytes.
 // ? Returns the size of the file that is streaming.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetBytes, 1, LCPUSHINT(LCGETPTR(1, Stream)->GetOggBytes()));
+LLFUNCEX(GetBytes, 1, LCPUSHVAR(LCGETPTR(1, Stream)->GetOggBytes()));
 /* ========================================================================= */
 // $ Stream:GetSamples
 // < Total:integer=Current stream total samples.
 // ? Returns the duration of the stream in samples.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetSamples, 1, LCPUSHINT(LCGETPTR(1, Stream)->GetSamplesSafe()));
+LLFUNCEX(GetSamples, 1, LCPUSHVAR(LCGETPTR(1, Stream)->GetSamplesSafe()));
 /* ========================================================================= */
 // $ Stream:GetMetaData
 // < Data:table=Stream metadata key/value table.
@@ -231,7 +235,7 @@ LLFUNCEX(GetMetaData, 1, LCTOTABLE(LCGETPTR(1, Stream)->GetMetaData()));
 // < Rate:integer=The sample rate
 // ? Returns the sample rate per second in samples.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetRate, 1, LCPUSHINT(LCGETPTR(1, Stream)->GetRate()));
+LLFUNCEX(GetRate, 1, LCPUSHVAR(LCGETPTR(1, Stream)->GetRate()));
 /* ========================================================================= */
 // $ Stream:GetBitRate
 // < Upper:integer=The upper bitrate
@@ -241,24 +245,22 @@ LLFUNCEX(GetRate, 1, LCPUSHINT(LCGETPTR(1, Stream)->GetRate()));
 // ? Returns bitrate information for the audio file.
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(GetBitRate)
-  Stream &sCref = *LCGETPTR(1, Stream);
-  LCPUSHINT(sCref.GetBitRateUpper());
-  LCPUSHINT(sCref.GetBitRateNominal());
-  LCPUSHINT(sCref.GetBitRateLower());
-  LCPUSHINT(sCref.GetBitRateWindow());
+  const Stream &sCref = *LCGETPTR(1, Stream);
+  LCPUSHVAR(sCref.GetBitRateUpper(), sCref.GetBitRateNominal(),
+            sCref.GetBitRateLower(), sCref.GetBitRateWindow());
 LLFUNCENDEX(4)
 /* ========================================================================= */
 // $ Stream:GetVersion
 // < Version:integer=The ogg version
 // ? Returns the version of the ogg file
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetVersion, 1, LCPUSHINT(LCGETPTR(1, Stream)->GetVersion()));
+LLFUNCEX(GetVersion, 1, LCPUSHVAR(LCGETPTR(1, Stream)->GetVersion()));
 /* ========================================================================= */
 // $ Stream:GetChannels
 // < Rate:integer=The number of channels
 // ? Returns the number of channels in the audio file.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetChannels, 1, LCPUSHINT(LCGETPTR(1, Stream)->GetChannels()));
+LLFUNCEX(GetChannels, 1, LCPUSHVAR(LCGETPTR(1, Stream)->GetChannels()));
 /* ========================================================================= */
 // $ Stream:Destroy
 // ? Stops and destroys the stream object and frees all the memory associated
@@ -266,11 +268,11 @@ LLFUNCEX(GetChannels, 1, LCPUSHINT(LCGETPTR(1, Stream)->GetChannels()));
 // ? error will be generated if accessed.
 /* ------------------------------------------------------------------------- */
 LLFUNC(Destroy, LCCLASSDESTROY(1, Stream));
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Stream:* member functions structure                                 ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Stream:* member functions structure                                 ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Stream:* member functions begin
   LLRSFUNC(OnEvent),      LLRSFUNC(GetBitRate),      LLRSFUNC(GetBytes),
   LLRSFUNC(GetChannels),  LLRSFUNC(GetDuration),     LLRSFUNC(GetElapsed),
@@ -287,12 +289,13 @@ LLRSEND                                // Stream:* member functions end
 // $ Stream.FileAsync
 // > Filename:string=The filename of the ogg to load
 // > ErrorFunc:function=The function to call when there is an error
+// > ProgressFunc:function=The function to call during initial IO loading.
 // > SuccessFunc:function=The function to call when the file is laoded
 // ? Loads a streamable ogg file off the main thread. The callback functions
 // ? send an argument to the stream object that was created.
 /* ------------------------------------------------------------------------- */
 LLFUNC(FileAsync, LCCLASSCREATE(Stream)->InitAsyncFile(lS));
-/* ======================================================================= */
+/* ========================================================================= */
 // $ Stream.File
 // > Filename:string=The filename of the ogg file to load
 // < Handle:Stream=The stream object
@@ -306,6 +309,7 @@ LLFUNCEX(File, 1,
 // > Id:String=The identifier of the string
 // > Data:array=The data of the ogg file to load
 // > ErrorFunc:function=The function to call when there is an error
+// > ProgressFunc:function=The function to call during initial IO loading.
 // > SuccessFunc:function=The function to call when the audio file is laoded
 // ? Loads an ogg file off the main thread from the specified array object.
 // ? The callback functions send an argument to the Stream object that was
@@ -322,7 +326,7 @@ LLFUNC(ArrayAsync, LCCLASSCREATE(Stream)->InitAsyncArray(lS));
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Asset, 1, LCCLASSCREATE(Stream)->SyncInitArray(
   LCGETCPPSTRINGNE(1, "Identifier"), StdMove(*LCGETPTR(2, Asset))));
-/* ======================================================================= */
+/* ========================================================================= */
 // $ Stream.WaitAsync
 // ? Halts main-thread execution until all async stream mevents have completed
 /* ------------------------------------------------------------------------- */
@@ -335,20 +339,20 @@ LLFUNC(WaitAsync, cStreams->WaitAsync());
 // ? that the Stream object does not get garbage collected.
 /* ------------------------------------------------------------------------- */
 LLFUNC(ClearEvents, StreamClearEvents());
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Stream.* namespace functions structure                              ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Stream.* namespace functions structure                              ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Stream.* namespace functions begin
   LLRSFUNC(Asset), LLRSFUNC(ArrayAsync), LLRSFUNC(ClearEvents),
   LLRSFUNC(File),  LLRSFUNC(FileAsync),  LLRSFUNC(WaitAsync),
 LLRSEND                                // Stream.* namespace functions end
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Stream.* namespace constants structure                              ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Stream.* namespace constants                                        ## **
+** ######################################################################### **
+** ========================================================================= */
 // @ Stream.Flags
 // < Codes:table=The table of key/value pairs of available flags
 // ? Returns possible values for Stream:OnEvent() event command.
@@ -377,7 +381,11 @@ LLRSKTITEM(SR_,REBUFFAIL),             LLRSKTITEM(SR_,RWREBUFFAIL),
 LLRSKTITEM(SR_,GENBUFFAIL),            LLRSKTITEM(SR_,STOPALL),
 LLRSKTITEM(SR_,LUA),                   LLRSKTITEM(SR_,MAX),
 LLRSKTEND                              // End of Stream stop reasons
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Stream.* namespace constants structure                              ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSCONSTBEGIN                         // Stream.* namespace consts begin
 LLRSCONST(Events), LLRSCONST(States), LLRSCONST(Reasons),
 LLRSCONSTEND                           // Stream.* namespace consts end

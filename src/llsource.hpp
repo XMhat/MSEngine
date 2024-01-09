@@ -1,32 +1,34 @@
-/* == LLSOURCE.HPP ========================================================= */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Defines the 'Source' namespace and methods for the guest to use in  ## */
-/* ## Lua. This file is invoked by 'lualib.hpp'.                          ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == LLSOURCE.HPP ========================================================= **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Defines the 'Source' namespace and methods for the guest to use in  ## **
+** ## Lua. This file is invoked by 'lualib.hpp'.                          ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 #pragma once                           // Only one incursion allowed
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ========================================================================= */
 // % Source
 /* ------------------------------------------------------------------------- */
 // ! The source is a sound channel in OpenAL that can be manipulated such as */
 // ! changing volume, pitch, position and other things. It can only be       */
 // ! created by the Sample:Play() function.
 /* ========================================================================= */
-namespace NsSource {                   // Stream namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfSource;              // Using source namespace
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+namespace LLSource {                   // Stream namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace ISource::P;            using namespace Lib::OpenAL;
+/* ========================================================================= **
+** ######################################################################### **
+** ## Source:* member functions                                           ## **
+** ######################################################################### **
+** ========================================================================= */
 // $ Source:GetElapsed
 // < Seconds:number=Number of seconds elapsed.
 // ? Returns the number of seconds elapsed in the source.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetElapsed, 1, LCPUSHNUM(LCGETPTR(1, Source)->GetElapsed()));
+LLFUNCEX(GetElapsed, 1, LCPUSHVAR(LCGETPTR(1, Source)->GetElapsed()));
 /* ========================================================================= */
 // $ Source:SetElapsed
 // > Seconds:number=Number of seconds elapsed.
@@ -39,7 +41,7 @@ LLFUNC(SetElapsed,
 // < Gain:number=The current gain value.
 // ? Returns the current gain of the source.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetGain, 1, LCPUSHNUM(LCGETPTR(1, Source)->GetGain()));
+LLFUNCEX(GetGain, 1, LCPUSHVAR(LCGETPTR(1, Source)->GetGain()));
 /* ========================================================================= */
 // $ Source:SetGain
 // > Gain:number=The new gain value.
@@ -51,7 +53,7 @@ LLFUNC(SetGain, LCGETPTR(1, Source)->SetGain(LCGETNUM(ALfloat, 2, "Gain")));
 // < Gain:number=The current gain value.
 // ? Returns the current minimum gain of the source.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetMinGain, 1, LCPUSHNUM(LCGETPTR(1, Source)->GetMinGain()));
+LLFUNCEX(GetMinGain, 1, LCPUSHVAR(LCGETPTR(1, Source)->GetMinGain()));
 /* ========================================================================= */
 // $ Source:SetMinGain
 // > Gain:number=The new minimum gain value.
@@ -64,7 +66,7 @@ LLFUNC(SetMinGain,
 // < Gain:number=The current gain value.
 // ? Returns the current maximum gain of the source.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetMaxGain, 1, LCPUSHNUM(LCGETPTR(1, Source)->GetMaxGain()));
+LLFUNCEX(GetMaxGain, 1, LCPUSHVAR(LCGETPTR(1, Source)->GetMaxGain()));
 /* ========================================================================= */
 // $ Source:SetMaxGain
 // > Gain:number=The new maximum  gain value.
@@ -77,7 +79,7 @@ LLFUNC(SetMaxGain,
 // < Pitch:number=The current pitch value.
 // ? Returns the current pitch of the source.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetPitch, 1, LCPUSHNUM(LCGETPTR(1, Source)->GetPitch()));
+LLFUNCEX(GetPitch, 1, LCPUSHVAR(LCGETPTR(1, Source)->GetPitch()));
 /* ========================================================================= */
 // $ Source:SetPitch
 // > Pitch:number=The new pitch value.
@@ -90,7 +92,7 @@ LLFUNC(SetPitch, LCGETPTR(1, Source)->
 // < Distance:number=The current reference distance.
 // ? Returns the current reference distance of the source.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetRefDist, 1, LCPUSHNUM(LCGETPTR(1, Source)->GetRefDist()));
+LLFUNCEX(GetRefDist, 1, LCPUSHVAR(LCGETPTR(1, Source)->GetRefDist()));
 /* ========================================================================= */
 // $ Source:SetRefDist
 // > Distance:number=The new reference distance.
@@ -103,7 +105,7 @@ LLFUNC(SetRefDist,
 // < RollOff:number=The current rolloff.
 // ? Returns the current rolloff of the source.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetRollOff, 1, LCPUSHNUM(LCGETPTR(1, Source)->GetRollOff()));
+LLFUNCEX(GetRollOff, 1, LCPUSHVAR(LCGETPTR(1, Source)->GetRollOff()));
 /* ========================================================================= */
 // $ Source:SetRollOff
 // > RollOff:number=The new rolloff.
@@ -116,7 +118,7 @@ LLFUNC(SetRollOff,
 // < Distance:number=The current maximum distance.
 // ? Returns the current maximum distance of the source.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetMaxDist, 1, LCPUSHNUM(LCGETPTR(1, Source)->GetMaxDist()));
+LLFUNCEX(GetMaxDist, 1, LCPUSHVAR(LCGETPTR(1, Source)->GetMaxDist()));
 /* ========================================================================= */
 // $ Source:SetMaxDist
 // > Distance:number=The new maximum distance.
@@ -129,7 +131,7 @@ LLFUNC(SetMaxDist,
 // < State:boolean=Is the source looping?
 // ? Returns if the source is looping.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetLooping, 1, LCPUSHBOOL(LCGETPTR(1, Source)->GetLooping()));
+LLFUNCEX(GetLooping, 1, LCPUSHVAR(LCGETPTR(1, Source)->GetLooping()));
 /* ========================================================================= */
 // $ Source:SetLooping
 // > State:boolean=The new looping state
@@ -141,7 +143,7 @@ LLFUNC(SetLooping, LCGETPTR(1, Source)->SetLooping(LCGETBOOL(2, "Looping")));
 // < State:boolean=Is the source relative?
 // ? Returns if the source is relative.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetRelative, 1, LCPUSHBOOL(LCGETPTR(1, Source)->GetRelative()));
+LLFUNCEX(GetRelative, 1, LCPUSHVAR(LCGETPTR(1, Source)->GetRelative()));
 /* ========================================================================= */
 // $ Source:SetRelative
 // > State:boolean=Sets if the source is relative.
@@ -159,7 +161,7 @@ LLFUNC(SetRelative,
 LLFUNCBEGIN(GetDirection)
   ALfloat fX, fY, fZ;
   LCGETPTR(1, Source)->GetDirection(fX, fY, fZ);
-  LCPUSHNUM(fX); LCPUSHNUM(fY); LCPUSHNUM(fZ);
+  LCPUSHVAR(fX); LCPUSHVAR(fY); LCPUSHVAR(fZ);
 LLFUNCENDEX(3);
 /* ========================================================================= */
 // $ Source:SetDirection
@@ -182,7 +184,7 @@ LLFUNC(SetDirection,
 LLFUNCBEGIN(GetPosition)
   ALfloat fX, fY, fZ;
   LCGETPTR(1, Source)->GetPosition(fX, fY, fZ);
-  LCPUSHNUM(fX); LCPUSHNUM(fY); LCPUSHNUM(fZ);
+  LCPUSHVAR(fX); LCPUSHVAR(fY); LCPUSHVAR(fZ);
 LLFUNCENDEX(3);
 /* ========================================================================= */
 // $ Source:SetPosition
@@ -205,7 +207,7 @@ LLFUNC(SetPosition,
 LLFUNCBEGIN(GetVelocity)
   ALfloat fX, fY, fZ;
   LCGETPTR(1, Source)->GetVelocity(fX, fY, fZ);
-  LCPUSHNUM(fX); LCPUSHNUM(fY); LCPUSHNUM(fZ);
+  LCPUSHVAR(fX, fY, fZ);
 LLFUNCENDEX(3);
 /* ========================================================================= */
 // $ Source:SetVelocity
@@ -233,7 +235,7 @@ LLFUNC(Stop, LCGETPTR(1, Source)->Stop());
 // < State:integer=The current playback state.
 // ? Returns if current playback state.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetState, 1, LCPUSHINT(LCGETPTR(1, Source)->GetState()));
+LLFUNCEX(GetState, 1, LCPUSHVAR(LCGETPTR(1, Source)->GetState()));
 /* ========================================================================= */
 // $ Source:Destroy
 // ? Stops and destroys the source object and frees all the memory associated
@@ -241,11 +243,11 @@ LLFUNCEX(GetState, 1, LCPUSHINT(LCGETPTR(1, Source)->GetState()));
 // ? error will be generated if accessed.
 /* ------------------------------------------------------------------------- */
 LLFUNC(Destroy, LCCLASSDESTROY(1, Source));
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Source:* member functions structure                                 ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Source:* member functions structure                                 ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Source:* member functions begin
   LLRSFUNC(Destroy),     LLRSFUNC(GetDirection), LLRSFUNC(GetElapsed),
   LLRSFUNC(GetGain),     LLRSFUNC(GetLooping),   LLRSFUNC(GetMaxDist),
@@ -258,11 +260,11 @@ LLRSMFBEGIN                            // Source:* member functions begin
   LLRSFUNC(SetPosition), LLRSFUNC(SetRefDist),   LLRSFUNC(SetRelative),
   LLRSFUNC(SetRollOff),  LLRSFUNC(SetVelocity),  LLRSFUNC(Stop),
 LLRSEND                                // Source:* member functions end
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Source.* namespace functions structure                              ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Source.* namespace functions structure                              ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Source.* namespace functions begin
 LLRSEND                                // Source.* namespace functions end
 /* ========================================================================= */

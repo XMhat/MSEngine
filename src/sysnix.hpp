@@ -1,34 +1,29 @@
-/* == SYSNIX.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This is a Linux specific module that allows the engine to talk      ## */
-/* ## to, and manipulate operating system procedures and funtions.        ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == SYSNIX.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This is a Linux specific module that allows the engine to talk      ## **
+** ## to, and manipulate operating system procedures and funtions.        ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
 namespace SysBase {                    // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace Lib::OS;               // Need operating system functions
 /* -- Classes -------------------------------------------------------------- */
 #include "pixbase.hpp"                 // Base system class
 #include "pixcon.hpp"                  // Console terminal window class
 #include "pixmod.hpp"                  // Module information class
 #include "pixmap.hpp"                  // File mapping class
 #include "pixpip.hpp"                  // Process output piping class
-/* -- Namespaces ----------------------------------------------------------- */
-using namespace IfVars;                // Using vars namespace
-using namespace IfFStream;             // Using fstream namespace
-/* == System intialisation helper ========================================== */
-/* ######################################################################### */
-/* ## Because we want to try and statically init const data as much as    ## */
-/* ## possible, we need this class to derive by the System class so we    ## */
-/* ## can make sure these functions are initialised first. Also making    ## */
-/* ## this private prevents us from accessing these functions because     ## */
-/* ## again - they are only for initialisation.                           ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == System intialisation helper ========================================== **
+** ######################################################################### **
+** ## Because we want to try and statically init const data as much as    ## **
+** ## possible, we need this class to derive by the System class so we    ## **
+** ## can make sure these functions are initialised first. Also making    ## **
+** ## this private prevents us from accessing these functions because     ## **
+** ## again - they are only for initialisation.                           ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 class SysProcess                       // Need this before of System init order
 { /* -- Streams ------------------------------------------------- */ protected:
   FStream          fsProcStat;         // Handle to proc/stat (cpu)
@@ -96,7 +91,7 @@ class SysCore :
           const TokenListNC tStats{ strStat, cCommon->Space(), 8 };
           if(tStats.size() >= 3)
           { // We're only interested in the first value
-            memData.stMProcUse = ToNumber<size_t>(tStats[1]) * stPageSize;
+            memData.stMProcUse = StrToNum<size_t>(tStats[1]) * stPageSize;
             // Check for new process peak
             if(memData.stMProcUse > memData.stMProcPeak)
               memData.stMProcPeak = memData.stMProcUse;
@@ -115,8 +110,8 @@ class SysCore :
       memData.qMTotal = siData.totalram,
       memData.qMFree = siData.freeram + siData.bufferram,
       memData.qMUsed = memData.qMTotal - memData.qMFree,
-      memData.stMFree = Minimum(memData.qMFree, 0xFFFFFFFF),
-      memData.dMLoad = MakePercentage(memData.qMUsed, memData.qMTotal);
+      memData.stMFree = UtilMinimum(memData.qMFree, 0xFFFFFFFF),
+      memData.dMLoad = UtilMakePercentage(memData.qMUsed, memData.qMTotal);
     // Failed
     else memData.qMTotal = memData.qMFree = memData.qMUsed = 0,
          memData.stMFree = 0,
@@ -169,10 +164,10 @@ class SysCore :
           const TokenListNC tStats{ strStat, cCommon->Space(), 6 };
           if(tStats.size() >= 5)
           { // Get idle time
-            const clock_t cUserNow = ToNumber<clock_t>(tStats[2]);
-            const clock_t cLowNow = ToNumber<clock_t>(tStats[3]);
-            const clock_t cSystemNow = ToNumber<clock_t>(tStats[4]);
-            const clock_t cIdleNow = ToNumber<clock_t>(tStats[5]);
+            const clock_t cUserNow = StrToNum<clock_t>(tStats[2]);
+            const clock_t cLowNow = StrToNum<clock_t>(tStats[3]);
+            const clock_t cSystemNow = StrToNum<clock_t>(tStats[4]);
+            const clock_t cIdleNow = StrToNum<clock_t>(tStats[5]);
             // Check for valid time
             if(cUserNow < ctUser || cLowNow < ctLow ||
                cSystemNow < ctSystem || cIdleNow < ctIdle)
@@ -187,7 +182,8 @@ class SysCore :
               // Add the idle jiffies to the total jiffies
               cTotal += (cIdleNow - ctIdle);
               // Now we can calculate the true percent
-              cpuUData.fdSystem = MakePercentage(cpuUData.fdSystem, cTotal);
+              cpuUData.fdSystem =
+                UtilMakePercentage(cpuUData.fdSystem, cTotal);
             } // Update new times;
             ctUser = cUserNow, ctLow = cLowNow, ctSystem = cSystemNow,
               ctIdle = cIdleNow;
@@ -229,11 +225,12 @@ class SysCore :
           (lseek64(iFp, static_cast<off64_t>(itP), SEEK_SET)); }
   /* -- Get executable size from header (N/A on Linux) --------------------- */
   static size_t GetExeSize(const string &strFile)
-  { // Machine byte order check
-#if defined(LITTLE_ENDIAN)
-# define ELFDATANATIVE ELFDATA2LSB
-#elif defined(BIG_ENDIAN)
-# define ELFDATANATIVE ELFDATA2MSB
+  { // Machine byte order magic
+    constexpr const unsigned int uiELFDataNative =
+#if defined(LITTLE_ENDIAN)             // Intel, ARM, etc.
+      ELFDATA2LSB;
+#elif defined(BIG_ENDIAN)              // PPC, etc.
+      ELFDATA2MSB;
 #endif
     // Open exe file and return on error
     if(FStream fExe{ strFile, FStream::FM_R_B })
@@ -258,7 +255,7 @@ class SysCore :
               { // We read enough bytes?
                 if(stRead2 == sizeof(ehData32))
                 { // Reverse bytes if not native
-                  if(uiType != ELFDATANATIVE)
+                  if(uiType != uiELFDataNative)
                     ehData.e_shoff = SWAP_U32(ehData32.e_shoff),
                     ehData.e_shentsize = SWAP_U16(ehData32.e_shentsize),
                     ehData.e_shnum = SWAP_U16(ehData32.e_shnum);
@@ -281,7 +278,7 @@ class SysCore :
               { // We read enough bytes?
                 if(stRead2 == sizeof(ehData64))
                 { // Reverse bytes if not native
-                  if(uiType != ELFDATANATIVE)
+                  if(uiType != uiELFDataNative)
                     ehData.e_shoff = SWAP_U64(ehData64.e_shoff),
                     ehData.e_shentsize = SWAP_U16(ehData64.e_shentsize),
                     ehData.e_shnum = SWAP_U16(ehData64.e_shnum);
@@ -314,8 +311,6 @@ class SysCore :
                "Requested", sizeof(ehData), "File", strFile);
     } // Failed to open executable file to read
     else XCL("Failed to open executable!", "File", strFile);
-    // Done with this macro
-#undef ELFDATANATIVE
   }
   /* -- Get executable file name ------------------------------------------- */
   const string GetExeName(void)
@@ -328,7 +323,7 @@ class SysCore :
   /* -- Enum modules ------------------------------------------------------- */
   SysModList EnumModules(void)
   { // Make verison string
-    string strVersion{ Append(sizeof(void*)*8, "-bit version") };
+    string strVersion{ StrAppend(sizeof(void*)*8, "-bit version") };
     // Mod list
     SysModList mlData;
     mlData.emplace(make_pair(static_cast<size_t>(0),
@@ -360,11 +355,10 @@ class SysCore :
     if(strCode[2] == '_') strCode[2] = '-';
     // Return operating system info
     return { utsnData.sysname, cCommon->Blank(),
-      tVersion.empty()    ? 0 : ToNumber<unsigned int>(tVersion[0]),
-      tVersion.size() < 2 ? 0 : ToNumber<unsigned int>(tVersion[1]),
-      tVersion.size() < 3 ? 0 : ToNumber<unsigned int>(tVersion[2]),
-      sizeof(void*)*8, StdMove(strCode), DetectElevation(), false, 0,
-      false };
+      tVersion.empty()    ? 0 : StrToNum<unsigned int>(tVersion[0]),
+      tVersion.size() < 2 ? 0 : StrToNum<unsigned int>(tVersion[1]),
+      tVersion.size() < 3 ? 0 : StrToNum<unsigned int>(tVersion[2]),
+      sizeof(void*)*8, StdMove(strCode), DetectElevation(), false };
   }
   /* ----------------------------------------------------------------------- */
   ExeData GetExecutableData(void) { return { 0, 0, false, false }; }
@@ -376,7 +370,7 @@ class SysCore :
       const string strFile{ fsCpuInfo.FStreamReadStringChunked() };
       if(!strFile.empty())
       { // Parse the variables and if we got some?
-        VarsConst vVars(strFile, GetTextFormat(strFile), ':');
+        VarsConst vVars(strFile, StrGetReturnFormat(strFile), ':');
         if(!vVars.empty())
         { // Read variables
           string strCpuId{ StdMove(vVars["model name"]) },
@@ -386,25 +380,25 @@ class SysCore :
                  strModel{ StdMove(vVars["model"]) },
                  strStepping{ StdMove(vVars["stepping"]) };
           // Return default data we could not read
-          return { strVendor.empty() ? cCommon->Unknown() : StdMove(strVendor),
-                   strCpuId.empty() ? cCommon->Unknown() : StdMove(strCpuId),
+          return { strVendor.empty() ? cCommon->Unspec() : StdMove(strVendor),
+                   strCpuId.empty() ? cCommon->Unspec() : StdMove(strCpuId),
                    strFamily.empty() &&
                    strModel.empty() &&
-                   strStepping.empty() ? cCommon->Unknown() :
-                     StdMove(Format("$ Family $ Model $ Stepping $",
+                   strStepping.empty() ? cCommon->Unspec() :
+                     StdMove(StrFormat("$ Family $ Model $ Stepping $",
                        StdMove(strVendor), StdMove(strFamily),
                        StdMove(strModel), StdMove(strStepping))),
                    thread::hardware_concurrency(),
-                   strSpeed.empty() ? 0 : ToNumber<unsigned int>(strSpeed),
+                   strSpeed.empty() ? 0 : StrToNum<unsigned int>(strSpeed),
                    0, 0 };
         } // Failed to parse cpu variables
         else cLog->LogWarningSafe("Could not parse cpu information file!");
       } // Failed to read cpu info failed
       else cLog->LogWarningExSafe("Could not read cpu information file: $!",
-        LocalError());
+        StrFromErrNo());
     } // Failed to open cpu info file
     else cLog->LogWarningExSafe("Could not open cpu information file: $!",
-      LocalError());
+      StrFromErrNo());
     // Return default data we could not read
     return { "Unknown", "Unknown", "Unknown",
       thread::hardware_concurrency(), 0, 0, 0 };
@@ -421,7 +415,7 @@ class SysCore :
     uint64_t qwAffinity = 0;
     // Fill in the mask
     for(size_t stIndex = 0,
-               stMaximum = Minimum(64, CPU_COUNT(&cstMask));
+               stMaximum = UtilMinimum(64, CPU_COUNT(&cstMask));
                stIndex < stMaximum;
              ++stIndex)
       qwAffinity |= CPU_ISSET(stIndex, &cstMask) << stIndex;
@@ -453,7 +447,7 @@ class SysCore :
   /* -- Help with debugging ------------------------------------------------ */
   const char *HeapCheck(void) const { return "Not implemented!"; }
   /* ----------------------------------------------------------------------- */
-  int LastSocketOrSysError(void) const { return GetErrNo(); }
+  int LastSocketOrSysError(void) const { return StdGetError(); }
   /* -- Build user roaming directory ---------------------------- */ protected:
   const string BuildRoamingDir(void) const
     { return cCmdLine->MakeEnvPath("HOME", "/.local"); }

@@ -1,26 +1,29 @@
-/* == LLSAMPLE.HPP ========================================================= */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Defines the 'Sample' namespace and methods for the guest to use in  ## */
-/* ## Lua. This file is invoked by 'lualib.hpp'.                          ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == LLSAMPLE.HPP ========================================================= **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Defines the 'Sample' namespace and methods for the guest to use in  ## **
+** ## Lua. This file is invoked by 'lualib.hpp'.                          ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 #pragma once                           // Only one incursion allowed
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ========================================================================= */
 // % Sample
 /* ------------------------------------------------------------------------- */
 // ! The sample class allows loading of audio files into a single buffer.
 // ! Samples can also be played with 3D positional audio.
 /* ========================================================================= */
-namespace NsSample {                   // Sample namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfSample;              // Using sample namespace
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+namespace LLSample {                   // Sample namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IPcm::P;               using namespace ISample::P;
+using namespace Lib::OpenAL;
+/* ========================================================================= **
+** ######################################################################### **
+** ## Sample:* member functions                                           ## **
+** ######################################################################### **
+** ========================================================================= */
 // $ Sample:Play
 // > Gain:number=Volume of sample to play at.
 // > Pan:integer=Current 2D position.
@@ -59,20 +62,20 @@ LLFUNCEX(PlayEx, 2, LCGETPTR(1, Sample)->Play(lS));
 // < Count:integer=Number of source buffers stopped;
 // ? Stops playing the specified sample.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Stop, 1, LCPUSHINT(LCGETPTR(1, Sample)->Stop()));
+LLFUNCEX(Stop, 1, LCPUSHVAR(LCGETPTR(1, Sample)->Stop()));
 /* ========================================================================= */
 // $ Sample:Duration
 // < Duration:number=Duration of buffer in seconds
 // ? Returns the duration of the buffer in seconds
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Duration, 1, LCPUSHNUM(LCGETPTR(1, Sample)->GetDuration()));
+LLFUNCEX(Duration, 1, LCPUSHVAR(LCGETPTR(1, Sample)->GetDuration()));
 /* ========================================================================= */
 // $ Sample:Name
 // < Name:string=Name of the sample.
 // ? If this sample was loaded by a filename or it was set with a custom id.
 // ? This function returns that name which was assigned to it.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Name, 1, LCPUSHXSTR(LCGETPTR(1, Sample)->IdentGet()));
+LLFUNCEX(Name, 1, LCPUSHVAR(LCGETPTR(1, Sample)->IdentGet()));
 /* ========================================================================= */
 // $ Sample:Destroy
 // ? Destroys the sample object and frees all the memory associated with it.
@@ -80,11 +83,11 @@ LLFUNCEX(Name, 1, LCPUSHXSTR(LCGETPTR(1, Sample)->IdentGet()));
 // ? generated if accessed.
 /* ------------------------------------------------------------------------- */
 LLFUNC(Destroy, LCCLASSDESTROY(1, Sample));
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Sample:* member functions structure                                 ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Sample:* member functions structure                                 ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Sample:* member functions begin
   LLRSFUNC(Destroy), LLRSFUNC(Duration), LLRSFUNC(Name), LLRSFUNC(Play),
   LLRSFUNC(PlayEx),  LLRSFUNC(Spawn),   LLRSFUNC(Stop),
@@ -96,11 +99,11 @@ LLRSEND                                // Sample:* member functions end
 // ? Loads the specified number of samples and returns a handle.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Create, 1, LCCLASSCREATE(Sample)->InitSample(*LCGETPTR(1, Pcm)));
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Sample.* namespace functions structure                              ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Sample.* namespace functions structure                              ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Sample.* namespace functions begin
   LLRSFUNC(Create),
 LLRSEND                                // Sample.* namespace functions end

@@ -1,16 +1,27 @@
-/* == IMAGE.HPP ============================================================ */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This module defines a class that can load and save image files and  ## */
-/* ## then can optionally be sent to opengl for viewing.                  ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == IMAGE.HPP ============================================================ **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This module defines a class that can load and save image files and  ## **
+** ## then can optionally be sent to opengl for viewing.                  ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfImage {                    // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfImageFormat;         // Using imageformat namespace
+namespace IImage {                     // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IAsset::P;             using namespace IASync::P;
+using namespace ICollector::P;         using namespace IError::P;
+using namespace IEvtMain::P;           using namespace IFileMap::P;
+using namespace IIdent::P;             using namespace IImageDef::P;
+using namespace IImageFormat::P;       using namespace IImageLib::P;
+using namespace ILog::P;               using namespace ILuaUtil::P;
+using namespace IMemory::P;            using namespace IOgl::P;
+using namespace IStd::P;               using namespace IString::P;
+using namespace ISysUtil::P;           using namespace IUtil::P;
+using namespace Lib::OS::GlFW;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* == Image collector and member class ===================================== */
 BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
@@ -66,7 +77,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     // Calculate destination size
     const size_t stDst = TotalPixels() / 8;
     // Must be divisible by eight
-    if(!IsDivisible(static_cast<double>(stDst)))
+    if(!UtilIsDivisible(static_cast<double>(stDst)))
       XC("Image size not divisible by eight!", "Size", stDst);
     // Bits lookup table
     static const array<const unsigned char,8>
@@ -315,7 +326,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     // Set override tile size and count
     duTileOR.DimSet(isFirst);
     // Get maximum texture size allowed
-    const size_t stMaxSize = IfOgl::cOgl->MaxTexSize();
+    const size_t stMaxSize = cOgl->MaxTexSize();
     // Setup compatible types needed to do the compaction
     size_t stTexWidth  = 0,            // Current destination texture width
            stTexHeight = 0,            // Current destination texture height
@@ -678,8 +689,8 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
           cCommon->Blank(),
         dOld.DimGetWidth(), dOld.DimGetHeight(), DimGetWidth(), DimGetHeight(),
         stSlots, GetSlotCount(), bdOld, byOld, GetBitsPerPixel(),
-        GetBytesPerPixel(), IfOgl::cOgl->GetPixelFormat(glOld), hex, glOld,
-        IfOgl::cOgl->GetPixelFormat(GetPixelType()), GetPixelType(), dec,
+        GetBytesPerPixel(), cOgl->GetPixelFormat(glOld), hex, glOld,
+        cOgl->GetPixelFormat(GetPixelType()), GetPixelType(), dec,
         stOld, GetAlloc(), duTileOR.DimGetWidth(), duTileOR.DimGetHeight(),
         stTiles);
   }
@@ -714,14 +725,12 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Load image from memory asynchronously ------------------------------ */
   void InitAsyncArray(lua_State*const lS)
   { // Need 6 parameters (class pointer was already pushed onto the stack);
-    CheckParams(lS, 7);
+    LuaUtilCheckParams(lS, 7);
     // Get and check parameters
-    const string strName{ GetCppStringNE(lS, 1, "Identifier") };
-    Asset &aData = *GetPtr<Asset>(lS, 2, "Asset");
-    FlagSet(GetFlags(lS, 3, IL_MASK, "Flags"));
-    CheckFunction(lS, 4, "ErrorFunc");
-    CheckFunction(lS, 5, "ProgressFunc");
-    CheckFunction(lS, 6, "SuccessFunc");
+    const string strName{ LuaUtilGetCppStrNE(lS, 1, "Identifier") };
+    Asset &aData = *LuaUtilGetPtr<Asset>(lS, 2, "Asset");
+    FlagSet(LuaUtilGetFlags(lS, 3, IL_MASK, "Flags"));
+    LuaUtilCheckFuncs(lS, 4, "ErrorFunc", 5, "ProgressFunc", 6, "SuccessFunc");
     // The decoded image will be kept in memory
     SetDynamic();
     // Load image from memory asynchronously
@@ -730,13 +739,11 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Load image from file asynchronously -------------------------------- */
   void InitAsyncFile(lua_State*const lS)
   { // Need 5 parameters (class pointer was already pushed onto the stack);
-    CheckParams(lS, 6);
+    LuaUtilCheckParams(lS, 6);
     // Get and check parameters
-    const string strFile{ GetCppFileName(lS, 1, "File") };
-    FlagSet(GetFlags(lS, 2, IL_MASK, "Flags"));
-    CheckFunction(lS, 3, "ErrorFunc");
-    CheckFunction(lS, 4, "ProgressFunc");
-    CheckFunction(lS, 5, "SuccessFunc");
+    const string strFile{ LuaUtilGetCppFile(lS, 1, "File") };
+    FlagSet(LuaUtilGetFlags(lS, 2, IL_MASK, "Flags"));
+    LuaUtilCheckFuncs(lS, 3, "ErrorFunc", 4, "ProgressFunc", 5, "SuccessFunc");
     // Load image from file asynchronously
     AsyncInitFile(lS, strFile, "bmpfile");
   }
@@ -923,5 +930,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
 };/* -- End ---------------------------------------------------------------- */
 END_ASYNCCOLLECTOR(Images, Image, IMAGE)
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

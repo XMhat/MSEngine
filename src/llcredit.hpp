@@ -1,23 +1,27 @@
-/* == LLCREDIT.HPP ========================================================= */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Defines the 'Credit' namespace and methods for the guest to use in ## */
-/* ## Lua. This file is invoked by 'lualib.hpp'.                          ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == LLCREDIT.HPP ========================================================= **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Defines the 'Credit' namespace and methods for the guest to use in  ## **
+** ## Lua. This file is invoked by 'lualib.hpp'.                          ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 #pragma once                           // Only one incursion allowed
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ========================================================================= */
 // % Credit
 /* ------------------------------------------------------------------------- */
 // ! Allows access to engine credits information.
 /* ========================================================================= */
-namespace NsCredit {                   // Credit namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfCredit;              // Using credit namespace
-/* ========================================================================= */
+namespace LLCredit {                   // Credit namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace ICredit::P;
+/* ========================================================================= **
+** ######################################################################### **
+** ## Credit.* namespace functions                                        ## **
+** ######################################################################### **
+** ========================================================================= */
 // $ Credit.Credit
 // > Id:integer=The index of the licence.
 // < Name:string=Name of the credit.
@@ -31,8 +35,8 @@ using namespace IfCredit;              // Using credit namespace
 LLFUNCBEGIN(Item)
   const CreditLib &libItem = cCredits->CreditGetItem(
     LCGETINTLGE(CreditEnums, 1, CL_FIRST, CL_MAX, "Id"));
-  LCPUSHXSTR(libItem.GetName());       LCPUSHXSTR(libItem.GetVersion());
-  LCPUSHBOOL(libItem.IsCopyright());   LCPUSHXSTR(libItem.GetAuthor());
+  LCPUSHVAR(libItem.GetName(),     libItem.GetVersion(),
+            libItem.IsCopyright(), libItem.GetAuthor());
 LLFUNCENDEX(4)
 /* ========================================================================= */
 // $ Credit.Licence
@@ -41,19 +45,19 @@ LLFUNCENDEX(4)
 // < Text:string=Full text file of the licence.
 // ? Shows the full licence information of the specified index.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Licence, 1, LCPUSHXSTR(cCredits->CreditGetItemText(
+LLFUNCEX(Licence, 1, LCPUSHVAR(cCredits->CreditGetItemText(
   LCGETINTLGE(CreditEnums, 1, CL_FIRST, CL_MAX, "Id"))));
 /* ========================================================================= */
 // $ Credit.Total
 // < Total:integer=Number of credits used in the executable.
 // ? Returns the number of API's stored in the executable.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Total, 1, LCPUSHINT(cCredits->CreditGetItemCount()));
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Credit.* namespace functions structure                              ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+LLFUNCEX(Total, 1, LCPUSHVAR(cCredits->CreditGetItemCount()));
+/* ========================================================================= **
+** ######################################################################### **
+** ## Credit.* namespace functions structure                              ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Credit.* namespace functions begin
   LLRSFUNC(Item), LLRSFUNC(Licence), LLRSFUNC(Total),
 LLRSEND                                // Credit.* namespace functions end

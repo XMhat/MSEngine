@@ -1,21 +1,32 @@
-/* == FONT.HPP ============================================================= */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This module allows loading and drawing of beautifully rendered      ## */
-/* ## fonts using the FreeType library. There is a lot of code in this    ## */
-/* ## class so it is split apart into different font*.hpp files and will  ## */
-/* ## be included inline and the rest of the code in this file is related ## */
-/* ## to initialisation of the actual font and public metadata retrieval. ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == FONT.HPP ============================================================= **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This module allows loading and drawing of beautifully rendered      ## **
+** ## fonts using the FreeType library. There is a lot of code in this    ## **
+** ## class so it is split apart into different font*.hpp files and will  ## **
+** ## be included inline and the rest of the code in this file is related ## **
+** ## to initialisation of the actual font and public metadata retrieval. ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfFont {                     // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfTexture;             // Using texture namespace
-using namespace IfBin;                 // Using bin namespace
-using namespace IfFtf;                 // Using ftf namespace
+namespace IFont {                      // Start of private namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IAsset::P;             using namespace IBin::P;
+using namespace ICollector::P;         using namespace IDim;
+using namespace IError::P;             using namespace IFbo::P;
+using namespace IFileMap::P;           using namespace IFtf::P;
+using namespace IImageDef::P;          using namespace ILog::P;
+using namespace IMemory::P;            using namespace IOgl::P;
+using namespace IPSplit::P;            using namespace IStd::P;
+using namespace IString::P;            using namespace ISysUtil::P;
+using namespace ITexture::P;           using namespace IToken::P;
+using namespace IUtf;                  using namespace IUtil::P;
+using namespace IVars::P;              using namespace Lib::FreeType;
+using namespace Lib::OS::GlFW;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public namespace
 /* == Font collector class for collector data and custom variables ========= */
 BEGIN_COLLECTOR(Fonts, Font, CLHelperUnsafe)
 /* == Font Variables Class ================================================= */
@@ -212,7 +223,7 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
   /* -- Set size of the font ----------------------------------------------- */
   void SetSize(const GLfloat fNScale)
   { // Set scale
-    fScale = Clamp(fNScale, 0, 1024);
+    fScale = UtilClamp(fNScale, 0, 1024);
     // Update scaled dimensions
     dfScale.DimSet(dfTile.DimGetWidth() * fScale,
                    dfTile.DimGetHeight() * fScale);
@@ -241,7 +252,7 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
   /* -- Do initialise all freetype characters in specified string ---------- */
   void InitFTCharString(const GLubyte*const ucpPtr)
   { // Ignore if string not valid or font not loaded
-    if(!IsCStringValid(ucpPtr) || !ftfData.Loaded()) return;
+    if(UtfIsCStringNotValid(ucpPtr) || !ftfData.Loaded()) return;
     // Do load string characters
     DoInitFTCharStringApplyStroker<HandleGlyphFunc::FreeType>(ucpPtr);
     // Check if any textures need reloading
@@ -252,7 +263,7 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
     const GLuint _uiFilter, const ImageFlagsConst &ffFlags)
   { // Make sure padding isn't negative. We use int because it is optimal for
     // use with the BinPack routines.
-    if(IntWillOverflow<int>(uiPadding))
+    if(UtilIntWillOverflow<int>(uiPadding))
       XC("Invalid padding size!",
          "Identifier", IdentGet(), "Requested",  _uiPadding);
     // Show that we're loading the file
@@ -307,7 +318,7 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
     // alocations
     const size_t stGColumns = DimGetWidth() / duTile.DimGetWidth(),
                  stGRows = DimGetHeight() / duTile.DimGetHeight(),
-                 stGTotal = NearestPow2<size_t>(stGColumns * stGRows);
+                 stGTotal = UtilNearestPow2<size_t>(stGColumns * stGRows);
     // Init bin packer so we can tightly pack glyphs together. We're trying to
     // guess the size of the rlFree and rlUsed structs are too.
     ipData.Init(DimGetWidth(), DimGetHeight(), stGTotal, stGTotal);
@@ -338,7 +349,7 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
     // Strip path name and set descriptor file name
     const PathSplit pathData{ IdentGet() };
     const string strManfiest{
-      Append(pathData.strLoc, pathData.strFile, ".txt") };
+      StrAppend(pathData.strLoc, pathData.strFile, ".txt") };
     // Get the file. It should at least be 3 bytes long
     const FileMap fC{ AssetExtract(strManfiest) };
     // Convert whole file data to a string
@@ -347,7 +358,7 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
       XC("Index file is possibly corrupted!",
          "Identifier", IdentGet(), "Manfiest", strManfiest);
     // Get format of CR/LF in buffer. Throw error if not found
-    const string strTokens{ GetTextFormat(strBuffer) };
+    const string strTokens{ StrGetReturnFormat(strBuffer) };
     if(strTokens.empty())
       XC("Index file format not detected!",
          "Identifier",   IdentGet(), "Manfiest", strManfiest,
@@ -358,8 +369,8 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
       XC("No metadata in index file!",
          "Identifier", IdentGet(), "Manfiest", strManfiest);
     // Get number of characters and offset.
-    const unsigned int uiCharCount = ToNumber<unsigned int>(vC["range"]),
-                       uiCharOffset = ToNumber<unsigned int>(vC["rangestart"]);
+    const unsigned int uiCharCount = StrToNum<unsigned int>(vC["range"]),
+                       uiCharOffset = StrToNum<unsigned int>(vC["rangestart"]);
     if(!uiCharCount)
       XC("Invalid character count in metadata!",
          "Identifier", IdentGet(),   "Manfiest", strManfiest,
@@ -375,8 +386,8 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
     // in the specified range.
     ulDefaultChar =
       (strDefaultChar.length() > 1 && strDefaultChar.front() == '#') ?
-        ToNumber<unsigned int>(strDefaultChar.substr(1)) :
-        Decoder{ strDefaultChar }.Next();
+        StrToNum<unsigned int>(strDefaultChar.substr(1)) :
+        UtfDecoder{ strDefaultChar }.Next();
     if(ulDefaultChar < uiCharOffset || ulDefaultChar >= uiCharEnd)
       XC("Default character index in metadata out of range!",
          "Identifier", IdentGet(),     "Index",   strManfiest,
@@ -384,7 +395,7 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
          "Minimum",    uiCharOffset,   "Maximum", uiCharEnd,
          "Count",      uiCharCount);
     // Get filter
-    uiFilter = ToNumber<unsigned int>(vC["filter"]);
+    uiFilter = StrToNum<unsigned int>(vC["filter"]);
     if(uiFilter > 11)
       XC("Invalid filter index specified in font metadata!",
          "Identifier", IdentGet(), "Filter", uiFilter);
@@ -405,15 +416,15 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
     // Add the starting unused characters
     gvData.resize(uiCharOffset);
     // Read size of tile. Texture init will clamp this if needed.
-    const unsigned int uiTW = ToNumber<unsigned int>(vC["tilewidth"]),
-                       uiTH = ToNumber<unsigned int>(vC["tileheight"]);
+    const unsigned int uiTW = StrToNum<unsigned int>(vC["tilewidth"]),
+                       uiTH = StrToNum<unsigned int>(vC["tileheight"]);
     // Convert to float as we need a float version of this in the next loop
     const GLfloat fW = static_cast<GLfloat>(uiTW),
                   fH = static_cast<GLfloat>(uiTH);
     // Add the characters the manifest file cares about
     transform(svList.cbegin(), svList.cend(), back_inserter(gvData),
       [fW, fH](const string &strWidth)->const Glyph{
-        return { fW,fH, true, ToNumber<GLfloat>(strWidth), 0.0f,0.0f, fW,fH };
+        return { fW,fH, true, StrToNum<GLfloat>(strWidth), 0.0f,0.0f, fW,fH };
       });
     // Now we have the default character we can fill all the unused slots with
     // the default characters data.
@@ -427,8 +438,8 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
     clFirst.reserve(uiCharEnd);
     clFirst.resize(uiCharOffset);
     // Get extra tile padding dimensions. Also clamped by texture class
-    const unsigned int uiPX = ToNumber<unsigned int>(vC["tilespacingwidth"]),
-                       uiPY = ToNumber<unsigned int>(vC["tilespacingheight"]);
+    const unsigned int uiPX = StrToNum<unsigned int>(vC["tilespacingwidth"]),
+                       uiPY = StrToNum<unsigned int>(vC["tilespacingheight"]);
     // Init texture with custom parameters and generate tileset
     InitImage(imSrc, uiTW, uiTH, uiPX, uiPY, uiFilter);
     // Initialise the uninitialised texcoords with the default character that
@@ -437,7 +448,7 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
     StdFill(par_unseq, clFirst.begin(),clFirst.begin()+uiCharOffsetM1, cdRef);
     StdFill(par_unseq, clFirst.begin()+uiCharEnd, clFirst.end(), cdRef);
     // Initialise font scale
-    SetSize(ToNumber<GLfloat>(vC["scale"]));
+    SetSize(StrToNum<GLfloat>(vC["scale"]));
     // Show that we've loaded the file
     cLog->LogInfoExSafe("Font '$' loaded from bitmap (T:$x$;F:$).",
       IdentGet(), uiTW, uiTH, uiFilter);
@@ -477,5 +488,7 @@ static void FontReInitTextures(void)
   cLog->LogInfoExSafe("Fonts re-initialising $ objects.", cFonts->size());
 }
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

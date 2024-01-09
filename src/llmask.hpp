@@ -1,15 +1,15 @@
-/* == LLMASK.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Defines the 'Mask' namespace and methods for the guest to use in    ## */
-/* ## Lua. This file is invoked by 'lualib.hpp'.                          ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == LLMASK.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Defines the 'Mask' namespace and methods for the guest to use in    ## **
+** ## Lua. This file is invoked by 'lualib.hpp'.                          ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 #pragma once                           // Only one incursion allowed
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ========================================================================= */
 // % Mask
 /* ------------------------------------------------------------------------- */
 // ! The mask class is a pixel-perfect 1-bit bitmask processing API which
@@ -17,12 +17,14 @@
 // ! whether the test maybe between two sprites or actual terrain background.
 // ! You can create bitmasks as big as the system will allow.
 /* ========================================================================= */
-namespace NsMask {                     // Mask namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfMask;                // Using mask namespace
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+namespace LLMask {                     // Mask namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IImage::P;             using namespace IMask::P;
+/* ========================================================================= **
+** ######################################################################### **
+** ## Mask:* member functions                                             ## **
+** ######################################################################### **
+** ========================================================================= */
 // $ Mask:IsCollide
 // > SourceId:integer=The sub-mask id to use
 // > SourceX:integer=The X position of the source mask
@@ -36,7 +38,7 @@ using namespace IfMask;                // Using mask namespace
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(IsCollideEx)
   const Mask &mSrc = *LCGETPTR(1, Mask), &mDst = *LCGETPTR(5, Mask);
-  LCPUSHBOOL(mSrc.IsCollide(
+  LCPUSHVAR(mSrc.IsCollide(
     LCGETINTLGE(size_t, 2, 0, mSrc.size(), "SrcID"),
     LCGETINT   (int,    3,                 "SrcXPos"),
     LCGETINT   (int,    4,                 "SrcYPos"), mDst,
@@ -55,7 +57,7 @@ LLFUNCENDEX(1)
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(IsCollide)
   const Mask &mSrc = *LCGETPTR(1, Mask), &mDst = *LCGETPTR(2, Mask);
-  LCPUSHBOOL(mSrc.IsCollide(0, 0, 0, mDst,
+  LCPUSHVAR(mSrc.IsCollide(0, 0, 0, mDst,
     LCGETINTLGE(size_t, 3, 0, mDst.size(), "DestID"),
     LCGETINT   (int,    4,                 "DestXPos"),
     LCGETINT   (int,    5,                 "DestYPos")));
@@ -80,15 +82,13 @@ LLFUNCBEGIN(Raycast)
   const Mask &mSrc = *LCGETPTR(1, Mask), &mDst = *LCGETPTR(5, Mask);
   int iX = LCGETINT(int,  9, "DestXPos");
   int iY = LCGETINT(int, 10, "DestYPos");
-  LCPUSHBOOL(mSrc.Raycast(
+  LCPUSHVAR(mSrc.Raycast(
     LCGETINTLGE(size_t, 2, 0, mSrc.size(), "SrcID"),
     LCGETINT   (int,    3,                 "SrcXPos"),
     LCGETINT   (int,    4,                 "SrcYPos"), mDst,
     LCGETINTLGE(size_t, 6, 0, mDst.size(), "DestID"),
     LCGETINT   (int,    7,                 "DestXPos"),
-    LCGETINT   (int,    8,                 "DestYPos"), *&iX, *&iY));
-  LCPUSHINT(iX);
-  LCPUSHINT(iY);
+    LCGETINT   (int,    8,                 "DestYPos"), *&iX, *&iY), iX, iY);
 LLFUNCENDEX(3)
 /* ========================================================================= */
 // $ Mask:Save
@@ -181,25 +181,25 @@ LLFUNCEND
 // ? If this mask was loaded by a filename or it was set with a custom id.
 // ? This function returns that name which was assigned to it.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Name, 1, LCPUSHXSTR(LCGETPTR(1, Mask)->IdentGet()));
+LLFUNCEX(Name, 1, LCPUSHVAR(LCGETPTR(1, Mask)->IdentGet()));
 /* ========================================================================= */
 // $ Mask:Count
 // < Count:integer=Number of sub-masks in the mask.
 // ? Returns the number of sub-masks in the mask.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Count, 1, LCPUSHINT(LCGETPTR(1, Mask)->size()));
+LLFUNCEX(Count, 1, LCPUSHVAR(LCGETPTR(1, Mask)->size()));
 /* ========================================================================= */
 // $ Mask:Width
 // < Width:integer=Width of each tile in sub-masks.
 // ? Returns the width of each sub-mask in the mask.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Width, 1, LCPUSHINT(LCGETPTR(1, Mask)->DimGetWidth()));
+LLFUNCEX(Width, 1, LCPUSHVAR(LCGETPTR(1, Mask)->DimGetWidth()));
 /* ========================================================================= */
 // $ Mask:Height
 // < Height:integer=Height of each tile in sub-masks.
 // ? Returns the height of each sub-mask in the mask.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Height, 1, LCPUSHINT(LCGETPTR(1, Mask)->DimGetHeight()));
+LLFUNCEX(Height, 1, LCPUSHVAR(LCGETPTR(1, Mask)->DimGetHeight()));
 /* ========================================================================= */
 // $ Mask:Destroy
 // ? destroys the mask and frees all the memory associated with it. The object
@@ -207,11 +207,11 @@ LLFUNCEX(Height, 1, LCPUSHINT(LCGETPTR(1, Mask)->DimGetHeight()));
 // ? if accessed.
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(Destroy) LCCLASSDESTROY(1, Mask); LLFUNCEND
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Mask:* member functions structure                                   ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Mask:* member functions structure                                   ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Mask:* member functions begin
   LLRSFUNC(Clear),   LLRSFUNC(Copy),      LLRSFUNC(Count),
   LLRSFUNC(Destroy), LLRSFUNC(Erase),     LLRSFUNC(Fill),
@@ -257,11 +257,11 @@ LLFUNCEX(Create, 1, LCCLASSCREATE(Mask)->InitFromImage(
  *LCGETPTR (              1,              Image),
   LCGETINTLG(unsigned int, 2, 0, UINT_MAX, "Width"),
   LCGETINTLG(unsigned int, 3, 0, UINT_MAX, "Height")));
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Mask.* namespace functions structure                                ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Mask.* namespace functions structure                                ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Mask.* namespace functions begin
   LLRSFUNC(Create), LLRSFUNC(CreateNew), LLRSFUNC(CreateBlank),
 LLRSEND                                // Mask.* namespace functions end

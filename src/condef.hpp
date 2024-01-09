@@ -1,13 +1,15 @@
-/* == CONDEF.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This module defines console definitions before the console is       ## */
-/* ## created.                                                            ## */
-/* ######################################################################### */
+/* == CONDEF.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This module defines console definitions before the console is       ## **
+** ## created.                                                            ## **
+** ######################################################################### */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfConDef {                   // Start of module namespace
+namespace IConDef {                    // Start of private module namespace
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Colour palette ------------------------------------------------------- */
 enum Colour {                          // Try to match with SysCon colours
   COLOUR_BLACK   /* 00 */, COLOUR_BLUE     /* 01 */, COLOUR_GREEN  /* 02 */,
@@ -38,25 +40,21 @@ typedef ConLines::const_iterator         ConLinesConstIt;    // " fwd const it
 typedef ConLines::reverse_iterator       ConLinesRevIt;      // " reverse it
 typedef ConLines::const_reverse_iterator ConLinesConstRevIt; // " const
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
-/* ===================================================================== */
-namespace IfConLib {                   // Console library namespace
-/* == Notes ================================================================ */
-/* ######################################################################### */
-/* ## We cannot define the Console commands now because we have not       ## */
-/* ## defined the rest of the engine yet so we define this namespace so   ## */
-/* ## we can setup the ability for the Console manager to access the      ## */
-/* ## Console commands here and give us the ability to define the Console ## */
-/* ## command library later on.                                           ## */
-/* ######################################################################### */
-/* == Includes ============================================================= */
-using namespace IfCVarDef;             // Using cvardef namespace
-using namespace IfArgs;                // Using arguments namespace
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## BASE ENGINE COMMANDS DEFINES                                        ## */
-/* ######################################################################### */
+}                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
+/* ========================================================================= */
+namespace IConLib {                    // Console library namespace
+/* ------------------------------------------------------------------------- */
+using namespace IArgs;                 using namespace IConDef::P;
+using namespace ICVarDef::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
+/* ========================================================================= **
+** ######################################################################### **
+** ## BASE ENGINE COMMANDS DEFINES                                        ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 enum ConCmdEnums
 { /* ----------------------------------------------------------------------- */
   CC_ARCHIVES, CC_ARESET,    CC_ASSETS,  CC_AUDINS,  CC_AUDIO,     CC_AUDOUTS,
@@ -76,11 +74,11 @@ enum ConCmdEnums
   /* ----------------------------------------------------------------------- */
   MAX_CONCMD                           // Maximum console commands
 };/* ======================================================================= */
-/* ######################################################################### */
-/* ## BASE ENGINE COMMANDS TYPEDEFS                                       ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
-typedef void (*ConCbFunc)(const Arguments&); // Cmd callback
+/* ######################################################################### **
+** ## BASE ENGINE COMMANDS TYPEDEFS                                       ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
+typedef void (*ConCbFunc)(const Args &); // Cmd callback
 /* ------------------------------------------------------------------------- */
 struct ConLib                          // Console library command structure
 { /* ----------------------------------------------------------------------- */
@@ -92,5 +90,7 @@ struct ConLib                          // Console library command structure
 };/* ----------------------------------------------------------------------- */
 typedef array<const ConLib, MAX_CONCMD> ConCmdStaticList;
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

@@ -1,22 +1,21 @@
-/* == WINBASE.HPP ========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This is a Windows specific module that handles unhandled exceptions ## */
-/* ## and writes debugging information to disk to help resolve bugs.      ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == WINBASE.HPP ========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This is a Windows specific module that handles unhandled exceptions ## **
+** ## and writes debugging information to disk to help resolve bugs.      ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfStat;                // Using stat namespace
 /* == We'll put all these calls in a namespace ============================= */
 class SysBase :                        // Members initially private
   /* -- Base classes ------------------------------------------------------- */
   public Ident                         // Mutex name
 { /* -- Custom exceptions -------------------------------------------------- */
-#define EXCEPTION_ABORT     0xF0000001 // Abornmal program termination
-#define EXCEPTION_ISA       0xF0000002 // Illegal storage access
-#define EXCEPTION_FPOINT    0xF0000003 // Floating point exception
+  static constexpr const DWORD         // Custom exceptions
+    EXCEPTION_ABORT      = 0xF0000001, // Abornmal program termination
+    EXCEPTION_ISA        = 0xF0000002, // Illegal storage access
+    EXCEPTION_FPOINT     = 0xF0000003; // Floating point exception
   /* -- Private typedefs --------------------------------------------------- */
   typedef IdMap<const DWORD> ExCoList; // List of Win32 exception strings
   const ExCoList   eclStrings;         // Exception strings strings
@@ -86,9 +85,9 @@ class SysBase :                        // Members initially private
   }
   /* == Get environment ==================================================== */
   void SEHDumpEnvironment(void) try
-  { // Formatted data
+  { // Prepare formatted data
     Statistic tD;
-    tD.Header("Variable").Header("Value", false);
+    tD.Header("Variable").Header("Value", false).Reserve(10);
     // Get environment strings and if we have them?
     if(wchar_t*const wcpE = GetEnvironmentStrings())
     { // Iterate through the environment lines
@@ -127,6 +126,7 @@ class SysBase :                        // Members initially private
       .Header("Total")
       .Header("Free")
       .Header("Used")
+      .Reserve(5)
       // Process memory
       .Data("Process")
       .DataB(pD.PeakWorkingSetSize, 2)
@@ -195,7 +195,8 @@ class SysBase :                        // Members initially private
       default: return;
     } // For each parameter. Clamping just incase
     for(DWORD dwParam = 0,
-      dwMax = Minimum(erData.NumberParameters, EXCEPTION_MAXIMUM_PARAMETERS);
+      dwMax = UtilMinimum(erData.NumberParameters,
+                EXCEPTION_MAXIMUM_PARAMETERS);
               dwParam < dwMax;
               dwParam += 2)
     { // Write where the access occured
@@ -355,12 +356,12 @@ class SysBase :                        // Members initially private
   catch(const exception &e) { osS << e.what(); }
   /* == Perform process dump =============================================== */
   void SEHProcessDump(void) try
-  { // Data storage
+  { // Prepare formatted data
     Statistic tData;
     tData.Header("Name").Header("Pid").Header("PPid").Header("Thr")
          .Header("Pri").Header("Aff").Header("Version", false)
          .Header("Description", false).Header("Vendor", false)
-         .Header("Path", false);
+         .Header("Path", false).Reserve(10);
     // Storage for filename
     wstring wstrFN; wstrFN.resize(MAX_PATH);
     // Show modules
@@ -389,7 +390,7 @@ class SysBase :                        // Members initially private
           tData.DataN(0)
                .Data("N/A")
                .Data("OpenProcess() failed!")
-               .Data(Append("Error ", SysErrorCode()))
+               .Data(StrAppend("Error ", SysErrorCode()))
                .Data(SysError());
           // Next process
           continue;
@@ -405,7 +406,7 @@ class SysBase :                        // Members initially private
           { // Get version information
             const SysModuleData vD{ StdMove(SysModule(WS16toUTF(wstrFN))) };
             // Push version, description vendor and filename (use .c_str())
-            tData.Data(Format("$.$.$.$",
+            tData.Data(StrFormat("$.$.$.$",
               vD.GetMajor(), vD.GetMinor(), vD.GetRevision(), vD.GetBuild()))
                  .Data(StdMove(vD.GetDesc()))
                  .Data(StdMove(vD.GetVendor()))
@@ -413,7 +414,7 @@ class SysBase :                        // Members initially private
           } // Push blank field, error as description, number and reason
           else tData.Data()
                     .Data("GetModuleFileNameEx() failed!")
-                    .Data(Append("Error ", SysErrorCode()))
+                    .Data(StrAppend("Error ", SysErrorCode()))
                     .Data(SysError());
           // Done with process handle
           CloseHandle(hProcess);
@@ -440,11 +441,11 @@ class SysBase :                        // Members initially private
   catch(const exception &e) { osS << e.what(); }
   /* == Perform module dump ================================================ */
   void SEHModuleDump(void) try
-  { // Data storage
+  { // Prepare formatted data
     Statistic tD;
-    // Prepare formatted data
     tD.Header("Description").Header("Version", false)
-      .Header("Vendor", false).Header("Module", false);
+      .Header("Vendor", false).Header("Module", false)
+      .Reserve(10);
     // Show modules
     HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, 0);
     // Capture exceptions so we can close the handle
@@ -509,7 +510,7 @@ class SysBase :                        // Members initially private
       size_t stFunctions = 0;
       // Walk the stack
       while(StackWalk(IMAGE_FILE_MACHINE, hProcess, hThread, &sfData,
-        ToNonConstCast<PVOID>(&cData), nullptr, SymFunctionTableAccess,
+        UtfToNonConstCast<PVOID>(&cData), nullptr, SymFunctionTableAccess,
         SymGetModuleBase, nullptr))
       { // Add function number
         osS << dec << stFunctions++ << ": ";
@@ -542,7 +543,7 @@ class SysBase :                        // Members initially private
           ihsData))
         { // Get function name
           strName.resize(UnDecorateSymbolName(ihsData->Name,
-            ToNonConstCast<PSTR>(strName.data()),
+            UtfToNonConstCast<PSTR>(strName.data()),
             static_cast<DWORD>(strName.length()), UNDNAME_COMPLETE));
           // Put in output string
           osS << strName << '@';
@@ -844,10 +845,6 @@ class SysBase :                        // Members initially private
     }}
   /* -- Install unhandled exception filter --------------------------------- */
   { SetUnhandledExceptionFilter(HandleExceptionStatic); }
-  /* ----------------------------------------------------------------------- */
-#undef EXCEPTION_APT                   // Done with this macro
-#undef EXCEPTION_ISA                   // Done with this macro
-#undef EXCEPTION_FPE                   // Done with this macro
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(SysBase);            // Suppress copy constructor for safety
 };/* ======================================================================= */

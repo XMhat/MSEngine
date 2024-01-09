@@ -1,26 +1,28 @@
-/* == LLBIN.HPP ============================================================ */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Defines the 'Bin' namespace and methods for the guest to use in     ## */
-/* ## Lua. This file is invoked by 'lualib.hpp'.                          ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == LLBIN.HPP ============================================================ **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Defines the 'Bin' namespace and methods for the guest to use in     ## **
+** ## Lua. This file is invoked by 'lualib.hpp'.                          ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 #pragma once                           // Only one incursion allowed
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ========================================================================= */
 // % Bin
 /* ------------------------------------------------------------------------- */
 // ! This gives the guest to have a virtual bin of the specified size and
 // ! rectangles of a given size are placed inside until filled up.
 /* ========================================================================= */
-namespace NsBin {                      // Bin namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfBin;                 // Using bin namespace
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+namespace LLBin {                      // Bin namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IBin::P;
+/* ========================================================================= **
+** ######################################################################### **
+** ## Bin:* member functions                                              ## **
+** ######################################################################### **
+** ========================================================================= */
 // $ Bin:Insert
 // > Width:integer=The width of the item to insert in units
 // > Height:integer=The height of the item to insert in units
@@ -35,8 +37,8 @@ LLFUNCBEGIN(Insert)
   const Pack<int>::Rect &rData = LCGETPTR(1, Bin)->Insert(
     LCGETINTLGE(unsigned int, 2, 0, numeric_limits<int>::max(), "Width"),
     LCGETINTLGE(unsigned int, 3, 0, numeric_limits<int>::max(), "Height"));
-  LCPUSHINT(rData.CoordGetX());        LCPUSHINT(rData.CoordGetY());
-  LCPUSHINT(rData.DimGetWidth());      LCPUSHINT(rData.DimGetHeight());
+  LCPUSHVAR(rData.CoordGetX(),   rData.CoordGetY(),
+            rData.DimGetWidth(), rData.DimGetHeight());
 LLFUNCENDEX(4)
 /* ========================================================================= */
 // $ Bin:Test
@@ -53,8 +55,8 @@ LLFUNCBEGIN(Test)
   const Pack<int>::Rect &rData = LCGETPTR(1, Bin)->Test(
     LCGETINTLGE(unsigned int, 2, 0, numeric_limits<int>::max(), "Width"),
     LCGETINTLGE(unsigned int, 3, 0, numeric_limits<int>::max(), "Height"));
-  LCPUSHINT(rData.CoordGetX());        LCPUSHINT(rData.CoordGetY());
-  LCPUSHINT(rData.DimGetWidth());      LCPUSHINT(rData.DimGetHeight());
+  LCPUSHVAR(rData.CoordGetX(),   rData.CoordGetY(),
+            rData.DimGetWidth(), rData.DimGetHeight());
 LLFUNCENDEX(4)
 /* ========================================================================= */
 // $ Bin:Enlarge
@@ -65,7 +67,7 @@ LLFUNCENDEX(4)
 // ? a dirty operation. None of the original bounds are modified, only new
 // ? new empty rects are added, i.e. sub-bins to explain it simply.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Enlarge, 1, LCPUSHBOOL(LCGETPTR(1, Bin)->Resize(
+LLFUNCEX(Enlarge, 1, LCPUSHVAR(LCGETPTR(1, Bin)->Resize(
   LCGETINTLGE(unsigned int, 2, 0, numeric_limits<int>::max(), "Width"),
   LCGETINTLGE(unsigned int, 3, 0, numeric_limits<int>::max(), "Height"))));
 /* ========================================================================= */
@@ -73,19 +75,19 @@ LLFUNCEX(Enlarge, 1, LCPUSHBOOL(LCGETPTR(1, Bin)->Resize(
 // < Width:integer=The width of the bin in units
 // ? Returns the width of the bin in units.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Width, 1, LCPUSHINT(LCGETPTR(1, Bin)->DimGetWidth()));
+LLFUNCEX(Width, 1, LCPUSHVAR(LCGETPTR(1, Bin)->DimGetWidth()));
 /* ========================================================================= */
 // $ Bin:Height
 // < Height:integer=The height of the bin in units
 // ? Returns the height of the bin in units.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Height, 1, LCPUSHINT(LCGETPTR(1, Bin)->DimGetHeight()));
+LLFUNCEX(Height, 1, LCPUSHVAR(LCGETPTR(1, Bin)->DimGetHeight()));
 /* ========================================================================= */
 // $ Bin:Occupancy
 // < Height:integer=The height of the bin in units
 // ? Returns the height of the bin in units.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Occupancy, 1, LCPUSHNUM(LCGETPTR(1, Bin)->Occupancy()));
+LLFUNCEX(Occupancy, 1, LCPUSHVAR(LCGETPTR(1, Bin)->Occupancy()));
 /* ========================================================================= */
 // $ Bin:Destroy
 // ? Destroys the bin and frees all the memory associated with it. The object
@@ -93,11 +95,11 @@ LLFUNCEX(Occupancy, 1, LCPUSHNUM(LCGETPTR(1, Bin)->Occupancy()));
 // ? if accessed.
 /* ------------------------------------------------------------------------- */
 LLFUNC(Destroy, LCCLASSDESTROY(1, Bin));
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Bin:* member functions structure                                    ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Bin:* member functions structure                                    ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Bin:* member functions begin
   LLRSFUNC(Destroy),   LLRSFUNC(Insert), LLRSFUNC(Enlarge), LLRSFUNC(Height),
   LLRSFUNC(Occupancy), LLRSFUNC(Test),   LLRSFUNC(Width),
@@ -112,11 +114,11 @@ LLRSEND                                // Bin:* member functions end
 LLFUNCEX(Create, 1, LCCLASSCREATE(Bin)->Init(
   LCGETINTLGE(unsigned int, 1, 0, numeric_limits<int>::max(), "Width"),
   LCGETINTLGE(unsigned int, 2, 0, numeric_limits<int>::max(), "Height")));
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Bin:* namespace functions structure                                 ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Bin:* namespace functions structure                                 ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Bin.* namespace functions begin
   LLRSFUNC(Create),
 LLRSEND                                // Bin.* namespace functions end

@@ -1,21 +1,37 @@
-/* == UTF.HPP ============================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This module defines a class that allows whole text buffers to be    ## */
-/* ## parsed for key/value pairs (i.e. k1=v1\nk2=v2) and places them      ## */
-/* ## into a c++ map class for quick access.                              ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == UTF.HPP ============================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This module defines a class that allows whole text buffers to be    ## **
+** ## parsed for key/value pairs (i.e. k1=v1\nk2=v2) and places them      ## **
+** ## into a c++ map class for quick access.                              ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfUtf {                      // Start of module namespace
-/* -- Lookup table for decoder --------------------------------------------- */
-/* ######################################################################### */
-/* ## The first part of the table maps bytes to character classes to      ## */
-/* ## reduce the size of the transition table and create bitmasks.        ## */
-/* ######################################################################### */
-static const array<const unsigned int,256> uiaDecodeLookupData{
+namespace IUtf {                       // Start of module namespace
+/* -- Remove const from a pointer ------------------------------------------ */
+template<typename TypeTo, typename TypeFrom, typename TypeNonConst =
+  typename remove_const<typename remove_pointer<TypeFrom>::type>::type*>
+static TypeTo UtfToNonConstCast(TypeFrom tfV)
+{ // Check that type has a pointer
+  static_assert(is_pointer_v<TypeFrom>, "Input type must have pointer!");
+  // Do the const and reinterpret cast!
+  return reinterpret_cast<TypeTo>(const_cast<TypeNonConst>(tfV));
+}
+/* -- Check if C-string is nullptr or blank -------------------------------- */
+template<typename PtrType>
+  static bool UtfIsCStringValid(const PtrType*const ptCStr)
+    { return ptCStr && *ptCStr; }
+template<typename PtrType>
+  static bool UtfIsCStringNotValid(const PtrType*const ptCStr)
+    { return !UtfIsCStringValid<PtrType>(ptCStr); }
+/* -- Lookup table for decoder --------------------------------------------- **
+** ######################################################################### **
+** ## The first part of the table maps bytes to character classes to      ## **
+** ## reduce the size of the transition table and create bitmasks.        ## **
+** ######################################################################### */
+static const array<const unsigned int,256> uiaDecodeMap{
    0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
    0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
    0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
@@ -25,26 +41,22 @@ static const array<const unsigned int,256> uiaDecodeLookupData{
    8,8,2,2,2,2,2,2, 2,2,2,2,2,2,2,2,  2,2,2,2,2,2,2,2, 2,2,2,2,2,2,2,2,
   10,3,3,3,3,3,3,3, 3,3,3,3,3,4,3,3, 11,6,6,6,5,8,8,8, 8,8,8,8,8,8,8,8
 };
-/* ######################################################################### */
-/* ## The second part is a transition table that maps a combination of a  ## */
-/* ## state of the automaton and a character class to a state.            ## */
-/* ######################################################################### */
-static const array<const unsigned int,108> uiaDecodeLookupDataX{
+/* ######################################################################### **
+** ## The second part is a transition table that maps a combination of a  ## **
+** ## state of the automaton and a character class to a state.            ## **
+** ######################################################################### */
+static const array<const unsigned int,108> uiaDecodeTransition{
    0,12,24,36,60,96,84,12, 12,12,48,72,12,12,12,12, 12,12,12,12,12,12,12,12,
   12, 0,12,12,12,12,12, 0, 12, 0,12,12,12,24,12,12, 12,12,12,24,12,24,12,12,
   12,12,12,12,12,12,12,24, 12,12,12,12,12,24,12,12, 12,12,12,12,12,24,12,12,
   12,12,12,12,12,12,12,36, 12,36,12,12,12,36,12,12, 12,12,12,36,12,36,12,12,
   12,36,12,12,12,12,12,12, 12,12,12,12
 };
-/* -- Structure for utf encoder -------------------------------------------- */
-// These Encoder(Ex) structs help facilitate the returning of encoded UTF8
-// strings. The compiler will most probably just optimise them into uint64_t's
-// on the stack which will be really fast.
-union Encoder { const uint8_t u8[5]; const char c[5]; };
-/* -- Structure for utf encoder and size ----------------------------------- */
-struct EncoderEx { const size_t l; const Encoder u; };
+/* -- Structure for utf size and character code ---------------------------- */
+struct UtfEncoderEx { const size_t l;
+  const union { const uint8_t u8[5]; const char c[5]; } u; };
 /* -- Encode specified code and return string and size --------------------- */
-static const EncoderEx EncodeEx(const unsigned int uiC)
+static const UtfEncoderEx UtfEncodeEx(const unsigned int uiC)
 { // Normal ASCII character?
   if(uiC < 0x80) return
     { 1, {{ static_cast<uint8_t>(((uiC>>0)&0x7F)), 0, 0, 0, 0 }}};
@@ -67,25 +79,25 @@ static const EncoderEx EncodeEx(const unsigned int uiC)
   return { 0, {{ 0, 0, 0, 0, 0 }} };
 }
 /* -- Encode specified code and append it to the specified string ---------- */
-static void AppendString(const unsigned int uiChar, string &strDest)
+static void UtfAppend(const unsigned int uiChar, string &strDest)
 { // Encoded UTF8
-  const EncoderEx utfCode{ EncodeEx(uiChar) };
+  const UtfEncoderEx utfCode{ UtfEncodeEx(uiChar) };
   // Append to string
   strDest.append(utfCode.u.c, utfCode.l);
 }
 /* ------------------------------------------------------------------------- */
-static void Decode(unsigned int &uiState, unsigned int &uiCode,
+static void UtfDecode(unsigned int &uiState, unsigned int &uiCode,
   const unsigned char ucByte)
 { // Get type from lookup table
-  const unsigned int uiType = uiaDecodeLookupData[ucByte];
+  const unsigned int uiType = uiaDecodeMap[ucByte];
   // Calculate the utf code
   uiCode = uiState ? (ucByte & 0x3fu) | (uiCode << 6) :
                      (0xff >> uiType) & ucByte;
   // Update the new state of the code
-  uiState = uiaDecodeLookupDataX[uiState + uiType];
+  uiState = uiaDecodeTransition[uiState + uiType];
 }
 /* ------------------------------------------------------------------------- */
-static const string DecodeNum(uint32_t dwVal)
+static const string UtfDecodeNum(uint32_t dwVal)
 { // Unset the un-needed upper 8-bits. This will act as the nullptr character.
   dwVal &= 0x00FFFFFF;
   // If we have any of the lower 24-bits set? Keep shifting the bits until the
@@ -95,29 +107,20 @@ static const string DecodeNum(uint32_t dwVal)
   // Return the shifted value casted to a char pointer address.
   return { reinterpret_cast<const char*>(&dwVal) };
 }
-/* -- Remove const from a pointer ------------------------------------------ */
-template<typename TypeTo, typename TypeFrom, typename TypeNonConst =
-  typename remove_const<typename remove_pointer<TypeFrom>::type>::type*>
-static TypeTo ToNonConstCast(TypeFrom tfV)
-{ // Check that type has a pointer
-  static_assert(is_pointer_v<TypeFrom>, "Input type must have pointer!");
-  // Do the const and reinterpret cast!
-  return reinterpret_cast<TypeTo>(const_cast<TypeNonConst>(tfV));
-}
 /* -- Pop UTF character from start of string-------------------------------- */
-static bool PopFront(string &strStr)
+static bool UtfPopFront(string &strStr)
 { // String is not empty?
   if(!strStr.empty())
   { // Get start and end of buffer in string
     const unsigned char*const cpB =
-      ToNonConstCast<unsigned char*>(strStr.data()),
+      UtfToNonConstCast<unsigned char*>(strStr.data()),
         *const cpE = cpB + strStr.size();
     // Set start of string as enumerator
     unsigned char *cpI = const_cast<unsigned char*>(cpB);
     // Utf state and return code
     unsigned int uiState = 0;
     // Walk through the string until we get to a null terminator
-    do uiState = uiaDecodeLookupDataX[uiState + uiaDecodeLookupData[*cpI]];
+    do uiState = uiaDecodeTransition[uiState + uiaDecodeMap[*cpI]];
       while(++cpI < cpE && uiState);
     // If pointer moved?
     if(cpI >= cpB)
@@ -130,7 +133,7 @@ static bool PopFront(string &strStr)
   return false;
 }
 /* -- Pop UTF character from end of string --------------------------------- */
-static bool PopBack(string &strStr)
+static bool UtfPopBack(string &strStr)
 { // String is not empty?
   if(!strStr.empty())
   { // Get start of buffer and end of buffer
@@ -148,7 +151,7 @@ static bool PopBack(string &strStr)
   return false;
 }
 /* -- Move UTF character from back of one string to the front of another --- */
-static bool MoveBackToFront(string &strSrc, string &strDst)
+static bool UtfMoveBackToFront(string &strSrc, string &strDst)
 { // If string is not empty?
   if(!strSrc.empty())
   { // Get start of buffer and end of buffer
@@ -170,19 +173,19 @@ static bool MoveBackToFront(string &strSrc, string &strDst)
   return false;
 }
 /* -- Move UTF character from front of one string to the back of another --- */
-static bool MoveFrontToBack(string &strSrc, string &strDst)
+static bool UtfMoveFrontToBack(string &strSrc, string &strDst)
 { // If the string is not empty?
   if(!strSrc.empty())
   { // Get start and end of buffer
     const unsigned char*const cpB =
-      ToNonConstCast<unsigned char*>(strSrc.data()),
+      UtfToNonConstCast<unsigned char*>(strSrc.data()),
         *const cpE = cpB + strSrc.size();
     // Set start of string as enumerator
     unsigned char *cpI = const_cast<unsigned char*>(cpB);
     // Utf state and return code
     unsigned int uiState = 0, uiCode = 0;
     // Walk through the string until we get to a null terminator
-    do Decode(uiState, uiCode, *cpI);
+    do UtfDecode(uiState, uiCode, *cpI);
       while(++cpI < cpE && uiState);
     // Get size to remove
     const size_t stBytes = static_cast<size_t>(cpI - cpB);
@@ -198,22 +201,18 @@ static bool MoveFrontToBack(string &strSrc, string &strDst)
   } // Return failure
   return false;
 }
-/* -- Check if string is nullptr or blank ---------------------------------- */
-template<typename T=char>static bool IsCStringValid(const T*const tPtr)
-  { return tPtr && *tPtr; }
-// static const char *IfBlank(const char*const cpIn, const char*const cpAlt)
-//  { return cpIn && IsCStringValid(cpIn) ? cpIn : cpAlt; }
 /* == Convert a unicode or ansi string to UTF8 ----------------------------- */
 template<typename CharType>
-  static const string FromWideStringPtr(const CharType *ctPtr)
+  static const string UtfFromWide(const CharType *ctPtr)
 { // Empty string if nullptr or string empty
-  if(!IsCStringValid<CharType>(ctPtr)) return {};
+  if(UtfIsCStringNotValid<CharType>(ctPtr)) return {};
   // Output string
   string strOut;
   // For each character. Get character and convert to UTF8
   do
   { // Encode character
-    const EncoderEx utfCode{ EncodeEx(static_cast<unsigned int>(*ctPtr)) };
+    const UtfEncoderEx
+      utfCode{ UtfEncodeEx(static_cast<unsigned int>(*ctPtr)) };
     // Append to string
     strOut.append(utfCode.u.c, utfCode.l);
     // Until end of string
@@ -222,7 +221,7 @@ template<typename CharType>
   return strOut;
 }
 /* -- UTF8 decoder helper class -------------------------------------------- */
-class Decoder                          // UTF8 string decoder helper
+class UtfDecoder                        // UTF8 string decoder helper
 { /* ----------------------------------------------------------------------- */
   const unsigned char *ucpStr, *ucpPtr; // String and pointer to that string
   /* -- Iterator --------------------------------------------------- */ public:
@@ -230,7 +229,7 @@ class Decoder                          // UTF8 string decoder helper
   { // Walk through the string until we get to a null terminator
     for(unsigned int uiState = 0, uiCode = 0; *ucpPtr > 0; ++ucpPtr)
     { // Decode the specified character
-      Decode(uiState, uiCode, *ucpPtr);
+      UtfDecode(uiState, uiCode, *ucpPtr);
       // Ignore if we haven't got a valid UTF8 character yet.
       if(uiState) continue;
       // Move position onwards
@@ -354,26 +353,26 @@ class Decoder                          // UTF8 string decoder helper
     return wstrOut;
   }
   /* -- Constructors that copy the address of the allocated text ----------- */
-  explicit Decoder(const char*const ucpSrc) :
+  explicit UtfDecoder(const char*const ucpSrc) :
     /* -- Initialisers ----------------------------------------------------- */
     ucpStr(reinterpret_cast<const unsigned char*>(ucpSrc)),
     ucpPtr(ucpStr)
     /* -- No code ---------------------------------------------------------- */
     { }
-  explicit Decoder(const unsigned char*const ucpSrc) :
+  explicit UtfDecoder(const unsigned char*const ucpSrc) :
     /* -- Initialisers ----------------------------------------------------- */
     ucpStr(ucpSrc),
     ucpPtr(ucpStr)
     /* -- No codes --------------------------------------------------------- */
     { }
-  explicit Decoder(const string &strStr) :
+  explicit UtfDecoder(const string &strStr) :
     /* -- Initialisers ----------------------------------------------------- */
     ucpStr(reinterpret_cast<const unsigned char*>(strStr.c_str())),
     ucpPtr(ucpStr)
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* -- Word wrap a utf string --------------------------------------------- */
-static const StrVector WordWrap(const string &strText, const size_t stWidth,
+static const StrVector UtfWordWrap(const string &strText, const size_t stWidth,
   const size_t stIndent)
 { // Return empty array if width is invalid.
   if(!stWidth || stWidth <= stIndent) return {};
@@ -385,7 +384,7 @@ static const StrVector WordWrap(const string &strText, const size_t stWidth,
   // Premade indent
   string strIndent;
   // Make string into utf string
-  Decoder utfString{ strText };
+  UtfDecoder utfString{ strText };
   // Save position
   const unsigned char*const ucpString = utfString.GetCString();
   const unsigned char *ucpStart = utfString.GetCPtr(),
@@ -434,5 +433,5 @@ static const StrVector WordWrap(const string &strText, const size_t stWidth,
   return dqList;
 }
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of module namespace
 /* == EoF =========================================================== EoF == */

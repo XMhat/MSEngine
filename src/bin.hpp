@@ -1,18 +1,21 @@
-/* == BIN.HPP ============================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This module handles packing of 2D rectangles into a limited         ## */
-/* ## rectangular space.                                                  ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == BIN.HPP ============================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This module handles packing of 2D rectangles into a limited         ## **
+** ## rectangular space.                                                  ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfBin {                      // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfCollector;           // Using collector namespace
-using namespace IfDim;                 // Using dimensions namespace
-/* ========================================================================= */
+namespace IBin {                       // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace ICollector::P;         using namespace IDim;
+using namespace IIdent::P;             using namespace IStd::P;
+using namespace ISysUtil::P;           using namespace IUtil::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
+/* ------------------------------------------------------------------------- */
 template<typename IntType=int,         // Unsigned type not allowed!
          typename Int=typename make_signed<IntType>::type,
          typename UInt=typename make_unsigned<IntType>::type,
@@ -44,8 +47,8 @@ class Pack :
       if(rNode.DimGetWidth() < iW || rNode.DimGetHeight() < iH) continue;
       const Int iLeftOverHoriz = abs(rNode.DimGetWidth() - iW),
                 iLeftOverVert = abs(rNode.DimGetHeight() - iH),
-                iShortSideFit = Minimum(iLeftOverHoriz, iLeftOverVert),
-                iLongSideFit = Maximum(iLeftOverHoriz, iLeftOverVert);
+                iShortSideFit = UtilMinimum(iLeftOverHoriz, iLeftOverVert),
+                iLongSideFit = UtilMaximum(iLeftOverHoriz, iLeftOverVert);
       if(iShortSideFit < iBestShortSideFit ||
         (iShortSideFit == iBestShortSideFit &&
          iLongSideFit < iBestLongSideFit))
@@ -102,7 +105,7 @@ class Pack :
     if(rlFree.capacity() - rlFree.size() < 4)
     { // Not enough room so try to reserve up to four more items. Reserve()
       // will not grow exponentially so we should handle that instead.
-      rlFree.reserve(NearestPow2<size_t>(rlFree.size() + 4));
+      rlFree.reserve(UtilNearestPow2<size_t>(rlFree.size() + 4));
       // Do the split with a NEW evaluation of rlFree[stIndex] as again, the
       // address of rlFree[stIndex] may have changed!
       SplitFreeNodeUnsafe(rlFree[stIndex], rUsed,
@@ -287,5 +290,7 @@ BEGIN_COLLECTORDUO(Bins, Bin, CLHelperUnsafe, ICHelperUnsafe),
 };/* ----------------------------------------------------------------------- */
 END_COLLECTOR(Bins)                    // End of bin objects collector
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

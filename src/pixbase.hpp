@@ -1,16 +1,14 @@
-/* == PIXBASE.HPP ========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This is a POSIX specific module that handles unhandled exceptions   ## */
-/* ## and writes debugging information to disk to help resolve bugs.      ## */
-/* ## Since we support MacOS and Linux, we can support both systems very  ## */
-/* ## simply with POSIX compatible calls.                                 ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == PIXBASE.HPP ========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This is a POSIX specific module that handles unhandled exceptions   ## **
+** ## and writes debugging information to disk to help resolve bugs.      ## **
+** ## Since we support MacOS and Linux, we can support both systems very  ## **
+** ## simply with POSIX compatible calls.                                 ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* -- STL Includes --------------------------------------------------------- */
-using namespace IfStat;                // Using stat namespace
 /* -- Signals to support --------------------------------------------------- */
 static array<pair<const int,void(*)(int)>,14>iaSignals{ {
   { SIGABRT, nullptr }, { SIGBUS,  nullptr },
@@ -64,7 +62,7 @@ class SysBase :                        // Safe exception handler namespace
     // Create the semaphore and if the creation failed?
     if(shm_open(strTitle.c_str(), O_CREAT | O_EXCL, 0) == -1)
     { // If it was because it already exists?
-      if(IsErrNo(EEXIST) || IsErrNo(EACCES))
+      if(StdIsError(EEXIST) || StdIsError(EACCES))
       { // Put in log that another instance of this application is running
         cLog->LogWarningSafe(
          "System detected another instance of this application running.");
@@ -102,23 +100,40 @@ class SysBase :                        // Safe exception handler namespace
         // Ignore anything else
         default: break;
       }
-    } // Now tokenise it with a maximum of four cells
-    const Token tokData{ strLine, " ", 5 };
-    staData.Data(tokData.size() >= 2 ? tokData[1] : cCommon->Blank())
-           .Data(tokData.size() >= 5 ? tokData[4] : cCommon->Blank());
-    // Get information about the item and if failed?
+    } // Now tokenise it. Note that objc calls will have spaces in them but
+    // the last two tokens should always be a + and a number which we will
+    // grab.
+    const Token tokData{ strLine, " " };
+    switch(tokData.size())
+    { // Not enough data?
+      case  0: staData.Data(cCommon->Unspec()).Data(cCommon->Unspec());
+               break;
+      case  1: staData.Data(tokData.front()).Data(cCommon->Unspec());
+               break;
+      case  2: staData.Data(tokData[1]).Data(cCommon->Unspec());
+               break;
+      case  3: staData.Data(tokData[1]).Data(tokData[2]);
+               break;
+      case  4: staData.Data(tokData[1]).Data(tokData[3]);
+               break;
+      case  5: staData.Data(tokData[1])
+                      .Data(StrAppend(tokData[3], ' ', tokData[4]));
+               break;
+      // Expected amount for a C/C++ call. Just show the + amount
+      default: staData.Data(tokData[1])
+                      .Data(StrAppend(tokData[2], '+', tokData.back()));
+               break;
+    } // Get information about the item and if failed?
     if(!dladdr(vpStack, &diData))
-    { // Get information about the item and if failed?
-      staData.Data(tokData.size() >= 4 ? tokData[3] : cCommon->Blank());
-      // Done
+    { // Just add unknown and try the next function level
+      staData.Data(cCommon->Unspec());
       return;
     }
 #else
     // Get information about the item and if failed?
     if(!dladdr(vpStack, &diData))
-    { // Add
-      staData.Data().Data().Data(cpStack);
-      // Goto next item on stack
+    { // Just add unknown and try the next function level
+      staData.Data().Data().Data(cCommon->Unspec());
       return;
     }
 #endif
@@ -132,7 +147,7 @@ class SysBase :                        // Safe exception handler namespace
         nullptr, nullptr, &iStatus), free })
           staData.Data(uPtr.get());
     // Process error code
-    else staData.Data(Format("<$:$>", iStatus, diData.dli_sname));
+    else staData.Data(StrFormat("<$:$>", iStatus, diData.dli_sname));
   }
   /* ----------------------------------------------------------------------- */
   void DumpStack(ostringstream &osS) const
@@ -143,16 +158,18 @@ class SysBase :                        // Safe exception handler namespace
               iSize = backtrace(vaArray.data(), iMaxFrames);
     // Spreadsheet formatter
     Statistic staData;
-    staData.Header("#").Header("Module").Header("Source")
+    staData.Header("#").Header("Module").Header("Address")
            .Header("Function", false);
     // Get stack trace. For some reason, GCC on Linux doesn't like
     // decltype(free) but void(void*) works.
     if(unique_ptr<char*, function<void(void*)>> uStack{
       backtrace_symbols(vaArray.data(), iSize), free })
-    { // Write pointer address and name
-      for(size_t stI = 0, stSize = static_cast<size_t>(iSize);
-                 stI < stSize;
-               ++stI)
+    { // Convert entries to size_t
+      const size_t stSize = static_cast<size_t>(iSize);
+      // Reserve specified number of rows in output table
+      staData.Reserve(stSize);
+      // Write pointer address and name
+      for(size_t stI = 0; stI < stSize; ++stI)
       { // Add ID
         staData.DataN(stI);
         // Add others
@@ -171,7 +188,8 @@ class SysBase :                        // Safe exception handler namespace
     // Prepare headers
     Statistic staData;
     staData.Header("DESCRIPTION").Header("VERSION", false)
-         .Header("VENDOR", false).Header("MODULE", false);
+           .Header("VENDOR", false).Header("MODULE", false)
+           .Reserve(size());
     // list modules
     for(const auto &mD : *this)
     { // Get mod data
@@ -184,7 +202,7 @@ class SysBase :                        // Safe exception handler namespace
   /* ----------------------------------------------------------------------- */
   ExitState DebugMessage(const char*const cpSignal, const char*const cpExtra)
   { // Build filename
-    string strFileName{ cCmdLine ? Append(cCmdLine->GetCArgs()[0], ".dbg") :
+    string strFileName{ cCmdLine ? StrAppend(cCmdLine->GetCArgs()[0], ".dbg") :
       "/tmp/msengine-crash.txt" };
     // Begin message
     ostringstream osS;
@@ -204,7 +222,7 @@ class SysBase :                        // Safe exception handler namespace
     // Now add the buffer lines
     cLog->GetBufferLines(osS);
     // Write the output and close the log
-    const string strMsg{ Append(osS.str(), '\n') };
+    const string strMsg{ StrAppend(osS.str(), '\n') };
     // Message box string
     ostringstream osTS;
     osTS << "Received signal SIG" << cpSignal << " at " << cmSys.FormatTime()
@@ -354,7 +372,7 @@ class SysBase :                        // Safe exception handler namespace
       // Sent when we grow a file larger than the maximum allowed size.
       case SIGXFSZ: return DebugMessage("XFSZ (File size threshold)");
       // Unrecognised signal?
-      default: return DebugMessage(Format("UNKNOWN<$>", iSignal).c_str());
+      default: return DebugMessage(StrFormat("UNKNOWN<$>", iSignal).c_str());
     }
   }
   /* ----------------------------------------------------------------------- */
@@ -442,7 +460,7 @@ class SysBase :                        // Safe exception handler namespace
         break;
     } // Clamp the value
     spParam.sched_priority =
-      IfUtil::Clamp(spParam.sched_priority, iMinPriority, iMaxPriority);
+      UtilClamp(spParam.sched_priority, iMinPriority, iMaxPriority);
     // Set the new parameters and return true if succeeded
     return !pthread_setschedparam(ptHandle, iPolicy, &spParam);
   }
@@ -465,7 +483,7 @@ class SysBase :                        // Safe exception handler namespace
     for(auto &aSignal : iaSignals)
       if(signal(aSignal.first, aSignal.second) == SIG_ERR && cLog)
         cLog->LogWarningExSafe("Failed to restore signal $ handler! $.",
-          aSignal.first, LocalError());
+          aSignal.first, StrFromErrNo());
     // Delete global mutex
     DeleteGlobalMutex();
   }

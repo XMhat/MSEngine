@@ -1,13 +1,12 @@
-/* == PIXPIP.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This is a POSIX specific module that will assist in executing a new ## */
-/* ## process and capturing it's output into a buffer. Since we support   ## */
-/* ## MacOS and Linux, we can support both systems very simply with POSIX ## */
-/* ## compatible calls.                                                   ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == PIXPIP.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This is a POSIX specific module that will assist in executing a new ## **
+** ## process and capturing its output into a buffer. Since this means    ## **
+** ## MacOS and Linux, we can support both systems very easily.           ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* == System pipe class ==================================================== */
 class SysPipe :
@@ -75,37 +74,35 @@ class SysPipe :
   Handles          haParentToChild;    // Parent-to-child handles
   /* -- Kill an wait for pid ----------------------------------------------- */
   int DeInit(void)
-  { // Return if no pid
+  { // Return result
     int iResult;
+    // If we have a spawned process?
     if(pPid)
-    { // Kill the pid and if failed?
+    { // Kill the pid and if failed? Write failure to log
       iResult = kill(pPid, SIGTERM);
       if(iResult)
-      { // Write failure to log
         cLog->LogWarningExSafe("System failed to send SIGTERM to pid $: $!",
-          pPid, LocalError());
-      } // Kill succeeded?
-      else
-      { // Write success to log
-        cLog->LogDebugExSafe("System sent SIGTERM to pid $ with result $<$$>.",
+          pPid, StrFromErrNo());
+      // Kill succeeded? Write success to log
+      else cLog->LogDebugExSafe(
+        "System sent SIGTERM to pid $ with result $<$$>.",
           pPid, SysPipeBaseGetStatus(), hex, SysPipeBaseGetStatus());
-      } // Wait for the pid to terminate
+      // Wait for the pid to terminate
       do pPid = waitpid(pPid, &iResult, 0);
-        while(pPid == -1 && IsErrNo(EINTR));
+        while(pPid == -1 && StdIsError(EINTR));
       // Write error if there is one
       if(pPid == -1)
-      { // Write reason to log
         cLog->LogWarningExSafe("System failed to wait for pid $: $!", pPid,
-          LocalError());
-      } // Set return value
+          StrFromErrNo());
+      // Set return value
       else SysPipeBaseSetStatus(static_cast<int64_t>(WEXITSTATUS(iResult)));
-    } // Failed
+    } // Return failure
     else iResult = -1;
     // Return failure
     return iResult;
   }
   /* -- Initialise arguments list ------------------------------------------ */
-  void InitArgs(const string &strCmdLine, const Arguments &aList,
+  void InitArgs(const string &strCmdLine, const Args &aList,
     const ValidType vtId)
   { // Get the program filename and check it
     const string &strApp = aList.front();
@@ -195,8 +192,7 @@ class SysPipe :
   }
   /* -- Constructor with init ---------------------------------------------- */
   void Init(const string &strCmdLine, const ValidType vtId=VT_UNTRUSTED)
-    { if(const Arguments aList{ strCmdLine })
-        InitArgs(strCmdLine, aList, vtId); }
+    { if(const Args aList{ strCmdLine }) InitArgs(strCmdLine, aList, vtId); }
   /* -- Finished sending --------------------------------------------------- */
   void SendFinish(void)
   { // Ignore if write handle already closed
@@ -221,7 +217,7 @@ class SysPipe :
         // Return bytes
         return stRead;
       // Error? Report it!
-      case string::npos:
+      case StdMaxSizeT:
         XCS("Error reading from pipe!",
           "Executable", IdentGet(), "Bytes", stToRead);
     } // Don't get here
@@ -250,7 +246,7 @@ class SysPipe :
         // Return bytes written
         return stWritten;
       // Error? Report it!
-      case string::npos:
+      case StdMaxSizeT:
         XCS("Error writing to pipe!",
           "Executable", IdentGet(), "Bytes", stToWrite);
     } // Don't get here

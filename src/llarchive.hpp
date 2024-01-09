@@ -1,15 +1,15 @@
-/* == LLARCHIVE.HPP ======================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Defines the 'Archive' namespace and methods for the guest to use in ## */
-/* ## Lua. This file is invoked by 'lualib.hpp'.                          ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == LLARCHIVE.HPP ======================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Defines the 'Archive' namespace and methods for the guest to use in ## **
+** ## Lua. This file is invoked by 'lualib.hpp'.                          ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 #pragma once                           // Only one incursion allowed
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ========================================================================= */
 // % Archive
 /* ------------------------------------------------------------------------- */
 // ! The archive class allows the programmer to load 7-zip archives into the
@@ -31,12 +31,14 @@
 // ! that encrypted or split archives are not supported yet as these features
 // ! are not handled by the LZMA library.
 /* ========================================================================= */
-namespace NsArchive {                  // Archive namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfArchive;             // Using archive namespace
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+namespace LLArchive {                  // Archive namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IArchive::P;
+/* ========================================================================= **
+** ######################################################################### **
+** ## Archive:* member functions                                          ## **
+** ######################################################################### **
+** ========================================================================= */
 // $ Archive:Dir
 // > Id:integer=Zero-index id of the directory
 // < Name:string=The filename of the directory inside the archive
@@ -47,8 +49,7 @@ LLFUNCBEGIN(Dir)
   const Archive &aCref = *LCGETPTR(1, Archive);
   const StrUIntMapConstIt &itDir = aCref.GetDir(LCGETINTLGE(size_t,
     2, 0, aCref.GetDirList().size(), "Index"));
-  LCPUSHXSTR(itDir->first);
-  LCPUSHINT(itDir->second);
+  LCPUSHVAR(itDir->first, itDir->second);
 LLFUNCENDEX(2)
 /* ========================================================================= */
 // $ Archive:Dirs
@@ -56,7 +57,7 @@ LLFUNCENDEX(2)
 // ? Returns total number of the directories inside the archive.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Dirs, 1,
-  LCPUSHINT(LCGETPTR(1, Archive)->GetDirList().size()));
+  LCPUSHVAR(LCGETPTR(1, Archive)->GetDirList().size()));
 /* ========================================================================= */
 // $ Archive:DirList
 // < Directories:Table=A list of directories inside the archive
@@ -74,8 +75,7 @@ LLFUNCBEGIN(File)
   const Archive &aCref = *LCGETPTR(1, Archive);
   const StrUIntMapConstIt &itFile = aCref.GetFile(LCGETINTLGE(size_t, 2, 0,
     aCref.GetFileList().size(), "Index"));
-  LCPUSHXSTR(itFile->first);
-  LCPUSHINT(itFile->second);
+  LCPUSHVAR(itFile->first, itFile->second);
 LLFUNCENDEX(2)
 /* ========================================================================= */
 // $ Archive:Files
@@ -83,7 +83,7 @@ LLFUNCENDEX(2)
 // ? Returns total number of the files inside the archive.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Files, 1,
-  LCPUSHINT(LCGETPTR(1, Archive)->GetFileList().size()));
+  LCPUSHVAR(LCGETPTR(1, Archive)->GetFileList().size()));
 /* ========================================================================= */
 // $ Archive:FileList
 // < Directories:Table=A list of files inside the archive
@@ -98,7 +98,7 @@ LLFUNCEX(FileList, 1, LCTOTABLE(LCGETPTR(1, Archive)->GetFileList()));
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(Size)
   const Archive &aCref = *LCGETPTR(1, Archive);
-  LCPUSHINT(aCref.GetSize(LCGETINTLGE(size_t,
+  LCPUSHVAR(aCref.GetSize(LCGETINTLGE(size_t,
     2, 0, aCref.GetTotal(), "Index")));
 LLFUNCENDEX(1)
 /* ========================================================================= */
@@ -106,13 +106,13 @@ LLFUNCENDEX(1)
 // < Total:integer=Total number of files and directories in archive
 // ? Returns the total number of files and directories in archive
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Total, 1, LCPUSHINT(LCGETPTR(1, Archive)->GetTotal()));
+LLFUNCEX(Total, 1, LCPUSHVAR(LCGETPTR(1, Archive)->GetTotal()));
 /* ========================================================================= */
 // $ Archive:Name
 // < Name:string=Name of the archive.
 // ? Returns the name of the archive which was loaded.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Name, 1, LCPUSHXSTR(LCGETPTR(1, Archive)->IdentGet()));
+LLFUNCEX(Name, 1, LCPUSHVAR(LCGETPTR(1, Archive)->IdentGet()));
 /* ========================================================================= */
 // $ Archive:Destroy
 // ? Destroys the archive and frees all the memory associated with it. The
@@ -120,11 +120,11 @@ LLFUNCEX(Name, 1, LCPUSHXSTR(LCGETPTR(1, Archive)->IdentGet()));
 // ? generated if accessed.
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(Destroy) LCCLASSDESTROY(1, Archive); LLFUNCEND
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Archive:* member functions structure                                ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Archive:* member functions structure                                ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Archive:* member functions begin
   LLRSFUNC(Destroy), LLRSFUNC(Dir),   LLRSFUNC(Dirs),     LLRSFUNC(DirList),
   LLRSFUNC(File),    LLRSFUNC(Files), LLRSFUNC(FileList), LLRSFUNC(Name),
@@ -147,6 +147,7 @@ LLFUNCEX(Load, 1,
 // $ Archive.LoadAsync
 // > Filename:string=The filename of the archive to load
 // > ErrorFunc:function=The function to call when there is an error
+// > ProgressFunc:function=The function to call when there is progress
 // > SuccessFunc:function=The function to call when the file is laoded
 // ? Loads a 7-zip archive ogg file off the main thread. The callback functions
 // ? send an argument to the archive object that was created. See
@@ -158,11 +159,11 @@ LLFUNC(LoadAsync, LCCLASSCREATE(Archive)->InitAsyncFile(lS));
 // ? Halts main-thread execution until all async archive events have completed
 /* ------------------------------------------------------------------------- */
 LLFUNC(WaitAsync, cArchives->WaitAsync());
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Archive.* namespace functions structure                             ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Archive.* namespace functions structure                             ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Archive.* namespace functions begin
   LLRSFUNC(Load), LLRSFUNC(LoadAsync), LLRSFUNC(WaitAsync),
 LLRSEND                                // Archive.* namespace functions end

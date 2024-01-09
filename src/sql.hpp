@@ -1,18 +1,27 @@
-/* == SQL.HPP ============================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This module handles writing and reading of persistant data to a     ## */
-/* ## database on disk.                                                   ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == SQL.HPP ============================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This module handles writing and reading of persistant data to a     ## **
+** ## database on disk.                                                   ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfSql {                      // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace Lib::Sqlite;           // Using sqlite library functions
-using namespace IfAsset;               // Using asset namespace
-using namespace IfTimer;               // Using timer namespace
+namespace ISql {                       // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IAsset::P;             using namespace IClock::P;
+using namespace ICmdLine::P;           using namespace ICrypt::P;
+using namespace ICVarDef::P;           using namespace IDir::P;
+using namespace IError::P;             using namespace IFlags;
+using namespace IIdent::P;             using namespace ILog::P;
+using namespace ILuaUtil::P;           using namespace IPSplit::P;
+using namespace IMemory::P;            using namespace IStd::P;
+using namespace IString::P;            using namespace ISystem::P;
+using namespace ISysUtil::P;           using namespace ITimer::P;
+using namespace IUtil::P;              using namespace Lib::Sqlite;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Sql cvar data types -------------------------------------------------- */
 BUILD_FLAGS(SqlCVarData,
   /* -- (Note: Don't ever change these around) ----------------------------- */
@@ -131,13 +140,13 @@ static struct Sql final :              // Members initially public
     /* -- Initialise as a stand alone c-string ----------------------------- */
     explicit Cell(const char*const cpS) :
       /* -- Initialisers --------------------------------------------------- */
-      Cell{ cpS, IntOrMax<int>(strlen(cpS)), SQLITE_TEXT }
+      Cell{ cpS, UtilIntOrMax<int>(strlen(cpS)), SQLITE_TEXT }
       /* -- No code -------------------------------------------------------- */
       { }
     /* -- Initialise as a c++ string --------------------------------------- */
     explicit Cell(const string &strT) :
       /* -- Initialisers --------------------------------------------------- */
-      Cell{ IntOrMax<int>(strT.length()), strT.data() }
+      Cell{ UtilIntOrMax<int>(strT.length()), strT.data() }
       /* -- No code -------------------------------------------------------- */
       { }
     /* -- Initialise as a c-string with the specified size as a blob ------- */
@@ -149,7 +158,7 @@ static struct Sql final :              // Members initially public
     /* -- Initialise as a memory block ------------------------------------- */
     explicit Cell(const DataConst &dcM) :
       /* -- Initialisers --------------------------------------------------- */
-      Cell{ dcM.Ptr<char>(), IntOrMax<int>(dcM.Size()) }
+      Cell{ dcM.Ptr<char>(), UtilIntOrMax<int>(dcM.Size()) }
       /* -- No code -------------------------------------------------------- */
       { }
     /* -- Uninitialised constructor ---------------------------------------- */
@@ -295,8 +304,21 @@ static struct Sql final :              // Members initially public
               sqlite3_column_text(stmtData, iCol),
               static_cast<size_t>(sqlite3_column_bytes(stmtData, iCol)));
             break;
-          } // Unknown data type de-init and treat as nullptr
-          default: continue;
+          } // NULL?
+          case SQLITE_NULL:
+          { // Copy to a memory block if there is something to copy
+            DoPair(smbData, iType, sqlite3_column_name(stmtData, iCol),
+              NULL, 0);
+            break;
+          } // Unknown data type (shouldn't ever get here?)
+          default:
+          { // Warn on invalid type
+            cLog->LogWarningExSafe("Sql ignored unknown result type $[0x$$$] "
+              "for column '$' sized $ bytes.", iType, hex, iType, dec,
+              sqlite3_column_name(stmtData, iCol),
+              sqlite3_column_bytes(stmtData, iCol));
+            break;
+          }
         }
       } // Move key/values into records list if there were keys inserted
       if(!smbData.empty()) vKeys.emplace_back(StdMove(smbData));
@@ -312,7 +334,7 @@ static struct Sql final :              // Members initially public
     // Compare how many tables there are in the database...
     switch(GetTableCount())
     { // Error occured? Don't delete the database!
-      case string::npos: return ADR_ERR_LU_TABLE;
+      case StdMaxSizeT: return ADR_ERR_LU_TABLE;
       // No tables? Delete the database!
       case 0: return ADR_OK_NO_TABLES;
       // Only one or two tables (key and/or cvars table)?
@@ -320,7 +342,7 @@ static struct Sql final :              // Members initially public
         // Get number of records in the cvars table
         switch(GetRecordCount(strCVarTable))
         { // Error occured? Don't delete the database!
-          case string::npos: return ADR_ERR_LU_RECORD;
+          case StdMaxSizeT: return ADR_ERR_LU_RECORD;
           // Zero records? Delete the database! There is always the
           // mandatory private key inside the cvars database so there is no
           // point keeping that if there is nothing else in the cvars database.
@@ -341,7 +363,7 @@ static struct Sql final :              // Members initially public
     // Statement preparation
     sqlite3_stmt *stmtData = nullptr;
     SetError(sqlite3_prepare_v2(sqlDB, strC.c_str(),
-      IntOrMax<int>(strC.length()), &stmtData, nullptr));
+      UtilIntOrMax<int>(strC.length()), &stmtData, nullptr));
     // If succeeded then start parsing the input and ouput
     if(IsNoError())
     { // Free the statement context incase of exception
@@ -402,9 +424,9 @@ static struct Sql final :              // Members initially public
   /* -- Is sqlite database opened? --------------------------------- */ public:
   bool IsOpened(void) { return !!sqlDB; }
   /* -- Malloc functions for Lua (if wanted) ------------------------------- */
-  static void MemFree(void*const vpPtr)
+  static void UtilMemFree(void*const vpPtr)
     { return sqlite3_free(vpPtr); }
-  static void *MemReAlloc(void*const vpPtr, const size_t stSize)
+  static void *UtilMemReAlloc(void*const vpPtr, const size_t stSize)
     { return sqlite3_realloc64(vpPtr, stSize); }
   /* -- Heap used ---------------------------------------------------------- */
   size_t HeapUsed(void) const
@@ -442,7 +464,7 @@ static struct Sql final :              // Members initially public
         // Variable is userdata
         case LUA_TUSERDATA:
         { // Get reference to memory block and push data to list
-          const DataConst &dcCref = *GetPtr<Asset>(lS, iI, "Asset");
+          const DataConst &dcCref = *LuaUtilGetPtr<Asset>(lS, iI, "Asset");
           vIn.emplace_back(
             Cell{ dcCref.Ptr<char>(), static_cast<int>(dcCref.Size())} );
           break;
@@ -459,15 +481,15 @@ static struct Sql final :              // Members initially public
   /* -- Convert records to lua table --------------------------------------- */
   void RecordsToLuaTable(lua_State*const lS)
   { // Create the table, we're creating a indexed/value array
-    PushTable(lS, vKeys.size());
+    LuaUtilPushTable(lS, vKeys.size());
     // Memory id
     lua_Integer liId = 1;
     // For each table item
     for(const Records &smData : vKeys)
     { // Table index
-      PushInteger(lS, liId++);
+      LuaUtilPushInt(lS, liId);
       // Create the table, we're creating non-indexed key/value pairs
-      PushTable(lS, 0, smData.size());
+      LuaUtilPushTable(lS, 0, smData.size());
       // For each column data
       for(const auto &colData : smData)
       { // Get data list item
@@ -476,32 +498,41 @@ static struct Sql final :              // Members initially public
         switch(dliCData.iT)
         { // Text?
           case SQLITE_TEXT:
-            PushDataBlock(lS, dliCData);
+            LuaUtilPushMem(lS, dliCData);
             break;
           // 64-bit integer?
           case SQLITE_INTEGER:
-            PushInteger(lS, dliCData.ReadInt<lua_Integer>());
+            LuaUtilPushInt(lS, dliCData.ReadInt<lua_Integer>());
             break;
           // 64-bit IEEE float?
           case SQLITE_FLOAT:
-            PushNumber(lS, dliCData.ReadInt<lua_Number>());
+            LuaUtilPushNum(lS, dliCData.ReadInt<lua_Number>());
             break;
           // Raw data? Save as array
           case SQLITE_BLOB:
           { // Create memory block array class
-            Asset &aCref = *ClassCreate<Asset>(lS, "Asset");
+            Asset &aCref = *LuaUtilClassCreate<Asset>(lS, "Asset");
             // Initialise the memory block depending on if we have data
             if(dliCData.NotEmpty())
               aCref.InitData(dliCData.Size(), dliCData.Ptr<void*>());
             else aCref.InitBlank();
             // Done
             break;
-          } // No data or unknown? Push nothing
-          case SQLITE_NULL: default: PushNil(lS); break;
+          } // No data? Push a 'false' since we can't have 'nil' in keypairs.
+          case SQLITE_NULL: LuaUtilPushBool(lS, false); break;
+          // Since we don't store anything invalid in vKeys, this will NEVER
+          // get here, but we'll hard fail just incase. GCC needs the typecast.
+          default: XC("Invalid record type in results!",
+                      "Record", static_cast<uint64_t>(liId),
+                      "Column", colData.first,
+                      "Type",   dliCData.iT);
+                   break;
         } // Push key name
         lua_setfield(lS, -2, colData.first.c_str());
       } // Push key pair as integer table
       lua_rawset(lS, -3);
+      // Next result number
+      ++liId;
     }
   }
   /* -- Modify delete empty database permission ---------------------------- */
@@ -529,8 +560,8 @@ static struct Sql final :              // Members initially public
         IsReadOnlyError()); }
   /* -- sql_inc_vacuum cvar was modified ----------------------------------- */
   CVarReturn IncVacuumModified(const uint64_t qwVal)
-    { return BoolToCVarReturn(Pragma(Format("incremental_vacuum($)", qwVal)) ||
-        IsReadOnlyError()); }
+    { return BoolToCVarReturn(Pragma(
+        StrFormat("incremental_vacuum($)", qwVal)) || IsReadOnlyError()); }
   /* -- sql_db cvar was modified ------------------------------------------- */
   CVarReturn UdbFileModified(const string &strF, string &strV)
   { // Save original working directory and restore it when leaving scope
@@ -540,7 +571,7 @@ static struct Sql final :              // Members initially public
     { // Switch to executable directory
       if(!DirSetCWD(cSystem->ENGLoc())) return DENY;
       // Set database file with executable
-      strV = Append(cSystem->ENGFile(), "." UDB_EXTENSION);
+      strV = StrAppend(cSystem->ENGFile(), "." UDB_EXTENSION);
     } // If a memory database was requested? We allow it!
     else if(strF == strMemoryDBName) strV = strF;
     // If the user specified something?
@@ -548,7 +579,7 @@ static struct Sql final :              // Members initially public
     { // Switch to original startup directory
       if(!DirSetCWD(cCmdLine->GetStartupCWD())) return DENY;
       // Use theirs, but force UDB extension
-      strV = Append(strF, "." UDB_EXTENSION);
+      strV = StrAppend(strF, "." UDB_EXTENSION);
     } // Initialise the db and if succeeded?
     if(Init(strV))
     { // Set full path name of the database
@@ -657,7 +688,7 @@ static struct Sql final :              // Members initially public
   /* -- Set a pragma ------------------------------------------------------- */
   bool Pragma(const string &strVar)
   { // Execute without value
-    if(Execute(Append("PRAGMA ", strVar)))
+    if(Execute(StrAppend("PRAGMA ", strVar)))
     { // Log and return failure
       cLog->LogErrorExSafe("Sql pragma '$' failed because $ ($<$>)!",
         strVar, GetErrorStr(), GetErrorAsIdString(), GetError());
@@ -676,7 +707,7 @@ static struct Sql final :              // Members initially public
     // No value? Set as single line pragma
     if(strVal.empty()) return Pragma(strVar);
     // Execute with value
-    if(Execute(Format("PRAGMA $=$", strVar, strVal)))
+    if(Execute(StrFormat("PRAGMA $=$", strVar, strVal)))
     { // Log and return failure
       cLog->LogErrorExSafe(
         "Sql set pragma '$' to '$' failed because $ ($<$>)!",
@@ -691,27 +722,27 @@ static struct Sql final :              // Members initially public
   uint64_t Size(void)
   { // Get the database page size
     if(Execute("pragma page_size") || vKeys.empty())
-      return numeric_limits<uint64_t>::max();
+      return StdMaxUInt64;
     // Get reference to keys list
     const Records &smmPageSizePairs = *vKeys.cbegin();
-    if(smmPageSizePairs.size() != 1) return numeric_limits<uint64_t>::max();
+    if(smmPageSizePairs.size() != 1) return StdMaxUInt64;
     // Get first item
     const RecordsIt smmPageSizeItem{ smmPageSizePairs.cbegin() };
     if(smmPageSizeItem->first != "page_size")
-      return numeric_limits<uint64_t>::max();
+      return StdMaxUInt64;
     // Return number of tables
     const uint64_t qPageSize =
       smmPageSizeItem->second.ReadInt<uint64_t>();
     // Get the database page count
     if(Execute("pragma page_count") || vKeys.empty())
-      return numeric_limits<uint64_t>::max();
+      return StdMaxUInt64;
     // Get reference to keys list
     const Records &smmPageCountPairs = *vKeys.cbegin();
-    if(smmPageCountPairs.size() != 1) return numeric_limits<uint64_t>::max();
+    if(smmPageCountPairs.size() != 1) return StdMaxUInt64;
     // Get first item
     const RecordsIt smmPageCountItem{ smmPageCountPairs.cbegin() };
     if(smmPageCountItem->first != "page_count")
-      return numeric_limits<uint64_t>::max();
+      return StdMaxUInt64;
     // Return number of tables
     const uint64_t qPageCount =
       smmPageCountItem->second.ReadInt<uint64_t>();
@@ -731,7 +762,7 @@ static struct Sql final :              // Members initially public
   /* -- Return duration of last query -------------------------------------- */
   double Time(void) const { return ClockDurationToDouble(duQuery); }
   /* -- Return formatted query time ---------------------------------------- */
-  const string TimeStr(void) const { return ToShortDuration(Time()); }
+  const string TimeStr(void) const { return StrShortFromDuration(Time()); }
   /* -- Returns if sql is in a transaction --------------------------------- */
   bool Active(void) const { return !sqlite3_get_autocommit(sqlDB); }
   /* -- Return string map of records --------------------------------------- */
@@ -742,9 +773,9 @@ static struct Sql final :              // Members initially public
   int End(void)
     { return Execute("END TRANSACTION"); }
   int DropTable(const string &strT)
-    { return Execute(Format("DROP table `$`", strT)); }
+    { return Execute(StrFormat("DROP table `$`", strT)); }
   int FlushTable(const string &strT)
-    { return Execute(Format("DELETE from `$`", strT)); }
+    { return Execute(StrFormat("DELETE from `$`", strT)); }
   int Optimise(void)
     { return Execute("VACUUM"); }
   int Affected(void)
@@ -752,7 +783,7 @@ static struct Sql final :              // Members initially public
   /* -- Process a count(*) requested --------------------------------------- */
   size_t GetRecordCount(const string &strWhat, const string &strCondition="")
   { // Do a table count lookup. If succeeded and have records?
-    if(Execute(Format("SELECT count(*) FROM `$`$", strWhat, strCondition))
+    if(Execute(StrFormat("SELECT count(*) FROM `$`$", strWhat, strCondition))
       == SQLITE_OK && !vKeys.empty())
     { // Get reference to keys list and if we have one result?
       const Records &smmPairs = *vKeys.cbegin();
@@ -769,7 +800,7 @@ static struct Sql final :              // Members initially public
         } // Count(*) not found
       } // Result does not have one record
     } // Failed to execute query or no records, return failure
-    return string::npos;
+    return StdMaxSizeT;
   }
   /* -- Get number of tables in database ----------------------------------- */
   size_t GetTableCount(void)
@@ -788,7 +819,7 @@ static struct Sql final :              // Members initially public
   /* ----------------------------------------------------------------------- */
   bool CVarReadKeys(void)
   { // Read all variable names and if failed?
-    if(Execute(Format("SELECT `$` from `$`", strKeyColumn, strCVarTable)))
+    if(Execute(StrFormat("SELECT `$` from `$`", strKeyColumn, strCVarTable)))
     { // Put in log and return nothing loaded
       cLog->LogWarningExSafe(
         "CVars failed to fetch cvar key names because $ ($)!",
@@ -802,7 +833,7 @@ static struct Sql final :              // Members initially public
   /* ----------------------------------------------------------------------- */
   bool CVarReadAll(void)
   { // Read all variables and if failed?
-    if(Execute(Format("SELECT `$`,`$`,`$` from `$`",
+    if(Execute(StrFormat("SELECT `$`,`$`,`$` from `$`",
       strKeyColumn, strFlagsColumn, strValueColumn, strCVarTable)))
     { // Put in log and return nothing loaded
       cLog->LogWarningExSafe("Sql failed to read CVars table because $ ($)!",
@@ -816,7 +847,7 @@ static struct Sql final :              // Members initially public
   /* ----------------------------------------------------------------------- */
   CreateTableResult CVarDropTable(void)
   { // If table exists return that it already exists
-    if(GetRecordCount(strCVarTable) == string::npos) return CTR_OK_ALREADY;
+    if(GetRecordCount(strCVarTable) == StdMaxSizeT) return CTR_OK_ALREADY;
     // Drop the SQL table and if failed?
     if(DropTable(strCVarTable))
     { // Write error in console and return failure
@@ -831,9 +862,9 @@ static struct Sql final :              // Members initially public
   /* ----------------------------------------------------------------------- */
   CreateTableResult CVarCreateTable(void)
   { // If table already exists then return success already
-    if(GetRecordCount(strCVarTable) != string::npos) return CTR_OK_ALREADY;
+    if(GetRecordCount(strCVarTable) != StdMaxSizeT) return CTR_OK_ALREADY;
     // Create the SQL table for our settings if it does not exist
-    if(Execute(Format("CREATE table `$`" // Table name
+    if(Execute(StrFormat("CREATE table `$`" // Table name
          "(`$` TEXT UNIQUE NOT NULL,"    // Variable name
          "`$` INTEGER DEFAULT 0,"        // Value flags (crypt,comp,etc.)
          "`$` TEXT)",                    // Value (any type allowed)
@@ -849,7 +880,7 @@ static struct Sql final :              // Members initially public
   /* ----------------------------------------------------------------------- */
   CreateTableResult LuaCacheDropTable(void)
   { // If table exists return that it already exists
-    if(GetRecordCount(strLuaCacheTable) == string::npos) return CTR_OK_ALREADY;
+    if(GetRecordCount(strLuaCacheTable) == StdMaxSizeT) return CTR_OK_ALREADY;
     // Drop the SQL table and if failed?
     if(DropTable(strLuaCacheTable))
     { // Write error in console and return failure
@@ -864,9 +895,9 @@ static struct Sql final :              // Members initially public
   /* ----------------------------------------------------------------------- */
   CreateTableResult LuaCacheCreateTable(void)
   { // If table already exists then return success already
-    if(GetRecordCount("L") != string::npos) return CTR_OK_ALREADY;
+    if(GetRecordCount("L") != StdMaxSizeT) return CTR_OK_ALREADY;
     // Create the SQL table for our settings if it does not exist
-    if(Execute(Format("CREATE table `$`" // Table name
+    if(Execute(StrFormat("CREATE table `$`" // Table name
          "(`$` INTEGER UNIQUE NOT NULL," // Code CRC value
          "`$` INTEGER NOT NULL,"         // Code update timestamp
          "`$` TEXT UNIQUE NOT NULL,"     // Code eference
@@ -887,10 +918,11 @@ static struct Sql final :              // Members initially public
     const SqlCVarDataFlagsConst &lfType, const int iType,
     const char*const cpData, const size_t stLength)
   { // Try to write the specified cvar and if failed?
-    if(Execute(Format("INSERT or REPLACE into `$`(`$`,`$`,`$`) VALUES(?,?,?)",
+    if(Execute(StrFormat(
+       "INSERT or REPLACE into `$`(`$`,`$`,`$`) VALUES(?,?,?)",
          strCVarTable, strKeyColumn, strFlagsColumn, strValueColumn), {
            Cell{ strVar }, Cell{ lfType.FlagGet<int>() },
-           Cell{ cpData, IntOrMax<int>(stLength), iType }
+           Cell{ cpData, UtilIntOrMax<int>(stLength), iType }
          }))
     { // Log the warning and return failure
       cLog->LogWarningExSafe("Sql failed to commit CVar '$' "
@@ -914,7 +946,7 @@ static struct Sql final :              // Members initially public
   PurgeResult CVarPurgeData(const char*const cpKey, const size_t stKey)
   { // Try to purge the cvar from the database and if it failed?
     if(Execute("DELETE from C WHERE K=?",
-      { Cell{ IntOrMax<int>(stKey), cpKey } }))
+      { Cell{ UtilIntOrMax<int>(stKey), cpKey } }))
     { // Log the warning and return failure
       cLog->LogWarningExSafe("Sql failed to purge CVar '$' because $ ($)!",
         cpKey, GetErrorStr(), GetError());
@@ -953,7 +985,7 @@ static struct Sql final :              // Members initially public
         { // Log the reason as a warning
           cLog->LogWarningExSafe(
             "Sql empty database file '$' could not be deleted! $",
-            IdentGet(), LocalError());
+            IdentGet(), StrFromErrNo());
         } // We deleted it all right?
         else
         { // Log that we deleted the file
@@ -990,7 +1022,7 @@ static struct Sql final :              // Members initially public
       cLog->LogWarningExSafe("Sql failed to drop key table because $ ($<$>)!",
         GetErrorStr(), GetErrorAsIdString(), GetError());
     // Now try to create the table that holds the private key and if failed?
-    if(Execute(Format("CREATE table `$`(`$` INTEGER NOT NULL,"
+    if(Execute(StrFormat("CREATE table `$`(`$` INTEGER NOT NULL,"
                                        "`$` INTEGER NOT NULL)",
       strPKeyTable, strPIndexColumn, strPValueColumn)))
     { // Log failure and return
@@ -998,7 +1030,7 @@ static struct Sql final :              // Members initially public
         GetErrorStr(), GetErrorAsIdString(), GetError());
       return false;
     } // Prepare statement to insert values into sql
-    const string strInsert{ Format("INSERT into $($,$) VALUES(?,?)",
+    const string strInsert{ StrFormat("INSERT into $($,$) VALUES(?,?)",
       strPKeyTable, strPIndexColumn, strPValueColumn) };
     // For each key part to write
     for(size_t stIndex = 0; stIndex < cCrypt->pkKey.qKeys.size(); ++stIndex)
@@ -1023,7 +1055,7 @@ static struct Sql final :              // Members initially public
   { // Check table count
     switch(const size_t stCount = GetRecordCount("K"))
     { // Error reading table?
-      case string::npos:
+      case StdMaxSizeT:
       { // Log failure and create a new private key
         cLog->LogWarningExSafe(
           "Sql failed to read key table because $ ($<$>)!",
@@ -1038,7 +1070,7 @@ static struct Sql final :              // Members initially public
       } // Read enough entries?
       case Crypt::stPkTotalCount:
       { // Read keys and if failed?
-        if(Execute(Format("SELECT `$` from `$` ORDER BY `$` ASC",
+        if(Execute(StrFormat("SELECT `$` from `$` ORDER BY `$` ASC",
           strPValueColumn, strPKeyTable, strPIndexColumn)))
         { // Log failure and create a new private key
           cLog->LogWarningExSafe(
@@ -1157,5 +1189,7 @@ static struct Sql final :              // Members initially public
   /* -- End ---------------------------------------------------------------- */
 } *cSql = nullptr;                     // Pointer to static class
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

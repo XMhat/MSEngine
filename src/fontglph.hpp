@@ -1,11 +1,11 @@
-/* == FONTGLPH.HPP ========================================================= */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This file is included as part of the Font class from font.hpp and   ## */
-/* ## cotains functions related to glyph loading.                         ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == FONTGLPH.HPP ========================================================= **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This file is included as part of the Font class from font.hpp and   ## **
+** ## cotains functions related to glyph loading.                         ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
 struct StrokerFunc                     // Using as a public namespace only
@@ -509,7 +509,7 @@ template<class HandleGlyphFuncType,
          class RoundCheckFuncType>
 void DoInitFTCharString(const GLubyte*const ucpPtr)
 { // Build a new utfstring class with the string
-  Decoder utfRef{ ucpPtr };
+  UtfDecoder utfRef{ ucpPtr };
   // Enumerate trough the entire string
   while(const unsigned int uiChar = utfRef.Next())
     DoCheckGlyph<HandleGlyphFuncType,

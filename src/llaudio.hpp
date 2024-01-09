@@ -1,46 +1,52 @@
-/* == LLAUDIO.HPP ========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Defines the 'Audio' namespace and methods for the guest to use in   ## */
-/* ## Lua. This file is invoked by 'lualib.hpp'.                          ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == LLAUDIO.HPP ========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Defines the 'Audio' namespace and methods for the guest to use in   ## **
+** ## Lua. This file is invoked by 'lualib.hpp'.                          ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 #pragma once                           // Only one incursion allowed
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ========================================================================= */
 // % Audio
 /* ------------------------------------------------------------------------- */
 // ! The audio class allows control of audio subsystem.
 /* ========================================================================= */
-namespace NsAudio {                    // Audio namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfAudio;               // Using audio namespace
-/* ========================================================================= */
+namespace LLAudio {                    // Audio namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IAudio::P;             using namespace ISample::P;
+using namespace ISource::P;            using namespace IStream::P;
+using namespace IVideo::P;             using namespace Lib::OpenAL;
+/* ========================================================================= **
+** ######################################################################### **
+** ## Audio.* namespace functions                                         ## **
+** ######################################################################### **
+** ========================================================================= */
 // $ Audio.GetGlobalVolume
 // < Volume:number=Current master volume (0 to 1).
 // ? Returns global/master volume.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetGlobalVolume, 1, LCPUSHNUM(cSources->fGVolume.load()));
+LLFUNCEX(GetGlobalVolume, 1, LCPUSHVAR(cSources->fGVolume.load()));
 /* ========================================================================= */
 // $ Audio.GetStreamVolume
 // < Volume:number=Current streams volume (0 to 1).
 // ? Returns master volume of all stream classes.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetStreamVolume, 1, LCPUSHNUM(cSources->fMVolume.load()));
+LLFUNCEX(GetStreamVolume, 1, LCPUSHVAR(cSources->fMVolume.load()));
 /* ========================================================================= */
 // $ Audio.GetSampleVolume
 // < Volume:number=Current samples volume (0 to 1).
 // ? Returns master volume of all sample classes.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetSampleVolume, 1, LCPUSHNUM(cSources->fSVolume.load()));
+LLFUNCEX(GetSampleVolume, 1, LCPUSHVAR(cSources->fSVolume.load()));
 /* ========================================================================= */
 // $ Audio.GetVideoVolume
 // < Volume:number=Current samples volume (0 to 1).
 // ? Returns master volume of all video classes.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetVideoVolume, 1, LCPUSHNUM(cSources->fVVolume.load()));
+LLFUNCEX(GetVideoVolume, 1, LCPUSHVAR(cSources->fVVolume.load()));
 /* ========================================================================= */
 // $ Audio.SetGlobalVolume
 // > Volume:number=New master volume (0 to 1).
@@ -50,12 +56,12 @@ LLFUNCEX(GetVideoVolume, 1, LCPUSHNUM(cSources->fVVolume.load()));
 LLFUNC(SetGlobalVolume,
   cAudio->SetGlobalVolume(LCGETNUMLG(ALfloat, 1, 0, 1, "Volume")));
 /* ========================================================================= */
-// $ Audio.StreamSetVolume
+// $ Audio.SetStreamVolume
 // > Volume:number=New streams volume (0 to 1).
 // ? Sets new volume of all current and new streams. This does not modify the
 // ? cvar which controls the default sample volume.
 /* ------------------------------------------------------------------------- */
-LLFUNC(StreamSetVolume,
+LLFUNC(SetStreamVolume,
   StreamSetVolume(LCGETNUMLG(ALfloat, 1, 0, 1, "Volume")));
 /* ========================================================================= */
 // $ Audio.SetSampleVolume
@@ -64,14 +70,14 @@ LLFUNC(StreamSetVolume,
 // ? cvar which controls the default sample volume.
 /* ------------------------------------------------------------------------- */
 LLFUNC(SetSampleVolume,
-  SetSampleVolume(LCGETNUMLG(ALfloat, 1, 0, 1,"Volume")));
+  SampleSetVolume(LCGETNUMLG(ALfloat, 1, 0, 1,"Volume")));
 /* ========================================================================= */
-// $ Audio.VideoSetVolume
+// $ Audio.SetVideoVolume
 // > Volume:number=New samples volume (0 to 1).
 // ? Sets new volume of all current and new videos. This does not modify the
 // ? cvar which controls the default video volume.
 /* ------------------------------------------------------------------------- */
-LLFUNC(VideoSetVolume, VideoSetVolume(LCGETNUMLG(ALfloat, 1, 0, 1, "Volume")));
+LLFUNC(SetVideoVolume, VideoSetVolume(LCGETNUMLG(ALfloat, 1, 0, 1, "Volume")));
 /* ========================================================================= */
 // $ Audio.SetPosition
 // > X:number=New X listener position.
@@ -114,14 +120,14 @@ LLFUNC(SetVelocity, cAudio->SetVelocity(LCGETNUM(ALfloat, 1, "X"),
 // < Name:string=The name of the audio playback device.
 // ? Returns the name of the playback audio device at id.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetPBDeviceName, 1, LCPUSHXSTR(cAudio->GetPlaybackDeviceById(
+LLFUNCEX(GetPBDeviceName, 1, LCPUSHVAR(cAudio->GetPlaybackDeviceById(
   LCGETINTLG(size_t, 1, 0, cAudio->GetNumPlaybackDevices(), "Index"))));
 /* ========================================================================= */
 // $ Audio.GetNumPBDevices
 // < Count:integer=The number of playback devices detected.
 // ? Returns the number of audio playback devices detected by OpenAL.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetNumPBDevices, 1, LCPUSHINT(cAudio->GetNumPlaybackDevices()));
+LLFUNCEX(GetNumPBDevices, 1, LCPUSHVAR(cAudio->GetNumPlaybackDevices()));
 /* ========================================================================= */
 // $ Audio.Reset
 // < Result:boolean = Was the event sent successfully?
@@ -129,12 +135,12 @@ LLFUNCEX(GetNumPBDevices, 1, LCPUSHINT(cAudio->GetNumPlaybackDevices()));
 // ? samples should resume playing after the reset. The function will return
 // ? 'false' if the request was already sent.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Reset, 1, LCPUSHBOOL(cAudio->ReInit()));
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Audio.* namespace functions structure                               ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+LLFUNCEX(Reset, 1, LCPUSHVAR(cAudio->ReInit()));
+/* ========================================================================= **
+** ######################################################################### **
+** ## Audio.* namespace functions structure                               ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Audio.* namespace functions begin
   LLRSFUNC(GetGlobalVolume),           LLRSFUNC(GetNumPBDevices),
   LLRSFUNC(GetPBDeviceName),           LLRSFUNC(GetSampleVolume),
@@ -142,7 +148,7 @@ LLRSBEGIN                              // Audio.* namespace functions begin
   LLRSFUNC(Reset),                     LLRSFUNC(SetGlobalVolume),
   LLRSFUNC(SetOrientation),            LLRSFUNC(SetPosition),
   LLRSFUNC(SetSampleVolume),           LLRSFUNC(SetVelocity),
-  LLRSFUNC(StreamSetVolume),           LLRSFUNC(VideoSetVolume),
+  LLRSFUNC(SetStreamVolume),           LLRSFUNC(SetVideoVolume),
 LLRSEND                                // Audio.* namespace functions end
 /* ========================================================================= */
 }                                      // End of Audio namespace

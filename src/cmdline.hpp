@@ -1,17 +1,21 @@
-/* == CMDLINE.HPP ========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This static class stores command line arguments and assists in      ## */
-/* ## restarting the engine when needed.                                  ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == CMDLINE.HPP ========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This static class stores command line arguments and assists in      ## **
+** ## restarting the engine when needed.                                  ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfCmdLine {                  // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfDir;                 // Using util namespace
-using namespace IfSysUtil;             // Using system utility namespace
+namespace ICmdLine {                   // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IDir::P;               using namespace IError::P;
+using namespace IStd::P;               using namespace IString::P;
+using namespace ISysUtil::P;           using namespace IToken::P;
+using namespace IUtil::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Command line helper class (should be the first global to inti) ------- */
 static struct CmdLine final            // Members initially public
 { /* -- Public typedefs ---------------------------------------------------- */
@@ -36,7 +40,7 @@ static struct CmdLine final            // Members initially public
   bool IsHome(void) const { return !IsNoHome(); }
   /* -- Return and move string into output string -------------------------- */
   const string GetHome(const string &strSuf) const
-    { return Append(strHD, strSuf); }
+    { return StrAppend(strHD, strSuf); }
   /* -- Get environment variable ------------------------------------------- */
   const string &GetEnv(const string &strEnv, const string &strO={}) const
   { // Find item and return it else return the default item
@@ -53,7 +57,7 @@ static struct CmdLine final            // Members initially public
     // Check validity of the specified environmen variable
     const string &strEnvVal = eiEnv->second;
     const ValidResult vRes = DirValidName(strEnvVal, VT_TRUSTED);
-    if(vRes == VR_OK) return Append(strEnvVal, strSuffix);
+    if(vRes == VR_OK) return StrAppend(strEnvVal, strSuffix);
     // Show error otherwise
     XC("The specified environment variable is invalid!",
        "Variable", strEnv,
@@ -106,13 +110,13 @@ static struct CmdLine final            // Members initially public
     if(!lEnvP) XC("Evironment array corrupted!");
     if(!*lEnvP) XC("First environment variable corrupted!");
     if(!**lEnvP) XC("First environment varable is empty!");
-    // Compile on MacOS? Unset variables on process children because these
-    // variables can cause our terminal apps to spit garbage output and ruin
-    // the capture for scripts. If the guest needs these then they can just
-    // try the apps standalone in the terminal without the need for the engine.
+    // Compile on MacOS?
 #if defined(MACOS)
-    // Variables to unset
-    static array<const char*const,9> aUnset{
+    // Unset variables on process children because these variables can cause
+    // our terminal apps to spit garbage output and ruin the capture for
+    // scripts. If the guest needs these then they can just try the apps
+    // standalone in the terminal without the need for the engine.
+    SysUnSetEnv(
       "NSZombieEnabled",               // Enable dealloc in foundation
       "DYLD_INSERT_LIBRARIES",         // Disable dylib override
       "MallocHelp",                    // Help messages
@@ -122,8 +126,7 @@ static struct CmdLine final            // Members initially public
       "MallocScribble",                // Don't scribble memory
       "MallocGuardEdges",              // Don't guard edges
       "MallocCheckHeapAbort"           // Don't throw abort() on heap check
-    };
-    for(const char*const cpEnv : aUnset) unsetenv(cpEnv);
+    );
 #endif
     // Arguments list to return
     StrStrMap ssmRet;
@@ -137,7 +140,7 @@ static struct CmdLine final            // Members initially public
       Token tokParam{ S16toUTF(atStr), "=", 2 };
       if(tokParam.empty()) continue;
       // Find key and insert it if not found then erase the EcId value
-      string &strKey = ToUpperRef(tokParam.front());
+      string &strKey = StrToUpCaseRef(tokParam.front());
       const StrStrMapConstIt itArg{ ssmRet.find(strKey) };
       if(itArg != ssmRet.cend()) ssmRet.erase(itArg);
       // Insert new key/value into list
@@ -203,5 +206,7 @@ static struct CmdLine final            // Members initially public
   /* -- End ---------------------------------------------------------------- */
 } *cCmdLine = nullptr;                 // Pointer to static class
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+};                                     // End of public module namespace
+/* ------------------------------------------------------------------------- */
+};                                     // End of private module namespace
 /* == EoF =========================================================== EoF == */

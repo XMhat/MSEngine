@@ -1,11 +1,11 @@
-/* == WINPIP.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This is a Windows specific module that will assist in executing     ## */
-/* ## a new process and capturing it's output into a buffer.              ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == WINPIP.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This is a Windows specific module that will assist in executing     ## **
+** ## a new process and capturing it's output into a buffer.              ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* == Windows Registry Class =============================================== */
 class SysPipe :                        // Members initially private
@@ -45,25 +45,21 @@ class SysPipe :                        // Members initially private
           "System failed to close process handle for '$': $!",
             IdentGet(), SysError());
     } // Close pipe handles if open
-    if(hStdinRead != INVALID_HANDLE_VALUE &&
-      !CloseHandle(hStdinRead))
-        cLog->LogWarningExSafe("System failed to close process handle for '$' "
-          "stdin receive pipe: $!", IdentGet(), SysError());
-    if(hStdinWrite != INVALID_HANDLE_VALUE &&
-      !CloseHandle(hStdinWrite))
-        cLog->LogWarningExSafe("System failed to close process handle for '$' "
-          "stdin send pipe: $!", IdentGet(), SysError());
-    if(hStdoutRead != INVALID_HANDLE_VALUE &&
-      !CloseHandle(hStdoutRead))
-        cLog->LogWarningExSafe("System failed to close process handle for '$' "
-          "stdout read pipe: $!", IdentGet(), SysError());
-    if(hStdoutWrite != INVALID_HANDLE_VALUE &&
-      !CloseHandle(hStdoutWrite))
-        cLog->LogWarningExSafe("System failed to close process handle for '$' "
-          "stdout send pipe: $!", IdentGet(), SysError());
+    if(hStdinRead != INVALID_HANDLE_VALUE && !CloseHandle(hStdinRead))
+      cLog->LogWarningExSafe("System failed to close process handle for '$' "
+        "stdin receive pipe: $!", IdentGet(), SysError());
+    if(hStdinWrite != INVALID_HANDLE_VALUE && !CloseHandle(hStdinWrite))
+      cLog->LogWarningExSafe("System failed to close process handle for '$' "
+        "stdin send pipe: $!", IdentGet(), SysError());
+    if(hStdoutRead != INVALID_HANDLE_VALUE && !CloseHandle(hStdoutRead))
+      cLog->LogWarningExSafe("System failed to close process handle for '$' "
+        "stdout read pipe: $!", IdentGet(), SysError());
+    if(hStdoutWrite != INVALID_HANDLE_VALUE && !CloseHandle(hStdoutWrite))
+      cLog->LogWarningExSafe("System failed to close process handle for '$' "
+        "stdout send pipe: $!", IdentGet(), SysError());
   }
   /* -- Initialise arguments list ------------------------------------------ */
-  void InitArgs(const string &strCmdLine, const Arguments &aList,
+  void InitArgs(const string &strCmdLine, const Args &aList,
     const ValidType vtId)
   { // Get the program filename and check it
     const string &strApp = aList.front();
@@ -113,16 +109,16 @@ class SysPipe :                        // Members initially private
         0x8000,                        // (STARTF_UNTRUSTEDSOURCE - Untrusted)
       SW_SHOWNA,                       // WORD wShowWindow (Hide windows)
       0,                               // WORD cbReserved2 (Not used)
-      nullptr,                            // LPBYTE lpReserved2 (Not used)
+      nullptr,                         // LPBYTE lpReserved2 (Not used)
       hStdinRead,                      // HANDLE hStdInput (Using ours)
       hStdoutWrite,                    // HANDLE hStdOutput (Using ours)
       hStdoutWrite                     // HANDLE hStdError (Using ours/stdout)
     };
     // Create the child process and if succeeded?
-    if(CreateProcess(ToNonConstCast<LPCWSTR>(UTFtoS16(strApp).c_str()),
-      ToNonConstCast<LPWSTR>(UTFtoS16(strCmdLine).c_str()), nullptr, nullptr,
-      TRUE, CREATE_SUSPENDED|CREATE_NO_WINDOW, nullptr, nullptr, &siStartInfo,
-      &piProcInfo)) try
+    if(CreateProcess(UtfToNonConstCast<LPCWSTR>(UTFtoS16(strApp).c_str()),
+      UtfToNonConstCast<LPWSTR>(UTFtoS16(strCmdLine).c_str()), nullptr,
+      nullptr, TRUE, CREATE_SUSPENDED|CREATE_NO_WINDOW, nullptr, nullptr,
+      &siStartInfo, &piProcInfo)) try
     { // Store name of executable
       IdentSet(StdMove(strApp));
       // Close handles to the stdin and stdout pipes no longer needed by the
@@ -134,9 +130,19 @@ class SysPipe :                        // Members initially private
       if(!CloseHandle(hStdinRead))
         XCS("Failed to close stdin write pipe!", "Executable", IdentGet());
       hStdinRead = INVALID_HANDLE_VALUE;
-      // Set handle to process, thread and get process id
+      // Set process handle and check it. There will be no reason given if
+      // this is true. This may happen when Wine tries to execute a symbolic
+      // link's target that is invalid.
+      if(!piProcInfo.hProcess)
+        XC("No process handle was returned!", "Executable", IdentGet());
       hProcess = piProcInfo.hProcess;
+      // Set thread handle and check it
+      if(!piProcInfo.hThread)
+        XC("No thread handle was returned!", "Executable", IdentGet());
       hThread = piProcInfo.hThread;
+      // Set pid and check it
+      if(!piProcInfo.dwProcessId)
+        XC("No pid number was returned!", "Executable", IdentGet());
       dwPid = piProcInfo.dwProcessId;
       // Report pid
       cLog->LogInfoExSafe("System spawned process '$' to pid $.",
@@ -227,8 +233,7 @@ class SysPipe :                        // Members initially private
   }
   /* -- Constructor with init ---------------------------------------------- */
   void Init(const string &strCmdLine, const ValidType vtId=VT_UNTRUSTED)
-    { if(const Arguments aList{ strCmdLine })
-        InitArgs(strCmdLine, aList, vtId); }
+    { if(const Args aList{ strCmdLine }) InitArgs(strCmdLine, aList, vtId); }
   /* -- Return pid --------------------------------------------------------- */
   unsigned int GetPid(void) { return static_cast<unsigned int>(dwPid); }
   /* -- Constructor with init ---------------------------------------------- */

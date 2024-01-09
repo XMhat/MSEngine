@@ -1,16 +1,21 @@
-/* == CURSOR.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This module handles creation of cursors using the Glfw subsystem.   ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == CURSOR.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This module handles creation of cursors using the Glfw subsystem.   ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfCursor {                   // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfAsset;               // Using asset namespace
-using namespace IfGlFW;                // Using glfw namespace
+namespace ICursor {                    // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IAsset::P;             using namespace ICollector::P;
+using namespace IError::P;             using namespace IGlFW::P;
+using namespace IIdent::P;             using namespace ILog::P;
+using namespace IStd::P;               using namespace ISysUtil::P;
+using namespace Lib::OS::GlFW;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* == Cursor collector class for collector data and custom variables ======= */
 BEGIN_COLLECTOR(Cursors, Cursor, CLHelperUnsafe);
 /* == Cursor class ========================================================= */
@@ -93,5 +98,7 @@ static void CursorReInit(void)
   cLog->LogInfoExSafe("Cursors re-initialised $ objects.", cCursors->size());
 }
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

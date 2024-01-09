@@ -32,10 +32,7 @@ Diggers will always be a work-in-progress since it is difficult and incredibly t
   * _Windows:_ `100%`…
     * All functions accounted for.
   * _MacOS:_ `100%`…
-    * Some upstream issues with GLFW…
-      * Having to use a custom GLFW to fix VSync not working issue.
-      * Crash when operating window in its own thread due to MacOS/GLFW async issue so singled threaded for now. Can be overridden with `win_thread=1` argument.
-    * All other functions accounted for.
+    * All functions accounted for.
   * _Linux:_ `100%`…
     * Some upstream issues with GLFW.
       * Initial screen corruption when putting window in its own thread only on Wayland so single threaded for now. Can be overridden with `win_thread=1` argument.
@@ -68,7 +65,7 @@ Diggers will always be a work-in-progress since it is difficult and incredibly t
 | **Memory** *(Windows)* | 16MB *(XP/X86)* | 128MB+ *(Win7/X64)* | Close estimate. |
 | **System** *(MacOS)* | 10.7 *(Intel)* / 11 *(Arm)* | 13.0+ *(Arm)* | FAT Universal executable. |
 | **Memory** *(MacOS)* | 256MB *(Intel)* | 512MB *(Arm)* | Close estimate. |
-| **System** *(Linux)* | Ubuntu 22.04 *(X64)* | Ubuntu 22.04+ *(X64)* | See below for packages. |
+| **System** *(Linux)* | Ubuntu 23.04 *(X64)* | Ubuntu 23.04+ *(X64)* | See below for packages. |
 | **Memory** *(Linux)* | 16MB | 128MB+ | Wild estimate. |
 | **Graphics** | NV GF8K/ATI R600 | NV GF8K+/ATI R600+ | OpenGL 3.2 compatible. |
 | **Audio** | Any sound device | Any sound device | OpenAL 1.1 compatible. |
@@ -407,4 +404,4 @@ See [this document](/contributing.md) for details on contributing to this projec
 ## [Licence](#licence)…
 Please read [this document](/licence.md) for the licence and disclaimer for use of this software.
 
-## Copyright © 2006-2023 MS-Design. All Rights Reserved.
+## Copyright © 2006-2024 MS-Design. All Rights Reserved.

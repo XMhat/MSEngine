@@ -1,19 +1,22 @@
-/* == COLLECT.HPP ========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This module contains routines in helping keeping a record of each   ## */
-/* ## allocated member pointers in a collector list and keeping a limit   ## */
-/* ## on the size of the list. It also features optional synchronisation. ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == COLLECT.HPP ========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This module contains routines in helping keeping a record of each   ## **
+** ## allocated member pointers in a collector list and keeping a limit   ## **
+** ## on the size of the list. It also features optional synchronisation. ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfCollector {                // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfCVarDef;             // Using cvardef namespace
-using namespace IfSysUtil;             // Using system utility namespace
-using namespace IfLog;                 // Using log namespace
+namespace ICollector {                 // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IClock::P;             using namespace ICVarDef::P;
+using namespace IError::P;             using namespace IIdent::P;
+using namespace ILog::P;               using namespace IStd::P;
+using namespace IString::P;            using namespace ISysUtil::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Collector header ----------------------------------------------------- */
 #define COLLECTHDR(PCR,                /* The collector class type          */\
                    SCR,                /* The member class type             */\
@@ -103,16 +106,16 @@ using namespace IfLog;                 // Using log namespace
                                 ICH)   /* ICHelperSafe or ICHelperUnsafe    */\
   BEGIN_ASYNCCOLLECTOR(SCR,PCR,CLH)    /* Start building collector class    */\
   BEGIN_MEMBERCLASS(SCR,PCR,ICH)       /* Start building member class   */
-/* == Init Helper Class ==================================================== */
-/* ######################################################################### */
-/* ## This class holds the name of a class and if it has been             ## */
-/* ## initialised. It stops classes being accidentally double             ## */
-/* ## initialised due to programming errors.                              ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == Init Helper Class ==================================================== **
+** ######################################################################### **
+** ## This class holds the name of a class and if it has been             ## **
+** ## initialised. It stops classes being accidentally double             ## **
+** ## initialised due to programming errors.                              ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 class IHelper :                        // The Init Helper class
   /* -- Base classes ------------------------------------------------------- */
-  public IfIdent::IdentConst           // Holds the identifier
+  public IdentConst                    // Holds the identifier
 { /* -- Private variables -------------------------------------------------- */
   ClkTimePoint     ctInitialised,      // Time class was initialised
                    ctDeinitialised;    // Time class was deinitialised
@@ -128,7 +131,7 @@ class IHelper :                        // The Init Helper class
     if(IHIsInitialised())
       XC("Object already initialised!",
          "Identifier", IdentGet(),
-         "Age", ToShortDuration(cmHiRes.
+         "Age", StrShortFromDuration(cmHiRes.
                   TimePointToClampedDouble(ctInitialised)));
     // Class now initialised
     IHSetInitialised();
@@ -155,12 +158,12 @@ class IHelper :                        // The Init Helper class
   /* -- Default suppressions ----------------------------------------------- */
   DELETECOPYCTORS(IHelper)             // Remove copy ctor/assign oper
 };/* ----------------------------------------------------------------------- */
-/* == Collector class helper =============================================== */
-/* ######################################################################### */
-/* ## Derive this class into the main class to allow collection of child  ## */
-/* ## classes.                                                            ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == Collector class helper =============================================== **
+** ######################################################################### **
+** ## Derive this class into the main class to allow collection of child  ## **
+** ## classes.                                                            ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 template<class MemberType,             // Member type (Archive, Asset, etc.)
          class ListType,               // List type (std::list)
          class IteratorType>           // Iterator type (std::list::iterator)
@@ -214,7 +217,7 @@ class CLHelperBase :
     /* -- Initialisers ----------------------------------------------------- */
     IHelper{ strT },                   // Set initialisation helper name
     stMaximum(                         // Initialise maximum objects
-      numeric_limits<size_t>::max())   // " with maximum default objects
+      StdMaxSizeT)   // " with maximum default objects
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
@@ -351,13 +354,13 @@ struct CLHelper :                      // Members initially public
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(CLHelper)            // Don't need the default constructor
 }; /* ---------------------------------------------------------------------- */
-/* == MEMBER HELPERS ======================================================= */
-/* ######################################################################### */
-/* ## This is the best class for ICHelper. It allows member classes to    ## */
-/* ## register and unregister themselves in the collector and other       ## */
-/* ## neat things.                                                        ## */
-/* ######################################################################### */
-/* == Parent class helper ================================================== */
+/* == MEMBER HELPERS ======================================================= **
+** ######################################################################### **
+** ## This is the best class for ICHelper. It allows member classes to    ## **
+** ## register and unregister themselves in the collector and other       ## **
+** ## neat things.                                                        ## **
+** ######################################################################### **
+** == Parent class helper ================================================== */
 template<class CollectorType,
          class MemberType,
          class IteratorType = typename CollectorType::iterator>
@@ -439,14 +442,14 @@ struct ICHelperBase                    // Members initially public
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(ICHelperBase)        // Remove default functions
 };/* ----------------------------------------------------------------------- */
-/* == Collector class helper WITH locks ==================================== */
-/* ######################################################################### */
-/* ## Derive this class into the IcHelper (main collector) class to make  ## */
-/* ## use the collector with concurrency locking. Only the 'Sources'      ## */
-/* ## objects need this because the list can be accessed and manipulated  ## */
-/* ## in the audio processing thread.                                     ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == Collector class helper WITH locks ==================================== **
+** ######################################################################### **
+** ## Derive this class into the IcHelper (main collector) class to make  ## **
+** ## use the collector with concurrency locking. Only the 'Sources'      ## **
+** ## objects need this because the list can be accessed and manipulated  ## **
+** ## in the audio processing thread.                                     ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 template<class CollectorType,
          class MemberType,
          class IteratorType = typename CollectorType::iterator,
@@ -480,14 +483,14 @@ class ICHelperSafe :                   // Members initially private
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(ICHelperSafe)        // Remove default functions
 };/* ----------------------------------------------------------------------- */
-/* == Collector class helper without locks ================================= */
-/* ######################################################################### */
-/* ## Derive this class into the IcHelper (main collector) class to make  ## */
-/* ## use the collector without concurrency locking. Use this only if you ## */
-/* ## know the objects are not going to modify or access the list in a    ## */
-/* ## thread other than the engine thread.                                ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == Collector class helper without locks ================================= **
+** ######################################################################### **
+** ## Derive this class into the IcHelper (main collector) class to make  ## **
+** ## use the collector without concurrency locking. Use this only if you ## **
+** ## know the objects are not going to modify or access the list in a    ## **
+** ## thread other than the engine thread.                                ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 template<class CollectorType,
          class MemberType,
          class IteratorType = typename CollectorType::iterator,
@@ -521,15 +524,15 @@ class ICHelperUnsafe :                 // Members initially private
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(ICHelperUnsafe)      // Remove default functions
 };/* ----------------------------------------------------------------------- */
-/* == Collector class ====================================================== */
-/* ######################################################################### */
-/* ## This collector helper class can manually or automate class          ## */
-/* ## registration of members in the collector class. It will store a     ## */
-/* ## list::iterator of itself so it can be removed from the collector    ## */
-/* ## as fast as possible. Also members can freely use 'cParent' to       ## */
-/* ## access the collector.                                               ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == Collector class ====================================================== **
+** ######################################################################### **
+** ## This collector helper class can manually or automate class          ## **
+** ## registration of members in the collector class. It will store a     ## **
+** ## list::iterator of itself so it can be removed from the collector    ## **
+** ## as fast as possible. Also members can freely use 'cParent' to       ## **
+** ## access the collector.                                               ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 template<class CollectorType,
          class MemberType,
          class LockType,
@@ -566,13 +569,13 @@ struct ICHelper :                      // Members initially public
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(ICHelper)            // Remove default functions
 };/* ----------------------------------------------------------------------- */
-/* == Lua userdata helper ================================================== */
-/* ######################################################################### */
-/* ## This class stores pointers to classes which are used by LUA and can ## */
-/* ## locked by the engine so LUA cannot automatically delete them during ## */
-/* ## garbage collection.                                                 ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == Lua userdata helper ================================================== **
+** ######################################################################### **
+** ## This class stores pointers to classes which are used by LUA and can ## **
+** ## locked by the engine so LUA cannot automatically delete them during ## **
+** ## garbage collection.                                                 ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 class Lockable                         // Members initially private
 { /* -- Private variables -------------------------------------------------- */
   bool             bLocked;            // Class is locked from being dealloced
@@ -599,5 +602,7 @@ class Lockable                         // Members initially private
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Lockable)            // Remove default functions
 };/* -- End ---------------------------------------------------------------- */
-};                                     // End of module namespace
+};                                     // End of private module namespace
+/* ------------------------------------------------------------------------- */
+};                                     // End of public module namespace
 /* == EoF =========================================================== EoF == */

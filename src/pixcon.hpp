@@ -1,19 +1,19 @@
-/* == PIXCON.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This is a POSIX specific module that handles text only mode output  ## */
-/* ## which is needed by the engines bot mode and uses ncurses. Since we  ## */
-/* ## support MacOS and Linux, we can support both systems very simply    ## */
-/* ## with POSIX compatible calls.                                        ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == PIXCON.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This is a POSIX specific module that handles text only mode output  ## **
+** ## which is needed by the engines bot mode and uses ncurses. Since we  ## **
+** ## support MacOS and Linux, we can support both systems very simply    ## **
+** ## with POSIX compatible calls.                                        ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
-/* == Includes ============================================================= */
-/* Because ncurses shares function names with STL, we need to put it all the */
-/* Curses API in it's own namespace to prevent ambiguity problems.           */
-/* ------------------------------------------------------------------------- */
-namespace IfCurses {                   // Start of Curses interface
+/* == Includes ============================================================= **
+** Because ncurses shares function names with STL, we need to put it all the **
+** Curses API in it's own namespace to prevent ambiguity problems.           **
+** ------------------------------------------------------------------------- */
+namespace ICurses {                    // Start of Curses interface
 #ifdef MACOS                           // Using MacOS? (Built-in is buggy)
 # include <curses/curses.h>            // Using our static curses library
 #else                                  // Using Linux? (Built-in is OK)
@@ -26,11 +26,11 @@ class SysCon :                         // All members initially private
   public SysBase,                      // Defined in 'sys(nix/mac).hpp'
   public SysConBase,                   // Defined in 'syscore.hpp'
   private IHelper,                     // Allow access to windows console
-  private IfDim::DimCoInt              // Console drawing position & dimensions
+  private DimCoInt                     // Console drawing position & dimensions
 {  /* -- Typedefs ---------------------------------------------------------- */
-  typedef IfCurses::attr_t attr_t;     // NCurses alias
-  typedef IfDim::Coordinates<int> CoordInt; // Cordinates typedef
-  typedef IfDim::Dimensions<int> DimInt; // Dimension typedef
+  typedef ICurses::attr_t attr_t;      // NCurses alias
+  typedef Coordinates<int> CoordInt;   // Cordinates typedef
+  typedef Dimensions<int> DimInt;      // Dimension typedef
   /* -- Console data ------------------------------------------------------- */
   __sighandler_t   fpSignal;           // Old signal handler
   attr_t           aColour;            // Current colour
@@ -54,8 +54,7 @@ class SysCon :                         // All members initially private
   /* -- Do set a character at the current position ------------------------- */
   void DoSetChar(const unsigned int uiChar)
   { // Include curses namespace
-    using namespace IfCurses;
-    // Build character with specified colour
+    using namespace ICurses;
     const cchar_t ccChar{ aColour, { static_cast<wchar_t>(uiChar) }, 0 };
     // Print character and get result
     switch(const int iResult = add_wch(&ccChar))
@@ -79,7 +78,7 @@ class SysCon :                         // All members initially private
   /* -- Redraw screen and check for error ---------------------------------- */
   void CommitScreen(void)
   { // Commit all settings and buffer
-    switch(const int iResult = IfCurses::refresh())
+    switch(const int iResult = ICurses::refresh())
     { // Unknown result?
       default:
         // Log the result
@@ -93,14 +92,14 @@ class SysCon :                         // All members initially private
   /* -- Set maximum console line length ---------------------------- */ public:
   CVarReturn RowsModified(const size_t stRows)
   { // Deny if out of range. The maximum value is a SHORT from Win32 API.
-    if(stRows < 25 || IntWillOverflow<int>(stRows)) return DENY;
+    if(stRows < 25 || UtilIntWillOverflow<int>(stRows)) return DENY;
     // Value allowed
     return ACCEPT;
   }
   /* -- Set maximum console line length ------------------------------------ */
   CVarReturn ColsModified(const size_t stCols)
   { // Deny if out of range. The maximum value is a SHORT from Win32 API.
-    if(stCols < 80 || IntWillOverflow<int>(stCols)) return DENY;
+    if(stCols < 80 || UtilIntWillOverflow<int>(stCols)) return DENY;
     // Value allowed
     return ACCEPT;
   }
@@ -109,8 +108,7 @@ class SysCon :                         // All members initially private
   /* -- Check for and update size ------------------------------------------ */
   void CheckAndUpdateSize(void)
   { // Include curses namespace
-    using namespace IfCurses;
-    // Return if ncurses is not available. Not seen this trigger yet but I
+    using namespace ICurses;
     // am just going to put this here just incase.
     if(isendwin()) return;
     // Update size of terminal window
@@ -135,8 +133,7 @@ class SysCon :                         // All members initially private
   /* -- Check keys ------------------------------------------------- */ public:
   KeyType GetKey(int &iKey, int &iMods)
   { // Include curses namespace
-    using namespace IfCurses;
-    // Get key and return if it is anything but OK. There is KEY_CODE_YES to
+    using namespace ICurses;
     // signify function keys but we don't care about them at the moment.
     wint_t wChar = 0;
     switch(const int iResult = get_wch(&wChar))
@@ -220,7 +217,7 @@ class SysCon :                         // All members initially private
   /* -- Commit argument for curs_set() ------------------------------------- */
   void CommitCursor(void)
   { // Change it and save new cursor setting
-    switch(const int iResult = IfCurses::curs_set(iCursor))
+    switch(const int iResult = ICurses::curs_set(iCursor))
     { // Anything else report in log?
       default: cLog->LogWarningExSafe("SysCon set cursor type to $ result $!",
                  iCursor, iResult);
@@ -237,8 +234,7 @@ class SysCon :                         // All members initially private
   /* -- Set colour --------------------------------------------------------- */
   void SetColour(const size_t stColour)
   { // Include curses namespace for use of COLOR_PAIR
-    using namespace IfCurses;
-    // Set the colour
+    using namespace ICurses;
     aColour = static_cast<attr_t>(COLOR_PAIR(stColour % stPairs));
   }
   /* -- Set cursor size ---------------------------------------------------- */
@@ -256,8 +252,7 @@ class SysCon :                         // All members initially private
   /* -- Commit buffer ------------------------------------------------------ */
   void CommitBuffer(void)
   { // Include curses namespace
-    using namespace IfCurses;
-    // Move cursor to specified position
+    using namespace ICurses;
     switch(const int iResult =
       move(ciCursor.CoordGetY(), ciCursor.CoordGetX()))
     { // Unknown result
@@ -277,8 +272,7 @@ class SysCon :                         // All members initially private
   /* -- Set a character at the current position ---------------------------- */
   void SetChar(const unsigned int uiChar=' ')
   { // Include curses namespace
-    using namespace IfCurses;
-    // Move to the specified position and get result
+    using namespace ICurses;
     switch(const int iResult = move(CoordGetY(), CoordGetX()))
     { // If successful?
       case OK:
@@ -345,7 +339,7 @@ class SysCon :                         // All members initially private
   void SetBackgroundInteger(const unsigned int uiColour)
     { SetColourInteger(uiColour, 7, 128); }
   /* -- Handle print control character ------------------------------------- */
-  void HandlePrintControl(Decoder &utfStr, const bool bSimulation)
+  void HandlePrintControl(UtfDecoder &utfStr, const bool bSimulation)
   { // Get next character
     switch(utfStr.Next())
     { // Colour selection
@@ -375,7 +369,7 @@ class SysCon :                         // All members initially private
     }
   }
   /* -- Locate a supported character while checking if word can be printed - */
-  bool PrintGetWord(Decoder &utfStr, int iXp, const int iWi)
+  bool PrintGetWord(UtfDecoder &utfStr, int iXp, const int iWi)
   { // Save position because we're not drawing anything
     const unsigned char *ucpPtr = utfStr.GetCPtr();
     // Until null character. Which control token?
@@ -402,7 +396,7 @@ class SysCon :                         // All members initially private
     return false;
   }
   /* -- Handle return on print --------------------------------------------- */
-  void HandleReturnSimulated(Decoder &utfStr, int &iXp, int &iYp,
+  void HandleReturnSimulated(UtfDecoder &utfStr, int &iXp, int &iYp,
     const int iIn)
   { // Go down own line and set indentation
     iXp = iIn;
@@ -414,7 +408,7 @@ class SysCon :                         // All members initially private
   bool ValidY(const int iYp)
     { return iYp >= 1 && iYp <= diSizeM1.DimGetHeight(); }
   /* -- Handle return on print --------------------------------------------- */
-  void HandleReturn(Decoder &utfStr, const int iIn)
+  void HandleReturn(UtfDecoder &utfStr, const int iIn)
   { // If we can draw on this Y? Clear up till the end
     if(ValidY(CoordGetY())) ClearLine();
     // If we can draw on the next line too? Clear up to indentation
@@ -426,7 +420,7 @@ class SysCon :                         // All members initially private
     utfStr.Ignore(' ');
   }
   /* -- Write data upwards and wrapping (same as what Char::* does) -------- */
-  int WriteLineWU(Decoder &&utfStr)
+  int WriteLineWU(UtfDecoder &&utfStr)
   { // Check the string is valid
     if(!utfStr.Valid()) return 1;
     // Save current colour
@@ -512,7 +506,7 @@ class SysCon :                         // All members initially private
     return iYp;
   }
   /* -- Write data --------------------------------------------------------- */
-  void WriteLine(Decoder &&utfString, const int iMax, const bool bClrEOL)
+  void WriteLine(UtfDecoder &&utfString, const int iMax, const bool bClrEOL)
   { // For each character index in the buffer
     while(const unsigned int uiChar = utfString.Next())
     { // Compare character
@@ -543,12 +537,12 @@ class SysCon :                         // All members initially private
     // Have left side text?
     if(!strIL.empty())
     { // Put left text in a UTF container
-      Decoder utfString{ strIL };
+      UtfDecoder utfString{ strIL };
       // Set length
       iLen = static_cast<int>(utfString.Length());
       // Reset at scrolled position
       utfString.Reset(strIL.c_str() +
-        abs(Maximum(0, iLen - diSizeM2.DimGetWidth())));
+        abs(UtilMaximum(0, iLen - diSizeM2.DimGetWidth())));
       // Draw start of input text
       WriteLine(StdMove(utfString), diSizeM1.DimGetWidth(), false);
     } // Left size of text is zero long
@@ -558,10 +552,10 @@ class SysCon :                         // All members initially private
     { // Set cursor position
       SetCursor(1 + iLen, diSizeM1.DimGetHeight());
       // Reset again and write the string
-      WriteLine(Decoder(strIR), diSizeM1.DimGetWidth(), false);
+      WriteLine(UtfDecoder(strIR), diSizeM1.DimGetWidth(), false);
     } // Actually set cursor position
-    ciCursor.CoordSet(Minimum(diSizeM1.DimGetWidth(), 1 + iLen),
-                              diSizeM1.DimGetHeight());
+    ciCursor.CoordSet(UtilMinimum(diSizeM1.DimGetWidth(), 1 + iLen),
+                                  diSizeM1.DimGetHeight());
     // Cursor is visible
     SetCursorVisibility(true);
   }
@@ -581,11 +575,11 @@ class SysCon :                         // All members initially private
     // Set colour
     SetColour(31);
     // Get length of left and right part of string
-    Decoder utfL{ strL }, utfR{ strR };
+    UtfDecoder utfL{ strL }, utfR{ strR };
     const int iL = static_cast<int>(utfL.Length()),
-              iLC = static_cast<int>(Minimum(iL, diSizeM2.DimGetWidth())),
+              iLC = static_cast<int>(UtilMinimum(iL, diSizeM2.DimGetWidth())),
               iR = static_cast<int>(utfR.Length()),
-              iRC = static_cast<int>(Minimum(iR, diSizeM2.DimGetWidth()));
+              iRC = static_cast<int>(UtilMinimum(iR, diSizeM2.DimGetWidth()));
     // If we have left status text length?
     if(iLC)
     { // If the right text would not completely obscure the left text?
@@ -610,7 +604,7 @@ class SysCon :                         // All members initially private
     else SetWhitespace();
     // Both texts can only share 'iWm2' characters so they need to share
     // this limited space. If there is enough space for both?
-    const int iTotal = Minimum(diSizeM2.DimGetWidth(), iLC + iRC);
+    const int iTotal = UtilMinimum(diSizeM2.DimGetWidth(), iLC + iRC);
     if(iTotal < diSizeM2.DimGetWidth())
     { // Get position to write at
       const int iSpaces = diSizeM2.DimGetWidth() - iTotal,
@@ -655,15 +649,14 @@ class SysCon :                         // All members initially private
       // value we can make sure we don't access any OOB memory by just checking
       // that the co-ordinates while drawing, we don't have to worry about the
       // integer wrapping at all we are not drawing.
-      CoordDecY(WriteLineWU(Decoder{ lD.strLine }) - 1);
+      CoordDecY(WriteLineWU(UtfDecoder{ lD.strLine }) - 1);
     } // Clear extra lines we didn't draw too
     while(CoordGetY() > 1) { CoordSetX(0); CoordDecY(); ClearLine(); }
   }
   /* -- Update size (from event) ------------------------------------------- */
   void OnResize(void)
   { // Include curses namespace
-    using namespace IfCurses;
-    // Return if size didn't change
+    using namespace ICurses;
     CheckAndUpdateSize();
     // De-initialise ncurses
     switch(const int iResult = endwin())
@@ -677,8 +670,7 @@ class SysCon :                         // All members initially private
   /* -- DeInitialise ------------------------------------------------------- */
   void SysConDeInit(void)
   { // Include curses namespace
-    using namespace IfCurses;
-    // Ignore if not initialised
+    using namespace ICurses;
     if(IHNotDeInitialise()) return;
     // System console is de-initialising
     cLog->LogDebugSafe("SysCon de-initialising...");
@@ -710,8 +702,7 @@ class SysCon :                         // All members initially private
   /* -- Initialise --------------------------------------------------------- */
   void SysConInit(const char*const, const size_t, const size_t, const bool)
   { // Include curses namespace
-    using namespace IfCurses;
-    // Console class initialised
+    using namespace ICurses;
     IHInitialise();
     // System console is initialising
     cLog->LogDebugSafe("SysCon initialising...");
@@ -769,7 +760,7 @@ class SysCon :                         // All members initially private
         // Create number of pairs we need. We only need COLOUR_MAX squared so
         // we dont need to load the reset if there are any.
         if(const size_t stPairsMax =
-          Minimum<size_t>(stPairsMaxSupported, COLOUR_MAX*COLOUR_MAX))
+          UtilMinimum<size_t>(stPairsMaxSupported, COLOUR_MAX*COLOUR_MAX))
         { // Size palette array to save colours
           ptPairs.resize(stPairsMax);
           // For each background colour we support. Ignore the first entry.

@@ -80,4 +80,4 @@ Feel free to create an [issue](https://github.com/XMhat/MSEngine/issues) or [pul
 
 ### [Back to contents](#contents)…
 
-## Copyright © 2006-2023 MS-Design. All Rights Reserved.
+## Copyright © 2006-2024 MS-Design. All Rights Reserved.

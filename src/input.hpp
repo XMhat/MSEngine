@@ -1,16 +1,26 @@
-/* == INPUT.HPP ============================================================ */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This module handles the keyboard and controller input.              ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == INPUT.HPP ============================================================ **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This module handles the keyboard and controller input.              ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfInput {                    // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfConsole;             // Using console namespace
-using namespace IfEvtWin;              // Using window event manager interface
+namespace IInput {                     // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace ICollector::P;         using namespace IConsole::P;
+using namespace ICVar::P;              using namespace ICVarDef::P;
+using namespace ICVarLib::P;           using namespace IEvtMain::P;
+using namespace IEvtWin::P;            using namespace IFboMain::P;
+using namespace IFlags;                using namespace IGlFW::P;
+using namespace IGlFWUtil::P;          using namespace IIdent::P;
+using namespace ILog::P;               using namespace ILuaFunc::P;
+using namespace IStd::P;               using namespace IString::P;
+using namespace ISysUtil::P;           using namespace IUtf;
+using namespace IUtil::P;              using namespace Lib::OS::GlFW;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* == Input flags ========================================================== */
 BUILD_FLAGS(Input,
   /* ----------------------------------------------------------------------- */
@@ -166,7 +176,7 @@ class JoyInfo :
     if(const unsigned char*const cpData =
       GlFWGetJoystickButtons(GetId(), iButtons))
     { // Clamp count to number we support on the stack
-      stButtons = Minimum(static_cast<size_t>(iButtons),
+      stButtons = UtilMinimum(static_cast<size_t>(iButtons),
         GetConstButtonList().size());
       // Return if no buttons
       if(!stButtons) return;
@@ -192,7 +202,7 @@ class JoyInfo :
     int iAxises;
     if(const float*const fpData = GlFWGetJoystickAxes(GetId(), iAxises))
     { // Clamp count to number we support on the stack
-      stAxises = Minimum(static_cast<size_t>(iAxises),
+      stAxises = UtilMinimum(static_cast<size_t>(iAxises),
         GetConstAxisList().size());
       // Return if no axis
       if(!stAxises) return;
@@ -254,8 +264,14 @@ class JoyInfo :
     FlagSet(JF_CONNECTED);
     // Set gamepad status
     FlagSetOrClear(JF_GAMEPAD, glfwJoystickIsGamepad(GetId()));
-    // Get name of joystick and set a generic one if invalid
-    IdentSet(IfNull(GlFWGetJoystickName(GetId())));
+    // Get joystick name and if it's not null?
+    if(const char*const cpName = GlFWGetJoystickName(GetId()))
+    { // If monitor name is blank return blank name
+      if(*cpName) IdentSet(cpName);
+      // Return blank name
+      else IdentSet(cCommon->Unspec());
+    } // Return null name
+    else IdentSet(cCommon->Null());
     // Refresh joystick data
     RefreshData();
     // We gained this joystick
@@ -364,8 +380,8 @@ static class Input final :             // Handles keyboard, mouse & controllers
       fAdjY = (epData.vParams[1].f - cFboMain->fboMain.fcStage.GetCoTop()) /
         cFboMain->fboMain.GetCoBottom() * GetWindowHeight(),
       // Clamp the new position to the window bounds.
-      fNewX = Clamp(fAdjX, 0.0f, cFboMain->fboMain.GetCoRight() - 1.0f),
-      fNewY = Clamp(fAdjY, 0.0f, cFboMain->fboMain.GetCoBottom() - 1.0f);
+      fNewX = UtilClamp(fAdjX, 0.0f, cFboMain->fboMain.GetCoRight() - 1.0f),
+      fNewY = UtilClamp(fAdjY, 0.0f, cFboMain->fboMain.GetCoBottom() - 1.0f);
     // Now translate that position back into the actual window cursor pos.
     cGlFW->WinSetCursorPos(static_cast<double>(fNewX),
                            static_cast<double>(fNewY));
@@ -502,7 +518,7 @@ static class Input final :             // Handles keyboard, mouse & controllers
   /* -- Window past event--------------------------------------------------- */
   void OnWindowPaste(const EvtMain::Cell&)
   { // Get text in clipboard
-    Decoder utfString(cGlFW->WinGetClipboard());
+    UtfDecoder utfString{ cGlFW->WinGetClipboard() };
     // For each character, ddd the character to queue if valid
     while(const unsigned int uiChar = utfString.Next())
       if(uiChar >= 32) cConsole->OnCharPress(uiChar);
@@ -668,7 +684,7 @@ static class Input final :             // Handles keyboard, mouse & controllers
     } // Set the new input if we can and log status
     cGlFW->WinSetRawMouseMotion(bState);
     cLog->LogDebugExSafe("Input updated raw mouse status to $.",
-      TrueOrFalse(cGlFW->WinGetRawMouseMotion()));
+      StrFromBoolTF(cGlFW->WinGetRawMouseMotion()));
     // CVar allowed to be set
     return ACCEPT;
   }
@@ -679,7 +695,7 @@ static class Input final :             // Handles keyboard, mouse & controllers
     // Set the new input if we can and log status
     cGlFW->WinSetStickyKeys(bState);
     cLog->LogDebugExSafe("Input updated sticky keys status to $.",
-      TrueOrFalse(cGlFW->WinGetStickyKeys()));
+      StrFromBoolTF(cGlFW->WinGetStickyKeys()));
     // CVar allowed to be set
     return ACCEPT;
   }
@@ -690,7 +706,7 @@ static class Input final :             // Handles keyboard, mouse & controllers
     // Set the new input if we can and log status
     cGlFW->WinSetStickyMouseButtons(bState);
     cLog->LogDebugExSafe("Input updated sticky mouse status to $.",
-      TrueOrFalse(cGlFW->WinGetStickyMouseButtons()));
+      StrFromBoolTF(cGlFW->WinGetStickyMouseButtons()));
     // CVar allowed to be set
     return ACCEPT;
   }
@@ -750,7 +766,7 @@ static class Input final :             // Handles keyboard, mouse & controllers
     glfwSetJoystickCallback(OnGamePad);
     // Log progress
     cLog->LogDebugExSafe("Input interface initialised (R:$;J:$).",
-      TrueOrFalse(GlFWIsRawMouseMotionSupported()), GetJoyCount());
+      StrFromBoolTF(GlFWIsRawMouseMotionSupported()), GetJoyCount());
   }
   /* -- DeInit ------------------------------------------------------------- */
   void DeInit(void)
@@ -817,5 +833,7 @@ static class Input final :             // Handles keyboard, mouse & controllers
   /* ----------------------------------------------------------------------- */
 } *cInput = nullptr;                   // Global input class
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

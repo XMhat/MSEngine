@@ -1,33 +1,39 @@
-/* == LLPCM.HPP ============================================================ */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Defines the 'Pcm' namespace and methods for the guest to use in     ## */
-/* ## Lua. This file is invoked by 'lualib.hpp'.                          ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == LLPCM.HPP ============================================================ **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Defines the 'Pcm' namespace and methods for the guest to use in     ## **
+** ## Lua. This file is invoked by 'lualib.hpp'.                          ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 #pragma once                           // Only one incursion allowed
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ========================================================================= */
 // % Pcm
 /* ------------------------------------------------------------------------- */
-// ! This allows the programmer to maniuplate pcm wave forms asynchronously
-// ! and send the objects to the OpenAL if needed.
+// ! This allows the programmer to load pcm wave forms or decompress encoded
+// ! pcm waveforms and send the objects to the OpenAL if needed. You can use
+// ! the command 'pcmfmts' to see what formats are usable which are WAV
+// ! (WaveForm Audio StrFormat) PCM/INT/FLOAT/LE, CAF (CoreAudio StrFormat),
+// ! PCM/INT/FLOAT/LE/BE, OGG (OGG Vorbis) and MP3 (MPEG-Layer III).
 /* ========================================================================= */
-namespace NsPcm {                      // Pcm namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfPcm;                 // Using pcm namespace
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+namespace LLPcm {                      // Pcm namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IAsset::P;             using namespace IPcm::P;
+using namespace IStd::P;               using namespace IPcmLib::P;
+/* ========================================================================= **
+** ######################################################################### **
+** ## Pcm:* member functions                                              ## **
+** ######################################################################### **
+** ========================================================================= */
 // $ Pcm:Name
 // < Name:string=The name of the object
 // ? Returns the name of the specified object when it was created, or if used
 // ? by another function, a small trace of who took ownership of it prefixed
 // ? with an exclamation mark (!).
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Name, 1, LCPUSHXSTR(LCGETPTR(1, Pcm)->IdentGet()));
+LLFUNCEX(Name, 1, LCPUSHVAR(LCGETPTR(1, Pcm)->IdentGet()));
 /* ========================================================================= */
 // $ Pcm:Destroy
 // ? Destroys the pcm object and frees all the memory associated with it. The
@@ -35,11 +41,11 @@ LLFUNCEX(Name, 1, LCPUSHXSTR(LCGETPTR(1, Pcm)->IdentGet()));
 // ? generated if accessed.
 /* ------------------------------------------------------------------------- */
 LLFUNC(Destroy, LCCLASSDESTROY(1, Pcm));
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Pcm:* member functions structure                                    ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Pcm:* member functions structure                                    ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Pcm:* member functions begin
   LLRSFUNC(Destroy),                   // Destroy the internal pcm object
   LLRSFUNC(Name),                      // Name or filename of the pcm object
@@ -49,6 +55,7 @@ LLRSEND                                // Pcm:* member functions end
 // > Filename:string=The filename of the encoded waveform to load
 // > Flags:Integer=Load flags
 // > ErrorFunc:function=The function to call when there is an error
+// > ProgressFunc:function=The function to call when there is progress
 // > SuccessFunc:function=The function to call when the file is laoded
 // ? Loads a audio file off the main thread. The callback functions send an
 // ? argument to the pcm object that was created.
@@ -70,6 +77,7 @@ LLFUNCEX(File, 1, LCCLASSCREATE(Pcm)->InitFile(LCGETCPPFILE(1, "File"),
 // > Data:array=The data of the audio file to load
 // > Flags:Integer=Load flags
 // > ErrorFunc:function=The function to call when there is an error
+// > ProgressFunc:function=The function to call when there is progress
 // > SuccessFunc:function=The function to call when the audio file is laoded
 // ? Loads an audio file off the main thread from the specified array object.
 // ? The callback functions send an argument to the Pcm object that was
@@ -86,7 +94,7 @@ LLFUNC(ArrayAsync, LCCLASSCREATE(Pcm)->InitAsyncArray(lS));
 LLFUNCEX(Asset, 1, LCCLASSCREATE(Pcm)->InitArray(
   LCGETCPPSTRINGNE(1, "Identifier"), StdMove(*LCGETPTR(2, Asset)),
   LCGETFLAGS(PcmFlagsConst, 3, PL_MASK, "Flags")));
-/* ======================================================================= */
+/* ========================================================================= */
 // $ Pcm.Raw
 // > Identifier:string=Identifier of the sample.
 // > Data:Asset=Sample PCM data.
@@ -105,20 +113,20 @@ LLFUNCEX(Raw, 1, LCCLASSCREATE(Pcm)->InitRaw(
 // ? Halts main-thread execution until all async pcm events have completed
 /* ------------------------------------------------------------------------- */
 LLFUNC(WaitAsync, cPcms->WaitAsync());
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Pcm.* namespace functions structure                                 ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Pcm.* namespace functions structure                                 ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Pcm.* namespace functions begin
   LLRSFUNC(ArrayAsync), LLRSFUNC(Asset), LLRSFUNC(File),
   LLRSFUNC(FileAsync),  LLRSFUNC(Raw),   LLRSFUNC(WaitAsync),
 LLRSEND                                // Pcm.* namespace functions end
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Pcm.* namespace constants structure                               ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Pcm.* namespace constants                                           ## **
+** ######################################################################### **
+** ========================================================================= */
 // @ Pcm.Flags
 // < Codes:table=The table of key/value pairs of available flags
 // ? Returns the pcm flags available. Returned as key/value pairs. The
@@ -129,9 +137,13 @@ LLRSKTBEGIN(Flags)                     // Beginning of pcm loading flags
   LLRSKTITEM(PL_,FCE_MP3),             LLRSKTITEM(PL_,FCE_OGG),
   LLRSKTITEM(PL_,FCE_WAV),
 LLRSKTEND                              // End of pcm loading flags
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Pcm.* namespace constants structure                                 ## **
+** ######################################################################### **
+** ========================================================================= */
 LLRSCONSTBEGIN                         // Pcm.* namespace consts begin
-LLRSCONST(Flags),
+  LLRSCONST(Flags),
 LLRSCONSTEND                           // Pcm.* namespace consts end
 /* ========================================================================= */
 }                                      // End of Pcm namespace

@@ -1,19 +1,22 @@
-/* == MEMORY.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## These classes allow allocation and manipulation of memory. Always   ## */
-/* ## use the 'Memory' class as statically allocated so the memory will   ## */
-/* ## never be lost. The 'Data' class is used to help manipulate existing ## */
-/* ## memory and may be used when allocation isn't needed.                ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == MEMORY.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## These classes allow allocation and manipulation of memory. Always   ## **
+** ## use the 'Memory' class as statically allocated so the memory will   ## **
+** ## never be lost. The 'Data' class is used to help manipulate existing ## **
+** ## memory and may be used when allocation isn't needed.                ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfMemory {                   // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfUtil;                // Using util namespace
-using namespace IfUtf;                 // Using utf namespace
+namespace IMemory {                    // Start of private module namespace
+/* ------------------------------------------------------------------------- */
+using namespace IError::P;             using namespace IIdent::P;
+using namespace IStd::P;               using namespace IUtf;
+using namespace IUtil::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* == Read only data class ================================================= */
 class DataConst                        // Start of const Data Block Class
 { /* -- Private variables ----------------------------------------- */ private:
@@ -31,7 +34,8 @@ class DataConst                        // Start of const Data Block Class
   void HandleBitError[[noreturn]](const char*const cpWhat,
     const size_t stPos) const
   { // Get absolute position and maximum bit position
-    const size_t stAbsPos = Bit::Slot(stPos), stMax = Bit::Bit(stSize);
+    const size_t stAbsPos = UtilBitToByte(stPos),
+                 stMax = UtilBitFromByte(stSize);
     // Throw the error
     XC(cpWhat, "BitPosition",  stPos,    "BitMaximum",  stMax,
                "BytePosition", stAbsPos, "ByteMaximum", stSize,
@@ -50,7 +54,7 @@ class DataConst                        // Start of const Data Block Class
   void SetNewParams(char*const cpNPtr, const size_t stNSize)
     { SetNewPtr(cpNPtr); SetNewSize(stNSize); }
   /* -- Free the pointer --------------------------------------------------- */
-  void FreePtr(void) { MemFree(Ptr()); }
+  void FreePtr(void) { UtilMemFree(Ptr()); }
   void FreePtrIfSet(void) { if(IsPtrSet()) FreePtr(); }
   /* -- Character access by position ------------------------------- */ public:
   char &operator[](const size_t stPos) const
@@ -84,11 +88,11 @@ class DataConst                        // Start of const Data Block Class
       { return CheckValid(stPos, stBytes) && vpOther != nullptr; }
   /* -- Test a bit position ------------------------------------------------ */
   bool CheckValidBit(const size_t stPos) const
-    { return Bit::Slot(stPos) >= Size(); }
+    { return UtilBitToByte(stPos) >= Size(); }
   /* -- Find specified string ---------------------------------------------- */
   size_t Find(const string &strMatch, size_t stPos=0) const
   { // Bail if parameters are invalid
-    if(strMatch.empty() || Empty() || stPos > Size()) return string::npos;
+    if(strMatch.empty() || Empty() || stPos > Size()) return StdMaxSizeT;
     // Position
     size_t stIndex;
     // Until end of string
@@ -110,7 +114,7 @@ class DataConst                        // Start of const Data Block Class
       // Incrememnt position and try again
       stPos += stIndex;
     } // Failed
-    return string::npos;
+    return StdMaxSizeT;
   }
   /* -- Read with byte bound check ----------------------------------------- */
   template<typename Type=char>
@@ -127,17 +131,17 @@ class DataConst                        // Start of const Data Block Class
   template<typename Type>Type ReadIntLE(const size_t stPos=0) const
     { static_assert(is_integral_v<Type>, "Wrong type!");
       static_assert(sizeof(Type) > 1, "Wrong size!");
-      return ToLittleEndian(ReadInt<Type>(stPos)); }
+      return UtilToLittleEndian(ReadInt<Type>(stPos)); }
   template<typename Type>Type ReadIntBE(const size_t stPos=0) const
     { static_assert(is_integral_v<Type>, "Wrong type!");
       static_assert(sizeof(Type) > 1, "Wrong size!");
-      return ToBigEndian(ReadInt<Type>(stPos)); }
+      return UtilToBigEndian(ReadInt<Type>(stPos)); }
   /* -- Test a bit --------------------------------------------------------- */
   bool BitTest(const size_t stPos) const
   { // Throw error if invalid position
     if(!CheckValidBit(stPos)) HandleBitError("Test error!", stPos);
     // Return the tested bit
-    return Bit::Test(Ptr<char>(), stPos);
+    return UtilBitTest(Ptr<char>(), stPos);
   }
   /* -- Stringify the memory ----------------------------------------------- */
   const string ToString(void) const
@@ -152,7 +156,7 @@ class DataConst                        // Start of const Data Block Class
   }
   /* -- Return if current size would overflow specified type --------------- */
   template<typename Type=size_t>bool IsSizeOverflow(void) const
-    { return IntWillOverflow<Type>(Size()); }
+    { return UtilIntWillOverflow<Type>(Size()); }
   /* -- Init from string (does not copy) ----------------------------------- */
   explicit DataConst(const string &strSrc) :
     /* -- Initialisers ----------------------------------------------------- */
@@ -177,7 +181,7 @@ class DataConst                        // Start of const Data Block Class
   /* -- Inherit an already allocated pointer ------------------------------- */
   DataConst(const size_t stNSize, const void*const vpSrc) :
     /* -- Initialisers ----------------------------------------------------- */
-    cpPtr(ToNonConstCast               // Initialise memory
+    cpPtr(UtfToNonConstCast            // Initialise memory
       <char*>(vpSrc)),                 // To specified pointer
     stSize(stNSize)                    // Set pointer size
     /* -- Check that size is set with pointer ------------------------------ */
@@ -227,7 +231,7 @@ class Data :
   }
   /* -- Swap bits ---------------------------------------------------------- */
   void Swap8(const size_t stPos)
-    { WriteInt<uint8_t>(stPos, Swap4Bit(ReadInt<uint8_t>(stPos))); }
+    { WriteInt<uint8_t>(stPos, UtilBitSwap4(ReadInt<uint8_t>(stPos))); }
   void Swap16(const size_t stPos)
     { WriteInt<uint16_t>(stPos, SWAP_U16(ReadInt<uint16_t>(stPos))); }
   void Swap32(const size_t stPos)
@@ -242,32 +246,32 @@ class Data :
   template<typename Type>void WriteIntLE(const size_t stPos, const Type tVar)
     { static_assert(is_integral_v<Type>, "Wrong type!");
       static_assert(sizeof(Type) > 1, "Wrong size!");
-      WriteInt<Type>(stPos, ToLittleEndian(tVar)); }
+      WriteInt<Type>(stPos, UtilToLittleEndian(tVar)); }
   template<typename Type>void WriteIntLE(const Type tVar)
     { static_assert(is_integral_v<Type>, "Wrong type!");
       static_assert(sizeof(Type) > 1, "Wrong size!");
-      WriteInt<Type>(ToLittleEndian(tVar)); }
+      WriteInt<Type>(UtilToLittleEndian(tVar)); }
   template<typename Type>void WriteIntBE(const size_t stPos, const Type tVar)
     { static_assert(is_integral_v<Type>, "Wrong type!");
       static_assert(sizeof(Type) > 1, "Wrong size!");
-      WriteInt<Type>(stPos, ToBigEndian(tVar)); }
+      WriteInt<Type>(stPos, UtilToBigEndian(tVar)); }
   template<typename Type>void WriteIntBE(const Type tVar)
     { static_assert(is_integral_v<Type>, "Wrong type!");
       static_assert(sizeof(Type) > 1, "Wrong size!");
-      WriteInt<Type>(ToBigEndian(tVar)); }
+      WriteInt<Type>(UtilToBigEndian(tVar)); }
   /* -- Write specified variable as an floating point number --------------- */
   void WriteFloatLE(const float fVar) { WriteFloatLE(0, fVar); }
   void WriteFloatLE(const size_t stPos, const float fVar)
-    { WriteInt<float>(stPos, ToF32LE(fVar)); }
+    { WriteInt<float>(stPos, UtilToF32LE(fVar)); }
   void WriteFloatBE(const float fVar) { WriteFloatBE(0, fVar); }
   void WriteFloatBE(const size_t stPos, const float fVar)
-    { WriteInt<float>(stPos, ToF32BE(fVar)); }
+    { WriteInt<float>(stPos, UtilToF32BE(fVar)); }
   void WriteDoubleLE(const double dVar) { WriteDoubleLE(0, dVar); }
   void WriteDoubleLE(const size_t stPos, const double dVar)
-    { WriteInt<double>(stPos, ToF64LE(dVar)); }
+    { WriteInt<double>(stPos, UtilToF64LE(dVar)); }
   void WriteDoubleBE(const double dVar) { WriteDoubleBE(0, dVar); }
   void WriteDoubleBE(const size_t stPos, const double dVar)
-    { WriteInt<double>(stPos, ToF64BE(dVar)); }
+    { WriteInt<double>(stPos, UtilToF64BE(dVar)); }
   /* -- Write memory block at specified position --------------------------- */
   void WriteBlock(const size_t stPos, const DataConst &dData,
     const size_t stBytes) { Write(stPos, dData.Ptr<char>(), stBytes); }
@@ -278,21 +282,21 @@ class Data :
   { // Throw error if invalid position
     if(!CheckValidBit(stPos)) HandleBitError("Set error!", stPos);
     // Set the bit
-    Bit::Set(Ptr<char>(), stPos);
+    UtilBitSet(Ptr<char>(), stPos);
   }
   /* -- Clear a bit -------------------------------------------------------- */
   void BitClear(const size_t stPos)
   { // Throw error if invalid position
     if(!CheckValidBit(stPos)) HandleBitError("Clear error!", stPos);
     // Clear the bit
-    Bit::Clear(Ptr<char>(), stPos);
+    UtilBitClear(Ptr<char>(), stPos);
   }
   /* -- Flip a bit --------------------------------------------------------- */
   void BitFlip(const size_t stPos)
   { // Throw error if invalid position
     if(!CheckValidBit(stPos)) HandleBitError("Flip error!", stPos);
     // Flip the bit
-    Bit::Flip(Ptr<char>(), stPos);
+    UtilBitFlip(Ptr<char>(), stPos);
   }
   /* -- Invert specific flags ---------------------------------------------- */
   template<typename Type=uint8_t>void Invert(const size_t stPos,
@@ -333,7 +337,7 @@ class Memory :
 { /* -- Resize and preserve allocated memory ---------------------- */ private:
   void DoResize(const size_t stNSize)
   { // Realloc new amount of memory and if succeeded? Set new block and size
-    if(char*const cpNew = MemReAlloc(Ptr<char>(), Maximum(stNSize, 1)))
+    if(char*const cpNew = UtilMemReAlloc(Ptr<char>(), UtilMaximum(stNSize, 1)))
       SetNewParams(cpNew, stNSize);
     // Failed so throw error
     else XC("Re-alloc failed!", "OldSize", Size(), "NewSize", stNSize);
@@ -381,7 +385,7 @@ class Memory :
                 *ubEnd = ubPtr + stBytes;
                  ubPtr < ubEnd;
                ++ubPtr)
-      *ubPtr = ReverseByte(*ubPtr);
+      *ubPtr = UtilReverseByte(*ubPtr);
   }
   void ByteSwap8(const size_t stBytes) { ByteSwap8(0, stBytes); }
   void ByteSwap8(void) { ByteSwap8(Size()); }
@@ -454,7 +458,7 @@ class Memory :
   { // If allocated memory already exists? Free it!
     FreePtrIfSet();
     // Allocate memory forcing zero bytes to 1 byte for compatibility.
-    if(char*const cpNew = MemAlloc<char>(Maximum(stBytesRequested, 1)))
+    if(char*const cpNew = UtilMemAlloc<char>(UtilMaximum(stBytesRequested, 1)))
       return SetNewParams(cpNew, stBytesRequested);
     // The memory was freed so this memory is no longer available.
     SetNewSize();
@@ -510,8 +514,8 @@ class Memory :
   explicit Memory(const size_t stNSize) :
     /* -- Initialisers ----------------------------------------------------- */
     Data{ stNSize,                     // Initialise data base class
-      MemAlloc<void>                   // Allocate memory (checked by CTOR)
-        (Maximum(stNSize, 1)) }        // Allocate requested size
+      UtilMemAlloc<void>                   // Allocate memory (checked by CTOR)
+        (UtilMaximum(stNSize, 1)) }    // Allocate requested size
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Alloc with fill ---------------------------------------------------- */
@@ -536,5 +540,7 @@ class Memory :
 typedef list<Memory> MemoryList;       // List of memory blocks
 typedef vector<Memory> MemoryVector;   // A vector of memory classes
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */
