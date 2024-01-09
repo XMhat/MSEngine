@@ -1,13 +1,13 @@
-/* == PIXMOD.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This is a POSIX specific module that parses executable files to     ## */
-/* ## reveal information about it. (ToDo: This is not implemented yet!).  ## */
-/* ## Since we support MacOS and Linux, we can support both systems very  ## */
-/* ## simply with POSIX compatible calls.                                 ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == PIXMOD.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This is a POSIX specific module that parses executable files to     ## **
+** ## reveal information about it. (ToDo: This is not implemented yet!).  ## **
+** ## Since we support MacOS and Linux, we can support both systems very  ## **
+** ## simply with POSIX compatible calls.                                 ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* == Version information subclass ========================================= */
 struct SysModule :

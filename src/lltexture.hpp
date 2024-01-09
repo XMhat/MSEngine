@@ -1,27 +1,30 @@
-/* == LLTEXTURE.HPP ======================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Defines the 'Texture' namespace and methods for the guest to use in ## */
-/* ## Lua. This file is invoked by 'lualib.hpp'.                          ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == LLTEXTURE.HPP ======================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Defines the 'Texture' namespace and methods for the guest to use in ## **
+** ## Lua. This file is invoked by 'lualib.hpp'.                          ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 #pragma once                           // Only one incursion allowed
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ========================================================================= */
 // % Texture
 /* ------------------------------------------------------------------------- */
 // ! The texture class allows the programmer to draw textures on the screen
 // ! which also includes font management.
 /* ========================================================================= */
-namespace NsTexture {                  // Texture namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfTexture;             // Using texture namespace
-using namespace IfConsole;             // Using console namespace
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+namespace LLTexture {                  // Texture namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IConsole::P;           using namespace IFbo::P;
+using namespace IImage::P;             using namespace IOgl::P;
+using namespace ITexture::P;           using namespace Lib::OS::GlFW;
+/* ========================================================================= **
+** ######################################################################### **
+** ## Texture:* member functions                                          ## **
+** ######################################################################### **
+** ========================================================================= */
 // $ Texture:BlitLTRB
 // > X:number=The X screen position of the string.
 // > Y:number=The Y screen position of the string.
@@ -543,7 +546,7 @@ LLFUNCBEGIN(TileAS)
     LCGETNUMLG(GLfloat, 4, 0, tCref.GetFHeight(), "Top"),
     LCGETNUMLG(GLfloat, 5, 0, tCref.GetFWidth(),  "Right"),
     LCGETNUMLG(GLfloat, 6, 0, tCref.GetFHeight(), "Bottom"));
-  LCPUSHINT(tCref.GetTileCount(stId)-1);
+  LCPUSHVAR(tCref.GetTileCount(stId)-1);
 LLFUNCENDEX(1)
 /* ========================================================================= */
 // $ Texture:TileASD
@@ -565,7 +568,7 @@ LLFUNCBEGIN(TileASD)
     fW = LCGETNUMLG(GLfloat, 5, 0, tCref.GetFWidth()-fX,  "Width"),
     fH = LCGETNUMLG(GLfloat, 6, 0, tCref.GetFHeight()-fY, "Height");
   tCref.AddTileDORWH(stId, fX, fY, fW, fH);
-  LCPUSHINT(tCref.GetTileCount(stId)-1);
+  LCPUSHVAR(tCref.GetTileCount(stId)-1);
 LLFUNCENDEX(1)
 /* ========================================================================= */
 // $ Texture:TileA
@@ -584,7 +587,7 @@ LLFUNCBEGIN(TileA)
     LCGETNUMLG(GLfloat, 3, 0, tCref.GetFHeight(), "Top"),
     LCGETNUMLG(GLfloat, 4, 0, tCref.GetFWidth(),  "Right"),
     LCGETNUMLG(GLfloat, 5, 0, tCref.GetFHeight(), "Bottom"));
-  LCPUSHINT(tCref.GetTileCount()-1);
+  LCPUSHVAR(tCref.GetTileCount()-1);
 LLFUNCENDEX(1)
 /* ========================================================================= */
 // $ Texture:TileAD
@@ -604,7 +607,7 @@ LLFUNCBEGIN(TileAD)
     fW = LCGETNUMLG(GLfloat, 4, 0, tCref.GetFWidth()-fX,  "Width"),
     fH = LCGETNUMLG(GLfloat, 5, 0, tCref.GetFHeight()-fY, "Height");
   tCref.AddTileDORWH(0, fX, fY, fW, fH);
-  LCPUSHINT(tCref.GetTileCount()-1);
+  LCPUSHVAR(tCref.GetTileCount()-1);
 LLFUNCENDEX(1)
 /* ========================================================================= */
 // $ Texture:TileSS
@@ -697,7 +700,7 @@ LLFUNCEND
 // < Count:integer=The handle of the texture created.
 // ? Returns number of tiles found in the loaded texture file.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(TileGTC, 1, LCPUSHINT(LCGETPTR(1, Texture)->GetTileCount()));
+LLFUNCEX(TileGTC, 1, LCPUSHVAR(LCGETPTR(1, Texture)->GetTileCount()));
 /* ========================================================================= */
 // $ Texture:TileGSTC
 // > Id:integer=The id of the sub-texture to get the count for.
@@ -707,7 +710,7 @@ LLFUNCEX(TileGTC, 1, LCPUSHINT(LCGETPTR(1, Texture)->GetTileCount()));
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(TileGSTC)
   const Texture &tCref = *LCGETPTR(1, Texture);
-  LCPUSHINT(tCref.GetTileCount(
+  LCPUSHVAR(tCref.GetTileCount(
     LCGETINTLGE(size_t, 2, 0, tCref.GetSubCount(), "TexId")));
 LLFUNCENDEX(1)
 /* ========================================================================= */
@@ -715,26 +718,26 @@ LLFUNCENDEX(1)
 // < Count:integer=The number of sub-textures in this texture
 // ? Returns number of sub-textures found in the loaded image file.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetSubCount, 1, LCPUSHINT(LCGETPTR(1, Texture)->GetSubCount()));
+LLFUNCEX(GetSubCount, 1, LCPUSHVAR(LCGETPTR(1, Texture)->GetSubCount()));
 /* ========================================================================= */
 // $ Texture:GetHeight
 // < Height:integer=The handle of the new mask created.
 // ? Returns height of texture.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetHeight, 1, LCPUSHINT(LCGETPTR(1, Texture)->DimGetHeight()));
+LLFUNCEX(GetHeight, 1, LCPUSHVAR(LCGETPTR(1, Texture)->DimGetHeight()));
 /* ========================================================================= */
 // $ Texture:GetName
 // < Name:string=Name of the texture.
 // ? If this texture was loaded by a filename or it was set with a custom id.
 // ? This function returns that name which was assigned to it.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetName, 1, LCPUSHXSTR(LCGETPTR(1, Texture)->IdentGet()));
+LLFUNCEX(GetName, 1, LCPUSHVAR(LCGETPTR(1, Texture)->IdentGet()));
 /* ========================================================================= */
 // $ Texture:GetWidth
 // < Width:integer=The handle of the new mask created.
 // ? Returns width of texture.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetWidth, 1, LCPUSHINT(LCGETPTR(1, Texture)->DimGetWidth()));
+LLFUNCEX(GetWidth, 1, LCPUSHVAR(LCGETPTR(1, Texture)->DimGetWidth()));
 /* ========================================================================= */
 // $ Texture:Dump
 // ? Dumps the texture to the specified file in the specified format.
@@ -902,11 +905,11 @@ LLFUNC(PopColour, LCGETPTR(1, Texture)->PopQuadColour());
 // ? and an error will be generated if accessed.
 /* ------------------------------------------------------------------------- */
 LLFUNC(Destroy, LCCLASSDESTROY(1, Texture));
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Texture:* member functions structure                                ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Texture:* member functions structure                                ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Texture:* member functions begin
   LLRSFUNC(Blit),       LLRSFUNC(BlitI),       LLRSFUNC(BlitILT),
   LLRSFUNC(BlitILTA),   LLRSFUNC(BlitILTRB),   LLRSFUNC(BlitILTRBA),
@@ -966,11 +969,11 @@ LLFUNCEX(CreateTS, 1, LCCLASSCREATE(Texture)->InitImage(
 // ? properties!
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Console, 1, LCCLASSCREATEPTR(Texture, cConsole->GetTexture()));
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Texture.* namespace functions structure                             ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Texture.* namespace functions structure                             ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Texture.* namespace functions begin
   LLRSFUNC(Create), LLRSFUNC(CreateTS), LLRSFUNC(Console),
 LLRSEND                                // Texture.* namespace functions end

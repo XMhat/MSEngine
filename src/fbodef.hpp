@@ -1,17 +1,18 @@
-/* == FBODEF.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Definitions for the operatibility of framebuffer objects.           ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == FBODEF.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Definitions for the operatibility of framebuffer objects.           ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfFbo {                      // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace Lib::OS::GlFW;         // Using GLFW library functions
-using namespace IfDim;                 // Using dimensions namespace
-using namespace IfUtil;                // Using utility namespace
+namespace IFbo {                       // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IDim;                  using namespace IUtil::P;
+using namespace Lib::OS::GlFW;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Defines -------------------------------------------------------------- */
 constexpr static const size_t
   /* -- Defines to describe a simple triangle  ----------------------------- */
@@ -60,18 +61,18 @@ struct FboVert                         // Formatted data for OpenGL
   TriVertex      faVertex;             // Vertex specific data to send
   TriColour      faColour;             // Colour specific data to send
 };/* ----------------------------------------------------------------------- */
-/* FboVert[0].TriCoord  =  8 bytes @ GLfloat[ 0] - Point 1 / Texcoord 1      */
-/*     "     .TriVertex =  8 bytes @ GLfloat[ 8] -    "    / Vertex 1        */
-/*     "     .TriColour = 16 bytes @ GLfloat[16] -    "    / Colour 1        */
-/* FboVert[1].TriCoor   =  8 bytes @ GLfloat[32] - Point 2 / Texcoord 2      */
-/*     "     .TriVertex =  8 bytes @ GLfloat[40] -    "    / Vertex 2        */
-/*     "     .TriColour = 16 bytes @ GLfloat[48] -    "    / Colour 2        */
-/* FboVert[2].TriCoord  =  8 bytes @ GLfloat[64] - Point 3 / Texcoord 3      */
-/*     "     .TriVertex =  8 bytes @ GLfloat[72] -    "    / Vertex 3        */
-/*     "     .TriColour = 16 bytes @ GLfloat[80] -    "    / Colour 3        */
-/* +-- Single interlaced triangle --+- T(Vec2)=Texcoord(XY) -+-----+-----+-- */
-/* + TTVVCCCC | TTVVCCCC | TTVVCCCC |  V(Vec2)=Vertex(XY)    | ... | ... |   */
-/* +----------+----------+----------+- C(Vec4)=Colour(RGBA) -+-----+-----+-- */
+/* FboVert[0].TriCoord  =  8 bytes @ GLfloat[ 0] - Point 1 / Texcoord 1      **
+**     "     .TriVertex =  8 bytes @ GLfloat[ 8] -    "    / Vertex 1        **
+**     "     .TriColour = 16 bytes @ GLfloat[16] -    "    / Colour 1        **
+** FboVert[1].TriCoor   =  8 bytes @ GLfloat[32] - Point 2 / Texcoord 2      **
+**     "     .TriVertex =  8 bytes @ GLfloat[40] -    "    / Vertex 2        **
+**     "     .TriColour = 16 bytes @ GLfloat[48] -    "    / Colour 2        **
+** FboVert[2].TriCoord  =  8 bytes @ GLfloat[64] - Point 3 / Texcoord 3      **
+**     "     .TriVertex =  8 bytes @ GLfloat[72] -    "    / Vertex 3        **
+**     "     .TriColour = 16 bytes @ GLfloat[80] -    "    / Colour 3        **
+** +-- Single interlaced triangle --+- T(Vec2)=Texcoord(XY) -+-----+-----+-- **
+** + TTVVCCCC | TTVVCCCC | TTVVCCCC |  V(Vec2)=Vertex(XY)    | ... | ... |   **
+** +----------+----------+----------+- C(Vec4)=Colour(RGBA) -+-----+-----+-- */
 typedef array<FboVert,stVertexPerTriangle> FboTri;     // All triangles data
 typedef vector<FboTri>                   FboTriList; // Render triangles list
 /* == Fbo colour class ===================================================== */
@@ -95,20 +96,20 @@ class FboColour                        // Members initially private
   void SetColourAlpha(const GLfloat fA) { GetColour()[3] = fA; }
   /* ----------------------------------------------------------------------- */
   void SetColourRedInt(const unsigned int uiR)
-    { SetColourRed(NormaliseEx<GLfloat>(uiR)); }
+    { SetColourRed(UtilNormaliseEx<GLfloat>(uiR)); }
   void SetColourGreenInt(const unsigned int uiG)
-    { SetColourGreen(NormaliseEx<GLfloat>(uiG)); }
+    { SetColourGreen(UtilNormaliseEx<GLfloat>(uiG)); }
   void SetColourBlueInt(const unsigned int uiB)
-    { SetColourBlue(NormaliseEx<GLfloat>(uiB)); }
+    { SetColourBlue(UtilNormaliseEx<GLfloat>(uiB)); }
   void SetColourAlphaInt(const unsigned int uiA)
-    { SetColourAlpha(NormaliseEx<GLfloat>(uiA)); }
+    { SetColourAlpha(UtilNormaliseEx<GLfloat>(uiA)); }
   /* ----------------------------------------------------------------------- */
   void SetColourInt(const unsigned int uiValue)
   { // Strip bits and send to proper clear colour
-    SetColourRed(NormaliseEx<GLfloat,16>(uiValue));
-    SetColourGreen(NormaliseEx<GLfloat,8>(uiValue));
-    SetColourBlue(NormaliseEx<GLfloat>(uiValue));
-    SetColourAlpha(NormaliseEx<GLfloat,24>(uiValue));
+    SetColourRed(UtilNormaliseEx<GLfloat,16>(uiValue));
+    SetColourGreen(UtilNormaliseEx<GLfloat,8>(uiValue));
+    SetColourBlue(UtilNormaliseEx<GLfloat>(uiValue));
+    SetColourAlpha(UtilNormaliseEx<GLfloat,24>(uiValue));
   }
   /* ----------------------------------------------------------------------- */
   void SetColourRed(const FboColour &cO)
@@ -123,22 +124,22 @@ class FboColour                        // Members initially private
   void ResetColour(void) { GetColour().fill(-1.0f); }
   /* ----------------------------------------------------------------------- */
   bool RedColourNotEqual(const FboColour &cO) const
-    { return IsFloatNotEqual(GetColourRed(), cO.GetColourRed()); }
+    { return UtilIsFloatNotEqual(GetColourRed(), cO.GetColourRed()); }
   bool GreenColourNotEqual(const FboColour &cO) const
-    { return IsFloatNotEqual(GetColourGreen(), cO.GetColourGreen()); }
+    { return UtilIsFloatNotEqual(GetColourGreen(), cO.GetColourGreen()); }
   bool BlueColourNotEqual(const FboColour &cO) const
-    { return IsFloatNotEqual(GetColourBlue(), cO.GetColourBlue()); }
+    { return UtilIsFloatNotEqual(GetColourBlue(), cO.GetColourBlue()); }
   bool AlphaColourNotEqual(const FboColour &cO) const
-    { return IsFloatNotEqual(GetColourAlpha(), cO.GetColourAlpha()); }
+    { return UtilIsFloatNotEqual(GetColourAlpha(), cO.GetColourAlpha()); }
   /* ----------------------------------------------------------------------- */
   template<typename IntType,
     class ArrayType=array<IntType,
       sizeof(FboRGBA)/sizeof(GLfloat)>>
     const ArrayType Cast(void) const
-  { return { Denormalise<IntType>(GetColourRed()),
-             Denormalise<IntType>(GetColourGreen()),
-             Denormalise<IntType>(GetColourBlue()),
-             Denormalise<IntType>(GetColourAlpha()) }; }
+  { return { UtilDenormalise<IntType>(GetColourRed()),
+             UtilDenormalise<IntType>(GetColourGreen()),
+             UtilDenormalise<IntType>(GetColourBlue()),
+             UtilDenormalise<IntType>(GetColourAlpha()) }; }
   /* ----------------------------------------------------------------------- */
   bool SetColour(const FboColour &fcData)
   { // Red clear colour change?
@@ -170,19 +171,19 @@ class FboColour                        // Members initially private
   FboColour(const unsigned int uiR, const unsigned int uiG,
             const unsigned int uiB, const unsigned int uiA) :
     /* -- Initialisers ----------------------------------------------------- */
-    fboRGBA{NormaliseEx<GLfloat>(uiR), // Copy and normalise red component
-            NormaliseEx<GLfloat>(uiG), // Copy and normalise green component
-            NormaliseEx<GLfloat>(uiB), // Copy and normalise blue component
-            NormaliseEx<GLfloat>(uiA)} // Copy and normalise alpha component
+    fboRGBA{UtilNormaliseEx<GLfloat>(uiR), // Copy/normalise red component
+            UtilNormaliseEx<GLfloat>(uiG), // Copy/normalise green component
+            UtilNormaliseEx<GLfloat>(uiB), // Copy/normalise blue component
+            UtilNormaliseEx<GLfloat>(uiA)} // Copy/normalise alpha component
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Init constructor with RGB ints ------------------------------------- */
   FboColour(const unsigned int uiR, const unsigned int uiG,
             const unsigned int uiB) :
     /* -- Initialisers ----------------------------------------------------- */
-    fboRGBA{NormaliseEx<GLfloat>(uiR), // Copy and normalise red component
-            NormaliseEx<GLfloat>(uiG), // Copy and normalise green component
-            NormaliseEx<GLfloat>(uiB), // Copy and normalise blue component
+    fboRGBA{UtilNormaliseEx<GLfloat>(uiR), // Copy/normalise red component
+            UtilNormaliseEx<GLfloat>(uiG), // Copy/normalise green component
+            UtilNormaliseEx<GLfloat>(uiB), // Copy/normalise blue component
             1.0f }                     // Opaque alpha
     /* -- No code ---------------------------------------------------------- */
     { }
@@ -190,10 +191,10 @@ class FboColour                        // Members initially private
   FboColour(const uint8_t ucR, const uint8_t ucG,
             const uint8_t ucB, const uint8_t ucA) :
     /* -- Initialisers ----------------------------------------------------- */
-    fboRGBA{Normalise<GLfloat>(ucR),   // Copy and normalise red component
-            Normalise<GLfloat>(ucG),   // Copy and normalise green component
-            Normalise<GLfloat>(ucB),   // Copy and normalise blue component
-            Normalise<GLfloat>(ucA)}   // Copy and normalise alpha component
+    fboRGBA{UtilNormalise<GLfloat>(ucR),   // Copy/normalise red component
+            UtilNormalise<GLfloat>(ucG),   // Copy/normalise green component
+            UtilNormalise<GLfloat>(ucB),   // Copy/normalise blue component
+            UtilNormalise<GLfloat>(ucA)}   // Copy/normalise alpha component
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Init constructor --------------------------------------------------- */
@@ -384,5 +385,7 @@ struct FboRenderItem :                 // Rendering item data class
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

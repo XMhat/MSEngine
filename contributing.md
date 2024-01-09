@@ -10,4 +10,4 @@ Thank you for your interest in contributing to the [MS-ENGINE](https://github.co
 ## Contributors…
 * Your name here.
 
-## Copyright © 2006-2023 MS-Design. All Rights Reserved.
+## Copyright © 2006-2024 MS-Design. All Rights Reserved.

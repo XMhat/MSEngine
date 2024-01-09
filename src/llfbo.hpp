@@ -1,29 +1,32 @@
-/* == LLFBO.HPP ============================================================ */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Defines the 'Fbo' namespace and methods for the guest to use in     ## */
-/* ## Lua. This file is invoked by 'lualib.hpp'.                          ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == LLFBO.HPP ============================================================ **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Defines the 'Fbo' namespace and methods for the guest to use in     ## **
+** ## Lua. This file is invoked by 'lualib.hpp'.                          ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 #pragma once                           // Only one incursion allowed
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ========================================================================= */
 // % Fbo
 /* ------------------------------------------------------------------------- */
 // ! The fbo class allows the programmer to create an OpenGL frame-buffer
 // ! object which they can use to create seperate drawing canvases which they
 // ! can apply special effects to without modifying other canvases.
 /* ========================================================================= */
-namespace NsFbo {                      // Fbo namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfFboMain;             // Using fbomain namespace
-using namespace IfSShot;               // Using screenshot namespace
-using namespace IfConsole;             // Using console namespace
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+namespace LLFbo {                      // Fbo namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IConsole::P;           using namespace IFbo::P;
+using namespace IFboMain::P;           using namespace ILua::P;
+using namespace IOgl::P;               using namespace ISShot::P;
+using namespace IString::P;            using namespace Lib::OS::GlFW;
+/* ========================================================================= **
+** ######################################################################### **
+** ## Fbo:* member functions                                              ## **
+** ######################################################################### **
+** ========================================================================= */
 // $ Fbo.Blend
 // > srcRGB:integer=How the source RGB blending factors are computed.
 // > dstRGB:integer=How the dest RGB blending factors are computed.
@@ -136,6 +139,14 @@ LLFUNC(SetOrtho, LCGETULPTR(1, Fbo)->SetOrtho(
   LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom")));
 /* ========================================================================= */
+// $ Fbo:SetWireframe
+// > Wireframe:Boolean=Use polygon mode GL_LINE (true) or GL_FILL (false).
+// ? Sets drawing the contents in the fbo in wireframe more or texture filled
+// ? mode (default).
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetWireframe,
+  LCGETULPTR(1, Fbo)->SetWireframe(LCGETBOOL(2, "Wireframe")));
+/* ========================================================================= */
 // $ Fbo:SetTexCoord
 // > Left:number=The left co-ordinate.
 // > Top:number=The top co-ordinate.
@@ -225,20 +236,20 @@ LLFUNC(BlitT, FboActive()->BlitTri(*LCGETPTR(1, Fbo),
 // ? Returns the number of floating point numbers entered into the display list
 // ? on the last rendered frame.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetLFloatCount, 1, LCPUSHINT(LCGETPTR(1, Fbo)->GetTris()));
+LLFUNCEX(GetLFloatCount, 1, LCPUSHVAR(LCGETPTR(1, Fbo)->GetTris()));
 /* ========================================================================= */
 // $ Fbo:GetFloatCount
 // < Count:integer=Number of floats in display lists.
 // ? Returns the number of floating point numbers currently entered into the
 // ? display list.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetFloatCount, 1, LCPUSHINT(LCGETPTR(1, Fbo)->GetTrisNow()));
+LLFUNCEX(GetFloatCount, 1, LCPUSHVAR(LCGETPTR(1, Fbo)->GetTrisNow()));
 /* ========================================================================= */
 // $ Fbo:IsFinished
 // < State:boolean=Is the fbo finished
 // ? Returns if the fbo has been finished.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(IsFinished, 1, LCPUSHBOOL(!!LCGETPTR(1, Fbo)->GetFinishCount()));
+LLFUNCEX(IsFinished, 1, LCPUSHVAR(!!LCGETPTR(1, Fbo)->GetFinishCount()));
 /* ========================================================================= */
 // $ Fbo:GetMatrix
 // < Width:number=Total count of horizontal viewable pixels.
@@ -253,12 +264,9 @@ LLFUNCEX(IsFinished, 1, LCPUSHBOOL(!!LCGETPTR(1, Fbo)->GetFinishCount()));
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(GetMatrix)
   const Fbo &fboCref = *LCGETPTR(1, Fbo);
-  LCPUSHNUM(fboCref.GetCoRight());
-  LCPUSHNUM(fboCref.GetCoBottom());
-  LCPUSHNUM(fboCref.fcStage.GetCoLeft());
-  LCPUSHNUM(fboCref.fcStage.GetCoTop());
-  LCPUSHNUM(fboCref.fcStage.GetCoRight());
-  LCPUSHNUM(fboCref.fcStage.GetCoBottom());
+  LCPUSHVAR(fboCref.GetCoRight(),         fboCref.GetCoBottom(),
+            fboCref.fcStage.GetCoLeft(),  fboCref.fcStage.GetCoTop(),
+            fboCref.fcStage.GetCoRight(), fboCref.fcStage.GetCoBottom());
 LLFUNCENDEX(6)
 /* ========================================================================= */
 // $ Fbo:Dump
@@ -268,7 +276,7 @@ LLFUNCENDEX(6)
 // ? 'file' parameter to use an engine generated file.
 /* ------------------------------------------------------------------------- */
 LLFUNC(Dump, cSShot->DumpFBO(*LCGETPTR(1, Fbo),
-  GetStackCount(lS) < 2 ? cCommon->Blank() : LCGETCPPFILE(2, "File")));
+  LuaUtilStackSize(lS) < 2 ? cCommon->Blank() : LCGETCPPFILE(2, "File")));
 /* ========================================================================= */
 // $ Fbo:Reserve
 // > Vertexes:integer=How many 64-bit floats to reserve in GPU float list
@@ -288,11 +296,11 @@ LLFUNC(Reserve, LCGETPTR(1, Fbo)->Reserve(
 // ? error will be generated if accessed.
 /* ------------------------------------------------------------------------- */
 LLFUNC(Destroy, LCCLASSDESTROY(1, Fbo));
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Fbo:* member functions structure                                    ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Fbo:* member functions structure                                    ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Fbo:* member functions begin
   LLRSFUNC(Activate),      LLRSFUNC(Blit),           LLRSFUNC(BlitT),
   LLRSFUNC(Destroy),       LLRSFUNC(Dump),           LLRSFUNC(Finish),
@@ -301,7 +309,7 @@ LLRSMFBEGIN                            // Fbo:* member functions begin
   LLRSFUNC(SetClear),      LLRSFUNC(SetClearColour), LLRSFUNC(SetColour),
   LLRSFUNC(SetColourEx),   LLRSFUNC(SetFilter),      LLRSFUNC(SetOrtho),
   LLRSFUNC(SetTexCoord),   LLRSFUNC(SetTexCoordEx),  LLRSFUNC(SetVertex),
-  LLRSFUNC(SetVertexA),    LLRSFUNC(SetVertexEx),
+  LLRSFUNC(SetVertexA),    LLRSFUNC(SetVertexEx),    LLRSFUNC(SetWireframe),
 LLRSEND                                // Fbo:* member functions end
 /* ========================================================================= */
 // $ Fbo.Main
@@ -337,7 +345,7 @@ LLFUNC(Draw, cFboMain->SetDraw());
 // ? < State:boolean=Is the main fbo set to redraw?
 // ? Returns if the main fbo is set to redraw.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(IsDrawing, 1, LCPUSHBOOL(cFboMain->CanDraw()));
+LLFUNCEX(IsDrawing, 1, LCPUSHVAR(cFboMain->CanDraw()));
 /* ========================================================================= */
 // $ Fbo.OnRedraw
 // > Func:function=The main redraw function to change to
@@ -355,7 +363,7 @@ LLFUNC(OnRedraw, LCSETEVENTCB(cLua->lrMainRedraw));
 // ? function is in Fbo because it only applies to opengl mode. It also
 // ? overrides the 'con_disabled' setting.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ConSet, 1, LCPUSHBOOL(cConsole->DoSetVisible(LCGETBOOL(1, "State"))));
+LLFUNCEX(ConSet, 1, LCPUSHVAR(cConsole->DoSetVisible(LCGETBOOL(1, "State"))));
 /* ========================================================================= */
 // $ Fbo.ConHeight
 // > State:number=The console height.
@@ -369,7 +377,7 @@ LLFUNC(ConHeight, cConsole->SetHeight(LCGETNUMLG(GLfloat, 1, 0, 1, "Height")));
 // ? Returns true if the console is showing, false if it is not. This function
 // ? is in Fbo because it only applies to opengl mode.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ConEnabled, 1, LCPUSHBOOL(cConsole->IsVisible()));
+LLFUNCEX(ConEnabled, 1, LCPUSHVAR(cConsole->IsVisible()));
 /* ========================================================================= */
 // $ Fbo.ConLock
 // < State:boolean=The console visibility lock state.
@@ -377,21 +385,21 @@ LLFUNCEX(ConEnabled, 1, LCPUSHBOOL(cConsole->IsVisible()));
 // ? because it only applies to opengl mode.
 /* ------------------------------------------------------------------------- */
 LLFUNC(ConLock, cConsole->SetCantDisable(LCGETBOOL(1, "State")));
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Fbo.* namespace functions structure                                 ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Fbo.* namespace functions structure                                 ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Fbo.* namespace functions begin
   LLRSFUNC(ConEnabled), LLRSFUNC(ConHeight), LLRSFUNC(ConLock),
   LLRSFUNC(ConSet),     LLRSFUNC(Create),    LLRSFUNC(Draw),
   LLRSFUNC(IsDrawing),  LLRSFUNC(Main),      LLRSFUNC(OnRedraw),
 LLRSEND                                // Fbo.* namespace functions end
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Fbo.* namespace constants structure                                 ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Fbo.* namespace constants                                           ## **
+** ######################################################################### **
+** ========================================================================= */
 // @ Fbo.Blends
 // < Codes:table=The table of key/value pairs of available flags
 // ? Returns the texture filters available. Returned as key/value pairs. The
@@ -429,7 +437,7 @@ LLRSKTBEGIN(Blends)                    // Beginning of blending types
   LLRSKTITEM(OB_,C_C),                 LLRSKTITEM(OB_,C_A),
   LLRSKTITEM(OB_,S_A_S),
 LLRSKTEND                              // End of blending types
-/* ======================================================================= */
+/* ========================================================================= */
 // @ Fbo.Filters
 // < Codes:table=The table of key/value pairs of available flags
 // ? Returns the texture filters available. Returned as key/value pairs. The
@@ -485,7 +493,11 @@ LLRSKTBEGIN(Filters)                   // Beginning of filter types
   LLRSKTITEM(OF_,N_L_MM_N),            LLRSKTITEM(OF_,L_L_MM_N),
   LLRSKTITEM(OF_,N_L_MM_L),            LLRSKTITEM(OF_,L_L_MM_L),
 LLRSKTEND                              // End of filter types
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Fbo.* namespace constants structure                                 ## **
+** ######################################################################### **
+** ========================================================================= */
 LLRSCONSTBEGIN                         // Fbo.* namespace consts begin
   LLRSCONST(Blends), LLRSCONST(Filters),
 LLRSCONSTEND                           // Fbo.* namespace consts end

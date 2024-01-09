@@ -1,19 +1,21 @@
-/* == LUAREF.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This class manages function callbacks for certain core engine       ## */
-/* ## events which should only be used witrh the main Lua thread only.    ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == LUAREF.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This class manages function callbacks for certain core engine       ## **
+** ## events which should only be used witrh the main Lua thread only.    ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfLuaFunc {                   // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfLuaUtil;             // Using luautil namespace
-using namespace IfLog;                 // Using log namespace
-using namespace IfLuaRef;              // Using luaref namespace
-using namespace IfCollector;           // Using collector namespace
+namespace ILuaFunc {                   // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace ICollector::P;         using namespace IError::P;
+using namespace IIdent::P;             using namespace ILog::P;
+using namespace ILuaRef::P;            using namespace ILuaUtil::P;
+using namespace IStd::P;               using namespace ISysUtil::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- LuaFunc ollector class for collector data and custom variables ------- */
 BEGIN_COLLECTOREX(LuaFuncs, LuaFunc, CLHelperSafe, /**/,/**/, public LuaRef<1>)
 /* -- LuaFunc class -------------------------------------------------------- */
@@ -49,7 +51,7 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
   /* -- Check to see if we can add the specified number of parameters ------ */
   bool LuaFuncCheckAddParams(const size_t stParams, const char*const cpType)
   { // Return if value is valid
-    if(StackHasCapacity(cParent.LuaRefGetState(), stParams)) return true;
+    if(LuaUtilIsStackAvail(cParent.LuaRefGetState(), stParams)) return true;
     // Write warning to log
     cLog->LogWarningExSafe("LuaFunc cannot add $ more $ parameters for "
       "calling '$' due to integer or potential stack overflow!",
@@ -60,63 +62,63 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
   /* -- Send nothing ------------------------------------------------------- */
   void LuaFuncParams(int&) { }
   /* -- Send string vector ------------------------------------------------- */
-  template<typename... Vars>
+  template<typename ...VarArgs>
     void LuaFuncParams(int &iParams, const StrVector &svList,
-      const Vars... vVars)
+      const VarArgs &...vaVars)
   { // If we have items
     if(!svList.empty())
     { // Make sure the number of parameters would not overflow
       if(!LuaFuncCheckAddParams(svList.size(), "vector strings")) return;
       // Convert to table on stack
       for(const string &strStr : svList)
-        PushCppString(cParent.LuaRefGetState(), strStr);
+        LuaUtilPushStr(cParent.LuaRefGetState(), strStr);
       // Increase number of parameters
       iParams += static_cast<int>(svList.size());
     } // Next item
-    LuaFuncParams(iParams, vVars...);
+    LuaFuncParams(iParams, vaVars...);
   }
   /* ----------------------------------------------------------------------- */
-  template<typename... Vars>
+  template<typename ...VarArgs>
     void LuaFuncParams(int &iParams, const string &strVal,
-      const Vars... vVars)
+      const VarArgs &...vaVars)
   { // Make sure the number of parameters would not overflow
     if(!LuaFuncCheckAddParams(1, "string")) return;
     // Copy string to stack
-    PushCppString(cParent.LuaRefGetState(), strVal);
+    LuaUtilPushStr(cParent.LuaRefGetState(), strVal);
     // Next item
-    LuaFuncParams(++iParams, vVars...);
+    LuaFuncParams(++iParams, vaVars...);
   }
   /* -- Helper function to make LUAREFDISPATCH parameters ------------------ */
 #define MP(t,s,f) \
-  template<typename... Vars> \
+  template<typename ...VarArgs> \
     void LuaFunc ## Params(int &iParams, const t tValue, \
-      const Vars... vVars) \
+      const VarArgs &...vaVars) \
   { \
     if(!LuaFuncCheckAddParams(1, s)) return; \
     f(cParent.LuaRefGetState(), tValue); \
-    LuaFunc ## Params(++iParams, vVars...); \
+    LuaFunc ## Params(++iParams, vaVars...); \
   }
   /* -- A function for each type ------------------------------------------- */
-  MP(signed long long,   "int64",  PushInteger)
-  MP(unsigned long long, "uint64", PushInteger)
-  MP(signed int,         "int",    PushInteger)
-  MP(unsigned int,       "uint",   PushInteger)
-  MP(float,              "float",  PushNumber)
-  MP(double,             "double", PushNumber)
-  MP(bool,               "bool",   PushBoolean)
+  MP(signed long long,   "int64",  LuaUtilPushInt)
+  MP(unsigned long long, "uint64", LuaUtilPushInt)
+  MP(signed int,         "int",    LuaUtilPushInt)
+  MP(unsigned int,       "uint",   LuaUtilPushInt)
+  MP(float,              "float",  LuaUtilPushNum)
+  MP(double,             "double", LuaUtilPushNum)
+  MP(bool,               "bool",   LuaUtilPushBool)
   /* -- Done with helper function ------------------------------------------ */
 #undef MP
   /* -- Send a function ---------------------------------------------------- */
   void LuaFuncPushFunc(void) const
   { // Get referenced function and return if succeeded
-    if(GetReferencedFunction(cParent.LuaRefGetState(), iRef)) return;
+    if(LuaUtilGetRefFunc(cParent.LuaRefGetState(), iRef)) return;
     // Failed so throw error
     XC("Pushed function is not a valid function!",
        "Name",  IdentGet(), "Value", iRef,
-       "Stack", GetVarStack(cParent.LuaRefGetState()));
+       "Stack", LuaUtilGetVarStack(cParent.LuaRefGetState()));
   }
   /* -- Dispatch the requested variables ----------------------------------- */
-  template<typename... Vars>void LuaFuncDispatch(const Vars... vArgs)
+  template<typename ...VarArgs>void LuaFuncDispatch(const VarArgs &...vArgs)
   { // Push the call back function
     LuaFuncPushFunc();
     // Number of parameters written. This cannot be optimised with sizeof...()
@@ -125,15 +127,17 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
     // Push all the parameters
     LuaFuncParams(iParams, vArgs...);
     // Do the call
-    CallFuncEx(cParent.LuaRefGetState(), iParams);
+    LuaUtilCallFuncEx(cParent.LuaRefGetState(), iParams);
   }
   /* -- Dispatch the requested variables safely ---------------------------- */
-  template<typename... Vars>
-    void LuaFuncProtectedDispatch(const int iReturns, const Vars... vArgs)
+  template<typename ...VarArgs>
+    void LuaFuncProtectedDispatch(const int iReturns, const VarArgs &...vArgs)
   { // Save stack position so we can restore it on error
-    const int iStack = GetStackCount(cParent.LuaRefGetState()),
-    // Push generic error function. This needs to be cleaned up after PCall
-    iErrorCallback = PushAndGetGenericErrorId(cParent.LuaRefGetState());
+    const int iStack = LuaUtilStackSize(cParent.LuaRefGetState()),
+    // Push generic error function. This needs to be cleaned up after
+    // LuaUtilPCall use
+    iErrorCallback =
+      LuaUtilPushAndGetGenericErrId(cParent.LuaRefGetState());
     // This exception block is so we can remove the error callback
     try
     { // Push the call back function
@@ -143,11 +147,12 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
       // Push all the parameters sent by the caller
       LuaFuncParams(iParams, vArgs...);
       // Do the secure call. The exception handler is to cleam
-      PCallSafe(cParent.LuaRefGetState(), iParams, iReturns, iErrorCallback);
+      LuaUtilPCallSafe(cParent.LuaRefGetState(),
+        iParams, iReturns, iErrorCallback);
     } // Exception occured?
     catch(const exception&)
     { // Restore stack position because we don't know what might have added
-      PruneStack(cParent.LuaRefGetState(), iStack);
+      LuaUtilPruneStack(cParent.LuaRefGetState(), iStack);
       // Rethrow the error
       throw;
     }
@@ -157,17 +162,17 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
   { // Push function onto stack
     LuaFuncPushFunc();
     // Do the call with no params nor returns
-    CallFunc(cParent.LuaRefGetState());
+    LuaUtilCallFunc(cParent.LuaRefGetState());
   }
   /* -- De-initialise saved function --------------------------------------- */
   void LuaFuncDeInit(void)
   { // Reset user set function if it isn't the empty function
     if(iRef != cParent.LuaRefGetId())
-      SafeDeleteReference(cParent.LuaRefGetState(), iRef,
+      LuaUtilRmRefSafe(cParent.LuaRefGetState(), iRef,
         cParent.LuaRefGetId());
     // Reset saved function from pause request if it isn't the empty function
     if(iRefS != cParent.LuaRefGetId())
-      SafeDeleteReference(cParent.LuaRefGetState(), iRefS);
+      LuaUtilRmRefSafe(cParent.LuaRefGetState(), iRefS);
   }
   /* -- Set a new function ------------------------------------------------- */
   void LuaFuncSet(void)
@@ -175,15 +180,15 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
     if(lua_iscfunction(cParent.LuaRefGetState(), -1))
     { // De-init old reference if it not empty function
       if(iRef != cParent.LuaRefGetId() && iRef != LUA_REFNIL &&
-        !SafeDeleteReference(cParent.LuaRefGetState(), iRef,
+        !LuaUtilRmRefSafe(cParent.LuaRefGetState(), iRef,
           cParent.LuaRefGetId()))
             cLog->LogErrorSafe(
               "LuaFunc couldn't delete old ref for C function!");
       // Set reference to C function
-      if(!InitReference(cParent.LuaRefGetState(), iRef))
+      if(!LuaUtilRefInit(cParent.LuaRefGetState(), iRef))
         XC("Failed to create refid to C function!",
            "Name",  IdentGet(), "Value", iRef,
-           "Stack", GetVarStack(cParent.LuaRefGetState()));
+           "Stack", LuaUtilGetVarStack(cParent.LuaRefGetState()));
       // Succeeded so put in log
       cLog->LogDebugExSafe("LuaFunc allocated refid #$ for C function '$'.",
         iRef, IdentGet());
@@ -191,15 +196,15 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
     else if(lua_isfunction(cParent.LuaRefGetState(), -1))
     { // Set reference to c function. Do NOT de-initialise empty function
       if(iRef != cParent.LuaRefGetId() && iRef != LUA_REFNIL &&
-        !SafeDeleteReference(cParent.LuaRefGetState(),
+        !LuaUtilRmRefSafe(cParent.LuaRefGetState(),
           iRef, cParent.LuaRefGetId()))
             cLog->LogErrorExSafe(
               "LuaFunc couldn't delete old ref for function!");
       // Set reference to regular function
-      if(!InitReference(cParent.LuaRefGetState(), iRef))
+      if(!LuaUtilRefInit(cParent.LuaRefGetState(), iRef))
         XC("Failed to create refid to function!",
            "Name",  IdentGet(), "Value", iRef,
-           "Stack", GetVarStack(cParent.LuaRefGetState()));
+           "Stack", LuaUtilGetVarStack(cParent.LuaRefGetState()));
       // Succeeded so fut in log
       cLog->LogDebugExSafe("LuaFunc allocated refid #$ for function '$'.",
         iRef, IdentGet());
@@ -207,7 +212,7 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
     else XC("Expected C or regular function type on stack!",
             "Name",  IdentGet(),
             "Type",  lua_typename(cParent.LuaRefGetState(), -1),
-            "Stack", GetVarStack(cParent.LuaRefGetState()));
+            "Stack", LuaUtilGetVarStack(cParent.LuaRefGetState()));
   }
   /* -- Set empty function ------------------------------------------------- */
   void LuaFuncSetEmptyFunc(void) { iRef = cParent.LuaRefGetId(); }
@@ -292,7 +297,7 @@ static void LuaFuncInitRef(lua_State*const lS)
   // Write to log that we're deinitialising
   cLog->LogDebugSafe("LuaFuncs manager initialising...");
   // Push empty function and reference it into the lua stack
-  PushCFunction(lS, LuaFuncEmptyCFunction);
+  LuaUtilPushCFunc(lS, LuaFuncEmptyCFunction);
   cLuaFuncs->LuaRefInit(lS);
   // Log result
   cLog->LogDebugExSafe("LuaFunc allocated refid #$ for empty function.",
@@ -330,5 +335,7 @@ static void LuaFuncEnableAllRefs(void)
 /* ------------------------------------------------------------------------- */
 END_COLLECTOREX(LuaFuncs,,LuaFuncDeInitRef(),) // Finish collector
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

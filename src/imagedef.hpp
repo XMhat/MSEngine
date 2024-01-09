@@ -1,25 +1,26 @@
-/* == IMAGEDEF.HPP ========================================================= */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Sets up the image data storage memory and metadata.                 ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == IMAGEDEF.HPP ========================================================= **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Sets up the image data storage memory and metadata.                 ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfImageDef {                 // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace Lib::OS::GlFW;         // Access to OpenGL headers
-using namespace IfFlags;               // Using flags namespace
-using namespace IfMemory;              // Using memory namespace
-using namespace IfDim;                 // Using dimensions namespace
+namespace IImageDef {                  // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IDim;                  using namespace IFlags;
+using namespace IMemory::P;            using namespace IStd::P;
+using namespace Lib::OS::GlFW;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Shared image flags --------------------------------------------------- */
 BUILD_FLAGS(Image,
-  /* -- Note --------------------------------------------------------------- */
-  /* The 'ImageData' class contains a 'Flags' class which is shared between  */
-  /* four different classes, 'Image', 'ImageData', 'Font' and 'Texture' so   */
-  /* it's important we don't duplicate values here.                          */
-  /* -- Post processing (Only used in 'Image' class) ----------------------- */
+  /* -- Note --------------------------------------------------------------- **
+  ** The 'ImageData' class contains a 'Flags' class which is shared between  **
+  ** four different classes, 'Image', 'ImageData', 'Font' and 'Texture' so   **
+  ** it's important we don't duplicate values here.                          **
+  ** -- Post processing (Only used in 'Image' class) ----------------------- */
   // No flags?                         Image will be loadable in OpenGL?
   IL_NONE        {0x0000000000000000}, IL_TOGPU        {0x0000000000000001},
   // Convert loaded image to 24bpp?    Convert loaded image to 32bpp?
@@ -277,5 +278,7 @@ class ImageData :                      // Members initially private
     /* -- Code ------------------------------------------------------------- */
     { }                                // Nothing else to do
 };/* ----------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

@@ -1,14 +1,17 @@
-/* == FBOBASE.HPP ========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Variables to help with fbos, rendering threading and context.       ## */
-/* ######################################################################### */
+/* == FBOBASE.HPP ========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Variables to help with fbos, rendering threading and context.       ## **
+** ######################################################################### */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfFboBase {                  // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfShader;              // Using shader namespace
+namespace IFboBase {                   // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace ICollector::P;         using namespace ILog::P;
+using namespace IShader::P;            using namespace IStd::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* == Fbo base class ======================================================= */
 static class FboBase final
 { /* -- 3D shader references --------------------------------------- */ public:
@@ -74,5 +77,7 @@ static class FboBase final
   /* ----------------------------------------------------------------------- */
 } *cFboBase = nullptr;                 // Global access
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

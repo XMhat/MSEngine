@@ -1,22 +1,35 @@
-/* == CONSOLE.HPP ========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This module handles a console for the engine so information about   ## */
-/* ## the engine can be seen and manipulated by the developer or user.    ## */
-/* ## Exclusively for use in the engine's main thread only.               ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == CONSOLE.HPP ========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This module handles a console for the engine so information about   ## **
+** ## the engine can be seen and manipulated by the developer or user.    ## **
+** ## Exclusively for use in the engine's main thread only.               ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfConsole {                  // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfFboMain;             // Using fbomain namespace
-using namespace IfFont;                // Using font namespace
-using namespace IfSocket;              // Using socket namespace
-/* -- Minor includes ------------------------------------------------------- */
-using IfConLib::ConLib;                // We do not want to 'use' the entire
-using IfConLib::ConCbFunc;             // reasons.
+namespace IConsole {                   // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IArgs;                 using namespace IClock::P;
+using namespace ICollector::P;         using namespace IConDef::P;
+using namespace IConLib::P;            using namespace ICVar::P;
+using namespace ICVarDef::P;           using namespace ICVarLib::P;
+using namespace IError::P;             using namespace IEvtMain::P;
+using namespace IFbo::P;               using namespace IFboMain::P;
+using namespace IFlags;                using namespace IFont::P;
+using namespace IFtf::P;               using namespace IGlFW::P;
+using namespace IImage::P;             using namespace IImageDef::P;
+using namespace ILog::P;               using namespace ILua::P;
+using namespace ILuaUtil::P;           using namespace ILuaFunc::P;
+using namespace IStd::P;               using namespace IString::P;
+using namespace ISocket::P;            using namespace ISystem::P;
+using namespace ISysUtil::P;           using namespace ITexture::P;
+using namespace ITimer::P;             using namespace IToken::P;
+using namespace IUtf;                  using namespace IUtil::P;
+using namespace Lib::OS::GlFW;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public namespace
 /* == Typedefs ============================================================= */
 BUILD_FLAGS(Console,                   // Console flags classes
   /* --------------------------------------------------------------------- */
@@ -98,7 +111,7 @@ static class Console final :           // Members initially private
   Font             cfConsole;          // Console font
   char             cCursor;            // Cursor character to use
   /* -- Other -------------------------------------------------------------- */
-  const IfConLib::ConCmdStaticList &conLibList; // Default console cmds list
+  const ConCmdStaticList &conLibList;  // Default console cmds list
   LibList          llCmds;             // Console commands list
   size_t           stMaxCount;         // Maximum console commands allowed
   /* -- Lua ---------------------------------------------------------------- */
@@ -134,7 +147,7 @@ static class Console final :           // Members initially private
     // Draw input text and subtract the height drawn from Y position
     GLfloat fY = fBL - GetFontRef().PrintWU(fboC.fcStage.GetCoLeft(), fBL,
       fboC.fcStage.GetCoRight(), GetFontRef().dfScale.DimGetWidth(),
-        reinterpret_cast<const GLubyte*>(Format(">$\rc000000ff$\rr$",
+        reinterpret_cast<const GLubyte*>(StrFormat(">$\rc000000ff$\rr$",
         strConsoleBegin, cCursor, strConsoleEnd).c_str()));
     // For each line or until we clip the top of the screen, print the text
     for(ConLinesConstRevIt clI{ clriPosition }; clI!=crend() && fY>0; ++clI)
@@ -259,7 +272,7 @@ static class Console final :           // Members initially private
   /* -- Return lua commands list ------------------------------------------- */
   const LuaFunc::Map &GetLuaCmds(void) const { return lfList; }
   /* -- Return information about a console command ------------------------- */
-  const ConLib &GetCommand(const IfConLib::ConCmdEnums cceId) const
+  const ConLib &GetCommand(const ConCmdEnums cceId) const
     { return conLibList[cceId]; }
   /* -- Clear console and redraw ------------------------------------------- */
   void Flush(void) { DoFlush(); SetRedraw(); }
@@ -272,8 +285,8 @@ static class Console final :           // Members initially private
     XC("Virtual console command not found!", "Command", strCmd);
   }
   /* -- Push and get error callback function id ---------------------------- */
-  static void LuaCallbackStatic(const Arguments &);
-  void LuaCallback(const Arguments &aList)
+  static void LuaCallbackStatic(const Args &);
+  void LuaCallback(const Args &aList)
     { FindVirtualCommand(aList[0])->
         second.LuaFuncProtectedDispatch(0, aList); }
   /* -- Unregister user console command from lua --------------------------- */
@@ -304,13 +317,14 @@ static class Console final :           // Members initially private
   { // Must be running on the main thread
     cLua->StateAssert(lS);
     // Must have 4 parameters
-    CheckParams(lS, 4);
+    LuaUtilCheckParams(lS, 4);
     // Get command name, min and max parameter count
-    const string strCmd{ GetCppStringNE(lS, 1, "Name") };
-    const unsigned int uiMinimum = GetInt<unsigned int>(lS, 2, "Minimum"),
-                       uiMaximum = GetInt<unsigned int>(lS, 3, "Maximum");
+    const string strCmd{ LuaUtilGetCppStrNE(lS, 1, "Name") };
+    const unsigned int
+      uiMinimum = LuaUtilGetInt<unsigned int>(lS, 2, "Minimum"),
+      uiMaximum = LuaUtilGetInt<unsigned int>(lS, 3, "Maximum");
     // Check that the fourth parameter is a function
-    CheckFunction(lS, 4, "Callback");
+    LuaUtilCheckFunc(lS, 4, "Callback");
     // Find command and throw exception if already exists
     const auto lfItem{ lfList.find(strCmd) };
     if(lfItem != lfList.cend())
@@ -320,7 +334,7 @@ static class Console final :           // Members initially private
     const LibListItConst clItem{
       RegisterCommand(strCmd, uiMinimum, uiMaximum, LuaCallbackStatic) };
     // Add command to local list. Do not move the position of this call.
-    lfList.insert({ strCmd, LuaFunc(Append("CC:", clItem->first), true) });
+    lfList.insert({ strCmd, LuaFunc(StrAppend("CC:", clItem->first), true) });
   }
   /* -- Add specified command line to history ------------------------------ */
   void AddHistory(const string &strCmdLine)
@@ -344,7 +358,8 @@ static class Console final :           // Members initially private
     if(strKey.compare(0, strWhat.size(), strWhat)) return false;
     // We found the word so now we need to replace it with the actual command.
     if(stBPos == string::npos) strConsoleBegin = strKey;
-    else strConsoleBegin = Append(strConsoleBegin.substr(0, stBPos+1), strKey);
+    else strConsoleBegin =
+      StrAppend(strConsoleBegin.substr(0, stBPos+1), strKey);
     if(stEPos == string::npos) strConsoleEnd.clear();
     else strConsoleEnd = strConsoleEnd.substr(stEPos);
     // Redraw the console because we changed the input field
@@ -381,7 +396,7 @@ static class Console final :           // Members initially private
     { return strConsoleBegin.empty() && strConsoleEnd.empty(); }
   /* -- Return text input -------------------------------------------------- */
   const string InputText(void)
-    { return Append(strConsoleBegin, strConsoleEnd); }
+    { return StrAppend(strConsoleBegin, strConsoleEnd); }
   /* -- OnExecute event ------------------------ Execute inputted command -- */
   void Execute(void)
   { // Do not proceed further if no text is inputted
@@ -391,7 +406,7 @@ static class Console final :           // Members initially private
     // Clear current text input now we have it here
     ClearInput();
     // Split command-line into arguments and process them if not empty
-    if(const Arguments aList{ strCmd }) ExecuteArguments(strCmd, aList);
+    if(const Args aList{ strCmd }) ExecuteArguments(strCmd, aList);
   }
   /* -- Fired when lua needs to be paused (EMC_LUA_PAUSE) ------------------ */
   void OnLuaPause(const EvtMain::Cell &)
@@ -477,16 +492,16 @@ static class Console final :           // Members initially private
   }
   /* -- Pop the back of the before cursor string --------------------------- */
   void PopInputBeforeCursor(void)
-    { if(PopBack(strConsoleBegin)) SetRedraw(); }
+    { if(UtfPopBack(strConsoleBegin)) SetRedraw(); }
   /* -- Pop the front the after cursor string ------------------------------ */
   void PopInputAfterCursor(void)
-    { if(PopFront(strConsoleEnd)) SetRedraw(); }
+    { if(UtfPopFront(strConsoleEnd)) SetRedraw(); }
   /* -- Move cursor left --------------------------------------------------- */
   void CursorLeft(void)
-    { if(MoveBackToFront(strConsoleBegin, strConsoleEnd)) SetRedraw(); }
+    { if(UtfMoveBackToFront(strConsoleBegin, strConsoleEnd)) SetRedraw(); }
   /* -- Move cursor right -------------------------------------------------- */
   void CursorRight(void)
-    { if(MoveFrontToBack(strConsoleEnd, strConsoleBegin)) SetRedraw(); }
+    { if(UtfMoveFrontToBack(strConsoleEnd, strConsoleBegin)) SetRedraw(); }
   /* -- Move cursor to beginning of line ----------------------------------- */
   void CursorHome(void)
   { // Ignore if no end text
@@ -629,7 +644,7 @@ static class Console final :           // Members initially private
     if(strConsoleBegin.size() + strConsoleEnd.size() >= GetMaximumChars())
       return;
     // Encode character to utf-8
-    AppendString(uiChar, strConsoleBegin);
+    UtfAppend(uiChar, strConsoleBegin);
     // Redraw the buffer, it changed
     SetRedraw();
   }
@@ -638,9 +653,9 @@ static class Console final :           // Members initially private
   { // Add character if we are at the end of the line input
     if(strConsoleEnd.empty()) return AddInputChar(uiChar);
     // Encode character to utf-8
-    AppendString(uiChar, strConsoleBegin);
+    UtfAppend(uiChar, strConsoleBegin);
     // Remove character from beginning of end of line input
-    PopFront(strConsoleEnd);
+    UtfPopFront(strConsoleEnd);
     // Redraw the buffer, it changed
     SetRedraw();
   }
@@ -713,7 +728,7 @@ static class Console final :           // Members initially private
     GetTextureRef().LockSet();
   }
   /* -- Execute arguments list --------------------------------------------- */
-  void ExecuteArguments(const string &strCmd, const Arguments &aList)
+  void ExecuteArguments(const string &strCmd, const Args &aList)
   { // Get var or command name
     const string &strVarOrCmd = aList[0];
     if(strVarOrCmd.empty()) return;
@@ -738,7 +753,7 @@ static class Console final :           // Members initially private
           osS << "is currently " << cCVars->Protect(strVarOrCmd) << "!";
           // Copy it to clipboard if requested
           if(FlagIsSet(CF_AUTOCOPYCVAR))
-            cGlFW->WinSetClipboardString(Format("$ \"$\"",
+            cGlFW->WinSetClipboardString(StrFormat("$ \"$\"",
               strVarOrCmd, cCVars->GetStrSafe(strVarOrCmd)));
         } // Else set item and get return value
         else switch(const CVarSetEnums cscResult =
@@ -794,7 +809,7 @@ static class Console final :           // Members initially private
           osS << "exists!";
           // Copy to clipboard
           if(FlagIsSet(CF_AUTOCOPYCVAR))
-            cGlFW->WinSetClipboardString(Format("$ \"$\"",
+            cGlFW->WinSetClipboardString(StrFormat("$ \"$\"",
               strVarOrCmd, cCVars->GetInitialVarSafe(strVarOrCmd)));
         } // Set the value and say if it worked
         else if(cCVars->SetExistingInitialVar(strVarOrCmd, aList[1]))
@@ -897,11 +912,11 @@ static class Console final :           // Members initially private
       cSystem->UpdateMemoryUsageData();
       cSystem->UpdateCPUUsage();
       // Redraw title
-      cSystem->RedrawTitleBar(Format("CPU:$$$%  FPS:$$  MEM:$  NET:$  UP:$",
+      cSystem->RedrawTitleBar(StrFormat("CPU:$$$%  FPS:$$  MEM:$  NET:$  UP:$",
         fixed, setprecision(1), cSystem->CPUUsage(), setprecision(0),
-        cTimer->TimerGetSecond(), ToBytesStr(cSystem->RAMProcUse(), 0),
+        cTimer->TimerGetSecond(), StrToBytes(cSystem->RAMProcUse(), 0),
         cSockets->stConnected.load(),
-        ToShortDuration(cLog->CCDeltaToDouble(), 0)),
+        StrShortFromDuration(cLog->CCDeltaToDouble(), 0)),
         cmSys.FormatTime(strTimeFormat.c_str()));
       // Not redrawing?
       if(rfFlags.FlagIsClear(RD_TEXT))
@@ -1012,17 +1027,17 @@ static class Console final :           // Members initially private
   /* -- Add line as string with default text colour ------------------- */
   void AddLine(const string &strText) { AddLine(strText, cTextColour); }
   /* -- Formatted console output ------------------------------------------- */
-  template<typename... VarArgs>void AddLineEx(const char*const cpFormat,
+  template<typename ...VarArgs>void AddLineEx(const char*const cpFormat,
     const VarArgs &...vaArgs)
-      { AddLine(Format(cpFormat, vaArgs...)); }
+      { AddLine(StrFormat(cpFormat, vaArgs...)); }
   /* -- Formatted console output with colour ------------------------------- */
-  template<typename... VarArgs>void AddLineEx(const Colour pColour,
+  template<typename ...VarArgs>void AddLineEx(const Colour pColour,
     const char*const cpFormat, const VarArgs &...vaArgs)
-      { AddLine(Format(cpFormat, vaArgs...), pColour); }
-  /* -- Formatted console output using Append() ---------------------------- */
-  template<typename... VarArgs>void AddLineExC(const Colour pColour,
-    const VarArgs &...vaArgs) { AddLine(Append(vaArgs...), pColour); }
-  template<typename... VarArgs>void AddLineExA(const VarArgs &...vaArgs)
+      { AddLine(StrFormat(cpFormat, vaArgs...), pColour); }
+  /* -- Formatted console output using StrAppend() ------------------------- */
+  template<typename ...VarArgs>void AddLineExC(const Colour pColour,
+    const VarArgs &...vaArgs) { AddLine(StrAppend(vaArgs...), pColour); }
+  template<typename ...VarArgs>void AddLineExA(const VarArgs &...vaArgs)
     { AddLineExC(cTextColour, vaArgs...); }
   /* -- Set Console status ------------------------------------------------- */
   void SetCantDisable(const bool bState)
@@ -1244,8 +1259,8 @@ static class Console final :           // Members initially private
   CVarReturn SetMaxConLineChars(const size_t stChars)
   { // Deny if out of range
     if(stChars < 256 ||
-       stChars > Minimum(Minimum(strConsoleBegin.max_size(),
-                                 strConsoleEnd.max_size()), 16384))
+       stChars > UtilMinimum(UtilMinimum(strConsoleBegin.max_size(),
+                                         strConsoleEnd.max_size()), 16384))
       return DENY;
     // Reserve buffer sizes for console input
     strConsoleBegin.reserve(stChars);
@@ -1389,7 +1404,7 @@ static class Console final :           // Members initially private
     return ACCEPT;
   }
   /* -- Constructor -------------------------------------------------------- */
-  explicit Console(const IfConLib::ConCmdStaticList &ccslDef) :
+  explicit Console(const ConCmdStaticList &ccslDef) :
     /* -- Initialisers ----------------------------------------------------- */
     IHelper{ __FUNCTION__ },           // Init helper function name
     Flags{ CF_NONE },                  // No initial flags
@@ -1437,8 +1452,10 @@ static class Console final :           // Members initially private
   /* ----------------------------------------------------------------------- */
 } *cConsole = nullptr;                 // Pointer to static class
 /* ------------------------------------------------------------------------- */
-void Console::LuaCallbackStatic(const Arguments &aList)
+void Console::LuaCallbackStatic(const Args &aList)
   { cConsole->LuaCallback(aList); }
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

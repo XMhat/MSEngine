@@ -1,19 +1,19 @@
-/* == FLAGS.HPP ============================================================ */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This class helps with managing flags (a collection of booleans) or  ## */
-/* ## many bits in a byte. The compiler should hopefully optimise all of  ## */
-/* ## this complecated functory to single CPU instructions.               ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == FLAGS.HPP ============================================================ **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This class helps with managing flags (a collection of booleans) or  ## **
+** ## many bits in a byte. The compiler should hopefully optimise all of  ## **
+** ## this complecated functory to single CPU instructions.               ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfFlags {                    // Start of module namespace
-/* == Storage for flags ==================================================== */
-/* ######################################################################### */
-/* ## Simple unprotected integer based flags.                             ## */
-/* ######################################################################### */
+namespace IFlags {                     // Start of module namespace
+/* == Storage for flags ==================================================== **
+** ######################################################################### **
+** ## Simple unprotected integer based flags.                             ## **
+** ######################################################################### */
 template<typename IntType>class FlagsStorageUnsafe
 { /* -- Values storage ------------------------------------------ */ protected:
   IntType          itV;                // The simple value
@@ -28,10 +28,10 @@ template<typename IntType>class FlagsStorageUnsafe
   template<typename AnyType=IntType>AnyType FlagGet(void) const
     { return static_cast<AnyType>(itV); }
 };/* ----------------------------------------------------------------------- */
-/* == Atomic storage for flags ============================================= */
-/* ######################################################################### */
-/* ## Thread safe integer based flags.                                    ## */
-/* ######################################################################### */
+/* == Atomic storage for flags ============================================= **
+** ######################################################################### **
+** ## Thread safe integer based flags.                                    ## **
+** ######################################################################### */
 template<typename IntType,
          typename SafeType = atomic<IntType>>
 class FlagsStorageSafe :
@@ -48,10 +48,10 @@ class FlagsStorageSafe :
   template<typename AnyType=IntType>AnyType FlagGet(void) const
     { return static_cast<AnyType>(this->load()); }
 };/* ----------------------------------------------------------------------- */
-/* == Read-only flags helper class ========================================= */
-/* ######################################################################### */
-/* ## If only read-only access is desired.                                ## */
-/* ######################################################################### */
+/* == Read-only flags helper class ========================================= **
+** ######################################################################### **
+** ## If only read-only access is desired.                                ## **
+** ######################################################################### */
 template<typename IntType,
          class StorageType = FlagsStorageUnsafe<IntType>>
 class FlagsConst :
@@ -86,6 +86,21 @@ class FlagsConst :
   /* -- Is bit clear of specified value? ----------------------------------- */
   bool FlagIsClear(const FlagsConst &fO) const
     { return !FlagIsSet(fO); }
+  /* -- Is flag set with specified value and clear with another? ----------- */
+  bool FlagIsSetAndClear(const FlagsConst &fO1, const FlagsConst &fO2) const
+    { return FlagIsSet(fO1) && FlagIsClear(fO2); }
+  /* -- Is any of these flags set and cleared? ----------------------------- */
+  bool FlagIsAnyOfSetAndClear(void) const { return false; }
+  template<typename ...VarArgs>
+    bool FlagIsAnyOfSetAndClear(const FlagsConst &fO1, const FlagsConst &fO2,
+      const VarArgs &...vaVars) const
+  { return FlagIsSetAndClear(fO1, fO2) ?
+      true : FlagIsAnyOfSetAndClear(vaVars...); }
+  /* -- Is any of these flags set? ----------------------------------------- */
+  bool FlagIsAnyOfSet(void) const { return false; }
+  template<typename ...VarArgs>
+    bool FlagIsAnyOfSet(const FlagsConst &fO, const VarArgs &...vaVars) const
+  { return FlagIsSet(fO) ? true : FlagIsAnyOfSet(vaVars...); }
   /* -- Is bits set? ------------------------------------------------------- */
   bool FlagIsEqualToBool(const FlagsConst &fO, const bool bS) const
     { return FlagIsSet(fO) == bS; }
@@ -96,7 +111,7 @@ class FlagsConst :
   template<typename AnyType>
     const AnyType FlagIsSetTwo(const FlagsConst &fO,
       const AnyType tSet, const AnyType tClear) const
-        { return FlagIsSet(fO) ? tSet : tClear; }
+  { return FlagIsSet(fO) ? tSet : tClear; }
   /* -- Init constructors -------------------------------------------------- */
   template<typename AnyType>explicit FlagsConst(const AnyType atV) :
     StorageType{ static_cast<IntType>(atV) } { }
@@ -116,10 +131,10 @@ class FlagsConst :
   operator IntType(void) const
     { return this->template FlagGet<IntType>(); }
 };/* ----------------------------------------------------------------------- */
-/* == Flags helper class =================================================== */
-/* ######################################################################### */
-/* ## Read-write acesss for specified type.                               ## */
-/* ######################################################################### */
+/* == Flags helper class =================================================== **
+** ######################################################################### **
+** ## Read-write acesss for specified type.                               ## **
+** ######################################################################### */
 template<typename IntType,
          class StorageType = FlagsStorageUnsafe<IntType>,
          class ConstType = FlagsConst<IntType, StorageType>>
@@ -156,10 +171,10 @@ struct Flags :
   explicit Flags(const IntType &itO) : ConstType{ itO } {}
   explicit Flags(const ConstType &ctO) : ConstType{ ctO } {}
 };/* ----------------------------------------------------------------------- */
-/* == Safe flags helper class ============================================== */
-/* ######################################################################### */
-/* ## Uses atomic storage for safe access.                                ## */
-/* ######################################################################### */
+/* == Safe flags helper class ============================================== **
+** ######################################################################### **
+** ## Uses atomic storage for safe access.                                ## **
+** ######################################################################### */
 template<typename IntType,
          class StorageType = FlagsStorageSafe<IntType>,
          class UStorageType = FlagsStorageUnsafe<IntType>,
@@ -173,7 +188,6 @@ class SafeFlags :
   explicit SafeFlags(const ConstType &fO) : FlagsType{ fO } {}
   explicit SafeFlags(const UConstType &fO) : FlagsType{ fO } {}
 };/* ----------------------------------------------------------------------- */
-};                                     // End of module namespace
 /* == Flags helper macro =================================================== */
 #define BUILD_FLAGS_EX(n, s, ...) \
   typedef uint64_t n ## FlagsType; \
@@ -182,4 +196,6 @@ class SafeFlags :
   static const n ## FlagsConst __VA_ARGS__;
 #define BUILD_FLAGS(n, ...) BUILD_FLAGS_EX(n, Flags, __VA_ARGS__)
 #define BUILD_SECURE_FLAGS(n, ...) BUILD_FLAGS_EX(n, SafeFlags, __VA_ARGS__)
+/* ------------------------------------------------------------------------- */
+}                                      // End of module namespace
 /* == EoF =========================================================== EoF == */

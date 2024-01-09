@@ -1,23 +1,30 @@
-/* == STD.HPP ============================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This module contains common functions to target specific functions. ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == STD.HPP ============================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This module contains common functions to target specific functions. ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfStd {                      // Start of module namespace
+namespace IStd {                       // Start of private module namespace
+/* ------------------------------------------------------------------------- */
+using namespace IUtf;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* ------------------------------------------------------------------------- */
 #if defined(MACOS)                     // Using MacOS?
-/* ------------------------------------------------------------------------- */
-/* ######################################################################### */
-/* ## Because MacOS doesn't support execution policy yet, we need to make ## */
-/* ## functions that ignore the first parameter while allowing the        ## */
-/* ## same parameter to pass through on other targets.                    ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- **
+** ######################################################################### **
+** ## Because MacOS doesn't support execution policy yet, we need to make ## **
+** ## functions that ignore the first parameter while allowing the        ## **
+** ## same parameter to pass through on other targets.                    ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 constexpr static bool par_unseq = false, par = false, seq = false;
+/* ------------------------------------------------------------------------- */
+constexpr static auto StdSort(auto&, auto &&...aArgs)
+  { return ::std::sort(::std::forward<decltype(aArgs)>(aArgs)... ); }
 /* ------------------------------------------------------------------------- */
 constexpr static auto StdFill(auto&, auto &&...aArgs)
   { return ::std::fill(::std::forward<decltype(aArgs)>(aArgs)... ); }
@@ -41,6 +48,9 @@ constexpr static auto StdAllOf(auto&, auto &&...aArgs)
   { return ::std::all_of(::std::forward<decltype(aArgs)>(aArgs)... ); }
 /* ------------------------------------------------------------------------- */
 #else                                  // Windows or Posix target?
+/* ------------------------------------------------------------------------- */
+constexpr static auto StdSort(auto &&...aArgs)
+  { return ::std::sort(::std::forward<decltype(aArgs)>(aArgs)... ); }
 /* ------------------------------------------------------------------------- */
 constexpr static auto StdFill(auto &&...aArgs)
   { return ::std::fill(::std::forward<decltype(aArgs)>(aArgs)... ); }
@@ -79,13 +89,13 @@ typedef __time64_t      StdTimeT;       // Different on Windows
 typedef ::std::make_signed<size_t>::type ssize_t; // Not in MSVC
 /* -- Convert any widestring pointer type to utf8 class string ------------- */
 inline const string S16toUTF(const wchar_t*const wcpStr)
-  { return IfUtf::FromWideStringPtr(wcpStr); }
+  { return UtfFromWide(wcpStr); }
 /* -- Convert STL widestring to utf8 --------------------------------------- */
 inline const string WS16toUTF(const wstring &wstrRef)
   { return S16toUTF(wstrRef.c_str()); }
 /* -- Convert UTF string to STL widestring --------------------------------- */
 inline const wstring UTFtoS16(const string &strRef)
-  { return IfUtf::Decoder{ strRef }.Wide(); };
+  { return UtfDecoder{ strRef }.Wide(); };
 /* -- Wrapper for _waccess() ----------------------------------------------- */
 static int StdAccess(const wchar_t*const wcpPath, const int iMode)
   { return _waccess(wcpPath, iMode); }
@@ -272,47 +282,68 @@ static int StdPClose[[maybe_unused]](FILE*const fStream)
 static void StdSRand(const unsigned int uiSeed) { srandom(uiSeed); }
 /* ------------------------------------------------------------------------- */
 #endif                                 // Operating system check
-/* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
-/* ------------------------------------------------------------------------- */
-/* ######################################################################### */
-/* ## Because some compilers may not allow me to alias ::std::move        ## */
-/* ## anymore with an error referring to being an 'unqualified call', the ## */
-/* ## only workaround seems to be to use this constexpr function which    ## */
-/* ## does not appear to cause an increase of machine code.               ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* -- Some frequently used maximums ---------------------------------------- */
+constexpr const unsigned int StdMaxUInt = numeric_limits<unsigned int>::max();
+constexpr const uint64_t StdMaxUInt64 = numeric_limits<uint64_t>::max();
+constexpr const size_t StdMaxSizeT = numeric_limits<size_t>::max();
+/* -- Set error number ----------------------------------------------------- */
+static void StdSetError(const int iValue) { errno = iValue; }
+/* -- Get error number ----------------------------------------------------- */
+static int StdGetError(void) { return errno; }
+/* -- Is error number equal to --------------------------------------------- */
+static bool StdIsError(const int iValue) { return StdGetError() == iValue; }
+/* -- Is error number not equal to ----------------------------------------- */
+static bool StdIsNotError(const int iValue) { return !StdIsError(iValue); }
+/* -- Return absolute number ----------------------------------------------- */
+template<typename IntType=int64_t>
+  static IntType StdAbsolute(const IntType itVal)
+{ // Check if supplied argument is signed and negate it if true
+  if constexpr(is_signed_v<IntType>) return (itVal < 0) ? -itVal : itVal;
+  // Else just return the value without any processing
+  else return itVal;
+}
+/* -- Returns if the specified number is a power of two -------------------- */
+template<typename IntType=int64_t>static bool StdIntIsPOW2(const IntType itVal)
+    { return !((itVal & (itVal - 1)) && itVal); }
+/* ------------------------------------------------------------------------- **
+** ######################################################################### **
+** ## Because some compilers may not allow me to alias ::std::move        ## **
+** ## anymore with an error referring to being an 'unqualified call', the ## **
+** ## only workaround seems to be to use this constexpr function which    ## **
+** ## does not appear to cause an increase of machine code.               ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 template<class AnyType>
   constexpr static std::remove_reference_t<AnyType>
     &&StdMove(AnyType &&atVar) noexcept
       { return ::std::move(atVar); }
-/* == Omission macros ====================================================== */
-/* ######################################################################### */
-/* ## These allow us to delete the assignment operator and assignment     ## */
-/* ## copy constructor in a class so we don't accidently perform copies   ## */
-/* ## instead of StdMove()'s.                                           ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == Omission macros ====================================================== **
+** ######################################################################### **
+** ## These allow us to delete the assignment operator and assignment     ## **
+** ## copy constructor in a class so we don't accidently perform copies   ## **
+** ## instead of StdMove()'s.                                             ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 #define DELETECOPYCTORS(x) \
   x(const x&) = delete; const x &operator=(const x&) = delete;
-/* == Static class try/catch helpers ======================================= */
-/* ######################################################################### */
-/* ## Don't put try/catch on func level. (C++ ISO/IEC JTC 1/SC 22 N 4411) ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == Static class try/catch helpers ======================================= **
+** ######################################################################### **
+** ## Don't put try/catch on func level. (C++ ISO/IEC JTC 1/SC 22 N 4411) ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 #define DTORHELPERBEGIN(c) c(void) noexcept(false) { try {
 #define DTORHELPEREND(c) } catch(const exception &E) \
   { SysMessage(STR(c) " Shutdown Exception", E.what(), MB_ICONSTOP); } }
 #define DTORHELPER(c,...) DTORHELPERBEGIN(c) __VA_ARGS__; DTORHELPEREND(c)
-/* == Init helper ========================================================== */
-/* ######################################################################### */
-/* ## Very useful little helper to create a class in-scope to init and    ## */
-/* ## a de-init function when leaving the scope.                          ## */
-/* ######################################################################### */
-/* ## n ## Name of the class. The variable is called this too prefix 'c'. ## */
-/* ## i ## The function to execute straight away.                         ## */
-/* ## d ## The function to execute when leaving the scope.                ## */
-/* ######################################################################### */
+/* == Init helper ========================================================== **
+** ######################################################################### **
+** ## Very useful little helper to create a class in-scope to init and    ## **
+** ## a de-init function when leaving the scope.                          ## **
+** ######################################################################### **
+** ## n ## Name of the class. The variable is called this too prefix 'c'. ## **
+** ## i ## The function to execute straight away.                         ## **
+** ## d ## The function to execute when leaving the scope.                ## **
+** ######################################################################### */
 #define INITHELPER(n,i,d) class n{public:n(void){i;}\
                                ~n(void) noexcept(false){d;}} c ## n
 #define DEINITHELPER(n,d) INITHELPER(n,,d)
@@ -320,4 +351,8 @@ template<class AnyType>
 #if defined(ALPHA)                     // Z-Lib debug version requires this
 extern "C" { int z_verbose = 0, z_error = 0; }
 #endif                                 // Compiling DEBUG/ALPHA version
+/* ------------------------------------------------------------------------- */
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

@@ -1,17 +1,19 @@
-/* == FSTREAM.HPP ========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This module is a simple C++ wrapper for C file stream functions.    ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == FSTREAM.HPP ========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This module is a simple C++ wrapper for C file stream functions.    ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfFStream {                  // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfCmdLine;             // Using cmdline namespace
-using namespace IfMemory;              // Using memory namespace
-using namespace IfIdent;               // Using ident namespace
+namespace IFStream {                   // Start of private module namespace
+/* ------------------------------------------------------------------------- */
+using namespace IError::P;             using namespace IIdent::P;
+using namespace IStd::P;               using namespace IString::P;
+using namespace IMemory::P;            using namespace IUtil::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- FStream Class -------------------------------------------------------- */
 class FStream :
   /* -- Base classes ------------------------------------------------------- */
@@ -19,20 +21,20 @@ class FStream :
 { /* -- Public typedefs -------------------------------------------- */ public:
   enum Mode                            // Open types allowed
   { /* --------------------------------------------------------------------- */
-    FM_R_T,                            // "rt"  Read|Exists|Text
-    FM_W_T,                            // "wt"  Write|New|Trunc|Text
-    FM_A_T,                            // "at"  Write|Append|New|Text
-    FM_R_P_T,                          // "r+t" Read|Write|Exists|Text
-    FM_W_P_T,                          // "w+t" Read|Write|New|Trunc|Text
-    FM_A_P_T,                          // "a+t" Read|Write|Append|New|Text
-    FM_R_B,                            // "rb"  Read|Exists|Binary
-    FM_W_B,                            // "wb"  Write|New|Trunc|Binary
-    FM_A_B,                            // "ab"  Write|Append|New|Binary
-    FM_R_P_B,                          // "r+b" Read|Write|Exists|Binary
-    FM_W_P_B,                          // "w+b" Read|Write|New|Trunc|Binary
-    FM_A_P_B,                          // "a+b" Read|Append|New|Binary
+    FM_R_T,                            // [00] "rt"  Read|Exists|Text
+    FM_W_T,                            // [01] "wt"  Write|New|Trunc|Text
+    FM_A_T,                            // [02] "at"  Write|Append|New|Text
+    FM_R_P_T,                          // [03] "r+t" Read|Write|Exists|Text
+    FM_W_P_T,                          // [04] "w+t" Read|Write|New|Trunc|Text
+    FM_A_P_T,                          // [05] "a+t" Read|Write|Append|New|Text
+    FM_R_B,                            // [06] "rb"  Read|Exists|Binary
+    FM_W_B,                            // [07] "wb"  Write|New|Trunc|Binary
+    FM_A_B,                            // [08] "ab"  Write|Append|New|Binary
+    FM_R_P_B,                          // [09] "r+b" Read|Write|Exists|Binary
+    FM_W_P_B,                          // [10] "w+b" Read|Write|New|Trunc|Binar
+    FM_A_P_B,                          // [11] "a+b" Read|Append|New|Binary
     /* --------------------------------------------------------------------- */
-    FM_MAX                             // Maximum number of modes supported
+    FM_MAX                             // [12] Maximum number of modes
   };/* -- Private variables --------------------------------------- */ private:
   FILE            *fStream;            // Stream handle
   int              iErrNo;             // Stored error number
@@ -104,7 +106,7 @@ class FStream :
   operator bool(void) const { return FStreamOpened(); }
   /* -- Return last error nuumber ------------------------------------------ */
   int FStreamGetErrNo(void) const { return iErrNo; }
-  const string FStreamGetErrStr(void) const { return LocalError(iErrNo); }
+  const string FStreamGetErrStr(void) const { return StrFromErrNo(iErrNo); }
   /* -- Return handle to stream -------------------------------------------- */
   int FStreamGetID(void) const { return StdFileNo(FStreamGetCtx()); }
   int FStreamGetIDSafe(void) const
@@ -251,17 +253,18 @@ class FStream :
     return qSize;
   }
   /* -- Return size as size_t so it will be clamped ------------------------ */
-  size_t FStreamSizeT(void) { return IntOrMax<size_t>(FStreamSize()); }
+  size_t FStreamSizeT(void) { return UtilIntOrMax<size_t>(FStreamSize()); }
   /* -- Return size of file ------------------------------------------------ */
   int64_t FStreamSizeSafe(void) { return FStreamClosed() ? 0 : FStreamSize(); }
   /* -- Open a file without filename validation ---------------------------- */
   int FStreamOpen(const string &strFile, const Mode mMode)
   { // Try to open the file on disk and if succeeded?
     if(FStreamDoOpen(strFile, mMode)) return 0;
-    // Return error if the error was FNF or there is no backup home directory.
-    if(cCmdLine->IsNoHome()) return GetErrNo();
+    // Using cmdline namespace
+    using namespace ICmdLine::P;
+    if(cCmdLine->IsNoHome()) return StdGetError();
     // Save error number
-    const int iError = GetErrNo();
+    const int iError = StdGetError();
     // Return original error code if persist storage fails or success
     return FStreamDoOpen(cCmdLine->GetHome(strFile), mMode) ? iError : 0;
   }
@@ -324,5 +327,7 @@ class FStream :
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(FStream)             // Disable copy constructor and operator
 };/* ----------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

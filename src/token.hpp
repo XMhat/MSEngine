@@ -1,14 +1,18 @@
-/* == TOKEN.HPP ============================================================ */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This class will take a string and split it into tokens seperated by ## */
-/* ## the specified delimiter.                                            ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == TOKEN.HPP ============================================================ **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This class will take a string and split it into tokens seperated by ## **
+** ## the specified delimiter.                                            ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfToken {                    // Start of module namespace
+namespace IToken {                     // Start of module namespace
+/* ------------------------------------------------------------------------- */
+using namespace IStd::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Token class with permission to modify the original string ------------ */
 struct TokenListNC :
   /* -- Base classes ------------------------------------------------------- */
@@ -163,11 +167,13 @@ struct Token :
   /* -- MOVE assignment constructor ---------------------------------------- */
   Token(Token &&tOther) :
     /* -- Initialisers ----------------------------------------------------- */
-    StrVector{ StdMove(tOther) }          // Move vector string over
+    StrVector{ StdMove(tOther) }       // Move vector string over
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Token)               // Disable copy constructor/operator
-};/* -- End of module namespace -------------------------------------------- */
-};                                     // End of module namespace
+};/* ----------------------------------------------------------------------- */
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of module namespace
 /* == EoF =========================================================== EoF == */

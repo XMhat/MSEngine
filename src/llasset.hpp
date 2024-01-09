@@ -1,28 +1,31 @@
-/* == LLASSET.HPP ========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Defines the 'Asset' namespace and methods for the guest to use in   ## */
-/* ## Lua. This file is invoked by 'lualib.hpp'.                          ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == LLASSET.HPP ========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Defines the 'Asset' namespace and methods for the guest to use in   ## **
+** ## Lua. This file is invoked by 'lualib.hpp'.                          ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 #pragma once                           // Only one incursion allowed
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ========================================================================= */
 // % Asset
 /* ------------------------------------------------------------------------- */
 // ! The Asset class allows the programmer to load files from disk for personal
 // ! use and manipulation of that data with codecs or manually by the
 // ! programmer.
 /* ========================================================================= */
-namespace NsAsset {                    // Asset namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfAsset;               // Using asset namespace
-using namespace IfLuaCode;             // Using luacode namespace
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+namespace LLAsset {                    // Asset namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IAsset::P;             using namespace IASync::P;
+using namespace IFStream::P;           using namespace ILuaCode::P;
+using namespace IStd::P;               using namespace IUtil::P;
+/* ========================================================================= **
+** ######################################################################### **
+** ## Asset:* member functions                                            ## **
+** ######################################################################### **
+** ========================================================================= */
 // $ Asset:WriteInt
 // > Position:integer=Position to write the integer to in the array.
 // > Value:integer=Integer to write to the array.
@@ -116,19 +119,19 @@ LLFUNC(WF64LE, LCGETPTR(1, Asset)->
 // ? - RU64LE = Same as RU64 but forces the return value to little-endian.
 // ? - RU8    = Reads a 8-bit unsigned integer from the specified position.
 /* ------------------------------------------------------------------------- */
-LLFUNCTEMPLATEEX(ReadI, 1, LCPUSHINT(
+LLFUNCTEMPLATEEX(ReadI, 1, LCPUSHVAR(
   LCGETPTR(1, Asset)->ReadInt<T>(LCGETINT(size_t, 2, "Position"))));
-LLFUNCTEMPLATEEX(RI16LE, 1, LCPUSHINT(ToI16LE(
+LLFUNCTEMPLATEEX(RI16LE, 1, LCPUSHVAR(UtilToI16LE(
   LCGETPTR(1, Asset)->ReadInt<T>(LCGETINT(size_t, 2, "Position")))));
-LLFUNCTEMPLATEEX(RI16BE, 1, LCPUSHINT(ToI16BE(
+LLFUNCTEMPLATEEX(RI16BE, 1, LCPUSHVAR(UtilToI16BE(
   LCGETPTR(1, Asset)->ReadInt<T>(LCGETINT(size_t, 2, "Position")))));
-LLFUNCTEMPLATEEX(RI32LE, 1, LCPUSHINT(ToI32LE(
+LLFUNCTEMPLATEEX(RI32LE, 1, LCPUSHVAR(UtilToI32LE(
   LCGETPTR(1, Asset)->ReadInt<T>(LCGETINT(size_t, 2, "Position")))));
-LLFUNCTEMPLATEEX(RI32BE, 1, LCPUSHINT(ToI32BE(
+LLFUNCTEMPLATEEX(RI32BE, 1, LCPUSHVAR(UtilToI32BE(
   LCGETPTR(1, Asset)->ReadInt<T>(LCGETINT(size_t, 2, "Position")))));
-LLFUNCTEMPLATEEX(RI64LE, 1, LCPUSHINT(ToI64LE(
+LLFUNCTEMPLATEEX(RI64LE, 1, LCPUSHVAR(UtilToI64LE(
   LCGETPTR(1, Asset)->ReadInt<T>(LCGETINT(size_t, 2, "Position")))));
-LLFUNCTEMPLATEEX(RI64BE, 1, LCPUSHINT(ToI64BE(
+LLFUNCTEMPLATEEX(RI64BE, 1, LCPUSHVAR(UtilToI64BE(
   LCGETPTR(1, Asset)->ReadInt<T>(LCGETINT(size_t, 2, "Position")))));
 /* ========================================================================= */
 // $ Asset:WriteInt
@@ -159,19 +162,19 @@ LLFUNC(S64, LCGETPTR(1, Asset)->Swap64(LCGETINT(size_t, 2, "Position")));
 // ? - RF64BE = Same as RF64 but forces the return value to big-endian.
 // ? - RF64LE = Same as RF64 but forces the return value to little-endian.
 /* ------------------------------------------------------------------------- */
-LLFUNCTEMPLATEEX(ReadN, 1, LCPUSHNUM(static_cast<lua_Number>(
+LLFUNCTEMPLATEEX(ReadN, 1, LCPUSHVAR(static_cast<lua_Number>(
   LCGETPTR(1, Asset)->ReadInt<T>(LCGETINT(size_t, 2, "Position")))));
-LLFUNCEX(RF32LE, 1, LCPUSHNUM(static_cast<lua_Number>(
-  CastInt32ToFloat(ToI32LE(LCGETPTR(1, Asset)->
+LLFUNCEX(RF32LE, 1, LCPUSHVAR(static_cast<lua_Number>(
+  UtilCastInt32ToFloat(UtilToI32LE(LCGETPTR(1, Asset)->
     ReadInt<uint32_t>(LCGETINT(size_t, 2, "Position")))))));
-LLFUNCEX(RF32BE, 1, LCPUSHNUM(static_cast<lua_Number>(
-  CastInt32ToFloat(ToI32BE(LCGETPTR(1, Asset)->
+LLFUNCEX(RF32BE, 1, LCPUSHVAR(static_cast<lua_Number>(
+  UtilCastInt32ToFloat(UtilToI32BE(LCGETPTR(1, Asset)->
     ReadInt<uint32_t>(LCGETINT(size_t, 2, "Position")))))));
-LLFUNCEX(RF64LE, 1, LCPUSHNUM(static_cast<lua_Number>(
-  CastInt64ToDouble(ToI64LE(LCGETPTR(1, Asset)->
+LLFUNCEX(RF64LE, 1, LCPUSHVAR(static_cast<lua_Number>(
+  UtilCastInt64ToDouble(UtilToI64LE(LCGETPTR(1, Asset)->
     ReadInt<uint64_t>(LCGETINT(size_t, 2, "Position")))))));
-LLFUNCEX(RF64BE, 1, LCPUSHNUM(static_cast<lua_Number>(
-  CastInt64ToDouble(ToI64BE(LCGETPTR(1, Asset)->
+LLFUNCEX(RF64BE, 1, LCPUSHVAR(static_cast<lua_Number>(
+  UtilCastInt64ToDouble(UtilToI64BE(LCGETPTR(1, Asset)->
     ReadInt<uint64_t>(LCGETINT(size_t, 2, "Position")))))));
 /* ========================================================================= */
 // $ Asset:Resize
@@ -211,7 +214,7 @@ LLFUNC(Reverse, LCGETPTR(1, Asset)->Reverse());
 // ? terminate at the first null character or at the end of array, whichever
 // ? comes first.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ToString, 1, LCPUSHXSTR(LCGETPTR(1, Asset)->ToString()));
+LLFUNCEX(ToString, 1, LCPUSHVAR(LCGETPTR(1, Asset)->ToString()));
 /* ========================================================================= */
 // $ Asset:ToFile
 // > Filename:string=Filename to write to.
@@ -219,21 +222,21 @@ LLFUNCEX(ToString, 1, LCPUSHXSTR(LCGETPTR(1, Asset)->ToString()));
 // ? Dumps the array to the specified file on disk. Useful for debugging.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(ToFile, 1,
-  LCPUSHINT(FStream(LCGETCPPFILE(2, "File"), FStream::FM_W_B).
+  LCPUSHVAR(FStream(LCGETCPPFILE(2, "File"), FStream::FM_W_B).
     FStreamWriteBlockSafe(*LCGETPTR(1, Asset))));
 /* ========================================================================= */
 // $ Asset:Size
 // < Size:integer=Size of the array in bytes.
 // ? Returns the size of the array.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Size, 1, LCPUSHINT(LCGETPTR(1, Asset)->Size()));
+LLFUNCEX(Size, 1, LCPUSHVAR(LCGETPTR(1, Asset)->Size()));
 /* ========================================================================= */
 // $ Asset:Find
 // > Text:string=String to find in array.
 // < Position:integer=Position of occurence.
 // ? Finds the first occurence of 'Text' in array from the beginning.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Find, 1, LCPUSHINT(LCGETPTR(1, Asset)->
+LLFUNCEX(Find, 1, LCPUSHVAR(LCGETPTR(1, Asset)->
   Find(LCGETCPPSTRINGNE(2, "String"))));
 /* ========================================================================= */
 // $ Asset:FindEx
@@ -242,7 +245,7 @@ LLFUNCEX(Find, 1, LCPUSHINT(LCGETPTR(1, Asset)->
 // < Position:integer=Position of occurence.
 // ? Finds the first occurence of 'Text' in array from the specified position.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(FindEx, 1, LCPUSHINT(LCGETPTR(1, Asset)->
+LLFUNCEX(FindEx, 1, LCPUSHVAR(LCGETPTR(1, Asset)->
   Find(LCGETCPPSTRINGNE(2, "String"), LCGETINT(size_t, 3, "Position"))));
 /* ========================================================================= */
 // $ Asset:Set
@@ -297,14 +300,14 @@ LLFUNC(BitSet,
 // ? position and not a byte position.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(BitState, 1,
-  LCPUSHBOOL(LCGETPTR(1, Asset)->BitTest(LCGETINT(size_t, 2, "Position"))));
+  LCPUSHVAR(LCGETPTR(1, Asset)->BitTest(LCGETINT(size_t, 2, "Position"))));
 /* ========================================================================= */
 // $ Asset:Invert
 // > Position:integer=Position to invert.
 // > Bits:integer=Bits to invert (I*F functions only, all bits otherwise).
 // ? Flips the specified bits at the specified position.
 // ?
-// ? Actual functions (Replace 'I*' with one of the following)...
+// ? Actual functions (Replace 'Invert' with one of the following)...
 // ? - I8     = Inverts bits 0-7 at the specified position.
 // ? - I8F    = Inverts specified bits between 0-7 at the specified position.
 // ? - I16    = Inverts bits 0-15 at the specified position.
@@ -325,24 +328,24 @@ LLFUNCTEMPLATE(Invert,
 LLFUNCTEMPLATE(InvertEx, LCGETPTR(1, Asset)->Invert<T>(
   LCGETINT(size_t, 2, "Position"), LCGETINT(T, 3, "Bits")));
 LLFUNC(I16FBE, LCGETPTR(1, Asset)->Invert<uint16_t>(LCGETINT(size_t, 2,
-  "Position"), ToI16BE(LCGETINT(uint16_t, 3, "Bits"))));
+  "Position"), UtilToI16BE(LCGETINT(uint16_t, 3, "Bits"))));
 LLFUNC(I16FLE, LCGETPTR(1, Asset)->Invert<uint16_t>(LCGETINT(size_t, 2,
-  "Position"), ToI16LE(LCGETINT(uint16_t, 3, "Bits"))));
+  "Position"), UtilToI16LE(LCGETINT(uint16_t, 3, "Bits"))));
 LLFUNC(I32FBE, LCGETPTR(1, Asset)->Invert<uint32_t>(LCGETINT(size_t, 2,
-  "Position"), ToI32BE(LCGETINT(uint32_t, 3, "Bits"))));
+  "Position"), UtilToI32BE(LCGETINT(uint32_t, 3, "Bits"))));
 LLFUNC(I32FLE, LCGETPTR(1, Asset)->Invert<uint32_t>(LCGETINT(size_t, 2,
-  "Position"), ToI32LE(LCGETINT(uint32_t, 3, "Bits"))));
+  "Position"), UtilToI32LE(LCGETINT(uint32_t, 3, "Bits"))));
 LLFUNC(I64FBE, LCGETPTR(1, Asset)->Invert<uint64_t>(LCGETINT(size_t, 2,
-  "Position"), ToI64BE(LCGETINT(uint64_t, 3, "Bits"))));
+  "Position"), UtilToI64BE(LCGETINT(uint64_t, 3, "Bits"))));
 LLFUNC(I64FLE, LCGETPTR(1, Asset)->Invert<uint64_t>(LCGETINT(size_t, 2,
-  "Position"), ToI64LE(LCGETINT(uint64_t, 3, "Bits"))));
+  "Position"), UtilToI64LE(LCGETINT(uint64_t, 3, "Bits"))));
 /* ========================================================================= */
 // $ Asset:Name
 // < Name:string=Name of the asset.
 // ? If this asset was loaded by a filename or it was set with a custom id.
 // ? This function returns that name which was assigned to it.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Name, 1, LCPUSHXSTR(LCGETPTR(1, Asset)->IdentGet()));
+LLFUNCEX(Name, 1, LCPUSHVAR(LCGETPTR(1, Asset)->IdentGet()));
 /* ========================================================================= */
 // $ Asset:Destroy
 // ? Frees the internal memory allocated to the asset. The object will no
@@ -350,11 +353,11 @@ LLFUNCEX(Name, 1, LCPUSHXSTR(LCGETPTR(1, Asset)->IdentGet()));
 // ? accessed.
 /* ------------------------------------------------------------------------- */
 LLFUNC(Destroy, LCCLASSDESTROY(1, Asset));
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Asset:* member functions structure                                  ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Asset:* member functions structure                                  ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Asset:* member functions begin
   LLRSFUNC(BitClear),                  LLRSFUNC(BitFlip),
   LLRSFUNC(BitSet),                    LLRSFUNC(BitState),
@@ -406,41 +409,43 @@ LLRSEND                                // Asset:* member functions end
 // > Filename:string=The name of the file to parse
 // > Returns:integer=The number of returns expected from the call.
 // < Params...:*=The parameters the function returned
+// < ...Last:integer=The result code of the compilation
 // ? Compiles and executes the specified string.
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(Parse)
-LLFUNCENDEX(LuaCodeExecFileAndRets(lS,
-  LCGETCPPFILE(1, "File"),
-  LCGETINTLG  (int, 2, 0, numeric_limits<int>::max(), "Returns")
-));
+  const int iR = LCGETINTLG(int, 2, 0, numeric_limits<int>::max(), "Returns");
+  LCPUSHVAR(LuaCodeExecuteFile(lS, LCGETCPPFILE(1, "File"), iR));
+LLFUNCENDEX(iR+1);
 /* ========================================================================= */
 // $ Asset.ParseBlock
 // > Data:Asset=The data to execute
 // > Returns:integer=The number of returns expected from the call.
 // > Name:string=The name of the block to help identify the the source.
 // < Params...:*=The parameters the function returned
-// ? Compiles and executes the specified asset.
+// < ...Last:integer=The result code of the compilation
+// ? Compiles and executes the specified asset. Prefix the name with '!' to
+// ? disable caching of this code and not pollute the code cache.
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(ParseBlock)
-LLFUNCENDEX(LuaCodeExecBlockAndRets(lS,
- *LCGETPTR        (1, Asset),
-  LCGETINTLG      (int, 2, 0, numeric_limits<int>::max(), "Returns"),
-  LCGETCPPSTRINGNE(3, "Name")
-));
+  const int iR = LCGETINTLG(int, 2, 0, numeric_limits<int>::max(), "Returns");
+  LCPUSHVAR(LuaCodeExecuteBlock(lS, *LCGETPTR(1, Asset), iR,
+    LCGETCPPSTRINGNE(3, "Name")));
+LLFUNCENDEX(iR+1);
 /* ========================================================================= */
 // $ Asset.ParseString
 // > Code:string=The block of LUA code to execute.
 // > Returns:integer=The number of returns expected from the call.
 // > Name:string=The name of the string to help identify the the source.
 // < Params...:*=The parameters the function returned
-// ? Compiles and executes the specified string.
+// < ...Last:integer=The result code of the compilation
+// ? Compiles and executes the specified string. Prefix the name with '!' to
+// ? disable caching of this code and not pollute the code cache.
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(ParseString)
-LLFUNCENDEX(LuaCodeExecStringAndRets(lS,
-  LCGETCPPSTRING  (     1, "Code"),
-  LCGETINTLG      (int, 2, 0, numeric_limits<int>::max(), "Returns"),
-  LCGETCPPSTRINGNE(     3, "Name")
-));
+  const int iR = LCGETINTLG(int, 2, 0, numeric_limits<int>::max(), "Returns");
+  LCPUSHVAR(LuaCodeExecuteString(lS, LCGETCPPSTRING(1, "Code"), iR,
+    LCGETCPPSTRINGNE(3, "Name")));
+LLFUNCENDEX(iR+1);
 /* ========================================================================= */
 // $ Asset.CompileFunction
 // > Debug:boolean=Include debug data?
@@ -487,7 +492,7 @@ LLFUNCEX(CompileString, 1, LuaCodeCompileString(lS,
 // ? then the function traverses archives. Use this function to make sure
 // ? exceptions aren't raised when loading files with any API function.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(FileExists, 1, LCPUSHBOOL(AssetExists(LCGETCPPFILE(1, "File"))));
+LLFUNCEX(FileExists, 1, LCPUSHVAR(AssetExists(LCGETCPPFILE(1, "File"))));
 /* ========================================================================= */
 // $ Asset.Enumerate
 // > Directory:string=The directory to scan (can only be exedir or below).
@@ -621,11 +626,11 @@ LLFUNC(WaitAsync, cAssets->WaitAsync());
 // ? not destory the original.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Duplicate, 1, LCCLASSCREATE(Asset)->InitCopy(*LCGETPTR(1, Asset)));
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Asset.* namespace functions structure                               ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Asset.* namespace functions structure                               ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Asset.* namespace functions begin
   LLRSFUNC(Asset),         LLRSFUNC(AssetAsync),      LLRSFUNC(Compile),
   LLRSFUNC(CompileBlock),  LLRSFUNC(CompileFunction), LLRSFUNC(CompileString),
@@ -635,11 +640,11 @@ LLRSBEGIN                              // Asset.* namespace functions begin
   LLRSFUNC(Parse),         LLRSFUNC(ParseBlock),      LLRSFUNC(ParseString),
   LLRSFUNC(String),        LLRSFUNC(StringAsync),     LLRSFUNC(WaitAsync),
 LLRSEND                                // Asset.* namespace functions end
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Asset.* namespace constants structure                               ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Asset.* namespace constants                                         ## **
+** ######################################################################### **
+** ========================================================================= */
 // @ Asset.Flags
 // < Codes:table=The table of key/value pairs of available flags
 // ? A table of loading flags available. Returned as key/value pairs. The
@@ -665,8 +670,21 @@ LLRSKTBEGIN(Progress)                  // Beginning of progress flags
   LLRSKTITEM(APC_,FILESTART),
 LLRSKTEND                              // End of progress flags
 /* ========================================================================= */
+// @ Asset.ParseResult
+// < Codes:table=The table of key/value pairs of available parse results
+// ? A table containing results for parse commands.
+/* ------------------------------------------------------------------------- */
+LLRSKTBEGIN(ParseResult)               // Beginning of parse results
+  LLRSKTITEM(LCR_,CACHED), LLRSKTITEM(LCR_,RECOMPILE),
+  LLRSKTITEM(LCR_,DBERR),  LLRSKTITEM(LCR_,NOCACHE),
+LLRSKTEND                              // End of parse results
+/* ========================================================================= **
+** ######################################################################### **
+** ## Asset.* namespace constants structure                               ## **
+** ######################################################################### **
+** ========================================================================= */
 LLRSCONSTBEGIN                         // Asset.* namespace consts begin
-  LLRSCONST(Flags), LLRSCONST(Progress),
+  LLRSCONST(Flags), LLRSCONST(Progress), LLRSCONST(ParseResult),
 LLRSCONSTEND                           // Asset.* namespace consts end
 /* ========================================================================= */
 }                                      // End of Asset namespace

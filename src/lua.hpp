@@ -1,21 +1,30 @@
-/* == LUA.HPP ============================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## The lua instance is the core scripting module that glues all the    ## */
-/* ## engine components together. Note that this class does not handle    ## */
-/* ## and inits or deinits because this has to be done later on as        ## */
-/* ## lua allocated objects need to destruct their objects before the     ## */
-/* ## actual object destructors are called.                               ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == LUA.HPP ============================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## The lua instance is the core scripting module that glues all the    ## **
+** ## engine components together. Note that this class does not handle    ## **
+** ## and inits or deinits because this has to be done later on as        ## **
+** ## lua allocated objects need to destruct their objects before the     ## **
+** ## actual object destructors are called.                               ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfLua {                      // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfLuaDef;              // Using luadef namespace
-using namespace IfLuaFunc;             // Using luafunc namespace
-using namespace IfLuaCode;             // Using luacode namespace
+namespace ILua {                       // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IClock::P;             using namespace ICollector::P;
+using namespace ICrypt::P;             using namespace ICVarDef::P;
+using namespace IError::P;             using namespace IEvtMain::P;
+using namespace IFlags;                using namespace ILog::P;
+using namespace ILuaDef;               using namespace ILuaCode::P;
+using namespace ILuaFunc::P;           using namespace ILuaLib::P;
+using namespace ILuaUtil::P;           using namespace ISql::P;
+using namespace IStd::P;               using namespace IString::P;
+using namespace ISystem::P;            using namespace ISysUtil::P;
+using namespace ITimer::P;             using namespace IUtil::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Flags for setting up environment ------------------------------------- */
 BUILD_FLAGS(Lua,
   // Load nothing                      // Load engine core api
@@ -25,7 +34,7 @@ BUILD_FLAGS(Lua,
   // Mask bits
   LUF_MASK{ LUF_ENGINE|LUF_CORE }
 );
-/* == Lua class ========================================================== */
+/* == Lua class ============================================================ */
 static class Lua final :
   /* -- Base classes ------------------------------------------------------- */
   public ClockChrono<CoreClock>,       // Runtime clock
@@ -59,9 +68,9 @@ static class Lua final :
   /* -- Set a lua reference (LuaFunc can't have this check) ---------------- */
   void SetLuaRef(lua_State*const lS, LuaFunc &lrEvent, const int iParam)
   { // Need only one parameter which is the function
-    CheckParams(lS, iParam);
+    LuaUtilCheckParams(lS, iParam);
     // It must be a function
-    CheckFunction(lS, iParam, "Callback");
+    LuaUtilCheckFunc(lS, iParam, "Callback");
     // And must be on the main thread
     StateAssert(lS);
     // Set the function
@@ -117,9 +126,9 @@ static class Lua final :
   /* -- Stop gabage collection --------------------------------------------- */
   void StopGC(void) const
   { // Garbage collector is running?
-    if(GCRunning(GetState()))
+    if(LuaUtilGCRunning(GetState()))
     { // Stop garbage collector
-      GCStop(GetState());
+      LuaUtilGCStop(GetState());
       // Log success
       cLog->LogDebugSafe("Lua garbage collector stopped.");
     } // Garbage collector not running? Show warning in log.
@@ -128,16 +137,16 @@ static class Lua final :
   /* -- Start garbage collection ------------------------------------------- */
   void StartGC(void) const
   { // Garbage collector is not running?
-    if(!GCRunning(GetState()))
+    if(!LuaUtilGCRunning(GetState()))
     { // Start garbage collector
-      GCStart(GetState());
+      LuaUtilGCStart(GetState());
       // Log success
       cLog->LogDebugSafe("Lua garbage collector started.");
     } // Garbage collector running? Show warning in log.
     else cLog->LogWarningSafe("Lua garbage collector already started!");
   }
   /* -- Full garbage collection while logging memory usage ----------------- */
-  size_t GarbageCollect(void) const { return GCCollect(GetState()); }
+  size_t GarbageCollect(void) const { return LuaUtilGCCollect(GetState()); }
   /* -- Checks that the state matches with main state ---------------------- */
   void StateAssert(lua_State*const lS) const
   { // This function call is needed when some LUA API functions need to make
@@ -158,28 +167,28 @@ static class Lua final :
     const LuaStackSaver lssSaved{ GetState() };
     // Compile the specified script from the command line
     LuaCodeCompileString(GetState(), strWhat, {});
-    // Move compiled function for PCall argument
+    // Move compiled function for LuaUtilPCall argument
     lua_insert(GetState(), 1);
     // Call the protected function. We don't know how many return values.
-    PCall(GetState(), 0, LUA_MULTRET);
+    LuaUtilPCall(GetState(), 0, LUA_MULTRET);
     // Scan for results
     StrList slResults;
     for(int iI = lssSaved.Value() + 1; !lua_isnone(GetState(), iI); ++iI)
-      slResults.emplace_back(GetStackType(GetState(), iI));
+      slResults.emplace_back(LuaUtilGetStackType(GetState(), iI));
     // Print result
     return slResults.empty() ?
-      Format("Request took $.",
-        ToShortDuration(ccExecute.CCDeltaToDouble())) :
-      Format("Request took $ returning $: $.",
-        ToShortDuration(ccExecute.CCDeltaToDouble()),
-        PluraliseNum(slResults.size(), "result", "results"),
-        Implode(slResults, ", "));
+      StrFormat("Request took $.",
+        StrShortFromDuration(ccExecute.CCDeltaToDouble())) :
+      StrFormat("Request took $ returning $: $.",
+        StrShortFromDuration(ccExecute.CCDeltaToDouble()),
+        StrPluraliseNum(slResults.size(), "result", "results"),
+        StrImplode(slResults, ", "));
   }
   /* -- Execute main function ---------------------------------------------- */
   void ExecuteMain(void) const { lrMainTick.LuaFuncPushAndCall(); }
   /* -- When lua enters the specified function ----------------------------- */
   static void OnInstructionCount(lua_State*const lS, lua_Debug*const)
-    { if(cTimer->TimerIsTimedOut()) ProcessError(lS, "Frame timeout!"); }
+    { if(cTimer->TimerIsTimedOut()) LuaUtilPushErr(lS, "Frame timeout!"); }
   /* -- When operations count have changed --------------------------------- */
   CVarReturn SetOpsInterval(const int iCount)
     { return CVarSimpleSetIntNL(iOperations, iCount, 1); }
@@ -199,24 +208,21 @@ static class Lua final :
   int GetOpsInterval(void) { return iOperations; }
   /* -- Init lua library and configuration --------------------------------- */
   void SetupEnvironment(void)
-  { // Using LibLua namepace
-    using namespace IfLuaLib;
-    // Disable garbage collector temporarily
-    StopGC();
+  { StopGC();
     // Init references
     LuaFuncInitRef(GetState());
     // Set default end function to automatically exit the engine
-    PushCFunction(GetState(), [](lua_State*)->int{
+    LuaUtilPushCFunc(GetState(), [](lua_State*)->int{
       cEvtMain->Add(EMC_LUA_CONFIRM_EXIT); return 0;
     });
     lrMainEnd.LuaFuncSet();
     // Set initial size of stack
     cLog->LogDebugExSafe("Lua $ stack size to $.",
-      StackHasCapacity(GetState(), iStack) ?
+      LuaUtilIsStackAvail(GetState(), iStack) ?
         "initialised" : "could not initialise", iStack);
     // Set incremental garbage collector settings. We're not using LUA_GCGEN
     // right now as it makes everything lag so investigate it sometime.
-    GCSet(GetState(), LUA_GCINC, iGCPause, iGCStep);
+    LuaUtilGCSet(GetState(), LUA_GCINC, iGCPause, iGCStep);
     cLog->LogDebugExSafe("Lua initialised incremental gc to $:$.",
       iGCPause, iGCStep);
     // Init engine variables?
@@ -249,7 +255,7 @@ static class Lua final :
         iTables += llRef.iLLKICount;
         ++iCount;
         // Load class creation functions
-        PushTable(GetState(), 0,
+        LuaUtilPushTable(GetState(), 0,
           llRef.iLLCount + llRef.iLLMFCount + llRef.iLLKICount);
         luaL_setfuncs(GetState(), llRef.libList, 0);
         // If we have consts list?
@@ -259,13 +265,13 @@ static class Lua final :
           { // Get reference to table
             const LuaTable &ltRef = *ltPtr;
             // Create a table
-            PushTable(GetState(), 0, ltRef.iCount);
+            LuaUtilPushTable(GetState(), 0, ltRef.iCount);
             // Walk through the key/value pairs
             for(const LuaKeyInt *kiPtr = ltRef.kiList; kiPtr->cpName; ++kiPtr)
             { // Get reference to key/value pair
               const LuaKeyInt &kiRef = *kiPtr;
               // Push the name of the item
-              PushInteger(GetState(), kiRef.liValue);
+              LuaUtilPushInt(GetState(), kiRef.liValue);
               lua_setfield(GetState(), -2, kiRef.cpName);
             } // Set field name and finalise const table
             lua_setfield(GetState(), -2, ltRef.cpName);
@@ -286,26 +292,26 @@ static class Lua final :
         // Pre-cache the metadata for the class and it's members. Note that
         // all threads of the same lua state share a single registry so this is
         // very safe. Start by creating a new metadata table for 4 entries.
-        PushTable(GetState(), 0, 4);
+        LuaUtilPushTable(GetState(), 0, 4);
         // Push the name of the metatable
-        PushString(GetState(), llRef.cpName);
+        LuaUtilPushCStr(GetState(), llRef.cpName);
         lua_setfield(GetState(), -2, "__name");
         // Set methods so var:func() works
-        PushTable(GetState(), 0, llRef.iLLMFCount);
+        LuaUtilPushTable(GetState(), 0, llRef.iLLMFCount);
         luaL_setfuncs(GetState(), llRef.libmfList, 0);
         lua_setfield(GetState(), -2, "__index");
         // Protect metadata. getmetatable(x) returns the type instead.
-        PushString(GetState(), llRef.cpName);
+        LuaUtilPushCStr(GetState(), llRef.cpName);
         lua_setfield(GetState(), -2, "__metatable");
         // Push destructor function, this is copied to __gc when as classes
         // are constructed. See CreateClass in luautil.hpp.
-        PushCFunction(GetState(), llRef.lcfpDestroy);
+        LuaUtilPushCFunc(GetState(), llRef.lcfpDestroy);
         lua_setfield(GetState(), -2, "__dtor");
         // Register the metatable
         lua_pushvalue(GetState(), -1);
         lua_setfield(GetState(), LUA_REGISTRYINDEX, llRef.cpName);
         // Remove the table (not sure why this table wasn't removed).
-        RemoveStack(GetState());
+        LuaUtilRmStack(GetState());
         // Log progress
         cLog->LogDebugExSafe("- $ ($ members, $ tables and $ methods).",
           llRef.cpName, llRef.iLLCount, llRef.iLLKICount, llRef.iLLMFCount);
@@ -336,22 +342,22 @@ static class Lua final :
       // Initialise random number generator and if pre-defined?
       if(liSeed)
       { // Init pre-defined seed
-        InitRNGSeed(GetState(), liSeed);
+        LuaUtilInitRNGSeed(GetState(), liSeed);
         // Warn developer/user that there is a pre-defined random seed
         cLog->LogWarningExSafe("Lua using pre-defined random seed '$'!",
           liSeed);
       } // Use a random number instead
-      else InitRNGSeed(GetState(), CryptRandom<lua_Integer>());
+      else LuaUtilInitRNGSeed(GetState(), CryptRandom<lua_Integer>());
     } // Standard library not available so we can only set C-Lib seed
     else StdSRand(!!liSeed ? static_cast<unsigned int>(liSeed) :
                              CryptRandom<unsigned int>());
     // Use a timeout hook?
     if(iOperations > 0)
     { // Set the hook
-      SetHookCallback(GetState(), OnInstructionCount, iOperations);
+      LuaUtilSetHookCallback(GetState(), OnInstructionCount, iOperations);
       // Log that it was enabled
       cLog->LogDebugExSafe("Lua timeout set to $ sec for every $ operations.",
-        ToShortDuration(cTimer->TimerGetTimeOut(), 1), iOperations);
+        StrShortFromDuration(cTimer->TimerGetTimeOut(), 1), iOperations);
     } // Show a warning to say the timeout hook is disabled
     else cLog->LogWarningSafe("Lua timeout hook disabled so use at own risk!");
     // Resume garbage collector
@@ -362,22 +368,22 @@ static class Lua final :
   /* -- Enter sandbox mode ------------------------------------------------- */
   void EnterSandbox(lua_CFunction cbFunc, void*const vpPtr)
   { // Push and get error callback function id
-    const int iParam = PushAndGetGenericErrorId(GetState());
+    const int iParam = LuaUtilPushAndGetGenericErrId(GetState());
     // Push function and parameters
-    PushCFunction(GetState(), cbFunc);
+    LuaUtilPushCFunc(GetState(), cbFunc);
     // Push user parameter (core class)
-    PushPtr(GetState(), vpPtr);
+    LuaUtilPushPtr(GetState(), vpPtr);
     // Call it! No parameters and no returns
-    PCallSafe(GetState(), 1, 0, iParam);
+    LuaUtilPCallSafe(GetState(), 1, 0, iParam);
   }
   /* -- De-initialise LUA context ------------------------------------------ */
   void DeInit(void)
   { // Return if class already initialised
     if(!lsState) return;
     // Report progress
-    cLog->LogDebugExSafe("Lua subsystem deinitialising...");
+    cLog->LogDebugExSafe("Lua sandbox deinitialising...");
     // De-init instruction count hook?
-    SetHookCallback(GetState(), nullptr, 0);
+    LuaUtilSetHookCallback(GetState(), nullptr, 0);
     // Disable garbage collector
     StopGC();
     // Unregister lua related events
@@ -389,15 +395,15 @@ static class Lua final :
     // No longer paused or exited
     bLuaPaused = bExiting = false;
     // Report progress
-    cLog->LogDebugSafe("Lua subsystem successfully deinitialised.");
+    cLog->LogDebugSafe("Lua sandbox successfully deinitialised.");
   }
   /* -- Default allocator that uses malloc() ------------------------------- */
   static void *LuaDefaultAllocator(void*const, void*const vpAddr,
     size_t, size_t stSize)
   { // (Re)allocate if memory needed and return
-    if(stSize) return MemReAlloc<void>(vpAddr, stSize);
+    if(stSize) return UtilMemReAlloc<void>(vpAddr, stSize);
     // Zero for free memory
-    MemFree(vpAddr);
+    UtilMemFree(vpAddr);
     // Return nothing
     return nullptr;
   }
@@ -434,22 +440,25 @@ static class Lua final :
   /* -- Initialise LUA context --------------------------------------------- */
   void Init(void)
   { // Class initialised
-    if(lsState) XC("Lua already initialised!");
+    if(lsState) XC("Lua sandbox already initialised!");
     // Report progress
-    cLog->LogDebugSafe("Lua subsystem initialising...");
+    cLog->LogDebugSafe("Lua sandbox initialising...");
     // Create lua context and bail if failed. ONLY use malloc() because we
     // could sometimes interleave allocations with C++ STL and use of any other
     // allocator will cause issues.
     lsState = LuaPtr{ lua_newstate(LuaDefaultAllocator, this), lua_close };
-    if(!lsState) XC("Failed to create context!");
+    if(!lsState) XC("Failed to create Lua context!");
     // Set panic callback
-    lua_atpanic(GetState(), GenericPanic);
+    lua_atpanic(GetState(), LuaUtilException);
     // Set warning catcher
     lua_setwarnf(GetState(), WarningCallback, this);
     // Register callback events
     cEvtMain->RegisterEx(*this);
-    // Report progress
-    cLog->LogDebugSafe("Lua subsystem successfully initialised.");
+    // Report initialisation with version and some important variables
+    cLog->LogDebugExSafe("Lua sandbox initialised...\n"
+      "- Stack size minimum: $; Stack size maximum: $.\n"
+      "- Maximum CFunction calls: $; Maximum UpValues: $.",
+      LUA_MINSTACK, LUAI_MAXSTACK, LUAI_MAXCCALLS, MAXUPVAL);
   }
   /* -- Constructor -------------------------------------------------------- */
   Lua(void) :
@@ -481,5 +490,7 @@ static class Lua final :
   /* -- End ---------------------------------------------------------------- */
 } *cLua = nullptr;                     // Pointer to static class
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

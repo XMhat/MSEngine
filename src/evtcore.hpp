@@ -1,42 +1,45 @@
-/* == EVTCORE.HPP ========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This class allows threads to communicate with each other safely.    ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == EVTCORE.HPP ========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This class allows threads to communicate with each other safely.    ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfEvtCore {                  // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfLog;                 // Using log namespace
-/* ----------------------------------------------------------------------- */
-enum MVarType                        // MVar variable types
-{ /* --------------------------------------------------------------------- */
-  MVT_BOOL,     MVT_CSTR, MVT_STR,  MVT_PTR,       MVT_FLOAT,
-  MVT_DOUBLE,   MVT_UINT, MVT_INT,  MVT_ULONGLONG, MVT_LONGLONG,
+namespace IEvtCore {                   // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IError::P;             using namespace ILog::P;
+using namespace IStd::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public public namespace
+/* ------------------------------------------------------------------------- */
+enum MVarType                          // MVar variable types
+{ /* ----------------------------------------------------------------------- */
+  MVT_BOOL,     MVT_CSTR,    MVT_STR, MVT_PTR,       MVT_FLOAT,
+  MVT_DOUBLE,   MVT_UINT,    MVT_INT, MVT_ULONGLONG, MVT_LONGLONG,
   MVT_LONGUINT, MVT_LONGINT, MVT_MAX
-};/* --------------------------------------------------------------------- */
-struct MVar                          // Multi-type helps access event data
-{ /* --------------------------------------------------------------------- */
-  const MVarType       t;            // Variable type
-  /* --------------------------------------------------------------------- */
-  union                              // Variables share same memory space
-  { /* -- All these use the same memory ---------------------------------- */
-    size_t             z;            // Size Integer ............ (4-8 bytes)
-    bool               b;            // Boolean .................... (1 byte)
-    void              *vp;           // Pointer ................. (4-8 bytes)
-    char              *cp;           // C-String pointer ........ (4-8 bytes)
-    string            *str;          // STL-String pointer ...... (4-8 bytes)
-    float              f;            // Float ..................... (4 bytes)
-    double             d;            // Double .................... (8 bytes)
-    unsigned int       ui;           // Unsigned Integer .......... (4 bytes)
-    signed int         i;            // Signed Integer ............ (4 bytes)
-    unsigned long long ull;          // Unsigned Long Long ........ (8 bytes)
-    signed long long   ll;           // Signed Long Long .......... (8 bytes)
-    long unsigned int  lui;          // Long Unsigned Integer ... (4-8 bytes)
-    long signed int    li;           // Long Signed Integer ..... (4-8 bytes)
-  }; /* ------------------------------------------------------------------ */
+};/* ----------------------------------------------------------------------- */
+struct MVar                            // Multi-type helps access event data
+{ /* ----------------------------------------------------------------------- */
+  const MVarType       t;              // Variable type
+  /* ----------------------------------------------------------------------- */
+  union                                // Variables share same memory space
+  { /* -- All these use the same memory ------------------------------------ */
+    size_t             z;              // Size Integer ............ (4-8 bytes)
+    bool               b;              // Boolean .................... (1 byte)
+    void              *vp;             // Pointer ................. (4-8 bytes)
+    char              *cp;             // C-String pointer ........ (4-8 bytes)
+    string            *str;            // STL-String pointer ...... (4-8 bytes)
+    float              f;              // Float ..................... (4 bytes)
+    double             d;              // Double .................... (8 bytes)
+    unsigned int       ui;             // Unsigned Integer .......... (4 bytes)
+    signed int         i;              // Signed Integer ............ (4 bytes)
+    unsigned long long ull;            // Unsigned Long Long ........ (8 bytes)
+    signed long long   ll;             // Signed Long Long .......... (8 bytes)
+    long unsigned int  lui;            // Long Unsigned Integer ... (4-8 bytes)
+    long signed int    li;             // Long Signed Integer ..... (4-8 bytes)
+  }; /* -------------------------------------------------------------------- */
   explicit MVar(const void*const vpP) :
     t(MVT_PTR), vp(const_cast<void*>(vpP)) {}
   explicit MVar(const char*const cpP) :
@@ -61,7 +64,7 @@ struct MVar                          // Multi-type helps access event data
     t(MVT_LONGINT), li(liV) {}
   explicit MVar(const bool bV):
     t(MVT_BOOL), b(bV) {}
-};/* --------------------------------------------------------------------- */
+};/* ----------------------------------------------------------------------- */
 /* -- Common events system (since we need to use this twice) --------------- */
 template<typename Cmd,                 // Variable type of command to use
          size_t   EvtMaxEvents,        // Maximum number of events
@@ -141,12 +144,13 @@ class EvtCore                          // Start of common event system class
     fCB({ eCmd, fCB, StdMove(pData) });
   }
   /* -- Execute specified event NOW (parameters) --------------------------- */
-  template<typename... V,typename T>
-    void ExecuteParam(const Cmd eCmd, Params &pData, T tParam, V... vVars)
+  template<typename ...VarArgs,typename AnyType>
+    void ExecuteParam(const Cmd eCmd, Params &pData, AnyType tParam,
+      const VarArgs &...vaVars)
   { // Insert parameter into list
     pData.push_back(MVar{ tParam });
     // Add more parameters
-    ExecuteParam(eCmd, pData, vVars...);
+    ExecuteParam(eCmd, pData, vaVars...);
   }
   /* -- Add with copy parameter semantics (finisher) ----------------------- */
   void AddParam(const Cmd eCmd, Params &pData)
@@ -158,12 +162,13 @@ class EvtCore                          // Start of common event system class
     eEvents.emplace_back(StdMove(cData));
   }
   /* -- Add with copy parameter semantics (parameters) --------------------- */
-  template<typename... V,typename T>
-    void AddParam(const Cmd eCmd, Params &pData, T tParam, V... vVars)
+  template<typename ...VarArgs, typename AnyType>
+    void AddParam(const Cmd eCmd, Params &pData, AnyType tParam,
+      const VarArgs &...vaVars)
   { // Place parameter in list
     pData.emplace_back(MVar{ tParam });
     // Add more parameters or finish
-    AddParam(eCmd, pData, vVars...);
+    AddParam(eCmd, pData, vaVars...);
   }
   /* -- list is empty? --------------------------------------------- */ public:
   bool Empty(void)
@@ -236,22 +241,24 @@ class EvtCore                          // Start of common event system class
   /* -- Flush events list -------------------------------------------------- */
   void Flush(void) { const LockGuard lgEventsSync{ mMutex }; eEvents.clear(); }
   /* -- Execute specified event NOW (starter) ------------------------------ */
-  template<typename... V>void Execute(const Cmd eCmd, V... vVars)
+  template<typename ...VarArgs>
+    void Execute(const Cmd eCmd, const VarArgs &...vaVars)
   { // Parameters list
     Params pData;
     // Reserve memory for parameters
-    pData.reserve(sizeof...(V));
+    pData.reserve(sizeof...(VarArgs));
     // Prepare parameters list and execute
-    ExecuteParam(eCmd, pData, vVars...);
+    ExecuteParam(eCmd, pData, vaVars...);
   }
   /* -- Add with copy parameter semantics (starter) ------------------------ */
-  template<typename... V>void Add(const Cmd eCmd, V... vVars)
+  template<typename ...VarArgs>
+    void Add(const Cmd eCmd, const VarArgs &...vaVars)
   { // Parameters list
     Params pData;
     // Reserve memory for parameters
-    pData.reserve(sizeof...(V));
+    pData.reserve(sizeof...(VarArgs));
     // Prepare parameters list and add a new event
-    AddParam(eCmd, pData, vVars...);
+    AddParam(eCmd, pData, vaVars...);
   }
   /* -- Add to events and return iterator (finisher) ----------------------- */
   void AddExParam(const Cmd eCmd, QueueConstIt &qciItem, Params &pData)
@@ -263,23 +270,25 @@ class EvtCore                          // Start of common event system class
     qciItem = StdMove(eEvents.emplace(eEvents.cend(), StdMove(cData)));
   }
   /* -- Add to events and return iterator (parameters) --------------------- */
-  template<typename... V,typename T>void AddExParam(const Cmd eCmd,
-    QueueConstIt &qciItem, Params &pData, T tParam, V... vVars)
+  template<typename ...VarArgs, typename AnyType>
+    void AddExParam(const Cmd eCmd, QueueConstIt &qciItem,
+      Params &pData, AnyType tParam, const VarArgs &...vaVars)
   { // Place parameter into parameter list
     pData.emplace_back(MVar{ tParam });
     // Add more parameters or finish
-    AddExParam(eCmd, qciItem, pData, vVars...);
+    AddExParam(eCmd, qciItem, pData, vaVars...);
   }
   /* -- Queue and event and return the id of the event copy params --------- */
-  template<typename... V>const QueueConstIt AddEx(const Cmd eCmd, V... vVars)
+  template<typename ...VarArgs>
+    const QueueConstIt AddEx(const Cmd eCmd, const VarArgs &...vaVars)
   { // Iterator to return
     QueueConstIt qciItem;
     // Parameters list
     Params pData;
     // Reserve parameters
-    pData.reserve(sizeof...(V));
+    pData.reserve(sizeof...(VarArgs));
     // Prepare parameters list and execute
-    AddExParam(eCmd, qciItem, pData, vVars...);
+    AddExParam(eCmd, qciItem, pData, vaVars...);
     // Return iterator
     return qciItem;
   }
@@ -321,5 +330,7 @@ class EvtCore                          // Start of common event system class
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(EvtCore)             // Delete copy constructor and operator
 };/* ----------------------------------------------------------------------- */
-};                                     // End of module namespace
+};                                     // End of public module namespace
+/* ------------------------------------------------------------------------- */
+};                                     // End of private module namespace
 /* == EoF =========================================================== EoF == */

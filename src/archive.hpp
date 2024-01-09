@@ -1,18 +1,28 @@
-/* == ARCHIVE.HPP ========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This the file handles the .adb (7-zip) archives and the extraction  ## */
-/* ## and decompression of files.                                         ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == ARCHIVE.HPP ========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This the file handles the .adb (7-zip) archives and the extraction  ## **
+** ## and decompression of files.                                         ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfArchive {                  // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfASync;               // Using async namespace
-using namespace IfCodec;               // Using codec namespace
-using namespace IfCrypt;               // Using cryptographic namespace
+namespace IArchive {                   // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IASync::P;             using namespace ICodec::P;
+using namespace ICollector::P;         using namespace ICrypt::P;
+using namespace ICVarDef::P;           using namespace IDir::P;
+using namespace IError::P;             using namespace IEvtMain::P;
+using namespace IFileMap::P;           using namespace IFlags;
+using namespace IIdent::P;             using namespace ILog::P;
+using namespace ILuaUtil::P;           using namespace IPSplit::P;
+using namespace IMemory::P;            using namespace IStd::P;
+using namespace IString::P;            using namespace ISystem::P;
+using namespace ISysUtil::P;           using namespace IUtf;
+using namespace IUtil::P;              using namespace Lib::OS::SevenZip;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* == Archive collector with extract buffer size =========================== */
 BEGIN_ASYNCCOLLECTOREX(Archives, Archive, CLHelperSafe,
   /* ----------------------------------------------------------------------- */
@@ -20,10 +30,10 @@ BEGIN_ASYNCCOLLECTOREX(Archives, Archive, CLHelperSafe,
   ISzAlloc         isaData;            /* Allocator functions               */\
   /* -- Alloc function for lzma -------------------------------------------- */
   static void *Alloc(ISzAllocPtr, size_t stBytes)\
-    { return MemAlloc<void>(stBytes); }\
+    { return UtilMemAlloc<void>(stBytes); }\
   /* -- Free function for lzma --------------------------------------------- */
   static void Free(ISzAllocPtr, void*const vpAddress)\
-    { MemFree(vpAddress); }\
+    { UtilMemFree(vpAddress); }\
 );/* ----------------------------------------------------------------------- */
 BUILD_FLAGS(Archive,
   /* ----------------------------------------------------------------------- */
@@ -74,7 +84,7 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
       // files in non-solid blocks.
       size_t stCompressed = 0, stOffset = 0, stUncompressed = 0;
       // Block index returned in extractor function
-      unsigned int uiBlockIndex = static_cast<unsigned int>(-1);
+      unsigned int uiBlockIndex = StdMaxUInt;
       // Decompress the buffer using our base handles and throw error if it
       // failed
       if(const int iCode = SzArEx_Extract(&csaeD, &cltrD.vt,
@@ -153,7 +163,7 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
     cltrOut.bufSize = cParent.stExtractBufSize;
     // Initialise look2read structs. On p7zip, the buffer allocation is already
     // done for us.
-    LookToRead2_Init(&cltrOut);
+    LookToRead2_INIT(&cltrOut);
   }
   /* -- Get archive file/dir as table ------------------------------ */ public:
   const StrUIntMap &GetFileList(void) const { return lFiles; }
@@ -161,12 +171,12 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
   /* -- Returns modified time of specified file ---------------------------- */
   StdTimeT GetModifiedTime(const size_t stId) const
     { return static_cast<StdTimeT>(SzBitWithVals_Check(&csaeData.MTime, stId) ?
-        BruteCast<uint64_t>(csaeData.MTime.Vals[stId]) / 100000000 :
+        UtilBruteCast<uint64_t>(csaeData.MTime.Vals[stId]) / 100000000 :
         numeric_limits<StdTimeT>::max()); }
   /* -- Returns creation time of specified file ---------------------------- */
   StdTimeT GetCreatedTime(const size_t stId) const
     { return static_cast<StdTimeT>(SzBitWithVals_Check(&csaeData.CTime, stId) ?
-        BruteCast<uint64_t>(csaeData.CTime.Vals[stId]) / 100000000 :
+        UtilBruteCast<uint64_t>(csaeData.CTime.Vals[stId]) / 100000000 :
         numeric_limits<StdTimeT>::max()); }
   /* -- Returns uncompressed size of file by id ---------------------------- */
   uint64_t GetSize(const size_t stId) const
@@ -337,13 +347,13 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
         // Convert wide-string to utf-8 and insert it in the dirs to integer
         // list and store the iterator in the vector
         vDirs.push_back(lDirs.insert({
-          FromWideStringPtr(wvFilesWide.data()), uiIndex }).first);
+          UtfFromWide(wvFilesWide.data()), uiIndex }).first);
       // Is a file?
       else
         // Convert wide-string to utf-8 and insert it in the files to integer
         // list and store the iterator in the vector
         vFiles.push_back(lFiles.insert({
-          FromWideStringPtr(wvFilesWide.data()), uiIndex }).first);
+          UtfFromWide(wvFilesWide.data()), uiIndex }).first);
     } // We did not know how many files and directories there were
     // specifically so lets free the extra memory allocated for the lists
     vFiles.shrink_to_fit();
@@ -355,12 +365,10 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
   /* -- Loads archive asynchronously --------------------------------------- */
   void InitAsyncFile(lua_State*const lS)
   { // Need 4 parameters (class pointer was already pushed onto the stack);
-    CheckParams(lS, 5);
+    LuaUtilCheckParams(lS, 5);
     // Get and check parameters
-    const string strFilename{ GetCppFileName(lS, 1, "File") };
-    CheckFunction(lS, 2, "ErrorFunc");
-    CheckFunction(lS, 3, "ProgressFunc");
-    CheckFunction(lS, 4, "SuccessFunc");
+    const string strFilename{ LuaUtilGetCppFile(lS, 1, "File") };
+    LuaUtilCheckFuncs(lS, 2, "ErrorFunc", 3, "ProgressFunc", 4, "SuccessFunc");
     // Throw error if invalid name
     if(const ValidResult vrId = DirValidName(strFilename))
       XC("Filename is invalid!",
@@ -503,7 +511,7 @@ static CVarReturn ArchiveInit(const string &strFileMask, string&)
   for(const auto &dI : dList.dFiles)
   { // Log archive info
     cLog->LogDebugExSafe("- #$: '$' (S:$;A:0x$$;C:0x$;M:0x$).",
-      ++stFound, dI.first, ToBytesStr(dI.second.qSize), hex,
+      ++stFound, dI.first, StrToBytes(dI.second.qSize), hex,
       dI.second.qFlags, dI.second.tCreate, dI.second.tWrite);
     // Dynamically create the archive. The pointer is recorded in the parent
     // and is referenced from there when loading other files. If succeeded?
@@ -600,7 +608,7 @@ static FileMap ArchiveExtract(const string &strFile)
   } // FileMap not found
   return {};
 }
-/* -- ArchiveGetNames -------------------------------------------------- */
+/* -- ArchiveGetNames ------------------------------------------------------ */
 static const string ArchiveGetNames(void)
 { // Set default archive name if no archives
   if(cArchives->empty()) return {};
@@ -616,5 +624,7 @@ static const string ArchiveGetNames(void)
   return osS.str();
 }
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

@@ -1,13 +1,17 @@
-/* == IDENT.HPP ============================================================ */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Simple class to hold a string identifier.                           ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == IDENT.HPP ============================================================ **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Simple class to hold a string identifier.                           ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfIdent {                    // Start of module namespace
+namespace IIdent {                     // Start of private module namespace
+/* ------------------------------------------------------------------------- */
+using namespace IStd::P;               using namespace IString::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Read only identifier class ------------------------------------------- */
 template<class StringType>             // STL string type to use
   class IdentBase                      // Members initially private
@@ -51,16 +55,16 @@ struct Ident :                         // Members initially public
   void IdentSet(string &&strId) { strIdentifier = StdMove(strId); }
   /* -- Set identifier by lvalue ------------------------------------------- */
   void IdentSet(const string &strId) { strIdentifier = strId; }
-  /* -- Set identifier by class ------------------------------------------- */
+  /* -- Set identifier by class -------------------------------------------- */
   void IdentSet(const IdentBase &ibO) { strIdentifier = ibO.IdentGet(); }
-  /* -- Formatted set using Format() --------------------------------------- */
-  template<typename... VarArgs>
+  /* -- Formatted set using StrFormat() ------------------------------------ */
+  template<typename ...VarArgs>
     void IdentSet(const char*const cpFormat, const VarArgs &...vaArgs)
-  { IdentSet(IfString::Format(cpFormat, vaArgs...)); }
-  /* -- Formatted set using Append() --------------------------------------- */
-  template<typename... VarArgs>
+      { IdentSet(StrFormat(cpFormat, vaArgs...)); }
+  /* -- Formatted set using StrAppend() ------------------------------------ */
+  template<typename ...VarArgs>
     void IdentSetA(const VarArgs &...vaArgs)
-  { IdentSet(IfString::Append(vaArgs...)); }
+      { IdentSet(StrAppend(vaArgs...)); }
   /* -- Clear identifier --------------------------------------------------- */
   void IdentClear(void) { strIdentifier.clear(); }
   /* -- Swap identifier ---------------------------------------------------- */
@@ -111,7 +115,7 @@ struct IdList :                        // Members initially public
   /* -- Constructor with blank alternative string -------------------------- */
   explicit IdList(const List &lNI) :
     /* -- Initialisers ----------------------------------------------------- */
-    IdList(lNI, IfString::cCommon->Blank())
+    IdList(lNI, cCommon->Blank())
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Get name from id --------------------------------------------------- */
@@ -143,7 +147,7 @@ struct IdMap :                         // Members initially public
   /* -- Constructor with no alternative string ----------------------------- */
   explicit IdMap(const MapType &mNI) :
     /* -- Initialisers ----------------------------------------------------- */
-    IdMap(mNI, IfString::cCommon->Blank())
+    IdMap(mNI, cCommon->Blank())
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Get string --------------------------------------------------------- */
@@ -179,5 +183,7 @@ class IdentCMaster :
   /* -- Public functions ------------------------------------------- */ public:
   IntType CtrNext(void) { return this->itCounter++; }
 };/* ----------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

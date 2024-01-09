@@ -1,16 +1,17 @@
-/* == UUID.HPP ============================================================= */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This class allows UUID v4's to be generated, encoded and decoded.   ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == UUID.HPP ============================================================= **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This class allows UUID v4's to be generated, encoded and decoded.   ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfUuId {                     // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfString;              // Using string namespace
-using namespace IfCrypt;               // Using string namespace
+namespace IUuId {                      // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace ICrypt::P;             using namespace IString::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* == Universally unique identifier helper ================================= */
 struct UuId                            // Members initially public
 { /* -- Typedefs ----------------------------------------------------------- */
@@ -86,7 +87,7 @@ struct UuId                            // Members initially public
   /* -- Convert UUID to string ------------------------------------- */ public:
   const string UuIdToString(void) const
   { // Return result
-    return Append(hex, setfill('0'), right,
+    return StrAppend(hex, setfill('0'), right,
       setw(8), d.p.dwTimeLow,                                '-', // %08x-
       setw(4), d.p.wTimeMid,                                 '-', // %04x-
       setw(4), d.p.wTimeHiAndVer,                            '-', // %04x-
@@ -117,6 +118,8 @@ struct UuId                            // Members initially public
     d{ UuIdReadTwoQuads(q1, q2) }      // Read two integers and store result
     /* -- No code ---------------------------------------------------------- */
     { }
-};/* -- End of module namespace -------------------------------------------- */
-};                                     // End of module namespace
+};/* ----------------------------------------------------------------------- */
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

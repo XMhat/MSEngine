@@ -1,16 +1,22 @@
-/* == PALETTE.HPP ========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This module handles palette handling and updating                  ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == PALETTE.HPP ========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This module handles palette handling and updating                   ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfPalette {                  // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfFboBase;             // Using fbobase namespace
-using namespace IfImage;               // Using image namespace
+namespace IPalette {                   // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace ICollector::P;         using namespace IError::P;
+using namespace IFbo::P;               using namespace IFboBase::P;
+using namespace IIdent::P;             using namespace IImage::P;
+using namespace IImageDef::P;          using namespace IStd::P;
+using namespace ISysUtil::P;           using namespace IUtil::P;
+using namespace Lib::OS::GlFW;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* ------------------------------------------------------------------------- */
 typedef array<FboColour, 256> PalData; // Palette data
 /* ------------------------------------------------------------------------- */
@@ -38,22 +44,22 @@ struct Pal :                           // Members initially public
   GLfloat GetRed(const size_t stPos) const
     { return GetSlotConst(stPos).GetColourRed(); }
   unsigned int GetRedInt(const size_t stPos) const
-    { return Denormalise<unsigned int>(GetRed(stPos)); }
+    { return UtilDenormalise<unsigned int>(GetRed(stPos)); }
   /* -- Get green palette entry -------------------------------------------- */
   GLfloat GetGreen(const size_t stPos) const
     { return GetSlotConst(stPos).GetColourGreen(); }
   unsigned int GetGreenInt(const size_t stPos) const
-    { return Denormalise<unsigned int>(GetGreen(stPos)); }
+    { return UtilDenormalise<unsigned int>(GetGreen(stPos)); }
   /* -- Get green palette entry -------------------------------------------- */
   GLfloat GetBlue(const size_t stPos) const
     { return GetSlotConst(stPos).GetColourBlue(); }
   unsigned int GetBlueInt(const size_t stPos) const
-    { return Denormalise<unsigned int>(GetBlue(stPos)); }
+    { return UtilDenormalise<unsigned int>(GetBlue(stPos)); }
   /* -- Get alpha palette entry -------------------------------------------- */
   GLfloat GetAlpha(const size_t stPos) const
     { return GetSlotConst(stPos).GetColourAlpha(); }
   unsigned int GetAlphaInt(const size_t stPos) const
-    { return Denormalise<unsigned int>(GetAlpha(stPos)); }
+    { return UtilDenormalise<unsigned int>(GetAlpha(stPos)); }
   /* -- Set red palette entry ---------------------------------------------- */
   void SetRed(const size_t stPos, const GLfloat fRed)
     { GetSlot(stPos).SetColourRed(fRed); }
@@ -267,5 +273,7 @@ END_COLLECTOREX(Palettes,,,,palDefault{{{ // Init default palette to VGA colour
 {   0,   0,   0 }, {   0,   0,   0 }, {   0,   0,   0 }, {   0,   0,   0 },
 {   0,   0,   0 }, {   0,   0,   0 }, {   0,   0,   0 }, {   0,   0,   0 }
 }}})/* --------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

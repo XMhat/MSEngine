@@ -1,17 +1,20 @@
-/* == SYSUTIL.HPP ========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This is the header to define operating system level critical        ## */
-/* ## utility functions.                                                  ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == SYSUTIL.HPP ========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This is the header to define operating system level critical        ## **
+** ## utility functions.                                                  ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfSysUtil {                  // Start of module namespace
+namespace ISysUtil {                   // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IStd::P;               using namespace IString::P;
+using namespace IUtf;                  using namespace IUtil::P;
+using namespace Lib::OS;
 /* ------------------------------------------------------------------------- */
-using namespace IfUtf;                 // Using utf namespace
-using namespace IfString;              // Using string namespace
+namespace P {                          // Start of public module namespace
 /* ------------------------------------------------------------------------- */
 enum class SysThread                   // Thread priority types
 { /* ----------------------------------------------------------------------- */
@@ -22,8 +25,6 @@ enum class SysThread                   // Thread priority types
   Low                                  // Aux thread low priority
 };/* -- Includes ----------------------------------------------------------- */
 #if defined(WINDOWS)                   // Using windows?
-/* ------------------------------------------------------------------------- */
-using namespace Lib::OS;               // Using OS namespace
 /* -- System error formatter with specified error code --------------------- */
 static const string SysError(const int iError)
 { // Convert int to DWORD as we use the same function type across platforms
@@ -32,13 +33,13 @@ static const string SysError(const int iError)
   LPWSTR lpszError = nullptr;
   // Capture exceptions
   try
-  { // Format the system error code and catch result
+  { // StrFormat the system error code and catch result
     switch(const DWORD dwLen = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|
       FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_IGNORE_INSERTS, nullptr,
       dwError, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
         reinterpret_cast<LPWSTR>(&lpszError), 0, nullptr))
     { // Failed and no allocation was made so just store error code
-      case 0: return Append("SE#", dwError);
+      case 0: return StrAppend("SE#", dwError);
       // We can remove carriage return and free the string (fall through)
       default: lpszError[dwLen - 3] = '\0';
       // Just incase we don't have enough characters
@@ -51,7 +52,7 @@ static const string SysError(const int iError)
   { // Free the string if allocated
     if(lpszError) LocalFree(lpszError);
     // Assign the exception message as the error
-    return Format("SE#$($)", dwError, E.what());
+    return StrFormat("SE#$($)", dwError, E.what());
   }
 }
 /* -- System error code ---------------------------------------------------- */
@@ -103,12 +104,10 @@ static bool SysInitThread(const char*const cpName, const SysThread stLevel)
 }
 /* ------------------------------------------------------------------------- */
 #elif defined(MACOS)                   // Using mac?
-/* -- Actual interface to show a message box ----------------------------- */
+/* -- Actual interface to show a message box ------------------------------- */
 static unsigned int SysMessage(void*const, const string &strTitle,
   const string &strMessage, const unsigned int uiFlags)
-{ // Need operating system functions
-  using namespace Lib::OS;
-  // Make an autorelease ptr for Apple strings. Not sure if Apple provides a
+{ // Make an autorelease ptr for Apple strings. Not sure if Apple provides a
   // non-pointer based CStringRef so we'll just remove it instead!
   typedef unique_ptr<const void, function<decltype(CFRelease)>> CFAutoRelPtr;
   // Setup dialogue title string with autorelease and if succeeded?
@@ -156,37 +155,49 @@ static unsigned int SysMessage(void*const, const string &strTitle,
         }
       }
   // Didn't work so put in stdout
-  fwprintf(stderr, L"%ls: %ls\n", Decoder{ strTitle }.Wide().c_str(),
-                                  Decoder{ strMessage }.Wide().c_str());
+  fwprintf(stderr, L"%ls: %ls\n", UtfDecoder{ strTitle }.Wide().c_str(),
+                                  UtfDecoder{ strMessage }.Wide().c_str());
   // If exited successfully? Return success
   return 0;
 }
+/* -- Unset multiple environment variables --------------------------------- */
+static void SysUnSetEnv(void) { }
+template<typename ...VarArgs>
+  static void SysUnSetEnv(const char*const cpEnv, const VarArgs &...vaVars)
+    { unsetenv(cpEnv); SysUnSetEnv(vaVars...); }
 /* ------------------------------------------------------------------------- */
 #else                                  // Using linux?
 /* -- Compatibility with X11 ----------------------------------------------- */
 # if defined(Bool)                     // Undefine 'Bool' set by X11
 #  undef Bool                          // To prevent problems with other apis
 # endif                                // Done checking for 'Bool'
-/* -- Actual interface to show a message box ----------------------------- */
+/* -- Actual interface to show a message box ------------------------------- */
 static unsigned int SysMessage(void*const, const string &strTitle,
   const string &strMessage, const unsigned int uiFlags)
 { // Print the error first
-  fwprintf(stderr, L"%ls: %ls\n", Decoder{ strTitle }.Wide().c_str(),
-                                  Decoder{ strMessage }.Wide().c_str());
+  fwprintf(stderr, L"%ls: %ls\n", UtfDecoder{ strTitle }.Wide().c_str(),
+                                  UtfDecoder{ strMessage }.Wide().c_str());
   // Return status code
   return 0;
 }
 /* ------------------------------------------------------------------------- */
 #endif                                 // Done checking OS
 /* ------------------------------------------------------------------------- */
-#if !defined(WINDOWS)                  // Not using Windows target? (POSIX)
+#if defined(WINDOWS)                   // Windows is defined?
+/* -- System message without a handle -------------------------------------- */
+static unsigned int SysMessage(const string &strTitle,
+  const string &strMessage, const unsigned int uiFlags)
+    { return SysMessage(nullptr, strTitle, strMessage,
+        MB_SYSTEMMODAL|uiFlags); }
+/* ------------------------------------------------------------------------- */
+#else                                  // Not using Windows target? (POSIX)
 /* -- System error code ---------------------------------------------------- */
 template<typename IntType=int>static IntType SysErrorCode(void)
-  { return static_cast<IntType>(GetErrNo()); }
+  { return static_cast<IntType>(StdGetError()); }
 /* -- System error formatter with specified error code --------------------- */
-static const string SysError(const int iError) { return LocalError(iError); }
+static const string SysError(const int iError) { return StrFromErrNo(iError); }
 /* -- System error formatter with current error code ----------------------- */
-static const string SysError(void) { return LocalError(SysErrorCode()); }
+static const string SysError(void) { return StrFromErrNo(SysErrorCode()); }
 /* ------------------------------------------------------------------------- */
 static bool SysInitThread(const char*const cpName, const SysThread stLevel)
 { // Get this thread handle
@@ -251,16 +262,20 @@ static bool SysInitThread(const char*const cpName, const SysThread stLevel)
       break;
   } // Clamp the value
   spParam.sched_priority =
-    IfUtil::Clamp(spParam.sched_priority, iMinPriority, iMaxPriority);
+    UtilClamp(spParam.sched_priority, iMinPriority, iMaxPriority);
   // Set the new parameters and return true if succeeded
   return !pthread_setschedparam(ptHandle, iPolicy, &spParam);
 }
+/* -- System message without a handle -------------------------------------- */
+static unsigned int SysMessage(const string &strTitle,
+  const string &strMessage, const unsigned int uiFlags)
+    { return SysMessage(nullptr, strTitle, strMessage, uiFlags); }
 /* ------------------------------------------------------------------------- */
 #endif                                 // Not using Windows target
 /* ------------------------------------------------------------------------- */
 struct SysErrorPlugin final
 { /* -- Exception class helper macro for system errors --------------------- */
-#define XCS(r,...) throw IfError::Error<SysErrorPlugin>(r, ## __VA_ARGS__)
+#define XCS(r,...) throw Error<SysErrorPlugin>(r, ## __VA_ARGS__)
   /* -- Constructor to add system error code ------------------------------- */
   explicit SysErrorPlugin(ostringstream &osS)
   { // Get system error code and add system formatted parameter
@@ -272,11 +287,8 @@ static bool SysIsErrorCode(const int iCode=0)
   { return SysErrorCode() == iCode; }
 static bool SysIsNotErrorCode[[maybe_unused]](const int iCode=0)
   { return !SysIsErrorCode(iCode); }
-/* -- System message without a handle -------------------------------------- */
-static unsigned int SysMessage(const string &strTitle,
-  const string &strMessage, const unsigned int uiFlags)
-    { return SysMessage(nullptr, strTitle, strMessage,
-        MB_SYSTEMMODAL|uiFlags); }
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

@@ -1,11 +1,11 @@
-/* == WINMAP.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This is a Windows specific module that handles mapping files in     ## */
-/* ## memory. It will be derived by the FileMap class.                    ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == WINMAP.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This is a Windows specific module that handles mapping files in     ## **
+** ## memory. It will be derived by the FileMap class.                    ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* == Windows file mapping class =========================================== */
 class SysMap :                         // Members initially private
@@ -94,8 +94,8 @@ class SysMap :                         // Members initially private
   { // Get file times and return filetime if successful
     FILETIME ftC, ftM;
     if(GetFileTime(hFile, &ftC, nullptr, &ftM))
-      return { BruteCast<StdTimeT>(ftC) / 100000000,
-               BruteCast<StdTimeT>(ftM) / 100000000 };
+      return { UtilBruteCast<StdTimeT>(ftC) / 100000000,
+               UtilBruteCast<StdTimeT>(ftM) / 100000000 };
     XCS("Failed to query file creation time!",
       "File", IdentGet(), "Handle", hFile);
   }

@@ -1,16 +1,22 @@
-/* == PCMLIB.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This module manages all the different audio types we support in the ## */
-/* ## engine.                                                             ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == PCMLIB.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This module manages all the different audio types we support in the ## **
+** ## engine.                                                             ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfPcmLib {                   // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfFileMap;             // Using filemap namespace
+namespace IPcmLib {                    // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace ICollector::P;         using namespace IError::P;
+using namespace IFileMap::P;           using namespace IFStream::P;
+using namespace IIdent::P;             using namespace ILog::P;
+using namespace IPcmLib::P;            using namespace IString::P;
+using namespace ISysUtil::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* == Pcm libraries collector class ======================================== */
 BEGIN_COLLECTOR(PcmFmts, PcmFmt, CLHelperUnsafe)
 /* == Pcm format object class ============================================== */
@@ -69,7 +75,7 @@ static void PcmLoadFile(const size_t stFId, FileMap &fC, PcmData &auD)
       cLog->LogInfoExSafe("Pcm loaded '$' directly as $<$>! ($;$;$;$$;$;$;$$)",
         fC.IdentGet(), pCref.GetExt(), stFId, auD.GetRate(), auD.GetChannels(),
         auD.GetBits(), hex, auD.GetFormat(), auD.GetSFormat(),
-        TrueOrFalse(auD.IsDynamic()), hex, auD.GetAlloc());
+        StrFromBoolTF(auD.IsDynamic()), hex, auD.GetAlloc());
       return;
     } // Could not detect format so throw error
     throw runtime_error{ "Unable to load sound!" };
@@ -95,7 +101,7 @@ static void PcmLoadFile(FileMap &fC, PcmData &auD)
         cLog->LogInfoExSafe("Pcm loaded '$' as $! ($;$;$;$$;$;$;$$)",
           fC.IdentGet(), pCref.GetExt(), auD.GetRate(), auD.GetChannels(),
           auD.GetBits(), hex, auD.GetFormat(), auD.GetSFormat(),
-          TrueOrFalse(auD.IsDynamic()), dec, auD.GetAlloc());
+          StrFromBoolTF(auD.IsDynamic()), dec, auD.GetAlloc());
         return;
       }
     } // Error occured. Error used as title
@@ -111,5 +117,7 @@ static void PcmLoadFile(FileMap &fC, PcmData &auD)
   XC("Unable to determine sound format!", "Identifier", fC.IdentGet());
 }
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

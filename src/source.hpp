@@ -1,21 +1,26 @@
-/* == SOURCE.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This module defines a class that can be used to play and manage     ## */
-/* ## buffers in OpenAL. All sources are managed here too so we will      ## */
-/* ## manage the collector list with concurrency locks instead of the     ## */
-/* ## ICHelper class. The Lockable class is also used for a different     ## */
-/* ## reason to all the other interfaces to stop the source from being    ## */
-/* ## deleted while it is in use by the engine and not OpenAL.            ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == SOURCE.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This module defines a class that can be used to play and manage     ## **
+** ## buffers in OpenAL. All sources are managed here too so we will      ## **
+** ## manage the collector list with concurrency locks instead of the     ## **
+** ## ICHelper class. The Lockable class is also used for a different     ## **
+** ## reason to all the other interfaces to stop the source from being    ## **
+** ## deleted while it is in use by the engine and not OpenAL.            ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfSource {                   // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfOal;                 // Using oal namespace
-using namespace IfLuaUtil;             // Using luautil namespace
+namespace ISource {                    // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace ICollector::P;         using namespace ICVarDef::P;
+using namespace IIdent::P;             using namespace ILog::P;
+using namespace ILuaUtil::P;           using namespace IOal::P;
+using namespace IStd::P;               using namespace ISysUtil::P;
+using namespace IUtil::P;              using namespace Lib::OpenAL;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Source collector class for collector data and custom variables ------- */
 BEGIN_COLLECTOREX(Sources, Source, CLHelperSafe, /* Build collector/member   */
 /* ------------------------------------------------------------------------- */
@@ -330,9 +335,10 @@ static bool SourceCanMakeNew(void)
 static Source *SourceGetFromLua(lua_State*const lS)
 { // Try to get an idle source and pass it to Lua if found
   if(Source*const soNew = SourceGetFree())
-    return ClassReuse<Source>(lS, "Source", soNew);
+    return LuaUtilClassReuse<Source>(lS, "Source", soNew);
   // Else try to make a new one if we can
-  return SourceCanMakeNew() ? ClassCreate<Source>(lS, "Source") : nullptr;
+  return SourceCanMakeNew() ?
+    LuaUtilClassCreate<Source>(lS, "Source") : nullptr;
 }
 /* == Manage sources ======================================================= */
 static Source *GetSource(void)
@@ -344,7 +350,7 @@ static Source *GetSource(void)
 /* == SourceAlloc ========================================================== */
 static void SourceAlloc(const size_t stCount)
 { // Set the value we can actually use
-  const size_t stUsable = Clamp(stCount, 0, cOal->GetMaxMonoSources());
+  const size_t stUsable = UtilClamp(stCount, 0, cOal->GetMaxMonoSources());
   // Get size and return if no new static sources needed to be created
   const size_t stSize = cSources->size();
   if(stSize >= stUsable) return;
@@ -364,5 +370,7 @@ static CVarReturn SourceSetCount(const size_t stCount)
   return ACCEPT;
 }
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

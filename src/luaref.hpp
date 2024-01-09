@@ -1,15 +1,17 @@
-/* == LUAREF.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This class manages a user specified number of Lua references        ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == LUAREF.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This class manages a user specified number of Lua references        ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfLuaRef {                   // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfLuaUtil;             // Using luautil namespace
+namespace ILuaRef {                    // Start of private module namespace
+/* ------------------------------------------------------------------------- */
+using namespace ILuaUtil::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* ------------------------------------------------------------------------- */
 template<size_t Refs=1>class LuaRef    // Lua easy reference class
 { /* -- Private variables --------------------------------------- */ protected:
@@ -18,7 +20,7 @@ template<size_t Refs=1>class LuaRef    // Lua easy reference class
   /* -- Initialise a specific reference --------------------------- */ private:
   bool LuaRefDoInitEx(const size_t stId)
   { // Initialise the new reference and return failure if failed
-    const int iReference = InitReferenceUnsafe(LuaRefGetState());
+    const int iReference = LuaUtilRefInitUnsafe(LuaRefGetState());
     if(iReference == LUA_REFNIL) return false;
     // Success to assign
     iReferences[stId] = iReference;
@@ -31,7 +33,7 @@ template<size_t Refs=1>class LuaRef    // Lua easy reference class
     int &iReference = iReferences[stId];
     if(iReference == LUA_REFNIL) return false;
     // Clear the reference
-    DeleteReferenceUnsafe(LuaRefGetState(), iReference);
+    LuaUtilRmRefUnsafe(LuaRefGetState(), iReference);
     // Reference no longer valid
     iReference = LUA_REFNIL;
     // Success
@@ -45,13 +47,13 @@ template<size_t Refs=1>class LuaRef    // Lua easy reference class
   int LuaRefGetId(const size_t stId=0) const { return iReferences[stId]; }
   /* -- Returns the function at the specified index ------------------------ */
   bool LuaRefGetFunc(const size_t stId=0) const
-    { return GetReferencedFunction(LuaRefGetState(), LuaRefGetId(stId)); }
+    { return LuaUtilGetRefFunc(LuaRefGetState(), LuaRefGetId(stId)); }
   /* -- Returns the userdata at the specified index ------------------------ */
   bool LuaRefGetUData(const size_t stId=0) const
-    { return GetReferencedUserdata(LuaRefGetState(), LuaRefGetId(stId)); }
+    { return LuaUtilGetRefUsrData(LuaRefGetState(), LuaRefGetId(stId)); }
   /* -- Returns the reference at the specified index ----------------------- */
   void LuaRefGet(const size_t stId=0) const
-    { return GetReference(LuaRefGetState(), LuaRefGetId(stId)); }
+    { return LuaUtilGetRef(LuaRefGetState(), LuaRefGetId(stId)); }
   /* -- Returns if the state is equal to the specified state --------------- */
   bool LuaRefStateIsEqual(const lua_State*const lS) const
     { return LuaRefGetState() == lS; }
@@ -75,7 +77,7 @@ template<size_t Refs=1>class LuaRef    // Lua easy reference class
       int &iReference = *itRef;
       if(iReference == LUA_REFNIL) continue;
       // Clear the reference
-      DeleteReferenceUnsafe(LuaRefGetState(), iReference);
+      LuaUtilRmRefUnsafe(LuaRefGetState(), iReference);
       // Reference no longer valid
       iReference = LUA_REFNIL;
     } // Clear the state
@@ -124,11 +126,13 @@ template<size_t Refs=1>class LuaRef    // Lua easy reference class
       const int iReference = *itRef;
       if(iReference == LUA_REFNIL) continue;
       // Clear the reference
-      DeleteReferenceUnsafe(LuaRefGetState(), iReference);
+      LuaUtilRmRefUnsafe(LuaRefGetState(), iReference);
     }
   }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(LuaRef)              // Omit copy constructor for safety
-};/* -- End of module namespace -------------------------------------------- */
-};                                     // End of module namespace
+};/* ----------------------------------------------------------------------- */
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

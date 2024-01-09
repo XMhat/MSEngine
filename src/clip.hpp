@@ -1,19 +1,24 @@
-/* == CLIP.HPP ============================================================= */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This module handles interfacing Lua and the engine with GLFW's      ## */
-/* ## clipboard functions. Since GLFW requires that the clipboard funcs   ## */
-/* ## run only in the window thread, we need to send an async event to    ## */
-/* ## the window thread, and then back to the engine thread an Lua.       ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == CLIP.HPP ============================================================= **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This module handles interfacing Lua and the engine with GLFW's      ## **
+** ## clipboard functions. Since GLFW requires that the clipboard funcs   ## **
+** ## run only in the window thread, we need to send an async event to    ## **
+** ## the window thread, and then back to the engine thread an Lua.       ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfClipboard {                // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfCollector;           // Using collector namespace
-using namespace IfEvtWin;              // Using event namespace
+namespace IClipboard {                 // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace ICollector::P;         using namespace IError::P;
+using namespace IEvtMain::P;           using namespace IEvtWin::P;
+using namespace IGlFW::P;              using namespace IIdent::P;
+using namespace ILuaEvt::P;            using namespace ILuaUtil::P;
+using namespace IStd::P;               using namespace ISysUtil::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Clipboard mini class which can be used internally -------------------- */
 class Clipboard
 { /* -- Protected variables ------------------------------------- */ protected:
@@ -65,7 +70,7 @@ BEGIN_MEMBERCLASS(Clips, Clip, ICHelperUnsafe),
         XC("Clipboard second argument not a class!",
            "Identifier", IdentGet());
       // Call callback with class
-      CallFuncEx(lsState, 1);
+      LuaUtilCallFuncEx(lsState, 1);
     } // Done with references. We won't be using them anymore.
     return LuaEvtDeInit();
   } // Exception occured? Cleanup and rethrow exception
@@ -88,11 +93,11 @@ BEGIN_MEMBERCLASS(Clips, Clip, ICHelperUnsafe),
   /* -- Initialise and set string ------------------------------------------ */
   void ClipSetAsync(lua_State*const lS)
   { // Need 4 parameters (Name[1], Value[2], function[3] and class[4])
-    CheckParams(lS, 4);
+    LuaUtilCheckParams(lS, 4);
     // Get and check parameters
-    IdentSet(GetCppStringNE(lS, 1, "Identifier"));
-    strClipboard = GetCppString(lS, 2, "Value");
-    CheckFunction(lS, 3, "EventFunc");
+    IdentSet(LuaUtilGetCppStrNE(lS, 1, "Identifier"));
+    strClipboard = LuaUtilGetCppStr(lS, 2, "Value");
+    LuaUtilCheckFunc(lS, 3, "EventFunc");
     // Init LUA references
     LuaEvtInitEx(lS);
     // We're ready, so dispatch to the window thread with this class
@@ -101,10 +106,10 @@ BEGIN_MEMBERCLASS(Clips, Clip, ICHelperUnsafe),
   /* -- Initialise and get string ------------------------------------------ */
   void ClipGetAsync(lua_State*const lS)
   { // Need 3 parameters (Name[1], function[2] and class[3])
-    CheckParams(lS, 3);
+    LuaUtilCheckParams(lS, 3);
     // Get and check parameters
-    IdentSet(GetCppStringNE(lS, 1, "Identifier"));
-    CheckFunction(lS, 2, "EventFunc");
+    IdentSet(LuaUtilGetCppStrNE(lS, 1, "Identifier"));
+    LuaUtilCheckFunc(lS, 2, "EventFunc");
     // Init LUA references
     LuaEvtInitEx(lS);
     // We're ready, so dispatch to the window thread with this class
@@ -130,5 +135,7 @@ END_COLLECTOREX(Clips,
   }
 );
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

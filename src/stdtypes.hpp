@@ -1,101 +1,67 @@
-/* == TYPES.HPP ============================================================ */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This module sets up all the types we use from the STL. All these    ## */
-/* ## types should sit in the Engine namespace so only the engine has     ## */
-/* ## access to them and not any other included API.                      ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == TYPES.HPP ============================================================ **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This module sets up all the types we use from the STL. All these    ## **
+** ## types should sit in the Engine namespace so only the engine has     ## **
+** ## access to them and not any other included API.                      ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* -- Storage spaces ------------------------------------------------------- */
-using ::std::array;                    // Static arrays
-using ::std::deque;                    // Chunked indexed arrays
-using ::std::list;                     // Linked lists
-using ::std::map;                      // Sorted key lists
-using ::std::pair;                     // Key value pairs
-using ::std::set;                      // Unsorted string list
-using ::std::string;                   // Narrow strings
-using ::std::vector;                   // Indexed lists
-using ::std::wstring;                  // Wide strings
+using ::std::array;                    using ::std::deque;
+using ::std::list;                     using ::std::map;
+using ::std::pair;                     using ::std::set;
+using ::std::string;                   using ::std::vector;
+using ::std::wstring;
 /* -- Exceptions ----------------------------------------------------------- */
-using ::std::exception;                // Exceptions
-using ::std::runtime_error;            // Runtime errors (exceptions)
+using ::std::exception;                using ::std::runtime_error;
 /* -- Other ---------------------------------------------------------------- */
-using ::std::addressof;                // Get underlying address of a pointer
-using ::std::bind;                     // Store function and calling convention
-using ::std::function;                 // Store any function
-using ::std::locale;                   // For applying localisation to values
-using ::std::make_pair;                // Make a pair when 'insert' doesnt work
-using ::std::nothrow;                  // Prevent throwing on 'new'
-using ::std::numeric_limits;           // Query integral value limits
-using ::std::remove_const;             // For removing const from type
-using ::std::remove_pointer;           // For removing a pointer from type
-using ::std::make_signed;              // Make a type signed
-using ::std::make_unsigned;            // Make a type unsigned
-using ::std::swap;                     // Swap data with another variable.
+using ::std::addressof;                using ::std::bind;
+using ::std::function;                 using ::std::locale;
+using ::std::make_pair;                using ::std::make_signed;
+using ::std::make_unsigned;            using ::std::nothrow;
+using ::std::numeric_limits;           using ::std::remove_const;
+using ::std::remove_pointer;           using ::std::swap;
 /* -- Iteratations --------------------------------------------------------- */
-using ::std::accumulate;               // Loop and accumulate a value
-using ::std::any_of;                   // Any of these iterator
-using ::std::back_inserter;            // Helper when enumerating values
-using ::std::next;                     // Traverse iterator forward
-using ::std::prev;                     // Traverse iterator backwards
+using ::std::accumulate;               using ::std::any_of;
+using ::std::back_inserter;            using ::std::next;
+using ::std::prev;
 /* -- String streams ------------------------------------------------------- */
-using ::std::dec;                      // Display integral value as decimal
-using ::std::fixed;                    // Show real numbers as non-scientific
-using ::std::get_time;                 // Parse a time string
-using ::std::hex;                      // Display integral value as hex
-using ::std::ios_base;                 // Allows storing of alignment
-using ::std::istringstream;            // Input string streams
-using ::std::left;                     // Left aligned output (text)
-using ::std::noskipws;                 // Don't skip whitespaces on parse
-using ::std::oct;                      // Display integral value as octlet
-using ::std::ostream_iterator;         // For copying data to ostringstream
-using ::std::ostringstream;            // Output string streams
-using ::std::put_time;                 // Push a formatted time string
-using ::std::right;                    // Right aligned output (values)
-using ::std::setfill;                  // Set padding characters
-using ::std::setprecision;             // Set precision of real numbers
-using ::std::setw;                     // Add padding to next value
-using ::std::showpos;                  // Show '+' on positive values
-using ::std::fpclassify;               // Classify floating point number
-/* -- Static assert functions ---------------------------------------------- */
-using ::std::is_floating_point_v;      // If type is floating point?
-using ::std::is_integral_v;            // If type is integral?
-using ::std::is_pointer_v;             // If type has a pointer?
-using ::std::is_signed_v;              // If type is signed?
-using ::std::is_same_v;                // If type is equal?
+using ::std::dec;                      using ::std::fixed;
+using ::std::fpclassify;               using ::std::get_time;
+using ::std::hex;                      using ::std::ios_base;
+using ::std::istringstream;            using ::std::left;
+using ::std::noskipws;                 using ::std::oct;
+using ::std::ostream_iterator;         using ::std::ostringstream;
+using ::std::put_time;                 using ::std::right;
+using ::std::setfill;                  using ::std::setprecision;
+using ::std::setw;                     using ::std::showpos;
+/* -- Constexpr functions -------------------------------------------------- */
+using ::std::is_floating_point_v;      using ::std::is_integral_v;
+using ::std::is_pointer_v;             using ::std::is_signed_v;
+using ::std::is_enum_v;                using ::std::is_same_v;
 /* -- Namespaces ----------------------------------------------------------- */
-using ::std::placeholders::_1;         // For ::std::bind placeholder parameter
+using ::std::placeholders::_1;
 /* -- Times ---------------------------------------------------------------- */
-using ::std::chrono::duration_cast;    // Cast a duration to another type
-using ::std::chrono::duration;         // Return duration of a specified time
-using ::std::chrono::microseconds;     // Microseconds unit for duration
-using ::std::chrono::milliseconds;     // Milliseconds unit for duration
-using ::std::chrono::nanoseconds;      // Nanoseconds unit for duration
-using ::std::chrono::seconds;          // Seconds unit for duration
-using ::std::chrono::system_clock;     // Need system clock for time
+using ::std::chrono::duration_cast;    using ::std::chrono::duration;
+using ::std::chrono::microseconds;     using ::std::chrono::milliseconds;
+using ::std::chrono::nanoseconds;      using ::std::chrono::seconds;
+using ::std::chrono::system_clock;
 /* -- Operating system specific -------------------------------------------- */
 #if !defined(WINDOWS)                  // Not using windows?
-using ::std::unexpected_handler;       // Unexpected exception handler
-using ::std::set_unexpected;           // Set unexpected exception handler
+using ::std::unexpected_handler;       using ::std::set_unexpected;
 #endif                                 // Not windows check
-using ::std::terminate_handler;        // Terminate handler
-using ::std::set_terminate;            // Set terminate handler
+using ::std::terminate_handler;        using ::std::set_terminate;
 #if !defined(MACOS)                    // Not using apple compiler?
-using ::std::execution::par_unseq;     // Parallel unserialised operation
-using ::std::execution::par;           // Parallel serialised operation
-using ::std::execution::seq;           // Serialised operation
+using ::std::execution::par_unseq;     using ::std::execution::par;
+using ::std::execution::seq;
 #endif                                 // Apple check
 /* -- Asynchronisation ----------------------------------------------------- */
-using ::std::atomic;                   // atomic variables (synchronising)
-using ::std::condition_variable;       // Condition variables (synchronising)
-using ::std::lock_guard;               // For exclusive lock in 'unique_lock'
-using ::std::mutex;                    // Mutexes (synchronising)
-using ::std::thread;                   // Threading support
-using ::std::try_to_lock;              // For exclusive lock in 'unique_lock'
-using ::std::unique_lock;              // For managing class pointers
-using ::std::unique_ptr;               // For managing class pointers
+using ::std::atomic;                   using ::std::condition_variable;
+using ::std::lock_guard;               using ::std::mutex;
+using ::std::thread;                   using ::std::try_to_lock;
+using ::std::unique_lock;              using ::std::unique_ptr;
 typedef atomic<bool>       SafeBool;   // Thread safe boolean
 typedef atomic<double>     SafeDouble; // Thread safe double
 typedef atomic<int>        SafeInt;    // Thread safe integer
@@ -118,6 +84,7 @@ typedef FloatVector::const_iterator       FloatVectorConstIt;
 typedef vector<int>                       IntVector;
 typedef IntVector::const_iterator         IntVectorConstIt;
 typedef vector<string>                    StrVector;
+typedef StrVector::iterator               StrVectorIt;
 typedef StrVector::const_iterator         StrVectorConstIt;
 typedef StrVector::const_reverse_iterator StrVectorConstRevIt;
 typedef vector<unsigned int>              UIntVector;

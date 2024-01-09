@@ -1,26 +1,29 @@
-/* == LLINPUT.HPP ========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Defines the 'Input' namespace and methods for the guest to use in   ## */
-/* ## Lua. This file is invoked by 'lualib.hpp'.                          ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == LLINPUT.HPP ========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Defines the 'Input' namespace and methods for the guest to use in   ## **
+** ## Lua. This file is invoked by 'lualib.hpp'.                          ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 #pragma once                           // Only one incursion allowed
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ========================================================================= */
 // % Input
 /* ------------------------------------------------------------------------- */
 // ! The input class allows the programmer to query the state of the keyboard,
 // ! mouse and game controllers.
 /* ========================================================================= */
-namespace NsInput {                    // Input namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfInput;               // Using input namespace
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+namespace LLInput {                    // Input namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IGlFW::P;              using namespace IGlFWUtil::P;
+using namespace IInput::P;             using namespace ILua::P;
+/* ========================================================================= **
+** ######################################################################### **
+** ## Input.* namespace functions                                         ## **
+** ######################################################################### **
+** ========================================================================= */
 // $ Input.SetJoyAxisForwardDeadZone
 // > JId:integer=The joystick id.
 // > AId:integer=The joystick axis id.
@@ -85,8 +88,7 @@ LLFUNC(SetCursorPos,
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(GetCursorPos)
   double dX, dY; cInput->GetCursorPos(dX, dY);
-  LCPUSHNUM(dX);
-  LCPUSHNUM(dY);
+  LCPUSHVAR(dX, dY);
 LLFUNCENDEX(2)
 /* ========================================================================= */
 // $ Input.MouseState
@@ -94,7 +96,7 @@ LLFUNCENDEX(2)
 // < Result:integer=Button state (0=up,1=down).
 // ? Returns the state of the specified mouse button.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(MouseState, 1, LCPUSHINT(cGlFW->WinGetMouse(
+LLFUNCEX(MouseState, 1, LCPUSHVAR(cGlFW->WinGetMouse(
   LCGETINTLG(int, 1, 0, GLFW_MOUSE_BUTTON_LAST, "Button"))));
 /* ========================================================================= */
 // $ Input.KeyState
@@ -103,7 +105,7 @@ LLFUNCEX(MouseState, 1, LCPUSHINT(cGlFW->WinGetMouse(
 // ? Returns the state of the specified keyboard button direct from cGlFW->
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(KeyState, 1,
-  LCPUSHINT(cGlFW->WinGetKey(LCGETINTLG(int, 1, 0, GLFW_KEY_LAST, "Key"))));
+  LCPUSHVAR(cGlFW->WinGetKey(LCGETINTLG(int, 1, 0, GLFW_KEY_LAST, "Key"))));
 /* ========================================================================= */
 // $ Input.ClearStates
 // ? Clears the keyboard, mouse and joystick states which wipes the current
@@ -128,7 +130,7 @@ LLFUNC(SetCursor, cInput->SetCursor(LCGETBOOL(1, "State")));
 // < State:boolean=True if it exists, false if it does not.
 // ? Tests if the specified joystick exists.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(JoyExists, 1, LCPUSHBOOL(cInput->JoystickExists(
+LLFUNCEX(JoyExists, 1, LCPUSHVAR(cInput->JoystickExists(
   LCGETINTLGE(size_t, 1, 0, cInput->GetJoyCount(), "JoyId"))));
 /* ========================================================================= */
 // $ Input.GetJoyName
@@ -136,7 +138,7 @@ LLFUNCEX(JoyExists, 1, LCPUSHBOOL(cInput->JoystickExists(
 // < Name:string=The name of the joystick.
 // ? Returns the name of the specified joystick as reported by the OS.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetJoyName, 1, LCPUSHXSTR(cInput->GetJoyData(
+LLFUNCEX(GetJoyName, 1, LCPUSHVAR(cInput->GetJoyData(
   LCGETINTLGE(size_t, 1, 0, cInput->GetJoyCount(), "JoyId")).IdentGet()));
 /* ========================================================================= */
 // $ Input.GetNumJoyButtons
@@ -144,7 +146,7 @@ LLFUNCEX(GetJoyName, 1, LCPUSHXSTR(cInput->GetJoyData(
 // < Count:integer=Number of buttons.
 // ? Returns the number of buttons this joystick supports.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetNumJoyButtons, 1, LCPUSHINT(cInput->GetJoyData(
+LLFUNCEX(GetNumJoyButtons, 1, LCPUSHVAR(cInput->GetJoyData(
   LCGETINTLGE(size_t, 1, 0, cInput->GetJoyCount(), "JoyId")).
     GetButtonCount()));
 /* ========================================================================= */
@@ -153,7 +155,7 @@ LLFUNCEX(GetNumJoyButtons, 1, LCPUSHINT(cInput->GetJoyData(
 // < Count:integer=Number of axises.
 // ? Returns the number of axises this joystick supports.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetNumJoyAxises, 1, LCPUSHINT(cInput->GetJoyData(
+LLFUNCEX(GetNumJoyAxises, 1, LCPUSHVAR(cInput->GetJoyData(
   LCGETINTLGE(size_t, 1, 0, cInput->GetJoyCount(), "JoyId")).
     GetAxisCount()));
 /* ========================================================================= */
@@ -170,7 +172,7 @@ LLFUNCEX(GetNumJoyAxises, 1, LCPUSHINT(cInput->GetJoyData(
 LLFUNCBEGIN(GetJoyButton)
   const JoyInfo &jiData = cInput->GetJoyData(LCGETINTLGE(size_t,
     1, 0, cInput->GetJoyCount(), "JoyId"));
-  LCPUSHINT(jiData.GetButtonState(LCGETINTLGE(size_t, 2, 0,
+  LCPUSHVAR(jiData.GetButtonState(LCGETINTLGE(size_t, 2, 0,
     jiData.GetButtonCount(), "ButtonId")));
 LLFUNCENDEX(1)
 /* ========================================================================= */
@@ -183,7 +185,7 @@ LLFUNCENDEX(1)
 LLFUNCBEGIN(GetJoyAxis)
   const JoyInfo &jiData = cInput->GetJoyData(LCGETINTLGE(size_t,
     1, 0, cInput->GetJoyCount(), "JoyId"));
-  LCPUSHINT(jiData.GetAxisState(LCGETINTLGE(size_t, 2, 0,
+  LCPUSHVAR(jiData.GetAxisState(LCGETINTLGE(size_t, 2, 0,
     jiData.GetButtonCount(), "AxisId")));
 LLFUNCENDEX(1)
 /* ========================================================================= */
@@ -195,7 +197,7 @@ LLFUNCENDEX(1)
 LLFUNCBEGIN(GetJoyAxisUB)
   const JoyInfo &jiData = cInput->GetJoyData(LCGETINTLGE(size_t,
     1, 0, cInput->GetJoyCount(), "JoyId"));
-  LCPUSHNUM(jiData.GetUnbufferedAxisState(LCGETINTLGE(size_t, 2, 0,
+  LCPUSHVAR(jiData.GetUnbufferedAxisState(LCGETINTLGE(size_t, 2, 0,
     jiData.GetAxisCount(), "AxisId")));
 LLFUNCENDEX(1)
 /* ========================================================================= */
@@ -261,13 +263,13 @@ LLFUNC(OnKey, LCSETEVENTCB(cInput->lfOnKey));
 // < Name:stringr=The name of the key
 // ? Returns the name of the specified key
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetKeyName, 1, LCPUSHSTR(GlFWGetKeyName(LCGETINT(int, 1, "Key"),
+LLFUNCEX(GetKeyName, 1, LCPUSHVAR(GlFWGetKeyName(LCGETINT(int, 1, "Key"),
   LCGETINT(int, 2, "Scan"))));
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Input.* namespace functions structure                               ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Input.* namespace functions structure                               ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Input.* namespace functions begin
   LLRSFUNC(ClearStates),               LLRSFUNC(GetCursorPos),
   LLRSFUNC(GetJoyAxis),                LLRSFUNC(GetJoyAxisUB),
@@ -283,12 +285,12 @@ LLRSBEGIN                              // Input.* namespace functions begin
   LLRSFUNC(SetCursorPos),              LLRSFUNC(SetJoyAxisDeadZones),
   LLRSFUNC(SetJoyAxisForwardDeadZone), LLRSFUNC(SetJoyAxisReverseDeadZone),
 LLRSEND                                // Input.* namespace functions end
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Image.* namespace constants structure                               ## */
-/* ######################################################################### */
-/* ========================================================================= */
-// @ Input.GetKeyCodes
+/* ========================================================================= **
+** ######################################################################### **
+** ## Input.* namespace constants                                         ## **
+** ######################################################################### **
+** ========================================================================= */
+// @ Input.KeyCodes
 // < Data:table=The entire list of key codes GLFW supports
 // ? Returns a table of key/value pairs that identify a specific key with its
 // ? corresponding GLFW code (for use with GetKeyButton[UB]).
@@ -391,7 +393,11 @@ LLRSKTBEGIN(States)                    // Beginning of keyboard/mouse states
   LLRSKTITEM(GLFW_,RELEASE),           LLRSKTITEM(GLFW_,PRESS),
   LLRSKTITEM(GLFW_,REPEAT),
 LLRSKTEND                              // End of mouse codes
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Input.* namespace constants structure                               ## **
+** ######################################################################### **
+** ========================================================================= */
 LLRSCONSTBEGIN                         // Input.* namespace consts begin
   LLRSCONST(KeyCodes),                 LLRSCONST(KeyMods),
   LLRSCONST(MouseCodes),               LLRSCONST(States),

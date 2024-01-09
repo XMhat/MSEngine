@@ -1,24 +1,24 @@
-/* == ARGS.HPP ============================================================= */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This module defines a arguments parsing class you can use to parse  ## */
-/* ## a plain string of command-line into a array indexed vector.         ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == ARGS.HPP ============================================================= **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This module defines a arguments parsing class you can use to parse  ## **
+** ## a plain string of command-line into a array indexed vector.         ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfArgs {                     // Start of module namespace
+namespace IArgs {                      // Start of module namespace
 /* ------------------------------------------------------------------------- */
-struct Arguments :                     // Arguments list
+struct Args :                          // Arguments list
   /* -- Dependencies ------------------------------------------------------- */
   public StrVector                     // List of arguments parsed
 { /* -- Direct access using class variable name which returns if !empty ---- */
   operator bool(void) const { return !empty(); }
   /* -- Constructor -------------------------------------------------------- */
-  Arguments(void) { }
+  Args(void) { }
   /* -- Constructor with string argument ----------------------------------- */
-  explicit Arguments(const string &strArgs)
+  explicit Args(const string &strArgs)
   { // Common characters used when parsing
     static constexpr const char
       cSpace      = ' ',  // Argument seperator unless enclosed on quotes
@@ -123,8 +123,8 @@ struct Arguments :                     // Arguments list
   }
 };
 /* -- Build an array of arguments from a string ---------------------------- */
-static const Arguments ArgumentsBuildSafe(const string &strArgs)
-  { return strArgs.empty() ? Arguments{} : Arguments{ strArgs }; }
+static const Args ArgsBuildSafe(const string &strArgs)
+  { return strArgs.empty() ? Args{} : Args{ strArgs }; }
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of module namespace
 /* == EoF =========================================================== EoF == */

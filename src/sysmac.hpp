@@ -1,16 +1,14 @@
-/* == SYSMAC.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This is a MacOS specific module that allows the engine to talk      ## */
-/* ## to, and manipulate operating system procedures and funtions.        ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == SYSMAC.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This is a MacOS specific module that allows the engine to talk      ## **
+** ## to, and manipulate operating system procedures and funtions.        ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
 namespace SysBase {                    // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace Lib::OS;               // Need operating system functions
 /* -- Dependiencies -------------------------------------------------------- */
 #include "pixbase.hpp"                 // Base system class
 #include "pixcon.hpp"                  // Console emulation class
@@ -19,17 +17,15 @@ using namespace Lib::OS;               // Need operating system functions
 #include "pixpip.hpp"                  // Process pipe handling
 /* ------------------------------------------------------------------------- */
 #undef _XOPEN_SOURCE_EXTENDED          // Done with this macro
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfVars;                // Using vars namespace
-/* == System intialisation helper ========================================== */
-/* ######################################################################### */
-/* ## Because we want to try and statically init const data as much as    ## */
-/* ## possible, we need this class to derive by the System class so we    ## */
-/* ## can make sure these functions are initialised first. Also making    ## */
-/* ## this private prevents us from accessing these functions because     ## */
-/* ## again - they are only for initialisation.                           ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == System intialisation helper ========================================== **
+** ######################################################################### **
+** ## Because we want to try and statically init const data as much as    ## **
+** ## possible, we need this class to derive by the System class so we    ## **
+** ## can make sure these functions are initialised first. Also making    ## **
+** ## this private prevents us from accessing these functions because     ## **
+** ## again - they are only for initialisation.                           ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 class SysProcess                       // Need this before of System init order
 { /* -- Private variables ----------------------------------------- */ private:
   const pid_t      ullProcessId;       // Process id
@@ -41,7 +37,7 @@ class SysProcess                       // Need this before of System init order
   template<typename IntType=decltype(ullProcessId)>IntType GetPid(void) const
     { return static_cast<IntType>(ullProcessId); }
   template<typename IntType=decltype(vpThreadId)>IntType GetTid(void) const
-    { return static_cast<IntType>(BruteCast<const size_t>(vpThreadId)); }
+    { return static_cast<IntType>(UtilBruteCast<const size_t>(vpThreadId)); }
   /* ----------------------------------------------------------------------- */
   SysProcess(void) :
     /* -- Initialisers ----------------------------------------------------- */
@@ -70,7 +66,7 @@ class SysCore :
     if(sysctlbyname(cpS, nullptr, &stSize, nullptr, 0) < 0) return "#ERR1#";
     // Resize and fill string
     string strOut; strOut.resize(stSize - 1);
-    if(sysctlbyname(cpS, ToNonConstCast<char*>(strOut.c_str()),
+    if(sysctlbyname(cpS, UtfToNonConstCast<char*>(strOut.c_str()),
       &stSize, nullptr, 0) < 0)
         return cCommon->Blank();
     // Return the string
@@ -193,7 +189,7 @@ class SysCore :
     // Cpu counters
     cpuUData.fdProcess = 0;
     // For each thread
-    for(int iIndex = 0, iMax = IntOrMax<int>(numThreads);
+    for(int iIndex = 0, iMax = UtilIntOrMax<int>(numThreads);
             iIndex < iMax;
           ++iIndex)
     { // Set size of structure
@@ -248,7 +244,7 @@ class SysCore :
             fExe.FStreamReadSafe(&lcData, sizeof(lcData)))
           { // We read enough bytes?
             if(stReadCmd == sizeof(lcData))
-            { // Format command data
+            { // StrFormat command data
               lcData.cmd = Swap32Type(lcData.cmd).v;
               lcData.cmdsize = Swap32Type(lcData.cmdsize).v;
               // We are only interested in segments
@@ -263,7 +259,7 @@ class SysCore :
                     sizeof(scItem)))
                   { // We read enough bytes?
                     if(stReadSeg == sizeof(scItem))
-                    { // Format segment data
+                    { // StrFormat segment data
                       scItem.fileoff = Swap64Type(scItem.fileoff).v;
                       scItem.filesize = Swap64Type(scItem.filesize).v;
                       // Get highest point in exe
@@ -292,7 +288,7 @@ class SysCore :
                     sizeof(scItem)))
                   { // We read enough bytes?
                     if(stReadSeg == sizeof(scItem))
-                    { // Format needed segment data
+                    { // StrFormat needed segment data
                       scItem.fileoff = Swap32Type(scItem.fileoff).v;
                       scItem.filesize = Swap32Type(scItem.filesize).v;
                       // Get highest point in exe
@@ -357,7 +353,7 @@ class SysCore :
             fExe.FStreamReadSafe(&faData, sizeof(faData)))
           { // We read enough bytes?
             if(stReadArch == sizeof(faData))
-            { // Format needed segment data
+            { // StrFormat needed segment data
               faData.offset = SwapType(faData.offset).v;
               faData.size = SwapType(faData.size).v;
               // Get highest point in exe
@@ -386,56 +382,49 @@ class SysCore :
   static size_t GetExeSize(const string &strFile)
   { // Open exe file and return on error
     if(FStream fExe{ strFile, FStream::FM_R_B })
-    { // Machine byte order check
-#if defined(LITTLE_ENDIAN)
-# define MACHO_LE32 MH_MAGIC
-# define MACHO_LE64 MH_MAGIC_64
-# define MACHO_BE32 MH_CIGAM
-# define MACHO_BE64 MH_CIGAM_64
-# define MACHO_FAT_LE32 FAT_MAGIC
-# define MACHO_FAT_LE64 FAT_MAGIC_64
-# define MACHO_FAT_BE32 FAT_CIGAM
-# define MACHO_FAT_BE64 FAT_CIGAM_64
-#elif defined(BIG_ENDIAN)
-# define MACHO_LE32 MH_CIGAM
-# define MACHO_LE64 MH_CIGAM_64
-# define MACHO_BE32 MH_MAGIC
-# define MACHO_BE64 MH_MAGIC_64
-# define MACHO_FAT_LE32 FAT_CIGAM
-# define MACHO_FAT_LE64 FAT_CIGAM_64
-# define MACHO_FAT_BE32 FAT_MAGIC
-# define MACHO_FAT_BE64 FAT_MAGIC_64
+    { // Possible MachO header magic values
+      enum MachOMagic : uint32_t {
+#if defined(LITTLE_ENDIAN)             // Intel and ARM?
+        MACHO_LE32     = MH_MAGIC,     MACHO_LE64     = MH_MAGIC_64,
+        MACHO_BE32     = MH_CIGAM,     MACHO_BE64     = MH_CIGAM_64,
+        MACHO_FAT_LE32 = FAT_MAGIC,    MACHO_FAT_LE64 = FAT_MAGIC_64,
+        MACHO_FAT_BE32 = FAT_CIGAM,    MACHO_FAT_BE64 = FAT_CIGAM_64,
+#elif defined(BIG_ENDIAN)              // PPC?
+        MACHO_LE32     = MH_CIGAM,     MACHO_LE64     = MH_CIGAM_64,
+        MACHO_BE32     = MH_MAGIC,     MACHO_BE64     = MH_MAGIC_64,
+        MACHO_FAT_LE32 = FAT_CIGAM,    MACHO_FAT_LE64 = FAT_CIGAM_64,
+        MACHO_FAT_BE32 = FAT_MAGIC,    MACHO_FAT_BE64 = FAT_MAGIC_64,
 #endif
-      // Load magic directly into integer
-      unsigned int uiMagic;
+      } uiMagic;
+      // Load magic and compare it to possible recognised values...
       switch(const size_t stMagicBytes =
         fExe.FStreamReadSafe(&uiMagic, sizeof(uiMagic)))
       { // Read enough bytes? Compare magic value
         case sizeof(uiMagic): switch(uiMagic)
         { // Little-endian 32-bit format executable
           case MACHO_LE32: return GetExeSize<mach_header,
-            Swap32LEFunctor, Swap64LEFunctor>("32LE", fExe);
+            UtilSwap32LEFunctor, UtilSwap64LEFunctor>("32LE", fExe);
           // Little-endian 64-bit format executable
           case MACHO_LE64: return GetExeSize<mach_header_64,
-            Swap32LEFunctor, Swap64LEFunctor>("64LE", fExe);
+            UtilSwap32LEFunctor, UtilSwap64LEFunctor>("64LE", fExe);
           // Big-endian 32-bit format executable
           case MACHO_BE32: return GetExeSize<mach_header,
-            Swap32BEFunctor, Swap64BEFunctor>("32BE", fExe);
+            UtilSwap32BEFunctor, UtilSwap64BEFunctor>("32BE", fExe);
           // Big-endian 64-bit format executable
           case MACHO_BE64: return GetExeSize<mach_header_64,
-            Swap32BEFunctor, Swap64BEFunctor>("64BE", fExe);
+            UtilSwap32BEFunctor, UtilSwap64BEFunctor>("64BE", fExe);
           // Little-endian 32-bit format executable
           case MACHO_FAT_LE32: return GetFatExeSize<fat_arch,
-            Swap32LEFunctor>("FAT32LE", fExe);
+            UtilSwap32LEFunctor>("FAT32LE", fExe);
           // Little-endian 64-bit format executable
           case MACHO_FAT_LE64: return GetFatExeSize<fat_arch_64,
-            Swap64LEFunctor>("FAT64LE", fExe);
+            UtilSwap64LEFunctor>("FAT64LE", fExe);
           // Big-endian 32-bit format executable
           case MACHO_FAT_BE32: return GetFatExeSize<fat_arch,
-            Swap32BEFunctor>("FAT32BE", fExe);
+            UtilSwap32BEFunctor>("FAT32BE", fExe);
           // Big-endian 64-bit format executable
           case MACHO_FAT_BE64: return GetFatExeSize<fat_arch_64,
-            Swap64BEFunctor>("FAT64BE", fExe);
+            UtilSwap64BEFunctor>("FAT64BE", fExe);
           // Invalid magic
           default: XC("MACH-O magic is invalid!",
                       "Magic", uiMagic, "File", strFile);
@@ -446,15 +435,7 @@ class SysCore :
         default: XC("Failed to read enough bytes for MACH-O executable magic!",
                     "Requested", sizeof(uiMagic), "Actual", stMagicBytes,
                     "File", strFile);
-      } // Done with these defines
-#undef MACHO_FAT_BE64
-#undef MACHO_FAT_BE32
-#undef MACHO_FAT_LE64
-#undef MACHO_FAT_LE32
-#undef MACHO_BE32
-#undef MACHO_BE64
-#undef MACHO_LE32
-#undef MACHO_LE64
+      }
     } // Failed to open mach executable
     XCL("Failed to open MACH-O executable!", "File", strFile);
   }
@@ -476,7 +457,7 @@ class SysCore :
   /* -- Enum modules ------------------------------------------------------- */
   SysModList EnumModules(void)
   { // Make verison string
-    const string strVersion{ Append(sizeof(void*)*8, "-bit version") };
+    const string strVersion{ StrAppend(sizeof(void*)*8, "-bit version") };
     // Mod list
     SysModList mlData;
     mlData.emplace(make_pair(static_cast<size_t>(0),
@@ -492,11 +473,11 @@ class SysCore :
       // it into the returned structure. I don't believe this will ever be
       // nullptr but we will check just incase.
       const char*const cpFullPath = _dyld_get_image_name(ulIndex);
-      if(!IsCStringValid(cpFullPath)) continue;
+      if(UtfIsCStringNotValid(cpFullPath)) continue;
       string strFullPath{ cpFullPath };
       // Get filename. Again, this should never be null but just incase
       const char*const cpBaseName = basename(const_cast<char*>(cpFullPath));
-      if(!IsCStringValid(cpBaseName)) continue;
+      if(UtfIsCStringNotValid(cpBaseName)) continue;
       const string strBaseName{ cpBaseName };
       // Id name to lookup and add to to the returned structure
       string strPathName;
@@ -506,8 +487,8 @@ class SysCore :
       if(stDot == string::npos) strPathName = StdMove(strBaseName);
       // Have extension? If it ends in 'dylib' and it starts with 'lib'? Grab
       // first part before dot and after the lib part
-      else if(ToLower(strBaseName.substr(stDot+1)) == "dylib" &&
-              ToLower(strBaseName.substr(0, 3)) == "lib")
+      else if(StrToLowCase(strBaseName.substr(stDot+1)) == "dylib" &&
+              StrToLowCase(strBaseName.substr(0, 3)) == "lib")
         strPathName = strBaseName.substr(3, stDot-3);
       // Unknown extension
       else continue;
@@ -515,11 +496,11 @@ class SysCore :
       unsigned int uiVer = static_cast<unsigned int>
         (NSVersionOfLinkTimeLibrary(strPathName.c_str()));
       // Try another function if failed
-      if(uiVer == numeric_limits<unsigned int>::max())
+      if(uiVer == StdMaxUInt)
         uiVer = static_cast<unsigned int>
           (NSVersionOfRunTimeLibrary(strPathName.c_str()));
       // Worked this time?
-      if(uiVer != numeric_limits<unsigned int>::max())
+      if(uiVer != StdMaxUInt)
       { // Fill in the bkanks
         uiMajor = (uiVer & 0xFFFF0000) >> 16;
         uiMinor = (uiVer & 0x0000FF00) >> 8;
@@ -530,7 +511,7 @@ class SysCore :
       mlData.emplace(make_pair(static_cast<size_t>(ulIndex),
         SysModule{ StdMove(strFullPath), uiMajor, uiMinor, uiBuild,
           0, strPathName.c_str(), strPathName.c_str(),
-          string(strVersion), string(Format("$.$.$.0",
+          string(strVersion), string(StrFormat("$.$.$.0",
             uiMajor, uiMinor, uiBuild)) }));
     } // Module list which includes the executable module
     return mlData;
@@ -540,9 +521,9 @@ class SysCore :
   { // Get operating system name
     const Token tVersion{ GetSysCTLInfoString("kern.osproductversion"), "." };
     unsigned int uiMajor =
-        tVersion.empty() ? 0 : ToNumber<unsigned int>(tVersion[0]),
-      uiMinor = tVersion.size() < 2 ? 0 : ToNumber<unsigned int>(tVersion[1]),
-      uiBuild = tVersion.size() < 3 ? 0 : ToNumber<unsigned int>(tVersion[2]);
+        tVersion.empty() ? 0 : StrToNum<unsigned int>(tVersion[0]),
+      uiMinor = tVersion.size() < 2 ? 0 : StrToNum<unsigned int>(tVersion[1]),
+      uiBuild = tVersion.size() < 3 ? 0 : StrToNum<unsigned int>(tVersion[2]);
     // Set operating system version string
     ostringstream osS; osS << "MacOS ";
     // Version information table
@@ -551,38 +532,21 @@ class SysCore :
       const char*const cpLabel;
       // Major, minor and service pack of OS which applies to this label
       const unsigned int uiHi, uiLo;
-      // Expiry date
-      const StdTimeT ttExp;
     };
-    // Handy converter at https://www.unixtimestamp.com/ and OS list data at...
-    // https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions.
+    // List of MacOS versions and when they expire
     static const array<const OSListItem,21>osList{ {
-      //   cpLevel       uiHi  uiLo  ttExp           Note
-      {cCommon->CBlank(),15,   0,    1830211200 }, // ~31/12/2027
-      { "Sonoma",        14,   0,    1798675200 }, // ~31/12/2026
-      { "Ventura",       13,   0,    1767139200 }, // ~31/12/2025
-      { "Monterey",      12,   0,    1735603200 }, // ~31/12/2024
-      { "Big Sur",       11,   0,    1703980800 }, // ~31/12/2023
-      { "Catalina",      10,   15,   1667084400 }, // 30/10/2022 (EoL)
-      { "Mojave",        10,   14,   1635116400 }, // 25/10/2021 (EoL)
-      { "High Sierra",   10,   13,   1606780800 }, // 01/12/2020 (EoL)
-      { "Sierra",        10,   12,   1569884400 }, // 01/10/2019 (EoL)
-      { "El Capitan",    10,   11,   1543622400 }, // 01/12/2018 (EoL)
-      { "Yosemite",      10,   10,   1501542000 }, // 01/08/2017 (EoL)
-      { "Mavericks",     10,   9,    1480550400 }, // 01/12/2016 (EoL)
-      { "Mountain Lion", 10,   8,    1441062000 }, // 01/09/2015 (EoL)
-      { "Lion",          10,   7,    1412118000 }, // 01/10/2014 (EoL)
-      { "Snow Leopard",  10,   6,    1393286400 }, // 25/02/2014 (EoL)
-      { "Leopard",       10,   5,    1308783600 }, // 23/06/2011 (EoL)
-      { "Tiger",         10,   4,    1251759600 }, // 01/09/2009 (EoL)
-      { "Panther",       10,   3,    1167609600 }, // 01/01/2007 (EoL)
-      { "Jaguar",        10,   2,    1136073600 }, // 01/01/2006 (EoL)
-      { "Puma",          10,   1,    1104537600 }, // 01/01/2005 (EoL)
-      { "Cheetah",       10,   0,    1072915200 }  // 01/01/2004 (EoL)
-      //   cpLevel       uiHi  uiLo  uiBl  uiSp  ttExp           Note
+      { cCommon->CBlank(), 15,  0 },   { "Sonoma",          14,  0 },
+      { "Ventura",         13,  0 },   { "Monterey",        12,  0 },
+      { "Big Sur",         11,  0 },   { "Catalina",        10, 15 },
+      { "Mojave",          10, 14 },   { "High Sierra",     10, 13 },
+      { "Sierra",          10, 12 },   { "El Capitan",      10, 11 },
+      { "Yosemite",        10, 10 },   { "Mavericks",       10,  9 },
+      { "Mountain Lion",   10,  8 },   { "Lion",            10,  7 },
+      { "Snow Leopard",    10,  6 },   { "Leopard",         10,  5 },
+      { "Tiger",           10,  4 },   { "Panther",         10,  3 },
+      { "Jaguar",          10,  2 },   { "Puma",            10,  1 },
+      { "Cheetah",         10,  0 },
     } };
-    // Operating system expiry time
-    StdTimeT ttExpiry;
     // Iterate through the versions and try to find a match for the
     // versions above. 'Unknown' is caught if none are found.
     for(const OSListItem &osItem : osList)
@@ -590,13 +554,9 @@ class SysCore :
       if(uiMajor < osItem.uiHi || uiMinor < osItem.uiLo) continue;
       // Set operating system version
       osS << osItem.cpLabel;
-      // Set expiry time
-      ttExpiry = osItem.ttExp;
       // Skip adding version numbers
       goto SkipNumericalVersionNumber;
-    } // No expiry time
-    ttExpiry = 0;
-    // Nothing was found so add version number detected
+    } // Nothing was found so add version number detected
     osS << uiMajor << '.' << uiMinor;
     // Label for when we found the a matching version
     SkipNumericalVersionNumber:
@@ -618,7 +578,7 @@ class SysCore :
     string strExtra;
     struct utsname utsnData;
     if(!uname(&utsnData))
-      strExtra = Append(utsnData.sysname, " v", utsnData.release);
+      strExtra = StrAppend(utsnData.sysname, " v", utsnData.release);
     // Return operating system info
     return {
       osS.str(),                       // Version string
@@ -629,9 +589,7 @@ class SysCore :
       sizeof(void*)*8,                 // 32 or 64 OS arch
       StdMove(strCode),                // Get locale
       DetectElevation(),               // Elevated?
-      false,                           // Wine or Old OS?
-      ttExpiry,                        // OS expiry
-      cmSys.GetTimeS() >= ttExpiry     // OS has expired?
+      false                            // Wine or Old OS?
     };
   }
   /* ----------------------------------------------------------------------- */
@@ -654,7 +612,7 @@ class SysCore :
       ulFeatureSet = GetSysCTLInfoNum<unsigned int>("hw.cpufamily"),
       ulPlatformId = GetSysCTLInfoNum<unsigned int>("hw.cputype");
     const string strIdentifier{
-      Format("Arm64 Family $ Model $",
+      StrFormat("Arm64 Family $ Model $",
         GetSysCTLInfoNum<uint32_t>("hw.cpusubfamily"),
         GetSysCTLInfoNum<uint32_t>("hw.cpusubtype"))
     }, strProcessorName{ GetSysCTLInfoString("machdep.cpu.brand_string") },
@@ -662,17 +620,17 @@ class SysCore :
     // Processor speeds common speeds (lowest vs highest speed).
     typedef array<const unsigned int, 2> UIntDouble;
     const UIntDouble uidM1{ { 2064, 3228 } }, // Apple M1
-                     uidM2{ { 2420, 3480 } }; // Apple M2
-//                   uidM3{ { ????, ???? } }; // Apple M3
+                     uidM2{ { 2420, 3480 } }, // Apple M2
+                     uidM3{ { 2748, 4056 } }; // Apple M3
     // Processor table with speeds. This is because there is no API to get
     // the speed of Apple branded processors.
     const map<const string, const UIntDouble&> smList{
       { "Apple M1",       uidM1 }, { "Apple M1 Pro",   uidM1 },
       { "Apple M1 Max",   uidM1 }, { "Apple M1 Ultra", uidM1 },
       { "Apple M2",       uidM2 }, { "Apple M2 Pro",   uidM2 },
-      { "Apple M2 Max",   uidM2 }, { "Apple M2 Ultra", uidM2 }
-//    { "Apple M3",       uidM3 }, { "Apple M3 Pro",   uidM3 },
-//    { "Apple M3 Max",   uidM3 }, { "Apple M3 Ultra", uidM3 }
+      { "Apple M2 Max",   uidM2 }, { "Apple M2 Ultra", uidM2 },
+      { "Apple M3",       uidM3 }, { "Apple M3 Pro",   uidM3 },
+      { "Apple M3 Max",   uidM3 }, { "Apple M3 Ultra", uidM3 }
     };
     // Find processor name to speed table and if we found it? Then copy the
     // value from the table as the actual speed.
@@ -688,7 +646,7 @@ class SysCore :
       ulFeatureSet = GetSysCTLInfoNum<uint64_t>("machdep.cpu.feature_bits"),
       ulPlatformId = GetSysCTLInfoNum<uint32_t>("machdep.cpu.signature");
     const string strIdentifier{
-      Format("Intel$ Family $ Model $ Stepping $",
+      StrFormat("Intel$ Family $ Model $ Stepping $",
         sizeof(void*) == 8 ? "64" : cCommon->Blank(),
         GetSysCTLInfoNum<uint32_t>("machdep.cpu.family"),
         GetSysCTLInfoNum<uint32_t>("machdep.cpu.model"),
@@ -717,7 +675,7 @@ class SysCore :
   }
   /* -- Get process affinity masks (N/A on OSX) ---------------------------- */
   uint64_t GetAffinity(const bool) const
-    { return BitsToMask<uint64_t>(thread::hardware_concurrency()); }
+    { return UtilBitsToMask<uint64_t>(thread::hardware_concurrency()); }
   /* ----------------------------------------------------------------------- */
   int GetPriority(void) const
   { // Get priority value and throw if failed
@@ -743,7 +701,7 @@ class SysCore :
   /* -- Help with debugging ------------------------------------------------ */
   const char *HeapCheck(void) const { return "Not implemented!"; }
   /* ----------------------------------------------------------------------- */
-  int LastSocketOrSysError(void) const { return GetErrNo(); }
+  int LastSocketOrSysError(void) const { return StdGetError(); }
   /* -- Build user roaming directory ---------------------------- */ protected:
   const string BuildRoamingDir(void) const
     { return cCmdLine->MakeEnvPath("HOME", "/Library/Application Support"); }

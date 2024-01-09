@@ -1,17 +1,27 @@
-/* == FBOMAIN.HPP ========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Contains the main drawing fbo's and commands. It would be nice to   ## */
-/* ## have this in the FBOs collector but we can't due to C++ limitations ## */
-/* ## of initialising static FBO classes when it hasn't been defined yet. ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == FBOMAIN.HPP ========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Contains the main drawing fbo's and commands. It would be nice to   ## **
+** ## have this in the FBOs collector but we can't due to C++ limitations ## **
+** ## of initialising static FBO classes when it hasn't been defined yet. ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfFboMain {                  // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfFbo;                 // Using fbo namespace
+namespace IFboMain {                   // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IClock::P;            using namespace ICVar::P;
+using namespace ICVarDef::P;          using namespace ICVarLib::P;
+using namespace IEvtMain::P;          using namespace IFbo::P;
+using namespace IFboBase::P;          using namespace IGlFW::P;
+using namespace ILog::P;              using namespace IOgl::P;
+using namespace IShader::P;           using namespace IStd::P;
+using namespace IString::P;           using namespace ISysUtil::P;
+using namespace ITimer::P;            using namespace IUtil::P;
+using namespace Lib::OS::GlFW;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* == Main fbo class ======================================================= */
 static class FboMain final :           // The main fbo operations manager
   /* -- Base classes ------------------------------------------------------- */
@@ -66,6 +76,8 @@ static class FboMain final :           // The main fbo operations manager
     cOgl->SetBlendIfChanged(*this);
     // Clear back buffer if main fbo has alpha
     if(fboMain.IsTransparencyEnabled()) cOgl->SetAndClear(*this);
+    // Set normal fill poly mode
+    cOgl->SetPolygonMode(GL_FILL);
     // Buffer the interlaced triangle data
     cOgl->BufferStaticData(fboMain.GetDataSize(), fboMain.GetData());
     // Specify format of the interlaced triangle data
@@ -143,7 +155,7 @@ static class FboMain final :           // The main fbo operations manager
     // will not be automatically calculated based on window size.
     if(bSimpleMatrix)
     { // Set aspect based on window size and clamp it to allowable matrix
-      fAspect = Clamp(fWidth / fHeight, fOrthoMinimum, fOrthoMaximum);
+      fAspect = UtilClamp(fWidth / fHeight, fOrthoMinimum, fOrthoMaximum);
       // We're not adding any width, keep it classic style
       fAddWidth = 0.0f;
       // Set bounds
@@ -156,14 +168,14 @@ static class FboMain final :           // The main fbo operations manager
       // specified minimum and maximum aspect ratio and to also keep the size
       // within the specified multiple value to prevent cracks appearing in
       // between tiles.
-      fAspect = Clamp(static_cast<GLfloat>(DimGetWidth()) /
-                      static_cast<GLfloat>(DimGetHeight()),
-                      fOrthoMinimum, fOrthoMaximum) / 1.333333f;
+      fAspect = UtilClamp(static_cast<GLfloat>(DimGetWidth()) /
+                          static_cast<GLfloat>(DimGetHeight()),
+                          fOrthoMinimum, fOrthoMaximum) / 1.333333f;
       // For some unknown reason we could be sent invalid values so we need to
       // make sure we ignore this value to prevent error handlers triggering.
       if(fAspect != fAspect) fAspect = 1.0f;
       // Calculate additional width over the 4:3 aspect ratio
-      fAddWidth = Maximum(((fWidth * fAspect) - fWidth) / 2.0f, 0.0f);
+      fAddWidth = UtilMaximum(((fWidth * fAspect) - fWidth) / 2.0f, 0.0f);
       // Calculate bounds for stage
       fLeft = floorf(-fAddWidth);
       fRight = floorf(fWidth + fAddWidth);
@@ -171,10 +183,10 @@ static class FboMain final :           // The main fbo operations manager
       fTop = 0.0f;
       fBottom = fHeight;
     } // If the viewport didn't change?
-    if(IsFloatEqual(fLeft, fboMain.fcStage.GetCoLeft()) &&
-       IsFloatEqual(fTop, fboMain.fcStage.GetCoTop()) &&
-       IsFloatEqual(fRight, fboMain.fcStage.GetCoRight()) &&
-       IsFloatEqual(fBottom, fboMain.fcStage.GetCoBottom()))
+    if(UtilIsFloatEqual(fLeft, fboMain.fcStage.GetCoLeft()) &&
+       UtilIsFloatEqual(fTop, fboMain.fcStage.GetCoTop()) &&
+       UtilIsFloatEqual(fRight, fboMain.fcStage.GetCoRight()) &&
+       UtilIsFloatEqual(fBottom, fboMain.fcStage.GetCoBottom()))
     { // Return if we're not forcing the change
       if(!bForce) return false;
     } // Viewport changed?
@@ -185,21 +197,21 @@ static class FboMain final :           // The main fbo operations manager
       // Set stage bounds for drawing
       fboMain.SetOrtho(fLeft, fTop, fRight, fBottom);
     } // Calculate new fbo width and height
-    const GLsizei stFBOWidth = static_cast<GLsizei>(fRight - fLeft),
-                  stFBOHeight = static_cast<GLsizei>(fBottom - fTop);
+    const GLsizei siFBOWidth = static_cast<GLsizei>(fRight - fLeft),
+                  siFBOHeight = static_cast<GLsizei>(fBottom - fTop);
     // No point changing anything if the bounds are the same and if the fbo
     // needs updating? Also ignore if opengl isn't initialised as the GLfW FB
     // reset window event might be sent before we've initialised it!
-    if((stFBOWidth != static_cast<GLsizei>(fboMain.GetCoRight()) ||
-        stFBOHeight != static_cast<GLsizei>(fboMain.GetCoBottom()) ||
+    if((siFBOWidth != static_cast<GLsizei>(fboMain.GetCoRight()) ||
+        siFBOHeight != static_cast<GLsizei>(fboMain.GetCoBottom()) ||
         bForce) && cOgl->IsGLInitialised())
     { // Re-initialise the main framebuffer
-      fboMain.Init("main", stFBOWidth, stFBOHeight);
+      fboMain.Init("main", siFBOWidth, siFBOHeight);
       // Log computations
       cLog->LogDebugExSafe("Fbo main matrix reinitialised as $x$ [$] "
         "(D=$x$,A=$<$-$>,AW=$,S=$:$:$:$).",
         fboMain.GetCoRight(), fboMain.GetCoBottom(),
-        ToRatio(fboMain.GetCoRight(), fboMain.GetCoBottom()),
+        StrFromRatio(fboMain.GetCoRight(), fboMain.GetCoBottom()),
           fWidth, fHeight, fAspect, fOrthoMinimum, fOrthoMaximum, fAddWidth,
           fLeft, fTop, fRight, fBottom);
       // Everything changed
@@ -213,28 +225,28 @@ static class FboMain final :           // The main fbo operations manager
     return false;
   }
   /* -- Sent when the window is resized ------------------------------------ */
-  bool AutoViewport(const GLsizei stWidth, const GLsizei stHeight,
+  bool AutoViewport(const GLsizei siWidth, const GLsizei siHeight,
     const bool bForce=false)
   { // Return if the viewport size did not change
-    if(DimGetWidth() == stWidth && DimGetHeight() == stHeight) return false;
+    if(DimGetWidth() == siWidth && DimGetHeight() == siHeight) return false;
     // Chosen viewport to store
-    GLsizei stUseWidth, stUseHeight;
+    GLsizei siUseWidth, siUseHeight;
     // Lock viewport to ortho?
     if(bLockViewport)
     { // Lock viewport to ortho
-      stUseWidth = static_cast<GLsizei>(GetOrthoWidth());
-      stUseHeight = static_cast<GLsizei>(GetOrthoHeight());
+      siUseWidth = static_cast<GLsizei>(GetOrthoWidth());
+      siUseHeight = static_cast<GLsizei>(GetOrthoHeight());
     } // Lock viewport to requested size?
     else
     { // Lock viewport to requested size clamped to a minimum of 1x1.
-      stUseWidth = Maximum(1, stWidth);
-      stUseHeight = Maximum(1, stHeight);
+      siUseWidth = UtilMaximum(1, siWidth);
+      siUseHeight = UtilMaximum(1, siHeight);
     } // Set the new viewport
-    DimSet(stUseWidth, stUseHeight);
+    DimSet(siUseWidth, siUseHeight);
     // Log event
     cLog->LogDebugExSafe(
       "Fbo processing automatrix size of $x$ to backbuffer...",
-      stUseWidth, stUseHeight);
+      siUseWidth, siUseHeight);
     // Update matrix because the window's aspect ratio may have changed
     const bool bResult = AutoMatrix(GetOrthoWidth(), GetOrthoHeight(), bForce);
     // Inform lua scripts that they should redraw the framebuffer
@@ -304,7 +316,9 @@ static class FboMain final :           // The main fbo operations manager
   /* -- Destructor --------------------------------------------------------- */
   DTORHELPER(~FboMain, DestroyAllObjectsAndBuiltIns())
   /* -- FboCore::End ------------------------------------------------------- */
-} *cFboMain = nullptr;                    // Pointer to static class
+} *cFboMain = nullptr;                 // Pointer to static class
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

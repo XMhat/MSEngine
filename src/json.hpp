@@ -1,18 +1,26 @@
-/* == JSON.HPP ============================================================= */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This module defines a class that allows JSON encoding or decoding   ## */
-/* ## to performed.                                                       ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == JSON.HPP ============================================================= **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This module defines a class that allows JSON encoding or decoding   ## **
+** ## to performed.                                                       ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfJson {                     // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace Lib::RapidJson;        // Using rapidjson library functions
-using namespace IfAsset;               // Using asset namespace
-using Lib::RapidJson::Value;           // Need this to stop conflict with Lua
+namespace IJson {                      // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IAsset::P;             using namespace IASync::P;
+using namespace ICollector::P;         using namespace IError::P;
+using namespace IEvtMain::P;           using namespace IFileMap::P;
+using namespace IFStream::P;           using namespace IIdent::P;
+using namespace ILuaUtil::P;           using namespace IMemory::P;
+using namespace IStd::P;               using namespace ISysUtil::P;
+using namespace IUtil::P;              using namespace Lib::RapidJson;
+/* ------------------------------------------------------------------------- */
+using Lib::RapidJson::Value;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* == Json object collector and member class =============================== */
 BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
@@ -35,19 +43,19 @@ BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
     { // Json entry is a number type?
       case kNumberType:
         // Actually an integer or a number type?
-        if(vValue.IsInt()) PushInteger(lS, vValue.GetInt());
-        else PushNumber(lS, vValue.GetDouble());
+        if(vValue.IsInt()) LuaUtilPushInt(lS, vValue.GetInt());
+        else LuaUtilPushNum(lS, vValue.GetDouble());
         break;
       // Json entry is a string type?
       case kStringType:
-        PushLString(lS, vValue.GetString(), vValue.GetStringLength());
+        LuaUtilPushLStr(lS, vValue.GetString(), vValue.GetStringLength());
         break;
       // Json entry is a boolean type?
       case kTrueType:
-        PushBoolean(lS, true);
+        LuaUtilPushBool(lS, true);
         break;
       case kFalseType:
-        PushBoolean(lS, false);
+        LuaUtilPushBool(lS, false);
         break;
       // Json entry is an array[] type?
       case kArrayType:
@@ -61,26 +69,26 @@ BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
       case kNullType: [[fallthrough]];
       // Unknown type?
       default:
-        PushNil(lS);
+        LuaUtilPushNil(lS);
         break;
     }
   }
   /* -- Convert LUA table to rapidjson::Value ---------------------- */ public:
   Value ParseTable(lua_State*const lS, const int iId, const int iObjId)
   { // Check table
-    CheckTable(lS, iId, "Data");
-    // Test: lexec Console.Write(Json.Table({ }):ToString());
+    LuaUtilCheckTable(lS, iId, "Data");
+    // Test: lexec Console.Write(Json.Table({ }):StrFromNum());
     // Get size of table and if we have length then we need to create an array
     if(const lua_Integer liLen =
-      IntOrMax<lua_Integer>(LuaUtilGetSize(lS, iId)))
+      UtilIntOrMax<lua_Integer>(LuaUtilGetSize(lS, iId)))
     {  // Set this value is array
       Value rjvRoot{ kArrayType };
       // We need one more free item on the stack, leave empty if not
-      if(!StackHasCapacity(lS, IntOrMax<int>(liLen))) return rjvRoot;
+      if(!LuaUtilIsStackAvail(lS, UtilIntOrMax<int>(liLen))) return rjvRoot;
       // Until end of table
       for(lua_Integer lI = 1; lI <= liLen; ++lI)
       { // Get first item
-        GetReferenceEx(lS, iId, lI);
+        LuaUtilGetRefEx(lS, iId, lI);
         // Append value if a string. Lua will convert any valid numbered
         // string to a number if this is not checked before integral checks.
         // Test with: lexec Console.Write(Json.Table({1,2,'3'}):ToHRString());
@@ -102,7 +110,7 @@ BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
           case LUA_TSTRING:
           default: rjvRoot.PushBack(ToStr(lS, -1), GetAllocator()); break;
         } // Remove the last item
-        RemoveStack(lS);
+        LuaUtilRmStack(lS);
       } // Return new object
       return rjvRoot;
     } // Set this value as object
@@ -110,10 +118,10 @@ BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
     // Save stack position so it can be restored on completion or exception
     const LuaStackSaver lSS{ lS };
     // We need two more free item on the stack, leave empty if not
-    if(!StackHasCapacity(lS, 2)) return rjvRoot;
+    if(!LuaUtilIsStackAvail(lS, 2)) return rjvRoot;
     // Push nil value
     // Walk through all the object members
-    for(PushNil(lS); lua_next(lS, iObjId); RemoveStack(lS))
+    for(LuaUtilPushNil(lS); lua_next(lS, iObjId); LuaUtilRmStack(lS))
     { // Get keyname
       Value vKey{ ToStr(lS, -2) };
       // Set the key->value for the LUA variable
@@ -144,9 +152,9 @@ BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Convert json value to lua object table and put it on stack --------- */
   static void ToTableObject(lua_State*const lS, const Value &rjvVal)
   { // Create the table, we're creating non-indexed key/value pairs
-    PushTable(lS, 0, rjvVal.MemberCount());
+    LuaUtilPushTable(lS, 0, rjvVal.MemberCount());
     // We need two more free item on the stack, leave empty if not
-    if(!StackHasCapacity(lS, 2)) return;
+    if(!LuaUtilIsStackAvail(lS, 2)) return;
     // For each table item
     for(const auto &rjvRef : rjvVal.GetObject())
     { // What type is the value?
@@ -158,15 +166,15 @@ BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Convert json value to lua array table and put it on stack ---------- */
   static void ToTableArray(lua_State*const lS, const Value &rjvVal)
   { // Create the table, we're creating a indexed/value array
-    PushTable(lS, rjvVal.Size());
+    LuaUtilPushTable(lS, rjvVal.Size());
     // We need two more free items on the stack, leave empty if not
-    if(rjvVal.Empty() || !StackHasCapacity(lS, 2)) return;
+    if(rjvVal.Empty() || !LuaUtilIsStackAvail(lS, 2)) return;
     // Index id
     lua_Integer liId = 0;
     // For each table item
     for(const auto &rjvRef : rjvVal.GetArray())
     { // Table index
-      PushInteger(lS, ++liId);
+      LuaUtilPushInt(lS, ++liId);
       // What type is the value?
       ProcessValueType(lS, rjvRef);
       // Push key pair as integer table
@@ -193,7 +201,7 @@ BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
   typedef Writer<StringBuffer, UTF8<>, UTF8<>> RJCompactWriter;
   typedef PrettyWriter<StringBuffer, UTF8<>, UTF8<>> RJPrettyWriter;
   /* ----------------------------------------------------------------------- */
-  template<typename WriterType>const string ToString(void) const
+  template<typename WriterType>const string StrFromNum(void) const
   { // Output buffer
     StringBuffer rsbOut;
     WriterType rwWriter{ rsbOut };
@@ -203,7 +211,7 @@ BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   template<typename T>int ToFile(const string &strFile) const
     { return FStream{ strFile, FStream::FM_W_T }.
-        FStreamWriteStringSafe(ToString<T>()) ? 0 : GetErrNo(); }
+        FStreamWriteStringSafe(StrFromNum<T>()) ? 0 : StdGetError(); }
   /* ----------------------------------------------------------------------- */
   void AsyncReady(FileMap &fC)
   { // Parse the string and return if succeeded
@@ -215,25 +223,21 @@ BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Load json from file asynchronously --------------------------------- */
   void InitAsyncFile(lua_State*const lS)
   { // Must have 4 parameters (including the class pointer)
-    CheckParams(lS, 5);
+    LuaUtilCheckParams(lS, 5);
     // Check and get parameters
-    const string strName{ GetCppFileName(lS, 1, "File") };
-    CheckFunction(lS, 2, "ErrorFunc");
-    CheckFunction(lS, 3, "ProgressFunc");
-    CheckFunction(lS, 4, "SuccessFunc");
+    const string strName{ LuaUtilGetCppFile(lS, 1, "File") };
+    LuaUtilCheckFuncs(lS, 2, "ErrorFunc", 3, "ProgressFunc", 4, "SuccessFunc");
     // Init the specified string as a file asynchronously
     AsyncInitFile(lS, strName, "jsonfile");
   }
   /* -- Load json from string asynchronously ------------------------------- */
   void InitAsyncString(lua_State*const lS)
   { // Must have 5 parameters (including the class pointer)
-    CheckParams(lS, 6);
+    LuaUtilCheckParams(lS, 6);
     // Check and get parameters
-    const string strN{ GetCppStringNE(lS, 1, "Identifier") };
-    Memory mData{ GetMBfromLString(lS, 2, "Code") };
-    CheckFunction(lS, 3, "ErrorFunc");
-    CheckFunction(lS, 4, "ProgressFunc");
-    CheckFunction(lS, 5, "SuccessFunc");
+    const string strN{ LuaUtilGetCppStrNE(lS, 1, "Identifier") };
+    Memory mData{ LuaUtilGetMBfromLStr(lS, 2, "Code") };
+    LuaUtilCheckFuncs(lS, 3, "ErrorFunc", 4, "ProgressFunc", 5, "SuccessFunc");
     // Init the specified string as an array asynchronously
     AsyncInitArray(lS, strN, "jsonstring", StdMove(mData));
   }
@@ -243,11 +247,11 @@ BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
     //   1: identifier
     //   2: string to convert
     //   3: the userdata object that contains a pointer to this class
-    CheckParams(lS, 3);
+    LuaUtilCheckParams(lS, 3);
     // Get name and code to parse
-    IdentSet(GetCppString(lS, 1, "Identifier"));
+    IdentSet(LuaUtilGetCppStr(lS, 1, "Identifier"));
     // Init file as array
-    SyncInitArray(IdentGet(), GetMBfromLString(lS, 2, "String"));
+    SyncInitArray(IdentGet(), LuaUtilGetMBfromLStr(lS, 2, "String"));
   }
   /* -- Parse the table into a value --------------------------------------- */
   void InitFromTable(lua_State*const lS) { ParseTable(lS, 1, 1).Swap(*this); }
@@ -266,5 +270,7 @@ BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
 };/* -- End ---------------------------------------------------------------- */
 END_ASYNCCOLLECTOR(Jsons, Json, JSON)
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

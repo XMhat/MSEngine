@@ -1,30 +1,36 @@
-/* == FTF.HPP ============================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This module defines a class that can load true-type fonts using     ## */
-/* ## freetype. As of writing, Freetype supports the following fonts.     ## */
-/* ##   OTF, CFF, OTC  OpenType and variants                              ## */
-/* ##   TTF, TTC       TrueType and variants                              ## */
-/* ##   WOFF           Open web font format                               ## */
-/* ##   PFA, PFB       Type 1                                             ## */
-/* ##   CID            Keyed Type 1                                       ## */
-/* ##   SFNT           Bitmap fonts including colour emoji                ## */
-/* ##   PCF            X11 Unix                                           ## */
-/* ##   FNT            Windows bitmap font                                ## */
-/* ##   BDF            Including anti-aliased                             ## */
-/* ##   PFR            BitStream TrueDoc                                  ## */
-/* ##   N/A            Type 42 PostScript fonts (limited support)         ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == FTF.HPP ============================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This module defines a class that can load true-type fonts using     ## **
+** ## freetype. As of writing, Freetype supports the following fonts.     ## **
+** ##   OTF, CFF, OTC  OpenType and variants                              ## **
+** ##   TTF, TTC       TrueType and variants                              ## **
+** ##   WOFF           Open web font format                               ## **
+** ##   PFA, PFB       Type 1                                             ## **
+** ##   CID            Keyed Type 1                                       ## **
+** ##   SFNT           Bitmap fonts including colour emoji                ## **
+** ##   PCF            X11 Unix                                           ## **
+** ##   FNT            Windows bitmap font                                ## **
+** ##   BDF            Including anti-aliased                             ## **
+** ##   PFR            BitStream TrueDoc                                  ## **
+** ##   N/A            Type 42 PostScript fonts (limited support)         ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfFtf {                      // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace Lib::FreeType;         // Using freetype library functions
-using namespace Lib::OS::GlFW;         // Using GlFW library functions
-using namespace IfAsset;               // Using asset namespace
-using namespace IfDim;                 // Using dimensions namespace
+namespace IFtf {                       // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IAsset::P;             using namespace IASync::P;
+using namespace ICollector::P;         using namespace IDim;
+using namespace IError::P;             using namespace IEvtMain::P;
+using namespace IFileMap::P;           using namespace IIdent::P;
+using namespace ILog::P;               using namespace ILuaUtil::P;
+using namespace IMemory::P;            using namespace IStd::P;
+using namespace ISysUtil::P;           using namespace IUtil::P;
+using namespace Lib::FreeType;         using namespace Lib::OS::GlFW;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Freetype core class -------------------------------------------------- */
 static class FreeType final            // Members initially private
 { /* -- Private variables -------------------------------------------------- */
@@ -80,7 +86,7 @@ static class FreeType final            // Members initially private
   /* -- Error checker with custom error details ---------------------------- */
   template<typename ...VarArgs>
     static void CheckError(const FT_Error ftErr,
-      const char*cpMessage, const VarArgs... vaArgs)
+      const char*cpMessage, const VarArgs &...vaArgs)
   { if(ftErr) XC(cpMessage, "Code", ftErr, "Reason", FT_Error_String(ftErr),
                 vaArgs...); }
   /* ----------------------------------------------------------------------- */
@@ -103,11 +109,11 @@ static class FreeType final            // Members initially private
   /* ----------------------------------------------------------------------- */
   FreeType(void) : ftLibrary(nullptr), ftMemory{ this,
     [](FT_Memory, long lBytes)->void*
-      { return MemAlloc<void>(lBytes); },
+      { return UtilMemAlloc<void>(lBytes); },
     [](FT_Memory, void*const vpAddress)
-      { MemFree(vpAddress); },
+      { UtilMemFree(vpAddress); },
     [](FT_Memory, long, long lBytes, void*const vpAddress)->void*
-      { return MemReAlloc(vpAddress, lBytes); }
+      { return UtilMemReAlloc(vpAddress, lBytes); }
   } { }
   /* ----------------------------------------------------------------------- */
   DTORHELPER(~FreeType, DoDeInit())
@@ -209,20 +215,19 @@ BEGIN_ASYNCCOLLECTORDUO(Ftfs, Ftf, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Load pcm from memory asynchronously -------------------------------- */
   void InitAsyncArray(lua_State*const lS)
   { // We need eleven parameters
-    CheckParams(lS, 11);
+    LuaUtilCheckParams(lS, 11);
     // Get name and init parameters
-    const string strName{ GetCppStringNE(lS, 1, "Identifier") };
-    Asset &aData = *GetPtr<Asset>(lS, 2, "Asset");
-    const GLfloat fW = GetNumLG<GLfloat>(lS, 3, 1, 4096, "Width"),
-                  fH = GetNumLG<GLfloat>(lS, 4, 1, 4096, "Height");
+    const string strName{ LuaUtilGetCppStrNE(lS, 1, "Identifier") };
+    Asset &aData = *LuaUtilGetPtr<Asset>(lS, 2, "Asset");
+    const GLfloat fW = LuaUtilGetNumLG<GLfloat>(lS, 3, 1, 4096, "Width"),
+                  fH = LuaUtilGetNumLG<GLfloat>(lS, 4, 1, 4096, "Height");
     const unsigned int
-      uiDW = GetIntLG<unsigned int>(lS, 5, 1, 1024, "DPIWidth"),
-      uiDH = GetIntLG<unsigned int>(lS, 6, 1, 1024, "DPIHeight");
-    const GLfloat fO = GetNumLG<GLfloat>(lS, 7, 0, 1024, "OutLine");
+      uiDW = LuaUtilGetIntLG<unsigned int>(lS, 5, 1, 1024, "DPIWidth"),
+      uiDH = LuaUtilGetIntLG<unsigned int>(lS, 6, 1, 1024, "DPIHeight");
+    const GLfloat fO = LuaUtilGetNumLG<GLfloat>(lS, 7, 0, 1024, "OutLine");
     // Check callbacks
-    CheckFunction(lS, 8, "ErrorFunc");
-    CheckFunction(lS, 9, "ProgressFunc");
-    CheckFunction(lS, 10, "SuccessFunc");
+    LuaUtilCheckFuncs(lS,
+      8, "ErrorFunc", 9, "ProgressFunc", 10, "SuccessFunc");
     // Set other members
     InitVars(fW, fH, uiDW, uiDH, fO);
     // Prepare asynchronous loading from array
@@ -231,19 +236,17 @@ BEGIN_ASYNCCOLLECTORDUO(Ftfs, Ftf, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Load pcm from file asynchronously ---------------------------------- */
   void InitAsyncFile(lua_State*const lS)
   { // We need nine parameters
-    CheckParams(lS, 10);
+    LuaUtilCheckParams(lS, 10);
     // Get name and init parameters
-    const string strName{ GetCppFileName(lS, 1, "File") };
-    const GLfloat fW = GetNumLG<GLfloat>(lS, 2, 1, 4096, "Width"),
-                  fH = GetNumLG<GLfloat>(lS, 3, 1, 4096, "Height");
+    const string strName{ LuaUtilGetCppFile(lS, 1, "File") };
+    const GLfloat fW = LuaUtilGetNumLG<GLfloat>(lS, 2, 1, 4096, "Width"),
+                  fH = LuaUtilGetNumLG<GLfloat>(lS, 3, 1, 4096, "Height");
     const unsigned int
-      uiDW = GetIntLG<unsigned int>(lS, 4, 1, 1024, "DPIWidth"),
-      uiDH = GetIntLG<unsigned int>(lS, 5, 1, 1024, "DPIHeight");
-    const GLfloat fO = GetNumLG<GLfloat>(lS, 6, 0, 1024, "OutLine");
+      uiDW = LuaUtilGetIntLG<unsigned int>(lS, 4, 1, 1024, "DPIWidth"),
+      uiDH = LuaUtilGetIntLG<unsigned int>(lS, 5, 1, 1024, "DPIHeight");
+    const GLfloat fO = LuaUtilGetNumLG<GLfloat>(lS, 6, 0, 1024, "OutLine");
     // Check callbacks
-    CheckFunction(lS, 7, "ErrorFunc");
-    CheckFunction(lS, 8, "ProgressFunc");
-    CheckFunction(lS, 9, "SuccessFunc");
+    LuaUtilCheckFuncs(lS, 7, "ErrorFunc", 8, "ProgressFunc", 9, "SuccessFunc");
     // Set other members
     InitVars(fW, fH, uiDW, uiDH, fO);
     // Prepare asynchronous loading from array
@@ -310,5 +313,7 @@ BEGIN_ASYNCCOLLECTORDUO(Ftfs, Ftf, CLHelperUnsafe, ICHelperUnsafe),
 };/* -- End ---------------------------------------------------------------- */
 END_ASYNCCOLLECTOR(Ftfs, Ftf, FONT)    // End of ftf collector
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

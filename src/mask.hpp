@@ -1,15 +1,22 @@
-/* == MASK.HPP ============================================================= */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## 1-bit bitmask collision system.                                     ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == MASK.HPP ============================================================= **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## 1-bit bitmask collision system.                                     ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfMask {                     // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfImage;               // Using image namespace
+namespace IMask {                      // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace ICollector::P;         using namespace IDim;
+using namespace IDir::P;               using namespace IError::P;
+using namespace IIdent::P;             using namespace IImage::P;
+using namespace IImageDef::P;          using namespace ILog::P;
+using namespace IMemory::P;            using namespace IStd::P;
+using namespace ISysUtil::P;           using namespace IUtil::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* == Mask collector and member class ====================================== */
 BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
@@ -29,8 +36,10 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
       iYMax1 = iSrcY + DimGetHeight(),
       iXMax2 = iDestX + mCdest.DimGetWidth(),
       iYMax2 = iDestY + mCdest.DimGetHeight(),
-      iXMin  = Maximum(iSrcX, iDestX),  iYMin  = Maximum(iSrcY, iDestY),
-      iXMax  = Minimum(iXMax1, iXMax2), iYMax  = Minimum(iYMax1, iYMax2);
+      iXMin  = UtilMaximum(iSrcX, iDestX),
+      iYMin  = UtilMaximum(iSrcY, iDestY),
+      iXMax  = UtilMinimum(iXMax1, iXMax2),
+      iYMax  = UtilMinimum(iYMax1, iYMax2);
     // Bail if out of bounds
     if(iXMax <= iXMin || iYMax <= iYMin) return false;
     // Get bitmask surfaces for both masks
@@ -40,8 +49,8 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     // return if we found a match, else try next pixel
     for(int iY = iYMin; iY < iYMax; ++iY)
       for(int iX = iXMin; iX < iXMax; ++iX)
-        if(Bit::Test(cpS, ((iY-iSrcY)*DimGetWidth())+(iX-iSrcX)) &&
-           Bit::Test(cpD, ((iY-iDestY)*mCdest.DimGetWidth())+(iX-iDestX)))
+        if(UtilBitTest(cpS, ((iY-iSrcY)*DimGetWidth())+(iX-iSrcX)) &&
+           UtilBitTest(cpD, ((iY-iDestY)*mCdest.DimGetWidth())+(iX-iDestX)))
           return true;
     // No collision
     return false;
@@ -79,10 +88,10 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     const int
       iXMax2 = iDestX + mCsrc.DimGetWidth(),
       iYMax2 = iDestY + mCsrc.DimGetHeight(),
-      iXMin  = Maximum(iDestX, 0),
-      iYMin  = Maximum(iDestY, 0),
-      iXMax  = Minimum(DimGetWidth(), iXMax2),
-      iYMax  = Minimum(DimGetHeight(), iYMax2);
+      iXMin  = UtilMaximum(iDestX, 0),
+      iYMin  = UtilMaximum(iDestY, 0),
+      iXMax  = UtilMinimum(DimGetWidth(), iXMax2),
+      iYMax  = UtilMinimum(DimGetHeight(), iYMax2);
     // Bail if out of bounds
     if(iXMax <= iXMin || iYMax <= iYMin) return;
     // Get bitmask surfaces for both masks
@@ -92,9 +101,9 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     for(int iY = iYMin; iY < iYMax; ++iY)
       for(int iX = iXMin; iX < iXMax; ++iX)
       { // Clear the bits first
-        Bit::Clear(cpD, (iY*DimGetWidth())+iX);
+        UtilBitClear(cpD, (iY*DimGetWidth())+iX);
         // Copy the bits
-        Bit::Set2(cpD, (iY*DimGetWidth())+iX,
+        UtilBitSet2(cpD, (iY*DimGetWidth())+iX,
                   cpS, ((iY-iDestY)*mCsrc.DimGetWidth())+(iX-iDestX));
       }
   }
@@ -105,10 +114,10 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     const int
       iXMax2 = iDestX + mCsrc.DimGetWidth(),
       iYMax2 = iDestY + mCsrc.DimGetHeight(),
-      iXMin  = Maximum(iDestX, 0),
-      iYMin  = Maximum(iDestY, 0),
-      iXMax  = Minimum(DimGetWidth(), iXMax2),
-      iYMax  = Minimum(DimGetHeight(), iYMax2);
+      iXMin  = UtilMaximum(iDestX, 0),
+      iYMin  = UtilMaximum(iDestY, 0),
+      iXMax  = UtilMinimum(DimGetWidth(), iXMax2),
+      iYMax  = UtilMinimum(DimGetHeight(), iYMax2);
     // Bail if out of bounds
     if(iXMax <= iXMin || iYMax <= iYMin) return;
     // Get bitmask surfaces for both masks
@@ -118,8 +127,8 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     // Check the bits and return if we found a match, else try next pixel
     for(int iY = iYMin; iY < iYMax; ++iY)
       for(int iX = iXMin; iX < iXMax; ++iX)
-        Bit::Set2(cpD, (iY*DimGetWidth())+iX,
-                  cpS, ((iY-iDestY)*mCsrc.DimGetWidth())+(iX-iDestX));
+        UtilBitSet2(cpD, (iY*DimGetWidth())+iX,
+                    cpS, ((iY-iDestY)*mCsrc.DimGetWidth())+(iX-iDestX));
   }
   /* -- Erase specified mask into this one --------------------------------- */
   void Erase(const size_t stDestId)
@@ -131,16 +140,16 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     // Check the bits and return if we found a match, else try next pixel
     for(int iY = 0; iY < DimGetHeight(); ++iY)
       for(int iX = 0; iX < DimGetWidth(); ++iX)
-        Bit::Clear(cpD, (iY*DimGetWidth())+iX);
+        UtilBitClear(cpD, (iY*DimGetWidth())+iX);
   }
   /* -- Fill specified mask ------------------------------------------------ */
   void Fill(const int iDX, const int iDY, const int iW, const int iH)
   { // Caculate distances and lengths between both bounds
     const int
       iXMax2 = iDX + iW,                iYMax2 = iDY + iH,
-      iXMin  = Maximum(iDX, 0),         iYMin  = Maximum(iDY, 0),
-      iXMax  = Minimum(DimGetWidth(), iXMax2),
-      iYMax  = Minimum(DimGetHeight(), iYMax2);
+      iXMin  = UtilMaximum(iDX, 0),     iYMin  = UtilMaximum(iDY, 0),
+      iXMax  = UtilMinimum(DimGetWidth(), iXMax2),
+      iYMax  = UtilMinimum(DimGetHeight(), iYMax2);
     // Bail if out of bounds
     if(iXMax <= iXMin || iYMax <= iYMin) return;
     // Get bitmask surfaces for both masks
@@ -148,16 +157,16 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     // Walk through the pixels of the intersection and set each bit
     for(int iY = iYMin; iY < iYMax; ++iY)
       for(int iX = iXMin; iX < iXMax; ++iX)
-        Bit::Set(cpD, (iY*DimGetWidth())+iX);
+        UtilBitSet(cpD, (iY*DimGetWidth())+iX);
   }
   /* -- Clear specified mask ----------------------------------------------- */
   void Clear(const int iDX, const int iDY, const int iW, const int iH)
   { // Caculate distances and lengths between both bounds
     const int
-      iXMax2 = iDX + iW,                iYMax2 = iDY + iH,
-      iXMin  = Maximum(iDX, 0),         iYMin  = Maximum(iDY, 0),
-      iXMax  = Minimum(DimGetWidth(), iXMax2),
-      iYMax  = Maximum(DimGetHeight(), iYMax2);
+      iXMax2 = iDX + iW,               iYMax2 = iDY + iH,
+      iXMin  = UtilMaximum(iDX, 0),    iYMin  = UtilMaximum(iDY, 0),
+      iXMax  = UtilMinimum(DimGetWidth(), iXMax2),
+      iYMax  = UtilMaximum(DimGetHeight(), iYMax2);
     // Bail if out of bounds
     if(iXMax <= iXMin || iYMax <= iYMin) return;
     // Get bitmask surfaces for both masks
@@ -165,12 +174,13 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     // Walk through the pixels of the intersection and set each bit
     for(int iY = iYMin; iY < iYMax; ++iY)
       for(int iX = iXMin; iX < iXMax; ++iX)
-        Bit::Clear(cpD, (iY*DimGetWidth())+iX);
+        UtilBitClear(cpD, (iY*DimGetWidth())+iX);
   }
   /* -- Init --------------------------------------------------------------- */
   void Init(const unsigned int uiW, const unsigned int uiH)
   { // Check dimension parameters
-    if(!uiW || !uiH || IntWillOverflow<int>(uiW) || IntWillOverflow<int>(uiH))
+    if(!uiW || !uiH ||
+       UtilIntWillOverflow<int>(uiW) || UtilIntWillOverflow<int>(uiH))
       XC("Mask dimensions are invalid!", "Width", uiW, "Height", uiH);
     // Calculate space required, push it into mask list and increment size
     const size_t stLen = (uiW * uiH) / 8;
@@ -222,7 +232,8 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     // Check dimensions. We're also working with ints for sizes so we have
     // to limit the size to signed int range so check for that too.
     if(!_uiTWidth || !_uiTHeight ||
-      IntWillOverflow<int>(_uiTWidth) || IntWillOverflow<int>(_uiTHeight))
+      UtilIntWillOverflow<int>(_uiTWidth) ||
+      UtilIntWillOverflow<int>(_uiTHeight))
         XC("Invalid tile dimensions!",
            "Identifier", IdentGet(), "Width", _uiTWidth, "Height", _uiTHeight);
     // Get first image slot and show error as we are not reversing this.
@@ -236,14 +247,14 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
          "BitsPerPixel", iC.GetBitsPerPixel());
     // Check image dimensions too. Again we're dealing with ints!
     if(!bData.DimIsSet() ||
-      IntWillOverflow<int>(bData.DimGetWidth()) ||
-      IntWillOverflow<int>(bData.DimGetHeight()))
+      UtilIntWillOverflow<int>(bData.DimGetWidth()) ||
+      UtilIntWillOverflow<int>(bData.DimGetHeight()))
         XC("Invalid image dimensions!",
            "Identifier", IdentGet(), "Width", bData.DimGetWidth(),
            "Height",     bData.DimGetHeight());
     // Image is divisible by 8?
-    if(!IsDivisible(bData.DimGetWidth<double>() / 8) ||
-       !IsDivisible(bData.DimGetHeight<double>() / 8))
+    if(!UtilIsDivisible(bData.DimGetWidth<double>() / 8) ||
+       !UtilIsDivisible(bData.DimGetHeight<double>() / 8))
       XC("Image dimensions are not divisible by eight!",
          "Identifier", IdentGet(), "Width", bData.DimGetWidth(),
          "Height",     bData.DimGetHeight());
@@ -290,7 +301,7 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
           for(size_t stTY = stTHeightM1; stTY < stTHeight; --stTY)
             for(size_t stTX = 0; stTX < stTWidth; ++stTX)
               // Note that bits are reversed too.
-              Bit::Set2R(ucpD, ((stTHeightM1 - stTY) * stTWidth) + stTX,
+              UtilBitSet2R(ucpD, ((stTHeightM1 - stTY) * stTWidth) + stTX,
                 ucpS, ((stHeightM1 - (stY + stTY)) * stWidth) + (stX + stTX));
         }
       }
@@ -306,7 +317,7 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
         for(size_t stTY = 0; stTY < stTHeight; ++stTY)
           for(size_t stTX = 0; stTX < stTWidth; ++stTX)
             // Note that bits are reversed too.
-            Bit::Set2R(ucpD, (stTY * stTWidth) + stTX, ucpS,
+            UtilBitSet2R(ucpD, (stTY * stTWidth) + stTX, ucpS,
               ((stHeightM1 - (stY + stTY)) * stWidth) + (stX + stTX));
       }
     } // Set allocated size
@@ -337,5 +348,7 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
 };/* ----------------------------------------------------------------------- */
 END_COLLECTOR(Masks)
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

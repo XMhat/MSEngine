@@ -1,16 +1,19 @@
-/* == DIR.HPP ============================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Reads and stores all files in the specified directory.              ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == DIR.HPP ============================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Reads and stores all files in the specified directory.              ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfDir {                      // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfPSplit;              // Using psplit namespace
-using namespace IfToken;               // Using token namespace
+namespace IDir {                       // Start of private module namespace
+/* ------------------------------------------------------------------------- */
+using namespace IError::P;             using namespace IIdent::P;
+using namespace IPSplit::P;            using namespace IStd::P;
+using namespace IString::P;            using namespace IToken::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* ------------------------------------------------------------------------- */
 enum ValidResult                       // Return values for ValidName()
 { /* ----------------------------------------------------------------------- */
@@ -37,8 +40,8 @@ enum ValidType                         // Types for ValidName()
 };/* ----------------------------------------------------------------------- */
 static const class DirBase final       // Members initially private
 { /* ----------------------------------------------------------------------- */
-  typedef IfIdent::IdList<VR_MAX> VRList;
-  const VRList     vrStrings;          // List of ValidName strings.
+  typedef IdList<VR_MAX> VRList;       // List of ValidName strings typedef
+  const VRList     vrStrings;          // " container
   /* -- Convert a valid result from ValidName to string ------------ */ public:
   const string &VNRtoStr(const ValidResult vrId) const
     { return vrStrings.Get(vrId); }
@@ -107,7 +110,7 @@ static ValidResult DirValidName(const string &strName,
     { // Root directory not allowed
       if(strChosen.front() == '/') return VR_NOROOT;
       // Get parts from pathname and return if empty.
-      const Token tParts{ strChosen, "/" };
+      const Token tParts{ strChosen, cCommon->FSlash() };
       // Get first iterator and string.
       StrVectorConstIt svciPart{ tParts.cbegin() };
       const string &strFirst = tParts.front();
@@ -135,7 +138,7 @@ static ValidResult DirValidName(const string &strName,
     } // Trusted filename?
     case VT_TRUSTED:
     { // Get parts from pathname and if was just a root directory, it's fine
-      const Token tParts{ strChosen, "/" };
+      const Token tParts{ strChosen, cCommon->FSlash() };
       // Get first string item and iterator.
       StrVectorConstIt svciPart{ tParts.cbegin() };
       const string &strFirst = tParts.front();
@@ -171,11 +174,11 @@ class DirFile                          // Files container class
 { /* -- Public typedefs -------------------------------------------- */ public:
   struct Item                          // File information structure
   { /* --------------------------------------------------------------------- */
-    StdTimeT       tCreate;            // File creation time
-    StdTimeT       tAccess;            // File access time
-    StdTimeT       tWrite;             // File modification time
-    uint64_t       qSize;              // File size
-    uint64_t       qFlags;             // Attributes (OS specific)
+    StdTimeT       tCreate,            // File creation time
+                   tAccess,            // File access time
+                   tWrite;             // File modification time
+    uint64_t       qSize,              // File size
+                   qFlags;             // Attributes (OS specific)
   };/* --------------------------------------------------------------------- */
   typedef map<const string, const Item> EntMap;   // map of file entries
   typedef EntMap::const_iterator        EntMapIt; // " iterator
@@ -249,7 +252,7 @@ class DirCore                          // System specific implementation
   explicit DirCore(const string &strDir) :
     /* -- Initialisers ----------------------------------------------------- */
     iH(_wfindfirst64(UTFtoS16(strDir.empty() ? "*" :
-      Append(Trim(strDir, '/'), "/*")).c_str(), &wfData)),
+      StrAppend(StrTrim(strDir, '/'), "/*")).c_str(), &wfData)),
     bMore(iH != -1)
     /* -- Process file if there are more ----------------------------------- */
     { if(bMore) ProcessItem(); }
@@ -277,7 +280,7 @@ class DirCore                          // System specific implementation
     // Data for stat
     struct stat sData;
     // Get information about the filename
-    if(stat(Append(strPrefix, strFile).c_str(), &sData) == -1)
+    if(stat(StrAppend(strPrefix, strFile).c_str(), &sData) == -1)
     { // Not a directory (unknown)
       bIsDir = false;
       // Set the file data as blank
@@ -295,14 +298,14 @@ class DirCore                          // System specific implementation
   /* -- Constructor for POSIX system --------------------------------------- */
   explicit DirCore(const string &strDir) :
     /* -- Initialisers ----------------------------------------------------- */
-    dData{ opendir(Trim(strDir.empty() ? "." : strDir, '/').c_str()),
+    dData{ opendir(StrTrim(strDir.empty() ? "." : strDir, '/').c_str()),
       closedir },
     dPtrNext{ &dPtr }
     /* -- Initialise directory handle -------------------------------------- */
     { // Return if we could not open the directory
       if(!dData) return;
       // Prepare prefix for filenames to state
-      strPrefix = Append(strDir, '/');
+      strPrefix = StrAppend(strDir, '/');
       // Prepare the first filename and reset handle if failed
       if(!GetNextFile()) dData.reset();
     }
@@ -322,7 +325,7 @@ class DirCore                          // System specific implementation
       // Set filename
       strFile = dPtr->d_name;
       // Get information about the filename
-      if(stat(Append(strPrefix, strFile).c_str(), &sData) == -1)
+      if(stat(StrAppend(strPrefix, strFile).c_str(), &sData) == -1)
       { // Not a directory (unknown)
         bIsDir = false;
         // Set the file data as blank
@@ -342,12 +345,12 @@ class DirCore                          // System specific implementation
   /* -- Constructor for POSIX system --------------------------------------- */
   explicit DirCore(const string &strDir) :
     /* -- Initialisers ----------------------------------------------------- */
-    dData{ opendir(Trim(strDir.empty() ? "." : strDir, '/').c_str()) }
+    dData{ opendir(StrTrim(strDir.empty() ? "." : strDir, '/').c_str()) }
     /* -- Initialise directory handle -------------------------------------- */
     { // Return if we could not open the directory
       if(!dData) return;
       // Prepare prefix for filenames to state
-      strPrefix = Append(strDir, '/');
+      strPrefix = StrAppend(strDir, '/');
       // Prepare the first filename and return if succeeded
       if(GetNextFile()) return;
       // Close the directory
@@ -414,7 +417,7 @@ class Dir :                            // Directory information class
           dliDirs.insert({ StdMove(dfcInterface.strFile),
                            StdMove(dfcInterface.dItem) });
         // Is a file and extension doesn't match? Ignore it
-        else if(PathSplit(dfcInterface.strFile).strExt != strExt) continue;
+        else if(PathSplit{ dfcInterface.strFile }.strExt != strExt) continue;
         // Insert into files list
         else dliFiles.insert({ StdMove(dfcInterface.strFile),
                                StdMove(dfcInterface.dItem) });
@@ -503,7 +506,8 @@ static bool DirMkDirEx(const string &strDir)
 { // Break apart directory parts
   const PathSplit psParts{ strDir };
   // Break apart so we can check the directories. Will always be non-empty.
-  const Token tParts{ Append(psParts.strDir, psParts.strFileExt), "/" };
+  const Token tParts{ StrAppend(psParts.strDir, psParts.strFileExt),
+    cCommon->FSlash() };
   // This will be the string that wile sent to mkdir multiple times gradually.
   // Do not try to construct the oss with the drive string because it won't
   // work and thats not how the constructor works it seems!
@@ -513,7 +517,7 @@ static bool DirMkDirEx(const string &strDir)
   if(!strFirst.empty())
   { // Make the directory if isn't the drive and return failure if the
     // directory doesn't already exist
-    if(!DirMkDir(strFirst) && IsNotErrNo(EEXIST)) return false;
+    if(!DirMkDir(strFirst) && StdIsNotError(EEXIST)) return false;
     // Move first item. It will be empty if directory started with a slash
     osS << StdMove(strFirst);
   } // If there are more directories?
@@ -525,7 +529,7 @@ static bool DirMkDirEx(const string &strDir)
     { // Append next directory
       osS << '/' << StdMove(*svI);
       // Make the directory and if failed and it doesn't exist return error
-      if(!DirMkDir(osS.str()) && IsNotErrNo(EEXIST)) return false;
+      if(!DirMkDir(osS.str()) && StdIsNotError(EEXIST)) return false;
     }
   } // Success
   return true;
@@ -535,7 +539,8 @@ static bool DirRmDirEx(const string &strDir)
 { // Break apart directory parts
   const PathSplit psParts{ strDir };
   // Break apart so we can check the directories. Will always be non-empty.
-  Token tParts{ Append(psParts.strDir, psParts.strFileExt), "/" };
+  Token tParts{ StrAppend(psParts.strDir, psParts.strFileExt),
+    cCommon->FSlash() };
   // Get the first item and if it is not empty?
   while(!tParts.empty())
   { // This will be the string that wile sent to mkdir multiple times
@@ -552,7 +557,7 @@ static bool DirRmDirEx(const string &strDir)
                          ++svI)
         osS << '/' << *svI;
     // Make the directory and if failed and it doesn't exist return error
-    if(!DirRmDir(osS.str()) && IsNotErrNo(EEXIST)) return false;
+    if(!DirRmDir(osS.str()) && StdIsNotError(EEXIST)) return false;
     // Remove the last item
     tParts.pop_back();
   } // Success
@@ -562,7 +567,7 @@ static bool DirRmDirEx(const string &strDir)
 static bool DirFileUnlink(const string &strF) { return !StdUnlink(strF); }
 /* -- Get file size - ------------------------------------------------------ */
 static int DirFileSize(const string &strF, StdFStatStruct &sData)
-  { return StdFStat(strF, &sData) ? GetErrNo() : 0; }
+  { return StdFStat(strF, &sData) ? StdGetError() : 0; }
 /* -- True if specified file has the specified mode ------------------------ */
 static bool DirFileHasMode(const string &strF, const int iMode,
   const int iNegate)
@@ -572,7 +577,7 @@ static bool DirFileHasMode(const string &strF, const int iMode,
   { // If file attributes have specified mode then success
     if((sData.st_mode ^ iNegate) & iMode) return true;
     // Set error number
-    SetErrNo(ENOTDIR);
+    StdSetError(ENOTDIR);
   } // Failed
   return false;
 }
@@ -633,5 +638,7 @@ class DirSaver
     /* --------------------------------------------------------------------- */
     { DirSetCWD(strCWD); }
 };/* ----------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

@@ -1,17 +1,25 @@
-/* == SSHOT.HPP ============================================================ */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Contains the class to help with creating screenshots                ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == SSHOT.HPP ============================================================ **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Contains the class to help with creating screenshots                ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfSShot {                    // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfThread;              // Using thread namespace
-using namespace IfImage;               // Using image namespace
-using namespace IfFboMain;             // Using fbomain namespace
+namespace ISShot {                     // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IClock::P;             using namespace ICVar::P;
+using namespace ICVarDef::P;           using namespace ICVarLib::P;
+using namespace IFbo::P;               using namespace IFboMain::P;
+using namespace IImage::P;             using namespace IImageDef::P;
+using namespace IImageFormat::P;       using namespace IImageLib::P;
+using namespace ILog::P;               using namespace IMemory::P;
+using namespace IOgl::P;               using namespace IStd::P;
+using namespace IString::P;            using namespace ISysUtil::P;
+using namespace IThread::P;            using namespace Lib::OS::GlFW;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Core fbo wrapper class ----------------------------------------------- */
 static class SShot final :             // Members initially private
   /* -- Base classes ------------------------------------------------------- */
@@ -72,7 +80,7 @@ static class SShot final :             // Members initially private
       "Identifier", fboRef.IdentGet(), "Mode", eMode);
     // Get new filename or original filename
     Image::IdentSet(strFN.empty() ?
-      Append(cCVars->GetInternalStrSafe(APP_SHORTNAME),
+      StrAppend(cCVars->GetInternalStrSafe(APP_SHORTNAME),
         cmSys.FormatTime("-%Y%m%d-%H%M%S")) : strFN);
     // Log status
     cLog->LogDebugExSafe("SShot '$' screen capture to '$' ($x$x$)...",
@@ -107,5 +115,7 @@ static class SShot final :             // Members initially private
   /* ----------------------------------------------------------------------- */
 } *cSShot = nullptr;                   // Pointer to static class
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

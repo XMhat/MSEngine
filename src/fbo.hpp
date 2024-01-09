@@ -1,18 +1,25 @@
-/* == FBO.HPP ============================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This the file handles rendering of 2d fbos and triangles in opengl  ## */
-/* ##                                                                     ## */
-/* ## TODO: Add custom shaders and expose the functions to LUA. Probably  ## */
-/* ##       only allow them to be attached to custom FBO's so the guest   ## */
-/* ##       can't override the built in shaders.                          ## */
-/* ######################################################################### */
+/* == FBO.HPP ============================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This the file handles rendering of 2d fbos and triangles in opengl  ## **
+** ##                                                                     ## **
+** ## TODO: Add custom shaders and expose the functions to LUA. Probably  ## **
+** ##       only allow them to be attached to custom FBO's so the guest   ## **
+** ##       can't override the built in shaders.                          ## **
+** ######################################################################### */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfFbo {                      // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfFboBase;             // Using fbobase namespace
+namespace IFbo {                       // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace ICollector::P;         using namespace ICVarDef::P;
+using namespace IError::P;             using namespace IFboBase::P;
+using namespace IIdent::P;             using namespace ILog::P;
+using namespace IOgl::P;               using namespace IShader::P;
+using namespace IStd::P;               using namespace IString::P;
+using namespace ISysUtil::P;           using namespace ITimer::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* == Fbo collector class for collector data and custom variables ========== */
 BEGIN_COLLECTOREX2(Fbos, Fbo, CLHelperUnsafe, // Build 'Fbos' collector/child
 /* -- Fbo collector variables ---------------------------------------------- */
@@ -21,14 +28,14 @@ struct OrderItem :                     /* Order item structure              */\
   public FboRenderItem                 /* Order structure                   */\
 { /* -- Variables --------------------------------------------------------- */\
   Fbo             *fboDest;            /* Reference to fbo to draw to       */\
-  GLsizei          stVertices;         /* No. of vertices in fbo gtlData.   */\
+  GLsizei          siVertices;         /* No. of vertices in fbo gtlData.   */\
   ssize_t          stCommands;         /* No. of commands in fbo gclData.   */\
   /* -- Init constructor --------------------------------------------------- */
   OrderItem(const FboRenderItem &friOther, Fbo*const fboNDest,
-    const GLsizei stNVertices, const ssize_t stNCommands) : \
+    const GLsizei siNVertices, const ssize_t stNCommands) : \
     /* -- Initialisers ----------------------------------------------------- */
     FboRenderItem{ friOther },         fboDest(fboNDest), \
-    stVertices(stNVertices),           stCommands(stNCommands) \
+    siVertices(siNVertices),           stCommands(stNCommands) \
     /* -- No code ---------------------------------------------------------- */
     { }
 }; /* --------------------------------------------------------------------- */\
@@ -56,6 +63,7 @@ class FboVariables :                   // Fbo variables class
                    iMagFilter,         // Frame buffer magnification filter
                    iWrapMode,          // Frame buffer wrapping mode
                    iPixFormat;         // Frame buffer pixel format
+  GLenum           ePolyMode;          // Frame buffer polygon mode
   /* ----------------------------------------------------------------------- */
   FboTriList       ftlActive;          // Triangles list
   FboCmdList       fclActive;          // Commands list
@@ -76,11 +84,12 @@ class FboVariables :                   // Fbo variables class
     /* -- Initialisers ----------------------------------------------------- */
     stFilterId(0),                     iMinFilter(GL_NEAREST),
     iMagFilter(GL_NEAREST),            iWrapMode(GL_CLAMP_TO_EDGE),
-    iPixFormat(iPF),                   uiTextureCache(0),
-    uiTexUnitCache(0),                 uiShaderCache(0),
-    stGLArrayOff(0),                   stTrianglesLast(0),
-    stTrianglesFrame(0),               stCommandsFrame(0),
-    stFinishCounter(0),                uiFBOtex(0)
+    iPixFormat(iPF),                   ePolyMode(GL_FILL),
+    uiTextureCache(0),                 uiTexUnitCache(0),
+    uiShaderCache(0),                  stGLArrayOff(0),
+    stTrianglesLast(0),                stTrianglesFrame(0),
+    stCommandsFrame(0),                stFinishCounter(0),
+    uiFBOtex(0)
     /* --------------------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
@@ -107,6 +116,9 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
   void SetTransparency(const bool bState)
     { iPixFormat = bState ? GL_RGBA8 : GL_RGB8; }
   bool IsTransparencyEnabled(void) const { return iPixFormat == GL_RGBA8; }
+  /* -- Set wireframe mode ------------------------------------------------- */
+  void SetWireframe(const bool bWireframe)
+    { ePolyMode = bWireframe ? GL_LINE : GL_FILL; }
   /* -- Flush the vertex buffer and queue ---------------------------------- */
   void ClearLists(void) { ftlActive.clear(); fclActive.clear(); }
   /* -- Flush queue -------------------------------------------------------- */
@@ -130,10 +142,10 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
   }
   /* -- Set main fbo command reserve --------------------------------------- */
   bool ReserveCommands(const size_t stCount)
-    { return ReserveList(fclActive, stCount); }
+    { return UtilReserveList(fclActive, stCount); }
   /* -- Set main fbo float reserve ----------------------------------------- */
   bool ReserveTriangles(const size_t stCount)
-    { return ReserveList(ftlActive, stCount); }
+    { return UtilReserveList(ftlActive, stCount); }
   /* -- Return number of commands parsed last frame ---------------- */ public:
   size_t GetCmdsNow(void) const { return fclActive.size(); }
   size_t GetCmds(void) const { return stCommandsFrame; }
@@ -158,12 +170,14 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
     // Clear the fbo if requested
     if(oiRef.bClear) cOgl->SetAndClear(oiRef);
     // No point in continuing if there are no vertices
-    if(!oiRef.stVertices) return;
+    if(!oiRef.siVertices) return;
+    // Set polygon fill mode
+    cOgl->SetPolygonMode(ePolyMode);
     // For each 2D shader...
     for(Shader &shBuiltIn : cFboBase->sh2DBuiltIns)
       shBuiltIn.UpdateOrtho(oiRef);
     // Buffer the new vertex data
-    cOgl->BufferStaticData(oiRef.stVertices, ftlActive.data());
+    cOgl->BufferStaticData(oiRef.siVertices, ftlActive.data());
     // For each command in this order
     for(auto fclIt{ fclActive.cbegin() },
              fclItEnd{ next(fclIt, oiRef.stCommands) };
@@ -216,7 +230,7 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
     // Add current count to fbo rendering queue
     cParent.ovActive.push_back({ *this, this,
       static_cast<GLsizei>(stTrianglesFrame * sizeof(FboTri)),
-      IntOrMax<ssize_t>(stCommandsFrame) });
+      UtilIntOrMax<ssize_t>(stCommandsFrame) });
     // Increment number of times this fbo is referenced in the active list,
     // this is so when the reference counter is reduced the zero, the triangles
     // and command lists are permitted to clear on FboRender(). Return if it
@@ -426,25 +440,25 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
       else ++fboIt;
   }
   /* -- Initialise --------------------------------------------------------- */
-  void Init(const string &strID, const GLsizei stW, const GLsizei stH)
+  void Init(const string &strID, const GLsizei siW, const GLsizei siH)
   { // De-initialise old FBO first.
     DeInit();
     // Set identifier.
     IdentSet(strID);
     // Say we're initialising the frame buffer.
     cLog->LogDebugExSafe("Fbo initialising a $x$ object '$'...",
-      stW, stH, IdentGet());
+      siW, siH, IdentGet());
     // Record dimensions and clamp texture size to maximum supported size.
-    DimSet(Minimum(cOgl->MaxTexSize<GLsizei>(), stW),
-           Minimum(cOgl->MaxTexSize<GLsizei>(), stH));
+    DimSet(UtilMinimum(cOgl->MaxTexSize<GLsizei>(), siW),
+           UtilMinimum(cOgl->MaxTexSize<GLsizei>(), siH));
     // If dimensions are different we need to tell the user that
-    if(DimGetWidth() != stW || DimGetHeight() != stH)
+    if(DimGetWidth() != siW || DimGetHeight() != siH)
       cLog->LogWarningExSafe(
         "Fbo '$' dimensions exceed renderer limit ($x$ > $^2)!",
-        IdentGet(), stW, stH, cOgl->MaxTexSize());
+        IdentGet(), siW, siH, cOgl->MaxTexSize());
     // Generate framebuffer and throw error if failed.
     GL(cOgl->CreateFBO(&uiFBO), "Failed to create framebuffer!",
-      "Identifier", IdentGet(), "Width", stW, "Height", stH);
+      "Identifier", IdentGet(), "Width", siW, "Height", siH);
     // Generate the FBO, bind the FBO, generate the texture for the FBO,
     // commit the filter and wrapping setting for the FBO and verify that
     // the FBO was setup properly. Bind the newly created framebuffer.
@@ -452,8 +466,8 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
     // Generate texture name for FBO.
     GL(cOgl->CreateTexture(&uiFBOtex),
      "Failed to create texture for framebuffer!",
-     "Identifier", IdentGet(), "Width",  stW,
-     "Height",     stH,        "Buffer", &uiFBOtex);
+     "Identifier", IdentGet(), "Width",  siW,
+     "Height",     siH,        "Buffer", &uiFBOtex);
     // Bind the texture so we can set it up
     BindTexture();
     // nullptr means reserve texture memory but to not copy any data to it
@@ -473,15 +487,16 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
       XC("Failed to complete framebuffer!",
          "Identifier", IdentGet(), "Error", uiError);
     // Set total requested width and height
-    SetCoRight(static_cast<GLfloat>(stW));
-    SetCoBottom(static_cast<GLfloat>(stH));
+    SetCoRight(static_cast<GLfloat>(siW));
+    SetCoBottom(static_cast<GLfloat>(siH));
     // Commit the guest requested filter and wrapping texture properties
     CommitFilter();
     CommitWrap();
     // Say we've initialised the frame buffer
     cLog->LogDebugExSafe("Fbo initialised '$' at $ (S=$x$;A=$;T=$;F=$).",
-      IdentGet(), uiFBO, DimGetWidth(), DimGetHeight(), ToRatio(GetCoRight(),
-      GetCoBottom()), uiFBOtex, cOgl->GetPixelFormat(iPixFormat));
+      IdentGet(), uiFBO, DimGetWidth(), DimGetHeight(),
+      StrFromRatio(GetCoRight(), GetCoBottom()), uiFBOtex,
+      cOgl->GetPixelFormat(iPixFormat));
   }
   /* -- Constructor -------------------------------------------------------- */
   Fbo(void) :                          // No parameters
@@ -539,9 +554,11 @@ static void FboDeInit(void)
 }
 /* -- Set fbo render order reserve ----------------------------------------- */
 static CVarReturn FboSetOrderReserve(const size_t stCount)
-  { return BoolToCVarReturn(ReserveList(cFbos->ovActive, stCount)); }
+  { return BoolToCVarReturn(UtilReserveList(cFbos->ovActive, stCount)); }
 /* -- Get active FBO ------------------------------------------------------- */
 static Fbo *FboActive(void) { return cFbos->fboActive; }
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

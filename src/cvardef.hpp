@@ -1,17 +1,18 @@
-/* == CVARDEF.HPP ========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This module defines cvar names, default values and flags. Theres no ## */
-/* ## actual code, just definitions!                                      ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == CVARDEF.HPP ========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This module defines cvar names, default values and flags. Theres no ## **
+** ## actual code, just definitions!                                      ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfCVarDef {                  // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfString;              // Using string namespace
-using namespace IfFlags;               // Using flags namespace
+namespace ICVarDef {                   // Start of private module namespace
+/* ------------------------------------------------------------------------- */
+using namespace IFlags;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* ------------------------------------------------------------------------- */
 enum CVarReturn                        // Callback return values
 { /* ----------------------------------------------------------------------- */
@@ -122,23 +123,27 @@ BUILD_FLAGS(CVar,
   /* -- Allowed bits ------------------------------------------------------- */
   MASK{ TSTRING|TINTEGER|TFLOAT|TBOOLEAN|CALPHA|CNUMERIC|CSAVEABLE|CPROTECTED|
         CDEFLATE|CNOTEMPTY|CUNSIGNED|CPOW2|CPOW2Z|CFILENAME|MTRIM|OSAVEFORCE };
-);/* -- Prototypes --------------------------------------------------------- */
+);/* ----------------------------------------------------------------------- */
 class Item;                            // (Prototype) Cvar callback data
 typedef CVarReturn (*CbFunc)(Item&, const string&); // Callback return type
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
-/* == CVar library namespace =============================================== */
-namespace IfCVarLib {                  // Beginning of CVar library namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfCVarDef;             // Using cvardef namespace
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## BASE ENGINE CVARS LIST                                              ## */
-/* ######################################################################### */
-/* ## Please note that if you add more and/or modify this order then you  ## */
-/* ## need to update the 'cvKeyValueStaticList' list below this scope and ## */
-/* ## then the 'cvEngList' list in 'cvarlib.hpp'.                         ## */
-/* ######################################################################### */
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
+/* ========================================================================= **
+** ######################################################################### **
+** ## BASE ENGINE CVARS LIST                                              ## **
+** ######################################################################### **
+** ## Please note that if you add more and/or modify this order then you  ## **
+** ## need to update the 'cvKeyValueStaticList' list below this scope and ## **
+** ## then the 'cvEngList' list in 'cvarlib.hpp'.                         ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
+namespace ICVarLib {                   // Start of private module namespace
+/* ------------------------------------------------------------------------- */
+using namespace ICVarDef::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* ------------------------------------------------------------------------- */
 enum CVarEnums : size_t
 { /* -- Critical cvars ----------------------------------------------------- */
@@ -190,15 +195,16 @@ enum CVarEnums : size_t
   NET_STIMEOUT,     NET_CIPHERTLSv1,     NET_CIPHERTLSv13,    NET_CASTORE,
   NET_OCSP,         NET_USERAGENT,
   /* -- Video cvars -------------------------------------------------------- */
-  VID_ALPHA,        VID_CLEAR,           VID_CLEARCOLOUR,     VID_DEBUG,
-  VID_FS,           VID_FSMODE,          VID_LOCK,            VID_MONITOR,
-  VID_GAMMA,        VID_FSAA,            VID_BPP,             VID_HIDPI,
-  VID_STEREO,       VID_NOERRORS,        VID_SRGB,            VID_AUXBUFFERS,
-  VID_SIMPLEMATRIX, VID_TEXFILTER,       VID_VSYNC,           VID_GASWITCH,
-  VID_WIREFRAME,    VID_ORWIDTH,         VID_ORHEIGHT,        VID_ORASPMIN,
-  VID_ORASPMAX,     VID_RFBO,            VID_RFLOATS,         VID_RCMDS,
-  VID_RDTEX,        VID_RDFBO,           VID_SSTYPE,          VID_SUBPIXROUND,
-  VID_QSHADER,      VID_QLINE,           VID_QPOLYGON,        VID_QCOMPRESS,
+  VID_ALPHA,        VID_AUXBUFFERS,      VID_BPP,             VID_CLEAR,
+  VID_CLEARCOLOUR,  VID_DEBUG,           VID_FS,              VID_FSAA,
+  VID_FSMODE,       VID_GAMMA,           VID_GASWITCH,        VID_HIDPI,
+  VID_LOCK,         VID_MONITOR,         VID_NOERRORS,        VID_ORASPMAX,
+  VID_ORASPMIN,     VID_ORHEIGHT,        VID_ORWIDTH,         VID_QCOMPRESS,
+  VID_QLINE,        VID_QPOLYGON,        VID_QSHADER,         VID_RCMDS,
+  VID_RDFBO,        VID_RDTEX,           VID_RFBO,            VID_RFLOATS,
+  VID_SIMPLEMATRIX, VID_SRGB,            VID_SSTYPE,          VID_STEREO,
+  VID_SUBPIXROUND,  VID_TEXFILTER,       VID_VSYNC,
+  /* -- Window cvars ------------------------------------------------------- */
   WIN_ASPECT,       WIN_BORDER,          WIN_CLOSEABLE,       WIN_FLOATING,
   WIN_FOCUSED,      WIN_HEIGHT,          WIN_HEIGHTMAX,       WIN_HEIGHTMIN,
   WIN_MAXIMISED,    WIN_MINIMISEAUTO,    WIN_POSX,            WIN_POSY,
@@ -207,6 +213,7 @@ enum CVarEnums : size_t
   /* -- Logging cvars ------------------------------------------------------ */
   LOG_CREDITS,      LOG_DYLIBS,
   /* -- Other -------------------------------------------------------------- */
+  APP_COMFLAGS,                        // Compatibility flags. DO NOT (RE)MOVE
   MAX_CVAR                             // Maximum cvars. DO NOT (RE)MOVE!
 };/* ----------------------------------------------------------------------- */
 struct ItemStatic                      // Start of CVar static struct
@@ -214,10 +221,12 @@ struct ItemStatic                      // Start of CVar static struct
   const CoreFlagsConst cfRequired;     // Required core flags
   const string         &strVar;        // Variable name
   const string         &strValue;      // Variable default value
-  const CbFunc          cbTrigger;     // Callback trigger event
+  const CbFunc         cbTrigger;      // Callback trigger event
   const CVarFlagsConst &cFlags;        // Variable flags
 };/* ----------------------------------------------------------------------- */
 typedef array<const ItemStatic, MAX_CVAR> ItemStaticList;
-/* ========================================================================= */
-};                                     // End of module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

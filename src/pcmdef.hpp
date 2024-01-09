@@ -1,15 +1,19 @@
-/* == PCMDEF.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## A class to help store and access PCM data and its metadata.         ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == PCMDEF.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## A class to help store and access PCM data and its metadata.         ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfPcmLib {                   // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfOal;                 // Using oal namespace
+namespace IPcmLib {                    // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IFlags;                using namespace IMemory::P;
+using namespace IOal::P;               using namespace IStd::P;
+using namespace Lib::OpenAL;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Loading flags -------------------------------------------------------- */
 BUILD_FLAGS(Pcm,
   /* -- Commands (Only used in 'Pcm' class) -------------------------------- */
@@ -29,16 +33,16 @@ class PcmData :                        // Audio data structure
   /* ----------------------------------------------------------------------- */
   public PcmFlags                      // Shared with 'Pcm' class if needed
 { /* ----------------------------------------------------------------------- */
-  unsigned int     uiRate;             // Samples per second (Frequency/Hz)
-  unsigned int     uiChannels;         // Channels per sample
-  unsigned int     uiBits;             // Bits per channel
-  ALenum           eFormat;            // Format type for openal
-  ALenum           eSFormat;           // Single channel format for openal
+  unsigned int     uiRate,             // Samples per second (Frequency/Hz)
+                   uiChannels,         // Channels per sample
+                   uiBits;             // Bits per channel
+  ALenum           eFormat,            // StrFormat type for openal
+                   eSFormat;           // Single channel format for openal
   array<Memory,2>  aPcm;               // Pcm data (aPcmR used if stereo)
   size_t           stAlloc;            // Bytes allocated
   /* -- Public variables ------------------------------------------- */ public:
-  Memory           &aPcmL;             // First Pcm channel (Mono or left)
-  Memory           &aPcmR;             // Second Pcm channel (Right stereo)
+  Memory           &aPcmL,             // First Pcm channel (Mono or left)
+                   &aPcmR;             // Second Pcm channel (Right stereo)
   /* ----------------------------------------------------------------------- */
   size_t GetAlloc(void) const { return stAlloc; }
   /* ----------------------------------------------------------------------- */
@@ -110,7 +114,7 @@ class PcmData :                        // Audio data structure
     uiRate(0),                         // Rate not initialised
     uiChannels(0),                     // Channels not initialised
     uiBits(0),                         // Bits per channel not initialised
-    eFormat(AL_NONE),                  // Format not initialised
+    eFormat(AL_NONE),                  // StrFormat not initialised
     eSFormat(AL_NONE),                 // Singal channel format not initialised
     stAlloc(0),                        // No memory allocated
     aPcmL(aPcm.front()),               // Alias of first pcm channel
@@ -118,5 +122,7 @@ class PcmData :                        // Audio data structure
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

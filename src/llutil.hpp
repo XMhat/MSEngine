@@ -1,29 +1,31 @@
-/* == LLUTIL.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Defines the 'Util' namespace and methods for the guest to use in    ## */
-/* ## Lua. This file is invoked by 'lualib.hpp'.                          ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == LLUTIL.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Defines the 'Util' namespace and methods for the guest to use in    ## **
+** ## Lua. This file is invoked by 'lualib.hpp'.                          ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 #pragma once                           // Only one incursion allowed
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ========================================================================= */
 // % Util
 /* ------------------------------------------------------------------------- */
 // ! This contains miscellenious utility functions such as string, number and
 // ! time manipulation functions.
 /* ========================================================================= */
-namespace NsUtil {                     // Util namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfClock;               // Using clock namespace
-using namespace IfGlFW;                // Using glfw namespace
-using namespace IfUrl;                 // Using url namespace
-using namespace IfUuId;                // Using uuid namespace
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+namespace LLUtil {                     // Util namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IArgs;                 using namespace IClock::P;
+using namespace IStd::P;               using namespace IString::P;
+using namespace IUrl::P;               using namespace IUtf;
+using namespace IUtil::P;              using namespace IUuId::P;
+/* ========================================================================= **
+** ######################################################################### **
+** ## Util.* namespace functions                                          ## **
+** ######################################################################### **
+** ========================================================================= */
 // $ Util.AscTime
 // > Timestamp:integer=The timestamp to convert to string
 // < Date:string=The timestamp converted to a string.
@@ -32,7 +34,7 @@ using namespace IfUuId;                // Using uuid namespace
 // ? Note that time will be in local time format.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(AscTime, 1,
-  LCPUSHXSTR(FormatTimeTT(LCGETINT(StdTimeT, 1, "Timestamp"))));
+  LCPUSHVAR(StrFromTimeTT(LCGETINT(StdTimeT, 1, "Timestamp"))));
 /* ========================================================================= */
 // $ Util.AscTimeUTC
 // > Timestamp:integer=The timestamp to convert to string
@@ -42,7 +44,7 @@ LLFUNCEX(AscTime, 1,
 // ? Note that time will be in UTC time format.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(AscTimeUTC, 1,
-  LCPUSHXSTR(FormatTimeTTUTC(LCGETINT(StdTimeT, 1, "Timestamp"))));
+  LCPUSHVAR(StrFromTimeTTUTC(LCGETINT(StdTimeT, 1, "Timestamp"))));
 /* ========================================================================= */
 // $ Util.AscNTime
 // < Date:string=The timestamp converted to a string.
@@ -50,7 +52,7 @@ LLFUNCEX(AscTimeUTC, 1,
 // ? There maybe a slight differences across different operating systems.
 // ? Note that time will be in local time format.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(AscNTime, 1, LCPUSHXSTR(cmSys.FormatTime()));
+LLFUNCEX(AscNTime, 1, LCPUSHVAR(cmSys.FormatTime()));
 /* ========================================================================= */
 // $ Util.AscNTimeUTC
 // < Date:string=The timestamp converted to a string.
@@ -58,7 +60,7 @@ LLFUNCEX(AscNTime, 1, LCPUSHXSTR(cmSys.FormatTime()));
 // ? There maybe a slight differences across different operating systems.
 // ? Note that time will be in UTC time format.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(AscNTimeUTC, 1, LCPUSHXSTR(cmSys.FormatTimeUTC()));
+LLFUNCEX(AscNTimeUTC, 1, LCPUSHVAR(cmSys.FormatTimeUTC()));
 /* ========================================================================= */
 // $ Util.FormatTime
 // > Timestamp:integer=The timestamp to convert to string
@@ -68,8 +70,8 @@ LLFUNCEX(AscNTimeUTC, 1, LCPUSHXSTR(cmSys.FormatTimeUTC()));
 // ? slight differences across different operating systems. Note that time
 // ? will be in local time format.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(FormatTime, 1, LCPUSHXSTR(FormatTimeTT(
-  LCGETINT(StdTimeT, 1, "Timestamp"), LCGETSTRING(char, 2, "Format"))));
+LLFUNCEX(FormatTime, 1, LCPUSHVAR(StrFromTimeTT(
+  LCGETINT(StdTimeT, 1, "Timestamp"), LCGETSTRING(char, 2, "StrFormat"))));
 /* ========================================================================= */
 // $ Util.FormatTimeUTC
 // > Timestamp:integer=The timestamp to convert to string
@@ -79,8 +81,8 @@ LLFUNCEX(FormatTime, 1, LCPUSHXSTR(FormatTimeTT(
 // ? slight differences across different operating systems. Note that time
 // ? will be in UTC time format.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(FormatTimeUTC, 1, LCPUSHXSTR(FormatTimeTTUTC(
-  LCGETINT(StdTimeT, 1, "Timestamp"), LCGETSTRING(char, 2, "Format"))));
+LLFUNCEX(FormatTimeUTC, 1, LCPUSHVAR(StrFromTimeTTUTC(
+  LCGETINT(StdTimeT, 1, "Timestamp"), LCGETSTRING(char, 2, "StrFormat"))));
 /* ========================================================================= */
 // $ Util.FormatNTime
 // > Format:stringr=The strftime format string.
@@ -90,7 +92,7 @@ LLFUNCEX(FormatTimeUTC, 1, LCPUSHXSTR(FormatTimeTTUTC(
 // ? Note that time will be in local time format.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(FormatNTime, 1,
-  LCPUSHXSTR(cmSys.FormatTime(LCGETSTRING(char, 1, "Format"))));
+  LCPUSHVAR(cmSys.FormatTime(LCGETSTRING(char, 1, "StrFormat"))));
 /* ========================================================================= */
 // $ Util.FormatNTimeUTC
 // > Format:stringr=The strftime format string.
@@ -100,7 +102,7 @@ LLFUNCEX(FormatNTime, 1,
 // ? time will be in UTC time format.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(FormatNTimeUTC, 1,
-  LCPUSHXSTR(cmSys.FormatTimeUTC(LCGETSTRING(char, 1, "Format"))));
+  LCPUSHVAR(cmSys.FormatTimeUTC(LCGETSTRING(char, 1, "StrFormat"))));
 /* ========================================================================= */
 // $ Util.ParseTime
 // > Format:string=The ISO 8601 formatted string.
@@ -108,17 +110,19 @@ LLFUNCEX(FormatNTimeUTC, 1,
 // ? Converts the specified ISO 8601 formatted string to a numerical timestamp.
 // ? Only the format '2015-09-04T14:26:16Z' is supported at the moment.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ParseTime, 1, LCPUSHINT(ParseTime(LCGETCPPSTRINGNE(1, "ISO8601"))));
+LLFUNCEX(ParseTime, 1,
+  LCPUSHVAR(StrParseTime(LCGETCPPSTRINGNE(1, "ISO8601"))));
 /* ========================================================================= */
 // $ Util.ParseTimeEx
-// > Timestamp:string=The ISO 8601 formatted string.
+// > Timestamp:string=The specially formatted date string.
 // > Format:string=The customised syntax of the formatted string.
 // < Timestamp:integer=The timestamp converted from the string.
-// ? Converts the specified ISO 8601 formatted string to a numerical timestamp.
-// ? Only the format '2015-09-04T14:26:16Z' is supported at the moment.
+// ? Converts the specified specially formatted string to a numerical
+// ? timestamp.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ParseTimeEx, 1, LCPUSHINT(ParseTime(LCGETCPPSTRINGNE(1, "Timestamp"),
-  LCGETSTRING(char, 2, "Format"))));
+LLFUNCEX(ParseTimeEx, 1,
+  LCPUSHVAR(StrParseTime(LCGETCPPSTRINGNE(1, "Timestamp"),
+    LCGETSTRING(char, 2, "StrFormat"))));
 /* ========================================================================= */
 // $ Util.ParseTime2
 // > Format:string=The specially formatted date string.
@@ -127,7 +131,8 @@ LLFUNCEX(ParseTimeEx, 1, LCPUSHINT(ParseTime(LCGETCPPSTRINGNE(1, "Timestamp"),
 // ? timestamp. Only the format 'Mon May 04 00:05:00 +0000 2009' is supported
 // ? at the moment.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ParseTime2, 1, LCPUSHINT(ParseTime2(LCGETCPPSTRINGNE(1, "Format"))));
+LLFUNCEX(ParseTime2, 1,
+  LCPUSHVAR(StrParseTime2(LCGETCPPSTRINGNE(1, "StrFormat"))));
 /* ========================================================================= */
 // $ Util.FormatNumber
 // > Value:number=A number value, it will be converted to a string.
@@ -136,10 +141,10 @@ LLFUNCEX(ParseTime2, 1, LCPUSHINT(ParseTime2(LCGETCPPSTRINGNE(1, "Format"))));
 // ? Uses the current OS locale settings to cleanly format a number with
 // ? thousand separators.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(FormatNumber, 1, LCPUSHXSTR(FormatNumber(
+LLFUNCEX(FormatNumber, 1, LCPUSHVAR(StrReadableFromNum(
   LCGETNUM(double, 1, "Value"), LCGETINT(int, 2, "Digits"))));
 /* ========================================================================= */
-// $ Util.FormatNumber
+// $ Util.FormatNumberI
 // > Value:integer=A integer value, it will be converted to a string.
 // > Precision:integer=Maximum number of floating point digits
 // < Value:string=The formatted string.
@@ -147,7 +152,7 @@ LLFUNCEX(FormatNumber, 1, LCPUSHXSTR(FormatNumber(
 // ? thousand separators.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(FormatNumberI, 1,
-  LCPUSHXSTR(FormatNumber(LCGETINT(uint64_t, 1, "Value"), 0)));
+  LCPUSHVAR(StrReadableFromNum(LCGETINT(uint64_t, 1, "Value"), 0)));
 /* ========================================================================= */
 // $ Util.Round
 // > Value:string=A number value
@@ -156,7 +161,7 @@ LLFUNCEX(FormatNumberI, 1,
 // ? Rounds the specified number to the specified number of floating point
 // ? digits up or down to the nearest zero.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Round, 1, LCPUSHNUM(Round<lua_Number>(
+LLFUNCEX(Round, 1, LCPUSHVAR(UtilRound<lua_Number>(
   LCGETNUM(double, 1, "Value"), LCGETINT(int, 2, "Precision"))));
 /* ========================================================================= */
 // $ Util.RoundInt
@@ -167,7 +172,7 @@ LLFUNCEX(Round, 1, LCPUSHNUM(Round<lua_Number>(
 // ? digits up or down to the nearest zero.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(RoundInt, 1,
-  LCPUSHINT(Round<lua_Integer>(LCGETNUM(double, 1, "Value"), 0)));
+  LCPUSHVAR(UtilRound<lua_Integer>(LCGETNUM(double, 1, "Value"), 0)));
 /* ========================================================================= */
 // $ Util.Explode
 // > Text:string=The text to tokenise.
@@ -176,7 +181,7 @@ LLFUNCEX(RoundInt, 1,
 // ? Splits the specified string into table entries on each matching interation
 // ? of the specified separator.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Explode, 1, Explode(lS));
+LLFUNCEX(Explode, 1, LuaUtilExplode(lS));
 /* ========================================================================= */
 // $ Util.ExplodeEx
 // > Text:string=The text to tokenise.
@@ -188,7 +193,7 @@ LLFUNCEX(Explode, 1, Explode(lS));
 // ? tokens allowed so further occurences of the separator are not tokenised
 // ? and included in the final tokens string.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ExplodeEx, 1, ExplodeEx(lS));
+LLFUNCEX(ExplodeEx, 1, LuaUtilExplodeEx(lS));
 /* ========================================================================= */
 // $ Util.Implode
 // > Table:table=The table to convert to a string.
@@ -197,9 +202,9 @@ LLFUNCEX(ExplodeEx, 1, ExplodeEx(lS));
 // ? Appends each entry in the specified table to a string separated by the
 // ? specified separator string.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Implode, 1, Implode(lS));
+LLFUNCEX(Implode, 1, LuaUtilImplode(lS));
 /* ========================================================================= */
-// $ Util.ImplodeReadable
+// $ Util.ImplodeEx
 // > Table:table=The table to convert to a string.
 // > Separator:string=The separator.
 // > LastSep:string=The final separator (i.e. ' or' or ' and').
@@ -208,15 +213,15 @@ LLFUNCEX(Implode, 1, Implode(lS));
 // ? 'Separator' and uses the specified 'LastSep' as the final separator to
 // ? form a human reable string.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ImplodeEx, 1, ImplodeEx(lS));
+LLFUNCEX(ImplodeEx, 1, LuaUtilImplodeEx(lS));
 /* ========================================================================= */
 // $ Util.IfBlank
 // > String:string=The string to test if empty.
-// > StringAlt:string=The string to use if blank.
-// < StringRet:string=The returned string.
+// > Alternative:string=The string to use if blank.
+// < Return:string=The returned string.
 // ? If 'String' is blank or invalid, then 'StringAlt' is returned.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(IfBlank, 1, IfBlank(lS));
+LLFUNCEX(IfBlank, 1, LuaUtilIfBlank(lS));
 /* ========================================================================= */
 // $ Util.IsASCII
 // > String:string=The string to test if empty.
@@ -225,7 +230,7 @@ LLFUNCEX(IfBlank, 1, IfBlank(lS));
 // ? UTF8 compatible.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(IsASCII, 1,
-  LCPUSHBOOL(Decoder(LCGETSTRING(char, 1, "String")).IsASCII()));
+  LCPUSHVAR(UtfDecoder(LCGETSTRING(char, 1, "String")).IsASCII()));
 /* ========================================================================= */
 // $ Util.IsExtASCII
 // > String:string=The string to test if empty.
@@ -234,7 +239,7 @@ LLFUNCEX(IsASCII, 1,
 // ? UTF8 compatible.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(IsExtASCII, 1,
-  LCPUSHBOOL(Decoder(LCGETSTRING(char, 1, "String")).IsExtASCII()));
+  LCPUSHVAR(UtfDecoder(LCGETSTRING(char, 1, "String")).IsExtASCII()));
 /* ========================================================================= */
 // $ Util.Capitalise
 // > String:string=The string to capitalise
@@ -242,7 +247,7 @@ LLFUNCEX(IsExtASCII, 1,
 // ? Returns the same string capitalised
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Capitalise, 1,
-  LCPUSHXSTR(Capitalise(LCGETCPPSTRING(1, "String"))));
+  LCPUSHVAR(StrCapitalise(LCGETCPPSTRING(1, "String"))));
 /* ========================================================================= */
 // $ Util.ParseArgs
 // > String:string=The arguments to parse.
@@ -251,7 +256,7 @@ LLFUNCEX(Capitalise, 1,
 // ? for each argument.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(ParseArgs, 1,
-  LCTOTABLE(ArgumentsBuildSafe(LCGETCPPSTRING(1, "Arguments"))));
+  LCTOTABLE(ArgsBuildSafe(LCGETCPPSTRING(1, "Arguments"))));
 /* ========================================================================= */
 // $ Util.ParseUrl
 // > String:string=The url to parse
@@ -262,19 +267,19 @@ LLFUNCEX(ParseArgs, 1,
 // < Port:integer=The port number to connect to
 // < Resource:string=The resource to request
 // < Bookmark:string=The bookmark part of the request
+// < Username:string=The username part of the request
+// < Password:string=The password part of the request
 // ? Parses the specified url and returns all the information about it
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(ParseUrl)
   const Url uParsed{ LCGETCPPSTRING(1, "Url") };
-  LCPUSHINT(uParsed.GetResult());
+  LCPUSHVAR(uParsed.GetResult());
   if(uParsed.GetResult() != Url::R_GOOD) return 1;
-  LCPUSHXSTR(uParsed.GetProtocol());
-  LCPUSHBOOL(uParsed.GetSecure());
-  LCPUSHXSTR(uParsed.GetHost());
-  LCPUSHINT(uParsed.GetPort());
-  LCPUSHXSTR(uParsed.GetResource());
-  LCPUSHXSTR(uParsed.GetBookmark());
-LLFUNCENDEX(7)
+  LCPUSHVAR(uParsed.GetProtocol(), uParsed.GetSecure(),
+            uParsed.GetHost(), uParsed.GetPort(),
+            uParsed.GetResource(), uParsed.GetBookmark(),
+            uParsed.GetUsername(), uParsed.GetPassword());
+LLFUNCENDEX(9)
 /* ========================================================================= */
 // $ Util.Position
 // > Position:integer=The position to convert to human readable form.
@@ -283,7 +288,7 @@ LLFUNCENDEX(7)
 // ? 2="2nd", 11="11th", 98="98th", etc.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Position, 1,
-  LCPUSHXSTR(ToPositionStr(LCGETINT(uint64_t, 1, "Position"))));
+  LCPUSHVAR(StrFromPosition(LCGETINT(uint64_t, 1, "Position"))));
 /* ========================================================================= */
 // $ Util.RelTime
 // > Seconds:integer=The unix timestamp.
@@ -292,7 +297,7 @@ LLFUNCEX(Position, 1,
 // ? human readable string showing the time duration between the two.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(RelTime, 1,
-  LCPUSHXSTR(cmSys.ToDurationRel(LCGETINT(StdTimeT, 1, "Timestamp"))));
+  LCPUSHVAR(cmSys.ToDurationRel(LCGETINT(StdTimeT, 1, "Timestamp"))));
 /* ========================================================================= */
 // $ Util.RelTimeEx
 // > Seconds:integer=The unix timestamp.
@@ -303,7 +308,7 @@ LLFUNCEX(RelTime, 1,
 // ? giving the option to keep the string short and simple by limiting the
 // ? specified number of components to show.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(RelTimeEx, 1, LCPUSHXSTR(cmSys.ToDurationRel(
+LLFUNCEX(RelTimeEx, 1, LCPUSHVAR(cmSys.ToDurationRel(
   LCGETINT(StdTimeT,   1, "Timestamp"),
   LCGETINT(unsigned int, 2, "Components"))));
 /* ========================================================================= */
@@ -315,7 +320,7 @@ LLFUNCEX(RelTimeEx, 1, LCPUSHXSTR(cmSys.ToDurationRel(
 // ? Checks the number and suffixes the appropriate word depending on if the
 // ? supplied number is singular or plural.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Pluralise, 1, LCPUSHXSTR(PluraliseNum(
+LLFUNCEX(Pluralise, 1, LCPUSHVAR(StrPluraliseNum(
   LCGETINT   (uint64_t, 1, "Value"), LCGETSTRING(char, 2, "Singular"),
   LCGETSTRING(char,     3, "Plural"))));
 /* ========================================================================= */
@@ -328,7 +333,7 @@ LLFUNCEX(Pluralise, 1, LCPUSHXSTR(PluraliseNum(
 // ? supplied number is singular or plural. Uses the systems local settings
 // ? to make sure the number is formatted properly.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(PluraliseEx, 1, LCPUSHXSTR(PluraliseNumEx(
+LLFUNCEX(PluraliseEx, 1, LCPUSHVAR(StrPluraliseNumEx(
   LCGETINT   (uint64_t, 1, "Value"), LCGETSTRING(char, 2, "Singular"),
   LCGETSTRING(char,     3, "Plural"))));
 /* ========================================================================= */
@@ -338,7 +343,7 @@ LLFUNCEX(PluraliseEx, 1, LCPUSHXSTR(PluraliseNumEx(
 // < Result:string=The resulting string.
 // ? Converts the specified number of bytes into a human readable string.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Bytes, 1, LCPUSHXSTR(ToImbuedBytesStr(
+LLFUNCEX(Bytes, 1, LCPUSHVAR(StrToReadableBytes(
   LCGETINT(uint64_t, 1, "Bytes"), LCGETINT(int, 2, "Precision"))));
 /* ========================================================================= */
 // $ Util.Bits
@@ -347,7 +352,7 @@ LLFUNCEX(Bytes, 1, LCPUSHXSTR(ToImbuedBytesStr(
 // < Result:string=The resulting string.
 // ? Converts the specified number of bits into a human readable string.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Bits, 1, LCPUSHXSTR(ToImbuedBitsStr(
+LLFUNCEX(Bits, 1, LCPUSHVAR(StrToReadableBits(
   LCGETINT(uint64_t, 1, "Bits"), LCGETINT(int, 2, "Precision"))));
 /* ========================================================================= */
 // $ Util.Grouped
@@ -356,7 +361,7 @@ LLFUNCEX(Bits, 1, LCPUSHXSTR(ToImbuedBitsStr(
 // < Result:string=The resulting string.
 // ? Converts the specified number into a human readable string.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Grouped, 1, LCPUSHXSTR(ToImbuedGroupedStr(
+LLFUNCEX(Grouped, 1, LCPUSHVAR(StrToReadable(
   LCGETINT(uint64_t, 1, "Bits"), LCGETINT(int, 2, "Precision"))));
 /* ========================================================================= */
 // $ Util.PlusOrMinus
@@ -364,7 +369,7 @@ LLFUNCEX(Grouped, 1, LCPUSHXSTR(ToImbuedGroupedStr(
 // < Result:string=The resulting string.
 // ? Prefixes the specified number with + or -.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(PlusOrMinus, 1, LCPUSHXSTR(PlusOrMinus(
+LLFUNCEX(PlusOrMinus, 1, LCPUSHVAR(StrPrefixPosNeg(
   LCGETNUM(double, 1, "Value"), LCGETINT(int, 2, "Precision"))));
 /* ========================================================================= */
 // $ Util.PlusOrMinusEx
@@ -372,7 +377,7 @@ LLFUNCEX(PlusOrMinus, 1, LCPUSHXSTR(PlusOrMinus(
 // < Result:string=The resulting string.
 // ? Prefixes the specified number with + or - and formats the number.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(PlusOrMinusEx, 1, LCPUSHXSTR(PlusOrMinusEx(
+LLFUNCEX(PlusOrMinusEx, 1, LCPUSHVAR(StrPrefixPosNegReadable(
   LCGETNUM(double, 1, "Value"), LCGETINT(int, 2, "Precision"))));
 /* ========================================================================= */
 // $ Util.WordWrap
@@ -382,7 +387,7 @@ LLFUNCEX(PlusOrMinusEx, 1, LCPUSHXSTR(PlusOrMinusEx(
 // < Lines:table=The resulting indexed table of lines.
 // ? Word wraps the specified string into a table of lines.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(WordWrap, 1, LCTOTABLE(WordWrap(
+LLFUNCEX(WordWrap, 1, LCTOTABLE(UtfWordWrap(
   LCGETCPPSTRING(1, "String"), LCGETINT(size_t, 2, "Width"),
   LCGETINT(size_t, 3, "Indent"))));
 /* ========================================================================= */
@@ -393,7 +398,7 @@ LLFUNCEX(WordWrap, 1, LCTOTABLE(WordWrap(
 // ? Converts the specified number of seconds into a human readable duration
 // ? string in the format of 000:00:00:00.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Duration, 1, LCPUSHXSTR(ToShortDuration(
+LLFUNCEX(Duration, 1, LCPUSHVAR(StrShortFromDuration(
   LCGETNUM(double, 1, "Seconds"), LCGETINT(int, 2, "Precision"))));
 /* ========================================================================= */
 // $ Util.LDuration
@@ -403,7 +408,7 @@ LLFUNCEX(Duration, 1, LCPUSHXSTR(ToShortDuration(
 // ? string in the format of e.g. 0 years 0 weeks 0 days 0 hours 0 mins 0 secs.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(LDuration, 1,
-  LCPUSHXSTR(ToDuration(LCGETINT(StdTimeT, 1, "Seconds"))));
+  LCPUSHVAR(StrLongFromDuration(LCGETINT(StdTimeT, 1, "Seconds"))));
 /* ========================================================================= */
 // $ Util.LDurationEx
 // > Seconds:integer=The number of seconds.
@@ -412,7 +417,7 @@ LLFUNCEX(LDuration, 1,
 // ? Converts the specified number of seconds into a human readable duration
 // ? string in the format of e.g. 0 years 0 weeks 0 days 0 hours 0 mins 0 secs.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(LDurationEx, 1, LCPUSHXSTR(ToDuration(
+LLFUNCEX(LDurationEx, 1, LCPUSHVAR(StrLongFromDuration(
   LCGETINT(StdTimeT,   1, "Seconds"),
   LCGETINT(unsigned int, 2, "Components"))));
 /* ========================================================================= */
@@ -423,7 +428,7 @@ LLFUNCEX(LDurationEx, 1, LCPUSHXSTR(ToDuration(
 // ? Caclulates the ratio between the two numbers and returns a string in the
 // ? format of "n:n".
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetRatio, 1, LCPUSHXSTR(ToRatio(
+LLFUNCEX(GetRatio, 1, LCPUSHVAR(StrFromRatio(
   LCGETINTLGE(double, 1, 1, UINT_MAX, "Width"),
   LCGETINTLGE(double, 2, 1, UINT_MAX, "Height"))));
 /* ========================================================================= */
@@ -435,7 +440,7 @@ LLFUNCEX(GetRatio, 1, LCPUSHXSTR(ToRatio(
 // ? Makes sure the specified number does not go under the minimum or maximum
 // ? numbers specified.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Clamp, 1, LCPUSHNUM(Clamp(
+LLFUNCEX(Clamp, 1, LCPUSHVAR(UtilClamp(
   LCGETNUM(lua_Number, 1, "Value"), LCGETNUM(lua_Number, 2, "Minimum"),
   LCGETNUM(lua_Number, 3, "Maximum"))));
 /* ========================================================================= */
@@ -447,7 +452,7 @@ LLFUNCEX(Clamp, 1, LCPUSHNUM(Clamp(
 // ? Makes sure the specified number does not go under the minimum or maximum
 // ? numbers specified.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ClampInt, 1, LCPUSHINT(Clamp(
+LLFUNCEX(ClampInt, 1, LCPUSHVAR(UtilClamp(
   LCGETINT(lua_Integer, 1, "Value"), LCGETINT(lua_Integer, 2, "Minimum"),
   LCGETINT(lua_Integer, 3, "Maximum"))));
 /* ========================================================================= */
@@ -460,7 +465,7 @@ LLFUNCEX(ClampInt, 1, LCPUSHINT(Clamp(
 // ? errors with escape sequences with string:gsub. Uses standard c++ string
 // ? class functions for functionality.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Replace, 1, LCPUSHXSTR(Replace(LCGETCPPSTRING(1, "String"),
+LLFUNCEX(Replace, 1, LCPUSHVAR(StrReplace(LCGETCPPSTRING(1, "String"),
   LCGETCPPSTRING(2, "Search"), LCGETCPPSTRING(3, "Replace"))));
 /* ========================================================================= */
 // $ Util.ReplaceEx
@@ -471,7 +476,7 @@ LLFUNCEX(Replace, 1, LCPUSHXSTR(Replace(LCGETCPPSTRING(1, "String"),
 // ? value pairs which are the text to replace (as key) and the text to replace
 // ? to (as value).
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ReplaceEx, 1, ReplaceMulti(lS));
+LLFUNCEX(ReplaceEx, 1, LuaUtilReplaceMulti(lS));
 /* ========================================================================= */
 // $ Util.Trim
 // > String:string=The string to modify
@@ -480,7 +485,7 @@ LLFUNCEX(ReplaceEx, 1, ReplaceMulti(lS));
 // ? Removes the specified character that are prefixed and suffixed to the
 // ? specified string.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Trim, 1, LCPUSHXSTR(Trim(LCGETCPPSTRING(1, "String"),
+LLFUNCEX(Trim, 1, LCPUSHVAR(StrTrim(LCGETCPPSTRING(1, "String"),
   static_cast<char>(LCGETINTLGE(unsigned char, 2, 0, 255, "Char")))));
 /* ========================================================================= */
 // $ Util.StretchInner
@@ -500,11 +505,8 @@ LLFUNCBEGIN(StretchInner)
          fdOH = LCGETNUM(double, 2, "OuterHeight"),
          fdIW = LCGETNUM(double, 3, "InnerWidth"),
          fdIH = LCGETNUM(double, 4, "InnerHeight");
-  StretchToInnerBounds(fdOW, fdOH, fdIW, fdIH);
-  LCPUSHNUM(fdOW);
-  LCPUSHNUM(fdOH);
-  LCPUSHNUM(fdIW);
-  LCPUSHNUM(fdIH);
+  UtilStretchToInner(fdOW, fdOH, fdIW, fdIH);
+  LCPUSHVAR(fdOW, fdOH, fdIW, fdIH);
 LLFUNCENDEX(4)
 /* ========================================================================= */
 // $ Util.StretchOuter
@@ -524,11 +526,8 @@ LLFUNCBEGIN(StretchOuter)
          fdOH = LCGETNUM(double, 2, "OuterHeight"),
          fdIW = LCGETNUM(double, 3, "InnerWidth"),
          fdIH = LCGETNUM(double, 4, "InnerHeight");
-  StretchToOuterBounds(fdOW, fdOH, fdIW, fdIH);
-  LCPUSHNUM(fdOW);
-  LCPUSHNUM(fdOH);
-  LCPUSHNUM(fdIW);
-  LCPUSHNUM(fdIH);
+  UtilStretchToOuter(fdOW, fdOH, fdIW, fdIH);
+  LCPUSHVAR(fdOW, fdOH, fdIW, fdIH);
 LLFUNCENDEX(4)
 /* ========================================================================= */
 // $ Util.MkUTF8Char
@@ -539,7 +538,7 @@ LLFUNCENDEX(4)
 // ? automatically stripped by a bitwise operation for safety.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(UTF8Char, 1,
-  LCPUSHXSTR(DecodeNum(LCGETINT(uint32_t, 1, "Value"))));
+  LCPUSHVAR(UtfDecodeNum(LCGETINT(uint32_t, 1, "Value"))));
 /* ========================================================================= */
 // $ Util.CountOf
 // > Source:string=Source string to search
@@ -547,7 +546,7 @@ LLFUNCEX(UTF8Char, 1,
 // < Count:integer=Number of occurences in the string
 // ? A fast way of counting the number of occurences in a string.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(CountOf, 1, LCPUSHINT(CountOccurences(
+LLFUNCEX(CountOf, 1, LCPUSHVAR(StrCountOccurences(
   LCGETCPPSTRING(1, "Source"), LCGETCPPSTRING(2, "What"))));
 /* ========================================================================= */
 // $ Util.Hex
@@ -555,7 +554,7 @@ LLFUNCEX(CountOf, 1, LCPUSHINT(CountOccurences(
 // < Value:string=Same number but in hexadecimal
 // ? Convert integer to hexadecimal
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Hex, 1, LCPUSHXSTR(ToHex(LCGETINT(lua_Integer, 1, "Value"))));
+LLFUNCEX(Hex, 1, LCPUSHVAR(StrHexFromInt(LCGETINT(lua_Integer, 1, "Value"))));
 /* ========================================================================= */
 // $ Util.TableSize
 // > Table:table=A key/value pairs table
@@ -567,7 +566,7 @@ LLFUNCEX(Hex, 1, LCPUSHXSTR(ToHex(LCGETINT(lua_Integer, 1, "Value"))));
 // ? size yourself whilst building the key/value pairs table instead of using
 // ? this.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(TableSize, 1, LCPUSHINT(GetKeyValueTableSize(lS)));
+LLFUNCEX(TableSize, 1, LCPUSHVAR(LuaUtilGetKeyValTableSize(lS)));
 /* ========================================================================= */
 // $ Util.Blank
 // ? Just a blank function that does nothing
@@ -580,8 +579,8 @@ LLFUNC(Blank,);
 // < Result:string=The decoded UUID.
 // ? Decodes the specified UUID integers to a string.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(DecodeUUID, 1, LCPUSHXSTR(UuId(LCGETINT(uint64_t, 1, "High"),
-  LCGETINT(uint64_t, 2, "Low")).UuIdToString()));
+LLFUNCEX(DecodeUUID, 1, LCPUSHVAR(UuId{ LCGETINT(uint64_t, 1, "High"),
+  LCGETINT(uint64_t, 2, "Low") }.UuIdToString()));
 /* ========================================================================= */
 // $ Util.EncodeUUID
 // > UUID:string=The UUID string to recode.
@@ -591,8 +590,7 @@ LLFUNCEX(DecodeUUID, 1, LCPUSHXSTR(UuId(LCGETINT(uint64_t, 1, "High"),
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(EncodeUUID)
   const UuId uuidData{ LCGETCPPSTRING(1, "String") };
-  LCPUSHINT(uuidData.d.qwRandom[0]);
-  LCPUSHINT(uuidData.d.qwRandom[1]);
+  LCPUSHVAR(uuidData.d.qwRandom[0], uuidData.d.qwRandom[1]);
 LLFUNCENDEX(2)
 /* ========================================================================= */
 // $ Util.RandUUID
@@ -602,8 +600,7 @@ LLFUNCENDEX(2)
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(RandUUID)
   const UuId uuidData;
-  LCPUSHINT(uuidData.d.qwRandom[0]);
-  LCPUSHINT(uuidData.d.qwRandom[1]);
+  LCPUSHVAR(uuidData.d.qwRandom[0], uuidData.d.qwRandom[1]);
 LLFUNCENDEX(2)
 /* ========================================================================= */
 // $ Util.MakeWord
@@ -613,8 +610,8 @@ LLFUNCENDEX(2)
 // ? Joins two integers in the 8-bit range to return one integer in the 16-bit
 // ? range.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(MakeWord, 1, LCPUSHINT(MakeWord(LCGETINT(uint8_t, 1, "High"),
-                                         LCGETINT(uint8_t, 2, "Low"))));
+LLFUNCEX(MakeWord, 1, LCPUSHVAR(UtilMakeWord(LCGETINT(uint8_t, 1, "High"),
+                                             LCGETINT(uint8_t, 2, "Low"))));
 /* ========================================================================= */
 // $ Util.MakeDWord
 // > High:integer=The high-order 16-bit range integer
@@ -623,8 +620,8 @@ LLFUNCEX(MakeWord, 1, LCPUSHINT(MakeWord(LCGETINT(uint8_t, 1, "High"),
 // ? Joins two integers in the 16-bit range to return one integer in the 32-bit
 // ? range.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(MakeDWord, 1, LCPUSHINT(MakeDWord(LCGETINT(uint16_t, 1, "High"),
-                                           LCGETINT(uint16_t, 2, "Low"))));
+LLFUNCEX(MakeDWord, 1, LCPUSHVAR(UtilMakeDWord(LCGETINT(uint16_t, 1, "High"),
+                                               LCGETINT(uint16_t, 2, "Low"))));
 /* ========================================================================= */
 // $ Util.MakeQWord
 // > High:integer=The high-order 32-bit range integer
@@ -633,50 +630,51 @@ LLFUNCEX(MakeDWord, 1, LCPUSHINT(MakeDWord(LCGETINT(uint16_t, 1, "High"),
 // ? Joins two integers in the 32-bit range to return one integer in the 64-bit
 // ? range.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(MakeQWord, 1, LCPUSHINT(MakeQWord(LCGETINT(uint32_t, 1, "High"),
-                                           LCGETINT(uint32_t, 2, "Low"))));
+LLFUNCEX(MakeQWord, 1, LCPUSHVAR(UtilMakeQWord(LCGETINT(uint32_t, 1, "High"),
+                                               LCGETINT(uint32_t, 2, "Low"))));
 /* ========================================================================= */
 // $ Util.LowByte
 // > Value:integer=The 16-bit ranged value to extract the lowest 8-bit value
 // < Result:integer=The resulting 8-bit ranged value
 // ? Extracts the lowest 8-bits from a 16-bit ranged integer.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(LowByte, 1, LCPUSHINT(LowByte(LCGETINT(uint16_t, 1, "Low"))));
+LLFUNCEX(LowByte, 1, LCPUSHVAR(UtilLowByte(LCGETINT(uint16_t, 1, "Low"))));
 /* ========================================================================= */
 // $ Util.LowWord
 // > Value:integer=The 32-bit ranged value to extract the lowest 16-bit value
 // < Result:integer=The resulting 16-bit ranged value
 // ? Extracts the lowest 16-bits from a 32-bit ranged integer.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(LowWord, 1, LCPUSHINT(LowWord(LCGETINT(uint32_t, 1, "Low"))));
+LLFUNCEX(LowWord, 1, LCPUSHVAR(UtilLowWord(LCGETINT(uint32_t, 1, "Low"))));
 /* ========================================================================= */
 // $ Util.LowDWord
 // > Value:integer=The 64-bit ranged value to extract the lowest 32-bit value
 // < Result:integer=The resulting 32-bit ranged value
 // ? Extracts the lowest 32-bits from a 64-bit ranged integer.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(LowDWord, 1, LCPUSHINT(LowDWord(LCGETINT(uint64_t, 1, "Low"))));
+LLFUNCEX(LowDWord, 1, LCPUSHVAR(UtilLowDWord(LCGETINT(uint64_t, 1, "Low"))));
 /* ========================================================================= */
 // $ Util.HighByte
 // > Value:integer=The 16-bit ranged value to extract the highest 8-bit value
 // < Result:integer=The resulting 8-bit ranged value
 // ? Extracts the highest 8-bits from a 16-bit ranged integer.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(HighByte, 1, LCPUSHINT(HighByte(LCGETINT(uint16_t, 1, "High"))));
+LLFUNCEX(HighByte, 1, LCPUSHVAR(UtilHighByte(LCGETINT(uint16_t, 1, "High"))));
 /* ========================================================================= */
 // $ Util.HighWord
 // > Value:integer=The 32-bit ranged value to extract the highest 16-bit value
 // < Result:integer=The resulting 16-bit ranged value
 // ? Extracts the highest 16-bits from a 32-bit ranged integer.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(HighWord, 1, LCPUSHINT(HighWord(LCGETINT(uint32_t, 1, "High"))));
+LLFUNCEX(HighWord, 1, LCPUSHVAR(UtilHighWord(LCGETINT(uint32_t, 1, "High"))));
 /* ========================================================================= */
 // $ Util.HighDWord
 // > Value:integer=The 64-bit ranged value to extract the lowest 32-bit value
 // < Result:integer=The resulting 32-bit ranged value
 // ? Extracts the lowest 32-bits from a 64-bit ranged integer.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(HighDWord, 1, LCPUSHINT(HighDWord(LCGETINT(uint64_t, 1, "High"))));
+LLFUNCEX(HighDWord, 1,
+  LCPUSHVAR(UtilHighDWord(LCGETINT(uint64_t, 1, "High"))));
 /* ========================================================================= */
 // $ Util.RoundMul
 // > Value:integer=The integer to round up to the nearest multiple.
@@ -686,8 +684,8 @@ LLFUNCEX(HighDWord, 1, LCPUSHINT(HighDWord(LCGETINT(uint64_t, 1, "High"))));
 // ? multiplier.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(RoundMul, 1,
-  LCPUSHINT(Nearest(LCGETINT(lua_Integer, 1, "Value"),
-                    LCGETINT(lua_Integer, 2, "Multiple"))));
+  LCPUSHVAR(UtilNearest(LCGETINT(lua_Integer, 1, "Value"),
+                        LCGETINT(lua_Integer, 2, "Multiple"))));
 /* ========================================================================= */
 // $ Util.RoundPow2
 // > Value:integer=The integer to round up to the nearest power of two
@@ -695,12 +693,12 @@ LLFUNCEX(RoundMul, 1,
 // ? Rounds the specified integer up to the nearest power of two.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(RoundPow2, 1,
-  LCPUSHINT(NearestPow2<lua_Integer>(LCGETINT(lua_Integer, 1, "Value"))));
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Util.* namespace functions structure                              ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+  LCPUSHVAR(UtilNearestPow2<lua_Integer>(LCGETINT(lua_Integer, 1, "Value"))));
+/* ========================================================================= **
+** ######################################################################### **
+** ## Util.* namespace functions structure                                ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Util.* namespace functions begin
   LLRSFUNC(AscNTime),      LLRSFUNC(AscNTimeUTC),   LLRSFUNC(AscTime),
   LLRSFUNC(AscTimeUTC),    LLRSFUNC(Bits),          LLRSFUNC(Blank),

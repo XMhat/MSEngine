@@ -1,19 +1,21 @@
-/* == CLOCK.HPP ============================================================ */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This class helps with processing of TimePoint variables into basic  ## */
-/* ## types. Also provides a simple class boolean wether the specified    ## */
-/* ## time has elapsed or not. Since the C++ time functions are so        ## */
-/* ## complecated, theres also a lot of code here to deal with that.      ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == CLOCK.HPP ============================================================ **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This class helps with processing of TimePoint variables into basic  ## **
+** ## types. Also provides a simple class boolean wether the specified    ## **
+** ## time has elapsed or not. Since the C++ time functions are so        ## **
+** ## complecated, theres also a lot of code here to deal with that.      ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfClock {                    // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfString;              // Using string namespace
-using namespace IfUtil;                // Using util namespace
+namespace IClock {                     // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IStd::P;               using namespace IString::P;
+using namespace IUtil::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Get count from a duration -------------------------------------------- */
 template<typename DurType>
   static auto ClockGetCount(const ClkDuration cdDuration)
@@ -28,7 +30,7 @@ static double ClockTimePointRangeToDouble
 /* -- Subtract one timepoint from the other and return as clamped double --- */
 static double ClockTimePointRangeToClampedDouble
   (const ClkTimePoint ctpEnd, const ClkTimePoint ctpStart)
-    { return Maximum(ClockTimePointRangeToDouble(ctpEnd, ctpStart), 0); }
+    { return UtilMaximum(ClockTimePointRangeToDouble(ctpEnd, ctpStart), 0); }
 /* -- Clock manager -------------------------------------------------------- */
 template<class ClockType = CoreClock>struct ClockManager
 { /* -- Get current time --------------------------------------------------- */
@@ -67,23 +69,23 @@ template<class ClockType = CoreClock>struct ClockManager
     { return ClockDurationToDouble(GetDuration(ctpTime)); }
   /* -- Convert clamped timepoint to double -------------------------------- */
   double TimePointToClampedDouble(const ClkTimePoint ctpTime) const
-    { return Maximum(TimePointToDouble(ctpTime), 0); }
+    { return UtilMaximum(TimePointToDouble(ctpTime), 0); }
   /* -- Convert local time to string --------------------------------------- */
   const string FormatTime(const char*const cpFormat = cpTimeFormat)
-    const { return FormatTimeTT(GetTimeS(), cpFormat); }
+    const { return StrFromTimeTT(GetTimeS(), cpFormat); }
   /* -- Convert universal time to string ----------------------------------- */
   const string FormatTimeUTC(const char*const cpFormat =
-    cpTimeFormat) const { return FormatTimeTTUTC(GetTimeS(), cpFormat); }
+    cpTimeFormat) const { return StrFromTimeTTUTC(GetTimeS(), cpFormat); }
   /* -- Convert time to short duration ------------------------------------- */
   const string ToDurationString(unsigned int uiPrecision = 6) const
-    { return ToShortDuration(GetTimeDouble(), uiPrecision); }
+    { return StrShortFromDuration(GetTimeDouble(), uiPrecision); }
   /* -- Convert seconds to long duration relative to current time ---------- */
   const string ToDurationRel(const StdTimeT tDuration = 0,
-    unsigned int uiCompMax = numeric_limits<unsigned int>::max()) const
-      { return ToDuration(GetTimeS() - tDuration, uiCompMax); }
+    unsigned int uiCompMax = StdMaxUInt) const
+      { return StrLongFromDuration(GetTimeS() - tDuration, uiCompMax); }
   /* -- Convert time to long duration -------------------------------------- */
   const string ToDurationLongString(unsigned int uiCompMax =
-    numeric_limits<unsigned int>::max()) const
+    StdMaxUInt) const
       { return ToDurationRel(0, uiCompMax); }
   /* -- Unused constructor ------------------------------------------------- */
   ClockManager(void) { }
@@ -166,7 +168,7 @@ class ClockChrono :                    // Members intially private
     { return ClockDurationToDouble(ctpEnd - ctpStart); }
   /* -- Same as above but clamps to zero so there is no negative time ------ */
   double CCDeltaToClampedDouble(const ClkTimePoint ctpEnd) const
-    { return Maximum(CCDeltaRangeToDouble(ctpEnd), 0); }
+    { return UtilMaximum(CCDeltaRangeToDouble(ctpEnd), 0); }
   /* -- Return uptime as milliseconds in a 64-bit uint --------------------- */
   uint64_t CCDeltaMS(void) const
     { return static_cast<uint64_t>(
@@ -194,5 +196,7 @@ class ClockChrono :                    // Members intially private
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

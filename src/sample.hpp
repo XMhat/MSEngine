@@ -1,17 +1,23 @@
-/* == SAMPLE.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This module defines a class that can load and play sound files      ## */
-/* ## using OpenAL's 3D positioning functions.                            ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == SAMPLE.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This module defines a class that can load and play sound files      ## **
+** ## using OpenAL's 3D positioning functions.                            ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfSample {                   // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfPcm;                 // Using pcm namespace
-using namespace IfSource;              // Using source namespace
+namespace ISample {                    // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace ICollector::P;         using namespace ICVarDef::P;
+using namespace IError::P;             using namespace ILog::P;
+using namespace ILuaUtil::P;           using namespace IOal::P;
+using namespace IPcm::P;               using namespace IStd::P;
+using namespace ISource::P;            using namespace ISysUtil::P;
+using namespace Lib::OpenAL;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Sample collector and member class ------------------------------------ */
 BEGIN_COLLECTOR(Samples, Sample, CLHelperUnsafe)
 /* -- Sample member class -------------------------------------------------- */
@@ -136,10 +142,10 @@ BEGIN_MEMBERCLASSEX(Samples, Sample, ICHelperUnsafe, /* n/a */),
   /* -- Play with a pre-allocated sources by Lua --------------------------- */
   void Play(lua_State*const lS)
   { // Grab parameters
-    const ALfloat fGain = GetNumLG<ALfloat>(lS, 2,  0, 1, "Gain"),
-                  fPan = GetNumLG<ALfloat>(lS, 3, -1, 1, "Pan"),
-                  fPitch = GetNum<ALfloat>(lS, 4, "Pitch");
-    const bool bLoop = GetBool(lS, 5, "Loop");
+    const ALfloat fGain = LuaUtilGetNumLG<ALfloat>(lS, 2,  0, 1, "Gain"),
+                  fPan = LuaUtilGetNumLG<ALfloat>(lS, 3, -1, 1, "Pan"),
+                  fPitch = LuaUtilGetNum<ALfloat>(lS, 4, "Pitch");
+    const bool bLoop = LuaUtilGetBool(lS, 5, "Loop");
     // How many sources do we need?
     switch(size())
     { // 1? (Mono source?) Create a new mono source and if we got it?
@@ -228,7 +234,7 @@ BEGIN_MEMBERCLASSEX(Samples, Sample, ICHelperUnsafe, /* n/a */),
       pcmSrc.aPcmL, static_cast<ALsizei>(pcmSrc.GetRate())),
         "Error buffering left channel/mono PCM audio data!",
         "Identifier", pcmSrc.IdentGet(),  "Buffer",  front(),
-        "Format",     pcmSrc.GetFormat(), "MFormat", pcmSrc.GetSFormat(),
+        "StrFormat",     pcmSrc.GetFormat(), "MFormat", pcmSrc.GetSFormat(),
         "Rate",       pcmSrc.GetRate(),   "Size",    pcmSrc.aPcmL.Size());
     // Stereo sample?
     if(size() > 1)
@@ -237,7 +243,7 @@ BEGIN_MEMBERCLASSEX(Samples, Sample, ICHelperUnsafe, /* n/a */),
         pcmSrc.aPcmR, static_cast<ALsizei>(pcmSrc.GetRate())),
           "Error buffering right/stereo channel PCM audio data!",
           "Identifier", pcmSrc.IdentGet(),  "Buffer",  (*this)[1],
-          "Format",     pcmSrc.GetFormat(), "MFormat", pcmSrc.GetSFormat(),
+          "StrFormat",     pcmSrc.GetFormat(), "MFormat", pcmSrc.GetSFormat(),
           "Rate",       pcmSrc.GetRate(),   "Size",    pcmSrc.aPcmR.Size());
       // Log progress
       cLog->LogDebugExSafe(
@@ -300,13 +306,13 @@ BEGIN_MEMBERCLASSEX(Samples, Sample, ICHelperUnsafe, /* n/a */),
 };/* -- End ---------------------------------------------------------------- */
 END_COLLECTOR(Samples)
 /* ========================================================================= */
-static void StopAllSamples(void)
+static void SampleStop(void)
 { // Stop all samples from playing
   if(cSamples->empty()) return;
   for(const Sample*const sCptr : *cSamples) sCptr->Stop();
 }
 /* ========================================================================= */
-static void DeInitAllSamples(void)
+static void SampleDeInit(void)
 { // Done if empty
   if(cSamples->empty()) return;
   // Re-create buffers for all the samples and log pre/post de-init
@@ -317,7 +323,7 @@ static void DeInitAllSamples(void)
     cSamples->size());
 }
 /* ========================================================================= */
-static void ReInitAllSamples(void)
+static void SampleReInit(void)
 { // Done if empty
   if(cSamples->empty()) return;
   // Re-create buffers for all the samples and log pre/post re-init
@@ -328,7 +334,7 @@ static void ReInitAllSamples(void)
     cSamples->size());
 }
 /* == Update all streams base volume======================================== */
-static void UpdateSampleVolume(void)
+static void SampleUpdateVolume(void)
 { // Lock source list so it cannot be modified
   const LockGuard mLock{ cSources->CollectorGetMutex() };
   // Walk through sources
@@ -342,16 +348,18 @@ static void UpdateSampleVolume(void)
   }
 }
 /* == Set all streams base volume ========================================== */
-static CVarReturn SetSampleVolume(const ALfloat fVolume)
+static CVarReturn SampleSetVolume(const ALfloat fVolume)
 { // Ignore if invalid value
   if(fVolume < 0.0f || fVolume > 1.0f) return DENY;
   // Store volume (SOURCES class keeps it)
   cSources->fSVolume = fVolume;
   // Update volumes on all streams
-  UpdateSampleVolume();
+  SampleUpdateVolume();
   // Success
   return ACCEPT;
 }
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

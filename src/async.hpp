@@ -1,37 +1,49 @@
-/* == ASYNC.HPP ============================================================ */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Helps with loading data asynchronously and handle parallelisation.  ## */
-/* ## Do not use class directly. It must be derived with another class.   ## */
-/* ######################################################################### */
-/* ## This class requires the parent class to have these functions...     ## */
-/* ##   void AsyncReady(FileMap &fileClass)                               ## */
-/* ##     - Fired when file is loading from memory (data block)           ## */
-/* ######################################################################### */
-/* ## It also requires the parent class' collector class to also register ## */
-/* ## the supplied event command argument prior to using. The event must  ## */
-/* ## point to the EventCallback function in this class.                  ## */
-/* ######################################################################### */
-/* ## Also do swap members in this class in anyway, it causes corruption! ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == ASYNC.HPP ============================================================ **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Helps with loading data asynchronously and handle parallelisation.  ## **
+** ## Do not use class directly. It must be derived with another class.   ## **
+** ######################################################################### **
+** ## This class requires the parent class to have these functions...     ## **
+** ##   void AsyncReady(FileMap &fileClass)                               ## **
+** ##     - Fired when file is loading from memory (data block)           ## **
+** ######################################################################### **
+** ## It also requires the parent class' collector class to also register ## **
+** ## the supplied event command argument prior to using. The event must  ## **
+** ## point to the EventCallback function in this class.                  ## **
+** ######################################################################### **
+** ## Also do swap members in this class in anyway, it causes corruption! ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* -- Prototypes ----------------------------------------------------------- */
-namespace IfAsset {                    // Start of Asset module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfFileMap;             // Using filemap namespace
+namespace IAsset {                     // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IFileMap::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Prototypes ----------------------------------------------------------- */
 static FileMap AssetExtract(const string&);      // Extract files from archives
 static FileMap AssetLoadFromDisk(const string&); // Load file from disk
 static size_t AssetGetPipeBufferSize(void);      // Get pipe buffer size
 /* ------------------------------------------------------------------------- */
-};                                     // End of asset namespace
+}                                      // End of public namespace
 /* ------------------------------------------------------------------------- */
-namespace IfASync {                    // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfAsset;               // Using asset namespace
-using namespace IfLuaEvt;              // Using luaevent namespace
+}                                      // End of private namespace
+/* ------------------------------------------------------------------------- */
+namespace IASync {                     // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IAsset::P;             using namespace IClock::P;
+using namespace ICollector::P;         using namespace IError::P;
+using namespace IEvtMain::P;           using namespace IFileMap::P;
+using namespace IIdent::P;             using namespace ILog::P;
+using namespace ILuaEvt::P;            using namespace ILuaUtil::P;
+using namespace IMemory::P;            using namespace IStd::P;
+using namespace IString::P;            using namespace ISystem::P;
+using namespace ISysUtil::P;           using namespace IThread::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* ------------------------------------------------------------------------- */
 enum ASyncProgressCommand              // For lua callback events
 { /* ----------------------------------------------------------------------- */
@@ -107,11 +119,12 @@ template<typename MemberType>class AsyncLoader :
       reinterpret_cast<void*>(&cAsyncOwner), AR_SUCCESS_PARAM, qwParam);
   }
   /* -- Send progress event ------------------------------------------------ */
-  template<typename... V>
-    void AsyncProgress(const ASyncProgressCommand apcCmd, V... vVars)
-      { lesAsync.LuaEvtsDispatch(evtAsyncEvent,
-          reinterpret_cast<void*>(&cAsyncOwner), AR_LOADING,
-          static_cast<uint64_t>(apcCmd), vVars...); }
+  template<typename ...VarArgs>
+    void AsyncProgress(const ASyncProgressCommand apcCmd,
+      const VarArgs &...vaVars)
+  { lesAsync.LuaEvtsDispatch(evtAsyncEvent,
+      reinterpret_cast<void*>(&cAsyncOwner), AR_LOADING,
+      static_cast<uint64_t>(apcCmd), vaVars...); }
   /* -- Write to pipe assistant -------------------------------------------- */
   void AsyncWriteToPipe(SysBase::SysPipe &spProcess, size_t &stPosition,
     const size_t stBuffer)
@@ -173,7 +186,7 @@ template<typename MemberType>class AsyncLoader :
       // Report that we write data
       cLog->LogInfoExSafe("Async pipe wrote $ bytes to stdin of pid $ in $!",
         stPosition, spProcess.GetPid(),
-        ToShortDuration(ccExecute.CCDeltaToDouble()));
+        StrShortFromDuration(ccExecute.CCDeltaToDouble()));
       // Clear the memory to re-use for output
       mAsyncLoadData.DeInit();
     } // List of output
@@ -196,7 +209,7 @@ template<typename MemberType>class AsyncLoader :
     cLog->LogInfoExSafe(
       "Async pipe returned $ bytes and exit code $ from pid $ in $!",
       stTotalRead, spProcess.SysPipeBaseGetStatus(), spProcess.GetPid(),
-      ToShortDuration(ccExecute.CCDeltaToDouble()));
+      StrShortFromDuration(ccExecute.CCDeltaToDouble()));
     // If we have no memory stored? Return exit code
     if(!stTotalRead) return spProcess.SysPipeBaseGetStatus();
     // Initialise memory for program output data block
@@ -295,9 +308,9 @@ template<typename MemberType>class AsyncLoader :
     lesAsync.LuaEvtInitEx(lsS);
     // Save the current stack because if an error occurs asynchronously, the
     // event subsystem executes the callback and will be empty.
-    strAsyncError = StdMove(GetStack(lsS));
+    strAsyncError = StdMove(LuaUtilStack(lsS));
     // Begin async thread
-    tAsyncThread.ThreadInit(Append(strL, ':', strName),
+    tAsyncThread.ThreadInit(StrAppend(strL, ':', strName),
       bind(&AsyncLoader<MemberType>::AsyncThreadMain,
         this, _1), this);
   }
@@ -313,14 +326,14 @@ template<typename MemberType>class AsyncLoader :
   { // Get error function callback
     if(lesAsync.LuaRefGetFunc(LR_ERROR))
     { // Push the error message
-      PushCppString(lesAsync.LuaRefGetState(), strAsyncError);
+      LuaUtilPushStr(lesAsync.LuaRefGetState(), strAsyncError);
       // The memory for the error is no longer needed
       strAsyncError.clear();
       strAsyncError.shrink_to_fit();
       // Wait for thread and register the class
       AsyncStopAndRegister();
       // Now do the callback. An exception could occur here.
-      CallFuncEx(lesAsync.LuaRefGetState(), 1);
+      LuaUtilCallFuncEx(lesAsync.LuaRefGetState(), 1);
     } // Invalid userdata?
     else cLog->LogErrorExSafe("AsyncLoader got invalid params in failure "
       "event $ for '$' with luastate($) and fref($) from $ params!",
@@ -331,13 +344,13 @@ template<typename MemberType>class AsyncLoader :
   void AsyncDoLuaProtectedDispatch(const EvtMain::Cell &epData,
     const int iParams, const int iHandler)
   { // Compare error code
-    switch(PCallExSafe(lesAsync.LuaRefGetState(), iParams, 0, iHandler))
+    switch(LuaUtilPCallExSafe(lesAsync.LuaRefGetState(), iParams, 0, iHandler))
     { // No error so remove error handler value and return
       case 0: return;
       // Run-time error
       case LUA_ERRRUN:
-        strAsyncError.insert(0, Append("Async runtime error! > ",
-          GetAndPopString(lesAsync.LuaRefGetState()))); break;
+        strAsyncError.insert(0, StrAppend("Async runtime error! > ",
+          LuaUtilGetAndPopStr(lesAsync.LuaRefGetState()))); break;
       // Memory allocation error
       case LUA_ERRMEM:
         strAsyncError.insert(0, "Async memory allocation error!"); break;
@@ -461,13 +474,13 @@ template<typename MemberType>class AsyncLoader :
         case AR_LOADING:
         { // Push and get error callback function id
           const int iErrorHandler =
-            PushAndGetGenericErrorId(lesAsync.LuaRefGetState());
+            LuaUtilPushAndGetGenericErrId(lesAsync.LuaRefGetState());
           // Push the progress callback and if succeeded?
           if(lesAsync.LuaRefGetFunc(LR_PROGRESS))
           { // Push the sent parameters onto the stack
             const size_t stMax = eParams.size();
             for(size_t stIndex = 3; stIndex < stMax; ++stIndex)
-              PushInteger(lesAsync.LuaRefGetState(),
+              LuaUtilPushInt(lesAsync.LuaRefGetState(),
                 eParams[stIndex].ll);
             // Execute the progress callback
             AsyncDoLuaProtectedDispatch(epData, static_cast<int>(stMax - 3),
@@ -488,13 +501,13 @@ template<typename MemberType>class AsyncLoader :
           if(eParams.size() >= 4)
           { // Push and get error callback function id
             const int iErrorHandler =
-              PushAndGetGenericErrorId(lesAsync.LuaRefGetState());
+              LuaUtilPushAndGetGenericErrId(lesAsync.LuaRefGetState());
             // Push the success callback and if succeeded?
             if(lesAsync.LuaRefGetFunc(LR_SUCCESS))
             { // Push the class ref and if both succeeded?
               if(lesAsync.LuaRefGetUData())
               { // Push the specified parameter
-                PushInteger(lesAsync.LuaRefGetState(), eParams[3].ll);
+                LuaUtilPushInt(lesAsync.LuaRefGetState(), eParams[3].ll);
                 // Dispatch the event with two parameters
                 AsyncDoFinishLuaProtectedDispatch(epData, 2, iErrorHandler);
               } // Failed? Write error to log
@@ -517,7 +530,7 @@ template<typename MemberType>class AsyncLoader :
         case AR_SUCCESS:
         { // Push and get error callback function id
           const int iErrorHandler =
-            PushAndGetGenericErrorId(lesAsync.LuaRefGetState());
+            LuaUtilPushAndGetGenericErrId(lesAsync.LuaRefGetState());
           // Push the success callback and if succeeded?
           if(lesAsync.LuaRefGetFunc(LR_SUCCESS))
           { // Push the class ref and if both succeeded?
@@ -611,6 +624,8 @@ class CLHelperAsync :
     { }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(CLHelperAsync)       // Supress copy constructor for safety
-};/* -- End of module namespace -------------------------------------------- */
-};                                     // End of module namespace
+};/* ----------------------------------------------------------------------- */
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

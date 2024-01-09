@@ -1,25 +1,32 @@
-/* == IMAGEFMT.HPP ========================================================= */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## These classes are plugins for the ImgLib manager to allow loading   ## */
-/* ## of certain formatted images.                                        ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == IMAGEFMT.HPP ========================================================= **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## These classes are plugins for the ImgLib manager to allow loading   ## **
+** ## of certain formatted images.                                        ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfImageFormat {              // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace Lib::Png;              // Using libpng library functions
-using namespace Lib::OS::JpegTurbo;    // Using jpegturbo library functions
-using namespace Lib::NSGif;            // Using libnsgif library functions
-using namespace IfImageLib;            // Using imagelib namespace
-using namespace IfCVar;                // Using cvar namespace
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## DirectDraw Surface                                              DDS ## */
-/* ######################################################################### */
-/* -- DDS Codec Object ----------------------------------------------------- */
+namespace IImageFormat {               // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IClock::P;             using namespace ICVar::P;
+using namespace ICVarLib::P;           using namespace IDim;
+using namespace IError::P;             using namespace IFileMap::P;
+using namespace IFStream::P;           using namespace IImageDef::P;
+using namespace IImageLib::P;          using namespace ILog::P;
+using namespace IMemory::P;            using namespace IStd::P;
+using namespace ISystem::P;            using namespace IString::P;
+using namespace IUtf;                  using namespace IUtil::P;
+using namespace Lib::NSGif;            using namespace Lib::OS::JpegTurbo;
+using namespace Lib::Png;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
+/* ========================================================================= **
+** ######################################################################### **
+** ## DirectDraw Surface                                              DDS ## **
+** ######################################################################### **
+** -- DDS Codec Object ----------------------------------------------------- */
 struct CodecDDS final :                // Members initially public
   /* -- Base classes ------------------------------------------------------- */
   private ImageFmt                     // Image format helper class
@@ -287,7 +294,7 @@ struct CodecDDS final :                // Members initially public
     ++uiMipIndex,
       uiMipWidth  >>= 1,
       uiMipHeight >>= 1,
-      uiMipBPP      = Maximum(uiMipBPP >> 1, 1),
+      uiMipBPP      = UtilMaximum(uiMipBPP >> 1, 1),
       uiMipSize     = ((uiMipWidth+3)/4)*((uiMipHeight+3)/4)*uiBitDiv)
     { // Read compressed data from file and show error if not enough data
       Memory mPixels{ fC.FileMapReadBlock(uiMipSize) };
@@ -329,21 +336,22 @@ struct CodecDDS final :                // Members initially public
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(CodecDDS)            // Omit copy constructor for safety
 };/* -- End ---------------------------------------------------------------- */
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Graphics Interchange Format                                     GIF ## */
-/* ######################################################################### */
-/* -- GIF Codec Object ----------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Graphics Interchange Format                                     GIF ## **
+** ######################################################################### **
+** -- GIF Codec Object ----------------------------------------------------- */
 class CodecGIF final :                 // Members initially private
   /* -- Base classes ------------------------------------------------------- */
   private ImageFmt                     // Image format helper class
 { /* -- Allocate memory ---------------------------------------------------- */
   static void *GIFCreate(int iW, int iH)
-    { return MemAlloc<void>(static_cast<unsigned int>(iW * iH) * BY_RGBA); }
+    { return UtilMemAlloc<void>
+        (static_cast<unsigned int>(iW * iH) * BY_RGBA); }
   /* -- Free memory -------------------------------------------------------- */
   static void GIFDestroy(void*const vpBuffer)
     { if(!vpBuffer) throw runtime_error{ "Free buffer null pointer" };
-      MemFree(vpBuffer); }
+      UtilMemFree(vpBuffer); }
   /* -- Return ptr to pixel data in image ---------------------------------- */
   static unsigned char *GIFRead(void*const vpBuffer)
     { if(!vpBuffer) throw runtime_error{ "Get buffer null pointer" };
@@ -369,48 +377,85 @@ class CodecGIF final :                 // Members initially private
     if(fC.FileMapReadVar16LEFrom(fC.Size() - sizeof(uint16_t)) != 0x3b00)
       return false;
     // Set gif callbacks
-    gif_bitmap_callback_vt sBMPCB{ GIFCreate, GIFDestroy, GIFRead, GIFOpaque,
-      GIFIsOpaque, GIFFlush };
+    nsgif_bitmap_cb_vt sBMPCB{ GIFCreate, GIFDestroy, GIFRead, GIFOpaque,
+      GIFIsOpaque, GIFFlush, nullptr };
     // Animations data and return code
-    gif_animation gmPixels;
+    nsgif_t *nsgCtx;
     // create our gif animation
-    gif_create(&gmPixels, &sBMPCB);
-    // Trap exceptions so we can clean up
+    switch(const nsgif_error nsgErr =
+      nsgif_create(&sBMPCB, NSGIF_BITMAP_FMT_R8G8B8A8, &nsgCtx))
+    { // Succeeded?
+      case NSGIF_OK: break;
+      // Anything else?
+      default: XC("Failed to create nsgif context!",
+        "Reason", nsgif_strerror(nsgErr), "Code", nsgErr);
+    } // Trap exceptions so we can clean up
     try
-    { { // Decode the gif and report error if failed
-        const gif_result grCode = gif_initialise(&gmPixels, fC.Size(),
-          fC.Ptr<unsigned char>());
-        if(grCode != GIF_OK) XC("GIF context failed!",
-          "Total", gmPixels.frame_count, "Code", grCode);
-      } // Reserve memory for frames
-      ifD.ReserveSlots(gmPixels.frame_count);
-      // Set members
-      ifD.SetBitsAndBytesPerPixel(BD_RGBA);
-      ifD.SetPixelType(GL_RGBA);
-      ifD.SetReversed();
-      ifD.DimSet(gmPixels.width, gmPixels.height);
-      // Decode the frames
-      for(unsigned int uiIndex = 0; uiIndex < gmPixels.frame_count; ++uiIndex)
-      { // Decode the frame and throw exception if failed
-        const gif_result grCode = gif_decode_frame(&gmPixels, uiIndex);
-        if(grCode != GIF_OK) XC("GIF decode failed!",
-          "Frame", uiIndex, "Total", gmPixels.frame_count, "Code", grCode);
-        // Image size. Not using cached width and height just incase it
-        // might change inside the .gif
-        const size_t stSize =
-          gmPixels.width * gmPixels.height * ifD.GetBytesPerPixel();
-        // Since libnsgif has conveniently expanded the gif into RGBA we can
-        // just go ahead and copy it all into our mem buffer.
-        Memory mData{ stSize, gmPixels.frame_image };
-        ifD.AddSlot(mData, gmPixels.width, gmPixels.height);
-      } // Success! Clean up
-      gif_finalise(&gmPixels);
+    { // Decode the gif and report error if failed
+      switch(const nsgif_error nsgErr =
+        nsgif_data_scan(nsgCtx, fC.Size(), fC.Ptr<unsigned char>()))
+      { // Succeeded?
+        case NSGIF_OK: break;
+        // Anything else?
+        default: XC("Failed to parse gif file!",
+          "Reason", nsgif_strerror(nsgErr), "Code", nsgErr);
+      } // The data is complete
+      nsgif_data_complete(nsgCtx);
+      // Get information about gif and if we got it?
+     	if(const nsgif_info_t*const nsgInfo = nsgif_get_info(nsgCtx))
+      { // Reserve memory for frames
+        ifD.ReserveSlots(nsgInfo->frame_count);
+        // Set members
+        ifD.SetBitsAndBytesPerPixel(BD_RGBA);
+        ifD.SetPixelType(GL_RGBA);
+        ifD.SetReversed();
+        ifD.DimSet(nsgInfo->width, nsgInfo->height);
+        // Decode the frames
+        for(unsigned int uiIndex = 0;
+                         uiIndex < nsgInfo->frame_count;
+                       ++uiIndex)
+        { // Area and frame data
+          nsgif_rect_t nsgRect;
+          uint32_t uiFrame, uiDelay;
+          // Prepare frame
+          switch(const nsgif_error nsgErr =
+            nsgif_frame_prepare(nsgCtx, &nsgRect, &uiDelay, &uiFrame))
+          { // Succeeded?
+            case NSGIF_OK: break;
+            // Anything else?
+            default: XC("Failed to prepare frame!",
+              "Reason", nsgif_strerror(nsgErr), "Code", nsgErr);
+          } // Get frame info
+          if(const nsgif_frame_info_t*const nsgFrame =
+            nsgif_get_frame_info(nsgCtx, uiFrame))
+          { // Decode the frame and throw exception if failed
+            nsgif_bitmap_t *nsgBitmap;
+            switch(const nsgif_error nsgErr =
+              nsgif_frame_decode(nsgCtx, uiFrame, &nsgBitmap))
+            { // Succeeded?
+              case NSGIF_OK: break;
+              // Anything else?
+              default: XC("Failed to decode gif!",
+                "Reason", nsgif_strerror(nsgErr), "Code", nsgErr);
+            } // Calculate image size
+            const size_t stSize =
+              nsgInfo->width * nsgInfo->height * ifD.GetBytesPerPixel();
+            // Now we can just copy the memory over
+            Memory mData{ stSize, nsgBitmap };
+            ifD.AddSlot(mData, nsgInfo->width, nsgInfo->height);
+          } // Failed to get frame data
+          else XC("Failed to get frame data!");
+        }
+      } // Failed to get gif information
+      else XC("Failed to get gif information!");
+      // Success! Clean up
+      nsgif_destroy(nsgCtx);
       // Success parsing gif
       return true;
     } // Caught an exception (unlikely)
     catch(const exception &)
     { // Clean up
-      gif_finalise(&gmPixels);
+      nsgif_destroy(nsgCtx);
       // Throw back to proper exception handler if message sent
       throw;
     } // Never gets here
@@ -424,11 +469,11 @@ class CodecGIF final :                 // Members initially private
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(CodecGIF)            // Omit copy constructor for safety
 };/* -- End ---------------------------------------------------------------- */
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Portable Network Graphics                                       PNG ## */
-/* ######################################################################### */
-/* -- PNG Codec Object ----------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Portable Network Graphics                                       PNG ## **
+** ######################################################################### **
+** -- PNG Codec Object ----------------------------------------------------- */
 class CodecPNG final :                 // Members initially private
   /* -- Base classes ------------------------------------------------------- */
   private ImageFmt                     // Image format helper class
@@ -446,7 +491,7 @@ class CodecPNG final :                 // Members initially private
       (png_get_io_ptr(psD))->FileMapReadToAddr(ucP, stC);
     if(stRead == stC) return;
     // Error occured so longjmp()
-    png_error(psD, Format("Read only $ of the $ requested bytes",
+    png_error(psD, StrFormat("Read only $ of the $ requested bytes",
       stRead, stC).c_str());
   }
   /* -- Save png file ---------------------------------------------- */ public:
@@ -498,7 +543,7 @@ class CodecPNG final :                 // Members initially private
         // Initialisers
         psData(png_create_write_struct(  // Create a write struct
           PNG_LIBPNG_VER_STRING,         // Set version string
-          ToNonConstCast<png_voidp>(     // Send user parameter
+          UtfToNonConstCast<png_voidp>(     // Send user parameter
             fsC.IdentGetCStr()),         // Set filename as user parameter
           PngError,                      // Set error callback function
           PngWarning)),                  // Set warning callback function
@@ -520,7 +565,7 @@ class CodecPNG final :                 // Members initially private
     pwC.Meta("Copyright", cCVars->GetInternalStrSafe(APP_COPYRIGHT));
     pwC.Meta("Creation Time", cmSys.FormatTime().c_str());
     pwC.Meta("Description", cSystem->ENGName()+" Exported Image");
-    pwC.Meta("Software", Format("$ ($) v$.$.$.$ ($-bit) by $",
+    pwC.Meta("Software", StrFormat("$ ($) v$.$.$.$ ($-bit) by $",
       cSystem->ENGName(), cSystem->ENGBuildType(), cSystem->ENGMajor(),
       cSystem->ENGMinor(), cSystem->ENGBuild(), cSystem->ENGRevision(),
       cSystem->ENGBits(), cSystem->ENGAuthor()));
@@ -540,7 +585,7 @@ class CodecPNG final :                 // Members initially private
         // Set location of each scanline from the bottom
         for(size_t stScanIndex = ppvList.size() - 1,
                    stStride = bData.DimGetWidth() / 8;
-                   stScanIndex != string::npos;
+                   stScanIndex != StdMaxSizeT;
                  --stScanIndex)
           ppvList[stScanIndex] = bData.Read<png_byte>(stScanIndex * stStride);
         // Done
@@ -589,7 +634,7 @@ class CodecPNG final :                 // Members initially private
         // Initialisers
         psData(png_create_read_struct(   // Create a read struct
           PNG_LIBPNG_VER_STRING,         // Set version string
-          ToNonConstCast<png_voidp>(     // Send user parameter
+          UtfToNonConstCast<png_voidp>(     // Send user parameter
             fmC.IdentGetCStr()),         // Set filename as user parameter
           PngError,                      // Set error callback function
           PngWarning)),                  // Set warning callback function
@@ -635,14 +680,14 @@ class CodecPNG final :                 // Members initially private
           ifD.DimSet(png_get_image_width(psData, piData),
                      png_get_image_height(psData, piData));
           // Initialise memory
-          Memory mPixels{ Maximum(static_cast<size_t>(1),
+          Memory mPixels{ UtilMaximum(static_cast<size_t>(1),
             ifD.TotalPixels() / 8) };
           // Create vector array to hold scanline pointers and size it
           PngPtrVec ppvList{ ifD.DimGetHeight<size_t>() };
           // For each scanline
           for(size_t stHeight = ifD.DimGetHeight<size_t>(),
                      stHeightM1 = stHeight - 1,
-                     stStride = Maximum(static_cast<size_t>(1),
+                     stStride = UtilMaximum(static_cast<size_t>(1),
                        ifD.DimGetWidth<size_t>() / 8),
                      stRow = 0;
                      stRow < stHeight;
@@ -802,11 +847,11 @@ class CodecPNG final :                 // Members initially private
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(CodecPNG)            // Omit copy constructor for safety
 };/* -- End ---------------------------------------------------------------- */
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## JPEG format                                                    JPEG ## */
-/* ######################################################################### */
-/* -- JPEG Codec Object ---------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## JPEG format                                                    JPEG ## **
+** ######################################################################### **
+** -- JPEG Codec Object ---------------------------------------------------- */
 class CodecJPG final :                 // Members initially private
   /* -- Base classes ------------------------------------------------------- */
   private ImageFmt                     // Image format helper class
@@ -985,6 +1030,8 @@ class CodecJPG final :                 // Members initially private
     { }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(CodecJPG)            // Omit copy constructor for safety
-};/* -- End ---------------------------------------------------------------- */
-};                                     // End of module namespace
+};/* ----------------------------------------------------------------------- */
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

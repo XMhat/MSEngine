@@ -1,17 +1,20 @@
-/* == GLFWMON.HPP ========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Neatly structures glfw's monitor and video enumeration information. ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == GLFWMON.HPP ========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Neatly structures glfw's monitor and video enumeration information. ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfGlFWMonitor {              // Start of module namespace
+namespace IGlFWMonitor {               // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IDim;                  using namespace IError::P;
+using namespace IGlFWUtil::P;          using namespace ILog::P;
+using namespace IStd::P;               using namespace IString::P;
+using namespace IUtil::P;              using namespace Lib::OS::GlFW;
 /* ------------------------------------------------------------------------- */
-using namespace Lib::OS::GlFW;         // Using GlFW library functions
-using namespace IfDim;                 // Using dimensions namespace
-using namespace IfLog;                 // Using logging namespace
+namespace P {                          // Start of public module namespace
 /* ------------------------------------------------------------------------- */
 class GlFWRes                          // Members initially private
 { /* -- Private variables -------------------------------------------------- */
@@ -22,15 +25,17 @@ class GlFWRes                          // Members initially private
   const GLFWvidmode &Data(void) const { return vmData; }
   /* -- Get resolution id -------------------------------------------------- */
   int Index(void) const { return iIndex; }
-  /* -- Get resolution width in pixels ------------------------------------- */
+  /* -- Get resolution width/height in pixels ------------------------------ */
   int Width(void) const { return vmData.width; }
-  /* -- Get resolution height in pixels ------------------------------------ */
   int Height(void) const { return vmData.height; }
-  /* -- Get resolution depth red component bits ---------------------------- */
+  /* -- Helpful checks ----------------------------------------------------- */
+  bool IsWidth(const int iWidth) const { return Width() == iWidth; }
+  bool IsHeight(const int iHeight) const { return Height() == iHeight; }
+  bool IsDim(const int iWidth, const int iHeight) const
+    { return IsWidth(iWidth) && IsHeight(iHeight); }
+  /* -- Get resolution depth r/g/b component bits -------------------------- */
   int Red(void) const { return vmData.redBits; }
-  /* -- Get resolution depth green component bits -------------------------- */
   int Green(void) const { return vmData.greenBits; }
-  /* -- Get resolution depth blue component bits --------------------------- */
   int Blue(void) const { return vmData.blueBits; }
   /* -- Get resolution depth total component bits -------------------------- */
   int Depth(void) const { return iDepth; }
@@ -71,6 +76,17 @@ class GlFWMonitor :                    // Members initially private
     int iW, iH; glfwGetMonitorPhysicalSize(mC, &iW, &iH);
     return { iX, iY, iW, iH };
   }
+  /* -- Get monitor name as string ----------------------------------------- */
+  string InitName(GLFWmonitor*const mC) const
+  { // Get monitor name and if it's not null?
+    if(const char*const cpName = GlFWGetMonitorName(mC))
+    { // If monitor name is blank return blank name
+      if(*cpName) return cpName;
+      // Return blank name
+      return cCommon->Unspec();
+    } // Return null name
+    return cCommon->Null();
+  }
   /* -- Get monitor context ---------------------------------------- */ public:
   GLFWmonitor *Context(void) const { return mContext; }
   /* -- Get glfw monitor id ------------------------------------------------ */
@@ -93,17 +109,18 @@ class GlFWMonitor :                    // Members initially private
     mContext(mC),                    // Initialise glfw context
     rPrimary(nullptr),               // Initialise primary resolution
     ddInches{                        // Initialise physical size as inches
-      MillimetresToInches(DimGetWidth()),
-      MillimetresToInches(DimGetHeight()) },
-    fdDiagonal(GetDiagLength(        // Initialise physical diagonal length
+      UtilMillimetresToInches(DimGetWidth()),
+      UtilMillimetresToInches(DimGetHeight()) },
+    fdDiagonal(UtilGetDiagLength(        // Initialise physical diagonal length
       DimGetWidth(),
       DimGetHeight())),
     fdDiagonalInches(                // Initialise diagonal length in inches
-      MillimetresToInches(fdDiagonal)),
-    strName{ IfGlFW::                // Initialise monitor name
-      GlFWGetMonitorName(mC) }
+      UtilMillimetresToInches(fdDiagonal)),
+    strName{ StdMove(InitName(mC)) } // Initialise monitor name
   /* -- No code ------------------------------------------------------------ */
-  { // Get primary video mode information
+  { // Get primary video mode information. Note that if a monitor is
+    // just connecting, the width, height and refreshRate properties can be
+    // zero which means we cannot detect the current resolution right now.
     if(const GLFWvidmode*const vPrimary = glfwGetVideoMode(mC))
     { // Get monitor, position, physical size and video modes
       int iModes;
@@ -126,7 +143,14 @@ class GlFWMonitor :                    // Members initially private
             while(++iMode < iModes) push_back({ iMode, vModes[iMode] });
             // Done
             return;
-          }
+          } // Could not detect primary resolution
+          cLog->LogWarningExSafe("GlFW could not detect primary resolution "
+            "for '$' so guessing with the last available resolution.",
+            strName);
+          // Set the primary resolution to the last one
+          rPrimary = &back();
+          // Done
+          return;
         } // Impossible but log it just incase
         else cLog->LogWarningExSafe("GlFW returned valid video modes "
           "structure but zero video modes for '$' so falling back to primary "
@@ -203,5 +227,7 @@ struct GlFWMonitors :
   /* ----------------------------------------------------------------------- */
   GlFWMonitors(void) : moPrimary(nullptr) { }
 };/* ----------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ----------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

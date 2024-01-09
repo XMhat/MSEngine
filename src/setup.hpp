@@ -1,12 +1,12 @@
-/* == SETUP.HPP ============================================================ */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This module sets up the environment for the game engine. For        ## */
-/* ## example. Making the build process compatible with different         ## */
-/* ## compilers.                                                          ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == SETUP.HPP ============================================================ **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This module sets up the environment for the game engine. For        ## **
+** ## example. Making the build process compatible with different         ## **
+** ## compilers.                                                          ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* == Build type setup ===================================================== */
 #if defined(RELEASE)                   // Final public release version?
@@ -310,13 +310,14 @@
 #  pragma GCC diagnostic ignored "-Weverything" // Disable ALL warnings
 # endif                                // Linux or MacOS check
 #endif                                 // Not using windows
-/* -- Lua includes --------------------------------------------------------- */
-/* Because Lua was compiled as C++ in the root namespace, Lua's includes     */
-/* also need to be defined in the root namespace.                            */
-/* ------------------------------------------------------------------------- */
+/* -- Lua includes --------------------------------------------------------- **
+** Because Lua was compiled as C++ in the root namespace, Lua's includes     **
+** also need to be defined in the root namespace.                            **
+** ------------------------------------------------------------------------- */
 #include <lua/lstate.h>                // Definition of Lua_State
 #include <lua/lauxlib.h>               // Lua auxiliary library
 #include <lua/lualib.h>                // Lua library
+#include <lua/lfunc.h>                 // Lua functions
 #undef getstr                          // Ambiguity with ncurses
 /* == Libaries namespace to keep all the API's neat and tidy =============== */
 namespace Lib                          // LIBRARY OF EXTERNAL API FUNCTIONS
@@ -418,6 +419,9 @@ namespace Lib                          // LIBRARY OF EXTERNAL API FUNCTIONS
 # include <jpeglib.h>                  // Repository provided main header
 # include <jerror.h>                   // Repository provided error handling
 #else                                  // MacOS or Windows?
+# if defined(WINDOWS)                  // Using windows?
+      typedef int boolean;             // Defined by system but not in our NS
+# endif                                // Windows check
 # include <jpeg/jpeglib.h>             // Our main header
 # include <jpeg/jerror.h>              // Our error handling
 # include <jpeg/jversion.h>            // Our version information
@@ -481,6 +485,15 @@ namespace Lib                          // LIBRARY OF EXTERNAL API FUNCTIONS
 #define OV_EXCLUDE_STATIC_CALLBACKS    // We don't need these callbacks
 #include <ogg/vorbisfile.h>            // Vorbis/ogg API headers
 #undef OV_EXCLUDE_STATIC_CALLBACKS     // The define is no longer needed
+    /* -- Theora decoder depends on ogg headers ---------------------------- */
+    namespace Theora                   // THEORA API FUNCTIONS
+    { /* ------------------------------------------------------------------- */
+#include <theora/theora.h>             // StrFormat codec (+ ogg codec)
+#include <theora/theoradec.h>          // Decoder
+    };/* ------------------------------------------------------------------- */
+#if !defined(WINDOWS)                  // Not using windows?
+# pragma GCC diagnostic pop            // - Restore compiler warnings
+#endif                                 // Not using windows
   };/* --------------------------------------------------------------------- */
   namespace Sqlite                     // SQLITE API FUNCTIONS
   {/* ---------------------------------------------------------------------- */
@@ -494,15 +507,6 @@ namespace Lib                          // LIBRARY OF EXTERNAL API FUNCTIONS
 #include <ft/ftglyph.h>                // Glyph header
 #include <ft/ftmodapi.h>               // Modification header
   };/* --------------------------------------------------------------------- */
-  namespace Theora                     // THEORA API FUNCTIONS
-  { /* --------------------------------------------------------------------- */
-    using namespace Ogg;               // Require types from Ogg API
-#include <theora/theora.h>             // Format codec (+ ogg codec)
-#include <theora/theoradec.h>          // Decoder
-  };/* --------------------------------------------------------------------- */
-#if !defined(WINDOWS)                  // Not using windows?
-# pragma GCC diagnostic pop            // - Restore compiler warnings
-#endif                                 // Not using windows
 };/* ----------------------------------------------------------------------- */
 /* == Main() configuration. So msengine.cpp's main() declaration is tidy === */
 #if defined(WINDOWS)                   // Targeting Windows?

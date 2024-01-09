@@ -1,17 +1,35 @@
-/* == LUACODE.HPP ========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This file defines the execution and caching system of lua code      ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == LUACODE.HPP ========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This file defines the execution and caching system of lua code      ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfLuaCode {                  // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfSql;                 // Using sql namespace
+namespace ILuaCode {                   // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IAsset::P;             using namespace IClock::P;
+using namespace ICVarDef::P;           using namespace IError::P;
+using namespace IFileMap::P;           using namespace ILog::P;
+using namespace ILuaUtil::P;           using namespace IMemory::P;
+using namespace ISql::P;               using namespace IStd::P;
+using namespace IString::P;            using namespace Lib::OS::SevenZip;
+using namespace Lib::Sqlite;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Consts --------------------------------------------------------------- */
 static enum LuaCache { LCC_OFF, LCC_FULL, LCC_MINIMUM, LCC_MAX } lcSetting;
+/* -- Cache and compilation results ---------------------------------------- */
+enum LuaCompResult
+{ /* ----------------------------------------------------------------------- */
+  LCR_CACHED,                          // [0] Using cached version
+  LCR_RECOMPILE,                       // [1] Code compiled and stored
+  LCR_DBERR,                           // [2] Code compiled but not stored
+  LCR_NOCACHE,                         // [3] Code compiled cache disabled
+  /* ----------------------------------------------------------------------- */
+  LCR_MAX,                             // [6] Number of used result codes
+};/* ----------------------------------------------------------------------- */
 /* -- Set lua cache setting ------------------------------------------------ */
 static CVarReturn LuaCodeSetCache(const unsigned int uiVal)
   { return CVarSimpleSetIntNGE(lcSetting,
@@ -36,7 +54,6 @@ namespace LuaCodeDumpHelper
 static Memory LuaCodeCompileFunction(lua_State*const lS, const bool bDebug)
 { // Include utility namespace
   using namespace LuaCodeDumpHelper;
-  // Memory blocks to write
   MemData mdData{ {}, 0 };
   // Dump the code to binary and if error occured?
   if(lua_dump(lS, PopulateMemoryListCallback, &mdData, bDebug ? 0 : 1))
@@ -72,6 +89,19 @@ static Memory LuaCodeCompileFunction(lua_State*const lS, const bool bDebug)
   // Return compiled memory
   return mbData;
 }
+/* -- Copmile function to binary ------------------------------------------- */
+static void LuaCodeCompileFunction(lua_State*const lS)
+{ // Must have two parameters
+  LuaUtilCheckParams(lS, 2);
+  // Debug parameter
+  const bool bDebug = LuaUtilGetBool(lS, 1, "Debug");
+  // Second parameter must be function
+  LuaUtilCheckFunc(lS, 2, "Function");
+  // Compile the function
+  Memory mbData{ LuaCodeCompileFunction(lS, bDebug) };
+  // Return a newly created asset
+  LuaUtilClassCreate<Asset>(lS, "Asset")->SwapMemory(StdMove(mbData));
+}
 /* -- Compile a buffer ----------------------------------------------------- */
 static void LuaCodeDoCompileBuffer(lua_State*const lS, const char *cpBuf,
   size_t stSize, const string &strRef)
@@ -81,7 +111,8 @@ static void LuaCodeDoCompileBuffer(lua_State*const lS, const char *cpBuf,
     // the sandbox, so no pcall is needed.
     case 0: return;
     // Syntax error? Show error
-    case LUA_ERRSYNTAX: XC(Append("Compile error! > ", GetAndPopString(lS)));
+    case LUA_ERRSYNTAX:
+      XC(StrAppend("Compile error! > ", LuaUtilGetAndPopStr(lS)));
     // Not enough memory?
     case LUA_ERRMEM: XC("Not enough memory executing script!");
     // Unknown error (never get here, but only to stop compiler whining)
@@ -89,20 +120,20 @@ static void LuaCodeDoCompileBuffer(lua_State*const lS, const char *cpBuf,
   }
 }
 /* -- Compile a buffer ----------------------------------------------------- */
-static void LuaCodeCompileBuffer(lua_State*const lS, const char*const cpBuf,
-  const size_t stSize, const string &strRef)
-{ // If code is binary or lua cache is disable or has default reference?
-  if((stSize >= sizeof(uint32_t) &&
-     *reinterpret_cast<const uint32_t*>(cpBuf) == 0x61754C1B) ||
-    lcSetting == LCC_OFF || strRef.empty())
-  { // Do compile the buffer
+static LuaCompResult LuaCodeCompileBuffer(lua_State*const lS,
+  const char*const cpBuf, const size_t stSize, const string &strRef)
+{ // If lua caching is disabled or the buffer is binary or no reference given?
+  if(lcSetting == LCC_OFF || (stSize >= sizeof(uint32_t) &&
+    *reinterpret_cast<const uint32_t*>(cpBuf) == 0x61754C1B) ||
+    strRef.empty() || strRef.front() == '!')
+  { // Do compile the buffer and return
     LuaCodeDoCompileBuffer(lS, cpBuf, stSize, strRef);
-    // Do nothing else
-    return;
+    // Return success but cache disabled
+    return LCR_NOCACHE;
   } // Get checksum of module
   const unsigned int uiCRC = CrcCalc(cpBuf, stSize);
   // Check if we have cached this in the sql database and if we have?
-  if(cSql->ExecuteAndSuccess(Format("SELECT `$` from `$` WHERE R=? AND C=?",
+  if(cSql->ExecuteAndSuccess(StrFormat("SELECT `$` from `$` WHERE R=? AND C=?",
     cSql->strCodeColumn, cSql->strLuaCacheTable),
       { Sql::Cell(strRef), Sql::Cell(uiCRC) }))
   { // Get records and if we have results?
@@ -122,8 +153,8 @@ static void LuaCodeCompileBuffer(lua_State*const lS, const char*const cpBuf,
               strRef, stSize, hex, uiCRC);
           // Do compile the buffer
           LuaCodeDoCompileBuffer(lS, mbO.Ptr<char>(), mbO.Size(), strRef);
-          // Done
-          return;
+          // Return that we used the cached version
+          return LCR_CACHED;
         } // Invalid type
         else cLog->LogWarningExSafe(
           "LuaCode will recompile '$'[$]($$$) as it has a bad type of $!",
@@ -146,12 +177,12 @@ static void LuaCodeCompileBuffer(lua_State*const lS, const char*const cpBuf,
   // Compile the function
   Memory mbData{ LuaCodeCompileFunction(lS, lcSetting == LCC_FULL) };
   // Send to sql database and return if succeeded
-  if(cSql->ExecuteAndSuccess(Format(
+  if(cSql->ExecuteAndSuccess(StrFormat(
        "INSERT or REPLACE into `$`(`$`,`$`,`$`,`$`) VALUES(?,?,?,?)",
        cSql->strLuaCacheTable, cSql->strCRCColumn, cSql->strTimeColumn,
        cSql->strRefColumn, cSql->strCodeColumn),
     { Sql::Cell(uiCRC), Sql::Cell(cmSys.GetTimeNS<sqlite3_int64>()),
-      Sql::Cell(strRef), Sql::Cell(mbData) })) return;
+      Sql::Cell(strRef), Sql::Cell(mbData) })) return LCR_RECOMPILE;
   // Show error
   cLog->LogWarningExSafe(
     "LuaCode failed to store cache for '$' because $ ($)!",
@@ -159,63 +190,46 @@ static void LuaCodeCompileBuffer(lua_State*const lS, const char*const cpBuf,
   // Try to rebuild table
   cSql->LuaCacheDropTable();
   cSql->LuaCacheCreateTable();
+  // Return compiled but not stored
+  return LCR_DBERR;
 }
-/* -- Compile a memory block ----------------------------------------------- */
-static void LuaCodeCompileBlock(lua_State*const lS, const DataConst &dcData,
-  const string &strRef)
-    { LuaCodeCompileBuffer(lS, dcData.Ptr<char>(), dcData.Size(), strRef); }
-/* -- Execute specified block ---------------------------------------------- */
-static void LuaCodeExecuteBlock(lua_State*const lS, const DataConst &dcData,
-  const int iRet, const string &strRef)
-    { LuaCodeCompileBlock(lS, dcData, strRef); CallFunc(lS, iRet); }
 /* -- Compile a string ----------------------------------------------------- */
-static void LuaCodeCompileString(lua_State*const lS, const string &strBuf,
-  const string &strRef)
-    { LuaCodeCompileBuffer(lS, strBuf.data(), strBuf.length(), strRef); }
+static LuaCompResult LuaCodeCompileString(lua_State*const lS,
+  const string &strBuf, const string &strRef)
+{ return LuaCodeCompileBuffer(lS, strBuf.data(), strBuf.length(), strRef); }
+/* -- Executes the function and returns the compilation result ------------- */
+static LuaCompResult LuaCodeExecCallRet(lua_State*const lS,
+  const LuaCompResult lcrRes, const int iRet)
+{ LuaUtilCallFunc(lS, iRet); return lcrRes; }
+/* -- Compile a memory block ----------------------------------------------- */
+static LuaCompResult LuaCodeCompileBlock(lua_State*const lS,
+  const DataConst &dcData, const string &strRef)
+{ return LuaCodeCompileBuffer(lS, dcData.Ptr<char>(), dcData.Size(), strRef); }
+/* -- Execute specified block ---------------------------------------------- */
+static LuaCompResult LuaCodeExecuteBlock(lua_State*const lS,
+  const DataConst &dcData, const int iRet, const string &strRef)
+{ return LuaCodeExecCallRet(lS,
+    LuaCodeCompileBlock(lS, dcData, strRef), iRet); }
 /* -- Execute specified string in unprotected ------------------------------ */
-static void LuaCodeExecuteString(lua_State*const lS, const string &strCode,
-  const int iRet, const string &strRef)
-    { LuaCodeCompileString(lS, strCode, strRef); CallFunc(lS, iRet); }
+static LuaCompResult LuaCodeExecuteString(lua_State*const lS,
+  const string &strCode, const int iRet, const string &strRef)
+{ return LuaCodeExecCallRet(lS,
+    LuaCodeCompileString(lS, strCode, strRef), iRet); }
 /* -- Compile contents of a file (returns function on lua stack) ----------- */
-static void LuaCodeCompileFile(lua_State*const lS, const FileMap &fScript)
-  { LuaCodeCompileBuffer(lS, fScript.Ptr<char>(), fScript.Size(),
-      fScript.IdentGetCStr()); }
-/* -- Execute specified file ----------------------------------------------- */
-static void LuaCodeExecuteFile(lua_State*const lS, const FileMap &fScript,
-  const int iRet=0)
-    { LuaCodeCompileFile(lS, fScript); CallFunc(lS, iRet); }
-/* -- Same as ExecString() but returns uiRet (for LuaLib) ------------------ */
-static int LuaCodeExecStringAndRets(lua_State*const lS,
-  const string &strCode, const int iRet, const string &strName)
-    { LuaCodeExecuteString(lS, strCode, iRet, strName); return iRet; }
-/* -- Same as ExecString() but returns iRet (for LuaLib) ------------------- */
-static int LuaCodeExecBlockAndRets(lua_State*const lS,
-  const DataConst &dcData, const int iRet, const string &strName)
-    { LuaCodeExecuteBlock(lS, dcData, iRet, strName); return iRet; }
-/* -- Load file and execute script that may be binary ---------------------- */
-static void LuaCodeExecFile(lua_State*const lS, const string &strFilename,
-  const int iRet=0)
-    { LuaCodeExecuteFile(lS, AssetExtract(strFilename), iRet); }
+static LuaCompResult LuaCodeCompileFile(lua_State*const lS,
+  const FileMap &fScript)
+{ return LuaCodeCompileBuffer(lS, fScript.Ptr<char>(), fScript.Size(),
+    fScript.IdentGetCStr()); }
 /* -- Copmile file and execute script that may be binary ------------------- */
-static void LuaCodeCompileFile(lua_State*const lS, const string &strFilename)
-  { LuaCodeCompileFile(lS, AssetExtract(strFilename)); }
-/* -- Copmile function to binary ------------------------------------------- */
-static void LuaCodeCompileFunction(lua_State*const lS)
-{ // Must have two parameters
-  CheckParams(lS, 2);
-  // Debug parameter
-  const bool bDebug = GetBool(lS, 1, "Debug");
-  // Second parameter must be function
-  CheckFunction(lS, 2, "Function");
-  // Compile the function
-  Memory mbData{ LuaCodeCompileFunction(lS, bDebug) };
-  // Return a newly created asset
-  ClassCreate<Asset>(lS, "Asset")->SwapMemory(StdMove(mbData));
-}
-/* -- Same as ExecFile() but returns iRet (for LuaLib) --------------------- */
-static int LuaCodeExecFileAndRets(lua_State*const lS,
-  const string &strFilename, const int iRet)
-    { LuaCodeExecFile(lS, strFilename, iRet); return iRet; }
+static LuaCompResult LuaCodeCompileFile(lua_State*const lS,
+  const string &strFilename)
+{ return LuaCodeCompileFile(lS, AssetExtract(strFilename)); }
+/* -- Load file and execute script that may be binary ---------------------- */
+static LuaCompResult LuaCodeExecuteFile(lua_State*const lS,
+  const string &strFilename, const int iRet=0)
+{ return LuaCodeExecCallRet(lS, LuaCodeCompileFile(lS, strFilename), iRet); }
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

@@ -1,17 +1,21 @@
-/* == THREAD.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This module handles the ability to manage and spawn multiple        ## */
-/* ## threads for parallel and asynchronous execution.                    ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == THREAD.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This module handles the ability to manage and spawn multiple        ## **
+** ## threads for parallel and asynchronous execution.                    ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfThread {                   // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfLog;                 // Using log namespace
-using namespace IfCollector;           // Using collector namespace
+namespace IThread {                    // Start of private namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IClock::P;             using namespace ICollector::P;
+using namespace IError::P;             using namespace IIdent::P;
+using namespace ILog::P;               using namespace IStd::P;
+using namespace IString::P;            using namespace ISysUtil::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public namespace
 /* == Thread collector class with global thread id counter ================= */
 BEGIN_COLLECTOREX(Threads, Thread, CLHelperSafe, /* ------------------------ */
   SafeSizeT        stRunning;          /* Number of threads running          */
@@ -54,7 +58,7 @@ BEGIN_MEMBERCLASS(Threads, Thread, ICHelperUnsafe),
   public ThreadVariables,              // Thread variables class
   private thread                       // The C++11 thread
 { /* -- Put in place a new thread ------------------------------------------ */
-  template<typename... VarArgs>void ThreadNew(const VarArgs &...vaArgs)
+  template<typename ...VarArgs>void ThreadNew(const VarArgs &...vaArgs)
     { thread tNewThread{ vaArgs... }; this->swap(tNewThread); }
   /* -- Thread handler function -------------------------------------------- */
   void ThreadHandler(void) try
@@ -82,8 +86,8 @@ BEGIN_MEMBERCLASS(Threads, Thread, ICHelperUnsafe),
     // Log if thread didn't signal to exit
     cLog->LogDebugExSafe("Thread $<$> exited in $ with code $<$$>.",
       CtrGet(), IdentGet(),
-      ToShortDuration(ClockTimePointRangeToClampedDouble(ThreadGetEndTime(),
-        ThreadGetStartTime())),
+      StrShortFromDuration(ClockTimePointRangeToClampedDouble(
+        ThreadGetEndTime(), ThreadGetStartTime())),
       ThreadGetExitCode(), hex, ThreadGetExitCode());
     // Reduce thread count
     --cParent.stRunning;
@@ -100,8 +104,8 @@ BEGIN_MEMBERCLASS(Threads, Thread, ICHelperUnsafe),
     // Log if thread didn't signal to exit
     cLog->LogErrorExSafe("Thread $<$> exited in $ due to exception: $!",
       CtrGet(), IdentGet(),
-      ToShortDuration(ClockTimePointRangeToClampedDouble(ThreadGetEndTime(),
-        ThreadGetStartTime())),
+      StrShortFromDuration(ClockTimePointRangeToClampedDouble(
+        ThreadGetEndTime(), ThreadGetStartTime())),
       e.what());
   }
   /* ----------------------------------------------------------------------- */
@@ -111,7 +115,7 @@ BEGIN_MEMBERCLASS(Threads, Thread, ICHelperUnsafe),
     { // Set thread name and priority in system
       if(!SysInitThread(tPtr->IdentGetCStr(), tPtr->stPerf))
         cLog->LogWarningExSafe("Thread '$' update priority to $ failed: $!",
-          tPtr->IdentGet(), tPtr->ThreadGetPerf(), LocalError());
+          tPtr->IdentGet(), tPtr->ThreadGetPerf(), StrFromErrNo());
       // Run the thread callback
       tPtr->ThreadHandler();
     } // Report the problem
@@ -374,5 +378,7 @@ template<class Callbacks>class ThreadSyncHelper : private Callbacks
 };/* ----------------------------------------------------------------------- */
 static size_t ThreadGetRunning(void) { return cThreads->stRunning; }
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+};                                     // End of public namespace
+/* ------------------------------------------------------------------------- */
+};                                     // End of private namespace
 /* == EoF =========================================================== EoF == */

@@ -1,15 +1,20 @@
-/* == GLFWWIN.HPP ========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Manage Window objects using GLFW.                                   ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == GLFWWIN.HPP ========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Manage Window objects using GLFW.                                   ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfGlFWWindow {               // Start of module namespace
+namespace IGlFWWindow {                // Start of private module namespace
 /* ------------------------------------------------------------------------- */
-using namespace IfGlFWUtil;            // Using glfw utility namespace
+using namespace ICollector::P;         using namespace IError::P;
+using namespace IEvtMain::P;           using namespace IGlFWUtil::P;
+using namespace ILog::P;               using namespace IString::P;
+using namespace IUtf;                  using namespace Lib::OS::GlFW;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* ------------------------------------------------------------------------- */
 class GlFWWindow :                     // GLFW window class
   /* -- Base classes ------------------------------------------------------- */
@@ -37,7 +42,7 @@ class GlFWWindow :                     // GLFW window class
     unsigned int uiC, const char **const cpaF)
   { // Check if is our window, and check the pointer and return if empty or
     // invalid or a previous event has not been processed yet.
-    if(wC != WinGetHandle() || !IsCStringValid(cpaF) || !vFiles.empty())
+    if(wC != WinGetHandle() || UtfIsCStringNotValid(cpaF) || !vFiles.empty())
       return;
     // Because we're in the main thread, we need to tell the engine thread
     // but the problem is that glfw will free 'cpaFiles' after this function
@@ -191,6 +196,8 @@ class GlFWWindow :                     // GLFW window class
   /* -- Returns if the window should close --------------------------------- */
   bool WinShouldClose(void) const
     { return !WinIsAvailable() || glfwWindowShouldClose(WinGetHandle()); }
+  bool WinShouldNotClose(void) const
+    { return !WinShouldClose(); }
   /* -- Restore the window from being minimised ---------------------------- */
   void WinRestore(void) const { glfwRestoreWindow(WinGetHandle()); }
   /* -- Minimise/Iconify the window ---------------------------------------- */
@@ -276,8 +283,8 @@ class GlFWWindow :                     // GLFW window class
     const size_t stPos = strVal.find('.');
     if(stPos != string::npos)
     { // Get numeric and denominator
-      const int iNumeric = ToNumber<int>(strVal.substr(0, stPos)),
-        iDenominator = ToNumber<int>(strVal.substr(stPos+1));
+      const int iNumeric = StrToNum<int>(strVal.substr(0, stPos)),
+        iDenominator = StrToNum<int>(strVal.substr(stPos+1));
       // Free aspect ratio if either are invalid
       if(iNumeric > 0 && iDenominator > 0)
         return WinSetAspectRatio(iNumeric, iDenominator);
@@ -342,7 +349,7 @@ class GlFWWindow :                     // GLFW window class
 #undef SET                             // Done with this macro
   /* -- Check current context ---------------------------------------------- */
   bool WinIsCurrentContext(void) const
-    { return glfwGetCurrentContext() == WinGetHandle(); }
+    { return GlFWContext() == WinGetHandle(); }
   /* -- Make current context ----------------------------------------------- */
   void WinSetContext(void) const
     { glfwMakeContextCurrent(WinGetHandle()); }
@@ -418,5 +425,7 @@ class GlFWWindow :                     // GLFW window class
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(GlFWWindow)          // Do not need defaults
 };/* ----------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

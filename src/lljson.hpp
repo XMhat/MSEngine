@@ -1,45 +1,47 @@
-/* == LLJSON.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Defines the 'Json' namespace and methods for the guest to use in    ## */
-/* ## Lua. This file is invoked by 'lualib.hpp'.                          ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == LLJSON.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Defines the 'Json' namespace and methods for the guest to use in    ## **
+** ## Lua. This file is invoked by 'lualib.hpp'.                          ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 #pragma once                           // Only one incursion allowed
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ========================================================================= */
 // % Json
 /* ------------------------------------------------------------------------- */
 // ! This allows the programmer to encode and decode Json objects.
 /* ========================================================================= */
-namespace NsJson {                     // Json namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfJson;                // Using json namespace
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+namespace LLJson {                     // Json namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IJson::P;
+/* ========================================================================= **
+** ######################################################################### **
+** ## Json:* member functions                                             ## **
+** ######################################################################### **
+** ========================================================================= */
 // $ Json:ToString
 // < Data:string=Encoded JSON data
 // ? Encodes the data inside the class to JSON string.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(ToString, 1,
-  LCPUSHXSTR(LCGETPTR(1, Json)->ToString<Json::RJCompactWriter>()));
+  LCPUSHVAR(LCGETPTR(1, Json)->StrFromNum<Json::RJCompactWriter>()));
 /* ========================================================================= */
 // $ Json:ToHRString
 // < Data:string=Encoded JSON data
 // ? Encodes the data inside the class to JSON string in human readable format.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(ToHRString, 1,
-  LCPUSHXSTR(LCGETPTR(1, Json)->ToString<Json::RJPrettyWriter>()));
+  LCPUSHVAR(LCGETPTR(1, Json)->StrFromNum<Json::RJPrettyWriter>()));
 /* ========================================================================= */
 // $ Json:ToFile
 // < Result:integer=Error number code returned (0 = success)
 // > Filename:string=The filename to write to
 // ? Dumps the entire json into the specified file.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ToFile, 1, LCPUSHINT(LCGETPTR(1, Json)->
+LLFUNCEX(ToFile, 1, LCPUSHVAR(LCGETPTR(1, Json)->
   ToFile<Json::RJCompactWriter>(LCGETCPPFILE(2, "File"))));
 /* ========================================================================= */
 // $ Json:ToHRFile
@@ -47,7 +49,7 @@ LLFUNCEX(ToFile, 1, LCPUSHINT(LCGETPTR(1, Json)->
 // > Filename:string=The filename to write to
 // ? Dumps the entire json into the specified file in readable format.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ToHRFile, 1, LCPUSHINT(LCGETPTR(1, Json)->
+LLFUNCEX(ToHRFile, 1, LCPUSHVAR(LCGETPTR(1, Json)->
   ToFile<Json::RJPrettyWriter>(LCGETCPPFILE(2, "File"))));
 /* ========================================================================= */
 // $ Json:ToTable
@@ -61,7 +63,7 @@ LLFUNCEX(ToTable, 1, LCGETPTR(1, Json)->ToLuaTable(lS));
 // ? If this json was loaded by a filename or it was set with a custom id.
 // ? This function returns that name which was assigned to it.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Name, 1, LCPUSHXSTR(LCGETPTR(1, Json)->IdentGet()));
+LLFUNCEX(Name, 1, LCPUSHVAR(LCGETPTR(1, Json)->IdentGet()));
 /* ========================================================================= */
 // $ Json:Destroy
 // ? Destroys the json object and frees all the memory associated with it. The
@@ -69,11 +71,11 @@ LLFUNCEX(Name, 1, LCPUSHXSTR(LCGETPTR(1, Json)->IdentGet()));
 // ? generated if accessed.
 /* ------------------------------------------------------------------------- */
 LLFUNC(Destroy, LCCLASSDESTROY(1, Json));
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Json:* member functions structure                                   ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Json:* member functions structure                                   ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Json:* member functions begin
   LLRSFUNC(Destroy),  LLRSFUNC(Name),       LLRSFUNC(ToTable),
   LLRSFUNC(ToString), LLRSFUNC(ToHRString), LLRSFUNC(ToFile),
@@ -91,6 +93,7 @@ LLFUNCEX(File, 1,
 // $ Json.FileAsync
 // > Filename:string=The filename of the json to load
 // > ErrorFunc:function=The function to call when there is an error
+// > ProgressFunc:function=The function to call when there is progress
 // > SuccessFunc:function=The function to call when the JSON string is laoded
 // ? Decodes the specified string as JSON encoded asynchronously.
 /* ------------------------------------------------------------------------- */
@@ -107,6 +110,7 @@ LLFUNCEX(String, 1, LCCLASSCREATE(Json)->InitString(lS));
 // $ Json.StringAsync
 // > Code:string=The string of JSON encoded data to decode
 // > ErrorFunc:function=The function to call when there is an error
+// > ProgressFunc:function=The function to call when there is progress
 // > SuccessFunc:function=The function to call when the JSON string is laoded
 // ? Decodes the specified string as JSON encoded asynchronously.
 /* ------------------------------------------------------------------------- */
@@ -119,16 +123,16 @@ LLFUNC(StringAsync, LCCLASSCREATE(Json)->InitAsyncString(lS));
 // ? to 255 due to limitations with LUA's hardcoded stack level.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Table, 1, LCCLASSCREATE(Json)->InitFromTable(lS));
-/* ======================================================================= */
+/* ========================================================================= */
 // $ Json.WaitAsync
 // ? Halts main-thread execution until all json pcm events have completed
 /* ------------------------------------------------------------------------- */
 LLFUNC(WaitAsync, cJsons->WaitAsync());
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Json.* namespace functions structure                                ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Json.* namespace functions structure                                ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Json.* namespace functions begin
   LLRSFUNC(File),        LLRSFUNC(FileAsync), LLRSFUNC(String),
   LLRSFUNC(StringAsync), LLRSFUNC(Table),     LLRSFUNC(WaitAsync),

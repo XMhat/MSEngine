@@ -1,16 +1,21 @@
-/* == CERT.HPP ============================================================= */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Handles X509 certificate storage operations using OpenSSL.          ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == CERT.HPP ============================================================= **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Handles X509 certificate storage operations using OpenSSL.          ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfCert {                     // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfAsset;               // Using asset namespace
-using namespace IfCVar;                // Using cvar namespace
+namespace ICert {                      // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IAsset::P;             using namespace IClock::P;
+using namespace ICVarDef::P;           using namespace IError::P;
+using namespace IFileMap::P;           using namespace ILog::P;
+using namespace IStd::P;               using namespace IString::P;
+using namespace Lib::OS::OpenSSL;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* ------------------------------------------------------------------------- */
 class Certs                            // Certificates store
 { /* -- Typedefs --------------------------------------------------- */ public:
@@ -58,44 +63,46 @@ class Certs                            // Certificates store
   template<class SyncMethod>void CertsLoad(SyncMethod &smClass,
     const string &strD, const string &strF) try
   { // Load the certificate
-    const FileMap fC{ AssetExtract(Append(strD, '/', strF)) };
+    const FileMap fC{ AssetExtract(StrAppend(strD, '/', strF)) };
     // Get pointer
     const unsigned char*ucpPtr = fC.Ptr<unsigned char>();
     // Load the raw certificate and ig it succeeded?
     typedef unique_ptr<X509, function<decltype(X509_free)>> X509Ptr;
     if(X509Ptr caCert{
-     d2i_X509(nullptr, &ucpPtr, fC.Size<long>()), X509_free })
+      d2i_X509(nullptr, &ucpPtr, fC.Size<long>()), X509_free })
     { // Get purpose struct of certificate
       if(X509_PURPOSE*const x509p = X509_PURPOSE_get0(X509_PURPOSE_SSL_SERVER))
-      { // Get purpose id and if it is not a server CA certificate?
-        if(X509_check_purpose(caCert.get(),
-          X509_PURPOSE_get_id(x509p), 1) != 1)
-        { // Log it as rejected
-          cLog->LogWarningExSafe(
-            "Certs rejected '$' as not a server CA certificate!",
-            fC.IdentGet());
-        } // Valid server CA certificate. Add to CA store and if failed?
-        else if(!X509_STORE_add_cert(xsCerts, caCert.get()))
-        { // Log the problem
-          cLog->LogWarningExSafe("Certs failed to add '$' to SSL context!",
-            fC.IdentGet());
-        } // Loaded successfully?
-        else
-        { // Lock access to the list
-          smClass.LockFunction();
-          lCAStore.push_back({ fC.IdentGet(), caCert.get() });
-          caCert.release();
-          smClass.UnlockFunction();
-          // Process next certificate
-          return;
+      { // Get purpose id and reject if it is not a server CA certificate
+        switch(X509_check_purpose(caCert.get(), X509_PURPOSE_get_id(x509p), 1))
+        { // The certificate was created to perform the purpose represented
+          case 1:
+            // Valid server CA certificate so add to CA store and if succeeded?
+            if(X509_STORE_add_cert(xsCerts, caCert.get()))
+            { // Lock access to the list
+              smClass.LockFunction();
+              lCAStore.push_back({ fC.IdentGet(), caCert.get() });
+              smClass.UnlockFunction();
+            } // Failed to add certificate to CA store
+            else cLog->LogWarningExSafe(
+              "Certs failed to add '$' to SSL context!", fC.IdentGet());
+            break;
+          // The certificate was not created to perform the purpose represented
+          case 0:
+            cLog->LogWarningExSafe(
+              "Certs rejected '$' as not a server CA certificate!",
+              fC.IdentGet());
+            break;
+          // An error occured
+          default:
+            cLog->LogWarningExSafe(
+              "Certs rejected '$' because an error occurred!",
+              fC.IdentGet());
+            break;
         }
-      } // Failed to get purpose?
-      else
-      { // Log the rejection
-        cLog->LogWarningExSafe("Certs rejected '$' as unable to get purpose!",
-          fC.IdentGet());
-      }
-    }
+      } // Failed to get purpose? Log the rejection
+      else cLog->LogWarningExSafe(
+        "Certs rejected '$' as unable to get purpose!", fC.IdentGet());
+    } // Release the certificate (caCert)
   } // In the rare occurence that an exception occurs we should skip the cert
   catch(const exception &e)
   { // Show the exception and try the next certificate
@@ -207,9 +214,13 @@ class Certs                            // Certificates store
   /* -- Is X509 error valid ------------------------------------------------ */
   bool CertsIsErrorValid(const auto &aItem) const
     { return aItem != xErrDB.cend(); }
+  bool CertsIsNotErrorValid(const auto &aItem) const
+    { return !CertsIsErrorValid(aItem); }
   /* -- Verify if a X509 bypass flag is set -------------------------------- */
   bool CertsIsX509BypassFlagSet(const size_t stBank, uint64_t qFlag)
     { return qCertBypass[stBank] & qFlag; }
+  bool CertsIsNotX509BypassFlagSet(const size_t stBank, uint64_t qFlag)
+    { return !CertsIsX509BypassFlagSet(stBank, qFlag); }
   /* ----------------------------------------------------------------------- */
   CVarReturn CertsFileModified(const string &strD, string&)
   { // Empty string is ok, treat as no CA store
@@ -377,13 +388,14 @@ static const string CertGetSubject(const Certs::X509Pair &caPair)
   // Grab the subject line form ceritificate. We couldn't get the subject if
   // failed.
   if(!X509_NAME_oneline(X509_get_subject_name(caPair.second),
-    const_cast<char *>(strD.data()), static_cast<int>(strD.length())))
-      return { };
-  // Resize string
+    const_cast<char*>(strD.data()), static_cast<int>(strD.length())))
+      return {};
+  // Resize and return string
   strD.resize(strlen(strD.c_str()));
-  // Return string
   return strD;
 }
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

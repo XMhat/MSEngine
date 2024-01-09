@@ -1,15 +1,15 @@
-/* == LLPALETTE.HPP ======================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Defines the 'Palette' namespace and methods for the guest to use in ## */
-/* ## Lua. This file is invoked by 'lualib.hpp'.                          ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == LLPALETTE.HPP ======================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Defines the 'Palette' namespace and methods for the guest to use in ## **
+** ## Lua. This file is invoked by 'lualib.hpp'.                          ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 #pragma once                           // Only one incursion allowed
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+/* ========================================================================= **
+** ######################################################################### **
+** ========================================================================= */
 // % Palette
 /* ------------------------------------------------------------------------- */
 // ! The palette class allows creating and modifying palettes and uploading
@@ -17,13 +17,16 @@
 // ! be active at once and textures marked with LF_PALETTE are affected by the
 // ! palette.
 /* ========================================================================= */
-namespace NsPalette {                  // Palette namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfPalette;             // Using palette namespace
-using namespace IfTexture;             // Using texture namespace
-/* ========================================================================= */
-/* ######################################################################### */
-/* ========================================================================= */
+namespace LLPalette {                  // Palette namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IFbo::P;               using namespace IImage::P;
+using namespace IPalette::P;           using namespace IStd::P;
+using namespace ITexture::P;           using namespace Lib::OS::GlFW;
+/* ========================================================================= **
+** ######################################################################### **
+** ## Palette:* member functions                                          ## **
+** ######################################################################### **
+** ========================================================================= */
 // $ Palette:Commit
 // ? Use this function to commit the new palette to the shader.
 /* ------------------------------------------------------------------------- */
@@ -79,7 +82,7 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Palette));
 // < Red:number=The red intensity number (0.0-1.0).
 // ? Use this function to get the alpha palette entry.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetA, 1, LCPUSHNUM(LCGETPTR(1, Palette)->
+LLFUNCEX(GetA, 1, LCPUSHVAR(LCGETPTR(1, Palette)->
   GetAlpha(LCGETINTLGE(size_t, 2, 0, cPalettes->palDefault.size(), "Id"))));
 /* ========================================================================= */
 // $ Palette:GetB
@@ -87,7 +90,7 @@ LLFUNCEX(GetA, 1, LCPUSHNUM(LCGETPTR(1, Palette)->
 // < Red:number=The red intensity number (0.0-1.0).
 // ? Use this function to get the blue palette entry.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetB, 1, LCPUSHNUM(LCGETPTR(1, Palette)->
+LLFUNCEX(GetB, 1, LCPUSHVAR(LCGETPTR(1, Palette)->
   GetBlue(LCGETINTLGE(size_t, 2, 0, cPalettes->palDefault.size(), "Id"))));
 /* ========================================================================= */
 // $ Palette:GetG
@@ -95,7 +98,7 @@ LLFUNCEX(GetB, 1, LCPUSHNUM(LCGETPTR(1, Palette)->
 // < Red:number=The red intensity number (0.0-1.0).
 // ? Use this function to get the green palette entry.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetG, 1, LCPUSHNUM(LCGETPTR(1, Palette)->
+LLFUNCEX(GetG, 1, LCPUSHVAR(LCGETPTR(1, Palette)->
   GetGreen(LCGETINTLGE(size_t, 2, 0, cPalettes->palDefault.size(), "Id"))));
 /* ========================================================================= */
 // $ Palette:GetAI
@@ -106,7 +109,7 @@ LLFUNCEX(GetG, 1, LCPUSHNUM(LCGETPTR(1, Palette)->
 // ? the palette values have to be stored as GLfloats in the GPU and thus extra
 // ? calculations are required as a result.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetAI, 1, LCPUSHINT(LCGETPTR(1, Palette)->
+LLFUNCEX(GetAI, 1, LCPUSHVAR(LCGETPTR(1, Palette)->
   GetAlphaInt(LCGETINTLGE(size_t, 2, 0, cPalettes->palDefault.size(), "Id"))));
 /* ========================================================================= */
 // $ Palette:GetBI
@@ -117,7 +120,7 @@ LLFUNCEX(GetAI, 1, LCPUSHINT(LCGETPTR(1, Palette)->
 // ? the palette values have to be stored as GLfloats in the GPU and thus extra
 // ? calculations are required as a result.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetBI, 1, LCPUSHINT(LCGETPTR(1, Palette)->
+LLFUNCEX(GetBI, 1, LCPUSHVAR(LCGETPTR(1, Palette)->
   GetBlueInt(LCGETINTLGE(size_t, 2, 0, cPalettes->palDefault.size(), "Id"))));
 /* ========================================================================= */
 // $ Palette:GetGI
@@ -128,7 +131,7 @@ LLFUNCEX(GetBI, 1, LCPUSHINT(LCGETPTR(1, Palette)->
 // ? the palette values have to be stored as GLfloats in the GPU and thus extra
 // ? calculations are required as a result.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetGI, 1, LCPUSHINT(LCGETPTR(1, Palette)->
+LLFUNCEX(GetGI, 1, LCPUSHVAR(LCGETPTR(1, Palette)->
   GetGreenInt(LCGETINTLGE(size_t, 2, 0, cPalettes->palDefault.size(), "Id"))));
 /* ========================================================================= */
 // $ Palette:GetRI
@@ -139,7 +142,7 @@ LLFUNCEX(GetGI, 1, LCPUSHINT(LCGETPTR(1, Palette)->
 // ? the palette values have to be stored as GLfloats in the GPU and thus extra
 // ? calculations are required as a result.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetRI, 1, LCPUSHINT(LCGETPTR(1, Palette)->
+LLFUNCEX(GetRI, 1, LCPUSHVAR(LCGETPTR(1, Palette)->
   GetRedInt(LCGETINTLGE(size_t, 2, 0, cPalettes->palDefault.size(), "Id"))));
 /* ========================================================================= */
 // $ Palette:GetRGBAI
@@ -154,8 +157,7 @@ LLFUNCBEGIN(GetRGBAI)
   const auto &fbocData = LCGETPTR(1, Palette)->GetSlotConst(
     LCGETINTLGE(size_t, 2, 0, cPalettes->palDefault.size(), "Id")).
     Cast<lua_Integer>();
-  LCPUSHINT(fbocData[0]);  LCPUSHINT(fbocData[1]);
-  LCPUSHINT(fbocData[2]); LCPUSHINT(fbocData[3]);
+  LCPUSHVAR(fbocData[0], fbocData[1], fbocData[2], fbocData[3]);
 LLFUNCENDEX(4)
 /* ========================================================================= */
 // $ Palette:GetR
@@ -163,7 +165,7 @@ LLFUNCENDEX(4)
 // < Red:number=The red intensity number (0.0-1.0).
 // ? Use this function to get the red palette entry.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetR, 1, LCPUSHNUM(LCGETPTR(1, Palette)->
+LLFUNCEX(GetR, 1, LCPUSHVAR(LCGETPTR(1, Palette)->
   GetRed(LCGETINTLGE(size_t, 2, 0, cPalettes->palDefault.size(), "Id"))));
 /* ========================================================================= */
 // $ Palette:GetRGBA
@@ -177,15 +179,15 @@ LLFUNCEX(GetR, 1, LCPUSHNUM(LCGETPTR(1, Palette)->
 LLFUNCBEGIN(GetRGBA)
   const FboColour &fbocData = LCGETPTR(1, Palette)->GetSlotConst(
     LCGETINTLGE(size_t, 2, 0, cPalettes->palDefault.size(), "Id"));
-  LCPUSHNUM(fbocData.GetColourRed());  LCPUSHNUM(fbocData.GetColourGreen());
-  LCPUSHNUM(fbocData.GetColourBlue()); LCPUSHNUM(fbocData.GetColourAlpha());
+  LCPUSHVAR(fbocData.GetColourRed(), fbocData.GetColourGreen(),
+            fbocData.GetColourBlue(), fbocData.GetColourAlpha());
 LLFUNCENDEX(4)
 /* ========================================================================= */
 // $ Palette:GetName
 // < Name:string=The identifier of the palette.
 // ? Returns the palette identifier
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetName, 1, LCPUSHXSTR(LCGETPTR(1, Palette)->IdentGet()));
+LLFUNCEX(GetName, 1, LCPUSHVAR(LCGETPTR(1, Palette)->IdentGet()));
 /* ========================================================================= */
 // $ Palette:SetA
 // > Id:integer=Palette entry to modify (0-255).
@@ -333,11 +335,11 @@ LLFUNCBEGIN(ShiftF)
   pRef.ShiftFwd(stBegin, LCGETINTLGE(ssize_t, 3,stBegin, pRef.Size(), "Limit"),
     LCGETINTLG(ssize_t, 4, 0, pRef.Size() - stBegin, "Amount"));
 LLFUNCEND
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Palette:* member functions structure                                ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Palette:* member functions structure                                ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Palette:* member functions begin
   LLRSFUNC(Commit),  LLRSFUNC(Copy),     LLRSFUNC(Destroy), LLRSFUNC(Fill),
   LLRSFUNC(GetA),    LLRSFUNC(GetAI),    LLRSFUNC(GetB),    LLRSFUNC(GetBI),
@@ -387,11 +389,11 @@ LLFUNCEX(Default, 1, LCCLASSCREATE(Palette)->Init(
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Palette, 1, LCCLASSCREATE(Palette)->Init(
   LCGETCPPSTRINGNE(1, "Identifier"), *LCGETPTR(2, Palette)));
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Palette.* namespace functions structure                             ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Palette.* namespace functions structure                             ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Palette.* namespace functions begin
   LLRSFUNC(Create),  LLRSFUNC(Default), LLRSFUNC(Image), LLRSFUNC(Palette),
   LLRSFUNC(Texture),

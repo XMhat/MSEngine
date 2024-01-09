@@ -1,18 +1,21 @@
-/* == LOG.HPP ============================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This module handles logging of engine events which the user and     ## */
-/* ## developer can read to help resolve issues.                          ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == LOG.HPP ============================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This module handles logging of engine events which the user and     ## **
+** ## developer can read to help resolve issues.                          ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfLog {                      // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfFStream;             // Using fstream namespace
-using namespace IfClock;               // Using clock namespace
-using namespace IfCVarDef;             // Using cvardef namespace
+namespace ILog {                       // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IClock::P;             using namespace ICVarDef::P;
+using namespace IFStream::P;           using namespace IIdent::P;
+using namespace IStd::P;               using namespace IString::P;
+using namespace ISysUtil::P;           using namespace IToken::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Log levels ----------------------------------------------------------- */
 enum LHLevel                           // Log helper level flags
 { /* ----------------------------------------------------------------------- */
@@ -22,9 +25,15 @@ enum LHLevel                           // Log helper level flags
   LH_INFO,                             // Log message is informational only
   LH_DEBUG,                            // Log message is for debugging
   LH_MAX,                              // Maximum log message level
-};/* -- Log line typedefs -------------------------------------------------- */
-struct LogLine { double dTime; LHLevel lhLevel; string strLine; };
-typedef list<LogLine> LogLines;
+};
+/* -- Log line typedefs -------------------------------------------------- */
+struct LogLine                         // Log line structure
+{ /* ----------------------------------------------------------------------- */
+  const double     dTime;              // The time it happend
+  const LHLevel    lhLevel;            // The type of log entry
+  const string     strLine;            // The log entry string
+};/* ----------------------------------------------------------------------- */
+typedef list<LogLine> LogLines;        // List of log lines
 /* == Log class ============================================================ */
 static class Log final :
   /* -- Base classes ------------------------------------------------------- */
@@ -64,20 +73,20 @@ static class Log final :
     { // Get reference to line
       const LogLine &llLine = *llciItem;
       // Write stored line and if succeeded
-      if(FStreamWriteString(Format("[$$$] $\n", fixed,
+      if(FStreamWriteString(StrFormat("[$$$] $\n", fixed,
         setprecision(6), llLine.dTime, llLine.strLine)))
       { // Flush the line to file straight away and continue if succeeded
         if(FStreamFlush()) continue;
         // Flush failed so close file
         FStreamClose();
         // Write closure reason
-        LogErrorExSafe("Log file closed (flush error: $)!", LocalError());
+        LogErrorExSafe("Log file closed (flush error: $)!", StrFromErrNo());
       } // Write string failed?
       else
       { // Close file
         FStreamClose();
         // Write closure reason
-        LogErrorExSafe("Log file closed (write error: $)!", LocalError());
+        LogErrorExSafe("Log file closed (write error: $)!", StrFromErrNo());
       } // Erase the lines we actually wrote. Never erase the first line.
       erase(begin(), llciItem);
       // Do not write anymore lines
@@ -182,28 +191,28 @@ static class Log final :
   void LogNLCDebugSafe(const string& strLine)
     { LogNLCSafe(LH_DEBUG, strLine); }
   /* -- Formatted logging without level check (specified level) ------------ */
-  template<typename... VarArgs>void LogNLCExSafe(const LHLevel lhLev,
+  template<typename ...VarArgs>void LogNLCExSafe(const LHLevel lhLev,
     const char*const cpFormat, const VarArgs &...vaArgs)
-      { LogNLCSafe(lhLev, Format(cpFormat, vaArgs...)); }
+      { LogNLCSafe(lhLev, StrFormat(cpFormat, vaArgs...)); }
   /* -- Formatted logging without level check (error level) ---------------- */
-  template<typename... VarArgs>
+  template<typename ...VarArgs>
     void LogNLCErrorExSafe(const char*const cpFormat, const VarArgs &...vaArgs)
       { LogNLCExSafe(LH_ERROR, cpFormat, vaArgs...); }
   /* -- Formatted logging without level check (warning level) -------------- */
-  template<typename... VarArgs>
+  template<typename ...VarArgs>
     void LogNLCWarningExSafe(const char*const cpFormat,
       const VarArgs &...vaArgs)
         { LogNLCExSafe(LH_WARNING, cpFormat, vaArgs...); }
   /* -- Formatted logging without level check (info level) ----------------- */
-  template<typename... VarArgs>
+  template<typename ...VarArgs>
     void LogNLCInfoExSafe(const char*const cpFormat, const VarArgs &...vaArgs)
       { LogNLCExSafe(LH_INFO, cpFormat, vaArgs...); }
   /* -- Formatted logging without level check (debug level) ---------------- */
-  template<typename... VarArgs>
+  template<typename ...VarArgs>
     void LogNLCDebugExSafe(const char*const cpFormat, const VarArgs &...vaArgs)
       { LogNLCExSafe(LH_DEBUG, cpFormat, vaArgs...); }
   /* -- Formatted logging with level check (specified level) --------------- */
-  template<typename... VarArgs>void LogExSafe(const LHLevel lhL,
+  template<typename ...VarArgs>void LogExSafe(const LHLevel lhL,
     const char*const cpFormat, const VarArgs &...vaArgs)
   { // Return if we don't have this level
     if(NotHasLevel(lhL)) return;
@@ -211,19 +220,19 @@ static class Log final :
     LogNLCExSafe(lhL, cpFormat, vaArgs...);
   }
   /* -- Formatted logging with level check (error level) ------------------- */
-  template<typename... VarArgs>
+  template<typename ...VarArgs>
     void LogErrorExSafe(const char*const cpFormat, const VarArgs &...vaArgs)
       { LogExSafe(LH_ERROR, cpFormat, vaArgs...); }
   /* -- Formatted logging with level check (warning level) ----------------- */
-  template<typename... VarArgs>
+  template<typename ...VarArgs>
     void LogWarningExSafe(const char*const cpFormat, const VarArgs &...vaArgs)
       { LogExSafe(LH_WARNING, cpFormat, vaArgs...); }
   /* -- Formatted logging with level check (info level) -------------------- */
-  template<typename... VarArgs>
+  template<typename ...VarArgs>
     void LogInfoExSafe(const char*const cpFormat, const VarArgs &...vaArgs)
       { LogExSafe(LH_INFO, cpFormat, vaArgs...); }
   /* -- Formatted logging with level check --------------------------------- */
-  template<typename... VarArgs>
+  template<typename ...VarArgs>
     void LogDebugExSafe(const char*const cpFormat, const VarArgs &...vaArgs)
       { LogExSafe(LH_DEBUG, cpFormat, vaArgs...); }
   /* -- Unformatted logging with level check (specified level) ------------- */
@@ -253,7 +262,7 @@ static class Log final :
     // Set name
     IdentSet(strLabel);
     // Write log ifle
-    WriteString(Format("Logging to standard output '$'.", IdentGet()));
+    WriteString(StrFormat("Logging to standard output '$'.", IdentGet()));
   }
   /* ----------------------------------------------------------------------- */
   bool Init(const string &strFN)
@@ -262,7 +271,7 @@ static class Log final :
     // has already checked that this filename is valid.
     if(FStreamOpen(strFN, FStream::FM_W_T)) return false;
     // Write log file
-    WriteString(Format("Log file is '$'.", IdentGet()));
+    WriteString(StrFormat("Log file is '$'.", IdentGet()));
     // Success
     return true;
   }
@@ -293,7 +302,7 @@ static class Log final :
     } // Just check if empty and return acceptance if so
     else if(strFN.empty()) return ACCEPT;
     // Create new filename with log extension and try to create it
-    if(!Init(Append(strFN, "." LOG_EXTENSION))) return DENY;
+    if(!Init(StrAppend(strFN, "." LOG_EXTENSION))) return DENY;
     // Success so update the actual filename
     strCV = IdentGet();
     // Success
@@ -337,5 +346,7 @@ static class Log final :
   /* -- End ---------------------------------------------------------------- */
 } *cLog = nullptr;                     // Pointer to static class
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+};                                     // End of public module namespace
+/* ------------------------------------------------------------------------- */
+};                                     // End of private module namespace
 /* == EoF =========================================================== EoF == */

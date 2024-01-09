@@ -1,11 +1,11 @@
-/* == FONTBLIT.HPP ========================================================= */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This file is included as part of the Font class from font.hpp and   ## */
-/* ## cotains functions related to drawing strings and glyphs.            ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == FONTBLIT.HPP ========================================================= **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This file is included as part of the Font class from font.hpp and   ## **
+** ## cotains functions related to drawing strings and glyphs.            ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* -- Check if a character needs initialising ------------------------------ */
 size_t CheckGlyph(const size_t stChar)
@@ -15,7 +15,7 @@ size_t CheckGlyph(const size_t stChar)
     RoundCheckFunc::Auto<RoundFunc::Straight<GLfloat>>>(stChar);
 }
 /* -- Handle return on print ----------------------------------------------- */
-void HandleReturn(Decoder &utfRef, GLfloat &fX, GLfloat &fY,
+void HandleReturn(UtfDecoder &utfRef, GLfloat &fX, GLfloat &fY,
   const GLfloat fI)
 { // Go down own line and set indentation
   fX = fI;
@@ -27,7 +27,7 @@ void HandleReturn(Decoder &utfRef, GLfloat &fX, GLfloat &fY,
 GLfloat GetCharWidth(const size_t stPos)
   { return (gvData[stPos].GlyphGetAdvance() + fCharSpacing) * fScale; }
 /* -- Locate a supported character while checking if word can be printed --- */
-bool PrintGetWord(Decoder &utfRef, size_t &stPos, float fX, float &fY,
+bool PrintGetWord(UtfDecoder &utfRef, size_t &stPos, float fX, float &fY,
   const float fW)
 { // Save position because we're not drawing anything
   const unsigned char*const ucpPtr = utfRef.GetCPtr();
@@ -87,7 +87,7 @@ void PushQuadColourAndGlyphs(Texture*const tNGlyphs)
   tGlyphs->SetQuadAlpha(GetCData(0)[3]);
 }
 /* -- Handle print control character --------------------------------------- */
-void HandlePrintControl(GLfloat &fX, GLfloat &fY, Decoder &utfRef,
+void HandlePrintControl(GLfloat &fX, GLfloat &fY, UtfDecoder &utfRef,
   const bool bSimulation, const bool bReverse=false, const bool bClip=false,
   const GLfloat fXO=0, const GLfloat fL=0, const GLfloat fR=0)
 { // Get next character
@@ -172,7 +172,7 @@ void HandlePrintControl(GLfloat &fX, GLfloat &fY, Decoder &utfRef,
 }
 /* -- Print a utfstring of textures, wrap at width, return height ---------- */
 GLfloat DoPrintW(GLfloat fX, GLfloat fY, const GLfloat fW, const GLfloat fI,
-  Decoder &utfRef)
+  UtfDecoder &utfRef)
 { // Record original X and Y position and maximum X position
   const GLfloat fXO = fX + fI, fYO = fY;
   // Until null character, which character?
@@ -212,7 +212,7 @@ GLfloat DoPrintW(GLfloat fX, GLfloat fY, const GLfloat fW, const GLfloat fI,
   return (fY - fYO) + fLineSpacingHeight;
 }
 /* -- Simluate printing a wrapped utfstring and return height -------------- */
-GLfloat DoPrintWS(const GLfloat fW, const GLfloat fI, Decoder &utfRef)
+GLfloat DoPrintWS(const GLfloat fW, const GLfloat fI, UtfDecoder &utfRef)
 { // Record original X and Y position and maximum X position
   GLfloat fX = 0, fY = fLineSpacingHeight;
   // Until null character, which character?
@@ -255,7 +255,7 @@ GLfloat DoPrintWS(const GLfloat fW, const GLfloat fI, Decoder &utfRef)
   return fY;
 }
 /* -- Print a utf string --------------------------------------------------- */
-void DoPrint(GLfloat fX, GLfloat fY, const GLfloat fXO, Decoder &utfRef)
+void DoPrint(GLfloat fX, GLfloat fY, const GLfloat fXO, UtfDecoder &utfRef)
 { // Until null character. Do printing of characters
   while(const unsigned int uiChar = utfRef.Next()) switch(uiChar)
   { // Carriage return?
@@ -267,7 +267,7 @@ void DoPrint(GLfloat fX, GLfloat fY, const GLfloat fXO, Decoder &utfRef)
   }
 }
 /* -- Print a utfstring of textures with right align ----------------------- */
-void DoPrintR(GLfloat fX, GLfloat fY, Decoder &utfRef)
+void DoPrintR(GLfloat fX, GLfloat fY, UtfDecoder &utfRef)
 { // Record original X position
   const GLfloat fXO = fX;
   // Save position
@@ -280,7 +280,7 @@ void DoPrintR(GLfloat fX, GLfloat fY, Decoder &utfRef)
     { // Create and prepare spliced string. *DO NOT* merge these lines
       // as the string will be freed after utfSliced() returns.
       const string strSpliced{ utfRef.Slice(cpSaved) };
-      Decoder utfSliced{ strSpliced };
+      UtfDecoder utfSliced{ strSpliced };
       // Now print the string. We need to duplicate the string here, because
       // we shouldn't modify the original string, even though it would be
       // more optimal to just nullify this character instead.
@@ -300,7 +300,7 @@ void DoPrintR(GLfloat fX, GLfloat fY, Decoder &utfRef)
     } // End of string or invalid unicode character
     case '\0':
     { // Create spliced string
-      Decoder utfSliced{ cpSaved };
+      UtfDecoder utfSliced{ cpSaved };
       // Now print the string. We need to duplicate the string here, because
       // we shouldn't modify the original string, even though it would be
       // more optimal to just nullify this character instead.
@@ -312,7 +312,7 @@ void DoPrintR(GLfloat fX, GLfloat fY, Decoder &utfRef)
   }
 }
 /* -- Print a utfstring with centre alignment ------------------------------ */
-void DoPrintC(GLfloat fX, GLfloat fY, Decoder &utfRef)
+void DoPrintC(GLfloat fX, GLfloat fY, UtfDecoder &utfRef)
 { // Adjust X position with spacing so it doesnt affect the centre position
   if(fCharSpacing != 0.0f) fX += fCharSpacingScale / 2.0f;
   // Record original X position.
@@ -327,7 +327,7 @@ void DoPrintC(GLfloat fX, GLfloat fY, Decoder &utfRef)
     { // Create and prepare spliced string. *DO NOT* merge these lines
       // as the string will be freed after utfSliced() returns.
       const string strSliced{ utfRef.Slice(cpSaved) };
-      Decoder utfSliced{ strSliced };
+      UtfDecoder utfSliced{ strSliced };
       // Now print the string. We need to duplicate the string here, because
       // we shouldn't modify the original string, even though it would be
       // more optimal to just nullify this character instead.
@@ -351,7 +351,7 @@ void DoPrintC(GLfloat fX, GLfloat fY, Decoder &utfRef)
     } // End of string or invalid unicode character
     case '\0':
     { // Slice the utf8 string
-      Decoder utfSliced{ cpSaved };
+      UtfDecoder utfSliced{ cpSaved };
       // Now print the string. We need to duplicate the string here, because
       // we shouldn't modify the original string, even though it would be
       // more optimal to just nullify this character instead.
@@ -363,7 +363,7 @@ void DoPrintC(GLfloat fX, GLfloat fY, Decoder &utfRef)
   }
 }
 /* -- Simulate printing a utfstring ---------------------------------------- */
-GLfloat DoPrintS(Decoder &utfRef)
+GLfloat DoPrintS(UtfDecoder &utfRef)
 { // Width and highest width
   GLfloat fW = 0, fWH = 0;
   // Increase width until end of string
@@ -378,7 +378,7 @@ GLfloat DoPrintS(Decoder &utfRef)
   return fW > fWH ? fW : fWH;
 }
 /* -- Simulate printing a utfstring and returning the height --------------- */
-GLfloat DoPrintSU(Decoder &utfRef)
+GLfloat DoPrintSU(UtfDecoder &utfRef)
 { // Width and highest width
   GLfloat fX = 0, fY;
   // We're going to print something
@@ -430,7 +430,7 @@ bool DrawPartialGlyph(const bool bMove, const size_t stPos,
 }
 /* -- Print a utfstring of textures ---------------------------------------- */
 void DoPrintM(GLfloat fX, GLfloat fY, const GLfloat fL, const GLfloat fR,
-  Decoder &utfRef)
+  UtfDecoder &utfRef)
 { // Parameters:-
   // > fX = The X position of where to draw the string.
   // > fY = The Y position of where to draw the string.
@@ -482,13 +482,13 @@ static GLuint GetMaxTexSizeFromBounds(const GLuint uiWidth,
   // requested glpyh size plus the current canvas size up to the
   // nearest power of two, or double the current image size, whichever
   // value is largest.
-  return Maximum(Maximum(NearestPow2<GLuint>(uiWidth + uiXWidth),
-                         uiWidth * uiMultiplier),
-                 Maximum(NearestPow2<GLuint>(uiHeight + uiXHeight),
-                         uiHeight * uiMultiplier));
+  return UtilMaximum(UtilMaximum(UtilNearestPow2<GLuint>(uiWidth + uiXWidth),
+                                   uiWidth * uiMultiplier),
+         UtilMaximum(UtilNearestPow2<GLuint>(uiHeight + uiXHeight),
+                       uiHeight * uiMultiplier));
 }
 /* -- Check to make sure texture was loaded as a font ---------------------- */
-bool PrintSanityCheck(const Decoder &utfRef)
+bool PrintSanityCheck(const UtfDecoder &utfRef)
 { // No string? Bail out
   if(!utfRef.Valid())
     XC("Null pointer assignment!", "Identifier", IdentGet());
@@ -496,7 +496,7 @@ bool PrintSanityCheck(const Decoder &utfRef)
   return utfRef.Finished();
 }
 /* -- Check to make sure texture was loaded as a font + glyphs are valid --- */
-bool PrintSanityCheck(const Decoder &utfRef, const Texture*const tGlyph)
+bool PrintSanityCheck(const UtfDecoder &utfRef, const Texture*const tGlyph)
 { // Can't print anything if no characters stored
   if(PrintSanityCheck(utfRef)) return false;
   // No glyph texture? Bail out
@@ -508,7 +508,7 @@ bool PrintSanityCheck(const Decoder &utfRef, const Texture*const tGlyph)
 GLfloat PrintW(const GLfloat fX, const GLfloat fY, const GLfloat fW,
   const GLfloat fI, const GLubyte*const ucpStr)
 { // Build a new utfstring class with the string
-  Decoder utfRef{ ucpStr };
+  UtfDecoder utfRef{ ucpStr };
   // Check that texture is a font and the string is valid
   if(PrintSanityCheck(utfRef)) return fLineSpacingHeight;
   // Push tint
@@ -526,7 +526,7 @@ GLfloat PrintW(const GLfloat fX, const GLfloat fY, const GLfloat fW,
 GLfloat PrintWS(const GLfloat fW, const GLfloat fI,
   const GLubyte*const ucpStr)
 { // Build a new utfstring class with the string
-  Decoder utfRef{ ucpStr };
+  UtfDecoder utfRef{ ucpStr };
   // Check that texture is a font and the string is valid
   if(PrintSanityCheck(utfRef)) return fLineSpacingHeight;
   // Push tint
@@ -542,7 +542,7 @@ GLfloat PrintWS(const GLfloat fW, const GLfloat fI,
 GLfloat PrintWTS(const GLfloat fW, const GLfloat fI,
   const GLubyte*const ucpStr, Texture*const tNGlyphs)
 { // Build a new utfstring class with the string
-  Decoder utfRef{ ucpStr };
+  UtfDecoder utfRef{ ucpStr };
   // Check that texture is a font and the string is valid
   if(PrintSanityCheck(utfRef)) return fLineSpacingHeight;
   // Save current colour and set glyph texture
@@ -558,13 +558,13 @@ GLfloat PrintWTS(const GLfloat fW, const GLfloat fI,
 GLfloat PrintWU(const GLfloat fX, const GLfloat fY, const GLfloat fW,
   const GLfloat fI, const GLubyte*const ucpStr)
 { // Build a new utfstring class with the string
-  Decoder utfRef{ ucpStr };
+  UtfDecoder utfRef{ ucpStr };
   // Check that texture is a font and the string is valid
   if(PrintSanityCheck(utfRef)) return fLineSpacingHeight;
   // Push tint
   PushQuadColour();
   // Simulate the height of the print
-  const GLfloat fHeight = DoPrintWS(Distance(fX, fW), fI, utfRef);
+  const GLfloat fHeight = DoPrintWS(UtilDistance(fX, fW), fI, utfRef);
   // Reset the iterator on the utf string.
   utfRef.Reset();
   // Print the string
@@ -579,7 +579,7 @@ GLfloat PrintWU(const GLfloat fX, const GLfloat fY, const GLfloat fW,
 /* -- Print a string of textures, return height ---------------------------- */
 void PrintU(const GLfloat fX, const GLfloat fY, const GLubyte*const ucpStr)
 { // Build a new utfstring class with the string
-  Decoder utfRef{ ucpStr };
+  UtfDecoder utfRef{ ucpStr };
   // Check that texture is a font and the string is valid
   if(PrintSanityCheck(utfRef)) return;
   // Push tint
@@ -599,13 +599,13 @@ void PrintU(const GLfloat fX, const GLfloat fY, const GLubyte*const ucpStr)
 GLfloat PrintWUT(const GLfloat fX, const GLfloat fY, const GLfloat fW,
   const GLfloat fI, const GLubyte*const ucpStr, Texture*const tNGlyphs)
 { // Build a new utfstring class with the string
-  Decoder utfRef{ ucpStr };
+  UtfDecoder utfRef{ ucpStr };
   // Check that texture is a font and the string is valid
   if(PrintSanityCheck(utfRef)) return fLineSpacingHeight;
   // Save current colour and set glyph texture
   PushQuadColourAndGlyphs(tNGlyphs);
   // Simulate the height of the print
-  const GLfloat fHeight = DoPrintWS(Distance(fX, fW), fI, utfRef);
+  const GLfloat fHeight = DoPrintWS(UtilDistance(fX, fW), fI, utfRef);
   // Reset the iterator on the utf string
   utfRef.Reset();
   // Now actually print
@@ -621,7 +621,7 @@ GLfloat PrintWUT(const GLfloat fX, const GLfloat fY, const GLfloat fW,
 GLfloat PrintWT(const GLfloat fX, const GLfloat fY, const GLfloat fW,
   const GLfloat fI, const GLubyte*const ucpStr, Texture*const tNGlyphs)
 { // Build a new utfstring class with the string
-  Decoder utfRef{ ucpStr };
+  UtfDecoder utfRef{ ucpStr };
   // Check that texture is a font and the string is valid
   if(PrintSanityCheck(utfRef)) return fLineSpacingHeight;
   // Save current colour and set glyph texture
@@ -639,7 +639,7 @@ GLfloat PrintWT(const GLfloat fX, const GLfloat fY, const GLfloat fW,
 void PrintT(const GLfloat fX, const GLfloat fY, const GLubyte*const ucpStr,
   Texture*const tNGlyphs)
 { // Build a new utfstring class with the string
-  Decoder utfRef{ ucpStr };
+  UtfDecoder utfRef{ ucpStr };
   // Check that texture is a font and the string is valid
   if(PrintSanityCheck(utfRef)) return;
   // Save current colour and set glyph texture
@@ -655,7 +655,7 @@ void PrintT(const GLfloat fX, const GLfloat fY, const GLubyte*const ucpStr,
 void PrintRT(const GLfloat fX, const GLfloat fY, const GLubyte*const ucpStr,
   Texture*const tNGlyphs)
 { // Build a new utfstring class with the string
-  Decoder utfRef{ ucpStr };
+  UtfDecoder utfRef{ ucpStr };
   // Check that texture is a font and the string is valid
   if(PrintSanityCheck(utfRef)) return;
   // Save current colour and set glyph texture
@@ -670,7 +670,7 @@ void PrintRT(const GLfloat fX, const GLfloat fY, const GLubyte*const ucpStr,
 /* -- Print a string ------------------------------------------------------- */
 void Print(const GLfloat fX, const GLfloat fY, const GLubyte*const ucpStr)
 { // Build a new utfstring class with the string
-  Decoder utfRef{ ucpStr };
+  UtfDecoder utfRef{ ucpStr };
   // Check that texture is a font and the string is valid
   if(PrintSanityCheck(utfRef)) return;
   // Save tint
@@ -685,7 +685,7 @@ void Print(const GLfloat fX, const GLfloat fY, const GLubyte*const ucpStr)
 /* -- Print a string of textures with right align -------------------------- */
 void PrintR(const GLfloat fX, const GLfloat fY, const GLubyte*const ucpStr)
 { // Build a new utfstring class with the string
-  Decoder utfRef{ ucpStr };
+  UtfDecoder utfRef{ ucpStr };
   // Check that texture is a font and the string is valid
   if(PrintSanityCheck(utfRef)) return;
   // Push tint
@@ -700,7 +700,7 @@ void PrintR(const GLfloat fX, const GLfloat fY, const GLubyte*const ucpStr)
 /* -- Print a string with centre alignment --------------------------------- */
 void PrintC(const GLfloat fX, const GLfloat fY, const GLubyte*const ucpStr)
 { // Build a new utfstring class with the string
-  Decoder utfRef{ ucpStr };
+  UtfDecoder utfRef{ ucpStr };
   // Check that texture is a font and the string is valid
   if(PrintSanityCheck(utfRef)) return;
   // Save colour
@@ -716,7 +716,7 @@ void PrintC(const GLfloat fX, const GLfloat fY, const GLubyte*const ucpStr)
 void PrintCT(const GLfloat fX, const GLfloat fY, const GLubyte*const ucpStr,
   Texture*const tNGlyphs)
 { // Build a new utfstring class with the string
-  Decoder utfRef{ ucpStr };
+  UtfDecoder utfRef{ ucpStr };
   // Check that texture is a font and the string is valid
   if(PrintSanityCheck(utfRef)) return;
   // Save current colour and set glyph texture
@@ -732,7 +732,7 @@ void PrintCT(const GLfloat fX, const GLfloat fY, const GLubyte*const ucpStr,
 void PrintMT(const GLfloat fX, const GLfloat fY, const GLfloat fL,
   const GLfloat fR, const GLubyte*const ucpStr, Texture*const tNGlyphs)
 { // Build a new utfstring class with the string
-  Decoder utfRef{ ucpStr };
+  UtfDecoder utfRef{ ucpStr };
   // Check that texture is a font and the string is valid
   if(PrintSanityCheck(utfRef)) return;
   // Save current colour and set glyph texture
@@ -747,7 +747,7 @@ void PrintMT(const GLfloat fX, const GLfloat fY, const GLfloat fL,
 /* -- Simulate printing a string and returning the height ------------------ */
 GLfloat PrintSU(const GLubyte*const ucpStr)
 { // Build a new utfstring class with the string
-  Decoder utfRef{ ucpStr };
+  UtfDecoder utfRef{ ucpStr };
   // Check that texture is a font and the string is valid
   if(PrintSanityCheck(utfRef)) return fLineSpacingHeight;
   // Push tint
@@ -762,7 +762,7 @@ GLfloat PrintSU(const GLubyte*const ucpStr)
 /* -- Simulate printing a string ------------------------------------------- */
 GLfloat PrintS(const GLubyte*const ucpStr)
 { // Build a new utfstring class with the string
-  Decoder utfRef{ ucpStr };
+  UtfDecoder utfRef{ ucpStr };
   // Check that texture is a font and the string is valid
   if(PrintSanityCheck(utfRef)) return 0;
   // Push tint
@@ -777,7 +777,7 @@ GLfloat PrintS(const GLubyte*const ucpStr)
 /* -- Simulate a string of textures with glyphs ---------------------------- */
 GLfloat PrintTS(const GLubyte*const ucpStr, Texture*const tNGlyphs)
 { // Build a new utfstring class with the string
-  Decoder utfRef{ ucpStr };
+  UtfDecoder utfRef{ ucpStr };
   // Check that texture is a font and the string is valid
   if(PrintSanityCheck(utfRef)) return 0;
   // Save current colour and set glyph texture
@@ -793,7 +793,7 @@ GLfloat PrintTS(const GLubyte*const ucpStr, Texture*const tNGlyphs)
 void PrintM(const GLfloat fX, const GLfloat fY, const GLfloat fL,
   const GLfloat fR, const GLubyte*const ucpStr)
 { // Build a new utfstring class with the string
-  Decoder utfRef{ ucpStr };
+  UtfDecoder utfRef{ ucpStr };
   // Check that texture is a font and the string is valid
   if(PrintSanityCheck(utfRef)) return;
   // Save tint

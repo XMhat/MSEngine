@@ -1,18 +1,22 @@
-/* == LUAEVENT.HPP ========================================================= */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This helps classes have an event system which can fire events off   ## */
-/* ## to the event system from another thread and passed back to a lua    ## */
-/* ## callback on the main thread.                                        ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == LUAEVENT.HPP ========================================================= **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This helps classes have an event system which can fire events off   ## **
+** ## to the event system from another thread and passed back to a lua    ## **
+** ## callback on the main thread.                                        ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfLuaEvt {                   // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfEvtMain;             // Using event namespace
-using namespace IfLuaRef;              // Using luaref namespace
+namespace ILuaEvt {                    // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace ILuaRef::P;            using namespace ILuaUtil::P;
+using namespace IError::P;             using namespace IEvtCore::P;
+using namespace IEvtMain::P;           using namespace ILog::P;
+using namespace IStd::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Private typedefs ----------------------------------------------------- */
 // We need to collect the event ids of the events we dispatch so we can
 // remove these events when the class is destroyed, or events that reference
@@ -50,8 +54,8 @@ class LuaEvts :
     return eParams.size() >= stMinimum;
   }
   /* -- Add a new event and stab iterator ---------------------------------- */
-  template<typename... V>void LuaEvtsDispatch(const EvtMainCmd &eCmd,
-    const void*const vpClass, V... vVars)
+  template<typename ...VarArgs>void LuaEvtsDispatch(const EvtMainCmd &eCmd,
+    const void*const vpClass, const VarArgs &...vaVars)
   { // Iterator to return
     EvtMain::QueueConstIt qciItem;
     // Lock access to the list
@@ -59,9 +63,9 @@ class LuaEvts :
     // Current parameters list for event
     EvtMain::Params pData;
     // Reserve memory for parameters
-    pData.reserve(sizeof...(V));
+    pData.reserve(sizeof...(VarArgs));
     // Create a new params list with the class and the events list size
-    cEvtMain->AddExParam(eCmd, qciItem, pData, vpClass, size(), vVars...);
+    cEvtMain->AddExParam(eCmd, qciItem, pData, vpClass, size(), vaVars...);
     // Insert the iterator the new event.
     emplace_back(StdMove(qciItem));
   }
@@ -169,12 +173,12 @@ class LuaEvtSlave :
   EvtMainCmd       evtCmd;             // Event associated with this
   MemberType*const cMember;            // Parent of this class
   /* -- Event dispatch --------------------------------------------- */ public:
-  template<typename...V>void LuaEvtDispatch(V... vVars)
+  template<typename ...VarArgs>void LuaEvtDispatch(const VarArgs &...vaVars)
   { // Return if no callback is set. No point firing an event!
     if(!this->LuaRefIsSet()) return;
     // Insert a new event. We need to store the id of the iterator too so we
     // can remove it when we process the event in LuaEvtCallbackParam().
-    LuaEvtsDispatch(evtCmd, reinterpret_cast<void*>(cMember), vVars...);
+    LuaEvtsDispatch(evtCmd, reinterpret_cast<void*>(cMember), vaVars...);
   }
   /* -- Event callback on main thread -------------------------------------- */
   void LuaEvtCallbackParam(const EvtMain::Cell &epData) try
@@ -198,7 +202,7 @@ class LuaEvtSlave :
       // Just return
       return;
     } // Check to see if we can write the function and it's parameters, if not?
-    if(!StackHasCapacity(this->LuaRefGetState(), stMax - 1))
+    if(!LuaUtilIsStackAvail(this->LuaRefGetState(), stMax - 1))
       XC("Not enough stack space or memory, or param count overflowed!",
          "Identifier", cMember->IdentGet(),         "Event", epData.evtCommand,
          "HaveState",  this->LuaRefStateIsSet(), "Ref", this->LuaRefGetId(),
@@ -212,55 +216,54 @@ class LuaEvtSlave :
     // Enumerate add the rest of the parameters
     for(size_t stIndex = 2; stIndex < stMax; ++stIndex)
     { // Using event core namespace
-      using namespace IfEvtCore;
-      // Get cell
+      using namespace IEvtCore;
       const MVar &mvParam = epData.vParams[stIndex];
       // Compare type
       switch(mvParam.t)
       { // Boolean?
         case MVT_BOOL:
-          PushBoolean(this->LuaRefGetState(), mvParam.b);
+          LuaUtilPushBool(this->LuaRefGetState(), mvParam.b);
           break;
         // C-String?
         case MVT_CSTR:
-          PushString(this->LuaRefGetState(), mvParam.cp);
+          LuaUtilPushCStr(this->LuaRefGetState(), mvParam.cp);
           break;
         // STL String?
         case MVT_STR:
-          PushCppString(this->LuaRefGetState(), *mvParam.str);
+          LuaUtilPushStr(this->LuaRefGetState(), *mvParam.str);
           break;
         // Float?
         case MVT_FLOAT:
-          PushNumber(this->LuaRefGetState(),
+          LuaUtilPushNum(this->LuaRefGetState(),
             static_cast<lua_Number>(mvParam.f));
           break;
         // Double?
         case MVT_DOUBLE:
-          PushNumber(this->LuaRefGetState(),
+          LuaUtilPushNum(this->LuaRefGetState(),
             static_cast<lua_Number>(mvParam.d));
           break;
         // Signed or unsigned integer?
         case MVT_UINT: [[fallthrough]]; case MVT_INT:
-          PushInteger(this->LuaRefGetState(),
+          LuaUtilPushInt(this->LuaRefGetState(),
             static_cast<lua_Integer>(mvParam.i));
           break;
         // Signed or unsigned long long?
         case MVT_ULONGLONG: [[fallthrough]]; case MVT_LONGLONG:
-          PushInteger(this->LuaRefGetState(),
+          LuaUtilPushInt(this->LuaRefGetState(),
             static_cast<lua_Integer>(mvParam.ll));
           break;
         // Signed or unsigned long int?
         case MVT_LONGUINT: [[fallthrough]]; case MVT_LONGINT:
-          PushInteger(this->LuaRefGetState(),
+          LuaUtilPushInt(this->LuaRefGetState(),
             static_cast<lua_Integer>(mvParam.li));
           break;
         // Unsupported type? Push nil
         default: [[fallthrough]]; case MVT_MAX:
-          PushNil(this->LuaRefGetState());
+          LuaUtilPushNil(this->LuaRefGetState());
           break;
       }
     } // Call the callback function.
-    CallFuncEx(this->LuaRefGetState(),
+    LuaUtilCallFuncEx(this->LuaRefGetState(),
       static_cast<int>(stMax - stMandatory));
   } // Exception occured? Disable lua callback and rethrow
   catch(const exception&) { this->LuaRefDeInit(); throw; }
@@ -296,8 +299,8 @@ class LuaEvtSlave :
   /* -- Initialise with empty function ------------------------------------- */
   void LuaEvtInit(lua_State*const lS)
   { // Need 2 parameters and a function
-    CheckParams(lS, 2);
-    CheckFunction(lS, 2, "Callback");
+    LuaUtilCheckParams(lS, 2);
+    LuaUtilCheckFunc(lS, 2, "Callback");
     // Done
     LuaEvtInitEx(lS);
   }
@@ -309,7 +312,9 @@ class LuaEvtSlave :
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(LuaEvtSlave)        // Disable copy constructor
+  DELETECOPYCTORS(LuaEvtSlave)         // Disable copy constructor
 };/* ----------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

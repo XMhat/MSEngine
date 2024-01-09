@@ -1,15 +1,15 @@
-/* == FBOITEM.HPP ========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## Allows storage and manipulation of a quad (two trangles).           ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == FBOITEM.HPP ========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## Allows storage and manipulation of a quad (two trangles).           ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfFbo {                      // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfUtil;                // Using util namespace
+namespace IFbo {                       // Start of private module namespace
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* == Fbo item class ======================================================= */
 class FboItem
 { /* -- Typedefs for types we need --------------------------------- */ public:
@@ -81,7 +81,7 @@ class FboItem
   /* -- Set vertex bounds with angle --------------------------------------- */
   void SetVertex(const GLfloat fX1, const GLfloat fY1,
      const GLfloat fX2, const GLfloat fY2, const GLfloat fA)
-  { // Denormalise the angle to radians                             (M_PI)
+  { // UtilDenormalise the angle to radians                             (M_PI)
     const GLfloat fAR = fA * 2.0f * 3.141592653589793238462643383279502884f,
     // Calculate centre
     fXC = (fX2-fX1)/2, fYC = (fY2-fY1)/2,
@@ -199,19 +199,19 @@ class FboItem
   /* -- Set colour components (0xAARRGGBB) --------------------------------- */
   void SetQuadRGBAInt(const unsigned int uiC)
     { SetQuadRGBA(
-        NormaliseEx<GLfloat, sizeof(uint16_t)*8>(uiC),
-        NormaliseEx<GLfloat, sizeof(uint8_t)*8>(uiC),
-        NormaliseEx<GLfloat>(uiC),
-        NormaliseEx<GLfloat, (sizeof(uint16_t)+sizeof(uint8_t))*8>(uiC)); }
+        UtilNormaliseEx<GLfloat, sizeof(uint16_t)*8>(uiC),
+        UtilNormaliseEx<GLfloat, sizeof(uint8_t)*8>(uiC),
+        UtilNormaliseEx<GLfloat>(uiC),
+        UtilNormaliseEx<GLfloat, (sizeof(uint16_t)+sizeof(uint8_t))*8>(uiC)); }
   /* -- Set colour components (0xRRGGBB) ----------------------------------- */
   void SetQuadRGB(const GLfloat fR, const GLfloat fG, const GLfloat fB)
     { SetQuadRed(fR); SetQuadGreen(fG); SetQuadBlue(fB); }
   /* -- Set colour components by integer ----------------------------------- */
   void SetQuadRGBInt(const unsigned int uiC)
     { SetQuadRGB(
-        NormaliseEx<GLfloat, sizeof(uint16_t)*8>(uiC),
-        NormaliseEx<GLfloat, sizeof(uint8_t)*8>(uiC),
-        NormaliseEx<GLfloat>(uiC)); }
+        UtilNormaliseEx<GLfloat, sizeof(uint16_t)*8>(uiC),
+        UtilNormaliseEx<GLfloat, sizeof(uint8_t)*8>(uiC),
+        UtilNormaliseEx<GLfloat>(uiC)); }
   /* -- Update red component ----------------------------------------------- */
   void SetQuadRed(const GLfloat fRed)
   { // Get references to triangle colour data and modify the red values
@@ -250,5 +250,7 @@ class FboItem
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(FboItem)
 };/* ----------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

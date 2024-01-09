@@ -1,17 +1,24 @@
-/* == PCM.HPP ============================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This module defines a class that can load sound files and then      ## */
-/* ## can optionally be sent to openal for playback.                      ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == PCM.HPP ============================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This module defines a class that can load sound files and then      ## **
+** ## can optionally be sent to openal for playback.                      ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfPcm {                      // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfPcmFormat;           // Using pcmformat namespace
-using namespace IfAsset;               // Using asset namespace
+namespace IPcm {                       // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IAsset::P;             using namespace IASync::P;
+using namespace ICollector::P;         using namespace IError::P;
+using namespace IEvtMain::P;           using namespace IFileMap::P;
+using namespace IIdent::P;             using namespace ILuaUtil::P;
+using namespace IMemory::P;            using namespace IPcmFormat::P;
+using namespace IPcmLib::P;            using namespace IStd::P;
+using namespace ISysUtil::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* == Pcm collector and member class ======================================= */
 BEGIN_ASYNCCOLLECTORDUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
@@ -75,14 +82,12 @@ BEGIN_ASYNCCOLLECTORDUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Load pcm from memory asynchronously -------------------------------- */
   void InitAsyncArray(lua_State*const lS)
   { // Need 6 parameters (class pointer was already pushed onto the stack);
-    CheckParams(lS, 7);
+    LuaUtilCheckParams(lS, 7);
     // Get and check parameters
-    const string strF{ GetCppStringNE(lS, 1, "Identifier") };
-    Asset &aData = *GetPtr<Asset>(lS, 2, "Asset");
-    FlagReset(GetFlags(lS, 3, PL_MASK, "Flags"));
-    CheckFunction(lS, 4, "ErrorFunc");
-    CheckFunction(lS, 5, "ProgressFunc");
-    CheckFunction(lS, 6, "SuccessFunc");
+    const string strF{ LuaUtilGetCppStrNE(lS, 1, "Identifier") };
+    Asset &aData = *LuaUtilGetPtr<Asset>(lS, 2, "Asset");
+    FlagReset(LuaUtilGetFlags(lS, 3, PL_MASK, "Flags"));
+    LuaUtilCheckFuncs(lS, 4, "ErrorFunc", 5, "ProgressFunc", 6, "SuccessFunc");
     // Is dynamic because it was not loaded from disk
     SetDynamic();
     // Load sample from memory asynchronously
@@ -91,13 +96,11 @@ BEGIN_ASYNCCOLLECTORDUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Load pcm from file asynchronously ---------------------------------- */
   void InitAsyncFile(lua_State*const lS)
   { // Need 5 parameters (class pointer was already pushed onto the stack);
-    CheckParams(lS, 6);
+    LuaUtilCheckParams(lS, 6);
     // Get and check parameters
-    const string strF{ GetCppFileName(lS, 1, "File") };
-    FlagReset(GetFlags(lS, 2, PL_MASK, "Flags"));
-    CheckFunction(lS, 3, "ErrorFunc");
-    CheckFunction(lS, 4, "ProgressFunc");
-    CheckFunction(lS, 5, "SuccessFunc");
+    const string strF{ LuaUtilGetCppFile(lS, 1, "File") };
+    FlagReset(LuaUtilGetFlags(lS, 2, PL_MASK, "Flags"));
+    LuaUtilCheckFuncs(lS, 3, "ErrorFunc", 4, "ProgressFunc", 5, "SuccessFunc");
     // Load sample from file asynchronously
     AsyncInitFile(lS, strF, "pcmfile");
   }
@@ -126,7 +129,7 @@ BEGIN_ASYNCCOLLECTORDUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
       "Identifier", strN, "Rate", uiR);
     if(uiC < 1 || uiC > 2) XC("Bogus channels per sample!",
       "Identifier", strN, "Channels", uiC);
-    if(uiB < 1 || uiB > 4 || !IsPow2(uiB)) XC("Bogus bits-per-channel!",
+    if(uiB < 1 || uiB > 4 || !StdIntIsPOW2(uiB)) XC("Bogus bits-per-channel!",
       "Identifier", strN, "Bits", uiB);
     // Calculate bytes per sample
     const size_t stBytesPerSample = GetRate() * GetChannels() * GetBits();
@@ -144,7 +147,7 @@ BEGIN_ASYNCCOLLECTORDUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
     SetBits(uiB);
     // Check that format is supported in OpenAL
     if(!ParseOALFormat())
-      XC("Format not supported by AL!",
+      XC("StrFormat not supported by audio driver!",
          "Identifier", IdentGet(),
          "Channels",   GetChannels(), "Bits", GetBits());
     // Split audio into two channels if audio in stereo
@@ -184,5 +187,7 @@ BEGIN_ASYNCCOLLECTORDUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
 };/* -- End-of-collector --------------------------------------------------- */
 END_ASYNCCOLLECTOR(Pcms, Pcm, PCM);
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

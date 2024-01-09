@@ -1,16 +1,25 @@
-/* == ASSET.HPP ============================================================ */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This the file handles the .adb (7-zip) archives and the extraction  ## */
-/* ## and decompression of files.                                         ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == ASSET.HPP ============================================================ **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This the file handles the .adb (7-zip) archives and the extraction  ## **
+** ## and decompression of files.                                         ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfAsset {                    // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfArchive;             // Using archive namespace
+namespace IAsset {                     // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IArchive::P;           using namespace IASync::P;
+using namespace ICodec::P;             using namespace ICollector::P;
+using namespace ICVarDef::P;           using namespace IDir::P;
+using namespace IError::P;             using namespace IEvtMain::P;
+using namespace IIdent::P;             using namespace IFlags;
+using namespace ILog::P;               using namespace ILuaUtil::P;
+using namespace IMemory::P;            using namespace IStd::P;
+using namespace IString::P;            using namespace ISysUtil::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* -- Typedefs ------------------------------------------------------------- */
 BUILD_FLAGS(Asset,                     // Asset loading flags
   /* -- Commands ----------------------------------------------------------- */
@@ -40,7 +49,7 @@ bool               bOverride;          /* Allow load of external files      */\
 SafeSizeT          stPipeBufSize;      /* Pipe buffer size for execute      */\
 ); /* ---------------------------------------------------------------------- */
 /* -- Function to load a file locally -------------------------------------- */
-FileMap AssetLoadFromDisk(const string &strFile)
+static FileMap AssetLoadFromDisk(const string &strFile)
 { // Open it and sending full-load flag and if succeeded?
   if(FileMap fmFile{ strFile })
   { // Put in the log that we loaded the file successfully
@@ -52,7 +61,7 @@ FileMap AssetLoadFromDisk(const string &strFile)
   XCL("Failed to open local resource!", "File",  strFile, "Path", DirGetCWD());
 }
 /* -- Function to search local directory then archives for a file ---------- */
-FileMap AssetExtract(const string &strFile)
+static FileMap AssetExtract(const string &strFile)
 { // Do we have the permission to load external files?
   if(cAssets->bOverride)
   { // Does the file exist on disk?
@@ -87,10 +96,10 @@ BEGIN_MEMBERCLASS(Assets, Asset, ICHelperUnsafe),
     IdentSwap(aOther);
     CollectorSwapRegistration(aOther);
   }
-  /* -- Perform decoding -------------------------------------------------- */
+  /* -- Perform decoding --------------------------------------------------- */
   template<class Codec>void CodecExec(FileMap &fC, size_t stLevel=0)
     { SwapMemory(Block<Codec>{ fC, stLevel }); }
-  /* -- Perform decoding converting flags to compression level ------------ */
+  /* -- Perform decoding converting flags to compression level ------------- */
   template<class Codec>void CodecExecEx(FileMap &fC)
     { CodecExec<Codec>(fC, FlagIsSet(CD_LEVEL_FASTEST)  ? 1 :
                           (FlagIsSet(CD_LEVEL_FAST)     ? 3 :
@@ -119,54 +128,46 @@ BEGIN_MEMBERCLASS(Assets, Asset, ICHelperUnsafe),
   /* -- Load data from string asynchronously ------------------------------- */
   void InitAsyncString(lua_State*const lS)
   { // Must have 5 parameters (including the class pointer)
-    CheckParams(lS, 7);
+    LuaUtilCheckParams(lS, 7);
     // Check and get parameters
-    const string strName{ GetCppStringNE(lS, 1, "Identifier") };
-    Memory mData{ GetMBfromLString(lS, 2, "String") };
-    FlagReset(GetFlags(lS, 3, CD_MASK, "Flags"));
-    CheckFunction(lS, 4, "ErrorFunc");
-    CheckFunction(lS, 5, "ProgressFunc");
-    CheckFunction(lS, 6, "SuccessFunc");
+    const string strName{ LuaUtilGetCppStrNE(lS, 1, "Identifier") };
+    Memory mData{ LuaUtilGetMBfromLStr(lS, 2, "String") };
+    FlagReset(LuaUtilGetFlags(lS, 3, CD_MASK, "Flags"));
+    LuaUtilCheckFuncs(lS, 4, "ErrorFunc", 5, "ProgressFunc", 6, "SuccessFunc");
     // Init the specified string as an array asynchronously
     AsyncInitArray(lS, strName, "assetstring", StdMove(mData));
   }
   /* -- Load data from array asynchronously -------------------------------- */
   void InitAsyncArray(lua_State*const lS)
   { // Must have 5 parameters (including the class pointer)
-    CheckParams(lS, 7);
+    LuaUtilCheckParams(lS, 7);
     // Check and get parameters
-    const string strName{ GetCppStringNE(lS, 1, "Identifier") };
-    Asset &aData = *GetPtr<Asset>(lS, 2, "Asset");
-    FlagReset(GetFlags(lS, 3, CD_MASK, "Flags"));
-    CheckFunction(lS, 4, "ErrorFunc");
-    CheckFunction(lS, 5, "ProgressFunc");
-    CheckFunction(lS, 6, "SuccessFunc");
+    const string strName{ LuaUtilGetCppStrNE(lS, 1, "Identifier") };
+    Asset &aData = *LuaUtilGetPtr<Asset>(lS, 2, "Asset");
+    FlagReset(LuaUtilGetFlags(lS, 3, CD_MASK, "Flags"));
+    LuaUtilCheckFuncs(lS, 4, "ErrorFunc", 5, "ProgressFunc", 6, "SuccessFunc");
     // Init the specified string as an array asynchronously
     AsyncInitArray(lS, strName, "assetdata", StdMove(aData));
   }
   /* -- Load asset from file asynchronously -------------------------------- */
   void InitAsyncFile(lua_State*const lS)
   { // Need 4 parameters (class pointer was already pushed onto the stack);
-    CheckParams(lS, 6);
+    LuaUtilCheckParams(lS, 6);
     // Get and check parameters
-    const string strName{ GetCppFileName(lS, 1, "File") };
-    FlagReset(GetFlags(lS, 2, CD_MASK, "Flags"));
-    CheckFunction(lS, 3, "ErrorFunc");
-    CheckFunction(lS, 4, "ProgressFunc");
-    CheckFunction(lS, 5, "SuccessFunc");
+    const string strName{ LuaUtilGetCppFile(lS, 1, "File") };
+    FlagReset(LuaUtilGetFlags(lS, 2, CD_MASK, "Flags"));
+    LuaUtilCheckFuncs(lS, 3, "ErrorFunc", 4, "ProgressFunc", 5, "SuccessFunc");
     // Load asset from file asynchronously
     AsyncInitFile(lS, strName, "assetfile");
   }
   /* -- Load asset from command-line --------------------------------------- */
   void InitAsyncCmdLine(lua_State*const lS)
   { // Need 4 parameters (class pointer was already pushed onto the stack);
-    CheckParams(lS, 6);
+    LuaUtilCheckParams(lS, 6);
     // Get and check parameters
-    const string strCmdLine{ GetCppStringNE(lS, 1, "CmdLine") };
-    FlagReset(GetFlags(lS, 2, CD_MASK, "Flags"));
-    CheckFunction(lS, 3, "ErrorFunc");
-    CheckFunction(lS, 4, "ProgressFunc");
-    CheckFunction(lS, 5, "SuccessFunc");
+    const string strCmdLine{ LuaUtilGetCppStrNE(lS, 1, "CmdLine") };
+    FlagReset(LuaUtilGetFlags(lS, 2, CD_MASK, "Flags"));
+    LuaUtilCheckFuncs(lS, 3, "ErrorFunc", 4, "ProgressFunc", 5, "SuccessFunc");
     // Load asset from file asynchronously
     Memory mbBlank;
     AsyncInitCmdLine(lS, strCmdLine, "CL", mbBlank);
@@ -174,17 +175,14 @@ BEGIN_MEMBERCLASS(Assets, Asset, ICHelperUnsafe),
   /* -- Load asset from command-line --------------------------------------- */
   void InitAsyncCmdLineEx(lua_State*const lS)
   { // Need 5 parameters (class pointer was already pushed onto the stack);
-    CheckParams(lS, 7);
+    LuaUtilCheckParams(lS, 7);
     // Get and check parameters
-    const string strCmdLine{ GetCppStringNE(lS, 1, "CmdLine") };
-    FlagReset(GetFlags(lS, 2, CD_MASK, "Flags"));
-    Asset &aInput = *GetPtr<Asset>(lS, 3, "Asset");
-    CheckFunction(lS, 4, "ErrorFunc");
-    CheckFunction(lS, 5, "ProgressFunc");
-    CheckFunction(lS, 6, "SuccessFunc");
+    const string strCmdLine{ LuaUtilGetCppStrNE(lS, 1, "CmdLine") };
+    FlagReset(LuaUtilGetFlags(lS, 2, CD_MASK, "Flags"));
+    Asset &aInput = *LuaUtilGetPtr<Asset>(lS, 3, "Asset");
+    LuaUtilCheckFuncs(lS, 4, "ErrorFunc", 5, "ProgressFunc", 6, "SuccessFunc");
     // Load asset from file asynchronously
-    AsyncInitCmdLine(lS, strCmdLine,
-      IfString::Append("CLP", aInput.Size()), aInput);
+    AsyncInitCmdLine(lS, strCmdLine, StrAppend("CLP", aInput.Size()), aInput);
   }
   /* -- Init from file ----------------------------------------------------- */
   void InitFile(const string &strFilename, const AssetFlagsConst &lfS)
@@ -265,5 +263,7 @@ static CVarReturn AssetSetPipeBufferSize(const size_t stSize)
 /* -- Set pipe buffer size ------------------------------------------------- */
 static size_t AssetGetPipeBufferSize(void) { return cAssets->stPipeBufSize; }
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

@@ -1,18 +1,22 @@
-/* == FILEMAP.HPP ========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This module closely emulates a FILE* stream but instead maps a file ## */
-/* ## on disk into memory. This interface is used only by the 'Assets'    ## */
-/* ## interface when loading files from archives or disk. ONLY supply     ## */
-/* ## already malloc()'d data to the class if re-using existing data.     ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == FILEMAP.HPP ========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This module closely emulates a FILE* stream but instead maps a file ## **
+** ## on disk into memory. This interface is used only by the 'Assets'    ## **
+** ## interface when loading files from archives or disk. ONLY supply     ## **
+** ## already malloc()'d data to the class if re-using existing data.     ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfFileMap {                  // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfSystem;              // Using system namespace
+namespace IFileMap {                   // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IError::P;             using namespace IMemory::P;
+using namespace IStd::P;               using namespace ISystem::P;
+using namespace IUtil::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* == FileMap Class Definition ============================================= */
 class FileMap :
   /* -- Derivced classes --------------------------------------------------- */
@@ -26,7 +30,7 @@ class FileMap :
   { // Read address. Memory() will handle all the error checking for us
     T*const tAddr = DoRead<T>(stFrom);
     // Set new position clamping to size of file
-    stPosition = Minimum(Size(), stFrom + stBytes);
+    stPosition = UtilMinimum(Size(), stFrom + stBytes);
     // Return address
     return tAddr;
   }
@@ -66,17 +70,17 @@ class FileMap :
     { return FileMapReadVarFrom<T>(FileMapTell()); }
   /* -- Read specified variable from specified position -------------------- */
   uint16_t FileMapReadVar16LEFrom(const size_t stFrom)
-    { return ToI16LE(FileMapReadVarFrom<uint16_t>(stFrom)); }
+    { return UtilToI16LE(FileMapReadVarFrom<uint16_t>(stFrom)); }
   uint16_t FileMapReadVar16BEFrom(const size_t stFrom)
-    { return ToI16BE(FileMapReadVarFrom<uint16_t>(stFrom)); }
+    { return UtilToI16BE(FileMapReadVarFrom<uint16_t>(stFrom)); }
   uint32_t FileMapReadVar32LEFrom(const size_t stFrom)
-    { return ToI32LE(FileMapReadVarFrom<uint32_t>(stFrom)); }
+    { return UtilToI32LE(FileMapReadVarFrom<uint32_t>(stFrom)); }
   uint32_t FileMapReadVar32BEFrom(const size_t stFrom)
-    { return ToI32BE(FileMapReadVarFrom<uint32_t>(stFrom)); }
+    { return UtilToI32BE(FileMapReadVarFrom<uint32_t>(stFrom)); }
   uint64_t FileMapReadVar64LEFrom(const size_t stFrom)
-    { return ToI64LE(FileMapReadVarFrom<uint64_t>(stFrom)); }
+    { return UtilToI64LE(FileMapReadVarFrom<uint64_t>(stFrom)); }
   uint64_t FileMapReadVar64BEFrom(const size_t stFrom)
-    { return ToI64BE(FileMapReadVarFrom<uint64_t>(stFrom)); }
+    { return UtilToI64BE(FileMapReadVarFrom<uint64_t>(stFrom)); }
   /* -- Read specified variable from current pos --------------------------- */
   uint16_t FileMapReadVar16LE(void)
     { return FileMapReadVar16LEFrom(FileMapTell()); }
@@ -122,7 +126,7 @@ class FileMap :
       return Memory{ StdMove(static_cast<DataConst&>(*this)) };
     // We need to read mapped memory into a new memory block. The map class
     // disallows files greater than size_t(-1) so this is safe
-    Memory mOut{ IntOrMax<size_t>(SysMapGetSize()), SysMapGetMemory() };
+    Memory mOut{ UtilIntOrMax<size_t>(SysMapGetSize()), SysMapGetMemory() };
     // De-initialise the map, no point keeping it anymore
     SysMapDeInit();
     // Clear memory block members
@@ -194,7 +198,7 @@ class FileMap :
   explicit FileMap(const string &strF) :
     /* -- Initialisers ----------------------------------------------------- */
     SysMap{ strF },
-    DataConst{ IntOrMax<size_t>(SysMapGetSize()), SysMapGetMemory() },
+    DataConst{ UtilIntOrMax<size_t>(SysMapGetSize()), SysMapGetMemory() },
     stPosition(0)
     /* -- No code ---------------------------------------------------------- */
     { }
@@ -232,5 +236,7 @@ class FileMap :
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(FileMap)             // Disable copy constructor and operator
 };/* ----------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

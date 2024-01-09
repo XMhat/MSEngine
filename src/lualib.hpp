@@ -1,55 +1,52 @@
-/* == LUALIB.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## This file defines the complete LUA API that interfaces with the     ## */
-/* ## game engine. The guest will be able to use this functions when      ## */
-/* ## writing scripts for their software.                                 ## */
-/* ##                                                                     ## */
-/* ## To define a function, begin with use of the llfuncbegin/end macros  ## */
-/* ## to use multiple lines of code and llfunc(ex) to define a function   ## */
-/* ## in a single line. The 'ex' signifies returning number of params.    ## */
-/* ######################################################################### */
-/* ------------------------------------------------------------------------- */
+/* == LUALIB.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This file defines the complete LUA API that interfaces with the     ## **
+** ## game engine. The guest will be able to use this functions when      ## **
+** ## writing scripts for their software.                                 ## **
+** ##                                                                     ## **
+** ## To define a function, begin with use of the llfuncbegin/end macros  ## **
+** ## to use multiple lines of code and llfunc(ex) to define a function   ## **
+** ## in a single line. The 'ex' signifies returning number of params.    ## **
+** ######################################################################### **
+** ------------------------------------------------------------------------- */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfLuaLib {                   // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace IfLuaUtil;             // Using luautil namespace
-/* -- Macros to simplify param checking ------------------------------------ */
-#define LCPUSHBOOL(a)                  PushBoolean(lS, a)
-#define LCPUSHNUM(a)                   PushNumber(lS, a)
-#define LCPUSHINT(a)                   PushInteger(lS, a)
-#define LCPUSHSTR(a)                   PushString(lS, a)
-#define LCPUSHLSTR(a,l)                PushLString(lS, a, l)
-#define LCPUSHXSTR(a)                  PushCppString(lS, a)
+namespace ILuaLib {                    // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace ICVarDef::P;           using namespace ILuaUtil::P;
 /* ------------------------------------------------------------------------- */
-#define LCTOTABLE(...)                 ToTable(lS, __VA_ARGS__)
-#define LCGETFLAGS(t,a,m,n)            GetFlags<t>(lS, a, m, n)
-#define LCGETINTLEG(t,a,l,ge,n)        GetIntLEG<t>(lS, a, l, ge, n)
-#define LCGETINTLGE(t,a,l,ge,n)        GetIntLGE<t>(lS, a, l, ge, n)
-#define LCGETINTLG(t,a,l,g,n)          GetIntLG<t>(lS, a, l, g, n)
-#define LCGETINT(t,a,n)                GetInt<t>(lS, a, n)
-#define LCGETINTNUM(t,a,n)             GetIntOrNum<t>(lS, a, n)
-#define LCGETNUMLGE(t,a,l,ge,n)        GetNumLGE<t>(lS, a, l, ge, n)
-#define LCGETNUMLG(t,a,l,g,n)          GetNumLG<t>(lS, a, l, g, n)
-#define LCGETNUM(t,a,n)                GetNum<t>(lS, a, n)
-#define LCGETBOOL(a,n)                 GetBool(lS, a, n)
-#define LCGETSTRING(t,a,n)             GetString<t>(lS, a, n)
-#define LCGETCPPSTRING(a,n)            GetCppString(lS, a, n)
-#define LCGETCPPSTRINGNE(a,n)          GetCppStringNE(lS, a, n)
-#define LCGETCPPFILE(a,n)              GetCppFileName(lS, a, n)
-#define LCCHECKFUNC(a,n)               CheckFunction(lS, a, n)
-#define LCCHECKPARAMS(c)               CheckParams(lS, c)
+namespace P {                          // Start of public module namespace
+/* -- Macros to simplify param checking ------------------------------------ */
+#define LCPUSHVAR(...)                 LuaUtilPushVar(lS, __VA_ARGS__)
+#define LCPUSHLSTR(a,l)                LuaUtilPushLStr(lS, a, l)
+/* ------------------------------------------------------------------------- */
+#define LCTOTABLE(...)                 LuaUtilToTable(lS, __VA_ARGS__)
+#define LCGETFLAGS(t,a,m,n)            LuaUtilGetFlags<t>(lS, a, m, n)
+#define LCGETINTLEG(t,a,l,ge,n)        LuaUtilGetIntLEG<t>(lS, a, l, ge, n)
+#define LCGETINTLGE(t,a,l,ge,n)        LuaUtilGetIntLGE<t>(lS, a, l, ge, n)
+#define LCGETINTLG(t,a,l,g,n)          LuaUtilGetIntLG<t>(lS, a, l, g, n)
+#define LCGETINT(t,a,n)                LuaUtilGetInt<t>(lS, a, n)
+#define LCGETNUMLGE(t,a,l,ge,n)        LuaUtilGetNumLGE<t>(lS, a, l, ge, n)
+#define LCGETNUMLG(t,a,l,g,n)          LuaUtilGetNumLG<t>(lS, a, l, g, n)
+#define LCGETNUM(t,a,n)                LuaUtilGetNum<t>(lS, a, n)
+#define LCGETBOOL(a,n)                 LuaUtilGetBool(lS, a, n)
+#define LCGETSTRING(t,a,n)             LuaUtilGetStr<t>(lS, a, n)
+#define LCGETCPPSTRING(a,n)            LuaUtilGetCppStr(lS, a, n)
+#define LCGETCPPSTRINGNE(a,n)          LuaUtilGetCppStrNE(lS, a, n)
+#define LCGETCPPFILE(a,n)              LuaUtilGetCppFile(lS, a, n)
+#define LCCHECKFUNC(a,n)               LuaUtilCheckFunc(lS, a, n)
+#define LCCHECKPARAMS(c)               LuaUtilCheckParams(lS, c)
 #define LCCHECKMAINSTATE()             cLua->StateAssert(lS)
 #define LCSETEVENTCBEX(c,p)            cLua->SetLuaRef(lS, c, p)
 #define LCSETEVENTCB(c)                LCSETEVENTCBEX(c, 1)
 /* -- Macros to simplify LUA class creation and destruction ---------------- */
-#define LCCLASSCREATEPTR(t,f)          ClassCreatePtr<t>(lS, #t, f)
-#define LCCLASSCREATE(t)               ClassCreate<t>(lS, #t)
-#define LCCLASSDESTROY(p,t)            ClassDestroy<t>(lS, p, #t)
-#define LCGETPTR(p,t)                  GetPtr<t>(lS, p, #t)
-#define LCGETULPTR(p,t)                GetUnlockedPtr<t>(lS, p, #t)
+#define LCCLASSCREATEPTR(t,f)          LuaUtilClassCreatePtr<t>(lS, #t, f)
+#define LCCLASSCREATE(t)               LuaUtilClassCreate<t>(lS, #t)
+#define LCCLASSDESTROY(p,t)            LuaUtilClassDestroy<t>(lS, p, #t)
+#define LCGETPTR(p,t)                  LuaUtilGetPtr<t>(lS, p, #t)
+#define LCGETULPTR(p,t)                LuaUtilGetUnlockedPtr<t>(lS, p, #t)
 /* -- Macros to simplify try/catch on each lualib function ----------------- */
 #define LLFUNCBEGIN(n)                 static int Cb ## n(lua_State*const lS) {
 #define LLFUNCENDEX(p)                 UNUSED_VARIABLE(lS); return p; }
@@ -61,22 +58,24 @@ using namespace IfLuaUtil;             // Using luautil namespace
 #define LLFUNCEX(n,x,f)                LLFUNCBEGIN(n) f; LLFUNCENDEX(x)
 #define LLFUNCTEMPLATE(n,f)            LLFUNCBEGINTEMPLATE(n) f; LLFUNCEND
 #define LLFUNCTEMPLATEEX(n,x,f)        LLFUNCBEGINTEMPLATE(n) f; LLFUNCENDEX(x)
+/* -- Get length of an array ignoring the final NULL entry ----------------- */
+template<typename IntType=int, typename AnyType, IntType itSize>
+  constexpr int ArrayLen(AnyType (&)[itSize]) { return itSize - 1; };
 /* -- Macros to simplify definition of lualib reg func structures ---------- */
-#define ARRAYLEN(a)              (sizeof((a)) / sizeof((a)[0]) - 1)
-#define LLRSBEGIN                static const luaL_Reg llStatics[]{
-#define LLRSMFBEGIN              static const luaL_Reg llMethods[]{
-#define LLRSCONSTBEGIN           static const LuaTable llConsts[]{
-#define LLRSCONST(n)             { #n, llConsts ## n, ARRAYLEN(llConsts ## n) }
-#define LLRSCONSTEND             { nullptr, nullptr, 0 } };
-#define LLRSKTBEGIN(n)           static const LuaKeyInt llConsts ## n[]{
-#define LLRSKTITEMEX2(k,v)       { k, static_cast<lua_Integer>(v) }
-#define LLRSKTITEMEX(p,n,u)      LLRSKTITEMEX2(#n, p ## n ## u)
-#define LLRSKTITEM(p,n)          LLRSKTITEMEX2(#n, p ## n)
-#define LLRSKTEND                { nullptr, 0 } };
-#define LLRSFUNC(n)              { #n, Cb ## n }
-#define LLRSFUNCEX(n,f)          { #n, Cb ## f }
-#define LLRSEND                  { nullptr, nullptr } };
-/* -- Includes ------------------------------------------------------------- */
+#define LLRSBEGIN           static const luaL_Reg llStatics[]{
+#define LLRSMFBEGIN         static const luaL_Reg llMethods[]{
+#define LLRSCONSTBEGIN      static const LuaTable llConsts[]{
+#define LLRSCONST(n)        { #n, llConsts ## n, ArrayLen(llConsts ## n) }
+#define LLRSCONSTEND        { nullptr, nullptr, 0 } };
+#define LLRSKTBEGIN(n)      static const LuaKeyInt llConsts ## n[]{
+#define LLRSKTITEMEX2(k,v)  { k, static_cast<lua_Integer>(v) }
+#define LLRSKTITEMEX(p,n,u) LLRSKTITEMEX2(#n, p ## n ## u)
+#define LLRSKTITEM(p,n)     LLRSKTITEMEX2(#n, p ## n)
+#define LLRSKTEND           { nullptr, 0 } };
+#define LLRSFUNC(n)         { #n, Cb ## n }
+#define LLRSFUNCEX(n,f)     { #n, Cb ## f }
+#define LLRSEND             { nullptr, nullptr } };
+/* -- Dependencies --------------------------------------------------------- */
 #include "llarchive.hpp"               // Archive namespace and methods
 #include "llasset.hpp"                 // Asset namespace and methods
 #include "llaudio.hpp"                 // Audio namespace and methods
@@ -139,16 +138,11 @@ using namespace IfLuaUtil;             // Using luautil namespace
 #undef LLFUNCBEGINEX
 /* ------------------------------------------------------------------------- */
 #undef LCTOTABLE
-#undef LCPUSHBOOL
-#undef LCPUSHNUM
-#undef LCPUSHINT
-#undef LCPUSHSTR
 #undef LCGETULPTR
 #undef LCGETPTR
 #undef LCCLASSCREATEPTR
 #undef LCCLASSCREATE
 #undef LCCLASSDESTROY
-#undef LCGETINTNUM
 #undef LCGETINTLEG
 #undef LCGETINTLGE
 #undef LCGETINTLG
@@ -167,26 +161,26 @@ using namespace IfLuaUtil;             // Using luautil namespace
 #undef LCGETCPPSTRING
 #undef LCSETEVENTCBEX
 #undef LCPUSHCPPSTR
+#undef LCPUSHVAR
 #undef LCPUSHLSTR
-#undef LCPUSHXSTR
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## LUA GLOBAL CLASS STRUCTURE                                          ## */
-/* ######################################################################### */
-/* -- Key ------------------------------------------------------------------ */
-/* v (variable) = The fully qualified name of the array to use.              */
-/* n (name)     = The name of the namespace.                                 */
-/* t (type)     = The variable type (Statics, Methods or Consts).            */
-/* l (level)    = The required core flags. See cvardef.hpp->CoreFlags.       */
-/* m (methods)  = Method function list. LLMETHODS(name) or LLNOMETHODS.      */
-/* c (consts)   = Const key/value list. LLCONSTS(name) or LLNOCONSTS.        */
-/* -- Helps build the pointer to the list and the length of the list ------- */
-#define LLPTRLENEX(v)   v, ARRAYLEN(v)
-#define LLPTRLEN(n,t)   LLPTRLENEX(Ns ## n::ll ## t)
+/* ========================================================================= **
+** ######################################################################### **
+** ## LUA GLOBAL CLASS STRUCTURE                                          ## **
+** ######################################################################### **
+** -- Key ------------------------------------------------------------------ **
+** v (variable) = The fully qualified name of the array to use.              **
+** n (name)     = The name of the namespace.                                 **
+** t (type)     = The variable type (Statics, Methods or Consts).            **
+** l (level)    = The required core flags. See cvardef.hpp->CoreFlags.       **
+** m (methods)  = Method function list. LLMETHODS(name) or LLNOMETHODS.      **
+** c (consts)   = Const key/value list. LLCONSTS(name) or LLNOCONSTS.        **
+** -- Helps build the pointer to the list and the length of the list ------- */
+#define LLPTRLENEX(v)   v, ArrayLen(v)
+#define LLPTRLEN(n,t)   LLPTRLENEX(LL ## n::ll ## t)
 /* -- Helps define the list of static, methods and consts ------------------ */
 #define LLSTATICS(n)    LLPTRLEN(n, Statics)
 #define LLMETHODS(n)    LLPTRLEN(n, Methods), \
-  static_cast<lua_CFunction>(Ns ## n::CbDestroy)
+  static_cast<lua_CFunction>(LL ## n::CbDestroy)
 #define LLNOMETHODS()   nullptr, 0, nullptr
 #define LLCONSTS(n)     LLPTRLEN(n, Consts)
 #define LLNOCONSTS()    nullptr, 0
@@ -201,8 +195,7 @@ const LuaLibStatic luaLibList[] =
 { /* -- Use the above macros to define namespaces -------------------------- */
   LLSMX(Archive, CF_NOTHING),          LLSMC(Asset,   CF_NOTHING),
   LLSXX(Audio,   CF_AUDIO),            LLSMX(Bin,     CF_NOTHING),
-  LLSMX(Clip,    CF_VIDEO),            LLSXX(Display, CF_VIDEO),
-  LLSMC(Fbo,     CF_VIDEO),            LLSXC(Core,    CF_NOTHING),
+  LLSMX(Clip,    CF_VIDEO),            LLSXC(Core,    CF_NOTHING),
   LLSXX(Credit,  CF_NOTHING),          LLSXC(CVars,   CF_NOTHING),
   LLSXC(Console, CF_NOTHING),          LLSXX(Crypt,   CF_NOTHING),
   LLSMC(Cursor,  CF_VIDEO),            LLSXC(Display, CF_VIDEO),
@@ -231,7 +224,8 @@ const LuaLibStatic luaLibList[] =
 #undef LLSTATICS
 #undef LLPTRLEN
 #undef LLPTRLENEX
-#undef ARRAYLEN
 /* ------------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

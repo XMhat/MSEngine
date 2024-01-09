@@ -1,23 +1,28 @@
-/* == PCMFMT.HPP =========================================================== */
-/* ######################################################################### */
-/* ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## */
-/* ######################################################################### */
-/* ## These classes are plugins for the PcmFmt manager to allow loading   ## */
-/* ## of certain formatted audio files.                                   ## */
-/* ######################################################################### */
-/* ========================================================================= */
+/* == PCMFMT.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## These classes are plugins for the PcmFmt manager to allow loading   ## **
+** ## of certain formatted audio files.                                   ## **
+** ######################################################################### **
+** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IfPcmFormat {                // Start of module namespace
-/* -- Includes ------------------------------------------------------------- */
-using namespace Lib::Ogg;              // Using LibOgg library functions
-using namespace Lib::MiniMP3;          // Using MiniMP3 library functions
-using namespace IfPcmLib;              // Using pcmlib namespace
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Windows WAVE format                                             WAV ## */
-/* ######################################################################### */
-/* -- WAV Codec Object ----------------------------------------------------- */
+namespace IPcmFormat {                 // Start of private module namespace
+/* -- Dependencies --------------------------------------------------------- */
+using namespace IError::P;             using namespace IFileMap::P;
+using namespace IFlags;                using namespace ILog::P;
+using namespace IMemory::P;            using namespace IOal::P;
+using namespace IPcmLib::P;            using namespace IStd::P;
+using namespace IUtil::P;              using namespace Lib::MiniMP3;
+using namespace Lib::Ogg;              using namespace Lib::OpenAL;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
+/* ========================================================================= **
+** ######################################################################### **
+** ## Windows WAVE format                                             WAV ## **
+** ######################################################################### **
+** -- WAV Codec Object ----------------------------------------------------- */
 class CodecWAV final :
   /* -- Base classes ------------------------------------------------------- */
   private PcmFmt                       // Pcm format helper class
@@ -69,7 +74,7 @@ class CodecWAV final :
       XC("RIFF must have WAV formatted data!",
          "Expected", uiExpectedMagic, "Actual", uiActualMagic);
     // Flag for if we got the data chunks we need
-    BUILD_FLAGS(WaveLoad, WL_NONE(1), WL_GOTFORMAT(2), WL_GOTDATA(4));
+    BUILD_FLAGS(WaveLoad, WL_NONE{1}, WL_GOTFORMAT{2}, WL_GOTDATA{4});
     WaveLoadFlags chunkFlags{ WL_NONE };
     // The RIFF file contains dynamic 'chunks' of data. We need to iterate
     // through each one until we can no longer read any more chunks. We need
@@ -157,11 +162,11 @@ class CodecWAV final :
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(CodecWAV)            // Omit copy constructor for safety
 };/* -- End ---------------------------------------------------------------- */
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Core Audio Format                                               CAF ## */
-/* ######################################################################### */
-/* -- CAF Codec Object ----------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Core Audio Format                                               CAF ## **
+** ######################################################################### **
+** -- CAF Codec Object ----------------------------------------------------- */
 class CodecCAF final :
   /* -- Base classes ------------------------------------------------------- */
   private PcmFmt                       // Pcm format helper class
@@ -214,11 +219,11 @@ class CodecCAF final :
       const unsigned int uiMagic = fC.FileMapReadVar32LE();
       // Read size and if size is too big for machine to handle? Log warning.
       const uint64_t qSize = fC.FileMapReadVar64BE();
-      if(IntWillOverflow<size_t>(qSize))
+      if(UtilIntWillOverflow<size_t>(qSize))
         cLog->LogWarningExSafe("Pcm CAF chunk too big $ > $!",
-          qSize, numeric_limits<size_t>::max());
+          qSize, StdMaxSizeT);
       // Accept maximum size the machine allows
-      const size_t stSize = IntOrMax<size_t>(qSize);
+      const size_t stSize = UtilIntOrMax<size_t>(qSize);
       // test the header chunk
       switch(uiMagic)
       { // Is it the 'desc' chunk?
@@ -227,7 +232,7 @@ class CodecCAF final :
           if(stSize < 32) XC("CAF 'desc' chunk needs >=32 bytes!");
           // Get sample rate as double convert from big-endian.
           const double dV =
-            CastInt64ToDouble(fC.FileMapReadVar64BE());
+            UtilCastInt64ToDouble(fC.FileMapReadVar64BE());
           if(dV < 1 || dV > 5644800)
             XC("CAF sample rate invalid!", "Rate", dV);
           auD.SetRate(static_cast<ALuint>(dV));
@@ -313,11 +318,11 @@ class CodecCAF final :
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(CodecCAF)            // Omit copy constructor for safety
 };/* -- End ---------------------------------------------------------------- */
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## Ogg Vorbis                                                      OGG ## */
-/* ######################################################################### */
-/* -- OGG Codec Object ----------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## Ogg Vorbis                                                      OGG ## **
+** ######################################################################### **
+** -- OGG Codec Object ----------------------------------------------------- */
 class CodecOGG final :
   /* -- Base classes ------------------------------------------------------- */
   private PcmFmt                       // Pcm format helper class
@@ -402,11 +407,11 @@ class CodecOGG final :
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(CodecOGG)            // Omit copy constructor for safety
 };/* -- End ---------------------------------------------------------------- */
-/* ========================================================================= */
-/* ######################################################################### */
-/* ## MPEG Layer-3                                                    MP3 ## */
-/* ######################################################################### */
-/* -- MP3 codec object ----------------------------------------------------- */
+/* ========================================================================= **
+** ######################################################################### **
+** ## MPEG Layer-3                                                    MP3 ## **
+** ######################################################################### **
+** -- MP3 codec object ----------------------------------------------------- */
 class CodecMP3 final :
   /* -- Base classes ------------------------------------------------------- */
   private PcmFmt                       // Pcm format helper class
@@ -414,7 +419,7 @@ class CodecMP3 final :
   static bool Load(FileMap &fC, PcmData &auD)
   { // Check size of file
     const size_t stTotal = fC.Size();
-    if(IntWillOverflow<int>(stTotal))
+    if(UtilIntWillOverflow<int>(stTotal))
       XC("Pcm data size is not valid to fit in an integer!",
          "Maximum", numeric_limits<int>::max());
     // Create mp3 decoder context and if it succeeded?
@@ -432,7 +437,7 @@ class CodecMP3 final :
       // Frame informations struct
       mp3_info_t mpInfo{};
       // How much data do we have left to read? Break if not
-      while(const size_t stRemain = Minimum(stLen, stTotal - stRead))
+      while(const size_t stRemain = UtilMinimum(stLen, stTotal - stRead))
       { // Try to decode more data and break if we could not
         const int iBytes =
           mp3_decode(mpData.get(),                    // Context
@@ -478,5 +483,7 @@ class CodecMP3 final :
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(CodecMP3)            // Omit copy constructor for safety
 };/* ----------------------------------------------------------------------- */
-};                                     // End of module namespace
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */
