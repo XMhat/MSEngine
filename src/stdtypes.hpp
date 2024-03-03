@@ -49,9 +49,6 @@ using ::std::chrono::microseconds;     using ::std::chrono::milliseconds;
 using ::std::chrono::nanoseconds;      using ::std::chrono::seconds;
 using ::std::chrono::system_clock;
 /* -- Operating system specific -------------------------------------------- */
-#if !defined(WINDOWS)                  // Not using windows?
-using ::std::unexpected_handler;       using ::std::set_unexpected;
-#endif                                 // Not windows check
 using ::std::terminate_handler;        using ::std::set_terminate;
 #if !defined(MACOS)                    // Not using apple compiler?
 using ::std::execution::par_unseq;     using ::std::execution::par;

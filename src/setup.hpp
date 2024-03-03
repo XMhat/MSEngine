@@ -415,17 +415,12 @@ namespace Lib                          // LIBRARY OF EXTERNAL API FUNCTIONS
     };/* ------------------------------------------------------------------- */
     namespace JpegTurbo                // LIBJPEGTURBO API FUNCTIONS
     { /* ------------------------------------------------------------------- */
-#if defined(LINUX)                     // Using Linux?
-# include <jpeglib.h>                  // Repository provided main header
-# include <jerror.h>                   // Repository provided error handling
-#else                                  // MacOS or Windows?
-# if defined(WINDOWS)                  // Using windows?
+#if defined(WINDOWS)                   // Using windows?
       typedef int boolean;             // Defined by system but not in our NS
-# endif                                // Windows check
-# include <jpeg/jpeglib.h>             // Our main header
-# include <jpeg/jerror.h>              // Our error handling
-# include <jpeg/jversion.h>            // Our version information
-#endif                                 // Linux check
+#endif                                 // Windows check
+#include <jpeg/jpeglib.h>              // Our main header
+#include <jpeg/jerror.h>               // Our error handling
+#include <jpeg/jversion.h>             // Our version information
     };/* ------------------------------------------------------------------- */
     namespace ZLib                     // ZLIB API FUNCTIONS
     { /* ------------------------------------------------------------------- */

@@ -39,6 +39,8 @@ BUILD_FLAGS(Display,
   // Full-screen locked?
   DF_NATIVEFS            {0x00000020},
   /* -- End-user configuration flags --------------------------------------- */
+  // Use forward compatible context?   Use double-buffering?
+  DF_FORWARD             {0x00004000}, DF_DOUBLEBUFFER        {0x00008000},
   // Automatic minimise?               Focus on show?
   DF_AUTOICONIFY         {0x00010000}, DF_AUTOFOCUS           {0x00020000},
   // Window is resizable?              Always on top?
@@ -73,7 +75,13 @@ static class Display final :
   GLfloat          fGamma,             // Monitor gamma setting
                    fOrthoWidth,        // Saved ortho width
                    fOrthoHeight;       // Saved ortho height
-  int              iBPPSelected,       // Selected bit depth mode
+  int              iApi,               // Selected API from GLFW
+                   iProfile,           // Selected profile for the context
+                   iCtxMajor,          // Selected context major version
+                   iCtxMinor,          // Selected context minor version
+                   iRobustness,        // Selected context robustness
+                   iRelease,           // Selected context release behaviour
+                   iBPPSelected,       // Selected bit depth mode
                    iWinPosX, iWinPosY, // Window position
                    iAuxBuffers,        // Auxilliary buffers to use
                    iSamples;           // FSAA setting to use
@@ -383,7 +391,7 @@ static class Display final :
   { // Get new frame buffer size
     const int iWidth = emcArgs.vParams[1].i, iHeight = emcArgs.vParams[2].i;
     // On Mac?
-#ifdef MACOS
+#if defined(MACOS)
     // Get addition position and window size data
     const int iWinX = emcArgs.vParams[3].i, iWinY = emcArgs.vParams[4].i,
       iWinWidth = emcArgs.vParams[5].i, iWinHeight = emcArgs.vParams[6].i;
@@ -733,9 +741,66 @@ static class Display final :
   /* -- Auto iconify modified------ ---------------------------------------- */
   CVarReturn AutoIconifyChanged(const bool bState)
     { FlagSetOrClear(DF_AUTOICONIFY, bState); return ACCEPT; }
-  /* -- Auto iconify modified------ ---------------------------------------- */
+  /* -- Auto iconify modified ---------------------------------------------- */
   CVarReturn AutoFocusChanged(const bool bState)
     { FlagSetOrClear(DF_AUTOFOCUS, bState); return ACCEPT; }
+  /* -- Set robustness ----------------------------------------------------- */
+  CVarReturn RobustnessChanged(const size_t stIndex)
+  { // Possible values
+    static const array<const int,3> aValues{
+      GLFW_NO_RESET_NOTIFICATION, GLFW_LOSE_CONTEXT_ON_RESET,
+      GLFW_NO_ROBUSTNESS
+    }; // Fail if invalid
+    if(stIndex >= aValues.size()) return DENY;
+    // Set the api
+    iRobustness = aValues[stIndex];
+    // Success
+    return ACCEPT;
+  }
+  /* -- Set release behaviour ---------------------------------------------- */
+  CVarReturn ReleaseChanged(const size_t stIndex)
+  { // Possible values
+    static const array<const int,3> aValues{
+      GLFW_ANY_RELEASE_BEHAVIOR, GLFW_RELEASE_BEHAVIOR_FLUSH,
+      GLFW_RELEASE_BEHAVIOR_NONE
+    }; // Fail if invalid
+    if(stIndex >= aValues.size()) return DENY;
+    // Set the api
+    iRelease = aValues[stIndex];
+    // Success
+    return ACCEPT;
+  }
+  /* -- Set double buffering ----------------------------------------------- */
+  CVarReturn DoubleBufferChanged(const bool bState)
+    { FlagSetOrClear(DF_DOUBLEBUFFER, bState); return ACCEPT; }
+  /* -- Set forward compatible context ------------------------------------- */
+  CVarReturn ForwardChanged(const bool bState)
+    { FlagSetOrClear(DF_FORWARD, bState); return ACCEPT; }
+  /* -- Set api ------------------------------------------------------------ */
+  CVarReturn ApiChanged(const size_t stIndex)
+  { // Possible values
+    static const array<const int,3> aValues
+      { GLFW_OPENGL_API, GLFW_OPENGL_ES_API, GLFW_NO_API };
+    // Fail if invalid
+    if(stIndex >= aValues.size()) return DENY;
+    // Set the api
+    iApi = aValues[stIndex];
+    // Success
+    return ACCEPT;
+  }
+  /* -- Set profile -------------------------------------------------------- */
+  CVarReturn ProfileChanged(const size_t stIndex)
+  { // Possible values
+    static const array<const int,3> aValues{
+      GLFW_OPENGL_CORE_PROFILE, GLFW_OPENGL_COMPAT_PROFILE,
+      GLFW_OPENGL_ANY_PROFILE
+    }; // Fail if invalid
+    if(stIndex >= aValues.size()) return DENY;
+    // Set the api
+    iProfile = aValues[stIndex];
+    // Success
+    return ACCEPT;
+  }
   /* -- Set full-screen video mode cvar ------------------------------------ */
   CVarReturn FullScreenModeChanged(const int iVId)
   { // Return if invalid full-screen mode
@@ -769,6 +834,17 @@ static class Display final :
     CoordSetY(iNewY);
     // Apply window position if window is available
     if(cGlFW && cGlFW->WinIsAvailable()) RequestReposition();
+    // Success
+    return ACCEPT;
+  }
+  /* -- Context version changed -------------------------------------------- */
+  CVarReturn CtxVersionChanged(const string &strF, string&)
+  { // Deny change if string is not formatted correctly
+    if(strF.length() != 3 || !isdigit(strF[0]) || strF[1] != '.' ||
+       !isdigit(strF[2])) return DENY;
+    // Now set the version
+    iCtxMajor = strF[0] - '0';
+    iCtxMinor = strF[2] - '0';
     // Success
     return ACCEPT;
   }
@@ -924,16 +1000,16 @@ static class Display final :
     EnumerateMonitorsAndVideoModes();
     // Inform main fbo class of our transparency setting
     cFboMain->fboMain.SetTransparency(FlagIsSet(DF_TRANSPARENT));
-    // We are using the OpenGL 3.2 forward compatible API
-    cGlFW->GlFWSetClientAPI(GLFW_OPENGL_API);
-    cGlFW->GlFWSetContextVersion(3, 2);
-    cGlFW->GlFWSetCoreProfile(GLFW_OPENGL_CORE_PROFILE);
-    cGlFW->GlFWSetForwardCompatEnabled();
-    cGlFW->GlFWSetRobustness(GLFW_LOSE_CONTEXT_ON_RESET);
-    // Set other settings
+    // Set api, profile and context settings
+    cGlFW->GlFWSetClientAPI(iApi);
+    cGlFW->GlFWSetContextVersion(iCtxMajor, iCtxMinor);
+    cGlFW->GlFWSetCoreProfile(iProfile);
+    cGlFW->GlFWSetForwardCompat(FlagIsSet(DF_FORWARD));
+    cGlFW->GlFWSetRobustness(iRobustness);
+    cGlFW->GlFWSetRelease(iRelease);
     cGlFW->GlFWSetDebug(FlagIsSet(DF_DEBUG));
     cGlFW->GlFWSetNoErrors(FlagIsSet(DF_NOERRORS));
-    cGlFW->GlFWSetDoubleBufferEnabled();
+    cGlFW->GlFWSetDoubleBuffer(FlagIsSet(DF_DOUBLEBUFFER));
     cGlFW->GlFWSetSRGBCapable(FlagIsSet(DF_SRGB));
     cGlFW->GlFWSetRefreshRate(GetRefreshRate());
     cGlFW->GlFWSetAuxBuffers(iAuxBuffers);
@@ -1055,6 +1131,12 @@ static class Display final :
     fGamma(0),                         // Gamma initialised by CVars
     fOrthoWidth(0.0f),                 // Ortho width initialised by CVars
     fOrthoHeight(0.0f),                // Ortho height initialised by CVars
+    iApi(GL_NONE),                     // Api type set by cvars
+    iProfile(GL_NONE),                 // Profile type set by cvars
+    iCtxMajor(GL_NONE),                // Context major version set by cvars
+    iCtxMinor(GL_NONE),                // Context major version set by cvars
+    iRobustness(GL_NONE),              // Context robustness set by cvars
+    iRelease(GL_NONE),                 // Context release behaviour set by cvar
     iBPPSelected(-1),                  // Bit depth not selected yet
     iWinPosX(-1), iWinPosY(-1),        // No initial window position
     iAuxBuffers(0),                    // No auxiliary buffers specified

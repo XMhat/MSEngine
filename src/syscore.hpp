@@ -422,17 +422,10 @@ static class System final :            // The main system class
   const size_t     stThreadId;         // Readable thread id
   /* ----------------------------------------------------------------------- */
   terminate_handler  thHandler;        // Old C++ termination handler
-  unexpected_handler uhHandler;        // Old C++ unexpected handler
   /* ----------------------------------------------------------------------- */
   const string     strRoamingDir;      // Roaming directory
-  /* -- Show message box with window handle (thiscall) --------------------- */
-  unsigned int SysMsgTerm(const int iExitCode, const string &strMessage) const
-    { SysMsgEx(strMessage, "An unexpected error has occurred and the engine "
-        "must now terminate! We apologise for the inconvenience!");
-      _exit(iExitCode); }
   /* -- Default handler for std::unexpected -------------------------------- */
-  static void UnexpectedHandler(void);
-  static void TerminateHandler(void);
+  static void TerminateHandler[[noreturn]](void);
   /* -- Return readable process and thread id ---------------------- */ public:
   size_t GetReadablePid(void) const { return stProcessId; }
   size_t GetReadableTid(void) const { return stThreadId; }
@@ -488,7 +481,7 @@ static class System final :            // The main system class
     return ACCEPT;
   }
   /* -- Restore old unexpected and termination handlers -------------------- */
-  ~System(void) { set_unexpected(uhHandler); set_terminate(thHandler); }
+  ~System(void) { set_terminate(thHandler); }
   /* -- Set/Get GUI mode status -------------------------------------------- */
   CVarReturn SetCoreFlags(const unsigned int uiNGM)
   { // Failed if bad value
@@ -621,8 +614,6 @@ static class System final :            // The main system class
     stThreadId(GetTid<size_t>()),      // Init readable thread id
     thHandler(set_terminate(           // Store current termination handler
       TerminateHandler)),              // " Use our termination handler
-    uhHandler(set_unexpected(          // Store current unexpected handler
-      UnexpectedHandler)),             // " Use our unexpected handler
     strRoamingDir{                     // Set user roaming directory
       PSplitBackToForwardSlashes(      // Convert backward slashes to forward
         BuildRoamingDir()) }           // Get roaming directory from system
@@ -634,13 +625,15 @@ static class System final :            // The main system class
     cLog->LogNLCInfoExSafe("$ v$.$.$.$ ($) for $.\n"
        "+ Executable is $.\n"
        "+ Created at $ with $ v$.\n"
-#ifdef WINDOWS
+#if defined(WINDOWS)
        "+ Checksum $ with $<0x$$$> expecting $<0x$$$>.\n"
 #endif
        "+ Working directory is $.\n"
        "+ Persistent directory is $.\n"
        "+ Process id is $<0x$$$> with main thread id of $<0x$$$>.\n"
+#if !defined(MACOS)
        "+ Priority is $<0x$$$> with affinity $<0x$$$> and mask $<0x$$$>.\n"
+#endif
        "+ Processor is $ <$ x $ MHz>.\n"
        "+ Type is $<0x$$$>.\n"
        "+ Memory has $ with $ free and $ initial.\n"
@@ -652,7 +645,7 @@ static class System final :            // The main system class
       ENGName(), ENGMajor(), ENGMinor(), ENGBuild(), ENGRevision(),
         ENGBuildType(), ENGTarget(),
       ENGFull(), ENGCompiled(), ENGCompiler(), ENGCompVer(),
-#ifdef WINDOWS
+#if defined(WINDOWS)
       EXEModified() ? "failed" : "verified",
         exeData.ulHeaderSum, hex, exeData.ulHeaderSum, dec,
         exeData.ulCheckSum, hex, exeData.ulCheckSum, dec,
@@ -661,9 +654,11 @@ static class System final :            // The main system class
       GetRoamingDir(),
       GetReadablePid(), hex, GetReadablePid(), dec,
         GetReadableTid(), hex, GetReadableTid(), dec,
-        GetPriority(), hex, GetPriority(), dec,
+#if !defined(MACOS)
+      GetPriority(), hex, GetPriority(), dec,
         GetAffinity(false), hex, GetAffinity(false), dec,
         GetAffinity(true), hex, GetAffinity(true), dec,
+#endif
       CPUName(), CPUCount(), CPUSpeed(),
         CPUIdentifier(), hex, CPUFeatures(), dec,
       StrToBytes(RAMTotal()), StrToBytes(RAMFree()), StrToBytes(RAMProcUse()),
@@ -677,12 +672,15 @@ static class System final :            // The main system class
   DELETECOPYCTORS(System)              // Disable copy constructor and operator
   /* ----------------------------------------------------------------------- */
 } *cSystem = nullptr;                  // Pointer to static class
-/* -- Default handler for std::unexpected ---------------------------------- */
-void System::UnexpectedHandler(void)
-  { cSystem->SysMsgTerm(-1, "An unhandled exception has occurred!"); }
 /* -- Default handler for std::terminate ----------------------------------- */
 void System::TerminateHandler(void)
-  { cSystem->SysMsgTerm(-2, "Abnormal program termination!"); }
+{ // Show message box to user
+  cSystem->SysMsgEx("Abnormal program termination!",
+    "An unexpected error has occurred and the engine "
+    "must now terminate! We apologise for the inconvenience!");
+  // Terminate now without destructors
+  _exit(-1);
+}
 /* -- Pre-defined SysBase callbacks that require access to cSystem global -- */
 MSENGINE_SYSBASE_CALLBACKS();          // Parse requested SysBase callbacks
 #undef MSENGINE_SYSBASE_CALLBACKS      // Done with this

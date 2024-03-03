@@ -96,6 +96,7 @@ class GlFWUtil                         // Members initially private
   SET(CtxMinor, CONTEXT_VERSION_MINOR) // Set gl context minor version
   SET(CoreProfile, OPENGL_PROFILE)     // Set gl profile to use
   SET(Robustness, CONTEXT_ROBUSTNESS)  // Set context robustness
+  SET(Release, CONTEXT_RELEASE_BEHAVIOR) // Set context release behaviour
   /* ----------------------------------------------------------------------- */
 #undef SET                             // Done with this macro
   /* -- Set window bits all in one ----------------------------------------- */

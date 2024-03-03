@@ -821,7 +821,7 @@ static void LuaUtilSetTableIdxStr(lua_State*const lS,
   lua_rawset(lS, iTableId);
 }
 /* -- Push the specified integer at the specified index -------------------- */
-template<typename IntType> static void LuaUtilSetTableIdxInt(lua_State*const lS,
+template<typename IntType>static void LuaUtilSetTableIdxInt(lua_State*const lS,
   const int iTableId, const lua_Integer liIndex, const IntType itValue)
 { // Push index in table
   LuaUtilPushInt(lS, liIndex);

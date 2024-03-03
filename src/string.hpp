@@ -990,6 +990,32 @@ static const string StrToUpCase[[maybe_unused]](const string &strSrc)
   // Return copied string
   return strDst;
 }
+/* -- Compact a string removing leading, trailing and duplicate spaces ----- */
+static string &StrCompactRef(string &strStr, const char cToken=' ')
+{ // Enumerate every whitespace character until end-of-string
+  for(auto itC{ strStr.begin() }; itC != strStr.end(); )
+  { // Not a whitespace?
+    if(*itC != cToken)
+    { // Skip non-whitespace characters until end of string
+      while(++itC != strStr.end())
+        // If is a whitespace go forward again and go back to for loop
+        if(*itC == cToken) { ++itC; break; }
+    } // Erase whitespace
+    else itC = strStr.erase(itC);
+  } // Remove trailing whitespace if there is one
+  if(!strStr.empty() && strStr.back() == cToken) strStr.pop_back();
+  // Return string
+  return strStr;
+}
+/* -- Compact a c-string removing duplicate spaces ------------------------- */
+static const string StrCompact(const char*cpStr)
+{ // Ignore if empty
+  if(UtfIsCStringNotValid(cpStr)) return {};
+  // Convert to string, compact it and return it
+  string strOut{ cpStr };
+  StrCompactRef(strOut);
+  return strOut;
+}
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */

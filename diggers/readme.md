@@ -37,6 +37,7 @@ Diggers will always be a work-in-progress since it is difficult and incredibly t
     * Some upstream issues with GLFW.
       * Initial screen corruption when putting window in its own thread only on Wayland so single threaded for now. Can be overridden with `win_thread=1` argument.
       * Problem with `Alt+Enter` not working properly. Think maybe GLFW is duplicating the event.
+    * Problems initialising with error EGL_BAD_ATTRIBUTE on older OpenGL 3.3 compatible Nouveau driver GPU's.
     * Skipping one rendered frame every few seconds only on Wayland, perhaps due to using a `59.97hz` NTSC display. Help needed with this one.
     * All other functions accounted for.
 * *Graphics*: `100%`…
@@ -65,7 +66,7 @@ Diggers will always be a work-in-progress since it is difficult and incredibly t
 | **Memory** *(Windows)* | 16MB *(XP/X86)* | 128MB+ *(Win7/X64)* | Close estimate. |
 | **System** *(MacOS)* | 10.7 *(Intel)* / 11 *(Arm)* | 13.0+ *(Arm)* | FAT Universal executable. |
 | **Memory** *(MacOS)* | 256MB *(Intel)* | 512MB *(Arm)* | Close estimate. |
-| **System** *(Linux)* | Ubuntu 23.04 *(X64)* | Ubuntu 23.04+ *(X64)* | See below for packages. |
+| **System** *(Linux)* | Ubuntu 23.10 *(X64)* | Ubuntu 23.04+ *(X64)* | See below for packages. |
 | **Memory** *(Linux)* | 16MB | 128MB+ | Wild estimate. |
 | **Graphics** | NV GF8K/ATI R600 | NV GF8K+/ATI R600+ | OpenGL 3.2 compatible. |
 | **Audio** | Any sound device | Any sound device | OpenAL 1.1 compatible. |
@@ -81,7 +82,7 @@ You can always get the latest version of this project [here](https://github.com/
 Running the Windows version should be trivial.
 
 ### Linux version…
-The Linux version is linked against external packages that you need to install for the game to work. These packages can be installed with `sudo apt-get install libfreetype libglfw3 libjpegturbo0 libncurses libogg libopenal libpng libsqlite3 libssl libtheora libvorbis libxrandr mesa-common zlib1g`.
+The Linux version is linked against external packages that you need to install for the game to work. These packages can be installed with `sudo apt-get install libfreetype libglfw3 libncurses libogg libopenal libpng libsqlite3 libssl libtheora libvorbis libxrandr mesa-common zlib1g`.
 
 ### MacOS version…
 The MacOS version is self-contained and only basic stdlibs are required to run which should already be included by default in any system. However, opening the disk image will require you to bypass Gatekeeper as I do not wish to sign it with personal information and have therefore used a self-signed certificate instead. To bypass Gatekeeper, simply run the `Terminal.app` and `chdir` to the directory where you downloaded the disk image with `chdir ~/Downloads` and then execute the following command to remove the quarantine flag from the disk image archive with `xattr -d com.apple.quarantine Diggers-R<x>-MacOS-Universal.dmg` where `<x>` is the version of this application. You should then be able to mount the disk image and run the game without any issue.

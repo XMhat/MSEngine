@@ -160,7 +160,6 @@ template<typename IntType=int, typename AnyType, IntType itSize>
 #undef LCGETCPPSTRINGNE
 #undef LCGETCPPSTRING
 #undef LCSETEVENTCBEX
-#undef LCPUSHCPPSTR
 #undef LCPUSHVAR
 #undef LCPUSHLSTR
 /* ========================================================================= **

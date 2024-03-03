@@ -14,7 +14,7 @@
 ** Curses API in it's own namespace to prevent ambiguity problems.           **
 ** ------------------------------------------------------------------------- */
 namespace ICurses {                    // Start of Curses interface
-#ifdef MACOS                           // Using MacOS? (Built-in is buggy)
+#if defined(MACOS)                     // Using MacOS? (Built-in is buggy)
 # include <curses/curses.h>            // Using our static curses library
 #else                                  // Using Linux? (Built-in is OK)
 # include <ncurses.h>                  // Using Curses for fancy term effects

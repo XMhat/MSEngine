@@ -9,7 +9,7 @@
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
 namespace ICrypt {                     // Start of private module namespace
-/* -- Dependencies ---------------------------------------------------------- */
+/* -- Dependencies --------------------------------------------------------- */
 using namespace ICollector::P;         using namespace IError::P;
 using namespace ILog::P;               using namespace IMemory::P;
 using namespace IStd::P;               using namespace IString::P;

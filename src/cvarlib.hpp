@@ -1175,6 +1175,14 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 { CF_VIDEO, "vid_alpha", cCommon->Zero(),
   CB(cDisplay->SetWindowTransparency, bool), TBOOLEAN|PSYSTEM },
 /* ------------------------------------------------------------------------- */
+// ! VID_API
+// ? Specifies the API to use. This is only used for troubleshooting purposes
+// ? only and serves no other purpose. Select 0 (default) for GLFW_OPENGL_API,
+// ? 1 for GLFW_OPENGL_ES_API or 2 for GLFW_NO_API.
+/* ------------------------------------------------------------------------- */
+{ CF_VIDEO, "vid_api",  cCommon->Zero(),
+  CB(cDisplay->ApiChanged, size_t), TUINTEGER|PBOOT|PSYSTEM },
+/* ------------------------------------------------------------------------- */
 // ! VID_AUXBUFFERS
 // ? Specified the number of auxiliary swap chain buffers to use. Specify 0
 // ? for double-buffering, 1 for triple-buffering or -1 to let the OpenGL
@@ -1184,19 +1192,27 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
   CB(cDisplay->AuxBuffersChanged, int), TINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_BPP
-// ? Set default bits-per-pixel. On Windows, the driver can decide properly
-// ? what depth to use, but on others the bit depth is forced to RGBA161616 to
-// ? resolve gradient banding issues but you can override that if you like.
+// ? Set default framebuffer bits-per-pixel. On Windows, the driver can decide
+// ? properly what depth to use, but on others we force the bit depth to 10-bit
+// ? to resolve colour banding issues but you can override that if you like.
 /* ------------------------------------------------------------------------- */
 { CF_VIDEO, "vid_bpp",
 /* ------------------------------------------------------------------------- */
 #if defined(WINDOWS)
   cCommon->Zero(),                     // Win32 doesn't need forcing depth
 #else
-  "16",                                // For better bit-depth quality
+  "10",                                // Force RGBA10101010
 #endif
 /* ------------------------------------------------------------------------- */
   CB(cDisplay->SetForcedBitDepth, int), TUINTEGER|PANY },
+/* ------------------------------------------------------------------------- */
+// ! VID_CONTEXT
+// ? Specifies the context version to use. This is only used for
+// ? troubleshooting purposes only and serves no other purpose. The default is
+// ? 3.2 for OpenGL Core Profile.
+/* ------------------------------------------------------------------------- */
+{ CF_VIDEO, "vid_context", "3.2",
+  CBSTR(cDisplay->CtxVersionChanged), TSTRING|MTRIM|CNOTEMPTY|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_CLEAR
 // ? Specifies to clear the main frame buffer every frame.
@@ -1209,6 +1225,13 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 /* ------------------------------------------------------------------------- */
 { CF_VIDEO, "vid_clearcolour", cCommon->Zero(),
   CB(cFboMain->SetBackBufferClearColour, unsigned int), TUINTEGER|PSYSTEM },
+/* ------------------------------------------------------------------------- */
+// ! VID_DBLBUFF
+// ? Specifies to use double-buffering. This is only used for troubleshooting
+// ? purposes only and serves no other purpose. The default is 1 for yes.
+/* ------------------------------------------------------------------------- */
+{ CF_VIDEO, "vid_dblbuff", cCommon->One(),
+  CB(cDisplay->DoubleBufferChanged, bool), TBOOLEAN|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_DEBUG
 // ? Sets 'GLFW_OPENGL_DEBUG_CONTEXT'. Default is 0 (disabled).
@@ -1231,6 +1254,14 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 /* ------------------------------------------------------------------------- */
 { CF_VIDEO, "vid_fsaa", "-1",
   CB(cDisplay->FsaaChanged, int), TINTEGERSAVE|CPOW2Z|PANY },
+/* ------------------------------------------------------------------------- */
+// ! VID_FORWARD
+// ? Specifies to use a forward compatible context. This is only used for
+// ? troubleshooting purposes only and serves no other purpose. The default is
+// ? 1 for yes.
+/* ------------------------------------------------------------------------- */
+{ CF_VIDEO, "vid_forward", cCommon->One(),
+  CB(cDisplay->ForwardChanged, bool), TBOOLEAN|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_FSMODE
 // ? Specifies which full-screen mode to use. You can check the log or use
@@ -1318,6 +1349,15 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 { CF_VIDEO, "vid_orwidth", "640",
   CB(cDisplay->SetOrthoWidth, GLfloat), TUFLOAT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
+// ! VID_PROFILE
+// ? Specifies the type of profile to create the context for. This is only used
+// ? for troubleshooting purposes only and serves no other purpose. Select 0
+// ? (default) for GLFW_OPENGL_CORE_PROFILE, 1 for GLFW_OPENGL_COMPAT_PROFILE
+// ? or 2 for GLFW_OPENGL_ANY_PROFILE.
+/* ------------------------------------------------------------------------- */
+{ CF_VIDEO, "vid_profile", cCommon->Zero(),
+  CB(cDisplay->ProfileChanged, size_t), TUINTEGER|PBOOT|PSYSTEM },
+/* ------------------------------------------------------------------------- */
 // ! VID_QCOMPRESS
 // ? Specifies texture compression quality. Default is maximum.
 /* ------------------------------------------------------------------------- */
@@ -1367,6 +1407,15 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 { CF_VIDEO, "vid_rdtex", "10",
   CB(cOgl->SetTexDListReserve, size_t), TINTEGER|PSYSTEM|CUNSIGNED|PBOOT },
 /* ------------------------------------------------------------------------- */
+// ! VID_RELEASE
+// ? Specifies the context release behaviour. This is only used
+// ? for troubleshooting purposes only and serves no other purpose. Select 0
+// ? (default) for GLFW_ANY_RELEASE_BEHAVIOR, 1 for GLFW_RELEASE_BEHAVIOR_FLUSH
+// ? or 2 for GLFW_RELEASE_BEHAVIOR_NONE.
+/* ------------------------------------------------------------------------- */
+{ CF_VIDEO, "vid_release", cCommon->Zero(),
+  CB(cDisplay->ReleaseChanged, size_t), TUINTEGER|PBOOT|PSYSTEM },
+/* ------------------------------------------------------------------------- */
 // ! VID_RFBO
 // ? Pre-allocates space for the specified number of frame buffer names. By
 // ? default we allocate enough room for the main frame buffer and the console
@@ -1385,6 +1434,15 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 /* ------------------------------------------------------------------------- */
 { CF_VIDEO, "vid_rfloats", "10000",
   CB(cFboMain->SetFloatReserve, size_t), TINTEGER|PSYSTEM|CUNSIGNED|PBOOT },
+/* ------------------------------------------------------------------------- */
+// ! VID_ROBUSTNESS
+// ? Specifies the robustness strategy of the context. This is only used
+// ? for troubleshooting purposes only and serves no other purpose. Specify 0
+// ? for GLFW_NO_RESET_NOTIFICATION, 1 (default) for
+// ? GLFW_LOSE_CONTEXT_ON_RESET or 2 for GLFW_NO_ROBUSTNESS.
+/* ------------------------------------------------------------------------- */
+{ CF_VIDEO, "vid_robustness", cCommon->One(),
+  CB(cDisplay->RobustnessChanged, size_t), TUINTEGER|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_SIMPLEMATRIX
 // ? Set to 0 to not maintain frame buffer aspect ratio, or 1 to allow the

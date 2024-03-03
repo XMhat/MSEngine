@@ -26,7 +26,7 @@ enum LHLevel                           // Log helper level flags
   LH_DEBUG,                            // Log message is for debugging
   LH_MAX,                              // Maximum log message level
 };
-/* -- Log line typedefs -------------------------------------------------- */
+/* -- Log line typedefs ---------------------------------------------------- */
 struct LogLine                         // Log line structure
 { /* ----------------------------------------------------------------------- */
   const double     dTime;              // The time it happend

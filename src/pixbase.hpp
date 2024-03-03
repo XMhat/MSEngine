@@ -83,27 +83,10 @@ class SysBase :                        // Safe exception handler namespace
     Dl_info diData;
     // Need some extra work on Apple
 #if defined(MACOS)
-    // Convert to string
-    string strLine{ cpStack };
-    // Enumerate characters
-    for(auto itC{ strLine.begin() }; itC != strLine.end(); ++itC)
-    { // What character?
-      switch(*itC)
-      { // Space?
-        case ' ':
-          // Strip all the other spaces
-          for(++itC;
-                itC != strLine.end() && *itC == ' ';
-                itC = strLine.erase(itC));
-          // Done
-          break;
-        // Ignore anything else
-        default: break;
-      }
-    } // Now tokenise it. Note that objc calls will have spaces in them but
-    // the last two tokens should always be a + and a number which we will
-    // grab.
-    const Token tokData{ strLine, " " };
+    // Tokenise the stack after removing duplicate whitespaces. Note that objc
+    // calls will have spaces in them but the last two tokens should always be
+    // a + and a number which we will grab.
+    const Token tokData{ StrCompact(cpStack), " " };
     switch(tokData.size())
     { // Not enough data?
       case  0: staData.Data(cCommon->Unspec()).Data(cCommon->Unspec());
@@ -128,12 +111,12 @@ class SysBase :                        // Safe exception handler namespace
     { // Just add unknown and try the next function level
       staData.Data(cCommon->Unspec());
       return;
-    }
+    } // Running on Linux?
 #else
     // Get information about the item and if failed?
     if(!dladdr(vpStack, &diData))
-    { // Just add unknown and try the next function level
-      staData.Data().Data().Data(cCommon->Unspec());
+    { // Just add what the second value was and return
+      staData.Data(tokData[1]);
       return;
     }
 #endif
@@ -146,37 +129,62 @@ class SysBase :                        // Safe exception handler namespace
       uPtr{ abi::__cxa_demangle(diData.dli_sname,
         nullptr, nullptr, &iStatus), free })
           staData.Data(uPtr.get());
-    // Process error code
-    else staData.Data(StrFormat("<$:$>", iStatus, diData.dli_sname));
+    // What is the return code for this call?
+    else switch(iStatus)
+    { // Memory error?
+      case -1: staData.Data(StrFormat("<MAE:$>", diData.dli_sname)); break;
+      // Not a valid name?
+      case -2: staData.Data(diData.dli_sname); break;
+      // Invalid argument?
+      case -3: staData.Data(StrFormat("<IA:$>", diData.dli_sname)); break;
+      // Success (impossible) or unknown?
+      default:
+        staData.Data(StrFormat("<$:$>", iStatus, diData.dli_sname));
+        break;
+    }
   }
   /* ----------------------------------------------------------------------- */
   void DumpStack(ostringstream &osS) const
   { // Create array to hold stack pointers
     array<void*, 256> vaArray;
-    // Get stack pointers array
-    const int iMaxFrames = sizeof(vaArray) / sizeof(vaArray[0]),
-              iSize = backtrace(vaArray.data(), iMaxFrames);
-    // Spreadsheet formatter
-    Statistic staData;
-    staData.Header("#").Header("Module").Header("Address")
-           .Header("Function", false);
-    // Get stack trace. For some reason, GCC on Linux doesn't like
-    // decltype(free) but void(void*) works.
-    if(unique_ptr<char*, function<void(void*)>> uStack{
-      backtrace_symbols(vaArray.data(), iSize), free })
-    { // Convert entries to size_t
-      const size_t stSize = static_cast<size_t>(iSize);
-      // Reserve specified number of rows in output table
-      staData.Reserve(stSize);
-      // Write pointer address and name
-      for(size_t stI = 0; stI < stSize; ++stI)
-      { // Add ID
-        staData.DataN(stI);
-        // Add others
-        DebugFunction(staData, uStack.get()[stI], vaArray[stI]);
+    // Get the number of stack frames that can fit in the array and if can?
+    if(const int iSize = backtrace(vaArray.data(),
+      sizeof(vaArray) / sizeof(vaArray[0])))
+    { // Get stack trace. For some reason, GCC on Linux doesn't like
+      // decltype(free) but void(void*) works.
+      if(unique_ptr<char*, function<void(void*)>> uStack{
+        backtrace_symbols(vaArray.data(), iSize), free })
+      { // Convert entries to size_t
+        const size_t stSize = static_cast<size_t>(iSize);
+        // Setup table formatter
+        Statistic staData;
+        staData.Header("#")
+        // MacOS shows extra information with 'backtrace_symbols()'
+        // 'STACKID MODULE ADDRESS FUNCTION' as opposite to 'STACKID FUNCTION'
+        // on Linux systems.
+#if defined(MACOS)
+               .Header("Module").Header("Address")
+#endif
+               .Header("Function", false)
+        // Reserve specified number of rows in output table
+               .Reserve(stSize);
+        // Write pointer address and name
+        for(size_t stI = 0; stI < stSize; ++stI)
+        { // Add ID
+          staData.DataN(stI);
+          // Add others
+          DebugFunction(staData, uStack.get()[stI], vaArray[stI]);
+        } // We got a stack trace
+        osS << ", stack trace:-\n";
+        // Build output into string stream
+        staData.Finish(osS);
+        // Footer
+        osS << stSize << " calls.\n";
+        // Done
+        return;
       }
-    } // Build output into string stream
-    staData.Finish(osS);
+    } // Problem generating backtrace.
+    osS << '.';
   }
   /* ----------------------------------------------------------------------- */
   void DumpMods(ostringstream &osS)
@@ -202,12 +210,12 @@ class SysBase :                        // Safe exception handler namespace
   /* ----------------------------------------------------------------------- */
   ExitState DebugMessage(const char*const cpSignal, const char*const cpExtra)
   { // Build filename
-    string strFileName{ cCmdLine ? StrAppend(cCmdLine->GetCArgs()[0], ".dbg") :
-      "/tmp/msengine-crash.txt" };
+    const string strFileName{ cCmdLine ?
+      StrAppend(cCmdLine->GetCArgs()[0], ".dbg") : "/tmp/msengine-crash.txt" };
     // Begin message
     ostringstream osS;
     osS << "Received signal 'SIG" << cpSignal << "' at "
-        << cmSys.FormatTime() << ", stack trace:-\n";
+        << cmSys.FormatTime();
     // Dump the stack
     DumpStack(osS);
     // Add extra information if set
@@ -241,7 +249,7 @@ class SysBase :                        // Safe exception handler namespace
               << fOut.IdentGet() << "' because " << fOut.FStreamGetErrStr()
               << '!';
     // Finish string
-    osTS << " Please press OK to terminate.";
+    osTS << " Please press the button to terminate.";
     // Show message box
     SysMessage("Critical error!", osTS.str(), MB_ICONSTOP);
     // Send requested exit code

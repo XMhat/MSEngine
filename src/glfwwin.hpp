@@ -73,7 +73,7 @@ class GlFWWindow :                     // GLFW window class
   /* -- Event handler for 'glfwSetFramebufferSizeCallback' ----------------- */
   static void WinOnFrameBufferSize(GLFWwindow*const wC, int iW, int iH)
   { // On Mac?
-#ifdef MACOS
+#if defined(MACOS)
     // Note that there is literally no chance for this to be false but it's not
     // really time critical and only a programming error we make could cause it
     // so we shall check it anyway.
