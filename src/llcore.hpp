@@ -16,10 +16,12 @@
 /* ========================================================================= */
 namespace LLCore {                     // Core namespace
 /* -- Dependencies --------------------------------------------------------- */
-using namespace ICore::P;              using namespace IDisplay::P;
-using namespace IEvtMain::P;           using namespace ILog::P;
-using namespace ILua::P;               using namespace IStd::P;
-using namespace ISystem::P;            using namespace ITimer::P;
+using namespace IConDef::P;
+using namespace IConsole::P;           using namespace ICore::P;
+using namespace IDisplay::P;           using namespace IEvtMain::P;
+using namespace ILog::P;               using namespace ILua::P;
+using namespace IStd::P;               using namespace ISystem::P;
+using namespace ITimer::P;
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Core.* namespace functions                                          ## **
@@ -68,7 +70,7 @@ LLFUNC(End, cEvtMain->Add(EMC_LUA_END));
 // > Text:string=The line of text to write to the log.
 // ? Writes the specified line of text to the engine log with highest level.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Log, cLog->LogExSafe(LH_DISABLED, "(Lua) $",
+LLFUNC(Log, cLog->LogExSafe(LH_CRITICAL, "(Lua) $",
   LCGETSTRING(char, 1, "String")));
 /* ========================================================================= */
 // $ Core.LogEx
@@ -79,7 +81,7 @@ LLFUNC(Log, cLog->LogExSafe(LH_DISABLED, "(Lua) $",
 // ? log anything.
 /* ------------------------------------------------------------------------- */
 LLFUNC(LogEx,
-  cLog->LogExSafe(LCGETINTLGE(LHLevel, 2, LH_DISABLED, LH_MAX, "Level"),
+  cLog->LogExSafe(LCGETINTLGE(LHLevel, 2, LH_CRITICAL, LH_MAX, "Level"),
     "(Lua) $", LCGETSTRING(char, 1, "String")));
 /* ========================================================================= */
 // $ Core.Events
@@ -175,19 +177,65 @@ LLFUNC(OnTick, LCSETEVENTCB(cLua->lrMainTick));
 // ? instead if you want to change to a new main tick function.
 /* ------------------------------------------------------------------------- */
 LLFUNC(OnEnd, LCSETEVENTCB(cLua->lrMainEnd));
+/* ========================================================================= */
+// $ Core.Write
+// > Text:string=Text to write to console.
+// ? Writes the specified line of text directly to the console with no regard
+// ? to colour of text.
+/* ------------------------------------------------------------------------- */
+LLFUNC(Write,
+  cConsole->AddLine(LCGETCPPSTRING(1, "String"), COLOUR_CYAN));
+/* ========================================================================= */
+// $ Core.WriteEx
+// > Text:string=Text to write to console.
+// > Colour:integer=The optional colour to use.
+// ? Writes the specified line of text directly to the console with the
+// ? specified text colour.
+/* ------------------------------------------------------------------------- */
+LLFUNC(WriteEx, cConsole->AddLine(LCGETCPPSTRINGNE(1, "String"),
+  LCGETINTLGE(Colour, 2, COLOUR_BLACK, COLOUR_MAX, "Colour")));
+/* ========================================================================= */
+// $ Core.StatusLeft
+// > Text:string=Console status text
+// ? In bot mode, this function will set the text to appear when no text is
+// ? input into the input bar. Useful for customised stats. It will update
+// ? every second.
+/* ------------------------------------------------------------------------- */
+LLFUNC(StatusLeft, cConsole->SetStatusLeft(LCGETCPPSTRING(1, "String")));
+/* ========================================================================= */
+// $ Core.StatusRight
+// > Text:string=Console status text
+// ? In bot mode, this function will set the text to appear when no text is
+// ? input into the input bar. Useful for customised stats. It will update
+// ? every second.
+/* ------------------------------------------------------------------------- */
+LLFUNC(StatusRight,
+  cConsole->SetStatusRight(LCGETCPPSTRING(1, "String")));
+/* ========================================================================= */
+// $ Core.ScrollDown
+// ? Scrolls the console up one line
+/* ------------------------------------------------------------------------- */
+LLFUNC(ScrollDown, cConsole->MoveLogDown());
+/* ========================================================================= */
+// $ Core.ScrollUp
+// ? Scrolls the console up one line
+/* ------------------------------------------------------------------------- */
+LLFUNC(ScrollUp, cConsole->MoveLogUp());
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Core.* namespace functions structure                                ## **
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Core.* namespace functions begin
-  LLRSFUNC(Delay),        LLRSFUNC(Done),       LLRSFUNC(End),
-  LLRSFUNC(Events),       LLRSFUNC(KillPid),    LLRSFUNC(Log),
-  LLRSFUNC(LogEx),        LLRSFUNC(OnEnd),      LLRSFUNC(OnTick),
-  LLRSFUNC(Pause),        LLRSFUNC(PidRunning), LLRSFUNC(Quit),
-  LLRSFUNC(Reset),        LLRSFUNC(Restart),    LLRSFUNC(RestartNP),
-  LLRSFUNC(RestoreDelay), LLRSFUNC(SetDelay),   LLRSFUNC(SetIcon),
-  LLRSFUNC(Stack),        LLRSFUNC(WaitAsync),
+  LLRSFUNC(Delay),        LLRSFUNC(Done),        LLRSFUNC(End),
+  LLRSFUNC(Events),       LLRSFUNC(KillPid),     LLRSFUNC(Log),
+  LLRSFUNC(LogEx),        LLRSFUNC(OnEnd),       LLRSFUNC(OnTick),
+  LLRSFUNC(Pause),        LLRSFUNC(PidRunning),  LLRSFUNC(Quit),
+  LLRSFUNC(Reset),        LLRSFUNC(Restart),     LLRSFUNC(RestartNP),
+  LLRSFUNC(RestoreDelay), LLRSFUNC(ScrollDown),  LLRSFUNC(ScrollUp),
+  LLRSFUNC(SetDelay),     LLRSFUNC(SetIcon),     LLRSFUNC(Stack),
+  LLRSFUNC(StatusLeft),   LLRSFUNC(StatusRight), LLRSFUNC(Write),
+  LLRSFUNC(WriteEx),      LLRSFUNC(WaitAsync),
 LLRSEND                                // Core.* namespace functions end
 /* ========================================================================= **
 ** ######################################################################### **
@@ -199,17 +247,33 @@ LLRSEND                                // Core.* namespace functions end
 // ? Returns a table of key/value pairs that identify possible log levels.
 /* ------------------------------------------------------------------------- */
 LLRSKTBEGIN(LogLevels)                 // Beginning of log levels
-  LLRSKTITEM(LH_,DISABLED),            LLRSKTITEM(LH_,ERROR),
+  LLRSKTITEM(LH_,CRITICAL),            LLRSKTITEM(LH_,ERROR),
   LLRSKTITEM(LH_,WARNING),             LLRSKTITEM(LH_,INFO),
   LLRSKTITEM(LH_,DEBUG),               LLRSKTITEM(LH_,MAX),
 LLRSKTEND                              // End of log levels
+/* ========================================================================= */
+// @ Core.Colours
+// < Data:table=A table of const string/int key pairs
+// ? Returns all the colour palette of console colours used with ConWrite.
+/* ------------------------------------------------------------------------- */
+LLRSKTBEGIN(Colours)                   // Beginning of console colours
+  LLRSKTITEM(COLOUR_,BLACK),           LLRSKTITEM(COLOUR_,BLUE),
+  LLRSKTITEM(COLOUR_,GREEN),           LLRSKTITEM(COLOUR_,CYAN),
+  LLRSKTITEM(COLOUR_,RED),             LLRSKTITEM(COLOUR_,GRAY),
+  LLRSKTITEM(COLOUR_,MAGENTA),         LLRSKTITEM(COLOUR_,BROWN),
+  LLRSKTITEM(COLOUR_,LGRAY),           LLRSKTITEM(COLOUR_,LBLUE),
+  LLRSKTITEM(COLOUR_,LGREEN),          LLRSKTITEM(COLOUR_,LCYAN),
+  LLRSKTITEM(COLOUR_,LRED),            LLRSKTITEM(COLOUR_,LMAGENTA),
+  LLRSKTITEM(COLOUR_,YELLOW),          LLRSKTITEM(COLOUR_,WHITE),
+  LLRSKTITEM(COLOUR_,MAX),
+LLRSKTEND                              // End of console colours
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Core.* namespace constants structure                                ## **
 ** ######################################################################### **
 ** ========================================================================= */
 LLRSCONSTBEGIN                         // Core.* namespace consts begin
-  LLRSCONST(LogLevels),
+  LLRSCONST(Colours), LLRSCONST(LogLevels),
 LLRSCONSTEND                           // Core.* namespace consts end
 /* ========================================================================= */
 }                                      // End of Core namespace

@@ -92,22 +92,22 @@ local function InitIntro(bAndSetup)
       -- If we're not in widescreen?
       if iStageL == 0 then
         -- Draw video normally
-        vVideo:SetTexCoord(0, 0, 1, 1);
-        vVideo:SetVertex(0, 0, 320, 240);
+        vVideo:SetTCLTRB(0, 0, 1, 1);
+        vVideo:SetVLTRB(0, 0, 320, 240);
         vVideo:Blit();
       -- In widescreen?
       else
         -- Draw video effect for widescreen (left side)
-        vVideo:SetTexCoord(0, 0, 0, 1);
-        vVideo:SetVertex(0, 0, iStageL, 240);
+        vVideo:SetTCLTRB(0, 0, 0, 1);
+        vVideo:SetVLTRB(0, 0, iStageL, 240);
         vVideo:Blit();
         -- Draw video effect for widescreen (right side)
-        vVideo:SetTexCoord(1, 0, 1, 1);
-        vVideo:SetVertex(iStageR, 0, 320, 240);
+        vVideo:SetTCLTRB(1, 0, 1, 1);
+        vVideo:SetVLTRB(iStageR, 0, 320, 240);
         vVideo:Blit();
         -- Draw the actual video in the centre (4:3)
-        vVideo:SetTexCoord(0, 0, 1, 1);
-        vVideo:SetVertex(0, 0, 320, 240);
+        vVideo:SetTCLTRB(0, 0, 1, 1);
+        vVideo:SetVLTRB(0, 0, 320, 240);
         vVideo:Blit();
         -- Draw transparent tiles over the top of the widescreen border
         tTiles:SetCRGBA(1, 1, 1, 0.5);

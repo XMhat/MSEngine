@@ -28,23 +28,29 @@ using namespace Lib::Ogg;              using namespace Lib::OpenAL;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* ------------------------------------------------------------------------- */
-enum StreamEvents { SE_PLAY, SE_STOP }; // Playback events
+enum StreamEvents : unsigned int { SE_PLAY, SE_STOP }; // Playback events
 /* ------------------------------------------------------------------------- */
-enum StreamPlayState { PS_STANDBY,     // Is not playing
-                       PS_PLAYING,     // Is playing
-                       PS_FINISHING,   // Was stopping (no more data)
-                       PS_WASPLAYING,  // Was playing (audio reset)
-                       PS_MAX };       // Maximum number of states
+enum StreamPlayState : unsigned int    // Current playback state
+{ /* ----------------------------------------------------------------------- */
+  PS_STANDBY,                          // Is not playing?
+  PS_PLAYING,                          // Is playing?
+  PS_FINISHING,                        // Was stopping? (no more data)
+  PS_WASPLAYING,                       // Was playing? (audio re-init)
+  PS_MAX                               // Maximum number of states
+};/* ----------------------------------------------------------------------- */
 typedef IdList<PS_MAX> PSList;         // Play state strings
 /* ------------------------------------------------------------------------- */
-enum StreamStopReason { SR_STOPNOUNQ,  // Successful stop with no unqueue
-                        SR_STOPUNQ,    // Successful stop with unqueue
-                        SR_REBUFFAIL,  // Rebuffer failed
-                        SR_RWREBUFFAIL,// Rewind/Rebuffer failed
-                        SR_GENBUFFAIL, // Generate source and buffer failed
-                        SR_STOPALL,    // Stopping all buffers (reset/quit)
-                        SR_LUA,        // Requested by Lua (guest).
-                        SR_MAX };      // Maximum number of stop reasons
+enum StreamStopReason : unsigned int   // Reason playback stopped
+{ /* ----------------------------------------------------------------------- */
+  SR_STOPNOUNQ,                        // Successful stop with no unqueue
+  SR_STOPUNQ,                          // Successful stop with unqueue
+  SR_REBUFFAIL,                        // Rebuffer failed
+  SR_RWREBUFFAIL,                      // Rewind/Rebuffer failed
+  SR_GENBUFFAIL,                       // Generate source and buffer failed
+  SR_STOPALL,                          // Stopping all buffers (reset/quit)
+  SR_LUA,                              // Requested by Lua (guest).
+  SR_MAX                               // Maximum number of stop reasons
+};/* ----------------------------------------------------------------------- */
 typedef IdList<SR_MAX> SRList;         // Stop reason strings
 /* -- Stream collector class for collector data and custom variables ------- */
 BEGIN_ASYNCCOLLECTOREX(Streams, Stream, CLHelperSafe,
@@ -56,12 +62,12 @@ size_t             stBufSize;,,        /* Size of each buffer               */\
 /* -- Derived classes ------------------------------------------------------ */
 private LuaEvtMaster<Stream,LuaEvtTypeParam<Stream>>); /* Lua event handler */\
 /* ========================================================================= */
-BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
+BEGIN_ASYNCMEMBERCLASS(Streams, Stream, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
-  public AsyncLoader<Stream>,          // Asynchronous loading of Streams
+  public Ident,                        // Stream file name
+  public AsyncLoaderStream,            // Asynchronous loading of Streams
   public LuaEvtSlave<Stream>,          // Lua event system for Stream
-  public Lockable,                     // Lua garbage collector instruction
-  private Memory                       // Playback memory buffer
+  public Lockable                      // Lua garbage collector instruction
 { /* -- Variables ---------------------------------------------------------- */
   FileMap          fmFile;             // FileMap class
   OggVorbis_File   ovfContext;         // Ogg vorbis file context
@@ -137,11 +143,11 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
   /* -- Get total PCM samples ---------------------------------------------- */
   ogg_int64_t GetSamples(void) { return ov_pcm_total(&ovfContext, -1); }
   /* -- Convert stop reason to string -------------------------------------- */
-  const string &StopReasonToString(const StreamStopReason srReason) const
-    { return cParent.srStrings.Get(srReason); }
+  const string_view &StopReasonToString(const StreamStopReason srReason) const
+    { return cParent->srStrings.Get(srReason); }
   /* -- Convert stop reason to string -------------------------------------- */
-  const string &StateReasonToString(const StreamPlayState psReason) const
-    { return cParent.psStrings.Get(psReason); }
+  const string_view &StateReasonToString(const StreamPlayState psReason) const
+    { return cParent->psStrings.Get(psReason); }
   /* -- Stop (without locks) ----------------------------------------------- */
   void Stop(const StreamStopReason srReason)
   { // Don't have source class? There is nothing else to do!
@@ -200,8 +206,8 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
         ALfloat **fpPCM;
         // Read buffer
         if(const long lResult = ov_read_float(&ovfContext, &fpPCM,
-          static_cast<int>((Size() - stBSize) / stChannels / sizeof(ALfloat)),
-          nullptr))
+          static_cast<int>((MemSize() - stBSize) / stChannels /
+            sizeof(ALfloat)), nullptr))
         { // Error?
           if(lResult < 0)
             XC("Failed to decode ogg stream to float pcm!",
@@ -210,7 +216,7 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
           // Get size as size_t
           const size_t stBytes = static_cast<size_t>(lResult);
           // Converted to float buffer
-          ALfloat*const fpPCMout = Read<ALfloat>(stBSize);
+          ALfloat*const fpPCMout = MemRead<ALfloat>(stBSize);
           // Process frames to buffer (iFI=FrameIndex / iCI=ChanIndex)
           VorbisFramesToF32PCM(fpPCM, stBytes, stChannels, fpPCMout);
           // Increase buffer
@@ -218,7 +224,7 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
         } // Break loop when no bytes read
         else break;
       } // ...until buffer is filled
-      while(stBSize < Size());
+      while(stBSize < MemSize());
     }
     else
     { // Two bytes per channel (short)
@@ -226,8 +232,9 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
       // Loop...
       do
       { // Read buffer
-        if(const long lResult = ov_read(&ovfContext, Read(stBSize),
-          static_cast<int>(Size() - stBSize), 0, sizeof(ALshort), 1, nullptr))
+        if(const long lResult = ov_read(&ovfContext, MemRead(stBSize),
+          static_cast<int>(MemSize() - stBSize), 0, sizeof(ALshort), 1,
+            nullptr))
         { // Check result
           if(lResult < 0)
             XC("Failed to decode ogg stream to integer pcm!",
@@ -238,7 +245,7 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
         } // Break loop when no bytes read
         else break;
       } // ...until buffer is filled
-      while(stBSize < Size());
+      while(stBSize < MemSize());
     } // Calculate pcm samples read in 32-bit floats
     const ogg_int64_t qS = static_cast<ogg_int64_t>(stBSize) /
                            static_cast<ogg_int64_t>(stBpc) /
@@ -250,18 +257,18 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
     // We cannot play the next part of the audio due to loop end position
     else
     { // Restrict number of samples to play, but don't go over the buffer size
-      stBSize = UtilMinimum(Size(),
+      stBSize = UtilMinimum(MemSize(),
         static_cast<size_t>(qLoopEnd - qDecPos) * stBpc * stChannels);
       // Push forward
       qDecPos += stBSize;
     } // Return failure if no bytes were buffered
     if(!stBSize) return false;
     // Buffer the PCM data if we have some
-    AL(cOal->BufferData(uiBufferId, GetFormat(), Ptr<ALvoid>(),
+    AL(cOal->BufferData(uiBufferId, GetFormat(), MemPtr<ALvoid>(),
       static_cast<ALsizei>(stBSize), static_cast<ALsizei>(GetRate())),
       "Failed to buffer ogg stream data!",
       "Identifier", IdentGet(),  "BufferId",   uiBufferId,
-      "StrFormat",     GetFormat(), "BufferData", Ptr<void>(),
+      "StrFormat",     GetFormat(), "BufferData", MemPtr<void>(),
       "BufferSize", stBSize,     "Rate",       GetRate());
     // Return status
     return true;
@@ -374,10 +381,11 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
   ogg_int64_t GetSamplesSafe(void)
     { const LockGuard lgStreamSync{ mMutex }; return GetSamples(); }
   /* ----------------------------------------------------------------------- */
-  ogg_int64_t GetOggBytes(void) const { return fmFile.Size<ogg_int64_t>(); }
+  ogg_int64_t GetOggBytes(void) const { return fmFile.MemSize<ogg_int64_t>(); }
   /* -- GetFormat ---------------------------------------------------------- */
   ALenum GetFormat(void) const { return eFormat; }
-  const string GetFormatName(void) const { return cOal->GetALFormat(eFormat); }
+  const string_view GetFormatName(void) const
+    { return cOal->GetALFormat(eFormat); }
   /* -- Main (from audio thread) ------------------------------------------- */
   void Main(void)
   { // Wait for audio thread and lock access to stream buffers
@@ -539,6 +547,22 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
   /* -- Stop with lock ----------------------------------------------------- */
   void StopSafe(const StreamStopReason srReason)
     {  const LockGuard lgStreamSync{ mMutex }; Stop(srReason); }
+  /* -- Parse vorbis comments block ---------------------------------------- */
+  static StrNCStrMap ParseComments(char **const clpPtr, const int iCount)
+  { // Metadata to return
+    StrNCStrMap ssMetaData;
+    // Enumerate all the strings...
+    StdForEach(seq, clpPtr, clpPtr+iCount, [&ssMetaData](char*const cpStr)
+    { // Find equals delimiter and if we find it?
+      if(char*const cpPtr = strchr(cpStr, '='))
+      { // Remove separator (safe), add key/value pair and readd separator
+        *cpPtr = '\0';
+        ssMetaData.insert(ssMetaData.cend(), { cpStr, cpPtr+1 });
+      } // We at least have a string so add it as key with empty value
+      else ssMetaData.insert(ssMetaData.cend(), { cpStr, cCommon->CBlank() });
+    }); // Return built metadata
+    return ssMetaData;
+  }
   /* -- Load from memory --------------------------------------------------- */
   void AsyncReady(FileMap &fClass)
   { // Set file class
@@ -553,7 +577,7 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
     // calls will fail. We'll add a minimum value of 1 too just incase we get
     // a stream with no data.
     vBuffers.resize(UtilClamp(static_cast<size_t>(ceil(static_cast<ALdouble>
-      (GetSamples()) / cParent.stBufSize)), 1, cParent.stBufCount));
+      (GetSamples()) / cParent->stBufSize)), 1, cParent->stBufCount));
     // Get info about ogg and copy it into our static buffer if succeeded,
     // else show an exception if failed. This removes dereferencing of the
     // vorbis info struct.
@@ -568,34 +592,32 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
     eFormat = GetChannels() == 1 ?
       (cOal->Have32FPPB() ? AL_FORMAT_MONO_FLOAT32 : AL_FORMAT_MONO16) :
       (cOal->Have32FPPB() ? AL_FORMAT_STEREO_FLOAT32 : AL_FORMAT_STEREO16);
-    // Allocate the buffer with size from global setting
-    InitBlank(cParent.stBufSize);
+    // Allocate the buffer with size from global setting. We can re-use the
+    // 'Memory' class from the 'AsyncLoader' class.
+    MemInitBlank(cParent->stBufSize);
     // Set default loop position to the end
     SetLoopRange(0, GetSamples());
-    // Build a formatted table of meta data we can quickly access
-    if(const vorbis_comment*const vcStrings = ov_comment(&ovfContext, -1))
-      for(char*const *clpPtr = vcStrings->user_comments;
-          char*const cpStr = *clpPtr; ++clpPtr)
-      { // Ignore if string is valid but empty
-        if(!*cpStr) continue;
-        // Find equals delimiter and if we find it?
-        if(char*const cpStrPtr = strchr(cpStr, '='))
-        { // Remove separator (safe), add key/value pair and readd separator
-          *cpStrPtr = ' ';
-          ssMetaData.insert(ssMetaData.cend(), { cpStr, cpStrPtr+1 });
-          *cpStrPtr = '=';
-        } // We at least have a string so add it as key with empty value
-        else ssMetaData.insert(ssMetaData.cend(),
-          { cpStr, cCommon->CBlank() });
-      } // Generate buffers, recommending this amount
+    // Parse vorbis comments and if we got them?
+    if(vorbis_comment*const vcStrings = ov_comment(&ovfContext, -1))
+    { // Parse the comments and then free the strings
+      ssMetaData = StdMove(ParseComments(vcStrings->user_comments,
+        vcStrings->comments));
+      vorbis_comment_clear(vcStrings);
+      // Write vorbis comments to log
+      if(cLog->HasLevel(LH_DEBUG))
+      { // Write Vorbis comments
+        for(auto &aPair : ssMetaData)
+          cLog->LogNLCDebugExSafe("- Vorbis comment: $ -> $.",
+            aPair.first, aPair.second);
+      }
+    } // Generate buffers, recommending this amount
     GenerateBuffers();
     // Log ogg loaded
     cLog->LogInfoExSafe(
       "Stream loaded '$' (C=$;R=$;BR=$:$:$:$;D$=$;B=$;BS=$;V=$$).",
-      IdentGet(), GetChannels(), GetRate(),
-      viData.bitrate_upper, viData.bitrate_nominal,
-      viData.bitrate_lower, viData.bitrate_window,
-      fixed, GetDuration(), vBuffers.size(), Size(), hex, GetVersion());
+      IdentGet(), GetChannels(), GetRate(), viData.bitrate_upper,
+      viData.bitrate_nominal, viData.bitrate_lower, viData.bitrate_window,
+      fixed, GetDuration(), vBuffers.size(), MemSize(), hex, GetVersion());
   }
   /* -- Load stream from memory asynchronously ----------------------------- */
   void InitAsyncArray(lua_State*const lS)
@@ -623,9 +645,9 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
   /* -- Constructor -------------------------------------------------------- */
   Stream(void) :                       // No parameters
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperStream{ *cStreams },       // Initialise collector unregistered
-    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
-    AsyncLoader<Stream>{ this,         // Initialise async loader
+    ICHelperStream{ cStreams },        // Initialise collector unregistered
+    IdentCSlave{ cParent->CtrNext() }, // Initialise identification number
+    AsyncLoaderStream{ *this, this,    // Initialise async loader
       EMC_MP_STREAM },                 //   with our streaming event
     LuaEvtSlave{ this,                 // Initialise stream event manager
       EMC_STR_EVENT },                 //   with our stremaing event
@@ -651,7 +673,7 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
     AsyncCancel();
     // Guard mutex from sources management. Meaning that destruction cannot
     // proceed until the audio thread has finished processing
-    const LockGuard lgProtectAudioMain{ cParent.CollectorGetMutex() };
+    const LockGuard lgProtectAudioMain{ cParent->CollectorGetMutex() };
     // Wait for any previous operations on this stream (such as rebuffering)
     // to complete and lock simultanius access to this streams buffers/memory
     const LockGuard lgStreamSync{ mMutex };
@@ -729,8 +751,7 @@ static void StreamCommitVolume(void)
 }
 /* == Set number of buffers to allocate per stream ========================= */
 static CVarReturn StreamSetBufferCount(const size_t stNewCount)
-  { return CVarSimpleSetIntNLG(cStreams->stBufCount, stNewCount,
-      static_cast<size_t>(2), static_cast<size_t>(16)); }
+  { return CVarSimpleSetIntNLG(cStreams->stBufCount, stNewCount, 2UL, 16UL); }
 /* == Set all streams base volume ========================================== */
 static CVarReturn StreamSetVolume(const ALfloat fNewVolume)
 { // Ignore if invalid value
@@ -745,7 +766,7 @@ static CVarReturn StreamSetVolume(const ALfloat fNewVolume)
 /* -- Set memory allocated per buffer -------------------------------------- */
 static CVarReturn StreamSetBufferSize(const size_t stNewSize)
   { return CVarSimpleSetIntNLG(cStreams->stBufSize, stNewSize,
-      static_cast<size_t>(4096), static_cast<size_t>(65536)); }
+      4096UL, 65536UL); }
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */

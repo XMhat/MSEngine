@@ -43,81 +43,87 @@ struct Args :                          // Arguments list
     } // Set starting position because this current character is valid
     size_t stStart = stPos;
     // Until we reach end of string
-    for(char cSepChar = cNull; stPos < stLength; ++stPos)
-    { // Store and check current character
-      Again: switch(const char cChar = strArgs[stPos])
-      { // Whitespace?
-        case cSpace:
-        { // Break if we already have a seperator character because whitespaces
-          // are allowed until we find the end of it.
-          if(cSepChar != cNull) break;
-          // If we have an argument to save?
-          if(stPos > stStart)
-            emplace_back(strArgs.substr(stStart, stPos-stStart));
-          // Skip spaces and return the list if we've run out of characters
-          while(strArgs[stPos] == cSpace) if(++stPos >= stLength) return;
-          // Reset starting and ending position
-          stStart = stPos;
-          // Set if we're in quotation marks
-          switch(strArgs[stPos])
-          { case cApostrophy: [[fallthrough]];
-            case cQuotation: bQuote = true; break;
-            default: bQuote = false; break;
-          } // Test current character, don't move position ahead
-          goto Again;
-        } // Apostrophe or quotation mark?
-        case cApostrophy : case cQuotation:
-        { // Have a separator character?
-          if(cSepChar != cNull)
-          { // Its the seperator char? Reset seperator character
-            if(cChar == cSepChar)
-            { // Get position plus one
-              const size_t stPosP1 = stPos + 1;
-              // At end of string?
-              if(stPosP1 >= stLength)
-              { // If we're in quotation marks
-                if(bQuote)
-                { // Move start forward to ignore the starting quote character
-                  ++stStart;
-                  // Add new entry
-                  emplace_back(strArgs.substr(stStart, stPos-stStart));
-                } // Not in quotation marks? Add new entry
-                else emplace_back(strArgs.substr(stStart, stPosP1-stStart));
-                // Return the list
-                return;
-              } // Is a space character?
-              if(strArgs[stPosP1] == cSpace)
-              { // If we're in quotation marks
-                if(bQuote)
-                { // Move start forward to ignore the starting quote character
-                  ++stStart;
-                  // Add new entry
-                  emplace_back(strArgs.substr(stStart, stPos-stStart));
-                } // Not in quotation marks? Add new entry
-                else emplace_back(strArgs.substr(stStart, stPosP1-stStart));
-                // Skip spaces
-                while(strArgs[++stPos] == cSpace)
-                  if(stPos >= stLength) return;
-                // Reset starting and ending position
-                stStart = stPos;
-                // Set if we're in quotation marks
-                switch(strArgs[stPos])
-                { case cApostrophy: [[fallthrough]];
-                  case cQuotation: bQuote = true; break;
-                  default: bQuote = false; break;
-                } // Reset separator character
-                cSepChar = cNull;
-                // Test current character, don't move position ahead
-                goto Again;
-              } // Not at end of string and not a space character
-            } // Not separator character
-          } // Set new seperator character
-          else cSepChar = cChar;
-          // Done
-          break;
-        } // Everything else
-        default: break;
-      } // Character check
+    if(stPos < stLength)
+    { // Prefix and suffix being used for whole strings with spaces
+      char cSepChar = cNull;
+      // Repeat...
+      do
+      { // Check current character
+        switch(const char cChar = strArgs[stPos])
+        { // Whitespace?
+          case cSpace:
+          { // Break if we already have a seperator character because
+            // whitespaces are allowed until we find the end of it.
+            if(cSepChar != cNull) break;
+            // If we have an argument to save?
+            if(stPos > stStart)
+              emplace_back(strArgs.substr(stStart, stPos-stStart));
+            // Skip spaces and return the list if we've run out of characters
+            while(strArgs[stPos] == cSpace) if(++stPos >= stLength) return;
+            // Reset starting and ending position
+            stStart = stPos;
+            // Set if we're in quotation marks
+            switch(strArgs[stPos])
+            { case cApostrophy: [[fallthrough]];
+              case cQuotation: bQuote = true; break;
+              default: bQuote = false; break;
+            } // Test current character, don't move position ahead
+            continue;
+          } // Apostrophe or quotation mark?
+          case cApostrophy : case cQuotation:
+          { // Have a separator character?
+            if(cSepChar != cNull)
+            { // Its the seperator char? Reset seperator character
+              if(cChar == cSepChar)
+              { // Get position plus one and if at end of string?
+                const size_t stPosP1 = stPos + 1;
+                if(stPosP1 >= stLength)
+                { // If we're in quotation marks
+                  if(bQuote)
+                  { // Move start forward to ignore the starting quote char
+                    ++stStart;
+                    // Add new entry
+                    emplace_back(strArgs.substr(stStart, stPos-stStart));
+                  } // Not in quotation marks? Add new entry
+                  else emplace_back(strArgs.substr(stStart, stPosP1-stStart));
+                  // Return the list
+                  return;
+                } // Is a space character?
+                if(strArgs[stPosP1] == cSpace)
+                { // If we're in quotation marks
+                  if(bQuote)
+                  { // Move start forward to ignore the starting quote char
+                    ++stStart;
+                    // Add new entry
+                    emplace_back(strArgs.substr(stStart, stPos-stStart));
+                  } // Not in quotation marks? Add new entry
+                  else emplace_back(strArgs.substr(stStart, stPosP1-stStart));
+                  // Skip spaces
+                  while(strArgs[++stPos] == cSpace)
+                    if(stPos >= stLength) return;
+                  // Reset starting and ending position
+                  stStart = stPos;
+                  // Set if we're in quotation marks
+                  switch(strArgs[stPos])
+                  { case cApostrophy: [[fallthrough]];
+                    case cQuotation: bQuote = true; break;
+                    default: bQuote = false; break;
+                  } // Reset separator character
+                  cSepChar = cNull;
+                  // Test current character, don't move position ahead
+                  continue;
+                } // Not at end of string and not a space character
+              } // Not separator character
+            } // Set new seperator character
+            else cSepChar = cChar;
+            // Done
+            break;
+          } // Everything else
+          default: break;
+        } // Move forward in string
+        ++stPos;
+      } // ...until at end of string
+      while(stPos < stLength);
     } // If we have an argument to save then add the final argument to the list
     if(stPos > stStart) emplace_back(strArgs.substr(stStart, stPos-stStart));
   }

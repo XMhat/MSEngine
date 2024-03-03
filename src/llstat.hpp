@@ -18,7 +18,7 @@
 /* ========================================================================= */
 namespace LLStat {                     // Stat namespace
 /* -- Dependencies --------------------------------------------------------- */
-using namespace IStat::P;
+using namespace IStat::P;              using namespace IStd::P;
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Stat:* member functions                                             ## **
@@ -79,8 +79,10 @@ LLFUNC(Reserve, LCGETPTR(1, Stat)->Reserve(LCGETINT(size_t, 2, "Rows")));
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(Sort)
   Statistic &sStat = *LCGETPTR(1, Stat);
-  sStat.Sort(LCGETINTLGE(size_t, 2, 0, sStat.Headers(), "Column"),
-             LCGETBOOL(3, "Descending"));
+  sStat.Sort(
+    LCGETINTLGE(ssize_t, 2, 0, static_cast<ssize_t>(sStat.Headers()),
+      "Column"),
+    LCGETBOOL(3, "Descending"));
 LLFUNCEND
 /* ========================================================================= */
 // $ Stat:SortTwo
@@ -91,9 +93,11 @@ LLFUNCEND
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(SortTwo)
   Statistic &sStat = *LCGETPTR(1, Stat);
-  sStat.SortTwo(LCGETINTLGE(size_t, 2, 0, sStat.Headers(), "Column1"),
-                LCGETINTLGE(size_t, 3, 0, sStat.Headers(), "Column2"),
-                LCGETBOOL(4, "Descending"));
+  const ssize_t sstHeaders = static_cast<ssize_t>(sStat.Headers());
+  sStat.SortTwo(
+    LCGETINTLGE(ssize_t, 2, 0, sstHeaders, "Column1"),
+    LCGETINTLGE(ssize_t, 3, 0, sstHeaders, "Column2"),
+    LCGETBOOL(4, "Descending"));
 LLFUNCEND
 /* ========================================================================= */
 // $ Stat:Finish

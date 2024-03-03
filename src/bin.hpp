@@ -194,20 +194,19 @@ class Pack :
     if(iNWidth <= this->DimGetWidth())
     { // Return if new height same as old
       if(iNHeight <= this->DimGetHeight()) return false;
-      // New height specified so add new free rect and update it
-      UpdateHeight:
-      AddFreeRect(0, this->DimGetHeight(), iNWidth,
-        iNHeight - this->DimGetHeight());
-      this->DimSetHeight(iNHeight);
     } // New width specified?
     else
     { // New width specified so add new free rect and update it
       AddFreeRect(this->DimGetWidth(), 0,
         iNWidth - this->DimGetWidth(), this->DimGetHeight());
       this->DimSetWidth(iNWidth);
-      // New height specified? Update it
-      if(iNHeight > this->DimGetHeight()) goto UpdateHeight;
-    } // Englarge complete
+      // New height not specified? We're done
+      if(iNHeight <= this->DimGetHeight()) return true;
+    } // New height specified so add new free rect and update it
+    AddFreeRect(0, this->DimGetHeight(), iNWidth,
+      iNHeight - this->DimGetHeight());
+    this->DimSetHeight(iNHeight);
+    // Englarge complete
     return true;
   }
   /* ----------------------------------------------------------------------- */
@@ -283,8 +282,8 @@ BEGIN_COLLECTORDUO(Bins, Bin, CLHelperUnsafe, ICHelperUnsafe),
 { /* -- Default constructor ---------------------------------------- */ public:
   Bin(void) :
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperBin{ *cBins, this },       // Register the object in collector
-    IdentCSlave{ cParent.CtrNext() }   // Initialise identification number
+    ICHelperBin{ cBins, this },        // Register the object in collector
+    IdentCSlave{ cParent->CtrNext() }  // Initialise identification number
     /* --------------------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */

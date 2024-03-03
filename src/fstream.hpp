@@ -14,28 +14,28 @@ using namespace IStd::P;               using namespace IString::P;
 using namespace IMemory::P;            using namespace IUtil::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
-/* -- FStream Class -------------------------------------------------------- */
-class FStream :
+/* -- Typedefs ------------------------------------------------------------- */
+enum FStreamMode : size_t              // Open types allowed
+{ /* ----------------------------------------------------------------------- */
+  FM_R_T,                              // [00] "rt"  Read|Exists|Text
+  FM_W_T,                              // [01] "wt"  Write|New|Trunc|Text
+  FM_A_T,                              // [02] "at"  Write|Append|New|Text
+  FM_R_P_T,                            // [03] "r+t" Read|Write|Exists|Text
+  FM_W_P_T,                            // [04] "w+t" Read|Write|New|Trunc|Text
+  FM_A_P_T,                            // [05] "a+t" Read|Write|Append|New|Text
+  FM_R_B,                              // [06] "rb"  Read|Exists|Binary
+  FM_W_B,                              // [07] "wb"  Write|New|Trunc|Binary
+  FM_A_B,                              // [08] "ab"  Write|Append|New|Binary
+  FM_R_P_B,                            // [09] "r+b" Read|Write|Exists|Binary
+  FM_W_P_B,                            // [10] "w+b" Read|Write|New|Trunc|Binar
+  FM_A_P_B,                            // [11] "a+b" Read|Append|New|Binary
+  /* ----------------------------------------------------------------------- */
+  FM_MAX                               // [12] Maximum number of modes
+};/* -- FStream base class ------------------------------------------------- */
+class FStreamBase :                    // File stream base class
   /* -- Base classes ------------------------------------------------------- */
   public Ident                         // Contains filename string
-{ /* -- Public typedefs -------------------------------------------- */ public:
-  enum Mode                            // Open types allowed
-  { /* --------------------------------------------------------------------- */
-    FM_R_T,                            // [00] "rt"  Read|Exists|Text
-    FM_W_T,                            // [01] "wt"  Write|New|Trunc|Text
-    FM_A_T,                            // [02] "at"  Write|Append|New|Text
-    FM_R_P_T,                          // [03] "r+t" Read|Write|Exists|Text
-    FM_W_P_T,                          // [04] "w+t" Read|Write|New|Trunc|Text
-    FM_A_P_T,                          // [05] "a+t" Read|Write|Append|New|Text
-    FM_R_B,                            // [06] "rb"  Read|Exists|Binary
-    FM_W_B,                            // [07] "wb"  Write|New|Trunc|Binary
-    FM_A_B,                            // [08] "ab"  Write|Append|New|Binary
-    FM_R_P_B,                          // [09] "r+b" Read|Write|Exists|Binary
-    FM_W_P_B,                          // [10] "w+b" Read|Write|New|Trunc|Binar
-    FM_A_P_B,                          // [11] "a+b" Read|Append|New|Binary
-    /* --------------------------------------------------------------------- */
-    FM_MAX                             // [12] Maximum number of modes
-  };/* -- Private variables --------------------------------------- */ private:
+{ /* -- Private variables -------------------------------------------------- */
   FILE            *fStream;            // Stream handle
   int              iErrNo;             // Stored error number
   /* -- Accept a file stream from DoOpen() --------------------------------- */
@@ -52,7 +52,7 @@ class FStream :
   template<typename AnyType>AnyType FStreamErrNoWrapper(AnyType atVal)
     { iErrNo = errno; return atVal; }
   /* -- Open a file -------------------------------------------------------- */
-  bool FStreamDoOpen(const string &strFile, const Mode mMode)
+  bool FStreamDoOpen(const string &strFile, const FStreamMode fmMode)
   { // Obviously Windows has to be different from everyone else!
 #if defined(WINDOWS)                   // Using windows?
     // The mode supported (in unicode)
@@ -63,7 +63,7 @@ class FStream :
     // Send it to the Windows file open call and accept it if successful
     if(FILE*const fNew =
       FStreamErrNoWrapper(_wfsopen(UTFtoS16(strFile).c_str(),
-        cplModes[mMode], _SH_DENYWR)))
+        cplModes[fmMode], _SH_DENYWR)))
           return FStreamDoAccept(strFile, fNew);
 #else                                  // Using linux or MacOS?
     // The mode supported (in ansi string)
@@ -73,7 +73,7 @@ class FStream :
     };
     // Send it to the posix file open call and accept it if successful
     if(FILE*const fNew =
-      FStreamErrNoWrapper(fopen(strFile.c_str(), cplModes[mMode])))
+      FStreamErrNoWrapper(fopen(strFile.c_str(), cplModes[fmMode])))
         return FStreamDoAccept(strFile, fNew);
 #endif                                 // Operating system check
     // Failed
@@ -97,13 +97,11 @@ class FStream :
   int FStreamGetFdSafe(void) const
     { return FStreamOpened() ? FStreamGetFd() : EOF; }
   /* -- Swap stream handle and filename ------------------------------------ */
-  void FStreamSwap(FStream &fsOther)
+  void FStreamSwap(FStreamBase &fsOther)
     { swap(fStream, fsOther.fStream); IdentSwap(fsOther); }
   /* -- File is opened or closed?  ----------------------------------------- */
   bool FStreamOpened(void) const { return !!FStreamGetCtx(); }
   bool FStreamClosed(void) const { return !FStreamOpened(); }
-  /* -- Direct access using class variable name which returns opened ------- */
-  operator bool(void) const { return FStreamOpened(); }
   /* -- Return last error nuumber ------------------------------------------ */
   int FStreamGetErrNo(void) const { return iErrNo; }
   const string FStreamGetErrStr(void) const { return StrFromErrNo(iErrNo); }
@@ -181,17 +179,26 @@ class FStream :
   size_t FStreamWriteSafe(const void*const vpPtr, const size_t stBytes)
     { return FStreamIsReadyWrite() ? FStreamWrite(vpPtr, stBytes) : 0; }
   /* -- Write memory block to file ----------------------------------------- */
-  size_t FStreamWriteBlock(const DataConst &dcSrc)
-    { return FStreamWrite(dcSrc.Ptr(), dcSrc.Size()); }
-  size_t FStreamWriteBlockSafe(const DataConst &dcSrc)
-    { return FStreamIsReadyWrite() && !dcSrc.Empty() ?
-        FStreamWrite(dcSrc.Ptr(), dcSrc.Size()) : 0; }
+  size_t FStreamWriteBlock(const MemConst &mcSrc)
+    { return FStreamWrite(mcSrc.MemPtr(), mcSrc.MemSize()); }
+  size_t FStreamWriteBlockSafe(const MemConst &mcSrc)
+    { return FStreamIsReadyWrite() && mcSrc.MemIsNotEmpty() ?
+        FStreamWrite(mcSrc.MemPtr(), mcSrc.MemSize()) : 0; }
   /* -- Write a string to the file ----------------------------------------- */
   size_t FStreamWriteString(const string &strString)
     { return FStreamWrite(strString.data(), strString.length()); }
   size_t FStreamWriteStringSafe(const string &strString)
     { return FStreamIsReadyWrite() && !strString.empty() ?
         FStreamWrite(strString.data(), strString.length()) : 0; }
+  /* -- Formatted writing a string to the file ----------------------------- */
+  template<typename ...VarArgs>
+    size_t FStreamWriteStringEx(const char*const cpFormat,
+      const VarArgs &...vaArgs)
+        { return FStreamWriteString(StrFormat(cpFormat, vaArgs...)); }
+  template<typename ...VarArgs>
+    size_t FStreamWriteStringExSafe(const char*const cpFormat,
+      const VarArgs &...vaArgs)
+        { return FStreamWriteStringSafe(StrFormat(cpFormat, vaArgs...)); }
   /* -- Read entire file without knowing the size of the file -------------- */
   const string FStreamReadStringChunked(const size_t stBytes=4096)
   { // Stream to write strings to
@@ -215,7 +222,7 @@ class FStream :
   { // Allocate initial memory of expected bytes to read
     Memory mOut{ stBytes };
     // Read file data into buffer and resize buffer to the amount acteally read
-    mOut.Resize(FStreamRead(mOut.Ptr(), stBytes));
+    mOut.MemResize(FStreamRead(mOut.MemPtr(), stBytes));
     // Return the new size of the buffer and the number of bytes read
     return mOut;
   }
@@ -257,16 +264,16 @@ class FStream :
   /* -- Return size of file ------------------------------------------------ */
   int64_t FStreamSizeSafe(void) { return FStreamClosed() ? 0 : FStreamSize(); }
   /* -- Open a file without filename validation ---------------------------- */
-  int FStreamOpen(const string &strFile, const Mode mMode)
+  int FStreamOpen(const string &strFile, const FStreamMode fmMode)
   { // Try to open the file on disk and if succeeded?
-    if(FStreamDoOpen(strFile, mMode)) return 0;
+    if(FStreamDoOpen(strFile, fmMode)) return 0;
     // Using cmdline namespace
     using namespace ICmdLine::P;
     if(cCmdLine->IsNoHome()) return StdGetError();
     // Save error number
     const int iError = StdGetError();
     // Return original error code if persist storage fails or success
-    return FStreamDoOpen(cCmdLine->GetHome(strFile), mMode) ? iError : 0;
+    return FStreamDoOpen(cCmdLine->GetHome(strFile), fmMode) ? iError : 0;
   }
   /* -- Close file --------------------------------------------------------- */
   bool FStreamClose(void)
@@ -284,21 +291,21 @@ class FStream :
   bool FStreamCloseSafe(void)
     { return FStreamOpened() ? FStreamClose() : true; }
   /* -- Basic constructor with no init ------------------------------------- */
-  FStream(void) :                      // No parameters
+  FStreamBase(void) :                  // No parameters
     /* -- Initialisers ----------------------------------------------------- */
     fStream(nullptr),                  // File context not initialised yet
     iErrNo(0)                          // Error number not initialised yet
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor with optional checking --------------------------------- */
-  FStream(const string &strF, const Mode mMode) :
+  FStreamBase(const string &strF, const FStreamMode fmMode) :
     /* -- Initialisers ----------------------------------------------------- */
-    FStream{}                          // Initialise defaults
+    FStreamBase{}                      // Initialise defaults
     /* -- Open the file and throw error if failed -------------------------- */
-    { if(FStreamOpen(strF, mMode))
-        XCL("Failed to open file!", "File", strF, "Mode", mMode); }
+    { if(FStreamOpen(strF, fmMode))
+        XCL("Failed to open file!", "File", strF, "Mode", fmMode); }
   /* -- Constructor with rvalue name init, no open ------------------------- */
-  explicit FStream(string &&strF) :    // Movable filename string
+  explicit FStreamBase(string &&strF) :    // Movable filename string
     /* -- Initialisers ----------------------------------------------------- */
     Ident{ StdMove(strF) },            // Move filename across
     fStream(nullptr),                  // File context not initialised yet
@@ -306,7 +313,7 @@ class FStream :
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor with lvalue name init, no open ------------------------- */
-  explicit FStream(const string &strF) : // Filename to set
+  explicit FStreamBase(const string &strF) : // Filename to set
     /* -- Initialisers ----------------------------------------------------- */
     Ident{ strF },                     // Move filename across
     fStream(nullptr),                  // File context not initialised yet
@@ -314,7 +321,7 @@ class FStream :
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- MOVE assignment constructor ---------------------------------------- */
-  FStream(FStream &&fsOther) :         // Other FStream object
+  FStreamBase(FStreamBase &&fsOther) : // Other FStream object
     /* -- Initialisers ----------------------------------------------------- */
     Ident{ StdMove(fsOther) },         // Move filename across from other
     fStream(fsOther.FStreamGetCtx()),  // Copy stream context over
@@ -322,8 +329,27 @@ class FStream :
     /* -- Clear other handle ----------------------------------------------- */
     { fsOther.FStreamClearHandle(); }
   /* -- Destructor (Close the file if opened) ------------------------------ */
-  ~FStream(void)
+  ~FStreamBase(void)
     { if(FStreamOpened() && !FStreamIsHandleStd()) FStreamDoClose(); }
+  /* ----------------------------------------------------------------------- */
+  DELETECOPYCTORS(FStreamBase)         // Disable copy constructor and operator
+};/* ----------------------------------------------------------------------- */
+class FStream :                        // Main file stream class
+  /* -- Base classes ------------------------------------------------------- */
+  public FStreamBase                   // Contains fstream base class
+{ /* -- Direct access using class variable name which returns opened */ public:
+  operator bool(void) const { return FStreamOpened(); }
+  /* -- Basic constructor with no init ------------------------------------- */
+  FStream(void) : FStreamBase{} { }
+  /* -- Constructor with optional checking --------------------------------- */
+  FStream(const string &strF, const FStreamMode fmMode) :
+    FStreamBase(strF, fmMode) { }
+  /* -- Constructor with rvalue name init, no open ------------------------- */
+  explicit FStream(string &&strF) : FStreamBase(StdMove(strF)) { }
+  /* -- Constructor with lvalue name init, no open ------------------------- */
+  explicit FStream(const string &strF) : FStreamBase(strF) { }
+  /* -- MOVE assignment constructor ---------------------------------------- */
+  FStream(FStream &&fsOther) : FStreamBase(StdMove(fsOther)) { }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(FStream)             // Disable copy constructor and operator
 };/* ----------------------------------------------------------------------- */

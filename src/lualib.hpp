@@ -27,10 +27,12 @@ namespace P {                          // Start of public module namespace
 #define LCGETINTLEG(t,a,l,ge,n)        LuaUtilGetIntLEG<t>(lS, a, l, ge, n)
 #define LCGETINTLGE(t,a,l,ge,n)        LuaUtilGetIntLGE<t>(lS, a, l, ge, n)
 #define LCGETINTLG(t,a,l,g,n)          LuaUtilGetIntLG<t>(lS, a, l, g, n)
+#define LCGETINTLGP2(t,a,l,g,n)        LuaUtilGetIntLGP2<t>(lS, a, l, g, n)
 #define LCGETINT(t,a,n)                LuaUtilGetInt<t>(lS, a, n)
 #define LCGETNUMLGE(t,a,l,ge,n)        LuaUtilGetNumLGE<t>(lS, a, l, ge, n)
 #define LCGETNUMLG(t,a,l,g,n)          LuaUtilGetNumLG<t>(lS, a, l, g, n)
 #define LCGETNUM(t,a,n)                LuaUtilGetNum<t>(lS, a, n)
+#define LCGETNORM(t,a,n)               LuaUtilGetNormal<t>(lS, a, n)
 #define LCGETBOOL(a,n)                 LuaUtilGetBool(lS, a, n)
 #define LCGETSTRING(t,a,n)             LuaUtilGetStr<t>(lS, a, n)
 #define LCGETCPPSTRING(a,n)            LuaUtilGetCppStr(lS, a, n)
@@ -49,7 +51,7 @@ namespace P {                          // Start of public module namespace
 #define LCGETULPTR(p,t)                LuaUtilGetUnlockedPtr<t>(lS, p, #t)
 /* -- Macros to simplify try/catch on each lualib function ----------------- */
 #define LLFUNCBEGIN(n)                 static int Cb ## n(lua_State*const lS) {
-#define LLFUNCENDEX(p)                 UNUSED_VARIABLE(lS); return p; }
+#define LLFUNCENDEX(p)                 (void)(lS); return p; }
 #define LLFUNCBEGINEX(n,p)             LLFUNCBEGIN(n) LCCHECKPARAMS(p);
 #define LLFUNCBEGINTEMPLATE(n)         template<typename T>LLFUNCBEGIN(n)
 #define LLFUNCEND                      LLFUNCENDEX(0)
@@ -81,12 +83,10 @@ template<typename IntType=int, typename AnyType, IntType itSize>
 #include "llaudio.hpp"                 // Audio namespace and methods
 #include "llbin.hpp"                   // Bin namespace and methods
 #include "llclip.hpp"                  // Clipboard namespace and methods
-#include "llconsole.hpp"               // Console namespace and methods
+#include "llcmd.hpp"                   // Command namespace and methods
 #include "llcore.hpp"                  // Core namespace and methods
 #include "llcredit.hpp"                // Credit namespace and methods
 #include "llcrypt.hpp"                 // Crypt namespace and methods
-#include "llcvars.hpp"                 // Cvars namespace and methods
-#include "llcursor.hpp"                // Cursor namespace and methods
 #include "lldisplay.hpp"               // Display namespace and methods
 #include "llfbo.hpp"                   // Fbo namespace and methods
 #include "llfile.hpp"                  // File namespace and methods
@@ -107,6 +107,7 @@ template<typename IntType=int, typename AnyType, IntType itSize>
 #include "lltexture.hpp"               // Texture namespace and methods
 #include "llpalette.hpp"               // Palette namespace and methods
 #include "llutil.hpp"                  // Util namespace and methods
+#include "llvar.hpp"                   // Variable namespace and methods
 #include "llvideo.hpp"                 // Video namespace and methods
 /* -- Done with these macros ----------------------------------------------- */
 #undef LLRSEND
@@ -145,11 +146,13 @@ template<typename IntType=int, typename AnyType, IntType itSize>
 #undef LCCLASSDESTROY
 #undef LCGETINTLEG
 #undef LCGETINTLGE
+#undef LCGETINTLGP2
 #undef LCGETINTLG
 #undef LCGETINT
 #undef LCGETNUMLGE
 #undef LCGETNUMLG
 #undef LCGETNUM
+#undef LCGETNORM
 #undef LCCHECKFUNC
 #undef LCCHECKPARAMS
 #undef LCCHECKMAINSTATE
@@ -160,7 +163,6 @@ template<typename IntType=int, typename AnyType, IntType itSize>
 #undef LCGETCPPSTRINGNE
 #undef LCGETCPPSTRING
 #undef LCSETEVENTCBEX
-#undef LCPUSHCPPSTR
 #undef LCPUSHVAR
 #undef LCPUSHLSTR
 /* ========================================================================= **
@@ -191,27 +193,28 @@ template<typename IntType=int, typename AnyType, IntType itSize>
 #define LLSXC(n,l) LLITEM(n, l, LLNOMETHODS(), LLCONSTS(n))  // Meth:N,Const:Y
 #define LLSMC(n,l) LLITEM(n, l, LLMETHODS(n),  LLCONSTS(n))  // Meth:Y,Const:Y
 /* -- Define the ms-engine api list loaded at startup ---------------------- */
-const LuaLibStatic luaLibList[] =
-{ /* -- Use the above macros to define namespaces -------------------------- */
-  LLSMX(Archive, CF_NOTHING),          LLSMC(Asset,   CF_NOTHING),
-  LLSXX(Audio,   CF_AUDIO),            LLSMX(Bin,     CF_NOTHING),
-  LLSMX(Clip,    CF_VIDEO),            LLSXC(Core,    CF_NOTHING),
-  LLSXX(Credit,  CF_NOTHING),          LLSXC(CVars,   CF_NOTHING),
-  LLSXC(Console, CF_NOTHING),          LLSXX(Crypt,   CF_NOTHING),
-  LLSMC(Cursor,  CF_VIDEO),            LLSXC(Display, CF_VIDEO),
-  LLSMC(Fbo,     CF_VIDEO),            LLSMC(File,    CF_NOTHING),
-  LLSMC(Font,    CF_VIDEO),            LLSMX(Ftf,     CF_NOTHING),
-  LLSMC(Image,   CF_NOTHING),          LLSXX(Info,    CF_NOTHING),
-  LLSXC(Input,   CF_VIDEO),            LLSMX(Json,    CF_NOTHING),
-  LLSMX(Mask,    CF_NOTHING),          LLSMX(Palette, CF_VIDEO),
-  LLSMC(Pcm,     CF_NOTHING),          LLSMX(Sample,  CF_AUDIO),
-  LLSMX(Stat,    CF_NOTHING),          LLSMC(Socket,  CF_NOTHING),
-  LLSMX(Source,  CF_AUDIO),            LLSXC(Sql,     CF_NOTHING),
-  LLSMC(Stream,  CF_AUDIO),            LLSMX(Texture, CF_VIDEO),
-  LLSXX(Util,    CF_NOTHING),          LLSMC(Video,   CF_AUDIOVIDEO),
-  /* -- Last item, do not delete ------------------------------------------- */
-  { nullptr, CF_NOTHING, LLNOCONSTS(), LLNOMETHODS(), LLNOCONSTS() }
-};/* -- Done with these macros --------------------------------------------- */
+const LuaLibStaticArray luaLibList{
+{ /* -- Use the above macros to define namespaces -------------------------- **
+  ** WARNING: Make sure to update 'LuaLibStaticArray' count in luadef.hpp if **
+  ** the total number of elements in this list changes.                      **
+  ** ----------------------------------------------------------------------- */
+  LLSMX(Archive,  CFL_NONE),           LLSMC(Asset,    CFL_NONE),
+  LLSXX(Audio,    CFL_AUDIO),          LLSMX(Bin,      CFL_NONE),
+  LLSMX(Clip,     CFL_VIDEO),          LLSXC(Core,     CFL_NONE),
+  LLSXX(Credit,   CFL_NONE),           LLSMX(Command,  CFL_NONE),
+  LLSXX(Crypt,    CFL_NONE),           LLSXC(Display,  CFL_VIDEO),
+  LLSMC(Fbo,      CFL_VIDEO),          LLSMC(File,     CFL_NONE),
+  LLSMC(Font,     CFL_VIDEO),          LLSMX(Ftf,      CFL_NONE),
+  LLSMC(Image,    CFL_NONE),           LLSXX(Info,     CFL_NONE),
+  LLSXC(Input,    CFL_VIDEO),          LLSMX(Json,     CFL_NONE),
+  LLSMX(Mask,     CFL_NONE),           LLSMX(Palette,  CFL_VIDEO),
+  LLSMC(Pcm,      CFL_NONE),           LLSMX(Sample,   CFL_AUDIO),
+  LLSMX(Stat,     CFL_NONE),           LLSMC(Socket,   CFL_NONE),
+  LLSMX(Source,   CFL_AUDIO),          LLSXC(Sql,      CFL_NONE),
+  LLSMC(Stream,   CFL_AUDIO),          LLSMX(Texture,  CFL_VIDEO),
+  LLSXX(Util,     CFL_NONE),           LLSMC(Variable, CFL_NONE),
+  LLSMC(Video,    CFL_AUDIOVIDEO),
+}};/* -- Done with these macros -------------------------------------------- */
 #undef LLSXC
 #undef LLSMC
 #undef LLSMX

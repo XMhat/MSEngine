@@ -16,7 +16,7 @@ using namespace ISysUtil::P;           using namespace IThread::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* -- Available engine commands -------------------------------------------- */
-enum EvtMainCmd                        // Render thread event commands
+enum EvtMainCmd : size_t               // Engine thread event commands
 { /* -- Main events -------------------------------------------------------- */
   EMC_NONE,                            // 00: No event occured
   /* -- Quit events -------------------------------------------------------- */
@@ -78,10 +78,11 @@ enum EvtMainCmd                        // Render thread event commands
   EMC_STR_EVENT,                       // 46: Stream event occured
   EMC_VID_EVENT,                       // 47: Video event occured
   EMC_CB_EVENT,                        // 48: Clipboard event occured
+  EMC_CUR_EVENT,                       // 49: Cursor event occured
   /* ----------------------------------------------------------------------- */
-  EMC_MAX,                             // 49: Below are just codes
+  EMC_MAX,                             // 50: Below are just codes
   /* ----------------------------------------------------------------------- */
-  EMC_LUA_ERROR,                       // 50: Error in LUA exec (not an event)
+  EMC_LUA_ERROR,                       // 51: Error in LUA exec (not an event)
   /* ----------------------------------------------------------------------- */
 };
 /* ------------------------------------------------------------------------- */
@@ -215,9 +216,8 @@ static class EvtMain final :           // Event list for render thread
   EvtMain(void) :
     /* -- Initialisers ----------------------------------------------------- */
     IHelper{ __FUNCTION__ },           // Initialise helper
-    EvtCore{"EventMain"},              // Set name of this object
-    Thread{ "engine",                  // Set up engine thread
-      SysThread::Engine },             // High performance sandbox thread
+    EvtCore{ "EventMain" },            // Set name of this object
+    Thread{ "engine", STP_ENGINE },    // Set up high perf engine thread
     emcPending(EMC_NONE),              // Not exiting yet
     emcExit(EMC_NONE),                 // Not exited yet
     uiConfirm(0),                      // Exit not confirmed yet

@@ -355,20 +355,32 @@ class UtfDecoder                        // UTF8 string decoder helper
   /* -- Constructors that copy the address of the allocated text ----------- */
   explicit UtfDecoder(const char*const ucpSrc) :
     /* -- Initialisers ----------------------------------------------------- */
-    ucpStr(reinterpret_cast<const unsigned char*>(ucpSrc)),
-    ucpPtr(ucpStr)
+    ucpStr(reinterpret_cast            // Set start of string
+      <const unsigned char*>
+        (ucpSrc)),
+    ucpPtr(ucpStr)                     // Copy for current position
     /* -- No code ---------------------------------------------------------- */
     { }
   explicit UtfDecoder(const unsigned char*const ucpSrc) :
     /* -- Initialisers ----------------------------------------------------- */
-    ucpStr(ucpSrc),
-    ucpPtr(ucpStr)
+    ucpStr(ucpSrc),                    // Set start of string
+    ucpPtr(ucpStr)                     // Copy for current position
     /* -- No codes --------------------------------------------------------- */
+    { }
+  explicit UtfDecoder(const string_view &strvStr) :
+    /* -- Initialisers ----------------------------------------------------- */
+    ucpStr(reinterpret_cast            // Set start of string
+      <const unsigned char*>
+        (strvStr.data())),
+    ucpPtr(ucpStr)                     // Copy for current position
+    /* -- No code ---------------------------------------------------------- */
     { }
   explicit UtfDecoder(const string &strStr) :
     /* -- Initialisers ----------------------------------------------------- */
-    ucpStr(reinterpret_cast<const unsigned char*>(strStr.c_str())),
-    ucpPtr(ucpStr)
+    ucpStr(reinterpret_cast            // Set start of string
+      <const unsigned char*>
+        (strStr.c_str())),
+    ucpPtr(ucpStr)                     // Copy for current position
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* -- Word wrap a utf string --------------------------------------------- */

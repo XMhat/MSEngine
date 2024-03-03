@@ -9,7 +9,7 @@
 /* ------------------------------------------------------------------------- */
 namespace IUrl {                       // Start of private module namespace
 /* -- Dependencies --------------------------------------------------------- */
-using namespace IString::P;
+using namespace IStd::P;               using namespace IString::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* == Class to break apart urls ============================================ */
@@ -18,6 +18,7 @@ struct Url                             // Members initially public
   enum Result                          // Result codes
   {/* ---------------------------------------------------------------------- */
     R_GOOD,                            // Url is good
+    R_TOOLONG,                         // Url is too long
     R_EMURL,                           // Empty URL specified
     R_EMPROTO,                         // Empty protocol after processing
     R_EMHOSTUSERPASSPORT,              // Empty hostname/username/password/port
@@ -56,6 +57,8 @@ struct Url                             // Members initially public
   explicit Url(const string &strUrl)
   { // Error if url is empty
     if(strUrl.empty()) { rResult = R_EMURL; return; }
+    // Error if url is too long
+    if(strUrl.size() > 2048) { rResult = R_TOOLONG; return; }
     // Find protocol and throw if error
     const size_t stProtPos = strUrl.find(':');
     if(stProtPos == string::npos) { rResult = R_NOPROTO; return; }
@@ -99,7 +102,8 @@ struct Url                             // Members initially public
       } // Check that username is valid
       if(strUsername.empty()) { rResult = R_EMUSER; return; }
       // Truncate username and password from hostname and make sure not empty
-      strHost.erase(strHost.begin(), strHost.begin() + stUserPos + 1);
+      strHost.erase(strHost.begin(), strHost.begin() +
+        static_cast<ssize_t>(stUserPos) + 1);
       if(strHost.empty()) { rResult = R_EMHOSTPORT; return; }
     } // Find port in hostname
     const size_t stPortPos = strHost.find(':');

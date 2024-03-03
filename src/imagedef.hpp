@@ -14,65 +14,72 @@ using namespace IMemory::P;            using namespace IStd::P;
 using namespace Lib::OS::GlFW;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
-/* -- Shared image flags --------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
+enum ImageFormat : size_t              // Available image codecs
+{ /* ----------------------------------------------------------------------- */
+  IFMT_PNG,                            // PNG format (IImageFormat::CodecPNG)
+  IFMT_JPG,                            // JPG format (IImageFormat::CodecJPG)
+  IFMT_GIF,                            // GIF format (IImageFormat::CodecGIF)
+  IFMT_DDS,                            // DDS format (IImageFormat::CodecDDS)
+  /* ----------------------------------------------------------------------- */
+  IFMT_MAX                             // Maximum supported image codecs
+};/* -- Shared image flags ------------------------------------------------- */
 BUILD_FLAGS(Image,
   /* -- Note --------------------------------------------------------------- **
   ** The 'ImageData' class contains a 'Flags' class which is shared between  **
   ** four different classes, 'Image', 'ImageData', 'Font' and 'Texture' so   **
   ** it's important we don't duplicate values here.                          **
-  ** -- Post processing (Only used in 'Image' class) ----------------------- */
-  // No flags?                         Image will be loadable in OpenGL?
-  IL_NONE        {0x0000000000000000}, IL_TOGPU        {0x0000000000000001},
-  // Convert loaded image to 24bpp?    Convert loaded image to 32bpp?
-  IL_TO24BPP     {0x0000000000000002}, IL_TO32BPP      {0x0000000000000004},
-  // Convert loaded image to BGR(A)?   Convert loaded image to RGB(A)?
-  IL_TOBGR       {0x0000000000000008}, IL_TORGB        {0x0000000000000010},
-  // Convert loaded image to BINARY?   Force reverse the image?
-  IL_TOBINARY    {0x0000000000000020}, IL_REVERSE      {0x0000000000000040},
-  // Convert to atlas?
-  IL_ATLAS       {0x0000000000000080},
-  /* -- Force load formats (Only used in 'Image' class) -------------------- */
-  // Force load as PNG?                Force load as JPEG?
-  IL_FCE_PNG     {0x0000000000000100}, IL_FCE_JPG     {0x0000000000000200},
-  // Force load as GIF?                // Force load as DDS?
-  IL_FCE_GIF     {0x0000000000000400}, IL_FCE_DDS     {0x0000000000000800},
-  /* -- Image loader public mask bits -------------------------------------- */
-  IL_MASK{ IL_TOGPU|IL_TO24BPP|IL_TO32BPP|IL_TOBGR|IL_TORGB|IL_TOBINARY|
-    IL_REVERSE|IL_ATLAS|IL_FCE_JPG|IL_FCE_PNG|IL_FCE_GIF|IL_FCE_DDS },
-  /* -- Font loading flags (Only used in 'Font' class) --------------------- */
-  // Use image glyph size for advance? True stroke but more buggy?
-  FF_USEGLYPHSIZE{0x0000000000001000}, FF_STROKETYPE2  {0x0000000000002000},
+  ** -- Font loading flags (Only used in 'Font' class) --------------------- */
+  // No flags?                         True stroke but more buggy?
+  IL_NONE                   {Flag[0]}, FF_STROKETYPE2             {Flag[1]},
+  // Use image glyph size for advance? Do round() on advance width?
+  FF_USEGLYPHSIZE           {Flag[2]}, FF_ROUNDADVANCE            {Flag[3]},
   // Do floor() on advance width?      Do ceil() on advance width?
-  FF_FLOORADVANCE{0x0000000000004000}, FF_CEILADVANCE  {0x0000000000008000},
-  // Do round() on advance width?
-  FF_ROUNDADVANCE{0x0000000000010000},
+  FF_FLOORADVANCE           {Flag[4]}, FF_CEILADVANCE             {Flag[5]},
   /* -- Font loader public mask bits --------------------------------------- */
   FF_MASK{ FF_USEGLYPHSIZE|FF_STROKETYPE2|FF_FLOORADVANCE|FF_CEILADVANCE|
            FF_ROUNDADVANCE },
+  /* -- Post processing (Only used in 'Image' class) ----------------------- */
+  // Convert to atlas?                 Image will be loadable in OpenGL?
+  IL_ATLAS                  {Flag[8]}, IL_TOGPU                   {Flag[9]},
+  // Convert loaded image to 24bpp?    Convert loaded image to 32bpp?
+  IL_TO24BPP               {Flag[10]}, IL_TO32BPP                {Flag[11]},
+  // Convert loaded image to BGR(A)?   Convert loaded image to RGB(A)?
+  IL_TOBGR                 {Flag[12]}, IL_TORGB                  {Flag[13]},
+  // Convert loaded image to BINARY?   Force reverse the image?
+  IL_TOBINARY              {Flag[14]}, IL_REVERSE                {Flag[15]},
+  /* -- Force load formats (Only used in 'Image' class) -------------------- */
+  // Force load as PNG?                Force load as JPEG?
+  IL_FCE_PNG               {Flag[24]}, IL_FCE_JPG                {Flag[25]},
+  // Force load as GIF?                // Force load as DDS?
+  IL_FCE_GIF               {Flag[26]}, IL_FCE_DDS                {Flag[27]},
+  /* -- Image loader public mask bits -------------------------------------- */
+  IL_MASK{ IL_TOGPU|IL_TO24BPP|IL_TO32BPP|IL_TOBGR|IL_TORGB|IL_TOBINARY|
+    IL_REVERSE|IL_ATLAS|IL_FCE_JPG|IL_FCE_PNG|IL_FCE_GIF|IL_FCE_DDS },
   /* -- Active flags (Only used in 'Image' class) ----------------------- */
   // Image will be loadable in GL?     Convert loaded image to 24bpp?
-  IA_TOGPU       {0x0000000000020000}, IA_TO24BPP      {0x0000000000040000},
+  IA_TOGPU                 {Flag[32]}, IA_TO24BPP                {Flag[33]},
   // Convert loaded image to 32bpp?    Convert loaded image to BGR(A)?
-  IA_TO32BPP     {0x0000000000080000}, IA_TOBGR        {0x0000000000100000},
+  IA_TO32BPP               {Flag[34]}, IA_TOBGR                  {Flag[35]},
   // Convert loaded image to RGB(A)?   Convert loaded image to BINARY?
-  IA_TORGB       {0x0000000000200000}, IA_TOBINARY     {0x0000000000400000},
+  IA_TORGB                 {Flag[36]}, IA_TOBINARY               {Flag[37]},
   // Force reverse the image?          Convert to atlas?
-  IA_REVERSE     {0x0000000000800000}, IA_ATLAS        {0x0000000001000000},
+  IA_REVERSE               {Flag[38]}, IA_ATLAS                  {Flag[39]},
   /* -- Image loaded flags (Only used in 'ImageData' class) ---------------- */
   // Bitmap has mipmaps?               Bitmap has reversed pixels?
-  IF_MIPMAPS     {0x0000000002000000}, IF_REVERSED     {0x0000000004000000},
+  IF_MIPMAPS               {Flag[48]}, IF_REVERSED               {Flag[49]},
   // Bitmap is compressed?             Bitmap is dynamically created?
-  IF_COMPRESSED  {0x0000000008000000}, IF_DYNAMIC      {0x0000000010000000},
+  IF_COMPRESSED            {Flag[50]}, IF_DYNAMIC                {Flag[51]},
   // A palette is included?            Move loaded data back
-  IF_PALETTE     {0x0000000020000000},
+  IF_PALETTE               {Flag[52]},
   /* -- Texture loaded flags (Only used in 'Image' class) ------------------ */
-  // Generate tiles for texture?       Marked for deletion
-  TF_DELETE      {0x0000000040000000},
+  // Marked for deletion
+  TF_DELETE                {Flag[60]},
   /* -- Image purpose (help with debugging) -------------------------------- */
   // Image is stand-alone              Image is part of a Texture class
-  IP_IMAGE       {0x0000000080000000}, IP_TEXTURE      {0x0000000100000000},
+  IP_IMAGE                 {Flag[62]}, IP_TEXTURE                {Flag[63]},
   // Image is part of a Font class
-  IP_FONT        {0x0000000200000000}
+  IP_FONT                  {Flag[64]}
 );/* ----------------------------------------------------------------------- */
 struct ImageSlot :                     // Members initially public
   /* -- Initialisers ------------------------------------------------------- */
@@ -219,7 +226,7 @@ class ImageData :                      // Members initially private
   { // Add the slot moving the memory over
     GetSlots().push_back({ StdMove(mData), uiSWidth, uiSHeight });
     // Add to memory bytes allocated counter
-    stAlloc += GetSlots().back().Size();
+    stAlloc += GetSlots().back().MemSize();
   }
   /* -- Add a new slot using our image size -------------------------------- */
   void AddSlot(Memory &mData)

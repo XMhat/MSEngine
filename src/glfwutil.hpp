@@ -26,7 +26,7 @@ class GlFWUtil                         // Members initially private
   typedef IdMap<const int> HintList;   // List of glfw hints
   const HintList   hsStrings;          // Hint strings
   /* -- Convert window hint id to string --------------------------- */ public:
-  const string &GlFWGetHintAttribStr(const int iTarget) const
+  const string_view &GlFWGetHintAttribStr(const int iTarget) const
     { return hsStrings.Get(iTarget); }
   /* -- Set window hint ---------------------------------------------------- */
   void GlFWSetHint(const int iVar, const int iVal)
@@ -96,16 +96,9 @@ class GlFWUtil                         // Members initially private
   SET(CtxMinor, CONTEXT_VERSION_MINOR) // Set gl context minor version
   SET(CoreProfile, OPENGL_PROFILE)     // Set gl profile to use
   SET(Robustness, CONTEXT_ROBUSTNESS)  // Set context robustness
+  SET(Release, CONTEXT_RELEASE_BEHAVIOR) // Set context release behaviour
   /* ----------------------------------------------------------------------- */
 #undef SET                             // Done with this macro
-  /* -- Set window bits all in one ----------------------------------------- */
-  void GlFWSetColourDepth(const int iRed, const int iGreen,
-    const int iBlue, const int iAlpha)
-  { GlFWSetRedBits(iRed); GlFWSetGreenBits(iGreen);
-    GlFWSetBlueBits(iBlue); GlFWSetAlphaBits(iAlpha); }
-  /* -- Set opengl context version in one function ------------------------- */
-  void GlFWSetContextVersion(const int iMajor, const int iMinor)
-    { GlFWSetCtxMajor(iMajor); GlFWSetCtxMinor(iMinor); }
   /* -- Create functions to access all attributes -------------------------- */
 #define SET(nc,nu) \
   /* ---------------------------------------------------------------------- */\
@@ -218,6 +211,9 @@ static const char *GlFWGetMonitorName(GLFWmonitor*const mDevice)
   { return glfwGetMonitorName(mDevice); }
 /* -- Is the context not set ----------------------------------------------- */
 static GLFWwindow *GlFWContext(void) { return glfwGetCurrentContext(); }
+/* ------------------------------------------------------------------------- */
+static void GlFWSetCursor(GLFWwindow*const gwCtx, GLFWcursor*const gcCtx)
+  { glfwSetCursor(gwCtx, gcCtx); }
 /* ------------------------------------------------------------------------- */
 static GLFWglproc GlFWGetProcAddress(const char*const cpFunction)
 { // Get function and return it if we have it

@@ -23,10 +23,10 @@ using namespace ICredit::P;
 ** ######################################################################### **
 ** ========================================================================= */
 // $ Credit.Credit
-// > Id:integer=The index of the licence.
+// > Id:integer=The index of the license.
 // < Name:string=Name of the credit.
 // < Version:string=Version of the api.
-// < Id:integer=Licence index.
+// < Id:integer=License index.
 // < Website:string=Website of the api.
 // < Copyright:string=Copyright of the api.
 // < Author:string=Author of the api.
@@ -39,13 +39,13 @@ LLFUNCBEGIN(Item)
             libItem.IsCopyright(), libItem.GetAuthor());
 LLFUNCENDEX(4)
 /* ========================================================================= */
-// $ Credit.Licence
-// > Id:integer=The index of the licence.
-// < Name:string=Name of the licence.
-// < Text:string=Full text file of the licence.
-// ? Shows the full licence information of the specified index.
+// $ Credit.License
+// > Id:integer=The index of the license.
+// < Name:string=Name of the license.
+// < Text:string=Full text file of the license.
+// ? Shows the full license information of the specified index.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Licence, 1, LCPUSHVAR(cCredits->CreditGetItemText(
+LLFUNCEX(License, 1, LCPUSHVAR(cCredits->CreditGetItemText(
   LCGETINTLGE(CreditEnums, 1, CL_FIRST, CL_MAX, "Id"))));
 /* ========================================================================= */
 // $ Credit.Total
@@ -59,7 +59,7 @@ LLFUNCEX(Total, 1, LCPUSHVAR(cCredits->CreditGetItemCount()));
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Credit.* namespace functions begin
-  LLRSFUNC(Item), LLRSFUNC(Licence), LLRSFUNC(Total),
+  LLRSFUNC(Item), LLRSFUNC(License), LLRSFUNC(Total),
 LLRSEND                                // Credit.* namespace functions end
 /* ========================================================================= */
 }                                      // End of Credit namespace

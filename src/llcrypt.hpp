@@ -195,7 +195,7 @@ LLFUNCEX(B64D, 1, LCPUSHVAR(CryptB64toS(LCGETCPPSTRING(1, "String"))));
 // ? if you're handling binary data and/or not sure if the data is binary/text
 // ? and need to check.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(B64DA, 1, LCCLASSCREATE(Asset)->SwapMemory(
+LLFUNCEX(B64DA, 1, LCCLASSCREATE(Asset)->MemSwap(
   CryptB64toMB(LCGETCPPSTRING(1, "String"))));
 /* ========================================================================= */
 // $ Crypt.HexEncode
@@ -240,7 +240,7 @@ LLFUNCEX(HexDecode, 1,
 // ? Decodes the specified hexadecimal string to binary data.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(HexDecodeA, 1, LCCLASSCREATE(Asset)->
-  SwapMemory(CryptHexDecodeA(LCGETCPPSTRING(1, "String"))));
+  MemSwap(CryptHexDecodeA(LCGETCPPSTRING(1, "String"))));
 /* ========================================================================= */
 // $ Crypt.UrlEncode
 // > Text:string=The URL string to encode.

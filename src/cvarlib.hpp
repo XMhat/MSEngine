@@ -15,23 +15,23 @@
 ** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* == Built-in CVar definition struct ====================================== */
-const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
+const CVarItemStaticList cvislList{ {  // Default cvars (from cvars.hpp)
 /* -- Use this when cvar is an integer ------------------------------------- */
-#define CB(f,t) [](Item &, const string &strV)->CVarReturn\
+#define CB(f,t) [](CVarItem&, const string &strV)->CVarReturn \
   { return f(StrToNum<t>(strV)); }
 /* -- Use this when cvar is a string (NoOp for no callback needed) --------- */
-#define CBSTR(f) [](Item &ciD, const string &strV)->CVarReturn\
-  { return f(strV, ciD.GetModifyableValue()); }
+#define CBSTR(f) [](CVarItem &cviItem, const string &strV)->CVarReturn \
+  { return f(strV, cviItem.GetModifyableValue()); }
 /* == Core cvars (don't modify order) ====================================== */
 // ! LOG_LEVEL
 // ? Specifies the logging level...
-// ? [0] LH_DISABLED = Nothing. Lua log function can still use this.
+// ? [0] LH_CRITICAL = For reporting only critical messages.
 // ? [1] LH_ERROR    = For reporting only errors (which halt execution).
 // ? [2] LH_WARNING  = For reporting only warnings (recoverable errors).
 // ? [3] LH_INFO     = For reporting useful important messages.
 // ? [4] LH_DEBUG    = For reporitng other information (debugging).
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "log_level",
+{ CFL_NONE, "log_level",
 /* ------------------------------------------------------------------------- */
 #if defined(ALPHA)                     // Alpha (Debug) version?
   "4",                                 // Default of DEBUG for log level
@@ -41,25 +41,25 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
   "2",                                 // Default of WARNING for log level
 #endif                                 // Release type check
   /* ----------------------------------------------------------------------- */
-  CB(cLog->SetLevel, unsigned int), TUINTEGER|PANY },
+  CB(cLog->SetLevel, LHLevel), TUINTEGER|PANY },
 /* ------------------------------------------------------------------------- */
 // ! APP_CMDLINE
 // ? Shows the commandline sent to the application it cannot be changed at all.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "app_cmdline", cCommon->Blank(),
+{ CFL_NONE, "app_cmdline", cCommon->Blank(),
   CBSTR(cCore->CoreParseCmdLine), CONFIDENTIAL|TSTRING|MTRIM|PBOOT },
 /* ------------------------------------------------------------------------- */
 // ! AST_LZMABUFFER
 // ? Specifies the decompression buffer size (in bytes) for the lzma api. The
 // ? default value is 256 kilobytes.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "ast_lzmabuffer", "262144",
+{ CFL_NONE, "ast_lzmabuffer", "262144",
   CB(ArchiveSetBufferSize, size_t), TUINTEGER|CPOW2|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! AST_PIPEBUFFER
 // ? Specifies the size of the pipe buffer.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "ast_pipebuffer", "4096",
+{ CFL_NONE, "ast_pipebuffer", "4096",
   CB(AssetSetPipeBufferSize, size_t), TUINTEGER|CPOW2|PANY },
 /* ------------------------------------------------------------------------- */
 // ! AST_FSOVERRIDE
@@ -68,7 +68,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? if true. It is by default disabled on release builds and enabled on
 // ? all other builds.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "ast_fsoverride",
+{ CFL_NONE, "ast_fsoverride",
 /* ------------------------------------------------------------------------- */
 #if defined(RELEASE)                   // Default disabled in release builds
   cCommon->Zero(),
@@ -83,21 +83,21 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? 7-zip archive and use that to load guest assets. This is only supported
 // ? on Windows architectures right now and ignored on others.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "ast_exebundle", cCommon->One(),
+{ CFL_NONE, "ast_exebundle", cCommon->One(),
   CB(ArchiveInitExe, bool), TBOOLEAN|PBOOT },
 /* ------------------------------------------------------------------------- */
 // ! APP_BASEDIR
 // ? Specifies the base directory of where the executable was started from. It
 // ? is only readable by the end-user and the host, but not the guest.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "app_basedir", cCommon->Blank(),
+{ CFL_NONE, "app_basedir", cCommon->Blank(),
   CBSTR(cSystem->SetWorkDir), CONFIDENTIAL|TSTRING|CTRUSTEDFN|MTRIM|PBOOT },
 /* ------------------------------------------------------------------------- */
 // ! AST_BUNDLES
 // ? Specifies the [.ext]ension to use as 7-zip archives. These filenames will
 // ? be checked for at startup and automatically loaded by the engine.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "ast_bundles", "." ARCHIVE_EXTENSION,
+{ CFL_NONE, "ast_bundles", "." ARCHIVE_EXTENSION,
   CBSTR(ArchiveInit), TSTRING|MTRIM|PBOOT },
 /* ------------------------------------------------------------------------- */
 // ! APP_CONFIG
@@ -106,7 +106,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? guest need never specify it. This variable can only be set at the
 // ? command-line.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "app_config", DEFAULT_CONFIGURATION,
+{ CFL_NONE, "app_config", DEFAULT_CONFIGURATION,
   CBSTR(cCVars->ExecuteAppConfig), TSTRING|CFILENAME|MTRIM|PBOOT },
 /* ------------------------------------------------------------------------- */
 // ! APP_AUTHOR
@@ -114,7 +114,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? purposes only and can be requested by the guest and only set in the
 // ? app.cfg file.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "app_author", "Anonymous", NoOp,
+{ CFL_NONE, "app_author", "Anonymous", CBSTR(cSystem->SetGuestAuthor),
   TSTRING|CNOTEMPTY|MTRIM|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! APP_SHORTNAME
@@ -122,7 +122,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? display purposes only to the end-user. It can be requested by the guest
 // ? and only set in the app.cfg file.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "app_shortname", "Untitled", NoOp,
+{ CFL_NONE, "app_shortname", "Untitled", CBSTR(cSystem->SetGuestShortTitle),
   TSTRING|CNOTEMPTY|MTRIM|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! APP_HOMEDIR
@@ -130,7 +130,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? be written to the working directory. It is only readable by the end-user
 // ? and the host, but not the guest.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "app_homedir", cCommon->Blank(),
+{ CFL_NONE, "app_homedir", cCommon->Blank(),
   CBSTR(cCore->CoreSetHomeDir), CONFIDENTIAL|TSTRING|CTRUSTEDFN|MTRIM|PBOOT },
 /* ------------------------------------------------------------------------- */
 // ! SQL_DB
@@ -143,53 +143,53 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? result in the Sqlite database being stored in memory. Specifying a blank
 // ? string uses the executables filename without the extension.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "sql_db", cCommon->Blank(),
+{ CFL_NONE, "sql_db", cCommon->Blank(),
   CBSTR(cSql->UdbFileModified), CONFIDENTIAL|TSTRING|CTRUSTEDFN|MTRIM|PBOOT },
 /* ------------------------------------------------------------------------- */
 // ! SQL_ERASEEMPTY
 // ? Specifies to automatically erase the database at exit if no cvars or
 // ? custom tables are written to it by the guest.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "sql_eraseempty", cCommon->One(),
+{ CFL_NONE, "sql_eraseempty", cCommon->One(),
   CB(cSql->DeleteEmptyDBModified, bool), TBOOLEAN|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! SQL_TEMPSTORE
 // ? Performs 'pragma temp_store' when the database is opened to this value.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "sql_tempstore", "MEMORY",
+{ CFL_NONE, "sql_tempstore", "MEMORY",
   CBSTR(cSql->TempStoreModified), TSTRING|MTRIM|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! SQL_SYNCHRONOUS
 // ? Performs 'pragma synchronous x' when the database is opened to this value.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "sql_synchronous", cCommon->Zero(),
+{ CFL_NONE, "sql_synchronous", cCommon->Zero(),
   CB(cSql->SynchronousModified, bool), TBOOLEAN|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! SQL_JOURNALMODE
 // ? Performs 'pragma journal_mode x' when the database is opened to this
 // ? value.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "sql_journalmode", cCommon->Zero(),
+{ CFL_NONE, "sql_journalmode", cCommon->Zero(),
   CB(cSql->JournalModeModified, bool), TBOOLEAN|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! SQL_AUTOVACUUM
 // ? Performs 'pragma auto_vacuum x' when the database is opened to this value.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "sql_autovacuum", cCommon->One(),
+{ CFL_NONE, "sql_autovacuum", cCommon->One(),
   CB(cSql->AutoVacuumModified, bool), TBOOLEAN|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! SQL_FOREIGNKEYS
 // ? Performs 'pragma foreign_keys x' when the database is opened to this
 // ? value.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "sql_foreignkeys", cCommon->One(),
+{ CFL_NONE, "sql_foreignkeys", cCommon->One(),
   CB(cSql->ForeignKeysModified, bool), TBOOLEAN|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! SQL_INCVACUUM
 // ? Performs 'pragma incremental_vacuum(x)' when the database is opened and
 // ? sets 'x' to this value.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "sql_incvacuum", cCommon->Zero(),
+{ CFL_NONE, "sql_incvacuum", cCommon->Zero(),
   CB(cSql->IncVacuumModified, uint64_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! SQL_DEFAULTS
@@ -198,28 +198,28 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? [1] DC_OVERWRITE = Overwrite engine variables with defaults.
 // ? [2] DC_REFRESH   = Completely clear SQL cvars table.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "sql_defaults", cCommon->Zero(),
-  CB(cCVars->SetDefaults, unsigned int), TUINTEGER|PSYSTEM },
+{ CFL_NONE, "sql_defaults", cCommon->Zero(),
+  CB(cCVars->SetDefaults, CVarDefaults), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! SQL_LOADCONFIG
 // ? Actually loads cvars from the configuration database.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "sql_loadconfig", cCommon->One(),
+{ CFL_NONE, "sql_loadconfig", cCommon->One(),
   CB(cCVars->LoadSettings, bool), TBOOLEAN|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! APP_CFLAGS
 // ? Specifies how the host wants to be run with the following flags...
-// ? [0x1] CF_TERMINAL = Opens (Win32) or reuses (Unix) a console window.
-// ? [0x2] CF_AUDIO    = Initialises an OpenAL audio context and exposes API.
-// ? [0x4] CF_VIDEO    = Initialises an OpenGL context+window and exposes API.
-{ CF_NOTHING, "app_cflags", cCommon->Zero(),
-  CB(cSystem->SetCoreFlags, unsigned int), TUINTEGER|PSYSTEM },
+// ? [0x1] CFL_TERMINAL = Opens (Win32) or reuses (Unix) a console window.
+// ? [0x2] CFL_AUDIO    = Initialises an OpenAL audio context and exposes API.
+// ? [0x4] CFL_VIDEO    = Initialises an OpenGL context+window and exposes API.
+{ CFL_NONE, "app_cflags", cCommon->Zero(),
+  CB(cSystem->SetCoreFlags, CoreFlagsType), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! LOG_LINES
 // ? Specifies the maximum number of lines to keep in the backlog. The log
 // ? lines are always empty when logging to a file.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "log_lines", "10000",
+{ CFL_NONE, "log_lines", "10000",
   CB(cLog->LogLinesModified, size_t), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! LOG_FILE
@@ -227,7 +227,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? debugging. Leave as blank for no log file. It can be set from command-line
 // ? parameters, the app.cfg file and the user.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "log_file", cCommon->Blank(),
+{ CFL_NONE, "log_file", cCommon->Blank(),
   CBSTR(cLog->LogFileModified), TSTRING|CFILENAME|MTRIM|PBOOT|PUSR },
 /* ------------------------------------------------------------------------- */
 // ! APP_LONGNAME
@@ -235,7 +235,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? window title and for display purposes only to the end-user. It can be
 // ? requested by the guest and only set in the app.cfg file.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "app_longname", "Untitled", NoOp,
+{ CFL_NONE, "app_longname", "Untitled", CBSTR(cSystem->SetGuestTitle),
   TSTRING|CNOTEMPTY|MTRIM|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! APP_CLEARMUTEX
@@ -244,7 +244,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? Windows the mutex is freed on process termination so there is never any
 // ? need to use this on Windows.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "app_clearmutex",
+{ CFL_NONE, "app_clearmutex",
   /* ----------------------------------------------------------------------- */
 #if !defined(WINDOWS) && defined(ALPHA)
   cCommon->One(),
@@ -260,7 +260,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? crash but not on Linux and OSX. So just simply remove the app name from
 // ? /dev/shm and the engine should run again.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "err_instance", cCommon->One(),
+{ CFL_NONE, "err_instance", cCommon->One(),
   CB(cCore->CoreSetOneInstance, bool), TBOOLEAN|PSYSTEM },
 /* == Object cvars ========================================================= */
 // ! OBJ_CLIPMAX
@@ -268,24 +268,23 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? by the engine. An exception is generated if more cvars than this are
 // ? allocated.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "obj_clipmax", "100",
+{ CFL_NONE, "obj_clipmax", "100",
   CB(cClips->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! OBJ_CMDMAX
-// ? Specifies the maximum number of console commands allowed to be registered
-// ? by the engine. This includes the internal default commands. An exception
-// ? is generated if more cvars than this are allocated.
+// ? Specifies the maximum number of Lua console commands allowed to be
+// ? registered by the engine.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "obj_cmdmax", "1000",
-  CB(cConsole->MaxCountModified, size_t), TUINTEGER|PSYSTEM },
+{ CFL_NONE, "obj_cmdmax", "1000",
+  CB(cCommands->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! OBJ_CVARMAX
 // ? Specifies the maximum number of cvars allowed to be registered by the
 // ? engine. This includes the internal default cvars. An exception is
 // ? generated if more cvars than this are allocated.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "obj_cvarmax", "1000",
-  CB(cCVars->MaxCountModified, size_t), TUINTEGER|PSYSTEM },
+{ CFL_NONE, "obj_cvarmax", "1000",
+  CB(cVariables->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! OBJ_CVARIMAX
 // ? Specifies the maximum number of initial cvars allowed to be registered by
@@ -295,7 +294,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? cvars are then commited to database at exit and on-demand. An exception is
 // ? generated if more initial cvars than this are allocated.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "obj_cvarimax", "1000",
+{ CFL_NONE, "obj_cvarimax", "1000",
   CB(cCVars->MaxICountModified, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! OBJ_ARCHIVEMAX
@@ -303,7 +302,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? by the engine. This includes the archives that are loaded at startup
 // ? An exception is generated if more archives than this are allocated.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "obj_archivemax", "1000",
+{ CFL_NONE, "obj_archivemax", "1000",
   CB(cArchives->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! OBJ_ASSETMAX
@@ -311,7 +310,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? the engine. An exception is generated if more cvars than this are
 // ? allocated.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "obj_assetmax", "1000",
+{ CFL_NONE, "obj_assetmax", "1000",
   CB(cAssets->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! OBJ_BINMAX
@@ -319,23 +318,15 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? the engine. An exception is generated if more cvars than this are
 // ? allocated.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "obj_binmax", "1000",
+{ CFL_NONE, "obj_binmax", "1000",
   CB(cBins->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
-/* ------------------------------------------------------------------------- */
-// ! OBJ_CURSORMAX
-// ? Specifies the maximum number of cursor objects allowed to be registered by
-// ? the engine. An exception is generated if more cvars than this are
-// ? allocated.
-/* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "obj_cursormax", "1000",
-  CB(cCursors->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! OBJ_FBOMAX
 // ? Specifies the maximum number of framebuffer objects allowed to be
 // ? registered by the engine. An exception is generated if more cvars than
 // ? this are allocated.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "obj_fbomax", "1000",
+{ CFL_VIDEO, "obj_fbomax", "1000",
   CB(cFbos->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! OBJ_FONTMAX
@@ -343,7 +334,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? the engine. An exception is generated if more cvars than this are
 // ? allocated.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "obj_fontmax", "1000",
+{ CFL_VIDEO, "obj_fontmax", "1000",
   CB(cFonts->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! OBJ_FILEMAX
@@ -351,7 +342,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? the engine. An exception is generated if more cvars than this are
 // ? allocated.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "obj_filemax", "1000",
+{ CFL_NONE, "obj_filemax", "1000",
   CB(cFiles->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! OBJ_FTFMAX
@@ -359,7 +350,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? by the engine. An exception is generated if more cvars than this are
 // ? allocated.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "obj_ftfmax", "1000",
+{ CFL_NONE, "obj_ftfmax", "1000",
   CB(cFtfs->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! OBJ_FUNCMAX
@@ -367,7 +358,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? be registered by the engine. An exception is generated if more cvars than
 // ? this are allocated.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "obj_funcmax", "1000",
+{ CFL_NONE, "obj_funcmax", "1000",
   CB(cLuaFuncs->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! OBJ_IMGMAX
@@ -375,23 +366,15 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? the engine. An exception is generated if more cvars than this are
 // ? allocated.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "obj_imgmax", "1000",
+{ CFL_NONE, "obj_imgmax", "1000",
   CB(cImages->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
-/* ------------------------------------------------------------------------- */
-// ! OBJ_IMGFMTMAX
-// ? Specifies the maximum number of image format objects allowed to be
-// ? registered by the engine. An exception is generated if more cvars than
-// ? this are allocated.
-/* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "obj_imgfmtmax", "1000",
-  CB(cImageFmts->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! OBJ_JSONMAX
 // ? Specifies the maximum number of json objects allowed to be registered by
 // ? the engine. An exception is generated if more cvars than this are
 // ? allocated.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "obj_jsonmax", "1000",
+{ CFL_NONE, "obj_jsonmax", "1000",
   CB(cJsons->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! OBJ_MASKMAX
@@ -399,7 +382,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? the engine. An exception is generated if more cvars than this are
 // ? allocated.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "obj_maskmax", "1000",
+{ CFL_NONE, "obj_maskmax", "1000",
   CB(cMasks->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! OBJ_PCMMAX
@@ -407,23 +390,15 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? the engine. An exception is generated if more objects than this are
 // ? allocated.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "obj_pcmmax", "1000",
+{ CFL_NONE, "obj_pcmmax", "1000",
   CB(cPcms->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
-/* ------------------------------------------------------------------------- */
-// ! OBJ_PCMFMTMAX
-// ? Specifies the maximum number of pcm format objects allowed to be
-// ? registered by the engine. An exception is generated if more objects than
-// ? this are allocated.
-/* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "obj_pcmfmtmax", "1000",
-  CB(cPcmFmts->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! OBJ_SAMPLEMAX
 // ? Specifies the maximum number of sample objects allowed to be
 // ? registered by the engine. An exception is generated if more objects than
 // ? this are allocated.
 /* ------------------------------------------------------------------------- */
-{ CF_AUDIO, "obj_samplemax", "1000",
+{ CFL_AUDIO, "obj_samplemax", "1000",
   CB(cSamples->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! OBJ_SHADERMAX
@@ -431,7 +406,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? registered by the engine. An exception is generated if more objects than
 // ? this are allocated.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "obj_shadermax", "1000",
+{ CFL_VIDEO, "obj_shadermax", "1000",
   CB(cShaders->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! OBJ_SOCKETMAX
@@ -439,7 +414,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? registered by the engine. An exception is generated if more objects than
 // ? this are allocated.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "obj_socketmax", "1000",
+{ CFL_NONE, "obj_socketmax", "1000",
   CB(cSockets->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! OBJ_SOURCEMAX
@@ -447,7 +422,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? registered by the engine. An exception is generated if more objects than
 // ? this are allocated.
 /* ------------------------------------------------------------------------- */
-{ CF_AUDIO, "obj_sourcemax", "1000",
+{ CFL_AUDIO, "obj_sourcemax", "1000",
   CB(cSources->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! OBJ_STATMAX
@@ -455,7 +430,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? registered by the engine. An exception is generated if more objects than
 // ? this are allocated.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "obj_statmax", "1000",
+{ CFL_NONE, "obj_statmax", "1000",
   CB(cStats->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! OBJ_STREAMMAX
@@ -463,7 +438,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? registered by the engine. An exception is generated if more objects than
 // ? this are allocated.
 /* ------------------------------------------------------------------------- */
-{ CF_AUDIO, "obj_streammax", "1000",
+{ CFL_AUDIO, "obj_streammax", "1000",
   CB(cStreams->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! OBJ_TEXTUREMAX
@@ -471,7 +446,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? registered by the engine. An exception is generated if more objects than
 // ? this are allocated.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "obj_texturemax", "1000",
+{ CFL_VIDEO, "obj_texturemax", "1000",
   CB(cTextures->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! OBJ_THREADMAX
@@ -479,7 +454,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? registered by the engine. An exception is generated if more objects than
 // ? this are allocated.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "obj_threadmax", "1000",
+{ CFL_NONE, "obj_threadmax", "1000",
   CB(cThreads->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! OBJ_VIDEOMAX
@@ -487,7 +462,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? registered by the engine. An exception is generated if more objects than
 // ? this are allocated.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "obj_videomax", "1000",
+{ CFL_VIDEO, "obj_videomax", "1000",
   CB(cVideos->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
 /* == Base cvars =========================================================== */
 // ! APP_DESCRIPTION
@@ -495,15 +470,15 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? display purposes only to the end-user. It can be requested by the guest
 // ? and only set in the app.cfg file.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "app_description", "Undescribed", NoOp,
-  TSTRING|CNOTEMPTY|MTRIM|PSYSTEM },
+{ CFL_NONE, "app_description", "Undescribed",
+  CBSTR(cSystem->SetGuestDescription), TSTRING|CNOTEMPTY|MTRIM|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! APP_VERSION
 // ? Specifies a version for the guest application. It is purely for display
 // ? purposes only to the end-user. It can be requested by the guest and only
 // ? set in the app.cfg file.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "app_version", "0.0", NoOp,
+{ CFL_NONE, "app_version", "0.0", CBSTR(cSystem->SetGuestVersion),
   TSTRING|CNOTEMPTY|MTRIM|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! APP_ICON
@@ -511,7 +486,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? any format that is supported with the Image.* loading functions. It can
 // ? also be changed dynamically by Lua. Keep to empty for default icon.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "app_icon", cCommon->Blank(),
+{ CFL_NONE, "app_icon", cCommon->Blank(),
   CBSTR(cDisplay->SetIcon), TSTRING|MTRIM|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! APP_COPYRIGHT
@@ -519,31 +494,31 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? purely for display purposes only to the end-user. It can be requested by
 // ? the guest and only set in the app.cfg file.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "app_copyright", "Public Domain", NoOp,
-  TSTRING|CNOTEMPTY|MTRIM|PSYSTEM },
+{ CFL_NONE, "app_copyright", "Public Domain",
+  CBSTR(cSystem->SetGuestCopyright), TSTRING|CNOTEMPTY|MTRIM|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! APP_WEBSITE
 // ? Specifies a website for the guest application. It is purely for display
 // ? purposes only to the end-user. It can be requested by the guest and only
 // ? set in the app.cfg file.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "app_website", "about:blank", NoOp,
+{ CFL_NONE, "app_website", "about:blank", CBSTR(cSystem->SetGuestWebsite),
   TSTRING|CNOTEMPTY|MTRIM|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! APP_TICKRATE
-// ? Specifies the base tick rate of the guest application in ticks when using
-// ? the timer accumulator. The engine locks to this tick rate regardless of
-// ? lag. It can also be changed dynamically with Lua.
+// ? Specifies the base tick rate of the guest application in nanoseconds.
+// ? The engine locks to this tick rate regardless of lag. It can also be
+// ? changed dynamically with Lua. The default is 0.016666667 seconds (60fps).
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "app_tickrate", "60",
-  CB(cTimer->TimerTickRateModified, unsigned int), TUINTEGER|PSYSTEM },
+{ CFL_VIDEO, "app_tickrate", "16666667",
+  CB(cTimer->TimerTickRateModified, uint64_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! APP_DELAY
 // ? Specifies an artificial delay to force for bot mode in milliseconds. This
 // ? is ignored on interactive mode because a one millisecond delay is forced
 // ? for every frame under the target rate.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "app_delay", cCommon->One(),
+{ CFL_NONE, "app_delay", cCommon->One(),
   CB(cTimer->TimerSetDelay, unsigned int), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! APP_TITLE
@@ -555,7 +530,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? value of 'app_longname', where 'V' is the value of 'app_version' and 'T'
 // ? is the target executable architechture.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "app_title", cCommon->Blank(),
+{ CFL_NONE, "app_title", cCommon->Blank(),
   CBSTR(cCore->CoreTitleModified), TSTRING|MTRIM|PSYSTEM },
 /* == Error cvars ========================================================== */
 // ! ERR_ADMIN
@@ -566,7 +541,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? 2 = Same as 1 but ALLOWS when OS's has admin as default (i.e. XP!).
 // ? The default value is 2.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "err_admin", "2",
+{ CFL_NONE, "err_admin", "2",
   CB(cSystem->CheckAdminModified, unsigned int), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! ERR_CHECKSUM
@@ -575,7 +550,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? checksum and MacOS uses code signing externally. The default value is 1
 // ? on release executable else 0 on beta executable.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "err_checksum",
+{ CFL_NONE, "err_checksum",
   /* ----------------------------------------------------------------------- */
 #if defined(RELEASE)
   cCommon->One(),
@@ -589,7 +564,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? Throws an error if a debugger is running at start-up. The default value
 // ? is 1 on release executable else 0 on beta executable.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "err_debugger",
+{ CFL_NONE, "err_debugger",
   /* ----------------------------------------------------------------------- */
 #if defined(RELEASE)
   cCommon->One(),
@@ -607,7 +582,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? [3] LEM_CRITICAL = Terminate engine with error.
 // ? The default value is 3 for release executable and 2 for beta executable.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "err_luamode",
+{ CFL_NONE, "err_luamode",
   /* ----------------------------------------------------------------------- */
 #if defined(RELEASE)
   "3",
@@ -615,7 +590,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
   "2",
 #endif
   /* ----------------------------------------------------------------------- */
-  CB(cCore->CoreErrorBehaviourModified, unsigned int), TUINTEGER|PSYSTEM },
+  CB(cCore->CoreErrorBehaviourModified, CoreErrorFlags), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! ERR_LMRESETLIMIT
 // ? When ERR_LUAMODE is set to 1, this specifies the number of LUA script
@@ -623,7 +598,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? critical error. The default value for release executable is 1000 and
 // ? 10 for beta executable.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "err_lmresetlimit",
+{ CFL_NONE, "err_lmresetlimit",
   /* ----------------------------------------------------------------------- */
 #if defined(RELEASE)
   "1000",
@@ -637,7 +612,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? The engine fails to run if the system does not have this amount of VRAM
 // ? available.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "err_minvram", cCommon->Zero(),
+{ CFL_VIDEO, "err_minvram", cCommon->Zero(),
   CB(cOgl->SetMinVRAM, uint64_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! ERR_MINRAM
@@ -647,7 +622,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? speed of the clear is reported in the log then the memory is freed. The
 // ? default value is zero.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "err_minram", cCommon->Zero(),
+{ CFL_NONE, "err_minram", cCommon->Zero(),
   CB(cSystem->SetMinRAM, uint64_t), TUINTEGER|PSYSTEM },
 /* == Lua cvars ============================================================ */
 // ! LUA_TICKTIMEOUT
@@ -656,7 +631,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? as resulting infinite loops in Lua cannot be recovered and will require
 // ? force termination of the entire process.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "lua_ticktimeout", "10",
+{ CFL_NONE, "lua_ticktimeout", "1",
   CB(cTimer->TimerSetTimeOut, unsigned int), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! LUA_TICKCHECK
@@ -665,7 +640,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? has been executing for too long. You can see the rate of the operations
 // ? by using the 'cpu' command in the engine console.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "lua_tickcheck", "1000000",
+{ CFL_NONE, "lua_tickcheck", "1000000",
   CB(cLua->SetOpsInterval, int), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! LUA_CACHE
@@ -677,25 +652,25 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? [2] LCC_MINIMUM  = " with minimum debug information and store result.
 // ? The default value is 3 for release executable and 2 for beta executable.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "lua_cache", cCommon->One(),
-  CB(LuaCodeSetCache, unsigned int), TUINTEGER|PANY },
+{ CFL_NONE, "lua_cache", cCommon->One(),
+  CB(LuaCodeSetCache, LuaCache), TUINTEGER|PANY },
 /* ------------------------------------------------------------------------- */
 // ! LUA_SIZESTACK
 // ? Makes sure theres room for this many values on the Lua stack.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "lua_sizestack", "1000",
+{ CFL_NONE, "lua_sizestack", "1000",
   CB(cLua->SetStack, int), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! LUA_GCPAUSE
 // ? Overrides Lua's internal LUA_GCPAUSE value with this.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "lua_gcpause", "200",
+{ CFL_NONE, "lua_gcpause", "200",
   CB(cLua->SetGCPause, int), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! LUA_GCSTEPMUL
 // ? Overrides Lua's internal LUA_GCSTEP value with this.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "lua_gcstepmul", "100",
+{ CFL_NONE, "lua_gcstepmul", "100",
   CB(cLua->SetGCStep, int), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! LUA_RANDOMSEED
@@ -703,21 +678,21 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? use. Specify zero to have this value randomised at startup with entropy
 // ? from the operating system.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "lua_randomseed", cCommon->Zero(),
+{ CFL_NONE, "lua_randomseed", cCommon->Zero(),
   CB(cLua->SetSeed, lua_Integer), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! LUA_APIFLAGS
 // ? Specifies to enable or disable certain Lua namespaces.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "lua_apiflags", "3",
-  CB(cLua->SetFlags, unsigned int), TUINTEGER|PSYSTEM },
+{ CFL_NONE, "lua_apiflags", "3",
+  CB(cLua->SetFlags, LuaFlagsType), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! LUA_SCRIPT
 // ? Specifies the script to load and execute automatically at startup. It must
 // ? be a safe filename that does not leave the engines active parent
 // ? directory.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "lua_script", "main.lua", NoOp,
+{ CFL_NONE, "lua_script", "main.lua", NoOp,
   TSTRING|CFILENAME|CNOTEMPTY|MTRIM|PSYSTEM },
 /* == Audio cvars ========================================================== */
 // ! AUD_DELAY
@@ -726,7 +701,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? pops. The audio thread is in charge of managing Source classes and
 // ? checking for discreprencies.
 /* ------------------------------------------------------------------------- */
-{ CF_AUDIO, "aud_delay", "10",
+{ CFL_AUDIO, "aud_delay", "10",
   CB(cAudio->SetAudThreadDelay, ALuint), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! AUD_VOL
@@ -734,7 +709,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? 1.0 (maximum volume). Setting a value too high may cause artifacts on
 // ? older OS audio API's.
 /* ------------------------------------------------------------------------- */
-{ CF_AUDIO, "aud_vol", "0.75",
+{ CFL_AUDIO, "aud_vol", "0.75",
   CB(cAudio->SetGlobalVolume, ALfloat), TUFLOATSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! AUD_INTERFACE
@@ -742,7 +717,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? device, otherwise it is the index number of a specific audio device to
 // ? use.
 /* ------------------------------------------------------------------------- */
-{ CF_AUDIO, "aud_interface", "-1", NoOp, TINTEGERSAVE|PANY },
+{ CFL_AUDIO, "aud_interface", cCommon->NOne(), NoOp, TINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! AUD_CHECK
 // ? Specifies an interval (in number of milliseconds) of checking for audio
@@ -751,7 +726,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? device list is detected then the audio is reset automatically, as if the
 // ? 'areset' console command was used.
 /* ------------------------------------------------------------------------- */
-{ CF_AUDIO, "aud_check", "5000",
+{ CFL_AUDIO, "aud_check", "5000",
   CB(cAudio->SetAudCheckRate, unsigned int), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! AUD_NUMSOURCES
@@ -760,7 +735,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? CPU usage but increases the chances of errors if too many sources are
 // ? requested.
 /* ------------------------------------------------------------------------- */
-{ CF_AUDIO, "aud_numsources", cCommon->Zero(),
+{ CFL_AUDIO, "aud_numsources", cCommon->Zero(),
   CB(SourceSetCount, size_t), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! AUD_SAMVOL
@@ -768,7 +743,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? 1.0 (maximum volume). Setting a value too high may cause artifacts on
 // ? older OS audio API's.
 /* ------------------------------------------------------------------------- */
-{ CF_AUDIO, "aud_samvol", "0.75",
+{ CFL_AUDIO, "aud_samvol", "0.75",
   CB(SampleSetVolume, ALfloat), TUFLOATSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! AUD_STRBUFCOUNT
@@ -776,7 +751,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? multiple buffers to make streamed audio playback consistent. Four should
 // ? always be enough.
 /* ------------------------------------------------------------------------- */
-{ CF_AUDIO, "aud_strbufcount", "4",
+{ CFL_AUDIO, "aud_strbufcount", "4",
   CB(StreamSetBufferCount, size_t), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! AUD_STRBUFSIZ
@@ -784,7 +759,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? We need sufficiently large enough buffers to make streamed audio playback
 // ? consistent.
 /* ------------------------------------------------------------------------- */
-{ CF_AUDIO, "aud_strbufsiz", "32768",
+{ CFL_AUDIO, "aud_strbufsiz", "32768",
   CB(StreamSetBufferSize, size_t), TUINTEGERSAVE|CPOW2|PANY },
 /* ------------------------------------------------------------------------- */
 // ! AUD_STRVOL
@@ -792,35 +767,35 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? 1.0 (maximum volume). Setting a value too high may cause artifacts on
 // ? older OS audio API's.
 /* ------------------------------------------------------------------------- */
-{ CF_AUDIO, "aud_strvol", "0.75",
+{ CFL_AUDIO, "aud_strvol", "0.75",
   CB(StreamSetVolume, ALfloat), TUFLOATSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! AUD_FMVVOL
 // ? Specifies the volume of Video classes. 0.0 (mute) to 1.0 (maximum volume).
 // ? Setting a value too high may cause artifacts on older OS audio API's.
 /* ------------------------------------------------------------------------- */
-{ CF_AUDIO, "aud_fmvvol", "0.75",
+{ CFL_AUDIO, "aud_fmvvol", "0.75",
   CB(VideoSetVolume, ALfloat), TUFLOATSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! AUD_HRTF
 // ? Specifies whether to use HRTF dynamics on audio output. This could cause
 // ? strange audio stereo quality issues so it is recommended to disable.
 /* ------------------------------------------------------------------------- */
-{ CF_AUDIO, "aud_hrtf", cCommon->Zero(),
+{ CFL_AUDIO, "aud_hrtf", cCommon->Zero(),
   NoOp, TUINTEGERSAVE|PANY },
 /* == Console cvars ======================================================== */
 // ! CON_KEYPRIMARY
 // ? The primary GLFW console key virtual key code to use to toggle console
 // ? visibility. It is set to '`' as default on a UK keyboard.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "con_keyprimary", "96",
+{ CFL_VIDEO, "con_keyprimary", "96",
   CB(cInput->SetConsoleKey1, int), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_KEYSECONDARY
 // ? The secondary GLFW console key virtual key code to use to toggle console
 // ? visibility. It is set to '+-' as default on a US keyboard.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "con_keysecondary", "161",
+{ CFL_VIDEO, "con_keysecondary", "161",
   CB(cInput->SetConsoleKey2, int), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_AUTOCOMPLETE
@@ -830,48 +805,48 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? [0x1] AC_COMMANDS = Autocomplete command names
 // ? [0x2] AC_CVARS    = Autocomplete cvar names
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "con_autocomplete", "3",
-  CB(cConsole->SetAutoComplete, unsigned int), TUINTEGERSAVE|PANY },
+{ CFL_NONE, "con_autocomplete", "3",
+  CB(cConsole->SetAutoComplete, AutoCompleteFlagsType), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_AUTOSCROLL
 // ? A boolean that specifies whether to autoscroll the console to the last
 // ? newly printed message.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "con_autoscroll", cCommon->One(),
+{ CFL_NONE, "con_autoscroll", cCommon->One(),
   CB(cConsole->SetAutoScroll, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_AUTOCOPYCVAR
 // ? A boolean that specifies whether to automatically copy the variable
 // ? name and value when a cvar name is typed in the console.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "con_autocopycvar", cCommon->One(),
+{ CFL_NONE, "con_autocopycvar", cCommon->One(),
   CB(cConsole->SetAutoCopyCVar, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_HEIGHT
 // ? Specifies the height of the console in OpenGL mode. 1 means the console
 // ? is covering the whole screen, and 0 means the console is not showing.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "con_height", "0.5",
-  CB(cConsole->SetHeight, GLfloat), TUFLOATSAVE|PANY },
+{ CFL_VIDEO, "con_height", "0.5",
+  CB(cConGraphics->SetHeight, GLfloat), TUFLOATSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_BLOUTPUT
 // ? Specifies the maximum number of lines to keep in the console. Excess
 // ? messages are discarded automatically to not fill up memory.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "con_bloutput", "10000",
+{ CFL_NONE, "con_bloutput", "10000",
   CB(cConsole->SetConsoleOutputLines, size_t), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_BLINPUT
 // ? Number of lines to store in the input backlog. A successful command input
 // ? automatically adds the last command typed into this list.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "con_blinput", "1000",
+{ CFL_NONE, "con_blinput", "1000",
   CB(cConsole->SetConsoleInputLines, size_t), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_DISABLED
 // ? Specifies wether the console is permanantly disabled or not.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "con_disabled",
+{ CFL_VIDEO, "con_disabled",
   /* ----------------------------------------------------------------------- */
 #if defined(RELEASE)
   cCommon->One(),
@@ -879,7 +854,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
   cCommon->Zero(),
 #endif
   /* ----------------------------------------------------------------------- */
-  CB(cConsole->CantDisableModified, bool), TBOOLEAN|PBOOT|PSYSTEM },
+  CB(cConGraphics->CantDisableModified, bool), TBOOLEAN|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! CON_CVSHOWFLAGS
 // ? Flags specifying how to show CVar values in the console to protect
@@ -888,93 +863,94 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? [0x1] SF_CONFIDENTIAL = Show cvars marked as private.
 // ? [0x2] SF_PROTECTED    = Show cvars marked as protected.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "con_cvshowflags", cCommon->Zero(),
-  CB(cCVars->SetDisplayFlags, unsigned int), TUINTEGER|PANY },
+{ CFL_NONE, "con_cvshowflags", cCommon->Zero(),
+  CB(cCVars->SetDisplayFlags, CVarShowFlagsType), TUINTEGER|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_BGCOLOUR
 // ? Specifies the background colour of the console texture in the syntax of
 // ? 0xAARRGGBB or an integral number.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "con_bgcolour", "2130706432",
-  CB(cConsole->TextBackgroundColourModified, uint32_t), TUINTEGERSAVE|PANY },
+{ CFL_VIDEO, "con_bgcolour", "2130706432",
+  CB(cConGraphics->TextBackgroundColourModified, uint32_t),
+  TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_BGTEXTURE
 // ? The texture file to load that will be used as the background for the
 // ? console.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "con_bgtexture", cCommon->Blank(), NoOp,
+{ CFL_VIDEO, "con_bgtexture", cCommon->Blank(), NoOp,
   TSTRING|CFILENAME|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! CON_FONT
 // ? Specifies the filename of the FreeType compatible font to load as the
 // ? console font file.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "con_font", "console.ttf", NoOp,
+{ CFL_VIDEO, "con_font", "console.ttf", NoOp,
   TSTRING|CFILENAME|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! CON_FONTFLAGS
 // ? Specifies manipulation of the loaded font. See the 'Char.Flags' for
 // ? possible values
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "con_fontflags", cCommon->Zero(),
-  CB(cConsole->ConsoleFontFlagsModified, unsigned int), TUINTEGER|PANY },
+{ CFL_VIDEO, "con_fontflags", cCommon->Zero(),
+  CB(cConGraphics->ConsoleFontFlagsModified, ImageFlagsType), TUINTEGER|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_FONTCOLOUR
 // ? Specifies the default colour of the console text. See the Console.Colours
 // ? lookup table for possible values. There are only 16 pre-defined colours
 // ? to keep compatibility with the system text console.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "con_fontcolour", "15",
+{ CFL_VIDEO, "con_fontcolour", "15",
   CB(cConsole->TextForegroundColourModified, unsigned int),
   TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_FONTHEIGHT
 // ? Specifies the height of the loaded console FreeType font.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "con_fontheight", "20",
-  CB(cConsole->TextHeightModified, GLfloat), TUINTEGER|PSYSTEM },
+{ CFL_VIDEO, "con_fontheight", "20",
+  CB(cConGraphics->TextHeightModified, GLfloat), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! CON_FONTPADDING
 // ? Specifies any extra padding to add to each FreeType font glyph to prevent
 // ? pixels from other glyphs spilling into the render due to filtering.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "con_fontpadding", cCommon->Zero(),
+{ CFL_VIDEO, "con_fontpadding", cCommon->Zero(),
   NoOp, TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! CON_FONTPCMIN
 // ? Specifies the minimum character code to start precaching from
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "con_fontpcmin", "32", NoOp, TUINTEGER|PSYSTEM },
+{ CFL_VIDEO, "con_fontpcmin", "32", NoOp, TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! CON_FONTPCMAX
 // ? Specifies the maximum character code to end precaching at
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "con_fontpcmax", "256", NoOp, TUINTEGER|PSYSTEM },
+{ CFL_VIDEO, "con_fontpcmax", "256", NoOp, TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! CON_FONTSCALE
 // ? Specifies the scale adjust of the font. A value not equal to one will
 // ? cause interpolation to occur so filtering is advised.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "con_fontscale", cCommon->One(),
-  CB(cConsole->TextScaleModified, GLfloat), TUFLOATSAVE|PANY },
+{ CFL_VIDEO, "con_fontscale", cCommon->One(),
+  CB(cConGraphics->TextScaleModified, GLfloat), TUFLOATSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_FONTSPACING
 // ? Specifies the amount of padding to add after each cahracter rendered.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "con_fontspacing", cCommon->Zero(),
-  CB(cConsole->TextLetterSpacingModified, GLfloat), TFLOAT|PSYSTEM },
+{ CFL_VIDEO, "con_fontspacing", cCommon->Zero(),
+  CB(cConGraphics->TextLetterSpacingModified, GLfloat), TFLOAT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! CON_FONTLSPACING
 // ? Specifies the amount of padding to add below each line of text rendered.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "con_fontlspacing", cCommon->Zero(),
-  CB(cConsole->TextLineSpacingModified, GLfloat), TFLOAT|PSYSTEM },
+{ CFL_VIDEO, "con_fontlspacing", cCommon->Zero(),
+  CB(cConGraphics->TextLineSpacingModified, GLfloat), TFLOAT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! CON_FONTWIDTH
 // ? Specifies the width of the loaded console FreeType font.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "con_fontwidth", "20",
-  CB(cConsole->TextWidthModified, GLfloat), TUINTEGER|PSYSTEM },
+{ CFL_VIDEO, "con_fontwidth", "20",
+  CB(cConGraphics->TextWidthModified, GLfloat), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! CON_FONTTEXSIZE
 // ? Specifies the initial size of the texture canvas in pixels. Do not set
@@ -982,29 +958,50 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? this value. An exception is thrown if not. Zero means start with enough
 // ? size for one character.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "con_fonttexsize", cCommon->Zero(),
-  NoOp, TUINTEGER|PSYSTEM },
+{ CFL_VIDEO, "con_fonttexsize", cCommon->Zero(), NoOp, TUINTEGER|PSYSTEM },
+/* ------------------------------------------------------------------------- */
+// ! CON_INPREFRESH
+// ? Specifies the time interval in microseconds between input polls. Only
+// ? applies to the text mode console. The default is 3125 microseconds on
+// ? windows (31.25 milliseconds) to prevent concurrency slowdowns and 10000
+// ? microseconds (10 milliseconds) on anything else.
+/* ------------------------------------------------------------------------- */
+{ CFL_TERMINAL, "con_inprefresh",
+#if defined(WINDOWS)
+  "31250",                             // 31.25ms (0.003 sec)
+#else
+  "1000",                              // 1.00ms (0.0001 sec)
+#endif
+  CB(cConsole->InputRefreshModified, unsigned int), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_INPUTMAX
 // ? Specifies the maximum number of characters that are allowed to be typed
 // ? into the console input buffer.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "con_inputmax", "1000",
-  CB(cConsole->SetMaxConLineChars, size_t), TUINTEGERSAVE|PANY },
+{ CFL_NONE, "con_inputmax", "1024",
+  CB(cConsole->SetMaxInputChars, size_t), TUINTEGERSAVE|PANY },
+/* ------------------------------------------------------------------------- */
+// ! CON_OUTPUTMAX
+// ? Specifies the maximum number of characters that are allowed on each
+// ? console output line. It is needed to limit stalling the engine and GPU
+// ? with very long lines.
+/* ------------------------------------------------------------------------- */
+{ CFL_NONE, "con_outputmax", "4096",
+  CB(cConsole->SetMaxOutputChars, size_t), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_PAGELINES
 // ? The number of lines that are scrolled when pressing CONTROL and PAGEUP or
 // ? PAGEDOWN keys.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "con_pagelines", "10",
-  CB(cConsole->SetPageMoveCount, int), TUINTEGERSAVE|PANY },
+{ CFL_NONE, "con_pagelines", "10",
+  CB(cConsole->SetPageMoveCount, ssize_t), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_TMCCOLS
 // ? In bot mode, this is the maximum number of columns to draw. The larger
 // ? this value is, the more text that can be displayed at once but will
 // ? increase CPU usage from the operating system.
 /* ------------------------------------------------------------------------- */
-{ CF_TERMINAL, "con_tmccols", "80",
+{ CFL_TERMINAL, "con_tmccols", "80",
   CB(cSystem->ColsModified, unsigned int), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_TMCROWS
@@ -1012,7 +1009,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? this value is, the more text that can be displayed at once but will
 // ? increase CPU usage from the operating system.
 /* ------------------------------------------------------------------------- */
-{ CF_TERMINAL, "con_tmcrows", "32",
+{ CFL_TERMINAL, "con_tmcrows", "32",
   CB(cSystem->RowsModified, unsigned int), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_TMCREFRESH
@@ -1021,46 +1018,55 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? status bar is configurable by LUA and contains the input bar when text
 // ? is being typed.
 /* ------------------------------------------------------------------------- */
-{ CF_TERMINAL, "con_tmcrefresh", "1000",
-  CB(cConsole->RefreshModified, unsigned int), TUINTEGERSAVE|PANY },
+{ CFL_TERMINAL, "con_tmcrefresh", "1000",
+  CB(cConsole->OutputRefreshModified, unsigned int), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_TMCNOCLOSE
 // ? Disables the X button and close in the application context menu. This does
 // ? not prevent CONTROL+C/BREAK keys.
 /* ------------------------------------------------------------------------- */
-{ CF_TERMINAL, "con_tmcnoclose", cCommon->One(), NoOp,
+{ CFL_TERMINAL, "con_tmcnoclose", cCommon->One(), NoOp,
   TBOOLEAN|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! CON_TMCTFORMAT
 // ? The format of the time in the titlebar (see strftime() for details).
 /* ------------------------------------------------------------------------- */
-{ CF_TERMINAL, "con_tmctformat", "%y-%m-%d %T",
+{ CFL_TERMINAL, "con_tmctformat", "%y-%m-%d %T",
   CBSTR(cConsole->SetTimeFormat), TSTRINGSAVE|MTRIM|CNOTEMPTY|PSYSTEM|PUSR },
 /* == Fmv cvars ============================================================ */
+// ! FMV_ABUFFER
+// ? The size of the audio buffer in seconds. Changing this value only takes
+// ? effect the next time a 'Video' object is constructed.
+/* ------------------------------------------------------------------------- */
+{ CFL_AUDIOVIDEO, "fmv_abuffer", "0.25",
+  CB(VideoSetAudioBufferSize, double), TUFLOATSAVE|CPOW2|PANY },
+/* ------------------------------------------------------------------------- */
 // ! FMV_IOBUFFER
 // ? For each 'Video' class, this amount of memory is allocated as buffering
-// ? from disk.
+// ? from disk. Changing this value only takes effect the next time a 'Video'
+// ? object is constructed.
 /* ------------------------------------------------------------------------- */
-{ CF_AUDIOVIDEO, "fmv_iobuffer", "65536",
-  CB(VideoSetBufferSize, long), TUINTEGERSAVE|CPOW2|PANY },
+{ CFL_AUDIOVIDEO, "fmv_iobuffer", "65536",
+  CB(VideoSetIOBufferSize, size_t), TUINTEGERSAVE|CPOW2|PANY },
 /* ------------------------------------------------------------------------- */
 // ! FMV_MAXDRIFT
 // ? The amount of time allowed to drift between audio and video before we
-// ? start dropping frames.
+// ? start speeding up or slowing down audio. Changing this value only takes
+// ? effect the next time a 'Video' object is constructed.
 /* ------------------------------------------------------------------------- */
-{ CF_AUDIOVIDEO, "fmv_maxdrift", "0.1",
-  CB(VideoSetMaximumDrift, double), TUFLOAT|PANY },
+{ CFL_AUDIOVIDEO, "fmv_maxdrift", "0.25",
+  CB(VideoSetMaximumDrift, double), TUFLOATSAVE|PANY },
 /* == Input cvars ========================================================== */
 // ! INP_JOYDEFFDZ
 // ? Specifies the gamepad forward deadzone.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "inp_joydeffdz", "0.25",
+{ CFL_VIDEO, "inp_joydeffdz", "0.25",
   CB(cInput->SetDefaultJoyFwdDZ, float), TUFLOATSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! INP_JOYDEFRDZ
 // ? Specifies the gamepad reverse deadzone.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "inp_joydefrdz", "0.25",
+{ CFL_VIDEO, "inp_joydefrdz", "0.25",
   CB(cInput->SetDefaultJoyRevDZ, float), TUFLOATSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! INP_JOYSTICK
@@ -1069,79 +1075,79 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? [0]  JOY_DISABLE = Disable gamepads completely.
 // ? [1]  JOY_ENABLE  = Enable gamepads and always try to detect new gamepads.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "inp_joystick", "-1",
-  CB(cInput->SetJoystickEnabled, int), TINTEGERSAVE|PANY },
+{ CFL_VIDEO, "inp_joystick", cCommon->NOne(),
+  CB(cInput->SetJoystickEnabled, JoyStatus), TINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! INP_FSTOGGLER
 // ? Enables or disables the ALT+ENTER or OPTION+ENTER combinations to switch
 // ? between full-screen or windowed mode (Uses value from 'vid_fs').
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "inp_fstoggler", cCommon->One(),
+{ CFL_VIDEO, "inp_fstoggler", cCommon->One(),
   CB(cInput->SetFSTogglerEnabled, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! INP_RAWMOUSE
 // ? Enables raw mouse input if available.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "inp_rawmouse", cCommon->One(),
+{ CFL_VIDEO, "inp_rawmouse", cCommon->One(),
   CB(cInput->SetRawMouseEnabled, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! INP_STICKYKEY
 // ? Enables sticky key presses.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "inp_stickykey", cCommon->One(),
+{ CFL_VIDEO, "inp_stickykey", cCommon->One(),
   CB(cInput->SetStickyKeyEnabled, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! INP_STICKYMOUSE
 // ? Enables sticky mouse buttons.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "inp_stickymouse", cCommon->One(),
+{ CFL_VIDEO, "inp_stickymouse", cCommon->One(),
   CB(cInput->SetStickyMouseEnabled, bool), TBOOLEANSAVE|PANY },
 /* == Network cvars ======================================================== */
 // ! NET_CBPFLAG1
 // ? Specifies the certificate error ignore flags.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "net_cbpflag1", cCommon->Zero(),
+{ CFL_NONE, "net_cbpflag1", cCommon->Zero(),
   CB(cSockets->CertsSetBypassFlags1, uint64_t), TUINTEGER|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! NET_CBPFLAG2
 // ? Specifies the extended certificate error ignore flags.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "net_cbpflag2", cCommon->Zero(),
+{ CFL_NONE, "net_cbpflag2", cCommon->Zero(),
   CB(cSockets->CertsSetBypassFlags2, uint64_t), TUINTEGER|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! NET_BUFFER
 // ? Specifies the amount of memory in bytes to reserve for each recv() or
 // ? send() call. Default is 64k.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "net_buffer", "65536",
+{ CFL_NONE, "net_buffer", "65536",
   CB(SocketSetBufferSize, size_t), TUINTEGER|CPOW2|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! NET_RTIMEOUT
 // ? Specifies a socket recv() command timeout in seconds.
 // ? Default is 2 minutes.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "net_rtimeout", "120",
+{ CFL_NONE, "net_rtimeout", "120",
   CB(SocketSetRXTimeout, double), TUFLOAT|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! NET_STIMEOUT
 // ? Specifies a socket send() command timeout in seconds.
 // ? Default is 30 seconds.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "net_stimeout", "30",
+{ CFL_NONE, "net_stimeout", "30",
   CB(SocketSetTXTimeout, double), TUFLOAT|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! NET_CIPHERTLSv1
 // ? Specifies the default settings for TLSv1.x connections. The default is
 // ? use only maximum strength ciphers.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "net_ciphertlsv1", "HIGH:!DSS:!aNULL@STRENGTH",
-  NoOp, MTRIM|TSTRING|PSYSTEM },
+{ CFL_NONE, "net_ciphertlsv1", "HIGH:!DSS:!aNULL@STRENGTH",
+  CBSTR(SocketSetCipher12), MTRIM|TSTRING|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! NET_CIPHERTLSv13
 // ? Specifies the default settings for TLSv3 connections. The default is empty
 // ? which lets OpenSSL decide.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "net_ciphertlsv13", cCommon->Blank(), NoOp,
+{ CFL_NONE, "net_ciphertlsv13", cCommon->Blank(), CBSTR(SocketSetCipher13),
   MTRIM|TSTRING|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! NET_CASTORE
@@ -1150,13 +1156,13 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? connection. These certificates are loaded and checked at startup and
 // ? a log warning message is generated if the certificate is not usable.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "net_castore", cCommon->Blank(),
+{ CFL_NONE, "net_castore", cCommon->Blank(),
   CBSTR(cSockets->CertsFileModified), TSTRING|CFILENAME|MTRIM|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! NET_OCSP
 // ? Informs OpenSSL to verify server certificates via OCSP.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "net_ocsp", cCommon->One(),
+{ CFL_NONE, "net_ocsp", cCommon->One(),
   CB(SocketOCSPModified, int), TUINTEGER|PANY },
 /* ------------------------------------------------------------------------- */
 // ! NET_USERAGENT
@@ -1165,55 +1171,127 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? to "Mozilla/5.0 (<EngineName>; <EngineBits>-bit; v<EngineVersion>)
 // ? <AppName>/<AppVersion>".
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "net_useragent", cCommon->Blank(),
+{ CFL_NONE, "net_useragent", cCommon->Blank(),
   CBSTR(SocketAgentModified), TSTRING|MTRIM|PBOOT|PSYSTEM },
 /* == Video cvars ========================================================== */
-// ! VID_ALPHA
-// ? Specifies that the main frame buffer has alpha (GL_RGBA) which is needed
-// ? for transparent windows. Default is 0 to use GL_RGB.
+// ! VID_API
+// ? Specifies the API to use. This is only used for troubleshooting purposes
+// ? only and serves no other purpose. Select 0 (default) for GLFW_OPENGL_API,
+// ? 1 for GLFW_OPENGL_ES_API or 2 for GLFW_NO_API.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_alpha", cCommon->Zero(),
-  CB(cDisplay->SetWindowTransparency, bool), TBOOLEAN|PSYSTEM },
+{ CFL_VIDEO, "vid_api",  cCommon->Zero(),
+  CB(cDisplay->ApiChanged, size_t), TUINTEGER|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_AUXBUFFERS
 // ? Specified the number of auxiliary swap chain buffers to use. Specify 0
 // ? for double-buffering, 1 for triple-buffering or -1 to let the OpenGL
 // ? driver decide.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_auxbuffers", "-1",
+{ CFL_VIDEO, "vid_auxbuffers", cCommon->NOne(),
   CB(cDisplay->AuxBuffersChanged, int), TINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
-// ! VID_BPP
-// ? Set default bits-per-pixel. On Windows, the driver can decide properly
-// ? what depth to use, but on others the bit depth is forced to RGBA161616 to
-// ? resolve gradient banding issues but you can override that if you like.
+// ! VID_FBALPHA
+// ? Override alpha component bit-depth. Default is -1 for GLFW_DONT_CARE.
+// ? Mainly for troubleshooting or expert purposes. This value is also saved to
+// ? the configuration database if changed.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_bpp",
+{ CFL_VIDEO, "vid_fbalpha",
 /* ------------------------------------------------------------------------- */
-#if defined(WINDOWS)
-  cCommon->Zero(),                     // Win32 doesn't need forcing depth
+#if defined(MACOS)
+  "10",                                // Force RGBA10101010
 #else
-  "16",                                // For better bit-depth quality
+  cCommon->NOne(),                     // Win32/Wayland doesn't need
 #endif
 /* ------------------------------------------------------------------------- */
-  CB(cDisplay->SetForcedBitDepth, int), TUINTEGER|PANY },
+  CB(cDisplay->SetForcedBitDepthA, int), TINTEGERSAVE|PANY },
+/* ------------------------------------------------------------------------- */
+// ! VID_FBBLUE
+// ? Override red component bit-depth. Default is -1 for GLFW_DONT_CARE or 10
+// ? on MacOS to prevent gradient banding issues. Mainly for troubleshooting
+// ? or expert purposes. This value is also saved to the configuration database
+// ? if changed.
+/* ------------------------------------------------------------------------- */
+{ CFL_VIDEO, "vid_fbblue",
+/* ------------------------------------------------------------------------- */
+#if defined(MACOS)
+  "10",                                // Force RGBA10101010
+#else
+  cCommon->NOne(),                     // Win32/Wayland doesn't need
+#endif
+/* ------------------------------------------------------------------------- */
+  CB(cDisplay->SetForcedBitDepthB, int), TINTEGERSAVE|PANY },
+/* ------------------------------------------------------------------------- */
+// ! VID_FBGREEN
+// ? Override red component bit-depth. Default is -1 for GLFW_DONT_CARE or 10
+// ? on MacOS to prevent gradient banding issues. Mainly for troubleshooting or
+// ? expert purposes. This value is also saved to the configuration database if
+// ? changed.
+/* ------------------------------------------------------------------------- */
+{ CFL_VIDEO, "vid_fbgreen",
+/* ------------------------------------------------------------------------- */
+#if defined(MACOS)
+  "10",                                // Force RGBA10101010
+#else
+  cCommon->NOne(),                     // Win32/Wayland doesn't need
+#endif
+/* ------------------------------------------------------------------------- */
+  CB(cDisplay->SetForcedBitDepthG, int), TINTEGERSAVE|PANY },
+/* ------------------------------------------------------------------------- */
+// ! VID_FBRED
+// ? Override red component bit-depth. Default is -1 for GLFW_DONT_CARE or 10
+// ? on MacOS to prevent gradient banding issues. Mainly for troubleshooting or
+// ? expert purposes. This value is also saved to the configuration database if
+// ? changed.
+/* ------------------------------------------------------------------------- */
+{ CFL_VIDEO, "vid_fbred",
+/* ------------------------------------------------------------------------- */
+#if defined(MACOS)
+  "10",                                // Force RGBA10101010
+#else
+  cCommon->NOne(),                     // Win32/Wayland doesn't need
+#endif
+/* ------------------------------------------------------------------------- */
+  CB(cDisplay->SetForcedBitDepthR, int), TINTEGERSAVE|PANY },
+/* ------------------------------------------------------------------------- */
+// ! VID_CTXMAJOR
+// ? Specifies the major context version to use. This is only used for
+// ? troubleshooting purposes only and serves no other purpose. The default is
+// ? 3 with a core profile.
+/* ------------------------------------------------------------------------- */
+{ CFL_VIDEO, "vid_ctxmajor", "3",
+  CB(cDisplay->CtxMajorChanged, int), TINTEGER|PBOOT|PSYSTEM },
+/* ------------------------------------------------------------------------- */
+// ! VID_CTXMINOR
+// ? Specifies the minor context version to use. This is only used for
+// ? troubleshooting purposes only and serves no other purpose. The default is
+// ? 2 with a core profile.
+/* ------------------------------------------------------------------------- */
+{ CFL_VIDEO, "vid_ctxminor", "2",
+  CB(cDisplay->CtxMinorChanged, int), TINTEGER|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_CLEAR
 // ? Specifies to clear the main frame buffer every frame.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_clear", cCommon->One(),
-  CB(cFboMain->SetBackBufferClear, bool), TBOOLEAN|PSYSTEM },
+{ CFL_VIDEO, "vid_clear", cCommon->One(),
+  CB(cFboCore->SetBackBufferClear, bool), TBOOLEAN|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_CLEARCOLOUR
 // ? Specifies the 32-bit integer (0xAARRGGBB) as the default clear value.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_clearcolour", cCommon->Zero(),
-  CB(cFboMain->SetBackBufferClearColour, unsigned int), TUINTEGER|PSYSTEM },
+{ CFL_VIDEO, "vid_clearcolour", cCommon->Zero(),
+  CB(cFboCore->SetBackBufferClearColour, unsigned int), TUINTEGER|PSYSTEM },
+/* ------------------------------------------------------------------------- */
+// ! VID_DBLBUFF
+// ? Specifies to use double-buffering. This is only used for troubleshooting
+// ? purposes only and serves no other purpose. The default is 1 for yes.
+/* ------------------------------------------------------------------------- */
+{ CFL_VIDEO, "vid_dblbuff", cCommon->One(),
+  CB(cDisplay->DoubleBufferChanged, bool), TBOOLEAN|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_DEBUG
 // ? Sets 'GLFW_OPENGL_DEBUG_CONTEXT'. Default is 0 (disabled).
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_debug", cCommon->Zero(),
+{ CFL_VIDEO, "vid_debug", cCommon->Zero(),
   CB(cDisplay->SetGLDebugMode, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_FS
@@ -1221,16 +1299,25 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? a normal window, 1 for exclusive full-screen mode (specified by
 // ? 'vid_fsmode') or 2 for borderless full-screen mode.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_fs", cCommon->Zero(),
+{ CFL_VIDEO, "vid_fs", cCommon->Zero(),
   CB(cDisplay->FullScreenStateChanged, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_FSAA
 // ? Enables full-scene anti-aliasing. Only needed to smooth the edges of
 // ? textures if you frequently blit textures at an different angles other than
-// ? 0, 90, 180 or 270 degrees.
+// ? 0, 90, 180 or 270 degrees. This cvar has been semi-disabled as instability
+// ? occurs with any setting other than the default on a Mac.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_fsaa", "-1",
-  CB(cDisplay->FsaaChanged, int), TINTEGERSAVE|CPOW2Z|PANY },
+{ CFL_VIDEO, "vid_fsaa", cCommon->NOne(),
+  CB(cDisplay->FsaaChanged, int), TINTEGER|CPOW2|PBOOT },
+/* ------------------------------------------------------------------------- */
+// ! VID_FORWARD
+// ? Specifies to use a forward compatible context. This is only used for
+// ? troubleshooting purposes only and serves no other purpose. The default is
+// ? 1 for yes.
+/* ------------------------------------------------------------------------- */
+{ CFL_VIDEO, "vid_forward", cCommon->One(),
+  CB(cDisplay->ForwardChanged, bool), TBOOLEAN|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_FSMODE
 // ? Specifies which full-screen mode to use. You can check the log or use
@@ -1239,10 +1326,10 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? engine use the current desktop resolution (default on Mac for now). Use -2
 // ? to make the engine use borderless full-screen mode (default on Win/Linux).
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_fsmode",
+{ CFL_VIDEO, "vid_fsmode",
   /* ----------------------------------------------------------------------- */
 #if defined(MACOS)
-  "-1",
+  cCommon->NOne(),
 #else
   "-2",
 #endif
@@ -1253,20 +1340,20 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? Overrides the gamma level. The default is 1 which is to keep the desktop
 // ? gamma level.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_gamma", cCommon->One(),
+{ CFL_VIDEO, "vid_gamma", cCommon->One(),
   CB(cDisplay->GammaChanged, GLfloat), TUFLOATSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_GASWITCH
 // ? Set to 0 (default) to disable MacOS graphics switching, or 1 to allow
 // ? MacOS to switch between integral and dedicated graphics.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_gaswitch", cCommon->Zero(),
+{ CFL_VIDEO, "vid_gaswitch", cCommon->Zero(),
   CB(cDisplay->GraphicsSwitchingChanged, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_HIDPI
 // ? Enables or disables HiDPI support.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_hidpi", cCommon->One(),
+{ CFL_VIDEO, "vid_hidpi", cCommon->One(),
   CB(cDisplay->HiDPIChanged, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_LOCK
@@ -1274,20 +1361,20 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? 'vid_orwidth' and 'vid_orheight' instead of resizing it to the windows
 // ? size.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_lock", cCommon->Zero(),
-  CB(cFboMain->SetLockViewport, bool), TBOOLEAN|PSYSTEM },
+{ CFL_VIDEO, "vid_lock", cCommon->Zero(),
+  CB(cFboCore->SetLockViewport, bool), TBOOLEAN|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_MONITOR
 // ? Specifies the monitor id to use. Use the 'mlist' console command to see
 // ? possible values or just use -1 to let the operating system decide.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_monitor", "-1",
+{ CFL_VIDEO, "vid_monitor", cCommon->NOne(),
   CB(cDisplay->MonitorChanged, int), TINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_NOERRORS
 // ? Sets GLFW_CONTEXT_NO_ERROR. Default is 0 (disabled).
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_noerrors", cCommon->Zero(),
+{ CFL_VIDEO, "vid_noerrors", cCommon->Zero(),
   CB(cDisplay->SetNoErrorsMode, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_ORASPMAX
@@ -1295,51 +1382,60 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? example, 1.333333 is 4:3 and 1.777778 is 16:9. Only applies when the
 // ? 'vid_simplematrix' cvar is set to 0.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_oraspmax", "1.777778",
-  CB(cFboMain->SetMaxOrtho, GLfloat), TUFLOAT|PSYSTEM },
+{ CFL_VIDEO, "vid_oraspmax", "1.777778",
+  CB(cFboCore->SetMaxOrtho, GLfloat), TUFLOAT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_ORASPMIN
 // ? Specifies the minmum aspect ratio allowed in the main frame buffer. For
 // ? example, 1.333333 is 4:3 and 1.777778 is 16:9. Only applies when the
 // ? 'vid_simplematrix' cvar is set to 0.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_oraspmin", "1.25",
-  CB(cFboMain->SetMinOrtho, GLfloat), TUFLOAT|PSYSTEM },
+{ CFL_VIDEO, "vid_oraspmin", "1.25",
+  CB(cFboCore->SetMinOrtho, GLfloat), TUFLOAT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_ORHEIGHT
 // ? Specifies the height of the main frame buffer.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_orheight", "480",
+{ CFL_VIDEO, "vid_orheight", "480",
   CB(cDisplay->SetOrthoHeight, GLfloat), TUFLOAT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_ORWIDTH
 // ? Specifies the width of the main frame buffer.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_orwidth", "640",
+{ CFL_VIDEO, "vid_orwidth", "640",
   CB(cDisplay->SetOrthoWidth, GLfloat), TUFLOAT|PSYSTEM },
+/* ------------------------------------------------------------------------- */
+// ! VID_PROFILE
+// ? Specifies the type of profile to create the context for. This is only used
+// ? for troubleshooting purposes only and serves no other purpose. Select 0
+// ? (default) for GLFW_OPENGL_CORE_PROFILE, 1 for GLFW_OPENGL_COMPAT_PROFILE
+// ? or 2 for GLFW_OPENGL_ANY_PROFILE.
+/* ------------------------------------------------------------------------- */
+{ CFL_VIDEO, "vid_profile", cCommon->Zero(),
+  CB(cDisplay->ProfileChanged, size_t), TUINTEGER|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_QCOMPRESS
 // ? Specifies texture compression quality. Default is maximum.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_qcompress", "3",
+{ CFL_VIDEO, "vid_qcompress", "3",
   CB(cOgl->SetQCompressHint, size_t), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_QLINE
 // ? Specifies line quality. Default is maximum.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_qline", cCommon->Zero(),
+{ CFL_VIDEO, "vid_qline", cCommon->Zero(),
   CB(cOgl->SetQLineHint, size_t), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_QPOLYGON
 // ? Specifies polygon quality. Default is maximum.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_qpolygon", cCommon->Zero(),
+{ CFL_VIDEO, "vid_qpolygon", cCommon->Zero(),
   CB(cOgl->SetQPolygonHint, size_t), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_QSHADER
 // ? Specifies shader quality. Default is maximum.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_qshader", "3",
+{ CFL_VIDEO, "vid_qshader", "3",
   CB(cOgl->SetQShaderHint, size_t), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_RCMDS
@@ -1348,15 +1444,15 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? app author needs to be concerned with this value and can only be set in
 // ? the application manifest.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_rcmds", "1000",
-  CB(cFboMain->SetCommandReserve, size_t), TINTEGER|PSYSTEM|CUNSIGNED|PBOOT },
+{ CFL_VIDEO, "vid_rcmds", "1000",
+  CB(cFboCore->SetCommandReserve, size_t), TINTEGER|PSYSTEM|CUNSIGNED|PBOOT },
 /* ------------------------------------------------------------------------- */
 // ! VID_RDFBO
 // ? Pre-allocates the specified number of frame buffer names to reserve in the
 // ? pending frame buffer names deletion list. Only the app author needs to be
 // ? concerned with this value and can only be set in the application manifest.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_rdfbo", "10",
+{ CFL_VIDEO, "vid_rdfbo", "10",
   CB(cOgl->SetFboDListReserve, size_t), TINTEGER|PSYSTEM|CUNSIGNED|PBOOT },
 /* ------------------------------------------------------------------------- */
 // ! VID_RDTEX
@@ -1364,8 +1460,17 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? pending texture names deletion list. Only the app author needs to be
 // ? concerned with this value and can only be set in the application manifest.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_rdtex", "10",
+{ CFL_VIDEO, "vid_rdtex", "10",
   CB(cOgl->SetTexDListReserve, size_t), TINTEGER|PSYSTEM|CUNSIGNED|PBOOT },
+/* ------------------------------------------------------------------------- */
+// ! VID_RELEASE
+// ? Specifies the context release behaviour. This is only used
+// ? for troubleshooting purposes only and serves no other purpose. Select 0
+// ? (default) for GLFW_ANY_RELEASE_BEHAVIOR, 1 for GLFW_RELEASE_BEHAVIOR_FLUSH
+// ? or 2 for GLFW_RELEASE_BEHAVIOR_NONE.
+/* ------------------------------------------------------------------------- */
+{ CFL_VIDEO, "vid_release", cCommon->Zero(),
+  CB(cDisplay->ReleaseChanged, size_t), TUINTEGER|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_RFBO
 // ? Pre-allocates space for the specified number of frame buffer names. By
@@ -1374,7 +1479,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? low and many frame buffers are used. Only the app author needs to be
 // ? concerned with this value and can only be set in the application manifest.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_rfbo", "2",
+{ CFL_VIDEO, "vid_rfbo", "2",
   CB(FboSetOrderReserve, size_t), TINTEGER|PSYSTEM|CUNSIGNED|PBOOT },
 /* ------------------------------------------------------------------------- */
 // ! VID_RFLOATS
@@ -1383,21 +1488,30 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? app author needs to be concerned with this value and can only be set in
 // ? the application manifest.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_rfloats", "10000",
-  CB(cFboMain->SetFloatReserve, size_t), TINTEGER|PSYSTEM|CUNSIGNED|PBOOT },
+{ CFL_VIDEO, "vid_rfloats", "10000",
+  CB(cFboCore->SetFloatReserve, size_t), TINTEGER|PSYSTEM|CUNSIGNED|PBOOT },
+/* ------------------------------------------------------------------------- */
+// ! VID_ROBUSTNESS
+// ? Specifies the robustness strategy of the context. This is only used
+// ? for troubleshooting purposes only and serves no other purpose. Specify 0
+// ? for GLFW_NO_RESET_NOTIFICATION, 1 (default) for
+// ? GLFW_LOSE_CONTEXT_ON_RESET or 2 for GLFW_NO_ROBUSTNESS.
+/* ------------------------------------------------------------------------- */
+{ CFL_VIDEO, "vid_robustness", cCommon->One(),
+  CB(cDisplay->RobustnessChanged, size_t), TUINTEGER|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_SIMPLEMATRIX
 // ? Set to 0 to not maintain frame buffer aspect ratio, or 1 to allow the
 // ? main frame buffer to stick to the users preferred aspect ratio (see
 // ? 'vid_oraspmin' and 'vid_oraspmax).
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_simplematrix", cCommon->Zero(),
-  CB(cFboMain->SetSimpleMatrix, bool), TBOOLEAN|PSYSTEM },
+{ CFL_VIDEO, "vid_simplematrix", cCommon->Zero(),
+  CB(cFboCore->SetSimpleMatrix, bool), TBOOLEAN|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_SRGB
 // ? Enables SRGB colour space.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_srgb", cCommon->One(),
+{ CFL_VIDEO, "vid_srgb", cCommon->One(),
   CB(cDisplay->SRGBColourSpaceChanged, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_SSTYPE
@@ -1405,13 +1519,13 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? the image types supported and the id's for them. Only entries marked with
 // ? the 'S' (saveable) token can be used.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_sstype", cCommon->Zero(),
-  CB(cSShot->SetScreenShotType, size_t), TUINTEGERSAVE|PANY },
+{ CFL_VIDEO, "vid_sstype", cCommon->Zero(),
+  CB(cSShot->SetScreenShotType, ImageFormat), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_STEREO
 // ? Enables 3D glasses support.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_stereo", cCommon->Zero() ,
+{ CFL_VIDEO, "vid_stereo", cCommon->Zero() ,
   CB(cDisplay->SetStereoMode, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_SUBPIXROUND
@@ -1420,15 +1534,15 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? function, 2 to use the ceil() function, 3 to use the round() function or
 // ? 4 to use the roundEven() function.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_subpixround", cCommon->Zero(),
-  CB(SetSPRoundingMethod, size_t), TUINTEGER|PSYSTEM },
+{ CFL_VIDEO, "vid_subpixround", cCommon->Zero(),
+  CB(cShaderCore->SetSPRoundingMethod, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_TEXFILTER
 // ? Sets the texture filter id and equates to the values of the 'Fbo.Filters'
 // ? table.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_texfilter", "3",
-  CB(cFboMain->SetFilter, size_t), TUINTEGERSAVE|PANY },
+{ CFL_VIDEO, "vid_texfilter", "3",
+  CB(cFboCore->SetFilter, OglFilterEnum), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_VSYNC
 // ? Enables vertical synchronisation which helps smooth the frame rate. Set to
@@ -1437,47 +1551,53 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? refresh rate. You can also use -1 to use adaptive sync, and 2 to half the
 // ? refresh rate if you like.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_vsync", cCommon->One(),
+{ CFL_VIDEO, "vid_vsync", cCommon->One(),
   CB(cOgl->SetVSyncMode, int), TINTEGERSAVE|PANY },
+/* ------------------------------------------------------------------------- */
+// ! WIN_ALPHA
+// ? Specifies that the window has alpha which is needed for transparent
+// ? windows. Default is 0 for no.
+/* ------------------------------------------------------------------------- */
+{ CFL_VIDEO, "win_alpha", cCommon->Zero(),
+  CB(cDisplay->SetWindowTransparency, bool), TBOOLEAN|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! WIN_ASPECT
 // ? Force the window to have an aspect ratio. Specify as a floating point
 // ? number. i.e. 16.9 for 16:9 or 4.3 for 4:3, etc. or 0 for numeric and/or
 // ? denominator for freedom for the end user to resize at will.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "win_aspect", cCommon->Zero(),
-  NoOp, TUFLOAT|PSYSTEM },
+{ CFL_VIDEO, "win_aspect", cCommon->Zero(), NoOp, TUFLOAT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! WIN_BORDER
 // ? Specifies if the window should have a titlebar and a border.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "win_border", cCommon->One(),
+{ CFL_VIDEO, "win_border", cCommon->One(),
   CB(cDisplay->BorderChanged, bool), TBOOLEAN|PANY },
 /* ------------------------------------------------------------------------- */
 // ! WIN_CLOSEABLE
 // ? Specifies if the window is closable by the user.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "win_closeable", cCommon->One(),
+{ CFL_VIDEO, "win_closeable", cCommon->One(),
   CB(cDisplay->CloseableChanged, bool), TBOOLEAN|PANY },
 /* ------------------------------------------------------------------------- */
 // ! WIN_FLOATING
 // ? Specifies to lock the visibility of the window, otherwise known as 'always
 // ? on top' or 'Topmost'.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "win_floating", cCommon->Zero(),
+{ CFL_VIDEO, "win_floating", cCommon->Zero(),
   CB(cDisplay->FloatingChanged, bool), TBOOLEAN|PANY },
 /* ------------------------------------------------------------------------- */
 // ! WIN_FOCUSED
 // ? Specifies to automatically focus the window on creation.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "win_focused", cCommon->One(),
+{ CFL_VIDEO, "win_focused", cCommon->One(),
   CB(cDisplay->AutoFocusChanged, bool), TBOOLEAN|PANY },
 /* ------------------------------------------------------------------------- */
 // ! WIN_HEIGHT
 // ? Sets the initial height of the window. This value is saved to the
 // ? persistence database when changed.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "win_height", cCommon->Zero(),
+{ CFL_VIDEO, "win_height", cCommon->Zero(),
   CB(cDisplay->HeightChanged, int), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! WIN_HEIGHTMAX
@@ -1486,28 +1606,26 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? The upper value is clamped by the GPU's maximum texture size which is
 // ? normally 16384 on all modern GPU's. Specify 0 to use the GPU maximum.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "win_heightmax", cCommon->Zero(),
-  NoOp, TUINTEGER|PSYSTEM },
+{ CFL_VIDEO, "win_heightmax", cCommon->Zero(), NoOp, TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! WIN_HEIGHTMIN
 // ? Sets the minimum height of the window. This is only changable at the
 // ? application configuration file and is not saved to persistence database.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "win_heightmin", cCommon->Zero(),
-  NoOp, TUINTEGER|PSYSTEM },
+{ CFL_VIDEO, "win_heightmin", cCommon->Zero(), NoOp, TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! WIN_MAXIMISED
 // ? Specify 1 to have the window automatically maximised on creation or 0
 // ? to not. The default value is 0.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "win_maximised", cCommon->Zero(),
+{ CFL_VIDEO, "win_maximised", cCommon->Zero(),
   CB(cDisplay->SetMaximisedMode, bool), TBOOLEAN|PANY },
 /* ------------------------------------------------------------------------- */
 // ! WIN_MINIMISEAUTO
 // ? Specify 1 to have the window automatically minimise when it is not active
 // ? or 0 to not. The default value is 1.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "win_minimiseauto", cCommon->One(),
+{ CFL_VIDEO, "win_minimiseauto", cCommon->One(),
   CB(cDisplay->AutoIconifyChanged, bool), TBOOLEAN|PANY },
 /* ------------------------------------------------------------------------- */
 // ! WIN_POSX
@@ -1515,7 +1633,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? screen and -1 means the default position. Any other value is the actual
 // ? physical position on the screen. The default value is -2.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "win_posx", "-2",
+{ CFL_VIDEO, "win_posx", "-2",
   CB(cDisplay->SetXPosition, int), TINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! WIN_POSY
@@ -1523,14 +1641,14 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? screen and -1 means the default position. Any other value is the actual
 // ? physical position on the screen. The default value is -2.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "win_posy", "-2",
+{ CFL_VIDEO, "win_posy", "-2",
   CB(cDisplay->SetYPosition, int), TINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! WIN_SIZABLE
 // ? Specify 1 if the window is allowed to be resized or 0 if not. The default
 // ? value is 1.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "win_sizable", cCommon->One(),
+{ CFL_VIDEO, "win_sizable", cCommon->One(),
   CB(cDisplay->SizableChanged, bool), TBOOLEAN|PANY },
 /* ------------------------------------------------------------------------- */
 // ! WIN_THREAD
@@ -1541,21 +1659,13 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? the in the application configuration file and not saved to the persistence
 // ? database.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "win_thread",
-  /* ----------------------------------------------------------------------- */
-#if defined(LINUX)
-  cCommon->Zero(),                                 // Wayland oddities
-#else
-  cCommon->One(),
-#endif
-  /* ----------------------------------------------------------------------- */
-  NoOp, TBOOLEANSAVE|PANY },
+{ CFL_VIDEO, "win_thread", cCommon->One(), NoOp, TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! WIN_WIDTH
 // ? Sets the initial width of the window. This value is saved to the
 // ? persistence database when changed.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "win_width", cCommon->Zero(),
+{ CFL_VIDEO, "win_width", cCommon->Zero(),
   CB(cDisplay->WidthChanged, int), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! WIN_WIDTHMAX
@@ -1564,33 +1674,31 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? The upper value is clamped by the GPU's maximum texture size which is
 // ? normally 16384 on all modern GPU's. Specify 0 to use the GPU maximum.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "win_widthmax", cCommon->Zero(),
-  NoOp, TUINTEGER|PSYSTEM },
+{ CFL_VIDEO, "win_widthmax", cCommon->Zero(), NoOp, TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! WIN_WIDTHMIN
 // ? Sets the minimum width of the window. This is only changable at the
 // ? application configuration file and is not saved to persistence database.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "win_widthmin", cCommon->Zero(),
-  NoOp, TUINTEGER|PSYSTEM },
+{ CFL_VIDEO, "win_widthmin", cCommon->Zero(), NoOp, TUINTEGER|PSYSTEM },
 /* == Logging cvars ======================================================== */
 // ! LOG_CREDITS
 // ? Specifies to include credits in the log at startup.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "log_credits", cCommon->Zero(),
+{ CFL_NONE, "log_credits", cCommon->Zero(),
   CB(cCredits->CreditDumpList, bool), TBOOLEAN|PANY },
 /* ------------------------------------------------------------------------- */
 // ! LOG_DYLIBS
 // ? Specifies to include shared libraries in the log at startup.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "log_dylibs", cCommon->Zero(),
+{ CFL_NONE, "log_dylibs", cCommon->Zero(),
   CB(cSystem->DumpModuleList, bool), TBOOLEAN|PANY },
 /* ------------------------------------------------------------------------- */
 // ! APP_COMPATFLAGS
 // ? Specifies to test system for compatibility and override any settings
 // ? depending on the system environment.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "app_comflags", cCommon->One(),
+{ CFL_NONE, "app_comflags", cCommon->One(),
   CB(cCVars->SetCompatFlags, bool), TBOOLEAN|PBOOT },
 /* -- Undefines ------------------------------------------------------------ */
 #undef CBSTR                           // Done with string function callback

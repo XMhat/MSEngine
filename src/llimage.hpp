@@ -65,7 +65,8 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Image));
 // < File:string=The filename to save to.
 // ? Saves the file to disk.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Save, LCGETPTR(1, Image)->SaveFile(LCGETCPPFILE(2, "File"), 0, 0));
+LLFUNC(Save,
+  LCGETPTR(1, Image)->SaveFile(LCGETCPPFILE(2, "File"), 0, IFMT_PNG));
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Image:* member functions structure                                  ## **

@@ -84,9 +84,8 @@ template<class ClockType = CoreClock>struct ClockManager
     unsigned int uiCompMax = StdMaxUInt) const
       { return StrLongFromDuration(GetTimeS() - tDuration, uiCompMax); }
   /* -- Convert time to long duration -------------------------------------- */
-  const string ToDurationLongString(unsigned int uiCompMax =
-    StdMaxUInt) const
-      { return ToDurationRel(0, uiCompMax); }
+  const string ToDurationLongString(unsigned int uiCompMax = StdMaxUInt) const
+    { return ToDurationRel(0, uiCompMax); }
   /* -- Unused constructor ------------------------------------------------- */
   ClockManager(void) { }
 };/* -- Global functors / System time clock functor ------------------------ */
@@ -98,14 +97,27 @@ template<class CoreClockType = CoreClock,
          class ClockManagerType = ClockManager<CoreClockType>>
 class ClockInterval :                  // Members initially private
   /* -- Base classes ------------------------------------------------------- */
-  protected ClockManagerType           // Type of clock to use
+  private ClockManagerType             // Type of clock to use
 { /* -- Variables ---------------------------------------------------------- */
   ClkDuration      cdLimit;            // Time delay before trigger
   ClkTimePoint     ctpNext;            // Next trigger
-  /* -- Time elapsed? ---------------------------------------------- */ public:
+  /* -- Returns if time + this duration not elapsed yet ------------ */ public:
+  bool CIIsNotTriggered(const ClkDuration cdT) const
+    { return this->GetTime() + cdT < ctpNext; }
+  /* -- Returns if timepoint not elapsed yet ------------------------------- */
+  bool CIIsNotTriggered(const ClkTimePoint ctpT) const
+    { return ctpT < ctpNext; }
+  /* -- Returns if current timepoint not elapsed yet ----------------------- */
+  bool CIIsNotTriggered(void) const
+    { return CIIsNotTriggered(this->GetTime()); }
+  /* -- Returns if current timepoint elapsed ------------------------------- */
+  bool CIIsTriggered(void) const { return !CIIsNotTriggered(); }
+  /* -- Add time to next limit --------------------------------------------- */
+  void CIAccumulate(void) { ctpNext += cdLimit; }
+  /* -- Time elapsed? ------------------------------------------------------ */
   bool CITrigger(void)
   { // Return false if time hasn't elapsed yet
-    if(CINoTrigger()) return false;
+    if(CIIsNotTriggered()) return false;
     // Set next time
     CIAccumulate();
     // Success
@@ -116,7 +128,7 @@ class ClockInterval :                  // Members initially private
   { // Get current high res time
     const ClkTimePoint ctpNow{ this->GetTime() };
     // Return false if time hasn't elapsed yet
-    if(CINoTrigger(ctpNow)) return false;
+    if(CIIsNotTriggered(ctpNow)) return false;
     // Set next time strictly and not accumulate it
     ctpNext = ctpNow + cdLimit;
     // Success
@@ -124,22 +136,15 @@ class ClockInterval :                  // Members initially private
   }
   /* -- Reset trigger ------------------------------------------------------ */
   void CIReset(void) { ctpNext = this->GetTime() + cdLimit; }
-  /* -- Returns if time not elapsed yet ------------------------------------ */
-  bool CINoTrigger(const ClkTimePoint tpT) const
-    { return tpT < ctpNext; }
-  bool CINoTrigger(void) const
-    { return CINoTrigger(this->GetTime()); }
-  /* -- Add time to next limit --------------------------------------------- */
-  void CIAccumulate(void) { ctpNext += cdLimit; }
   /* -- Return time left --------------------------------------------------- */
-  const ClkDuration CIDelta(void) const
-    { return this->GetTime() - ctpNext; }
+  const ClkDuration CIDelta(void) const { return this->GetTime() - ctpNext; }
   /* -- Sync now ----------------------------------------------------------- */
   void CISync(void) { ctpNext = this->GetTime(); }
-  /* -- Update limit and time now ------------------------------------------ */
+  /* -- Update limit and time now do a duration object --------------------- */
   void CISetLimit(const ClkDuration duL) { cdLimit = duL; CISync(); }
-  void CISetLimit(const double fdL)
-    { CISetLimit(duration_cast<ClkDuration>(duration<double>(fdL))); }
+  /* -- Update limit and time now to a double ------------------------------ */
+  void CISetLimit(const double dL)
+    { CISetLimit(duration_cast<ClkDuration>(duration<double>(dL))); }
   /* -- Constructor -------------------------------------------------------- */
   ClockInterval(void) :
     /* -- Initialisers ----------------------------------------------------- */
@@ -195,7 +200,8 @@ class ClockChrono :                    // Members intially private
     ctpStart{ this->GetTime() }        // Set start time
     /* -- No code ---------------------------------------------------------- */
     { }
-};/* ----------------------------------------------------------------------- */
+};
+/* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */
 }                                      // End of private module namespace

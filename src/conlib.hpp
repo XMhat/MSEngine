@@ -10,12 +10,12 @@
 ** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ========================================================================= */
-const ConCmdStaticList conLibList{{    // Default console commands list
+const ConCmdStaticList ccslList{{      // Default console commands list
 /* ========================================================================= */
 // ! archives
-// ? Lists archives that are loaded into the game engine.
+// ? Lists archive objects that are loaded into the game engine.
 /* ------------------------------------------------------------------------- */
-{ "archives", 1, 1, CF_NOTHING, [](const Args &){
+{ "archives", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Get reference to assets collector class and lock it so it's not changed
 const LockGuard lgAssetsSync{ cArchives->CollectorGetMutex() };
@@ -26,9 +26,9 @@ tData.Header("ID").Header("F").Header("D").Header("T").Header("U")
 // Total resources
 size_t stResources = 0;
 // Walk through archives
-for(const Archive*const oCptr : *cArchives)
-{ // Get pointer to class
-  const Archive &aCref = *oCptr;
+for(const Archive*const aCptr : *cArchives)
+{ // Get reference to class
+  const Archive &aCref = *aCptr;
   // Get number of resources in archive
   const size_t stFiles = aCref.GetFileList().size(),
                stDirs = aCref.GetDirList().size();
@@ -48,7 +48,7 @@ cConsole->AddLineEx("$$ and $.", tData.Finish(),
 // ! areset
 // ? Resets the audio interface.
 /* ------------------------------------------------------------------------- */
-{ "areset", 1, 1, CF_AUDIO, [](const Args &){
+{ "areset", 1, 1, CFL_AUDIO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Reset the audio subsystem and print result of the reset call
 cConsole->AddLineExA("Audio subsystem reset ",
@@ -59,7 +59,7 @@ cConsole->AddLineExA("Audio subsystem reset ",
 // ! assets
 // ? Lists assets that are loaded into the game engine.
 /* ------------------------------------------------------------------------- */
-{ "assets", 1, 1, CF_NOTHING, [](const Args &){
+{ "assets", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Get reference to arrays collector class and lock it so it's not changed
 const LockGuard lgAssetsSync{ cAssets->CollectorGetMutex() };
@@ -79,13 +79,14 @@ tData.Header("ID").Header("BYTES").Header("PREVIEW", false)
 #endif
 // Walk mask list and add size of it
 for(const Asset *aCptr : *cAssets)
-{ // Get reference to memory block
-  const DataConst &dcCref = *aCptr;
+{ // Get reference to class
+  const Asset &acRef = *aCptr;
+  // Don't show detail in release version
 #if !defined(RELEASE)
   // Set preview size
-  const size_t stMax = UtilMinimum(dcCref.Size(), stCount);
+  const size_t stMax = UtilMinimum(acRef.MemSize(), stCount);
   // Set id and size
-  tData.DataN(aCptr->CtrGet()).DataN(dcCref.Size());
+  tData.DataN(acRef.CtrGet()).DataN(acRef.MemSize());
   // Clear preview strings
   strHex.clear();
   strAscii.clear();
@@ -93,7 +94,7 @@ for(const Asset *aCptr : *cAssets)
   for(size_t stIndex = 0; stIndex < stMax; ++stIndex)
   { // Get character
     const unsigned int uiChar =
-      static_cast<unsigned int>(dcCref.ReadInt<uint8_t>(stIndex));
+      static_cast<unsigned int>(acRef.MemReadInt<uint8_t>(stIndex));
     // Add hex of block
     strHex += StrHexFromInt(uiChar, 2) + ' ';
     // Put a dot if character is invalid
@@ -109,7 +110,7 @@ for(const Asset *aCptr : *cAssets)
   tData.Data(strHex).Data(strAscii);
 #endif
   // Add size of this array to the total size of all arrays
-  stTotal += dcCref.Size();
+  stTotal += acRef.MemSize();
 } // Number of items in buffer. We're not showing data in release mode.
 #if defined(RELEASE)
 cConsole->AddLineEx("$ totalling $.",
@@ -126,7 +127,7 @@ cConsole->AddLineEx("$$ totalling $.", tData.Finish(),
 // ! audins
 // ? Lists available audio input devices (unused by engine right now).
 /* ------------------------------------------------------------------------- */
-{ "audins", 1, 1, CF_AUDIO, [](const Args &){
+{ "audins", 1, 1, CFL_AUDIO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Ignore if no audio subsystem initialised
 if(!cOal->IsInitialised())
@@ -148,7 +149,7 @@ cConsole->AddLineExA(tData.Finish(),
 // ! audio
 // ? Shows information about the currently loaded audio device.
 /* ------------------------------------------------------------------------- */
-{ "audio", 1, 1, CF_AUDIO, [](const Args &){
+{ "audio", 1, 1, CFL_AUDIO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Write information about current audio device
 cConsole->AddLineEx(
@@ -173,7 +174,7 @@ cConsole->AddLineEx(
 // ! audouts
 // ? Lists available audio output devices.
 /* ------------------------------------------------------------------------- */
-{ "audouts", 1, 1, CF_AUDIO, [](const Args &){
+{ "audouts", 1, 1, CFL_AUDIO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Ignore if no audio subsystem initialised
 if(!cOal->IsInitialised())
@@ -195,7 +196,7 @@ cConsole->AddLineExA(tData.Finish(),
 // ! bins
 // ? Lists currently loaded bin objects.
 /* ------------------------------------------------------------------------- */
-{ "bins", 1, 1, CF_NOTHING, [](const Args &){
+{ "bins", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Text table class to help us write neat output
 Statistic tData;
@@ -203,12 +204,11 @@ tData.Header("WIDTH").Header("HEIGHT").Header("OCCUPANCY").Header("TOTL")
      .Header("USED").Header("FREE").Reserve(cBins->size());
 // Walk through textures classes
 for(const Bin*const bCptr : *cBins)
-{ // Get pointer to class
+{ // Get reference to class and write its data to the table
   const Bin &bCref = *bCptr;
-  // Show data
   tData.DataN(bCref.DimGetWidth()).DataN(bCref.DimGetHeight())
-       .DataN(bCref.Occupancy(), 7).DataN(bCref.Total())
-       .DataN(bCref.Used()).DataN(bCref.Free());
+       .DataN(bCref.Occupancy(), 7).DataN(bCref.Total()).DataN(bCref.Used())
+       .DataN(bCref.Free());
 } // Log counts
 cConsole->AddLineExA(tData.Finish(),
   StrPluraliseNum(cBins->size(), "bin.", "bins."));
@@ -219,7 +219,7 @@ cConsole->AddLineExA(tData.Finish(),
 // ? Lists currently loaded X509 certificates which are populated by the
 // ? 'net_castore' cvar on startup.
 /* ------------------------------------------------------------------------- */
-{ "certs", 1, 1, CF_NOTHING, [](const Args &){
+{ "certs", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Make a table to automatically format our data neatly
 Statistic tData;
@@ -231,12 +231,14 @@ for(const auto &caPair : cSockets->GetCertList())
   tData.Data(StrFromBoolYN(CertIsExpired(caPair.second)))
        .Data(caPair.first);
   // Split subject key/value pairs. We couldn't split the data if empty
-  const VarsConst ssD{ CertGetSubject(caPair), cCommon->FSlash(), '=' };
-  if(ssD.empty()) { tData.Data("??").Data("<No sub>"); continue; }
+  const ParserConst<> pSubject{
+    CertGetSubject(caPair), cCommon->FSlash(), '=' };
+  if(pSubject.empty()) { tData.Data("??").Data("<No sub>"); continue; }
   // Print country and certificate name
-  const StrStrMapConstIt iC{ ssD.find("C") }, iCN{ ssD.find("CN") };
-  tData.Data(iC == ssD.cend() ? "--" : CryptURLDecode(iC->second)).
-        Data(iCN == ssD.cend() ? "<Unknown>" : CryptURLDecode(iCN->second));
+  const StrStrMapConstIt iC{ pSubject.find("C") }, iCN{ pSubject.find("CN") };
+  tData.Data(iC == pSubject.cend() ? "--" : CryptURLDecode(iC->second))
+       .Data(iCN == pSubject.cend() ?
+          cCommon->Unspec() : CryptURLDecode(iCN->second));
 } // Print output and number of shaders listed
 cConsole->AddLineExA(tData.Finish(),
   StrPluraliseNum(cSockets->GetCertListSize(),
@@ -247,14 +249,14 @@ cConsole->AddLineExA(tData.Finish(),
 // ! cla
 // ? Lists all command-line arguments sent to the process.
 /* ------------------------------------------------------------------------- */
-{ "cla", 1, 2, CF_NOTHING, [](const Args &aList){
+{ "cla", 1, 2, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Get list of environment variables
 const StrVector &svArgs = cCmdLine->GetArgList();
 // If parameter was specified?
-if(aList.size() > 1)
+if(aArgs.size() > 1)
 { // Convert parmeter to number
-  const size_t stArg = StrToNum<size_t>(aList[1]);
+  const size_t stArg = StrToNum<size_t>(aArgs[1]);
   if(stArg >= svArgs.size())
     return cConsole->AddLine("Command line argument index invalid!");
   // Print it and return
@@ -276,7 +278,7 @@ cConsole->AddLineExA(tData.Finish(),
 // ! clh
 // ? Flushes the historic use of commands entered into the console.
 /* ------------------------------------------------------------------------- */
-{ "clh", 1, 1, CF_NOTHING, [](const Args &){
+{ "clh", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 cConsole->ClearHistory();
 /* ------------------------------------------------------------------------- */
@@ -285,7 +287,7 @@ cConsole->ClearHistory();
 // ! cls
 // ? Flushes the console output buffer.
 /* ------------------------------------------------------------------------- */
-{ "cls", 1, 1, CF_NOTHING, [](const Args &){
+{ "cls", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 cConsole->Flush();
 /* ------------------------------------------------------------------------- */
@@ -295,13 +297,13 @@ cConsole->Flush();
 // ? Shows all the available console commands. You can optionally specify
 // ? [partial] to partially match the beginning of each command.
 /* ------------------------------------------------------------------------- */
-{ "cmds", 1, 2, CF_NOTHING, [](const Args &aList){
+{ "cmds", 1, 2, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Setup iterator to find items and return if no commands.
 const auto &cbCmds = cConsole->GetCmdsList();
 if(cbCmds.empty()) return cConsole->AddLine("No commands are found!");
 // Set filter if specified and look for command and if we found one?
-const string &strFilter = aList.size() > 1 ? aList[1] : cCommon->Blank();
+const string &strFilter = aArgs.size() > 1 ? aArgs[1] : cCommon->Blank();
 auto ciItem{ cbCmds.lower_bound(strFilter) };
 if(ciItem != cbCmds.cend())
 { // Output string
@@ -329,14 +331,16 @@ cConsole->AddLineEx("No match from $.",
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'cmds' function
 /* ========================================================================= */
-{ "con", 1, 1, CF_NOTHING, [](const Args &){
+// ! con
+// ? No explanation yet.
+/* ========================================================================= */
+{ "con", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Write console status
 cConsole->AddLineEx("Console flags are currently 0x$$$ ($).\n"
                     "- Output lines: $ (Maximum: $).\n"
                     "- Input commands: $ (Maximum: $).\n"
-                    "- Max input characters: $; Page lines: $.\n"
-                    "- Command functions: $ (Lua: $).",
+                    "- Engine commands: $.",
   hex, cConsole->FlagGet(), dec, StrFromEvalTokens({
     { cConsole->FlagIsSet(CF_CANTDISABLE), 'D' },
     { cConsole->FlagIsSet(CF_IGNOREKEY),   'K' },
@@ -347,12 +351,14 @@ cConsole->AddLineEx("Console flags are currently 0x$$$ ($).\n"
   }),
   cConsole->GetOutputCount(), cConsole->GetOutputMaximum(),
   cConsole->GetInputCount(), cConsole->GetInputMaximum(),
-  cConsole->GetMaximumChars(), cConsole->GetPageLines(),
-  cConsole->GetCmdsList().size(), cConsole->GetLuaCmds().size());
+  cConsole->GetCmdsList().size());
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'con' function
 /* ========================================================================= */
-{ "conlog", 1, 1, CF_NOTHING, [](const Args &){
+// ! conlog
+// ? No explanation yet.
+/* ========================================================================= */
+{ "conlog", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Copy all the console lines to log and report how many lines we copied
 cConsole->AddLineExA(StrPluraliseNum(cConsole->ToLog(), "line", "lines"),
@@ -360,41 +366,51 @@ cConsole->AddLineExA(StrPluraliseNum(cConsole->ToLog(), "line", "lines"),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'conlog' function
 /* ========================================================================= */
-{ "cpu", 1, 1, CF_NOTHING, [](const Args &){
+// ! cpu
+// ? No explanation yet.
+/* ========================================================================= */
+{ "cpu", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Update cpu usage times
 cSystem->UpdateCPUUsage();
 // Write detected processor information
 cConsole->AddLineEx(
-  "CPU: $$MHz x $ x $.\n"
-  "CPUID: $; Load: $% ($%).\n"
+  "$$x$MHz/$ (FMS:$;$;$); Load: $% ($%).\n"
   "Start: $; Last: $; Limit: $; Accu: $.\n"
-  "Mode: $ ($); TimeOut: $ ($x$).\n"
-  "FPS: $/s; Delay: $/s; Ticks: $.",
-    fixed, cSystem->CPUSpeed(), cSystem->CPUCount(), cSystem->CPUName(),
-    cSystem->CPUIdentifier(), cSystem->CPUUsage(), cSystem->CPUUsageSystem(),
+  "Mode: $ ($); TimeOut: $ ($x$); Ticks: $.\n"
+  "FPS: $/s ($/s); Eff: $%; Delay: $/s.",
+    fixed, cSystem->CPUCount(), cSystem->CPUSpeed(), cSystem->CPUName(),
+      cSystem->CPUFamily(), cSystem->CPUModel(), cSystem->CPUStepping(),
+      cSystem->CPUUsage(), cSystem->CPUUsageSystem(),
     cTimer->TimerGetStart(), cTimer->TimerGetDuration(),
       cTimer->TimerGetLimit(), cTimer->TimerGetAccumulator(),
     cSystem->GetCoreFlags(), cSystem->GetCoreFlagsString(),
       cTimer->TimerGetTimeOut(), cTimer->TimerGetTriggers(),
-      cLua->GetOpsInterval(),
-    cTimer->TimerGetSecond(), cTimer->TimerGetDelay(),
-      cTimer->TimerGetTicks());
+      cLua->GetOpsInterval(), cTimer->TimerGetTicks(),
+    cTimer->TimerGetFPS(), cTimer->TimerGetFPSLimit(),
+      UtilMakePercentage(cTimer->TimerGetFPS(), cTimer->TimerGetFPSLimit()),
+      cTimer->TimerGetDelay());
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'cpu' function
 /* ========================================================================= */
-{ "crash", 1, 1, CF_NOTHING, [](const Args &){
+// ! crash
+// ? No explanation yet.
+/* ========================================================================= */
+{ "crash", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 System::CriticalHandler("Requested operation");
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'crash' function
 /* ========================================================================= */
-{ "credits", 1, 2, CF_NOTHING, [](const Args &aList){
+// ! credits
+// ? No explanation yet.
+/* ========================================================================= */
+{ "credits", 1, 2, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Do we have a parameter?
-if(aList.size() > 1)
+if(aArgs.size() > 1)
 {  // Get index and show decompressed text for it or invalid
-  const size_t stIndex = StrToNum<size_t>(aList[1]);
+  const size_t stIndex = StrToNum<size_t>(aArgs[1]);
   return cConsole->AddLine(stIndex >= cCredits->CreditGetItemCount() ?
     "The specified credit index is invalid!" :
     cCredits->CreditGetItemText(static_cast<CreditEnums>(stIndex)));
@@ -404,7 +420,7 @@ tData.Header("ID").Header("NAME", false).Header("VERSION")
      .Header("AUTHOR", false).Reserve(cCredits->CreditGetItemCount());
 // For each item, show library information
 for(size_t stIndex = 0; stIndex < cCredits->CreditGetItemCount(); ++stIndex)
-{ // Get credit for item and add the data for the credit
+{ // Get reference to class and write its data to the table
   const CreditLib &sD =
     cCredits->CreditGetItem(static_cast<CreditEnums>(stIndex));
   tData.DataN(stIndex).Data(sD.GetName()).Data(sD.GetVersion())
@@ -417,40 +433,43 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'credits' function
 /* ========================================================================= */
-{ "cvars", 1, 2, CF_NOTHING, [](const Args &aList){
+// ! cvars
+// ? No explanation yet.
+/* ========================================================================= */
+{ "cvars", 1, 2, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // If we actually came from the 'cvpend' command, select internal 'load
 // from/save to' list else select the main public cvar list.
-const CVars::ItemMap &cimList = aList[0][2] == 'p' ? // Optimal and safe
+const CVarMap &cvmList = aArgs[0][2] == 'p' ? // Optimal and safe
   cCVars->GetInitialVarList() : cCVars->GetVarList();
 // Ignore if empty
-if(cimList.empty())
+if(cvmList.empty())
   return cConsole->AddLine("No cvars exist in this category!");
 // Set filter if specified
-const string &strFilter = aList.size() > 1 ? aList[1] : cCommon->Blank();
-// Lock cvars list
-const LockGuard lgCVarsSync{ cCVars->mMutex };
+const string &strFilter = aArgs.size() > 1 ? aArgs[1] : cCommon->Blank();
 // Try to find the cvar outright first (only make work when not in release)
 #if !defined(RELEASE)
-CVars::ItemMapItConst ciItem{ cimList.find(strFilter) };
-if(ciItem != cimList.cend())
+const CVarMapItConst cvmicIt{ cvmList.find(strFilter) };
+if(cvmicIt != cvmList.cend())
 { // Get cvar data an flags
-  const Item &cD = ciItem->second;
+  const CVarItem &cviVar = cvmicIt->second;
   // Categories to add
-  StrList lCats{
+  StrList slCats{
     StrFormat("Status for CVar '$'...\n"
-           "- Registered by: $, Flags: 0x$$$, Callback: $.\n"
-           "- Current Value<$> = \"$\".",
-      strFilter, cD.FlagIsSet(TLUA) ? "Lua" : "Engine",
-      hex, cD.FlagGet(), dec, cD.IsTriggerSet() ? "Set" : "None",
-      cD.GetValueLength(), cD.GetValue()) };
+              "- Registered by: $, Flags: 0x$$$, Callback: $.\n"
+              "- Current Value<$> = \"$\".",
+      strFilter, cviVar.FlagIsSet(TLUA) ? "Lua" : "Engine",
+      hex, cviVar.FlagGet(), dec, cviVar.IsTriggerSet() ? "Set" : "None",
+      cviVar.GetValueLength(), cviVar.GetValue()) };
   // Add default value if set
-  if(cD.IsValueChanged())
-    lCats.emplace_back(StrFormat("- Default Value<$> = \"$\".",
-      cD.GetDefLength(), cD.GetDefValue()));
+  if(cviVar.IsValueChanged())
+    slCats.emplace_back(StrFormat("- Default Value<$> = \"$\".",
+      cviVar.GetDefLength(), cviVar.GetDefValue()));
   // Flags to test data
-  const vector<pair<const char*const,
-    const vector<pair<const CVarFlagsConst&, const char*const>>>> vcList{
+  typedef pair<const CVarFlagsConst&, const char*const> FlagPair;
+  typedef pair<const char*const, const vector<FlagPair>> CatPair;
+  typedef vector<CatPair> CatPairVecFlag;
+  const CatPairVecFlag vcList{
   { "Types", {
     { TSTRING,      "String"       }, { TBOOLEAN,     "Boolean"      },
     { TFLOAT,       "Float"        }, { TINTEGER,     "Integer"      } } },
@@ -471,92 +490,109 @@ if(ciItem != cimList.cend())
     { LOADED,       "LoadedFromDB" }, { COMMIT,       "Modified"     },
     { MTRIM,        "TrimSpaces"   }                                 } } };
   // Walk through test categories
-  for(const auto &cItem : vcList)
+  for(const CatPair &cpPair : vcList)
   { // Joined list of flags
-    StrList lDest;
+    StrList slDest;
     // Test each flag and add to list if set
-    for(const auto &tItem : cItem.second)
-      if(cD.FlagIsSet(tItem.first)) lDest.emplace_back(tItem.second);
+    for(const FlagPair &fpPair : cpPair.second)
+      if(cviVar.FlagIsSet(fpPair.first)) slDest.emplace_back(fpPair.second);
     // Add joined list to ca`1tegories list
-    lCats.emplace_back(StrFormat("- $<$> = $.", cItem.first, lDest.size(),
-      lDest.empty() ? string{ "None" } : StrImplode(lDest, ", ")));
+    slCats.emplace_back(StrFormat("- $<$> = $.", cpPair.first, slDest.size(),
+      slDest.empty() ? cCommon->Unspec(): StrImplode(slDest, ", ")));
   } // Print data about the cvar
-  return cConsole->AddLine(StrImplode(lCats, cCommon->Lf()));
+  return cConsole->AddLine(StrImplode(slCats, cCommon->Lf()));
 } // Try as a lower bound check?
-ciItem = cimList.lower_bound(strFilter);
 #else
-// Try as a lower bound check?
-auto ciItem{ cimList.lower_bound(strFilter) };
+  // Try as a lower bound check?
 #endif
-if(ciItem != cimList.cend())
+CVarMapItConst cvmicPIt{ cvmList.lower_bound(strFilter) };
+if(cvmicPIt != cvmList.cend())
 { // Formatted output. Can assume all variables will be printed
   Statistic tData;
   tData.Header("FLAGS").Header("NAME", false).Header("VALUE", false)
-       .Reserve(cimList.size());
+       .Reserve(cvmList.size());
   // Number of variables matched and tokens mask
   size_t stMatched = 0;
   // Build output string
   do
   { // If no match found? return original string
-    const string &strKey = ciItem->first;
+    const string &strKey = cvmicPIt->first;
     if(strKey.compare(0, strFilter.size(), strFilter)) continue;
     // Increment matched counter
     ++stMatched;
     // Get cvar data and flags
-    const Item &cD = ciItem->second;
+    const CVarItem &cviVar = cvmicPIt->second;
     // Add tokens
     tData.Data(StrFromEvalTokens({
       // Types
-      { true, cD.FlagIsSet(CFILENAME)  ? 'F' :
-             (cD.FlagIsSet(CTRUSTEDFN) ? 'T' :
-             (cD.FlagIsSet(TSTRING)    ? 'S' :
-             (cD.FlagIsSet(TINTEGER)   ? 'I' :
-             (cD.FlagIsSet(TFLOAT)     ? 'N' :
-             (cD.FlagIsSet(TBOOLEAN)   ? 'B' :
+      { true, cviVar.FlagIsSet(CFILENAME)  ? 'F' :
+             (cviVar.FlagIsSet(CTRUSTEDFN) ? 'T' :
+             (cviVar.FlagIsSet(TSTRING)    ? 'S' :
+             (cviVar.FlagIsSet(TINTEGER)   ? 'I' :
+             (cviVar.FlagIsSet(TFLOAT)     ? 'N' :
+             (cviVar.FlagIsSet(TBOOLEAN)   ? 'B' :
                                          '?'))))) },
       // Permissions
-      { cD.FlagIsSet(PBOOT),        '1' }, { cD.FlagIsSet(PSYSTEM),      '2' },
-      { cD.FlagIsSet(PUSR),         '3' },
+      { cviVar.FlagIsSet(PBOOT),        '1' },
+      { cviVar.FlagIsSet(PSYSTEM),      '2' },
+      { cviVar.FlagIsSet(PUSR),         '3' },
       // Sources
-      { cD.FlagIsSet(SENGINE),      '6' }, { cD.FlagIsSet(SCMDLINE),     '7' },
-      { cD.FlagIsSet(SAPPCFG),      '8' }, { cD.FlagIsSet(SUDB) ,        '9' },
+      { cviVar.FlagIsSet(SENGINE),      '6' },
+      { cviVar.FlagIsSet(SCMDLINE),     '7' },
+      { cviVar.FlagIsSet(SAPPCFG),      '8' },
+      { cviVar.FlagIsSet(SUDB) ,        '9' },
       // Conditions and operations
-      { cD.FlagIsSet(CUNSIGNED),    'U' }, { cD.FlagIsSet(TLUA),         'L' },
-      { cD.FlagIsSet(CONFIDENTIAL), 'C' }, { cD.FlagIsSet(CPROTECTED),   'P' },
-      { cD.FlagIsSet(CDEFLATE),     'D' }, { cD.FlagIsSet(COMMIT),       'M' },
-      { cD.FlagIsSet(LOADED),       'O' }, { cD.FlagIsSet(CSAVEABLE),    'V' },
-      { cD.FlagIsSet(OSAVEFORCE),   'Z' }, { cD.FlagIsSet(CPOW2),        'W' },
-      { cD.FlagIsSet(CNOTEMPTY),    'Y' }, { cD.FlagIsSet(MTRIM),        'R' },
-      { cD.IsTriggerSet(),      'K' }
+      { cviVar.FlagIsSet(CUNSIGNED),    'U' },
+      { cviVar.FlagIsSet(TLUA),         'L' },
+      { cviVar.FlagIsSet(CONFIDENTIAL), 'C' },
+      { cviVar.FlagIsSet(CPROTECTED),   'P' },
+      { cviVar.FlagIsSet(CDEFLATE),     'D' },
+      { cviVar.FlagIsSet(COMMIT),       'M' },
+      { cviVar.FlagIsSet(LOADED),       'O' },
+      { cviVar.FlagIsSet(CSAVEABLE),    'V' },
+      { cviVar.FlagIsSet(OSAVEFORCE),   'Z' },
+      { cviVar.FlagIsSet(CPOW2),        'W' },
+      { cviVar.FlagIsSet(CNOTEMPTY),    'Y' },
+      { cviVar.FlagIsSet(MTRIM),        'R' },
+      { cviVar.IsTriggerSet(),          'K' }
     // Name and value
-    })).Data(strKey).Data(cD.Protect());
+    })).Data(strKey).Data(cviVar.Protect());
   } // Until no more commands
-  while(++ciItem != cimList.cend());
+  while(++cvmicPIt != cvmList.cend());
   // Print output if we matched commands
   if(stMatched)
     return cConsole->AddLineEx("$$ of $ matched.", tData.Finish(),
-      stMatched, StrPluraliseNum(cimList.size(), "cvar", "cvars"));
+      stMatched, StrPluraliseNum(cvmList.size(), "cvar", "cvars"));
 } // No matches
 cConsole->AddLineEx("No match from $.",
-  StrPluraliseNum(cimList.size(), "cvar", "cvars"));
+  StrPluraliseNum(cvmList.size(), "cvar", "cvars"));
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'cvars' function
 /* ========================================================================= */
-{ "cvclr", 1, 1, CF_NOTHING, [](const Args &){
+// ! cvclr
+// ? No explanation yet.
+/* ========================================================================= */
+{ "cvclr", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 cConsole->AddLineExA(StrPluraliseNum(cCVars->Clean(),
   "cvar", "cvars"), " purged.");
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'cvclr' function
 /* ========================================================================= */
-{ "cvload", 1, 1, CF_NOTHING, [](const Args &){
+// ! cvload
+// ? No explanation yet.
+/* ========================================================================= */
+{ "cvload", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 cConsole->AddLineExA(StrPluraliseNum(cCVars->LoadFromDatabase(),
   "cvar", "cvars"), " reloaded.");
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'cvload' function
 /* ========================================================================= */
-{ "cvnpk", 1, 1, CF_NOTHING, [](const Args &){
+// ! cvnpk
+// ? No explanation yet.
+/* ========================================================================= */
+{ "cvnpk", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Create the private key and if succeeded? Show the result
 if(cSql->CreatePrivateKey())
@@ -567,27 +603,36 @@ else cConsole->AddLine("Failed to create new private key!");
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'cvnpk' function
 /* ========================================================================= */
-{ "cvpend", 1, 2, CF_NOTHING, [](const Args &aList){
+// ! cvpend
+// ? No explanation yet.
+/* ========================================================================= */
+{ "cvpend", 1, 2, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // We can reuse the 'cvars' callback here but the only way to get to it from
 // here is to access this list from the 'CVars' class since it keeps a
 // reference to this list. Compiler will most probably just optimise this away
 // anyway to a direct access.
-cConsole->GetCommand(CC_CVARS).ccbFunc(aList);
+cConsole->GetCommand(CC_CVARS).ccbFunc(aArgs);
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'cvpend' function
 /* ========================================================================= */
-{ "cvsave", 1, 1, CF_NOTHING, [](const Args &){
+// ! cvsave
+// ? No explanation yet.
+/* ========================================================================= */
+{ "cvsave", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
-cConsole->AddLineExA(StrPluraliseNum(cCVars->Save(),
-  "cvar", "cvars"), " commited.");
+cConsole->AddLineExA(StrPluraliseNum(cCVars->Save(), "cvar", "cvars"),
+                       " commited.");
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'cvsave' function
 /* ========================================================================= */
-{ "dir", 1, 2, CF_NOTHING, [](const Args &aList){
+// ! dir
+// ? No explanation yet.
+/* ========================================================================= */
+{ "dir", 1, 2, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Make and checkfilename
-const string &strVal = aList.size() > 1 ? aList[1] : ".";
+const string &strVal = aArgs.size() > 1 ? aArgs[1] : ".";
 const ValidResult vResult = DirValidName(strVal);
 if(vResult != VR_OK)
   return cConsole->AddLineEx("Cannot check directory '$': $!",
@@ -595,7 +640,7 @@ if(vResult != VR_OK)
 // Enumerate local directories on disk
 const Dir dPath{ StdMove(strVal) };
 // Set directory and get directories and files
-const string &strDir = aList.size() > 1 ? aList[1] : cCommon->Blank();
+const string &strDir = aArgs.size() > 1 ? aArgs[1] : cCommon->Blank();
 // Directory data we are enumerating
 struct Item { const uint64_t qwSize;
               const unsigned int uiId;
@@ -606,11 +651,11 @@ StrItemList silDirs, silFiles;
 const LockGuard lgArchivesSync{ cArchives->CollectorGetMutex() };
 // Iterate through the list
 for(const Archive*const aCptr : *cArchives)
-{ // Get archive class
+{ // Get reference to class
   const Archive &aCref = *aCptr;
   // Goto next archive if directory specified and is not found
   const StrUIntMap &suimDirs = aCref.GetDirList();
-  if(!strDir.empty() && suimDirs.find(strDir) == suimDirs.cend()) continue;
+  if(!strDir.empty() && !suimDirs.contains(strDir)) continue;
   // Enumerate directories
   for(const auto &dI : suimDirs)
   { // Skip directory if start of directory does not match
@@ -691,14 +736,17 @@ cConsole->AddLineEx("$$ and $ totalling $ ($) in $.",
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'dir' function
 /* ========================================================================= */
-{ "env", 1, 2, CF_NOTHING, [](const Args &aList){
+// ! env
+// ? No explanation yet.
+/* ========================================================================= */
+{ "env", 1, 2, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Get list of environment variables
 const StrStrMap &ssmEnv = cCmdLine->GetEnvList();
 // If parameter was specified?
-if(aList.size() > 1)
+if(aArgs.size() > 1)
 { // Get parameter name and find it
-  const StrStrMapConstIt &ssmciVar = ssmEnv.find(aList[1]);
+  const StrStrMapConstIt &ssmciVar = ssmEnv.find(aArgs[1]);
   if(ssmciVar == ssmEnv.cend())
     return cConsole->AddLine("Environment variable not found!");
   // Print it and return
@@ -712,11 +760,14 @@ for(const auto &eVar : ssmEnv) tData.Data(eVar.first).Data(eVar.second);
 // Log counts
 cConsole->AddLineExA(tData.Finish(),
   StrPluraliseNum(ssmEnv.size(), "environment variable.",
-                              "environment variables."));
+                                 "environment variables."));
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'env' function
 /* ========================================================================= */
-{ "events", 1, 1, CF_NOTHING, [](const Args &){
+// ! events
+// ? No explanation yet.
+/* ========================================================================= */
+{ "events", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Log event counts
 cConsole->AddLineEx("$ and $.",
@@ -725,23 +776,28 @@ cConsole->AddLineEx("$ and $.",
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'events' function
 /* ========================================================================= */
-{ "fbos", 1, 1, CF_VIDEO, [](const Args &){
+// ! fbos
+// ? No explanation yet.
+/* ========================================================================= */
+{ "fbos", 1, 1, CFL_VIDEO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 const function ShowFboInfo{ [](const Fbo &fC, Statistic &tData,
   size_t &stTriangles, size_t &stCommands)
 { // Add to totals
-  stTriangles += fC.GetTris();
-  stCommands += fC.GetCmds();
+  stTriangles += fC.FboGetTris();
+  stCommands += fC.FboGetCmds();
   // Show FBO status
   tData.DataN(fC.CtrGet()).DataN(fC.uiFBO).DataN(fC.uiFBOtex)
        .Data(StrFromEvalTokens({
-          { fC.IsTransparencyEnabled(), 'A' }, { fC.IsClearEnabled(), 'C' },
+          { fC.FboIsTransparencyEnabled(), 'A' },
+          { fC.FboIsClearEnabled(),        'C' },
        }))
-       .DataN(fC.GetFilter()).DataN(fC.DimGetWidth()).DataN(fC.DimGetHeight())
-       .DataN(fC.fcStage.GetCoLeft()).DataN(fC.fcStage.GetCoTop())
-       .DataN(fC.fcStage.GetCoRight()).DataN(fC.fcStage.GetCoBottom())
-       .DataN(fC.GetTris()).DataN(fC.GetCmds()).DataN(fC.GetTrisReserved())
-       .DataN(fC.GetCmdsReserved()).Data(fC.IdentGet());
+       .DataN(fC.FboGetFilter()).DataN(fC.DimGetWidth())
+       .DataN(fC.DimGetHeight()).DataN(fC.fcStage.GetCoLeft())
+       .DataN(fC.fcStage.GetCoTop()).DataN(fC.fcStage.GetCoRight())
+       .DataN(fC.fcStage.GetCoBottom()).DataN(fC.FboGetTris())
+       .DataN(fC.FboGetCmds()).DataN(fC.FboGetTrisReserved())
+       .DataN(fC.FboGetCmdsReserved()).Data(fC.IdentGet());
 } };
 // Text table class to help us write neat output
 Statistic tData;
@@ -753,11 +809,13 @@ tData.Header("ID").Header("FI").Header("TI").Header("FL").Header("FT")
 // Total triangles and commands
 size_t stTriangles = 0, stCommands = 0;
 // Show primary fbos info
-ShowFboInfo(cFboMain->fboMain, tData, stTriangles, stCommands);
-ShowFboInfo(cFboMain->fboConsole, tData, stTriangles, stCommands);
-// Walk through textures classes
+ShowFboInfo(cFboCore->fboMain, tData, stTriangles, stCommands);
+ShowFboInfo(cFboCore->fboConsole, tData, stTriangles, stCommands);
+// Enumerate fbo and video classes and show their infos
 for(const Fbo*const fCptr : *cFbos)
   ShowFboInfo(*fCptr, tData, stTriangles, stCommands);
+for(const Video*const vCptr : *cVideos)
+  ShowFboInfo(*vCptr, tData, stTriangles, stCommands);
 // Log counts
 cConsole->AddLineEx("$$ totalling $ and $.", tData.Finish(),
   StrPluraliseNum(2 + cFbos->size(), "framebuffer", "framebuffers"),
@@ -766,7 +824,10 @@ cConsole->AddLineEx("$$ totalling $ and $.", tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'fbos' function
 /* ========================================================================= */
-{ "files", 1, 1, CF_NOTHING, [](const Args &){
+// ! files
+// ? No explanation yet.
+/* ========================================================================= */
+{ "files", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Text table class to help us write neat output
 Statistic tData;
@@ -775,32 +836,34 @@ tData.Header("ID").Header("FLAG").Header("FD").Header("ERRNO")
      .Reserve(cFiles->size());
 // Walk through textures classes
 for(File*const fCptr : *cFiles)
-{ // Get pointer to class
+{ // Get reference to class and write its data to the table
   File &fCref = *fCptr;
-  // Show data
-  tData.DataN(fCref.CtrGet())
-       .Data(StrFromEvalTokens({
-         { fCref.FStreamOpened(),     'O' },
-         { fCref.FStreamFErrorSafe(), 'E' },
-         { fCref.FStreamIsEOFSafe(),  'X' }
-       }))
-       .DataN(fCref.FStreamGetIDSafe()).DataN(fCref.FStreamGetErrNo())
-       .DataN(fCref.FStreamGetPositionSafe()).DataN(fCref.FStreamSizeSafe())
-       .Data(fCref.IdentGet());
+  tData.DataN(fCref.CtrGet()).Data(StrFromEvalTokens({
+    { fCref.FStreamOpened(),    'O' }, { fCref.FStreamFErrorSafe(), 'E' },
+    { fCref.FStreamIsEOFSafe(), 'X' }
+  })).DataN(fCref.FStreamGetIDSafe()).DataN(fCref.FStreamGetErrNo())
+     .DataN(fCref.FStreamGetPositionSafe()).DataN(fCref.FStreamSizeSafe())
+     .Data(fCref.IdentGet());
 } // Log counts
 cConsole->AddLineExA(tData.Finish(),
   StrPluraliseNum(cFiles->size(), "file.", "files."));
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'files' function
 /* ========================================================================= */
-{ "find", 2, 0, CF_NOTHING, [](const Args &aList){
+// ! find
+// ? No explanation yet.
+/* ========================================================================= */
+{ "find", 2, 0, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Find text in console backlog and if not found, show message
-cConsole->FindText(StrImplode(aList, 1));
+cConsole->FindText(StrImplode(aArgs, 1));
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'find' function
 /* ========================================================================= */
-{ "fonts", 1, 1, CF_VIDEO, [](const Args &){
+// ! fonts
+// ? No explanation yet.
+/* ========================================================================= */
+{ "fonts", 1, 1, CFL_VIDEO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 const function ShowFontInfo{ [](Statistic &tData, const Font &fC)
   { tData.DataN(fC.CtrGet())
@@ -821,7 +884,7 @@ tData.Header("ID").Header("R").Header("FLAG").Header("SCALE")
      .Header("TEXOCPCY").Header("CC").Header("NAME", false)
      .Reserve(1 + cFonts->size());
 // Include console font
-ShowFontInfo(tData, cConsole->GetFontRef());
+ShowFontInfo(tData, cConGraphics->GetFontRef());
 // Walk through textures classes
 for(const Font*const fCptr : *cFonts) ShowFontInfo(tData, *fCptr);
 // Log counts including the static console font class
@@ -830,7 +893,10 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'fonts' function
 /* ========================================================================= */
-{ "ftfs", 1, 1, CF_NOTHING, [](const Args &){
+// ! ftfs
+// ? No explanation yet.
+/* ========================================================================= */
+{ "ftfs", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Get reference to fonts collector class and lock it so it's not changed
 const LockGuard lgFtfsSync{ cFtfs->CollectorGetMutex() };
@@ -841,9 +907,8 @@ tData.Header("ID").Header("GLYPH").Header("FW").Header("FH").Header("DW")
      .Header("FILENAME", false).Reserve(cFtfs->size());
 // Walk through textures classes
 for(const Ftf*const fCptr : *cFtfs)
-{ // Get pointer to class
+{ // Get reference to class and write its data to the table
   const Ftf &fCref = *fCptr;
-  // Show data
   tData.DataN(fCref.CtrGet()).DataN(fCref.GetGlyphCount())
        .DataN(fCref.DimGetWidth(),0).DataN(fCref.DimGetHeight(),0)
        .DataN(fCref.dDPI.DimGetWidth()).DataN(fCref.dDPI.DimGetHeight())
@@ -855,7 +920,10 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'ftfs' function
 /* ========================================================================= */
-{ "gpu", 1, 1, CF_VIDEO, [](const Args &){
+// ! gpu
+// ? No explanation yet.
+/* ========================================================================= */
+{ "gpu", 1, 1, CFL_VIDEO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Write opengl rendering stats
 cConsole->AddLineEx(
@@ -880,38 +948,41 @@ cConsole->AddLineEx(
     cDisplay->GetWindowScaleWidth(), cDisplay->GetWindowScaleHeight(),
     hex, cDisplay->FlagGet(),
   dec, cDisplay->GetFSType(), cDisplay->GetFSTypeString(),
-  cOgl->MaxTexSize(), cFboMain->DimGetWidth(), cFboMain->DimGetHeight(),
-    StrFromRatio(cFboMain->DimGetWidth(), cFboMain->DimGetHeight()),
-    cFboMain->GetOrthoWidth(), cFboMain->GetOrthoHeight(),
-    StrFromRatio(cFboMain->GetOrthoWidth(), cFboMain->GetOrthoHeight()),
-    cFboMain->fboMain.GetCoRight(), cFboMain->fboMain.GetCoBottom(),
-    StrFromRatio(cFboMain->fboMain.GetCoRight(),
-      cFboMain->fboMain.GetCoBottom()),
-  cFboMain->fboMain.fcStage.GetCoLeft(), cFboMain->fboMain.fcStage.GetCoTop(),
-    cFboMain->fboMain.fcStage.GetCoRight(),
-    cFboMain->fboMain.fcStage.GetCoBottom(),
-    cFboMain->fboMain.DimGetWidth(), cFboMain->fboMain.DimGetHeight(),
+  cOgl->MaxTexSize(), cFboCore->DimGetWidth(), cFboCore->DimGetHeight(),
+    StrFromRatio(cFboCore->DimGetWidth(), cFboCore->DimGetHeight()),
+    cFboCore->GetOrthoWidth(), cFboCore->GetOrthoHeight(),
+    StrFromRatio(cFboCore->GetOrthoWidth(), cFboCore->GetOrthoHeight()),
+    cFboCore->fboMain.GetCoRight(), cFboCore->fboMain.GetCoBottom(),
+    StrFromRatio(cFboCore->fboMain.GetCoRight(),
+      cFboCore->fboMain.GetCoBottom()),
+  cFboCore->fboMain.fcStage.GetCoLeft(), cFboCore->fboMain.fcStage.GetCoTop(),
+    cFboCore->fboMain.fcStage.GetCoRight(),
+    cFboCore->fboMain.fcStage.GetCoBottom(),
+    cFboCore->fboMain.DimGetWidth(), cFboCore->fboMain.DimGetHeight(),
     hex, cOgl->FlagGet(),
-  dec, cFboMain->fboMain.GetTris(),
-    cFboMain->fboMain.GetTrisReserved(),
-    cFboMain->fboMain.GetCmds(),
-    cFboMain->fboMain.GetCmdsReserved(),
-  fixed, cFboMain->dRTFPS, cDisplay->GetRefreshRate(),
-  cFboMain->dRTFPS / cDisplay->GetRefreshRate() * 100,
+  dec, cFboCore->fboMain.FboGetTris(),
+    cFboCore->fboMain.FboGetTrisReserved(),
+    cFboCore->fboMain.FboGetCmds(),
+    cFboCore->fboMain.FboGetCmdsReserved(),
+  fixed, cFboCore->dRTFPS, cDisplay->GetRefreshRate(),
+  UtilMakePercentage(cFboCore->dRTFPS, cDisplay->GetRefreshRate()),
   cOgl->GetLimit());
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'gpu' function
 /* ========================================================================= */
-{ "images", 1, 2, CF_NOTHING, [](const Args &aList){
+// ! images
+// ? No explanation yet.
+/* ========================================================================= */
+{ "images", 1, 2, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Get reference to images collector class and lock it so it's not changed
 const LockGuard lgImagesSync{ cImages->CollectorGetMutex() };
 // If we have more than one parameter?
-if(aList.size() == 2)
+if(aArgs.size() == 2)
 { // Get slot data and return if it is a bad slot
-  const size_t stId = StrToNum<size_t>(aList[1]);
+  const size_t stId = StrToNum<size_t>(aArgs[1]);
   if(stId >= cImages->size()) return cConsole->AddLine("Invalid image id!");
-  Image &iCref = **next(cImages->cbegin(), static_cast<ssize_t>(stId));
+  const Image &iCref = **next(cImages->cbegin(), static_cast<ssize_t>(stId));
   // Text table class to help us write neat output
   Statistic tData;
   tData.Header("SIZX").Header("SIZY").Header("SIZE")
@@ -919,7 +990,7 @@ if(aList.size() == 2)
   // For each slot
   for(const ImageSlot &imdD : iCref.GetSlotsConst())
     tData.DataN(imdD.DimGetWidth()).DataN(imdD.DimGetHeight())
-         .DataN(imdD.Size());
+         .DataN(imdD.MemSize());
   // Log texture counts
   cConsole->AddLineEx("$$ in $.", tData.Finish(),
     StrPluraliseNum(iCref.GetSlotCount(), "slot", "slots"), iCref.IdentGet());
@@ -932,9 +1003,8 @@ tData.Header("ID").Header("FLAGS", false).Header("SIZW").Header("SIZH")
      .Header("NAME", false).Reserve(cImages->size());
 // Walk through textures classes
 for(const Image*const iCptr : *cImages)
-{ // Convert to reference
+{ // Get reference to class and write its data to the table
   const Image &iCref = *iCptr;
-  // Add data to table
   tData.DataN(iCref.CtrGet()).Data(StrFromEvalTokens({
     { iCref.IsDynamic(),          'Y' }, { iCref.IsNotDynamic(),       'S' },
     { iCref.IsPurposeFont(),      'F' }, { iCref.IsPurposeImage(),     'I' },
@@ -961,28 +1031,32 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'images' function
 /* ========================================================================= */
-{ "imgfmts", 1, 1, CF_NOTHING, [](const Args &){
+// ! imgfmts
+// ? No explanation yet.
+/* ========================================================================= */
+{ "imgfmts", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Text table class to help us write neat output
 Statistic tData;
 tData.Header("ID").Header("FL").Header("EXT").Header("NAME", false)
-     .Reserve(cImageFmts->size());
+     .Reserve(cImageLibs->size());
 // For each plugin
-for(const ImageFmt*const iCptr : *cImageFmts)
-{ // Get refernece to plugin
-  const ImageFmt &iCref = *iCptr;
-  // Write data
-  tData.DataN(iCref.CtrGet())
-       .Data(StrFromEvalTokens({ { iCref.HaveLoader(), 'L' },
-                              { iCref.HaveSaver(),  'S' } }))
-       .Data(iCref.GetExt()).Data(iCref.GetName());
+for(const ImageLib*const iCptr : *cImageLibs)
+{ // Get reference to class and write its data to the table
+  const ImageLib &iCref = *iCptr;
+  tData.DataN(iCref.CtrGet()).Data(StrFromEvalTokens({
+    { iCref.HaveLoader(), 'L' }, { iCref.HaveSaver(),  'S' }
+  })).Data(iCref.GetExt()).Data(iCref.GetName());
 } // Log total plugins
 cConsole->AddLineExA(tData.Finish(),
-  StrPluraliseNum(cImageFmts->size(), "format.", "formats."));
+  StrPluraliseNum(cImageLibs->size(), "format.", "formats."));
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'imgfmts' function
 /* ========================================================================= */
-{ "input", 1, 1, CF_VIDEO, [](const Args &){
+// ! input
+// ? No explanation yet.
+/* ========================================================================= */
+{ "input", 1, 1, CFL_VIDEO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Get joysticks data
 const JoyList &jlList = cInput->GetConstJoyList();
@@ -1008,7 +1082,10 @@ cConsole->AddLineEx("$$ ($ supported).", tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'input' function
 /* ========================================================================= */
-{ "jsons", 1, 1, CF_NOTHING, [](const Args &){
+// ! jsons
+// ? No explanation yet.
+/* ========================================================================= */
+{ "jsons", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Get reference to jsons collector class and lock it so it's not changed
 const LockGuard lgJsonsSync{ cJsons->CollectorGetMutex() };
@@ -1017,14 +1094,57 @@ cConsole->AddLineExA(StrPluraliseNum(cJsons->size(), "json.", "jsons."));
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'jsons' function
 /* ========================================================================= */
-{ "lcalc", 2, 0, CF_NOTHING, [](const Args &aList){
+// ! lcalc
+// ? No explanation yet.
+/* ========================================================================= */
+{ "lcalc", 2, 0, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 cConsole->AddLine(cLua->CompileStringAndReturnResult(
-  StrFormat("return $", StrImplode(aList, 1))));
+  StrFormat("return $", StrImplode(aArgs, 1))));
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'lcalc' function
 /* ========================================================================= */
-{ "lend", 1, 1, CF_NOTHING, [](const Args &){
+// ! lcmds
+// ? No explanation yet.
+/* ========================================================================= */
+{ "lcmds", 1, 2, CFL_NONE, [](const Args &aArgs){
+/* ------------------------------------------------------------------------- */
+// Setup iterator to find items and return if no commands.
+const auto &cbCmds = cCommands->lcmMap;
+if(cbCmds.empty()) return cConsole->AddLine("No Lua commands are found!");
+// Set filter if specified and look for command and if we found one?
+const string &strFilter = aArgs.size() > 1 ? aArgs[1] : cCommon->Blank();
+auto ciItem{ cbCmds.lower_bound(strFilter) };
+if(ciItem != cbCmds.cend())
+{ // Output string
+  ostringstream osS;
+  // Commands matched
+  size_t stMatched = 0;
+  // Build output string
+  do
+  { // If no match found? return original string
+    const string &strKey = ciItem->first;
+    if(strKey.compare(0, strFilter.size(), strFilter)) continue;
+    // Increment matched counter
+    ++stMatched;
+    // Add command to command list
+    osS << ' ' << strKey;
+  } // Until no more commands
+  while(++ciItem != cbCmds.cend());
+  // Print output if we matched commands
+  if(stMatched)
+    return cConsole->AddLineEx("$:$.", StrPluraliseNum(stMatched,
+      "matching Lua command", "matching Lua commands"), osS.str());
+} // No matches
+cConsole->AddLineEx("No match from $.",
+  StrPluraliseNum(cbCmds.size(), "Lua command", "Lua commands"));
+/* ------------------------------------------------------------------------- */
+} },                                   // End of 'lcmds' function
+/* ========================================================================= */
+// ! lend
+// ? No explanation yet.
+/* ========================================================================= */
+{ "lend", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Re-init lua and inform user of the result
 cConsole->AddLine(cLua->TryEventOrForce(EMC_LUA_END) ?
@@ -1033,13 +1153,19 @@ cConsole->AddLine(cLua->TryEventOrForce(EMC_LUA_END) ?
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'lend' function
 /* ========================================================================= */
-{ "lexec", 2, 0, CF_NOTHING, [](const Args &aList){
+// ! lexec
+// ? No explanation yet.
+/* ========================================================================= */
+{ "lexec", 2, 0, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
-cConsole->AddLine(cLua->CompileStringAndReturnResult(StrImplode(aList, 1)));
+cConsole->AddLine(cLua->CompileStringAndReturnResult(StrImplode(aArgs, 1)));
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'lexec' function
 /* ========================================================================= */
-{ "lfuncs", 1, 1, CF_NOTHING, [](const Args &){
+// ! lfuncs
+// ? No explanation yet.
+/* ========================================================================= */
+{ "lfuncs", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Get reference to luarefs collector class and lock it so it's not changed
 const LockGuard lgLuaRefsSync(cLuaFuncs->CollectorGetMutex());
@@ -1047,9 +1173,9 @@ const LockGuard lgLuaRefsSync(cLuaFuncs->CollectorGetMutex());
 Statistic tData;
 tData.Header("ID").Header("FLAGS").Header("DATA", false).Header("MID")
      .Header("SID").Header("NAME", false).Reserve(cLuaFuncs->size());
-// Walk sample list
+// Walk Lua function list
 for(const LuaFunc*const lCptr : *cLuaFuncs)
-{ // Get sample
+{ // Get Lua function
   const LuaFunc &lCref = *lCptr;
   // Put on stack
   lCref.LuaFuncPushFunc();
@@ -1067,96 +1193,10 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'lfuncs' function
 /* ========================================================================= */
-{ "lgc", 1, 1, CF_NOTHING, [](const Args &){
-/* ------------------------------------------------------------------------- */
-// Free data and get bytes freed
-const size_t stT = cLua->GarbageCollect();
-// Return if no bytes freed
-if(!stT) return cConsole->AddLine("No unreferenced memory!");
-// Report how much was freed
-cConsole->AddLineEx("$ bytes ($) freed.", stT, StrToBytes(stT));
-/* ------------------------------------------------------------------------- */
-} },                                   // End of 'lgc' function
+// ! lg
+// ? No explanation yet.
 /* ========================================================================= */
-{ "log", 1, 1, CF_NOTHING, [](const Args &){
-/* ------------------------------------------------------------------------- */
-// Colours for log levels
-static const array<Colour, LH_MAX> cColours{
-  COLOUR_LBLUE  /* LH_DISABLED */, COLOUR_LRED   /* LH_ERROR    */,
-  COLOUR_YELLOW /* LH_WARNING  */, COLOUR_WHITE  /* LH_INFO     */,
-  COLOUR_LGRAY  /* LH_DEBUG    */
-};
-// Get reference to log class and lock it so it's not changed
-const LockGuard lgLogSync{ cLog->GetMutex() };
-// For each log line. Add the line to console buffer
-for(const LogLine &llLine : *cLog)
-  cConsole->AddLineEx(cColours[llLine.lhLevel], "[$$$] $",
-    fixed, setprecision(6), llLine.dTime, llLine.strLine);
-// Number of items in buffer
-cConsole->AddLineExA(StrPluraliseNum(cLog->size(), "line.", "lines."));
-/* ------------------------------------------------------------------------- */
-} },                                   // End of 'log' function
-/* ========================================================================= */
-{ "logclr", 1, 1, CF_NOTHING, [](const Args &){
-/* ------------------------------------------------------------------------- */
-// Lock access to the log
-const LockGuard lgLogSync{ cLog->GetMutex() };
-// Ignore if not empty
-if(cLog->empty()) return cConsole->AddLine("No log lines to clear!");
-// Get log lines count
-const size_t stCount = cLog->size();
-// Clear the log
-cLog->Clear();
-// Say we cleared it
-cConsole->AddLineExA(StrPluraliseNum(stCount,
-  "log line cleared.", "log lines cleared."));
-/* ------------------------------------------------------------------------- */
-} },                                   // End of 'logclr' function
-/* ========================================================================= */
-{ "lpause", 1, 1, CF_NOTHING, [](const Args &){
-/* ------------------------------------------------------------------------- */
-cEvtMain->Add(EMC_LUA_PAUSE);
-/* ------------------------------------------------------------------------- */
-} },                                   // End of 'lpause' function
-/* ========================================================================= */
-{ "lreset", 1, 1, CF_NOTHING, [](const Args &){
-/* ------------------------------------------------------------------------- */
-// Re-init lua and inform user of the result
-cConsole->AddLine(cLua->TryEventOrForce(EMC_LUA_REINIT) ?
-  "Bypassing guest end routine and restarting execution!" :
-  "Asking guest to end execution and restarting execution.");
-/* ------------------------------------------------------------------------- */
-} },                                   // End of 'lreset' function
-/* ========================================================================= */
-{ "lresume", 1, 1, CF_NOTHING, [](const Args &){
-/* ------------------------------------------------------------------------- */
-cEvtMain->Add(EMC_LUA_RESUME);
-/* ------------------------------------------------------------------------- */
-} },                                   // End of 'lresume' function
-/* ========================================================================= */
-{ "lstack", 1, 1, CF_NOTHING, [](const Args &){
-/* ------------------------------------------------------------------------- */
-// Get lua state
-lua_State*const lS = cLua->GetState();
-// Get number of items in stack
-const int iCount = LuaUtilStackSize(lS);
-// Setup output spreadsheet
-Statistic tData;
-tData.Header("ID").Header("FLAGS").Header("NAME", false).Header("VALUE")
-     .Reserve(iCount);
-// Enumerate each stack element (1 is the first item)
-for(int iIndex = 1; iIndex <= iCount; ++iIndex)
-  tData.DataN(iIndex)
-       .Data(LuaUtilGetStackTokens(lS, iIndex))
-       .DataN(-(iCount - (iIndex + 1)))
-       .Data(LuaUtilGetStackType(lS, iIndex));
-// Print number of element
-cConsole->AddLineExA(tData.Finish(),
-  StrPluraliseNum(iCount, "element.", "elements."));
-/* ------------------------------------------------------------------------- */
-} },                                   // End of 'lstack' function
-/* ========================================================================= */
-{ "lvars", 1, 0, CF_NOTHING, [](const Args &aList){
+{ "lg", 1, 0, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Get lua state
 lua_State*const lS = cLua->GetState();
@@ -1166,13 +1206,13 @@ lua_State*const lS = cLua->GetState();
 // class creation simplifies the cleanup process.
 const LuaStackSaver lssSaved{ lS };
 // We need free items on the stack, leave empty if not
-if(!LuaUtilIsStackAvail(lS, aList.size()))
+if(!LuaUtilIsStackAvail(lS, aArgs.size()))
   return cConsole->AddLine("Too many path components!");
 // Get iterator to second argument. First is actually the command name. The
 // second argument in this instance is the root table name in globals.
 // Store if we have arguments and if we have them?
-auto clItem{ aList.cbegin() + 1 };
-if(clItem != aList.cend())
+auto clItem{ aArgs.cbegin() + 1 };
+if(clItem != aArgs.cend())
 { // Get root table
   const string &strRoot = *clItem;
   if(strRoot.empty()) return cConsole->AddLine("Empty table name!");
@@ -1184,7 +1224,7 @@ if(clItem != aList.cend())
       lua_isnil(lS, -1) ? "does not exist" : "is not valid");
   // Save index so we can keep recursing the same table and check if each
   // remaining argument is a table until we reach no more arguments.
-  for(const int iIndex = LuaUtilStackSize(lS); ++clItem != aList.cend();)
+  for(const int iIndex = LuaUtilStackSize(lS); ++clItem != aArgs.cend();)
   { // Get name of parameter and if it's empty? Return empty sub-table
     const string &strParam = *clItem;
     if(strParam.empty()) return cConsole->AddLine("Empty sub-table name!");
@@ -1222,16 +1262,260 @@ Statistic tData;
 tData.Header("FLAGS").Header("NAME", false).Header("VALUE", false)
      .Reserve(smmList.size());
 for(const auto &sprIt : smmList)
-  tData.Data(sprIt.second.second)
-       .Data(sprIt.first)
-       .Data(sprIt.second.first);
+  tData.Data(sprIt.second.second).Data(sprIt.first).Data(sprIt.second.first);
 // Print number of items
 cConsole->AddLineExA(tData.Finish(),
   StrPluraliseNum(smmList.size(), "item.", "items."));
 /* ------------------------------------------------------------------------- */
+} },                                   // End of 'lg' function
+/* ========================================================================= */
+// ! lgc
+// ? No explanation yet.
+/* ========================================================================= */
+{ "lgc", 1, 1, CFL_NONE, [](const Args &){
+/* ------------------------------------------------------------------------- */
+// Free data and get bytes freed
+const size_t stT = cLua->GarbageCollect();
+// Return if no bytes freed
+if(!stT) return cConsole->AddLine("No unreferenced memory!");
+// Report how much was freed
+cConsole->AddLineEx("$ bytes ($) freed.", stT, StrToBytes(stT));
+/* ------------------------------------------------------------------------- */
+} },                                   // End of 'lgc' function
+/* ========================================================================= */
+// ! log
+// ? No explanation yet.
+/* ========================================================================= */
+{ "log", 1, 1, CFL_NONE, [](const Args &){
+/* ------------------------------------------------------------------------- */
+// Colours for log levels
+static const array<Colour, LH_MAX> cColours{
+  COLOUR_LBLUE  /* LH_CRITICAL */, COLOUR_LRED   /* LH_ERROR    */,
+  COLOUR_YELLOW /* LH_WARNING  */, COLOUR_WHITE  /* LH_INFO     */,
+  COLOUR_LGRAY  /* LH_DEBUG    */
+};
+// Get reference to log class and lock it so it's not changed
+const LockGuard lgLogSync{ cLog->GetMutex() };
+// For each log line. Add the line to console buffer
+for(const LogLine &llLine : *cLog)
+  cConsole->AddLineEx(cColours[llLine.lhlLevel], "[$$$] $",
+    fixed, setprecision(6), llLine.dTime, llLine.strLine);
+// Number of items in buffer
+cConsole->AddLineExA(StrPluraliseNum(cLog->size(), "line.", "lines."));
+/* ------------------------------------------------------------------------- */
+} },                                   // End of 'log' function
+/* ========================================================================= */
+// ! logclr
+// ? No explanation yet.
+/* ========================================================================= */
+{ "logclr", 1, 1, CFL_NONE, [](const Args &){
+/* ------------------------------------------------------------------------- */
+// Lock access to the log
+const LockGuard lgLogSync{ cLog->GetMutex() };
+// Ignore if not empty
+if(cLog->empty()) return cConsole->AddLine("No log lines to clear!");
+// Get log lines count
+const size_t stCount = cLog->size();
+// Clear the log
+cLog->Clear();
+// Say we cleared it
+cConsole->AddLineExA(StrPluraliseNum(stCount,
+  "log line cleared.", "log lines cleared."));
+/* ------------------------------------------------------------------------- */
+} },                                   // End of 'logclr' function
+/* ========================================================================= */
+// ! lpause
+// ? No explanation yet.
+/* ========================================================================= */
+{ "lpause", 1, 1, CFL_NONE, [](const Args &){
+/* ------------------------------------------------------------------------- */
+cEvtMain->Add(EMC_LUA_PAUSE);
+/* ------------------------------------------------------------------------- */
+} },                                   // End of 'lpause' function
+/* ========================================================================= */
+// ! lreset
+// ? No explanation yet.
+/* ========================================================================= */
+{ "lreset", 1, 1, CFL_NONE, [](const Args &){
+/* ------------------------------------------------------------------------- */
+// Re-init lua and inform user of the result
+cConsole->AddLine(cLua->TryEventOrForce(EMC_LUA_REINIT) ?
+  "Bypassing guest end routine and restarting execution!" :
+  "Asking guest to end execution and restarting execution.");
+/* ------------------------------------------------------------------------- */
+} },                                   // End of 'lreset' function
+/* ========================================================================= */
+// ! lresume
+// ? No explanation yet.
+/* ========================================================================= */
+{ "lresume", 1, 1, CFL_NONE, [](const Args &){
+/* ------------------------------------------------------------------------- */
+cEvtMain->Add(EMC_LUA_RESUME);
+/* ------------------------------------------------------------------------- */
+} },                                   // End of 'lresume' function
+/* ========================================================================= */
+// ! lstack
+// ? No explanation yet.
+/* ========================================================================= */
+{ "lstack", 1, 1, CFL_NONE, [](const Args &){
+/* ------------------------------------------------------------------------- */
+// Get lua state
+lua_State*const lS = cLua->GetState();
+// Get number of items in stack
+const int iCount = LuaUtilStackSize(lS);
+// Setup output spreadsheet
+Statistic tData;
+tData.Header("ID").Header("FLAGS").Header("NAME", false).Header("VALUE")
+     .Reserve(static_cast<size_t>(iCount));
+// Enumerate each stack element (1 is the first item)
+for(int iIndex = 1; iIndex <= iCount; ++iIndex)
+  tData.DataN(iIndex)
+       .Data(LuaUtilGetStackTokens(lS, iIndex))
+       .DataN(-(iCount - (iIndex + 1)))
+       .Data(LuaUtilGetStackType(lS, iIndex));
+// Print number of element
+cConsole->AddLineExA(tData.Finish(),
+  StrPluraliseNum(iCount, "element.", "elements."));
+/* ------------------------------------------------------------------------- */
+} },                                   // End of 'lstack' function
+/* ========================================================================= */
+// ! lvars
+// ? No explanation yet.
+/* ========================================================================= */
+{ "lvars", 1, 0, CFL_NONE, [](const Args &aArgs){
+/* ------------------------------------------------------------------------- */
+// Get list and return if empty
+const LuaCVarMap &lcvmList = cVariables->lcvmMap;
+if(lcvmList.empty()) return cConsole->AddLine("No Lua cvars exist!");
+// Set filter if specified
+const string &strFilter = aArgs.size() > 1 ? aArgs[1] : cCommon->Blank();
+// Try to find the cvar outright first (only make work when not in release)
+
+#if !defined(RELEASE)
+const LuaCVarMapItConst lcvmicIt{ lcvmList.find(strFilter) };
+if(lcvmicIt != lcvmList.cend())
+{ // Get cvar data an flags
+  const CVarItem &cviVar = lcvmicIt->second.second->second;
+  // Categories to add
+  StrList slCats{
+    StrFormat("Status for Lua CVar '$'...\n"
+              "- Registered by: $, Flags: 0x$$$, Callback: $.\n"
+              "- Current Value<$> = \"$\".",
+      strFilter, cviVar.FlagIsSet(TLUA) ? "Lua" : "Engine",
+      hex, cviVar.FlagGet(), dec, cviVar.IsTriggerSet() ? "Set" : "None",
+      cviVar.GetValueLength(), cviVar.GetValue()) };
+  // Add default value if set
+  if(cviVar.IsValueChanged())
+    slCats.emplace_back(StrFormat("- Default Value<$> = \"$\".",
+      cviVar.GetDefLength(), cviVar.GetDefValue()));
+  // Flags to test data
+  typedef pair<const CVarFlagsConst&, const char*const> FlagPair;
+  typedef pair<const char*const, const vector<FlagPair>> CatPair;
+  typedef vector<CatPair> CatPairVecFlag;
+  const CatPairVecFlag vcList{
+  { "Types", {
+    { TSTRING,      "String"       }, { TBOOLEAN,     "Boolean"      },
+    { TFLOAT,       "Float"        }, { TINTEGER,     "Integer"      } } },
+  { "Sources", {
+    { SENGINE,      "Internal"     }, { SCMDLINE,     "CmdLine"      },
+    { SAPPCFG,      "AppConfig"    }, { SUDB,         "Database"     } } },
+  { "Permissions", {
+    { PSYSTEM,      "AppManifest"  }, { PBOOT,        "CommandLine"  },
+    { PUSR,         "User"         }                                 } },
+  { "Conditions", {
+    { CDEFLATE,     "Compressed"   }, { CPROTECTED,   "Encrypted"    },
+    { CALPHA,       "Alpha",       }, { CNUMERIC,     "Numeric",     },
+    { CNOTEMPTY,    "NotEmpty"     }, { CPOW2,        "PowerOfTwo"   },
+    { CSAVEABLE,    "SaveToDB"     }, { CFILENAME,    "FileUntrusted"},
+    { CTRUSTEDFN,   "FileTrusted", }, { CUNSIGNED,    "NotNegative", } } },
+  { "Other Flags", {
+    { CONFIDENTIAL, "Confidential" }, { OSAVEFORCE,   "ForceSave"    },
+    { LOADED,       "LoadedFromDB" }, { COMMIT,       "Modified"     },
+    { MTRIM,        "TrimSpaces"   }                                 } } };
+  // Walk through test categories
+  for(const CatPair &cpPair : vcList)
+  { // Joined list of flags
+    StrList slDest;
+    // Test each flag and add to list if set
+    for(const FlagPair &fpPair : cpPair.second)
+      if(cviVar.FlagIsSet(fpPair.first)) slDest.emplace_back(fpPair.second);
+    // Add joined list to ca`1tegories list
+    slCats.emplace_back(StrFormat("- $<$> = $.", cpPair.first, slDest.size(),
+      slDest.empty() ? cCommon->Unspec(): StrImplode(slDest, ", ")));
+  } // Print data about the cvar
+  return cConsole->AddLine(StrImplode(slCats, cCommon->Lf()));
+} // Try as a lower bound check?
+#else
+// Try as a lower bound check?
+#endif
+LuaCVarMapItConst lcvmicPIt{ lcvmList.lower_bound(strFilter) };
+if(lcvmicPIt != lcvmList.cend())
+{ // Formatted output. Can assume all variables will be printed
+  Statistic tData;
+  tData.Header("FLAGS").Header("NAME", false).Header("VALUE", false)
+       .Reserve(lcvmList.size());
+  // Number of variables matched and tokens mask
+  size_t stMatched = 0;
+  // Build output string
+  do
+  { // If no match found? return original string
+    const string &strKey = lcvmicPIt->first;
+    if(strKey.compare(0, strFilter.size(), strFilter)) continue;
+    // Increment matched counter
+    ++stMatched;
+    // Get cvar data and flags
+    const CVarItem &cviVar = lcvmicPIt->second.second->second;
+    // Add tokens
+    tData.Data(StrFromEvalTokens({
+      // Types
+      { true, cviVar.FlagIsSet(CFILENAME)  ? 'F' :
+             (cviVar.FlagIsSet(CTRUSTEDFN) ? 'T' :
+             (cviVar.FlagIsSet(TSTRING)    ? 'S' :
+             (cviVar.FlagIsSet(TINTEGER)   ? 'I' :
+             (cviVar.FlagIsSet(TFLOAT)     ? 'N' :
+             (cviVar.FlagIsSet(TBOOLEAN)   ? 'B' :
+                                         '?'))))) },
+      // Permissions
+      { cviVar.FlagIsSet(PBOOT),        '1' },
+      { cviVar.FlagIsSet(PSYSTEM),      '2' },
+      { cviVar.FlagIsSet(PUSR),         '3' },
+      // Sources
+      { cviVar.FlagIsSet(SENGINE),      '6' },
+      { cviVar.FlagIsSet(SCMDLINE),     '7' },
+      { cviVar.FlagIsSet(SAPPCFG),      '8' },
+      { cviVar.FlagIsSet(SUDB) ,        '9' },
+      // Conditions and operations
+      { cviVar.FlagIsSet(CUNSIGNED),    'U' },
+      { cviVar.FlagIsSet(TLUA),         'L' },
+      { cviVar.FlagIsSet(CONFIDENTIAL), 'C' },
+      { cviVar.FlagIsSet(CPROTECTED),   'P' },
+      { cviVar.FlagIsSet(CDEFLATE),     'D' },
+      { cviVar.FlagIsSet(COMMIT),       'M' },
+      { cviVar.FlagIsSet(LOADED),       'O' },
+      { cviVar.FlagIsSet(CSAVEABLE),    'V' },
+      { cviVar.FlagIsSet(OSAVEFORCE),   'Z' },
+      { cviVar.FlagIsSet(CPOW2),        'W' },
+      { cviVar.FlagIsSet(CNOTEMPTY),    'Y' },
+      { cviVar.FlagIsSet(MTRIM),        'R' },
+      { cviVar.IsTriggerSet(),          'K' }
+    // Name and value
+    })).Data(strKey).Data(cviVar.Protect());
+  } // Until no more commands
+  while(++lcvmicPIt != lcvmList.cend());
+  // Print output if we matched commands
+  if(stMatched)
+    return cConsole->AddLineEx("$$ of $ matched.", tData.Finish(),
+      stMatched, StrPluraliseNum(lcvmList.size(), "Lua cvar", "Lua cvars"));
+} // No matches
+cConsole->AddLineEx("No match from $.",
+  StrPluraliseNum(lcvmList.size(), "Lua cvar", "Lua cvars"));
+/* ------------------------------------------------------------------------- */
 } },                                   // End of 'lvars' function
 /* ========================================================================= */
-{ "masks", 1, 1, CF_NOTHING, [](const Args &){
+// ! masks
+// ? No explanation yet.
+/* ========================================================================= */
+{ "masks", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Text table class to help us write neat output
 Statistic tData;
@@ -1239,19 +1523,21 @@ tData.Header("ID").Header("WIDTH").Header("HEIGHT").Header("TOTAL")
      .Header("ALLOC").Header("NAME", false).Reserve(cMasks->size());
 // Walk mask list
 for(const Mask*const mCptr : *cMasks)
-{ // Get mask
-  const Mask &dcCref = *mCptr;
-  // Add mask data to table
-  tData.DataN(dcCref.CtrGet()).DataN(dcCref.DimGetWidth())
-       .DataN(dcCref.DimGetHeight()).DataN(dcCref.size())
-       .DataN(dcCref.GetAlloc()).Data(dcCref.IdentGet());
+{ // Get reference to class and write its data to the table
+  const Mask &mcRef = *mCptr;
+  tData.DataN(mcRef.CtrGet()).DataN(mcRef.DimGetWidth())
+       .DataN(mcRef.DimGetHeight()).DataN(mcRef.size())
+       .DataN(mcRef.GetAlloc()).Data(mcRef.IdentGet());
 } // Output data
 cConsole->AddLineExA(tData.Finish(),
   StrPluraliseNum(cMasks->size(), "mask.", "masks."));
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'masks' function
 /* ========================================================================= */
-{ "mem", 1, 1, CF_NOTHING, [](const Args &){
+// ! mem
+// ? No explanation yet.
+/* ========================================================================= */
+{ "mem", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Update counters
 cSystem->UpdateMemoryUsageData();
@@ -1294,17 +1580,15 @@ if(cOgl->FlagIsSet(GFL_HAVEMEM))
   tData.DataN(qwA).DataB(qwA).Data("Renderer free")
        .DataN(qwU).DataB(qwU).Data("Renderer usage")
        .DataN(qwT).DataB(qwT).Data("Renderer total");
-} // Compiling in debug mode?
-#if defined(ALPHA)
-// Add heap check result
-tData.Data().Data().Data(cSystem->HeapCheck());
-#endif
-// Output all the data we built up
+} // Output all the data we built up
 cConsole->AddLine(tData.Finish(false));
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'mem' function
 /* ========================================================================= */
-{ "mlist", 1, 1, CF_VIDEO, [](const Args &){
+// ! mlist
+// ? No explanation yet.
+/* ========================================================================= */
+{ "mlist", 1, 1, CFL_VIDEO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Header (to be printed twice)
 Statistic tData;
@@ -1314,9 +1598,8 @@ tData.Header("ID").Header("A").Header("POSX").Header("POSY").Header("HORI")
      .Header("NAME", false).Reserve(cDisplay->GetMonitorsCount());
 // Walk the monitors list
 for(const GlFWMonitor &mItem : cDisplay->GetMonitors())
-{ // Get video mode information
+{ // Get reference to class and write its data to the table
   const GlFWRes &rItem = *mItem.Primary();
-  // Write id number
   tData.DataN(mItem.Index())
        .Data(StrFromBoolYN(&mItem == cDisplay->GetSelectedMonitor()))
        .DataN(mItem.CoordGetX()).DataN(mItem.CoordGetY())
@@ -1324,10 +1607,8 @@ for(const GlFWMonitor &mItem : cDisplay->GetMonitors())
        .Data(StrFromRatio(rItem.Width(), rItem.Height()))
        .DataN(rItem.Red()).DataN(rItem.Green()).DataN(rItem.Blue())
        .DataN(rItem.Depth()).DataN(rItem.Refresh())
-       .DataN(mItem.WidthInch(), 1)
-       .DataN(mItem.HeightInch(), 1)
-       .DataN(mItem.DiagonalInch(), 1)
-       .Data(mItem.Name());
+       .DataN(mItem.WidthInch(), 1).DataN(mItem.HeightInch(), 1)
+       .DataN(mItem.DiagonalInch(), 1).Data(mItem.Name());
 } // Write total monitors found
 cConsole->AddLineExA(tData.Finish(),
   StrPluraliseNum(cDisplay->GetMonitorsCount(), "monitor", "monitors"),
@@ -1335,7 +1616,10 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'mlist' function
 /* ========================================================================= */
-{ "mods", 1, 1, CF_NOTHING, [](const Args &){
+// ! mods
+// ? No explanation yet.
+/* ========================================================================= */
+{ "mods", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Make a table to automatically format our data neatly
 Statistic tData;
@@ -1345,7 +1629,7 @@ tData.Header("DESCRIPTION").Header("VERSION", false).Header("VENDOR", false)
 cSystem->EnumModules();
 // list modules
 for(const auto &mD : *cSystem)
-{ // Get mod data
+{ // Get reference to class and write its data to the table
   const SysModuleData &smdData = mD.second;
   tData.Data(smdData.GetDesc()).Data(smdData.GetVersion())
        .Data(smdData.GetVendor()).Data(smdData.GetFull());
@@ -1355,27 +1639,28 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'mods' function
 /* ========================================================================= */
-{ "objs", 1, 1, CF_NOTHING, [](const Args &){
+// ! objs
+// ? No explanation yet.
+/* ========================================================================= */
+{ "objs", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Typedefs for building memory usage data
 struct MemoryUsageItem
-  { const string &strName; size_t stCount, stBytes; }
+  { const string_view &strName; size_t stCount, stBytes; }
     muiTotal{ cCommon->Blank(), 0, 0 };
-const string strCmds{"Cmds"}, strCVars{"CVars"};
 typedef list<MemoryUsageItem> MemoryUsageItems;
 // Helper macros so there is not as much spam
-#define MSSEX(x,f,i) { x, f, f * sizeof(i) }
-#define MSS(x) \
-  MSSEX(c ## x ## s->IdentGet(), c ## x ## s->CollectorCount(), x)
+#define MSS(x) { c ## x ## s->IdentGet(), \
+                 c ## x ## s->CollectorCount(), \
+                 c ## x ## s->CollectorCount() * sizeof(x) }
 // Build memory usage items database
-MemoryUsageItems muiData{ {
-  MSS(Archive), MSS(Asset),   MSS(Bin),     MSS(Clip),
-  MSSEX(strCmds, cConsole->GetCmdCount(), ConLib),        MSS(Cursor),
-  MSSEX(strCVars,cCVars->GetVarCount(),   Item),          MSS(Fbo),
-  MSS(File),    MSS(Font),    MSS(Ftf),     MSS(Image),   MSS(ImageFmt),
-  MSS(Json),    MSS(LuaFunc), MSS(Mask),    MSS(Palette), MSS(Pcm),
-  MSS(PcmFmt),  MSS(Sample),  MSS(Shader),  MSS(Socket),  MSS(Source),
-  MSS(Stat),    MSS(Stream),  MSS(Texture), MSS(Thread),  MSS(Video)
+const MemoryUsageItems muiData{ {
+  MSS(Archive),  MSS(Asset),  MSS(Bin),     MSS(Clip),    MSS(Command),
+  MSS(Fbo),      MSS(File),   MSS(Font),    MSS(Ftf),     MSS(Image),
+  MSS(ImageLib), MSS(Json),   MSS(LuaFunc), MSS(Mask),    MSS(Palette),
+  MSS(Pcm),      MSS(PcmLib), MSS(Sample),  MSS(Shader),  MSS(Socket),
+  MSS(Source),   MSS(Stat),   MSS(Stream),  MSS(Texture), MSS(Thread),
+  MSS(Variable), MSS(Video)
 } };
 // Done with these macros
 #undef MSS
@@ -1402,27 +1687,36 @@ cConsole->AddLineEx("$$ totalling $ ($).", stData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'objs' function
 /* ========================================================================= */
-{ "oglext", 2, 2, CF_VIDEO, [](const Args &aList){
+// ! oglext
+// ? No explanation yet.
+/* ========================================================================= */
+{ "oglext", 2, 2, CFL_VIDEO, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Get extension name and output if the extension is supported
-const string &strX = aList[1];
+const string &strX = aArgs[1];
 cConsole->AddLineEx(
   "Extension '$' is$ supported by the selected graphics device.",
     strX, cOgl->HaveExtension(strX.c_str()) ? cCommon->Blank() : " NOT");
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'oglext' function
 /* ========================================================================= */
-{ "oglfunc", 2, 2, CF_VIDEO, [](const Args &aList){
+// ! oglfunc
+// ? No explanation yet.
+/* ========================================================================= */
+{ "oglfunc", 2, 2, CFL_VIDEO, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Get function name and output if the extension is supported
-const string &strF = aList[1];
+const string &strF = aArgs[1];
 cConsole->AddLineEx(
   "Function '$' is$ supported by the selected graphics device.",
     strF, GlFWProcExists(strF.c_str()) ? cCommon->Blank() : " NOT");
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'oglfunc' function
 /* ========================================================================= */
-{ "palettes", 2, 2, CF_VIDEO, [](const Args &){
+// ! palettes
+// ? No explanation yet.
+/* ========================================================================= */
+{ "palettes", 2, 2, CFL_VIDEO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Print totals
 cConsole->AddLineExA(StrPluraliseNum(cPalettes->size(),
@@ -1430,61 +1724,61 @@ cConsole->AddLineExA(StrPluraliseNum(cPalettes->size(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'palettes' function
 /* ========================================================================= */
-{ "pcmfmts", 1, 1, CF_NOTHING, [](const Args &){
+// ! pcmfmts
+// ? No explanation yet.
+/* ========================================================================= */
+{ "pcmfmts", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Text table class to help us write neat output
 Statistic tData;
 tData.Header("ID").Header("FL").Header("EXT").Header("NAME", false)
-     .Reserve(cPcmFmts->size());
+     .Reserve(cPcmLibs->size());
 // For each plugin
-for(const PcmFmt*const pCptr : *cPcmFmts)
-{ // Get refernece to plugin
-  const PcmFmt &pCref = *pCptr;
-  // Write data
-  tData.DataN(pCref.CtrGet())
-       .Data(StrFromEvalTokens({
-         { pCref.HaveLoader(), 'L' },
-         { pCref.HaveSaver(),  'S' } }))
-       .Data(pCref.GetExt()).Data(pCref.GetName());
+for(const PcmLib*const pCptr : *cPcmLibs)
+{ // Get reference to class and write its data to the table
+  const PcmLib &pCref = *pCptr;
+  tData.DataN(pCref.CtrGet()).Data(StrFromEvalTokens({
+      { pCref.HaveLoader(), 'L' }, { pCref.HaveSaver(),  'S' }
+  })).Data(pCref.GetExt()).Data(pCref.GetName());
 } // Log total plugins
 cConsole->AddLineExA(tData.Finish(),
-  StrPluraliseNum(cPcmFmts->size(), "format.", "formats."));
+  StrPluraliseNum(cPcmLibs->size(), "format.", "formats."));
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'pcmfmts' function
 /* ========================================================================= */
-{ "pcms", 1, 1, CF_NOTHING, [](const Args &){
+// ! pcms
+// ? No explanation yet.
+/* ========================================================================= */
+{ "pcms", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Get reference to pcms collector class and lock it so it's not changed
 const LockGuard lgPcmsSync{ cPcms->CollectorGetMutex() };
 // Text table class to help us write neat output
 Statistic tData;
 tData.Header("ID").Header("FLAGS", false).Header("RATE")
-     .Header("C").Header("BT").Header("PFMT").Header("ALLOC")
+     .Header("C").Header("BT").Header("B").Header("PFMT").Header("ALLOC")
      .Header("NAME", false).Reserve(cPcms->size());
 // Walk through textures classes
 for(const Pcm*const pCptr : *cPcms)
-{ // Get pointer to class
+{ // Get reference to class and write its data to the table
   const Pcm &pCref = *pCptr;
-  // Add data to table
-  tData.DataN(pCref.CtrGet())
-       .Data(StrFromEvalTokens({
-    { pCref.IsDynamic(),           'Y' },
-    { pCref.IsNotDynamic(),        'S' },
-    { pCref.FlagIsSet(PL_FCE_WAV), 'W' },
-    { pCref.FlagIsSet(PL_FCE_CAF), 'C' },
-    { pCref.FlagIsSet(PL_FCE_OGG), 'O' },
-    { pCref.FlagIsSet(PL_FCE_MP3), 'M' } }))
-       .DataN(pCref.GetRate()).DataN(pCref.GetChannels())
-       .DataN(pCref.GetBits()).DataH(pCref.GetFormat(),4)
-       .DataN(pCref.GetAlloc())
-       .Data(pCref.IdentGet());
+  tData.DataN(pCref.CtrGet()).Data(StrFromEvalTokens({
+    { pCref.IsDynamic(),           'Y' }, { pCref.IsNotDynamic(),        'S' },
+    { pCref.FlagIsSet(PL_FCE_WAV), 'W' }, { pCref.FlagIsSet(PL_FCE_CAF), 'C' },
+    { pCref.FlagIsSet(PL_FCE_OGG), 'O' }, { pCref.FlagIsSet(PL_FCE_MP3), 'M' }
+  })).DataN(pCref.GetRate()).DataN(pCref.GetChannels()).DataN(pCref.GetBits())
+     .DataN(pCref.GetBytes()).DataH(pCref.GetFormat(),4)
+     .DataN(pCref.GetAlloc()).Data(pCref.IdentGet());
 } // Log texture counts
 cConsole->AddLineExA(tData.Finish(),
   StrPluraliseNum(cPcms->size(), "pcm.", "pcms."));
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'pcms' function
 /* ========================================================================= */
-{ "quit", 1, 1, CF_NOTHING, [](const Args &){
+// ! quit
+// ? No explanation yet.
+/* ========================================================================= */
+{ "quit", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Quit the engine and inform user of the result
 cConsole->AddLine(cLua->TryEventOrForce(EMC_QUIT) ?
@@ -1493,10 +1787,13 @@ cConsole->AddLine(cLua->TryEventOrForce(EMC_QUIT) ?
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'quit' function
 /* ========================================================================= */
-{ "restart", 1, 2, CF_NOTHING, [](const Args &aList){
+// ! restart
+// ? No explanation yet.
+/* ========================================================================= */
+{ "restart", 1, 2, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Restart the process and inform user of the result
-cConsole->AddLine(aList.size() == 2 ?
+cConsole->AddLine(aArgs.size() == 2 ?
   (cLua->TryEventOrForce(EMC_QUIT_RESTART_NP) ?
     "Bypassing guest end routine and restarting engine with no args!" :
     "Asking guest to end execution and restarting engine with no args.") :
@@ -1506,7 +1803,10 @@ cConsole->AddLine(aList.size() == 2 ?
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'restart' function
 /* ========================================================================= */
-{ "samples", 1, 1, CF_AUDIO, [](const Args &){
+// ! samples
+// ? No explanation yet.
+/* ========================================================================= */
+{ "samples", 1, 1, CFL_AUDIO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Make a table to automatically format our data neatly
 Statistic tData;
@@ -1514,17 +1814,20 @@ tData.Header("ID").Header("BID").Header("NAME", false)
      .Reserve(cSamples->size());
 // Walk sample object list
 for(const Sample*const sCptr : *cSamples)
-{ // Get sample object reference
+{ // Get reference to class and write its data to the table
   const Sample &sCref = *sCptr;
-  // Print totals info
-  tData.DataN(sCref.CtrGet()).DataN(sCref.front()).Data(sCref.IdentGet());
+  tData.DataN(sCref.CtrGet()).DataN(sCref.uivNames.front())
+       .Data(sCref.IdentGet());
 } // Number of items in buffer
 cConsole->AddLineExA(tData.Finish(),
   StrPluraliseNum(cSamples->size(), "sample.", "samples."));
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'samples' function
 /* ========================================================================= */
-{ "shaders", 1, 2, CF_VIDEO, [](const Args &){
+// ! shaders
+// ? No explanation yet.
+/* ========================================================================= */
+{ "shaders", 1, 2, CFL_VIDEO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Make a table to automatically format our data neatly
 Statistic tData;
@@ -1535,7 +1838,7 @@ tData.Header("ID").Header("PID").Header("L").Header("C").Header("SID")
 size_t stShaders = 0;
 // Walk shader list
 for(const Shader*const sCptr : *cShaders)
-{ // Get shader and its list
+{ // Get reference to class
   const Shader &sCref = *sCptr;
   // Store shader information
   tData.DataN(sCref.CtrGet()).DataN(sCref.GetProgramId())
@@ -1555,18 +1858,24 @@ cConsole->AddLineEx("$$ and $.", tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'shaders' function
 /* ========================================================================= */
-{ "shot", 1, 1, CF_VIDEO, [](const Args &){
+// ! shot
+// ? No explanation yet.
+/* ========================================================================= */
+{ "shot", 1, 1, CFL_VIDEO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 cSShot->DumpMain();
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'shot' function
 /* ========================================================================= */
-{ "sockets", 1, 2, CF_NOTHING, [](const Args &aList){
+// ! sockets
+// ? No explanation yet.
+/* ========================================================================= */
+{ "sockets", 1, 2, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Id specified?
-if(aList.size() == 2)
+if(aArgs.size() == 2)
 { // Parse the specified id
-  const unsigned int uiId = StrToNum<unsigned int>(aList[1]);
+  const unsigned int uiId = StrToNum<unsigned int>(aArgs[1]);
   // For each socket. Try to find the FD specified and return the class
   // if we can't find, tell the console we could not find it.
   const auto sItem{ SocketFind(uiId) };
@@ -1601,12 +1910,12 @@ if(aList.size() == 2)
         sCref.GetAddress(), dec, sCref.GetPort(), sCref.GetIPAddress(),
         StrFromBoolTF(sCref.IsSecure()), StrIsBlank(sCref.GetCipher()));
    // Use disconnect time or connect time
-  const double fdConnect = sfFlags.FlagIsSet(SS_STANDBY) ?
+  const double dConnect = sfFlags.FlagIsSet(SS_STANDBY) ?
     ClockTimePointRangeToClampedDouble(sCref.GetTDisconnected(),
       sCref.GetTConnected()) :
     cmHiRes.TimePointToClampedDouble(sCref.GetTConnected()),
   // Set connected to connection time
-  fdInitial = ClockTimePointRangeToClampedDouble(sCref.GetTConnected(),
+  dInitial = ClockTimePointRangeToClampedDouble(sCref.GetTConnected(),
     sCref.GetTConnect());
   // Write connected information
   return cConsole->AddLineEx("Status for socket $...\n"
@@ -1630,36 +1939,34 @@ if(aList.size() == 2)
       StrShortFromDuration(
         cmHiRes.TimePointToClampedDouble(sCref.GetTWrite())),
     StrFromBoolTF(sCref.IsSecure()), StrIsBlank(sCref.GetCipher()),
-    StrShortFromDuration(fdConnect + fdInitial),
-      StrShortFromDuration(fdConnect), StrShortFromDuration(fdInitial));
+    StrShortFromDuration(dConnect + dInitial),
+      StrShortFromDuration(dConnect), StrShortFromDuration(dInitial));
 } // Make neatly formatted table
 Statistic tData;
 tData.Header("ID").Header("FLAGS").Header("IP").Header("PORT")
      .Header("ADDRESS", false).Reserve(cSockets->size());
 // Walk through sockets
-for(const Socket*const oCptr : *cSockets)
-{ // Get pointer to class
-  const Socket &sCref = *oCptr;
-  // Get status
+for(const Socket*const aCptr : *cSockets)
+{ // Get reference to class and socket flags
+  const Socket &sCref = *aCptr;
   const SocketFlagsConst ssType{ sCref.FlagGet() };
   // Show status
-  tData.DataN(sCref.CtrGet())
-       .Data(StrFromEvalTokens({
-          { ssType.FlagIsSet(SS_INITIALISING),  'I' },
-          { ssType.FlagIsSet(SS_ENCRYPTION),    'X' },
-          { ssType.FlagIsSet(SS_CONNECTING),    'T' },
-          { ssType.FlagIsSet(SS_CONNECTED),     'O' },
-          { ssType.FlagIsSet(SS_SENDREQUEST),   'H' },
-          { ssType.FlagIsSet(SS_REPLYWAIT),     'R' },
-          { ssType.FlagIsSet(SS_DOWNLOADING),   'D' },
-          { ssType.FlagIsSet(SS_DISCONNECTING), 'N' },
-          { ssType.FlagIsSet(SS_STANDBY),       'B' },
-          { sCref.GetError() != 0,          'E' },
-          { ssType.FlagIsSet(SS_CLOSEDBYSERVER), 'S' },
-          { ssType.FlagIsSet(SS_CLOSEDBYCLIENT), 'C' } }))
-       .Data(sCref.GetIPAddress())
-       .DataN(sCref.GetPort())
-       .Data(sCref.GetAddress());
+  tData.DataN(sCref.CtrGet()).Data(StrFromEvalTokens({
+    { ssType.FlagIsSet(SS_INITIALISING),  'I' },
+    { ssType.FlagIsSet(SS_ENCRYPTION),    'X' },
+    { ssType.FlagIsSet(SS_CONNECTING),    'T' },
+    { ssType.FlagIsSet(SS_CONNECTED),     'O' },
+    { ssType.FlagIsSet(SS_SENDREQUEST),   'H' },
+    { ssType.FlagIsSet(SS_REPLYWAIT),     'R' },
+    { ssType.FlagIsSet(SS_DOWNLOADING),   'D' },
+    { ssType.FlagIsSet(SS_DISCONNECTING), 'N' },
+    { ssType.FlagIsSet(SS_STANDBY),       'B' },
+    { sCref.GetError() != 0,          'E' },
+    { ssType.FlagIsSet(SS_CLOSEDBYSERVER), 'S' },
+    { ssType.FlagIsSet(SS_CLOSEDBYCLIENT), 'C' } }
+  )).Data(sCref.GetIPAddress())
+    .DataN(sCref.GetPort())
+    .Data(sCref.GetAddress());
 } // Show result
 cConsole->AddLineEx("$$ ($ connected).\n"
   "Total RX Packets: $; Bytes: $ ($).\n"
@@ -1673,11 +1980,14 @@ cConsole->AddLineEx("$$ ($ connected).\n"
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'sockets' function
 /* ========================================================================= */
-{ "sockreset", 2, 2, CF_NOTHING, [](const Args &aList){
+// ! sockreset
+// ? No explanation yet.
+/* ========================================================================= */
+{ "sockreset", 2, 2, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Get parameter and if user requested to close all connections? Close all
 // the sockets and report how many we closed and return
-const string &strId = aList[1];
+const string &strId = aArgs[1];
 if(strId == "*")
   return cConsole->AddLineExA(StrPluraliseNum(SocketReset(),
     "connection", "connections"), " closed.");
@@ -1692,7 +2002,10 @@ else cConsole->AddLineEx("Connection $ $ closed.",
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'sockreset' function
 /* ========================================================================= */
-{ "sources", 1, 1, CF_AUDIO, [](const Args &){
+// ! sources
+// ? No explanation yet.
+/* ========================================================================= */
+{ "sources", 1, 1, CFL_AUDIO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Get reference to sources collector class and lock it so it's not changed
 const LockGuard lgSourcesSync{ cSources->CollectorGetMutex() };
@@ -1704,7 +2017,7 @@ tData.Header("ID").Header("SID").Header("FLAG").Header("S")
      .Header("MAXDIST", false).Reserve(cSources->size());
 // Walk through sources
 for(const Source*const sCptr : *cSources)
-{ // Get pointer to class
+{ // Get reference to class
   const Source &sCref = *sCptr;
   // Get source play state and type
   const ALenum alState = sCref.GetState();
@@ -1730,7 +2043,10 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'sources' function
 /* ========================================================================= */
-{ "sqlcheck", 1, 1, CF_NOTHING, [](const Args &){
+// ! sqlcheck
+// ? No explanation yet.
+/* ========================================================================= */
+{ "sqlcheck", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Don't continue if theres a transaction in progress
 if(cSql->Active())
@@ -1743,7 +2059,10 @@ cSql->Reset();
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'sqlcheck' function
 /* ========================================================================= */
-{ "sqldefrag", 1, 1, CF_NOTHING, [](const Args &){
+// ! sqldefrag
+// ? No explanation yet.
+/* ========================================================================= */
+{ "sqldefrag", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Don't continue if theres a transaction in progress
 if(cSql->Active())
@@ -1775,7 +2094,10 @@ cConsole->AddLine(qChange ?
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'sqldefrag' function
 /* ========================================================================= */
-{ "sqlend", 1, 1, CF_NOTHING, [](const Args &){
+// ! sqlend
+// ? No explanation yet.
+/* ========================================================================= */
+{ "sqlend", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Don't continue if theres a transaction in progress
 if(!cSql->Active()) return cConsole->AddLine("Sql transaction not active!");
@@ -1785,19 +2107,22 @@ cConsole->AddLineEx("Sql transaction$ ended.",
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'sqlend' function
 /* ========================================================================= */
-{ "sqlexec", 2, 0, CF_NOTHING, [](const Args &aList){
+// ! sqlexec
+// ? No explanation yet.
+/* ========================================================================= */
+{ "sqlexec", 2, 0, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Don't continue if theres a transaction in progress
 if(cSql->Active())
   return cConsole->AddLine("Sql transaction already active!");
 // Execute the string and catch exceptions
-if(cSql->ExecuteAndSuccess(StrImplode(aList, 1)))
+if(cSql->ExecuteAndSuccess(StrImplode(aArgs, 1)))
 { // Get records and if we did not have any?
   const Sql::Result &vData = cSql->GetRecords();
   if(vData.empty())
   { // If we should show the rows affected. This is sloppy but sqllite
     // doesn't support resetting sqlite3_changes result yet :(
-    const string &strFirst = StrToLowCaseRef(UtilToNonConst(aList[1]));
+    const string &strFirst = StrToLowCaseRef(UtilToNonConst(aArgs[1]));
     // Show rows affected if we have them
     if(strFirst == "insert" || strFirst == "update" || strFirst == "delete")
       cConsole->AddLineEx("$ affected in $.",
@@ -1825,13 +2150,13 @@ if(cSql->ExecuteAndSuccess(StrImplode(aList, 1)))
         const Sql::DataListItem &mbOut = cItem.second;
         // Add row, column id, size and key name
         tData.DataN(stRecordId).DataN(stColumnId++)
-             .DataN(mbOut.Size()).Data(cItem.first);
+             .DataN(mbOut.MemSize()).Data(cItem.first);
         // What type is it?
         switch(mbOut.iT)
         { // 64-bit integer?
           case SQLITE_INTEGER:
           { // Get integer
-            const sqlite3_int64 qwVal = mbOut.ReadInt<sqlite3_int64>();
+            const sqlite3_int64 qwVal = mbOut.MemReadInt<sqlite3_int64>();
             // StrFormat and store in spreadsheet
             tData.Data("I")
                  .Data(StrFormat("$ (0x$$)", qwVal, hex, qwVal));
@@ -1839,11 +2164,11 @@ if(cSql->ExecuteAndSuccess(StrImplode(aList, 1)))
             break;
           } // 64-bit IEEE float?
           case SQLITE_FLOAT:
-            tData.Data("F").DataN(mbOut.ReadInt<double>()); break;
+            tData.Data("F").DataN(mbOut.MemReadInt<double>()); break;
           // Raw data? Just write number of bytes
           case SQLITE_BLOB: tData.Data("B").Data("<Blob>"); break;
           // Text?
-          case SQLITE_TEXT: tData.Data("T").Data(mbOut.ToString()); break;
+          case SQLITE_TEXT: tData.Data("T").Data(mbOut.MemToString()); break;
           // No data
           case SQLITE_NULL: tData.Data("N").Data("<Null>"); break;
           // Unknown type (impossible)
@@ -1865,7 +2190,10 @@ cSql->Reset();
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'sqlexec' function
 /* ========================================================================= */
-{ "stopall", 1, 1, CF_AUDIO, [](const Args &){
+// ! stopall
+// ? No explanation yet.
+/* ========================================================================= */
+{ "stopall", 1, 1, CFL_AUDIO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Tell audio to stop all sounds from playing
 cAudio->Stop();
@@ -1874,7 +2202,10 @@ cConsole->AddLine("Stopping all sounds from playing.");
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'stopall' function
 /* ========================================================================= */
-{ "streams", 1, 1, CF_AUDIO, [](const Args &){
+// ! streams
+// ? No explanation yet.
+/* ========================================================================= */
+{ "streams", 1, 1, CFL_AUDIO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Synchronise the streams collector list
 const LockGuard lgStreamsSync{ cStreams->CollectorGetMutex() };
@@ -1885,10 +2216,9 @@ tData.Header("ID").Header("L").Header("LENGTH").Header("TIME").Header()
      .Header("RATE").Header("TYPE").Header("BRU").Header("BRN").Header("BRL")
      .Header("BRW").Header("NAME", false).Reserve(cStreams->size());
 // Walk through sources
-for(const Stream*const sCptr : *cStreams)
-{ // Get pointer to class
-  Stream &sCref = *const_cast<Stream*>(sCptr);
-  // Add stream data to table
+for(Stream*const sCptr : *cStreams)
+{ // Get reference to class and write its data to the table
+  Stream &sCref = *sCptr;
   tData.DataN(sCref.CtrGet()).Data(StrFromBoolYN(sCref.LuaRefIsSet()))
        .DataN(sCref.GetOggBytes()).DataN(sCref.GetElapsedSafe(), 1)
        .DataN(sCref.GetDurationSafe(), 1).DataN(sCref.GetPositionSafe())
@@ -1905,7 +2235,10 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'streams' function
 /* ========================================================================= */
-{ "system", 1, 1, CF_NOTHING, [](const Args &){
+// ! system
+// ? No explanation yet.
+/* ========================================================================= */
+{ "system", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Print OS stats
 cConsole->AddLineEx("$-bit $ version $.$ build $ locale $.",
@@ -1914,7 +2247,10 @@ cConsole->AddLineEx("$-bit $ version $.$ build $ locale $.",
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'system' function
 /* ========================================================================= */
-{ "textures", 1, 1, CF_VIDEO, [](const Args &){
+// ! textures
+// ? No explanation yet.
+/* ========================================================================= */
+{ "textures", 1, 1, CFL_VIDEO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 const function ShowTextureInfo{ [](Statistic &tData, const Texture &tC)
 { // Add data to table
@@ -1932,8 +2268,8 @@ tData.Header("ID").Header("D").Header("SC").Header("MM").Header("TF")
      .Header("TSPY").Header("IDENTIFIER", false)
      .Reserve(2 + cFonts->size() + cTextures->size());
 // Include console texture and font
-ShowTextureInfo(tData, cConsole->GetTextureRef());
-ShowTextureInfo(tData, cConsole->GetFontRef());
+ShowTextureInfo(tData, cConGraphics->GetTextureRef());
+ShowTextureInfo(tData, cConGraphics->GetFontRef());
 // Walk through font textures and textures classes
 for(const Font*const fCptr : *cFonts) ShowTextureInfo(tData, *fCptr);
 for(const Texture*const tCptr : *cTextures) ShowTextureInfo(tData, *tCptr);
@@ -1943,7 +2279,10 @@ cConsole->AddLineExA(tData.Finish(), StrPluraliseNum(cTextures->size() +
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'textures' function
 /* ========================================================================= */
-{ "threads", 1, 1, CF_NOTHING, [](const Args &){
+// ! threads
+// ? No explanation yet.
+/* ========================================================================= */
+{ "threads", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Make a table to automatically format our data neatly
 Statistic tData;
@@ -1952,9 +2291,8 @@ tData.Header("ID").Header("FLAG").Header("P").Header("EC").Header("STTIME")
      .Reserve(cThreads->size());
 // For each thread pointer
 for(const Thread*const tCptr : *cThreads)
-{ // Get reference to thread pointer
+{ // Get reference to class and write its data to the table
   const Thread &tCref = *tCptr;
-  // Store thread information
   tData.DataN(tCref.CtrGet()).Data(StrFromEvalTokens({
     { tCref.ThreadHaveCallback(), 'C' },
     { tCref.ThreadIsParamSet(),   'P' }, { tCref.ThreadIsRunning(),    'R' },
@@ -1977,7 +2315,10 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'threads' function
 /* ========================================================================= */
-{ "time", 1, 1, CF_NOTHING, [](const Args &){
+// ! time
+// ? No explanation yet.
+/* ========================================================================= */
+{ "time", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Timestamp to use
 const char*const cpFmt = "%a %b %d %H:%M:%S %Y %z";
@@ -1993,56 +2334,63 @@ else cConsole->AddLineEx("Local time is $.\nUniversal time is $.",
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'time' function
 /* ========================================================================= */
-{ "version", 1, 1, CF_NOTHING, [](const Args &){
+// ! version
+// ? No explanation yet.
+/* ========================================================================= */
+{ "version", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 cConsole->PrintVersion();
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'version' function
 /* ========================================================================= */
-{ "videos", 1, 1, CF_AUDIOVIDEO, [](const Args &){
+// ! videos
+// ? No explanation yet.
+/* ========================================================================= */
+{ "videos", 1, 1, CFL_AUDIOVIDEO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Get reference to videos collector class and lock it so it's not changed
 const LockGuard lgVideosSync{ cVideos->CollectorGetMutex() };
 // Text table class to help us write neat output
 Statistic tData;
 tData.Header("ID").Header("FLAGS").Header("PCMF").Header("P").Header("C")
-     .Header("FRMW").Header("FRMH").Header("FPS").Header("TIME").Header("FD")
+     .Header("FRMW").Header("FRMH").Header("PICW").Header("PICH")
+     .Header("OX").Header("OY").Header("FPS").Header("TIME").Header("FD")
      .Header("FR").Header("FL").Header("AVD").Header("LEN")
      .Header("NAME", false).Reserve(cVideos->size());;
 // Walk through textures classes
 for(const Video*const vCptr : *cVideos)
-{ // Get pointer to class
+{ // Get reference to class and write its data to the table
   const Video &vCref = *vCptr;
-  // and write data
   tData.DataN(vCref.CtrGet())
     .Data(StrFromEvalTokens({
       { vCref.LuaRefIsSet(),       'L' }, { vCref.HaveAudio(),         'A' },
       { vCref.FlagIsSet(FL_FILTER),'F' }, { vCref.GetKeyed(),          'K' },
       { vCref.FlagIsSet(FL_PLAY),  'P' }, { vCref.FlagIsSet(FL_STOP),  'S' },
       { vCref.FlagIsSet(FL_THEORA),'T' }, { vCref.FlagIsSet(FL_VORBIS),'V' },
-      { vCref.FlagIsSet(FL_VDINIT),'1' }, { vCref.FlagIsSet(FL_VBINIT),'2' },
-      { vCref.FlagIsSet(FL_OSINIT),'3' }, { vCref.FlagIsSet(FL_TCINIT),'4' },
-      { vCref.FlagIsSet(FL_TIINIT),'5' }, { vCref.FlagIsSet(FL_VCINIT),'6' },
-      { vCref.FlagIsSet(FL_VIINIT),'7' },
     }))
    .Data(vCref.GetFormatAsIdentifier()).DataH(vCref.GetPixelFormat(),4)
    .DataN(vCref.GetColourSpace())      .DataN(vCref.GetFrameWidth())
-   .DataN(vCref.GetFrameHeight())      .DataN(vCref.GetFPS(), 2)
+   .DataN(vCref.GetFrameHeight())      .DataN(vCref.GetWidth())
+   .DataN(vCref.GetHeight())           .DataN(vCref.GetOriginX())
+   .DataN(vCref.GetOriginY())          .DataN(vCref.GetFPS(), 2)
    .DataN(vCref.GetVideoTime(), 3)     .DataN(vCref.GetFrame())
    .DataN(vCref.GetFrames())           .DataN(vCref.GetFramesSkipped())
-   .DataN(vCref.HaveAudio() ? vCref.GetDrift() : 0, 2)
-   .DataN(vCref.GetLength())           .Data(vCref.IdentGet());
+   .DataN(vCref.GetDrift(), 2)         .DataN(vCref.GetLength())
+   .Data(vCref.IdentGet());
 } // Log counts
 cConsole->AddLineExA(tData.Finish(),
   StrPluraliseNum(cVideos->size(), "video.", "videos."));
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'videos' function
 /* ========================================================================= */
-{ "vmlist", 1, 2, CF_VIDEO, [](const Args &aList){
+// ! vmlist
+// ? No explanation yet.
+/* ========================================================================= */
+{ "vmlist", 1, 2, CFL_VIDEO, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Monitor number and return if invalid
 const size_t stMonitorSelected =
-  aList.size() == 1 ? 0 : StrToNum<size_t>(aList[1]);
+  aArgs.size() == 1 ? 0 : StrToNum<size_t>(aArgs[1]);
 if(stMonitorSelected >= cDisplay->GetMonitorsCount())
   return cConsole->AddLineEx("Invalid monitor $ specified!",
     stMonitorSelected);
@@ -2056,27 +2404,32 @@ const GlFWMonitor &mItem = cDisplay->GetMonitors()[stMonitorSelected];
 if(mItem.size() > 1)
   tData.DupeHeader().Reserve(cDisplay->GetMonitorsCount() / 2);
 else tData.Reserve(1);
-// Enumerate video modes
+// Write each resolution to the table
 for(const GlFWRes &rItem : mItem)
-{ // Print resolution
   tData.DataN(rItem.Index()).Data(StrFromBoolYN(&rItem == mItem.Primary()))
        .DataN(rItem.Width()).DataN(rItem.Height()).DataN(rItem.Depth())
        .DataN(rItem.Refresh()).DataN(rItem.Red()).DataN(rItem.Green())
        .DataN(rItem.Blue()).Data(StrFromRatio(rItem.Width(), rItem.Height()));
-} // Print number of video modes
+// Print number of video modes
 cConsole->AddLineEx("$$ supported on monitor #$ ($).", tData.Finish(),
   StrPluraliseNum(mItem.size(), "mode", "modes"), stMonitorSelected,
   mItem.Name());
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'vmlist' function
 /* ========================================================================= */
-{ "vreset", 1, 1, CF_VIDEO, [](const Args &){
+// ! vreset
+// ? No explanation yet.
+/* ========================================================================= */
+{ "vreset", 1, 1, CFL_VIDEO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 cEvtMain->Add(EMC_QUIT_THREAD);
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'vreset' function
 /* ========================================================================= */
-{ "wreset", 1, 1, CF_VIDEO, [](const Args &){
+// ! wreset
+// ? No explanation yet.
+/* ========================================================================= */
+{ "wreset", 1, 1, CFL_VIDEO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 cDisplay->RequestReposition();
 /* ------------------------------------------------------------------------- */

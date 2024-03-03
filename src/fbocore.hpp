@@ -1,4 +1,4 @@
-/* == FBOMAIN.HPP ========================================================== **
+/* == FBOCORE.HPP ========================================================== **
 ** ######################################################################### **
 ** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
 ** ######################################################################### **
@@ -9,21 +9,21 @@
 ** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IFboMain {                   // Start of private module namespace
+namespace IFboCore {                   // Start of private module namespace
 /* -- Dependencies --------------------------------------------------------- */
-using namespace IClock::P;            using namespace ICVar::P;
-using namespace ICVarDef::P;          using namespace ICVarLib::P;
-using namespace IEvtMain::P;          using namespace IFbo::P;
-using namespace IFboBase::P;          using namespace IGlFW::P;
-using namespace ILog::P;              using namespace IOgl::P;
-using namespace IShader::P;           using namespace IStd::P;
-using namespace IString::P;           using namespace ISysUtil::P;
-using namespace ITimer::P;            using namespace IUtil::P;
-using namespace Lib::OS::GlFW;
+using namespace IClock::P;             using namespace ICVar::P;
+using namespace ICVarDef::P;           using namespace ICVarLib::P;
+using namespace IEvtMain::P;           using namespace IFboDef::P;
+using namespace IFbo::P;               using namespace IGlFW::P;
+using namespace ILog::P;               using namespace IOgl::P;
+using namespace IShader::P;            using namespace IShaders::P;
+using namespace IStd::P;               using namespace IString::P;
+using namespace ISysUtil::P;           using namespace ITimer::P;
+using namespace IUtil::P;              using namespace Lib::OS::GlFW;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* == Main fbo class ======================================================= */
-static class FboMain final :           // The main fbo operations manager
+static class FboCore final :           // The main fbo operations manager
   /* -- Base classes ------------------------------------------------------- */
   public FboColour,                    // Backbuffer clear colour
   public FboBlend,                     // Default blending mode
@@ -54,11 +54,11 @@ static class FboMain final :           // The main fbo operations manager
   /* -- Reset backbuffer clear colour to colour stored in cvar ------------- */
   void ResetClearColour(void)
   { // Set main backbuffer colour
-    fboMain.ResetClearColour();
-    fboConsole.ResetClearColour();
+    fboMain.FboResetClearColour();
+    fboConsole.FboResetClearColour();
     // Commit the default backbuffer clear colour
     cOgl->SetClearColourInt(
-      cCVars->GetInternalSafe<unsigned int>(VID_CLEARCOLOUR));
+      cCVars->GetInternal<unsigned int>(VID_CLEARCOLOUR));
   }
   /* -- Perform rendering to the back buffer ----------------------- */ public:
   void SwapBuffers(void)
@@ -69,24 +69,25 @@ static class FboMain final :           // The main fbo operations manager
     // Bind the texture attached to the fbo
     cOgl->BindTexture(fboMain.uiFBOtex);
     // Select our basic 3D transform shader
-    cOgl->UseProgram(cFboBase->sh3D.GetProgram());
+    cOgl->UseProgram(cShaderCore->sh3D.GetProgram());
     // Set the viewport of the FBO size
     cOgl->SetViewport(DimGetWidth(), DimGetHeight());
     // Set the default alpha blending mode
     cOgl->SetBlendIfChanged(*this);
     // Clear back buffer if main fbo has alpha
-    if(fboMain.IsTransparencyEnabled()) cOgl->SetAndClear(*this);
+    if(fboMain.FboIsTransparencyEnabled()) cOgl->SetAndClear(*this);
     // Set normal fill poly mode
     cOgl->SetPolygonMode(GL_FILL);
     // Buffer the interlaced triangle data
-    cOgl->BufferStaticData(fboMain.GetDataSize(), fboMain.GetData());
+    cOgl->BufferStaticData(fboMain.FboItemGetDataSize(),
+      fboMain.FboItemGetData());
     // Specify format of the interlaced triangle data
     cOgl->VertexAttribPointer(A_COORD, stCompsPerCoord, 0,
-      fboMain.GetTCIndex());
+      fboMain.FboItemGetTCIndex());
     cOgl->VertexAttribPointer(A_VERTEX, stCompsPerPos, 0,
-      fboMain.GetVIndex());
+      fboMain.FboItemGetVIndex());
     cOgl->VertexAttribPointer(A_COLOUR, stCompsPerColour, 0,
-      fboMain.GetCIndex());
+      fboMain.FboItemGetCIndex());
     // Blit the two triangles
     cOgl->DrawArraysTriangles(stTwoTriangles);
     // Swap buffers
@@ -117,25 +118,25 @@ static class FboMain final :           // The main fbo operations manager
     SwapBuffers();
   }
   /* -- Blits the console fbo to main fbo ---------------------------------- */
-  void BlitConsoleToMain(void) { fboMain.Blit(fboConsole); }
+  void BlitConsoleToMain(void) { fboMain.FboBlit(fboConsole); }
   /* -- Finish main fbo and add it to render list -------------------------- */
-  void FinishMain(void) { fboMain.FinishAndRender(); }
+  void FinishMain(void) { fboMain.FboFinishAndRender(); }
   /* -- Set main fbo as active fbo to draw too ----------------------------- */
-  void ActivateMain(void) { fboMain.SetActive(); }
+  void ActivateMain(void) { fboMain.FboSetActive(); }
   /* -- Called from main tick incase we need to keep catching up frames ---- */
   void RenderFbosAndFlushMain(void)
   { // Render all the user queud fbos and flush them
     FboRender();
     // Flush main fbo
-    fboMain.Flush();
+    fboMain.FboFlush();
   }
   /* -- De-initialise all fbos --------------------------------------------- */
   void DeInitAllObjectsAndBuiltIns(void)
   { // Temporary de-init all user objects
     FboDeInit();
     // Temporary de-init the console and main static fbo classes too
-    fboConsole.DeInit();
-    fboMain.DeInit();
+    fboConsole.FboDeInit();
+    fboMain.FboDeInit();
   }
   /* -- Destroy all fbo's -------------------------------------------------- */
   void DestroyAllObjectsAndBuiltIns(void)
@@ -143,8 +144,8 @@ static class FboMain final :           // The main fbo operations manager
     // were unregistered in the init function below.
     cFbos->CollectorDestroyUnsafe();
     // Deinit the console and main static fbo classes
-    fboConsole.DeInit();
-    fboMain.DeInit();
+    fboConsole.FboDeInit();
+    fboMain.FboDeInit();
   }
   /* -- Sent when the window is resized/main fbo needs autosized --- */ public:
   bool AutoMatrix(const GLfloat fWidth, const GLfloat fHeight,
@@ -195,7 +196,7 @@ static class FboMain final :           // The main fbo operations manager
       fOrthoWidth = fWidth;
       fOrthoHeight = fHeight;
       // Set stage bounds for drawing
-      fboMain.SetOrtho(fLeft, fTop, fRight, fBottom);
+      fboMain.FboSetOrtho(fLeft, fTop, fRight, fBottom);
     } // Calculate new fbo width and height
     const GLsizei siFBOWidth = static_cast<GLsizei>(fRight - fLeft),
                   siFBOHeight = static_cast<GLsizei>(fBottom - fTop);
@@ -206,7 +207,7 @@ static class FboMain final :           // The main fbo operations manager
         siFBOHeight != static_cast<GLsizei>(fboMain.GetCoBottom()) ||
         bForce) && cOgl->IsGLInitialised())
     { // Re-initialise the main framebuffer
-      fboMain.Init("main", siFBOWidth, siFBOHeight);
+      fboMain.FboInit("main", siFBOWidth, siFBOHeight);
       // Log computations
       cLog->LogDebugExSafe("Fbo main matrix reinitialised as $x$ [$] "
         "(D=$x$,A=$<$-$>,AW=$,S=$:$:$:$).",
@@ -257,26 +258,27 @@ static class FboMain final :           // The main fbo operations manager
   /* -- Init console fbo --------------------------------------------------- */
   void InitConsoleFBO(void)
   { // Initialise the console fbo for the console object
-    fboConsole.Init("console", fboMain.DimGetWidth(), fboMain.DimGetHeight());
+    fboConsole.FboInit("console",
+      fboMain.DimGetWidth(), fboMain.DimGetHeight());
   }
   /* -- Set main fbo float reserve ----------------------------------------- */
   CVarReturn SetFloatReserve(const size_t stCount)
-    { return BoolToCVarReturn(fboMain.ReserveTriangles(stCount)); }
+    { return BoolToCVarReturn(fboMain.FboReserveTriangles(stCount)); }
   /* -- Set main fbo command reserve --------------------------------------- */
   CVarReturn SetCommandReserve(const size_t stCount)
-    { return BoolToCVarReturn(fboMain.ReserveCommands(stCount)); }
+    { return BoolToCVarReturn(fboMain.FboReserveCommands(stCount)); }
   /* -- Set main fbo filters (cvar event) ---------------------------------- */
-  CVarReturn SetFilter(const size_t stV)
+  CVarReturn SetFilter(const OglFilterEnum ofeV)
   { // Check value
-    if(stV >= OF_MAX) return DENY;
+    if(ofeV >= OF_MAX) return DENY;
     // Set filtering of main and console fbo
-    fboMain.SetFilter(stV);
-    fboConsole.SetFilter(stV);
+    fboMain.FboSetFilter(ofeV);
+    fboConsole.FboSetFilter(ofeV);
     // Accept the change anyway if opengl not initialised
     if(cOgl->IsGLNotInitialised()) return ACCEPT;
     // Commit the filters
-    fboMain.CommitFilter();
-    fboConsole.CommitFilter();
+    fboMain.FboCommitFilter();
+    fboConsole.FboCommitFilter();
     // Ask LUA to tell guest to redraw if needed
     cEvtMain->Add(EMC_LUA_REDRAW);
     // Return success
@@ -303,20 +305,20 @@ static class FboMain final :           // The main fbo operations manager
   CVarReturn SetSimpleMatrix(const bool bState)
     { return CVarSimpleSetInt(bSimpleMatrix, bState); }
   /* -- Initialise fbos using a different constructor ---------------------- */
-  FboMain(void) :
+  FboCore(void) :
     /* -- Initialisers ----------------------------------------------------- */
     fOrthoMinimum(1.0f),               fOrthoMaximum(2.0f),
     fOrthoWidth(0.0f),                 fOrthoHeight(0.0f),
     bDraw(false),                      bSimpleMatrix(false),
     bLockViewport(false),              bClearBuffer(false),
-    fboConsole{ GL_RGBA8 },            fboMain{ GL_RGB8 },
+    fboConsole{ GL_RGBA8, true },      fboMain{ GL_RGB8, true },
     dRTFPS(0)
     /* -- Set pointer to main fbo ------------------------------------------ */
     { cFbos->fboMain = &fboMain; }
   /* -- Destructor --------------------------------------------------------- */
-  DTORHELPER(~FboMain, DestroyAllObjectsAndBuiltIns())
+  DTORHELPER(~FboCore, DestroyAllObjectsAndBuiltIns())
   /* -- FboCore::End ------------------------------------------------------- */
-} *cFboMain = nullptr;                 // Pointer to static class
+} *cFboCore = nullptr;                 // Pointer to static class
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */

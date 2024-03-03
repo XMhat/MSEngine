@@ -1,0 +1,242 @@
+/* == PARSER.HPP =========================================================== **
+** ######################################################################### **
+** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
+** ######################################################################### **
+** ## This class will take a string and split it into tokens seperated by ## **
+** ## the specified delimiter and split again into sorted key/value pairs ## **
+** ## for fast access by key name.                                        ## **
+** ######################################################################### **
+** ========================================================================= */
+#pragma once                           // Only one incursion allowed
+/* ------------------------------------------------------------------------- */
+namespace IParser {                    // Start of private module namespace
+/* ------------------------------------------------------------------------- */
+using namespace IError::P;             using namespace IStd::P;
+using namespace IString::P;
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
+/* -- Parser class --------------------------------------------------------- */
+template<class ParserMapType,
+         class ParserMapTypeIterator = typename ParserMapType::const_iterator>
+  class ParserBase :
+  /* -- Base classes ------------------------------------------------------- */
+  public ParserMapType                   // Derive by specified map type
+{ /* -- Initialise entries from a string ----------------------------------- */
+  void ParserDoInit(const string &strS, const string &strLS,
+    const char cDelimiter)
+  { // Ignore if any of the variables are empty
+    if(strS.empty() || strLS.empty()) return;
+    // Location of next separator
+    size_t stStart = 0;
+    // Until eof, push each item split into list
+    for(size_t stLoc; (stLoc = strS.find(strLS, stStart)) != string::npos;
+                     stStart = stLoc + strLS.length())
+      ParserPushLine(strS, stStart, stLoc, cDelimiter);
+    // Push remainder of string if available
+    ParserPushLine(strS, stStart, strS.length(), cDelimiter);
+  }
+  /* --------------------------------------------------------------- */ public:
+  void ParserPushPair(const string &strKey, const string &strValue)
+    { this->insert({ strKey, strValue }); }
+  void ParserPushPair(const string &strKey, string &&strValue)
+    { this->insert({ strKey, StdMove(strValue) }); }
+  void ParserPushPair(const string &strKey, const string_view &strValue)
+    { this->insert({ strKey, { strValue.data(), strValue.size() } }); }
+  void ParserPushPair(string &&strKey, const string &strValue)
+    { this->insert({ StdMove(strKey), strValue }); }
+  void ParserPushPair(string &&strKey, string &&strValue)
+    { this->insert({ StdMove(strKey), StdMove(strValue) }); }
+  /* -- Insert new key if we don't have it --------------------------------- */
+  void ParserPushIfNotExist(const string &strKey, const string &strValue)
+    { if(this->find(strKey) == this->end())
+        ParserPushPair(strKey, strValue); }
+  void ParserPushIfNotExist(const string &strKey, const string_view &strvValue)
+    { if(this->find(strKey) == this->end())
+        ParserPushPair(strKey, strvValue); }
+  void ParserPushIfNotExist(string &&strKey, const string &strValue)
+    { if(this->find(strKey) == this->end())
+        ParserPushPair(StdMove(strKey), strValue); }
+  void ParserPushIfNotExist(const string &strKey, string &&strValue)
+    { if(this->find(strKey) == this->end())
+        ParserPushPair(strKey, StdMove(strValue)); }
+  void ParserPushIfNotExist(string &&strKey, string &&strValue)
+    { if(this->find(strKey) == this->end())
+        ParserPushPair(StdMove(strKey), StdMove(strValue)); }
+  /* -- Direct conditional access ---------------------------------------- */
+  operator bool(void) const { return !this->empty(); }
+  /* -- Value access by key name ------------------------------------------- */
+  const string &ParserGet(const string &strKey) const
+  { // Find key and return empty string or value
+    const ParserMapTypeIterator pmtiIt{ this->find(strKey) };
+    if(pmtiIt != this->end()) return pmtiIt->second;
+    XC("No such key in table!", "Key", strKey, "Count", this->size());
+  }
+  /* -- Value access by key name ------------------------------------------- */
+  const string ParserGetAndRemove(const string &strKey)
+  { // Find key and throw error if not found
+    const ParserMapTypeIterator pmtiIt{ this->find(strKey) };
+    if(pmtiIt == this->end())
+      XC("No such key in table!", "Key", strKey, "Count", this->size());
+    // Move the string into a temp var, erase it and return the string
+    const string strOut{ StdMove(pmtiIt->second) };
+    this->erase(pmtiIt->second);
+    return strOut;
+  }
+  /* -- Converts the variables to a string --------------------------------- */
+  const string ParserImplodeEx(const string &strSep,
+    const string &strSuf) const
+  { // String to return
+    ostringstream osS;
+    // For each key/value pair, implode it into a string
+    for(const auto &aIt : *this)
+      osS << aIt.first << strSep << aIt.second << strSuf;
+    // Return what we created
+    return osS.str();
+  }
+  /* ----------------------------------------------------------------------- */
+  void ParserPushLine(const string &strS, const size_t stSegStart,
+    const size_t stSegEnd, const char cDelimiter)
+  { // Look for separator and if found?
+    const size_t stSepLoc =
+      StrFindCharForwards(strS, stSegStart, stSegEnd, cDelimiter);
+    if(stSepLoc != string::npos)
+    { // Find start of keyname and if found?
+      const size_t stKeyStart =
+        StrFindCharNotForwards(strS, stSegStart, stSepLoc);
+      if(stKeyStart != string::npos)
+      { // Find end of keyname and if found?
+        const size_t stKeyEnd =
+          StrFindCharNotBackwards(strS, stSepLoc-1, stSegStart);
+        if(stKeyEnd != string::npos)
+        { // Find start of value name and if found?
+          const size_t stValStart =
+            StrFindCharNotForwards(strS, stSepLoc+1, stSegEnd);
+          if(stValStart != string::npos)
+          { // Find end of value name and if found? We can grab key/value
+            const size_t stValEnd =
+              StrFindCharNotBackwards(strS, stSegEnd-1, stValStart);
+            if(stValEnd != string::npos)
+              return ParserPushPair(
+                StdMove(strS.substr(stKeyStart, stKeyEnd-stKeyStart+1)),
+                StdMove(strS.substr(stValStart, stValEnd-stValStart+1)));
+          } // Could not prune suffixed whitespaces on value.
+        }  // Could not prune prefixed whitespaces on value.
+      }  // Could not prune suffixed whitespaces on key.
+    } // Could not prune prefixed whitespaces on key. Add full value for debug
+    return ParserPushPair(StrAppend('\255', this->size()),
+      StdMove(strS.substr(stSegStart, stSegEnd-stSegStart)));
+  }
+  /* -- Initialise or add entries from a string ---------------------------- */
+  void ParserReInit(const string &strS, const string &strLS,
+    const char cDelimiter)
+      { this->clear(); ParserDoInit(strS, strLS, cDelimiter); }
+  /* -- Initialise or add entries from a string ---------------------------- */
+  ParserBase(const string &strS, const string &strLS, const char cDelimiter)
+    { ParserDoInit(strS, strLS, cDelimiter); }
+  /* -- Move constructor --------------------------------------------------- */
+  ParserBase(ParserBase &&pbOther) :   // Other Parser class to move from
+    /* -- Initialisers ----------------------------------------------------- */
+    ParserMapType{ StdMove(pbOther) }  // Initialise moving vars
+    /* -- No code ---------------------------------------------------------- */
+    { }
+  /* -- Constructor -------------------------------------------------------- */
+  ParserBase(void) { }
+  /* ----------------------------------------------------------------------- */
+  DELETECOPYCTORS(ParserBase)          // Disable copy constructor/operator
+}; /* -- A Parser class where the values can be modified ------------------- */
+template<class ParserBaseType = ParserBase<StrNCStrMap>>struct Parser :
+  /* -- Base classes ------------------------------------------------------- */
+  public ParserBaseType                // Base non-const type
+{ /* ----------------------------------------------------------------------- */
+  void ParserPushOrUpdatePair(const string &strKey, const string &strValue)
+  { // Find key and if it exists, just update the value else insert a new one
+    const StrNCStrMapIt sncsmiIt{ this->find(strKey) };
+    if(sncsmiIt != this->end()) sncsmiIt->second = strValue;
+    else this->ParserPushPair(strKey, strValue);
+  }
+  /* -- Try to move key but copy value ------------------------------------- */
+  void ParserPushOrUpdatePair(string &&strKey, const string &strValue)
+  { const StrNCStrMapIt sncsmiIt{ this->find(strKey) };
+    if(sncsmiIt != this->end()) sncsmiIt->second = strValue;
+    else this->ParserPushPair(StdMove(strKey), strValue);
+  }
+  /* -- Try to move value but copy key ------------------------------------- */
+  void ParserPushOrUpdatePair(const string &strKey, string &&strValue)
+  { const StrNCStrMapIt sncsmiIt{ this->find(strKey) };
+    if(sncsmiIt != this->end()) sncsmiIt->second = StdMove(strValue);
+    else this->ParserPushPair(strKey, StdMove(strValue));
+  }
+  /* -- Try to move key and value ------------------------------------------ */
+  void ParserPushOrUpdatePair(string &&strKey, string &&strValue)
+  { const StrNCStrMapIt sncsmiIt{ this->find(strKey) };
+    if(sncsmiIt != this->end()) sncsmiIt->second = StdMove(strValue);
+    else this->ParserPushPair(StdMove(strKey), StdMove(strValue));
+  }
+  /* ----------------------------------------------------------------------- */
+  void ParserPushOrUpdatePairs(const StrPairList &splValues)
+  { // Add each value that was sent
+    for(const StrPair &spKeyValue : splValues)
+      this->ParserPushOrUpdatePair(StdMove(spKeyValue.first),
+        StdMove(spKeyValue.second));
+  }
+  /* -- Extracts and deletes the specified key pair ------------------------ */
+  const string Extract(const string &strKey)
+  { // Find key and return empty string if not found
+    const StrNCStrMapIt sncsmiIt{ this->find(strKey) };
+    if(sncsmiIt == this->end()) return {};
+    // Take ownership of the string (faster than copy)
+    const string strOut{ StdMove(sncsmiIt->second) };
+    // Erase keypair
+    this->erase(sncsmiIt);
+    // Return the value
+    return strOut;
+  } /* -- Constructor ------------------------------------------------------ */
+  Parser(void) { }
+  /* -- MOVE assignment constructor ---------------------------------------- */
+  Parser(Parser &&pOther) :            // Other Parser class to move from
+    /* -- Initialisers ----------------------------------------------------- */
+    ParserBaseType{ StdMove(pOther) }  // Initialise moving vars
+    /* -- No code ---------------------------------------------------------- */
+    { }
+  /* -- Constructor -------------------------------------------------------- */
+  Parser(const string &strS,           // String to explode
+       const string &strLS,            // ...Record (line) separator
+       const char cDelimiter) :        // ...Key/value separator
+    /* -- Initialisers ----------------------------------------------------- */
+    ParserBaseType{ strS,              // Initialise string to explode
+                    strLS,             // Initialise record (line) separator
+                    cDelimiter }       // Initialise key/value separator
+    /* -- No code ---------------------------------------------------------- */
+    { }
+  /* ----------------------------------------------------------------------- */
+  DELETECOPYCTORS(Parser)              // Disable copy constructor/operator
+};/* -- A Parser class thats values cannot be modified at all -------------- */
+template<class ParserBaseType = const ParserBase<const StrStrMap>>
+  struct ParserConst :
+  /* -- Base classes ------------------------------------------------------- */
+  public ParserBaseType                // The base map type
+{ /* -- Constructor -------------------------------------------------------- */
+  ParserConst(void) { }
+  /* -- MOVE assignment constructor ---------------------------------------- */
+  ParserConst(ParserConst &&pcOther) : // Other vars
+    /* -- Initialisers ----------------------------------------------------- */
+    ParserBaseType{ StdMove(pcOther) } // Move it over
+    /* -- No code ---------------------------------------------------------- */
+    { }
+  /* -- Constructor -------------------------------------------------------- */
+  ParserConst(const string &strS,      // String to explode
+              const string &strLS,     // ...Record (line) separator
+              const char cDelimiter) : // ...Key/value separator
+    /* -- Initialisers ----------------------------------------------------- */
+    ParserBaseType{ strS,              // Initialise string to explode
+                    strLS,             // Initialise record (line) separator
+                    cDelimiter }       // Initialise key/value separator
+    /* -- No code ---------------------------------------------------------- */
+    { }
+  /* ----------------------------------------------------------------------- */
+  DELETECOPYCTORS(ParserConst)         // Disable copy constructor/operator
+};/* ----------------------------------------------------------------------- */
+}                                      // End of public module namespace
+/* ------------------------------------------------------------------------- */
+}                                      // End of private module namespace
+/* == EoF =========================================================== EoF == */

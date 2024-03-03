@@ -16,13 +16,15 @@ using namespace Lib::OS;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* ------------------------------------------------------------------------- */
-enum class SysThread                   // Thread priority types
+enum SysThread : size_t                // Thread priority types
 { /* ----------------------------------------------------------------------- */
-  Main,                                // Reserved for main thread
-  Engine,                              // Reserved for engine thread
-  Audio,                               // Reserved for audio thread
-  High,                                // Aux thread high priority
-  Low                                  // Aux thread low priority
+  STP_MAIN,                            // Reserved for main thread
+  STP_ENGINE,                          // Reserved for engine thread
+  STP_AUDIO,                           // Reserved for audio thread
+  STP_HIGH,                            // Aux thread high priority
+  STP_LOW,                             // Aux thread low priority
+  /* ----------------------------------------------------------------------- */
+  STP_MAX                              // Maximum number of types
 };/* -- Includes ----------------------------------------------------------- */
 #if defined(WINDOWS)                   // Using windows?
 /* -- System error formatter with specified error code --------------------- */
@@ -33,7 +35,7 @@ static const string SysError(const int iError)
   LPWSTR lpszError = nullptr;
   // Capture exceptions
   try
-  { // StrFormat the system error code and catch result
+  { // Format the system error code and catch result
     switch(const DWORD dwLen = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|
       FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_IGNORE_INSERTS, nullptr,
       dwError, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
@@ -69,7 +71,7 @@ static unsigned int SysMessage(void*const vpHandle, const string &strTitle,
           static_cast<DWORD>(uiFlags), 0)); }
 /* ------------------------------------------------------------------------- */
 static bool SysInitThread(const char*const cpName, const SysThread stLevel)
-{ // Keep bytes aligned
+{ // Keep structure aligned
 #pragma pack(push, 8)
   struct WinDBGThreadData {
     DWORD  dwType;                     // Must be 0x1000.
@@ -83,24 +85,15 @@ static bool SysInitThread(const char*const cpName, const SysThread stLevel)
   __try { RaiseException(0x406D1388, 0,
             sizeof(tInfo)/sizeof(ULONG_PTR), (ULONG_PTR*)&tInfo); }
   __except(EXCEPTION_CONTINUE_EXECUTION) { }
-  // Priority to set
-  int iPriority;
-  // What level was requested?
-  switch(stLevel)
-  { // Reserved for main thread
-    case SysThread::Main: iPriority = THREAD_PRIORITY_ABOVE_NORMAL; break;
-    // Reserved for engine thread
-    case SysThread::Engine: iPriority = THREAD_PRIORITY_HIGHEST; break;
-    // Reserved for audio thread
-    case SysThread::Audio: iPriority = THREAD_PRIORITY_BELOW_NORMAL; break;
-    // Aux thread high priority
-    case SysThread::High: iPriority = THREAD_PRIORITY_NORMAL; break;
-    // Aux thread low priority
-    case SysThread::Low: iPriority = THREAD_PRIORITY_LOWEST; break;
-    // Anything else
-    default: return false;
-  } // Set thread priorty and return result
-  return !!SetThreadPriority(GetCurrentThread(), iPriority);
+  // STP_* id to priority lookup table
+  static const array<const int, STP_MAX> aValues{
+    THREAD_PRIORITY_ABOVE_NORMAL,      // STP_MAIN
+    THREAD_PRIORITY_HIGHEST,           // STP_ENGINE
+    THREAD_PRIORITY_BELOW_NORMAL,      // STP_AUDIO
+    THREAD_PRIORITY_NORMAL,            // STP_HIGH
+    THREAD_PRIORITY_LOWEST,            // STP_LOW
+  }; // Set thread priorty and return result
+  return !!SetThreadPriority(GetCurrentThread(), aValues[stLevel]);
 }
 /* ------------------------------------------------------------------------- */
 #elif defined(MACOS)                   // Using mac?
@@ -207,64 +200,33 @@ static bool SysInitThread(const char*const cpName, const SysThread stLevel)
   // Set thread name
   pthread_setname_np(cpName);
   // Set qos
-  pthread_set_qos_class_self_np(stLevel <= SysThread::Engine ?
+  pthread_set_qos_class_self_np(stLevel <= STP_ENGINE ?
     QOS_CLASS_USER_INTERACTIVE : QOS_CLASS_BACKGROUND, 0);
+  // Get requested thread policy level and priority fraction adjustment
+  static const array<const float, STP_MAX>
+    aValues{ 0.75 /* STP_MAIN */, 1.00 /* STP_ENGINE */, 0.50 /* STP_AUDIO */,
+             0.25 /* STP_HIGH */, 0.00 /* STP_LOW */ };
+  const float fFraction = aValues[stLevel];
+  // Use round-robin policy
+  const int iPolicy = SCHED_RR;
+  // Get min and max priority for policy and the valid range. On MacOS this
+  // range is 15-47 and on Linux (Ubuntu at least) it is 1-99.
+  const float fMin = static_cast<float>(sched_get_priority_min(iPolicy)),
+              fMax = static_cast<float>(sched_get_priority_max(iPolicy));
+  // Calculate the priority by fractioning the range
+  struct sched_param spParam{
+    static_cast<int>(floorf(fMax - ((fMax - fMin) * fFraction))),
+    { }                                // __opaque (MacOS only)
+  };
+  // Set the new parameters and return true if succeeded
+  return !pthread_setschedparam(ptHandle, iPolicy, &spParam);
   // Using Linux?
 #else
   // Set thread name
   pthread_setname_np(ptHandle, cpName);
+  // Done pthread_setschedparam() is pointless on Linux.
+  return true;
 #endif
-  // Container for current scheduler parameters
-  struct sched_param spParam;
-  // Container for current policy level
-  int iPolicy;
-  // Get current thread settings
-  if(pthread_getschedparam(ptHandle, &iPolicy, &spParam)) return false;
-  // Get bounds
-  const int iMinPriority = sched_get_priority_min(iPolicy),
-            iMaxPriority = sched_get_priority_max(iPolicy);
-  // What level was requested?
-  switch(stLevel)
-  { // Reserved for main thread
-    case SysThread::Main:
-      // Use high priority parameters
-      spParam.sched_priority = iMinPriority+1;
-      iPolicy = SCHED_RR;
-      // Done
-      break;
-    // Reserved for engine thread
-    case SysThread::Engine:
-      // Use high priority parameters
-      spParam.sched_priority = iMinPriority;
-      iPolicy = SCHED_RR;
-      // Done
-      break;
-    // Reserved for audio thread
-    case SysThread::Audio:
-      // Use high priority parameters
-      spParam.sched_priority = iMinPriority+2;
-      iPolicy = SCHED_RR;
-      // Done
-      break;
-    // Aux thread high priority
-    case SysThread::High:
-      // Use high priority parameters
-      spParam.sched_priority = iMinPriority+3;
-      iPolicy = SCHED_RR;
-      // Done
-      break;
-    // Aux thread low priority
-    case SysThread::Low:
-      // Use high priority parameters
-      spParam.sched_priority = iMaxPriority;
-      iPolicy = SCHED_OTHER;
-      // Done
-      break;
-  } // Clamp the value
-  spParam.sched_priority =
-    UtilClamp(spParam.sched_priority, iMinPriority, iMaxPriority);
-  // Set the new parameters and return true if succeeded
-  return !pthread_setschedparam(ptHandle, iPolicy, &spParam);
 }
 /* -- System message without a handle -------------------------------------- */
 static unsigned int SysMessage(const string &strTitle,

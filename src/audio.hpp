@@ -25,7 +25,7 @@ namespace P {                          // Start of public module namespace
 BUILD_FLAGS(Audio,                     // Audio flags classes
   /* ----------------------------------------------------------------------- */
   // No settings?                      Audio system is resetting?
-  AF_NONE                {0x00000000}, AF_REINIT              {0x00000001}
+  AF_NONE                   {Flag[0]}, AF_REINIT                 {Flag[1]}
 );/* ======================================================================= */
 static class Audio final :             // Audio manager class
   /* -- Base classes ------------------------------------------------------- */
@@ -189,7 +189,7 @@ static class Audio final :             // Audio manager class
     EnumeratePlaybackDevices();
     EnumerateCaptureDevices();
     // Set device and override if requested
-    size_t stDevice = cCVars->GetInternalSafe<size_t>(AUD_INTERFACE);
+    size_t stDevice = cCVars->GetInternal<size_t>(AUD_INTERFACE);
     // Holding current device name
     string strDevice;
     // If -1 is not set (use specific device)
@@ -215,7 +215,7 @@ static class Audio final :             // Audio manager class
         XC("Failed to open al device!",
            "Identifier", strDevice, "Index", stDevice);
     } // Reopen the device to disable HRTF
-    if(!cCVars->GetInternalSafe<bool>(AUD_HRTF) && !cOal->DisableHRTF())
+    if(!cOal->SetHRTF(cCVars->GetInternal<bool>(AUD_HRTF)))
       XC("Audio failed to reconfigure al device!",
          "Identifier", strDevice, "Index", stDevice);
     // Create the context
@@ -225,7 +225,7 @@ static class Audio final :             // Audio manager class
     // Have the context
     cOal->Init();
     // Allocate sources data
-    SourceAlloc(cCVars->GetInternalSafe<ALuint>(AUD_NUMSOURCES));
+    SourceAlloc(cCVars->GetInternal<ALuint>(AUD_NUMSOURCES));
     // Register engine events
     cEvtMain->Register(EMC_AUD_REINIT, bind(&Audio::OnReInit, this, _1));
     // Set parameters and check for errors
@@ -433,8 +433,7 @@ static class Audio final :             // Audio manager class
     /* -- Initialisers ----------------------------------------------------- */
     IHelper{ __FUNCTION__ },           // Initialise class name
     AudioFlags{ AF_NONE },             // Initialise no audio flags
-    Thread{ "audio",                   // Initialise thread name
-      SysThread::Audio,                // " high performance thread
+    Thread{ "audio", STP_AUDIO,        // Initialise high perf audio thread
       bind(&Audio::AudioThreadMain,    // " with reference to callback
         this, _1) },                   // " function
     cdCheckRate{ seconds{ 0 } }        // Initialise thread check time

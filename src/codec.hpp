@@ -17,7 +17,7 @@ using namespace Lib::OS::ZLib;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* ------------------------------------------------------------------------- */
-enum EncMode                           // Encoding flags (DONT REORDER!!!)
+enum EncMode : unsigned int            // Encoding flags (DONT REORDER!!!)
 { /* ----------------------------------------------------------------------- */
   ENCMODE_RAW,                         // Raw format (Copy)
   ENCMODE_AES,                         // Encrypted with AES (openssl)
@@ -58,7 +58,7 @@ class EncData                          // Encoded data returned by callback
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* -- Magic block header data -------------------------------------------- */
-enum Header                            // Buffer header integer location flags
+enum Header : unsigned long            // Buffer header integer location flags
 { /* ----------------------------------------------------------------------- */
   ENCHDR_MAGIC           = 0x1A43444D, // Magic (MDC[esc])
   ENCHDR_VERSION         =          1, // Structure version
@@ -72,7 +72,7 @@ enum Header                            // Buffer header integer location flags
   /* ----------------------------------------------------------------------- */
   ENCHDR_SIZE            =         24, // Size of compressed block header
 };/* ----------------------------------------------------------------------- */
-static const EncData CodecEncodeAES(const DataConst &dIn, Memory &aOut,
+static const EncData CodecEncodeAES(const MemConst &mcSrc, Memory &mDest,
   const size_t, const Crypt::QPKey &qaKey, const Crypt::QIVKey &qaIV,
   const size_t stPos)
 { // Unique ptr type to free the cipher context
@@ -93,10 +93,10 @@ static const EncData CodecEncodeAES(const DataConst &dIn, Memory &aOut,
       EVP_aes_256_cbc(), nullptr, ucpKey, ucpIV) != 1)
         XC("Encrypt init failed!");
     // In and out length and buffer typecast to required types
-    const int iInLen = static_cast<int>(dIn.Size());
-    int iOutLen = static_cast<int>(aOut.Size());
-    const unsigned char*const ucpIn = dIn.Ptr<unsigned char>();
-    unsigned char*const ucpOut = aOut.Read<unsigned char>(stPos);
+    const int iInLen = static_cast<int>(mcSrc.MemSize());
+    int iOutLen = static_cast<int>(mDest.MemSize());
+    const unsigned char*const ucpIn = mcSrc.MemPtr<unsigned char>();
+    unsigned char*const ucpOut = mDest.MemRead<unsigned char>(stPos);
     // Provide the message to be encrypted, and obtain the encrypted
     // output. EVP_EncryptUpdate can be called multiple times if necessary
     // Also, save the amount of bytes that were initially written
@@ -111,7 +111,7 @@ static const EncData CodecEncodeAES(const DataConst &dIn, Memory &aOut,
     // Add to written bytes
     stWrote += static_cast<size_t>(iOutLen);
     // Success
-    return { ENCMODE_AES, dIn.Size(), stWrote, 0 };
+    return { ENCMODE_AES, mcSrc.MemSize(), stWrote, 0 };
   } // Context creation failed!
   else XC("Failed to create encode cipher context!");
 }
@@ -119,11 +119,11 @@ static const EncData CodecEncodeAES(const DataConst &dIn, Memory &aOut,
 static size_t CodecGetAES256CBCSize(void)
   { return static_cast<size_t>(EVP_CIPHER_block_size(EVP_aes_256_cbc())); }
 /* ------------------------------------------------------------------------- */
-static void CodecDecodeAES(const DataConst &dIn, Memory &aOut,
+static void CodecDecodeAES(const MemConst &mcSrc, Memory &mDest,
   const size_t stPos, const size_t stIn, const size_t stOut,
   const Crypt::QPKey &qaKey, const Crypt::QIVKey &qaIV)
 { // Create output
-  aOut.Resize(stOut + CodecGetAES256CBCSize());
+  mDest.MemResize(stOut + CodecGetAES256CBCSize());
   // Unique ptr type to free the cipher context
   typedef unique_ptr<EVP_CIPHER_CTX,
     function<decltype(EVP_CIPHER_CTX_free)>> EvpPtr;
@@ -144,8 +144,9 @@ static void CodecDecodeAES(const DataConst &dIn, Memory &aOut,
     // In and out length and buffer typecast to required types
     const int iInLen = static_cast<int>(stIn);
     int iOutLen = static_cast<int>(stOut);
-    const unsigned char*const ucpIn = dIn.Read<unsigned char>(stPos, stIn);
-    unsigned char*const ucpOut = aOut.Ptr<unsigned char>();
+    const unsigned char*const ucpIn =
+      mcSrc.MemRead<unsigned char>(stPos, stIn);
+    unsigned char*const ucpOut = mDest.MemPtr<unsigned char>();
     // Provide the message to be decrypted, and obtain the encrypted
     // output. EVP_EncryptUpdate can be called multiple times if
     // necessary
@@ -160,7 +161,7 @@ static void CodecDecodeAES(const DataConst &dIn, Memory &aOut,
     // Add to written bytes
     stWrote += static_cast<size_t>(iOutLen);
     // Resize to actual uncompressed size
-    aOut.Resize(stWrote);
+    mDest.MemResize(stWrote);
   } // Context creation failed!
   else XC("Failed to decode create cipher context!");
 }
@@ -200,24 +201,25 @@ static const char *CodecGetZLIBErrString(const int iCode)
 }
 /* ------------------------------------------------------------------------- */
 static const EncData CodecEncodeAESCompressed(const EncMode eOverrideMode,
-  const EncData &encCompressedData, Memory &aOut, const size_t stLevel,
+  const EncData &encCompressedData, Memory &mDest, const size_t stLevel,
   const Crypt::QPKey &qaKey, const Crypt::QIVKey &qaIV, const size_t stPos)
 { // Resize to fit the amount of compressed and extra data
-  aOut.Resize(sizeof(uint32_t) +
+  mDest.MemResize(sizeof(uint32_t) +
     encCompressedData.GetCompressed() +
     encCompressedData.GetExtra());
   // Store the size of the uncompressed block. The size of the compressed block
   // is already stored as the size of the uncompressed block in the actual
   // header.
-  aOut.WriteIntLE<uint32_t>
+  mDest.MemWriteIntLE<uint32_t>
     (static_cast<uint32_t>(encCompressedData.GetUncompressed()));
   // Discord compressed block and replace with encrypted block (dirty but meh)
-  const Memory aCompressed{ StdMove(aOut) };
+  const Memory aCompressed{ StdMove(mDest) };
   // Resize the output block with enough memory for encrypting
-  aOut.Resize(ENCHDR_SIZE + aCompressed.Size() + CodecGetAES256CBCSize());
+  mDest.MemResize(ENCHDR_SIZE +
+    aCompressed.MemSize() + CodecGetAES256CBCSize());
   // Encrypt data and get result
   const EncData encEncryptedData{
-    CodecEncodeAES(aCompressed, aOut, stLevel, qaKey, qaIV, stPos) };
+    CodecEncodeAES(aCompressed, mDest, stLevel, qaKey, qaIV, stPos) };
   // Return data with original extra bytes value
   return { eOverrideMode,
            encCompressedData.GetUncompressed(),
@@ -225,17 +227,17 @@ static const EncData CodecEncodeAESCompressed(const EncMode eOverrideMode,
            encCompressedData.GetExtra() };
 }
 /* ------------------------------------------------------------------------- */
-static const EncData CodecEncodeZLIB(const DataConst &dIn, Memory &aOut,
+static const EncData CodecEncodeZLIB(const MemConst &mcSrc, Memory &mDest,
   const size_t stLevel, const size_t stPos)
 { // Input address and size, check the size
-  const Bytef*const ucpSrc = dIn.Ptr<Bytef>();
-  const uLong ulSrc = dIn.Size<uLong>();
-  if(static_cast<size_t>(ulSrc) != dIn.Size())
+  const Bytef*const ucpSrc = mcSrc.MemPtr<Bytef>();
+  const uLong ulSrc = mcSrc.MemSize<uLong>();
+  if(static_cast<size_t>(ulSrc) != mcSrc.MemSize())
     XC("Input size not valid to deflate from memory!",
-       "InputSizeExternal", dIn.Size(), "InputSizeInternal", ulSrc);
+       "InputSizeExternal", mcSrc.MemSize(), "InputSizeInternal", ulSrc);
   // Output address and size, check the size
-  const size_t stOut = aOut.Size() - stPos;
-  Bytef*const ucpDest = aOut.Read<Bytef>(stPos);
+  const size_t stOut = mDest.MemSize() - stPos;
+  Bytef*const ucpDest = mDest.MemRead<Bytef>(stPos);
   uLongf ulDest = static_cast<uLongf>(stOut);
   if(static_cast<size_t>(ulDest) != stOut)
     XC("Output size not valid to deflate from memory!",
@@ -253,69 +255,69 @@ static const EncData CodecEncodeZLIB(const DataConst &dIn, Memory &aOut,
       "OutputSizeIn", stOut, "OutputSizeOut", ulDest,
       "Level",        stLevel);
   } // Return what we did to the encoder manager
-  return { ENCMODE_DEFLATE, dIn.Size(), ulDest, 0 };
+  return { ENCMODE_DEFLATE, mcSrc.MemSize(), ulDest, 0 };
 }
 /* ------------------------------------------------------------------------- */
-static const EncData CodecEncodeAESZLIB(const DataConst &dIn, Memory &aOut,
+static const EncData CodecEncodeAESZLIB(const MemConst &mcSrc, Memory &mDest,
   const size_t stLevel, const Crypt::QPKey &qaKey, const Crypt::QIVKey &qaIV,
   const size_t stPos)
 { // Create memory for compressed data
-  aOut.Resize(dIn.Size() + sizeof(uint32_t) +
-    static_cast<size_t>(ceil(dIn.Size() * 0.001)) + 12);
+  mDest.MemResize(mcSrc.MemSize() + sizeof(uint32_t) +
+    static_cast<size_t>(ceil(mcSrc.MemSize() * 0.001)) + 12);
   // Compress then prepare and encode the compressed data
   return CodecEncodeAESCompressed(ENCMODE_ZLIBAES,
-    CodecEncodeZLIB(dIn, aOut, stLevel, sizeof(uint32_t)),
-      aOut, stLevel, qaKey, qaIV, stPos);
+    CodecEncodeZLIB(mcSrc, mDest, stLevel, sizeof(uint32_t)),
+      mDest, stLevel, qaKey, qaIV, stPos);
 }
 /* ------------------------------------------------------------------------- */
-static const EncData CodecEncodeLZMA(const DataConst &dIn, Memory &aOut,
+static const EncData CodecEncodeLZMA(const MemConst &mcSrc, Memory &mDest,
   const size_t stLevel, const size_t stPos)
 { // For the next function
-  size_t stOutLen = dIn.Size(), stPropLen = 5;
+  size_t stOutLen = mcSrc.MemSize(), stPropLen = 5;
   // Do compress with default parameters, return failure code if fails
   const int iResult = LzmaCompress(
-    (aOut.Read<unsigned char>(stPos + stPropLen)),
-    &stOutLen, dIn.Ptr<unsigned char>(), dIn.Size(),
-    (aOut.Read<unsigned char>(stPos)), &stPropLen,
+    (mDest.MemRead<unsigned char>(stPos + stPropLen)),
+    &stOutLen, mcSrc.MemPtr<unsigned char>(), mcSrc.MemSize(),
+    (mDest.MemRead<unsigned char>(stPos)), &stPropLen,
     static_cast<int>(stLevel), 0, -1, -1, -1, -1, -1);
   if(iResult != SZ_OK)
     XC("Compress failed!",
        "Reason", CodecGetLzmaErrString(iResult), "Code", iResult);
   // Return what we did
-  return { ENCMODE_LZMA, dIn.Size(), stOutLen, stPropLen };
+  return { ENCMODE_LZMA, mcSrc.MemSize(), stOutLen, stPropLen };
 }
 /* ------------------------------------------------------------------------- */
-static const EncData CodecEncodeAESLZMA(const DataConst &dIn, Memory &aOut,
+static const EncData CodecEncodeAESLZMA(const MemConst &mcSrc, Memory &mDest,
   const size_t stLevel, const Crypt::QPKey &qaKey, const Crypt::QIVKey &qaIV,
   const size_t stPos)
 { // Create memory for compressed data
-  aOut.Resize(dIn.Size() + sizeof(uint32_t) + 5);
+  mDest.MemResize(mcSrc.MemSize() + sizeof(uint32_t) + 5);
   // Compress then prepare and encode the compressed data
   return CodecEncodeAESCompressed(ENCMODE_LZMAAES,
-    CodecEncodeLZMA(dIn, aOut, stLevel, sizeof(uint32_t)),
-      aOut, stLevel, qaKey, qaIV, stPos);
+    CodecEncodeLZMA(mcSrc, mDest, stLevel, sizeof(uint32_t)),
+      mDest, stLevel, qaKey, qaIV, stPos);
 }
 /* ------------------------------------------------------------------------- */
-static const EncData CodecEncodeRAW(const DataConst &dIn, Memory &aOut,
+static const EncData CodecEncodeRAW(const MemConst &mcSrc, Memory &mDest,
   const size_t, const size_t stPos)
 { // Copy the block over into the new one
-  aOut.WriteBlock(stPos, dIn);
+  mDest.MemWriteBlock(stPos, mcSrc);
   // Return what we did
-  return { ENCMODE_RAW, dIn.Size(), dIn.Size(), 0 };
+  return { ENCMODE_RAW, mcSrc.MemSize(), mcSrc.MemSize(), 0 };
 }
 /* ------------------------------------------------------------------------- */
-static void CodecDecodeZLIB(const DataConst &dIn, Memory &aOut,
+static void CodecDecodeZLIB(const MemConst &mcSrc, Memory &mDest,
   const size_t stPos, const size_t stIn, const size_t stOut)
 { // Prepare and check source parameters and make sure source valid for ulong
-  const Bytef*const ucpSrc = dIn.Read<Bytef>(stPos);
+  const Bytef*const ucpSrc = mcSrc.MemRead<Bytef>(stPos);
   const uLongf ulSrc = static_cast<uLongf>(stIn);
   if(static_cast<size_t>(ulSrc) != stIn)
     XC("Input size not valid to inflate from memory!",
        "InputSizeExternal", stIn, "InputSizeInternal", ulSrc);
   // Allocate buffer for output
-  aOut.Resize(stOut);
+  mDest.MemResize(stOut);
   // Prepare and check dest parameters and make sure dest valid for ulong
-  Bytef*const ucpDest = aOut.Ptr<Bytef>();
+  Bytef*const ucpDest = mDest.MemPtr<Bytef>();
   uLongf ulDest = static_cast<uLongf>(stOut);
   if(static_cast<size_t>(ulDest) != stOut)
     XC("Output size not valid to inflate from memory!",
@@ -331,84 +333,85 @@ static void CodecDecodeZLIB(const DataConst &dIn, Memory &aOut,
       "InputSize",    ulSrc, "Output",        ucpDest,
       "OutputSizeIn", stOut, "OutputSizeOut", ulDest);
   } // Resize to actual uncompressed size
-  aOut.Resize(ulDest);
+  mDest.MemResize(ulDest);
 }
 /* ------------------------------------------------------------------------- */
-static void CodecDecodeAESZLIB(const DataConst &dIn, Memory &aOut,
+static void CodecDecodeAESZLIB(const MemConst &mcSrc, Memory &mDest,
   const size_t stPos, const size_t stIn, const size_t stOut,
   const Crypt::QPKey &qaKey, const Crypt::QIVKey &qaIV)
 { // First decode the
-  CodecDecodeAES(dIn, aOut, stPos, stIn, stOut, qaKey, qaIV);
+  CodecDecodeAES(mcSrc, mDest, stPos, stIn, stOut, qaKey, qaIV);
   // Grab size of compressed block
   const size_t stUncompressed =
-    static_cast<size_t>(aOut.ReadIntLE<uint32_t>());
+    static_cast<size_t>(mDest.ReadIntLE<uint32_t>());
   // Move memory
-  const Memory mIn{ StdMove(aOut) };
+  const Memory mIn{ StdMove(mDest) };
   // Decompress the block now from the start
-  CodecDecodeZLIB(mIn, aOut, sizeof(uint32_t),
-    dIn.Size()-sizeof(uint32_t), stUncompressed);
+  CodecDecodeZLIB(mIn, mDest, sizeof(uint32_t),
+    mcSrc.MemSize()-sizeof(uint32_t), stUncompressed);
 }
 /* ------------------------------------------------------------------------- */
-static void CodecDecodeLZMA(const DataConst &dIn, Memory &aOut,
+static void CodecDecodeLZMA(const MemConst &mcSrc, Memory &mDest,
   const size_t stPos, size_t stIn, size_t stOut, const size_t stExtra)
 { // Create output
-  aOut.Resize(stOut);
+  mDest.MemResize(stOut);
   // For decompress and return success or failure
   switch(const int iR = LzmaUncompress(
-    aOut.Ptr<unsigned char>(),                &stOut,
-    dIn.Read<unsigned char>(stPos + stExtra), &stIn,
-    dIn.Read<unsigned char>(stPos),            stExtra))
+    mDest.MemPtr<unsigned char>(),                 &stOut,
+    mcSrc.MemRead<unsigned char>(stPos + stExtra), &stIn,
+    mcSrc.MemRead<unsigned char>(stPos),            stExtra))
   { // Succeeded!
     case SZ_OK: break;
     // Failed!
     default: XC("Decompress failed!",
       "Reason",      CodecGetLzmaErrString(iR),
-      "Code",        iR,          "Position",    stPos,
-      "SrcTotalIn",  dIn.Size(),  "SrcDataIn",   stIn,
-      "DestTotalIn", aOut.Size(), "DestDataOut", stOut,
+      "Code",        iR,              "Position",    stPos,
+      "SrcTotalIn",  mcSrc.MemSize(), "SrcDataIn",   stIn,
+      "DestTotalIn", mDest.MemSize(), "DestDataOut", stOut,
       "ExSize",      stExtra);
   } // Resize to actual uncompressed size
-  aOut.Resize(stOut);
+  mDest.MemResize(stOut);
 }
 /* ------------------------------------------------------------------------- */
-static void CodecDecodeAESLZMA(const DataConst &dIn, Memory &aOut,
+static void CodecDecodeAESLZMA(const MemConst &mcSrc, Memory &mDest,
   const size_t stPos, const size_t stIn, const size_t stOut,
   const size_t stExtra, const Crypt::QPKey &qaKey, const Crypt::QIVKey &qaIV)
 { // First decode the
-  CodecDecodeAES(dIn, aOut, stPos, stIn, stOut, qaKey, qaIV);
+  CodecDecodeAES(mcSrc, mDest, stPos, stIn, stOut, qaKey, qaIV);
   // Grab size of compressed block
   const size_t stUncompressed =
-    static_cast<size_t>(aOut.ReadIntLE<uint32_t>());
+    static_cast<size_t>(mDest.ReadIntLE<uint32_t>());
   // Move memory
-  const Memory mIn{ StdMove(aOut) };
+  const Memory mIn{ StdMove(mDest) };
   // Decompress the block now from the start
-  CodecDecodeLZMA(mIn, aOut, sizeof(uint32_t),
-    dIn.Size()-sizeof(uint32_t), stUncompressed, stExtra);
+  CodecDecodeLZMA(mIn, mDest, sizeof(uint32_t),
+    mcSrc.MemSize()-sizeof(uint32_t), stUncompressed, stExtra);
 }
 /* ------------------------------------------------------------------------- */
-static void CodecDecodeRAW(const DataConst &dIn, Memory &aOut,
+static void CodecDecodeRAW(const MemConst &mcSrc, Memory &mDest,
   const size_t stPos, const size_t stIn, const size_t stOut)
 { // Create output
-  aOut.Resize(stOut);
+  mDest.MemResize(stOut);
   // Copy the block
-  aOut.Write(0, dIn.Read(stPos, stIn), stOut);
+  mDest.MemWrite(0, mcSrc.MemRead(stPos, stIn), stOut);
 }
 /* ========================================================================= */
 class CoDecoder :                      // Magic decoder derivative class
   /* -- Base classes ------------------------------------------------------- */
   public Memory                        // Allocated memory block object
 { /* ----------------------------------------------------------------------- */
-  void DecodeV1(const DataConst &dIn)
+  void DecodeV1(const MemConst &mcSrc)
   { // Read compressed data length
-    const size_t stCBLen = dIn.ReadIntLE<uint32_t>(ENCHDR_POS_CBLEN);
+    const size_t stCBLen = mcSrc.ReadIntLE<uint32_t>(ENCHDR_POS_CBLEN);
     // Read extra data length
-    const size_t stXLen = dIn.ReadIntLE<uint32_t>(ENCHDR_POS_XLEN);
+    const size_t stXLen = mcSrc.ReadIntLE<uint32_t>(ENCHDR_POS_XLEN);
     // Calculate and test expected length of input
     const size_t stExpect = ENCHDR_SIZE + stXLen + stCBLen;
-    if(dIn.Size() != stExpect)
-      XC("Invalid data length!", "Expect", stExpect, "Actual", dIn.Size());
+    if(mcSrc.MemSize() != stExpect)
+      XC("Invalid data length!",
+         "Expect", stExpect, "Actual", mcSrc.MemSize());
     // Get uncompressed block length
-    const size_t stUBLen = dIn.ReadIntLE<uint32_t>(ENCHDR_POS_UBLEN);
+    const size_t stUBLen = mcSrc.ReadIntLE<uint32_t>(ENCHDR_POS_UBLEN);
     // No compressed block length?
     if(!stCBLen)
     { // No point doing anything if empty
@@ -418,51 +421,51 @@ class CoDecoder :                      // Magic decoder derivative class
           "Compressed", stCBLen, "Uncompressed", stUBLen);
     } // Compare mode and decode as necessary
     switch(const uint32_t ulMode =
-      dIn.ReadIntLE<uint32_t>(ENCHDR_POS_FLAGS))
+      mcSrc.ReadIntLE<uint32_t>(ENCHDR_POS_FLAGS))
     { // Raw (copy)?
       case ENCMODE_RAW:
-        CodecDecodeRAW(dIn, *this, ENCHDR_SIZE, stCBLen, stUBLen);
+        CodecDecodeRAW(mcSrc, *this, ENCHDR_SIZE, stCBLen, stUBLen);
         break;
       // Decompress (lzma)?
       case ENCMODE_LZMA:
-        CodecDecodeLZMA(dIn, *this, ENCHDR_SIZE, stCBLen, stUBLen, stXLen);
+        CodecDecodeLZMA(mcSrc, *this, ENCHDR_SIZE, stCBLen, stUBLen, stXLen);
         break;
       // Inflate (zlib)?
       case ENCMODE_DEFLATE:
-        CodecDecodeZLIB(dIn, *this, ENCHDR_SIZE, stCBLen, stUBLen);
+        CodecDecodeZLIB(mcSrc, *this, ENCHDR_SIZE, stCBLen, stUBLen);
         break;
       // Decrypt (openssl)?
       case ENCMODE_AES:
-        CodecDecodeAES(dIn, *this, ENCHDR_SIZE, stCBLen, stUBLen,
+        CodecDecodeAES(mcSrc, *this, ENCHDR_SIZE, stCBLen, stUBLen,
           cCrypt->pkKey.p.qKey, cCrypt->pkKey.p.qIV); break;
       // Decrypt/decompress? (compressed length stored in stXLen)
       case ENCMODE_ZLIBAES:
-        CodecDecodeAESZLIB(dIn, *this, ENCHDR_SIZE, stCBLen, stUBLen,
+        CodecDecodeAESZLIB(mcSrc, *this, ENCHDR_SIZE, stCBLen, stUBLen,
           cCrypt->pkKey.p.qKey, cCrypt->pkKey.p.qIV); break;
       // Decrypt/decompress? (compressed length stored in stXLen)
       case ENCMODE_LZMAAES:
-        CodecDecodeAESLZMA(dIn, *this, ENCHDR_SIZE, stCBLen, stUBLen, stXLen,
+        CodecDecodeAESLZMA(mcSrc, *this, ENCHDR_SIZE, stCBLen, stUBLen, stXLen,
           cCrypt->pkKey.p.qKey, cCrypt->pkKey.p.qIV); break;
       // Unknown
       default: XC("Unknown decoding method!", "Mode", ulMode);
     }
   }
   /* --------------------------------------------------------------- */ public:
-  explicit CoDecoder(const DataConst &dIn, const size_t)
+  explicit CoDecoder(const MemConst &mcSrc, const size_t)
   { // Should have at least enough bytes for header
-    const size_t stSizeExpect = ENCHDR_SIZE, stSizeActual = dIn.Size();
+    const size_t stSizeExpect = ENCHDR_SIZE, stSizeActual = mcSrc.MemSize();
     if(stSizeActual < stSizeExpect)
       XC("Invalid size!", "Expect", stSizeExpect, "Actual", stSizeActual);
     // Check magic, version and input size
     const unsigned int uiMagicExpect = ENCHDR_MAGIC,
-      uiMagicActual = dIn.ReadIntLE<uint32_t>(ENCHDR_POS_MAGIC);
+      uiMagicActual = mcSrc.ReadIntLE<uint32_t>(ENCHDR_POS_MAGIC);
     if(uiMagicActual != uiMagicExpect)
       XC("Invalid header!", "Expect", uiMagicExpect, "Actual", uiMagicActual);
     // Compare version
     switch(const unsigned int uiVersionActual =
-      dIn.ReadIntLE<uint32_t>(ENCHDR_POS_VERSION))
+      mcSrc.ReadIntLE<uint32_t>(ENCHDR_POS_VERSION))
     { // Version 1
-      case 1: DecodeV1(dIn); break;
+      case 1: DecodeV1(mcSrc); break;
       // Unknown version
       default: XC("Invalid version!", "Version", uiVersionActual);
     }
@@ -476,32 +479,32 @@ template<class EncPlugin>class CoEncoder :
 { /* -- Initialises the header of the block ----------------------- */ private:
   void InitHeader(void)
   { // Resize memory to fit actual output size
-    Resize(ENCHDR_SIZE + this->GetCompressed() + this->GetExtra());
+    MemResize(ENCHDR_SIZE + this->GetCompressed() + this->GetExtra());
     // Set properties
-    WriteIntLE<uint32_t>(ENCHDR_POS_MAGIC,
+    MemWriteIntLE<uint32_t>(ENCHDR_POS_MAGIC,
       static_cast<uint32_t>(ENCHDR_MAGIC));
-    WriteIntLE<uint32_t>(ENCHDR_POS_VERSION,
+    MemWriteIntLE<uint32_t>(ENCHDR_POS_VERSION,
       static_cast<uint32_t>(ENCHDR_VERSION));
-    WriteIntLE<uint32_t>(ENCHDR_POS_FLAGS,
+    MemWriteIntLE<uint32_t>(ENCHDR_POS_FLAGS,
       static_cast<uint32_t>(this->GetMode()));
-    WriteIntLE<uint32_t>(ENCHDR_POS_CBLEN,
+    MemWriteIntLE<uint32_t>(ENCHDR_POS_CBLEN,
       static_cast<uint32_t>(this->GetCompressed()));
-    WriteIntLE<uint32_t>(ENCHDR_POS_UBLEN,
+    MemWriteIntLE<uint32_t>(ENCHDR_POS_UBLEN,
       static_cast<uint32_t>(this->GetUncompressed()));
-    WriteIntLE<uint32_t>(ENCHDR_POS_XLEN,
+    MemWriteIntLE<uint32_t>(ENCHDR_POS_XLEN,
       static_cast<uint32_t>(this->GetExtra()));
   }
   /* -- Constructor that doesn't initialise memory block size ------ */ public:
-  CoEncoder(const DataConst &dIn, const size_t stLevel) :
+  CoEncoder(const MemConst &mcSrc, const size_t stLevel) :
     /* -- Initialisers ----------------------------------------------------- */
-    EncPlugin{ dIn, *this, stLevel }
+    EncPlugin{ mcSrc, *this, stLevel }
     /* -- Code ------------------------------------------------------------- */
     { InitHeader(); }
   /* -- Constructor that initialises memory block size --------------------- */
-  CoEncoder(const DataConst &dIn, const size_t stInit, const size_t stLevel) :
+  CoEncoder(const MemConst &mcSrc, const size_t stInit, const size_t stLevel) :
     /* -- Initialisers ----------------------------------------------------- */
-    Memory{ ENCHDR_SIZE + dIn.Size() + stInit },
-    EncPlugin{ dIn, *this, stLevel }
+    Memory{ ENCHDR_SIZE + mcSrc.MemSize() + stInit },
+    EncPlugin{ mcSrc, *this, stLevel }
     /* -- Code ------------------------------------------------------------- */
     { InitHeader(); }
   /* ----------------------------------------------------------------------- */
@@ -514,7 +517,7 @@ template<class EncPlugin>class CoEncoder :
 #define CODEC_HELPER(n,...) namespace CodecHelper { \
   class n ## Encoder : public EncData { \
     DELETECOPYCTORS(n ## Encoder) \
-    public: n ## Encoder(const DataConst &dS, Memory &mD, const size_t stU) : \
+    public: n ## Encoder(const MemConst &dS, Memory &mD, const size_t stU) : \
       EncData{ CodecEncode ## n(dS, mD, stU, ## __VA_ARGS__, ENCHDR_SIZE) } {}\
   }; \
 };
@@ -522,13 +525,13 @@ template<class EncPlugin>class CoEncoder :
 #define CODEC_PLUGINEX(n,is,...) \
   CODEC_HELPER(n, ## __VA_ARGS__); \
   class n ## Encoder : public CoEncoder<CodecHelper::n ## Encoder> { \
-    public: explicit n ## Encoder(const DataConst &dS, const size_t stU) : \
+    public: explicit n ## Encoder(const MemConst &dS, const size_t stU) : \
       CoEncoder<CodecHelper::n ## Encoder>{ dS, is, stU } {} };
 /* -- Encoder without an initialiser variable ------------------------------ */
 #define CODEC_PLUGIN(n,...) \
   CODEC_HELPER(n, ## __VA_ARGS__); \
   class n ## Encoder : public CoEncoder<CodecHelper::n ## Encoder> { \
-    public: explicit n ## Encoder(const DataConst &dS, const size_t stU) : \
+    public: explicit n ## Encoder(const MemConst &dS, const size_t stU) : \
       CoEncoder<CodecHelper::n ## Encoder>{ dS, stU } {} };
 /* -- The AES + ZLIB combined encoder (already provides init sizes) -------- */
 CODEC_PLUGIN(AESZLIB, cCrypt->pkKey.p.qKey, cCrypt->pkKey.p.qIV)
@@ -538,7 +541,7 @@ CODEC_PLUGINEX(AESLZMA, 5, cCrypt->pkKey.p.qKey, cCrypt->pkKey.p.qIV)
 CODEC_PLUGINEX(AES, CodecGetAES256CBCSize(), cCrypt->pkKey.p.qKey,
   cCrypt->pkKey.p.qIV)
 /* -- The ZLIB encoder class (provides init size) -------------------------- */
-CODEC_PLUGINEX(ZLIB, static_cast<size_t>(ceil(dS.Size() * 0.001)) + 12)
+CODEC_PLUGINEX(ZLIB, static_cast<size_t>(ceil(dS.MemSize() * 0.001)) + 12)
 /* -- The LZMA encoder class (provides the extra data needed size) --------- */
 CODEC_PLUGINEX(LZMA, 5)
 /* -- The nullptr encoder (no extra size needed) --------------------------- */
@@ -549,15 +552,15 @@ CODEC_PLUGINEX(RAW, 0)
 /* == Main interface class ================================================= */
 template<class EncoderType>class Block final : public EncoderType
 { /* -- Initialise by data array ----------------------------------- */ public:
-  explicit Block(const DataConst &dIn, const size_t stUser=StdMaxSizeT) :
+  explicit Block(const MemConst &mcSrc, const size_t stUser=StdMaxSizeT) :
     /* -- Initialisers ----------------------------------------------------- */
-    EncoderType{ dIn, stUser }
+    EncoderType{ mcSrc, stUser }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Initialise by string ----------------------------------------------- */
   explicit Block(const string &strIn, const size_t stUser=StdMaxSizeT) :
     /* -- Initialisers ----------------------------------------------------- */
-    EncoderType{ StdMove(DataConst(strIn)), stUser }
+    EncoderType{ StdMove(MemConst(strIn)), stUser }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */

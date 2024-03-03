@@ -50,9 +50,9 @@ class SysProcess                       // Need this before of System init order
   SysProcess(void) :
     /* -- Initialisers ----------------------------------------------------- */
     fsProcStat{ "/proc/stat",          // Open proc cpu stats stream
-                FStream::FM_R_B },     // - Read/Binary mode
+                FM_R_B },              // - Read/Binary mode
     fsProcStatM{ "/proc/self/statm",   // Open proc memory stats stream
-                 FStream::FM_R_B },    // - Read/Binary mode
+                 FM_R_B },             // - Read/Binary mode
     ctUser(0),                         // Init user cpu time
     ctLow(0),                          // Init low cpu time
     ctSystem(0),                       // Init system cpu time
@@ -73,7 +73,7 @@ class SysCore :
   public SysProcess,                   // System process object
   public SysCon,                       // Defined in 'pixcon.hpp"
   public SysCommon                     // Common system object
-{ /* -- Variables ------------------------------------------------- */ private:
+{ /* -- Variables ---------------------------------------------------------- */
   bool             bWindowInitialised; // Is window initialised?
   /* --------------------------------------------------------------- */ public:
   void UpdateMemoryUsageData(void)
@@ -116,6 +116,14 @@ class SysCore :
     else memData.qMTotal = memData.qMFree = memData.qMUsed = 0,
          memData.stMFree = 0,
          memData.dMLoad = 0;
+  }
+  /* -- Return operating system uptime (cmHiRes.GetTimeS() doesn't work!) -- */
+  StdTimeT GetUptime(void)
+  { // Get uptime
+    struct timespec tsData;
+    clock_gettime(CLOCK_MONOTONIC, &tsData);
+    // Return as time_t (future ref, also has t.tv_nsec)
+    return static_cast<time_t>(tsData.tv_sec);
   }
   /* -- Terminate a process ------------------------------------------------ */
   bool TerminatePid(const unsigned int uiPid) const
@@ -164,55 +172,55 @@ class SysCore :
           const TokenListNC tStats{ strStat, cCommon->Space(), 6 };
           if(tStats.size() >= 5)
           { // Get idle time
-            const clock_t cUserNow = StrToNum<clock_t>(tStats[2]);
-            const clock_t cLowNow = StrToNum<clock_t>(tStats[3]);
-            const clock_t cSystemNow = StrToNum<clock_t>(tStats[4]);
-            const clock_t cIdleNow = StrToNum<clock_t>(tStats[5]);
+            const clock_t cUserNow = StrToNum<clock_t>(tStats[2]),
+                          cLowNow = StrToNum<clock_t>(tStats[3]),
+                          cSystemNow = StrToNum<clock_t>(tStats[4]),
+                          cIdleNow = StrToNum<clock_t>(tStats[5]);
             // Check for valid time
             if(cUserNow < ctUser || cLowNow < ctLow ||
                cSystemNow < ctSystem || cIdleNow < ctIdle)
-                 cpuUData.fdSystem = -1;
+                 cpuUData.dSystem = -1;
             // Valid time
             else
             { // Grab cpu usage jiffies
               clock_t cTotal = ((cUserNow - ctUser) + (cLowNow - ctLow) +
                 (cSystemNow - ctSystem));
               // Set the percent to this
-              cpuUData.fdSystem = cTotal;
+              cpuUData.dSystem = cTotal;
               // Add the idle jiffies to the total jiffies
               cTotal += (cIdleNow - ctIdle);
               // Now we can calculate the true percent
-              cpuUData.fdSystem =
-                UtilMakePercentage(cpuUData.fdSystem, cTotal);
+              cpuUData.dSystem =
+                UtilMakePercentage(cpuUData.dSystem, cTotal);
             } // Update new times;
             ctUser = cUserNow, ctLow = cLowNow, ctSystem = cSystemNow,
               ctIdle = cIdleNow;
           } // No header
-          else cpuUData.fdSystem = -2;
+          else cpuUData.dSystem = -2;
         } // No line feed
-        else cpuUData.fdSystem = -3;
+        else cpuUData.dSystem = -3;
       } // Read failed
-      else cpuUData.fdSystem = -4;
+      else cpuUData.dSystem = -4;
       // Go back to start for next read
       fsProcStat.FStreamRewind();
     } // Stat file is not opened
-    else cpuUData.fdSystem = -5;
+    else cpuUData.dSystem = -5;
     // Get cpu times
     struct tms tmsData;
     const clock_t cProcNow = times(&tmsData);
     // If times are not valid? Show percent as error
     if(cProcNow <= ctProc || tmsData.tms_stime < ctProcSys ||
                              tmsData.tms_utime < ctProcUser)
-      cpuUData.fdProcess = -1;
+      cpuUData.dProcess = -1;
     // Times are valid
     else
     { // Caclulate total time
-      cpuUData.fdProcess = (tmsData.tms_stime - ctProcSys) +
+      cpuUData.dProcess = (tmsData.tms_stime - ctProcSys) +
                            (tmsData.tms_utime - ctProcUser);
       // Divide by total cpu time
-      cpuUData.fdProcess /= (cProcNow - ctProc);
-      cpuUData.fdProcess /= thread::hardware_concurrency();
-      cpuUData.fdProcess *= 100;
+      cpuUData.dProcess /= (cProcNow - ctProc);
+      cpuUData.dProcess /= thread::hardware_concurrency();
+      cpuUData.dProcess *= 100;
       // Update times
       ctProc = cProcNow, ctProcSys = tmsData.tms_stime,
         ctProcUser = tmsData.tms_utime;
@@ -227,13 +235,13 @@ class SysCore :
   static size_t GetExeSize(const string &strFile)
   { // Machine byte order magic
     constexpr const unsigned int uiELFDataNative =
-#if defined(LITTLE_ENDIAN)             // Intel, ARM, etc.
+#if defined(LITTLEENDIAN)         // Intel, ARM, etc.
       ELFDATA2LSB;
-#elif defined(BIG_ENDIAN)              // PPC, etc.
+#elif defined(BIGENDIAN)          // PPC, etc.
       ELFDATA2MSB;
 #endif
     // Open exe file and return on error
-    if(FStream fExe{ strFile, FStream::FM_R_B })
+    if(FStream fExe{ strFile, FM_R_B })
     { // Read in the header
       Elf64_Ehdr ehData;
       if(const size_t stRead = fExe.FStreamReadSafe(&ehData, sizeof(ehData)))
@@ -326,9 +334,9 @@ class SysCore :
     string strVersion{ StrAppend(sizeof(void*)*8, "-bit version") };
     // Mod list
     SysModList mlData;
-    mlData.emplace(make_pair(static_cast<size_t>(0),
-      SysModule{ GetExeName(), VER_MAJOR, VER_MINOR, VER_BUILD, VER_REV,
-        VER_AUTHOR, VER_NAME, StdMove(strVersion), VER_STR }));
+    mlData.emplace(make_pair(0UL, SysModule{ GetExeName(), VER_MAJOR,
+      VER_MINOR, VER_BUILD, VER_REV, VER_AUTHOR, VER_NAME, StdMove(strVersion),
+      VER_STR }));
     // Module list which includes the executable module
     return mlData;
   }
@@ -365,32 +373,42 @@ class SysCore :
   /* ----------------------------------------------------------------------- */
   CPUData GetProcessorData(void)
   {  // Open cpu information file
-    if(FStream fsCpuInfo{ "/proc/cpuinfo", FStream::FM_R_B })
+    if(FStream fsCpuInfo{ "/proc/cpuinfo", FM_R_B })
     { // Read file and if we got data?
       const string strFile{ fsCpuInfo.FStreamReadStringChunked() };
       if(!strFile.empty())
       { // Parse the variables and if we got some?
-        VarsConst vVars(strFile, StrGetReturnFormat(strFile), ':');
-        if(!vVars.empty())
-        { // Read variables
-          string strCpuId{ StdMove(vVars["model name"]) },
-                 strSpeed{ StdMove(vVars["cpu MHz"]) },
-                 strVendor{ StdMove(vVars["vendor_id"]) },
-                 strFamily{ StdMove(vVars["cpu family"]) },
-                 strModel{ StdMove(vVars["model"]) },
-                 strStepping{ StdMove(vVars["stepping"]) };
-          // Return default data we could not read
-          return { strVendor.empty() ? cCommon->Unspec() : StdMove(strVendor),
-                   strCpuId.empty() ? cCommon->Unspec() : StdMove(strCpuId),
-                   strFamily.empty() &&
-                   strModel.empty() &&
-                   strStepping.empty() ? cCommon->Unspec() :
-                     StdMove(StrFormat("$ Family $ Model $ Stepping $",
-                       StdMove(strVendor), StdMove(strFamily),
-                       StdMove(strModel), StdMove(strStepping))),
-                   thread::hardware_concurrency(),
-                   strSpeed.empty() ? 0 : StrToNum<unsigned int>(strSpeed),
-                   0, 0 };
+        ParserConst<> pcParser{ strFile, StrGetReturnFormat(strFile), ':' };
+        if(!pcParser.empty())
+        { // Move stirngs from loaded variables
+          string strCpuId{ StdMove(pcParser.ParserGet("model name")) },
+                 strSpeed{ StdMove(pcParser.ParserGet("cpu MHz")) },
+                 strVendor{ StdMove(pcParser.ParserGet("vendor_id")) },
+                 strFamily{ StdMove(pcParser.ParserGet("cpu family")) },
+                 strModel{ StdMove(pcParser.ParserGet("model")) },
+                 strStepping{ StdMove(pcParser.ParserGet("stepping")) };
+          // Remove excessive whitespaces from strings
+          StrCompactRef(strCpuId);
+          StrCompactRef(strSpeed);
+          StrCompactRef(strVendor);
+          StrCompactRef(strFamily);
+          StrCompactRef(strModel);
+          StrCompactRef(strStepping);
+          // Fail-safe any empty strings
+          if(strSpeed.empty()) strSpeed = cCommon->Zero();
+          if(strVendor.empty()) strVendor = cCommon->Unspec();
+          if(strCpuId.empty()) strCpuId = strVendor;
+          if(strFamily.empty()) strFamily = cCommon->Zero();
+          if(strModel.empty()) strModel = cCommon->Zero();
+          if(strStepping.empty()) strStepping = cCommon->Zero();
+          // Make processor id so it is consistent with the other platforms
+          // Return strings
+          return { thread::hardware_concurrency(),
+                   StrToNum<unsigned int>(strSpeed),
+                   StrToNum<unsigned int>(strFamily),
+                   StrToNum<unsigned int>(strModel),
+                   StrToNum<unsigned int>(strStepping),
+                   StdMove(strCpuId) };
         } // Failed to parse cpu variables
         else cLog->LogWarningSafe("Could not parse cpu information file!");
       } // Failed to read cpu info failed
@@ -400,8 +418,7 @@ class SysCore :
     else cLog->LogWarningExSafe("Could not open cpu information file: $!",
       StrFromErrNo());
     // Return default data we could not read
-    return { "Unknown", "Unknown", "Unknown",
-      thread::hardware_concurrency(), 0, 0, 0 };
+    return { thread::hardware_concurrency(), 0, 0, 0, 0, cCommon->Unspec() };
   }
   /* ----------------------------------------------------------------------- */
   bool DebuggerRunning(void) const { return false; }
@@ -435,7 +452,7 @@ class SysCore :
   bool DetectElevation(void) { return getuid() == 0; }
   /* -- Return data from /dev/urandom -------------------------------------- */
   Memory GetEntropy(void) const
-    { return FStream{ "/dev/random", FStream::FM_R_B }.
+    { return FStream{ "/dev/random", FM_R_B }.
         FStreamReadBlockSafe(1024); }
   /* ----------------------------------------------------------------------- */
   void *GetWindowHandle(void) const { return nullptr; }

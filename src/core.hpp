@@ -13,20 +13,20 @@ namespace ICore {                      // Start of private module namespace
 using namespace IArchive::P;           using namespace IAsset::P;
 using namespace IAudio::P;             using namespace ICmdLine::P;
 using namespace IConDef::P;            using namespace IConsole::P;
-using namespace ICursor::P;            using namespace ICVar::P;
-using namespace ICVarDef::P;           using namespace ICVarLib::P;
-using namespace IDir::P;               using namespace IDisplay::P;
-using namespace IError::P;             using namespace IEvtMain::P;
-using namespace IEvtWin::P;            using namespace IFbo::P;
-using namespace IFboBase::P;           using namespace IFboMain::P;
+using namespace ICVar::P;              using namespace ICVarDef::P;
+using namespace ICVarLib::P;           using namespace IDir::P;
+using namespace IDisplay::P;           using namespace IError::P;
+using namespace IEvtMain::P;           using namespace IEvtWin::P;
+using namespace IFbo::P;               using namespace IFboCore::P;
 using namespace IFont::P;              using namespace IFtf::P;
 using namespace IGlFW::P;              using namespace IGlFWUtil::P;
 using namespace IImage::P;             using namespace IInput::P;
 using namespace IJson::P;              using namespace ILog::P;
 using namespace ILua::P;               using namespace ILuaCode::P;
-using namespace ILuaUtil::P;           using namespace IOgl::P;
-using namespace IPalette::P;           using namespace IPcm::P;
-using namespace IPSplit::P;            using namespace ISql::P;
+using namespace ILuaUtil::P;           using namespace ILuaVariable::P;
+using namespace IOgl::P;               using namespace IPalette::P;
+using namespace IPcm::P;               using namespace IPSplit::P;
+using namespace IShaders::P;           using namespace ISql::P;
 using namespace IStd::P;               using namespace IStream::P;
 using namespace IString::P;            using namespace ISystem::P;
 using namespace ISysUtil::P;           using namespace ITexture::P;
@@ -38,80 +38,65 @@ namespace P {                          // Start of public module namespace
 class Core;                            // Core class prototype
 static Core *cCore = nullptr;          // Pointer to static class
 /* ------------------------------------------------------------------------- */
-class Core                             // Members initially private
-{/* ------------------------------------------------------------------------ */
-  enum ErrorBehaviour                  // Lua error mode behaviour
-  { /* --------------------------------------------------------------------- */
-    LEM_IGNORE,                        // Ignore errors and try to continue
-    LEM_RESET,                         // Automatically reset on error
-    LEM_SHOW,                          // Open console and show error
-    LEM_CRITICAL,                      // Terminate engine with error
-    LEM_MAX,                           // Maximum number of options supported
-  } /* --------------------------------------------------------------------- */
-  ebErrorMode;                         // Lua error mode behaviour
-  /* -- Public Variables --------------------------------------------------- */
-  unsigned int uiErrorCount,           // Number of errors occured
-               uiErrorLimit;           // Number of errors allowed
+enum CoreErrorFlags                    // Lua error mode behaviour
+{ /* ----------------------------------------------------------------------- */
+  CEF_IGNORE,                          // Ignore errors and try to continue
+  CEF_RESET,                           // Automatically reset on error
+  CEF_SHOW,                            // Open console and show error
+  CEF_CRITICAL,                        // Terminate engine with error
+  CEF_MAX,                             // Maximum number of options supported
+};/* ----------------------------------------------------------------------- */
+class Core final :                     // Members initially private
+  /* -- Base classes ------------------------------------------------------- */
+  private EvtMain::RegVec              // Events list to register
+{ /* -- Public Variables --------------------------------------------------- */
+  CoreErrorFlags   cefMode;            // Lua error mode behaviour
+  unsigned int     uiErrorCount,       // Number of errors occured
+                   uiErrorLimit;       // Number of errors allowed
   /* -- Set lua error mode behaviour --------------------------------------- */
-  CVarReturn CoreErrorBehaviourModified(const unsigned int uiState)
-    { return CVarSimpleSetIntNGE(ebErrorMode,
-        static_cast<ErrorBehaviour>(uiState), LEM_MAX); }
+  CVarReturn CoreErrorBehaviourModified(const CoreErrorFlags cefNMode)
+    { return CVarSimpleSetIntNGE(cefMode, cefNMode, CEF_MAX); }
   /* -- Title modified ----------------------------------------------------- */
   CVarReturn CoreTitleModified(const string &strN, string &strV)
   { // Do not allow user to set this variable, only empty is allowed
     if(!strN.empty()) return DENY;
     // Set the title
-    strV = StrAppend(cCVars->GetInternalStrSafe(APP_LONGNAME), ' ',
-      cCVars->GetInternalStrSafe(APP_VERSION), " (", cSystem->ENGTarget(),
-      ")");
+    strV = StrAppend(cSystem->GetGuestTitle(), ' ', cSystem->GetGuestVersion(),
+      " (", cSystem->ENGTarget(), ")");
     // We changed the value
     return ACCEPT_HANDLED;
   }
   /* -- Ask system to clear mutex ------------------ Core::SetOneInstance -- */
   CVarReturn CoreClearMutex(const bool bEnabled)
   { // Ignore check if not needed or global mutex creation succeeded
-    if(bEnabled)
-      cSystem->DeleteGlobalMutex(cCVars->GetInternalStrSafe(APP_LONGNAME));
+    if(bEnabled) cSystem->DeleteGlobalMutex(cSystem->GetGuestTitle());
     // Execution may continue
     return ACCEPT;
   }
   /* -- Set once instance cvar changed ------------- Core::SetOneInstance -- */
   CVarReturn CoreSetOneInstance(const bool bEnabled)
   { // Ignore check if not needed or global mutex creation succeeded
-    if(!bEnabled || cSystem->InitGlobalMutex
-      (cCVars->GetInternalStrSafe(APP_LONGNAME)))
-        return ACCEPT;
+    if(!bEnabled || cSystem->InitGlobalMutex(cSystem->GetGuestTitle()))
+      return ACCEPT;
     // Global mutex creation failed so exit program now, cleanly.
     exit(5);
   }
   /* -- Set home directory where files are written if base dir dont work --- */
   CVarReturn CoreSetHomeDir(const string &strP, string &strV)
-  { // Home directory
-    string strNP;
-    // If we need to build a new directory?
+  { // Build user volatile directory name if user didn't specify one
     if(strP.empty())
-    { // Get roaming directory and if we couldn't get it?
-      const string strRDir{ cSystem->GetRoamingDir() };
-      if(strRDir.empty()) return ACCEPT_HANDLED;
-      // Build new directory. Because this function can only be called before
-      // the cvars are loaded and after the app config file is loaded we can
-      // only get the app name and author from the initial vars.
-      const string &strAuthor = cCVars->GetInternalStrSafe(APP_AUTHOR),
-                   &strShortName = cCVars->GetInternalStrSafe(APP_SHORTNAME);
-      strNP = StrFormat("$/$/$/", strRDir,
-        strAuthor.empty() ? cCommon->Unspec() : strAuthor,
-        strShortName.empty() ? cCommon->Unspec() : strShortName);
-    } // Use what the user specified
-    else strNP = strP;
-    // Replace backslashes with forward slashes because backslashes are ugly
-    // and the Microsoft Visual C Run-Time accepts backslashes.
+      strV = StrFormat("$/$/$/", cSystem->GetRoamingDir(),
+        cSystem->GetGuestAuthor().empty() ?
+          cCommon->Unspec() : cSystem->GetGuestAuthor(),
+        cSystem->GetGuestShortTitle().empty() ?
+          cCommon->Unspec() : cSystem->GetGuestShortTitle());
+    // Specified so use what the user specified
+    else strV = StdMove(strP);
     // Try to make the users home directory as an alternative save place.
-    if(!DirMkDirEx(PSplitBackToForwardSlashes(strNP)))
-      XCL("Failed to setup persistance directory!", "Directory", strNP);
-    // Set home directory
-    cCmdLine->SetHome(strNP);
-    // We are changing the value so make sure the cvar system knows that
-    strV = StdMove(strNP);
+    if(!DirMkDirEx(PSplitBackToForwardSlashes(strV)))
+      XCL("Failed to setup persistance directory!", "Directory", strV);
+    // Set home directory and return that we set the value
+    cCmdLine->SetHome(strV);
     return ACCEPT_HANDLED;
   }
   /* -- Set error limit ---------------------------------------------------- */
@@ -132,22 +117,15 @@ class Core                             // Members initially private
         if(strArg.empty())
           cLog->LogWarningExSafe(
             "Core rejected empty command-line argument at $!", stArg);
-        // Not empty argument?
-        else
-        { // Tokenise the argument into a key/value pair. We only want a
-          // maximum of two tokens, the seperator is allowed on the second
-          // token. Log the failure and continue if we didn't parse a key/value
-          // pair.
-          const Token tKeyVal{ strArg, "=", 2 };
-          if(tKeyVal.empty())
-            cLog->LogWarningExSafe("Core rejected invalid command-line "
-              "argument at $: '$'!", stArg, strArg);
-          // Argument is valid? Set the variable from command line with full
-          // permission because we should allow any variable to be overriden
-          // from the command line. Also show an error if the variable could
-          // not be set.
-          else if(cCVars->SetVarOrInitial(tKeyVal[0], tKeyVal.size() <= 1 ?
-            cCommon->Blank() : tKeyVal[1], SCMDLINE|PBOOT, CCF_NOTHING))
+        // Not empty argument? Tokenise the argument into a key/value pair. We
+        // only want a maximum of two tokens, the seperator is allowed on the
+        // second token and if succeeded?
+        else if(const Token tKeyVal{ strArg, cCommon->Equals(), 2 })
+        { // Set the variable from command line with full permission because we
+          // should allow any variable to be overridden from the command line.
+          // Also show an error if the variable could not be set.
+          if(cCVars->SetVarOrInitial(tKeyVal.front(), tKeyVal.size() <= 1 ?
+            cCommon->Blank() : tKeyVal.back(), SCMDLINE|PBOOT, CCF_NOTHING))
           { // Append argument to accepted command line and add a space
             strV.append(strArg);
             strV.append(cCommon->Space());
@@ -156,7 +134,10 @@ class Core                             // Members initially private
           } // Failure? Log the failure
           else cLog->LogWarningExSafe(
             "Core rejected command-line argument at $: '$'!", stArg, strArg);
-        } // Next argument
+        } // Log the failure and continue to next argument
+        else cLog->LogWarningExSafe("Core rejected invalid command-line "
+          "argument at $: '$'!", stArg, strArg);
+        // Next argument
         ++stArg;
       } // Remove empty space if not empty
       if(!strV.empty()) strV.pop_back();
@@ -169,6 +150,34 @@ class Core                             // Members initially private
     else cLog->LogDebugSafe("Core parsed no command-line arguments!");
     // We handled setting the variable
     return ACCEPT_HANDLED;
+  }
+  /* -- Fired when lua needs to be paused (EMC_LUA_PAUSE) ------------------ */
+  void OnLuaPause(const EvtMain::Cell &)
+  { // Return if pause was not successful
+    if(!cLua->PauseExecution())
+      return cConsole->AddLine(
+        "Execution already paused. Type 'lresume' to continue.");
+    // The mainmanual* functions will consume 100% of the thread load
+    // when it doesn't request a request to redraw so make sure to
+    // throttle it.
+    if(cSystem->IsNotGraphicalMode()) cTimer->TimerSetDelayIfZero();
+    // Can't disable console while paused
+    cConGraphics->SetCantDisable(true);
+    // Write to console
+    cConsole->AddLine("Execution paused. Type 'lresume' to continue.");
+  }
+  /* -- Fired when lua needs to be resumed (EMC_LUA_RESUME) ---------------- */
+  void OnLuaResume(const EvtMain::Cell &)
+  { // Return if pause was not successful
+    if(!cLua->ResumeExecution())
+      return cConsole->AddLine("Execution already in progress.");
+    // Refresh stored delay because of manual render mode
+    if(cSystem->IsNotGraphicalMode())
+      cTimer->TimerSetDelay(cCVars->GetInternal<unsigned int>(APP_DELAY));
+    // Console can now be disabled
+    cConGraphics->SetCantDisable(false);
+    // Write to console
+    cConsole->AddLine("Execution resumed.");
   }
   /* -- Reset environment function ----------------------------------------- */
   void CoreResetEnvironment(const bool bLeaving)
@@ -183,29 +192,30 @@ class Core                             // Members initially private
     // If using graphical inteactive mode?
     if(cSystem->IsGraphicalMode())
     { // Reset main fbo and back clear colour
-      cFboMain->ResetClearColour();
+      cFboCore->ResetClearColour();
       // Reset texture unit and shader program if in GUI mode
       cOgl->ResetBinds();
       // Reset default palette
       cPalettes->palDefault.Commit();
       // Set main framebuffer as default
-      cFboMain->ActivateMain();
+      cFboCore->ActivateMain();
       // Reset cursor type, show it and clear input states
-      CursorReset();
       cInput->SetCursor(true);
       // Reset main matrix. No need to force a change if it's already set.
       cDisplay->SetDefaultMatrix(false);
       // Cant't disable console if leaving, can if entering
-      cConsole->SetCantDisable(bLeaving);
+      cConGraphics->SetCantDisable(bLeaving);
+      // Reset cursor if leaving
+      if(bLeaving) cDisplay->RequestResetCursor();
       // Set console enabled if entering.
-      if(!bLeaving) cConsole->SetVisible(false);
+      else cConGraphics->SetVisible(false);
       // Restore console font properties
-      cConsole->RestoreDefaultProperties();
-    } // Bot mode? Clear status texts
+      cConGraphics->RestoreDefaultProperties();
+    } // Bot mode? Clear bottom status texts
     if(cSystem->IsTextMode()) cConsole->ClearStatus();
     // Reset timer
     cTimer->TimerReset(bLeaving);
-    // Clear lingering events
+    // Clear any lingering engine events
     cEvtMain->Flush();
     // Log that we've reset the environment
     cLog->LogDebugExSafe("Core environment $!",
@@ -216,30 +226,30 @@ class Core                             // Members initially private
   { // Is it time to execute a game tick?
     if(cTimer->TimerShouldTick())
     { // Render the console fbo (if update requested)
-      cConsole->Render();
+      cConGraphics->Render();
       // Render video textures (if any)
       VideoRender();
       // Loop point incase we need to catchup game ticks
-      TimerCatchupWinThread:
+      for(;;)
       { // Set main fbo by default on each frame
-        cFboMain->ActivateMain();
+        cFboCore->ActivateMain();
         // Poll joysticks
         cInput->PollJoysticks();
         // Execute a tick for each frame missed
         cLua->ExecuteMain();
-        // If we should keep catching up frames?
-        if(cTimer->TimerShouldTick())
-        { // Flush the main fbo as we're not drawing it yet
-          cFboMain->RenderFbosAndFlushMain();
-          // Render again until we've caught up
-          goto TimerCatchupWinThread;
-        } // We've completed catching up at this point
+        // Break if we've caught up
+        if(cTimer->TimerShouldNotTick()) break;
+        // Flush the main fbo as we're not drawing it yet
+        cFboCore->RenderFbosAndFlushMain();
+        // Render again until we've caught up
       } // Add console fbo to render list
-      cConsole->RenderToMain();
+      cConGraphics->RenderToMain();
       // Render all fbos and copy the main fbo to screen
-      cFboMain->Render();
-    } // Update timer
-    cTimer->TimerUpdateInteractive();
+      cFboCore->Render();
+      // Update timer
+      cTimer->TimerUpdateInteractive();
+    } // Update interim timer without storing entire duration
+    else cTimer->TimerUpdateInteractiveInterim();
   }
   /* -- Graphical core main thread tick ------------------------------------ */
   void CoreMainThreadTick(void)
@@ -248,32 +258,32 @@ class Core                             // Members initially private
     // Is it time to execute a game tick?
     if(cTimer->TimerShouldTick())
     { // Render the console fbo (if update requested)
-      cConsole->Render();
+      cConGraphics->Render();
       // Render video textures (if any)
       VideoRender();
       // Loop point incase we need to catchup game ticks
-      TimerCatchupMainThread:
+      for(;;)
       { // Process window events
         GlFWPollEvents();
         // Set main fbo by default on each frame
-        cFboMain->ActivateMain();
+        cFboCore->ActivateMain();
         // Poll joysticks
         cInput->PollJoysticks();
         // Execute a tick for each frame missed
         cLua->ExecuteMain();
-        // If we should keep catching up frames?
-        if(cTimer->TimerShouldTick())
-        { // Flush the main fbo as we're not drawing it yet
-          cFboMain->RenderFbosAndFlushMain();
-          // Render again until we've caught up
-          goto TimerCatchupMainThread;
-        } // We've completed catching up at this point
+        // Break if we've caught up
+        if(cTimer->TimerShouldNotTick()) break;
+        // Flush the main fbo as we're not drawing it yet
+        cFboCore->RenderFbosAndFlushMain();
+        // Render again until we've caught up
       } // Add console fbo to render list
-      cConsole->RenderToMain();
+      cConGraphics->RenderToMain();
       // Render all fbos and copy the main fbo to screen
-      cFboMain->Render();
-    } // Update timer
-    cTimer->TimerUpdateInteractive();
+      cFboCore->Render();
+      // Update timer
+      cTimer->TimerUpdateInteractive();
+    } // Update interim timer without storing entire duration
+    else cTimer->TimerUpdateInteractiveInterim();
   }
   /* -- Fired when Lua enters the sandbox ---------------------------------- */
   int CoreThreadSandbox(lua_State*const lS)
@@ -315,11 +325,9 @@ class Core                             // Members initially private
           // this to something different when they cleanly exit their loops.
           cEvtMain->SetExitReason(EMC_LUA_ERROR);
           // Scan for game controllers and inform scripts if enabled
-          if(cSystem->IsGraphicalMode())
-            cInput->SetJoystickEnabled(
-              cCVars->GetInternalSafe<int>(INP_JOYSTICK));
+          if(cSystem->IsGraphicalMode()) cInput->BeginDetection();
           // Execute startup script
-          LuaCodeExecuteFile(lS, cCVars->GetInternalStrSafe(LUA_SCRIPT));
+          LuaCodeExecuteFile(lS, cCVars->GetStrInternal(LUA_SCRIPT));
           // Done
           break;
       } // Terminal mode requested?
@@ -366,9 +374,9 @@ class Core                             // Members initially private
       }
     } // exception occured so throw LUA stackdump and leave the sandbox
     catch(const exception &E)
-    { // Allow Lue to process error. WARNING!! This prevents destructors on
-      // all statically initialised classes to NEVER call so make sure we do
-      // not statically create something above!
+    { // Allow Lue to process error. WARNING!! This prevents destructors on all
+      // statically initialised classes to NEVER call so make sure we do not
+      // statically create something above!
       LuaUtilPushErr(lS, E.what());
     } // Returning nothing
     return 0;
@@ -384,10 +392,7 @@ class Core                             // Members initially private
   }
   /* -- Lua deinitialiser helper which updates all the classes that use it - */
   void CoreLuaDeInitHelper(void)
-  { // Unregister all lua cvars and console commands
-    cCVars->UnregisterAllLuaCVars();
-    cConsole->UnregisterAllLuaCommands();
-    // De-init lua and update systems that use Lua
+  { // De-init lua and update systems that use Lua
     cLua->DeInit();
     // Reset environment (leaving)
     CoreResetEnvironment(true);
@@ -406,32 +411,35 @@ class Core                             // Members initially private
         // Not interactive mode? Nothing to de-initialise
         if(cSystem->IsNotGraphicalMode()) return;
         // Unload console background and font textures
-        cConsole->DeInitTextureAndFont();
+        cConGraphics->DeInitTextureAndFont();
         // Unload font, texture, videos and curor textures
         VideoDeInitTextures();
         FontDeInitTextures();
         TextureDeInitTextures();
-        CursorDeInit();
         // Done
         break;
       // Were exiting to de-initialise everything
       default:
         // De-initialise Lua
         CoreLuaDeInitHelper();
-        // DeInitialise console class
+        // Deregister lua pause and resume callbacks
+        cEvtMain->UnregisterEx(*this);
+        // If in graphical mode?
+        if(cSystem->IsGraphicalMode())
+        { // De-init console graphics and input
+          cConGraphics->DeInit();
+          cInput->DeInit();
+        } // DeInitialise console class and freetype
         cConsole->DeInit();
-        // DeInitialise freetype
         cFreeType->DeInit();
         // De-init audio
         if(cSystem->IsAudioMode()) cAudio->DeInit();
-        // De-init input
-        if(cSystem->IsGraphicalMode()) cInput->DeInit();
         // Done
         break;
     } // Unload all fbos (NOT destroy);
-    cFboMain->DeInitAllObjectsAndBuiltIns();
+    cFboCore->DeInitAllObjectsAndBuiltIns();
     // De-init core shaders
-    cFboBase->DeInitShaders();
+    cShaderCore->DeInitShaders();
     // OpenGL de-initialised (do not throw error if de-initialised)
     cOgl->DeInit(true);
     // Request to close window
@@ -449,10 +457,10 @@ class Core                             // Members initially private
     if(cSystem->IsNotGraphicalMode()) return;
     // Reset opengl binds to defaults just incase any were selected
     cOgl->ResetBinds();
-    // Render the console?
-    if(bAndConsole) cConsole->RenderNow();
+    // Render the console and it has not already been drawn
+    if(bAndConsole) cConGraphics->RenderNow();
     // Render all fbos and copy the main fbo to screen
-    cFboMain->Render();
+    cFboCore->Render();
   }
   /* -- De-initialise everything ------------------------------------------- */
   void CoreDeInitEverything(void)
@@ -470,13 +478,16 @@ class Core                             // Members initially private
   { // Set context current and pass selected refresh rate
     cOgl->Init(cDisplay->GetRefreshRate());
     // Initialise core shaders
-    cFboBase->InitShaders();
+    cShaderCore->InitShaders();
     // If we're initialising for the first time?
     if(cEvtMain->IsExitReason(EMC_NONE))
-    { // Initialise freetype, console, audio and input classes
+    { // Initialise freetype, console render, audio and input classes
       cFreeType->Init();
       cConsole->Init();
+      cConGraphics->Init();
       cInput->Init();
+      // Register lua pause and resume events
+      cEvtMain->RegisterEx(*this);
       // Done
       return;
     } // Initialising for the first time so reconfigure matrix
@@ -484,9 +495,8 @@ class Core                             // Members initially private
     // Reset window icon
     cDisplay->UpdateIcons();
     // Reload cursor, fbo, console, fonts, textures and videos objects
-    CursorReInit();
     FboReInit();
-    cConsole->ReInitTextureAndFont();
+    cConGraphics->ReInitTextureAndFont();
     FontReInitTextures();
     TextureReInitTextures();
     VideoReInitTextures();
@@ -502,22 +512,21 @@ class Core                             // Members initially private
     // Non-interactive mode?
     if(cSystem->IsTextMode())
     { // And interactive mode?
-      if(cSystem->IsGraphicalMode())
-        CoreInitGraphicalSubsystems();
+      if(cSystem->IsGraphicalMode()) CoreInitGraphicalSubsystems();
       // No interactive mode so if we're not initialising for the first time?
       else if(cEvtMain->IsExitReason(EMC_NONE))
       { // Initialise freetype and console
         cFreeType->Init();
         cConsole->Init();
+        cEvtMain->RegisterEx(*this);
       } // Initialising for first time? Just update window icons
       else cDisplay->UpdateIcons();
     } // Init interactive console?
     else if(cSystem->IsGraphicalMode())
       CoreInitGraphicalSubsystems();
     // With audio mode enabled? Initialise audio class.
-    if(cSystem->IsAudioMode() &&
-      cEvtMain->IsExitReason(EMC_NONE))
-        cAudio->Init();
+    if(cSystem->IsAudioMode() && cEvtMain->IsExitReason(EMC_NONE))
+      cAudio->Init();
     // Lua loop with initialisation. Compare event code
     SandBoxInit: switch(cEvtMain->GetExitReason())
     { // Ignore LUA initialisation if we're re-initialising other components
@@ -544,9 +553,9 @@ class Core                             // Members initially private
           // If we are not in the exit script?
           if(!cLua->Exiting())
           { // Compare error mode behaviour
-            switch(ebErrorMode)
+            switch(cefMode)
             { // Ignore errors and try to continue? Execute again
-              case LEM_IGNORE:
+              case CEF_IGNORE:
                 // Write ignore exception to log and pause if at the limit.
                 if(uiErrorCount >= uiErrorLimit) goto Pause;
                 cLog->LogErrorExSafe(
@@ -557,7 +566,7 @@ class Core                             // Members initially private
                 // Go back into the sandbox.
                 goto SandBox;
               // Automatically reset on error?
-              case LEM_RESET:
+              case CEF_RESET:
                 // Write ignore exception to log and pause if at the limit.
                 if(uiErrorCount >= uiErrorLimit) goto Pause;
                 cLog->LogErrorExSafe(
@@ -570,7 +579,7 @@ class Core                             // Members initially private
                 // Go back into the sandbox
                 goto SandBox;
               // Open console and show error? Just break to other code.
-              case LEM_SHOW: Pause:      // May come here from above too
+              case CEF_SHOW: Pause:      // May come here from above too
                 // Write ignore exception to log.
                 cLog->LogErrorExSafe("Core sandbox run-time exception: $",
                   E.what());
@@ -585,11 +594,11 @@ class Core                             // Members initially private
                 // Report it!
                 cLog->LogErrorExSafe(
                   "Core exception with unknown behaviour $: $",
-                  ebErrorMode, E.what());
-                // Fall through to LEM_CRITICAL
+                  cefMode, E.what());
+                // Fall through to CEF_CRITICAL
                 [[fallthrough]];
               // Terminate engine with error? Throw to critical error dialog.
-              case LEM_CRITICAL:
+              case CEF_CRITICAL:
                 // Redraw the console.
                 CoreForceRedrawFrameBuffer(false);
                 // Throw to critical error dialog
@@ -666,7 +675,7 @@ class Core                             // Members initially private
         goto SandBoxInit;
       // Unknown value so report it and fall through.
       default: cLog->LogWarningExSafe("Core has unknown error behaviour of $!",
-        ebErrorMode); [[fallthrough]];
+        cefMode); [[fallthrough]];
       // Execution ended because of error. Shouldn't get here. Fall through.
       case EMC_LUA_ERROR: [[fallthrough]];
       // Restarting engine completely? Fall through.
@@ -713,12 +722,12 @@ class Core                             // Members initially private
     while(CoreShouldEngineContinue()) try
     { // Tell display class if window threading is enabled
       cDisplay->FlagSetOrClear(DF_WINTHREADED,
-        cCVars->GetInternalSafe<bool>(WIN_THREAD));
+        cCVars->GetInternal<bool>(WIN_THREAD));
       // Init window and de-init lua envifonment and window on scope exit
       INITHELPER(DIH, cDisplay->Init(),
         cEvtMain->ThreadDeInit();
         cDisplay->DeInit());
-      // Clear window manager events list
+      // Full window events
       cEvtWin->Flush();
       // If window threading enabled
       if(cDisplay->FlagIsSet(DF_WINTHREADED))
@@ -755,17 +764,11 @@ class Core                             // Members initially private
   /* -- Main function ------------------------------------------------------ */
   int CoreMain(const int iArgs, ArgType**const lArgs, ArgType**const lEnv) try
   { // Set this thread's name for debugger and that it is high performance
-    SysInitThread("main", SysThread::Main);
-    // Due to limitations in C++ right now we don't want to initialise our
-    // subsystems as global classes as there is no real way to safely
-    // error check these classes initialising so we use global pointers to the
-    // classes below instead. This means we need to use a de-init helper
-    // using a simple destructor in order to nullptr the pointer to the class
-    // so that it is easier for the engine to crash if we accidentally use the
-    // subsystems after the class below has been freed to prevent use of
-    // freed memory. The following is a helper macro to create a class,
-    // assign the global pointer version to it (makes compiler optimise the
-    // pointers to references) and clear the pointer when the scope is lost.
+    SysInitThread("main", STP_MAIN);
+    // Create static classes to engine components and set the pointer to that
+    // component (which should get optimised to static) so all the other
+    // components can access each other. Then nullptr them on destruction so
+    // any accidental access to them is easily identifiable by the debugger.
 #define INITSS(x, ...) DEINITHELPER(dih ## x, c ## x = nullptr); \
       x eng ## x{ __VA_ARGS__ }; c ## x = &eng ## x
     // Initialise critical command-line and logging systems. We cannot really
@@ -776,7 +779,7 @@ class Core                             // Members initially private
     INITSS(Log);                       // cppcheck-suppress danglingLifetime
     // Capture exceptions so we can log any errors
     try
-    { // Dependencies
+    { // Dependencies required only in this scope
       using namespace IArgs;           using namespace IBin::P;
       using namespace ICert::P;        using namespace IClipboard::P;
       using namespace ICmdLine::P;     using namespace IClock::P;
@@ -784,70 +787,66 @@ class Core                             // Members initially private
       using namespace ICrypt::P;       using namespace IFile::P;
       using namespace IGlFWMonitor::P; using namespace IImageDef::P;
       using namespace IImageFormat::P; using namespace IImageLib::P;
-      using namespace ILuaFunc::P;     using namespace IMask::P;
-      using namespace IMemory::P;      using namespace IOal::P;
+      using namespace ILuaCommand::P;  using namespace ILuaFunc::P;
+      using namespace IMask::P;        using namespace IMemory::P;
+      using namespace IOal::P;         using namespace IParser::P;
       using namespace IPcmFormat::P;   using namespace IPcmLib::P;
       using namespace ISample::P;      using namespace IShader::P;
       using namespace ISocket::P;      using namespace ISource::P;
       using namespace ISShot::P;       using namespace IStat::P;
       using namespace IUtil::P;        using namespace IUtf;
-      using namespace IVars::P;        using namespace Lib::OpenAL;
-      using namespace Lib::OS::GlFW;   using namespace Lib::Sqlite;
-      // Include cvar varaiables array that we will send to CVars class
-#include "cvarlib.hpp"
-      // Include console commands array that we will send to Console class
-#include "conlib.hpp"
-      // Initialise other systems. This order should strictly match the
-      // #include order in 'msengine.cpp' and not never use these classes
-      // outside of the construction and destruction order!
+      using namespace Lib::OpenAL;     using namespace Lib::OS::GlFW;
+      using namespace Lib::Sqlite;
+      // Initialise other systems. The order is important!
       INITSS(Stats);                   // cppcheck-suppress danglingLifetime
       INITSS(Threads);                 // cppcheck-suppress danglingLifetime
       INITSS(EvtMain);                 // cppcheck-suppress danglingLifetime
       INITSS(System);                  // cppcheck-suppress danglingLifetime
       INITSS(LuaFuncs);                // cppcheck-suppress danglingLifetime
-      INITSS(Credits);                 // cppcheck-suppress danglingLifetime
       INITSS(Archives);                // cppcheck-suppress danglingLifetime
       INITSS(Assets);                  // cppcheck-suppress danglingLifetime
       INITSS(Crypt);                   // cppcheck-suppress danglingLifetime
       INITSS(Timer);                   // cppcheck-suppress danglingLifetime
       INITSS(Sql);                     // cppcheck-suppress danglingLifetime
+#include "cvarlib.hpp"                 // Defines 'cvislList' cvar list
+      INITSS(CVars, cvislList);        // cppcheck-suppress danglingLifetime
+      INITSS(Sockets);                 // cppcheck-suppress danglingLifetime
+#include "conlib.hpp"                  // Defines 'ccslList' command list
+      INITSS(Console, ccslList);       // cppcheck-suppress danglingLifetime
       INITSS(GlFW);                    // cppcheck-suppress danglingLifetime
-      INITSS(CVars, cvEngList);        // cppcheck-suppress danglingLifetime
+      INITSS(Credits);                 // cppcheck-suppress danglingLifetime
       INITSS(FreeType);                // cppcheck-suppress danglingLifetime
       INITSS(Ftfs);                    // cppcheck-suppress danglingLifetime
       INITSS(Files);                   // cppcheck-suppress danglingLifetime
       INITSS(Masks);                   // cppcheck-suppress danglingLifetime
       INITSS(Jsons);                   // cppcheck-suppress danglingLifetime
-      INITSS(Sockets);                 // cppcheck-suppress danglingLifetime
       INITSS(Bins);                    // cppcheck-suppress danglingLifetime
-      // Audio rendering subsystems
       INITSS(Oal);                     // cppcheck-suppress danglingLifetime
-      INITSS(PcmFmts);                 // cppcheck-suppress danglingLifetime
+      INITSS(PcmLibs);                 // cppcheck-suppress danglingLifetime
       INITSS(Pcms);                    // cppcheck-suppress danglingLifetime
       INITSS(Audio);                   // cppcheck-suppress danglingLifetime
       INITSS(Sources);                 // cppcheck-suppress danglingLifetime
       INITSS(Samples);                 // cppcheck-suppress danglingLifetime
       INITSS(Streams);                 // cppcheck-suppress danglingLifetime
-      // Graphics rendering and window subsystems
       INITSS(EvtWin);                  // cppcheck-suppress danglingLifetime
       INITSS(Ogl);                     // cppcheck-suppress danglingLifetime
-      INITSS(ImageFmts);               // cppcheck-suppress danglingLifetime
+      INITSS(ImageLibs);               // cppcheck-suppress danglingLifetime
       INITSS(Images);                  // cppcheck-suppress danglingLifetime
       INITSS(Shaders);                 // cppcheck-suppress danglingLifetime
       INITSS(Clips);                   // cppcheck-suppress danglingLifetime
       INITSS(Display);                 // cppcheck-suppress danglingLifetime
-      INITSS(Cursors);                 // cppcheck-suppress danglingLifetime
       INITSS(Input);                   // cppcheck-suppress danglingLifetime
-      INITSS(FboBase);                 // cppcheck-suppress danglingLifetime
+      INITSS(ShaderCore);              // cppcheck-suppress danglingLifetime
       INITSS(Fbos);                    // cppcheck-suppress danglingLifetime
-      INITSS(FboMain);                 // cppcheck-suppress danglingLifetime
+      INITSS(FboCore);                 // cppcheck-suppress danglingLifetime
       INITSS(SShot);                   // cppcheck-suppress danglingLifetime
       INITSS(Textures);                // cppcheck-suppress danglingLifetime
       INITSS(Palettes);                // cppcheck-suppress danglingLifetime
       INITSS(Fonts);                   // cppcheck-suppress danglingLifetime
       INITSS(Videos);                  // cppcheck-suppress danglingLifetime
-      // Lua always has to be last so it can clean up properly
-      INITSS(Console, conLibList);     // cppcheck-suppress danglingLifetime
+      INITSS(ConGraphics);             // cppcheck-suppress danglingLifetime
+      INITSS(Variables);               // cppcheck-suppress danglingLifetime
+      INITSS(Commands);                // cppcheck-suppress danglingLifetime
       INITSS(Lua);                     // cppcheck-suppress danglingLifetime
       // Done with this macro
 #undef INITSS
@@ -855,17 +854,17 @@ class Core                             // Members initially private
       // the index and order in Image::LoadFlags or Pcm::LoadFlags
       // respectively.
 #define INITCODEC(x) const Codec ## x engCodec ## x
-      // Initialise available image codecs.
+      // This must match the exact order of the values in 'ImageFormat' enums
       INITCODEC(PNG); /* 0 */ INITCODEC(JPG); /* 1 */ INITCODEC(GIF); /* 2 */
       INITCODEC(DDS); /* 3 */
-      // Initialise available audio codecs.
+      // This must match the exact order of the values in 'PcmFormat' enums
       INITCODEC(WAV); /* 0 */ INITCODEC(CAF); /* 1 */ INITCODEC(OGG); /* 2 */
       INITCODEC(MP3); /* 3 */
       // Done with this macro
 #undef INITCODEC
       // Register default cvars and pass over the current gui mode by ref. All
       // the core parts of the engine are initialised from cvar callbacks.
-      cCVars->RegisterDefaults();
+      cCVars->Init();
       // Text mode requested?
       if(cSystem->IsTextMode())
       { // Bail out if logging to standard output because this will prevent
@@ -874,10 +873,10 @@ class Core                             // Members initially private
           XC("Text console cannot be used when logging to standard output!");
         // Init lightweight text mode console for monitoring.
         INITHELPER(SysConIH,
-          cSystem->SysConInit(cCVars->GetInternalCStrSafe(APP_TITLE),
-            cCVars->GetInternalSafe<unsigned int>(CON_TMCCOLS),
-            cCVars->GetInternalSafe<unsigned int>(CON_TMCROWS),
-            cCVars->GetInternalSafe<bool>(CON_TMCNOCLOSE));
+          cSystem->SysConInit(cSystem->GetGuestTitle().data(),
+            cCVars->GetInternal<unsigned int>(CON_TMCCOLS),
+            cCVars->GetInternal<unsigned int>(CON_TMCROWS),
+            cCVars->GetInternal<bool>(CON_TMCNOCLOSE));
           cSystem->WindowInitialised(nullptr),
           cEvtMain->ThreadDeInit();
           cSystem->SetWindowDestroyed();
@@ -885,8 +884,7 @@ class Core                             // Members initially private
         // Perform the initial draw of the console.
         cConsole->FlushToLog();
         // Graphical mode requested too?
-        if(cSystem->IsGraphicalMode())
-          CoreEnterGraphicalMode();
+        if(cSystem->IsGraphicalMode()) CoreEnterGraphicalMode();
         // Only text mode requested?
         else
         { // Reset window icon
@@ -922,15 +920,13 @@ class Core                             // Members initially private
             cCmdLine->GetTotalCArgs());
           // Set exit procedure
           cCmdLine->SetRestart(cSystem->IsGraphicalMode() ?
-            CmdLine::EcId::RestartUI : CmdLine::EcId::Restart);
+            EO_UI_REBOOT : EO_TERM_REBOOT);
           // Have debugging enabled?
           if(cLog->HasLevel(LH_DEBUG))
-          { // Create a counter for argument number
+          { // Log each argument that will be sent
             size_t stId = 0;
-            // Log each argument that will be sent. Could be wchar_t or char.
-            for(const ArgType*const *atListPtr = cCmdLine->GetCArgs();
-                const ArgType*const atPtr = *atListPtr; ++atListPtr)
-              cLog->LogNLCDebugExSafe("- Arg $: $.", stId++, S16toUTF(atPtr));
+            for(const string &strArg : cCmdLine->GetArgList())
+              cLog->LogNLCDebugExSafe("- Arg $: $.", stId++, strArg);
           } // Clean-up and restart
           return 3;
         // If we're to restart process without parameters? Set to do so.
@@ -940,10 +936,10 @@ class Core                             // Members initially private
             "Core signalled to restart without parameters!");
           // Set exit procedure
           cCmdLine->SetRestart(cSystem->IsGraphicalMode() ?
-            CmdLine::EcId::RestartNoParamUI : CmdLine::EcId::RestartNoParam);
+            EO_UI_REBOOT_NOARG : EO_TERM_REBOOT_NOARG);
           // Clean-up and restart
           return 4;
-        // Normal exit (which is already set to EC_QUIT)
+        // Normal exit (which is already set to EO_QUIT)
         default: break;
       }
     } // Safe loggable exception occured?
@@ -965,8 +961,13 @@ class Core                             // Members initially private
   }
   /* -- Default constructor ------------------------------------------------ */
   Core(void) :                         // No parameters
+    /* --------------------------------------------------------------------- */
+    EvtMain::RegVec{                   // Default events
+      { EMC_LUA_PAUSE,  bind(&Core::OnLuaPause,  this, _1) },
+      { EMC_LUA_RESUME, bind(&Core::OnLuaResume, this, _1) },
+    },
     /* -- Initialisers ----------------------------------------------------- */
-    ebErrorMode(LEM_CRITICAL),         // Init lua error mode behaviour
+    cefMode{ CEF_CRITICAL },           // Init lua error mode behaviour
     uiErrorCount(0),                   // Init number of errors occured
     uiErrorLimit(0)                    // Init number of errors allowed
     /* -- Set pointer to this class ---------------------------------------- */

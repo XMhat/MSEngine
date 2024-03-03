@@ -12,7 +12,7 @@ namespace IOgl {                       // Start of private module namespace
 using namespace IClock::P;             using namespace ICollector::P;
 using namespace ICVar::P;              using namespace ICVarDef::P;
 using namespace ICVarLib::P;           using namespace IError::P;
-using namespace IEvtWin::P;            using namespace IFbo::P;
+using namespace IEvtWin::P;            using namespace IFboDef::P;
 using namespace IFlags;                using namespace IGlFW::P;
 using namespace IGlFWUtil::P;          using namespace IIdent::P;
 using namespace ILog::P;               using namespace IStd::P;
@@ -30,27 +30,27 @@ namespace P {                          // Start of public module namespace
 BUILD_FLAGS(Ogl,
   /* ----------------------------------------------------------------------- */
   // No flags                          OpenGL context initialised?
-  GFL_NONE               {0x00000000}, GFL_INITIALISED        {0x00000001},
+  GFL_NONE                  {Flag[0]}, GFL_INITIALISED           {Flag[1]},
   // Either of the below commands?     Have nVidia memory information?
-  GFL_HAVEMEM            {0x00000002}, GFL_HAVENVMEM          {0x00000004},
+  GFL_HAVEMEM               {Flag[2]}, GFL_HAVENVMEM             {Flag[3]},
   // Have ATI memory avail info?       Devices shares memory with system
-  GFL_HAVEATIMEM         {0x00000008}, GFL_SHARERAM           {0x00000010}
+  GFL_HAVEATIMEM            {Flag[4]}, GFL_SHARERAM              {Flag[5]}
 );/* ----------------------------------------------------------------------- */
-enum OglFilterEnum                     // Available filter combinations
+enum OglFilterEnum : size_t            // Available filter combinations
 { /* ----------------------------------------------------------------------- */
   OF_N_N,     OF_N_L,    OF_L_N,      OF_L_L,      OF_NM_MAX,
   OF_N_N_MM_N=OF_NM_MAX, OF_L_N_MM_N, OF_N_N_MM_L, OF_L_N_MM_L,
   OF_N_L_MM_N,           OF_L_L_MM_N, OF_N_L_MM_L, OF_L_L_MM_L,
   OF_MAX,
 };/* ----------------------------------------------------------------------- */
-enum OglBlendEnum                      // Available blend combinations
+enum OglBlendEnum : size_t             // Available blend combinations
 { /* ----------------------------------------------------------------------- */
   OB_Z,   OB_O,       OB_S_C,   OB_O_M_S_C, OB_D_C, OB_O_M_D_C,
   OB_S_A, OB_O_M_S_A, OB_D_A,   OB_O_M_D_A, OB_C_C, OB_O_M_C_C,
   OB_C_A, OB_O_M_C_A, OB_S_A_S, OB_MAX
 };/* ---------------------------------------------------------------------- */
-enum OglUndefinedEnums : GLenum {      // Some undefined OpenGL consts
-  /* ----------------------------------------------------------------------- */
+enum OglUndefinedEnums : GLenum        // Some undefined OpenGL consts
+{ /* ----------------------------------------------------------------------- */
   GL_RGBA_DXT1               = 0x83F1, // GL_COMPRESSED_RGBA_S3TC_DXT1_EXT
   GL_RGBA_DXT3               = 0x83F2, // GL_COMPRESSED_RGBA_S3TC_DXT3_EXT
   GL_RGBA_DXT5               = 0x83F3, // GL_COMPRESSED_RGBA_S3TC_DXT5_EXT
@@ -185,21 +185,21 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
     void CheckLogError(const char*const cpFormat,
       const VarArgs &...vaArgs) const
   { // While there are OpenGL errors
-    for(GLenum glError = sAPI.glGetError();
-               glError != GL_NO_ERROR;
-               glError = sAPI.glGetError())
+    for(GLenum eCode = sAPI.glGetError();
+               eCode != GL_NO_ERROR;
+               eCode = sAPI.glGetError())
     cLog->LogWarningExSafe("GL call failed: $ ($/$$).",
-      StrFormat(cpFormat, vaArgs...), GetGLErr(glError), hex, glError);
+      StrFormat(cpFormat, vaArgs...), GetGLErr(eCode), hex, eCode);
   }
   /* -- GL error handler --------------------------------------------------- */
   template<typename ...VarArgs>
     void CheckExceptError(const char*const cpFormat,
       const VarArgs &...vaArgs) const
   { // If there is no error then return
-    const GLenum glError = sAPI.glGetError();
-    if(glError == GL_NO_ERROR) return;
+    const GLenum eCode = sAPI.glGetError();
+    if(eCode == GL_NO_ERROR) return;
     // Raise exception with error details
-    XC(cpFormat, "Code", glError, "Reason", GetGLErr(glError), vaArgs...);
+    XC(cpFormat, "Code", eCode, "Reason", GetGLErr(eCode), vaArgs...);
   }
   /* -- Flag setter ----------------------------------------------- */ private:
   void SetFlagExt(const char*const cpName, const OglFlagsConst &glFlag)
@@ -214,7 +214,7 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
     SetFlagExt("GL_NVX_gpu_memory_info", GFL_HAVENVMEM);
     SetFlagExt("GL_ATI_meminfo", GFL_HAVEATIMEM);
     // Set flag if have either
-    FlagSet(FlagIsSet(GFL_HAVENVMEM) || FlagIsSet(GFL_HAVEATIMEM) ?
+    FlagSet(FlagIsAnyOfSet(GFL_HAVENVMEM|GFL_HAVEATIMEM) ?
       GFL_HAVEMEM : GFL_SHARERAM|GFL_HAVEMEM);
     // Cache maximum texture size (Minimum hardware support for 3.2 is 1024^2)
     uiTexSize = GetInteger<GLuint>(GL_MAX_TEXTURE_SIZE);
@@ -502,9 +502,9 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
       GetShaderInfoLog(uiId, static_cast<GLsizei>(sErrMsg.size()),
         UtfToNonConstCast<GLchar*>(sErrMsg.data()))));
     // Get error and if an error occured put it as a failure reason
-    const GLenum glError = GetError();
-    if(glError != GL_NO_ERROR || sErrMsg.empty())
-      return StrFormat("Problem getting reason (0x$$)", hex, glError);
+    const GLenum eCode = GetError();
+    if(eCode != GL_NO_ERROR || sErrMsg.empty())
+      return StrFormat("Problem getting reason (0x$$)", hex, eCode);
     // Return the string while chopping off return characters
     return StrChop(sErrMsg);
   }
@@ -530,9 +530,9 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
       static_cast<GLsizei>(sErrMsg.size()),
       UtfToNonConstCast<GLchar*>(sErrMsg.data()))));
     // Get error and if an error occured put it as a failure reason
-    const GLenum glError = GetError();
-    if(glError != GL_NO_ERROR || sErrMsg.empty())
-      return StrFormat("Problem getting reason ($$)", hex, glError);
+    const GLenum eCode = GetError();
+    if(eCode != GL_NO_ERROR || sErrMsg.empty())
+      return StrFormat("Problem getting reason ($$)", hex, eCode);
     // Return the string while chopping off return characters
     return StrChop(sErrMsg);
   }
@@ -810,8 +810,9 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
   void SetTexParam(const GLenum eVar, const GLint iVal) const
     { sAPI.glTexParameteri(GL_TEXTURE_2D, eVar, iVal); }
   /* -- Convert pixel mode to string --------------------------------------- */
-  const string &GetPixelFormat(const GLenum eMode) const
-    { return idFormatModes.Get(eMode); }
+  template<typename IntType> // Forcing any type to GLenum
+    const string_view &GetPixelFormat(const IntType itMode) const
+       { return idFormatModes.Get(static_cast<GLenum>(itMode)); }
   /* -- Update hint -------------------------------------------------------- */
   void SetHint(const GLenum eTarget, const GLenum eMode) const
   { // Get opengl hint and throw if not failed else set hint
@@ -874,13 +875,13 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
           mI.first, mI.second);
     } // Show warning if not enough texture units
     if(uiTexUnits < 3)
-      cLog->LogWarningExSafe("Ogl detected only $ of the three texture units "
+      cLog->LogWarningSafe("Ogl detected only $ of the three texture units "
         "that are required for video playback!");
     // Set the initialised flag
     FlagSet(GFL_INITIALISED);
   }
   /* -- Set texture mode by filter id -------------------------------------- */
-  void SetFilterById(const size_t stId, GLint &iMin, GLint &iMag) const
+  void SetFilterById(const OglFilterEnum ofeId, GLint &iMin, GLint &iMag) const
   { // Filter table
     typedef array<const GLint, 2> TwoGLints;
     typedef array<const TwoGLints, OF_NM_MAX> TexFilterNMList;
@@ -890,12 +891,13 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
       { GL_LINEAR,  GL_NEAREST }, { GL_LINEAR,  GL_LINEAR }, // 02-03
     }};
     // Get filter lookup id and set values
-    const TwoGLints &tfItem = tfList[stId];
+    const TwoGLints &tfItem = tfList[ofeId];
     iMag = tfItem.front();
     iMin = tfItem.back();
   }
   /* -- Set texture mode by filter id -------------------------------------- */
-  void SetMipMapFilterById(const size_t stId, GLint &iMin, GLint &iMag) const
+  void SetMipMapFilterById(const OglFilterEnum ofeId, GLint &iMin,
+    GLint &iMag) const
   { // Filter table
     typedef array<const GLint, 2> TwoGLints;
     typedef array<const TwoGLints, OF_MAX> TexFilterList;
@@ -914,7 +916,7 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
       { GL_LINEAR,  GL_LINEAR_MIPMAP_LINEAR }    // 11
     } };
     // Get filter lookup id and set values
-    const TwoGLints &iaPair = tfList[stId];
+    const TwoGLints &iaPair = tfList[ofeId];
     iMag = iaPair.front();
     iMin = iaPair.back();
   }
@@ -1126,22 +1128,24 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
       StrToBytes(qwFreeVRAM));
   }
   /* --------------------------------------------------------------- */ public:
-  template<typename IntType>const string &GetGLErr(const IntType itCode) const
-    { return idOGLCodes.Get(static_cast<GLenum>(itCode)); }
+  template<typename IntType>
+    const string_view &GetGLErr(const IntType itCode) const
+      { return idOGLCodes.Get(static_cast<GLenum>(itCode)); }
   /* -- Return limit ------------------------------------------------------- */
   double GetLimit(void) const { return ClockDurationToDouble(cdLimit); }
   /* -- Update window size limits ------------------------------------------ */
   void UpdateWindowSizeLimits(void)
   { // Get app specified minimums and maximums
-    const int iWMin = cCVars->GetInternalSafe<int>(WIN_WIDTHMIN),
-              iWMax = cCVars->GetInternalSafe<int>(WIN_HEIGHTMIN),
-              iHMin = cCVars->GetInternalSafe<int>(WIN_WIDTHMAX),
-              iHMax = cCVars->GetInternalSafe<int>(WIN_HEIGHTMAX);
+    const unsigned int
+      uiWMin = cCVars->GetInternal<unsigned int>(WIN_WIDTHMIN),
+      uiWMax = cCVars->GetInternal<unsigned int>(WIN_HEIGHTMIN),
+      uiHMin = cCVars->GetInternal<unsigned int>(WIN_WIDTHMAX),
+      uiHMax = cCVars->GetInternal<unsigned int>(WIN_HEIGHTMAX);
     // Set the window size limits. The specified maximum must not exceed the
     // video cards maximum texture size or perhaps BOOM! (not tested though).
-    cEvtWin->Add(EWC_WIN_LIMITS, iWMin, iWMax,
-      iHMin ? UtilMinimum(iHMin, MaxTexSize()) : MaxTexSize(),
-      iHMax ? UtilMinimum(iHMax, MaxTexSize()) : MaxTexSize());
+    cEvtWin->Add(EWC_WIN_LIMITS, uiWMin, uiWMax,
+      uiHMin ? UtilMinimum(uiHMin, MaxTexSize()) : MaxTexSize(),
+      uiHMax ? UtilMinimum(uiHMax, MaxTexSize()) : MaxTexSize());
   }
   /* -- Initialise --------------------------------------------------------- */
   void Init(const int iRefresh, const bool bForce=false)
@@ -1173,22 +1177,22 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
     // Set hints. Indicates the accuracy of the derivative calculation for the
     // GL shading language fragment processing built-in functions: dFdx, dFdy,
     // and fwidth.
-    SetQShaderHint(cCVars->GetInternalSafe<size_t>(VID_QSHADER));
+    SetQShaderHint(cCVars->GetInternal<size_t>(VID_QSHADER));
     // Indicates the sampling quality of antialiased lines. If a larger filter
     // function is applied, hinting GL_NICEST can result in more pixel
     // fragments being generated during rasterization.
-    SetQLineHint(cCVars->GetInternalSafe<size_t>(VID_QLINE));
+    SetQLineHint(cCVars->GetInternal<size_t>(VID_QLINE));
     // Indicates the sampling quality of antialiased polygons. Hinting
     // GL_NICEST can result in more pixel fragments being generated during
     // rasterization, if a larger filter function is applied.
-    SetQPolygonHint(cCVars->GetInternalSafe<size_t>(VID_QPOLYGON));
+    SetQPolygonHint(cCVars->GetInternal<size_t>(VID_QPOLYGON));
     // Indicates the quality and performance of the compressing texture images.
     // Hinting GL_FASTEST indicates that texture images should be compressed as
     // quickly as possible, while GL_NICEST indicates that texture images
     // should be compressed with as little image quality loss as possible.
     // GL_NICEST should be selected if the texture is to be retrieved by
     // glGetCompressedTexImage for reuse.
-    SetQCompressHint(cCVars->GetInternalSafe<size_t>(VID_QCOMPRESS));
+    SetQCompressHint(cCVars->GetInternal<size_t>(VID_QCOMPRESS));
     // Setup window size limits
     UpdateWindowSizeLimits();
     // Set pack alignment for grabbing screenshots and unpack alignment for

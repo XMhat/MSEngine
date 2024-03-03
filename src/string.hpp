@@ -17,9 +17,12 @@ static const class Common final        // Members initially private
 { /* -- Private variables -------------------------------------------------- */
   const string     strTrue,            // C++ string as "true"
                    strFalse,           // C++ string as "false"
+                   strEquals,          // C++ string as "="
+                   strNOne,            // C++ string as "-1"
                    strZero,            // C++ string as "0"
                    strOne,             // C++ string as "1"
                    strSpace,           // C++ string with whitespace
+                   strEllipsis,        // C++ string for "..."
                    strBlank,           // Empty c++ string
                    strCr,              // Carriage return c++ string
                    strLf,              // Linefeed c++ string
@@ -41,6 +44,10 @@ static const class Common final        // Members initially private
   /* ----------------------------------------------------------------------- */
   const string &Fals(void) const { return strFalse; }
   /* ----------------------------------------------------------------------- */
+  const string &Equals(void) const { return strEquals; }
+  /* ----------------------------------------------------------------------- */
+  const string &NOne(void) const { return strNOne; }
+  /* ----------------------------------------------------------------------- */
   const string &Zero(void) const { return strZero; }
   /* ----------------------------------------------------------------------- */
   const string &One(void) const { return strOne; }
@@ -57,6 +64,8 @@ static const class Common final        // Members initially private
   /* ----------------------------------------------------------------------- */
   const string &Space(void) const { return strSpace; }
   /* ----------------------------------------------------------------------- */
+  const string &Ellipsis(void) const { return strEllipsis; }
+  /* ----------------------------------------------------------------------- */
   const string &FSlash(void) const { return strFSlash; }
   /* ----------------------------------------------------------------------- */
   const string &Unspec(void) const { return strUnspec; }
@@ -66,11 +75,12 @@ static const class Common final        // Members initially private
   Common(void) :                       // No parameters
     /* -- Initialisers ----------------------------------------------------- */
     strTrue{ "true" },                 strFalse{ "false" },
+    strEquals{ "=" },                  strNOne{ "-1" },
     strZero{ "0" },                    strOne{ "1" },
-    strSpace{ " " },                   strCr{ "\r" },
-    strLf{ "\n" },                     strCrLf{ strCr + strLf },
-    strCrLf2{ strCrLf + strCrLf },     strLfCr{ strLf + strCr },
-    strFSlash{ "/" },
+    strSpace{ " " },                   strEllipsis{ "..." },
+    strCr{ "\r" },                     strLf{ "\n" },
+    strCrLf{ strCr + strLf },          strCrLf2{ strCrLf + strCrLf },
+    strLfCr{ strLf + strCr },          strFSlash{ "/" },
     strUnspec{ "<Unspecified>" },      strNull{ "<NullPtr>" },
     cpBlank(strBlank.c_str()),         lLocaleCurrent{ strBlank }
     /* -- No code ---------------------------------------------------------- */
@@ -89,7 +99,9 @@ template<typename AnyType, typename ...VarArgs>
 /* -- Append main function ------------------------------------------------- */
 template<typename ...VarArgs>
   static const string StrAppend(const VarArgs &...vaVars)
-{ // Stream to write to
+{ // Theres no need to call this if theres no parameters
+  static_assert(sizeof...(VarArgs) > 0, "Not enough parameters!");
+  // Stream to write to
   ostringstream osS;
   // Build string
   StrAppendHelper(osS, vaVars...);
@@ -99,7 +111,9 @@ template<typename ...VarArgs>
 /* -- Append with formatted numbers ---------------------------------------- */
 template<typename ...VarArgs>
   static const string StrAppendImbue(const VarArgs &...vaVars)
-{ // Stream to write to
+{ // Theres no need to call this if theres no parameters
+  static_assert(sizeof...(VarArgs) > 0, "Not enough parameters!");
+  // Stream to write to
   ostringstream osS;
   // Imbue current locale
   osS.imbue(cCommon->Locale());
@@ -142,11 +156,13 @@ template<typename AnyType, typename ...VarArgs>
 template<typename ...VarArgs>
   static const string StrFormat(const char*const cpFmt,
     const VarArgs &...vaVars)
-{ // Return if string empty of invalid
+{ // Theres no need to call this if theres no parameters
+  static_assert(sizeof...(VarArgs) > 0, "Not enough parameters!");
+  // Return if string empty of invalid
   if(UtfIsCStringNotValid(cpFmt)) return {};
   // Stream to write to
   ostringstream osS;
-  // StrFormat the text
+  // Format the text
   StrFormatHelper(osS, cpFmt, vaVars...);
   // Return formated text
   return osS.str();
@@ -174,14 +190,25 @@ template<typename IntType>static const string StrFromNum(const IntType itV,
 /* -- Quickly convert numbered string to integer --------------------------- */
 template<typename IntType=int64_t>
   static const IntType StrToNum(const string &strValue)
-{ // Value to store into
-  IntType itN;
-  // Put value into input string stream
+{ // Put value into input string stream
   istringstream isS{ strValue };
   // Push value into integer
-  isS >> itN;
-  // Return result
-  return itN;
+  if constexpr(is_enum_v<IntType>)
+  { // Underlying value of the enum type to store into
+    underlying_type_t<IntType> utN;
+    // Store the value
+    isS >> utN;
+    // Return converting it back to the original type (no performance loss)
+    return static_cast<IntType>(utN);
+  } // Value is not enum type?
+  else
+  { // Value to store into
+    IntType itN;
+    // Store the value
+    isS >> itN;
+    // Return the value
+    return itN;
+  }
 }
 /* -- Quickly convert hex string to integer ------------------------------== */
 template<typename IntType=int64_t>
@@ -223,14 +250,6 @@ static bool StrIsFloat(const string &strValue)
 static bool StrIsNumPOW2(const string &strValue)
   { return !strValue.empty() &&
       StdIntIsPOW2(StdAbsolute(StrToNum(strValue))); }
-/* -- Return true if string is a value number to the power of 2 ------------ */
-static bool StrIsNumPOW2Zero(const string &strValue)
-{ // Failed if empty
-  if(strValue.empty()) return false;
-  // Convert string to number and return positive if value is zero or power 2
-  const int64_t qwVal = StdAbsolute(StrToNum(strValue));
-  return !qwVal || StdIntIsPOW2(qwVal);
-}
 /* -- Convert error number to string --------------------------------------- */
 static const string StrFromErrNo(const int iErrNo=errno)
 { // Buffer to store error message into
@@ -508,40 +527,40 @@ static const string
           { return bcpPair.first ? StrAppend(strOut,
             bcpPair.second) : strOut; }); }
 /* -- Convert time to short duration --------------------------------------- */
-static const string StrShortFromDuration(const double fdDuration,
+static const string StrShortFromDuration(const double dDuration,
   const int iPrecision=6)
 { // Output string
   ostringstream osS;
   // Get duration ceiled and if negative?
-  double fdInt, fdFrac = modf(fdDuration, &fdInt);
-  if(fdInt < 0)
+  double dInt, dFrac = modf(dDuration, &dInt);
+  if(dInt < 0)
   { // Set negative symbol and negate the duration
     osS << '-';
-    fdInt = -fdInt;
-    fdFrac = -fdFrac;
+    dInt = -dInt;
+    dFrac = -dFrac;
   } // Set floating point precision with zero fill
   osS << fixed << setfill('0') << setprecision(0);
   // Have days?
-  if(fdInt >= 86400)
-    osS <<            floor(fdInt/86400)          << ':'
-        << setw(2) << fmod(floor(fdInt/3600), 24) << ':'
-        << setw(2) << fmod(floor(fdInt/60),   60) << ':' << setw(2);
+  if(dInt >= 86400)
+    osS <<            floor(dInt/86400)          << ':'
+        << setw(2) << fmod(floor(dInt/3600), 24) << ':'
+        << setw(2) << fmod(floor(dInt/60),   60) << ':' << setw(2);
   // No days, but hours?
-  else if(fdInt >= 3600)
-    osS <<            fmod(floor(fdInt/3600), 24) << ':'
-        << setw(2) << fmod(floor(fdInt/60),   60) << ':' << setw(2);
+  else if(dInt >= 3600)
+    osS <<            fmod(floor(dInt/3600), 24) << ':'
+        << setw(2) << fmod(floor(dInt/60),   60) << ':' << setw(2);
   // No hours, but minutes?
-  else if(fdInt >= 60)
-    osS << fmod(floor(fdInt/60), 60) << ':' << setw(2);
+  else if(dInt >= 60)
+    osS << fmod(floor(dInt/60), 60) << ':' << setw(2);
   // No minutes so no zero padding
   else osS << setw(0);
   // On the seconds part, we have a problem where having a precision
   // of zero is causing stringstream to round so we'll just convert it to an
   // int instead to fix it.
-  osS << fmod(fdInt, 60);
+  osS << fmod(dInt, 60);
   if(iPrecision > 0)
     osS << '.' << setw(iPrecision) <<
-      static_cast<unsigned int>(fabs(fdFrac) * pow(10.0, iPrecision));
+      static_cast<unsigned int>(fabs(dFrac) * pow(10.0, iPrecision));
   // Return string
   return osS.str();
 }
@@ -607,7 +626,8 @@ template<typename DequeType>
 }
 /* -- Converts the key/value pairs to a stringvector ----------------------- */
 static const string ImplodeMap(const StrNCStrMap &ssmSrc,
-  const string &strLineSep=cCommon->Space(), const string &strKeyValSep="=",
+  const string &strLineSep=cCommon->Space(),
+  const string &strKeyValSep=cCommon->Equals(),
   const string &strValEncaps="\"")
 { // Done if empty
   if(ssmSrc.empty()) return {};
@@ -842,7 +862,18 @@ template<typename IntType>
 }
 /* ------------------------------------------------------------------------- */
 template<typename IntType>
-  static const string StrToReadable(const IntType itValue, int iPrecision)
+  static const string StrToGrouped(const IntType itValue, int iPrecision=2)
+{ // Process a human readable value for the specified number of bits
+  const char *cpSuffix = nullptr;
+  const double dVal =
+    StrToReadableHelper<IntType>(itValue, &cpSuffix, iPrecision);
+  // Move the stringstreams output string into the return value.
+  return StrAppend(fixed, setprecision(iPrecision), dVal, cpSuffix);
+}
+/* ------------------------------------------------------------------------- */
+template<typename IntType>
+  static const string StrToReadableGrouped(const IntType itValue,
+    int iPrecision)
 { // Process a human readable value for the specified number of bits
   const char *cpSuffix = nullptr;
   const double dVal =
@@ -954,23 +985,50 @@ template<typename FloatType>
   static const string StrFromRatio(const FloatType ftAntecedent,
     const FloatType ftConsequent)
 { // Convert to double if neccesary
-  const double fdAntecedent = static_cast<double>(ftAntecedent),
-               fdConsequent = static_cast<double>(ftConsequent);
+  const double dAntecedent = static_cast<double>(ftAntecedent),
+               dConsequent = static_cast<double>(ftConsequent);
   // Return if invalid number or the below loop can infinitely enumerate
-  if(fdAntecedent <= 0.0 || fdConsequent <= 0.0) return "N/A";
+  if(dAntecedent <= 0.0 || dConsequent <= 0.0) return "N/A";
   // Divisor to use
-  double fdDivisor;
+  double dDivisor;
   // Loop until common denominator found
-  for(double fdNumerator = fdAntecedent, fdDenominator = fdConsequent; ; )
+  for(double dNumerator = dAntecedent, dDenominator = dConsequent; ; )
   { // Find the lowest numerator and break if we find it
-    fdNumerator = fmod(fdNumerator, fdDenominator);
-    if(fdNumerator == 0.0) { fdDivisor = fdDenominator; break; }
+    dNumerator = fmod(dNumerator, dDenominator);
+    if(dNumerator == 0.0) { dDivisor = dDenominator; break; }
     // Find the lowest denominator and break if we find it
-    fdDenominator = fmod(fdDenominator, fdNumerator);
-    if(fdDenominator == 0.0) { fdDivisor = fdNumerator; break; }
+    dDenominator = fmod(dDenominator, dNumerator);
+    if(dDenominator == 0.0) { dDivisor = dNumerator; break; }
   } // Return lowest numerator and denominator
-  return StrAppend(fixed, setprecision(0), ceil(fdAntecedent / fdDivisor), ':',
-    ceil(fdConsequent / fdDivisor));
+  return StrAppend(fixed, setprecision(0), ceil(dAntecedent / dDivisor), ':',
+    ceil(dConsequent / dDivisor));
+}
+/* -- Convert list to exploded string -------------------------------------- */
+template<class ListType>string StrExplodeEx(const ListType &lType,
+  const string &strSep, const string &strLast)
+{ // String to return
+  ostringstream ossOut;
+  // What is the size of this string
+  switch(lType.size())
+  { // Empty list? Just break to return empty string
+    case 0: break;
+    // Only one? Just return the string directly
+    case 1: return *lType.cbegin();
+    // Two? Return a simple appendage.
+    case 2: ossOut << *lType.cbegin() << strLast << *lType.crbegin(); break;
+    // More than two? Write the first item first
+    default: ossOut << *lType.cbegin();
+             // Write the rest but one prefixed with the separator
+             StdForEach(seq,
+               next(lType.cbegin(), 1), next(lType.crbegin(), 1).base(),
+                 [&ossOut, &strSep](const auto &strStr)
+                   { ossOut << strSep << strStr; });
+             // and now append the last separator and string from list
+             ossOut << strLast << *lType.crbegin();
+             // Done
+             break;
+  } // Return the compacted string
+  return ossOut.str();
 }
 /* -- Convert string to lower case ----------------------------------------- */
 static const string StrToLowCase[[maybe_unused]](const string &strSrc)
@@ -989,6 +1047,32 @@ static const string StrToUpCase[[maybe_unused]](const string &strSrc)
     strDst[stI] = static_cast<char>(toupper(static_cast<int>(strSrc[stI])));
   // Return copied string
   return strDst;
+}
+/* -- Compact a string removing leading, trailing and duplicate spaces ----- */
+static string &StrCompactRef(string &strStr, const char cToken=' ')
+{ // Enumerate every whitespace character until end-of-string
+  for(auto itC{ strStr.begin() }; itC != strStr.end(); )
+  { // Not a whitespace?
+    if(*itC != cToken)
+    { // Skip non-whitespace characters until end of string
+      while(++itC != strStr.end())
+        // If is a whitespace go forward again and go back to for loop
+        if(*itC == cToken) { ++itC; break; }
+    } // Erase whitespace
+    else itC = strStr.erase(itC);
+  } // Remove trailing whitespace if there is one
+  if(!strStr.empty() && strStr.back() == cToken) strStr.pop_back();
+  // Return string
+  return strStr;
+}
+/* -- Compact a c-string removing duplicate spaces ------------------------- */
+static const string StrCompact(const char*cpStr)
+{ // Ignore if empty
+  if(UtfIsCStringNotValid(cpStr)) return {};
+  // Convert to string, compact it and return it
+  string strOut{ cpStr };
+  StrCompactRef(strOut);
+  return strOut;
 }
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace

@@ -1,4 +1,4 @@
-/* == TYPES.HPP ============================================================ **
+/* == STDTYPES.HPP ========================================================= **
 ** ######################################################################### **
 ** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
 ** ######################################################################### **
@@ -11,8 +11,9 @@
 /* -- Storage spaces ------------------------------------------------------- */
 using ::std::array;                    using ::std::deque;
 using ::std::list;                     using ::std::map;
-using ::std::pair;                     using ::std::set;
-using ::std::string;                   using ::std::vector;
+using ::std::queue;                    using ::std::pair;
+using ::std::set;                      using ::std::string;
+using ::std::string_view;              using ::std::vector;
 using ::std::wstring;
 /* -- Exceptions ----------------------------------------------------------- */
 using ::std::exception;                using ::std::runtime_error;
@@ -41,6 +42,7 @@ using ::std::setw;                     using ::std::showpos;
 using ::std::is_floating_point_v;      using ::std::is_integral_v;
 using ::std::is_pointer_v;             using ::std::is_signed_v;
 using ::std::is_enum_v;                using ::std::is_same_v;
+using ::std::underlying_type_t;
 /* -- Namespaces ----------------------------------------------------------- */
 using ::std::placeholders::_1;
 /* -- Times ---------------------------------------------------------------- */
@@ -49,9 +51,6 @@ using ::std::chrono::microseconds;     using ::std::chrono::milliseconds;
 using ::std::chrono::nanoseconds;      using ::std::chrono::seconds;
 using ::std::chrono::system_clock;
 /* -- Operating system specific -------------------------------------------- */
-#if !defined(WINDOWS)                  // Not using windows?
-using ::std::unexpected_handler;       using ::std::set_unexpected;
-#endif                                 // Not windows check
 using ::std::terminate_handler;        using ::std::set_terminate;
 #if !defined(MACOS)                    // Not using apple compiler?
 using ::std::execution::par_unseq;     using ::std::execution::par;
@@ -111,10 +110,10 @@ typedef StrIntMap::const_iterator    StrIntMapConstIt;
 typedef map<const string, const string> StrStrMap;
 typedef StrStrMap::iterator             StrStrMapIt;
 typedef StrStrMap::const_iterator       StrStrMapConstIt;
-/* -- map of key and referenced value strings ------------------------------ */
-typedef map<const string, const string&> StrStrRefMap;
-typedef StrStrMap::iterator              StrStrRefMapIt;
-typedef StrStrMap::const_iterator        StrStrRefMapConstIt;
+/* -- map of key and value string_views ------------------------------------ */
+typedef map<const string_view, const string_view> StrVStrVMap;
+typedef StrVStrVMap::iterator                     StrVStrVMapIt;
+typedef StrVStrVMap::const_iterator               StrVStrVMapConstIt;
 /* -- map of key and modifyable value strings ------------------------------ */
 typedef map<const string, string>   StrNCStrMap;
 typedef StrNCStrMap::iterator       StrNCStrMapIt;

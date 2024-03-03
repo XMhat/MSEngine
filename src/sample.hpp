@@ -23,45 +23,46 @@ BEGIN_COLLECTOR(Samples, Sample, CLHelperUnsafe)
 /* -- Sample member class -------------------------------------------------- */
 BEGIN_MEMBERCLASSEX(Samples, Sample, ICHelperUnsafe, /* n/a */),
   /* -- Base classes ------------------------------------------------------- */
-  public ALUIntVector,                 // OpenAL buffer handle ids
   public Pcm                           // Loaded pcm data
-{ /* -- Get AL buffer index from the specified physical buffer index */ public:
+{ /* -- Variables -------------------------------------------------- */ public:
+  ALUIntVector uivNames;               // OpenAL buffer handle ids
+  /* -- Get AL buffer index from the specified physical buffer index ------- */
   template<typename IntType=ALint>IntType GetBufferInt(const ALenum eP,
     const size_t stId=0) const
   { // Hold state
     ALint iV;
     // Store state
-    AL(cOal->GetBufferInt((*this)[stId], eP, &iV),
+    AL(cOal->GetBufferInt(uivNames[stId], eP, &iV),
       "Get buffer integer failed!",
       "Identifier", IdentGet(), "Param", eP, "Index", stId);
     // Return state
     return static_cast<IntType>(iV);
   }
-  /* -- Get buffer frequency ----------------------------------------------- */
-  ALsizei GetFrequency(void) const
+  /* -- Get buffer information --------------------------------------------- */
+  ALsizei GetALFrequency(void) const
     { return GetBufferInt<ALsizei>(AL_FREQUENCY); }
-  ALsizei GetBits(void) const
+  ALsizei GetALBits(void) const
     { return GetBufferInt<ALsizei>(AL_BITS); }
-  ALsizei GetChannels(void) const
+  ALsizei GetALChannels(void) const
     { return GetBufferInt<ALsizei>(AL_CHANNELS); }
-  ALsizei GetSize(void) const
+  ALsizei GetALSize(void) const
     { return GetBufferInt<ALsizei>(AL_SIZE); }
   ALdouble GetDuration(void) const
-    { return (static_cast<ALdouble>(GetSize()) * 8 /
-        (GetChannels() * GetBits())) / GetFrequency(); }
+    { return (static_cast<ALdouble>(GetALSize()) * 8 /
+        (GetALChannels() * GetALBits())) / GetALFrequency(); }
   /* -- Unload buffers ----------------------------------------------------- */
   void UnloadBuffer(void)
   { // Bail if buffers not allocated
-    if(empty()) return;
+    if(uivNames.empty()) return;
     // Stop this sample from playing in its entirety
     if(const unsigned int uiStopped = Stop())
       cLog->LogDebugExSafe("Sample '$' cleared $ sources using it!",
         IdentGet(), uiStopped);
     // Delete the buffers
-    ALL(cOal->DeleteBuffers(*this), "Sample '$' failed to delete $ buffers",
-      IdentGet(), size());
+    ALL(cOal->DeleteBuffers(uivNames), "Sample '$' failed to delete $ buffers",
+      IdentGet(), uivNames.size());
     // Reset buffer
-    clear();
+    uivNames.clear();
   }
   /* ----------------------------------------------------------------------- */
   ALuint PrepareSource(Source &sCref, const ALuint uiBufId,
@@ -92,9 +93,9 @@ BEGIN_MEMBERCLASSEX(Samples, Sample, ICHelperUnsafe, /* n/a */),
     // Prepare sources
     const array<const ALuint,2> aSourceIds{
       PrepareSource(*srLeft,           // Left channel
-        front(), fGain, -0.5f+fPan, fPitch, bLoop, bLuaManaged),
+        uivNames.front(), fGain, -0.5f+fPan, fPitch, bLoop, bLuaManaged),
       PrepareSource(*srRight,          // Right chanel
-        (*this)[1], fGain,  0.5f+fPan, fPitch, bLoop, bLuaManaged)
+        uivNames[1], fGain, 0.5f+fPan, fPitch, bLoop, bLuaManaged)
     }; // Play all the sources together
     ALL(cOal->PlaySources(aSourceIds),
       "Sample '$' failed to play stereo sources!", IdentGet());
@@ -104,14 +105,14 @@ BEGIN_MEMBERCLASSEX(Samples, Sample, ICHelperUnsafe, /* n/a */),
     const ALfloat fPitch, const bool bLoop, Source &sCref,
     const bool bLuaManaged)
   { // Play the source
-    ALL(cOal->PlaySource(PrepareSource(sCref, front(),
+    ALL(cOal->PlaySource(PrepareSource(sCref, uivNames.front(),
       GetAdjustedGain(fGain), fPan, fPitch, bLoop, bLuaManaged)),
         "Sample '$' failed to play mono source!", IdentGet());
   }
   /* -- Spawn new sources in Lua ------------------------------------------- */
   void Spawn(lua_State*const lS)
   { // How many sources do we need?
-    switch(size())
+    switch(uivNames.size())
     { // 1? (Mono source?) Create a new mono source and if we got it? Play it!
       case 1: if(SourceGetFromLua(lS)) return;
               // Log that we could not grab a mono channel source
@@ -136,7 +137,7 @@ BEGIN_MEMBERCLASSEX(Samples, Sample, ICHelperUnsafe, /* n/a */),
       // Unsupported amount of channels
       default: XC("Unsupported amount of channels!",
                   "Identifier", IdentGet(),
-                  "Channels",   size());
+                  "Channels",   uivNames.size());
     }
   }
   /* -- Play with a pre-allocated sources by Lua --------------------------- */
@@ -147,7 +148,7 @@ BEGIN_MEMBERCLASSEX(Samples, Sample, ICHelperUnsafe, /* n/a */),
                   fPitch = LuaUtilGetNum<ALfloat>(lS, 4, "Pitch");
     const bool bLoop = LuaUtilGetBool(lS, 5, "Loop");
     // How many sources do we need?
-    switch(size())
+    switch(uivNames.size())
     { // 1? (Mono source?) Create a new mono source and if we got it?
       case 1: if(Source*const scMono = SourceGetFromLua(lS))
               { // Play it!
@@ -182,14 +183,14 @@ BEGIN_MEMBERCLASSEX(Samples, Sample, ICHelperUnsafe, /* n/a */),
       // Unsupported amount of channels
       default: XC("Unsupported amount of channels!",
                   "Identifier", IdentGet(),
-                  "Channels",   size());
+                  "Channels",   uivNames.size());
     }
   }
   /* ----------------------------------------------------------------------- */
   void Play(const ALfloat fGain, const ALfloat fPan, const ALfloat fPitch,
     const ALuint uiLoop)
   { // How many sources do we need?
-    switch(size())
+    switch(uivNames.size())
     { // 1? (Mono source?) Create a new mono source and if we got it? Play it!
       case 1: if(Source*const scMono = GetSource())
                 PlayMonoSource(fGain, fPan, fPitch, uiLoop, *scMono, false);
@@ -218,43 +219,44 @@ BEGIN_MEMBERCLASSEX(Samples, Sample, ICHelperUnsafe, /* n/a */),
       // Unsupported amount of channels
       default: XC("Unsupported amount of channels!",
                   "Identifier", IdentGet(),
-                  "Channels",   size());
+                  "Channels",   uivNames.size());
     }
   }
   /* == Stop the buffer ==================================================== */
-  unsigned int Stop(void) const { return SourceStop(*this); }
+  unsigned int Stop(void) const { return SourceStop(uivNames); }
   /* -- Load a single buffer from memory ----------------------------------- */
   void LoadSample(Pcm &pcmSrc)
   { // Allocate and generate openal buffers
-    resize(pcmSrc.GetChannels());
-    AL(cOal->CreateBuffers(*this), "Error creating sample buffers!",
-      "Identifier", pcmSrc.IdentGet(), "Count", size());
+    uivNames.resize(pcmSrc.GetChannels());
+    AL(cOal->CreateBuffers(uivNames), "Error creating sample buffers!",
+      "Identifier", pcmSrc.IdentGet(), "Count", uivNames.size());
     // Buffer the left or mono channel
-    AL(cOal->BufferData(front(), pcmSrc.GetSFormat(),
+    AL(cOal->BufferData(uivNames.front(), pcmSrc.GetSFormat(),
       pcmSrc.aPcmL, static_cast<ALsizei>(pcmSrc.GetRate())),
         "Error buffering left channel/mono PCM audio data!",
-        "Identifier", pcmSrc.IdentGet(),  "Buffer",  front(),
-        "StrFormat",     pcmSrc.GetFormat(), "MFormat", pcmSrc.GetSFormat(),
-        "Rate",       pcmSrc.GetRate(),   "Size",    pcmSrc.aPcmL.Size());
+        "Identifier", pcmSrc.IdentGet(),  "Buffer",  uivNames.front(),
+        "Format",     pcmSrc.GetFormat(), "MFormat", pcmSrc.GetSFormat(),
+        "Rate",       pcmSrc.GetRate(),   "Size",    pcmSrc.aPcmL.MemSize());
     // Stereo sample?
-    if(size() > 1)
+    if(uivNames.size() > 1)
     { // Buffer the right stereo channel
-      AL(cOal->BufferData((*this)[1], pcmSrc.GetSFormat(),
+      AL(cOal->BufferData(uivNames[1], pcmSrc.GetSFormat(),
         pcmSrc.aPcmR, static_cast<ALsizei>(pcmSrc.GetRate())),
           "Error buffering right/stereo channel PCM audio data!",
-          "Identifier", pcmSrc.IdentGet(),  "Buffer",  (*this)[1],
-          "StrFormat",     pcmSrc.GetFormat(), "MFormat", pcmSrc.GetSFormat(),
-          "Rate",       pcmSrc.GetRate(),   "Size",    pcmSrc.aPcmR.Size());
+          "Identifier", pcmSrc.IdentGet(),  "Buffer",  uivNames[1],
+          "Format",     pcmSrc.GetFormat(), "MFormat", pcmSrc.GetSFormat(),
+          "Rate",       pcmSrc.GetRate(),   "Size",    pcmSrc.aPcmR.MemSize());
       // Log progress
       cLog->LogDebugExSafe(
         "Sample '$' uploaded as L:$[$] and R:$[$] at $Hz as format 0x$$.",
-        pcmSrc.IdentGet(), front(), pcmSrc.aPcmL.Size(), (*this)[1],
-        pcmSrc.aPcmR.Size(), pcmSrc.GetRate(), hex, pcmSrc.GetFormat());
+        pcmSrc.IdentGet(), uivNames.front(), pcmSrc.aPcmL.MemSize(),
+        uivNames[1], pcmSrc.aPcmR.MemSize(), pcmSrc.GetRate(), hex,
+        pcmSrc.GetFormat());
     } // Log progress
     else cLog->LogDebugExSafe(
       "Sample '$' uploaded as $[$] at $Hz as format 0x$$.",
-      pcmSrc.IdentGet(), front(), pcmSrc.aPcmL.Size(), pcmSrc.GetRate(),
-      hex, pcmSrc.GetFormat());
+      pcmSrc.IdentGet(), uivNames.front(), pcmSrc.aPcmL.MemSize(),
+      pcmSrc.GetRate(), hex, pcmSrc.GetFormat());
   }
   /* -- Load a single buffer ----------------------------------------------- */
   void ReloadSample(void)
@@ -279,14 +281,14 @@ BEGIN_MEMBERCLASSEX(Samples, Sample, ICHelperUnsafe, /* n/a */),
       pcmSrc.IdentGet(), pcmSrc.GetAlloc(), pcmSrc.GetRate(),
       pcmSrc.GetChannels(), pcmSrc.GetBits());
     // If source and destination pcm class are not the same?
-    if(&*this != &pcmSrc)
+    if(this != &pcmSrc)
     { // Move pcm data over. The old pcm will be unusable so guest should
       // discard it.
       SwapPcm(pcmSrc);
       // The pcm passed in the arguments is usually still allocated by LUA and
       // will still be registered, so lets put a note in the pcm sample to show
       // that this sample class has nicked the pcm sample.
-      pcmSrc.IdentSet("!SAM!$!", IdentGet());
+      pcmSrc.IdentSetEx("!SAM!$!", IdentGet());
     } // Initialise
     LoadSample(*this);
     // Remove all sample data because we can just load it from file again
@@ -296,7 +298,7 @@ BEGIN_MEMBERCLASSEX(Samples, Sample, ICHelperUnsafe, /* n/a */),
   /* -- Constructor -------------------------------------------------------- */
   Sample(void) :
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperSample{ *cSamples, this }  // Initialise collector class
+    ICHelperSample{ cSamples, this }   // Initialise collector class
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Destructor --------------------------------------------------------- */

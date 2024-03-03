@@ -361,7 +361,7 @@ LLFUNCEX(Bits, 1, LCPUSHVAR(StrToReadableBits(
 // < Result:string=The resulting string.
 // ? Converts the specified number into a human readable string.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Grouped, 1, LCPUSHVAR(StrToReadable(
+LLFUNCEX(Grouped, 1, LCPUSHVAR(StrToReadableGrouped(
   LCGETINT(uint64_t, 1, "Bits"), LCGETINT(int, 2, "Precision"))));
 /* ========================================================================= */
 // $ Util.PlusOrMinus
@@ -456,6 +456,14 @@ LLFUNCEX(ClampInt, 1, LCPUSHVAR(UtilClamp(
   LCGETINT(lua_Integer, 1, "Value"), LCGETINT(lua_Integer, 2, "Minimum"),
   LCGETINT(lua_Integer, 3, "Maximum"))));
 /* ========================================================================= */
+// $ Util.Compact
+// > Value:string=The string to compact.
+// < Result:integer=The compacted string.
+// ? Removes all leading, trailing and grouped whitespaces from string so that
+// ? each word has only one whitespace in between them.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(Compact, 1, LCPUSHVAR(StrCompact(LCGETSTRING(char, 1, "String"))));
+/* ========================================================================= */
 // $ Util.Replace
 // > String:string=The string to search from
 // > Search:string=The string to find
@@ -501,12 +509,12 @@ LLFUNCEX(Trim, 1, LCPUSHVAR(StrTrim(LCGETCPPSTRING(1, "String"),
 // ? preserving aspect ratio.
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(StretchInner)
-  double fdOW = LCGETNUM(double, 1, "OuterWidth"),
-         fdOH = LCGETNUM(double, 2, "OuterHeight"),
-         fdIW = LCGETNUM(double, 3, "InnerWidth"),
-         fdIH = LCGETNUM(double, 4, "InnerHeight");
-  UtilStretchToInner(fdOW, fdOH, fdIW, fdIH);
-  LCPUSHVAR(fdOW, fdOH, fdIW, fdIH);
+  double dOW = LCGETNUM(double, 1, "OuterWidth"),
+         dOH = LCGETNUM(double, 2, "OuterHeight"),
+         dIW = LCGETNUM(double, 3, "InnerWidth"),
+         dIH = LCGETNUM(double, 4, "InnerHeight");
+  UtilStretchToInner(dOW, dOH, dIW, dIH);
+  LCPUSHVAR(dOW, dOH, dIW, dIH);
 LLFUNCENDEX(4)
 /* ========================================================================= */
 // $ Util.StretchOuter
@@ -522,12 +530,12 @@ LLFUNCENDEX(4)
 // ? preserving aspect ratio.
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(StretchOuter)
-  double fdOW = LCGETNUM(double, 1, "OuterWidth"),
-         fdOH = LCGETNUM(double, 2, "OuterHeight"),
-         fdIW = LCGETNUM(double, 3, "InnerWidth"),
-         fdIH = LCGETNUM(double, 4, "InnerHeight");
-  UtilStretchToOuter(fdOW, fdOH, fdIW, fdIH);
-  LCPUSHVAR(fdOW, fdOH, fdIW, fdIH);
+  double dOW = LCGETNUM(double, 1, "OuterWidth"),
+         dOH = LCGETNUM(double, 2, "OuterHeight"),
+         dIW = LCGETNUM(double, 3, "InnerWidth"),
+         dIH = LCGETNUM(double, 4, "InnerHeight");
+  UtilStretchToOuter(dOW, dOH, dIW, dIH);
+  LCPUSHVAR(dOW, dOH, dIW, dIH);
 LLFUNCENDEX(4)
 /* ========================================================================= */
 // $ Util.MkUTF8Char
@@ -703,25 +711,26 @@ LLRSBEGIN                              // Util.* namespace functions begin
   LLRSFUNC(AscNTime),      LLRSFUNC(AscNTimeUTC),   LLRSFUNC(AscTime),
   LLRSFUNC(AscTimeUTC),    LLRSFUNC(Bits),          LLRSFUNC(Blank),
   LLRSFUNC(Bytes),         LLRSFUNC(Capitalise),    LLRSFUNC(Clamp),
-  LLRSFUNC(ClampInt),      LLRSFUNC(CountOf),       LLRSFUNC(DecodeUUID),
-  LLRSFUNC(Duration),      LLRSFUNC(EncodeUUID),    LLRSFUNC(Explode),
-  LLRSFUNC(ExplodeEx),     LLRSFUNC(FormatNTime),   LLRSFUNC(FormatNTimeUTC),
-  LLRSFUNC(FormatNumber),  LLRSFUNC(FormatNumberI), LLRSFUNC(FormatTime),
-  LLRSFUNC(FormatTimeUTC), LLRSFUNC(GetRatio),      LLRSFUNC(Grouped),
-  LLRSFUNC(Hex),           LLRSFUNC(HighByte),      LLRSFUNC(HighDWord),
-  LLRSFUNC(HighWord),      LLRSFUNC(IfBlank),       LLRSFUNC(Implode),
-  LLRSFUNC(ImplodeEx),     LLRSFUNC(IsASCII),       LLRSFUNC(IsExtASCII),
-  LLRSFUNC(LDuration),     LLRSFUNC(LDurationEx),   LLRSFUNC(LowByte),
-  LLRSFUNC(LowDWord),      LLRSFUNC(LowWord),       LLRSFUNC(MakeDWord),
-  LLRSFUNC(MakeQWord),     LLRSFUNC(MakeWord),      LLRSFUNC(ParseArgs),
-  LLRSFUNC(ParseTime),     LLRSFUNC(ParseTime2),    LLRSFUNC(ParseTimeEx),
-  LLRSFUNC(ParseUrl),      LLRSFUNC(Pluralise),     LLRSFUNC(PluraliseEx),
-  LLRSFUNC(PlusOrMinus),   LLRSFUNC(PlusOrMinusEx), LLRSFUNC(Position),
-  LLRSFUNC(RandUUID),      LLRSFUNC(RelTime),       LLRSFUNC(RelTimeEx),
-  LLRSFUNC(Replace),       LLRSFUNC(ReplaceEx),     LLRSFUNC(Round),
-  LLRSFUNC(RoundInt),      LLRSFUNC(RoundMul),      LLRSFUNC(RoundPow2),
-  LLRSFUNC(StretchInner),  LLRSFUNC(StretchOuter),  LLRSFUNC(TableSize),
-  LLRSFUNC(Trim),          LLRSFUNC(UTF8Char),      LLRSFUNC(WordWrap),
+  LLRSFUNC(ClampInt),      LLRSFUNC(Compact),       LLRSFUNC(CountOf),
+  LLRSFUNC(DecodeUUID),    LLRSFUNC(Duration),      LLRSFUNC(EncodeUUID),
+  LLRSFUNC(Explode),       LLRSFUNC(ExplodeEx),     LLRSFUNC(FormatNTime),
+  LLRSFUNC(FormatNTimeUTC),LLRSFUNC(FormatNumber),  LLRSFUNC(FormatNumberI),
+  LLRSFUNC(FormatTime),    LLRSFUNC(FormatTimeUTC), LLRSFUNC(GetRatio),
+  LLRSFUNC(Grouped),       LLRSFUNC(Hex),           LLRSFUNC(HighByte),
+  LLRSFUNC(HighDWord),     LLRSFUNC(HighWord),      LLRSFUNC(IfBlank),
+  LLRSFUNC(Implode),       LLRSFUNC(ImplodeEx),     LLRSFUNC(IsASCII),
+  LLRSFUNC(IsExtASCII),    LLRSFUNC(LDuration),     LLRSFUNC(LDurationEx),
+  LLRSFUNC(LowByte),       LLRSFUNC(LowDWord),      LLRSFUNC(LowWord),
+  LLRSFUNC(MakeDWord),     LLRSFUNC(MakeQWord),     LLRSFUNC(MakeWord),
+  LLRSFUNC(ParseArgs),     LLRSFUNC(ParseTime),     LLRSFUNC(ParseTime2),
+  LLRSFUNC(ParseTimeEx),   LLRSFUNC(ParseUrl),      LLRSFUNC(Pluralise),
+  LLRSFUNC(PluraliseEx),   LLRSFUNC(PlusOrMinus),   LLRSFUNC(PlusOrMinusEx),
+  LLRSFUNC(Position),      LLRSFUNC(RandUUID),      LLRSFUNC(RelTime),
+  LLRSFUNC(RelTimeEx),     LLRSFUNC(Replace),       LLRSFUNC(ReplaceEx),
+  LLRSFUNC(Round),         LLRSFUNC(RoundInt),      LLRSFUNC(RoundMul),
+  LLRSFUNC(RoundPow2),     LLRSFUNC(StretchInner),  LLRSFUNC(StretchOuter),
+  LLRSFUNC(TableSize),     LLRSFUNC(Trim),          LLRSFUNC(UTF8Char),
+  LLRSFUNC(WordWrap),
 LLRSEND                                // Util.* namespace functions end
 /* ========================================================================= */
 }                                      // End of Util namespace

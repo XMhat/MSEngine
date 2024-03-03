@@ -22,19 +22,20 @@ local assert<const>, type<const>, collectgarbage<const>, ceil<const>,
 local CoreLog<const>, UtilDuration<const>, InputClearStates<const>,
   UtilClamp<const>, InputGetJoyAxis<const>, InputMouseState<const>,
   UtilRoundInt<const>, InputGetJoyButton<const>, DisplayReset<const>,
-  InfoTicks<const>, AssetParse<const>, FboDraw<const>, ConsoleWrite<const>,
-  UtilBlank<const>, CoreStack<const>, CVarsGet<const>, InputSetCursor<const>,
+  InfoTicks<const>, AssetParse<const>, FboDraw<const>, CoreWrite<const>,
+  UtilBlank<const>, CoreStack<const>, InputSetCursor<const>,
   InputKeyState<const>, InputSetCursorPos<const>, FboConEnabled<const>,
   AssetParseBlock<const>, UtilExplode<const>, UtilImplode<const>,
-  CVarsRegister<const>, TextureCreate<const>, CoreOnTick<const>,
+  VariableRegister<const>, TextureCreate<const>, CoreOnTick<const>,
   InfoCatchup<const>, InfoTime<const>, InputGetNumJoyAxises<const>
   = -- --------------------------------------------------------------------- --
   Core.Log, Util.Duration, Input.ClearStates, Util.Clamp, Input.GetJoyAxis,
   Input.aMouseState, Util.RoundInt, Input.GetJoyButton, Display.Reset,
-  Info.Ticks, Asset.Parse, Fbo.Draw, Console.Write, Util.Blank, Core.Stack,
-  CVars.Get, Input.SetCursor, Input.KeyState, Input.SetCursorPos,
-  Fbo.ConEnabled, Asset.ParseBlock, Util.Explode, Util.Implode, CVars.Register,
-  Texture.Create, Core.OnTick, Info.Catchup, Info.Time, Input.GetNumJoyAxises;
+  Info.Ticks, Asset.Parse, Fbo.Draw, Core.Write, Util.Blank, Core.Stack,
+  Input.SetCursor, Input.KeyState, Input.SetCursorPos,
+  Fbo.ConEnabled, Asset.ParseBlock, Util.Explode, Util.Implode,
+  Variable.Register, Texture.Create, Core.OnTick, Info.Catchup, Info.Time,
+  Input.GetNumJoyAxises;
 -- Globals ----------------------------------------------------------------- --
 local fboMain<const> = Fbo.Main();     -- Main fbo class
 local fFont<const> = Font.Console();   -- Main console class
@@ -544,8 +545,8 @@ end
 local function VideoPlay(Handle)
   VideoStop();
   vidHandle = Handle;
-  vidHandle:SetVertex(0, 0, 320, 240);
-  vidHandle:SetTexCoord(0, 0, 1, 1);
+  vidHandle:SetVLTRB(0, 0, 320, 240);
+  vidHandle:SetTCLTRB(0, 0, 1, 1);
   vidHandle:SetFilter(true);
   vidHandle:Play();
   return vidHandle;
@@ -825,19 +826,11 @@ local function fcbTick()
   -- Empty callback function for cvar events
   local function fcbEmpty() return true end;
   -- Register file data cvar
-  local aCVF<const> = CVars.Flags;
+  local aCVF<const> = Variable.Flags;
   -- Default cvar flags for string storage
   local iCFR<const> = aCVF.STRINGSAVE|aCVF.TRIM|aCVF.PROTECTED|aCVF.DEFLATE;
   -- Default cvar flags for boolean storage
   local iCFB<const> = aCVF.BOOLEANSAVE;
-  -- 4 save slots so 4 save variables
-  for iI = 1, 4 do CVarsRegister("gam_data"..iI, "", iCFR, fcbEmpty) end;
-  -- ...and a cvar that lets us show setup for the first time
-  CVarsRegister("gam_setup", 1, iCFB, fcbEmpty);
-  -- ...and a cvar that lets us skip the intro
-  CVarsRegister("gam_intro", 1, iCFB, fcbEmpty);
-  -- ...and a cvar that lets us start straight into a level
-  CVarsRegister("gam_test", "", aCVF.STRING, fcbEmpty);
   -- Initialise base API functions
   aAPI = {
     GetKeyState = GetKeyState, ClearKeyState = ClearKeyState,
@@ -875,6 +868,17 @@ local function fcbTick()
     GetTestMode = GetTestMode, RenderShadow = RenderShadow,
     SetBottomRightTipAndShadow = SetBottomRightTipAndShadow
   };
+  -- 4 save slots so 4 save variables
+  for iI = 1, 4 do
+    aAPI["VarGameData"..iI] =
+      VariableRegister("gam_data"..iI, "", iCFR, fcbEmpty);
+  end
+  -- ...and a cvar that lets us show setup for the first time
+  aAPI.VarGameSetup = VariableRegister("gam_setup", 1, iCFB, fcbEmpty);
+  -- ...and a cvar that lets us skip the intro
+  aAPI.VarGameIntro = VariableRegister("gam_intro", 1, iCFB, fcbEmpty);
+  -- ...and a cvar that lets us start straight into a level
+  aAPI.VarGameTest = VariableRegister("gam_test", "", aCVF.STRING, fcbEmpty);
   -- Data script loaded event
   local function DataLoaded()
     aCursorIdData, aCursorData = aAPI.aCursorIdData, aAPI.aCursorData;
@@ -1019,7 +1023,7 @@ local function fcbTick()
     -- Init game counters so testing stuff quickly works properly
     InitNewGame();
     -- Tests
-    local sTestValue<const> = CVarsGet("gam_test");
+    local sTestValue<const> = aAPI.VarGameTest:Get();
     if #sTestValue > 0 then
       -- Test mode enabled
       bTestMode = true;
@@ -1045,9 +1049,9 @@ local function fcbTick()
       end
     end
     -- If being run for first time
-    if CVarsGet("gam_setup") == "0" then
+    if aAPI.VarGameSetup:Get() == "0" then
       -- Skip intro? Initialise title screen
-      if CVarsGet("gam_intro") == "0" then return InitTitle() end;
+      if aAPI.VarGameIntro:Get() == "0" then return InitTitle() end;
       -- Initialise intro with setup dialog
       return InitIntro(false);
     end
@@ -1057,7 +1061,7 @@ local function fcbTick()
     -- Initialise setup screen by default
     InitIntro(true);
     -- No longer show setup screen
-    CVars.Set("gam_setup", 0);
+    aAPI.VarGameSetup:Set(0);
   end
   -- Start loading assets
   local fcbProgress<const> = LoadResources("Core", aBaseAssets, OnLoaded);

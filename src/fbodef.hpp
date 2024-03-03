@@ -7,7 +7,7 @@
 ** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IFbo {                       // Start of private module namespace
+namespace IFboDef {                    // Start of private module namespace
 /* -- Dependencies --------------------------------------------------------- */
 using namespace IDim;                  using namespace IUtil::P;
 using namespace Lib::OS::GlFW;

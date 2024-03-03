@@ -22,7 +22,8 @@ namespace P {                          // Start of public module namespace
 /* == Pcm collector and member class ======================================= */
 BEGIN_ASYNCCOLLECTORDUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
-  public AsyncLoader<Pcm>,             // For loading Pcm's off main-thread
+  public Ident,                        // Pcm file name
+  public AsyncLoaderPcm,               // For loading Pcm's off main-thread
   public Lockable,                     // Lua garbage collector instruction
   public PcmData                       // Pcm data
 { /* -- Split a stereo waveform into two seperate channels --------- */ public:
@@ -30,23 +31,24 @@ BEGIN_ASYNCCOLLECTORDUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
   { // If pcm data only is single channel, we don't need to split channels.
     if(GetChannels() == 1) return;
     // If the right channel was already filled then we don't need to do it
-    if(!aPcmR.Empty()) return;
+    if(!aPcmR.MemIsEmpty()) return;
     // Move pcm file data to a temporary array
     const Memory aTemp{ StdMove(aPcmL) };
     // Initialise buffers, half the size since we're only splitting
-    aPcmL.InitBlank(aTemp.Size()/2);
-    aPcmR.InitBlank(aPcmL.Size());
+    aPcmL.MemInitBlank(aTemp.MemSize()/2);
+    aPcmR.MemInitBlank(aPcmL.MemSize());
     // Iterate through the samples
     for(size_t stIndex = 0,
                stSubIndex = 0,
-               stBytes = GetBits() / 8,
+               stBytes = GetBytes(),
                stStep = GetChannels() * stBytes;
-               stIndex < aTemp.Size();
+               stIndex < aTemp.MemSize();
                stIndex += stStep,
                stSubIndex += stBytes)
     { // De-interleave into seperate channels
-      aPcmL.Write(stSubIndex, aTemp.Read(stIndex, stBytes), stBytes);
-      aPcmR.Write(stSubIndex, aTemp.Read(stIndex + stBytes, stBytes), stBytes);
+      aPcmL.MemWrite(stSubIndex, aTemp.MemRead(stIndex, stBytes), stBytes);
+      aPcmR.MemWrite(stSubIndex, aTemp.MemRead(stIndex + stBytes, stBytes),
+        stBytes);
     }
   }
   /* -- Split a stereo waveform and set allocation size -------------------- */
@@ -54,19 +56,19 @@ BEGIN_ASYNCCOLLECTORDUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
   { // Split audio into two channels if audio in stereo
     Split();
     // Set allocated size
-    SetAlloc(aPcmL.Size() + aPcmR.Size());
+    SetAlloc(aPcmL.MemSize() + aPcmR.MemSize());
   }
   /* -- Load sample from memory -------------------------------------------- */
-  void AsyncReady(FileMap &fC)
+  void AsyncReady(FileMap &fsImage)
   { // Force load a certain type of audio (for speed?) but in Async mode,
     // force detection doesn't really matter as much, but overall, still
     // needed if speed is absolutely neccesary.
-    if     (FlagIsSet(PL_FCE_WAV)) PcmLoadFile(0, fC, *this);
-    else if(FlagIsSet(PL_FCE_CAF)) PcmLoadFile(1, fC, *this);
-    else if(FlagIsSet(PL_FCE_OGG)) PcmLoadFile(2, fC, *this);
-    else if(FlagIsSet(PL_FCE_MP3)) PcmLoadFile(3, fC, *this);
+    if     (FlagIsSet(PL_FCE_WAV)) PcmLoadFile(PFMT_WAV, fsImage, *this);
+    else if(FlagIsSet(PL_FCE_CAF)) PcmLoadFile(PFMT_CAF, fsImage, *this);
+    else if(FlagIsSet(PL_FCE_OGG)) PcmLoadFile(PFMT_OGG, fsImage, *this);
+    else if(FlagIsSet(PL_FCE_MP3)) PcmLoadFile(PFMT_MP3, fsImage, *this);
     // Auto detection of pcm audio
-    else PcmLoadFile(fC, *this);
+    else PcmLoadFile(fsImage, *this);
     // Split into two channels if audio in stereo
     SplitAndSetAlloc();
   }
@@ -84,70 +86,64 @@ BEGIN_ASYNCCOLLECTORDUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
   { // Need 6 parameters (class pointer was already pushed onto the stack);
     LuaUtilCheckParams(lS, 7);
     // Get and check parameters
-    const string strF{ LuaUtilGetCppStrNE(lS, 1, "Identifier") };
-    Asset &aData = *LuaUtilGetPtr<Asset>(lS, 2, "Asset");
+    const string strFile{ LuaUtilGetCppStrNE(lS, 1, "Identifier") };
+    Asset &mbSrc = *LuaUtilGetPtr<Asset>(lS, 2, "Asset");
     FlagReset(LuaUtilGetFlags(lS, 3, PL_MASK, "Flags"));
     LuaUtilCheckFuncs(lS, 4, "ErrorFunc", 5, "ProgressFunc", 6, "SuccessFunc");
     // Is dynamic because it was not loaded from disk
     SetDynamic();
     // Load sample from memory asynchronously
-    AsyncInitArray(lS, strF, "pcmarray", StdMove(aData));
+    AsyncInitArray(lS, strFile, "pcmarray", StdMove(mbSrc));
   }
   /* -- Load pcm from file asynchronously ---------------------------------- */
   void InitAsyncFile(lua_State*const lS)
   { // Need 5 parameters (class pointer was already pushed onto the stack);
     LuaUtilCheckParams(lS, 6);
     // Get and check parameters
-    const string strF{ LuaUtilGetCppFile(lS, 1, "File") };
+    const string strFile{ LuaUtilGetCppFile(lS, 1, "File") };
     FlagReset(LuaUtilGetFlags(lS, 2, PL_MASK, "Flags"));
     LuaUtilCheckFuncs(lS, 3, "ErrorFunc", 4, "ProgressFunc", 5, "SuccessFunc");
     // Load sample from file asynchronously
-    AsyncInitFile(lS, strF, "pcmfile");
+    AsyncInitFile(lS, strFile, "pcmfile");
   }
   /* -- Init from file ----------------------------------------------------- */
-  void InitFile(const string &strFilename, const PcmFlagsConst &lfLF)
+  void InitFile(const string &strFile, const PcmFlagsConst &pfcFlags)
   { // Set the loading flags
-    FlagReset(lfLF);
+    FlagReset(pfcFlags);
     // Load the file normally
-    SyncInitFileSafe(strFilename);
+    SyncInitFileSafe(strFile);
   }
   /* -- Init from array ---------------------------------------------------- */
-  void InitArray(const string &strName, Memory &&mbD,
-    const PcmFlagsConst &lfLF)
+  void InitArray(const string &strName, Memory &&mbSrc,
+    const PcmFlagsConst &pfcFlags)
   { // Is dynamic because it was not loaded from disk
     SetDynamic();
     // Set the loading flags
-    FlagReset(lfLF);
+    FlagReset(pfcFlags);
     // Load the array normally
-    SyncInitArray(strName, StdMove(mbD));
+    SyncInitArray(strName, StdMove(mbSrc));
   }
   /* -- Load audio file from raw memory ------------------------------------ */
-  void InitRaw(const string &strN, Memory &&aData, const unsigned int uiR,
-    const unsigned int uiC, const unsigned int uiB)
-  { // Validate parameters
-    if(uiR < 1 || uiR > 5644800) XC("Bogus sample rate!",
-      "Identifier", strN, "Rate", uiR);
-    if(uiC < 1 || uiC > 2) XC("Bogus channels per sample!",
-      "Identifier", strN, "Channels", uiC);
-    if(uiB < 1 || uiB > 4 || !StdIntIsPOW2(uiB)) XC("Bogus bits-per-channel!",
-      "Identifier", strN, "Bits", uiB);
-    // Calculate bytes per sample
-    const size_t stBytesPerSample = GetRate() * GetChannels() * GetBits();
-    if(aData.Size() != stBytesPerSample)
-      XC("Argument not valid for specified array!",
-         "Identifier",     strN,             "Rate", uiR,
-         "Channels",       uiC,              "Bits", uiB,
-         "BytesPerSample", stBytesPerSample, "Size", aData.Size());
+  void InitRaw(const string &strName, Memory &&mbSrc,
+    const unsigned int uiNRate, const PcmChannelType pctNChannels,
+    const PcmBitType pbtNBits)
+  { // Calculate actual memory size required for raw data
+    const size_t stExpected = uiNRate * pctNChannels * pbtNBits;
+    if(mbSrc.MemSize() != stExpected)
+      XC("Expected size versus actual size mismatch!",
+         "Identifier", strName,      "Rate",   uiNRate,
+         "Channels",   pctNChannels, "Bits",   pbtNBits,
+         "Expected",   stExpected,   "Actual", mbSrc.MemSize());
     // Set members
-    IdentSet(strN);
+    IdentSet(strName);
     SetDynamic();
-    aPcmL.SwapMemory(StdMove(aData));
-    SetRate(uiR);
-    SetChannels(uiC);
-    SetBits(uiB);
+    aPcmL.MemSwap(StdMove(mbSrc));
+    SetRate(uiNRate);
+    SetChannels(pctNChannels);
+    SetBits(pbtNBits);
     // Check that format is supported in OpenAL
     if(!ParseOALFormat())
-      XC("StrFormat not supported by audio driver!",
+      XC("Format not supported by audio driver!",
          "Identifier", IdentGet(),
          "Channels",   GetChannels(), "Bits", GetBits());
     // Split audio into two channels if audio in stereo
@@ -166,9 +162,9 @@ BEGIN_ASYNCCOLLECTORDUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Constructor -------------------------------------------------------- */
   Pcm(void) :                          // Default onstructor
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperPcm{ *cPcms },             // Initially unregistered
-    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
-    AsyncLoader<Pcm>{ this,            // Setup async loader with this class
+    ICHelperPcm{ cPcms },              // Initially unregistered
+    IdentCSlave{ cParent->CtrNext() }, // Initialise identification number
+    AsyncLoaderPcm{ *this, this,       // Setup async loader with this class
       EMC_MP_PCM }                     // ...and the event id for this class
     /* -- No code ---------------------------------------------------------- */
     { }

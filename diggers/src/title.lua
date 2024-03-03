@@ -14,16 +14,20 @@ local floor<const>, random<const>, insert<const>
       = -- ----------------------------------------------------------------- --
       math.floor, math.random, table.insert;
 -- M-Engine function aliases ----------------------------------------------- --
-local CVarsGet<const>, InfoRAM<const>, DisplayVRAM<const>, UtilBytes<const>
+local InfoRAM<const>, DisplayVRAM<const>, UtilBytes<const>,
+      VariableGetInt<const>
       = -- ----------------------------------------------------------------- --
-      CVars.Get, Info.RAM, Display.VRAM, Util.Bytes;
+      Info.RAM, Display.VRAM, Util.Bytes, Variable.GetInt;
+-- Consts ------------------------------------------------------------------ --
+local iCVAppTitle<const> = Variable.Internal.app_version;
+local strVersion<const> = VariableGetInt(iCVAppTitle).." ";
 -- Diggers function and data aliases --------------------------------------- --
-local LoadResources, SetCallbacks, SetCursor, aLevelData, aObjectTypes,
-  LoadLevel, IsMouseInBounds, aCursorIdData, aSfxData, IsButtonReleased,
-  PlayStaticSound, Fade, aCreditsData, IsKeyReleased, InitLobby, DeInitLevel,
-  InitNewGame, fontTiny, fontLittle, fontLarge, GetGameTicks, RenderTerrain,
-  RenderObjects, SelectObject, GameProc, RegisterFBUCallback, aObjects,
-  GetActivePlayer, GetOpponentPlayer;
+local LoadResources, SetCallbacks, SetCursor, aLevelData,
+  aObjectTypes, LoadLevel, IsMouseInBounds, aCursorIdData, aSfxData,
+  IsButtonReleased, PlayStaticSound, Fade, aCreditsData, IsKeyReleased,
+  InitLobby, DeInitLevel, InitNewGame, fontTiny, fontLittle, fontLarge,
+  GetGameTicks, RenderTerrain, RenderObjects, SelectObject, GameProc,
+  RegisterFBUCallback, aObjects, GetActivePlayer, GetOpponentPlayer;
 -- Initialise the title screen function ------------------------------------ --
 local function InitTitle()
   -- When title resources have loaded?
@@ -39,7 +43,6 @@ local function InitTitle()
     texTitle:TileA(344, 344, 512, 512);
     local tileCredits<const> = texTitle:TileA(0, 0, 512, 240);
     -- Set version
-    local strVersion<const> = CVarsGet("app_version").." ";
     local strSubTitle;
     -- Set credits
     local strCredits<const> =

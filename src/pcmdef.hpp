@@ -14,18 +14,47 @@ using namespace IOal::P;               using namespace IStd::P;
 using namespace Lib::OpenAL;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
-/* -- Loading flags -------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
+enum PcmFormat : size_t                // Available PCM codecs
+{ /* ----------------------------------------------------------------------- */
+  PFMT_WAV,                            // WAV format (IPcmFormat::CodecWAV)
+  PFMT_CAF,                            // CAF format (IPcmFormat::CodecCAF)
+  PFMT_OGG,                            // OGG format (IPcmFormat::CodecOGG)
+  PFMT_MP3,                            // MP3 format (IPcmFormat::CodecMP3)
+  /* ----------------------------------------------------------------------- */
+  PFMT_MAX                             // Maximum supported PCM codecs
+};/* ----------------------------------------------------------------------- */
+enum PcmBitType : unsigned int         // PCM bit-depth type
+{ /* ----------------------------------------------------------------------- */
+  PBI_NONE                       =  0, // PCM audio is uninitialised
+  PBI_BYTE                       =  8, // PCM audio is 8-bits per channel
+  PBI_SHORT                      = 16, // PCM audio is 16-bits per channel
+  PBI_LONG                       = 32  // PCM audio is 32-bits per channel
+};/* ----------------------------------------------------------------------- */
+enum PcmByteType : unsigned int        // PCM byte-depth type
+{ /* ----------------------------------------------------------------------- */
+  PBY_NONE                       =  0, // PCM audio is uninitialised
+  PBY_BYTE                       =  1, // PCM audio is 1 byte per channel
+  PBY_SHORT                      =  2, // PCM audio is 2 bytes per channel
+  PBY_LONG                       =  4  // PCM audio is 4 bytes per channel
+};/* ----------------------------------------------------------------------- */
+enum PcmChannelType : unsigned int     // PCM channels type
+{ /* ----------------------------------------------------------------------- */
+  PCT_NONE                       =  0, // PCM audio is uninitialised
+  PCT_MONO                       =  1, // PCM audio is mono (1ch)
+  PCT_STEREO                     =  2, // PCM audio is stereo (2ch)
+};/* -- Loading flags ------------------------------------------------------ */
 BUILD_FLAGS(Pcm,
   /* -- Commands (Only used in 'Pcm' class) -------------------------------- */
   // No loading flags                  Force load as WAV
-  PL_NONE                {0x00000000}, PL_FCE_WAV             {0x00000001},
+  PL_NONE                   {Flag[0]}, PL_FCE_WAV                {Flag[1]},
   // Force load as CAF                 Force load as OGG
-  PL_FCE_CAF             {0x00000002}, PL_FCE_OGG             {0x00000004},
+  PL_FCE_CAF                {Flag[2]}, PL_FCE_OGG                {Flag[3]},
   // Force load as MP3
-  PL_FCE_MP3             {0x00000008},
+  PL_FCE_MP3                {Flag[4]},
   /* -- Private flags (Only used in 'PcmData' class) ----------------------- */
   // Bitmap is dynamically created
-  PL_DYNAMIC             {0x00000010},
+  PL_DYNAMIC                {Flag[5]},
   /* -- Mask bits ---------------------------------------------------------- */
   PL_MASK{ PL_FCE_WAV|PL_FCE_CAF|PL_FCE_OGG|PL_FCE_MP3 }
 );/* -- Variables ---------------------------------------------------------- */
@@ -33,10 +62,11 @@ class PcmData :                        // Audio data structure
   /* ----------------------------------------------------------------------- */
   public PcmFlags                      // Shared with 'Pcm' class if needed
 { /* ----------------------------------------------------------------------- */
-  unsigned int     uiRate,             // Samples per second (Frequency/Hz)
-                   uiChannels,         // Channels per sample
-                   uiBits;             // Bits per channel
-  ALenum           eFormat,            // StrFormat type for openal
+  unsigned int     uiRate;             // Samples per second (Frequency/Hz)
+  PcmChannelType   pctChannels;        // Channels per sample
+  PcmBitType       pbitBits;           // Bits per channel
+  PcmByteType      pbytBytes;          // Bytes per channel
+  ALenum           eFormat,            // Format type for openal
                    eSFormat;           // Single channel format for openal
   array<Memory,2>  aPcm;               // Pcm data (aPcmR used if stereo)
   size_t           stAlloc;            // Bytes allocated
@@ -48,22 +78,32 @@ class PcmData :                        // Audio data structure
   /* ----------------------------------------------------------------------- */
   void ClearData(void)
     { for(size_t stIndex = 0; stIndex < aPcm.size(); ++stIndex)
-        aPcm[stIndex].DeInit(); }
+        aPcm[stIndex].MemDeInit(); }
   /* ----------------------------------------------------------------------- */
   unsigned int GetRate(void) const { return uiRate; }
   /* ----------------------------------------------------------------------- */
-  void SetRate(unsigned int uiNRate) { uiRate = uiNRate; }
+  void SetRate(const unsigned int uiNRate) { uiRate = uiNRate; }
   /* ----------------------------------------------------------------------- */
-  unsigned int GetChannels(void) const { return uiChannels; }
+  PcmChannelType GetChannels(void) const { return pctChannels; }
   /* ----------------------------------------------------------------------- */
-  void SetChannels(unsigned int uiNChannels) { uiChannels = uiNChannels; }
+  void SetChannels(const PcmChannelType pctNChannels)
+    { pctChannels = pctNChannels; }
   /* ----------------------------------------------------------------------- */
-  bool SetChannelsSafe(unsigned int uiNChannels)
-    { SetChannels(uiNChannels); return uiNChannels >= 1 && uiNChannels <= 2; }
+  bool SetChannelsSafe(const PcmChannelType pctNChannels)
+    { SetChannels(pctNChannels);
+      return pctNChannels >= PCT_MONO && pctNChannels <= PCT_STEREO; }
   /* ----------------------------------------------------------------------- */
-  unsigned int GetBits(void) const { return uiBits; }
+  PcmBitType GetBits(void) const { return pbitBits; }
   /* ----------------------------------------------------------------------- */
-  void SetBits(unsigned int uiNBits) { uiBits = uiNBits; }
+  void SetBits(const PcmBitType pbitNBits)
+    { pbitBits = pbitNBits;
+      pbytBytes = static_cast<PcmByteType>(pbitBits / CHAR_BIT); }
+  /* ----------------------------------------------------------------------- */
+  PcmByteType GetBytes(void) const { return pbytBytes; }
+  /* ----------------------------------------------------------------------- */
+  void SetBytes(const PcmByteType pbytNBytes)
+    { pbytBytes = pbytNBytes;
+      pbitBits = static_cast<PcmBitType>(pbytBytes * CHAR_BIT); }
   /* ----------------------------------------------------------------------- */
   ALenum GetFormat(void) const { return eFormat; }
   /* ----------------------------------------------------------------------- */
@@ -84,11 +124,11 @@ class PcmData :                        // Audio data structure
   /* -- Set allocated data size -------------------------------------------- */
   void SetAlloc(const size_t stNAlloc) { stAlloc = stNAlloc; }
   /* ----------------------------------------------------------------------- */
-  void SetSlot(Memory &mData) { aPcmL = StdMove(mData); }
-  /* ----------------------------------------------------------------------- */
   void ResetAllData(void)
   { // Reset all data
-    uiRate = uiChannels = uiBits = 0;
+    SetRate(0);
+    SetChannels(PCT_NONE);
+    SetBits(PBI_NONE);
     eFormat = eSFormat = AL_NONE;
     // Deinit all channel memory
     ClearData();
@@ -98,24 +138,26 @@ class PcmData :                        // Audio data structure
   { // Swap data members
     FlagSwap(pcmRef);
     swap(uiRate, pcmRef.uiRate);
-    swap(uiChannels, pcmRef.uiChannels);
-    swap(uiBits, pcmRef.uiBits);
+    swap(pctChannels, pcmRef.pctChannels);
+    swap(pbitBits, pcmRef.pbitBits);
+    swap(pbytBytes, pcmRef.pbytBytes);
     swap(eFormat, pcmRef.eFormat);
     swap(eSFormat, pcmRef.eSFormat);
     swap(stAlloc, pcmRef.stAlloc);
     // Swap all channeld ata
     for(size_t stIndex = 0; stIndex < aPcm.size(); ++stIndex)
-      aPcm[stIndex].SwapMemory(StdMove(pcmRef.aPcm[stIndex]));
+      aPcm[stIndex].MemSwap(StdMove(pcmRef.aPcm[stIndex]));
   }
   /* -- Default constructor ------------------------------------------------ */
   PcmData(void) :
     /* -- Initialisers ----------------------------------------------------- */
     PcmFlags{ PL_NONE },               // Flags not initialised
     uiRate(0),                         // Rate not initialised
-    uiChannels(0),                     // Channels not initialised
-    uiBits(0),                         // Bits per channel not initialised
-    eFormat(AL_NONE),                  // StrFormat not initialised
-    eSFormat(AL_NONE),                 // Singal channel format not initialised
+    pctChannels(PCT_NONE),             // Channels not initialised
+    pbitBits(PBI_NONE),                // Bits per channel not initialised
+    pbytBytes(PBY_NONE),               // Bytes per channel not initialised
+    eFormat(AL_NONE),                  // Format not initialised
+    eSFormat(AL_NONE),                 // Single channel format not initialised
     stAlloc(0),                        // No memory allocated
     aPcmL(aPcm.front()),               // Alias of first pcm channel
     aPcmR(aPcm.back())                 // Alias of second pcm channel

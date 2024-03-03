@@ -37,12 +37,6 @@ template<class Plugin=ErrorPluginGeneric>class Error final :
   /* -- Write left part of var --------------------------------------------- */
   void Init(const char*const cpName, const char*const cpType)
     { osS << "\n+ " << cpName << '<' << cpType << "> = "; }
-  /* -- Init a STL string -------------------------------------------------- */
-  void Init(const string &strErr)
-    { osS << (strErr.empty() ? "Unknown error!" : strErr); }
-  /* -- Init a c-string ---------------------------------------------------- */
-  void Init(const char*const cpErr)
-    { osS << (cpErr ? (*cpErr ? cpErr : "Unknown error!") : "Bad error!"); }
   /* -- Last parameter processed ------------------------------------------- */
   void Param(void) { const Plugin pPlugin(osS); assign(osS.str()); }
   /* -- Show integer ------------------------------------------------------- */
@@ -221,7 +215,11 @@ template<class Plugin=ErrorPluginGeneric>class Error final :
     // String is empty?
     if(tString.empty()) osS << "<Empty>.";
     // String is not displayable?
-    else if(tString[0] < 32) osS << "<Invalid>.";
+    else if(tString.front() < 32) osS << "<Invalid>.";
+    // Valid? Is a string view? (has no capacity())
+    else if constexpr(is_same_v<StringType, string_view>)
+      osS << '\"' << tString << '\"' << dec
+                  << " [" << tString.length() << "].";
     // Valid? Display string
     else osS << '\"' << tString << '\"' << dec
              << " [" << tString.length() << '/'
@@ -231,22 +229,27 @@ template<class Plugin=ErrorPluginGeneric>class Error final :
   template<typename ...VarArgs>
     void Param(const char*const cpName, const string &strV,
       const VarArgs &...vaVars)
-  { Str(cpName, "Str", strV); Param(vaVars...); }
+        { Str(cpName, "Str", strV); Param(vaVars...); }
   /* -- Process std::wstring lvalue ---------------------------------------- */
   template<typename ...VarArgs>
     void Param(const char*const cpName, const wstring &wstrV,
       const VarArgs &...vaVars)
-  { Str(cpName, "WStr", wstrV); Param(vaVars...); }
+        { Str(cpName, "WStr", wstrV); Param(vaVars...); }
+  /* -- Process std::string_view ------------------------------------------- */
+  template<typename ...VarArgs>
+    void Param(const char*const cpName, const string_view &strvV,
+      const VarArgs &...vaVars)
+        { Str(cpName, "StrV", strvV); Param(vaVars...); }
   /* -- Get message ------------------------------------------------ */ public:
   virtual const char *what(void) const noexcept override { return c_str(); }
   /* -- Prepare error message constructor with C-string--------------------- */
   template<typename ...VarArgs>
     Error(const char*const cpErr, const VarArgs &...vaVars)
-  { osS << cpErr; Param(vaVars...); }
+      { osS << cpErr; Param(vaVars...); }
   /* -- Prepare error message constructor with STL string ------------------ */
   template<typename ...VarArgs>
     Error(const string &strErr, const VarArgs &...vaVars)
-  { osS << strErr; Param(vaVars...); }
+      { osS << strErr; Param(vaVars...); }
 };/* -- Helper macro to trigger exceptions --------------------------------- */
 #define XC(r,...) throw Error<>(r, ## __VA_ARGS__)
 /* ------------------------------------------------------------------------- */

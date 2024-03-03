@@ -174,36 +174,36 @@
 #define CFG_EXTENSION            "cfg" // Default config file extension
 #define CER_EXTENSION            "cer" // Default certificate file extension
 /* == Base STL includes ==================================================== */
-#include <algorithm>                   // Needed for find
-#include <array>                       // Memory class
-#include <atomic>                      // atomic class
-#include <cctype>                      // Character check stuff
-#include <clocale>                     // Locale header
-#include <cmath>                       // Math header
-#include <condition_variable>          // Condition variable class (cpp11)
-#include <csetjmp>                     // Set jumper header
-#include <csignal>                     // Signal header
-#include <cstdarg>                     // Variable argumen
-#include <cstdlib>                     // Standard library header
-#include <cstring>                     // String header
-#include <deque>                       // DeQue class
-#include <exception>                   // exception class
-#include <functional>                  // Function class
-#include <iomanip>                     // Stream manipulation
-#include <iterator>                    // Iterator class
-#include <limits>                      // Limits
-#include <list>                        // ItemMap class
-#include <map>                         // Map class
-#include <memory>                      // Memory class
-#include <mutex>                       // Mutex class
-#include <numeric>                     // Accumulate class
-#include <queue>                       // Queue class
-#include <set>                         // Set class
-#include <sstream>                     // Stringstream class
-#include <stdexcept>                   // Runtime error class
-#include <string>                      // String class
-#include <thread>                      // Thread class
-#include <vector>                      // Vector class
+#include <algorithm>                   // Searching, sorting, counting, etc.
+#include <array>                       // Static arrays
+#include <atomic>                      // Multithreaded integers
+#include <cctype>                      // Character type functions
+#include <clocale>                     // Regional specific functions
+#include <cmath>                       // Perform mathematical functions
+#include <condition_variable>          // Synchronisation conditions
+#include <csetjmp>                     // Classic C jumps functions
+#include <csignal>                     // Operating system signal functions
+#include <cstdarg>                     // Classic variadic arguments functions
+#include <cstdlib>                     // Standard library functions
+#include <cstring>                     // Standard string functions
+#include <deque>                       // Chunked vectors
+#include <exception>                   // Exception handling
+#include <functional>                  // Dynamic functions
+#include <iomanip>                     // String stream manipulation
+#include <iterator>                    // Container iterators
+#include <limits>                      // Hardware bounds limits
+#include <list>                        // Linked lists
+#include <map>                         // Key value containers
+#include <memory>                      // Memory allocation
+#include <mutex>                       // Thread synchronisation
+#include <numeric>                     // Accumulators
+#include <queue>                       // First-in and first-out containers
+#include <set>                         // Automatically sorted lists
+#include <sstream>                     // String streams
+#include <stdexcept>                   // Runtime errors
+#include <string>                      // String containers
+#include <thread>                      // Operating system threads
+#include <vector>                      // Dynamic arrays
 /* -- Useful macros -------------------------------------------------------- */
 #define STR_HELPER(...)  #__VA_ARGS__            // Convert macro integer
 #define STR(...)         STR_HELPER(__VA_ARGS__) // to string
@@ -242,7 +242,7 @@
 #  define STRICT_U32BE(v) SWAP_U32(v)  // Swap 32-bits
 #  define STRICT_U64LE(v) (v)          // Use 64-bit integers as-is
 #  define STRICT_U64BE(v) SWAP_U64(v)  // Swap 64-bits
-#  define LITTLE_ENDIAN                // Using little endian byte order
+#  define LITTLEENDIAN                 // Using little endian byte order
 # elif REG_DWORD == REG_DWORD_BIG_ENDIAN // Using ARM? (BE)
 #  define STRICT_U16LE(v) SWAP_U16(v)  // Swap 16-bits
 #  define STRICT_U16BE(v) (v)          // Use 16-bit integers as-is
@@ -250,7 +250,7 @@
 #  define STRICT_U32BE(v) (v)          // Use 32-bit integers as-is
 #  define STRICT_U64LE(v) SWAP_U64(v)  // Swap 64-bits
 #  define STRICT_U64BE(v) (v)          // Use 64-bit integers as-is
-#  define BIG_ENDIAN                   // Using big endian byte order
+#  define BIGENDIAN                    // Using big endian byte order
 # else                                 // Unknown endianness?
 #  error Unknown endianness!
 # endif                                // Endianess setup
@@ -277,9 +277,7 @@
 #  define STRICT_U32BE(v) SWAP_U32(v)  // Swap 32-bits
 #  define STRICT_U64LE(v) (v)          // Use 64-bit integers as-is
 #  define STRICT_U64BE(v) SWAP_U64(v)  // Swap 64-bits
-#  if !defined(LITTLE_ENDIAN)          // This could already be defined
-#   define LITTLE_ENDIAN               // Define it if not
-#  endif                               // Little endian check
+#  define LITTLEENDIAN                 // Define it if not
 # elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__ // Using ARM? (BE)
 #  define STRICT_U16LE(v) SWAP_U16(v)  // Swap 16-bits
 #  define STRICT_U16BE(v) (v)          // Use 16-bit integers as-is
@@ -287,9 +285,7 @@
 #  define STRICT_U32BE(v) (v)          // Use 32-bit integers as-is
 #  define STRICT_U64LE(v) SWAP_U64(v)  // Swap 64-bits
 #  define STRICT_U64BE(v) (v)          // Use 64-bit integers as-is
-#  if !defined(BIG_ENDIAN)             // This could already be defined
-#   define BIG_ENDIAN                  // Define it if not
-#  endif                               // Big endian check
+#  define BIGENDIAN                    // Define it if not
 # else                                 // Unknown endianness?
 #  error Unknown endianness!
 # endif                                // Endianness setup
@@ -299,8 +295,6 @@
 # endif                                // Apple check
 /* ------------------------------------------------------------------------- */
 #endif                                 // Operating system
-/* ------------------------------------------------------------------------- */
-#define UNUSED_VARIABLE(x)             (void)(x)
 /* == Compiler warning configuration ======================================= */
 #if !defined(WINDOWS)                  // Not using windows?
 # pragma GCC diagnostic push           // Save warnings
@@ -415,17 +409,12 @@ namespace Lib                          // LIBRARY OF EXTERNAL API FUNCTIONS
     };/* ------------------------------------------------------------------- */
     namespace JpegTurbo                // LIBJPEGTURBO API FUNCTIONS
     { /* ------------------------------------------------------------------- */
-#if defined(LINUX)                     // Using Linux?
-# include <jpeglib.h>                  // Repository provided main header
-# include <jerror.h>                   // Repository provided error handling
-#else                                  // MacOS or Windows?
-# if defined(WINDOWS)                  // Using windows?
+#if defined(WINDOWS)                   // Using windows?
       typedef int boolean;             // Defined by system but not in our NS
-# endif                                // Windows check
-# include <jpeg/jpeglib.h>             // Our main header
-# include <jpeg/jerror.h>              // Our error handling
-# include <jpeg/jversion.h>            // Our version information
-#endif                                 // Linux check
+#endif                                 // Windows check
+#include <jpeg/jpeglib.h>              // Our main header
+#include <jpeg/jerror.h>               // Our error handling
+#include <jpeg/jversion.h>             // Our version information
     };/* ------------------------------------------------------------------- */
     namespace ZLib                     // ZLIB API FUNCTIONS
     { /* ------------------------------------------------------------------- */
@@ -515,8 +504,8 @@ typedef Lib::OS::TCHAR ArgType;        // Set main argument type
     Lib::OS::LPTSTR, int)
 # define CONENTRYFUNC _tmain           // For project management utility
 #else                                  // Targeting POSIX?
-typedef char         ArgType;          // Set main argument type
-# define ENTRYFUNC    main(int __argc, ArgType**__wargv, ArgType**_wenviron)
+typedef char ArgType;                  // Set main argument type
+# define ENTRYFUNC main(int __argc, ArgType**__wargv, ArgType**_wenviron)
 # define CONENTRYFUNC main             // For project management utility
 #endif                                 // Target check
 /* == EoF =========================================================== EoF == */

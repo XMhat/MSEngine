@@ -20,8 +20,8 @@ namespace P {                          // Start of public namespace
 BEGIN_COLLECTOREX(Threads, Thread, CLHelperSafe, /* ------------------------ */
   SafeSizeT        stRunning;          /* Number of threads running          */
 )/* ------------------------------------------------------------------------ */
-/* == Thread variables class =============================================== */
-class ThreadVariables                  // Thread variables class
+/* == Thread base class ==================================================== */
+class ThreadBase                       // Thread variables class
 { /* -- Private typedefs ---------------------------------------- */ protected:
   typedef int (CBFuncT)(Thread&);      // Thread callback function
   /* -- Public typedefs -------------------------------------------- */ public:
@@ -36,9 +36,9 @@ class ThreadVariables                  // Thread variables class
                    duEndTime;          // Thread end time
   const SysThread  stPerf;             // Thread is high performance?
   /* -- Constructor -------------------------------------------------------- */
-  ThreadVariables(const SysThread stP, // Thread is high performance?
-                  void*const vpP,      // Thread user parameter
-                  const CBFunc &cbF) : // Thread callback function
+  ThreadBase(const SysThread stP,      // Thread is high performance?
+             void*const vpP,           // Thread user parameter
+             const CBFunc &cbF) :      // Thread callback function
     /* -- Initialisers ----------------------------------------------------- */
     iExitCode(0),                      // Set exit code to standby
     vpParam(vpP),                      // Set user thread parameter
@@ -55,7 +55,7 @@ class ThreadVariables                  // Thread variables class
 BEGIN_MEMBERCLASS(Threads, Thread, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
   public Ident,                        // Object name
-  public ThreadVariables,              // Thread variables class
+  public ThreadBase,                   // Thread variables class
   private thread                       // The C++11 thread
 { /* -- Put in place a new thread ------------------------------------------ */
   template<typename ...VarArgs>void ThreadNew(const VarArgs &...vaArgs)
@@ -63,7 +63,7 @@ BEGIN_MEMBERCLASS(Threads, Thread, ICHelperUnsafe),
   /* -- Thread handler function -------------------------------------------- */
   void ThreadHandler(void) try
   { // Incrememt thread running count
-    ++cParent.stRunning;
+    ++cParent->stRunning;
     // Thread longer running
     bRunning = true;
     // Thread starting up in log
@@ -90,7 +90,7 @@ BEGIN_MEMBERCLASS(Threads, Thread, ICHelperUnsafe),
         ThreadGetEndTime(), ThreadGetStartTime())),
       ThreadGetExitCode(), hex, ThreadGetExitCode());
     // Reduce thread count
-    --cParent.stRunning;
+    --cParent->stRunning;
   } // exception occured in thread so handle it
   catch(const exception &e)
   { // Thread no longer running
@@ -98,7 +98,7 @@ BEGIN_MEMBERCLASS(Threads, Thread, ICHelperUnsafe),
     // Return error and set thread to exit
     ThreadSetExitCode(-2);
     // Reduce thread count
-    --cParent.stRunning;
+    --cParent->stRunning;
     // Set shutdown time
     duEndTime = cmHiRes.GetEpochTime();
     // Log if thread didn't signal to exit
@@ -194,6 +194,7 @@ BEGIN_MEMBERCLASS(Threads, Thread, ICHelperUnsafe),
   void ThreadJoin(void) { return join(); }
   /* ----------------------------------------------------------------------- */
   bool ThreadIsExited(void) const { return ThreadGetExitCode() != -1; }
+  bool ThreadIsNotExited(void) const { return !ThreadIsExited(); }
   /* ----------------------------------------------------------------------- */
   bool ThreadIsException(void) const { return ThreadGetExitCode() == -2; }
   /* ----------------------------------------------------------------------- */
@@ -238,48 +239,44 @@ BEGIN_MEMBERCLASS(Threads, Thread, ICHelperUnsafe),
   }
   /* -- Full initialise and execute constructor ---------------------------- */
   Thread(const string &strN,           // Requested Thread name
-         const SysThread stP,          // Thread needs high performance?
+         const SysThread sP,           // Thread needs high performance?
          const CBFunc &tC,             // Requested callback function
          void*const vpPtr) :           // User parameter to store
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperThread{ *cThreads, this }, // Automatic (de)registration
-    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
+    ICHelperThread{ cThreads, this },  // Automatic (de)registration
+    IdentCSlave{ cParent->CtrNext() }, // Initialise identification number
     Ident{ strN },                     // Initialise requested thread name
-    ThreadVariables{stP,               // Set requested performance
-                    vpPtr,             // Set requested thread user parameter
-                    tC},               // Set requested thread callback
+    ThreadBase{ sP, vpPtr, tC },       // Set perf, parameter and callback
     thread{ ThreadMain, this }         // Start the thread straight away
     /* --------------------------------------------------------------------- */
     { }                                // Do nothing else
   /* -- Standby constructor (set everything except user parameter) --------- */
   Thread(const string &strN,           // Requested Thread name
-         const SysThread stP,          // Thread needs high performance?
+         const SysThread sP,           // Thread needs high performance?
          const CBFunc &tC) :           // Requested callback function
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperThread{ *cThreads, this }, // Automatic (de)registration
-    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
+    ICHelperThread{ cThreads, this },  // Automatic (de)registration
+    IdentCSlave{ cParent->CtrNext() }, // Initialise identification number
     Ident{ strN },                     // Set requested identifier
-    ThreadVariables{ stP,nullptr,tC }  // Just set callback function
+    ThreadBase{ sP, nullptr, tC }      // Just set callback function
     /* --------------------------------------------------------------------- */
     { }                                // Do nothing else
   /* -- Standby constructor (set only name) -------------------------------- */
   Thread(const string &strN,           // Requested Thread name
-         const SysThread stP) :        // Thread needs high performance?
+         const SysThread sP) :         // Thread needs high performance?
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperThread{ *cThreads },       // No automatic registration
-    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
+    ICHelperThread{ cThreads },        // No automatic registration
+    IdentCSlave{ cParent->CtrNext() }, // Initialise identification number
     Ident{ strN },                     // Set requested identifer
-    ThreadVariables{ stP, nullptr, nullptr } // Initialise nothing else
+    ThreadBase{ sP, nullptr, nullptr } // Initialise nothing else
     /* --------------------------------------------------------------------- */
     { }                                // Do nothing else
   /* -- Standby constructor ------------------------------------------------ */
-  explicit Thread(const SysThread sP) : // Thread needs high performance?
+  explicit Thread(const SysThread sP) :// Thread needs high performance?
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperThread{ *cThreads },       // No automatic registration
-    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
-    ThreadVariables{ sP,
-      nullptr,
-      nullptr }                        // Initialise nothing else
+    ICHelperThread{ cThreads },        // No automatic registration
+    IdentCSlave{ cParent->CtrNext() }, // Initialise identification number
+    ThreadBase{ sP, nullptr, nullptr } // Initialise only thread priority
     /* --------------------------------------------------------------------- */
     { }                                // Do nothing else
   /* ----------------------------------------------------------------------- */

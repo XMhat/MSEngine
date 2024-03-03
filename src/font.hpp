@@ -15,15 +15,15 @@ namespace IFont {                      // Start of private namespace
 /* -- Dependencies --------------------------------------------------------- */
 using namespace IAsset::P;             using namespace IBin::P;
 using namespace ICollector::P;         using namespace IDim;
-using namespace IError::P;             using namespace IFbo::P;
+using namespace IError::P;             using namespace IFboDef::P;
 using namespace IFileMap::P;           using namespace IFtf::P;
 using namespace IImageDef::P;          using namespace ILog::P;
 using namespace IMemory::P;            using namespace IOgl::P;
-using namespace IPSplit::P;            using namespace IStd::P;
-using namespace IString::P;            using namespace ISysUtil::P;
-using namespace ITexture::P;           using namespace IToken::P;
-using namespace IUtf;                  using namespace IUtil::P;
-using namespace IVars::P;              using namespace Lib::FreeType;
+using namespace IParser::P;            using namespace IPSplit::P;
+using namespace IStd::P;               using namespace IString::P;
+using namespace ISysUtil::P;           using namespace ITexture::P;
+using namespace IToken::P;             using namespace IUtf;
+using namespace IUtil::P;              using namespace Lib::FreeType;
 using namespace Lib::OS::GlFW;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public namespace
@@ -34,10 +34,10 @@ BEGIN_COLLECTOR(Fonts, Font, CLHelperUnsafe)
 // we do not have to initialise all these variables more than once as we have
 // more than one constructor in the main Font class.
 /* ------------------------------------------------------------------------- */
-class FontVariables :                  // Members initially private
+class FontBase :                       // Members initially private
   /* -- Base classes ------------------------------------------------------- */
   public Texture                       // Texture class
-{ /* -- Private typedefs ---------------------------------------- */ protected:
+{ /* -- Protected typedefs -------------------------------------- */ protected:
   typedef Rectangle<GLfloat> RectFloat;// Rectangle of GLfloats
   /* ----------------------------------------------------------------------- */
   class Glyph :                        // Members initially private
@@ -99,8 +99,8 @@ class FontVariables :                  // Members initially private
                    fGPad, fGPadScaled; // Glyph position adjustment
   Texture         *tGlyphs;            // Texture for print calls only
   FboItem          fiOutline;          // Outline colour
-  GLuint           uiFilter,           // Selected texture filter
-                   uiPadding;          // Padding after each glyph
+  OglFilterEnum    ofeFilter;          // Selected texture filter
+  GLuint           uiPadding;          // Padding after each glyph
   /* -- Freetype handles --------------------------------------------------- */
   IntPack          ipData;             // FT packed characters in image
   Ftf              ftfData;            // FT font data
@@ -109,7 +109,7 @@ class FontVariables :                  // Members initially private
   enum RTCmd { RT_NONE, RT_FULL, RT_PARTIAL } rtCmd; // Reload texture command
   RectUint         rRedraw;            // Reload cordinates and dimensions
   /* -- Default constructor ------------------------------------------------ */
-  FontVariables(void) :                // No parameters
+  FontBase(void) :                     // No parameters
     /* --------------------------------------------------------------------- */
     Texture{ true },                   stMultiplier(1),
     fCharSpacing(0.0f),                fCharSpacingScale(0.0f),
@@ -117,7 +117,7 @@ class FontVariables :                  // Members initially private
     fGSize(0.0f),                      fScale(0.0f),
     fGPad(0.0f),                       fGPadScaled(0.0f),
     tGlyphs(nullptr),                  fiOutline{ 0xFF000000 },
-    uiFilter(0),                       uiPadding(0),
+    ofeFilter(OF_N_N),                 uiPadding(0),
     ulDefaultChar('?'),                rtCmd(RT_NONE),
     rRedraw{
       numeric_limits<GLuint>::max(),
@@ -126,12 +126,12 @@ class FontVariables :                  // Members initially private
     /* --------------------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(FontVariables)       // No copy constructors
+  DELETECOPYCTORS(FontBase)            // No copy constructors
 };/* ----------------------------------------------------------------------- */
 /* == Font Class (which inherits a Texture) ================================ */
 BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
   /* -- Base classes ------------------------------------------------------- */
-  public FontVariables                 // Font variables class
+  public FontBase                      // Font variables class
 {  /* -- Convert co-ordinates to absolute position ------------------------- */
   static size_t CoordsToAbsolute(const size_t stPosX, const size_t stPosY,
     const size_t stWidth, const size_t stBytesPerColumn=1)
@@ -165,7 +165,7 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
           rRedraw.RectGetY1(), DimGetWidth(), 2);
         // Calculate position in buffer to read from
         const GLubyte*const ucpSrc =
-          GetSlots().front().Read<GLubyte>(stRTPos, DimGetWidth());
+          GetSlots().front().MemRead<GLubyte>(stRTPos, DimGetWidth());
         // Update partial texture
         UpdateEx(GetSubName(),
           rRedraw.RectGetX1<GLint>(), rRedraw.RectGetY1<GLint>(),
@@ -260,7 +260,7 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
   }
   /* -- Do initialise freetype font ---------------------------------------- */
   void InitFTFont(Ftf &_ftfData, const GLuint uiISize, const GLuint _uiPadding,
-    const GLuint _uiFilter, const ImageFlagsConst &ffFlags)
+    const OglFilterEnum _ofeFilter, const ImageFlagsConst &ffFlags)
   { // Make sure padding isn't negative. We use int because it is optimal for
     // use with the BinPack routines.
     if(UtilIntWillOverflow<int>(uiPadding))
@@ -268,7 +268,7 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
          "Identifier", IdentGet(), "Requested",  _uiPadding);
     // Show that we're loading the file
     cLog->LogDebugExSafe("Font loading '$' (IS:$;P:$;F:$;FL:$$)...",
-      _ftfData.IdentGet(), uiISize, _uiPadding, _uiFilter, hex,
+      _ftfData.IdentGet(), uiISize, _uiPadding, _ofeFilter, hex,
       ffFlags.FlagGet());
     // If source and destination ftf class are not the same?
     if(&ftfData != &_ftfData)
@@ -277,7 +277,7 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
       // The ftf passed in the arguments is usually still allocated by LUA
       // and will still be registered, so lets put a note in the image to show
       // that this function has nicked this font class.
-      _ftfData.IdentSet("!FON!$!", ftfData.IdentGet());
+      _ftfData.IdentSetEx("!FON!$!", ftfData.IdentGet());
     }
     // Set initial font size. Since the font size is a float we should round
     // to next whole number so there is enough space.
@@ -289,7 +289,7 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
     // Initialise other data
     dfFont.DimSet(ftfData);
     uiPadding = _uiPadding;
-    uiFilter = _uiFilter;
+    ofeFilter = _ofeFilter;
     FlagSet(ffFlags);
     // Image now being used in a Font class
     ClearPurposeImage();
@@ -326,18 +326,18 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
     // parts that are padding will not be written to 'ever' and that would
     // cause display artifacts
     Memory mPixels{ DimGetWidth() * DimGetHeight() * 2 };
-    mPixels.Fill<uint16_t>(0x00FF);
+    mPixels.MemFill<uint16_t>(0x00FF);
     InitRaw(ftfData.IdentGet(), StdMove(mPixels), DimGetWidth(),
       DimGetHeight(), BD_GRAYALPHA, GL_RG);
     // Initialise image in GL. This class is responsible for updating the
     // texture tile co-ords set.
     InitImage(*this, duTile.DimGetWidth(), duTile.DimGetHeight(),
-      uiPadding, uiPadding, uiFilter, false);
+      uiPadding, uiPadding, ofeFilter, false);
     // Make enough space for initial tex coords set
     clTiles.resize(1);
     // Show that we've loaded the file
     cLog->LogInfoExSafe("Font '$' loaded FT font (IS:$;P:$;F:$;FL:$$)...",
-      ftfData.IdentGet(), uiISize, uiPadding, uiFilter, hex,
+      ftfData.IdentGet(), uiISize, uiPadding, ofeFilter, hex,
       ffFlags.FlagGet());
   }
   /* -- Init as a pre-rendered font ---------------------------------------- */
@@ -346,14 +346,13 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
     IdentSet(imSrc.IdentGet());
     // Show filename
     cLog->LogDebugExSafe("Font loading '$' from bitmap.", IdentGet());
-    // Strip path name and set descriptor file name
-    const PathSplit pathData{ IdentGet() };
+    // Strip path name, build manifest  file name and open it
+    const PathSplit psFont{ IdentGet() };
     const string strManfiest{
-      StrAppend(pathData.strLoc, pathData.strFile, ".txt") };
-    // Get the file. It should at least be 3 bytes long
+      StrAppend(psFont.strLoc, psFont.strFile, ".txt") };
     const FileMap fC{ AssetExtract(strManfiest) };
     // Convert whole file data to a string
-    const string strBuffer{ fC.ToString() };
+    const string strBuffer{ fC.MemToString() };
     if(strBuffer.size() < 3)
       XC("Index file is possibly corrupted!",
          "Identifier", IdentGet(), "Manfiest", strManfiest);
@@ -364,20 +363,21 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
          "Identifier",   IdentGet(), "Manfiest", strManfiest,
          "BufferLength", strBuffer.length());
     // Split variables and throw error if there are no vars
-    const VarsConst vC{ strBuffer, strTokens, '=' };
-    if(!vC.size())
+    const ParserConst<> pManifest{ strBuffer, strTokens, '=' };
+    if(!pManifest.size())
       XC("No metadata in index file!",
          "Identifier", IdentGet(), "Manfiest", strManfiest);
     // Get number of characters and offset.
-    const unsigned int uiCharCount = StrToNum<unsigned int>(vC["range"]),
-                       uiCharOffset = StrToNum<unsigned int>(vC["rangestart"]);
+    const unsigned int
+      uiCharCount = StrToNum<unsigned int>(pManifest.ParserGet("range")),
+      uiCharOffset = StrToNum<unsigned int>(pManifest.ParserGet("rangestart"));
     if(!uiCharCount)
       XC("Invalid character count in metadata!",
          "Identifier", IdentGet(),   "Manfiest", strManfiest,
          "Offset",     uiCharOffset, "Count",    uiCharCount);
     const unsigned int uiCharEnd = uiCharOffset + uiCharCount;
     // Set and check default character and if it's a number
-    const string strDefaultChar{ vC["default"] };
+    const string strDefaultChar{ pManifest.ParserGet("default") };
     if(strDefaultChar.empty())
       XC("Empty default character index in metadata!",
          "Identifier", IdentGet());
@@ -395,12 +395,13 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
          "Minimum",    uiCharOffset,   "Maximum", uiCharEnd,
          "Count",      uiCharCount);
     // Get filter
-    uiFilter = StrToNum<unsigned int>(vC["filter"]);
-    if(uiFilter > 11)
+    ofeFilter = static_cast<OglFilterEnum>(
+      StrToNum<size_t>(pManifest.ParserGet("filter")));
+    if(ofeFilter >= OF_MAX)
       XC("Invalid filter index specified in font metadata!",
-         "Identifier", IdentGet(), "Filter", uiFilter);
+         "Identifier", IdentGet(), "Filter", ofeFilter);
     // Look for widths and throw if there are none then report them in log
-    const string strWidths{ vC["width"] };
+    const string strWidths{ pManifest.ParserGet("width") };
     if(strWidths.empty())
       XC("No widths found in metadata!",
          "Identifier", IdentGet(), "Manfiest", strManfiest);
@@ -416,8 +417,9 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
     // Add the starting unused characters
     gvData.resize(uiCharOffset);
     // Read size of tile. Texture init will clamp this if needed.
-    const unsigned int uiTW = StrToNum<unsigned int>(vC["tilewidth"]),
-                       uiTH = StrToNum<unsigned int>(vC["tileheight"]);
+    const unsigned int
+      uiTW = StrToNum<unsigned int>(pManifest.ParserGet("tilewidth")),
+      uiTH = StrToNum<unsigned int>(pManifest.ParserGet("tileheight"));
     // Convert to float as we need a float version of this in the next loop
     const GLfloat fW = static_cast<GLfloat>(uiTW),
                   fH = static_cast<GLfloat>(uiTH);
@@ -434,35 +436,36 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
     StdFill(par_unseq, gvData.begin()+uiCharEnd, gvData.end(), gRef);
     // Initialise memory for texture tile co-ordinates
     clTiles.resize(1);
-    CoordList &clFirst = clTiles[0];
+    CoordList &clFirst = clTiles.front();
     clFirst.reserve(uiCharEnd);
     clFirst.resize(uiCharOffset);
     // Get extra tile padding dimensions. Also clamped by texture class
-    const unsigned int uiPX = StrToNum<unsigned int>(vC["tilespacingwidth"]),
-                       uiPY = StrToNum<unsigned int>(vC["tilespacingheight"]);
+    const unsigned int
+      uiPX = StrToNum<unsigned int>(pManifest.ParserGet("tilespacingwidth")),
+      uiPY = StrToNum<unsigned int>(pManifest.ParserGet("tilespacingheight"));
     // Init texture with custom parameters and generate tileset
-    InitImage(imSrc, uiTW, uiTH, uiPX, uiPY, uiFilter);
+    InitImage(imSrc, uiTW, uiTH, uiPX, uiPY, ofeFilter);
     // Initialise the uninitialised texcoords with the default character that
     // was initialised using InitImage
     const CoordData &cdRef = clFirst[ulDefaultChar];
     StdFill(par_unseq, clFirst.begin(),clFirst.begin()+uiCharOffsetM1, cdRef);
     StdFill(par_unseq, clFirst.begin()+uiCharEnd, clFirst.end(), cdRef);
     // Initialise font scale
-    SetSize(StrToNum<GLfloat>(vC["scale"]));
+    SetSize(StrToNum<GLfloat>(pManifest.ParserGet("scale")));
     // Show that we've loaded the file
     cLog->LogInfoExSafe("Font '$' loaded from bitmap (T:$x$;F:$).",
-      IdentGet(), uiTW, uiTH, uiFilter);
+      IdentGet(), uiTW, uiTH, ofeFilter);
   }
   /* -- Constructor (Initialisation then registration) --------------------- */
   Font(void) :                         // No parameters
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperFont{ *cFonts, this }      // Initially registered
+    ICHelperFont{ cFonts, this }       // Initially registered
     /* --------------------------------------------------------------------- */
     { }                                // Do nothing else
   /* -- Constructor (without registration) --------------------------------- */
   explicit Font(const bool) :          // Dummy parameter
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperFont{ *cFonts }            // Initially unregistered
+    ICHelperFont{ cFonts }             // Initially unregistered
     /* --------------------------------------------------------------------- */
     { }                                // Do nothing else
   /* ----------------------------------------------------------------------- */

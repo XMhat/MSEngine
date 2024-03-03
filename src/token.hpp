@@ -52,6 +52,8 @@ struct TokenListNC :
       }
     }
   }
+  /* -- Direct conditional access ------------------------------------------ */
+  operator bool(void) const { return !empty(); }
   /* -- MOVE assignment operator ------------------------------------------- */
   TokenListNC &operator=(TokenListNC &&tOther) { swap(tOther); return *this; }
   /* -- MOVE assignment constructor ---------------------------------------- */
@@ -101,6 +103,8 @@ struct TokenList :
       }
     }
   }
+  /* -- Direct conditional access ------------------------------------------ */
+  operator bool(void) const { return !empty(); }
   /* -- MOVE assignment operator ------------------------------------------- */
   TokenList& operator=(TokenList &&tOther) { swap(tOther); return *this; }
   /* -- MOVE assignment constructor ---------------------------------------- */
@@ -162,6 +166,8 @@ struct Token :
     // Push remainder of string if there is a remainder
     if(stStart <= strStr.length()) emplace_back(strStr.substr(stStart));
   }
+  /* -- Direct conditional access ------------------------------------------ */
+  operator bool(void) const { return !empty(); }
   /* -- MOVE assignment operator ------------------------------------------- */
   Token& operator=(Token &&tOther) { swap(tOther); return *this; }
   /* -- MOVE assignment constructor ---------------------------------------- */

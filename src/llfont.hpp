@@ -61,8 +61,9 @@ LLFUNC(SetSpacing, LCGETPTR(1, Font)->
 // ? Sets the colour intensity of the texture for each component. The change
 // ? affects all subsequent calls to all blitting functions.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetCRGB, LCGETPTR(1, Font)->SetQuadRGB(LCGETNUM(GLfloat, 2, "Red"),
-  LCGETNUM(GLfloat, 3, "Green"), LCGETNUM(GLfloat, 4, "Blue")));
+LLFUNC(SetCRGB, LCGETPTR(1, Font)->FboItemSetQuadRGB(
+  LCGETNUM(GLfloat, 2, "Red"), LCGETNUM(GLfloat, 3, "Green"),
+  LCGETNUM(GLfloat, 4, "Blue")));
 /* ========================================================================= */
 // $ Font:SetCRGBA
 // > Red:number=The colour intensity of the texture's red component (0-1).
@@ -72,7 +73,7 @@ LLFUNC(SetCRGB, LCGETPTR(1, Font)->SetQuadRGB(LCGETNUM(GLfloat, 2, "Red"),
 // ? Sets the colour intensity of the texture for each component. The change
 // ? affects all subsequent calls to all blitting functions.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetCRGBA, LCGETPTR(1, Font)->SetQuadRGBA(
+LLFUNC(SetCRGBA, LCGETPTR(1, Font)->FboItemSetQuadRGBA(
   LCGETNUM(GLfloat, 2, "Red"), LCGETNUM(GLfloat, 3, "Green"),
   LCGETNUM(GLfloat, 4, "Blue"), LCGETNUM(GLfloat, 5, "Alpha")));
 /* ========================================================================= */
@@ -82,35 +83,39 @@ LLFUNC(SetCRGBA, LCGETPTR(1, Font)->SetQuadRGBA(
 // ? bit integer.
 /* ------------------------------------------------------------------------- */
 LLFUNC(SetCRGBAI, LCGETPTR(1, Font)->
-  SetQuadRGBAInt(LCGETINT(uint32_t, 2, "Colour")));
+  FboItemSetQuadRGBAInt(LCGETINT(uint32_t, 2, "Colour")));
 /* ========================================================================= */
 // $ Font:SetCR
 // > Red:number=The colour intensity of the texture's red component (0-1).
 // ? Sets the colour intensity of the texture for the red component. The change
 // ? affects all subsequent calls to all blitting functions.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetCR, LCGETPTR(1, Font)->SetQuadRed(LCGETNUM(GLfloat, 2, "Red")));
+LLFUNC(SetCR, LCGETPTR(1, Font)->
+  FboItemSetQuadRed(LCGETNUM(GLfloat, 2, "Red")));
 /* ========================================================================= */
 // $ Font:SetCG
 // > Green:number=The colour intensity of the texture's green component (0-1).
 // ? Sets the colour intensity of the texture for the green component. The
 // ? change affects all subsequent calls to all blitting functions.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetCG, LCGETPTR(1, Font)->SetQuadGreen(LCGETNUM(GLfloat, 2, "Green")));
+LLFUNC(SetCG, LCGETPTR(1, Font)->
+  FboItemSetQuadGreen(LCGETNUM(GLfloat, 2, "Green")));
 /* ========================================================================= */
 // $ Font:SetCB
 // > Blue:number=The colour intensity of the texture's blue component (0-1).
 // ? Sets the colour intensity of the texture for the blue component. The
 // ? change affects all subsequent calls to all blitting functions.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetCB, LCGETPTR(1, Font)->SetQuadBlue(LCGETNUM(GLfloat, 2, "Blue")));
+LLFUNC(SetCB, LCGETPTR(1, Font)->
+  FboItemSetQuadBlue(LCGETNUM(GLfloat, 2, "Blue")));
 /* ========================================================================= */
 // $ Font:SetCA
 // > Alpha:number=The transparency of the texture (0-1).
 // ? Sets the colour transparency of the texture. The change affects all
 // ? subsequent calls to all blitting functions.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetCA, LCGETPTR(1, Font)->SetQuadAlpha(LCGETNUM(GLfloat, 2, "Alpha")));
+LLFUNC(SetCA, LCGETPTR(1, Font)->
+  FboItemSetQuadAlpha(LCGETNUM(GLfloat, 2, "Alpha")));
 /* ========================================================================= */
 // $ Font:SetCORGB
 // > Red:number=The colour intensity of the outline red component (0-1).
@@ -119,7 +124,7 @@ LLFUNC(SetCA, LCGETPTR(1, Font)->SetQuadAlpha(LCGETNUM(GLfloat, 2, "Alpha")));
 // ? Sets the colour intensity of the outline for each component. The change
 // ? affects all subsequent calls to all blitting functions.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetCORGB, LCGETPTR(1, Font)->fiOutline.SetQuadRGB(
+LLFUNC(SetCORGB, LCGETPTR(1, Font)->fiOutline.FboItemSetQuadRGB(
   LCGETNUM(GLfloat, 2, "Red"), LCGETNUM(GLfloat, 3, "Green"),
   LCGETNUM(GLfloat, 4, "Blue")));
 /* ========================================================================= */
@@ -131,7 +136,7 @@ LLFUNC(SetCORGB, LCGETPTR(1, Font)->fiOutline.SetQuadRGB(
 // ? Sets the colour intensity of the outline for each component. The change
 // ? affects all subsequent calls to all blitting functions.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetCORGBA, LCGETPTR(1, Font)->fiOutline.SetQuadRGBA(
+LLFUNC(SetCORGBA, LCGETPTR(1, Font)->fiOutline.FboItemSetQuadRGBA(
   LCGETNUM(GLfloat, 2, "Red"),  LCGETNUM(GLfloat, 3, "Green"),
   LCGETNUM(GLfloat, 4, "Blue"), LCGETNUM(GLfloat, 5, "Alpha")));
 /* ========================================================================= */
@@ -141,39 +146,39 @@ LLFUNC(SetCORGBA, LCGETPTR(1, Font)->fiOutline.SetQuadRGBA(
 // ? 32 bit integer.
 /* ------------------------------------------------------------------------- */
 LLFUNC(SetCORGBAI, LCGETPTR(1, Font)->
-  fiOutline.SetQuadRGBAInt(LCGETINT(uint32_t, 2, "Colour")));
+  fiOutline.FboItemSetQuadRGBAInt(LCGETINT(uint32_t, 2, "Colour")));
 /* ========================================================================= */
 // $ Font:SetCOR
 // > Red:number=The colour intensity of red outline component (0-1).
 // ? Sets the colour intensity of the outline for the red component. The change
 // ? affects all subsequent calls to all blitting functions.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetCOR,
-  LCGETPTR(1, Font)->fiOutline.SetQuadRed(LCGETNUM(GLfloat, 2, "Red")));
+LLFUNC(SetCOR, LCGETPTR(1, Font)->
+  fiOutline.FboItemSetQuadRed(LCGETNUM(GLfloat, 2, "Red")));
 /* ========================================================================= */
 // $ Font:SetCOG
 // > Green:number=The colour intensity of green outline component (0-1).
 // ? Sets the colour intensity of the outline for the green component. The
 // ? change affects all subsequent calls to all blitting functions.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetCOG,
-  LCGETPTR(1, Font)->fiOutline.SetQuadGreen(LCGETNUM(GLfloat, 2, "Green")));
+LLFUNC(SetCOG, LCGETPTR(1, Font)->
+  fiOutline.FboItemSetQuadGreen(LCGETNUM(GLfloat, 2, "Green")));
 /* ========================================================================= */
 // $ Font:SetCOB
 // > Blue:number=The colour intensity of the blue outline component (0-1).
 // ? Sets the colour intensity of the outline for the blue component. The
 // ? change affects all subsequent calls to all blitting functions.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetCOB,
-  LCGETPTR(1, Font)->fiOutline.SetQuadBlue(LCGETNUM(GLfloat, 2, "Blue")));
+LLFUNC(SetCOB, LCGETPTR(1, Font)->
+  fiOutline.FboItemSetQuadBlue(LCGETNUM(GLfloat, 2, "Blue")));
 /* ========================================================================= */
 // $ Font:SetCOA
 // > Alpha:number=The transparency of the outline texture (0-1).
 // ? Sets the colour transparency of the outline texture. The change affects
 // ? all subsequent calls to all blitting functions.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetCOA,
-  LCGETPTR(1, Font)->fiOutline.SetQuadAlpha(LCGETNUM(GLfloat, 2, "Alpha")));
+LLFUNC(SetCOA, LCGETPTR(1, Font)->
+  fiOutline.FboItemSetQuadAlpha(LCGETNUM(GLfloat, 2, "Alpha")));
 /* ========================================================================= */
 // $ Font:Print
 // > X:number=The X screen position of the string.
@@ -524,7 +529,7 @@ LLFUNCEX(Create, 1, LCCLASSCREATE(Font)->InitFTFont(
  *LCGETPTR (                  1, Ftf),
   LCGETINTLG(GLuint,          2, 0, cOgl->MaxTexSize(),  "TexSize"),
   LCGETINTLG(GLuint,          3, 0, 16,                  "Padding"),
-  LCGETINTLG(GLuint,          4, 0, 11,                  "Filter"),
+  LCGETINTLGE(OglFilterEnum,  4, OF_N_N, OF_MAX,         "Filter"),
   LCGETFLAGS(ImageFlagsConst, 5, FF_MASK,                "Flags")));
 /* ========================================================================= */
 // $ Font.Console
@@ -532,7 +537,7 @@ LLFUNCEX(Create, 1, LCCLASSCREATE(Font)->InitFTFont(
 // ? Returns the handle to the console font. Useful if you want to reuse the
 // ? font in your application. Careful not to mess around with it's properties!
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Console, 1, LCCLASSCREATEPTR(Font, cConsole->GetFont()));
+LLFUNCEX(Console, 1, LCCLASSCREATEPTR(Font, cConGraphics->GetFont()));
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Font.* namespace functions structure                                ## **

@@ -57,7 +57,7 @@ class SysBase :                        // Members initially private
     // First try showing the window and if successful?
     if(ShowWindow(hH, SW_RESTORE|SW_SHOWNORMAL))
     { // Log the successful command
-      cLog->LogDebugExSafe("- Show window request was successful.");
+      cLog->LogDebugSafe("- Show window request was successful.");
     } // Showing the window failed?
     else
     { // Log the failure with reason
@@ -65,7 +65,7 @@ class SysBase :                        // Members initially private
     } // Then try setting it as a foreground window and if succeeded?
     if(SetForegroundWindow(hH))
     { // Log the successful command
-      cLog->LogDebugExSafe("- Set fg window request was successful.");
+      cLog->LogDebugSafe("- Set fg window request was successful.");
     } // Setting foreground window failed?
     else
     { // Log the failure with reason
@@ -73,7 +73,7 @@ class SysBase :                        // Members initially private
     }// Then try setting the focus of the window and if succeeded?
     if(SetFocus(hH) || SysIsErrorCode())
     { // Log the successful command
-      cLog->LogDebugExSafe("- Set focus request was successful.");
+      cLog->LogDebugSafe("- Set focus request was successful.");
     } // Setting focus failed?
     else
     { // Log the failure with reason
@@ -477,7 +477,7 @@ class SysBase :                        // Members initially private
   catch(const exception &e) { osS << e.what(); }
   /* == Perform stack dump ================================================= */
   void SEHStackDump(const HANDLE hProcess, const HANDLE hThread,
-    const CONTEXT *pcData) try
+    const CONTEXT*const pcData) try
   { // Ignore if no context
     if(!pcData)
       throw runtime_error{ "No stacktrace when context is a null pointer!" };
@@ -531,13 +531,12 @@ class SysBase :                        // Members initially private
         // string functions.
         // Buffer for symbol name
         string strName; strName.resize(MAX_PATH);
-        DWORD_PTR dwOffsetFromSym;
+        DWORD_PTR dwOffsetFromSym = 0;
         // Holds the memory for the symbol structure
-        Memory aStruct{ 4096, true };
-        PIMAGEHLP_SYMBOL ihsData = aStruct.Ptr<IMAGEHLP_SYMBOL>();
-        ihsData->SizeOfStruct = aStruct.Size<DWORD>();
-        ihsData->MaxNameLength =
-          static_cast<DWORD>(aStruct.Size() - sizeof(IMAGEHLP_SYMBOL));
+        Memory aStruct{ sizeof(IMAGEHLP_SYMBOL)+255, true };
+        PIMAGEHLP_SYMBOL ihsData = aStruct.MemPtr<IMAGEHLP_SYMBOL>();
+        ihsData->SizeOfStruct = aStruct.MemSize<DWORD>();
+        ihsData->MaxNameLength = 254;
         // Retreive function and if succeeded?
         if(SymGetSymFromAddr(hProcess, sfData.AddrPC.Offset, &dwOffsetFromSym,
           ihsData))
@@ -551,8 +550,8 @@ class SysBase :                        // Members initially private
         else switch(const DWORD dwCode = SysErrorCode<DWORD>())
         { // Invalid address
           case ERROR_INVALID_ADDRESS:
-          // Success? (This happens on Wine for some reason)
-          case ERROR_SUCCESS:
+          // File not found? (This happens on Wine for some reason)
+          case ERROR_FILE_NOT_FOUND:
             osS << "0x" << hex << sfData.AddrPC.Offset << '@';
             break;
           // Any other code
@@ -756,9 +755,9 @@ class SysBase :                        // Members initially private
   bool IsNotWindowHandleSet(void) const { return !IsWindowHandleSet(); }
   void SetWindowDestroyed(void) { SetWindowHandle(nullptr); }
   /* ----------------------------------------------------------------------- */
-  bool InitGlobalMutex(const string &strTitle)
+  bool InitGlobalMutex(const string_view &strvTitle)
   { // Convert UTF title to wide string
-    const wstring wstrTitle{ UTFtoS16(strTitle) };
+    const wstring wstrTitle{ UTFtoS16(strvTitle) };
     // Create the global mutex handle with the specified name and check error
     hMutex = CreateMutex(nullptr, FALSE, wstrTitle.c_str());
     switch(const DWORD dwResult = SysErrorCode<DWORD>())
@@ -767,7 +766,7 @@ class SysBase :                        // Members initially private
       // Global mutex name already exists?
       case ERROR_ALREADY_EXISTS:
         // Log that another instance already exists
-        cLog->LogDebugExSafe(
+        cLog->LogDebugSafe(
           "System found existing mutex, scanning for original window...");
         // Look for the specified window and if we activated it?
         if(!EnumWindows(EnumWindowsProc, reinterpret_cast<LPARAM>(&wstrTitle)))
@@ -777,20 +776,20 @@ class SysBase :                        // Members initially private
             cLog->LogErrorExSafe(
               "System failed to find the window to activate! $!", SysError());
           } // No window was found
-          else cLog->LogWarningExSafe("System window enumeration successful!");
+          else cLog->LogWarningSafe("System window enumeration successful!");
         } // Could not find it?
-        else cLog->LogDebugExSafe("System window enumeration unsuccessful!");
+        else cLog->LogDebugSafe("System window enumeration unsuccessful!");
         // Caller must terminate program
         return false;
       // Other error
       default: XCS("Failed to create global mutex object!",
-        "Title",  strTitle,
+        "Title",  strvTitle,
         "Result", static_cast<unsigned int>(dwResult),
         "mutex",  reinterpret_cast<void*>(hMutex));
     } // Getting here is impossible
   }
   /* -- Delete specified mutex (not needed on windoze) --------------------- */
-  void DeleteGlobalMutex(const string&) { }
+  void DeleteGlobalMutex(const string_view&) { }
   /* == Destructor ========================================================= */
   ~SysBase(void)
   { // Restore original signal handlers

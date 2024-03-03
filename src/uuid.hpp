@@ -20,11 +20,11 @@ struct UuId                            // Members initially public
     struct Parts                       // Access to parts
     { /* ------------------------------------------------------------------- */
       uint32_t     dwTimeLow;          // Low 32-bits of the current time
-      uint16_t     wTimeMid;           // Middle 16-bits of the current time
-      uint16_t     wTimeHiAndVer;      // 4-bit "version" + 12-bits of the time
-      uint8_t      ucClkSeqHiRes;      // 1-3 bit "variant" + 13-15 bit clock
-      uint8_t      ucClkSeqLow;        // As above
-      uint8_t      ucNode[6];          // 48-bit node id
+      uint16_t     wTimeMid,           // Middle 16-bits of the current time
+                   wTimeHiAndVer;      // 4-bit "version" + 12-bits of the time
+      uint8_t      ucClkSeqHiRes,      // 1-3 bit "variant" + 13-15 bit clock
+                   ucClkSeqLow,        // As above
+                   ucNode[6];          // 48-bit node id
     } p; /* ---------------------------------------------------------------- */
     uint8_t        ucRandom[16];       // As sixteen 8-bit integers (128-bit)
     uint64_t       qwRandom[2];        // As two 64-bit integers    (128-bit)

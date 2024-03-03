@@ -15,7 +15,7 @@ using namespace IString::P;            using namespace IToken::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* ------------------------------------------------------------------------- */
-enum ValidResult                       // Return values for ValidName()
+enum ValidResult : unsigned int        // Return values for ValidName()
 { /* ----------------------------------------------------------------------- */
   VR_OK,                               // 00: The filename is valid!
   VR_EMPTY,                            // 01: The filename is empty!
@@ -30,10 +30,11 @@ enum ValidResult                       // Return values for ValidName()
   VR_NOTRAILWS,                        // 10: No trailing whitespace
   VR_NOLEADWS,                         // 11: No leading whitespace
   VR_RESERVED,                         // 12: No reserved names
+  VR_EXPLODE,                          // 13: String failed to explode
   /* ----------------------------------------------------------------------- */
-  VR_MAX,                              // 13: Maximum number of errors
+  VR_MAX,                              // 14: Maximum number of errors
 };/* ----------------------------------------------------------------------- */
-enum ValidType                         // Types for ValidName()
+enum ValidType : unsigned int          // Types for ValidName()
 { /* ----------------------------------------------------------------------- */
   VT_TRUSTED,                          // Trusted caller
   VT_UNTRUSTED,                        // Untrusted caller (chroot-like)
@@ -43,19 +44,19 @@ static const class DirBase final       // Members initially private
   typedef IdList<VR_MAX> VRList;       // List of ValidName strings typedef
   const VRList     vrStrings;          // " container
   /* -- Convert a valid result from ValidName to string ------------ */ public:
-  const string &VNRtoStr(const ValidResult vrId) const
+  const string_view &VNRtoStr(const ValidResult vrId) const
     { return vrStrings.Get(vrId); }
   /* -- Default constructor ------------------------------------------------ */
   DirBase(void) :                      // No parameters
     /* -- Initialisers ----------------------------------------------------- */
     vrStrings{{                        // Init ValidNameResult strings
-      "Filename is valid",         /*0001*/ "Empty filename",
-      "Filename too long",         /*0203*/ "Root directory not allowed",
+      "Pathname is valid",         /*0001*/ "Empty pathname",
+      "Pathname too long",         /*0203*/ "Root directory not allowed",
       "Drive letter not allowed",  /*0405*/ "Invalid drive letter",
       "Invalid trust parameter",   /*0607*/ "Double-slash or pre/suffix slash",
       "Invalid character in part", /*0809*/ "Parent directory not allowed",
       "No trailing whitespace",    /*1011*/ "No leading whitespace",
-      "No reserved names",         /*12  */
+      "No reserved names",         /*1213*/ "Explode pathname failed",
     }}                                 // Finished ValidNameResult strings
     /* -- No code ---------------------------------------------------------- */
     { }
@@ -98,8 +99,7 @@ static ValidResult DirValidName(const string &strName,
   if(strName.front() <= 32) return VR_NOLEADWS;
   if(strName.back() <= 32) return VR_NOTRAILWS;
   // Replace backslashes with forward slashes on Windows
-  const string &strChosen = strName.find('\\') == string::npos ?
-    strName : PSplitBackToForwardSlashes(strName);
+  const string &strChosen = PSplitBackToForwardSlashes(strName);
 #else
   const string &strChosen = strName;
 #endif
@@ -107,65 +107,69 @@ static ValidResult DirValidName(const string &strName,
   switch(vtId)
   { // Full sandbox. Do not leave .exe directory
     case VT_UNTRUSTED:
-    { // Root directory not allowed
+      // Root directory not allowed
       if(strChosen.front() == '/') return VR_NOROOT;
       // Get parts from pathname and return if empty.
-      const Token tParts{ strChosen, cCommon->FSlash() };
-      // Get first iterator and string.
-      StrVectorConstIt svciPart{ tParts.cbegin() };
-      const string &strFirst = tParts.front();
-      // If we have a length of 2 or more?
-      if(strFirst.length() > 1)
-      { // No parent directory or drive letter allowed
-        if(strFirst == "..") return VR_PARENT;
-        if(strFirst[1] == ':') return VR_NODRIVE;
-      } // Test all the characters in the first string
-      if(!DirIsValidPathPartCharacters(strFirst)) return VR_INVCHAR;
-      // This check will allow trailing forwardslashes
-      const StrVectorConstIt svciEnd{ tParts.cend() -
-        (tParts.size() >= 2 && tParts.rbegin()->empty() ? 1 : 0) };
-      // Check the rest of them
-      while(++svciPart != svciEnd)
-      { // Get part
-        const string &strPart = *svciPart;
-        // Not allowed to be empty or parent directory
-        if(strPart.empty()) return VR_DPRS;
-        if(strPart == "..") return VR_PARENT;
-        // Failed first character is an invalid character.
-        if(!DirIsValidPathPartCharacters(strPart)) return VR_INVCHAR;
-      } // Success
-      return VR_OK;
-    } // Trusted filename?
+      if(const Token tParts{ strChosen, cCommon->FSlash() })
+      { // Get first iterator and string.
+        StrVectorConstIt svciPart{ tParts.cbegin() };
+        const string &strFirst = tParts.front();
+        // If we have a length of 2 or more?
+        if(strFirst.length() > 1)
+        { // No parent directory or drive letter allowed
+          if(strFirst == "..") return VR_PARENT;
+          if(strFirst[1] == ':') return VR_NODRIVE;
+        } // Test all the characters in the first string
+        if(!DirIsValidPathPartCharacters(strFirst)) return VR_INVCHAR;
+        // This check will allow trailing forwardslashes
+        const StrVectorConstIt svciEnd{ tParts.cend() -
+          (tParts.size() >= 2 && tParts.rbegin()->empty() ? 1 : 0) };
+        // Check the rest of them
+        while(++svciPart != svciEnd)
+        { // Get part
+          const string &strPart = *svciPart;
+          // Not allowed to be empty or parent directory
+          if(strPart.empty()) return VR_DPRS;
+          if(strPart == "..") return VR_PARENT;
+          // Failed first character is an invalid character.
+          if(!DirIsValidPathPartCharacters(strPart)) return VR_INVCHAR;
+        } // Success
+        return VR_OK;
+      } // Tokeniser failed (should be impossible)
+      return VR_EXPLODE;
+    // Trusted filename?
     case VT_TRUSTED:
-    { // Get parts from pathname and if was just a root directory, it's fine
-      const Token tParts{ strChosen, cCommon->FSlash() };
-      // Get first string item and iterator.
-      StrVectorConstIt svciPart{ tParts.cbegin() };
-      const string &strFirst = tParts.front();
-      // Check drive letter is valid
-      if(strFirst.length() > 1 && strFirst[1] == ':')
-      { // Get first character and make sure the drive letter is valid
-        const char cFirst = strFirst.front();
-        if((cFirst < 'A' || cFirst > 'Z') &&
-           (cFirst < 'a' || cFirst > 'z')) return VR_INVDRIVE;
-        // Test rest of characters from the second character
-        if(!DirIsValidPathPartCharacters(strFirst, 2)) return VR_INVCHAR;
-      } // Test all of the characters
-      else if(!DirIsValidPathPartCharacters(strFirst)) return VR_INVCHAR;
-      // This check will allow trailing forwardslashes
-      const StrVectorConstIt svciEnd{ tParts.cend() -
-        (tParts.size() >= 2 && tParts.rbegin()->empty() ? 1 : 0) };
-      // Check the rest of them
-      while(++svciPart != svciEnd)
-      { // Get part
-        const string &strPart = *svciPart;
-        // Not allowed to be empty or parent directory
-        if(strPart.empty()) return VR_DPRS;
-        // Failed first character is an invalid character.
-        if(!DirIsValidPathPartCharacters(strPart)) return VR_INVCHAR;
-      } // Success
-      return VR_OK;
-    } // Anything else invalid
+      // Get parts from pathname and if was just a root directory, it's fine
+      if(const Token tParts{ strChosen, cCommon->FSlash() })
+      { // Get first string item and iterator.
+        StrVectorConstIt svciPart{ tParts.cbegin() };
+        const string &strFirst = tParts.front();
+        // Check drive letter is valid
+        if(strFirst.length() > 1 && strFirst[1] == ':')
+        { // Get first character and make sure the drive letter is valid
+          const char cFirst = strFirst.front();
+          if((cFirst < 'A' || cFirst > 'Z') &&
+             (cFirst < 'a' || cFirst > 'z')) return VR_INVDRIVE;
+          // Test rest of characters from the second character
+          if(!DirIsValidPathPartCharacters(strFirst, 2)) return VR_INVCHAR;
+        } // Test all of the characters
+        else if(!DirIsValidPathPartCharacters(strFirst)) return VR_INVCHAR;
+        // This check will allow trailing forwardslashes
+        const StrVectorConstIt svciEnd{ tParts.cend() -
+          (tParts.size() >= 2 && tParts.rbegin()->empty() ? 1 : 0) };
+        // Check the rest of them
+        while(++svciPart != svciEnd)
+        { // Get part
+          const string &strPart = *svciPart;
+          // Not allowed to be empty or parent directory
+          if(strPart.empty()) return VR_DPRS;
+          // Failed first character is an invalid character.
+          if(!DirIsValidPathPartCharacters(strPart)) return VR_INVCHAR;
+        } // Success
+        return VR_OK;
+      } // Tokeniser failed (should be impossible)
+      return VR_EXPLODE;
+    // Anything else invalid
     default: return VR_INVALID;
   }
 }
@@ -278,9 +282,9 @@ class DirCore                          // System specific implementation
     // Set next handle
     dPtrNext = &dPtr;
     // Data for stat
-    struct stat sData;
+    struct stat sfssData;
     // Get information about the filename
-    if(stat(StrAppend(strPrefix, strFile).c_str(), &sData) == -1)
+    if(stat(StrAppend(strPrefix, strFile).c_str(), &sfssData) == -1)
     { // Not a directory (unknown)
       bIsDir = false;
       // Set the file data as blank
@@ -288,10 +292,10 @@ class DirCore                          // System specific implementation
     } // Stat was successful?
     else
     { // Set if is directory
-      bIsDir = S_ISDIR(sData.st_mode);
+      bIsDir = S_ISDIR(sfssData.st_mode);
       // Set data
-      dItem = { sData.st_ctime, sData.st_atime, sData.st_mtime,
-        static_cast<uint64_t>(sData.st_size), sData.st_mode };
+      dItem = { sfssData.st_ctime, sfssData.st_atime, sfssData.st_mtime,
+        static_cast<uint64_t>(sfssData.st_size), sfssData.st_mode };
     } // Success
     return true;
   }
@@ -321,11 +325,11 @@ class DirCore                          // System specific implementation
   { // Read the filename and if failed
     if(struct dirent*const dPtr = readdir(dData))
     { // Data for stat
-      struct stat sData;
+      struct stat sfssData;
       // Set filename
       strFile = dPtr->d_name;
       // Get information about the filename
-      if(stat(StrAppend(strPrefix, strFile).c_str(), &sData) == -1)
+      if(stat(StrAppend(strPrefix, strFile).c_str(), &sfssData) == -1)
       { // Not a directory (unknown)
         bIsDir = false;
         // Set the file data as blank
@@ -333,10 +337,10 @@ class DirCore                          // System specific implementation
       } // Stat was successful?
       else
       { // Set if is directory
-        bIsDir = S_ISDIR(sData.st_mode);
+        bIsDir = S_ISDIR(sfssData.st_mode);
         // Set data
-        dItem = { sData.st_ctime, sData.st_atime, sData.st_mtime,
-          static_cast<uint64_t>(sData.st_size), sData.st_mode };
+        dItem = { sfssData.st_ctime, sfssData.st_atime, sfssData.st_mtime,
+          static_cast<uint64_t>(sfssData.st_size), sfssData.st_mode };
       } // Success
       return true;
     } // Failed
@@ -369,64 +373,64 @@ class Dir :                            // Directory information class
   /* -- Base classes ------------------------------------------------------- */
   public DirFile                       // Files container class
 { /* -- Do scan --------------------------------------------------- */ private:
-  static void RemoveEntry(DirFile::EntMap &dflList, const char*const cpEntry)
+  static void RemoveEntry(DirFile::EntMap &dfemMap, const char*const cpEntry)
   { // Remove specified entry
-    const DirFile::EntMapIt dliItem(dflList.find(cpEntry));
-    if(dliItem != dflList.cend()) dflList.erase(dliItem);
+    const DirFile::EntMapIt dfemiIt{ dfemMap.find(cpEntry) };
+    if(dfemiIt != dfemMap.cend()) dfemMap.erase(dfemiIt);
   }
   /* -- Remove current and parent directory entries ------------------------ */
-  static void RemoveParentAndCurrentDirectory(DirFile::EntMap &dflList)
+  static void RemoveParentAndCurrentDirectory(DirFile::EntMap &dfemMap)
   { // Remove "." and ".." current directory entries
-    RemoveEntry(dflList, ".");
-    RemoveEntry(dflList, "..");
+    RemoveEntry(dfemMap, ".");
+    RemoveEntry(dfemMap, "..");
   }
   /* -- Scan with no match checking ---------------------------------------- */
   static DirFile ScanDir(const string &strDir={})
   { // Directory and file list
-    DirFile::EntMap dliDirs, dliFiles;
+    DirFile::EntMap dfemDirs, dfemFiles;
     // Load up the specification and return if failed
-    DirCore dfcInterface(strDir);
-    if(dfcInterface.IsOpened())
+    DirCore dcInterface{ strDir };
+    if(dcInterface.IsOpened())
     { // Repeat...
       do
       { // Add directory if is a directory
-        if(dfcInterface.bIsDir)
-          dliDirs.insert({ StdMove(dfcInterface.strFile),
-                           StdMove(dfcInterface.dItem) });
+        if(dcInterface.bIsDir)
+          dfemDirs.insert({ StdMove(dcInterface.strFile),
+                            StdMove(dcInterface.dItem) });
         // Insert into files list
-        else dliFiles.insert({ StdMove(dfcInterface.strFile),
-                               StdMove(dfcInterface.dItem) });
+        else dfemFiles.insert({ StdMove(dcInterface.strFile),
+                                StdMove(dcInterface.dItem) });
         // ...until no more entries
-      } while(dfcInterface.GetNextFile());
+      } while(dcInterface.GetNextFile());
       // Remove '.' and '..' entries
-      RemoveParentAndCurrentDirectory(dliDirs);
+      RemoveParentAndCurrentDirectory(dfemDirs);
     } // Return list of files and directories
-    return { StdMove(dliDirs), StdMove(dliFiles) };
+    return { StdMove(dfemDirs), StdMove(dfemFiles) };
   }
   /* -- Scan with match checking ------------------------------------------- */
   static DirFile ScanDirExt(const string &strDir, const string &strExt)
   { // Directory and file list
-    DirFile::EntMap dliDirs, dliFiles;
+    DirFile::EntMap dfemDirs, dfemFiles;
     // Load up the specification and return if failed
-    DirCore dfcInterface(strDir);
-    if(dfcInterface.IsOpened())
+    DirCore dcInterface{ strDir };
+    if(dcInterface.IsOpened())
     { // Repeat...
       do
       { // Add directory if is a directory
-        if(dfcInterface.bIsDir)
-          dliDirs.insert({ StdMove(dfcInterface.strFile),
-                           StdMove(dfcInterface.dItem) });
+        if(dcInterface.bIsDir)
+          dfemDirs.insert({ StdMove(dcInterface.strFile),
+                            StdMove(dcInterface.dItem) });
         // Is a file and extension doesn't match? Ignore it
-        else if(PathSplit{ dfcInterface.strFile }.strExt != strExt) continue;
+        else if(PathSplit{ dcInterface.strFile }.strExt != strExt) continue;
         // Insert into files list
-        else dliFiles.insert({ StdMove(dfcInterface.strFile),
-                               StdMove(dfcInterface.dItem) });
+        else dfemFiles.insert({ StdMove(dcInterface.strFile),
+                                StdMove(dcInterface.dItem) });
         // ...until no more entries
-      } while(dfcInterface.GetNextFile());
+      } while(dcInterface.GetNextFile());
       // Remove '.' and '..' entries
-      RemoveParentAndCurrentDirectory(dliDirs);
+      RemoveParentAndCurrentDirectory(dfemDirs);
     } // Return list of files and directories
-    return { StdMove(dliDirs), StdMove(dliFiles) };
+    return { StdMove(dfemDirs), StdMove(dfemFiles) };
   }
   /* -- Constructor of current directory without safety --------- */ protected:
   explicit Dir(DirFile &&dfList) :
@@ -506,33 +510,34 @@ static bool DirMkDirEx(const string &strDir)
 { // Break apart directory parts
   const PathSplit psParts{ strDir };
   // Break apart so we can check the directories. Will always be non-empty.
-  const Token tParts{ StrAppend(psParts.strDir, psParts.strFileExt),
-    cCommon->FSlash() };
-  // This will be the string that wile sent to mkdir multiple times gradually.
-  // Do not try to construct the oss with the drive string because it won't
-  // work and thats not how the constructor works it seems!
-  ostringstream osS; osS << psParts.strDrive;
-  // Get the first item and if it is not empty?
-  const string &strFirst = tParts.front();
-  if(!strFirst.empty())
-  { // Make the directory if isn't the drive and return failure if the
-    // directory doesn't already exist
-    if(!DirMkDir(strFirst) && StdIsNotError(EEXIST)) return false;
-    // Move first item. It will be empty if directory started with a slash
-    osS << StdMove(strFirst);
-  } // If there are more directories?
-  if(tParts.size() >= 2)
-  { // Create all the other directories
-    for(StrVectorConstIt svI{ next(tParts.cbegin(), 1) };
-                         svI != tParts.cend();
-                       ++svI)
-    { // Append next directory
-      osS << '/' << StdMove(*svI);
-      // Make the directory and if failed and it doesn't exist return error
-      if(!DirMkDir(osS.str()) && StdIsNotError(EEXIST)) return false;
-    }
-  } // Success
-  return true;
+  if(const Token tParts{ StrAppend(psParts.strDir, psParts.strFileExt),
+    cCommon->FSlash() })
+  { // This will be the string that wile sent to mkdir multiple times
+    // gradually.
+    ostringstream osS; osS << psParts.strDrive;
+    // Get the first item and if it is not empty?
+    const string &strFirst = tParts.front();
+    if(!strFirst.empty())
+    { // Make the directory if isn't the drive and return failure if the
+      // directory doesn't already exist
+      if(!DirMkDir(strFirst) && StdIsNotError(EEXIST)) return false;
+      // Move first item. It will be empty if directory started with a slash
+      osS << StdMove(strFirst);
+    } // If there are more directories?
+    if(tParts.size() >= 2)
+    { // Create all the other directories
+      for(StrVectorConstIt svI{ next(tParts.cbegin(), 1) };
+                           svI != tParts.cend();
+                         ++svI)
+      { // Append next directory
+        osS << '/' << StdMove(*svI);
+        // Make the directory and if failed and it doesn't exist return error
+        if(!DirMkDir(osS.str()) && StdIsNotError(EEXIST)) return false;
+      }
+    } // Success
+    return true;
+  } // Tokeniser failed
+  return false;
 }
 /* -- Remove a directory and all it's interim components ------------------- */
 static bool DirRmDirEx(const string &strDir)
@@ -566,16 +571,16 @@ static bool DirRmDirEx(const string &strDir)
 /* -- Delete a file -------------------------------------------------------- */
 static bool DirFileUnlink(const string &strF) { return !StdUnlink(strF); }
 /* -- Get file size - ------------------------------------------------------ */
-static int DirFileSize(const string &strF, StdFStatStruct &sData)
-  { return StdFStat(strF, &sData) ? StdGetError() : 0; }
+static int DirFileSize(const string &strF, StdFStatStruct &sfssData)
+  { return StdFStat(strF, &sfssData) ? StdGetError() : 0; }
 /* -- True if specified file has the specified mode ------------------------ */
 static bool DirFileHasMode(const string &strF, const int iMode,
   const int iNegate)
 { // Get file information and and if succeeded?
-  StdFStatStruct sData;
-  if(!DirFileSize(strF, sData))
+  StdFStatStruct sfssData;
+  if(!DirFileSize(strF, sfssData))
   { // If file attributes have specified mode then success
-    if((sData.st_mode ^ iNegate) & iMode) return true;
+    if((sfssData.st_mode ^ iNegate) & iMode) return true;
     // Set error number
     StdSetError(ENOTDIR);
   } // Failed

@@ -20,138 +20,158 @@ using namespace IStd::P;               using namespace IString::P;
 using namespace ISysUtil::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
-/* == Image libraries collector class ====================================== */
-BEGIN_COLLECTOR(ImageFmts, ImageFmt, CLHelperUnsafe)
-/* == Image libraries format object class ================================== */
-BEGIN_MEMBERCLASS(ImageFmts, ImageFmt, ICHelperUnsafe)
+/* -- Image libraries collector class as a vector for direct access -------- */
+BEGIN_CUSTCTR_COLLECTOR(ImageLibs, ImageLib, vector, CLHelperUnsafe)
+/* -- Image libraries format object class ---------------------------------- */
+BEGIN_MEMBERCLASS(ImageLibs, ImageLib, ICHelperUnsafe)
 { /* -- Typedefs -------------------------------------------------- */ private:
   typedef bool (&CBLFunc)(FileMap&, ImageData&);
   typedef bool (&CBSFunc)(const FStream&, const ImageData&, const ImageSlot&);
   /* -- Variables ---------------------------------------------------------- */
-  const char*const cpExt;              // Default extension of plugin type
-  const char*const cpName;             // Name of plugin
-  CBLFunc          icLoader;           // Loader callback
-  CBSFunc          icSaver;            // Saver callback
+  const string_view strvName,          // Name of plugin
+                    strvExt;           // Default extension of plugin type
+  CBLFunc           cblfFunc;          // Loader callback
+  CBSFunc           cbsfFunc;          // Saver callback
+  const ImageFormat ifId;              // Image format id
+  /* -- Check id number ---------------------------------------------------- */
+  ImageFormat CheckId(const ImageFormat ifNId)
+  { // The id should match the collector count
+    const size_t stExpect = cParent->size() - 1;
+    if(ifNId == stExpect) return ifNId;
+    // Make sure the ImageFormats match the codec construction order!
+    XC("Internal error: Image format id mismatch!",
+       "Id",     ifNId,    "Expect",    stExpect,
+       "Filter", strvName, "Extension", strvExt);
+  }
   /* -- Unsupported callbacks----------------------------------------------- */
   static bool NoLoader(FileMap&, ImageData&) { return false; }
   static bool NoSaver(const FStream&, const ImageData&, const ImageSlot&)
     { return false; }
   /* -- Get members ------------------------------------------------ */ public:
-  const char *GetName(void) const    { return cpName; }
-  const char *GetExt(void) const     { return cpExt; }
-  CBLFunc     GetLoader(void) const  { return icLoader; }
-  bool        HaveLoader(void) const { return icLoader != NoLoader; }
-  CBSFunc     GetSaver(void) const   { return icSaver; }
-  bool        HaveSaver(void) const  { return icSaver != NoSaver; }
-  /* -- Constructors ------------------------------------------------------- */
-  explicit ImageFmt(const char*const cpN, const char*const cpE,
-    CBLFunc &icL=NoLoader, CBSFunc &icS=NoSaver) :
-    /* -- Initialisers ----------------------------------------------------- */
-    ICHelperImageFmt{ *cImageFmts,     // Register filter in filter list
+  CBLFunc GetLoader(void) const { return cblfFunc; }
+  CBSFunc GetSaver(void) const { return cbsfFunc; }
+  const string_view &GetName(void) const { return strvName; }
+  const string_view &GetExt(void) const { return strvExt; }
+  bool HaveLoader(void) const { return cblfFunc != NoLoader; }
+  bool HaveSaver(void) const { return cbsfFunc != NoSaver; }
+  /* -- Constructor -------------------------------------------------------- */
+  explicit ImageLib(
+    /* -- Required arguments ----------------------------------------------- */
+    const ImageFormat ifNId,           // The IFMT_* id
+    const string_view &strvNName,      // The name of the codec
+    const string_view &strvNExt,       // The default extension for the codec
+    CBLFunc &cblfNFunc=NoLoader,       // Function to call when loading
+    CBSFunc &cbsfNFunc=NoSaver         // Function to call when saving
+    ): /* -- Initialisers -------------------------------------------------- */
+    ICHelperImageLib{ cImageLibs,      // Register filter in filter list
       this },                          // Initialise filter parent
-    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
-    cpExt(cpE),                        // Set extension for filter
-    cpName(cpN),                       // Set name for filter
-    icLoader{ icL },                   // Set loader function
-    icSaver{ icS }                     // Set saver function
+    IdentCSlave{ cParent->CtrNext() }, // Initialise identification number
+    strvName(strvNName),               // Set name for filter
+    strvExt(strvNExt),                 // Set extension for filter
+    cblfFunc(cblfNFunc),               // Set loader function
+    cbsfFunc(cbsfNFunc),               // Set saver function
+    ifId(CheckId(ifNId))               // Set unique id for this filter
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(ImageFmt)            // Omit copy constructor for safety
-};/* -- End of objects collector ------------------------------------------- */
-END_COLLECTOR(ImageFmts)
+  DELETECOPYCTORS(ImageLib)            // Omit copy constructor for safety
+};/* -- End of objects collector (reserve and set limit for formats) ------- */
+END_COLLECTOREX(ImageLibs, reserve(IFMT_MAX); CollectorSetLimit(IFMT_MAX),)
 /* -- Save a image using a specific type ----------------------------------- */
-static void ImageSave(const size_t stFId, const string &strN,
-  const ImageData &ifD, const ImageSlot &sData)
+static void ImageSave(const ImageFormat ifId, const string &strFile,
+  const ImageData &idData, const ImageSlot &isData)
 { // Ignore if plugin is invalid
-  if(stFId >= cImageFmts->size())
-    XC("StrFormat invalid!",
-       "Identifier", strN, "FormatId", stFId, "Maximum", cImageFmts->size());
+  if(ifId >= cImageLibs->size())
+    XC("Format invalid!",
+       "Identifier", strFile, "FormatId", ifId, "Maximum", cImageLibs->size());
   // Get plugin class
-  const ImageFmt &iCref = **next(cImageFmts->cbegin(),
-    static_cast<ssize_t>(stFId));
-  // Set filename so we can delete it if it fails
-  const string strNX{ StrAppend(strN, '.', iCref.GetExt()) };
+  const ImageLib &ilRef = *cImageLibs->at(ifId);
+  // Set filename with forced extension so we can delete it if it fails
+  const string strFileNX{ StrAppend(strFile, '.', ilRef.GetExt()) };
   bool bCreated = false;
   // Capture exceptions
   try
   { // Create file on disk and report error if failed. Closed automatically
     // when leaving this scope. If there is an exception then the stream is
     // automatically closed
-    if(FStream fC{ strNX, FStream::FM_W_B })
+    if(FStream fsData{ strFileNX, FM_W_B })
     { // Created file
       bCreated = true;
       // Save the image and log the result if succeeded?
-      if(iCref.GetSaver()(fC, ifD, sData))
+      if(ilRef.GetSaver()(fsData, idData, isData))
       { // Log that we saved the image successfully and return
         cLog->LogInfoExSafe("Image saved '$' as $<$>! ($x$x$)",
-          strNX, iCref.GetExt(), stFId, sData.DimGetWidth(),
-          sData.DimGetHeight(), ifD.GetBitsPerPixel());
+          strFileNX, ilRef.GetExt(), ifId, isData.DimGetWidth(),
+          isData.DimGetHeight(), idData.GetBitsPerPixel());
         return;
       } // Could not detect format so throw error
       throw runtime_error{ "Failed to save image!" };
     } // Failed to create file
-    XCL("Failed to create file!", "File", strNX);
+    XCL("Failed to create file!", "File", strFileNX);
   } // Error occured. Error used as title
   catch(const exception &E)
   { // Remove file if created
-    if(bCreated) DirFileUnlink(strNX);
+    if(bCreated) DirFileUnlink(strFileNX);
     // Throw an error with the specified reason
-    XC(E.what(), "Identifier", strNX, "FormatId", stFId,
-                 "Plugin",     iCref.GetName());
+    XC(E.what(), "Identifier", strFileNX,
+                 "FormatId",   ifId,
+                 "Plugin",     ilRef.GetName());
   }
 }
 /* -- Load a image using a specific type ----------------------------------- */
-static void ImageLoad(const size_t stFId, FileMap &fC, ImageData &ifD)
+static void ImageLoad(const ImageFormat ifId, FileMap &fsData,
+  ImageData &idData)
 { // Ignore if plugin is invalid
-  if(stFId >= cImageFmts->size())
-    XC("Plugin invalid!", "Identifier", fC.IdentGet(), "FormatId", stFId,
-                          "Maximum",    cImageFmts->size());
+  if(ifId >= cImageLibs->size())
+    XC("Plugin invalid!", "Identifier", fsData.IdentGet(), "FormatId", ifId,
+                          "Maximum",    cImageLibs->size());
   // Get plugin class
-  ImageFmt &iCref = **next(cImageFmts->cbegin(), static_cast<ssize_t>(stFId));
+  const ImageLib &ilRef = *cImageLibs->at(ifId);
   // Capture exceptions
   try
-  { // Load the image and if succeeded?
-    if(iCref.GetLoader()(fC, ifD))
-      // Log that we loaded the image and return
+  { // Load the image, log and return and if succeeded
+    if(ilRef.GetLoader()(fsData, idData))
       return cLog->LogInfoExSafe("Image loaded '$' directly as $<$>! ($x$x$)",
-        fC.IdentGet(), iCref.GetExt(), stFId, ifD.DimGetWidth(),
-        ifD.DimGetHeight(), ifD.GetBitsPerPixel());
+        fsData.IdentGet(), ilRef.GetExt(), ifId, idData.DimGetWidth(),
+        idData.DimGetHeight(), idData.GetBitsPerPixel());
     // Could not detect format so throw error
     throw runtime_error{ "Unable to load image!" };
   } // Error occured. Error used as title
   catch(const exception &E)
   { // Throw an error with the specified reason
-    XC(E.what(), "Identifier", fC.IdentGet(),  "Size",     fC.Size(),
-                 "Position",   fC.FileMapTell(), "FormatId", stFId,
-                 "Plugin",     iCref.GetName());
+    XC(E.what(), "Identifier", fsData.IdentGet(),
+                 "Size",       fsData.MemSize(),
+                 "Position",   fsData.FileMapTell(),
+                 "FormatId",   ifId,
+                 "Plugin",     ilRef.GetName());
   }
 }
 /* -- Load a image and automatically detect type --------------------------- */
-static void ImageLoad(FileMap &fC, ImageData &ifD)
+static void ImageLoad(FileMap &fsData, ImageData &idData)
 { // For each plugin registered
-  for(ImageFmt*const iCptr : *cImageFmts)
+  for(ImageLib*const ilPtr : *cImageLibs)
   { // Get reference to plugin
-    ImageFmt &iCref = *iCptr;
+    ImageLib &ilRef = *ilPtr;
     // Capture exceptions
     try
-    { // Load the image and log and return if we loaded successfully?
-      if(iCref.GetLoader()(fC, ifD))
-        // Log taht we loaded the image and return
+    { // Load the image, log and return if we loaded successfully
+      if(ilRef.GetLoader()(fsData, idData))
         return cLog->LogInfoExSafe("Image loaded '$' ($x$x$) as $!",
-          fC.IdentGet(), ifD.DimGetWidth(), ifD.DimGetHeight(),
-          ifD.GetBitsPerPixel(), iCref.GetExt());
+          fsData.IdentGet(), idData.DimGetWidth(), idData.DimGetHeight(),
+          idData.GetBitsPerPixel(), ilRef.GetExt());
     } // Error occured. Error used as title
     catch(const exception &E)
     { // Throw an error with the specified reason
-      XC(E.what(), "Identifier", fC.IdentGet(),    "Size",   fC.Size(),
-                   "Position",   fC.FileMapTell(), "Plugin", iCref.GetName());
+      XC(E.what(), "Identifier", fsData.IdentGet(),
+                   "Size",       fsData.MemSize(),
+                   "Position",   fsData.FileMapTell(),
+                   "Plugin",     ilRef.GetName());
     } // Rewind stream position
-    fC.FileMapRewind();
+    fsData.FileMapRewind();
     // Reset other members to try next filter
-    ifD.ResetAllData();
+    idData.ResetAllData();
   } // Could not detect so throw error
-  XC("Unable to determine image format!", "Identifier", fC.IdentGet());
+  XC("Unable to determine image format!", "Identifier", fsData.IdentGet());
 }
 /* ------------------------------------------------------------------------- */
 static int ImageSwapPixels(char*const cpSrc, const size_t stSrc,
@@ -159,10 +179,10 @@ static int ImageSwapPixels(char*const cpSrc, const size_t stSrc,
 { // Check parameters
   if(!stSrc) return 0;
   if(!cpSrc) return -1;
-  if(stSwapA >= stPixel) return -1;
-  if(stSwapB >= stPixel) return -2;
-  if(stPixel >= stSrc) return -3;
-  if(stSwapA == stSwapB) return -4;
+  if(stSwapA >= stPixel) return -2;
+  if(stSwapB >= stPixel) return -3;
+  if(stPixel >= stSrc) return -4;
+  if(stSwapA == stSwapB) return -5;
   // Do swap the pixels
   for(size_t stPos = 0; stPos < stSrc; stPos += stPixel)
   { // Calculate source position and copy character at source

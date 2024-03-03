@@ -9,15 +9,15 @@
 /* ------------------------------------------------------------------------- */
 namespace ISShot {                     // Start of private module namespace
 /* -- Dependencies --------------------------------------------------------- */
-using namespace IClock::P;             using namespace ICVar::P;
-using namespace ICVarDef::P;           using namespace ICVarLib::P;
-using namespace IFbo::P;               using namespace IFboMain::P;
+using namespace IClock::P;             using namespace ICVarDef::P;
+using namespace IFbo::P;               using namespace IFboCore::P;
 using namespace IImage::P;             using namespace IImageDef::P;
 using namespace IImageFormat::P;       using namespace IImageLib::P;
 using namespace ILog::P;               using namespace IMemory::P;
 using namespace IOgl::P;               using namespace IStd::P;
-using namespace IString::P;            using namespace ISysUtil::P;
-using namespace IThread::P;            using namespace Lib::OS::GlFW;
+using namespace IString::P;            using namespace ISystem::P;
+using namespace ISysUtil::P;           using namespace IThread::P;
+using namespace Lib::OS::GlFW;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* -- Core fbo wrapper class ----------------------------------------------- */
@@ -26,7 +26,7 @@ static class SShot final :             // Members initially private
   public Thread,                       // Process in background
   public Image                         // Image data class
 { /* -- Screenshot thread -------------------------------------------------- */
-  size_t           stFormatId;         // Screenshot id to use
+  ImageFormat          ifFormatId;     // Screenshot id to use
   /* -- Fbo dumper thread callback ----------------------------------------- */
   int DumpThread(const Thread &)
   { // Code to return
@@ -36,7 +36,7 @@ static class SShot final :             // Members initially private
     { // Reverse pixels or they will be upside down
       ReversePixels();
       // Save the image to disk
-      SaveFile(Image::IdentGet(), 0, stFormatId);
+      SaveFile(Image::IdentGet(), 0, ifFormatId);
       // Success
       iReturn = 1;
     } // exception occured?
@@ -75,13 +75,12 @@ static class SShot final :             // Members initially private
       "Failed to bind FBO texture to dump!",
       "Identifier", fboRef.IdentGet(), "Id", fboRef.uiFBOtex);
     // Read into buffer
-    GL(cOgl->ReadTexture(eMode, mBuffer.Ptr<GLvoid>()),
+    GL(cOgl->ReadTexture(eMode, mBuffer.MemPtr<GLvoid>()),
       "Failed to read FBO pixel data!",
       "Identifier", fboRef.IdentGet(), "Mode", eMode);
     // Get new filename or original filename
-    Image::IdentSet(strFN.empty() ?
-      StrAppend(cCVars->GetInternalStrSafe(APP_SHORTNAME),
-        cmSys.FormatTime("-%Y%m%d-%H%M%S")) : strFN);
+    Image::IdentSet(strFN.empty() ? StrAppend(cSystem->GetGuestShortTitle(),
+      cmSys.FormatTime("-%Y%m%d-%H%M%S")) : strFN);
     // Log status
     cLog->LogDebugExSafe("SShot '$' screen capture to '$' ($x$x$)...",
       fboRef.IdentGet(), Image::IdentGet(), fboRef.DimGetWidth(),
@@ -96,20 +95,19 @@ static class SShot final :             // Members initially private
     return true;
   }
   /* -- Dump main fbo ------------------------------------------------------ */
-  void DumpMain(void) { DumpFBO(cFboMain->fboMain); }
+  void DumpMain(void) { DumpFBO(cFboCore->fboMain); }
   /* -- Default constructor ------------------------------------------------ */
   SShot(void) :                        // No parameters
     /* -- Initialisers ----------------------------------------------------- */
-    Thread{ "sshot",                   // Prepare screenshot thread
-      SysThread::Low,                  // Non-critical low performance
+    Thread{ "sshot", STP_LOW,          // Prepare low perf screenshot thread
       bind(&SShot::DumpThread,         // Dump thread entry function
         this, _1) },                   // Send this class pointer
-    stFormatId(0)                      // Not truly initialised yet
+    ifFormatId(IFMT_MAX)               // Not truly initialised yet
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Set image format type ---------------------------------------------- */
-  CVarReturn SetScreenShotType(const size_t stId)
-    { return CVarSimpleSetIntNGE(stFormatId, stId, cImageFmts->size()); }
+  CVarReturn SetScreenShotType(const ImageFormat ifId)
+    { return CVarSimpleSetIntNGE(ifFormatId, ifId, IFMT_MAX); }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(SShot)               // Supress copy constructor for safety
   /* ----------------------------------------------------------------------- */

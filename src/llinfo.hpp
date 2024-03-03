@@ -81,20 +81,18 @@ LLFUNCBEGIN(RAM)
 LLFUNCENDEX(6)
 /* ========================================================================= */
 // $ Info.CPU
-// < Count:integer=Number of threads available to the engine.
-// < Speed:integer=Processor frequency in hz.
-// < Feature:integer=Basic features mask.
-// < Id:string=Family/Model/Stepping, etc.
-// < Platform:integer=Family/Model/Stepping, etc.
 // < CPUid:string=The CPUID string.
-// < Vendor:string=The CPU vendor string (AuthenticAMD,
+// < Count:integer=Number of threads available to the engine.
+// < Speed:integer=Processor frequency in Hz.
+// < Family:integer=Processor family.
+// < Model:integer=Processor model.
+// < Stepping:integer=Processor stepping.
 // ? Returns information about the installed Central Processing Unit.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(CPU, 7,
-  LCPUSHVAR(cSystem->CPUCount(),    cSystem->CPUSpeed(),
-            cSystem->CPUFeatures(), cSystem->CPUIdentifier(),
-            cSystem->CPUPlatform(), cSystem->CPUName(),
-            cSystem->CPUVendor()));
+LLFUNCEX(CPU, 6,
+  LCPUSHVAR(cSystem->CPUName(), cSystem->CPUCount(), cSystem->CPUSpeed(),
+            cSystem->CPUFamily(), cSystem->CPUModel(),
+            cSystem->CPUStepping()));
 /* ========================================================================= */
 // $ Info.LUAUsage
 // < Bytes:integer=Bytes of memory.
@@ -197,7 +195,7 @@ LLFUNCEX(Ticks, 1, LCPUSHVAR(cTimer->TimerGetTicks()));
 // ? Get CPU loops processed in the last second. Should be the same as GPU for
 // ? most people but at times may be different, sometimes much higher.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(CPUFPS, 1, LCPUSHVAR(cTimer->TimerGetSecond()));
+LLFUNCEX(CPUFPS, 1, LCPUSHVAR(cTimer->TimerGetFPS()));
 /* ========================================================================= */
 // $ Info.Delay
 // < Time:number=Delay time in seconds.

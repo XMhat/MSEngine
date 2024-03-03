@@ -22,9 +22,10 @@ namespace E {                          // Start of engine namespace
 #include "utf.hpp"                     // UTF strings utility header
 #include "std.hpp"                     // StdLib function helpers header
 #include "string.hpp"                  // String utilities header
+#include "url.hpp"                     // Url parsing library
 #include "error.hpp"                   // Error handling utility header
 #include "token.hpp"                   // String tokenisation utility header
-#include "vars.hpp"                    // String variables utility header
+#include "parser.hpp"                  // String parsing utility header
 #include "psplit.hpp"                  // Path handling utilities header
 #include "ident.hpp"                   // Identifier utility header
 #include "dir.hpp"                     // Directory handling utility header
@@ -44,6 +45,7 @@ namespace E {                          // Start of engine namespace
 #include "evtmain.hpp"                 // Main engine events system header
 #include "condef.hpp"                  // Console definitions header
 #include "glfwutil.hpp"                // GLFW utility class header
+#include "glfwcrsr.hpp"                // GLFW cursor class header
 #include "glfwwin.hpp"                 // GLFW window class header
 #include "glfw.hpp"                    // GLFW utilities header
 #include "dim.hpp"                     // Data grouping classes header
@@ -60,13 +62,16 @@ namespace E {                          // Start of engine namespace
 #include "credits.hpp"                 // Credits handling class header
 #include "archive.hpp"                 // Archive handling class header
 #include "asset.hpp"                   // Asset handling class header
+#include "cert.hpp"                    // X509 certificate store class header
 #include "timer.hpp"                   // Timing utilities header
 #include "sql.hpp"                     // SQL database management header
+#include "cvar.hpp"                    // CVar item header
+#include "cvars.hpp"                   // CVars management class header
 #include "luacode.hpp"                 // Lua code subsystem header
 #include "luadef.hpp"                  // Lua definitions header
 #include "lua.hpp"                     // Lua core subsystem header
-#include "cvar.hpp"                    // CVar item header
-#include "cvars.hpp"                   // CVars management class header
+#include "socket.hpp"                  // Socket handling class header
+#include "console.hpp"                 // Console handling header
 #include "oal.hpp"                     // OpenAL audio header
 #include "pcmdef.hpp"                  // Pcm definitions header
 #include "pcmlib.hpp"                  // Pcm codecs handling header
@@ -81,21 +86,18 @@ namespace E {                          // Start of engine namespace
 #include "bin.hpp"                     // Bin packing class header
 #include "image.hpp"                   // Image load and save handling header
 #include "shader.hpp"                  // OpenGL Shader handling header
-#include "fbobase.hpp"                 // Frame buffer object base class header
+#include "shaders.hpp"                 // Actual shaders core
 #include "fboitem.hpp"                 // Frame buffer object item class header
 #include "fbo.hpp"                     // Frame buffer object class header
-#include "fbomain.hpp"                 // Core frame buffer object class header
+#include "fbocore.hpp"                 // Core frame buffer object class header
 #include "sshot.hpp"                   // Screenshot handling class header
 #include "texture.hpp"                 // Texture handling class header
 #include "palette.hpp"                 // Palette handling class header
 #include "ftf.hpp"                     // Freetype font handling class header
 #include "font.hpp"                    // Font loading and printing header
 #include "file.hpp"                    // FStream+FileMap class header
-#include "cert.hpp"                    // X509 certificate store class header
-#include "url.hpp"                     // Url parsing library
-#include "socket.hpp"                  // Socket handling class header
 #include "clip.hpp"                    // Clipboard class header
-#include "console.hpp"                 // Console handling header
+#include "congraph.hpp"                // Console rendering class header
 #include "mask.hpp"                    // BitMask system header
 #include "source.hpp"                  // Audio source class header
 #include "stream.hpp"                  // Audio stream class header
@@ -103,10 +105,11 @@ namespace E {                          // Start of engine namespace
 #include "video.hpp"                   // Theora video playback class header
 #include "audio.hpp"                   // Audio base management class header
 #include "json.hpp"                    // Json handling class header
-#include "cursor.hpp"                  // Cursor activation class header
 #include "input.hpp"                   // Input handling class header
 #include "glfwmon.hpp"                 // GLFW monitor class header
 #include "display.hpp"                 // Window handling class header
+#include "luavar.hpp"                  // Lua variable class
+#include "luacmd.hpp"                  // Lua console command class
 #include "core.hpp"                    // Core class header
 #include "lualib.hpp"                  // Lua lua function api library
 /* ------------------------------------------------------------------------- */

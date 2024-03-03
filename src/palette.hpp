@@ -10,15 +10,15 @@
 namespace IPalette {                   // Start of private module namespace
 /* -- Dependencies --------------------------------------------------------- */
 using namespace ICollector::P;         using namespace IError::P;
-using namespace IFbo::P;               using namespace IFboBase::P;
-using namespace IIdent::P;             using namespace IImage::P;
-using namespace IImageDef::P;          using namespace IStd::P;
+using namespace IFboDef::P;            using namespace IIdent::P;
+using namespace IImage::P;             using namespace IImageDef::P;
+using namespace IShaders::P;           using namespace IStd::P;
 using namespace ISysUtil::P;           using namespace IUtil::P;
 using namespace Lib::OS::GlFW;
 /* ------------------------------------------------------------------------- */
-namespace P {                          // Start of public module namespace
-/* ------------------------------------------------------------------------- */
 typedef array<FboColour, 256> PalData; // Palette data
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* ------------------------------------------------------------------------- */
 struct Pal :                           // Members initially public
   /* -- Base classes ------------------------------------------------------- */
@@ -29,7 +29,7 @@ struct Pal :                           // Members initially public
   FboColour &GetSlot(const size_t stSlot) { return (*this)[stSlot]; }
   /* -- Commit palette ----------------------------------------------------- */
   void Commit(void) const
-    { cFboBase->sh2D8Pal.UpdatePalette(size(),
+    { cShaderCore->sh2D8Pal.UpdatePalette(size(),
         reinterpret_cast<const GLfloat*>(data())); }
   /* -- Set palette entry -------------------------------------------------- */
   void SetRGBA(const size_t stPos, const GLfloat fRed,
@@ -176,9 +176,9 @@ BEGIN_MEMBERCLASS(Palettes, Palette, ICHelperUnsafe),
     { // Calculate position and set the new value
       const size_t stPos = stIndex * BY_RGB;
       GetSlot(stIndex) = {
-        isPalette.ReadInt<uint8_t>(stPos+sizeof(uint16_t)),
-        isPalette.ReadInt<uint8_t>(stPos+sizeof(uint8_t)),
-        isPalette.ReadInt<uint8_t>(stPos)
+        isPalette.MemReadInt<uint8_t>(stPos+sizeof(uint16_t)),
+        isPalette.MemReadInt<uint8_t>(stPos+sizeof(uint8_t)),
+        isPalette.MemReadInt<uint8_t>(stPos)
       };
     } // Fill the rest of the entries if we need to
     Fill(isPalette.DimGetWidth(), size() - isPalette.DimGetWidth());
@@ -186,8 +186,8 @@ BEGIN_MEMBERCLASS(Palettes, Palette, ICHelperUnsafe),
   /* -- Default constructor ------------------------------------------------ */
   Palette(void) :                      // No parameters
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperPalette{*cPalettes,this},  // Register the object in collector
-    IdentCSlave{ cParent.CtrNext() }   // Initialise identification number
+    ICHelperPalette{ cPalettes, this },// Register the object in collector
+    IdentCSlave{ cParent->CtrNext() }  // Initialise identification number
     /* -- Code  ------------------------------------------------------------ */
     { }                                // No code
 };/* ----------------------------------------------------------------------- */

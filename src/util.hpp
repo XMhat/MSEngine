@@ -52,70 +52,70 @@ template<typename IntType=double, typename FloatType=double>
   return static_cast<IntType>(floor(ftValue * ftAmount + 0.5) / ftAmount);
 }
 /* -- Expand dimensions to specified outer bounds keeping aspect ----------- */
-static void UtilStretchToOuter(double &fdOW, double &fdOH, double &fdIW,
-  double &fdIH)
+static void UtilStretchToOuter(double &dOW, double &dOH, double &dIW,
+  double &dIH)
 { // Get aspect ratio of inner and outer dimensions
-  const double fdOuterAspect = fdOW / fdOH, fdInnerAspect = fdIW / fdIH;
+  const double dOuterAspect = dOW / dOH, dInnerAspect = dIW / dIH;
   // If the aspect ratios are the same then the screen rectangle will do,
   // otherwise we need to calculate the new rectangle
-  if(fdInnerAspect > fdOuterAspect)
+  if(dInnerAspect > dOuterAspect)
   { // Calculate new width and centring factor
-    const double fdNewWidth = fdOH / fdIH * fdIW,
-                 fdCentringFactor = (fdOW - fdNewWidth) / 2;
+    const double dNewWidth = dOH / dIH * dIW,
+                 dCentringFactor = (dOW - dNewWidth) / 2;
     // Set new bounds. We'll use the original vars to set the values
-    fdIW = fdNewWidth + fdCentringFactor;
-    fdIH = fdOH;
-    fdOW = fdCentringFactor;
-    fdOH = 0;
+    dIW = dNewWidth + dCentringFactor;
+    dIH = dOH;
+    dOW = dCentringFactor;
+    dOH = 0;
   } // Otherwise
-  else if(fdInnerAspect < fdOuterAspect)
+  else if(dInnerAspect < dOuterAspect)
   { // Calculate new width and centring factor
-    const double fdNewHeight = fdOW / fdIW * fdIH,
-                 fdCentringFactor = (fdOH - fdNewHeight) / 2;
+    const double dNewHeight = dOW / dIW * dIH,
+                 dCentringFactor = (dOH - dNewHeight) / 2;
     // Set new bounds. We'll use the original vars to set the values
-    fdIH = fdNewHeight + fdCentringFactor;
-    fdIW = fdOW;
-    fdOW = 0;
-    fdOH = fdCentringFactor;
+    dIH = dNewHeight + dCentringFactor;
+    dIW = dOW;
+    dOW = 0;
+    dOH = dCentringFactor;
   } // No change?
   else
   { // Keep original values
-    fdIW = fdOW;
-    fdIH = fdOH;
-    fdOW = fdOH = 0;
+    dIW = dOW;
+    dIH = dOH;
+    dOW = dOH = 0;
   }
 }
 /* -- Expand dimensions to specified inner bounds keeping aspect ----------- */
-static void UtilStretchToInner(double &fdOW, double &fdOH, double &fdIW,
-  double &fdIH)
+static void UtilStretchToInner(double &dOW, double &dOH, double &dIW,
+  double &dIH)
 { // Get aspect ratio of inner and outer dimensions
-  const double fdOuterAspect = fdOW / fdOH, fdInnerAspect = fdIW / fdIH;
+  const double dOuterAspect = dOW / dOH, dInnerAspect = dIW / dIH;
   // If the aspect ratios are the same then the screen rectangle will do,
   // otherwise we need to calculate the new rectangle
-  if(fdInnerAspect > fdOuterAspect)
+  if(dInnerAspect > dOuterAspect)
   { // Calculate new width and centring factor
-    const double fdNewHeight = fdOW / fdIW * fdIH,
-                 fdCentringFactor = (fdOH - fdNewHeight) / 2;
+    const double dNewHeight = dOW / dIW * dIH,
+                 dCentringFactor = (dOH - dNewHeight) / 2;
     // Set new bounds. We'll use the original vars to set the values
-    fdIH = fdNewHeight + fdCentringFactor;
-    fdIW = fdOW;
-    fdOW = 0;
-    fdOH = fdCentringFactor;
+    dIH = dNewHeight + dCentringFactor;
+    dIW = dOW;
+    dOW = 0;
+    dOH = dCentringFactor;
   } // Otherwise
-  else if(fdInnerAspect < fdOuterAspect)
+  else if(dInnerAspect < dOuterAspect)
   { // Calculate new width and centring factor
-    const double fdNewWidth = fdOH / fdIH * fdIW,
-                 fdCentringFactor = (fdOW - fdNewWidth) / 2;
+    const double dNewWidth = dOH / dIH * dIW,
+                 dCentringFactor = (dOW - dNewWidth) / 2;
     // Set new bounds. We'll use the original vars to set the values
-    fdIW = fdNewWidth + fdCentringFactor;
-    fdIH = 0;
-    fdOW = fdCentringFactor;
+    dIW = dNewWidth + dCentringFactor;
+    dIH = 0;
+    dOW = dCentringFactor;
   } // No change?
   else
   { // Keep original values
-    fdIW = fdOW;
-    fdIH = fdOH;
-    fdOW = fdOH = 0;
+    dIW = dOW;
+    dIH = dOH;
+    dOW = dOH = 0;
   }
 }
 /* -- Try to reserve items in a list --------------------------------------- */

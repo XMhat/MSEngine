@@ -227,7 +227,7 @@ class SysPipe :
   { // Buffer for process output
     Memory mBuffer{ stBuffer };
     // Read some data and resize the block to the amount read
-    mBuffer.Resize(Read(mBuffer.Ptr<char>(), mBuffer.Size()));
+    mBuffer.MemResize(Read(mBuffer.MemPtr<char>(), mBuffer.MemSize()));
     // Return memory block
     return mBuffer;
   }

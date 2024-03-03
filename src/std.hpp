@@ -93,9 +93,15 @@ inline const string S16toUTF(const wchar_t*const wcpStr)
 /* -- Convert STL widestring to utf8 --------------------------------------- */
 inline const string WS16toUTF(const wstring &wstrRef)
   { return S16toUTF(wstrRef.c_str()); }
+/* -- Convert UTF c-string to STL widestring ------------------------------- */
+inline const wstring UTFtoS16(const char*const cpPtr)
+  { return UtfDecoder{ cpPtr }.Wide(); };
 /* -- Convert UTF string to STL widestring --------------------------------- */
 inline const wstring UTFtoS16(const string &strRef)
   { return UtfDecoder{ strRef }.Wide(); };
+/* -- Convert UTF string view to STL widestring ---------------------------- */
+inline const wstring UTFtoS16(const string_view &strvRef)
+  { return UtfDecoder{ strvRef }.Wide(); };
 /* -- Wrapper for _waccess() ----------------------------------------------- */
 static int StdAccess(const wchar_t*const wcpPath, const int iMode)
   { return _waccess(wcpPath, iMode); }

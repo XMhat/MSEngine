@@ -27,7 +27,7 @@ namespace SysBase {                    // Start of module namespace
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
 class SysProcess                       // Need this before of System init order
-{ /* -- Private variables ----------------------------------------- */ private:
+{ /* -- Private variables -------------------------------------------------- */
   const pid_t      ullProcessId;       // Process id
   const pthread_t  vpThreadId;         // Thread id
   /* -- Protected variables ------------------------------------- */ protected:
@@ -57,7 +57,7 @@ class SysCore :
   public SysProcess,                   // Process information class
   public SysCon,                       // Defined in 'pixcon.hpp'
   public SysCommon                     // Common functions class
-{ /* -- Variables ------------------------------------------------- */ private:
+{ /* -- Variables ---------------------------------------------------------- */
   bool             bWindowInitialised; // Is window initialised?
   /* ----------------------------------------------------------------------- */
   const string GetSysCTLInfoString(const char *cpS)
@@ -111,6 +111,8 @@ class SysCore :
     memData.dMLoad =
       static_cast<double>(memData.qMUsed) / memData.qMTotal * 100;
   }
+  /* -- Get uptime from clock class ---------------------------------------- */
+  StdTimeT GetUptime(void) const { return cmHiRes.GetTimeS(); }
   /* -- Send signal -------------------------------------------------------- */
   static int SendSignal(const unsigned int uiPid, const int iSignal)
     { return kill(static_cast<pid_t>(uiPid), iSignal); }
@@ -167,7 +169,7 @@ class SysCore :
       qTotalTicksL = qTotalTicks;
       qIdleTicksL = qIdleTicks;
       // Final calculation
-      cpuUData.fdSystem = (1.0 - ((qTotalTicksSinceLastTime > 0) ?
+      cpuUData.dSystem = (1.0 - ((qTotalTicksSinceLastTime > 0) ?
         (static_cast<double>(qIdleTicksSinceLastTime)) /
         qTotalTicksSinceLastTime : 0)) * 100;
     } // For retrieving CPU information about the process
@@ -187,7 +189,7 @@ class SysCore :
     if(task_threads(mptTask, &taThreads, &numThreads) != KERN_SUCCESS)
       return;
     // Cpu counters
-    cpuUData.fdProcess = 0;
+    cpuUData.dProcess = 0;
     // For each thread
     for(int iIndex = 0, iMax = UtilIntOrMax<int>(numThreads);
             iIndex < iMax;
@@ -203,14 +205,14 @@ class SysCore :
       // Ignore if thread not idle
       if(tbiInfo->flags & TH_FLAGS_IDLE) continue;
       // Now we can calculate cpu usage
-      cpuUData.fdProcess += static_cast<double>(
+      cpuUData.dProcess += static_cast<double>(
         tbiInfo->cpu_usage / static_cast<double>(TH_USAGE_SCALE) *
           100.0);
     } // Deallocate thread list
     vm_deallocate(mptTask, reinterpret_cast<vm_offset_t>(taThreads),
       numThreads * sizeof(thread_t));
     // Divide by CPU thread count to make the value read like Windows and Linux
-    cpuUData.fdProcess /= numThreads;
+    cpuUData.dProcess /= numThreads;
   }
   /* -- Seek to position in specified handle ------------------------------- */
   template<typename IntType>
@@ -244,7 +246,7 @@ class SysCore :
             fExe.FStreamReadSafe(&lcData, sizeof(lcData)))
           { // We read enough bytes?
             if(stReadCmd == sizeof(lcData))
-            { // StrFormat command data
+            { // Format command data
               lcData.cmd = Swap32Type(lcData.cmd).v;
               lcData.cmdsize = Swap32Type(lcData.cmdsize).v;
               // We are only interested in segments
@@ -259,7 +261,7 @@ class SysCore :
                     sizeof(scItem)))
                   { // We read enough bytes?
                     if(stReadSeg == sizeof(scItem))
-                    { // StrFormat segment data
+                    { // Format segment data
                       scItem.fileoff = Swap64Type(scItem.fileoff).v;
                       scItem.filesize = Swap64Type(scItem.filesize).v;
                       // Get highest point in exe
@@ -288,7 +290,7 @@ class SysCore :
                     sizeof(scItem)))
                   { // We read enough bytes?
                     if(stReadSeg == sizeof(scItem))
-                    { // StrFormat needed segment data
+                    { // Format needed segment data
                       scItem.fileoff = Swap32Type(scItem.fileoff).v;
                       scItem.filesize = Swap32Type(scItem.filesize).v;
                       // Get highest point in exe
@@ -353,7 +355,7 @@ class SysCore :
             fExe.FStreamReadSafe(&faData, sizeof(faData)))
           { // We read enough bytes?
             if(stReadArch == sizeof(faData))
-            { // StrFormat needed segment data
+            { // Format needed segment data
               faData.offset = SwapType(faData.offset).v;
               faData.size = SwapType(faData.size).v;
               // Get highest point in exe
@@ -381,15 +383,15 @@ class SysCore :
   /* -- Get executable size from header (N/A on OSX) ----------------------- */
   static size_t GetExeSize(const string &strFile)
   { // Open exe file and return on error
-    if(FStream fExe{ strFile, FStream::FM_R_B })
+    if(FStream fExe{ strFile, FM_R_B })
     { // Possible MachO header magic values
       enum MachOMagic : uint32_t {
-#if defined(LITTLE_ENDIAN)             // Intel and ARM?
+#if defined(LITTLEENDIAN)         // Intel and ARM?
         MACHO_LE32     = MH_MAGIC,     MACHO_LE64     = MH_MAGIC_64,
         MACHO_BE32     = MH_CIGAM,     MACHO_BE64     = MH_CIGAM_64,
         MACHO_FAT_LE32 = FAT_MAGIC,    MACHO_FAT_LE64 = FAT_MAGIC_64,
         MACHO_FAT_BE32 = FAT_CIGAM,    MACHO_FAT_BE64 = FAT_CIGAM_64,
-#elif defined(BIG_ENDIAN)              // PPC?
+#elif defined(BIGENDIAN)          // PPC?
         MACHO_LE32     = MH_CIGAM,     MACHO_LE64     = MH_CIGAM_64,
         MACHO_BE32     = MH_MAGIC,     MACHO_BE64     = MH_MAGIC_64,
         MACHO_FAT_LE32 = FAT_CIGAM,    MACHO_FAT_LE64 = FAT_CIGAM_64,
@@ -460,9 +462,9 @@ class SysCore :
     const string strVersion{ StrAppend(sizeof(void*)*8, "-bit version") };
     // Mod list
     SysModList mlData;
-    mlData.emplace(make_pair(static_cast<size_t>(0),
-      SysModule{ GetExeName(), VER_MAJOR, VER_MINOR, VER_BUILD, VER_REV,
-        VER_AUTHOR, VER_NAME, string(strVersion), VER_STR }));
+    mlData.emplace(make_pair(0UL, SysModule{ GetExeName(), VER_MAJOR,
+      VER_MINOR, VER_BUILD, VER_REV, VER_AUTHOR, VER_NAME, string(strVersion),
+      VER_STR }));
     // Now walk through all the dylibs loaded. Skip the first entry which is
     // always the executable. We already added it!
     for(uint32_t ulIndex = 1, ulEnd = _dyld_image_count();
@@ -604,19 +606,18 @@ class SysCore :
   }
   /* ----------------------------------------------------------------------- */
   CPUData GetProcessorData(void)
-  { // Get processor information
-    const size_t stCpuCount = thread::hardware_concurrency();
-    // Using arm cpu?
+  { // Using arm cpu?
 #if defined(RISC)
+    // Get family model and stepping (improvised for X-platform consistency)
     const unsigned int
-      ulFeatureSet = GetSysCTLInfoNum<unsigned int>("hw.cpufamily"),
-      ulPlatformId = GetSysCTLInfoNum<unsigned int>("hw.cputype");
-    const string strIdentifier{
-      StrFormat("Arm64 Family $ Model $",
-        GetSysCTLInfoNum<uint32_t>("hw.cpusubfamily"),
-        GetSysCTLInfoNum<uint32_t>("hw.cpusubtype"))
-    }, strProcessorName{ GetSysCTLInfoString("machdep.cpu.brand_string") },
-       strVendorId{ "Apple" };
+      uiFamily = GetSysCTLInfoNum<unsigned int>("hw.cpusubfamily"),
+      uiModel = GetSysCTLInfoNum<uint32_t>("hw.cpusubtype"),
+      uiStepping = 0;
+    // Get processor name
+    string strProcessorName{ GetSysCTLInfoString("machdep.cpu.brand_string") },
+      strVendorId{ "Apple" };
+    // Remove unnecessary whitespaces
+    StrCompactRef(strProcessorName);
     // Processor speeds common speeds (lowest vs highest speed).
     typedef array<const unsigned int, 2> UIntDouble;
     const UIntDouble uidM1{ { 2064, 3228 } }, // Apple M1
@@ -641,24 +642,26 @@ class SysCore :
       smListIt->second[1];
     // Using INTEL processor?
 #elif defined(CISC)
+    // Get family model and stepping
     const unsigned int
       uiSpeed = GetSysCTLInfoNum<uint64_t>("hw.cpufrequency")/1000000,
-      ulFeatureSet = GetSysCTLInfoNum<uint64_t>("machdep.cpu.feature_bits"),
-      ulPlatformId = GetSysCTLInfoNum<uint32_t>("machdep.cpu.signature");
-    const string strIdentifier{
-      StrFormat("Intel$ Family $ Model $ Stepping $",
-        sizeof(void*) == 8 ? "64" : cCommon->Blank(),
-        GetSysCTLInfoNum<uint32_t>("machdep.cpu.family"),
-        GetSysCTLInfoNum<uint32_t>("machdep.cpu.model"),
-        GetSysCTLInfoNum<uint32_t>("machdep.cpu.stepping"))
-    }, strProcessorName{ GetSysCTLInfoString("machdep.cpu.brand_string") },
-       strVendorId{ GetSysCTLInfoString("machdep.cpu.vendor") };
+      uiFamily = GetSysCTLInfoNum<uint32_t>("machdep.cpu.family"),
+      uiModel = GetSysCTLInfoNum<uint32_t>("machdep.cpu.model"),
+      uiStepping = GetSysCTLInfoNum<uint32_t>("machdep.cpu.stepping");
+    // Get processor id and vendor
+    string strProcessorName{ GetSysCTLInfoString("machdep.cpu.brand_string") },
+      strVendorId{ GetSysCTLInfoString("machdep.cpu.vendor") };
+    // Remove unnecessary whitespaces
+    StrCompactRef(strVendorId);
+    StrCompactRef(strProcessorName);
+    // Fail-safe empty strings
+    if(strVendorId.empty()) strVendorId = cCommon->Unspec();
 #endif
+    // Check processor name is specified
+    if(strProcessorName.empty()) strProcessorName = strVendorId;
     // Return default data we could not read
-    return { StdMove(strVendorId),   StdMove(strProcessorName),
-             StdMove(strIdentifier), stCpuCount,
-             uiSpeed,                ulFeatureSet,
-             ulPlatformId };
+    return { thread::hardware_concurrency(), uiSpeed, uiFamily, uiModel,
+               uiStepping, StdMove(strProcessorName) };
   }
   /* ----------------------------------------------------------------------- */
   bool DebuggerRunning(void) const
@@ -689,8 +692,7 @@ class SysCore :
   bool DetectElevation(void) { return getuid() == 0; }
   /* -- Return data from /dev/random -------------------------------------- */
   Memory GetEntropy(void) const
-    { return FStream{ "/dev/random", FStream::FM_R_B }.
-        FStreamReadBlockSafe(1024); }
+    { return FStream{ "/dev/random", FM_R_B }.FStreamReadBlockSafe(1024); }
   /* ----------------------------------------------------------------------- */
   void *GetWindowHandle(void) const { return nullptr; }
   /* -- A window was created ----------------------------------------------- */

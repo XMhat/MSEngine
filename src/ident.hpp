@@ -54,12 +54,16 @@ struct Ident :                         // Members initially public
 { /* -- Set identifier by rvalue ------------------------------------------- */
   void IdentSet(string &&strId) { strIdentifier = StdMove(strId); }
   /* -- Set identifier by lvalue ------------------------------------------- */
+  void IdentSet(const char*const cpId) { strIdentifier = cpId; }
+  /* -- Set identifier by lvalue ------------------------------------------- */
   void IdentSet(const string &strId) { strIdentifier = strId; }
+  /* -- Set identifier by string view -------------------------------------- */
+  void IdentSet(const string_view &strvId) { strIdentifier = strvId; }
   /* -- Set identifier by class -------------------------------------------- */
   void IdentSet(const IdentBase &ibO) { strIdentifier = ibO.IdentGet(); }
   /* -- Formatted set using StrFormat() ------------------------------------ */
   template<typename ...VarArgs>
-    void IdentSet(const char*const cpFormat, const VarArgs &...vaArgs)
+    void IdentSetEx(const char*const cpFormat, const VarArgs &...vaArgs)
       { IdentSet(StrFormat(cpFormat, vaArgs...)); }
   /* -- Formatted set using StrAppend() ------------------------------------ */
   template<typename ...VarArgs>
@@ -94,19 +98,19 @@ struct Ident :                         // Members initially public
   /* -- Default suppressions ----------------------------------------------- */
   DELETECOPYCTORS(Ident)               // Remove default functions
 };/* ----------------------------------------------------------------------- */
-typedef IdentBase<const string> IdentConst;       // Const type of Ident
+typedef IdentBase<const string_view> IdentConst; // Const type of Ident
 /* == Id to string list helper class ======================================= */
 template<size_t stMaximum,             // Maximum number of items
          size_t stMinimum=0,           // Minimum allowed value
          class List =                  // List array type alias
-           array<const string,         // Use const type string
+           array<const string_view,    // Use const type string
              stMaximum>>               // Maximum number of strings in array
 struct IdList :                        // Members initially public
   /* -- Dependents --------------------------------------------------------- */
   private IdentConst,                  // Alternative if id is unknown
   private List                         // Array of strings
 { /* -- Constructor with alternative string -------------------------------- */
-  public: IdList(const List &lNI, const string &strNU) :
+  public: IdList(const List &lNI, const string_view &strNU) :
     /* -- Initialisers ----------------------------------------------------- */
     IdentConst{ StdMove(strNU) },       // Unknown item string
     List{ StdMove(lNI) }                // Items
@@ -115,11 +119,12 @@ struct IdList :                        // Members initially public
   /* -- Constructor with blank alternative string -------------------------- */
   explicit IdList(const List &lNI) :
     /* -- Initialisers ----------------------------------------------------- */
-    IdList(lNI, cCommon->Blank())
+    IdList{ lNI, cCommon->Blank() }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Get name from id --------------------------------------------------- */
-  template<typename IntType=size_t>const string &Get(const IntType itId) const
+  template<typename IntType=size_t>
+    const string_view &Get(const IntType itId) const
   { // Allow any input integer type, we don't need to convert if the same
     const size_t stId = static_cast<size_t>(itId);
     return stId >= stMinimum && stId < stMaximum ? (*this)[stId] : IdentGet();
@@ -127,7 +132,7 @@ struct IdList :                        // Members initially public
 };/* ----------------------------------------------------------------------- */
 /* == Id to string list helper class ======================================= */
 template<class KeyType = unsigned int, // The user specified type of the key
-         class ValueType = string,     // The user specified type of the value
+         class ValueType = string_view,// The user specified type of the value
          class MapType =               // The map type to hold key/value pairs
            map<const KeyType,          // The key type
                const ValueType>>       // The value type
@@ -138,7 +143,7 @@ struct IdMap :                         // Members initially public
 { /* -- Macros ------------------------------------------------------------- */
 #define IDMAPSTR(e) { e, #e }          // Helper macro
   /* -- Constructor with alternative string ------------------------------- */
-  explicit IdMap(const MapType &mNI, const string &strNU) :
+  explicit IdMap(const MapType &mNI, const string_view &strNU) :
     /* -- Initialisers ----------------------------------------------------- */
     IdentConst{ StdMove(strNU) },         // Unknown item string
     MapType{ StdMove(mNI) }               // Items map

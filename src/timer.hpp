@@ -14,11 +14,15 @@ using namespace IClock::P;             using namespace ICVarDef::P;
 namespace P {                          // Start of public module namespace
 /* ------------------------------------------------------------------------- */
 static class Timer final               // Members initially private
-{ /* -- Variables ---------------------------------------------------------- */
+{ /* -- Limits ------------------------------------------------------------- */
+  static const uint64_t uqIntvMin =    2000000, // Minimum interval
+                        uqIntvMax = 1000000000; // Maximum interval
+  /* -- Variables ---------------------------------------------------------- */
   ClkTimePoint     ctStart,            // Start of frame time
                    ctTimeOut,          // Time script times out
                    ctEnd;              // End of frame time
-  ClkDuration      cdDuration,         // Frame duration
+  ClkDuration      cdLoop,             // Loop duration
+                   cdFrame,            // Frame duration
                    cdAcc,              // Accumulator duration
                    cdLimit,            // Frame limit
                    cdDelay,            // Delay duration
@@ -28,23 +32,22 @@ static class Timer final               // Members initially private
                    qTicks;             // Number of ticks processed this sec
   bool             bWait;              // Force wait?
   /* -- Set engine tick rate --------------------------------------- */ public:
-  void TimerSetInterval(const double fdNInt)
-    { cdLimit = duration_cast<ClkDuration>(duration<double>{ 1.0 / fdNInt }); }
+  void TimerSetInterval(const uint64_t uqInterval)
+    { cdLimit = nanoseconds{ uqInterval }; }
+  /* -- Get minimum maximum interval value --------------------------------- */
+  uint64_t TimerGetMinInterval(void) { return uqIntvMin; }
+  uint64_t TimerGetMaxInterval(void) { return uqIntvMax; }
   /* -- Set global target fps ---------------------------------------------- */
-  CVarReturn TimerTickRateModified(const unsigned int uiNewInterval)
-  { // Ignore invalid values
-    if(uiNewInterval < 2 || uiNewInterval > 200) return DENY;
-    // Set new interval
-    TimerSetInterval(static_cast<double>(uiNewInterval));
-    // Success
-    return ACCEPT;
-  }
+  CVarReturn TimerTickRateModified(const uint64_t uqInterval)
+    { return CVarSimpleSetIntNLGE(cdLimit, nanoseconds{ uqInterval},
+        nanoseconds{ TimerGetMinInterval() },
+        nanoseconds{ TimerGetMaxInterval() }); }
   /* -- Update delay as double --------------------------------------------- */
   void TimerUpdateDelay(const unsigned int uiNewDelay)
     { cdDelay = milliseconds{ uiNewDelay }; }
   /* -- Forces a delay internally if delay is disabled --------------------- */
   void TimerSetDelayIfZero(void)
-    { if(cdDelay != seconds(0)) TimerUpdateDelay(1); }
+    { if(cdDelay != seconds{0}) TimerUpdateDelay(1); }
   /* -- Restore saved persistent delay timer ------------------------------- */
   void TimerRestoreDelay(void) { cdDelay = cdDelayPst; }
   /* -- TimerSetDelay ------------------------------------------------------ */
@@ -66,7 +69,7 @@ static class Timer final               // Members initially private
   { // Set end time
     ctEnd = cmHiRes.GetTime();
     // Get duration we had to wait since end of last game loop
-    cdDuration = ctEnd - ctStart;
+    cdLoop = ctEnd - ctStart;
     // Set new start time
     ctStart = ctEnd;
     // Set new timeout time
@@ -82,24 +85,33 @@ static class Timer final               // Members initially private
   void TimerSuspend(void) { TimerSuspend(1); }
   /* -- Thread suspense by requested duration ------------------------------ */
   void TimerSuspendRequested(void) { TimerSuspend(cdDelay); }
-  /* -- Force wait if delay is disabled (cFboMain->Render()) --------------- */
+  /* -- Force wait if delay is disabled (cFboCore->Render()) --------------- */
   void TimerForceWait(void)
     { if(cdDelay == seconds(0)) bWait = true; }
-  /* -- Calculate time elapsed since c++  ---------------------------------- */
+  /* -- Calculate time elapsed since c++ ----------------------------------- */
   void TimerUpdateBot(void)
   { // Sleep if theres a delay
     TimerSuspendRequested();
     // Calculate current time using stl
     TimerCalculateTime();
+    // Frame time is loop time since theres no accumulator
+    cdFrame = cdLoop;
     // Increment ticks
     ++qTicks;
   }
   /* -- Calculate time elapsed since end of last loop ---------------------- */
-  void TimerUpdateInteractive(void)
-  { // Calculate frame time using glfw
+  void TimerUpdateInteractiveInterim(void)
+  { // Calculate frame time
     TimerCalculateTime();
     // Increase accumulator by frame time
-    cdAcc += cdDuration;
+    cdAcc += cdLoop;
+  }
+  /* -- Calculate time elapsed since end of last frame --------------------- */
+  void TimerUpdateInteractive(void)
+  { // Calculate frame time
+    TimerUpdateInteractiveInterim();
+    // Store grand frame time
+    cdFrame = cdLoop;
   }
   /* -- Should execute a game tick? ---------------------------------------- */
   bool TimerShouldTick(void)
@@ -120,10 +132,12 @@ static class Timer final               // Members initially private
     // Tick loop should render a frame
     return true;
   }
+  /* -- Should not execute a game tick? ------------------------------------ */
+  bool TimerShouldNotTick(void) { return !TimerShouldTick(); }
   /* -- Reset counters and re-initialise start and end time ---------------- */
   void TimerCatchup(void)
   { // Reset accumulator and duration
-    cdAcc = cdDuration = seconds{ 0 };
+    cdAcc = cdLoop = cdFrame = seconds{ 0 };
     // Update new start and end time
     ctStart = ctEnd = cmHiRes.GetTime();
   }
@@ -146,9 +160,11 @@ static class Timer final               // Members initially private
     { return ClockDurationToDouble(cdAcc); }
   /* -- Return the duration of the last frame ------------------------------ */
   double TimerGetDuration(void) const
-    { return ClockDurationToDouble(cdDuration); }
+    { return ClockDurationToDouble(cdFrame); }
   /* -- Return the frames per second based on the last frame --------------- */
-  double TimerGetSecond(void) const { return 1.0 / TimerGetDuration(); }
+  double TimerGetFPS(void) const { return 1.0 / TimerGetDuration(); }
+  /* -- Return the target frames per second -------------------------------- */
+  double TimerGetFPSLimit(void) const { return 1.0 / TimerGetLimit(); }
   /* -- Get the number of engine ticks processed --------------------------- */
   uint64_t TimerGetTicks(void) const { return qTicks; }
   /* -- Get the current suspend time --------------------------------------- */
@@ -172,12 +188,13 @@ static class Timer final               // Members initially private
     ctStart{ milliseconds{0} },        // Init start of frame time
     ctTimeOut{ ctStart },              // Init time script times out
     ctEnd{ ctStart },                  // Init end of frame time
-    cdDuration{ milliseconds{0} },     // Init frame duration
-    cdAcc{ cdDuration },               // Init accumulator duration
-    cdLimit{ cdDuration },             // Init frame limit
-    cdDelay{ cdDuration },             // Init delay duration
-    cdDelayPst{ cdDuration },          // Init persistent delay duration
-    cdTimeOut{ cdDuration },           // Init frame timeout duration
+    cdLoop{ milliseconds{0} },         // Init loop duration
+    cdFrame{ cdLoop },                 // Init frame duration
+    cdAcc{ cdLoop },                   // Init accumulator duration
+    cdLimit{ cdLoop },                 // Init frame limit
+    cdDelay{ cdLoop },                 // Init delay duration
+    cdDelayPst{ cdLoop },              // Init persistent delay duration
+    cdTimeOut{ cdLoop },               // Init frame timeout duration
     qTriggers(0),                      // Init number of frame timeout checks
     qTicks(0),                         // Init no. of ticks processed this sec
     bWait(false)                       // Init force wait?

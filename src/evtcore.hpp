@@ -14,7 +14,7 @@ using namespace IStd::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public public namespace
 /* ------------------------------------------------------------------------- */
-enum MVarType                          // MVar variable types
+enum MVarType : unsigned int           // MVar variable types
 { /* ----------------------------------------------------------------------- */
   MVT_BOOL,     MVT_CSTR,    MVT_STR, MVT_PTR,       MVT_FLOAT,
   MVT_DOUBLE,   MVT_UINT,    MVT_INT, MVT_ULONGLONG, MVT_LONGLONG,
@@ -50,8 +50,8 @@ struct MVar                            // Multi-type helps access event data
     t(MVT_UINT), ui(static_cast<unsigned int>(uiV)) {}
   explicit MVar(const signed int siV) :
     t(MVT_INT), i(static_cast<signed int>(siV)){}
-  explicit MVar(const double fdV) :
-    t(MVT_DOUBLE), d(fdV) {}
+  explicit MVar(const double dV) :
+    t(MVT_DOUBLE), d(dV) {}
   explicit MVar(const float fV):
     t(MVT_FLOAT), f(fV) {}
   explicit MVar(const unsigned long long ullV) :
@@ -128,11 +128,10 @@ class EvtCore                          // Start of common event system class
   /* -- Get a function ----------------------------------------------------- */
   const CBFunc GetFunction(const Cmd eCmd)
   { // Get event function and return if it is valid
-    const size_t stId = static_cast<size_t>(eCmd);
-    if(stId < evtData.size()) return evtData[stId];
+    if(eCmd < evtData.size()) return evtData[eCmd];
     // Log the error
     cLog->LogWarningExSafe("$ accessed an invalid event! ($>$).",
-      strName, stId, evtData.size());
+      strName, eCmd, evtData.size());
     // Return a blank function
     return bind(&EvtCore::BlankFunction, this, _1);
   }
@@ -302,12 +301,12 @@ class EvtCore                          // Start of common event system class
   /* -- Register event ----------------------------------------------------- */
   void Register(const Cmd eCmd, const CBFunc &ecFunc)
   { // Bail if invalid command
-    if(static_cast<size_t>(eCmd) >= evtData.size())
+    if(eCmd >= evtData.size())
       XC("Invalid registration command!",
          "System",   strName, "Event", eCmd,
          "Function", reinterpret_cast<const void*>(&ecFunc));
     // Assign callback function to event
-    evtData[static_cast<size_t>(eCmd)] = ecFunc;
+    evtData[eCmd] = ecFunc;
   }
   /* -- Register multiple events ------------------------------------------- */
   void RegisterEx(const RegVec &clCmds)
@@ -315,11 +314,10 @@ class EvtCore                          // Start of common event system class
   /* -- Unregister event --------------------------------------------------- */
   void Unregister(const Cmd eCmd)
   { // Bail if invalid command
-    if(static_cast<size_t>(eCmd) >= evtData.size())
+    if(eCmd >= evtData.size())
       XC("Invalid de-registration command!", "System", strName, "Event", eCmd);
     // Unassign callback function
-    evtData[static_cast<size_t>(eCmd)] =
-      bind(&EvtCore::BlankFunction, this, _1);
+    evtData[eCmd] = bind(&EvtCore::BlankFunction, this, _1);
   }
   /* -- Unregister multiple events ----------------------------------------- */
   void UnregisterEx(const RegVec &clCmds)

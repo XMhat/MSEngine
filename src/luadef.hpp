@@ -28,10 +28,10 @@ using namespace ICVarDef::P;           using namespace ILuaDef;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* == Variables ============================================================ */
-extern const struct LuaLibStatic       // Name of struct
+struct LuaLibStatic                    // Name of struct
 { /* ----------------------------------------------------------------------- */
-  const char*const     cpName;         // Name of library
-  const CoreFlagsConst cfRequired;     // Required core flags to register
+  const string_view   &strvName;       // Name of library
+  const CoreFlagsConst cfcRequired;    // Required core flags to register
   const luaL_Reg*const libList;        // Library functions
   const int            iLLCount;       // Size of library functions
   const luaL_Reg*const libmfList;      // Member library functions
@@ -40,7 +40,10 @@ extern const struct LuaLibStatic       // Name of struct
   const LuaTable*const lkiList;        // Table of key/values to define
   const int            iLLKICount;     // Size of member library functions
   /* --------------------------------------------------------------------- */
-} luaLibList[];                        // Library list in lualib.hpp
+};                                     // Library list in lualib.hpp
+/* ------------------------------------------------------------------------- */
+typedef array<const LuaLibStatic, 31> LuaLibStaticArray;
+extern const LuaLibStaticArray luaLibList;
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */

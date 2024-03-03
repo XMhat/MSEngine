@@ -140,11 +140,14 @@ template<typename PtrType, typename IntType>
 { lua_pushlstring(lS, reinterpret_cast<const char*>(ptValue),
                       static_cast<size_t>(itSize)); }
 /* -- Push a memory block onto the stack as a string ----------------------- */
-static void LuaUtilPushMem(lua_State*const lS, const DataConst &dcItem)
-    { LuaUtilPushLStr(lS, dcItem.Ptr<char>(), dcItem.Size()); }
+static void LuaUtilPushMem(lua_State*const lS, const MemConst &mcSrc)
+    { LuaUtilPushLStr(lS, mcSrc.MemPtr<char>(), mcSrc.MemSize()); }
 /* -- Push a C++ string onto the stack ------------------------------------- */
 static void LuaUtilPushStr(lua_State*const lS, const string &strStr)
   { LuaUtilPushLStr(lS, strStr.data(), strStr.length()); }
+/* -- Push a C++ string view onto the stack -------------------------------- */
+static void LuaUtilPushStrView(lua_State*const lS, const string_view &strvStr)
+  { LuaUtilPushLStr(lS, strvStr.data(), strvStr.length()); }
 /* -- Push a pointer ------------------------------------------------------- */
 static void LuaUtilPushPtr(lua_State*const lS, void*const vpPtr)
   { lua_pushlightuserdata(lS, vpPtr); }
@@ -527,6 +530,12 @@ template<typename IntType>
     "Parameter", iIndex, "Name",            cpName, "Supplied", itVal,
     "NotLesser", itMin,  "NotGreaterEqual", itMax);
 }
+/* -- Try to get and force a value between -1.0 and 1.0 -------------------- */
+template<typename IntType>
+  static IntType LuaUtilGetNormal(lua_State*const lS, const int iIndex,
+    const char*const cpName)
+      { return static_cast<IntType>(fmod(LuaUtilGetNum<lua_Number>(lS,
+          iIndex, cpName), 1.0)); }
 /* -- Try to get and check a valid integer --------------------------------- */
 template<typename IntType>
   static IntType LuaUtilGetInt(lua_State*const lS, const int iIndex,
@@ -547,6 +556,17 @@ template<typename IntType>
   XC("Integer out of range!",
     "Parameter", iIndex, "Name",       cpName, "Supplied", itVal,
     "NotLesser", itMin,  "NotGreater", itMax);
+}
+/* -- Try to get and check a valid integer range not < or > and = ^2 ------- */
+template<typename IntType>
+  static IntType LuaUtilGetIntLGP2(lua_State*const lS, const int iIndex,
+    const IntType itMin, const IntType itMax, const char*const cpName)
+{ // Get value in specified range it must be a power of two
+  const IntType itVal = LuaUtilGetIntLG(lS, iIndex, itMin, itMax, cpName);
+  if(StdIntIsPOW2(itVal)) return itVal;
+  // Throw error
+  XC("Integer is not a power of two!",
+    "Parameter", iIndex, "Name", cpName, "Supplied", itVal);
 }
 /* -- Try to get and check a valid integer range not < or >= --------------- */
 template<typename IntType>
@@ -821,7 +841,7 @@ static void LuaUtilSetTableIdxStr(lua_State*const lS,
   lua_rawset(lS, iTableId);
 }
 /* -- Push the specified integer at the specified index -------------------- */
-template<typename IntType> static void LuaUtilSetTableIdxInt(lua_State*const lS,
+template<typename IntType>static void LuaUtilSetTableIdxInt(lua_State*const lS,
   const int iTableId, const lua_Integer liIndex, const IntType itValue)
 { // Push index in table
   LuaUtilPushInt(lS, liIndex);

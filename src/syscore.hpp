@@ -19,11 +19,11 @@ using namespace IDim;                  using namespace IDir::P;
 using namespace IError::P;             using namespace IEvtMain::P;
 using namespace IFlags;                using namespace IFStream::P;
 using namespace IIdent::P;             using namespace ILog::P;
-using namespace IMemory::P;            using namespace IPSplit::P;
-using namespace IStat::P;              using namespace IStd::P;
-using namespace IString::P;            using namespace ISysUtil::P;
-using namespace IToken::P;             using namespace IUtf;
-using namespace IUtil::P;              using namespace IVars::P;
+using namespace IMemory::P;            using namespace IParser::P;
+using namespace IPSplit::P;            using namespace IStat::P;
+using namespace IStd::P;               using namespace IString::P;
+using namespace ISysUtil::P;           using namespace IToken::P;
+using namespace IUtf;                  using namespace IUtil::P;
 using namespace Lib::OS;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
@@ -238,25 +238,24 @@ class SysCommon                        // Common system structs and funcs
   /* ----------------------------------------------------------------------- */
   const struct CPUData                 // Processor data
   { /* --------------------------------------------------------------------- */
-    const string       sVendorId;      // VendorIdentifier
-    const string       sProcessorName; // ProcessorNameString
-    const string       sIdentifier;    // Identifier
     const size_t       stCpuCount;     // Cpu count
-    const unsigned int ulSpeed;        // ~MHz
-    const unsigned int ulFeatureSet;   // FeatureSet
-    const unsigned int ulPlatformId;   // Platform ID
+    const unsigned int ulSpeed,        // ~MHz
+                       ulFamily,       // Family
+                       ulModel,        // Model
+                       ulStepping;     // Stepping
+    const string       sProcessorName; // CPU id or vendor
   } /* --------------------------------------------------------------------- */
   cpuData;                             // System processor data
   /* ----------------------------------------------------------------------- */
   struct CPUUseData                    // Processor usage data
   { /* --------------------------------------------------------------------- */
-    double         fdProcess;          // Process cpu usage
-    double         fdSystem;           // System cpu usage
+    double         dProcess,           // Process cpu usage
+                   dSystem;            // System cpu usage
     /* -- Default constructor ---------------------------------------------- */
     CPUUseData(void) :
       /* -- Initialisers --------------------------------------------------- */
-      fdProcess(0.0),                  // Zero process cpu usage
-      fdSystem(0.0)                    // Zero system cpu usage
+      dProcess(0.0),                   // Zero process cpu usage
+      dSystem(0.0)                     // Zero system cpu usage
       /* -- No code -------------------------------------------------------- */
       { }
   } /* --------------------------------------------------------------------- */
@@ -264,21 +263,21 @@ class SysCommon                        // Common system structs and funcs
   /* ----------------------------------------------------------------------- */
   struct MemData                       // Processor data
   { /* --------------------------------------------------------------------- */
-    uint64_t       qMTotal;            // 64-bit memory total
-    uint64_t       qMFree;             // 64-bit memory free
-    uint64_t       qMUsed;             // 64-bit memory used
-    size_t         stMFree;            // 32-bit memory free
+    uint64_t       qMTotal,            // 64-bit memory total
+                   qMFree,             // 64-bit memory free
+                   qMUsed;             // 64-bit memory used
     double         dMLoad;             // Ram use in %
-    size_t         stMProcUse;         // Process memory usage
-    size_t         stMProcPeak;        // Peak process memory usage
+    size_t         stMFree,            // 32-bit memory free
+                   stMProcUse,         // Process memory usage
+                   stMProcPeak;        // Peak process memory usage
     /* -- Default constructor ---------------------------------------------- */
     MemData(void) :
       /* -- Initialisers --------------------------------------------------- */
       qMTotal(0),                      // Zero total memory
       qMFree(0),                       // Zero free memory
       qMUsed(0),                       // Zero used memory
-      stMFree(0),                      // Zero 32-bit free memory
       dMLoad(0.0),                     // Zero memory usage percentage
+      stMFree(0),                      // Zero 32-bit free memory
       stMProcUse(0),                   // Zero process usage
       stMProcPeak(0)                   // Zero process peak usage
       /* -- No code -------------------------------------------------------- */
@@ -302,15 +301,14 @@ class SysCommon                        // Common system structs and funcs
   bool OSIsAdmin(void) const { return osData.bIsAdmin; }
   bool OSIsAdminDefault(void) const { return osData.bIsAdminDef; }
   /* ----------------------------------------------------------------------- */
-  const string &CPUVendor(void) const { return cpuData.sVendorId; }
-  const string &CPUName(void) const { return cpuData.sProcessorName; }
-  const string &CPUIdentifier(void) const { return cpuData.sIdentifier; }
   size_t CPUCount(void) const { return cpuData.stCpuCount; }
   unsigned int CPUSpeed(void) const { return cpuData.ulSpeed; }
-  unsigned int CPUFeatures(void) const { return cpuData.ulFeatureSet; }
-  unsigned int CPUPlatform(void) const { return cpuData.ulPlatformId; }
-  double CPUUsage(void) const { return cpuUData.fdProcess; }
-  double CPUUsageSystem(void) const { return cpuUData.fdSystem; }
+  unsigned int CPUFamily(void) const { return cpuData.ulFamily; }
+  unsigned int CPUModel(void) const { return cpuData.ulModel; }
+  unsigned int CPUStepping(void) const { return cpuData.ulStepping; }
+  const string &CPUName(void) const { return cpuData.sProcessorName; }
+  double CPUUsage(void) const { return cpuUData.dProcess; }
+  double CPUUsageSystem(void) const { return cpuUData.dSystem; }
   /* ----------------------------------------------------------------------- */
   uint64_t RAMTotal(void) const { return memData.qMTotal; }
   double RAMTotalMegs(void) const
@@ -368,9 +366,9 @@ class SysPipeBase :
 BUILD_FLAGS(SysCon,                    // Console flags classes
   /* ----------------------------------------------------------------------- */
   // No settings?                      Cursor is visible?
-  SCO_NONE               {0x00000000}, SCO_CURVISIBLE         {0x00000001},
+  SCO_NONE                  {Flag[0]}, SCO_CURVISIBLE            {Flag[1]},
   // Cursor is in insert mode?         Exit requested?
-  SCO_CURINSERT          {0x00000002}, SCO_EXIT               {0x00000004}
+  SCO_CURINSERT             {Flag[2]}, SCO_EXIT                  {Flag[3]}
 );/* ----------------------------------------------------------------------- */
 class SysConBase :
   /* -- Base classes ------------------------------------------------------- */
@@ -417,28 +415,28 @@ static class System final :            // The main system class
   /* ----------------------------------------------------------------------- */
   const ModeList   mList;              // Modes list
   CoreFlags        cfMode;             // Requested core subsystem flags
-  ClockInterval<CoreClock> tdhCPU;     // For getting cpu usage
-  const size_t     stProcessId;        // Readable process id
-  const size_t     stThreadId;         // Readable thread id
+  ClockInterval<>  ciCpu;              // For getting cpu usage
+  const size_t     stProcessId,        // Readable process id
+                   stThreadId;         // Readable thread id
+  string_view      strvTitle,          // Guest title
+                   strvShortTitle,     // Guest short title
+                   strvVersion,        // Guest version
+                   strvAuthor,         // Guest author
+                   strvCopyright,      // Guest copyright
+                   strvDescription,    // Guest description
+                   strvWebsite;        // Guest website
   /* ----------------------------------------------------------------------- */
-  terminate_handler  thHandler;        // Old C++ termination handler
-  unexpected_handler uhHandler;        // Old C++ unexpected handler
+  terminate_handler thHandler;         // Old C++ termination handler
   /* ----------------------------------------------------------------------- */
   const string     strRoamingDir;      // Roaming directory
-  /* -- Show message box with window handle (thiscall) --------------------- */
-  unsigned int SysMsgTerm(const int iExitCode, const string &strMessage) const
-    { SysMsgEx(strMessage, "An unexpected error has occurred and the engine "
-        "must now terminate! We apologise for the inconvenience!");
-      _exit(iExitCode); }
   /* -- Default handler for std::unexpected -------------------------------- */
-  static void UnexpectedHandler(void);
-  static void TerminateHandler(void);
+  static void TerminateHandler[[noreturn]](void);
   /* -- Return readable process and thread id ---------------------- */ public:
   size_t GetReadablePid(void) const { return stProcessId; }
   size_t GetReadableTid(void) const { return stThreadId; }
   /* -- Update CPU usage information --------------------------------------- */
   void UpdateCPUUsage(void)
-    { if(tdhCPU.CITriggerStrict()) UpdateCPUUsageData(); }
+    { if(ciCpu.CITriggerStrict()) UpdateCPUUsageData(); }
   /* -- Update and return process CPU usage -------------------------------- */
   double UpdateAndGetCPUUsage(void)
     { UpdateCPUUsage(); return CPUUsage(); }
@@ -450,12 +448,35 @@ static class System final :            // The main system class
     unsigned int uiFlags = MB_ICONSTOP) const
       { return SysMessage(GetWindowHandle(),
           StrAppend(ENGName(), ' ', strReason), strMessage, uiFlags); }
+  /* -- Get descriptor strings --------------------------------------------- */
+  const string_view &GetGuestTitle(void) const { return strvTitle; }
+  const string_view &GetGuestShortTitle(void) const { return strvShortTitle; }
+  const string_view &GetGuestVersion(void) const { return strvVersion; }
+  const string_view &GetGuestAuthor(void) const { return strvAuthor; }
+  const string_view &GetGuestCopyright(void) const { return strvCopyright; }
+  const string_view &GetGuestDescription(void) const {return strvDescription; }
+  const string_view &GetGuestWebsite(void) const { return strvWebsite; }
+  /* -- CVar callbacks to update guest descriptor strings ------------------ */
+  CVarReturn SetGuestTitle(const string&, const string &strV)
+    { strvTitle = strV; return ACCEPT; }
+  CVarReturn SetGuestShortTitle(const string&, const string &strV)
+    { strvShortTitle = strV; return ACCEPT; }
+  CVarReturn SetGuestVersion(const string&, const string &strV)
+    { strvVersion = strV; return ACCEPT; }
+  CVarReturn SetGuestAuthor(const string&, const string &strV)
+    { strvAuthor = strV; return ACCEPT; }
+  CVarReturn SetGuestCopyright(const string&, const string &strV)
+    { strvCopyright = strV; return ACCEPT; }
+  CVarReturn SetGuestDescription(const string&, const string &strV)
+    { strvDescription = strV; return ACCEPT; }
+  CVarReturn SetGuestWebsite(const string&, const string &strV)
+    { strvWebsite = strV; return ACCEPT; }
   /* -- Update minimum RAM ------------------------------------------------- */
   CVarReturn SetMinRAM(const uint64_t qwMinValue)
   { // If we're to check for minimum memory free
     if(const size_t stMemory = UtilIntOrMax<size_t>(qwMinValue))
     { // Store duration of fill here later
-      double fdDuration;
+      double dDuration;
       // Update memory usage data
       UpdateMemoryUsageData();
       // Take away current process memory usage. We'll do a underflow check
@@ -465,7 +486,7 @@ static class System final :            // The main system class
       { // Memory block for data
         Memory mbData;
         // Try to allocate the memory and if succeeded
-        try { mbData.InitBlank(stActualMemory); }
+        try { mbData.MemInitBlank(stActualMemory); }
         // Allocation failed?
         catch(const exception &e)
         { // Throw memory error
@@ -477,24 +498,24 @@ static class System final :            // The main system class
             "Needed",  stMemory - RAMFree());
         } // Initialise the memory and record time spent
         const ClockChrono<CoreClock> tpStart;
-        mbData.Fill();
-        fdDuration = tpStart.CCDeltaToDouble();
+        mbData.MemFill();
+        dDuration = tpStart.CCDeltaToDouble();
       } // Show result of test in log
       cLog->LogInfoExSafe("System heap init of $ ($+$) in $ ($/s).",
         StrToBytes(stMemory), StrToBytes(RAMProcUse()),
-        StrToBytes(stActualMemory), StrShortFromDuration(fdDuration),
-          StrToBytes(static_cast<uint64_t>(1.0 / fdDuration * stMemory)));
+        StrToBytes(stActualMemory), StrShortFromDuration(dDuration),
+          StrToBytes(static_cast<uint64_t>(1.0 / dDuration * stMemory)));
     } // Success
     return ACCEPT;
   }
   /* -- Restore old unexpected and termination handlers -------------------- */
-  ~System(void) { set_unexpected(uhHandler); set_terminate(thHandler); }
+  ~System(void) { set_terminate(thHandler); }
   /* -- Set/Get GUI mode status -------------------------------------------- */
-  CVarReturn SetCoreFlags(const unsigned int uiNGM)
+  CVarReturn SetCoreFlags(const CoreFlagsType cftFlags)
   { // Failed if bad value
-    if(uiNGM > CF_MASK) return DENY;
+    if(cftFlags != CFL_NONE && (cftFlags & ~CFL_MASK)) return DENY;
     // Set new value
-    cfMode.FlagReset(static_cast<CoreFlags>(uiNGM));
+    cfMode.FlagReset(cftFlags);
     // Accepted
     return ACCEPT;
   }
@@ -579,21 +600,21 @@ static class System final :            // The main system class
   bool IsCoreFlagsHave(const CoreFlagsConst cfFlags) const
     { return !cfFlags || GetCoreFlags().FlagIsSet(cfFlags); }
   bool IsGraphicalMode(void) const
-    { return GetCoreFlags().FlagIsSet(CF_VIDEO); }
+    { return GetCoreFlags().FlagIsSet(CFL_VIDEO); }
   bool IsNotGraphicalMode(void) const { return !IsGraphicalMode(); }
   bool IsTextMode(void) const
-    { return GetCoreFlags().FlagIsSet(CF_TERMINAL); }
+    { return GetCoreFlags().FlagIsSet(CFL_TERMINAL); }
   bool IsNotTextMode(void) const { return !IsTextMode(); }
   bool IsAudioMode(void) const
-    { return GetCoreFlags().FlagIsSet(CF_AUDIO); }
+    { return GetCoreFlags().FlagIsSet(CFL_AUDIO); }
   bool IsNotAudioMode(void) const { return !IsAudioMode(); }
   /* -- Return users roaming directory ------------------------------------- */
   const string &GetRoamingDir(void) const { return strRoamingDir; }
   /* ----------------------------------------------------------------------- */
-  const string &GetCoreFlagsString(const CoreFlagsConst cfFlags) const
+  const string_view &GetCoreFlagsString(const CoreFlagsConst cfFlags) const
     { return mList.Get(cfFlags); }
   /* ----------------------------------------------------------------------- */
-  const string &GetCoreFlagsString(void) const
+  const string_view &GetCoreFlagsString(void) const
     { return GetCoreFlagsString(GetCoreFlags()); }
   /* -- Default error handler ---------------------------------------------- */
   static void CriticalHandler[[noreturn]](const char*const cpMessage)
@@ -615,14 +636,12 @@ static class System final :            // The main system class
       "audio+video",                   // [6<  2|4>] (video+audio)
       "text+audio+video",              // [7<1|2|4>] (text+audio+video)
     }},                                // Mode strings list initialised
-    cfMode(CF_MASK),                   // Guimode initially set by cvars
-    tdhCPU{ seconds{ 1 } },            // Cpu refresh time is one seconds
+    cfMode{ CFL_MASK },                // Guimode initially set by cvars
+    ciCpu{ seconds{ 1 } },             // Cpu refresh time is one seconds
     stProcessId(GetPid<size_t>()),     // Init readable proceess id
     stThreadId(GetTid<size_t>()),      // Init readable thread id
     thHandler(set_terminate(           // Store current termination handler
       TerminateHandler)),              // " Use our termination handler
-    uhHandler(set_unexpected(          // Store current unexpected handler
-      UnexpectedHandler)),             // " Use our unexpected handler
     strRoamingDir{                     // Set user roaming directory
       PSplitBackToForwardSlashes(      // Convert backward slashes to forward
         BuildRoamingDir()) }           // Get roaming directory from system
@@ -634,15 +653,16 @@ static class System final :            // The main system class
     cLog->LogNLCInfoExSafe("$ v$.$.$.$ ($) for $.\n"
        "+ Executable is $.\n"
        "+ Created at $ with $ v$.\n"
-#ifdef WINDOWS
+#if defined(WINDOWS)
        "+ Checksum $ with $<0x$$$> expecting $<0x$$$>.\n"
 #endif
        "+ Working directory is $.\n"
        "+ Persistent directory is $.\n"
        "+ Process id is $<0x$$$> with main thread id of $<0x$$$>.\n"
+#if !defined(MACOS)
        "+ Priority is $<0x$$$> with affinity $<0x$$$> and mask $<0x$$$>.\n"
-       "+ Processor is $ <$ x $ MHz>.\n"
-       "+ Type is $<0x$$$>.\n"
+#endif
+       "+ Processor is $ <$x$MHz;FMS:$,$,$>.\n"
        "+ Memory has $ with $ free and $ initial.\n"
        "+ System is $ v$.$.$ ($-bit) in $$.\n"
        "+ Uptime is $.\n"
@@ -652,7 +672,7 @@ static class System final :            // The main system class
       ENGName(), ENGMajor(), ENGMinor(), ENGBuild(), ENGRevision(),
         ENGBuildType(), ENGTarget(),
       ENGFull(), ENGCompiled(), ENGCompiler(), ENGCompVer(),
-#ifdef WINDOWS
+#if defined(WINDOWS)
       EXEModified() ? "failed" : "verified",
         exeData.ulHeaderSum, hex, exeData.ulHeaderSum, dec,
         exeData.ulCheckSum, hex, exeData.ulCheckSum, dec,
@@ -661,15 +681,17 @@ static class System final :            // The main system class
       GetRoamingDir(),
       GetReadablePid(), hex, GetReadablePid(), dec,
         GetReadableTid(), hex, GetReadableTid(), dec,
-        GetPriority(), hex, GetPriority(), dec,
+#if !defined(MACOS)
+      GetPriority(), hex, GetPriority(), dec,
         GetAffinity(false), hex, GetAffinity(false), dec,
         GetAffinity(true), hex, GetAffinity(true), dec,
-      CPUName(), CPUCount(), CPUSpeed(),
-        CPUIdentifier(), hex, CPUFeatures(), dec,
+#endif
+      CPUName(), CPUCount(), CPUSpeed(), CPUFamily(), CPUModel(),
+        CPUStepping(),
       StrToBytes(RAMTotal()), StrToBytes(RAMFree()), StrToBytes(RAMProcUse()),
       OSName(), OSMajor(), OSMinor(), OSBuild(), OSBits(), OSLocale(),
         IsOSNameExSet() ? StrAppend(" via ", OSNameEx()) : cCommon->Blank(),
-      cmHiRes.ToDurationLongString(),
+      StrLongFromDuration(GetUptime()),
       cmSys.FormatTime(), cmSys.FormatTimeUTC(),
       StrFromBoolTF(OSIsAdmin()), StrFromBoolTF(EXEBundled()));
   }
@@ -677,12 +699,15 @@ static class System final :            // The main system class
   DELETECOPYCTORS(System)              // Disable copy constructor and operator
   /* ----------------------------------------------------------------------- */
 } *cSystem = nullptr;                  // Pointer to static class
-/* -- Default handler for std::unexpected ---------------------------------- */
-void System::UnexpectedHandler(void)
-  { cSystem->SysMsgTerm(-1, "An unhandled exception has occurred!"); }
 /* -- Default handler for std::terminate ----------------------------------- */
 void System::TerminateHandler(void)
-  { cSystem->SysMsgTerm(-2, "Abnormal program termination!"); }
+{ // Show message box to user
+  cSystem->SysMsgEx("Abnormal program termination!",
+    "An unexpected error has occurred and the engine "
+    "must now terminate! We apologise for the inconvenience!");
+  // Terminate now without destructors
+  _exit(-1);
+}
 /* -- Pre-defined SysBase callbacks that require access to cSystem global -- */
 MSENGINE_SYSBASE_CALLBACKS();          // Parse requested SysBase callbacks
 #undef MSENGINE_SYSBASE_CALLBACKS      // Done with this

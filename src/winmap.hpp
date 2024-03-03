@@ -10,10 +10,10 @@
 /* == Windows file mapping class =========================================== */
 class SysMap :                         // Members initially private
   /* -- Base classes ------------------------------------------------------- */
-  public Ident                         // Filename (could override)
+  public Ident                         // File name to the map
 { /* -- Private typedefs --------------------------------------------------- */
-  typedef array<StdTimeT,2> TwoTime;   // The two time back to back 1993-1994
-  /* -- Private variables -------------------------------------------------- */
+  typedef array<StdTimeT,2> TwoTime;   // For holding two unix timestamps
+  /* -- Private variables (don't change order!) ---------------------------- */
   HANDLE           hFile;              // Handle to the file
   uint64_t         qSize;              // Size of file
   HANDLE           hMap;               // Handle to the file map
@@ -152,12 +152,12 @@ class SysMap :                         // Members initially private
   /* -- Move constructor --------------------------------------------------- */
   SysMap(SysMap &&smOther) :
     /* -- Initialisers ----------------------------------------------------- */
-    Ident{ StdMove(smOther) },            // Move other identifier
+    Ident{ StdMove(smOther) },         // Move other identifier
     hFile(smOther.hFile),              // Move other file handle
     qSize(smOther.qSize),              // Move other size
     hMap(smOther.hMap),                // Move other file map
     cpMem(smOther.cpMem),              // Move other memory pointer
-    atTime{ StdMove(smOther.atTime) }     // Move other file times
+    atTime{ StdMove(smOther.atTime) }  // Move other file times
     /* -- Clear other variables -------------------------------------------- */
     { smOther.SysMapClearVarsInternal(); }
   /* -- Constructor with actual initialisation ----------------------------- */

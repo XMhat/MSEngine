@@ -32,15 +32,20 @@ typedef vector<ALuint>   ALUIntVector; // A vector of ALuint's
 BUILD_FLAGS(Oal,
   /* --------------------------------------------------------------------- */
   // No flags                          Device has been initialised?
-  AFL_NONE               {0x00000000}, AFL_INITDEVICE         {0x00000004},
-  // Context has been initialised?     Device was reset to set parameters
-  AFL_INITCONTEXT        {0x00000008}, AFL_INITRESET          {0x00000010},
+  AFL_NONE                  {Flag[0]}, AFL_INITDEVICE            {Flag[3]},
+  // Context has been initialised?     Have infinite sources?
+  AFL_INITCONTEXT           {Flag[4]}, AFL_INFINITESOURCES       {Flag[5]},
   // Context has been made current?    OpenAL fully initialised
-  AFL_CONTEXTCURRENT     {0x00000020}, AFL_INITIALISED        {0x00000040},
+  AFL_CONTEXTCURRENT        {Flag[6]}, AFL_INITIALISED           {Flag[7]},
   // Can play 32-bit float audio?      Have ALC_ENUMERATE_ALL_EXT?
-  AFL_HAVE32FPPB         {0x00000080}, AFL_HAVEENUMEXT        {0x00000100},
-  // Have infinite sources?
-  AFL_INFINITESOURCES    {0x00000200}
+  AFL_HAVE32FPPB            {Flag[8]}, AFL_HAVEENUMEXT           {Flag[9]},
+  /* -- Persistent across initialisations ---------------------------------- */
+  // HRTF is enabled?
+  AFL_HRTF                 {Flag[64]},
+  /* -- Masks -------------------------------------------------------------- */
+  AFL_VOLATILE{ AFL_INITDEVICE|AFL_INITCONTEXT|AFL_INFINITESOURCES|
+                AFL_CONTEXTCURRENT|AFL_INITIALISED|AFL_HAVE32FPPB|
+                AFL_HAVEENUMEXT }
 );/* == Oal class ========================================================== */
 static class Oal final :
   /* -- Base classes ------------------------------------------------------- */
@@ -96,9 +101,9 @@ static class Oal final :
       { alBufferData(uiBuffer, eFormat, vpData, stSize, stFrequency); }
   /* -- Upload data to audio device ---------------------------------------- */
   void BufferData(const ALuint uiBuffer, const ALenum eFormat,
-    const DataConst &dcData, const ALsizei stFrequency)
-      { BufferData(uiBuffer, eFormat, dcData.Ptr<ALvoid>(),
-          dcData.Size<ALsizei>(), stFrequency); }
+    const MemConst &mcSrc, const ALsizei stFrequency)
+      { BufferData(uiBuffer, eFormat, mcSrc.MemPtr<ALvoid>(),
+          mcSrc.MemSize<ALsizei>(), stFrequency); }
   /* -- Queue specified buffer count into source --------------------------- */
   void QueueBuffers(const ALuint uiSource,
     const ALsizei stCount, ALuint*const uipBuffer) const
@@ -146,6 +151,12 @@ static class Oal final :
   /* -- Play a source ------------------------------------------------------ */
   void PlaySource(const ALuint uiSource) const
     { alSourcePlay(uiSource); }
+  /* -- Rewind a source ---------------------------------------------------- */
+  void RewindSource(const ALuint uiSource) const
+    { alSourceRewind(uiSource); }
+  /* -- Pause a source ---------------------------------------------------- */
+  void PauseSource(const ALuint uiSource) const
+    { alSourcePause(uiSource); }
   /* -- Play more than one source simultaniously --------------------------- */
   template<class ArrayType>void PlaySources(const ArrayType &atArray)
     { alSourcePlayv(static_cast<ALsizei>(atArray.size()), atArray.data()); }
@@ -159,13 +170,13 @@ static class Oal final :
   ALuint CreateSource(void) const
     { ALuint uiSource; CreateSource(uiSource); return uiSource; }
   /* -- Delete multiple sources -------------------------------------------- */
-  void DeleteSources(const ALsizei stCount, ALuint*const uipSource) const
+  void DeleteSources(const ALsizei stCount, const ALuint*const uipSource) const
     { alDeleteSources(stCount, uipSource); }
   /* -- Delete multiple sources -------------------------------------------- */
-  template<class List>void DeleteSources(List &tList) const
+  template<class List>void DeleteSources(const List &tList) const
     { DeleteSources(static_cast<ALsizei>(tList.size()), tList.data()); }
   /* -- Delete one source -------------------------------------------------- */
-  void DeleteSource(ALuint &uiSourceRef) const
+  void DeleteSource(const ALuint &uiSourceRef) const
     { DeleteSources(1, &uiSourceRef); }
   /* -- Create multiple buffers -------------------------------------------- */
   void CreateBuffers(const ALsizei stCount, ALuint*const uipBuffer) const
@@ -180,13 +191,13 @@ static class Oal final :
   ALuint CreateBuffer(void) const
     { ALuint uiBuffer; CreateBuffer(uiBuffer); return uiBuffer; }
   /* -- Delete multiple buffers -------------------------------------------- */
-  void DeleteBuffers(const ALsizei stCount, ALuint*const uipBuffer) const
+  void DeleteBuffers(const ALsizei stCount, const ALuint*const uipBuffer) const
     { alDeleteBuffers(stCount, uipBuffer); }
   /* -- Delete multiple sources -------------------------------------------- */
-  template<class List>void DeleteBuffers(List &tList) const
+  template<class List>void DeleteBuffers(const List &tList) const
     { DeleteBuffers(static_cast<ALsizei>(tList.size()), tList.data()); }
   /* -- Delete one buffer -------------------------------------------------- */
-  void DeleteBuffer(ALuint &uiBufferRef) const
+  void DeleteBuffer(const ALuint &uiBufferRef) const
     { DeleteBuffers(1, &uiBufferRef); }
   /* -- Get buffer parameter as integer ------------------------------------ */
   void GetBufferInt(const ALuint uiBId, const ALenum eId, ALint *iDest) const
@@ -324,7 +335,7 @@ static class Oal final :
   template<typename T=ALCint>T GetInteger(const ALenum eId) const
     { return static_cast<T>(GetIntegerArray<1>(eId)[0]); }
   /* -- Convert PCM format identifier to short identifier string ----------- */
-  const string &GetALFormat(const ALenum eFormat) const
+  const string_view &GetALFormat(const ALenum eFormat) const
     { return imFormatCodes.Get(eFormat); }
   /* -- Get source counts -------------------------------------------------- */
   ALuint GetMaxMonoSources(void) const { return uiMaxMonoSources; }
@@ -333,23 +344,29 @@ static class Oal final :
   const string &GetPlaybackDevice(void) const { return strPlayback; }
   /* -- Return version information --------------------------------- */ public:
   const string &GetVersion(void) const { return strVersion; }
+  /* -- Set new HRTF setting ---------------------------------------------- */
+  bool DoSetHRTF(const ALCint alState)
+  { // Reset with HRTF disabled
+    const array<const ALCint,3> alciAttrs{ ALC_HRTF_SOFT, alState, 0 };
+    return alcResetDeviceSOFT(alcDevice, alciAttrs.data()) != AL_FALSE;
+  }
   /* --------------------------------------------------------------- */ public:
-  template<typename IntType>const string &GetOggErr(const IntType itCode) const
-    { return imOGGCodes.Get(static_cast<unsigned int>(itCode)); }
+  template<typename IntType>
+    const string_view &GetOggErr(const IntType itCode) const
+      { return imOGGCodes.Get(static_cast<unsigned int>(itCode)); }
   /* ----------------------------------------------------------------------- */
-  template<typename IntType>const string &GetALErr(const IntType itCode) const
-    { return imOALCodes.Get(static_cast<ALenum>(itCode)); }
+  template<typename IntType>
+    const string_view &GetALErr(const IntType itCode) const
+      { return imOALCodes.Get(static_cast<ALenum>(itCode)); }
   /* -- AL is initialised? ------------------------------------------------- */
   bool IsInitialised(void) const { return alcDevice && alcContext; }
   /* -- ReInitialise device with HRTF disabled ----------------------------- */
-  bool DisableHRTF(void)
+  bool SetHRTF(const bool bState)
   { // Ignore if audio is already reset
-    if(FlagIsSet(AFL_INITRESET)) return true;
-    // Reset with HRTF disabled
-    const array<const ALCint,3> alciAttrs{ ALC_HRTF_SOFT, ALC_FALSE, 0 };
-    if(alcResetDeviceSOFT(alcDevice, alciAttrs.data()) != AL_TRUE)
-      return false;
-    FlagSet(AFL_INITRESET);
+    if(FlagIsClear(AFL_HRTF) && bState && DoSetHRTF(AL_TRUE))
+      FlagSet(AFL_HRTF);
+    else if(FlagIsSet(AFL_HRTF) && !bState && DoSetHRTF(AL_FALSE))
+      FlagClear(AFL_HRTF);
     // Return success
     return true;
   }
@@ -448,7 +465,7 @@ static class Oal final :
     // Set the flag
     FlagSet(AFL_INITIALISED);
     // Return if debug logging not enabled
-    if(!cLog->HasLevel(LH_DEBUG)) return;
+    if(cLog->NotHasLevel(LH_DEBUG)) return;
     // Build extensions list
     const Token tlExtensions{ LuaUtilGetStr(AL_EXTENSIONS), cCommon->Space() };
     // Build sorted list of extensions and log them all
@@ -463,12 +480,9 @@ static class Oal final :
       "- Maximum stereo sources: $.\n"
       "- Have ext.device enumerator: $.\n"
       "- Extensions count: $.",
-        StrFromBoolTF(FlagIsClear(AFL_INITRESET)),
-        StrFromBoolTF(Have32FPPB()),
-        uiMaxMonoSources,
-        uiMaxStereoSources,
-        StrFromBoolTF(FlagIsSet(AFL_HAVEENUMEXT)),
-        tlExtensions.size());
+      StrFromBoolTF(FlagIsSet(AFL_HRTF)), StrFromBoolTF(Have32FPPB()),
+      uiMaxMonoSources, uiMaxStereoSources,
+      StrFromBoolTF(FlagIsSet(AFL_HAVEENUMEXT)), tlExtensions.size());
     // Log extensions if debug is enabled
     for(const auto &mI : mExts)
       cLog->LogNLCDebugExSafe("- Have extension '$' (#$).",
@@ -480,8 +494,9 @@ static class Oal final :
     // class should be responsible for this, but just incase.
     DeInitContext();
     DeInitDevice();
-    // Refresh variables and make the external dll flag persist
-    FlagReset(AFL_NONE);
+    // Clear only volatile flags
+    FlagClear(AFL_VOLATILE);
+    // Clear everything else
     eQuery = AL_NONE;
     uiMaxStereoSources = 0;
     uiMaxMonoSources = numeric_limits<ALuint>::max();
@@ -491,7 +506,7 @@ static class Oal final :
   /* -- Constructor -------------------------------------------------------- */
   Oal(void) :
     /* -- Initialisers ----------------------------------------------------- */
-    OalFlags{ AFL_NONE },
+    OalFlags{ AFL_HRTF },              // HRTF is enabled by default
     /* -- Const members ---------------------------------------------------- */
     imOALCodes{{                       // Init OpenAL error codes
       IDMAPSTR(AL_NO_ERROR),           IDMAPSTR(AL_INVALID_NAME),

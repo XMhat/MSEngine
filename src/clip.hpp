@@ -19,19 +19,29 @@ using namespace ILuaEvt::P;            using namespace ILuaUtil::P;
 using namespace IStd::P;               using namespace ISysUtil::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
-/* -- Clipboard mini class which can be used internally -------------------- */
-class Clipboard
-{ /* -- Protected variables ------------------------------------- */ protected:
+/* -- Clipboard collector and lua interface class -------------------------- */
+BEGIN_COLLECTOREX(Clips, Clip, CLHelperUnsafe,
+  const EvtWin::RegVec rvEvents;,,     // Events list to register
+  private LuaEvtMaster<Clip, LuaEvtTypeAsync<Clip>>);
+BEGIN_MEMBERCLASS(Clips, Clip, ICHelperUnsafe),
+  /* -- Base classes ------------------------------------------------------- */
+  public LuaEvtSlave<Clip, 2>,         // Need to store callback and class
+  public Lockable,                     // Lua garbage collector instruction
+  public Ident                         // Name of this clipboard event
+{ /* -- Private variables -------------------------------------------------- */
   string           strClipboard;       // Clipboard string
-  /* -- Default constructor that does nothing ------------------------------ */
-  Clipboard(void) { }
   /* -- Window set clipboard request --------------------------------------- */
   void ClipOnSetNRCbT(void) { cGlFW->WinSetClipboardString(strClipboard); }
-  /* -- Window set clipboard request ------------------------------- */ public:
-  static void ClipOnSetNRCb(const EvtWin::Cell &ewcArgs)
-    { reinterpret_cast<Clipboard*>
-        (ewcArgs.vParams.front().vp)->ClipOnSetNRCbT(); }
-  /* -- Get string sent or retrieved --------------------------------------- */
+  /* -- Window set clipboard request --------------------------------------- */
+  void ClipOnSetCbT(void) { ClipOnSetNRCbT(); LuaEvtDispatch(); }
+  /* -- Window get clipboard request in window thread ---------------------- */
+  void ClipOnGetCbT(void)
+  { // Grab the string to clipboard
+    strClipboard = cGlFW->WinGetClipboardString();
+    // Pass the string back to the engine thread and Lua
+    LuaEvtDispatch();
+  }
+  /* -- Get string sent or retrieved ------------------------------- */ public:
   const string &ClipGet(void) const { return strClipboard; }
   /* -- Get string sent or retrieved --------------------------------------- */
   void ClipSet(const string &strText)
@@ -40,20 +50,19 @@ class Clipboard
     // Dispatch the event
     cEvtWin->Add(EWC_CB_SETNR, this);
   }
-};/* -- Clipboard collector and lua interface class ------------------------ */
-BEGIN_COLLECTOREX(Clips, Clip, CLHelperUnsafe,
-  const EvtWin::RegVec rvEvents;,,     // Events list to register
-  private LuaEvtMaster<Clip, LuaEvtTypeAsync<Clip>>);
-BEGIN_MEMBERCLASS(Clips, Clip, ICHelperUnsafe),
-  /* -- Base classes ------------------------------------------------------- */
-  public LuaEvtSlave<Clip, 2>,         // Need to store callback and class
-  public Lockable,                     // Lua garbage collector instruction
-  public Clipboard,                    // Base clipboard class
-  public Ident                         // Name of this clipboard event
-{ /* -- Async thread event callback (called by LuaEvtMaster) ------- */ public:
+  /* -- Window set clipboard request --------------------------------------- */
+  static void ClipOnSetNRCb(const EvtWin::Cell &ewcArgs)
+    { reinterpret_cast<Clip*>(ewcArgs.vParams.front().vp)->ClipOnSetNRCbT(); }
+  /* -- Window get clipboard request in window thread ---------------------- */
+  static void ClipOnGetCb(const EvtWin::Cell &ewcArgs)
+    { reinterpret_cast<Clip*>(ewcArgs.vParams.front().vp)->ClipOnGetCbT(); }
+  /* -- Window set clipboard request --------------------------------------- */
+  static void ClipOnSetCb(const EvtWin::Cell &ewcArgs)
+    { reinterpret_cast<Clip*>(ewcArgs.vParams.front().vp)->ClipOnSetCbT(); }
+  /* -- Async thread event callback (called by LuaEvtMaster) --------------- */
   void LuaEvtCallbackAsync(const EvtMain::Cell &epData) try
   { // Get reference to string vector and we need three parameters
-    // [0]=Pointer to socket class
+    // [0]=Pointer to clipboard class
     const EvtMain::Params &eParams = epData.vParams;
     // Must have 2 parameters
     if(!LuaEvtsCheckParams<2>(eParams))
@@ -75,21 +84,6 @@ BEGIN_MEMBERCLASS(Clips, Clip, ICHelperUnsafe),
     return LuaEvtDeInit();
   } // Exception occured? Cleanup and rethrow exception
   catch(const exception&) { LuaEvtDeInit(); throw; }
-  /* -- Window get clipboard request in window thread -------------- */ public:
-  void ClipOnGetCbT(void)
-  { // Grab the string to clipboard
-    strClipboard = cGlFW->WinGetClipboardString();
-    // Pass the string back to the engine thread and Lua
-    LuaEvtDispatch();
-  }
-  /* -- Window get clipboard request in window thread ---------------------- */
-  static void ClipOnGetCb(const EvtWin::Cell &ewcArgs)
-    { reinterpret_cast<Clip*>(ewcArgs.vParams.front().vp)->ClipOnGetCbT(); }
-  /* -- Window set clipboard request --------------------------------------- */
-  void ClipOnSetCbT(void) { ClipOnSetNRCbT(); LuaEvtDispatch(); }
-  /* -- Window set clipboard request --------------------------------------- */
-  static void ClipOnSetCb(const EvtWin::Cell &ewcArgs)
-    { reinterpret_cast<Clip*>(ewcArgs.vParams.front().vp)->ClipOnSetCbT(); }
   /* -- Initialise and set string ------------------------------------------ */
   void ClipSetAsync(lua_State*const lS)
   { // Need 4 parameters (Name[1], Value[2], function[3] and class[4])
@@ -118,22 +112,22 @@ BEGIN_MEMBERCLASS(Clips, Clip, ICHelperUnsafe),
   /* -- Default constructor ------------------------------------------------ */
   Clip(void) :
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperClip{ *cClips }, // Initially unregistered
-    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
+    ICHelperClip{ cClips },            // Initially unregistered
+    IdentCSlave{ cParent->CtrNext() }, // Initialise identification number
     LuaEvtSlave{ this, EMC_CB_EVENT }  // Register Clip async event
-    /* --------------------------------------------------------------------- */
+    /* -- No code ---------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */
-END_COLLECTOREX(Clips,
-  cEvtWin->RegisterEx(rvEvents),
-  cEvtWin->UnregisterEx(rvEvents),,
-  LuaEvtMaster{ EMC_CB_EVENT },
-  rvEvents{
-    { EWC_CB_SET,   &Clip::ClipOnSetCb },
-    { EWC_CB_GET,   &Clip::ClipOnGetCb },
-    { EWC_CB_SETNR, &Clipboard::ClipOnSetNRCb },
+END_COLLECTOREX(Clips,                 // Finish 'Clips' class body
+  cEvtWin->RegisterEx(rvEvents),       // Register all events in 'rvEvents'
+  cEvtWin->UnregisterEx(rvEvents),,    // Unregister all events in 'rvEvents'
+  LuaEvtMaster{ EMC_CB_EVENT },        // Setup Lua event master
+  rvEvents{                            // Define handled Window thread events
+    { EWC_CB_SET,   &Clip::ClipOnSetCb   },
+    { EWC_CB_GET,   &Clip::ClipOnGetCb   },
+    { EWC_CB_SETNR, &Clip::ClipOnSetNRCb },
   }
-);
+);/* ----------------------------------------------------------------------- */
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */

@@ -262,11 +262,11 @@ class SysCore :
     return wstrData;
   }
   /* -- Set socket timeout ----------------------------------------- */ public:
-  static int SetSocketTimeout(const int iFd, const double fdRTime,
-    const double fdWTime)
+  static int SetSocketTimeout(const int iFd, const double dRTime,
+    const double dWTime)
   { // Calculate timeout in milliseconds
-    const DWORD dwR = static_cast<DWORD>(fdRTime * 1000),
-                dwW = static_cast<DWORD>(fdWTime * 1000);
+    const DWORD dwR = static_cast<DWORD>(dRTime * 1000),
+                dwW = static_cast<DWORD>(dWTime * 1000);
     // Unix:  struct timeval tData = { 30, 0 }; // Sec / USec
     // Set socket options and get result
     return (setsockopt(iFd,
@@ -275,6 +275,8 @@ class SysCore :
       SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<const char*>(&dwW),
         sizeof(dwW)) < 0 ? 2 : 0);
   }
+  /* -- Get uptime from clock class ---------------------------------------- */
+  StdTimeT GetUptime(void) const { return cmHiRes.GetTimeS(); }
   /* -- Terminate a process ------------------------------------------------ */
   bool TerminatePid(const unsigned int uiPid) const
   { // Return result
@@ -312,19 +314,19 @@ class SysCore :
               cLog->LogWarningExSafe("System process $ parent $ not $!",
                 dwPid, pedData.th32ParentProcessID, GetPid());
             } // Terminate the process and if failed?
-            else if(!TerminateProcess(hPid, static_cast<UINT>(-1)))
-            { // Failed result
-              bResult = false;
-              // Write that we couldnt terminate processes
-              cLog->LogWarningExSafe(
-                "System failed to terminate process $: $!", uiPid, SysError());
-            } // Success so set success result
-            else
+            else if(TerminateProcess(hPid, static_cast<UINT>(-1)))
             { // Success result
               bResult = true;
               // Write that we couldnt terminate processes
               cLog->LogInfoExSafe(
                 "System forcefully terminated process $!", uiPid);
+            } // Success so set success result
+            else
+            { // Failed result
+              bResult = false;
+              // Write that we couldnt terminate processes
+              cLog->LogWarningExSafe(
+                "System failed to terminate process $: $!", uiPid, SysError());
             } // We're finished
             goto Finished;
             // ...until no more processes.
@@ -436,7 +438,7 @@ class SysCore :
   /* ----------------------------------------------------------------------- */
   void SetIcon(const string &strId, const char *cpType, const UINT uiT,
     HICON &hI, const size_t stWidth, const size_t stHeight,
-    const size_t stBits, const DataConst &dcData)
+    const size_t stBits, const MemConst &mcSrc)
   { // Check parameters
     if(!stWidth || !stHeight)
       XC("Supplied icon dimensions invalid!",
@@ -445,19 +447,19 @@ class SysCore :
     if(stBits != 24 && stBits != 32)
       XC("Must be 24/32 bpp icon!",
          "Type", cpType, "Identifier", strId, "Bits", stBits);
-    if(dcData.Empty())
+    if(mcSrc.MemIsEmpty())
       XC("Invalid icon data!", "Type", cpType, "Identifier", strId);
     // Create the icon. CreateIcon() seems to ignore the AND bits
     // on 24/32bpp icons but /analyse complains, so send original bits to it
     // The old icon will be preserved if the api call fails
     const HICON hNewIcon = CreateIcon(hInstance, static_cast<int>(stWidth),
       static_cast<int>(stHeight), 1, static_cast<BYTE>(stBits),
-      dcData.Ptr<BYTE>(), dcData.Ptr<BYTE>());
+      mcSrc.MemPtr<BYTE>(), mcSrc.MemPtr<BYTE>());
     if(!hNewIcon)
       XCS("Failed to create new icon!",
           "Type",   cpType,  "Identifier", strId,
           "Width",  stWidth, "Height",     stHeight,
-          "Bits",   stBits,  "Data",       !dcData.Empty(),
+          "Bits",   stBits,  "Data",       mcSrc.MemIsNotEmpty(),
           "Window", reinterpret_cast<void*>(GetWindowHandle()));
     // Destroy old icon if created and then assign the new icon
     if(hI && !DestroyIcon(hI))
@@ -473,13 +475,13 @@ class SysCore :
   }
   /* -- Set small or large icon -------------------------------------------- */
   void SetLargeIcon(const string &strId, const size_t stWidth,
-    const size_t stHeight, const size_t stBits, const DataConst &dcData)
+    const size_t stHeight, const size_t stBits, const MemConst &mcSrc)
       { SetIcon(strId, "large", ICON_BIG, hIconLarge, stWidth, stHeight,
-          stBits, dcData); }
+          stBits, mcSrc); }
   void SetSmallIcon(const string &strId, const size_t stWidth,
-    const size_t stHeight, const size_t stBits, const DataConst &dcData)
+    const size_t stHeight, const size_t stBits, const MemConst &mcSrc)
       { SetIcon(strId, "small", ICON_SMALL, hIconSmall, stWidth, stHeight,
-          stBits, dcData); }
+          stBits, mcSrc); }
   /* -- Free the library handle -------------------------------------------- */
   static bool LibFree(void*const vpModule)
     { return vpModule && !!FreeLibrary(reinterpret_cast<HMODULE>(vpModule)); }
@@ -507,11 +509,11 @@ class SysCore :
     // Storage for library name.
     Memory mStr{ _MAX_PATH * sizeof(ArgType) };
     // Get the library name and store it in the memory
-    mStr.Resize(GetModuleFileNameEx(hProcess,
-      reinterpret_cast<HMODULE>(vpModule), mStr.Ptr<ArgType>(),
-      mStr.Size<DWORD>()) * sizeof(ArgType));
+    mStr.MemResize(GetModuleFileNameEx(hProcess,
+      reinterpret_cast<HMODULE>(vpModule), mStr.MemPtr<ArgType>(),
+      mStr.MemSize<DWORD>()) * sizeof(ArgType));
     // Use default name if empty or failed
-    return mStr.Empty() ? cpAltName : S16toUTF(mStr.Ptr<ArgType>());
+    return mStr.MemIsEmpty() ? cpAltName : S16toUTF(mStr.MemPtr<ArgType>());
   }
   /* ----------------------------------------------------------------------- */
   void UpdateCPUUsageData(void)
@@ -526,7 +528,7 @@ class SysCore :
                    qcpuSKernel = qwK - qwSKL,
                    qcpuSysTot  = qcpuSKernel + qcpuSUser;
     // Set system cpu usage
-    cpuUData.fdSystem = UtilMakePercentage(qcpuSKernel, qcpuSysTot);
+    cpuUData.dSystem = UtilMakePercentage(qcpuSKernel, qcpuSysTot);
     // Update last system times
     qwSUL = qwU, qwSKL = qwK;
     // Get process CPU times
@@ -544,7 +546,7 @@ class SysCore :
     // Update last values
     qwPUL = qwU, qwPKL = qwK, qwPTL = qwX;
     // Set process cpu usage
-    cpuUData.fdProcess =
+    cpuUData.dProcess =
       UtilMakePercentage(static_cast<double>(qcpuProcTot) / qcpuPTime,
         ::std::thread::hardware_concurrency());
   }
@@ -571,25 +573,26 @@ class SysCore :
   /* -- Get executable size from header ------------------------------------ */
   size_t GetExeSize(const string &strFile) const
   { // Open exe file and return on error
-    if(FStream fExe{ strFile, FStream::FM_R_B })
+    if(FStream fExe{ strFile, FM_R_B })
     { // Create memblock for file header, must be at least 4K
       Memory mExe{ 4096 };
       // Get minimum amount of data we need to read
       const size_t stMinimum =
         sizeof(IMAGE_DOS_HEADER) + sizeof(IMAGE_NT_HEADERS32);
       // Read data into file and if failed? Report it
-      const size_t stActual = fExe.FStreamReadSafe(mExe.Ptr(), mExe.Size());
+      const size_t stActual =
+        fExe.FStreamReadSafe(mExe.MemPtr(), mExe.MemSize());
       if(stActual < stMinimum)
         XCL("Failed to read enough data in executable!",
-            "File",    strFile,       "Maximum", mExe.Size(),
+            "File",    strFile,       "Maximum", mExe.MemSize(),
             "Minimum", stMinimum,     "Actual",  stActual,
             "Size",    fExe.FStreamSize());
       // Align a dos header structure to buffer
       const IMAGE_DOS_HEADER &pdhData =
-        *mExe.Read<IMAGE_DOS_HEADER>(0, sizeof(IMAGE_DOS_HEADER));
+        *mExe.MemRead<IMAGE_DOS_HEADER>(0, sizeof(IMAGE_DOS_HEADER));
       // Read PE header and throw error if it is not valid MZ signature
       const IMAGE_NT_HEADERS32 &pnthData =
-        *mExe.Read<IMAGE_NT_HEADERS32>(pdhData.e_lfanew,
+        *mExe.MemRead<IMAGE_NT_HEADERS32>(pdhData.e_lfanew,
           sizeof(IMAGE_NT_HEADERS32));
       if(pdhData.e_magic != IMAGE_DOS_SIGNATURE)
         XC("Executable does not have a valid MZ signature!",
@@ -620,7 +623,7 @@ class SysCore :
                ++stI, stPtr += sizeof(IMAGE_SECTION_HEADER))
       { // Get reference to section data
         const IMAGE_SECTION_HEADER &pshData =
-          *mExe.Read<IMAGE_SECTION_HEADER>
+          *mExe.MemRead<IMAGE_SECTION_HEADER>
             (stHdrsOffset + stPtr, sizeof(IMAGE_SECTION_HEADER));
         // Get pointer to raw data and ignore if we're not there yet
         if(pshData.PointerToRawData <= stPos) continue;
@@ -630,8 +633,8 @@ class SysCore :
       } // Return size of executable hopefully
       return stSize;
     } // Failed so throw error
-    XCL("Failed to open executable!", "File", strFile, "Directory",
-      DirGetCWD());
+    XCL("Failed to open executable!",
+      "File", strFile, "Directory", DirGetCWD());
   }
   /* -- Enum modules ------------------------------------------------------- */
   SysModList EnumModules(void)
@@ -787,7 +790,7 @@ class SysCore :
     // Return data
     return {
       osOS.str(),                            // Version string
-      StdMove(strExtra),                        // Extra version string
+      StdMove(strExtra),                     // Extra version string
       osviData.dwMajorVersion,               // Major OS version
       osviData.dwMinorVersion,               // Minor OS version
       osviData.dwBuildNumber,                // OS build version
@@ -811,27 +814,48 @@ class SysCore :
   }
   /* ----------------------------------------------------------------------- */
   CPUData GetProcessorData(void)
-  { // Key to open
+  { // Try to open the specified below registry key and if successful?
     const string strK{ "HARDWARE\\DESCRIPTION\\System\\CentralProcessor" };
-    // Open the key
-    const SysReg rgClass{ HKEY_LOCAL_MACHINE, strK, KEY_ENUMERATE_SUB_KEYS };
-    if(rgClass.NotOpened())
-      XCS("Failed to open registry key!", "Key", strK);
-    // Enumerate subkeys
-    const StrVector klData{ rgClass.QuerySubKeys() };
-    // Open first subkey, usually "0".
-    const SysReg rgSubClass{ rgClass.GetHandle(),
-      *klData.cbegin(), KEY_QUERY_VALUE };
-    if(rgSubClass.NotOpened())
-      XCS("Failed to enumerate first subkey!", "Key", strK);
-    // Return data
-    return { rgSubClass.QueryString("VendorIdentifier"),
-             rgSubClass.QueryString("ProcessorNameString"),
-             rgSubClass.QueryString("Identifier"),
-             thread::hardware_concurrency(),
-             rgSubClass.Query<DWORD>("~MHz"),
-             rgSubClass.Query<DWORD>("FeatureSet"),
-             rgSubClass.Query<DWORD>("Platform ID") };
+    if(const SysReg srRoot{ HKEY_LOCAL_MACHINE, strK, KEY_ENUMERATE_SUB_KEYS })
+    { // Enumerate subkeys
+      const StrVector svKeys{ srRoot.QuerySubKeys() };
+      // Open first subkey, usually "0" and if succeeded?
+      const string &strSK = *svKeys.cbegin();
+      if(const SysReg srSub{ srRoot.GetHandle(), strSK, KEY_QUERY_VALUE })
+      { // Query required values
+        string strVendor{ srSub.QueryString("VendorIdentifier") },
+               strName{ srSub.QueryString("ProcessorNameString") },
+               strIdent{ srSub.QueryString("Identifier") };
+        // Remove unnecessary whitespaces from strings
+        StrCompactRef(strVendor);
+        StrCompactRef(strName);
+        StrCompactRef(strIdent);
+        // Fail-safe empty strings
+        if(strVendor.empty()) strVendor = cCommon->Unspec();
+        if(strName.empty()) strName = strVendor;
+        if(strIdent.empty()) strIdent = cCommon->Unspec();
+        // Detect family model and stepping from string (A F 0 M 0 S)
+        unsigned int uiFamily, uiModel, uiStepping;
+        Token tTokens{ strIdent, cCommon->Space() };
+        if(tTokens.size() >= 7 && tTokens[1] == "Family" &&
+          tTokens[3] == "Model" && tTokens[5] == "Stepping")
+        { // Convert strings to numbers
+          uiFamily = StrToNum<unsigned int>(tTokens[2]);
+          uiModel = StrToNum<unsigned int>(tTokens[4]);
+          uiStepping= StrToNum<unsigned int>(tTokens[6]);
+        } // Invalid syntax
+        else uiFamily = uiModel = uiStepping = 0;
+        // Return data
+        return { thread::hardware_concurrency(), srSub.Query<DWORD>("~MHz"),
+                 uiFamily, uiModel, uiStepping, strName };
+      } // Log that we couldn't open the subkey
+      else cLog->LogWarningExSafe("System could not open registry key $ "
+        "sub-key $! $", strK, strSK, SysError());
+    } // Log that we couldn't open the root key
+    else cLog->LogWarningExSafe("System could not open registry key $! $",
+      strK, SysError());
+    // Return default data we could not read
+    return { thread::hardware_concurrency(), 0, 0, 0, 0, cCommon->Unspec() };
   }
   /* ----------------------------------------------------------------------- */
   void UpdateMemoryUsageData(void)
@@ -911,31 +935,31 @@ class SysCore :
       LARGE_INTEGER         liD[2];              // Current hires timers
     };
     // Allocate memory and assign a reference structure to this memory
-    Memory meData{ sizeof(EntropyData) };
-    EntropyData &eData = *meData.Ptr<EntropyData>();
+    Memory mData{ sizeof(EntropyData) };
+    EntropyData &edData = *mData.MemPtr<EntropyData>();
     // System time and local time entropy (Both return void).
-    GetSystemTime(&eData.sSTime);
-    GetLocalTime(&eData.sLTime);
+    GetSystemTime(&edData.sSTime);
+    GetLocalTime(&edData.sLTime);
     // Cursor position entropy
-    if(!GetCursorPos(&eData.pPos))
+    if(!GetCursorPos(&edData.pPos))
       XCS("Failed to query cursor position!");
     // Time zone information
-    if(!GetTimeZoneInformation(&eData.tzData))
+    if(!GetTimeZoneInformation(&edData.tzData))
       XCS("Failed to query timezone information!");
     // Cpu process times
-    if(!GetProcessTimes(hProcess, &eData.cpuD[0], &eData.cpuD[1],
-                                  &eData.cpuD[2], &eData.cpuD[3]))
+    if(!GetProcessTimes(hProcess, &edData.cpuD[0], &edData.cpuD[1],
+                                  &edData.cpuD[2], &edData.cpuD[3]))
       XCS("Failed to query process times!");
     // Cpu system times
-    if(!GetSystemTimes(&eData.cpuD[4], &eData.cpuD[5], &eData.cpuD[6]))
+    if(!GetSystemTimes(&edData.cpuD[4], &edData.cpuD[5], &edData.cpuD[6]))
       XCS("Failed to query system times!");
     // Cpu counters
-    if(!QueryPerformanceFrequency(&eData.liD[0]))
+    if(!QueryPerformanceFrequency(&edData.liD[0]))
       XCS("Failed to query performance frequency!");
-    if(!QueryPerformanceCounter(&eData.liD[1]))
+    if(!QueryPerformanceCounter(&edData.liD[1]))
       XCS("Failed to query performance counter!");
     // Return data
-    return meData;
+    return mData;
   }
   /* ---------------------------------------------------------------------- */
   void WindowInitialised(GlFW::GLFWwindow*const gwWindow)
@@ -964,18 +988,6 @@ class SysCore :
     } // It's not a big deal if this fails
     else cLog->LogWarningExSafe(
       "System failed to create new window brush: $!", SysError());
-  }
-  /* -- Help with debugging ------------------------------------------------ */
-  const char *HeapCheck(void)
-  { // Check the heap and store result
-    switch(_heapchk())
-    { case _HEAPBADBEGIN : return "Heap header corrupt";
-      case _HEAPBADNODE  : return "Heap bad node";
-      case _HEAPBADPTR   : return "Heap bad pointer";
-      case _HEAPEMPTY    : return "Heap not initialised";
-      case _HEAPOK       : return "Heap consistent";
-      default            : return "Heap check unknown result";
-    }
   }
   /* ----------------------------------------------------------------------- */
   int LastSocketOrSysError(void)

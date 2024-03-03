@@ -67,7 +67,7 @@ void PrintDraw(GLfloat &fX, const GLfloat fY, const size_t stPos)
     BlitLTRBC(0, stPos+1,
       fX+gOData.RectGetX1() * fScale, fY+gOData.RectGetY1() * fScale,
       fX+gOData.RectGetX2() * fScale, fY+gOData.RectGetY2() * fScale,
-      fiOutline.GetCData());
+      fiOutline.FboItemGetCData());
   } // Get character info and print the opaque glyph
   const Glyph &gData = gvData[stPos];
     BlitLTRB(0, stPos,
@@ -77,14 +77,15 @@ void PrintDraw(GLfloat &fX, const GLfloat fY, const size_t stPos)
   fX += (gData.GlyphGetAdvance() + fCharSpacing) * fScale;
 }
 /* -- Pop colour and reset glyphs ------------------------------------------ */
-void PopQuadColourAndGlyphs(void) { tGlyphs = nullptr; PopQuadColour(); }
+void PopQuadColourAndGlyphs(void)
+  { tGlyphs = nullptr; FboItemPopQuadColour(); }
 /* -- Push colour and glyphs ----------------------------------------------- */
 void PushQuadColourAndGlyphs(Texture*const tNGlyphs)
 { // Push tint
-  PushQuadColour();
+  FboItemPushQuadColour();
   // Set glyphs texture and set alpha to our current alpha (dont set colour)
   tGlyphs = tNGlyphs;
-  tGlyphs->SetQuadAlpha(GetCData(0)[3]);
+  tGlyphs->FboItemSetQuadAlpha(FboItemGetCData(0)[3]);
 }
 /* -- Handle print control character --------------------------------------- */
 void HandlePrintControl(GLfloat &fX, GLfloat &fY, UtfDecoder &utfRef,
@@ -97,7 +98,8 @@ void HandlePrintControl(GLfloat &fX, GLfloat &fY, UtfDecoder &utfRef,
     { // Scan for the hexadecimal value and if we found it? Set Tint if not
       // simulation and we read 8 bytes
       unsigned int uiCol;
-      if(utfRef.ScanValue(uiCol) == 8 && !bSimulation) SetQuadRGBInt(uiCol);
+      if(utfRef.ScanValue(uiCol) == 8 && !bSimulation)
+        FboItemSetQuadRGBInt(uiCol);
       // Done
       break;
     } // Outline colour selection
@@ -106,11 +108,11 @@ void HandlePrintControl(GLfloat &fX, GLfloat &fY, UtfDecoder &utfRef,
       // simulation and we read 8 bytes
       unsigned int uiCol;
       if(utfRef.ScanValue(uiCol) == 8 && !bSimulation)
-        fiOutline.SetQuadRGBInt(uiCol);
+        fiOutline.FboItemSetQuadRGBInt(uiCol);
       // Done
       break;
     } // Reset colour
-    case 'r': if(!bSimulation) PopQuadColour(); break;
+    case 'r': if(!bSimulation) FboItemPopQuadColour(); break;
     // Print glyph
     case 't':
     { // Scan for the hexadecimal value and if we found it and we have
@@ -457,10 +459,10 @@ void DoPrintM(GLfloat fX, GLfloat fY, const GLfloat fL, const GLfloat fR,
       // Draw outline glyph first, don't care about return status
       if(ftfData.LoadedStroker())
         DrawPartialGlyph(false, stPos+1, fXO, fX, fY, fL, fR,
-          fiOutline.GetCData());
+          fiOutline.FboItemGetCData());
       // Draw main glyph, and if we don't need to draw anymore? Do not
       // process any more characters
-      if(DrawPartialGlyph(true, stPos, fXO, fX, fY, fL, fR, GetCData()))
+      if(DrawPartialGlyph(true, stPos, fXO, fX, fY, fL, fR, FboItemGetCData()))
         return;
       // Done
       break;
@@ -512,11 +514,11 @@ GLfloat PrintW(const GLfloat fX, const GLfloat fY, const GLfloat fW,
   // Check that texture is a font and the string is valid
   if(PrintSanityCheck(utfRef)) return fLineSpacingHeight;
   // Push tint
-  PushQuadColour();
+  FboItemPushQuadColour();
   // Print with width
   const GLfloat fHeight = DoPrintW(fX, fY, fW, fI, utfRef);
-  // Restore tint
-  PopQuadColour();
+  // Restore colour intensity
+  FboItemPopQuadColour();
   // Check if texture needs reloading
   CheckReloadTexture();
   // Return height of printed text
@@ -530,11 +532,11 @@ GLfloat PrintWS(const GLfloat fW, const GLfloat fI,
   // Check that texture is a font and the string is valid
   if(PrintSanityCheck(utfRef)) return fLineSpacingHeight;
   // Push tint
-  PushQuadColour();
+  FboItemPushQuadColour();
   // Print the utf string
   const GLfloat fHeight = DoPrintWS(fW, fI, utfRef);
-  // Restore tint
-  PopQuadColour();
+  // Restore colour intensity
+  FboItemPopQuadColour();
   // Return height of printed text
   return fHeight;
 }
@@ -562,15 +564,15 @@ GLfloat PrintWU(const GLfloat fX, const GLfloat fY, const GLfloat fW,
   // Check that texture is a font and the string is valid
   if(PrintSanityCheck(utfRef)) return fLineSpacingHeight;
   // Push tint
-  PushQuadColour();
+  FboItemPushQuadColour();
   // Simulate the height of the print
   const GLfloat fHeight = DoPrintWS(UtilDistance(fX, fW), fI, utfRef);
   // Reset the iterator on the utf string.
   utfRef.Reset();
   // Print the string
   DoPrintW(fX, fY-fHeight, fW, fI, utfRef);
-  // Restore tint
-  PopQuadColour();
+  // Restore colour intensity
+  FboItemPopQuadColour();
   // Check if texture needs reloading
   CheckReloadTexture();
   // Return height of printed text
@@ -583,7 +585,7 @@ void PrintU(const GLfloat fX, const GLfloat fY, const GLubyte*const ucpStr)
   // Check that texture is a font and the string is valid
   if(PrintSanityCheck(utfRef)) return;
   // Push tint
-  PushQuadColour();
+  FboItemPushQuadColour();
   // Simulate the height of the print
   const GLfloat fHeight = DoPrintSU(utfRef);
   // Reset the iterator on the utf string
@@ -592,8 +594,8 @@ void PrintU(const GLfloat fX, const GLfloat fY, const GLubyte*const ucpStr)
   DoPrint(fX, fY-fHeight, fX, utfRef);
   // Check if texture needs reloading
   CheckReloadTexture();
-  // Restore tint
-  PopQuadColour();
+  // Restore colour intensity
+  FboItemPopQuadColour();
 }
 /* -- Print a string of textures, wrap at specified width, return height --- */
 GLfloat PrintWUT(const GLfloat fX, const GLfloat fY, const GLfloat fW,
@@ -673,12 +675,12 @@ void Print(const GLfloat fX, const GLfloat fY, const GLubyte*const ucpStr)
   UtfDecoder utfRef{ ucpStr };
   // Check that texture is a font and the string is valid
   if(PrintSanityCheck(utfRef)) return;
-  // Save tint
-  PushQuadColour();
+  // Save colour intensity
+  FboItemPushQuadColour();
   // Print the utf string
   DoPrint(fX, fY, fX, utfRef);
-  // Restore tint
-  PopQuadColour();
+  // Restore colour intensity
+  FboItemPopQuadColour();
   // Check if texture needs reloading
   CheckReloadTexture();
 }
@@ -689,11 +691,11 @@ void PrintR(const GLfloat fX, const GLfloat fY, const GLubyte*const ucpStr)
   // Check that texture is a font and the string is valid
   if(PrintSanityCheck(utfRef)) return;
   // Push tint
-  PushQuadColour();
+  FboItemPushQuadColour();
   // Print the string
   DoPrintR(fX, fY, utfRef);
-  // Restore tint
-  PopQuadColour();
+  // Restore colour intensity
+  FboItemPopQuadColour();
   // Check if texture needs reloading
   CheckReloadTexture();
 }
@@ -704,11 +706,11 @@ void PrintC(const GLfloat fX, const GLfloat fY, const GLubyte*const ucpStr)
   // Check that texture is a font and the string is valid
   if(PrintSanityCheck(utfRef)) return;
   // Save colour
-  PushQuadColour();
+  FboItemPushQuadColour();
   // Print the utfstring
   DoPrintC(fX, fY, utfRef);
   // Restore colour
-  PopQuadColour();
+  FboItemPopQuadColour();
   // Check if texture needs reloading
   CheckReloadTexture();
 }
@@ -751,11 +753,11 @@ GLfloat PrintSU(const GLubyte*const ucpStr)
   // Check that texture is a font and the string is valid
   if(PrintSanityCheck(utfRef)) return fLineSpacingHeight;
   // Push tint
-  PushQuadColour();
+  FboItemPushQuadColour();
   // Simulate the height
   const GLfloat fHeight = DoPrintSU(utfRef);
-  // Restore tint
-  PopQuadColour();
+  // Restore colour intensity
+  FboItemPopQuadColour();
   // Return highest height
   return fHeight;
 }
@@ -766,11 +768,11 @@ GLfloat PrintS(const GLubyte*const ucpStr)
   // Check that texture is a font and the string is valid
   if(PrintSanityCheck(utfRef)) return 0;
   // Push tint
-  PushQuadColour();
+  FboItemPushQuadColour();
   // Print simulate of the utf string
   const GLfloat fWidth = DoPrintS(utfRef);
-  // Restore tint
-  PopQuadColour();
+  // Restore colour intensity
+  FboItemPopQuadColour();
   // Return highest width or width
   return fWidth;
 }
@@ -796,12 +798,12 @@ void PrintM(const GLfloat fX, const GLfloat fY, const GLfloat fL,
   UtfDecoder utfRef{ ucpStr };
   // Check that texture is a font and the string is valid
   if(PrintSanityCheck(utfRef)) return;
-  // Save tint
-  PushQuadColour();
+  // Save colour intensity
+  FboItemPushQuadColour();
   // Do the print
   DoPrintM(fX, fY, fL, fR, utfRef);
-  // Restore tint
-  PopQuadColour();
+  // Restore colour intensity
+  FboItemPopQuadColour();
   // Check if texture needs reloading
   CheckReloadTexture();
 }

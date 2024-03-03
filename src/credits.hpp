@@ -12,15 +12,15 @@
 namespace ICredit {                    // Start of private module namespace
 /* -- Dependencies --------------------------------------------------------- */
 using namespace ICodec::P;             using namespace ICVarDef::P;
-using namespace IError::P;             using namespace ILog::P;
-using namespace IMemory::P;            using namespace IString::P;
-using namespace ISystem::P;
+using namespace IGlFW::P;              using namespace IError::P;
+using namespace ILog::P;               using namespace IMemory::P;
+using namespace IString::P;            using namespace ISystem::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* -- Credit library class ------------------------------------------------- */
 class CreditLib :                      // Members initially private
   /* -- Base classes ------------------------------------------------------- */
-  public DataConst                     // Licence data memory
+  public MemConst                      // License data memory
 { /* ----------------------------------------------------------------------- */
   const string     strName,            // Name of library
                    strVersion,         // String version
@@ -32,19 +32,20 @@ class CreditLib :                      // Members initially private
   const string &GetAuthor(void) const { return strAuthor; }
   bool IsCopyright(void) const { return bCopyright; }
   /* ----------------------------------------------------------------------- */
-  CreditLib(const string &strN, const string &strV, const string &strA,
-    const bool bC, const void*const vpData, const size_t stSize) :
+  CreditLib(const string &strNName, const string &strNVersion,
+    const string &strNAuthor, const bool bNCopyright,
+    const void*const vpData, const size_t stSize) :
     /* -- Initialisers ----------------------------------------------------- */
-    DataConst{ stSize, vpData },       // Init credit licence data
-    strName{ strN },                   // Init credit name
-    strVersion{ strV },                // Init credit version
-    strAuthor{ strA },                 // Init credit author
-    bCopyright{ bC }                   // Init credit copyright status
+    MemConst{ stSize, vpData },        // Init credit license data
+    strName{ strNName },               // Init credit name
+    strVersion{ strNVersion },         // Init credit version
+    strAuthor{ strNAuthor },           // Init credit author
+    bCopyright{ bNCopyright }          // Init credit copyright status
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */
 /* -- Credits list lookup table -------------------------------------------- */
-enum CreditEnums                       // Credit ids
+enum CreditEnums : size_t              // Credit ids
 { /* ----------------------------------------------------------------------- */
   CL_FIRST,                            // The first item (see llcredit.hpp)
   /* ----------------------------------------------------------------------- */
@@ -75,12 +76,12 @@ typedef array<const CreditLib,CL_MAX> CreditLibList; // Library list typedef
 static const class Credits final :     // Members initially private
   /* -- Base classes ------------------------------------------------------- */
   private CreditLibList                // Credits list
-{ /* -- Licence data ------------------------------------------------------- */
-#define BEGINLICENCE(n,s) static constexpr const array<const uint8_t,s> l ## n{
-#define ENDLICENCE };                  // Helper functions for licences header
-#include "licence.hpp"                 // Load up compressed licences
-#undef ENDLICENCE                      // Done with this macro
-#undef BEGINLICENCE                    // Done with this macro
+{ /* -- License data ------------------------------------------------------- */
+#define BEGINLICENSE(n,s) static constexpr const array<const uint8_t,s> l ## n{
+#define ENDLICENSE };                  // Helper functions for licenses header
+#include "license.hpp"                 // Load up compressed licenses
+#undef ENDLICENSE                      // Done with this macro
+#undef BEGINLICENSE                    // Done with this macro
   /* -- Get credits count ------------------------------------------ */ public:
   size_t CreditGetItemCount(void) const { return size(); }
   /* -- Get credit item ---------------------------------------------------- */
@@ -90,12 +91,12 @@ static const class Credits final :     // Members initially private
   const string CreditGetItemText(const CreditLib &libItem) const try
   { // Using codec namespace
     using namespace ICodec;
-    return Block<CoDecoder>{ libItem }.ToString();
+    return Block<CoDecoder>{ libItem }.MemToString();
   } // exception occured?
   catch(const exception &e)
   { // Log failure and try to reset the initial var so this does not
-    XC("Failed to decode licence text!",
-       "Name", libItem.GetName(), "Reason", e, "Length", libItem.Size());
+    XC("Failed to decode license text!",
+       "Name", libItem.GetName(), "Reason", e, "Length", libItem.MemSize());
   }
   /* -- Decompress a credit ------------------------------------------------ */
   const string CreditGetItemText(const CreditEnums ceIndex) const
@@ -118,7 +119,7 @@ static const class Credits final :     // Members initially private
     /* -- Initialisers ----------------------------------------------------- */
     CreditLibList{{                    // The library list
       // t = Title of dependency         v = Version of dependency
-      // n = licence variable name       c = is dependency copyrighted?
+      // n = license variable name       c = is dependency copyrighted?
       // a = Author of dependency
 #define LD(t,v,c,a,n) { t, v, c, a, l ## n.data(), l ## n.size() }
       // The credits data structure (Keep MS-Engine as the first)
@@ -126,9 +127,8 @@ static const class Credits final :     // Members initially private
         MSENGINE),
       LD("FreeType", STR(FREETYPE_MAJOR) "." STR(FREETYPE_MINOR) "."
         STR(FREETYPE_PATCH), "The FreeType Project", true, FREETYPE),
-      LD("GLFW", STR(GLFW_VERSION_MAJOR) "." STR(GLFW_VERSION_MINOR) "."
-        STR(GLFW_VERSION_REVISION), "Marcus Geelnard & Camilla Löwy", true,
-        GLFW),
+      LD("GLFW", cGlFW->GetInternalVersion(),
+        "Marcus Geelnard & Camilla Löwy", true, GLFW),
       LD("JPEGTurbo", STR(LIBJPEG_TURBO_VERSION), "IJG/Contributing authors",
         true, LIBJPEGTURBO),
       LD("LibNSGif", "1.0.0", "Richard Wilson & Sean Fox", true,

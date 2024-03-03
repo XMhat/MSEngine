@@ -81,6 +81,8 @@ class SysReg                           // Members initially private
     // We are done! Return the value
     return tValue;
   }
+  /* -- Direct access to return if handle is opened ------------------------ */
+  operator bool(void) const { return Opened(); }
   /* -- Constructor with init ---------------------------------------------- */
   SysReg(HKEY hkB, const string &strSK, const REGSAM rsA) :
     /* -- Initialisers ----------------------------------------------------- */

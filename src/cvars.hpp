@@ -12,123 +12,84 @@
 namespace ICVar {                      // Start of private module namespace
 /* -- Dependencies --------------------------------------------------------- */
 using namespace IAsset::P;             using namespace ICodec::P;
-using namespace ICVarDef::P;           using namespace ICVarLib::P;
-using namespace IDir::P;               using namespace IError::P;
-using namespace ILog::P;               using namespace ILua::P;
-using namespace ILuaFunc::P;           using namespace ILuaUtil::P;
-using namespace ISql::P;               using namespace IStd::P;
-using namespace IString::P;            using namespace ISystem::P;
-using namespace ISysUtil::P;           using namespace IVars::P;
+using namespace ICollector::P;         using namespace ICVarDef::P;
+using namespace ICVarLib::P;           using namespace IDir::P;
+using namespace IError::P;             using namespace ILog::P;
+using namespace IParser::P;            using namespace ISql::P;
+using namespace IStd::P;               using namespace IString::P;
+using namespace ISystem::P;            using namespace ISysUtil::P;
 using namespace Lib::Sqlite;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public namespace
+/* -- Actual cvar list types ----------------------------------------------- */
+typedef pair<const string, CVarItem>  CVarMapPair;
+typedef map<CVarMapPair::first_type,
+            CVarMapPair::second_type> CVarMap;
+typedef CVarMap::iterator             CVarMapIt;
+typedef CVarMap::const_iterator       CVarMapItConst;
+/* ------------------------------------------------------------------------- */
+enum CVarDefaults : unsigned int       // Flags when loaded from DB
+{ /* -- (Note: Don't ever change these around) ----------------------------- */
+  DC_NONE,                             // Accept current configuration
+  DC_OVERWRITE,                        // Overwrite core variables only
+  DC_REFRESH                           // Wipe database completely
+}; /* ---------------------------------------------------------------------- */
 /* == CVars class ========================================================== */
-static class CVars final               // Start of vars class
-{ /* ----------------------------------------------------------------------- */
+static struct CVars final :            // Start of vars class
+  /* -- Base classes ------------------------------------------------------- */
+  private IHelper                      // Initialisation helper
+{ /* -- Settings ----------------------------------------------------------- */
   constexpr static const size_t        // Some internal settings
     stCVarConfigSizeMinimum = 2,       // Minimum config file size
     stCVarConfigSizeMaximum = 1048576, // Maximum config file size
     stCVarConfigMaxLevel    = 10,      // Maximum recursive level
     stCVarMinLength         = 5,       // Minimum length of a cvar name
     stCVarMaxLength         = 255;     // Maximum length of a cvar name
-  /* --------------------------------------------------------------- */ public:
-  enum DefaultsCommand                 // Flags when loaded from DB
-  { /* -- (Note: Don't ever change these around) --------------------------- */
-    DC_NONE,                           // Accept current configuration
-    DC_OVERWRITE,                      // Overwrite core variables only
-    DC_REFRESH                         // Wipe database completely
-  };/* -- Lua -------------------------------------------------------------- */
-  LuaFunc::Map     lfList;             // Lua cvar list
-  mutex            mMutex;             // Synchronisation support
-  /* ----------------------------------------------------------------------- */
-  typedef map<const string, Item> ItemMap;        // Var list
-  typedef ItemMap::iterator       ItemMapIt;      // " iterator
-  typedef ItemMap::const_iterator ItemMapItConst; // " iterator
-  typedef array<ItemMapIt, MAX_CVAR> ArrayVars;   // " to internal vars
+  /* -- Private typedefs ------------------------------------------ */ private:
+  typedef array<CVarMapIt, CVAR_MAX> ArrayVars;
   /* -- Private variables -------------------------------------------------- */
   size_t           stMaxInactiveCount; // Maximum Initial CVars allowed
-  ItemMap          imInactive;         // CVars inactive list
+  CVarMap          cvmPending;         // CVars inactive list
   ArrayVars        avInternal;         // Quick lookup to internal vars
-  size_t           stMaxActiveCount;   // Maximum CVars allowed
-  ItemMap          imActive;           // CVars active list
+  CVarMap          cvmActive;          // CVars active list
   string           strCBError;         // Callback error message
   /* ----------------------------------------------------------------------- */
-  struct ItemMapPair                   // Join initial with cvars
+  struct CVarMapMulti                  // Join initial with cvars
   { /* --------------------------------------------------------------------- */
-    ItemMap         &imList;           // Reference to variable list
+    CVarMap       &cmMap;              // Reference to variable list
     const char*const cpName;           // Name of list
   }; /* -------------------------------------------------------------------- */
-  typedef array<const ItemMapPair,2> CVarList;   // CVarList type
-  typedef CVarList::iterator         CVarListIt; // CVarList type
-  const   CVarList                   impCVars;   // All variables lists
-  const   ItemStaticList            &cvEngList;  // Reference to default cvars
-  /* ----------------------------------------------------------------------- */
-  void UnregisterAllVars(void)
-  { // Log result then dereg core variables, they don't need testing
-    cLog->LogDebugSafe("CVars unregistering core variables...");
-    // Unregister each built-in engine cvar
-    for(const ItemStatic &cvaR : cvEngList)
-    { // If the variable falls into the current gui mode then unregister it
-      if(cSystem->IsCoreFlagsHave(cvaR.cfRequired))
-        UnregisterVarNoLog(cvaR.strVar);
-    } // if everything is unregistered? (This should always be true!)
-    if(imActive.empty())
-    { // Log that we are done and return
-      cLog->LogInfoSafe("CVars finished unregistering all variables.");
-      return;
-    }
-    // Report amount of lingering variables. We should never get here so if
-    // this code is ever executed then there is an internal issue.
-    cLog->LogDebugExSafe("CVars unregistering $ lingering variables...",
-      imActive.size());
-    // Report remaining variables
-    while(!imActive.empty())
-    { // Get iterator and data
-      const ItemMapIt itItem{ imActive.begin() };
-      const Item &cvarItem = itItem->second;
-      // Report it
-      cLog->LogWarningExSafe("CVars detected lingering cvar '$' "
-                     "with value '$' and flags $$.",
-        cvarItem.GetVar(), cvarItem.GetValue(), hex, cvarItem.FlagGet());
-      // Delete it
-      imActive.erase(itItem);
-    } // Report proper cleanup
-    cLog->LogInfoSafe("CVars finished unregistering lingering variables.");
-  }
-  /* ----------------------------------------------------------------------- */
+  typedef array<const CVarMapMulti,2> CVarList;   // CVarList type
+  typedef CVarList::iterator          CVarListIt; // CVarList type
+  const   CVarList                    cvlList;    // All variables lists
+  const   CVarItemStaticList          &cvislList; // Reference to default cvars
+  /* --------------------------------------------------------------- */ public:
   bool InitialVarExists(const string &strVar) const
-    { return imInactive.find(strVar) != imInactive.cend(); }
+    { return cvmPending.contains(strVar); }
   /* ----------------------------------------------------------------------- */
-  bool VarExists(const string &strVar) const
-    { return imActive.find(strVar) != imActive.cend(); }
+  const CVarMapItConst FindVariableConst(const string &strVar) const
+    { return cvmActive.find(strVar); }
   /* ----------------------------------------------------------------------- */
-  const ItemMapIt GetVarIterator(const string &strVar)
-  { // Find item and throw error if the variable is not found
-    const ItemMapIt cvarItem{ imActive.find(strVar) };
-    if(cvarItem == imActive.cend()) XC("CVar not found!", "Variable", strVar);
-    // Found the iterator so return it.
-    return cvarItem;
+  CVarMapIt FindVariable(const string &strVar)
+    { return cvmActive.find(strVar); }
+  /* ----------------------------------------------------------------------- */
+  CVarSetEnums Set(const CVarMapIt cvmiIt, const string &strValue,
+    const CVarFlagsConst cvfcFlags=PUSR,
+    const CVarConditionFlagsConst cvcfcFlags=CCF_THROWONERROR)
+      { return cvmiIt->second.SetValue(strValue,
+          cvfcFlags, cvcfcFlags, strCBError); }
+  /* ----------------------------------------------------------------------- */
+  CVarSetEnums Set(const string &strVar, const string &strValue,
+    const CVarFlagsConst cvfcFlags=PUSR,
+    const CVarConditionFlagsConst cvcfcFlags=CCF_THROWONERROR)
+  { // Find item and if variable is found? Goto the next step
+    const CVarMapIt cvmiIt{ FindVariable(strVar) };
+    if(cvmiIt != cvmActive.end())
+      return Set(cvmiIt, strValue, cvfcFlags, cvcfcFlags);
+    // Just return if missing else throw an error
+    if(cvcfcFlags.FlagIsSet(CCF_IGNOREIFMISSING)) return CVS_NOTFOUND;
+    XC("CVar not found!", "Variable", strVar, "Value", strValue);
   }
-  /* -- Return the cvar name's value as a string --------------------------- */
-  const string &GetStr(const string &strVar)
-    { return GetVarIterator(strVar)->second.GetValue(); }
-  /* -- Return the cvar id's value as a string ----------------------------- */
-  const string &GetStrInternal(const CVarEnums cvId)
-    { return avInternal[cvId]->second.GetValue(); }
-  /* ----------------------------------------------------------------------- */
-  const string &LuaGetStr(const string &strVar)
-  { // Get the cvar item structure
-    const Item &ciItem = GetVarIterator(strVar)->second;
-    if(ciItem.FlagIsSet(CONFIDENTIAL))
-      XC("CVar is private!", "Variable", strVar);
-    // Return the value
-    return ciItem.GetValue();
-  }
-  /* ----------------------------------------------------------------------- */
-  bool IsVarStrEmpty(const string &strVar) { return GetStr(strVar).empty(); }
-  /* ----------------------------------------------------------------------- */
-  template<typename IntType>const IntType GetInternal(const CVarEnums cvId)
-    { return StdMove(StrToNum<IntType>(GetStrInternal(cvId))); }
   /* -- Check that the variable name is valid ------------------------------ */
   bool IsValidVariableName(const string &strVar)
   { // Check minimum name length
@@ -159,147 +120,124 @@ static class CVars final               // Start of vars class
     return false;
   }
   /* ----------------------------------------------------------------------- */
-  void CheckValidVariableName(const string &strVar)
-  { // Throw error if the variable name is not valid
+  bool SetInitialVar(const string &strVar, const string &strVal,
+    const CVarFlagsConst cvfcFlags=PUSR,
+    const CVarConditionFlagsConst cvcfcFlags=CCF_THROWONERROR)
+  { // Check that the variable name is valid.
     if(!IsValidVariableName(strVar))
-      XC("CVar name is not valid!",
-         "Variable", strVar,
-         "Minimum",  stCVarMinLength,
-         "Maximum",  stCVarMaxLength);
-  }
-  /* ----------------------------------------------------------------------- */
-  bool IsTypeValidInFlags(const CVarFlagsConst &cFlags) const
-  { // Check that the var has at least one type
-    return cFlags.FlagIsAnyOfSet(TSTRING, TINTEGER, TFLOAT, TBOOLEAN) &&
-      // Check that types are not mixed
-      cFlags.FlagIsAnyOfSetAndClear(
-        TSTRING,  /* <- Set? & Clear? -> */ TINTEGER|TFLOAT|TBOOLEAN,  /* Or */
-        TINTEGER, /* <- Set? & Clear? -> */ TSTRING|TFLOAT|TBOOLEAN,   /* Or */
-        TFLOAT,   /* <- Set? & Clear? -> */ TSTRING|TINTEGER|TBOOLEAN, /* Or */
-        TBOOLEAN, /* <- Set? & Clear? -> */ TSTRING|TINTEGER|TFLOAT);
-  }
-  /* ----------------------------------------------------------------------- */
-  void CheckTypeValidInFlags(const string &strVar,
-    const CVarFlagsConst &cFlags)
-  { // Throw error if the flags do not contain a type or mixed types
-    if(!IsTypeValidInFlags(cFlags))
-      XC("CVar flags have none or mixed types!",
-         "Variable", strVar, "Flags", cFlags.FlagGet());
-  }
-  /* ----------------------------------------------------------------------- */
-  void CheckVariableDoesntExist(const string &strVar)
-  { // Throw error if the variable exists
-    if(VarExists(strVar))
-      XC("CVar already registered!", "Variable", strVar);
-  }
-  /* ----------------------------------------------------------------------- */
-  void RegisterVar(const string &strVar, const string &strValue,
-    CbFunc cbTrigger, const CVarFlagsConst &cFlags,
-    const CVarConditionFlagsConst &scFlags)
-  { // Check that the variable name is valid
-    CheckValidVariableName(strVar);
-    // Check that the var has at least one type
-    CheckTypeValidInFlags(strVar, cFlags);
-    // Check that the variable does not exist already
-    CheckVariableDoesntExist(strVar);
-    // Do register the var
-    DoRegisterVar(strVar, strValue, cbTrigger, cFlags, scFlags);
-  }
-  /* -- Unregister variable by iterator ------------------------------------ */
-  void UnregisterVar(const ItemMapIt &itItem)
-  { // Get cvar data
-    const Item &ciItem = itItem->second;
-    // Get flags and throw exception if variable has been locked
-    if(ciItem.FlagIsSet(LOCKED))
-      XC("CVar cannot unregister in callback!", "Variable", ciItem.GetVar());
-    // If this cvar is marked as commit or force save or loaded from database?
-    // Move back into the initial list so it can be saved.
-    if(ciItem.FlagIsSet(COMMIT) ||
-       ciItem.FlagIsSet(OSAVEFORCE) ||
-       ciItem.FlagIsSet(LOADED))
-      imInactive.emplace(StdMove(*itItem));
-    // Erase variable
-    imActive.erase(itItem);
-  }
-  /* -- Unregister variable without logging -------------------------------- */
-  bool UnregisterVarNoLog(const string &strVar)
-  { // Find cvar data matching item name if not found? Log error and return
-    const ItemMapIt itItem{ imActive.find(strVar) };
-    if(itItem == imActive.cend()) return false;
-    // Get cvar data
-    UnregisterVar(itItem);
-    // Success
+    { // Throw if theres an error
+      if(cvcfcFlags.FlagIsSet(CCF_THROWONERROR))
+        XC("CVar name is not valid! Only alphanumeric characters "
+           "and underscores are acceptable!",
+           "Name",  strVar,         "Value",     strVal,
+           "Flags", cvfcFlags.FlagGet(), "Condition", cvcfcFlags.FlagGet());
+      // Return falure instead
+      return false;
+    } // Look if the initial var already exists and if we found it? Set it
+    const CVarMapIt cvmiIt{ cvmPending.find(strVar) };
+    if(cvmiIt != cvmPending.end())
+    { // Ignore overwrite if requested
+      if(cvcfcFlags.FlagIsSet(CCF_NOIOVERRIDE))
+      { // Log that this action was denied
+        cLog->LogWarningExSafe("CVars ignored overriding '$' with '$'!",
+          strVar, strVal);
+        // Failed
+        return false;
+      } // Do the set
+      SetInitialVar(cvmiIt->second, strVal, cvfcFlags);
+    } // Insert into initial list
+    else
+    { // Check that we can create another variable
+      if(cvmPending.size() >= stMaxInactiveCount)
+      { // Can we throw error?
+        if(cvcfcFlags.FlagIsSet(CCF_THROWONERROR))
+          XC("Initial CVar count upper threshold reached!",
+             "Variable", strVar, "Maximum", stMaxInactiveCount);
+        // Log that this action was denied
+        cLog->LogWarningExSafe(
+          "CVars not adding '$' because upper threshold of $ reached!",
+          strVar, stMaxInactiveCount);
+        // Failed
+        return false;
+      } // Check ok so insert
+      cvmPending.insert({ strVar,
+        CVarItem{ strVar, strVal, NoOp, cvfcFlags } });
+    } // Success
     return true;
   }
-  /* -- Unregister variable with logging ----------------------------------- */
-  void UnregisterVar(const string &strVar)
-  { // Try to unregister the variable and if it succeeded?
-    if(UnregisterVarNoLog(strVar))
-    { // Log that we unregistered it
-      cLog->LogDebugExSafe("CVars unregistered '$'.", strVar);
-    } // We could not unregister the variable so log the failure
-    else cLog->LogWarningExSafe("CVars un-register '$' not found!", strVar);
+  /* -- Return the cvar id's value as a string ----------------------------- */
+  const string &GetStrInternal(const CVarEnums cveId)
+  { // Get internal iterator and return value or empty string if invalid
+    const CVarMapIt cvmiIt{ GetInternalList()[cveId] };
+    return cvmiIt != cvmActive.cend() ? cvmiIt->second.GetValue() :
+      cCommon->Blank();
   }
+  /* -- Return the cvar id's value as a string ----------------------------- */
+  const char *GetCStrInternal(const CVarEnums cveId)
+    { return GetStrInternal(cveId).c_str(); }
   /* ----------------------------------------------------------------------- */
-  void SetInitialVar(Item &ciItem, const string &strVal,
-    const CVarFlagsConst &cFlags)
+  template<typename IntType>const IntType GetInternal(const CVarEnums cveId)
+    { return StdMove(StrToNum<IntType>(GetStrInternal(cveId))); }
+  /* ----------------------------------------------------------------------- */
+  void SetInitialVar(CVarItem &cviItem, const string &strVal,
+    const CVarFlagsConst cvfcFlags)
   { // Ignore if same value
-    if(ciItem.GetValue() == strVal)
+    if(cviItem.GetValue() == strVal)
     { // Flags are the same too?
-      if(ciItem.FlagIsSet(cFlags))
+      if(cviItem.FlagIsSet(cvfcFlags))
       { // Log that we're not overriding
         cLog->LogWarningExSafe("CVars initial var '$' already set to '$'/$$!",
-          ciItem.GetVar(), strVal, hex, cFlags.FlagGet());
+          cviItem.GetVar(), strVal, hex, cvfcFlags.FlagGet());
       } // Flags need updating
       else
       { // Update flags
-        ciItem.FlagSet(cFlags);
+        cviItem.FlagSet(cvfcFlags);
         // Log that we're overriding flags
         cLog->LogWarningExSafe(
           "CVars initial var '$' flags overridden to $$ from $!",
-            ciItem.GetVar(), hex, cFlags.FlagGet(), ciItem.FlagGet());
+            cviItem.GetVar(), hex, cvfcFlags.FlagGet(), cviItem.FlagGet());
       } // Done
       return;
     } // Log that we're overriding
     cLog->LogWarningExSafe(
       "CVars initial var '$' overridden with '$'[$$] from '$'[$!]",
-        ciItem.GetVar(), strVal, hex, cFlags.FlagGet(), ciItem.GetValue(),
-        ciItem.FlagGet());
+        cviItem.GetVar(), strVal, hex, cvfcFlags.FlagGet(), cviItem.GetValue(),
+        cviItem.FlagGet());
     // Now override
-    ciItem.SetValue(strVal);
-    ciItem.FlagSet(cFlags);
+    cviItem.SetValue(strVal);
+    cviItem.FlagSet(cvfcFlags);
   }
   /* ----------------------------------------------------------------------- */
-  CVarSetEnums Reset(const string &strVar, const CVarFlagsConst &cAcc,
-    const CVarConditionFlagsConst &scFlags)
-  { // Find item and if variable is found? Goto the next step
-    const ItemMapIt cvarItem{ imActive.find(strVar) };
-    if(cvarItem != imActive.end())
-      return cvarItem->second.ResetValue(cAcc, scFlags, mMutex, strCBError);
-    // Just return if missing else throw an error
-    if(scFlags.FlagIsSet(CCF_IGNOREIFMISSING)) return CVS_NOTFOUND;
-    XC("CVar not found!", "Variable", strVar);
+  CVarSetEnums Reset(const CVarMapIt &cvmiIt,
+    const CVarFlagsConst cvfcFlags=PUSR,
+    const CVarConditionFlagsConst cvcfcFlags=CCF_THROWONERROR)
+      { return cvmiIt->second.ResetValue(cvfcFlags, cvcfcFlags, strCBError); }
+  /* ----------------------------------------------------------------------- */
+  CVarSetEnums Reset(const CVarEnums cveId,
+    const CVarFlagsConst cvfcFlags=PUSR,
+    const CVarConditionFlagsConst cvcfcFlags=CCF_THROWONERROR)
+  { // Get internal iterator and return value or empty string if invalid
+    const CVarMapIt cvmiIt{ GetInternalList()[cveId] };
+    return cvmiIt != cvmActive.cend() ? Reset(cvmiIt, cvfcFlags, cvcfcFlags) :
+      CVS_NOTFOUND;
   }
   /* ----------------------------------------------------------------------- */
-  CVarSetEnums SetInternal(const CVarEnums cvId, const string &strValue,
-    const CVarFlagsConst &cAcc, const CVarConditionFlagsConst &scFlags)
-      { return avInternal[cvId]->second.SetValue(strValue, cAcc, scFlags,
-          mMutex, strCBError); }
-  /* ----------------------------------------------------------------------- */
-  CVarSetEnums Set(const string &strVar, const string &strValue,
-    const CVarFlagsConst &cAcc, const CVarConditionFlagsConst &scFlags)
-  { // Find item and if variable is found? Goto the next step
-    const ItemMapIt cvarItem{ imActive.find(strVar) };
-    if(cvarItem != imActive.end())
-      return cvarItem->second.SetValue(strValue, cAcc, scFlags,
-        mMutex, strCBError);
-    // Just return if missing else throw an error
-    if(scFlags.FlagIsSet(CCF_IGNOREIFMISSING)) return CVS_NOTFOUND;
-    XC("CVar not found!", "Variable", strVar, "Value", strValue);
+  CVarSetEnums SetInternal(const CVarEnums cveId, const string &strValue,
+    const CVarFlagsConst cvfcFlags=PUSR,
+    const CVarConditionFlagsConst cvcfcFlags=CCF_THROWONERROR)
+  { // Get iterator and set the value if valid except return invalid
+    const CVarMapIt cvmiIt{ GetInternalList()[cveId] };
+    return cvmiIt != cvmActive.cend() ?
+      cvmiIt->second.SetValue(strValue,
+        cvfcFlags, cvcfcFlags, strCBError) : CVS_NOTFOUND;
   }
   /* ----------------------------------------------------------------------- */
-  bool ParseBuffer(const string &strBuffer, const CVarFlagsConst &cF,
-    const unsigned int uiLevel)
+  template<typename AnyType>
+    CVarSetEnums SetInternal(const CVarEnums cveId, const AnyType atV)
+      { return SetInternal(cveId, StrFromNum(atV)); }
+  /* ----------------------------------------------------------------------- */
+  bool ParseBuffer(const string &strBuffer, const CVarFlagsConst cvfcFlags,
+    const unsigned int uiLevel=0)
   { // Bail if size not acceptable
     if(strBuffer.length() <= stCVarConfigSizeMinimum ||
        strBuffer.length() > stCVarConfigSizeMaximum)
@@ -311,23 +249,23 @@ static class CVars final               // Start of vars class
       cLog->LogErrorSafe("CVars failed to detect config file type!");
       return false;
     } // Initialise it and log and return failed if there are no lines
-    const VarsConst varLoaded{ strBuffer, strSplit, '=' };
-    if(varLoaded.empty())
+    const ParserConst<> pConfig{ strBuffer, strSplit, '=' };
+    if(pConfig.empty())
     { // Log the issue and return failure
       cLog->LogWarningSafe("CVars detected no readable variables!");
       return false;
     } // Total variables parsed, good vars and bad vars.
     size_t stGood = 0, stBad = 0;
     // For each item. Set variable or save for future reference.
-    for(const auto &vI : varLoaded)
+    for(const auto &vI : pConfig)
     { // If first string is not empty then check first character
-      if(!vI.first.empty()) switch(vI.first[0])
+      if(!vI.first.empty()) switch(vI.first.front())
       { // Comment?
         case '#': break;
         // No key was parsed?
         case '\255':
         { // Test value
-          if(!vI.second.empty()) switch(vI.second[0])
+          if(!vI.second.empty()) switch(vI.second.front())
           { // Comment?
             case '#': break;
             // Include?
@@ -339,7 +277,7 @@ static class CVars final               // Start of vars class
                    "File", vI.second, "Limit", stCVarConfigMaxLevel);
               // Log the include and parse it
               if(ParseBuffer(AssetExtract(StrTrim(vI.second.substr(1), ' ')).
-                ToString(), cF, uiNewLevel)) ++stGood; else ++stBad;
+                MemToString(), cvfcFlags, uiNewLevel)) ++stGood; else ++stBad;
               // Done
               break;
             } // Something else?
@@ -349,8 +287,8 @@ static class CVars final               // Start of vars class
         } // Something else?
         default:
         { // Set the variable and if succeeded increment good counter else bad
-          if(SetVarOrInitial(vI.first, vI.second, cF, CCF_IGNOREIFMISSING|
-            CCF_SAFECALL|CCF_THROWONERROR|CCF_NOMARKCOMMIT))
+          if(SetVarOrInitial(vI.first, vI.second, cvfcFlags,
+            CCF_IGNOREIFMISSING|CCF_THROWONERROR|CCF_NOMARKCOMMIT))
               ++stGood;
           else ++stBad;
           // Done
@@ -359,74 +297,11 @@ static class CVars final               // Start of vars class
       }
     } // Set total cvars processed and log the result
     const size_t stParsed = stGood + stBad,
-                 stIgnored = varLoaded.size() - stParsed;
+                 stIgnored = pConfig.size() - stParsed;
     cLog->LogInfoExSafe("CVars parsed $ lines with $ vars (G:$;B:$;I:$).",
-      varLoaded.size(), stParsed, stGood, stBad, stIgnored);
+      pConfig.size(), stParsed, stGood, stBad, stIgnored);
     // Done
     return true;
-  }
-  /* -- Do register a new variable without any checks ---------------------- */
-  const ItemMapIt DoRegisterVar(const string &strVar, const string &strValue,
-    CbFunc cbTrigger, const CVarFlagsConst &cFlags,
-    const CVarConditionFlagsConst &scFlags)
-  { // Check that we can create another variable
-    if(imActive.size() >= stMaxActiveCount)
-      XC("CVar count upper threshold reached!",
-         "Variable", strVar, "Maximum", stMaxActiveCount);
-    // Find initial cvar in initial pending list and if not found?
-    const ItemMapIt cvarPendItem{ imInactive.find(strVar) };
-    if(cvarPendItem == imInactive.cend())
-    { // Register cvar into cvar list and get iterator to it. Although putting
-      // the default value in here does not matter since we are about to set it
-      // anyway, the decryptfailquiet flag will need it if the decrypt fails.
-      const ItemMapIt liIter{ imActive.insert({ strVar,
-        Item{ strVar, strValue, cbTrigger, cFlags } }).first };
-      // Capture exceptions as we need to remove the variable if the value
-      // failed to set for a multitude of reasons.
-      try
-      { // Use the default value. Although we already set the default value
-        // when we inserted it, we need to check if it is valid too.
-        liIter->second.SetValue(strValue, cFlags|PANY,
-          scFlags|CCF_THROWONERROR|CCF_NEWCVAR, mMutex, strCBError);
-      } // Exception occured?
-      catch(const exception &)
-      { // Unregister the variable that was created to not cause problems when
-        // for example, resetting LUA.
-        imActive.erase(liIter);
-        // Rethrow the error
-        throw;
-      } // Return iterator
-      return liIter;
-    } // Persistant var exists? Move into cvar list, remove persist & get data.
-    const ItemMapIt liIter{ imActive.emplace(StdMove(*cvarPendItem)).first };
-    imInactive.erase(cvarPendItem);
-    // Capture exceptions as we need to remove the variable if the value failed
-    // to set for a multitude of reasons.
-    try
-    { // Update default value, trigger and flags. We also want to add the
-      // LOADED flag to tell UnregisterVar() to move the variable back into the
-      // initial list when unregistered for Lua reloads. Also maintain the
-      // commit flag at least so the data is saved on exit when the cvar is
-      // unregistered and re-registered.
-      Item &cvarData = liIter->second;
-      cvarData.SetDefValue(strValue);
-      cvarData.SetTrigger(cbTrigger);
-      cvarData.FlagReset(cFlags | LOADED | (cvarData & CVREGMASK));
-      // Types must not have changed
-      CheckTypeValidInFlags(strVar, cvarData);
-      // Use the value in persistent storage instead
-      cvarData.SetValue(cvarData.GetValue(), cFlags|PANY,
-        scFlags|CCF_THROWONERROR|CCF_NEWCVAR, mMutex, strCBError);
-      // Return iterator
-      return liIter;
-    } // exception occured
-    catch(const exception &)
-    { // Remove the item. We won't put it back in the initial list because we
-      // might have corrupted the data.
-      imActive.erase(liIter);
-      // Rethrow the error.
-      throw;
-    }
   }
   /* ----------------------------------------------------------------------- */
   void RefreshSettings(void)
@@ -441,247 +316,135 @@ static class CVars final               // Start of vars class
   { // Overwrite engine variables with defaults
     cLog->LogDebugSafe("CVars forcing default engine settings...");
     cSql->Begin();
-    for(const ItemStatic &cvaR : cvEngList) cSql->CVarPurge(cvaR.strVar);
+    for(const CVarMapIt cvmiIt : GetInternalList())
+      if(cvmiIt != cvmActive.end()) cSql->CVarPurge(cvmiIt->first);
     cSql->End();
     cLog->LogWarningSafe("CVars finished setting defaults.");
   }
-  /* == Cvar updated callback for Lua ============================== */ public:
-  static CVarReturn LuaCallbackStatic(Item&,const string &);
-  CVarReturn LuaCallback(Item &cvarData, const string &strVal)
-  { // Find cvar and ignore if we don't have it yet! This can happen if the
-    // variable is initialising for the first time. We haven't added the
-    // variable to imActive yet and we don't want to until the CVARS system
-    // has created the variable.
-    const auto lrItem{ lfList.find(cvarData.GetVar()) };
-    if(lrItem == lfList.cend()) return ACCEPT;
-    // Call the Lua callback assigned. We're expecting one return value
-    lrItem->second.LuaFuncProtectedDispatch(1, strVal, cvarData.GetVar());
-    // Get result of the callback which means a boolean HAS to be returned or
-    // we will deny the cvar change by default.
-    const CVarReturn cvResult = BoolToCVarReturn(
-      lua_isboolean(cLuaFuncs->LuaRefGetState(), -1) &&
-      lua_toboolean(cLuaFuncs->LuaRefGetState(), -1));
-    // Remove whatever it was that was returned by the callback
-    LuaUtilRmStack(cLuaFuncs->LuaRefGetState());
-    // Return result to cvar set function
-    return cvResult;
+  /* -- -------------------------------------------------------------------- */
+  ArrayVars &GetInternalList(void) { return avInternal; }
+  /* ----------------------------------------------------------------------- */
+  bool VarExists(const string &strVar) const
+    { return cvmActive.contains(strVar); }
+  /* -- Return the cvar name's value as a string --------------------------- */
+  const string &GetStr(const CVarMapIt cvmiIt) const
+    { return cvmiIt->second.GetValue(); }
+  /* -- Return the cvar name's default value as a string ------------------- */
+  const string &GetDefStr(const CVarMapIt cvmiIt) const
+    { return cvmiIt->second.GetDefValue(); }
+  /* -- Unregister variable by iterator ------------------------------------ */
+  void UnregisterVar(const CVarMapIt &cvmiIt)
+  { // Get cvar data
+    const CVarItem &cviItem = cvmiIt->second;
+    // Get flags and throw exception if variable has been locked
+    if(cviItem.FlagIsSet(LOCKED))
+      XC("CVar cannot unregister in callback!", "Variable", cviItem.GetVar());
+    // Grab the variable for logging
+    const string strVar{ cviItem.GetVar() };
+    // If this cvar is marked as commit, force save or loaded from database?
+    // Move back into the initial list so it can be saved.
+    if(cviItem.FlagIsAnyOfSet(COMMIT|OSAVEFORCE|LOADED))
+      cvmPending.emplace(StdMove(*cvmiIt));
+    // Erase iterator from list
+    cvmActive.erase(cvmiIt);
+    // Variable unregistered
+    cLog->LogDebugExSafe("CVars unregistered variable '$'.",  strVar);
+  }
+  /* -- Do register a new variable without any checks ---------------------- */
+  const CVarMapIt RegisterVar(const string &strVar, const string &strValue,
+    CbFunc cbTrigger, const CVarFlagsConst cvfcFlags,
+    const CVarConditionFlagsConst cvcfcFlags=CCF_NOTHING)
+  { // Find initial cvar in initial pending list and if not found?
+    const CVarMapIt cvmiPendIt{ cvmPending.find(strVar) };
+    if(cvmiPendIt == cvmPending.cend())
+    { // Register cvar into cvar list and get iterator to it. Although putting
+      // the default value in here does not matter since we are about to set it
+      // anyway, the decryptfailquiet flag will need it if the decrypt fails.
+      const CVarMapIt cvmiIt{ cvmActive.insert({ strVar,
+        CVarItem{ strVar, strValue, cbTrigger, cvfcFlags } }).first };
+      // Capture exceptions as we need to remove the variable if the value
+      // failed to set for a multitude of reasons.
+      try
+      { // Use the default value. Although we already set the default value
+        // when we inserted it, we need to check if it is valid too.
+        cvmiIt->second.SetValue(strValue, cvfcFlags|PANY,
+          cvcfcFlags|CCF_THROWONERROR|CCF_NEWCVAR, strCBError);
+      } // Exception occured?
+      catch(const exception &)
+      { // Unregister the variable that was created to not cause problems when
+        // for example, resetting LUA.
+        cvmActive.erase(cvmiIt);
+        // Rethrow the error
+        throw;
+      } // Return iterator
+      return cvmiIt;
+    } // Persistant var exists? Move into cvar list, remove persist & get data.
+    const CVarMapIt cvmiIt{ cvmActive.emplace(StdMove(*cvmiPendIt)).first };
+    cvmPending.erase(cvmiPendIt);
+    // Capture exceptions as we need to remove the variable if the value failed
+    // to set for a multitude of reasons.
+    try
+    { // Update default value, trigger and flags. We also want to add the
+      // LOADED flag to tell UnregisterVar() to move the variable back into the
+      // initial list when unregistered for Lua reloads. Also maintain the
+      // commit flag at least so the data is saved on exit when the cvar is
+      // unregistered and re-registered.
+      CVarItem &cviItem = cvmiIt->second;
+      cviItem.SetDefValue(strValue);
+      cviItem.SetTrigger(cbTrigger);
+      cviItem.FlagReset(cvfcFlags | LOADED | (cviItem & CVREGMASK));
+      // Use the value in persistent storage instead
+      cviItem.SetValue(cviItem.GetValue(), cvfcFlags|PANY,
+        cvcfcFlags|CCF_THROWONERROR|CCF_NEWCVAR, strCBError);
+      // Return iterator
+      return cvmiIt;
+    } // exception occured
+    catch(const exception &)
+    { // Remove the item. We won't put it back in the initial list because we
+      // might have corrupted the data.
+      cvmActive.erase(cvmiIt);
+      // Rethrow the error.
+      throw;
+    }
   }
   /* -- -------------------------------------------------------------------- */
   bool SetVarOrInitial(const string &strVar, const string &strVal,
-    const CVarFlagsConst &cAcc, const CVarConditionFlagsConst &scFlags)
+    const CVarFlagsConst cvfcFlags, const CVarConditionFlagsConst cvcfcFlags)
   { // Try to set the variable, catch result
-    switch(Set(strVar, strVal, cAcc, scFlags|CCF_IGNOREIFMISSING))
-    { // Not found?
+    switch(Set(strVar, strVal, cvfcFlags, cvcfcFlags|CCF_IGNOREIFMISSING))
+    { // Not found? Set the variable in the initial list and return result
       case CVS_NOTFOUND:
-        // Set the variable in the initial list and return result
-        return SetInitialVar(strVar, strVal, cAcc, scFlags|CCF_NOIOVERRIDE);
+        return SetInitialVar(strVar,
+          strVal, cvfcFlags, cvcfcFlags|CCF_NOIOVERRIDE);
       // No error or not changed? return success!
       case CVS_OKNOTCHANGED: case CVS_OK: return true;
       // Failed status code
       default: return false;
     }
   }
-  /* -- Set var or initial safe with synchronisation ----------------------- */
-  bool SetVarOrInitialSafe(const string &strVar, const string &strVal,
-    const CVarFlagsConst &cAcc, const CVarConditionFlagsConst &scFlags)
-  { // Synchronise use of cvars list and call function
-    const LockGuard lgCVarsSync{ mMutex };
-    return SetVarOrInitial(strVar, strVal, cAcc, scFlags);
-  }
   /* ----------------------------------------------------------------------- */
-  void RegisterDefaults(void)
-  { // Must have default variables to register
-    if(cvEngList.empty()) XC("No default variables to register!");
-    // Register each cvar
-    cLog->LogDebugExSafe("CVars registering $ built-in variables...",
-      cvEngList.size());
-    for(size_t stIndex = 0; stIndex < cvEngList.size(); ++stIndex)
-    { // Get cvar
-      const ItemStatic &cvaR = cvEngList[stIndex];
-      // Register the variable if the guimode is valid. Note that we might not
-      // get the gui mode which is default 0, but when it is set, it will set
-      // &guimId automatically (since it was passed as ref by core).
-      avInternal[stIndex] = cSystem->IsCoreFlagsHave(cvaR.cfRequired) ?
-        DoRegisterVar(cvaR.strVar, cvaR.strValue, cvaR.cbTrigger,
-          cvaR.cFlags, CCF_NOTHING) : imActive.end();
-    } // Finished
-    cLog->LogInfoExSafe("CVars registered $ of $ built-in variables for "
-      "$ mode $.", imActive.size(), cvEngList.size(),
-      cSystem->GetCoreFlagsString(), cSystem->GetCoreFlags());
-  }
-  /* -- Register console variable  ----------------------------------------- */
-  void RegisterLuaVar(lua_State*const lS)
-  { // Must be running on the main thread
-    cLua->StateAssert(lS);
-    // Must have 4 parameters
-    LuaUtilCheckParams(lS, 4);
-    // Get and check the variable name
-    const string strVar{ LuaUtilGetCppStr(lS, 1, "Variable") };
-    CheckValidVariableName(strVar);
-    // Get the value name
-    const string strD{ LuaUtilGetCppStr(lS, 2, "Default") };
-    // Get the flags and check that the flags are in range
-    const CVarFlagsConst cF{ LuaUtilGetFlags(lS, 3, MASK, "Flags") };
-    // Check that the fourth parameter is a function
-    LuaUtilCheckFunc(lS, 4, "Callback");
-    // Check that the var has at least one type
-    CheckTypeValidInFlags(strVar, cF);
-    // Wait for concurrent operations on cvars to finish
-    const LockGuard lgCVarsSync{ mMutex };
-    // Find command and throw exception if already exists
-    const auto cI{ lfList.find(strVar) };
-    if(cI != lfList.cend())
-      XC("Virtual cvar already exists!", "Variable", cI->first);
-    // Check that the variable does not exist in global list
-    CheckVariableDoesntExist(strVar);
-    // Create a function and reference the function on the lua stack and insert
-    // the reference into the list
-    const auto lfItem{ lfList.insert({ strVar,
-      LuaFunc(StrAppend("CV:", strVar), true) }).first };
-    // Capture exceptions as we need to remove the lua function class if
-    // theres a problem.
-    try
-    { // Register the variable and get the iterator to the new cvar. Don't
-      // forget the lua reference needs to be in place for when the callback
-      // is called.
-      DoRegisterVar(strVar, strD, LuaCallbackStatic,
-        cF|TLUA|PANY, CCF_SAFECALL);
-    } // Exception occured during registration so remove item and rethrow
-    catch(const exception &) { lfList.erase(lfItem); throw; }
-  }
-  /* -- Do unregister console cvar ----------------------------------------- */
-  void UnregisterLuaVar(const string &strCVar)
-  { // Find command and throw error if not found
-    const auto imiItem{ lfList.find(strCVar) };
-    if(imiItem == lfList.cend())
-      XC("Virtual cvar not found!", "Variable", strCVar);
-    // Unregister the command
-    UnregisterVar(imiItem->first);
-    // Unreference the callback function and remove the variable
-    lfList.erase(imiItem);
-  }
-  /* -- Unregister all cvars commands -------------------------------------- */
-  void UnregisterAllLuaCVars(void)
-  { // Wait for concurrent operations on cvar list to finish
-    const LockGuard lgCVarsSync{ mMutex };
-    // Bail if no commands
-    if(lfList.empty()) return;
-    // Say arrays unloadinghow many arrays loaded
-    cLog->LogDebugExSafe("CVars unloading $ virtual cvars...", lfList.size());
-    // Unregister each lua cvar until...
-    // FIXME: I originally intended to unload in the order of creation but
-    // dumbass me forgot that std::map's are sorted so this code unloads
-    // the vars in sorted descending order. I'd have to make another list
-    // which stores the order of creation.
-    do UnregisterLuaVar(next(lfList.rbegin()).base()->first);
-    // Until the lua cvarlist is empty
-    while(!lfList.empty());
-    // Say how many arrays loaded
-    cLog->LogInfoSafe("CVars unloaded virtual cvars.");
-  }
+  const CVarMap &GetVarList(void) { return cvmActive; }
+  CVarMapIt GetVarListEnd(void) { return cvmActive.end(); }
+  size_t GetVarCount(void) { return cvmActive.size(); }
+  const CVarMap &GetInitialVarList(void) { return cvmPending; }
   /* ----------------------------------------------------------------------- */
-  const ItemMap &GetVarList(void) { return imActive; }
-  size_t GetVarCount(void)
-    { const LockGuard lgCVarsSync{ mMutex };  return imActive.size(); }
-  const ItemMap &GetInitialVarList(void) { return imInactive; }
-  /* -- Synchronise cvar list and set the variable ------------------------- */
-  CVarSetEnums SetInternalSafe(const CVarEnums cvId, const string &strVal,
-    const CVarFlagsConst &cAcc=PUSR,
-    const CVarConditionFlagsConst &cF=CCF_NOTHING)
-      { const LockGuard lgCVarsSync{ mMutex };
-        return SetInternal(cvId, strVal, cAcc, cF|CCF_SAFECALL); }
-  /* ----------------------------------------------------------------------- */
-  template<typename AnyType>
-    CVarSetEnums SetInternalSafe(const CVarEnums cvId, const AnyType atV)
-      { return SetInternalSafe(cvId, StrFromNum(atV)); }
-  /* -- Synchronise cvar list and set the variable ------------------------- */
-  CVarSetEnums SetSafe(const string &strVar, const string &strVal,
-    const CVarFlagsConst &cAcc=PUSR,
-    const CVarConditionFlagsConst &cF=CCF_NOTHING)
-      { const LockGuard lgCVarsSync{ mMutex };
-        return Set(strVar, strVal, cAcc, cF|CCF_SAFECALL); }
-  /* -- Synchronise cvar list and reset the variable ----------------------- */
-  CVarSetEnums ResetSafe(const string &strVar, const CVarFlagsConst &cAcc=PUSR,
-    const CVarConditionFlagsConst &cF=CCF_NOTHING)
-      { const LockGuard lgCVarsSync{ mMutex };
-        return Reset(strVar, cAcc, cF|CCF_SAFECALL); }
-  /* ----------------------------------------------------------------------- */
-  bool ParseBufferSafe(const string &strBuffer, const CVarFlagsConst &cF,
-    const unsigned int uiLevel=0)
-      { const LockGuard lgCVarsSync{ mMutex };
-        return ParseBuffer(strBuffer, cF, uiLevel); }
-  /* ----------------------------------------------------------------------- */
-  bool LoadFromFile(const string &strFile, const CVarFlagsConst &cF)
-    { return ParseBufferSafe(AssetExtract(strFile).ToString(), cF); }
-  /* ----------------------------------------------------------------------- */
-  bool SetInitialVar(const string &strVar, const string &strVal,
-    const CVarFlagsConst &cFlags, const CVarConditionFlagsConst &scFlags)
-  { // Check that the variable name is valid.
-    if(!IsValidVariableName(strVar))
-    { // Throw if theres an error
-      if(scFlags.FlagIsSet(CCF_THROWONERROR))
-        XC("CVar name is not valid! Only alphanumeric characters "
-           "and underscores are acceptable!",
-           "Name",  strVar,         "Value",     strVal,
-           "Flags", cFlags.FlagGet(), "Condition", scFlags.FlagGet());
-      // Return falure instead
-      return false;
-    } // Look if the initial var already exists and if we found it? Set it
-    const ItemMapIt cvarItem{ imInactive.find(strVar) };
-    if(cvarItem != imInactive.end())
-    { // Ignore overwrite if requested
-      if(scFlags.FlagIsSet(CCF_NOIOVERRIDE))
-      { // Log that this action was denied
-        cLog->LogWarningExSafe("CVars ignored overriding '$' with '$'!",
-          strVar, strVal);
-        // Failed
-        return false;
-      } // Do the set
-      SetInitialVar(cvarItem->second, strVal, cFlags);
-    } // Insert into initial list
-    else
-    { // Check that we can create another variable
-      if(imInactive.size() >= stMaxInactiveCount)
-      { // Can we throw error?
-        if(scFlags.FlagIsSet(CCF_THROWONERROR))
-          XC("Initial CVar count upper threshold reached!",
-             "Variable", strVar, "Maximum", stMaxInactiveCount);
-        // Log that this action was denied
-        cLog->LogWarningExSafe(
-          "CVars not adding '$' because upper threshold of $ reached!",
-          strVar, stMaxInactiveCount);
-        // Failed
-        return false;
-      } // Check ok so insert
-      imInactive.insert({ strVar, Item{ strVar, strVal, NoOp, cFlags } });
-    } // Success
-    return true;
-  }
+  bool LoadFromFile(const string &strFile, const CVarFlagsConst cvfcFlags)
+    { return ParseBuffer(AssetExtract(strFile).MemToString(), cvfcFlags); }
   /* ----------------------------------------------------------------------- */
   bool SetExistingInitialVar(const string &strVar, const string &strVal,
-    const CVarFlagsConst &cAcc=PUSR)
-  { // Concurrency
-    const LockGuard lgCVarsSync{ mMutex };
-    // Find initial item and return failure if it doesn't exist
-    const ItemMapIt cVarItem{ imInactive.find(strVar) };
-    if(cVarItem == imInactive.end()) return false;
+    const CVarFlagsConst cvfcFlags=PUSR)
+  { // Find initial item and return failure if it doesn't exist
+    const CVarMapIt cvmiIt{ cvmPending.find(strVar) };
+    if(cvmiIt == cvmPending.end()) return false;
     // Set the value
-    SetInitialVar(cVarItem->second, strVal, cAcc);
+    SetInitialVar(cvmiIt->second, strVal, cvfcFlags);
     // Success
     return true;
   }
-  /* -- Unregister console cvar with lock ---------------------------------- */
-  void UnregisterLuaVarSafe(const string &strCVar)
-    { const LockGuard lgCVarsSync{ mMutex };
-      UnregisterLuaVar(strCVar); }
   /* ----------------------------------------------------------------------- */
-  template<typename AnyType>
-    void SetSafe(const string &strVar, const AnyType atV)
-      { SetSafe(strVar, StrFromNum(atV)); }
-  /* ----------------------------------------------------------------------- */
-  CVarReturn SetDefaults(const unsigned int uiVal)
+  CVarReturn SetDefaults(const CVarDefaults dcVal)
   { // Compare defaults setting
-    switch(static_cast<DefaultsCommand>(uiVal))
+    switch(dcVal)
     { // Use current configuration
       case DC_NONE: break;
       // Set defaults only? Overwrite engine variables with defaults
@@ -696,68 +459,32 @@ static class CVars final               // Start of vars class
   /* -- Return last error from callback (also moves it) -------------------- */
   const string GetCBError(void) { return StdMove(strCBError); }
   /* ----------------------------------------------------------------------- */
-  template<typename AnyType>AnyType GetInternalSafe(const CVarEnums cvId)
-    { const LockGuard lgCVarsSync{ mMutex };
-      return StdMove(GetInternal<AnyType>(cvId)); }
-  /* ----------------------------------------------------------------------- */
-  const string GetInitialVarSafe(const string &strVar)
-    { const LockGuard lgCVarsSync{ mMutex };
-      return GetInitialVar(strVar); }
-  /* ----------------------------------------------------------------------- */
-  const string &GetInternalStrSafe(const CVarEnums cvId)
-    { const LockGuard lgCVarsSync{ mMutex };
-      return GetStrInternal(cvId); }
-  const char *GetInternalCStrSafe(const CVarEnums cvId)
-    { return GetInternalStrSafe(cvId).c_str(); }
-  /* -- Return the cvar name's value as a string --------------------------- */
-  const string GetStrSafe(const string &strVar)
-    { const LockGuard lgCVarsSync{ mMutex };
-      return GetStr(strVar); }
-  /* ----------------------------------------------------------------------- */
-  const string &LuaGetStrSafe(const string &strVar)
-    { const LockGuard lgCVarsSync{ mMutex };
-      return LuaGetStr(strVar); }
-  /* ----------------------------------------------------------------------- */
-  bool IsVarStrEmptySafe(const string &strVar)
-    { const LockGuard lgCVarsSync{ mMutex };
-      return IsVarStrEmpty(strVar); }
-  /* ----------------------------------------------------------------------- */
-  bool VarExistsSafe(const string &strVar)
-    { const LockGuard lgCVarsSync{ mMutex };
-      return VarExists(strVar); }
-  /* ----------------------------------------------------------------------- */
-  bool InitialVarExistsSafe(const string &strVar)
-    { const LockGuard lgCVarsSync{ mMutex };
-      return InitialVarExists(strVar); }
+  const string Protect(const CVarMapItConst cvmicIt) const
+    { return cvmicIt->second.Protect(); }
   /* ----------------------------------------------------------------------- */
   const string Protect(const string &strVar) const
   { // Find item and return invalid if not found
-    const ItemMapItConst cvarItem{ imActive.find(strVar) };
-    return cvarItem == imActive.cend() ?
-      "<invalid>" : cvarItem->second.Protect();
+    const CVarMapItConst cvmiIt{ FindVariableConst(strVar) };
+    return cvmiIt == cvmActive.cend() ? "<invalid>" : Protect(cvmiIt);
   }
   /* ----------------------------------------------------------------------- */
   size_t MarkAllEncodedVarsAsCommit(void)
-  { // Thread safety
-    const LockGuard lgCVarsSync{ mMutex };
-    // Total number of commits
+  { // Total number of commits
     SafeSizeT stCommitted{0};
     // Enumerate the initial list and cvar list asyncronously
-    StdForEach(par_unseq, impCVars.cbegin(), impCVars.cend(),
-      [&stCommitted](const ItemMapPair &impStruct)
+    StdForEach(par_unseq, cvlList.cbegin(), cvlList.cend(),
+      [&stCommitted](const CVarMapMulti &impStruct)
       { // Enumerate the cvars in each list asynchronously
-        StdForEach(par_unseq, impStruct.imList.begin(), impStruct.imList.end(),
-            [&stCommitted](auto &imPair)
-            { if(imPair.second.MarkEncodedVarAsCommit()) ++stCommitted; });
+        StdForEach(par_unseq, impStruct.cmMap.begin(), impStruct.cmMap.end(),
+          [&stCommitted](CVarMapPair &cvmpPair)
+            { if(cvmpPair.second.MarkEncodedVarAsCommit()) ++stCommitted; });
       });
     // Return commit count
     return stCommitted;
   }
   /* ----------------------------------------------------------------------- */
   size_t Save(void)
-  { // Thread safety
-    const LockGuard lgCVarsSync{ mMutex };
-    // Done if sqlite database is not opened or vars table is not availabe
+  { // Done if sqlite database is not opened or vars table is not availabe
     if(!cSql->IsOpened() || cSql->CVarCreateTable() == Sql::CTR_FAIL)
       return string::npos;
     // Begin transaction
@@ -766,21 +493,20 @@ static class CVars final               // Start of vars class
     // written by multiple threads.
     SafeSizeT stCommitTotal{0}, stPurgeTotal{0};
     // Enumerate the lists asyncronously
-    StdForEach(par_unseq, impCVars.cbegin(), impCVars.cend(),
-      [&stCommitTotal, &stPurgeTotal](const ItemMapPair &impData)
+    StdForEach(par_unseq, cvlList.cbegin(), cvlList.cend(),
+      [&stCommitTotal, &stPurgeTotal](const CVarMapMulti &cvmpIt)
     { // Total number of commits attempted which may need to be read and
       // written by multiple threads.
       SafeSizeT stCommit{0}, stPurge{0};
       // Iterate through the initial list and try to commit the cvar. We might
       // as well try to do this as quick as possible
-      StdForEach(par_unseq,
-        impData.imList.begin(), impData.imList.end(),
-          [&stCommit, &stPurge](auto &imPair)
-            { imPair.second.Save(stCommit, stPurge); });
+      StdForEach(par_unseq, cvmpIt.cmMap.begin(), cvmpIt.cmMap.end(),
+        [&stCommit, &stPurge](CVarMapPair &cvmpPair)
+          { cvmpPair.second.Save(stCommit, stPurge); });
       // Log variables written
       if(stCommit || stPurge)
         cLog->LogInfoExSafe("CVars commited $ and purged $ from $ pool.",
-          stCommit.load(), stPurge.load(), impData.cpName);
+          stCommit.load(), stPurge.load(), cvmpIt.cpName);
       // Add to totals
       stCommitTotal += stCommit;
       stPurgeTotal += stPurge;
@@ -791,48 +517,47 @@ static class CVars final               // Start of vars class
     return stCommitTotal + stPurgeTotal;
   }
   /* ----------------------------------------------------------------------- */
-  const string GetInitialVar(const string &strKey, const string &strO={})
-  { // Find var
-    const ItemMapIt cvarItem{ imInactive.find(strKey) };
-    // Return empty string or the var
-    return cvarItem != imInactive.cend() ? cvarItem->second.GetValue() : strO;
+  const string GetInitialVar(const string &strKey)
+  { // Find var and return empty string or the var
+    const CVarMapIt cvmiIt{ cvmPending.find(strKey) };
+    return cvmiIt != cvmPending.cend() ?
+      cvmiIt->second.GetValue() : cCommon->Blank();
   }
   /* ----------------------------------------------------------------------- */
   size_t Clean(void)
   { // Get all key names in cvars, no values
     if(!cSql->CVarReadKeys()) return 0;
     // Get vars list
-    const Sql::Result &vVars = cSql->GetRecords();
-    if(vVars.empty())
+    const Sql::Result &srVars = cSql->GetRecords();
+    if(srVars.empty())
     { // Log message and return failed
       cLog->LogInfoSafe("CVars found no variables to clean up!");
       return 0;
-    } // Thread safety to protect cvar modification
-    const LockGuard lgCVarsSync{ mMutex };
-    // Say how many records we're probing
-    cLog->LogDebugExSafe("CVars probing $ records...", vVars.size());
+    } // Say how many records we're probing
+    cLog->LogDebugExSafe("CVars probing $ records...", srVars.size());
     // Begin transaction
     cSql->Begin();
     // Transactions committed
     size_t stCommit = 0;
     // For each record returned.
-    for(const Sql::Records &sslPairs : vVars)
+    for(const Sql::Records &srPairs : srVars)
     { // Get key and goto next record if not found, else assign cvar name
-      const Sql::RecordsIt smmI{ sslPairs.find("K") };
-      if(smmI == sslPairs.cend()) continue;
+      const Sql::RecordsIt smmI{ srPairs.find(cSql->strKeyColumn) };
+      if(smmI == srPairs.cend()) continue;
       const Sql::DataListItem &mbO = smmI->second;
       // If is not a string?
       if(mbO.iT != SQLITE_TEXT)
       { // Delete it from database and add to counter if ok and goto next cvar
-        if(cSql->CVarPurgeData(mbO.Ptr<char>(), mbO.Size()) == Sql::PR_OK)
+        if(cSql->CVarPurgeData(mbO.MemPtr<char>(), mbO.MemSize()) ==
+             Sql::PR_OK)
           ++stCommit;
         continue;
       } // Get string and find cvar name in live cvar list, ignore if it exists
-      const string strKey{ mbO.ToString() };
+      const string strKey{ mbO.MemToString() };
       if(VarExists(strKey)) continue;
       // Find item in initial/standby cvar list, delete it if found
-      const ItemMapIt cvarItem{ imInactive.find(strKey) };
-      if(cvarItem != imInactive.end()) imInactive.erase(cvarItem);
+      const CVarMapIt cvmiIt{ cvmPending.find(strKey) };
+      if(cvmiIt != cvmPending.end()) cvmPending.erase(cvmiIt);
       // Delete from database and proceed to the next record and if failed?
       if(cSql->CVarPurge(strKey) != Sql::PR_OK) continue;
       // Number of transactions send to sqlite
@@ -841,7 +566,7 @@ static class CVars final               // Start of vars class
     cSql->End();
     // If we have items to delete, we can say how many we deleted
     cLog->LogInfoExSafe("CVars removed $ of $ orphan records.",
-      stCommit, vVars.size());
+      stCommit, srVars.size());
     // Clean up downloaded records
     cSql->Reset();
     // Return number of rows affected
@@ -853,37 +578,38 @@ static class CVars final               // Start of vars class
     if(cSql->CVarCreateTable() != Sql::CTR_OK_ALREADY || !cSql->CVarReadAll())
       return 0;
     // Number of variables loaded
-    SafeSizeT stLoaded(0);
+    SafeSizeT stLoaded{ 0 };
     // Get vars list and if not empty
-    const Sql::Result &vVars = cSql->GetRecords();
-    if(!vVars.empty())
+    const Sql::Result &srVars = cSql->GetRecords();
+    if(!srVars.empty())
     { // Log number of vars being parsed
       cLog->LogDebugExSafe("CVars read $ persistent variables, parsing...",
-        vVars.size());
+        srVars.size());
       // For each record returned. Set each keypair returned, these are user
       // variables. We're using multithreading for this to accellerate
       // decryption and decompression routines.
-      StdForEach(par_unseq, vVars.cbegin(), vVars.cend(),
+      StdForEach(par_unseq, srVars.cbegin(), srVars.cend(),
         [this, &stLoaded](const Sql::Records &smmPairs)
       { // Get key and goto next record if not found, else set the key string
-        const Sql::RecordsIt iRecKey{ smmPairs.find("K") };
+        const Sql::RecordsIt iRecKey{ smmPairs.find(cSql->strKeyColumn) };
         if(iRecKey == smmPairs.cend()) return;
         const Sql::DataListItem &mbKey = iRecKey->second;
         if(mbKey.iT != SQLITE_TEXT) return;
         // Convert the variable to string and ignore if invalid
-        const string strVar{ mbKey.ToString() };
+        const string strVar{ mbKey.MemToString() };
         // Get flags and goto next record if not found, else set the key string
-        const Sql::RecordsIt iRecFlags{ smmPairs.find("F") };
+        const Sql::RecordsIt iRecFlags{ smmPairs.find(cSql->strFlagsColumn) };
         if(iRecFlags == smmPairs.cend()) return;
         const Sql::DataListItem &mbFlags = iRecFlags->second;
         if(mbFlags.iT != SQLITE_INTEGER) return;
-        const SqlCVarDataFlagsConst lFlags{ mbFlags.ReadInt<sqlite_int64>() };
+        const SqlCVarDataFlagsConst
+          scfFlags{ mbFlags.MemReadInt<sqlite_int64>() };
         // Get value and goto next record if not found, else set the value
-        const Sql::RecordsIt iRecVal{ smmPairs.find("V") };
+        const Sql::RecordsIt iRecVal{ smmPairs.find(cSql->strValueColumn) };
         if(iRecVal == smmPairs.cend()) return;
         const Sql::DataListItem &mbVal = iRecVal->second;
         // If the data pointed at 'V' is not encrypted?
-        if(lFlags.FlagIsClear(LF_ENCRYPTED))
+        if(scfFlags.FlagIsClear(SD_ENCRYPTED))
         { // Must be text
           if(mbVal.iT != SQLITE_TEXT)
           { // Show warning and ignore if not
@@ -891,7 +617,7 @@ static class CVars final               // Start of vars class
               "and not type $ for '$'!", SQLITE_TEXT, mbVal.iT, strVar);
             return;
           } // Store value directly with synchronisation and goto next
-          if(SetVarOrInitialSafe(strVar, mbVal.ToString(),
+          if(SetVarOrInitial(strVar, mbVal.MemToString(),
             PUSR|SUDB, CCF_NOIOVERRIDE|CCF_NOTDECRYPTED))
               ++stLoaded;
           return;
@@ -902,7 +628,7 @@ static class CVars final               // Start of vars class
         // Capture exceptions because MagicBlock does that on error
         try
         { // Decrypt the value and get the result, and if that call fails?
-          strNewValue = Block<CoDecoder>{ mbVal }.ToString();
+          strNewValue = Block<CoDecoder>{ mbVal }.MemToString();
         } // exception occured?
         catch(const exception &e)
         { // Log failure and try to reset the initial var so this does not
@@ -915,19 +641,19 @@ static class CVars final               // Start of vars class
         // are not to be marked as changed. Do not throw on error because it
         // is not easy to change a sql database manually if we change the
         // rules on a cvar.
-        if(SetVarOrInitialSafe(strVar, strNewValue, PUSR,
+        if(SetVarOrInitial(strVar, strNewValue, PUSR,
           CCF_NOIOVERRIDE|CCF_DECRYPTED))
             ++stLoaded;
       });
       // If we loaded all the variables? Report that we loaded all the vars
-      if(stLoaded == vVars.size())
+      if(stLoaded == srVars.size())
         cLog->LogInfoExSafe("CVars parsed all $ persistent variables.",
-          vVars.size());
+          srVars.size());
       // We didn't load all the variables? Report that we could not load all
       // the variables
       else cLog->LogWarningExSafe(
         "CVars only parsed $ of $ persistent variables!",
-        stLoaded.load(), vVars.size());
+        stLoaded.load(), srVars.size());
     } // No variables loaded
     else cLog->LogInfoSafe("CVars found no variables to parse.");
     // Clean up downloaded records
@@ -936,9 +662,11 @@ static class CVars final               // Start of vars class
     return stLoaded;
   }
   /* ----------------------------------------------------------------------- */
-  CVarReturn SetDisplayFlags(const unsigned int uiFlags)
-  { // Set the flags
-    csfShowFlags.FlagReset(CVarShowFlagsConst{ uiFlags });
+  CVarReturn SetDisplayFlags(const CVarShowFlagsType cstFlags)
+  { // Failed if flags are not valid
+    if(cstFlags != CSF_NONE && (cstFlags & ~CSF_MASK)) return DENY;
+    // Set the new flags
+    csfShowFlags.FlagReset(cstFlags);
     // Done
     return ACCEPT;
   }
@@ -949,9 +677,6 @@ static class CVars final               // Start of vars class
     // Same
     return ACCEPT;
   }
-  /* -- Set maximum cvar count --------------------------------------------- */
-  CVarReturn MaxCountModified(const size_t stCount)
-    { return CVarSimpleSetInt(stMaxActiveCount, stCount); }
   /* -- Set maximum offline cvar count ------------------------------------- */
   CVarReturn MaxICountModified(const size_t stCount)
     { return CVarSimpleSetInt(stMaxInactiveCount, stCount); }
@@ -970,32 +695,86 @@ static class CVars final               // Start of vars class
     if(bEnabled)
     { // If only using one cpu and log if we can disable window threading
       if(cSystem->CPUCount() == 1 &&
-        SetInternalSafe<bool>(WIN_THREAD, false) == CVS_OK)
-          cLog->LogWarningExSafe("CVars force disabled window threading due "
+        SetInternal<bool>(WIN_THREAD, false) == CVS_OK)
+          cLog->LogWarningSafe("CVars force disabled window threading due "
             "to only having one thread!");
     } // CVar is accepted
     return ACCEPT;
   }
-  /* -- Default constructor ------------------------------------------------ */
-  explicit CVars(const ItemStaticList &cvDefEngList) :
-    /* -- Initialisers ----------------------------------------------------- */
-    stMaxInactiveCount(MAX_CVAR),      // Initially set to max cvar count
-    stMaxActiveCount(MAX_CVAR),        // Initially set to max cvar count
-    impCVars{{                         // Set combined lists
-      { imInactive, "unregistered" },  // Inactive cvars list
-      { imActive,   "registered" } }}, // Active cvars list
-    cvEngList{ cvDefEngList }          // Default engine cvars list
-    /* -- No code ---------------------------------------------------------- */
-    { }
   /* ----------------------------------------------------------------------- */
-  DTORHELPER(~CVars, Save(); UnregisterAllVars())
+  void DeInit(void)
+  { // Ignore if not initialised
+    if(IHNotDeInitialise()) return;
+    // Save all variables
+    Save();
+    // Log result then dereg core variables, they don't need testing
+    cLog->LogDebugExSafe("CVars unregistering core variables...",
+      GetInternalList().size());
+    // Enumerate all the internal variables in reverse order
+    size_t stVars = 0;
+    for(size_t stIndex = GetInternalList().size()-1;
+               stIndex != StdMaxSizeT;
+             --stIndex)
+    { // Get iterator and unregister it if it is registered
+      const CVarMapIt cvmiIt{ GetInternalList()[stIndex] };
+      if(cvmiIt == cvmActive.end()) continue;
+      GetInternalList()[stIndex] = cvmActive.end();
+      UnregisterVar(cvmiIt);
+      ++stVars;
+    } // This should be 100% impossible but we'll deal with it just incase
+    if(!cvmActive.empty())
+    { // Something lingers which should be impossible but just incase
+      cLog->LogWarningExSafe("CVars unregistered $ engine variables "
+        "with $ lingering core engine variables!",
+          GetInternalList().size(), cvmActive.size());
+      // Repeat unregistering each remaining variable...
+      do { UnregisterVar(cvmActive.rbegin().base()); }
+      // ...until the vars list is empty
+      while(!cvmActive.empty());
+      // Log warning that we finished
+      cLog->LogWarningSafe("CVars unregistered all remaining variables!");
+    } // All the core variables were unregistered
+    else cLog->LogDebugExSafe("CVars unregistered $ core engine variables.",
+           stVars);
+  }
+  /* ----------------------------------------------------------------------- */
+  void Init(void)
+  { // Object initialised
+    IHInitialise();
+    // Register each cvar
+    cLog->LogDebugExSafe("CVars registering $ built-in variables...",
+      cvislList.size());
+    for(size_t stIndex = 0; stIndex < cvislList.size(); ++stIndex)
+    { // Get cvar
+      const CVarItemStatic &cvisVar = cvislList[stIndex];
+      // Register the variable if the guimode is valid
+      GetInternalList()[stIndex] =
+        cSystem->IsCoreFlagsHave(cvisVar.cfcRequired) ?
+          RegisterVar(string(cvisVar.strvVar), string(cvisVar.strvValue),
+            cvisVar.cbTrigger, cvisVar.cFlags, CCF_NOTHING) : cvmActive.end();
+    } // Finished
+    cLog->LogInfoExSafe(
+      "CVars registered $ of $ built-in variables for $ mode $.",
+      cvmActive.size(), cvislList.size(), cSystem->GetCoreFlagsString(),
+      cSystem->GetCoreFlags());
+  }
+  /* -- Default constructor ------------------------------------------------ */
+  explicit CVars(const CVarItemStaticList &cvislDef) :
+    /* -- Initialisers ----------------------------------------------------- */
+    IHelper{ __FUNCTION__ },           // Set function name for init helper
+    stMaxInactiveCount(CVAR_MAX),      // Initially set to max cvar count
+    cvlList{{                          // Set combined lists
+      { cvmPending, "unregistered" },  // Inactive cvars list
+      { cvmActive,  "registered" } }}, // Active cvars list
+    cvislList{ cvislDef }              // Default engine cvars list
+    /* -- Fill all the iterators to internal cvars ------------------------- */
+    { GetInternalList().fill(cvmActive.end()); }
+  /* -- Destructor --------------------------------------------------------- */
+  ~CVars(void) { DeInit(); }           // Save and clean-up all variables
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(CVars)               // Disable copy constructor and operator
   /* ----------------------------------------------------------------------- */
 } *cCVars = nullptr;                   // Pointer to static class
-/* == Cvar lua callback ==================================================== */
-CVarReturn CVars::LuaCallbackStatic(Item &cvarD, const string &strVal)
-  { return cCVars->LuaCallback(cvarD, strVal); }
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */

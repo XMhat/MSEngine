@@ -16,22 +16,25 @@ using namespace ISysUtil::P;           using namespace IToken::P;
 using namespace IUtil::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
+/* ------------------------------------------------------------------------- */
+enum ExitOperation : unsigned int      // Things to do at exit
+{ /* ----------------------------------------------------------------------- */
+  EO_QUIT,                             // Quit normally
+  EO_TERM_REBOOT_NOARG,                // Restart without parameters
+  EO_UI_REBOOT_NOARG,                  // Same as above but in UI mode
+  EO_TERM_REBOOT,                      // Restart with parameters
+  EO_UI_REBOOT,                        // Same as above but in UI mode
+};/* ----------------------------------------------------------------------- */
 /* -- Command line helper class (should be the first global to inti) ------- */
 static struct CmdLine final            // Members initially public
-{ /* -- Public typedefs ---------------------------------------------------- */
-  enum class EcId { Quit,              // Quit normally
-                    RestartNoParam,    // Restart without parameters
-                    RestartNoParamUI,  // Same as above but in UI mode
-                    Restart,           // Restart with parameters
-                    RestartUI };       // Same as above but in UI mode
-  /* -- Command-line and environment variables ---------------------*/ private:
-  EcId             ecExit;             // Exit mode
-  const string     strCWD;             // Current startup working directory
+{ /* -- Command-line and environment variables ---------------------*/ private:
+  ExitOperation    eoExit;             // Actions to perform at exit
   int              iArgC;              // Arguments count
   ArgType        **lArgV;              // Arguments list
   ArgType        **lEnvP;              // Environment list
   const StrVector  svArg;              // Arguments list
   const StrStrMap  lEnv;               // Formatted environment variables
+  const string     strCWD;             // Current startup working directory
   string           strHD;              // Persistant directory
   /* -- Set persistant directory ----------------------------------- */ public:
   void SetHome(const string &strDir) { strHD = strDir; }
@@ -71,7 +74,7 @@ static struct CmdLine final            // Members initially public
   const StrStrMap &GetEnvList(void) const { return lEnv; }
   const StrVector &GetArgList(void) const { return svArg; }
   /* -- Set restart flag (0 = no restart, 1 = no params, 2 = params) ------- */
-  void SetRestart(const EcId ecCmd) { ecExit = ecCmd; }
+  void SetRestart(const ExitOperation ecCmd) { eoExit = ecCmd; }
   /* -- Get startup current directory -------------------------------------- */
   const string &GetStartupCWD(void) const { return strCWD; }
   /* -- Return to startup directory ---------------------------------------- */
@@ -85,7 +88,7 @@ static struct CmdLine final            // Members initially public
   StrVector ParseArgumentsArray(void)
   { // Check that args are valid
     if(iArgC < 1) XC("Arguments array count corrupted!", "Count", iArgC);
-     // Check that args are valid
+    // Check that args are valid
     if(!lArgV) XC("Arguments array corrupted!");
     if(!*lArgV) XC("Arguments array executable string corrupted!");
     if(!**lArgV) XC("Arguments array executable string is empty!");
@@ -93,10 +96,9 @@ static struct CmdLine final            // Members initially public
     const size_t stArgCM1 = static_cast<size_t>(iArgC - 1);
     StrVector svRet; svRet.reserve(stArgCM1);
     // For each argument format the argument and add it to list
-    for(const ArgType*const *atPtr = lArgV+1;
-        const ArgType*const  atStr = *atPtr;
-                           ++atPtr)
-      svRet.emplace_back(S16toUTF(atStr));
+    StdForEach(seq, lArgV+1, lArgV+iArgC,
+      [&svRet](const ArgType*const atStr)
+        { svRet.emplace_back(S16toUTF(atStr)); });
     // One final sanity check
     if(svRet.size() != stArgCM1)
       XC("Arguments array actual count mismatch!",
@@ -110,55 +112,58 @@ static struct CmdLine final            // Members initially public
     if(!lEnvP) XC("Evironment array corrupted!");
     if(!*lEnvP) XC("First environment variable corrupted!");
     if(!**lEnvP) XC("First environment varable is empty!");
+    // Arguments list to return
+    StrStrMap ssmRet;
+    // Compile on MacOS and in debug mode?
+#if defined(MACOS) && defined(ALPHA)
+    // Hacky method to avoid address sanitiser false-positive in XCode
+    for(ArgType *atPtr = *lEnvP, *atStr = atPtr; *atStr; atStr = ++atPtr)
+    { // Skip all non-null characters then we have the end of the c-string
+      while(*atPtr) ++atPtr;
+#else
+    // Process environment variables
+    for(ArgType **atPtr = lEnvP; ArgType*const atStr = *atPtr; ++atPtr)
+    { // Ignore if string is empty
+      if(!*atStr) continue;
+#endif
+      // Split argument into key/value pair. Ignore if no parameters
+      if(Token tokParam{ S16toUTF(atStr), cCommon->Equals(), 2 })
+        ssmRet.insert({ StdMove(tokParam.front()), tokParam.size() >= 2 ?
+          StdMove(tokParam.back()) : cCommon->Blank() });
+    }
     // Compile on MacOS?
 #if defined(MACOS)
-    // Unset variables on process children because these variables can cause
-    // our terminal apps to spit garbage output and ruin the capture for
+    // Unset variables for process children because these variables can cause
+    // spawned terminal apps to spit garbage output and ruin the display for
     // scripts. If the guest needs these then they can just try the apps
     // standalone in the terminal without the need for the engine.
     SysUnSetEnv(
-      "NSZombieEnabled",               // Enable dealloc in foundation
       "DYLD_INSERT_LIBRARIES",         // Disable dylib override
-      "MallocHelp",                    // Help messages
-      "NSDeallocateZombies",           // Deallocate zombies
+      "MallocCheckHeapAbort",          // Don't throw abort() on heap check
       "MallocCheckHeapEach",           // Don't check heap every 'n' mallocs
       "MallocCheckHeapStart",          // Don't check heap at 'n' mallocs
-      "MallocScribble",                // Don't scribble memory
       "MallocGuardEdges",              // Don't guard edges
-      "MallocCheckHeapAbort"           // Don't throw abort() on heap check
+      "MallocHelp",                    // Help messages
+      "MallocScribble",                // Don't scribble memory
+      "NSDeallocateZombies",           // Deallocate zombies
+      "NSZombieEnabled"                // Enable dealloc in foundation
     );
 #endif
-    // Arguments list to return
-    StrStrMap ssmRet;
-    // Process environment variables
-    for(const ArgType*const *atPtr = lEnvP;
-        const ArgType*const  atStr = *atPtr;
-                           ++atPtr)
-    { // Ignore if parameter empty
-      if(!*atStr) continue;
-      // Split argument into key/value pair. Ignore if no parameters
-      Token tokParam{ S16toUTF(atStr), "=", 2 };
-      if(tokParam.empty()) continue;
-      // Find key and insert it if not found then erase the EcId value
-      string &strKey = StrToUpCaseRef(tokParam.front());
-      const StrStrMapConstIt itArg{ ssmRet.find(strKey) };
-      if(itArg != ssmRet.cend()) ssmRet.erase(itArg);
-      // Insert new key/value into list
-      ssmRet.insert({ StdMove(strKey),
-        tokParam.size() > 1 ? StdMove(tokParam[1]) : cCommon->Blank() });
-    } // Return environment variables list
+    // Return environment variables list
     return ssmRet;
   }
   /* -- Assign arguments ------------------------------------------- */ public:
   CmdLine(const int iArgs, ArgType**const atArgs, ArgType**const atEnv) :
     /* -- Initialisers ----------------------------------------------------- */
-    ecExit(EcId::Quit),                // Initialise exit code
-    strCWD{ DirGetCWD() },             // Initialise current working directory
+    eoExit(EO_QUIT),                   // Initialise exit code
     iArgC(iArgs),                      // Initialise stdlib args count
     lArgV(atArgs),                     // Initialise stdlib args ptr
     lEnvP(atEnv),                      // Initialise stdlib environment ptr
-    svArg{ ParseArgumentsArray() },    // Initialise command line arguments
-    lEnv{ ParseEnvironmentArray() }    // Initialise environment variables
+    svArg{ StdMove(                    // Initialise command line arguments
+      ParseArgumentsArray()) },        // ...so we can keep them const
+    lEnv{ StdMove(                     // Initialise environment variables
+      ParseEnvironmentArray()) },      // ...so we can keep them const
+    strCWD{ StdMove(DirGetCWD()) }     // Initialise current working directory
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Destructor --------------------------------------------------------- */
@@ -168,29 +173,27 @@ static struct CmdLine final            // Members initially public
   // Restore startup working directory
   SetStartupCWD();
   // Do we have a restart mode set?
-  switch(ecExit)
-  { // Just return if no restart required?
-    case EcId::Quit: return;
+  switch(eoExit)
+  { // Just return if no restart required
+    case EO_QUIT: return;
     // Remove first parameter and break?
-    case EcId::RestartNoParam:
-      lArgV[1] = nullptr; iArgC = 1; [[fallthrough]];
+    case EO_TERM_REBOOT_NOARG: lArgV[1] = nullptr; iArgC = 1; [[fallthrough]];
     // Restart while keeping parameters?
-    case EcId::Restart: SetRestart(EcId::Quit);
-      // Do the restart! Again, everything is cleaned up so this is convenient!
+    case EO_TERM_REBOOT: SetRestart(EO_QUIT);
+      // Do the restart and replace the current process with the new one
       switch(const int iCode = StdExecVE(lArgV, lEnvP))
-      { // Success? Proceed to quit
+      { // Success? Shouldn't get here!
         case 0: break;
         // Error occured? Don't attempt execution again and show error
         default: XCL("Failed to restart process!",
           "Process", *lArgV, "Code", iCode, "Parameters", iArgC);
       } // Done
       break;
-    // Remove first parameter and break in ui mode?
-    case EcId::RestartNoParamUI:
-      lArgV[1] = nullptr; iArgC = 1; [[fallthrough]];
+    // Remove first parameter and fallthrough to next label
+    case EO_UI_REBOOT_NOARG: lArgV[1] = nullptr; iArgC = 1; [[fallthrough]];
     // Restart while keeping parameters in ui mode?
-    case EcId::RestartUI: SetRestart(EcId::Quit);
-      // Do the restart! Again, everything is cleaned up so this is convenient!
+    case EO_UI_REBOOT: SetRestart(EO_QUIT);
+      // Do the restart using spawn as MacOS goes weird with ui apps otherwise.
       switch(const int iCode = StdSpawnVE(lArgV, lEnvP))
       { // Success? Proceed to quit
         case 0: break;

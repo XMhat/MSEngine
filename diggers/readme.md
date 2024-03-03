@@ -18,7 +18,7 @@
 13. [Credits](#credits)…
 14. [Disclaimer](#disclaimer)…
 15. [Contributing](#contributing)…
-16. [Licence](#licence)…
+16. [License](#license)…
 
 ## [Screenshots](#screenshots)…
 ![Screenshots](/docs/diggers.webp?raw=true "Screenshots")
@@ -34,10 +34,8 @@ Diggers will always be a work-in-progress since it is difficult and incredibly t
   * _MacOS:_ `100%`…
     * All functions accounted for.
   * _Linux:_ `100%`…
-    * Some upstream issues with GLFW.
-      * Initial screen corruption when putting window in its own thread only on Wayland so single threaded for now. Can be overridden with `win_thread=1` argument.
-      * Problem with `Alt+Enter` not working properly. Think maybe GLFW is duplicating the event.
-    * Skipping one rendered frame every few seconds only on Wayland, perhaps due to using a `59.97hz` NTSC display. Help needed with this one.
+    * Sometimes the full-screen/window toggle key might not work properly because of duplicated input keys. Hopefully will be fixed in Ubuntu 24.04 LTS.
+    * Skipping one rendered frame every few seconds only on Wayland, perhaps when only using a `59.97hz` NTSC display. Probably need to make animations based on time and not frames which could be extremely difficult.
     * All other functions accounted for.
 * *Graphics*: `100%`…
   * All other graphics accounted for.
@@ -65,7 +63,7 @@ Diggers will always be a work-in-progress since it is difficult and incredibly t
 | **Memory** *(Windows)* | 16MB *(XP/X86)* | 128MB+ *(Win7/X64)* | Close estimate. |
 | **System** *(MacOS)* | 10.7 *(Intel)* / 11 *(Arm)* | 13.0+ *(Arm)* | FAT Universal executable. |
 | **Memory** *(MacOS)* | 256MB *(Intel)* | 512MB *(Arm)* | Close estimate. |
-| **System** *(Linux)* | Ubuntu 23.04 *(X64)* | Ubuntu 23.04+ *(X64)* | See below for packages. |
+| **System** *(Linux)* | Ubuntu 23.10 *(X64)* | Ubuntu 23.04+ *(X64)* | See below for packages. |
 | **Memory** *(Linux)* | 16MB | 128MB+ | Wild estimate. |
 | **Graphics** | NV GF8K/ATI R600 | NV GF8K+/ATI R600+ | OpenGL 3.2 compatible. |
 | **Audio** | Any sound device | Any sound device | OpenAL 1.1 compatible. |
@@ -81,7 +79,7 @@ You can always get the latest version of this project [here](https://github.com/
 Running the Windows version should be trivial.
 
 ### Linux version…
-The Linux version is linked against external packages that you need to install for the game to work. These packages can be installed with `sudo apt-get install libfreetype libglfw3 libjpegturbo0 libncurses libogg libopenal libpng libsqlite3 libssl libtheora libvorbis libxrandr mesa-common zlib1g`.
+The Linux version is linked against external packages that you need to install for the game to work. These packages can be installed with `sudo apt-get install libfreetype libglfw3 libncurses libogg libopenal libpng libsqlite3 libssl libtheora libvorbis libxrandr mesa-common zlib1g`.
 
 ### MacOS version…
 The MacOS version is self-contained and only basic stdlibs are required to run which should already be included by default in any system. However, opening the disk image will require you to bypass Gatekeeper as I do not wish to sign it with personal information and have therefore used a self-signed certificate instead. To bypass Gatekeeper, simply run the `Terminal.app` and `chdir` to the directory where you downloaded the disk image with `chdir ~/Downloads` and then execute the following command to remove the quarantine flag from the disk image archive with `xattr -d com.apple.quarantine Diggers-R<x>-MacOS-Universal.dmg` where `<x>` is the version of this application. You should then be able to mount the disk image and run the game without any issue.
@@ -167,7 +165,7 @@ Press `F1` at any time in the game to access the setup screen and `F2` to show t
   - Show the acknowledgements (readme.txt).
 
 ### About…
-This screen shows the third party licences for this game.
+This screen shows the third party licenses for this game.
 
 * **Basic control…**
   - Move the cursor to the top of the screen with the mouse or joystick and hit the left button or button 1 to scroll the text up.
@@ -401,7 +399,7 @@ Diggers is *© Millennium Interactive Ltd. 1994* to which the company was [close
 ## [Contributing](#contributing)…
 See [this document](/contributing.md) for details on contributing to this project.
 
-## [Licence](#licence)…
-Please read [this document](/licence.md) for the licence and disclaimer for use of this software.
+## [License](#license)…
+Please read [this document](/license.md) for the license and disclaimer for use of this software.
 
 ## Copyright © 2006-2024 MS-Design. All Rights Reserved.

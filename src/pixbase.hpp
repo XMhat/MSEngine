@@ -25,10 +25,13 @@ class SysBase :                        // Safe exception handler namespace
   public SysVersion,                   // Version information class
   public Ident                         // Mutex name
 { /* ----------------------------------------------------------------------- */
+  typedef map<const int, struct rlimit> ResourceLimit; // Modifyable
+  ResourceLimit    rLimits;            // Resource limits database
+  /* ----------------------------------------------------------------------- */
   enum ExitState { ES_SAFE, ES_UNSAFE, ES_CRITICAL }; // Signal exit types
   /* --------------------------------------------------------------- */ public:
-  int DoDeleteGlobalMutex(const string &strTitle)
-    { return shm_unlink(strTitle.c_str()); }
+  int DoDeleteGlobalMutex(const char*const cpName)
+    { return shm_unlink(cpName); }
   /* ----------------------------------------------------------------------- */
   int DoDeleteGlobalMutex(void)
   { // Return if data not ready to prevent SIGSEGV during System() construction
@@ -36,31 +39,31 @@ class SysBase :                        // Safe exception handler namespace
     // Data no longer ready
     bSysBaseDataReady = false;
     // Return result of deleting the mutex
-    return DoDeleteGlobalMutex(IdentGet());
+    return DoDeleteGlobalMutex(IdentGet().c_str());
   }
   /* ----------------------------------------------------------------------- */
-  void DeleteGlobalMutex(const string &strTitle)
+  void DeleteGlobalMutex(const string_view &strvTitle)
   { // Create the semaphore and if the creation failed? Put in log that another
     // instance of this application is running
-    if(DoDeleteGlobalMutex(strTitle) == -1)
+    if(DoDeleteGlobalMutex(strvTitle.data()) == -1)
       cLog->LogWarningExSafe("SysMutex could not delete old mutex '$': $",
-        strTitle, SysError());
+        strvTitle, SysError());
     // Creation succeeded so put success in log
-    else cLog->LogWarningExSafe("SysMutex deleted old mutex '$'.", strTitle);
+    else cLog->LogWarningExSafe("SysMutex deleted old mutex '$'.", strvTitle);
   }
   /* ----------------------------------------------------------------------- */
-  void DeleteGlobalMutex(void) { DoDeleteGlobalMutex(IdentGet()); }
+  void DeleteGlobalMutex(void) { DoDeleteGlobalMutex(IdentGet().data()); }
   /* ----------------------------------------------------------------------- */
-  bool InitGlobalMutex(const string &strTitle)
+  bool InitGlobalMutex(const string_view &strvTitle)
   { // Ignore if semaphore already created
-    if(strTitle.empty() || IdentIsSet()) return false;
+    if(strvTitle.empty() || IdentIsSet()) return false;
     // Set a flag to say that the mutex is ready because the function to
     // delete the shared object can still be called when an signal is sent
     // during System() construction. This makes sure that the shared object is
     // not attempted to be deleted.
     bSysBaseDataReady = true;
     // Create the semaphore and if the creation failed?
-    if(shm_open(strTitle.c_str(), O_CREAT | O_EXCL, 0) == -1)
+    if(shm_open(strvTitle.data(), O_CREAT | O_EXCL, 0) == -1)
     { // If it was because it already exists?
       if(StdIsError(EEXIST) || StdIsError(EACCES))
       { // Put in log that another instance of this application is running
@@ -72,7 +75,7 @@ class SysBase :                        // Safe exception handler namespace
       cLog->LogWarningExSafe("System failed to setup global mutex: $!",
         SysError());
     } // Set mutex title
-    IdentSet(strTitle);
+    IdentSet(strvTitle);
     // Execution can continue
     return true;
   }
@@ -81,29 +84,13 @@ class SysBase :                        // Safe exception handler namespace
     const void*const vpStack) const
   { // Information about the object
     Dl_info diData;
+    // Tokenise the stack after removing duplicate whitespaces. Note that objc
+    // calls will have spaces in them.
+    const Token tokData{ StrCompact(cpStack), cCommon->Space() };
     // Need some extra work on Apple
 #if defined(MACOS)
-    // Convert to string
-    string strLine{ cpStack };
-    // Enumerate characters
-    for(auto itC{ strLine.begin() }; itC != strLine.end(); ++itC)
-    { // What character?
-      switch(*itC)
-      { // Space?
-        case ' ':
-          // Strip all the other spaces
-          for(++itC;
-                itC != strLine.end() && *itC == ' ';
-                itC = strLine.erase(itC));
-          // Done
-          break;
-        // Ignore anything else
-        default: break;
-      }
-    } // Now tokenise it. Note that objc calls will have spaces in them but
-    // the last two tokens should always be a + and a number which we will
+    // The last two tokens should always be a + and a number which we will
     // grab.
-    const Token tokData{ strLine, " " };
     switch(tokData.size())
     { // Not enough data?
       case  0: staData.Data(cCommon->Unspec()).Data(cCommon->Unspec());
@@ -128,12 +115,12 @@ class SysBase :                        // Safe exception handler namespace
     { // Just add unknown and try the next function level
       staData.Data(cCommon->Unspec());
       return;
-    }
+    } // Running on Linux?
 #else
     // Get information about the item and if failed?
     if(!dladdr(vpStack, &diData))
-    { // Just add unknown and try the next function level
-      staData.Data().Data().Data(cCommon->Unspec());
+    { // Just add what the second value was and return
+      staData.Data(tokData[1]);
       return;
     }
 #endif
@@ -146,37 +133,60 @@ class SysBase :                        // Safe exception handler namespace
       uPtr{ abi::__cxa_demangle(diData.dli_sname,
         nullptr, nullptr, &iStatus), free })
           staData.Data(uPtr.get());
-    // Process error code
-    else staData.Data(StrFormat("<$:$>", iStatus, diData.dli_sname));
+    // What is the return code for this call?
+    else switch(iStatus)
+    { // Memory error?
+      case -1: staData.Data(StrFormat("<MAE:$>", tokData[1])); break;
+      // Not a valid name?
+      case -2: staData.Data(diData.dli_sname); break;
+      // Invalid argument?
+      case -3: staData.Data(StrFormat("<IA:$>", tokData[1])); break;
+      // Success (impossible) or unknown?
+      default: staData.Data(StrFormat("<$:$>", iStatus, tokData[1])); break;
+    }
   }
   /* ----------------------------------------------------------------------- */
   void DumpStack(ostringstream &osS) const
   { // Create array to hold stack pointers
     array<void*, 256> vaArray;
-    // Get stack pointers array
-    const int iMaxFrames = sizeof(vaArray) / sizeof(vaArray[0]),
-              iSize = backtrace(vaArray.data(), iMaxFrames);
-    // Spreadsheet formatter
-    Statistic staData;
-    staData.Header("#").Header("Module").Header("Address")
-           .Header("Function", false);
-    // Get stack trace. For some reason, GCC on Linux doesn't like
-    // decltype(free) but void(void*) works.
-    if(unique_ptr<char*, function<void(void*)>> uStack{
-      backtrace_symbols(vaArray.data(), iSize), free })
-    { // Convert entries to size_t
-      const size_t stSize = static_cast<size_t>(iSize);
-      // Reserve specified number of rows in output table
-      staData.Reserve(stSize);
-      // Write pointer address and name
-      for(size_t stI = 0; stI < stSize; ++stI)
-      { // Add ID
-        staData.DataN(stI);
-        // Add others
-        DebugFunction(staData, uStack.get()[stI], vaArray[stI]);
+    // Get the number of stack frames that can fit in the array and if can?
+    if(const int iSize = backtrace(vaArray.data(),
+      sizeof(vaArray) / sizeof(vaArray[0])))
+    { // Get stack trace. For some reason, GCC on Linux doesn't like
+      // decltype(free) but void(void*) works.
+      if(unique_ptr<char*, function<void(void*)>> uStack{
+        backtrace_symbols(vaArray.data(), iSize), free })
+      { // Convert entries to size_t
+        const size_t stSize = static_cast<size_t>(iSize);
+        // Setup table formatter
+        Statistic staData;
+        staData.Header("#")
+        // MacOS shows extra information with 'backtrace_symbols()'
+        // 'STACKID MODULE ADDRESS FUNCTION' as opposite to 'STACKID FUNCTION'
+        // on Linux systems.
+#if defined(MACOS)
+               .Header("Module").Header("Address")
+#endif
+               .Header("Function", false)
+        // Reserve specified number of rows in output table
+               .Reserve(stSize);
+        // Write pointer address and name
+        for(size_t stI = 0; stI < stSize; ++stI)
+        { // Add ID
+          staData.DataN(stI);
+          // Add others
+          DebugFunction(staData, uStack.get()[stI], vaArray[stI]);
+        } // We got a stack trace
+        osS << ", stack trace:-\n";
+        // Build output into string stream
+        staData.Finish(osS);
+        // Footer
+        osS << stSize << " calls.\n";
+        // Done
+        return;
       }
-    } // Build output into string stream
-    staData.Finish(osS);
+    } // Problem generating backtrace.
+    osS << '.';
   }
   /* ----------------------------------------------------------------------- */
   void DumpMods(ostringstream &osS)
@@ -202,16 +212,16 @@ class SysBase :                        // Safe exception handler namespace
   /* ----------------------------------------------------------------------- */
   ExitState DebugMessage(const char*const cpSignal, const char*const cpExtra)
   { // Build filename
-    string strFileName{ cCmdLine ? StrAppend(cCmdLine->GetCArgs()[0], ".dbg") :
-      "/tmp/msengine-crash.txt" };
+    const string strFileName{ cCmdLine ?
+      StrAppend(cCmdLine->GetCArgs()[0], ".dbg") : "/tmp/msengine-crash.txt" };
     // Begin message
     ostringstream osS;
     osS << "Received signal 'SIG" << cpSignal << "' at "
-        << cmSys.FormatTime() << ", stack trace:-\n";
+        << cmSys.FormatTime();
     // Dump the stack
     DumpStack(osS);
     // Add extra information if set
-    if(*cpExtra) osS << "\n" << cpExtra << "\n";
+    if(*cpExtra) osS << cCommon->Lf() << cpExtra << cCommon->Lf();
     // Print it to stderr
     fputs(osS.str().c_str(), stderr);
     // Dump mods to log
@@ -229,7 +239,7 @@ class SysBase :                        // Safe exception handler namespace
          << ". This means that the engine must now terminate and we apologise "
             "for the inconvenience with the loss of any unsaved progress. ";
     // Create the debug log and exit if failed
-    if(FStream fOut{ StdMove(strFileName), FStream::FM_W_T })
+    if(FStream fOut{ StdMove(strFileName), FM_W_T })
     { // Write to crash output file
       fOut.FStreamWriteString(strMsg);
       // We wrote the crash log
@@ -241,7 +251,7 @@ class SysBase :                        // Safe exception handler namespace
               << fOut.IdentGet() << "' because " << fOut.FStreamGetErrStr()
               << '!';
     // Finish string
-    osTS << " Please press OK to terminate.";
+    osTS << " Please press the button to terminate.";
     // Show message box
     SysMessage("Critical error!", osTS.str(), MB_ICONSTOP);
     // Send requested exit code
@@ -390,12 +400,12 @@ class SysBase :                        // Safe exception handler namespace
   } // Exception occured so just exit now
   catch(const exception&) { _exit(-3); }
   /* -- Set socket timeout ----------------------------------------- */ public:
-  int SetSocketTimeout(const int iFd, const double fdRTime,
-    const double fdWTime)
+  int SetSocketTimeout(const int iFd, const double dRTime,
+    const double dWTime)
   { // Calculate timeout in milliseconds
     struct timeval                     // Sec, USec
-      tRT{ static_cast<int>(fdRTime), static_cast<int>(fdRTime*1000)%1000 },
-      tWT{ static_cast<int>(fdWTime), static_cast<int>(fdWTime*1000)%1000 };
+      tRT{ static_cast<int>(dRTime), static_cast<int>(dRTime*1000)%1000 },
+      tWT{ static_cast<int>(dWTime), static_cast<int>(dWTime*1000)%1000 };
     // Set socket options and get result
     return (setsockopt(iFd, SOL_SOCKET, SO_RCVTIMEO,
               reinterpret_cast<void*>(&tRT), sizeof(tRT)) < 0 ? 1 : 0) |
@@ -403,71 +413,22 @@ class SysBase :                        // Safe exception handler namespace
               reinterpret_cast<void*>(&tWT), sizeof(tWT)) < 0 ? 2 : 0);
   }
   /* ----------------------------------------------------------------------- */
-  static bool SysInitThread(const char*const cpName, const SysThread stLevel)
-  { // Get this thread handle
-    pthread_t ptHandle = pthread_self();
-    // Set thread name
-#if defined(MACOS)
-    pthread_setname_np(cpName);
-#else
-    pthread_setname_np(ptHandle, cpName);
-#endif
-    // Container for current scheduler parameters
-    struct sched_param spParam;
-    // Container for current policy level
-    int iPolicy;
-    // Get current thread settings
-    if(pthread_getschedparam(ptHandle, &iPolicy, &spParam)) return false;
-    // Get bounds
-    const int iMinPriority = sched_get_priority_min(iPolicy),
-              iMaxPriority = sched_get_priority_max(iPolicy);
-    // What level was requested?
-    switch(stLevel)
-    { // Reserved for main thread
-      case SysThread::Main:
-        // Use high priority parameters
-        spParam.sched_priority = iMinPriority+1;
-        iPolicy = SCHED_RR;
-        // Done
-        break;
-      // Reserved for engine thread
-      case SysThread::Engine:
-        // Use high priority parameters
-        spParam.sched_priority = iMinPriority;
-        iPolicy = SCHED_RR;
-        // Done
-        break;
-      // Reserved for audio thread
-      case SysThread::Audio:
-        // Use high priority parameters
-        spParam.sched_priority = iMinPriority+2;
-        iPolicy = SCHED_RR;
-        // Done
-        break;
-      // Aux thread high priority
-      case SysThread::High:
-        // Use high priority parameters
-        spParam.sched_priority = iMinPriority+3;
-        iPolicy = SCHED_RR;
-        // Done
-        break;
-      // Aux thread low priority
-      case SysThread::Low:
-        // Use high priority parameters
-        spParam.sched_priority = iMaxPriority;
-        iPolicy = SCHED_OTHER;
-        // Done
-        break;
-    } // Clamp the value
-    spParam.sched_priority =
-      UtilClamp(spParam.sched_priority, iMinPriority, iMaxPriority);
-    // Set the new parameters and return true if succeeded
-    return !pthread_setschedparam(ptHandle, iPolicy, &spParam);
-  }
-  /* ----------------------------------------------------------------------- */
   SysBase(SysModList &&svVersion, const size_t stI) :
     /* -- Initialisers ----------------------------------------------------- */
-    SysVersion{ StdMove(svVersion), stI } // Initialise version info class
+    SysVersion{                        // Initialise version info class
+      StdMove(svVersion), stI },       // Move sent mod list into ours
+    rLimits{{                          // Limits data
+#if !defined(MACOS)                    // Not all resources supported
+      { RLIMIT_LOCKS,  { 0, 0 } },     { RLIMIT_MSGQUEUE,   { 0, 0 } },
+      { RLIMIT_NICE,   { 0, 0 } },     { RLIMIT_RTPRIO,     { 0, 0 } },
+      { RLIMIT_RTTIME, { 0, 0 } },     { RLIMIT_SIGPENDING, { 0, 0 } },
+#endif                                 // Mac check
+      { RLIMIT_AS,     { 0, 0 } },     { RLIMIT_CORE,       { 0, 0 } },
+      { RLIMIT_CPU,    { 0, 0 } },     { RLIMIT_DATA,       { 0, 0 } },
+      { RLIMIT_FSIZE,  { 0, 0 } },     { RLIMIT_MEMLOCK,    { 0, 0 } },
+      { RLIMIT_NOFILE, { 0, 0 } },     { RLIMIT_NPROC,      { 0, 0 } },
+      { RLIMIT_RSS,    { 0, 0 } },     { RLIMIT_STACK,      { 0, 0 } }
+    }}
     /* -- ------------------------------------------------------------------ */
   { // Now install all those signal handlers
     for(auto &aSignal : iaSignals)
@@ -475,6 +436,30 @@ class SysBase :                        // Safe exception handler namespace
       aSignal.second = signal(aSignal.first, HandleSignalStatic);
       if(aSignal.second == SIG_ERR)
         XCL("Failed to install signal handler!", "Id", aSignal.first);
+    } // Increase resource limits we can change so the engine can do more
+    for(auto &aResource : rLimits)
+    { // Get the limit for this resource
+      if(!getrlimit(aResource.first, &aResource.second))
+      { // Ignore if value doesn't need to change
+        if(aResource.second.rlim_cur >= aResource.second.rlim_max) continue;
+        // Set maximum allowed and if failed?
+        const rlim_t rtOld = aResource.second.rlim_cur;
+        aResource.second.rlim_cur = aResource.second.rlim_max;
+        if(setrlimit(aResource.first, &aResource.second))
+        { // Restore original value
+          aResource.second.rlim_cur = rtOld;
+          // Log a message
+          cLog->LogWarningExSafe(
+            "System failed to set resource limit $<0x$$$> from $<0x$$$> to "
+            "$<0x$$$>: $!",
+            aResource.first, hex, aResource.first, dec, rtOld, hex, rtOld, dec,
+            aResource.second.rlim_max, hex, aResource.second.rlim_max, dec,
+            SysError());
+        }
+      } // Failed to get limit so log the error and why
+      else cLog->LogWarningExSafe(
+        "System failed to get limit for resource $<0x$$$>: $!",
+        aResource.first, hex, aResource.first, dec, SysError());
     }
   }
   /* ----------------------------------------------------------------------- */

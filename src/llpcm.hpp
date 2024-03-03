@@ -15,7 +15,7 @@
 // ! This allows the programmer to load pcm wave forms or decompress encoded
 // ! pcm waveforms and send the objects to the OpenAL if needed. You can use
 // ! the command 'pcmfmts' to see what formats are usable which are WAV
-// ! (WaveForm Audio StrFormat) PCM/INT/FLOAT/LE, CAF (CoreAudio StrFormat),
+// ! (WaveForm Audio Format) PCM/INT/FLOAT/LE, CAF (CoreAudio Format),
 // ! PCM/INT/FLOAT/LE/BE, OGG (OGG Vorbis) and MP3 (MPEG-Layer III).
 /* ========================================================================= */
 namespace LLPcm {                      // Pcm namespace
@@ -106,8 +106,9 @@ LLFUNCEX(Asset, 1, LCCLASSCREATE(Pcm)->InitArray(
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Raw, 1, LCCLASSCREATE(Pcm)->InitRaw(
   LCGETCPPSTRINGNE(1, "Identifier"), StdMove(*LCGETPTR(2, Asset)),
-  LCGETINT(unsigned int, 3, "Rate"), LCGETINT(unsigned int, 4, "Channel"),
-  LCGETINT(unsigned int, 5, "Bits")));
+  LCGETINTLG(unsigned int, 3, 1, 5644800, "Rate"),
+  LCGETINTLG(PcmChannelType, 4, PCT_MONO, PCT_STEREO, "Channel"),
+  LCGETINTLGP2(PcmBitType, 5, PBI_BYTE, PBI_LONG, "Bits")));
 /* ========================================================================= */
 // $ Pcm.WaitAsync
 // ? Halts main-thread execution until all async pcm events have completed

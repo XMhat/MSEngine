@@ -73,7 +73,7 @@ class GlFWWindow :                     // GLFW window class
   /* -- Event handler for 'glfwSetFramebufferSizeCallback' ----------------- */
   static void WinOnFrameBufferSize(GLFWwindow*const wC, int iW, int iH)
   { // On Mac?
-#ifdef MACOS
+#if defined(MACOS)
     // Note that there is literally no chance for this to be false but it's not
     // really time critical and only a programming error we make could cause it
     // so we shall check it anyway.
@@ -225,8 +225,8 @@ class GlFWWindow :                     // GLFW window class
   void WinGetFBSize(int &iW, int &iH) const
     { glfwGetFramebufferSize(WinGetHandle(), &iW, &iH); }
   /* -- Set or clear cursor graphic ---------------------------------------- */
-  void WinSetCursorGraphic(GLFWcursor*const gcC) const
-    { glfwSetCursor(WinGetHandle(), gcC); }
+  void WinSetCursorGraphic(GLFWcursor*const gcContext = nullptr) const
+    { GlFWSetCursor(WinGetHandle(), gcContext); }
   /* -- Toggle cursor visibility ------------------------------------------- */
   void WinSetCursor(const bool bS) const
     { glfwSetInputMode(WinGetHandle(), GLFW_CURSOR,

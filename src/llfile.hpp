@@ -88,7 +88,7 @@ LLFUNCEX(SeekCur, 1, LCPUSHVAR(LCGETPTR(1, File)->
 // ? Uses fread() to read the specified number of bytes from the stream. The
 // ? data is returned as an array class.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Read, 1, LCCLASSCREATE(Asset)->SwapMemory(LCGETPTR(1, File)->
+LLFUNCEX(Read, 1, LCCLASSCREATE(Asset)->MemSwap(LCGETPTR(1, File)->
   FStreamReadBlockSafe(LCGETINT(size_t, 2, "Bytes"))));
 /* ========================================================================= */
 // $ File:Write
@@ -199,7 +199,7 @@ LLRSEND                                // File:* member functions end
 // ? directory and it's children for security reasons.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Open, 1, LCCLASSCREATE(File)->FStreamOpen(LCGETCPPFILE(1, "File"),
-  LCGETINTLGE(FStream::Mode, 2, FStream::Mode(0), FStream::FM_MAX, "Mode")));
+  LCGETINTLGE(FStreamMode, 2, FStreamMode(0), FM_MAX, "Mode")));
 /* ========================================================================= */
 // $ File.MkDir
 // > Directory:string=Directory to create
@@ -489,13 +489,11 @@ LLRSEND                                // File.* namespace functions end
 // ? Text     = Open in text mode and convert to OS specific line endings.
 /* ------------------------------------------------------------------------- */
 LLRSKTBEGIN(Flags)                     // Beginning of open mode flags
-  LLRSKTITEM(FStream::FM_,R_T),        LLRSKTITEM(FStream::FM_,W_T),
-  LLRSKTITEM(FStream::FM_,A_T),        LLRSKTITEM(FStream::FM_,R_P_T),
-  LLRSKTITEM(FStream::FM_,W_P_T),      LLRSKTITEM(FStream::FM_,A_P_T),
-  LLRSKTITEM(FStream::FM_,R_B),        LLRSKTITEM(FStream::FM_,W_B),
-  LLRSKTITEM(FStream::FM_,A_B),        LLRSKTITEM(FStream::FM_,R_P_B),
-  LLRSKTITEM(FStream::FM_,W_P_B),      LLRSKTITEM(FStream::FM_,A_P_B),
-  LLRSKTITEM(FStream::FM_,MAX),
+  LLRSKTITEM(FM_,R_T),   LLRSKTITEM(FM_,W_T),   LLRSKTITEM(FM_,A_T),
+  LLRSKTITEM(FM_,R_P_T), LLRSKTITEM(FM_,W_P_T), LLRSKTITEM(FM_,A_P_T),
+  LLRSKTITEM(FM_,R_B),   LLRSKTITEM(FM_,W_B),   LLRSKTITEM(FM_,A_B),
+  LLRSKTITEM(FM_,R_P_B), LLRSKTITEM(FM_,W_P_B), LLRSKTITEM(FM_,A_P_B),
+  LLRSKTITEM(FM_,MAX),
 LLRSKTEND                              // End of open mode flags
 /* ========================================================================= **
 ** ######################################################################### **

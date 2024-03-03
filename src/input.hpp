@@ -12,7 +12,7 @@ namespace IInput {                     // Start of private module namespace
 using namespace ICollector::P;         using namespace IConsole::P;
 using namespace ICVar::P;              using namespace ICVarDef::P;
 using namespace ICVarLib::P;           using namespace IEvtMain::P;
-using namespace IEvtWin::P;            using namespace IFboMain::P;
+using namespace IEvtWin::P;            using namespace IFboCore::P;
 using namespace IFlags;                using namespace IGlFW::P;
 using namespace IGlFWUtil::P;          using namespace IIdent::P;
 using namespace ILog::P;               using namespace ILuaFunc::P;
@@ -25,9 +25,9 @@ namespace P {                          // Start of public module namespace
 BUILD_FLAGS(Input,
   /* ----------------------------------------------------------------------- */
   // No flags                          Mouse cursor is enabled?
-  IF_NONE                {0x00000000}, IF_CURSOR              {0x00000001},
+  IF_NONE                   {Flag[0]}, IF_CURSOR                 {Flag[1]},
   // Full-screen toggler enabled?      Mouse cursor has focus?
-  IF_FSTOGGLER           {0x00000002}, IF_MOUSEFOCUS          {0x00000004}
+  IF_FSTOGGLER              {Flag[2]}, IF_MOUSEFOCUS             {Flag[3]}
 );/* -- Axis class --------------------------------------------------------- */
 class JoyAxisInfo
 { /* -------------------------------------------------------------- */ private:
@@ -141,9 +141,9 @@ typedef array<JoyButtonInfo, GLFW_GAMEPAD_BUTTON_LAST+1> JoyButtonList;
 BUILD_FLAGS(Joy,
   /* ----------------------------------------------------------------------- */
   // No flags                          Joystick is connnected?
-  JF_NONE                (0x00000000), JF_CONNECTED           (0x00000001),
+  JF_NONE                   {Flag[0]}, JF_CONNECTED              {Flag[1]},
   // Joystick is actually a gamepad
-  JF_GAMEPAD             (0x00000002)
+  JF_GAMEPAD                {Flag[2]}
 );/* -- Joystick class ----------------------------------------------------- */
 class JoyInfo :
   /* -- Derived classes ---------------------------------------------------- */
@@ -303,32 +303,29 @@ class JoyInfo :
     /* -- Initialisers ----------------------------------------------------- */
     JoyFlags(JF_NONE),                 // Set no flags
     /* -- Initialise joystick axises --------------------------------------- */
-    JoyAxisList{ {
-      JoyAxisInfo(GLFW_GAMEPAD_AXIS_LEFT_X),       // Axis 0 of 6
-      JoyAxisInfo(GLFW_GAMEPAD_AXIS_LEFT_Y),       // Axis 1 of 6
-      JoyAxisInfo(GLFW_GAMEPAD_AXIS_RIGHT_X),      // Axis 2 of 6
-      JoyAxisInfo(GLFW_GAMEPAD_AXIS_RIGHT_Y),      // Axis 3 of 6
-      JoyAxisInfo(GLFW_GAMEPAD_AXIS_LEFT_TRIGGER), // Axis 4 of 6
-      JoyAxisInfo(GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER) // Axis 5 of 6
-    } },
+#define JAI(x) JoyAxisInfo{ GLFW_GAMEPAD_AXIS_ ## x }
+    /* --------------------------------------------------------------------- */
+    JoyAxisList{ {                     // Initialise joystick axises ids
+      /* ------------------------------------------------------------------- */
+      JAI(LEFT_X),  JAI(LEFT_Y),       JAI(RIGHT_X),
+      JAI(RIGHT_Y), JAI(LEFT_TRIGGER), JAI(RIGHT_TRIGGER)
+      /* ------------------------------------------------------------------- */
+    } },                               // End of joystic axises ids init
+    /* --------------------------------------------------------------------- */
+#undef JAI                             // Done with this macro
     /* -- Initialise joystick buttons -------------------------------------- */
-    JoyButtonList{ {
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_A),
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_B),
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_X),
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_Y),
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_LEFT_BUMPER),
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER),
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_BACK),
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_START),
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_GUIDE),
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_LEFT_THUMB),
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_RIGHT_THUMB),
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_DPAD_UP),
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_DPAD_RIGHT),
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_DPAD_DOWN),
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_DPAD_LEFT)
-    } },
+#define JBL(x) JoyButtonInfo{ GLFW_GAMEPAD_BUTTON_ ## x }
+    /* --------------------------------------------------------------------- */
+    JoyButtonList{ {                   // Initialise joystick buttons ids
+      /* ------------------------------------------------------------------- */
+      JBL(A),           JBL(B),            JBL(X),           JBL(Y),
+      JBL(LEFT_BUMPER), JBL(RIGHT_BUMPER), JBL(BACK),        JBL(START),
+      JBL(GUIDE),       JBL(LEFT_THUMB),   JBL(RIGHT_THUMB), JBL(DPAD_UP),
+      JBL(DPAD_RIGHT),  JBL(DPAD_DOWN),    JBL(DPAD_LEFT)
+      /* ------------------------------------------------------------------- */
+    } },                               // End of joystick button ids init
+    /* --------------------------------------------------------------------- */
+#undef JBL                             // Done with this macro
     /* -- Other initialisers ----------------------------------------------- */
     iId(iNId),                         // Set unique joystick id
     stAxises(0),                       // Set no axies
@@ -338,6 +335,13 @@ class JoyInfo :
 };/* -- Joystick state typedefs -------------------------------------------- */
 typedef array<JoyInfo, GLFW_JOYSTICK_LAST+1> JoyList; // Actual joystick data
 typedef JoyList::const_iterator JoyListIt; // Iterator for vector of joys
+/* ========================================================================= */
+enum JoyStatus : int                   // Joystick init status
+{ /* ----------------------------------------------------------------------- */
+  JOY_DETECT = -1,                     // Automatically detect at startup
+  JOY_DISABLE,                         // Joystick polling is disabled
+  JOY_ENABLE                           // Joystick polling is enabled
+};/* ----------------------------------------------------------------------- */
 /* == Input class ========================================================== */
 static class Input final :             // Handles keyboard, mouse & controllers
   /* -- Base classes ------------------------------------------------------- */
@@ -345,9 +349,7 @@ static class Input final :             // Handles keyboard, mouse & controllers
   public InputFlags,                   // Input configuration settings
   private JoyList,                     // Joystick data
   private EvtMain::RegVec              // Events list to register
-{ /* -------------------------------------------------------------- */ private:
-  enum JoyStatus { JOY_DETECT=-1, JOY_DISABLE, JOY_ENABLE };
-  /* -- Console ------------------------------------------------------------ */
+{ /* -- Console ------------------------------------------------------------ */
   int              iConsoleKey1,       // First console key
                    iConsoleKey2;       // Second console key
   /* -- Events ----------------------------------------------------- */ public:
@@ -375,13 +377,13 @@ static class Input final :             // Handles keyboard, mouse & controllers
     // More information:- https://www.glfw.org/docs/3.1/group__input.html
     // Calculate new position based on main fbo ortho matrix.
     const float
-      fAdjX = (epData.vParams[0].f - cFboMain->fboMain.fcStage.GetCoLeft()) /
-        cFboMain->fboMain.GetCoRight() * GetWindowWidth(),
-      fAdjY = (epData.vParams[1].f - cFboMain->fboMain.fcStage.GetCoTop()) /
-        cFboMain->fboMain.GetCoBottom() * GetWindowHeight(),
+      fAdjX = (epData.vParams[0].f - cFboCore->fboMain.fcStage.GetCoLeft()) /
+        cFboCore->fboMain.GetCoRight() * GetWindowWidth(),
+      fAdjY = (epData.vParams[1].f - cFboCore->fboMain.fcStage.GetCoTop()) /
+        cFboCore->fboMain.GetCoBottom() * GetWindowHeight(),
       // Clamp the new position to the window bounds.
-      fNewX = UtilClamp(fAdjX, 0.0f, cFboMain->fboMain.GetCoRight() - 1.0f),
-      fNewY = UtilClamp(fAdjY, 0.0f, cFboMain->fboMain.GetCoBottom() - 1.0f);
+      fNewX = UtilClamp(fAdjX, 0.0f, cFboCore->fboMain.GetCoRight() - 1.0f),
+      fNewY = UtilClamp(fAdjY, 0.0f, cFboCore->fboMain.GetCoBottom() - 1.0f);
     // Now translate that position back into the actual window cursor pos.
     cGlFW->WinSetCursorPos(static_cast<double>(fNewX),
                            static_cast<double>(fNewY));
@@ -417,27 +419,30 @@ static class Input final :             // Handles keyboard, mouse & controllers
   }
   /* -- Mouse wheel scroll ------------------------------------------------- */
   void OnMouseWheel(const EvtMain::Cell &epData)
-  { // Set event to lua callbacks
-    lfOnMouseScroll.LuaFuncDispatch(epData.vParams[1].d, epData.vParams[2].d);
+  { // Get movements
+    const double dX = epData.vParams[1].d, dY = epData.vParams[2].d;
+    // If console is enabled, send it to console instead
+    if(cConsole->IsVisible()) return cConGraphics->OnMouseWheel(dX, dY);
+    // Set event to lua callbacks
+    lfOnMouseScroll.LuaFuncDispatch(dX, dY);
   }
   /* -- Mouse button clicked ----------------------------------------------- */
   void OnMouseClick(const EvtMain::Cell &epData)
   { // Set event to lua callbacks
-    lfOnMouseClick.LuaFuncDispatch(epData.vParams[1].i,
-                                   epData.vParams[2].i,
-                                   epData.vParams[3].i);
+    lfOnMouseClick.LuaFuncDispatch(epData.vParams[1].i, epData.vParams[2].i,
+      epData.vParams[3].i);
   }
   /* -- Mouse button clicked ----------------------------------------------- */
   void OnMouseMove(const EvtMain::Cell &epData)
   { // Recalculate cursor position based on framebuffer size and send the
     // new co-ordinates to the lua callback handler
     lfOnMouseMove.LuaFuncDispatch(
-      static_cast<double>(cFboMain->fboMain.fcStage.GetCoLeft()) +
+      static_cast<double>(cFboCore->fboMain.fcStage.GetCoLeft()) +
         ((epData.vParams[1].d/GetWindowWidth()) *
-        static_cast<double>(cFboMain->fboMain.GetCoRight())),
-      static_cast<double>(cFboMain->fboMain.fcStage.GetCoTop()) +
+        static_cast<double>(cFboCore->fboMain.GetCoRight())),
+      static_cast<double>(cFboCore->fboMain.fcStage.GetCoTop()) +
         ((epData.vParams[2].d/GetWindowHeight()) *
-        static_cast<double>(cFboMain->fboMain.GetCoBottom())));
+        static_cast<double>(cFboCore->fboMain.GetCoBottom())));
   }
   /* -- Unfiltered key pressed --------------------------------------------- */
   void OnKeyPress(const EvtMain::Cell &epData)
@@ -451,17 +456,22 @@ static class Input final :             // Handles keyboard, mouse & controllers
     if(iKey == GLFW_KEY_ENTER &&       // If the ENTER key was pressed? and
        iMod == GLFW_MOD_ALT &&         // ...ALT key is held? and
        FlagIsSet(IF_FSTOGGLER))        // ...FullScreen key enabled?
-    { // Toggle full-screen if key released
-      if(iState == GLFW_RELEASE) cEvtWin->AddUnblock(EWC_WIN_TOGGLE_FS);
-      // Just being held so ignore further presses so the guest cannot
-      // interpret unintended return keypresses.
+    { // Return if keys not released
+      if(iState != GLFW_RELEASE) return;
+      // Get inverted full-screen setting
+      const bool bFullScreen = !cCVars->GetInternal<bool>(VID_FS);
+      // Set full screen setting depending on current state
+      cCVars->SetInternal<bool>(VID_FS, bFullScreen);
+      // Send command to toggle full-screen
+      cEvtWin->AddUnblock(EWC_WIN_TOGGLE_FS, bFullScreen);
+      // We handled this key so do not dispatch it to scripts
       return;
     } // Console is enabled?
     if(cConsole->IsVisible())
     { // Add normal key pressed. Since GLFW inconveniently gives us 3 int
       // parameters, we need to pack 2 ints together. Luckily, GLFW_RELEASE etc
       // is only 8-bit, we'll pack the modifiers with this value.
-      cConsole->OnKeyPress(iKey, iState, iMod);
+      cConGraphics->OnKeyPress(iKey, iState, iMod);
       // We handled this key so do not dispatch it to scripts
       return;
     } // Ignore the ESCAPE generated from hiding the console
@@ -477,7 +487,7 @@ static class Input final :             // Handles keyboard, mouse & controllers
     { // Set console enabled and if enabled? Ignore first key as registering
       // OnCharPress will trigger this keystroke and print it out in the
       // console.
-      if(cConsole->SetVisible(true)) cConsole->FlagSet(CF_IGNOREKEY);
+      if(cConGraphics->SetVisible(true)) cConsole->FlagSet(CF_IGNOREKEY);
       // We handled this key so do not dispatch it to scripts
       return;
     } // Send lua event for key
@@ -557,14 +567,17 @@ static class Input final :             // Handles keyboard, mouse & controllers
   /* -- Set full screen toggler -------------------------------------------- */
   CVarReturn SetFSTogglerEnabled(const bool bState)
     { FlagSetOrClear(IF_FSTOGGLER, bState); return ACCEPT; }
-  /* -- Commit visibility of mouse cursor ---------------------------------- */
-  void CommitCursor(void) { cGlFW->WinSetCursor(FlagIsSet(IF_CURSOR)); }
+  /* -- Commit cursor visibility now --------------------------------------- */
+  void CommitCursorNow(void) { cGlFW->WinSetCursor(FlagIsSet(IF_CURSOR)); }
+  /* -- Commit cursor visibility ------------------------------------------- */
+  void CommitCursor(void)
+    { cEvtWin->AddUnblock(EWC_WIN_CURSETVIS, FlagIsSet(IF_CURSOR)); }
   /* -- Set visibility of mouse cursor ------------------------------------- */
-  void SetCursor(const bool bEnabled)
+  void SetCursor(const bool bState)
   { // Set member var incase window needs to re-init so we can restore the
     // cursor state
-    FlagSetOrClear(IF_CURSOR, bEnabled);
-    // Commit cursor
+    FlagSetOrClear(IF_CURSOR, bState);
+    // Request to set cursor visibility
     CommitCursor();
   }
   /* -- Get button list data ----------------------------------------------- */
@@ -595,12 +608,12 @@ static class Input final :             // Handles keyboard, mouse & controllers
   { // Get the cursor position
     cGlFW->WinGetCursorPos(dX, dY);
     // Translate cursor position to framebuffer aspect
-    dX = static_cast<double>(cFboMain->fboMain.fcStage.GetCoLeft()) +
+    dX = static_cast<double>(cFboCore->fboMain.fcStage.GetCoLeft()) +
       ((dX/GetWindowWidth()) *
-        static_cast<double>(cFboMain->fboMain.GetCoRight()));
-    dY = static_cast<double>(cFboMain->fboMain.fcStage.GetCoTop()) +
+        static_cast<double>(cFboCore->fboMain.GetCoRight()));
+    dY = static_cast<double>(cFboCore->fboMain.fcStage.GetCoTop()) +
       ((dY/GetWindowHeight()) *
-        static_cast<double>(cFboMain->fboMain.GetCoBottom()));
+        static_cast<double>(cFboCore->fboMain.GetCoBottom()));
   }
   /* -- Forcefully move the cursor ----------------------------------------- */
   void SetCursorPos(const double dX, const double dY)
@@ -674,63 +687,41 @@ static class Input final :             // Handles keyboard, mouse & controllers
   }
   // -- CVar callback to toggle raw mouse ---------------------------------- */
   CVarReturn SetRawMouseEnabled(const bool bState)
-  { // Ignore changing flags right now if not initialised
-    if(IHIsNotInitialised()) return ACCEPT;
-    // If raw mouse support is supported?
-    if(!GlFWIsRawMouseMotionSupported())
-    { // Log that mouse support is not supported
-      cLog->LogInfoSafe("Input raw mouse support is not available.");
-      return ACCEPT;
-    } // Set the new input if we can and log status
-    cGlFW->WinSetRawMouseMotion(bState);
-    cLog->LogDebugExSafe("Input updated raw mouse status to $.",
-      StrFromBoolTF(cGlFW->WinGetRawMouseMotion()));
+  { // Send request to set raw mouse motion state if enabled
+    if(IHIsInitialised()) cEvtWin->AddUnblock(EWC_WIN_SETRAWMOUSE, bState);
     // CVar allowed to be set
     return ACCEPT;
   }
   // -- CVar callback to toggle sticky keys -------------------------------- */
   CVarReturn SetStickyKeyEnabled(const bool bState)
-  { // Ignore changing flags right now if not initialised
-    if(IHIsNotInitialised()) return ACCEPT;
-    // Set the new input if we can and log status
-    cGlFW->WinSetStickyKeys(bState);
-    cLog->LogDebugExSafe("Input updated sticky keys status to $.",
-      StrFromBoolTF(cGlFW->WinGetStickyKeys()));
+  { // Send request to set sticky keys state if enabled
+    if(IHIsInitialised()) cEvtWin->AddUnblock(EWC_WIN_SETSTKKEYS, bState);
     // CVar allowed to be set
     return ACCEPT;
   }
   // -- CVar callback to toggle sticky mouse ------------------------------- */
   CVarReturn SetStickyMouseEnabled(const bool bState)
-  { // Ignore changing flags right now if not initialised
-    if(IHIsNotInitialised()) return ACCEPT;
-    // Set the new input if we can and log status
-    cGlFW->WinSetStickyMouseButtons(bState);
-    cLog->LogDebugExSafe("Input updated sticky mouse status to $.",
-      StrFromBoolTF(cGlFW->WinGetStickyMouseButtons()));
+  { // Send request to set sticky mouse if enabled
+    if(IHIsInitialised()) cEvtWin->AddUnblock(EWC_WIN_SETSTKMOUSE, bState);
     // CVar allowed to be set
     return ACCEPT;
   }
-  // -- CVar callback to toggling joystick polling ------------------------- */
-  CVarReturn SetJoystickEnabled(const int iState)
-  { // If input already initialised? Get new joystick setting
-    if(IHIsInitialised() && cGlFW) switch(iState)
+  // -- Initialise joysticks ----------------------------------------------- */
+  void BeginDetection(void)
+  { // Check current user setting
+    switch(jsStatus)
     { // Set to detection mode or enable? Redetect joysticks
       case JOY_DETECT: case JOY_ENABLE: AutoDetectJoystick(); break;
       // Disable it? Set to disabled and clear joystick states
       case JOY_DISABLE: ClearJoystickButtons(); break;
       // Invalid value
-      default: return DENY;
-    } // Not initialised so just check joystick setting
-    else switch(iState)
-    { // Valid enum? Set state and return succees
-      case JOY_DETECT: case JOY_DISABLE: case JOY_ENABLE: break;
-      // Invalid value
-      default: return DENY;
-    } // Update status
-    jsStatus = static_cast<JoyStatus>(iState);
-    // CVar allowed to set
-    return ACCEPT;
+      default: break;
+    }
   }
+  // -- CVar callback to toggling joystick polling ------------------------- */
+  CVarReturn SetJoystickEnabled(const JoyStatus jsNewStatus)
+    { return CVarSimpleSetIntNLGE(jsStatus, jsNewStatus,
+        JOY_DETECT, JOY_ENABLE); }
   /* -- Clear joystick state ----------------------------------------------- */
   void ClearJoystickButtons(void)
     { StdForEach(par_unseq, GetJoyList().begin(), GetJoyList().end(),
@@ -741,6 +732,10 @@ static class Input final :             // Handles keyboard, mouse & controllers
   JoyInfo &GetJoyData(const size_t stId) { return GetJoyList()[stId]; }
   /* -- Return joysticks count --------------------------------------------- */
   size_t GetJoyCount(void) const { return GetConstJoyList().size(); }
+  /* -- Disable input events ----------------------------------------------- */
+  void DisableInputEvents(void) { cEvtMain->UnregisterEx(*this); }
+  /* -- Enable input events ------------------------------------------------ */
+  void EnableInputEvents(void) { cEvtMain->RegisterEx(*this); }
   /* -- Init --------------------------------------------------------------- */
   void Init(void)
   { // if window not available? This should never happen but we will put
@@ -755,11 +750,11 @@ static class Input final :             // Handles keyboard, mouse & controllers
     // Log progress
     cLog->LogDebugSafe("Input interface is initialising...");
     // Init input engine events
-    cEvtMain->RegisterEx(*this);
+    EnableInputEvents();
     // Init input settings
-    SetRawMouseEnabled(cCVars->GetInternalSafe<bool>(INP_RAWMOUSE));
-    SetStickyKeyEnabled(cCVars->GetInternalSafe<bool>(INP_STICKYKEY));
-    SetStickyMouseEnabled(cCVars->GetInternalSafe<bool>(INP_STICKYMOUSE));
+    SetRawMouseEnabled(cCVars->GetInternal<bool>(INP_RAWMOUSE));
+    SetStickyKeyEnabled(cCVars->GetInternal<bool>(INP_STICKYKEY));
+    SetStickyMouseEnabled(cCVars->GetInternal<bool>(INP_STICKYMOUSE));
     // Set/Restore cursor state
     SetCursor(FlagIsSet(IF_CURSOR));
     // Register joystick callback
@@ -777,7 +772,7 @@ static class Input final :             // Handles keyboard, mouse & controllers
     // Unregister joystick callback
     glfwSetJoystickCallback(nullptr);
     // Deinit engine events in the order they were registered
-    cEvtMain->UnregisterEx(*this);
+    DisableInputEvents();
     // Log progress
     cLog->LogDebugSafe("Input interface deinitialised.");
   }

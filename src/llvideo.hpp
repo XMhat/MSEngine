@@ -18,7 +18,7 @@
 /* ========================================================================= */
 namespace LLVideo {                    // Video namespace
 /* -- Dependencies --------------------------------------------------------- */
-using namespace IAsset::P;             using namespace IFbo::P;
+using namespace IAsset::P;             using namespace IFboDef::P;
 using namespace IStd::P;               using namespace IVideo::P;
 using namespace Lib::OpenAL;           using namespace Lib::OS::GlFW;
 /* ========================================================================= **
@@ -68,54 +68,163 @@ LLFUNC(Pause, LCGETPTR(1, Video)->Pause());
 LLFUNC(Rewind, LCGETPTR(1, Video)->Rewind());
 /* ========================================================================= */
 // $ Video:Stop
-// ? Stops and unloads the specified video, this frees resources.
+// ? Stops and unloads the specified video, this also unloads the audio and
+// ? video output structures.
 /* ------------------------------------------------------------------------- */
 LLFUNC(Stop, LCGETPTR(1, Video)->Stop());
 /* ========================================================================= */
+// $ Video:Advance
+// ? Advances one frame. The video must be paused or stopped and it only
+// ? happens in the engine thread and not its own thread.
+/* ------------------------------------------------------------------------- */
+LLFUNC(Advance, LCGETPTR(1, Video)->Advance());
+/* ========================================================================= */
 // $ Video:Awaken
-// ? Re-initialises the video after being stopped.
+// ? Initialises the audio and video structures after loading or after being
+// ? manually stopped.
 /* ------------------------------------------------------------------------- */
 LLFUNC(Awaken, LCGETPTR(1, Video)->Awaken());
 /* ========================================================================= */
-// $ Video:SetVertex
-// > Left:number=The left co-ordinate.
-// > Top:number=The top co-ordinate.
-// > Right:number=The right co-ordinate.
-// > Bottom:number=The bottom co-ordinate.
-// ? Allows you to set basic vertex co-ordinates when blitting the fbo. For a
-// ? more advanced version of this function, see Fbo:SetVertexEx().
+// $ Video:SetVLTRB
+// > Left:number=The destination left co-ordinate.
+// > Top:number=The destination top co-ordinate.
+// > Right:number=The destination right co-ordinate.
+// > Bottom:number=The destination bottom co-ordinate.
+// ? Allows you to set basic vertex bounds when blitting the frame buffer
+// ? object.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetVertex, LCGETPTR(1, Video)->SetFBOVertex(
+LLFUNC(SetVLTRB, LCGETPTR(1, Video)->FboItemSetVertex(
   LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom")));
 /* ========================================================================= */
-// $ Video:SetVertexA
-// > Left:number=The left co-ordinate.
-// > Top:number=The top co-ordinate.
-// > Right:number=The right co-ordinate.
-// > Bottom:number=The bottom co-ordinate.
-// > Angle:number=The angle of the vertex
-// ? Allows you to set basic vertex co-ordinates when blitting the fbo.
+// $ Video:SetVLTWH
+// > Left:number=The destination left co-ordinate.
+// > Top:number=The destination top co-ordinate.
+// > Width:number=The destination width.
+// > Height:number=The destination height.
+// ? Allows you to set basic vertex co-ordinates and dimensions when blitting
+// ? the videos frame buffer object.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetVertexA, LCGETPTR(1, Video)->SetFBOVertex(
+LLFUNC(SetVLTWH, LCGETPTR(1, Video)->FboItemSetVertexWH(
+  LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
+  LCGETNUM(GLfloat, 4, "Width"), LCGETNUM(GLfloat, 5, "Height")));
+/* ========================================================================= */
+// $ Video:SetVLTRBA
+// > Left:number=The destination left co-ordinate.
+// > Top:number=The destination top co-ordinate.
+// > Right:number=The destination right co-ordinate.
+// > Bottom:number=The destination bottom co-ordinate.
+// > Angle:number=The angle of the vertex
+// ? Allows you to set basic vertex co-ordinates when blitting the video's
+// ? frame buffer object.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetVLTRBA, LCGETPTR(1, Video)->FboItemSetVertex(
   LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom"),
-  LCGETNUM(GLfloat, 6, "Angle")));
+  LCGETNORM(GLfloat, 6, "Angle")));
 /* ========================================================================= */
-// $ Video:SetTexCoord
+// $ Video:SetVLTWHA
+// > Left:number=The destination left co-ordinate.
+// > Top:number=The destination top co-ordinate.
+// > Width:number=The destination width.
+// > Height:number=The destination height.
+// > Angle:number=The angle of the vertex
+// ? Allows you to set basic vertex co-ordinates, dimensions and angle when
+// ? blitting the video's frame buffer object.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetVLTWHA, LCGETPTR(1, Video)->FboItemSetVertexWH(
+  LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
+  LCGETNUM(GLfloat, 4, "Width"), LCGETNUM(GLfloat, 5, "Height"),
+  LCGETNORM(GLfloat, 6, "Angle")));
+/* ========================================================================= */
+// $ Video:SetVX
+// > TriIndex:integer=Triangle index. Triangle #1 (zero) or triangle #2 (one).
+// > V1Left:number=Coord #1 of vertex #1 of the specified triangle.
+// > V1Top:number=Coord #2 of vertex #2 of the specified triangle.
+// > V2Left:number=Coord #1 of vertex #3 of the specified triangle.
+// > V2Top:number=Coord #2 of vertex #1 of the specified triangle.
+// > V3Left:number=Coord #1 of vertex #2 of the specified triangle.
+// > V3Top:number=Coord #2 of vertex #3 of the specified triangle.
+// ? Stores the specified vertex co-ordinates when using the 'Video:Blit'
+// ? function.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetVX, LCGETULPTR(1, Video)->
+  FboItemSetVertexEx(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex"), {
+    LCGETNUM(GLfloat, 3, "V1Left"), LCGETNUM(GLfloat, 4, "V1Top"),
+    LCGETNUM(GLfloat, 5, "V2Left"), LCGETNUM(GLfloat, 6, "V2Top"),
+    LCGETNUM(GLfloat, 7, "V3Left"), LCGETNUM(GLfloat, 8, "V3Top")
+  }));
+/* ========================================================================= */
+// $ Video:SetTCLTRB
 // > Left:number=The left co-ordinate.
 // > Top:number=The top co-ordinate.
 // > Right:number=The right co-ordinate.
 // > Bottom:number=The bottom co-ordinate.
 // ? Allows you to set basic texture co-ordinates when blitting the video frame
-// ? texture. For an advanced version of this function,
-// ? see Video:SetTexCoordEx().
+// ? texture.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetTexCoord, LCGETPTR(1, Video)->SetFBOTexCoord(
+LLFUNC(SetTCLTRB, LCGETPTR(1, Video)->FboItemSetTexCoord(
   LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom")));
 /* ========================================================================= */
-// $ Video:SetColour
+// $ Video:SetTCLTWH
+// > Left:number=The left co-ordinate.
+// > Top:number=The top co-ordinate.
+// > Width:number=The width of the tile.
+// > Height:number=The height of the tile.
+// ? Allows you to set basic texture co-ordinates when blitting the video frame
+// ? texture.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetTCLTWH, LCGETPTR(1, Video)->FboItemSetTexCoordWH(
+  LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
+  LCGETNUM(GLfloat, 4, "Width"), LCGETNUM(GLfloat, 5, "Height")));
+/* ========================================================================= */
+// $ Video:SetTCX
+// > TriIndex:integer=Triangle index. Triangle #1 (zero) or triangle #2 (one).
+// > TC1Left:number=Coord #1 of vertex #1 of the specified triangle.
+// > TC1Top:number=Coord #2 of vertex #2 of the specified triangle.
+// > TC2Left:number=Coord #1 of vertex #3 of the specified triangle.
+// > TC2Top:number=Coord #2 of vertex #1 of the specified triangle.
+// > TC3Left:number=Coord #1 of vertex #2 of the specified triangle.
+// > TC3Top:number=Coord #2 of vertex #3 of the specified triangle.
+// ? Stores the specified texture co-ordinates for when the frame buffer object
+// ? is drawn.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetTCX, LCGETULPTR(1, Video)->
+  FboItemSetTexCoordEx(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex"), {
+    LCGETNUM(GLfloat, 3, "TC1Left"), LCGETNUM(GLfloat, 4, "TC1Top"),
+    LCGETNUM(GLfloat, 5, "TC2Left"), LCGETNUM(GLfloat, 6, "TC2Top"),
+    LCGETNUM(GLfloat, 7, "TC3Left"), LCGETNUM(GLfloat, 8, "TC3Top")
+  }));
+/* ========================================================================= */
+// $ Video:SetCX
+// > TriIndex:integer=Triangle index. Triangle #1 (zero) or triangle #2 (one).
+// > V1Red:number=Red component of vertex #1 of the specified triangle.
+// > V1Green:number=Green component of vertex #1 of the specified triangle.
+// > V1Blue:number=Blue component of vertex #1 of the specified triangle.
+// > V1Alpha:number=Alpha component of vertex #1 of the specified triangle.
+// > V2Red:number=Red component of vertex #2 of the specified triangle.
+// > V2Green:number=Green component of vertex #2 of the specified triangle.
+// > V2Blue:number=Blue component of vertex #2 of the specified triangle.
+// > V2Alpha:number=Alpha component of vertex #2 of the specified triangle.
+// > V3Red:number=Red component of vertex #3 of the specified triangle.
+// > V3Green:number=Green component of vertex #3 of the specified triangle.
+// > V3Blue:number=Blue component of vertex #3 of the specified triangle.
+// > V3Alpha:number=Alpha component of vertex #3 of the specified triangle.
+// ? Stores the specified colour intensities on each vertex for the
+// ? Video:Blit() function.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetCX, LCGETPTR(1, Video)->
+  FboItemSetColourEx(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex"), {
+    LCGETNUM(GLfloat, 3, "V1Red"), LCGETNUM(GLfloat, 4, "V1Green"),
+    LCGETNUM(GLfloat, 5, "V1Blue"), LCGETNUM(GLfloat, 6, "V1Alpha"),
+    LCGETNUM(GLfloat, 7, "V2Red"), LCGETNUM(GLfloat, 8, "V2Green"),
+    LCGETNUM(GLfloat, 9, "V2Blue"), LCGETNUM(GLfloat, 10, "V2Alpha"),
+    LCGETNUM(GLfloat, 11, "V3Red"), LCGETNUM(GLfloat, 12, "V3Green"),
+    LCGETNUM(GLfloat, 13, "V3Blue"), LCGETNUM(GLfloat, 14, "V3Alpha")
+  }));
+/* ========================================================================= */
+// $ Video:SetCRGBA
 // > Red:number=The entire fbo texture red colour intensity (0 to 1).
 // > Green:number=The entire fbo texture green colour intensity (0 to 1).
 // > Blue:number=The entire fbo texture blue colour intensity (0 to 1).
@@ -123,7 +232,7 @@ LLFUNC(SetTexCoord, LCGETPTR(1, Video)->SetFBOTexCoord(
 // ? Sets the colour intensity of all the vertexes for the entire video frame
 // ? texture.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetColour, LCGETPTR(1, Video)->SetFBOColour(
+LLFUNC(SetCRGBA, LCGETPTR(1, Video)->FboItemSetQuadRGBA(
   LCGETNUM(GLfloat, 2, "Red"),  LCGETNUM(GLfloat, 3, "Green"),
   LCGETNUM(GLfloat, 4, "Blue"), LCGETNUM(GLfloat, 5, "Alpha")));
 /* ========================================================================= */
@@ -135,7 +244,7 @@ LLFUNC(SetColour, LCGETPTR(1, Video)->SetFBOColour(
 // ? Allows a certain colour to be phased out on the video. You must enable
 // ? keying colour with the SetKeyed() function before using this
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetKeyColour, LCGETPTR(1, Video)->fiYUV.SetQuadRGBA(
+LLFUNC(SetKeyColour, LCGETPTR(1, Video)->fboYCbCr.FboItemSetQuadRGBA(
   LCGETNUM(GLfloat, 2, "Red"),  LCGETNUM(GLfloat, 3, "Green"),
   LCGETNUM(GLfloat, 4, "Blue"), LCGETNUM(GLfloat, 5, "Intensity")));
 /* ========================================================================= */
@@ -196,7 +305,7 @@ LLFUNC(SetFilter, LCGETPTR(1, Video)->SetFilter(LCGETBOOL(2, "Filter")));
 // $ Video:SetKeyed
 // < Keyed:boolean=Video should be keyed with the set colour
 // ? Enabling this allowed the video to be chroma keyed. This also disables
-// ? changing the colour intensity because the specified colour using SetColour
+// ? changing the colour intensity because the specified colour using SetCRGBA
 // ? will set the colour to be keyed. If the pixel is greater or equal then the
 // ? specified colour then the pixel is set to the specified alpha.
 /* ------------------------------------------------------------------------- */
@@ -253,16 +362,19 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Video));
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Video:* member functions begin
+  LLRSFUNC(Advance),
   LLRSFUNC(Awaken),        LLRSFUNC(Blit),         LLRSFUNC(BlitT),
   LLRSFUNC(Destroy),       LLRSFUNC(GetATime),     LLRSFUNC(GetDrift),
   LLRSFUNC(GetFPS),        LLRSFUNC(GetFrame),     LLRSFUNC(GetFrames),
   LLRSFUNC(GetFramesLost), LLRSFUNC(GetHeight),    LLRSFUNC(GetLoop),
   LLRSFUNC(GetName),       LLRSFUNC(GetPlaying),   LLRSFUNC(GetTime),
   LLRSFUNC(GetWidth),      LLRSFUNC(OnEvent),      LLRSFUNC(Pause),
-  LLRSFUNC(Play),          LLRSFUNC(Rewind),       LLRSFUNC(SetColour),
-  LLRSFUNC(SetFilter),     LLRSFUNC(SetKeyColour), LLRSFUNC(SetKeyed),
-  LLRSFUNC(SetLoop),       LLRSFUNC(SetTexCoord),  LLRSFUNC(SetVertex),
-  LLRSFUNC(SetVertexA),    LLRSFUNC(SetVolume),    LLRSFUNC(Stop),
+  LLRSFUNC(Play),          LLRSFUNC(Rewind),       LLRSFUNC(SetCRGBA),
+  LLRSFUNC(SetCX),         LLRSFUNC(SetFilter),    LLRSFUNC(SetKeyColour),
+  LLRSFUNC(SetKeyed),      LLRSFUNC(SetLoop),      LLRSFUNC(SetTCLTRB),
+  LLRSFUNC(SetTCLTWH),     LLRSFUNC(SetTCX),       LLRSFUNC(SetVLTRB),
+  LLRSFUNC(SetVLTRBA),     LLRSFUNC(SetVLTWH),     LLRSFUNC(SetVLTWHA),
+  LLRSFUNC(SetVX),         LLRSFUNC(SetVolume),    LLRSFUNC(Stop),
 LLRSEND                                // Video:* member functions end
 /* ========================================================================= */
 // $ Video.FileAsync

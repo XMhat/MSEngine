@@ -25,7 +25,8 @@ namespace P {                          // Start of public module namespace
 /* == Image collector and member class ===================================== */
 BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
-  public AsyncLoader<Image>,           // For loading images off main thread
+  public Ident,                        // Image file name
+  public AsyncLoaderImage,             // For loading images off main thread
   public Lockable,                     // Lua garbage collector instruction
   public ImageData                     // Raw image data
 { /* -- Swap image data  ------------------------------------------- */ public:
@@ -45,15 +46,16 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
        (GetPixelType() != GL_BGRA && GetPixelType() != GL_BGR)))
       return false;
     // For each slot
-    for(ImageSlot &sItem : GetSlots())
+    for(ImageSlot &isItem : GetSlots())
     { // Swap pixels
-      const int iResult = ImageSwapPixels(sItem.Ptr<char>(), sItem.Size(),
-        GetBytesPerPixel(), 0, 2);
+      const int iResult = ImageSwapPixels(isItem.MemPtr<char>(),
+        isItem.MemSize(), GetBytesPerPixel(), 0, 2);
       if(iResult < 0)
         XC("Pixel reorder failed!",
-           "Code",     iResult,           "FromFormat",    GetPixelType(),
-           "ToFormat", uiCM,              "BytesPerPixel", GetBytesPerPixel(),
-           "Address",  sItem.Ptr<void>(), "Length",        sItem.Size());
+           "Code",     iResult, "FromFormat",    GetPixelType(),
+           "ToFormat", uiCM,    "BytesPerPixel", GetBytesPerPixel(),
+           "Address",  isItem.MemPtr<void>(),
+           "Length",   isItem.MemSize());
     } // Set new pixel type
     switch(GetPixelType())
     { case GL_RGBA : SetPixelType(GL_BGRA); break;
@@ -87,19 +89,19 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     { // Destination image for binary data
       Memory mDst{ stDst };
       // For each byte in the alpha channel array
-      for(size_t stIndex = 0, stSubIndex = 0, stLimit = isRef.Size();
+      for(size_t stIndex = 0, stSubIndex = 0, stLimit = isRef.MemSize();
                  stIndex < stLimit;
                  stIndex += 8, ++stSubIndex)
       { // Init bits
         unsigned char ucBits = 0;
         // Set bits depending on image bytes
         for(size_t stBitIndex = 0; stBitIndex < 8; ++stBitIndex)
-          if(isRef.ReadInt<uint8_t>(stBitIndex) > 0)
+          if(isRef.MemReadInt<uint8_t>(stBitIndex) > 0)
             ucBits |= ucaBits[stBitIndex];
         // Write new bit value
-        mDst.WriteInt<uint8_t>(stSubIndex, ucBits);
+        mDst.MemWriteInt<uint8_t>(stSubIndex, ucBits);
       } // Update slot data
-      isRef.SwapMemory(StdMove(mDst));
+      isRef.MemSwap(StdMove(mDst));
     } // Update image data
     SetBitsPerPixel(BD_BINARY);
     SetBytesPerPixel(BY_GRAY);
@@ -115,23 +117,24 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     { // Monochrome image?
       case BD_BINARY:
         // Enumerate through each slot and swap the 4-bits in each 8-bit byte.
-        for(ImageSlot &sItem : GetSlots()) sItem.ByteSwap8();
+        for(ImageSlot &isItem : GetSlots()) isItem.MemByteSwap8();
         // Done
         break;
       // 8-bits per pixel or greater?
       case BD_GRAY: case BD_GRAYALPHA: case BD_RGB: case BD_RGBA:
         // Enumerate through each slot
-        for(ImageSlot &sItem : GetSlots())
+        for(ImageSlot &isItem : GetSlots())
         { // Create new mem block to write to
-          Memory mbOut{ sItem.Size() };
+          Memory mbOut{ isItem.MemSize() };
           // Pixel size
-          const size_t stStep = GetBytesPerPixel() * sItem.DimGetWidth();
+          const size_t stStep = GetBytesPerPixel() * isItem.DimGetWidth();
           // Copy the pixels
-          for(size_t stI = 0; stI < sItem.Size(); stI += stStep)
-            mbOut.Write(stI, sItem.Read(sItem.Size()-stStep-stI), stStep);
+          for(size_t stI = 0; stI < isItem.MemSize(); stI += stStep)
+            mbOut.MemWrite(stI, isItem.MemRead(isItem.MemSize()-stStep-stI),
+              stStep);
           // Set new mem block for this class automatically unloading the old
           // one
-          sItem.SwapMemory(StdMove(mbOut));
+          isItem.MemSwap(StdMove(mbOut));
         } // Done
         break;
       // Nothing done so return and log a warning
@@ -144,48 +147,48 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
   }
   /* -- Pixel conversion process ------------------------------------------- */
   template<class PixelConversionFunction, size_t stSrcStep, size_t stDstStep,
-    BitDepth bdNewBPP, GLenum glNewPixelType>
+    BitDepth bdNewBPP, GLenum eNewPixelTypee>
       void ConvertPixels(const char*const cpFilter)
   { // Some basic checks of parameters
     static_assert(stSrcStep > 0 && stSrcStep <= 2, "Invalid source step!");
     static_assert(stDstStep > 0 && stDstStep <= 32, "Invalid dest step!");
     // Set new bits and bytes
     SetBitsAndBytesPerPixel(bdNewBPP);
-    SetPixelType(glNewPixelType);
+    SetPixelType(eNewPixelTypee);
     // New allocation size
     size_t stNewAlloc = 0;
     // For each slot
-    for(ImageSlot &sItem : GetSlots())
+    for(ImageSlot &isItem : GetSlots())
     { // Calculate total pixels
-      const size_t stTotal = sItem.DimGetWidth() * sItem.DimGetHeight();
+      const size_t stTotal = isItem.DimGetWidth() * isItem.DimGetHeight();
       // Make a new memblock for the destinaiton pixels
       Memory mDst{ stTotal * GetBytesPerPixel() };
       // Quick sanity check to make sure the filters don't read/write OOB
-      if(const size_t stUnpadded = sItem.Size() % stSrcStep)
+      if(const size_t stUnpadded = isItem.MemSize() % stSrcStep)
         XC("Source image dimensions not acceptable for filter!",
-           "File",   IdentGet(),           "Width",    sItem.DimGetWidth(),
-           "Height", sItem.DimGetHeight(), "Total",    stTotal,
+           "File",   IdentGet(),           "Width",    isItem.DimGetWidth(),
+           "Height", isItem.DimGetHeight(), "Total",    stTotal,
            "Depth",  GetBytesPerPixel(),   "Filter",   cpFilter,
            "Step",   stSrcStep,            "Unpadded", stUnpadded);
-      if(const size_t stUnpadded = mDst.Size() % stDstStep)
+      if(const size_t stUnpadded = mDst.MemSize() % stDstStep)
         XC("Destination image dimensions not acceptable for filter!",
-           "File",   IdentGet(),           "Width",    sItem.DimGetWidth(),
-           "Height", sItem.DimGetHeight(), "Total",    stTotal,
+           "File",   IdentGet(),           "Width",    isItem.DimGetWidth(),
+           "Height", isItem.DimGetHeight(), "Total",    stTotal,
            "Depth",  GetBytesPerPixel(),   "Filter",   cpFilter,
            "Step",   stDstStep,            "Unpadded", stUnpadded);
       // Enumerate and filter through each pixel
-      for(uint8_t *cpSrc = sItem.Ptr<uint8_t>(),
-         *const cpSrcEnd = sItem.PtrEnd<uint8_t>(),
-                  *cpDst = mDst.Ptr<uint8_t>();
+      for(uint8_t *cpSrc = isItem.MemPtr<uint8_t>(),
+         *const cpSrcEnd = isItem.MemPtrEnd<uint8_t>(),
+                  *cpDst = mDst.MemPtr<uint8_t>();
                    cpSrc < cpSrcEnd;
                    cpSrc += stSrcStep,
                    cpDst += stDstStep)
         // Call pixel function conversion
         PixelConversionFunction(cpSrc, cpDst);
       // Move memory on top of old memory
-      sItem.SwapMemory(StdMove(mDst));
+      isItem.MemSwap(StdMove(mDst));
       // Adjust alloc size
-      stNewAlloc += sItem.Size();
+      stNewAlloc += isItem.MemSize();
     } // Update new size
     SetAlloc(stNewAlloc);
   }
@@ -371,8 +374,8 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     for(const ImageSlot &isData : slSrc)
     { // Now we copy this slide into the texuree
       for(size_t stY = 0; stY < stHeight; ++stY)
-        mTexture.Write((((stTY + stY) * stTexWidth) + stTX) *
-          GetBytesPerPixel(), isData.Read(stY * stScanLine, stScanLine),
+        mTexture.MemWrite((((stTY + stY) * stTexWidth) + stTX) *
+          GetBytesPerPixel(), isData.MemRead(stY * stScanLine, stScanLine),
           stScanLine);
       // Add to number of tiles added
       --stRemain;
@@ -418,7 +421,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
       } // Now we have the new width and height
       else { stTexWidth = stCols * stWidth; stTexHeight = stRows * stHeight; }
       // Make a new texture
-      mTexture.InitBlank(stTexWidth * stTexHeight * GetBytesPerPixel());
+      mTexture.MemInitBlank(stTexWidth * stTexHeight * GetBytesPerPixel());
     } // A new texture has been written? Add the final slot
     if(stTX || stTY) AddSlot(mTexture, static_cast<unsigned int>(stTexWidth),
                                        static_cast<unsigned int>(stTexHeight));
@@ -440,33 +443,33 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     // Reset allocation
     SetAlloc(0);
     // Get datas
-    const ImageSlot &isImage = slSrc.front(),
-                    &isPalette = slSrc.back();
+    const ImageSlot &isImage = slSrc.front(), &isPalette = slSrc.back();
     // Create output buffer and enumerate through the pixels
     Memory mOut{ DimGetWidth() * DimGetHeight() * byDepth };
     // If palette and output image are same depth?
     if(isPalette.DimGetHeight() == byDepth)
     { // We can copy directlry
       for(size_t stIn = 0, stOut = 0;
-                 stIn < mOut.Size();
+                 stIn < mOut.MemSize();
                ++stIn, stOut += byDepth)
         // Read palette index from pixel data, then write the RGB value
         // from the palette to the output image.
-        mOut.Write(stOut, isPalette.Read(isImage.ReadInt<uint8_t>(stIn) *
-          byDepth), byDepth);
+        mOut.MemWrite(stOut,
+          isPalette.MemRead(isImage.MemReadInt<uint8_t>(stIn) * byDepth),
+          byDepth);
     } // Not same so less trivial
     else if constexpr(byDepth == BY_RGBA) for(size_t stIn = 0, stOut = 0;
-                                                     stIn < mOut.Size();
+                                                     stIn < mOut.MemSize();
                                                    ++stIn, stOut += byDepth)
     { // Get palette location
-      const size_t stPalIndex = isImage.ReadInt<uint8_t>(stIn) *
+      const size_t stPalIndex = isImage.MemReadInt<uint8_t>(stIn) *
         isPalette.DimGetHeight();
       // Get palette value
       const uint32_t uiVal = static_cast<uint32_t>(
-        (isPalette.ReadInt<uint16_t>(stPalIndex) << 8) |
-         isPalette.ReadInt<uint8_t>(stPalIndex+sizeof(uint16_t)));
+        (isPalette.MemReadInt<uint16_t>(stPalIndex) << 8) |
+         isPalette.MemReadInt<uint8_t>(stPalIndex+sizeof(uint16_t)));
       // Write new value
-      mOut.WriteInt<uint32_t>(stOut, uiVal);
+      mOut.MemWriteInt<uint32_t>(stOut, uiVal);
     } // Unknown
     else XC("Image expanding circumstances not implemented!");
     // Update output, we will be converting to rgb
@@ -535,7 +538,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     const size_t stSlots = GetSlotCount();
     const BitDepth bdOld = GetBitsPerPixel();
     const ByteDepth byOld = GetBytesPerPixel();
-    const GLenum glOld = GetPixelType();
+    const GLenum eOld = GetPixelType();
     const size_t stOld = GetAlloc();
     // Convert to GPU copmatible texture?
     if(IsConvertGPUCompat())
@@ -545,8 +548,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
       // Run the function and log success if succeeded
       if(ConvertGPUCompatible())
       { // Log the successful result
-        cLog->LogInfoExSafe("Image '$' pixel-depth now safe.",
-          IdentGet());
+        cLog->LogInfoExSafe("Image '$' pixel-depth now safe.", IdentGet());
         // Set activated flag
         SetActiveGPUCompat();
       } // Conversion did not happen so log that too
@@ -555,13 +557,11 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     } // If a request to convert to 24-bits per pixel?
     else if(IsConvertRGB())
     { // Log that we're running this function
-      cLog->LogDebugExSafe("Image '$' force 24-bit request...",
-        IdentGet());
+      cLog->LogDebugExSafe("Image '$' force 24-bit request...", IdentGet());
       // Run the function and log success if succeeded
       if(ConvertRGB())
       { // Log the successful result
-        cLog->LogInfoExSafe("Image '$' pixel depth now 24-bit.",
-          IdentGet());
+        cLog->LogInfoExSafe("Image '$' pixel depth now 24-bit.", IdentGet());
         // Set activated flag
         SetActiveRGB();
       } // Conversion did not happen so log that too
@@ -570,13 +570,11 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     } // If a request to convert to RGBA?
     else if(IsConvertRGBA())
     { // Log that we're running this function
-      cLog->LogDebugExSafe("Image '$' force 32-bit request...",
-        IdentGet());
+      cLog->LogDebugExSafe("Image '$' force 32-bit request...", IdentGet());
       // Run the function and log success if succeeded
       if(ConvertRGBA())
       { // Log the successful result
-        cLog->LogInfoExSafe("Image '$' pixel depth now 32-bit.",
-          IdentGet());
+        cLog->LogInfoExSafe("Image '$' pixel depth now 32-bit.", IdentGet());
         // Set activated flag
         SetActiveRGBA();
       } // Conversion did not happen so log that too
@@ -585,13 +583,11 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     } // To BGR colour mode?
     if(IsConvertBGROrder())
     { // Log that we're running this function
-      cLog->LogDebugExSafe("Image '$' re-order to BGR request...",
-        IdentGet());
+      cLog->LogDebugExSafe("Image '$' re-order to BGR request...", IdentGet());
       // Run the function and log success if succeeded
       if(ForcePixelOrder(GL_BGR))
       { // Log the successful result
-        cLog->LogInfoExSafe("Image '$' re-ordered to BGR.",
-          IdentGet());
+        cLog->LogInfoExSafe("Image '$' re-ordered to BGR.", IdentGet());
         // Set activated flag
         SetActiveBGROrder();
       } // Conversion did not happen so log that too
@@ -600,28 +596,24 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     } // To RGB colour mode
     else if(IsConvertRGBOrder())
     { // Log that we're running this function
-      cLog->LogDebugExSafe("Image '$' re-order to RGB request...",
-        IdentGet());
+      cLog->LogDebugExSafe("Image '$' re-order to RGB request...", IdentGet());
       // Run the function and log success if succeeded
       if(ForcePixelOrder(GL_RGB))
       { // Log the successful result
-        cLog->LogInfoExSafe("Image '$' re-ordered now RGB.",
-          IdentGet());
+        cLog->LogInfoExSafe("Image '$' re-ordered now RGB.", IdentGet());
         // Set activated flag
         SetActiveRGBOrder();
       } // Conversion did not happen so log that too
-      else cLog->LogDebugExSafe("Image '$'[$] re-order to RGB skipped!",
+      else cLog->LogDebugExSafe("Image '$' re-order to RGB skipped!",
         IdentGet());
     } // Reverse the image pixels
     if(IsConvertReverse())
     { // Log that we're running this function
-      cLog->LogDebugExSafe("Image '$' pixel reversal request...",
-        IdentGet());
+      cLog->LogDebugExSafe("Image '$' pixel reversal request...", IdentGet());
       // Run the function and log success if succeeded
       if(ReversePixels())
       { // Log the successful result
-        cLog->LogInfoExSafe("Image '$' pixels reversed!",
-          IdentGet());
+        cLog->LogInfoExSafe("Image '$' pixels reversed!", IdentGet());
         // Set activated flag
         SetActiveReverse();
       } // Conversion did not happen so log that too
@@ -645,64 +637,72 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     } // Compact all slides into a single texture if possible
     if(IsConvertAtlas())
     { // Log that we're running this function
-      cLog->LogDebugExSafe("Image '$' compact request...",
-        IdentGet());
+      cLog->LogDebugExSafe("Image '$' compact request...", IdentGet());
       // Run the function and log success if succeeded
       if(MakeAtlas())
       { // Log the successful result
-        cLog->LogInfoExSafe("Image '$' compacted.",
-          IdentGet());
+        cLog->LogInfoExSafe("Image '$' compacted.", IdentGet());
         // Set activated flag
         SetActiveAtlas();
       } // Conversion did not happen so log that too
-      else cLog->LogDebugExSafe("Image '$' compact skipped!",
-        IdentGet());
+      else cLog->LogDebugExSafe("Image '$' compact skipped!", IdentGet());
     } // Report status if we acticated anything
     if(IsActiveAtlas() || IsActiveReverse() || IsActiveRGB() ||
        IsActiveRGBA() || IsActiveBGROrder() || IsActiveBinary() ||
        IsActiveGPUCompat() || IsActiveRGBOrder())
-      cLog->LogDebugExSafe("Image '$' filtering completed...\n"
-                         "$$$$$$$$"
-                         "- Bitmap dimensions: $x$ -> $x$.\n"
-                         "- Bitmap slots: $ -> $.\n"
-                         "- Pixel depth: $<$> -> $<$>.\n"
-                         "- Pixel type: $<$$> -> $<$$>.\n"
-                         "- Memory usage: $ -> $ bytes.\n"
-                         "- Tile size override: $x$.\n"
-                         "- Tile count override: $.",
+      cLog->LogDebugExSafe("Image '$' filtering completed...$$$$$$$$$$$$$$$",
         IdentGet(),
-        IsActiveAtlas()     ? "- Slots compacted to atlas.\n" :
+        duTileOR.DimGetWidth() && duTileOR.DimGetHeight() ?
+          StrFormat("\n- Tile size override: $x$.",
+            duTileOR.DimGetWidth(), duTileOR.DimGetHeight()) :
+            cCommon->Blank(),
+        stTiles ? StrFormat("\n- Tile count override: $.", stTiles) :
           cCommon->Blank(),
-        IsActiveReverse()   ? "- Pixels reversed.\n" :
+        dOld.DimGetWidth() != DimGetWidth() ||
+        dOld.DimGetHeight() != DimGetHeight() ?
+          StrFormat("\n- Bitmap dimensions: $x$ -> $x$.",
+            dOld.DimGetWidth(), dOld.DimGetHeight(),
+            DimGetWidth(), DimGetHeight()) : cCommon->Blank(),
+        stSlots != GetSlotCount() ?
+          StrFormat("\n- Bitmap slots: $ -> $.",
+            stSlots, GetSlotCount()) : cCommon->Blank(),
+        bdOld != GetBitsPerPixel() ?
+          StrFormat("\n- Pixel depth: $<$> -> $<$>.", bdOld, byOld,
+            GetBitsPerPixel(), GetBytesPerPixel()) : cCommon->Blank(),
+        eOld != GetPixelType() ?
+          StrFormat("\n- Pixel type: $<$$> -> $<$$>.",
+            cOgl->GetPixelFormat(eOld), hex, eOld,
+            cOgl->GetPixelFormat(GetPixelType()), GetPixelType(), dec) :
+              cCommon->Blank(),
+        stOld != GetAlloc() ?
+          StrFormat("\n- Memory usage: $ -> $ bytes.",
+            stOld, GetAlloc()) : cCommon->Blank(),
+        IsActiveAtlas() ? "\n- Slots compacted to atlas." :
           cCommon->Blank(),
-        IsActiveRGB()       ? "- Pixels converted to 24-bit.\n" :
+        IsActiveReverse() ? "\n- Pixels reversed." :
           cCommon->Blank(),
-        IsActiveRGBA()      ? "- Pixels converted to 32-bit.\n" :
+        IsActiveRGB() ? "\n- Pixels converted to 24-bit." :
           cCommon->Blank(),
-        IsActiveBGROrder()  ? "- Pixels converted to BGR order.\n" :
+        IsActiveRGBA() ? "\n- Pixels converted to 32-bit." :
           cCommon->Blank(),
-        IsActiveRGBOrder()  ? "- Pixels converted to RGB order.\n" :
+        IsActiveBGROrder() ? "\n- Pixels converted to BGR order." :
           cCommon->Blank(),
-        IsActiveBinary()    ? "- Pixels converted to monochrome.\n" :
+        IsActiveRGBOrder() ? "\n- Pixels converted to RGB order." :
           cCommon->Blank(),
-        IsActiveGPUCompat() ? "- Pixels made OpenGL compatible.\n" :
+        IsActiveBinary() ? "\n- Pixels converted to monochrome." :
           cCommon->Blank(),
-        dOld.DimGetWidth(), dOld.DimGetHeight(), DimGetWidth(), DimGetHeight(),
-        stSlots, GetSlotCount(), bdOld, byOld, GetBitsPerPixel(),
-        GetBytesPerPixel(), cOgl->GetPixelFormat(glOld), hex, glOld,
-        cOgl->GetPixelFormat(GetPixelType()), GetPixelType(), dec,
-        stOld, GetAlloc(), duTileOR.DimGetWidth(), duTileOR.DimGetHeight(),
-        stTiles);
+        IsActiveGPUCompat() ? "\n- Pixels made OpenGL compatible." :
+          cCommon->Blank());
   }
   /* -- Load specified image ----------------------------------------------- */
   void AsyncReady(FileMap &fmData)
   { // Force load a certain type of image (for speed?) but in Async mode,
     // force detection doesn't really matter as much, but overall, still
     // needed if speed is absolutely neccesary.
-    if(IsLoadAsPNG()) ImageLoad(0, fmData, *this);
-    else if(IsLoadAsJPG()) ImageLoad(1, fmData, *this);
-    else if(IsLoadAsGIF()) ImageLoad(2, fmData, *this);
-    else if(IsLoadAsDDS()) ImageLoad(3, fmData, *this);
+    if(IsLoadAsPNG()) ImageLoad(IFMT_PNG, fmData, *this);
+    else if(IsLoadAsJPG()) ImageLoad(IFMT_JPG, fmData, *this);
+    else if(IsLoadAsGIF()) ImageLoad(IFMT_GIF, fmData, *this);
+    else if(IsLoadAsDDS()) ImageLoad(IFMT_DDS, fmData, *this);
     // Auto detection of image
     else ImageLoad(fmData, *this);
     // Apply filters if image has no special circumstances
@@ -720,8 +720,9 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     AsyncReady(fmData);
   }
   /* -- Save image using a type id ----------------------------------------- */
-  void SaveFile(const string &strFN, const size_t stSId, const size_t stPId)
-    const { ImageSave(stPId, strFN, *this, GetSlotsConst()[stSId]); }
+  void SaveFile(const string &strFN, const size_t stSId,
+    const ImageFormat ifPId)
+      const { ImageSave(ifPId, strFN, *this, GetSlotsConst()[stSId]); }
   /* -- Load image from memory asynchronously ------------------------------ */
   void InitAsyncArray(lua_State*const lS)
   { // Need 6 parameters (class pointer was already pushed onto the stack);
@@ -729,7 +730,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     // Get and check parameters
     const string strName{ LuaUtilGetCppStrNE(lS, 1, "Identifier") };
     Asset &aData = *LuaUtilGetPtr<Asset>(lS, 2, "Asset");
-    FlagSet(LuaUtilGetFlags(lS, 3, IL_MASK, "Flags"));
+    FlagReset(LuaUtilGetFlags(lS, 3, IL_MASK, "Flags"));
     LuaUtilCheckFuncs(lS, 4, "ErrorFunc", 5, "ProgressFunc", 6, "SuccessFunc");
     // The decoded image will be kept in memory
     SetDynamic();
@@ -742,7 +743,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     LuaUtilCheckParams(lS, 6);
     // Get and check parameters
     const string strFile{ LuaUtilGetCppFile(lS, 1, "File") };
-    FlagSet(LuaUtilGetFlags(lS, 2, IL_MASK, "Flags"));
+    FlagReset(LuaUtilGetFlags(lS, 2, IL_MASK, "Flags"));
     LuaUtilCheckFuncs(lS, 3, "ErrorFunc", 4, "ProgressFunc", 5, "SuccessFunc");
     // Load image from file asynchronously
     AsyncInitFile(lS, strFile, "bmpfile");
@@ -775,7 +776,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     const unsigned int uiBWidth, const unsigned int uiBHeight,
     const BitDepth bdBitsPP, const GLenum ePixType)
   { // Error if no data specified
-    if(mSrc.Empty()) XC("Image data is empty!", "File", strName);
+    if(mSrc.MemIsEmpty()) XC("Image data is empty!", "File", strName);
     // Limit maximum size of images to 65535 pixels in either direction. Some
     // formats have this restriction and some don't so this is considered a
     // the safest hard-constraint.
@@ -815,9 +816,9 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
       default: XC("Image bit-depth is not valid!",
         "File", strName, "Depth", bdBitsPP);
     } // Check that the size matches
-    if(stExpect != mSrc.Size())
+    if(stExpect != mSrc.MemSize())
       XC("Arguments are not valid for specified image data!",
-        "File", strName, "Expect", stExpect, "Actual", mSrc.Size());
+        "File", strName, "Expect", stExpect, "Actual", mSrc.MemSize());
     // Everything looks OK, set rest of the members
     IdentSet(strName);
     SetDynamic();
@@ -852,7 +853,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Init from file ----------------------------------------------------- */
   void InitFile(const string &strFileName, const ImageFlagsConst &lfS)
   { // Set the loading flags
-    FlagSet(lfS);
+    FlagReset(lfS);
     // Load the file normally
     SyncInitFileSafe(strFileName);
   }
@@ -862,17 +863,17 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
   { // Is dynamic because it was not loaded from disk
     SetDynamic();
     // Set the loading flags
-    FlagSet(lfS);
+    FlagReset(lfS);
     // Load the array normally
     SyncInitArray(strName, StdMove(mbD));
   }
   /* -- Default constructor ------------------------------------------------ */
   Image(void) :                        // No parameters
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperImage(*cImages),           // Initialise collector helper
-    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
-    AsyncLoader<Image>(this,           // Initialise async loader
-      EMC_MP_IMAGE)                    // Initialise async event id
+    ICHelperImage{ cImages },          // Initialise collector helper
+    IdentCSlave{ cParent->CtrNext() }, // Initialise identification number
+    AsyncLoaderImage{ *this, this,     // Initialise async loader
+      EMC_MP_IMAGE }                   // Initialise async event id
     /* -- Code ------------------------------------------------------------- */
     { }                                // Do nothing else
   /* -- Constructor -------------------------------------------------------- */

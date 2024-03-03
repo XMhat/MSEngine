@@ -23,18 +23,19 @@ local InfoMonitor<const>, InfoMonitorData<const>, InfoMonitors<const>,
   InfoCPUUsage<const>, InfoRAM<const>, InfoGPUFPS<const>, InfoEngine<const>,
   UtilGetRatio<const>, UtilClampInt<const>, UtilClamp<const>,
   UtilExplode<const>, AudioGetNumPBDs<const>, AudioGetPBDName<const>,
-  AudioReset<const>, CVarsGet<const>, CVarsSet<const>, DisplayVReset<const>,
-  DisplayReset<const>, CreditItem<const>, CreditLicence<const>,
-  CreditTotal<const>, CVarsReset<const>, UtilWordWrap<const>,
-  DisplayFSType<const>
+  AudioReset<const>, VariableGetInt<const>, VariableSetInt<const>,
+  DisplayVReset<const>, DisplayReset<const>, CreditItem<const>,
+  CreditLicense<const>, CreditTotal<const>, VariableResetInt<const>,
+  UtilWordWrap<const>, DisplayFSType<const>
   = -- --------------------------------------------------------------------- --
   Display.Monitor, Display.MonitorData, Display.Monitors, Display.VidModeData,
   Display.VidModes, Info.Time, Info.CPUUsage, Info.RAM, Display.GPUFPS,
   Info.Engine, Util.GetRatio, Util.ClampInt, Util.Clamp, Util.Explode,
-  Audio.GetNumPBDevices, Audio.GetPBDeviceName, Audio.Reset, CVars.Get,
-  CVars.Set, Display.VReset, Display.Reset, Credit.Item, Credit.Licence,
-  Credit.Total, CVars.Reset, Util.WordWrap, Display.FSType;
+  Audio.GetNumPBDevices, Audio.GetPBDeviceName, Audio.Reset, Variable.GetInt,
+  Variable.SetInt, Display.VReset, Display.Reset, Credit.Item, Credit.License,
+  Credit.Total, Variable.ResetInt, Util.WordWrap, Display.FSType;
 -- Constants --------------------------------------------------------------- --
+local aCVars<const> = Variable.Internal;
 local aKeys<const> = Input.KeyCodes;
 local iKeyEscape<const>, iKeyPageUp<const>, iKeyPageDown<const>,
   iKeyHome<const>, iKeyEnd<const>, iKeyUp<const>, iKeyDown<const>
@@ -51,19 +52,22 @@ sAppTitle, sAppExeType = sAppTitle:upper(), sAppExeType:upper();
 local sGameVersion<const>, sGameName<const>, sGameCopyr<const>,
       sGameDescription<const>, sGameWebsite<const>
       = -- ----------------------------------------------------------------- --
-      CVarsGet("app_version"):upper(), CVarsGet("app_longname"):upper(),
-      CVarsGet("app_copyright"):upper(), CVarsGet("app_description"):upper(),
-      CVarsGet("app_website"):upper();
+      VariableGetInt(aCVars.app_version):upper(),
+      VariableGetInt(aCVars.app_longname):upper(),
+      VariableGetInt(aCVars.app_copyright):upper(),
+      VariableGetInt(aCVars.app_description):upper(),
+      VariableGetInt(aCVars.app_website):upper();
 -- Other CVars used -------------------------------------------------------- --
-local sCVvidvsync<const>, sCVappdelay<const>, sCVtexfilter<const>,
-      sCVaudvol<const>, sCVaudstrvol<const>, sCVaudsamvol<const>,
-      sCVaudfmvvol<const>, sCVvidmonitor<const>, sCVwinwidth<const>,
-      sCVwinheight<const>, sCVvidfs<const>, sCVvidfsmode<const>,
-      sCVaudinterface
+local iCVvidvsync<const>, iCVappdelay<const>, iCVtexfilter<const>,
+      iCVaudvol<const>, iCVaudstrvol<const>, iCVaudsamvol<const>,
+      iCVaudfmvvol<const>, iCVvidmonitor<const>, iCVwinwidth<const>,
+      iCVwinheight<const>, iCVvidfs<const>, iCVvidfsmode<const>,
+      iCVaudinterface
       = -- ----------------------------------------------------------------- --
-      "vid_vsync", "app_delay", "vid_texfilter","aud_vol", "aud_strvol",
-      "aud_samvol", "aud_fmvvol", "vid_monitor", "win_width", "win_height",
-      "vid_fs", "vid_fsmode", "aud_interface";
+      aCVars.vid_vsync, aCVars.app_delay, aCVars.vid_texfilter, aCVars.aud_vol,
+      aCVars.aud_strvol, aCVars.aud_samvol, aCVars.aud_fmvvol,
+      aCVars.vid_monitor, aCVars.win_width, aCVars.win_height, aCVars.vid_fs,
+      aCVars.vid_fsmode, aCVars.aud_interface;
 -- Diggers function and data aliases --------------------------------------- --
 local InitSetup, aButtonData, aCursorIdData, aSfxData, GetCallbacks,
   SetCallbacks, LoadResources, PlayMusic, StopMusic, GetMusic, GetCursor,
@@ -226,9 +230,9 @@ local function WSizeUp()
   if iWindowId > #aWindowSizes then iWindowId = #aWindowSizes end;
 end
 -- ------------------------------------------------------------------------- --
-local function GetVarVidVsync() return tonumber(CVarsGet(sCVvidvsync)) end;
+local function GetVarVidVsync() return tonumber(VariableGetInt(iCVvidvsync)) end;
 -- ------------------------------------------------------------------------- --
-local function GetVarAppDelay() return tonumber(CVarsGet(sCVappdelay)) end;
+local function GetVarAppDelay() return tonumber(VariableGetInt(iCVappdelay)) end;
 -- ------------------------------------------------------------------------- --
 local function LimiterGet()
   -- Get vsync value, thread delay and kernel tick rate
@@ -253,8 +257,8 @@ local function LimiterSet(iFrameLimiter)
   local iVSync, iDelay;
   if iFrameLimiter >= 4 then iVSync, iDelay = -1 + (iFrameLimiter % 4), 1;
   else iVSync, iDelay = -1 + iFrameLimiter, 0 end;
-  CVarsSet(sCVvidvsync, iVSync);
-  CVarsSet(sCVappdelay, iDelay);
+  VariableSetInt(iCVvidvsync, iVSync);
+  VariableSetInt(iCVappdelay, iDelay);
 end
 -- ------------------------------------------------------------------------- --
 local function LimiterDown()
@@ -265,9 +269,10 @@ local function LimiterUp()
   LimiterSet(UtilClampInt(LimiterGet()+1, 0, #aFrameLimiterLabels-1));
 end
 -- ------------------------------------------------------------------------- --
-local function GetVarTexFilter() return tonumber(CVarsGet(sCVtexfilter)) end;
+local function GetVarTexFilter()
+  return tonumber(VariableGetInt(iCVtexfilter)) end;
 -- ------------------------------------------------------------------------- --
-local function SetVarTexFilter(iV) return CVarsSet(sCVtexfilter, iV) end;
+local function SetVarTexFilter(iV) return VariableSetInt(iCVtexfilter, iV) end;
 -- ------------------------------------------------------------------------- --
 local function FilterUpdate()
   -- Point filtering if disabled
@@ -304,39 +309,40 @@ local function AudioUp()
   iAudioDeviceId = iAudioDeviceId + 1;
 end
 -- ------------------------------------------------------------------------- --
-local function VPrepare(sCV) return floor(CVarsGet(sCV)*100).."%" end;
+local function VPrepare(sCV) return floor(VariableGetInt(sCV)*100).."%" end;
 -- ------------------------------------------------------------------------- --
 local function VSet(sCV, iAdj)
-  CVarsSet(sCV, UtilClamp(tonumber(CVarsGet(sCV)) + (iAdj*0.05), 0, 1));
+  VariableSetInt(sCV,
+    UtilClamp(tonumber(VariableGetInt(sCV)) + (iAdj*0.05), 0, 1));
 end
 -- ------------------------------------------------------------------------- --
-local function VMasterUpdate() return VPrepare(sCVaudvol) end;
+local function VMasterUpdate() return VPrepare(iCVaudvol) end;
 -- ------------------------------------------------------------------------- --
-local function VMasterSet(iAdj) VSet(sCVaudvol, iAdj) end;
+local function VMasterSet(iAdj) VSet(iCVaudvol, iAdj) end;
 -- ------------------------------------------------------------------------- --
 local function VMasterDown() VMasterSet(-1) end;
 -- ------------------------------------------------------------------------- --
 local function VMasterUp() VMasterSet(1) end;
 -- ------------------------------------------------------------------------- --
-local function VStreamUpdate() return VPrepare(sCVaudstrvol) end;
+local function VStreamUpdate() return VPrepare(iCVaudstrvol) end;
 -- ------------------------------------------------------------------------- --
-local function VStreamSet(iAdj) VSet(sCVaudstrvol, iAdj) end;
+local function VStreamSet(iAdj) VSet(iCVaudstrvol, iAdj) end;
 -- ------------------------------------------------------------------------- --
 local function VStreamDown() VStreamSet(-1) end;
 -- ------------------------------------------------------------------------- --
 local function VStreamUp() VStreamSet(1) end;
 -- ------------------------------------------------------------------------- --
-local function VSampleSet(iAdj) VSet(sCVaudsamvol, iAdj) end;
+local function VSampleSet(iAdj) VSet(iCVaudsamvol, iAdj) end;
 -- ------------------------------------------------------------------------- --
-local function VSampleUpdate() return VPrepare(sCVaudsamvol) end;
+local function VSampleUpdate() return VPrepare(iCVaudsamvol) end;
 -- ------------------------------------------------------------------------- --
 local function VSampleDown() VSampleSet(-1) end;
 -- ------------------------------------------------------------------------- --
 local function VSampleUp() VSampleSet(1) end;
 -- ------------------------------------------------------------------------- --
-local function VFMVUpdate() return VPrepare(sCVaudfmvvol) end;
+local function VFMVUpdate() return VPrepare(iCVaudfmvvol) end;
 -- ------------------------------------------------------------------------- --
-local function VFMVSet(iAdj) VSet(sCVaudfmvvol, iAdj) end;
+local function VFMVSet(iAdj) VSet(iCVaudfmvvol, iAdj) end;
 -- ------------------------------------------------------------------------- --
 local function VFMVDown() VFMVSet(-1) end;
 -- ------------------------------------------------------------------------- --
@@ -384,11 +390,11 @@ local function RenderBackgroundStart(nId)
   for iY = iStageT+6, iStageB, 16 do
     local nTimeM2SX<const> = nTimeM2 - iY;
     for iX = iStageLP6, iStageR, 16 do
-      local nVal = nTimeM2SX - iX;
-      nVal = 0.5 + ((cos(nVal) * sin(nVal)));
-      texSpr:SetCA(nVal*0.75);
-      local nVal2<const> = nVal * 16;
-      texSpr:BlitSLTRBA(444, iX, iY, iX + nVal2, iY + nVal2, nVal);
+      local nAngle = nTimeM2SX - iX;
+      nAngle = 0.5 + ((cos(nAngle) * sin(nAngle)));
+      texSpr:SetCA(nAngle * 0.75);
+      local nDim<const> = nAngle * 16;
+      texSpr:BlitSLTWHA(444, iX, iY, nDim, nDim, nAngle);
     end
   end
   -- Draw background for text
@@ -446,15 +452,15 @@ local function Refresh()
   -- Refresh monitor settings
   local function RefreshMonitorSettings()
     -- Initialise monitor video modes and use primary monitor if invalid
-    iMonitorId = tonumber(CVarsGet(sCVvidmonitor));
+    iMonitorId = tonumber(VariableGetInt(iCVvidmonitor));
     if iMonitorId < -1 or iMonitorId >= InfoMonitors() then
       iMonitorId = -1 end;
     iMonitorIdOriginal = iMonitorId;
     -- Initialise video resolution and use desktop resolution if invalid
-    iFullScreenState = tonumber(CVarsGet(sCVvidfs));
+    iFullScreenState = tonumber(VariableGetInt(iCVvidfs));
     if iFullScreenState < 0 or iFullScreenState > 1 then
       iFullScreenState = 0 end;
-    iFullScreenMode = tonumber(CVarsGet(sCVvidfsmode));
+    iFullScreenMode = tonumber(VariableGetInt(iCVvidfsmode));
     -- If full-screen mode is enabled?
     if iFullScreenState == 1 then
       -- If full-screen mode is -1 (Exclusive full-screen)?
@@ -476,8 +482,8 @@ local function Refresh()
   -- Refresh window settings
   local function RefreshWindowSettings()
     -- Get window size
-    local iWindowWidth = tonumber(CVarsGet(sCVwinwidth));
-    local iWindowHeight = tonumber(CVarsGet(sCVwinheight));
+    local iWindowWidth = tonumber(VariableGetInt(iCVwinwidth));
+    local iWindowHeight = tonumber(VariableGetInt(iCVwinheight));
     -- Set to defaults if invalid
     if iWindowWidth < -1 then iWindowWidth = -1 end;
     if iWindowHeight < -1 then iWindowHeight = -1 end;
@@ -495,7 +501,7 @@ local function Refresh()
   end
   -- Refresh audio settings
   local function RefreshAudioSettings()
-    iAudioDeviceId = tonumber(CVarsGet(sCVaudinterface));
+    iAudioDeviceId = tonumber(VariableGetInt(iCVaudinterface));
     iAudioDeviceIdOriginal = iAudioDeviceId;
   end
   -- Perform refreshes
@@ -513,20 +519,20 @@ local function ApplySettings()
   if iWindowId >= 1 and iWindowId <= #aWindowSizes then
     local aData<const> = aWindowSizes[iWindowId];
     if aData[1] == 0 and aData[2] == 0 then bWindowReset = true end;
-    CVarsSet(sCVwinwidth, aData[1]);
-    CVarsSet(sCVwinheight, aData[2]);
+    VariableSetInt(iCVwinwidth, aData[1]);
+    VariableSetInt(iCVwinheight, aData[2]);
   end
   -- Set window variables if needed
-  if iFullScreenState == 2 then CVarsSet(sCVvidfs, 1)
-                           else CVarsSet(sCVvidfs, iFullScreenState) end;
+  if iFullScreenState == 2 then VariableSetInt(iCVvidfs, 1)
+                           else VariableSetInt(iCVvidfs, iFullScreenState) end;
   -- If full-screen mode is resetting?
   if iFullScreenMode == -3 then
     -- Now set to default mode
     iFullScreenMode = -2;
-    CVarsReset(sCVvidfsmode);
-  else CVarsSet(sCVvidfsmode, iFullScreenMode) end;
-  CVarsSet(sCVvidmonitor, iMonitorId);
-  CVarsSet(sCVaudinterface, iAudioDeviceId);
+    VariableResetInt(iCVvidfsmode);
+  else VariableSetInt(iCVvidfsmode, iFullScreenMode) end;
+  VariableSetInt(iCVvidmonitor, iMonitorId);
+  VariableSetInt(iCVaudinterface, iAudioDeviceId);
   -- Reset audio subsystem if interface changed
   if iAudioDeviceIdOriginal ~= iAudioDeviceId then AudioReset() end;
   -- If GPU related parameters changed from original then reset video
@@ -548,14 +554,14 @@ local function SetDefaults()
   iAudioDeviceId = -1;
   iWindowId = 1;
   -- Other options
-  CVarsReset(sCVappdelay);
-  CVarsReset(sCVvidvsync);
-  CVarsReset(sCVtexfilter);
+  VariableResetInt(iCVappdelay);
+  VariableResetInt(iCVvidvsync);
+  VariableResetInt(iCVtexfilter);
   -- Reset volumes
-  CVarsReset(sCVaudvol);
-  CVarsReset(sCVaudstrvol);
-  CVarsReset(sCVaudsamvol);
-  CVarsReset(sCVaudfmvvol);
+  VariableResetInt(iCVaudvol);
+  VariableResetInt(iCVaudstrvol);
+  VariableResetInt(iCVaudsamvol);
+  VariableResetInt(iCVaudfmvvol);
   -- Set new settings
   ApplySettings();
 end
@@ -933,8 +939,8 @@ local function InitThirdPartyCredits()
   end
   -- Add space
   insert(aCreditLines, "");
-  -- Add licences header
-  Header("LICENCES");
+  -- Add licenses header
+  Header("LICENSES");
   -- Now for all the other credits in detail
   for iIndex = 0, iCreditsM1 do
     -- Get credit information
@@ -946,8 +952,8 @@ local function InitThirdPartyCredits()
     -- Line to write
     Header((iIndex+1)..". USES "..sName:upper().." "..bCopyright.." "..
       sAuthor:upper());
-    -- Add credit licence
-    local aLines<const> = UtilExplode(CreditLicence(iIndex), "\n");
+    -- Add credit license
+    local aLines<const> = UtilExplode(CreditLicense(iIndex), "\n");
     for iI = 1, #aLines do
       local sLine<const> = aLines[iI];
       if #sLine > 78 then

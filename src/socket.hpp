@@ -16,11 +16,11 @@ using namespace ICVarLib::P;           using namespace IError::P;
 using namespace IEvtMain::P;           using namespace IFlags;
 using namespace IIdent::P;             using namespace ILog::P;
 using namespace ILuaEvt::P;            using namespace ILuaUtil::P;
-using namespace IMemory::P;            using namespace IStd::P;
-using namespace IString::P;            using namespace ISystem::P;
-using namespace ISysUtil::P;           using namespace IThread::P;
-using namespace IToken::P;             using namespace IUtil::P;
-using namespace IUtf;                  using namespace IVars::P;
+using namespace IMemory::P;            using namespace IParser::P;
+using namespace IStd::P;               using namespace IString::P;
+using namespace ISystem::P;            using namespace ISysUtil::P;
+using namespace IThread::P;            using namespace IToken::P;
+using namespace IUtil::P;              using namespace IUtf;
 using namespace Lib::OS::OpenSSL;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
@@ -56,12 +56,15 @@ const string       strRegVarPROTO;     /* " for http protocol data          */\
 const string       strRegVarCODE;      /* " for http status code data       */\
 const string       strRegVarMETHOD;    /* " for http method string          */\
 const string       strRegVarRESPONSE;  /* HTTP response string              */\
+const string       strCipherDefault;   /* Default cipher to use             */\
 /* -- Variables ------------------------------------------------------------ */
+string_view        strvCipher12;       /* Ciphers for TLSv1.2 from CVar     */\
+string_view        strvCipher13;       /* Ciphers for TLSv1.3+ from CVar    */\
+string_view        strvUserAgent;      /* User agent string from CVar       */\
 SafeInt            iOCSP;              /* Use OCSP (0=Off;1=On;2=Strict)    */\
 SafeSizeT          stBufferSize;       /* Default recv/send buffer size     */\
-SafeDouble         fdRecvTimeout;      /* Receive packet timeout            */\
-SafeDouble         fdSendTimeout;      /* Send packet timeout               */\
-string             strCipherDefault;   /* Default cipher to use             */\
+SafeDouble         dRecvTimeout;       /* Receive packet timeout            */\
+SafeDouble         dSendTimeout;       /* Send packet timeout               */\
 SafeUInt64         qRX;                /* Total bytes received              */\
 SafeUInt64         qTX;                /* Total bytes sent                  */\
 SafeUInt64         qRXp;               /* Total packets received            */\
@@ -80,14 +83,14 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
 { /* ----------------------------------------------------------------------- */
   struct Packet                        // Connection packet
   { /* --------------------------------------------------------------------- */
-    ClkTimePoint   dTimestamp;         // Packet timestamp
-    Memory         aPacket;            // Memory block
+    ClkTimePoint   ctpStart;           // Packet timestamp
+    Memory         mData;              // Memory block
   };/* --------------------------------------------------------------------- */
   typedef list<Packet> PacketList;     // list of blocks
   /* -- OpenSSL core variables --------------------------------------------- */
-  BIO             *bSocket;            // OpenSSL socket, blank socket
-  SSL_CTX         *cContext;           // OpenSSL context
-  SSL             *sSSL;               // OpenSSL descriptor
+  BIO             *bioPtr;             // OpenSSL socket, blank socket
+  SSL_CTX         *sslctxPtr;          // OpenSSL context
+  SSL             *sslPtr;             // OpenSSL descriptor
   /* -- Statistical variables ---------------------------------------------- */
   SafeUInt64       qRX, qTX,           // Total Transmit/Receive traffic
                    qRXp, qTXp;         // Total Transmit/Receive packets
@@ -111,40 +114,44 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
                    strIP,              // IP address connected to
                    strHost,            // Virtual hostname connected to
                    strRealHost;        // Real hostname connected to
-  PacketList       blRX, blTX;         // Transmit/Receive buffers
+  PacketList       plRX, plTX;         // Transmit/Receive buffers
   size_t           stRX, stTX;         // Total bytes stored in buffers
-  Vars             vlRegistry;         // For storing keypairs
+  Parser<>         pRegistry;          // For storing keypairs
   /* -- Timestamps --------------------------------------------------------- */
-  SafeClkDuration  duConnect,          // Time socket was connecting
-                   duConnected,        // Time socket was connected
-                   duRead,             // Time socket was last read from
-                   duWrite,            // Time socket was last written to
-                   duDisconnect,       // Time socket was disconnecting
-                   duDisconnected;     // Time socket was disconnected
+  SafeClkDuration  cdConnect,          // Time socket was connecting
+                   cdConnected,        // Time socket was connected
+                   cdRead,             // Time socket was last read from
+                   cdWrite,            // Time socket was last written to
+                   cdDisconnect,       // Time socket was disconnecting
+                   cdDisconnected;     // Time socket was disconnected
   /* -- Do internal log ---------------------------------------------------- */
-  template<typename ...VarArgs>void SocketLog(const LHLevel lhLevel,
+  template<typename ...VarArgs>void SocketLog(const LHLevel lhlSeverity,
     const char*const cpFormat, const VarArgs &...vaArgs)
-  { // Write formatted string
-    cLog->LogExSafe(lhLevel, "Socket $:$$$:$ $", CtrGet(), hex, FlagGet(),
-      dec, GetAddressAndPort(), StrFormat(cpFormat, vaArgs...));
+  { // If parameters are specified then cater to them
+    if constexpr(sizeof...(VarArgs) > 0)
+      cLog->LogExSafe(lhlSeverity, "Socket $:$$$:$ $", CtrGet(), hex,
+        FlagGet(), dec, GetAddressAndPort(), StrFormat(cpFormat, vaArgs...));
+    // No parameters specified so don't need to format them
+    else cLog->LogExSafe(lhlSeverity, "Socket $:$$$:$ $", CtrGet(), hex,
+      FlagGet(), dec, GetAddressAndPort(), cpFormat);
   }
   /* -- Internal log ------------------------------------------------------- */
-  template<typename ...VarArgs>void SocketLogSafe(const LHLevel lhLevel,
+  template<typename ...VarArgs>void SocketLogSafe(const LHLevel lhlSeverity,
     const char*const cpFormat, const VarArgs &...vaArgs)
   { // Return if we don't have this level
-    if(cLog->NotHasLevel(lhLevel)) return;
+    if(cLog->NotHasLevel(lhlSeverity)) return;
     // Synchronise access to socket data while we log details
     const LockGuard lgSocketSync{ mMutex };
     // Write formatted string
-    SocketLog(lhLevel, cpFormat, vaArgs...);
+    SocketLog(lhlSeverity, cpFormat, vaArgs...);
   }
   /* -- Internal log ------------------------------------------------------- */
-  template<typename ...VarArgs>void SocketLogUnsafe(const LHLevel lhLevel,
+  template<typename ...VarArgs>void SocketLogUnsafe(const LHLevel lhlSeverity,
     const char*const cpFormat, const VarArgs &...vaArgs)
   { // Return if we don't have this level
-    if(cLog->NotHasLevel(lhLevel)) return;
+    if(cLog->NotHasLevel(lhlSeverity)) return;
     // Write formatted string
-    SocketLog(lhLevel, cpFormat, vaArgs...);
+    SocketLog(lhlSeverity, cpFormat, vaArgs...);
   }
   /* -- Initialise static error (no openssl error) ------------------------- */
   int SetErrorStatic(const string &strReason, const bool bSet)
@@ -197,7 +204,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
        return static_cast<unsigned int>(SetAborted());
     // Wait for new packet, storing bytes read and compare result
     switch(const unsigned int uiRX = static_cast<unsigned int>
-      (BIO_read(bSocket, cpD, static_cast<int>(uiL))))
+      (BIO_read(bioPtr, cpD, static_cast<int>(uiL))))
     { // Did the server close the conection?
       case 0:
       { // Server closed the connection
@@ -216,10 +223,10 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
         // Increment received bytes and packet counters
         qRX += uiRX;
         ++qRXp;
-        cParent.qRX += uiRX;
-        ++cParent.qRXp;
+        cParent->qRX += uiRX;
+        ++cParent->qRXp;
         // Set last received timestamp
-        duRead = cmHiRes.GetEpochTime();
+        cdRead = cmHiRes.GetEpochTime();
         // Log status
         SocketLogSafe(LH_DEBUG, "$ received", uiRX);
         // Return bytes read
@@ -233,7 +240,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       return static_cast<unsigned int>(SetAborted());
     // Wait to write new packet, storing bytes written and compare result
     switch(const unsigned int uiTX = static_cast<unsigned int>
-      (BIO_write(bSocket, cpD, static_cast<int>(uiL))))
+      (BIO_write(bioPtr, cpD, static_cast<int>(uiL))))
     { // Server closed connection. Set connection completed status
       case 0:
       { // Server closed the connection
@@ -259,10 +266,10 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
           // Increment sent bytes and packet counters
           qTX += uiTX;
           ++qTXp;
-          cParent.qTX += uiTX;
-          ++cParent.qTXp;
+          cParent->qTX += uiTX;
+          ++cParent->qTXp;
           // Set last sent timestamp
-          duWrite = cmHiRes.GetEpochTime();
+          cdWrite = cmHiRes.GetEpochTime();
           // Return bytes written
           return uiTX;
         } // Log the error we did not send enough bytes
@@ -275,25 +282,25 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     { return SockWrite(strStr.data(),
         static_cast<unsigned int>(strStr.length())); }
   /* -- Write memory block class to socket --------------------------------- */
-  unsigned int SockWrite(const DataConst &dcBlock)
-    { return SockWrite(dcBlock.Ptr<char>(), dcBlock.Size<unsigned int>()); }
+  unsigned int SockWrite(const MemConst &mcSrc)
+    { return SockWrite(mcSrc.MemPtr<char>(), mcSrc.MemSize<unsigned int>()); }
   /* -- Convert packet to memblock for LUA API ----------------------------- */
-  double GetPacket(Memory &aPacket, PacketList &bData, size_t &stS)
+  double GetPacket(Memory &mDest, PacketList &plData, size_t &stS)
   { // Not empty? Return top memory block else through error
-    if(bData.empty())
+    if(plData.empty())
       XC("No packets remaining in blocklist!",
          "Address", strAddr, "Port", uiPort);
     // Get first top packet and move data to memblock supplied by caller
-    Packet &pData = bData.front();
-    aPacket.SwapMemory(StdMove(pData.aPacket));
+    Packet &pData = plData.front();
+    mDest.MemSwap(StdMove(pData.mData));
     // Copy record timestamp
-    const ClkTimePoint dTS{ StdMove(pData.dTimestamp) };
+    const ClkTimePoint ctpEnd{ StdMove(pData.ctpStart) };
     // Subtract total bytes counter
-    stS -= aPacket.Size();
+    stS -= mDest.MemSize();
     // Pop first RX packet
-    bData.pop_front();
+    plData.pop_front();
     // Return timestamp
-    return ClockGetCount<duration<double>>(dTS.time_since_epoch());
+    return ClockGetCount<duration<double>>(ctpEnd.time_since_epoch());
   }
   /* -- Packet management -------------------------------------------------- */
   void FlushPackets(PacketList &plList, size_t &stTotal)
@@ -302,10 +309,10 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   void FlushPackets(void)
   { // Setup lists we want to flush
     struct PacketListRef { PacketList &plList; size_t &stTotal; };
-    const array<const PacketListRef,2>
-      plrList{ { { blRX, stRX }, { blTX, stTX } } };
+    typedef array<const PacketListRef, 2> PacketListArray;
+    const PacketListArray plaData{ { { plRX, stRX }, { plTX, stTX } } };
     // Flush each list and total value
-    for(const PacketListRef &plrItem : plrList)
+    for(const PacketListRef &plrItem : plaData)
       FlushPackets(plrItem.plList, plrItem.stTotal);
   }
   /* -- Packet management -------------------------------------------------- */
@@ -322,13 +329,13 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     if(!IsConnected())
       XC("Send on unconnected socket!", "Address", strAddr, "Port", uiPort);
     // Add buffer to queue
-    PushData(blTX, stTX, cpData, stSize);
+    PushData(plTX, stTX, cpData, stSize);
     // Unblock writer thread
     WriteUnblock();
   }
   /* -- Send data as other types ------------------------------------------- */
-  void Send(const DataConst &dcPacket)
-    { Send(dcPacket.Ptr<char>(), dcPacket.Size()); }
+  void Send(const MemConst &mcPacket)
+    { Send(mcPacket.MemPtr<char>(), mcPacket.MemSize()); }
   void SendString(const string &strData)
     { Send(strData.data(), strData.length()); }
   /* ----------------------------------------------------------------------- */
@@ -352,32 +359,41 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   void FinishDisconnect(void)
   { // Lock mutex to prevent data race
     const LockGuard lgSocketSync{ mMutex };
-    { // Have Socket. This automatically frees the SSL context
-      if(bSocket) { BIO_free_all(bSocket); bSocket = nullptr; sSSL = nullptr; }
-      // Have SSL. If for some reason we have it and not a bio
-      else if(sSSL) { SSL_shutdown(sSSL); SSL_free(sSSL); sSSL = nullptr; }
-      // Clear context if created
-      if(cContext) { SSL_CTX_free(cContext); cContext = nullptr; }
+    { // Have BIO socket pointer?
+      if(bioPtr)
+      { // This automatically frees the SSL context
+        BIO_free_all(bioPtr);
+        // Clear addresses
+        bioPtr = nullptr;
+        sslPtr = nullptr;
+      } // Have SSL pointer? If for some reason we have it and not a bio
+      else if(sslPtr)
+      { // Shutdown and free the SSL context
+        SSL_shutdown(sslPtr);
+        SSL_free(sslPtr);
+        sslPtr = nullptr;
+      } // Clear context if created
+      if(sslctxPtr) { SSL_CTX_free(sslctxPtr); sslctxPtr = nullptr; }
     } // Don't log if we're already disconnected
     if(IsDisconnected()) return;
     // Set standby status
-    AddStatus(SS_STANDBY, duDisconnected);
+    AddStatus(SS_STANDBY, cdDisconnected);
     // Return if socket was never connected
     if(FlagIsClear(SS_CONNECTED)) return;
     // Decrement connection count
-    --cParent.stConnected;
+    --cParent->stConnected;
     // Report disconnection and statistics to log
     SocketLogUnsafe(LH_DEBUG, "Disconnected (RX:$/$;TX:$/$).",
       GetRXpkt(), GetRX(), GetTXpkt(), GetTX());
   }
   /* -- Compact all packets into single packet ----------------------------- */
-  void Compact(Memory &aDest, PacketList &blData, size_t &stX)
+  void Compact(Memory &mDest, PacketList &plData, size_t &stX)
   { // Bail if no packets, but 0 bytes will still be allocated
-    if(blData.empty()) { aDest.InitBlank(); return; }
+    if(plData.empty()) { mDest.MemInitBlank(); return; }
     // If zero size just flush all the empty packets and return
-    if(!stX) { aDest.InitBlank(); return FlushPackets(blData, stX); }
+    if(!stX) { mDest.MemInitBlank(); return FlushPackets(plData, stX); }
     // Resize memblock to hold all data
-    aDest.InitBlank(stX);
+    mDest.MemInitBlank(stX);
     // Size of buffers is now zero
     stX = 0;
     // Byte offset counter
@@ -385,40 +401,40 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     // Loop until...
     do
     { // Get packet memory block and copy it into our destination memory block
-      const DataConst &dcPacket = blData.front().aPacket;
-      aDest.WriteBlock(stOffset, dcPacket);
+      const MemConst &mcPacket = plData.front().mData;
+      mDest.MemWriteBlock(stOffset, mcPacket);
       // Increment counter
-      stOffset += dcPacket.Size();
+      stOffset += mcPacket.MemSize();
       // Pop packet
-      blData.pop_front();
+      plData.pop_front();
     } // ...list is fully emptied
-    while(!blData.empty());
+    while(!plData.empty());
   }
   /* -- Create connection with select used to monitor for timeout ---------- */
   int DoConnect(void)
   { // Set hostname (always returns 1).
-    if(CryptBIOSetConnHostname(bSocket, GetAddressAndPort().c_str()) != 1)
+    if(CryptBIOSetConnHostname(bioPtr, GetAddressAndPort().c_str()) != 1)
       return SetErrorSafe("Resolve failed");
     // Log and do secure connection
     SocketLogSafe(LH_DEBUG, "$onnecting...", IsSecure() ? "Securely c" : "C");
     // Set connecting flag. Do send an event for this
-    AddStatus(SS_CONNECTING, duConnect);
+    AddStatus(SS_CONNECTING, cdConnect);
     // Abort if requested
     if(tReader.ThreadShouldExit()) return SetAborted();
     // Try to connect and if failed?
-    if(BIO_do_connect(bSocket) != 1) return SetErrorSafe("Connect failed");
+    if(BIO_do_connect(bioPtr) != 1) return SetErrorSafe("Connect failed");
     // Abort if requested
     if(tReader.ThreadShouldExit()) return SetAborted();
     // Set descriptor and set error if failed
     if(!UpdateDescriptor()) return SetErrorSafe("Lost descriptor");
     // Get and check pointer to address data
-    if(const BIO_ADDR*const baData = CryptBIOGetConnAddress(bSocket))
+    if(const BIO_ADDR*const baData = CryptBIOGetConnAddress(bioPtr))
     { // Setup query commands for host and IP data
       struct AddressData{ const int iId; string &strDest; };
-      const array<const AddressData,2> adCmds
-        { { { 1, strIP }, { 0, strRealHost } } };
+      typedef array<const AddressData, 2> AddressDataArray;
+      const AddressDataArray adaCmds{ { { 1, strIP }, { 0, strRealHost } } };
       // Enumerate and store the address data
-      for(const AddressData &adItem : adCmds)
+      for(const AddressData &adCmd : adaCmds)
       { // Thanks to OpenSSL not giving us a unique_ptr compatible deallocator,
         // we need to do this ugly code to auto free the allocated the address.
         // I don't know how to make OPENSSL_free work with unique_ptr!
@@ -431,8 +447,8 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
         };
         // Get item of interest and if successful, move the result into the
         // specified destination
-        if(const AddrPtr apAddr{ baData, adItem.iId })
-          UtilMoveVarSafe(mMutex, adItem.strDest, apAddr.cpPtr);
+        if(const AddrPtr apAddr{ baData, adCmd.iId })
+          UtilMoveVarSafe(mMutex, adCmd.strDest, apAddr.cpPtr);
       }
     } // No IP address detected for some reason
     else return SetErrorSafe("No address found");
@@ -440,7 +456,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     SocketLogSafe(LH_DEBUG, "Connected to $", GetIPAddress());
     // Set socket read and send timeout
     switch(cSystem->SetSocketTimeout(iFd,
-      cParent.fdRecvTimeout, cParent.fdSendTimeout))
+      cParent->dRecvTimeout, cParent->dSendTimeout))
     { // Success
       case 0: break;
       // Failed so just log message
@@ -459,15 +475,15 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     } // Until thread says to terminate
     if(tReader.ThreadShouldExit()) return SetAborted();
     // Return success if the handshake succeeded or process error
-    return BIO_do_handshake(bSocket) == 1 ?
+    return BIO_do_handshake(bioPtr) == 1 ?
       0 : SetErrorSafe("Handshake failed");
   }
   /* -- OCSP verification result ------------------------------------------- */
-  int OCSPVerificationResponse(SSL*const sOSSL)
+  int OCSPVerificationResponse(SSL*const sslCbPtr)
   { // Allocate memory for response and get size of response. We actually need
     // the response to not be nullptr too or there is no response
     const unsigned char *cpResp = nullptr;
-    const long lLength = SSL_get_tlsext_status_ocsp_resp(sOSSL, &cpResp);
+    const long lLength = SSL_get_tlsext_status_ocsp_resp(sslCbPtr, &cpResp);
     if(lLength != -1 && UtfIsCStringValid(cpResp))
     { // Got a response so make sure it is freed on leaving the scope
       typedef unique_ptr<ocsp_response_st,
@@ -484,7 +500,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     // The callback when used on the client side should return a negative value
     // on error; 0 if the response is not acceptable (in which case the
     // handshake will fail) or a positive value if it is acceptable.
-    return cParent.iOCSP >= 2 ? 0 : 1;
+    return cParent->iOCSP >= 2 ? 0 : 1;
   }
   /* -- Socket initial connect function ------------------------------------ */
   int InitialConnect(void)
@@ -492,8 +508,8 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     FlagReset(SS_INITIALISING);
     // Reset counters and timers
     qRX = qTX = qRXp = qTXp = 0;
-    duConnect = duConnected = duRead = duWrite = duDisconnect =
-      duDisconnected = seconds{0};
+    cdConnect = cdConnected = cdRead = cdWrite = cdDisconnect =
+      cdDisconnected = seconds{0};
     // Flush packets in all buffers
     FlushPackets();
     // If want TLS encryption?
@@ -501,21 +517,21 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     { // Set encryption flag. Do not send a LUA event for this
       FlagSet(SS_ENCRYPTION);
       // Setup new TLS client context
-      cContext = SSL_CTX_new(TLS_client_method());
-      if(!cContext) return SetErrorSafe("Init TLS failed");
+      sslctxPtr = SSL_CTX_new(TLS_client_method());
+      if(!sslctxPtr) return SetErrorSafe("Init TLS failed");
       // Set cipher options
       if(!strCipherSuite.empty())
-        if(!SSL_CTX_set_ciphersuites(cContext, strCipherSuite.c_str()))
+        if(!SSL_CTX_set_ciphersuites(sslctxPtr, strCipherSuite.c_str()))
           return SetErrorStaticSafe("Invalid cipher suite");
       // Set ciphers supported, and if failed? Just show warning
       if(!strCipherList.empty())
-        if(!SSL_CTX_set_cipher_list(cContext, strCipherList.c_str()))
+        if(!SSL_CTX_set_cipher_list(sslctxPtr, strCipherList.c_str()))
           return SetErrorStaticSafe("Invalid cipher list");
       // Set context to release buffers as we don't reuse the contexts
-      SSL_CTX_set_mode(cContext, SSL_MODE_RELEASE_BUFFERS);
+      SSL_CTX_set_mode(sslctxPtr, SSL_MODE_RELEASE_BUFFERS);
       // Set our shared certificate store if we have one
-      if(cParent.CertsIsStoreAvailable() &&
-        !CryptSSLCtxSet1VerifyCertStore(cContext, cParent.CertsGetStore()))
+      if(cParent->CertsIsStoreAvailable() &&
+        !CryptSSLCtxSet1VerifyCertStore(sslctxPtr, cParent->CertsGetStore()))
           return SetErrorStaticSafe("Cert store failure");
       // Setup verification, make a new verification context and if succeded?
       typedef unique_ptr<X509_VERIFY_PARAM,
@@ -540,7 +556,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
             if(X509_VERIFY_PARAM_set1_host(x509vp.get(), strAddr.data(),
               strAddr.length()))
             { // Apply to context and return success
-              if(!SSL_CTX_set1_param(cContext, x509vp.get()))
+              if(!SSL_CTX_set1_param(sslctxPtr, x509vp.get()))
               { // Log the error and return failure
                 SocketLogSafe(LH_WARNING,
                   "Failed to assign verification parameters to context");
@@ -570,47 +586,47 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
         SocketLogSafe(LH_WARNING, "Failed to create verification context");
         return -1;
       } // Done setting up verification. Now create socket
-      bSocket = BIO_new_ssl_connect(cContext);
-      if(!bSocket) return SetErrorSafe("Failed to create BIO socket");
+      bioPtr = BIO_new_ssl_connect(sslctxPtr);
+      if(!bioPtr) return SetErrorSafe("Failed to create BIO socket");
       // Try to get ssl pointer from socket
-      if(CryptBIOGetSSL(bSocket, &sSSL) < 1)
+      if(CryptBIOGetSSL(bioPtr, &sslPtr) < 1)
         return SetErrorSafe("No SSL ptr from BIO");
-      if(!sSSL) return SetErrorSafe("Get SSL ptr failed");
+      if(!sslPtr) return SetErrorSafe("Get SSL ptr failed");
       // Client mode
-      BIO_set_ssl_mode(bSocket, 1);
+      BIO_set_ssl_mode(bioPtr, 1);
       // OCSP verification option enabled?
-      if(cParent.iOCSP >= 1)
+      if(cParent->iOCSP >= 1)
       { // Setup OCSP verification
-        if(!SSL_set_tlsext_status_type(sSSL, TLSEXT_STATUSTYPE_ocsp))
+        if(!SSL_set_tlsext_status_type(sslPtr, TLSEXT_STATUSTYPE_ocsp))
           SocketLogSafe(LH_WARNING, "Failed to setup OCSP verification!");
         // Set callback and argument
         int(*fCB)(SSL*,void*) = [](SSL*const sO, void*const vpS)->int
           { return reinterpret_cast<Socket*>(vpS)->
               OCSPVerificationResponse(sO); };
-        if(!CryptSSLCtxSetTlsExtStatusCb(cContext, fCB))
+        if(!CryptSSLCtxSetTlsExtStatusCb(sslctxPtr, fCB))
           SocketLogSafe(LH_WARNING,
             "Failed to setup OCSP verification callback!");
-        if(!SSL_CTX_set_tlsext_status_arg(cContext,
+        if(!SSL_CTX_set_tlsext_status_arg(sslctxPtr,
           reinterpret_cast<void*>(this)))
             SocketLogSafe(LH_WARNING,
               "Failed to setup OCSP verification argument!");
       } // Set SNI hostname. Some sites break if this is not set
-      if(!CryptSSLSetTlsExtHostName(sSSL, strAddr.c_str()))
+      if(!CryptSSLSetTlsExtHostName(sslPtr, strAddr.c_str()))
         return SetErrorStaticSafe("Init TLS SNI hostname failed");
       // Log and do secure connection
       if(DoConnect() == -1) return -1;
       // Get X509 chain verificiation result
       switch(const size_t stRes =
-        static_cast<size_t>(SSL_get_verify_result(sSSL)))
+        static_cast<size_t>(SSL_get_verify_result(sslPtr)))
       { // No error? Log success and carry on
         case X509_V_OK: SocketLogSafe(LH_DEBUG, "X509 chain is good"); break;
         // Anything else?
         default:
         { // Find error code if the error code information is not found?
-          const auto xErrInfoIt{ cParent.CertsGetError(stRes) };
-          if(cParent.CertsIsNotErrorValid(xErrInfoIt))
+          const auto xErrInfoIt{ cParent->CertsGetError(stRes) };
+          if(cParent->CertsIsNotErrorValid(xErrInfoIt))
           { // Return success if user wants to bypass it
-            if(cParent.CertsIsNotX509BypassFlagSet(1, 0x8000000000000000ULL))
+            if(cParent->CertsIsNotX509BypassFlagSet(1, 0x8000000000000000ULL))
             { // Set error and return status
               SetErrorStaticSafe(StrAppend("X509_V_ERR_UNKNOWN_", stRes));
               return -1;
@@ -623,7 +639,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
             // Build error code
             const string strErr{ StrAppend("X509_V_ERR_", xErrInfo.cpErr) };
             // Return success if user wants to bypass it
-            if(cParent.CertsIsNotX509BypassFlagSet(
+            if(cParent->CertsIsNotX509BypassFlagSet(
                  xErrInfo.stBank, xErrInfo.qFlag))
             { // Set error and return status
               SetErrorStaticSafe(strErr);
@@ -636,7 +652,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
         }
       } // Get cipher and if we got it?
       string strD; strD.resize(128);
-      if(SSL_CIPHER_description(SSL_get_current_cipher(sSSL),
+      if(SSL_CIPHER_description(SSL_get_current_cipher(sslPtr),
         const_cast<char*>(strD.data()), static_cast<int>(strD.length())))
       { // Remove carriage return
         strD.resize(strlen(strD.c_str()) - 1);
@@ -647,7 +663,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       } // Get cipher failed? Log failure
       else SocketLogSafe(LH_WARNING, "Failed $", strD.length());
       // Get server certificate
-      if(X509*const xCert = SSL_get0_peer_certificate(sSSL))
+      if(X509*const xCert = SSL_get0_peer_certificate(sslPtr))
       { // Get certificate subject and if successful?
         if(X509_NAME_oneline(X509_get_subject_name(xCert),
           const_cast<char *>(strD.data()), static_cast<int>(strD.length())))
@@ -664,14 +680,14 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     } // No security
     else
     { // Create socket and bail out if failed
-      bSocket = BIO_new(BIO_s_connect());
-      if(!bSocket) return SetErrorSafe("Failed to create BIO socket");
+      bioPtr = BIO_new(BIO_s_connect());
+      if(!bioPtr) return SetErrorSafe("Failed to create BIO socket");
       // Log and do insecure connection
       if(DoConnect() == -1) return -1;
     } // Now connected
-    AddStatus(SS_CONNECTED, duConnected);
+    AddStatus(SS_CONNECTED, cdConnected);
     // Increase connected count
-    ++cParent.stConnected;
+    ++cParent->stConnected;
     // Successful connect
     return 0;
   }
@@ -687,11 +703,11 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   /* -- Get and delete registry item --------------------------------------- */
   const string GetRegistry(const string &strItem)
   { // Find item and if we didn't find it? Return default string
-    const StrNCStrMapIt vlItem{ vlRegistry.find(strItem) };
-    if(vlItem == vlRegistry.cend()) return {};
+    const StrNCStrMapIt sncsmiIt{ pRegistry.find(strItem) };
+    if(sncsmiIt == pRegistry.cend()) return {};
     // Get the value and delete it. We will move instead of copying
-    const string strReq{ StdMove(vlItem->second) };
-    vlRegistry.erase(vlItem);
+    const string strReq{ StdMove(sncsmiIt->second) };
+    pRegistry.erase(sncsmiIt);
     return strReq;
   }
   /* -- String is binary? Returns location of binary ----------------------- */
@@ -706,7 +722,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   { // Connect and send http request and break loop if failed.
     if(InitialConnect() == -1) return 1;
     // Check if this is a HEAD request
-    const bool bIsHead = GetRegistry(cParent.strRegVarMETHOD) == "HEAD";
+    const bool bIsHead = GetRegistry(cParent->strRegVarMETHOD) == "HEAD";
     // Set sending request status event
     AddStatus(SS_SENDREQUEST);
     { // Get first line request and body which will also be deleted from the
@@ -714,9 +730,9 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       // trying to optimise/one-line this as MSVC compiler WILL evaluate
       // expressions in the opposite direction.
       const string
-        strReq{ StdMove(GetRegistry(cParent.strRegVarREQ)) },
-        strBody{ StdMove(GetRegistry(cParent.strRegVarBODY)) },
-        strHdrs{ StdMove(vlRegistry.VarsImplodeEx(": ", cCommon->CrLf())) },
+        strReq{ StdMove(GetRegistry(cParent->strRegVarREQ)) },
+        strBody{ StdMove(GetRegistry(cParent->strRegVarBODY)) },
+        strHdrs{ StdMove(pRegistry.ParserImplodeEx(": ", cCommon->CrLf())) },
         strPkt{ StdMove(StrAppend(strReq,
           strHdrs, cCommon->CrLf(), strBody)) };
       // Write the full request to the server and return if failed
@@ -728,14 +744,14 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     // Response headers
     string strHeaders;
     // Allocate memory for read buffer
-    Memory aPacket{ cParent.stBufferSize };
+    Memory mDest{ cParent->stBufferSize };
     // Expecting reponse headers? and connection closed status
     bool bHeaders = true;
     // Begin monitoring for reply and break if thread should exit
     while(tReader.ThreadShouldNotExit())
     { // Wait for data from connected server
       const unsigned int uiBX =
-        SockRead(aPacket.Ptr<char>(), aPacket.Size<unsigned int>());
+        SockRead(mDest.MemPtr<char>(), mDest.MemSize<unsigned int>());
       // Connection error or server closed connection?
       if(uiBX == StdMaxUInt)
       { // If we were waiting for headers still?
@@ -758,7 +774,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
         stContentRead += uiBX;
         // Push data into RX list. Truncate bytes read if we have a content
         // length and the we read past the content length.
-        PushDataSafe(blRX, stRX, aPacket.Ptr<char>(),
+        PushDataSafe(plRX, stRX, mDest.MemPtr<char>(),
           stContentLength && stContentRead > stContentLength ?
             uiBX - static_cast<unsigned int>(stContentLength - stContentRead) :
             uiBX);
@@ -771,7 +787,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
         continue;
       } // Make string from response. There could be binary characters in this
       // but it does not matter
-      string strResp{ aPacket.Ptr<char>(), uiBX };
+      string strResp{ mDest.MemPtr<char>(), uiBX };
       // Find end of headers marker and if we do not have it yet?
       const size_t stEnd = strResp.find(cCommon->CrLf2());
       if(stEnd == string::npos)
@@ -788,7 +804,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       const size_t stInitial = strResp.length() - (stEnd + 4);
       if(stInitial > 0)
       { // Push data into RX list
-        PushDataSafe(blRX, stRX, aPacket.Read(stEnd+4), stInitial);
+        PushDataSafe(plRX, stRX, mDest.MemRead(stEnd+4), stInitial);
         // Increment content read
         stContentRead += stInitial;
         // Truncate extra bytes
@@ -799,15 +815,15 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       // Add rest of response to headers
       strHeaders += strResp;
       // Build output headers list by exploding header string
-      vlRegistry = Vars{ strHeaders, cCommon->CrLf(), ':' };
-      if(vlRegistry.empty()) return SetErrorStaticSafe("No response");
+      pRegistry.ParserReInit(strHeaders, cCommon->CrLf(), ':');
+      if(pRegistry.empty()) return SetErrorStaticSafe("No response");
       // Done with the headers string
       strHeaders.clear();
       strHeaders.shrink_to_fit();
       // Find initial reponse (should be #0 set by VARS class)
       const StrNCStrMapConstIt
-        vlR{ vlRegistry.find(cParent.strRegVarRESPONSE) };
-      if(vlR == vlRegistry.cend()) return SetErrorStaticSafe("Bad response");
+        vlR{ pRegistry.find(cParent->strRegVarRESPONSE) };
+      if(vlR == pRegistry.cend()) return SetErrorStaticSafe("Bad response");
       // Split into words. We should have got at least three words
       const Token tWords{ vlR->second, cCommon->Space() };
       if(tWords.size() < 3) return SetErrorStaticSafe("Unknown response");
@@ -829,20 +845,20 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       else SocketLogSafe(LH_WARNING, "Status error $", strStatus);
       // Add protocol and status code to registry so guest can read them
       // without having to perform any special string operations
-      vlRegistry.VarsPushOrUpdatePair(cParent.strRegVarPROTO, strProtoRecv);
-      vlRegistry.VarsPushOrUpdatePair(cParent.strRegVarCODE, strStatus);
+      pRegistry.ParserPushOrUpdatePair(cParent->strRegVarPROTO, strProtoRecv);
+      pRegistry.ParserPushOrUpdatePair(cParent->strRegVarCODE, strStatus);
       // For each response var. Push key/value pair to TX registry
-      for(const auto &vlI : vlRegistry)
+      for(const auto &vlI : pRegistry)
         PushTXPairSafe(vlI.first, vlI.second);
       // If we got a content type?
-      const StrNCStrMapConstIt vlT{ vlRegistry.find("content-type") };
-      if(vlT != vlRegistry.cend())
-        SocketLogSafe(LH_DEBUG, "Type is $", vlT->second);
+      const StrNCStrMapConstIt sncsmciType{ pRegistry.find("content-type") };
+      if(sncsmciType != pRegistry.cend())
+        SocketLogSafe(LH_DEBUG, "Type is $", sncsmciType->second);
       // Should get content length
-      const StrNCStrMapConstIt vlL{ vlRegistry.find("content-length") };
-      if(vlL != vlRegistry.cend())
+      const StrNCStrMapConstIt sncsmciLen{ pRegistry.find("content-length") };
+      if(sncsmciLen != pRegistry.cend())
       { // Get reference to string and if it's not valid?
-        const string &strVal = vlL->second;
+        const string &strVal = sncsmciLen->second;
         if(!StrIsInt(strVal))
         { // Assume zero, safe to continue and log the warning
           stContentLength = 0;
@@ -897,13 +913,13 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   }
   /* -- Return if there are TX packets available --------------------------- */
   bool IsTXPacketAvailable(void)
-    { const LockGuard lgSocketSync{ mMutex }; return !blTX.empty(); }
+    { const LockGuard lgSocketSync{ mMutex }; return !plTX.empty(); }
   /* -- Get memory to oldest TX packet ------------------------------------- */
-  const DataConst &GetOldestTXPacketSafe(void)
-    { const LockGuard lgSocketSync{ mMutex }; return blTX.front().aPacket; }
+  const MemConst &GetOldestTXPacketSafe(void)
+    { const LockGuard lgSocketSync{ mMutex }; return plTX.front().mData; }
   /* -- Pop oldest TX packet ----------------------------------------------- */
   void PopOldestTXPacketSafe(void)
-    { const LockGuard lgSocketSync{ mMutex }; return blTX.pop_front(); }
+    { const LockGuard lgSocketSync{ mMutex }; return plTX.pop_front(); }
   /* -- Socket write manager ----------------------------------------------- */
   int SockWriteManager(void)
   { // Block until requested to exit
@@ -911,10 +927,10 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     { // For each packet waiting to be written
       while(IsTXPacketAvailable())
       { // Get oldest available TX packet, send it, and kill thread on error
-        const DataConst &dcPacket = GetOldestTXPacketSafe();
-        if(SockWrite(dcPacket) == StdMaxUInt) return 2;
+        const MemConst &mcPacket = GetOldestTXPacketSafe();
+        if(SockWrite(mcPacket) == StdMaxUInt) return 2;
         // Subtract total bytes counter and pop the packet we just sent
-        stTX -= dcPacket.Size();
+        stTX -= mcPacket.MemSize();
         PopOldestTXPacketSafe();
       } // Setup lock for condition variable and wait for new data to write
       UniqueLock uLock{ mWriter };
@@ -959,15 +975,15 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     // Try to connect and if it didn't fail kill the thread
     if(InitialConnect() == -1) return 2;
     // Create read transfer buffer
-    Memory aPacket{ cParent.stBufferSize };
+    Memory mDest{ cParent->stBufferSize };
     // Loop until thread should terminate
     while(tReader.ThreadShouldNotExit())
     { // Wait for new data to be read and kill thread on error
       const unsigned int uiBX =
-        SockRead(aPacket.Ptr<char>(), aPacket.Size<unsigned int>());
+        SockRead(mDest.MemPtr<char>(), mDest.MemSize<unsigned int>());
       if(uiBX == StdMaxUInt) return 3;
       // Push data block into list ready for LUA to collect
-      PushDataSafe(blRX, stRX, aPacket.Ptr<char>(),
+      PushDataSafe(plRX, stRX, mDest.MemPtr<char>(),
         static_cast<size_t>(uiBX));
       // Send read event
       DispatchEvent(SS_READPACKET);
@@ -1015,7 +1031,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   /* -- Update file descriptor --------------------------------------------- */
   bool UpdateDescriptor(void)
   { // Update descriptor
-    iFd = CryptBIOGetFd(bSocket);
+    iFd = CryptBIOGetFd(bioPtr);
     // Return if succeeded
     return iFd != -1;
   }
@@ -1067,19 +1083,19 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   /* -- RX packets --------------------------------------------------------- */
   uint64_t GetRX(void) const { return qRX; }
   uint64_t GetRXpkt(void) const { return qRXp; }
-  size_t GetRXQCount(void) const { return blRX.size(); }
-  size_t GetRXQCountSafe(void) { return GetXQCountSafe(blRX); }
+  size_t GetRXQCount(void) const { return plRX.size(); }
+  size_t GetRXQCountSafe(void) { return GetXQCountSafe(plRX); }
   double GetPacketRXSafe(Memory &mbD)
-    { return GetPacketXSafe(mbD, blRX, stRX); }
-  void CompactRXSafe(Memory &mbD) { CompactXSafe(mbD, blRX, stRX); }
+    { return GetPacketXSafe(mbD, plRX, stRX); }
+  void CompactRXSafe(Memory &mbD) { CompactXSafe(mbD, plRX, stRX); }
   /* -- TX packets --------------------------------------------------------- */
   uint64_t GetTX(void) const { return qTX; }
   uint64_t GetTXpkt(void) const { return qTXp; }
-  size_t GetTXQCount(void) const { return blTX.size(); }
-  size_t GetTXQCountSafe(void) { return GetXQCountSafe(blTX); }
+  size_t GetTXQCount(void) const { return plTX.size(); }
+  size_t GetTXQCountSafe(void) { return GetXQCountSafe(plTX); }
   double GetPacketTXSafe(Memory &mbD)
-    { return GetPacketXSafe(mbD, blTX, stTX); }
-  void CompactTXSafe(Memory &mbD) { CompactXSafe(mbD, blTX, stTX); }
+    { return GetPacketXSafe(mbD, plTX, stTX); }
+  void CompactTXSafe(Memory &mbD) { CompactXSafe(mbD, plTX, stTX); }
   /* ----------------------------------------------------------------------- */
   int SetErrorSafe(const string &strS)
     { const LockGuard lgSocketSync{ mMutex };
@@ -1091,23 +1107,23 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     const size_t stS)
       { const LockGuard lgSocketSync{ mMutex };
         PushData(blD, stX, cpD, stS); }
-  void SendSafe(const DataConst &dcPacket)
-    { const LockGuard lgSocketSync{ mMutex }; Send(dcPacket); }
+  void SendSafe(const MemConst &mcPacket)
+    { const LockGuard lgSocketSync{ mMutex }; Send(mcPacket); }
   void SendStringSafe(const string &strData)
     { const LockGuard lgSocketSync{ mMutex }; SendString(strData); }
   /* -- Get timers --------------------------------------------------------- */
   const ClkTimePoint GetTConnect(void) const
-    { return ClkTimePoint{ duConnect }; }
+    { return ClkTimePoint{ cdConnect }; }
   const ClkTimePoint GetTConnected(void) const
-    { return ClkTimePoint{ duConnected }; }
+    { return ClkTimePoint{ cdConnected }; }
   const ClkTimePoint GetTRead(void) const
-    { return ClkTimePoint{ duRead }; }
+    { return ClkTimePoint{ cdRead }; }
   const ClkTimePoint GetTWrite(void) const
-    { return ClkTimePoint{ duWrite }; }
+    { return ClkTimePoint{ cdWrite }; }
   const ClkTimePoint GetTDisconnect(void) const
-    { return ClkTimePoint{ duDisconnect }; }
+    { return ClkTimePoint{ cdDisconnect }; }
   const ClkTimePoint GetTDisconnected(void) const
-    { return ClkTimePoint{ duDisconnected }; }
+    { return ClkTimePoint{ cdDisconnected }; }
   /* -- Set a new callback ------------------------------------------------- */
   void SetNewCallback(lua_State*const lS) { LuaEvtInitEx(lS, 1); }
   /* -- Async thread event callback (called by LuaEvtMaster) ------------- */
@@ -1199,11 +1215,11 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       for(string strVar; GetTXQCount() > 0;)
       { // Get packet data in send qeue
         Memory mbPacket;
-        GetPacket(mbPacket, blTX, stTX);
+        GetPacket(mbPacket, plTX, stTX);
         // If we haven't set the key name
-        if(strVar.empty()) { strVar = mbPacket.ToString(); continue; }
+        if(strVar.empty()) { strVar = mbPacket.MemToString(); continue; }
         // Get value string from packet and store entry
-        const string strVal{ mbPacket.ToString() };
+        const string strVal{ mbPacket.MemToString() };
         LuaUtilPushStr(lS, strVal);
         lua_setfield(lS, -2, strVar.c_str());
         // Clear string
@@ -1219,11 +1235,11 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     // If the connection was closed by the server then it's a clean exit
     SocketLogSafe(LH_DEBUG, "Disconnecting...");
     // Disconnecting
-    AddStatus(SS_DISCONNECTING, duDisconnect);
+    AddStatus(SS_DISCONNECTING, cdDisconnect);
     // Lock access to packet list
     const LockGuard lgSocketSync{ mMutex };
     // If we have a BIO and there is no fd? (i.e. stuck in BIO_do_connect)
-    if(bSocket && iFd == -1) UpdateDescriptor();
+    if(bioPtr && iFd == -1) UpdateDescriptor();
     // If socket is open?
     if(iFd != -1)
     { // Closed by us if not closed by server
@@ -1246,9 +1262,9 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   { // Thread safety
     const LockGuard lgSocketSync{ mMutex };
     // Get items and push into TX
-    PushData(blTX, stTX, StrToLowCaseRef(UtilToNonConst(strVar)).data(),
+    PushData(plTX, stTX, StrToLowCaseRef(UtilToNonConst(strVar)).data(),
       strVar.size());
-    PushData(blTX, stTX, strVal.data(), strVal.size());
+    PushData(plTX, stTX, strVal.data(), strVal.size());
   }
   /* -- Valid Hostname checker --------------------------------------------- */
   static bool ValidAddress(const string &strA)
@@ -1262,11 +1278,11 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   /* -- Setup Cipher ------------------------------------------------------- */
   void SetupCipher(const string &strC)
   { // Default specified? Use defaults from both cvars
-    if(strC == cParent.strCipherDefault)
+    if(strC == cParent->strCipherDefault)
     { // Setup <=TLSv1.2 ciphers
-      strCipherList = cCVars->GetInternalStrSafe(NET_CIPHERTLSv1);
+      strCipherList = cSockets->strvCipher12;
       // Setup TLSv1.3 ciphers
-      strCipherSuite = cCVars->GetInternalStrSafe(NET_CIPHERTLSv13);
+      strCipherSuite = cSockets->strvCipher13;
       // Done
       return;
     } // Split ciphers into two tokens
@@ -1279,22 +1295,22 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       case 1:
       { // Set TLSv1.3 cipher suite
         const string &strSuite = tData.front();
-        strCipherSuite = strSuite == cParent.strCipherDefault ?
-          cCVars->GetInternalStrSafe(NET_CIPHERTLSv13) : strSuite;
+        strCipherSuite = strSuite == cParent->strCipherDefault ?
+          cSockets->strvCipher13 : strSuite;
         // Set <=TLSv1.2 cipher list
-        strCipherList = cCVars->GetInternalStrSafe(NET_CIPHERTLSv1);
+        strCipherList = cSockets->strvCipher12;
         // Done
         break;
       } // Two tokens specified?
       case 2:
       { // Set TLSv1.3 cipher suite
         const string &strSuite = tData.front();
-        strCipherSuite = strSuite == cParent.strCipherDefault ?
-          cCVars->GetInternalStrSafe(NET_CIPHERTLSv13) : strSuite;
+        strCipherSuite = strSuite == cParent->strCipherDefault ?
+          cSockets->strvCipher13 : strSuite;
         // Set <= TLSv1.2 cipher list
         const string &strList = tData[1];
-        strCipherList = strList == cParent.strCipherDefault ?
-          cCVars->GetInternalStrSafe(NET_CIPHERTLSv1) : strList;
+        strCipherList = strList == cParent->strCipherDefault ?
+          cSockets->strvCipher12 : strList;
         // Done
         break;
       } // Invalid
@@ -1343,33 +1359,32 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     SetAddress(strA, uiP);
     SetupCipher(strC);
     // Initialise registry with headers
-    vlRegistry = { strH, cCommon->Lf(), ':' };
+    pRegistry.ParserReInit(strH, cCommon->Lf(), ':');
     // Push default user agent if not specified already
-    vlRegistry.VarsPushIfNotExist("user-agent",
-      cCVars->GetInternalStrSafe(NET_USERAGENT));
+    pRegistry.ParserPushIfNotExist("user-agent", cSockets->strvUserAgent);
     // Find if the request contains a bookmark fragment
     const size_t stFrag = strR.find('#');
     // Start building registry for connector thread
-    vlRegistry.VarsPushOrUpdatePairs({
+    pRegistry.ParserPushOrUpdatePairs({
       // Also disable keep-alive, we don't support it (yet?).
       { "connection", "close" },
       // Push the source address
       { "host", StdMove(strA) },
       // Push the formulated request line. Remove the right hand fragment from
       // the URL if neccesary.
-      { cParent.strRegVarREQ, StrAppend(strS, ' ',
+      { cParent->strRegVarREQ, StrAppend(strS, ' ',
           (StrUrlEncodeSpaces(stFrag == string::npos ?
             strR : strR.substr(0, stFrag))), " HTTP/1.0\r\n") },
       // Push method because we need to check if this is a HEAD request and
       // thus to know when to expect no output.
-      { cParent.strRegVarMETHOD, StdMove(strS) },
+      { cParent->strRegVarMETHOD, StdMove(strS) },
     });
     // Body specified?
-    if(!strB.empty()) vlRegistry.VarsPushOrUpdatePairs({
+    if(!strB.empty()) pRegistry.ParserPushOrUpdatePairs({
       // Add length of body text
       { "content-length", StrFromNum(strB.length()) },
       // Add body text
-      { cParent.strRegVarBODY, StdMove(strB) }
+      { cParent->strRegVarBODY, StdMove(strB) }
     });
     // Init LUA references
     LuaEvtInitEx(lS);
@@ -1381,18 +1396,18 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   /* -- Constructor -------------------------------------------------------- */
   Socket(void) :
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperSocket{ *cSockets, this }, // Register in collector
-    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
+    ICHelperSocket{ cSockets, this },  // Register in collector
+    IdentCSlave{ cParent->CtrNext() }, // Initialise identification number
     LuaEvtSlave{ this,                 // Socket async events init
       EMC_MP_SOCKET },                 // ...with this id
     SocketFlags{ SS_STANDBY },         // Initially on standby
-    bSocket(nullptr),                  // Invalid bio (openssl)
-    cContext(nullptr),                 // Invalid ssl context (openssl)
-    sSSL(nullptr),                     // Invalid ssl (openssl)
+    bioPtr(nullptr),                   // Invalid bio (openssl)
+    sslctxPtr(nullptr),                // Invalid ssl context (openssl)
+    sslPtr(nullptr),                   // Invalid ssl (openssl)
     qRX(0), qTX(0),                    // No RX or TX bytes
     qRXp(0), qTXp(0),                  // No RX or TX packets
-    tReader{ SysThread::Low },         // Low priority reader thread
-    tWriter{ SysThread::Low },         // Low priority writer thread
+    tReader{ STP_LOW },                // Low priority reader thread
+    tWriter{ STP_LOW },                // Low priority writer thread
     bUnlock(false),                    // Block sock writer thread
     uiPort(0),                         // No port
     iError(0),                         // No error
@@ -1405,7 +1420,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Socket)              // Supress copy constructor for safety
 };/* ----------------------------------------------------------------------- */
-/* ========================================================================= */
+/* ------------------------------------------------------------------------- */
 static void DestroyAllSockets(void)
 { // No sockets? Ignore
   if(cSockets->empty()) return;
@@ -1416,14 +1431,14 @@ static void DestroyAllSockets(void)
   cLog->LogInfoExSafe("Sockets closed all connections [$]!",
     cSockets->size());
 }
-/* ========================================================================= */
+/* ------------------------------------------------------------------------- */
 static void DeInitSockets(void)
 { // Deregister event so callbacks cannot fire
   cEvtMain->Unregister(EMC_MP_SOCKET);
   // Close all socket
   DestroyAllSockets();
 }
-/* ========================================================================= */
+/* ------------------------------------------------------------------------- */
 static void InitSockets(void)
 { // The operating systems sockets API needs to be initialised here because
   // we do not want it initialising during connection in other threads as other
@@ -1433,7 +1448,7 @@ static void InitSockets(void)
   // other connections when sockets API intiialisation is needed.
   BIO_sock_init();
 }
-/* ========================================================================= */
+/* ------------------------------------------------------------------------- */
 END_COLLECTOREX(Sockets, InitSockets(), DeInitSockets(),,
   /* -- Initialisers ------------------------------------------------------- */
   LuaEvtMaster{ EMC_MP_SOCKET },       // Setup async socket event
@@ -1461,7 +1476,7 @@ static size_t SocketWaitAsync(void)
   // Return number of connections reset
   return static_cast<size_t>(stClosed);
 }
-/* ========================================================================= */
+/* ------------------------------------------------------------------------- */
 static size_t SocketReset(void)
 { // No sockets? Ignore
   if(cSockets->empty()) return 0;
@@ -1475,35 +1490,43 @@ static size_t SocketReset(void)
   // Return number of connections reset
   return static_cast<size_t>(stClosed);
 }
-/* == OCSP options ========================================================= */
+/* -- OCSP options --------------------------------------------------------- */
 static CVarReturn SocketOCSPModified(const int iState)
   { return CVarSimpleSetIntNG(cSockets->iOCSP, iState, 2); }
-/* == Return if cvar can be set (accept only 1024-16384 for now) =========== */
+/* -- Return if cvar can be set (accept only 1024-16384 for now) ----------- */
 static CVarReturn SocketSetBufferSize(const size_t stSize)
   { return CVarSimpleSetIntNLG(cSockets->stBufferSize,
-      stSize, static_cast<size_t>(4096), static_cast<size_t>(1048576)); }
-/* ========================================================================= */
-static CVarReturn SocketSetRXTimeout(const double fdNew)
-  { return CVarSimpleSetIntNLG(cSockets->fdRecvTimeout, fdNew, 0, 3600); }
-/* ========================================================================= */
-static CVarReturn SocketSetTXTimeout(const double fdNew)
-  { return CVarSimpleSetIntNLG(cSockets->fdSendTimeout, fdNew, 0, 3600); }
-/* ========================================================================= */
+      stSize, 4096UL, 1048576UL); }
+/* ------------------------------------------------------------------------- */
+static CVarReturn SocketSetRXTimeout(const double dNew)
+  { return CVarSimpleSetIntNLG(cSockets->dRecvTimeout, dNew, 0, 3600); }
+/* ------------------------------------------------------------------------- */
+static CVarReturn SocketSetTXTimeout(const double dNew)
+  { return CVarSimpleSetIntNLG(cSockets->dSendTimeout, dNew, 0, 3600); }
+/* ------------------------------------------------------------------------- */
+static CVarReturn SocketSetCipher12(const string&, const string &strV)
+  { cSockets->strvCipher12 = strV; return ACCEPT; }
+/* ------------------------------------------------------------------------- */
+static CVarReturn SocketSetCipher13(const string&, const string &strV)
+  { cSockets->strvCipher13 = strV; return ACCEPT; }
+/* ------------------------------------------------------------------------- */
 static CVarReturn SocketAgentModified(const string &strN, string &strV)
 { // Ignore if string too long
   if(strN.size() > 200) return DENY;
-  // If not empty? Accept the string
-  if(!strN.empty()) return ACCEPT;
-  // Empty so use default
-  strV = StrFormat("Mozilla/5.0 ($; $-bit; v$.$.$.$) $/$",
-    cSystem->ENGName(), cSystem->ENGBits(), cSystem->ENGMajor(),
-    cSystem->ENGMinor(), cSystem->ENGBuild(), cSystem->ENGRevision(),
-    cCVars->GetInternalStrSafe(APP_SHORTNAME),
-    cCVars->GetInternalStrSafe(APP_VERSION));
+  // If empty? We'll set a default value
+  if(strN.empty())
+    strV = StrFormat("Mozilla/5.0 ($; $-bit; v$.$.$.$) $/$",
+      cSystem->ENGName(), cSystem->ENGBits(), cSystem->ENGMajor(),
+      cSystem->ENGMinor(), cSystem->ENGBuild(), cSystem->ENGRevision(),
+      cSystem->GetGuestShortTitle(), cSystem->GetGuestVersion());
+  // Not empty to use user value instead
+  else strV = strN;
+  // Set string view
+  cSockets->strvUserAgent = strV;
   // We changed the value so return that
   return ACCEPT_HANDLED;
 }
-/* == Find socket (Lock the mutex before using) ============================ */
+/* -- Find socket (Lock the mutex before using) ---------------------------- */
 static const Sockets::const_iterator SocketFind(const unsigned int uiId)
   { return StdFindIf(par_unseq, cSockets->cbegin(), cSockets->cend(),
       [uiId](const Socket*const sCptr)
@@ -1513,30 +1536,31 @@ static StrNCStrMap SocketOAuth11(const string &strMethod,
   const string &strScheme, const string &strHost, const string &strPort,
   const string &strReq, const string &strURLparams, const string &strParams)
 { // Input varlist and split params into it
-  Vars vaIn{ strParams, cCommon->Lf(), '=' };
+  Parser<> pParams{ strParams, cCommon->Lf(), '=' };
+  if(pParams.empty()) return {};
   // Get consumer key
-  const string strCK{ vaIn.Extract("oauth_consumer_key") };
+  const string strCK{ pParams.Extract("oauth_consumer_key") };
   if(strCK.empty())
     XC("No 'oauth_consumer_key' specified!",
        "Method",  strMethod, "Scheme", strScheme,
        "Host",    strHost,   "Port",   strPort,
        "Request", strReq,    "Params", strParams);
   // Get token
-  const string strTok{ vaIn.Extract("oauth_token") };
+  const string strTok{ pParams.Extract("oauth_token") };
   if(strTok.empty())
     XC("No 'oauth_token' specified!",
        "Method",  strMethod, "Scheme", strScheme,
        "Host",    strHost,   "Port",   strPort,
        "Request", strReq,    "Params", strParams);
   // Get user secret
-  const string strUS{ vaIn.Extract("oauth_user_secret") };
+  const string strUS{ pParams.Extract("oauth_user_secret") };
   if(strUS.empty())
     XC("No 'oauth_user_secret' specified!",
        "Method",  strMethod, "Scheme", strScheme,
        "Host",    strHost,   "Port",   strPort,
        "Request", strReq,    "Params", strParams);
   // Get consumer secret
-  const string strCS{ vaIn.Extract("oauth_consumer_secret") };
+  const string strCS{ pParams.Extract("oauth_consumer_secret") };
   if(strCS.empty())
     XC("No 'oauth_consumer_secret' specified!",
        "Method",  strMethod, "Scheme", strScheme,
@@ -1550,7 +1574,7 @@ static StrNCStrMap SocketOAuth11(const string &strMethod,
   string strAddr{ StrAppend(strScheme, "://", strHost, strCPort, strReq) };
   // Put basic stuff in. Be careful of using StrPair with CStrings as
   // you cant use string& with cstrings, so use CSTR*PAIR's instead.
-  StrNCStrMap vaOA{{
+  StrNCStrMap ssmFinal{{
     { "oauth_consumer_key",                       StdMove(strCK) },
     { "oauth_nonce", SHA1functions::HashMB(CryptRandomBlock(64)) },
     { "oauth_timestamp",              StrFromNum(cmSys.GetTimeS()) },
@@ -1559,27 +1583,26 @@ static StrNCStrMap SocketOAuth11(const string &strMethod,
     { "oauth_version",                                     "1.0" }
   }};
   // Copy config vars and oauth vars into unsigned params map
-  StrNCStrMap vaUP{ vaOA };
-  vaUP.insert(vaIn.cbegin(), vaIn.cend());
+  StrNCStrMap ssmDupe{ ssmFinal };
+  ssmDupe.insert(pParams.cbegin(), pParams.cend());
   // Split URL parameters and put each one in unsigned parameters list
-  const VarsConst vaURLP{ strURLparams, "&", '=' };
-  vaUP.insert(vaURLP.cbegin(), vaURLP.cend());
+  const ParserConst<> pUrl{ strURLparams, "&", '=' };
+  ssmDupe.insert(pUrl.cbegin(), pUrl.cend());
   // Now for each unsigned parameter. Encode it into the signed param table.
-  const string strOAParams{ CryptImplodeMapAndEncode(vaUP, "&") };
-  // Whats left in vaIn should be body parameters so lets sign them
-  const string strBody{ CryptImplodeMapAndEncode(vaIn, "&") };
+  const string strOAParams{ CryptImplodeMapAndEncode(ssmDupe, "&") };
+  // Whats left in pParams should be body parameters so lets sign them
+  const string strBody{ CryptImplodeMapAndEncode(pParams, "&") };
   // Hash the string with the key and return empty if fail
-  vaOA.insert({ "oauth_signature",
+  ssmFinal.insert({ "oauth_signature",
     CryptURLEncode(CryptMBtoB64(StdMove(SHA1functions::HashStrRaw(
       StrAppend(CryptURLEncode(strCS), '&', CryptURLEncode(strUS)),
-      StrAppend(CryptURLEncode(strMethod), '&',
-             CryptURLEncode(strAddr), '&',
-             CryptURLEncode(strOAParams))
+      StrAppend(CryptURLEncode(strMethod), '&', CryptURLEncode(strAddr), '&',
+                CryptURLEncode(strOAParams))
   )))) });
   // Build final oauth string
-  const string strKV{ ImplodeMap(vaOA, ", ") };
-  // Whats left in vaURLP should be body parameters so lets sign them
-  string strURLParams{ CryptImplodeMapAndEncode(vaURLP, "&") };
+  const string strKV{ ImplodeMap(ssmFinal, ", ") };
+  // Whats left in pUrl should be body parameters so lets sign them
+  string strURLParams{ CryptImplodeMapAndEncode(pUrl, "&") };
   // This is the URL resource + parameters
   string strResParams{ strReq };
   // Have parameters?

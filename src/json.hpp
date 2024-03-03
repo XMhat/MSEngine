@@ -24,7 +24,8 @@ namespace P {                          // Start of public module namespace
 /* == Json object collector and member class =============================== */
 BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
-  public AsyncLoader<Json>,            // Asynchronous loading of Json object
+  public Ident,                        // Json code file name
+  public AsyncLoaderJson,              // Asynchronous loading of Json object
   public Lockable,                     // Lua garbage collector instruction
   private Document                     // RapidJson document class
 { /* -- Build a json string from lua string ----------------------- */ private:
@@ -210,14 +211,14 @@ BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
   }
   /* ----------------------------------------------------------------------- */
   template<typename T>int ToFile(const string &strFile) const
-    { return FStream{ strFile, FStream::FM_W_T }.
+    { return FStream{ strFile, FM_W_T }.
         FStreamWriteStringSafe(StrFromNum<T>()) ? 0 : StdGetError(); }
   /* ----------------------------------------------------------------------- */
   void AsyncReady(FileMap &fC)
   { // Parse the string and return if succeeded
-    const ParseResult prData{ Parse<0>(fC.Ptr<char>(), fC.Size()) };
+    const ParseResult prData{ Parse<0>(fC.MemPtr<char>(), fC.MemSize()) };
     if(!prData) XC(GetParseError_En(prData.Code()),
-      "Identifier", fC.IdentGet(), "Size", fC.Size(),
+      "Identifier", fC.IdentGet(), "Size", fC.MemSize(),
       "JsonSize",   prData.Offset());
   }
   /* -- Load json from file asynchronously --------------------------------- */
@@ -260,9 +261,10 @@ BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   Json(void) :
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperJson(*cJsons),
-    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
-    AsyncLoader<Json>{ this, EMC_MP_JSON }
+    ICHelperJson{ cJsons },            // Initialise collector
+    IdentCSlave{ cParent->CtrNext() }, // Initialise identification number
+    AsyncLoaderJson{ *this, this,      // Initialise async loader with this
+      EMC_MP_JSON }                    // ...and the event id
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */

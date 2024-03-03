@@ -66,8 +66,8 @@ class GlFWMonitor :                    // Members initially private
   GLFWmonitor   *mContext;             // Monitor context
   const GlFWRes *rPrimary;             // Monitor primary resolution
   const DimDouble ddInches;            // Monitor size in inches
-  const double   fdDiagonal,           // Diagonal millimetre length
-                 fdDiagonalInches;     // Diagonal inches length
+  const double   dDiagonal,            // Diagonal millimetre length
+                 dDiagonalInches;      // Diagonal inches length
   const string   strName;              // Monitor name
   /* -- Get monitor position ----------------------------------------------- */
   DimCoInt Dim(GLFWmonitor*const mC) const
@@ -96,27 +96,27 @@ class GlFWMonitor :                    // Members initially private
   /* -- Get monitor name --------------------------------------------------- */
   const string &Name(void) const { return strName; }
   /* -- Return diagonal size ----------------------------------------------- */
-  double Diagonal(void) const { return fdDiagonal; }
-  double DiagonalInch(void) const { return fdDiagonalInches; }
+  double Diagonal(void) const { return dDiagonal; }
+  double DiagonalInch(void) const { return dDiagonalInches; }
   /* -- Return size -------------------------------------------------------- */
   double WidthInch(void) const { return ddInches.DimGetWidth(); }
   double HeightInch(void) const { return ddInches.DimGetHeight(); }
   /* -- Constructor -------------------------------------------------------- */
   GlFWMonitor(const int iId, GLFWmonitor*const mC) :
     /* -- Initialisers ----------------------------------------------------- */
-    DimCoInt{ Dim(mC) },             // Initialise physical position+size
-    iIndex{ iId },                   // Initialise glfw index
-    mContext(mC),                    // Initialise glfw context
-    rPrimary(nullptr),               // Initialise primary resolution
-    ddInches{                        // Initialise physical size as inches
+    DimCoInt{ Dim(mC) },               // Initialise physical position+size
+    iIndex{ iId },                     // Initialise glfw index
+    mContext(mC),                      // Initialise glfw context
+    rPrimary(nullptr),                 // Initialise primary resolution
+    ddInches{                          // Initialise physical size as inches
       UtilMillimetresToInches(DimGetWidth()),
       UtilMillimetresToInches(DimGetHeight()) },
-    fdDiagonal(UtilGetDiagLength(        // Initialise physical diagonal length
+    dDiagonal(UtilGetDiagLength(       // Initialise physical diagonal length
       DimGetWidth(),
       DimGetHeight())),
-    fdDiagonalInches(                // Initialise diagonal length in inches
-      UtilMillimetresToInches(fdDiagonal)),
-    strName{ StdMove(InitName(mC)) } // Initialise monitor name
+    dDiagonalInches(                   // Initialise diagonal length in inches
+      UtilMillimetresToInches(dDiagonal)),
+    strName{ StdMove(InitName(mC)) }   // Initialise monitor name
   /* -- No code ------------------------------------------------------------ */
   { // Get primary video mode information. Note that if a monitor is
     // just connecting, the width, height and refreshRate properties can be
@@ -228,6 +228,6 @@ struct GlFWMonitors :
   GlFWMonitors(void) : moPrimary(nullptr) { }
 };/* ----------------------------------------------------------------------- */
 }                                      // End of public module namespace
-/* ----------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
 }                                      // End of private module namespace
 /* == EoF =========================================================== EoF == */

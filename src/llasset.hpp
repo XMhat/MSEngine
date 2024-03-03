@@ -54,19 +54,19 @@ using namespace IStd::P;               using namespace IUtil::P;
 // ? - WU8    = Writes an 8-bit unsigned integer to the specified position.
 /* ------------------------------------------------------------------------- */
 LLFUNCTEMPLATE(WriteI, LCGETPTR(1, Asset)->
-  WriteInt<T>(LCGETINT(size_t, 2, "Position"), LCGETINT(T, 3, "Value")));
+  MemWriteInt<T>(LCGETINT(size_t, 2, "Position"), LCGETINT(T, 3, "Value")));
 LLFUNCTEMPLATE(WI16LE, LCGETPTR(1, Asset)->
-  WriteIntLE<T>(LCGETINT(size_t, 2, "Position"), LCGETINT(T, 3, "Value")));
+  MemWriteIntLE<T>(LCGETINT(size_t, 2, "Position"), LCGETINT(T, 3, "Value")));
 LLFUNCTEMPLATE(WI16BE, LCGETPTR(1, Asset)->
-  WriteIntBE<T>(LCGETINT(size_t, 2, "Position"), LCGETINT(T, 3, "Value")));
+  MemWriteIntBE<T>(LCGETINT(size_t, 2, "Position"), LCGETINT(T, 3, "Value")));
 LLFUNCTEMPLATE(WI32LE, LCGETPTR(1, Asset)->
-  WriteIntLE<T>(LCGETINT(size_t, 2, "Position"), LCGETINT(T, 3, "Value")));
+  MemWriteIntLE<T>(LCGETINT(size_t, 2, "Position"), LCGETINT(T, 3, "Value")));
 LLFUNCTEMPLATE(WI32BE, LCGETPTR(1, Asset)->
-  WriteIntBE<T>(LCGETINT(size_t, 2, "Position"), LCGETINT(T, 3, "Value")));
+  MemWriteIntBE<T>(LCGETINT(size_t, 2, "Position"), LCGETINT(T, 3, "Value")));
 LLFUNCTEMPLATE(WI64LE, LCGETPTR(1, Asset)->
-  WriteIntLE<T>(LCGETINT(size_t, 2, "Position"), LCGETINT(T, 3, "Value")));
+  MemWriteIntLE<T>(LCGETINT(size_t, 2, "Position"), LCGETINT(T, 3, "Value")));
 LLFUNCTEMPLATE(WI64BE, LCGETPTR(1, Asset)->
-  WriteIntBE<T>(LCGETINT(size_t, 2, "Position"), LCGETINT(T, 3, "Value")));
+  MemWriteIntBE<T>(LCGETINT(size_t, 2, "Position"), LCGETINT(T, 3, "Value")));
 /* ========================================================================= */
 // $ Asset:WriteNum
 // > Position:integer=Position to write the number to in the array.
@@ -82,15 +82,20 @@ LLFUNCTEMPLATE(WI64BE, LCGETPTR(1, Asset)->
 // ? - RF64LE = Same as RF64 but forces the specified value to little-endian.
 /* ------------------------------------------------------------------------- */
 LLFUNCTEMPLATE(WriteN, LCGETPTR(1, Asset)->
-  WriteInt<T>(LCGETINT(size_t, 2, "Position"), LCGETNUM(T, 3, "Value")));
+  MemWriteInt<T>(LCGETINT(size_t, 2, "Position"),
+    LCGETNUM(T, 3, "Value")));
 LLFUNC(WF32BE, LCGETPTR(1, Asset)->
-  WriteFloatBE(LCGETINT(size_t, 2, "Position"), LCGETNUM(float, 3, "Value")));
+  MemWriteFloatBE(LCGETINT(size_t, 2, "Position"),
+    LCGETNUM(float, 3, "Value")));
 LLFUNC(WF32LE, LCGETPTR(1, Asset)->
-  WriteFloatLE(LCGETINT(size_t, 2, "Position"), LCGETNUM(float, 3, "Value")));
+  MemWriteFloatLE(LCGETINT(size_t, 2, "Position"),
+    LCGETNUM(float, 3, "Value")));
 LLFUNC(WF64BE, LCGETPTR(1, Asset)->
-  WriteDoubleBE(LCGETINT(size_t, 2, "Position"),LCGETNUM(double, 3, "Value")));
+  MemWriteDoubleBE(LCGETINT(size_t, 2, "Position"),
+    LCGETNUM(double, 3, "Value")));
 LLFUNC(WF64LE, LCGETPTR(1, Asset)->
-  WriteDoubleLE(LCGETINT(size_t, 2, "Position"),LCGETNUM(double, 3, "Value")));
+  MemWriteDoubleLE(LCGETINT(size_t, 2, "Position"),
+    LCGETNUM(double, 3, "Value")));
 /* ========================================================================= */
 // $ Asset:ReadInt
 // > Position:integer=Position to write in the array.
@@ -120,19 +125,19 @@ LLFUNC(WF64LE, LCGETPTR(1, Asset)->
 // ? - RU8    = Reads a 8-bit unsigned integer from the specified position.
 /* ------------------------------------------------------------------------- */
 LLFUNCTEMPLATEEX(ReadI, 1, LCPUSHVAR(
-  LCGETPTR(1, Asset)->ReadInt<T>(LCGETINT(size_t, 2, "Position"))));
+  LCGETPTR(1, Asset)->MemReadInt<T>(LCGETINT(size_t, 2, "Position"))));
 LLFUNCTEMPLATEEX(RI16LE, 1, LCPUSHVAR(UtilToI16LE(
-  LCGETPTR(1, Asset)->ReadInt<T>(LCGETINT(size_t, 2, "Position")))));
+  LCGETPTR(1, Asset)->MemReadInt<T>(LCGETINT(size_t, 2, "Position")))));
 LLFUNCTEMPLATEEX(RI16BE, 1, LCPUSHVAR(UtilToI16BE(
-  LCGETPTR(1, Asset)->ReadInt<T>(LCGETINT(size_t, 2, "Position")))));
+  LCGETPTR(1, Asset)->MemReadInt<T>(LCGETINT(size_t, 2, "Position")))));
 LLFUNCTEMPLATEEX(RI32LE, 1, LCPUSHVAR(UtilToI32LE(
-  LCGETPTR(1, Asset)->ReadInt<T>(LCGETINT(size_t, 2, "Position")))));
+  LCGETPTR(1, Asset)->MemReadInt<T>(LCGETINT(size_t, 2, "Position")))));
 LLFUNCTEMPLATEEX(RI32BE, 1, LCPUSHVAR(UtilToI32BE(
-  LCGETPTR(1, Asset)->ReadInt<T>(LCGETINT(size_t, 2, "Position")))));
+  LCGETPTR(1, Asset)->MemReadInt<T>(LCGETINT(size_t, 2, "Position")))));
 LLFUNCTEMPLATEEX(RI64LE, 1, LCPUSHVAR(UtilToI64LE(
-  LCGETPTR(1, Asset)->ReadInt<T>(LCGETINT(size_t, 2, "Position")))));
+  LCGETPTR(1, Asset)->MemReadInt<T>(LCGETINT(size_t, 2, "Position")))));
 LLFUNCTEMPLATEEX(RI64BE, 1, LCPUSHVAR(UtilToI64BE(
-  LCGETPTR(1, Asset)->ReadInt<T>(LCGETINT(size_t, 2, "Position")))));
+  LCGETPTR(1, Asset)->MemReadInt<T>(LCGETINT(size_t, 2, "Position")))));
 /* ========================================================================= */
 // $ Asset:WriteInt
 // > Position:integer=Position to swap the bytes at
@@ -144,10 +149,10 @@ LLFUNCTEMPLATEEX(RI64BE, 1, LCPUSHVAR(UtilToI64BE(
 // ? - S32    = Swaps high/low 16-bits
 // ? - S64    = Swaps high/low 32-bits
 /* ------------------------------------------------------------------------- */
-LLFUNC(S8, LCGETPTR(1, Asset)->Swap8(LCGETINT(size_t, 2, "Position")));
-LLFUNC(S16, LCGETPTR(1, Asset)->Swap16(LCGETINT(size_t, 2, "Position")));
-LLFUNC(S32, LCGETPTR(1, Asset)->Swap32(LCGETINT(size_t, 2, "Position")));
-LLFUNC(S64, LCGETPTR(1, Asset)->Swap64(LCGETINT(size_t, 2, "Position")));
+LLFUNC(S8, LCGETPTR(1, Asset)->MemSwap8(LCGETINT(size_t, 2, "Position")));
+LLFUNC(S16, LCGETPTR(1, Asset)->MemSwap16(LCGETINT(size_t, 2, "Position")));
+LLFUNC(S32, LCGETPTR(1, Asset)->MemSwap32(LCGETINT(size_t, 2, "Position")));
+LLFUNC(S64, LCGETPTR(1, Asset)->MemSwap64(LCGETINT(size_t, 2, "Position")));
 /* ========================================================================= */
 // $ Asset:ReadNum
 // > Position:integer=Position to write the number to in the array.
@@ -163,50 +168,50 @@ LLFUNC(S64, LCGETPTR(1, Asset)->Swap64(LCGETINT(size_t, 2, "Position")));
 // ? - RF64LE = Same as RF64 but forces the return value to little-endian.
 /* ------------------------------------------------------------------------- */
 LLFUNCTEMPLATEEX(ReadN, 1, LCPUSHVAR(static_cast<lua_Number>(
-  LCGETPTR(1, Asset)->ReadInt<T>(LCGETINT(size_t, 2, "Position")))));
+  LCGETPTR(1, Asset)->MemReadInt<T>(LCGETINT(size_t, 2, "Position")))));
 LLFUNCEX(RF32LE, 1, LCPUSHVAR(static_cast<lua_Number>(
   UtilCastInt32ToFloat(UtilToI32LE(LCGETPTR(1, Asset)->
-    ReadInt<uint32_t>(LCGETINT(size_t, 2, "Position")))))));
+    MemReadInt<uint32_t>(LCGETINT(size_t, 2, "Position")))))));
 LLFUNCEX(RF32BE, 1, LCPUSHVAR(static_cast<lua_Number>(
   UtilCastInt32ToFloat(UtilToI32BE(LCGETPTR(1, Asset)->
-    ReadInt<uint32_t>(LCGETINT(size_t, 2, "Position")))))));
+    MemReadInt<uint32_t>(LCGETINT(size_t, 2, "Position")))))));
 LLFUNCEX(RF64LE, 1, LCPUSHVAR(static_cast<lua_Number>(
   UtilCastInt64ToDouble(UtilToI64LE(LCGETPTR(1, Asset)->
-    ReadInt<uint64_t>(LCGETINT(size_t, 2, "Position")))))));
+    MemReadInt<uint64_t>(LCGETINT(size_t, 2, "Position")))))));
 LLFUNCEX(RF64BE, 1, LCPUSHVAR(static_cast<lua_Number>(
   UtilCastInt64ToDouble(UtilToI64BE(LCGETPTR(1, Asset)->
-    ReadInt<uint64_t>(LCGETINT(size_t, 2, "Position")))))));
+    MemReadInt<uint64_t>(LCGETINT(size_t, 2, "Position")))))));
 /* ========================================================================= */
 // $ Asset:Resize
 // > Size:integer=The new size of the array in bytes.
 // ? Resizes the specified array.
 /* ------------------------------------------------------------------------- */
 LLFUNC(Resize,
-  LCGETPTR(1, Asset)->Resize(LCGETINTLG(size_t, 2, 0, UINT_MAX, "Size")));
+  LCGETPTR(1, Asset)->MemResize(LCGETINTLG(size_t, 2, 0, UINT_MAX, "Size")));
 /* ========================================================================= */
 // $ Asset:ResizeUp
 // > Size:integer=The new size of the array in bytes.
 // ? Resizes the specified array upwards, but never downwards
 /* ------------------------------------------------------------------------- */
 LLFUNC(ResizeUp,
-  LCGETPTR(1, Asset)->ResizeUp(LCGETINTLG(size_t, 2, 0, UINT_MAX, "Size")));
+  LCGETPTR(1, Asset)->MemResizeUp(LCGETINTLG(size_t, 2, 0, UINT_MAX, "Size")));
 /* ========================================================================= */
 // $ Asset:Fill
 // > Char:integer=ASCII character
 // ? Fills the buffer with the specified character
 /* ------------------------------------------------------------------------- */
-LLFUNC(Fill,
-  LCGETPTR(1, Asset)->Fill(LCGETINTLG(uint8_t, 2, 0, UCHAR_MAX, "Character")));
+LLFUNC(Fill, LCGETPTR(1, Asset)->
+  MemFill(LCGETINTLG(uint8_t, 2, 0, UCHAR_MAX, "Character")));
 /* ========================================================================= */
 // $ Asset:Clear
 // ? Same as Asset:Fill but automatically assumes zero fill.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Clear, LCGETPTR(1, Asset)->Fill());
+LLFUNC(Clear, LCGETPTR(1, Asset)->MemFill());
 /* ========================================================================= */
 // $ Asset:Reverse
 // ? Completely reverses all the bytes in the array.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Reverse, LCGETPTR(1, Asset)->Reverse());
+LLFUNC(Reverse, LCGETPTR(1, Asset)->MemReverse());
 /* ========================================================================= */
 // $ Asset:ToString
 // < Text:string=The array converted to a string.
@@ -214,7 +219,7 @@ LLFUNC(Reverse, LCGETPTR(1, Asset)->Reverse());
 // ? terminate at the first null character or at the end of array, whichever
 // ? comes first.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ToString, 1, LCPUSHVAR(LCGETPTR(1, Asset)->ToString()));
+LLFUNCEX(ToString, 1, LCPUSHVAR(LCGETPTR(1, Asset)->MemToString()));
 /* ========================================================================= */
 // $ Asset:ToFile
 // > Filename:string=Filename to write to.
@@ -222,14 +227,14 @@ LLFUNCEX(ToString, 1, LCPUSHVAR(LCGETPTR(1, Asset)->ToString()));
 // ? Dumps the array to the specified file on disk. Useful for debugging.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(ToFile, 1,
-  LCPUSHVAR(FStream(LCGETCPPFILE(2, "File"), FStream::FM_W_B).
+  LCPUSHVAR(FStream(LCGETCPPFILE(2, "File"), FM_W_B).
     FStreamWriteBlockSafe(*LCGETPTR(1, Asset))));
 /* ========================================================================= */
 // $ Asset:Size
 // < Size:integer=Size of the array in bytes.
 // ? Returns the size of the array.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Size, 1, LCPUSHVAR(LCGETPTR(1, Asset)->Size()));
+LLFUNCEX(Size, 1, LCPUSHVAR(LCGETPTR(1, Asset)->MemSize()));
 /* ========================================================================= */
 // $ Asset:Find
 // > Text:string=String to find in array.
@@ -237,7 +242,7 @@ LLFUNCEX(Size, 1, LCPUSHVAR(LCGETPTR(1, Asset)->Size()));
 // ? Finds the first occurence of 'Text' in array from the beginning.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Find, 1, LCPUSHVAR(LCGETPTR(1, Asset)->
-  Find(LCGETCPPSTRINGNE(2, "String"))));
+  MemFind(LCGETCPPSTRINGNE(2, "String"))));
 /* ========================================================================= */
 // $ Asset:FindEx
 // > Text:string=String to find in array.
@@ -246,7 +251,7 @@ LLFUNCEX(Find, 1, LCPUSHVAR(LCGETPTR(1, Asset)->
 // ? Finds the first occurence of 'Text' in array from the specified position.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(FindEx, 1, LCPUSHVAR(LCGETPTR(1, Asset)->
-  Find(LCGETCPPSTRINGNE(2, "String"), LCGETINT(size_t, 3, "Position"))));
+  MemFind(LCGETCPPSTRINGNE(2, "String"), LCGETINT(size_t, 3, "Position"))));
 /* ========================================================================= */
 // $ Asset:Set
 // > Position:integer=Position to start at.
@@ -254,7 +259,7 @@ LLFUNCEX(FindEx, 1, LCPUSHVAR(LCGETPTR(1, Asset)->
 // > Bytes:integer=Number of bytes to set.
 // ? Fills the array with 'Character' at 'Position' for 'Bytes' bytes.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Set, LCGETPTR(1, Asset)->FillEx(
+LLFUNC(Set, LCGETPTR(1, Asset)->MemFillEx(
   LCGETINT(size_t,        2, "Position"),
   LCGETINT(unsigned char, 3, "Character"),
   LCGETINT(size_t,        4, "Bytes")));
@@ -267,7 +272,7 @@ LLFUNC(Set, LCGETPTR(1, Asset)->FillEx(
 // ? number of bytes.
 /* ------------------------------------------------------------------------- */
 LLFUNC(Crop, LCGETPTR(1, Asset)->
-  Crop(LCGETINT(size_t, 2, "Position"), LCGETINT(size_t, 3, "Bytes")));
+  MemCrop(LCGETINT(size_t, 2, "Position"), LCGETINT(size_t, 3, "Bytes")));
 /* ========================================================================= */
 // $ Asset:BitClear
 // > Position:integer=Position (in bits) to clear the bit from.
@@ -275,7 +280,7 @@ LLFUNC(Crop, LCGETPTR(1, Asset)->
 // ? position and not a byte position.
 /* ------------------------------------------------------------------------- */
 LLFUNC(BitClear,
-  LCGETPTR(1, Asset)->BitClear(LCGETINT(size_t, 2, "Position")));
+  LCGETPTR(1, Asset)->MemBitClear(LCGETINT(size_t, 2, "Position")));
 /* ========================================================================= */
 // $ Asset:BitFlip
 // > Position:integer=Position (in bits) to flip the bit from.
@@ -283,7 +288,7 @@ LLFUNC(BitClear,
 // ? position and not a byte position.
 /* ------------------------------------------------------------------------- */
 LLFUNC(BitFlip,
-  LCGETPTR(1, Asset)->BitFlip(LCGETINT(size_t, 2, "Position")));
+  LCGETPTR(1, Asset)->MemBitFlip(LCGETINT(size_t, 2, "Position")));
 /* ========================================================================= */
 // $ Asset:BitSet
 // > Position:integer=Position (in bits) to set the bit from.
@@ -291,7 +296,7 @@ LLFUNC(BitFlip,
 // ? position and not a byte position.
 /* ------------------------------------------------------------------------- */
 LLFUNC(BitSet,
-  LCGETPTR(1, Asset)->BitSet(LCGETINT(size_t, 2, "Position")));
+  LCGETPTR(1, Asset)->MemBitSet(LCGETINT(size_t, 2, "Position")));
 /* ========================================================================= */
 // $ Asset:BitTest
 // > Position:integer=Position (in bits) to set the bit from.
@@ -300,7 +305,7 @@ LLFUNC(BitSet,
 // ? position and not a byte position.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(BitState, 1,
-  LCPUSHVAR(LCGETPTR(1, Asset)->BitTest(LCGETINT(size_t, 2, "Position"))));
+  LCPUSHVAR(LCGETPTR(1, Asset)->MemBitTest(LCGETINT(size_t, 2, "Position"))));
 /* ========================================================================= */
 // $ Asset:Invert
 // > Position:integer=Position to invert.
@@ -324,20 +329,20 @@ LLFUNCEX(BitState, 1,
 // ? - I64FLE = Same as I64F but forces the specified bits to be litten-endian.
 /* ------------------------------------------------------------------------- */
 LLFUNCTEMPLATE(Invert,
-  LCGETPTR(1, Asset)->Invert<T>(LCGETINT(size_t, 2, "Position")));
-LLFUNCTEMPLATE(InvertEx, LCGETPTR(1, Asset)->Invert<T>(
+  LCGETPTR(1, Asset)->MemInvert<T>(LCGETINT(size_t, 2, "Position")));
+LLFUNCTEMPLATE(InvertEx, LCGETPTR(1, Asset)->MemInvert<T>(
   LCGETINT(size_t, 2, "Position"), LCGETINT(T, 3, "Bits")));
-LLFUNC(I16FBE, LCGETPTR(1, Asset)->Invert<uint16_t>(LCGETINT(size_t, 2,
+LLFUNC(I16FBE, LCGETPTR(1, Asset)->MemInvert<uint16_t>(LCGETINT(size_t, 2,
   "Position"), UtilToI16BE(LCGETINT(uint16_t, 3, "Bits"))));
-LLFUNC(I16FLE, LCGETPTR(1, Asset)->Invert<uint16_t>(LCGETINT(size_t, 2,
+LLFUNC(I16FLE, LCGETPTR(1, Asset)->MemInvert<uint16_t>(LCGETINT(size_t, 2,
   "Position"), UtilToI16LE(LCGETINT(uint16_t, 3, "Bits"))));
-LLFUNC(I32FBE, LCGETPTR(1, Asset)->Invert<uint32_t>(LCGETINT(size_t, 2,
+LLFUNC(I32FBE, LCGETPTR(1, Asset)->MemInvert<uint32_t>(LCGETINT(size_t, 2,
   "Position"), UtilToI32BE(LCGETINT(uint32_t, 3, "Bits"))));
-LLFUNC(I32FLE, LCGETPTR(1, Asset)->Invert<uint32_t>(LCGETINT(size_t, 2,
+LLFUNC(I32FLE, LCGETPTR(1, Asset)->MemInvert<uint32_t>(LCGETINT(size_t, 2,
   "Position"), UtilToI32LE(LCGETINT(uint32_t, 3, "Bits"))));
-LLFUNC(I64FBE, LCGETPTR(1, Asset)->Invert<uint64_t>(LCGETINT(size_t, 2,
+LLFUNC(I64FBE, LCGETPTR(1, Asset)->MemInvert<uint64_t>(LCGETINT(size_t, 2,
   "Position"), UtilToI64BE(LCGETINT(uint64_t, 3, "Bits"))));
-LLFUNC(I64FLE, LCGETPTR(1, Asset)->Invert<uint64_t>(LCGETINT(size_t, 2,
+LLFUNC(I64FLE, LCGETPTR(1, Asset)->MemInvert<uint64_t>(LCGETINT(size_t, 2,
   "Position"), UtilToI64LE(LCGETINT(uint64_t, 3, "Bits"))));
 /* ========================================================================= */
 // $ Asset:Name
@@ -519,8 +524,8 @@ LLFUNCEX(EnumerateEx, 1, LCTOTABLE(AssetList{ LCGETCPPFILE(1, "Directory"),
 // ? Allocates the specified amount of system memory for you to read and write
 // ? to. The memory is zero'd out after allocation for security reasons.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Create, 1,
-  LCCLASSCREATE(Asset)->InitSafe(LCGETINTLG(size_t, 1, 0, UINT_MAX, "Size")));
+LLFUNCEX(Create, 1, LCCLASSCREATE(Asset)->
+  MemInitSafe(LCGETINTLG(size_t, 1, 0, UINT_MAX, "Size")));
 /* ========================================================================= */
 // $ Asset.ArrayAsync
 // > Id:string=The filename of the file load
@@ -625,7 +630,7 @@ LLFUNC(WaitAsync, cAssets->WaitAsync());
 // ? across. This allows you to create a duplicate of the specified asset to
 // ? not destory the original.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Duplicate, 1, LCCLASSCREATE(Asset)->InitCopy(*LCGETPTR(1, Asset)));
+LLFUNCEX(Duplicate, 1, LCCLASSCREATE(Asset)->MemInitCopy(*LCGETPTR(1, Asset)));
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Asset.* namespace functions structure                               ## **

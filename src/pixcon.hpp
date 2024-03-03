@@ -14,8 +14,8 @@
 ** Curses API in it's own namespace to prevent ambiguity problems.           **
 ** ------------------------------------------------------------------------- */
 namespace ICurses {                    // Start of Curses interface
-#ifdef MACOS                           // Using MacOS? (Built-in is buggy)
-# include <curses/curses.h>            // Using our static curses library
+#if defined(MACOS)                     // Using MacOS? (Built-in is buggy)
+# include <curses.h>                   // Using our static curses library
 #else                                  // Using Linux? (Built-in is OK)
 # include <ncurses.h>                  // Using Curses for fancy term effects
 #endif                                 // End of POSIX OS detection
@@ -111,9 +111,9 @@ class SysCon :                         // All members initially private
     using namespace ICurses;
     // am just going to put this here just incase.
     if(isendwin()) return;
-    // Update size of terminal window
-    int iNewW, iNewH; getmaxyx(stdscr, iNewH, iNewW);
-    // Ignore if not changed
+    // Get new size of terminal window and return if not changed
+    const int iNewW = stdscr->_maxx+1, // getmaxx(stdscr)
+              iNewH = stdscr->_maxy+1; // getmaxy(stdscr)
     if(iNewW == DimGetWidth() && iNewH == DimGetHeight()) return;
     // Log the new size
     cLog->LogDebugExSafe("SysCon resized from $x$ to $x$.",
@@ -682,15 +682,13 @@ class SysCon :                         // All members initially private
       if(can_change_color())
       { // Make sure we initialise all the pairs
         for(size_t stIndex = 1; stIndex < stPairs; ++stIndex)
-        { // Get saved palette entry
+        { // Get saved palette entry and restore it
           ShortPair &spEntry = ptPairs[stIndex];
-          // Restore pair entry
           init_pair(static_cast<short>(stIndex), spEntry[0], spEntry[1]);
         } // For each palette entry
         for(size_t stIndex = 1; stIndex < stPalette; ++stIndex)
-        { // Get saved palette entry
+        { // Get saved palette entry and restore it
           ShortTri &stEntry = ctPalette[stIndex];
-          // Restore palette entry
           init_color(static_cast<short>(stIndex),
             stEntry[0], stEntry[1], stEntry[2]);
         }
@@ -727,6 +725,8 @@ class SysCon :                         // All members initially private
       XC("Failed to disable interrupt flush!");
     // Enable special keys
     if(keypad(stdscr, TRUE) == ERR) XC("Failed to enable special keys!");
+    // Disable the annoying one second escape key delay
+    set_escdelay(0);
     // If we can use colour?
     if(can_change_color())
     { // Using colour

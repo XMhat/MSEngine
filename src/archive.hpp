@@ -38,15 +38,18 @@ BEGIN_ASYNCCOLLECTOREX(Archives, Archive, CLHelperSafe,
 BUILD_FLAGS(Archive,
   /* ----------------------------------------------------------------------- */
   // Archive on standby?             Archive file handle opened?
-  AE_STANDBY           {0x00000000}, AE_FILEOPENED        {0x00000001},
+  AE_STANDBY              {Flag[0]}, AE_FILEOPENED           {Flag[1]},
   // Allocated look2read structs?    Allocated archive structs?
-  AE_SETUPL2R          {0x00000002}, AE_ARCHIVEINIT       {0x00000004}
+  AE_SETUPL2R             {Flag[2]}, AE_ARCHIVEINIT          {Flag[3]}
 );/* == Archive object class =============================================== */
-BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
+BEGIN_ASYNCMEMBERCLASS(Archives, Archive, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
-  public AsyncLoader<Archive>,         // Async manager for off-thread loading
+  public Ident,                        // Archive file name
+  public AsyncLoaderArchive,           // Async manager for off-thread loading
   public Lockable,                     // Lua garbage collect instruction
-  public ArchiveFlags                  // Archive initialisation flags
+  public ArchiveFlags,                 // Archive initialisation flags
+  private mutex,                       // Mutex for condition variable
+  private condition_variable           // Waiting for async ops to complete
 { /* -- Private macros ----------------------------------------------------- */
 #if defined(WINDOWS)                   // Not using Windows?
 # define LZMAOpen(s,f)                 InFile_OpenW(s, UTFtoS16(f).c_str())
@@ -56,8 +59,6 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
 # define LZMAGetHandle(s)              (s).file.fd
 #endif                                 // Operating system check
   /* -- Private Variables -------------------------------------------------- */
-  condition_variable cvExtract;        // Waiting for async ops to complete
-  mutex            mExtract;           // mutex for condition variable
   SafeSizeT        stInUse;            // API in use reference count
   /* ----------------------------------------------------------------------- */
   StrUIntMap       lFiles,             // Files and directories as a map means
@@ -89,7 +90,7 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
       // failed
       if(const int iCode = SzArEx_Extract(&csaeD, &cltrD.vt,
         uiSrcId, &uiBlockIndex, &ucpData, &stUncompressed, &stOffset,
-        &stCompressed, &cParent.isaData, &cParent.isaData))
+        &stCompressed, &cParent->isaData, &cParent->isaData))
           XC("Failed to extract file",
              "Archive", IdentGet(), "File",  strFile,
              "Index",   uiSrcId, "Code",  iCode,
@@ -125,7 +126,7 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
       Memory mData{ stCompressed,
         reinterpret_cast<void*>(ucpData + stOffset) };
       // Free the data that was allocated by LZMA as we had to copy it
-      cParent.isaData.Free(nullptr, reinterpret_cast<void*>(ucpData));
+      cParent->isaData.Free(nullptr, reinterpret_cast<void*>(ucpData));
       // Return newly added item
       FileMap fmFile{ strFile, StdMove(mData), GetCreatedTime(uiSrcId),
         GetModifiedTime(uiSrcId) };
@@ -138,7 +139,7 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
     catch(...)
     { // Free the block if it was allocated
       if(ucpData)
-        cParent.isaData.Free(nullptr, reinterpret_cast<void*>(ucpData));
+        cParent->isaData.Free(nullptr, reinterpret_cast<void*>(ucpData));
       // Rethrow error
       throw;
     }
@@ -146,7 +147,7 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
   /* -- DeInitialise Look2Read structs ------------------------------------- */
   void CleanupLookToRead(CLookToRead2 &cltrIn)
   { // Free the decopmression buffer if it was created
-    if(cltrData.buf) ISzAlloc_Free(&cParent.isaData, cltrIn.buf);
+    if(cltrData.buf) ISzAlloc_Free(&cParent->isaData, cltrIn.buf);
   }
   /* -- Initialise Look2Read structs --------------------------------------- */
   void SetupLookToRead(CFileInStream &cfisOut, CLookToRead2 &cltrOut)
@@ -156,11 +157,11 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
     cltrOut.realStream = &cfisOut.vt;
     // Need to allocate transfer buffer in later LZMA.
     cltrOut.buf = reinterpret_cast<Byte*>
-      (ISzAlloc_Alloc(&cParent.isaData, cParent.stExtractBufSize));
+      (ISzAlloc_Alloc(&cParent->isaData, cParent->stExtractBufSize));
     if(!cltrData.buf)
       XC("Error allocating buffer for archive!",
-         "Archive", IdentGet(), "Bytes", cParent.stExtractBufSize);
-    cltrOut.bufSize = cParent.stExtractBufSize;
+         "Archive", IdentGet(), "Bytes", cParent->stExtractBufSize);
+    cltrOut.bufSize = cParent->stExtractBufSize;
     // Initialise look2read structs. On p7zip, the buffer allocation is already
     // done for us.
     LookToRead2_INIT(&cltrOut);
@@ -200,11 +201,11 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
   FileMap Extract(const StrUIntMapConstIt &flItem)
   { // Lock mutex. We don't care if we can't lock it though because we will
     // open another archive if we cannot lock it.
-    const UniqueLock uLock{ mExtract, try_to_lock };
+    const UniqueLock uLock{ *this, try_to_lock };
     // Create class to notify destructor when leaving this scope
     const class Notify { public: Archive &aCref;
       explicit Notify(Archive &oCr) : aCref(oCr) { }
-      ~Notify(void) { aCref.cvExtract.notify_one(); } } cNotify(*this);
+      ~Notify(void) { aCref.notify_one(); } } cNotify(*this);
     // Get filename and filename id from iterator
     const string &strFile = flItem->first;
     const unsigned int &uiSrcId = flItem->second;
@@ -242,7 +243,7 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
         SzArEx_Init(&csaeData2);
         // Initialise archive database and if failed, just log it
         if(const int iCode = SzArEx_Open(&csaeData2,
-          &cltrData2.vt, &cParent.isaData, &cParent.isaData))
+          &cltrData2.vt, &cParent->isaData, &cParent->isaData))
             XC("Failed to load archive!",
                "Archive", IdentGet(),       "Index", flItem->second,
                "File",    flItem->first, "Code",  iCode,
@@ -252,7 +253,7 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
         // Clean up look to read
         CleanupLookToRead(cltrData2);
         // Free memory
-        SzArEx_Free(&csaeData2, &cParent.isaData);
+        SzArEx_Free(&csaeData2, &cParent->isaData);
         // Close archive
         if(File_Close(&cfisData2.file))
           cLog->LogWarningExSafe("Archive failed to close archive '$': $!",
@@ -264,7 +265,7 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
       { // Clean up look to read
         CleanupLookToRead(cltrData2);
         // Free memory
-        SzArEx_Free(&csaeData2, &cParent.isaData);
+        SzArEx_Free(&csaeData2, &cParent->isaData);
         // Close archive
         if(File_Close(&cfisData2.file))
           cLog->LogWarningExSafe("Archive failed to close archive '$': $!",
@@ -311,7 +312,7 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
     FlagSet(AE_ARCHIVEINIT);
     // Initialise archive database and if failed, just log it
     if(const int iCode = SzArEx_Open(&csaeData, &cltrData.vt,
-      &cParent.isaData, &cParent.isaData))
+      &cParent->isaData, &cParent->isaData))
     { // Log warning and return
       cLog->LogWarningExSafe("Archive '$' not opened with code $ ($)!",
         IdentGet(), iCode, CodecGetLzmaErrString(iCode));
@@ -394,9 +395,9 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
   /* -- For loading via lua ------------------------------------------------ */
   Archive(void) :
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperArchive{ *cArchives },     // Initialise collector with this obj
-    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
-    AsyncLoader<Archive>{ this,        // Initialise async collector
+    ICHelperArchive{ cArchives },      // Initialise collector with this obj
+    IdentCSlave{ cParent->CtrNext() }, // Initialise identification number
+    AsyncLoaderArchive{ *this, this,   // Initialise async collector
       EMC_MP_ARCHIVE },                // " our archive async event
     ArchiveFlags{ AE_STANDBY },        // Set default archive flags
     stInUse(0),                        // Set threads in use
@@ -422,10 +423,10 @@ BEGIN_MEMBERCLASS(Archives, Archive, ICHelperUnsafe),
       cLog->LogInfoExSafe("Archive '$' waiting for $ async ops to complete...",
         IdentGet(), static_cast<size_t>(stInUse));
       // Wait for base and spawned file operations to finish
-      UniqueLock uLock{ mExtract };
-      cvExtract.wait(uLock, [this]{ return !stInUse; });
+      UniqueLock uLock{ *this };
+      wait(uLock, [this]{ return !stInUse; });
     } // Free archive structs if allocated
-    if(FlagIsSet(AE_ARCHIVEINIT)) SzArEx_Free(&csaeData, &cParent.isaData);
+    if(FlagIsSet(AE_ARCHIVEINIT)) SzArEx_Free(&csaeData, &cParent->isaData);
     // Memory allocated? Free memory allocated for buffer
     if(FlagIsSet(AE_SETUPL2R)) CleanupLookToRead(cltrData);
     // Close archive handle
@@ -471,7 +472,7 @@ static Archive *ArchiveInitNew(const string &strFile, const size_t stSize=0)
 /* -- Set extraction buffer size ------------------------------------------- */
 static CVarReturn ArchiveSetBufferSize(const size_t stSize)
   { return CVarSimpleSetIntNLG(cArchives->stExtractBufSize, stSize,
-      static_cast<size_t>(262144), static_cast<size_t>(16777216)); }
+      262144UL, 16777216UL); }
 /* -- Loads the archive from executable ------------------------------------ */
 static CVarReturn ArchiveInitExe(const bool bCheck)
 { // If we're checking the executable for archive?
@@ -500,7 +501,7 @@ static CVarReturn ArchiveInit(const string &strFileMask, string&)
   // Return if no files found (rare but not impossible)
   if(dList.dFiles.empty())
   { // Log no files and return success
-    cLog->LogWarningExSafe("Archives matched no potential archive filenames!");
+    cLog->LogWarningSafe("Archives matched no potential archive filenames!");
     return ACCEPT;
   } // Start processing filenames
   cLog->LogDebugExSafe("Archives loading $ files in working directory...",

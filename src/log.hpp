@@ -17,23 +17,23 @@ using namespace ISysUtil::P;           using namespace IToken::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* -- Log levels ----------------------------------------------------------- */
-enum LHLevel                           // Log helper level flags
+enum LHLevel : unsigned int            // Log helper level flags
 { /* ----------------------------------------------------------------------- */
-  LH_DISABLED,                         // Log messages are disabled
+  LH_CRITICAL,                         // Log message is critical
   LH_ERROR,                            // Log message is an error (exception)
   LH_WARNING,                          // Log message is a warning
   LH_INFO,                             // Log message is informational only
   LH_DEBUG,                            // Log message is for debugging
   LH_MAX,                              // Maximum log message level
-};
-/* -- Log line typedefs -------------------------------------------------- */
+};/* ----------------------------------------------------------------------- */
 struct LogLine                         // Log line structure
 { /* ----------------------------------------------------------------------- */
   const double     dTime;              // The time it happend
-  const LHLevel    lhLevel;            // The type of log entry
+  const LHLevel    lhlLevel;           // The type of log entry
   const string     strLine;            // The log entry string
 };/* ----------------------------------------------------------------------- */
-typedef list<LogLine> LogLines;        // List of log lines
+typedef list<LogLine>            LogLines;        // List of log lines
+typedef LogLines::const_iterator LogLinesConstIt; // Log lines iterator
 /* == Log class ============================================================ */
 static class Log final :
   /* -- Base classes ------------------------------------------------------- */
@@ -42,14 +42,13 @@ static class Log final :
   public ClockChrono<CoreClock>,       // Holds the current log time
   private mutex                        // Because logger needs thread safe
 { /* -- Private typedefs --------------------------------------------------- */
-  typedef IdList<LH_MAX> LogLevels;
+  typedef IdList<LH_MAX> LogLevels;    // Log levels as human readable strings
   /* -- Private variables -------------------------------------------------- */
   const LogLevels  llLevels;           // Log level strings
-  const string     strStdOut;          // Label for 'stdout'
-  const string     strStdErr;          // Label for 'stderr'
-  atomic<LHLevel>  lhLevel;            // Log helper level for this instance
+  const string     strStdOut,          // Label for 'stdout'
+                   strStdErr;          // Label for 'stderr'
+  atomic<LHLevel>  lhlLevel;           // Log helper level for this instance
   size_t           stMaximum;          // Maximum log lines
-  bool             bInitialised;       // Log cvar has been initialised?
   /* ----------------------------------------------------------------------- */
   void ReserveLines(const size_t stLines)
   { // Calculate total liens
@@ -67,25 +66,24 @@ static class Log final :
   { // Ignore if file not opened or there is nothing to write
     if(empty() || FStreamClosed()) return;
     // Get start of log
-    LogLines::const_iterator llciItem{ cbegin() };
+    LogLinesConstIt llciItem{ cbegin() };
     // Repeat...
     do
     { // Get reference to line
       const LogLine &llLine = *llciItem;
       // Write stored line and if succeeded
-      if(FStreamWriteString(StrFormat("[$$$] $\n", fixed,
-        setprecision(6), llLine.dTime, llLine.strLine)))
+      if(FStreamWriteStringEx("[$$$]<$> $\n", fixed, setprecision(6),
+        llLine.dTime, LogLevelToString(llLine.lhlLevel).front(),
+        llLine.strLine))
       { // Flush the line to file straight away and continue if succeeded
         if(FStreamFlush()) continue;
-        // Flush failed so close file
+        // Flush failed so close file and write closure reason
         FStreamClose();
-        // Write closure reason
         LogErrorExSafe("Log file closed (flush error: $)!", StrFromErrNo());
       } // Write string failed?
       else
-      { // Close file
+      { // Close file and write closure reason
         FStreamClose();
-        // Write closure reason
         LogErrorExSafe("Log file closed (write error: $)!", StrFromErrNo());
       } // Erase the lines we actually wrote. Never erase the first line.
       erase(begin(), llciItem);
@@ -106,18 +104,16 @@ static class Log final :
     // appending for this and it turned out to be almost twice as slow as
     // using formatstring due to the fact that less memory management
     // is required!
-    for(const string &sL : tLines)
-      push_back({ CCDeltaToDouble(), lhL, StdMove(sL) });
+    for(const string &strLine : tLines)
+      push_back({ CCDeltaToDouble(), lhL, StdMove(strLine) });
     // Write lines to log
     FlushLog();
   }
   /* -- Write string to log. Line feed creates multiple lines -------------- */
   void WriteString(const LHLevel lhL, const string &strL) noexcept(true)
     { WriteLines(lhL, { strL, cCommon->Lf(), stMaximum }); }
-  void WriteString(const LHLevel lhL, string &&strL) noexcept(true)
-    { WriteLines(lhL, { StdMove(strL), cCommon->Lf(), stMaximum }); }
   /* ----------------------------------------------------------------------- */
-  void WriteString(const string &strL) { WriteString(LH_DISABLED, strL); }
+  void WriteString(const string &strL) { WriteString(LH_CRITICAL, strL); }
   /* ----------------------------------------------------------------------- */
   void DeInit(void)
   { // Bail if initialised
@@ -130,19 +126,19 @@ static class Log final :
     FStreamClose();
   }
   /* -- Convert log level to a string -------------------------------------- */
-  const string &LogLevelToString(const LHLevel lhId)
+  const string_view &LogLevelToString(const LHLevel lhId)
     { return llLevels.Get(lhId); }
   /* -- Safe access to members ------------------------------------- */ public:
-  CVarReturn SetLevel(const unsigned int uiLevel)
+  CVarReturn SetLevel(const LHLevel lhNewLevel)
   { // Deny if invalid level
-    if(uiLevel >= LH_MAX) return DENY;
+    if(lhNewLevel >= LH_MAX) return DENY;
     // Set new logging state
-    const LHLevel lhOldLevel = lhLevel;
-    lhLevel = static_cast<LHLevel>(uiLevel);
+    const LHLevel lhOldLevel = lhlLevel;
+    lhlLevel = lhNewLevel;
     // Report state, we could disable logging so we should force report it
     LogNLCDebugExSafe("Log change verbosity from $ ($) to $ ($).",
       LogLevelToString(lhOldLevel), lhOldLevel,
-      LogLevelToString(lhLevel.load()), lhLevel.load());
+      LogLevelToString(lhNewLevel), lhNewLevel);
     // Success
     return ACCEPT;
   }
@@ -156,11 +152,11 @@ static class Log final :
     return stSize;
   }
   /* ----------------------------------------------------------------------- */
-  bool HasLevel(const LHLevel lhReq) const { return lhReq <= lhLevel; }
+  bool HasLevel(const LHLevel lhReq) const { return lhReq <= lhlLevel; }
   /* ----------------------------------------------------------------------- */
   bool NotHasLevel(const LHLevel lhReq) const { return !HasLevel(lhReq); }
   /* ----------------------------------------------------------------------- */
-  LHLevel GetLevel(void) const { return lhLevel; }
+  LHLevel GetLevel(void) const { return lhlLevel; }
   /* ----------------------------------------------------------------------- */
   mutex &GetMutex(void) { return *this; }
   /* ----------------------------------------------------------------------- */
@@ -257,22 +253,16 @@ static class Log final :
   }
   /* -- Initialise log to built-in standard output ------------------------- */
   void Init(FILE*const fpDevice, const string &strLabel)
-  { // Set device
+  { // Set device, name and write confirmation of opening a device handle
     FStreamSetHandle(fpDevice);
-    // Set name
     IdentSet(strLabel);
-    // Write log ifle
     WriteString(StrFormat("Logging to standard output '$'.", IdentGet()));
   }
   /* ----------------------------------------------------------------------- */
   bool Init(const string &strFN)
-  { // If already opened or open/create log failed? Ignore. We're using
-    // trusted here because this is only changable with the cvar and the cvar
-    // has already checked that this filename is valid.
-    if(FStreamOpen(strFN, FStream::FM_W_T)) return false;
-    // Write log file
+  { // Return failure if already opened else write log file and return success
+    if(FStreamOpen(strFN, FM_W_T)) return false;
     WriteString(StrFormat("Log file is '$'.", IdentGet()));
-    // Success
     return true;
   }
   /* -- Conlib callback function for APP_LOG variable ---------------------- */
@@ -281,31 +271,22 @@ static class Log final :
     const LockGuard lgLogSync{ GetMutex() };
     // Close log if opened
     if(FStreamOpened()) DeInit();
-    // Has cvar change not been triggered yet?
-    if(!bInitialised)
-    { // Cvar has now been initialised so this condition cannot re-execute
-      bInitialised = true;
-      // Check for special character
-      switch(strFN.length())
-      { // Empty? Ignore
-        case 0: return ACCEPT;
-        // One character? Compare it...
-        case 1: switch(strFN.front())
-        { // Check for requested use of stderr or stdout
-          case '!': Init(stderr, strStdErr); return ACCEPT;
-          case '-': Init(stdout, strStdOut); return ACCEPT;
-          // Anything else ignore and open the file normally
-          default: break;
-        } // Anything else just break;
+    // Check for special character
+    switch(strFN.length())
+    { // Empty? Ignore
+      case 0: return ACCEPT;
+      // One character? Compare it...
+      case 1: switch(strFN.front())
+      { // Check for requested use of stderr or stdout
+        case '!': Init(stderr, strStdErr); return ACCEPT;
+        case '-': Init(stdout, strStdOut); return ACCEPT;
+        // Anything else ignore and open the file normally
         default: break;
-      }
-    } // Just check if empty and return acceptance if so
-    else if(strFN.empty()) return ACCEPT;
-    // Create new filename with log extension and try to create it
+      } // Anything else just break;
+      default: break;
+    } // Create new filename and set filename on success and return success
     if(!Init(StrAppend(strFN, "." LOG_EXTENSION))) return DENY;
-    // Success so update the actual filename
     strCV = IdentGet();
-    // Success
     return ACCEPT_HANDLED;
   }
   /* -- Conlib callback function for APP_LOGLINES variable ----------------- */
@@ -317,16 +298,15 @@ static class Log final :
     // Current size is over the new maximum? Trim the oldest entries out
     if(size() > stMaximum)
       erase(begin(), next(begin(), static_cast<ssize_t>(size() - stMaximum)));
-    // Set new maximum
+    // Set new maximum and return success
     stMaximum = stL;
-    // Value has been accepted
     return ACCEPT;
   }
   /* -- Constructor -------------------------------------------------------- */
   Log(void) :
     /* -- Initialisers ----------------------------------------------------- */
     llLevels{{                         // Initialise log level strings
-      "Disabled",                      // Shouldn't really be used
+      "Critical",                      // Log line is critical
       "Error",                         // Log line is an error
       "Warning",                       // Log line is a warning
       "Info",                          // Log line is information
@@ -334,9 +314,8 @@ static class Log final :
     }},                                // End of log level strings
     strStdOut{ "/dev/stdout" },        // Initialise display label for stdout
     strStdErr{ "/dev/stderr" },        // Initialise display label for stderr
-    lhLevel{ LH_DEBUG },               // Initialise default level
-    stMaximum(1000),                   // Initialise maximum output lines
-    bInitialised(false)                // CVar has not been initialised
+    lhlLevel{ LH_DEBUG },              // Initialise default level
+    stMaximum(1000)                    // Initialise maximum output lines
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Destructor --------------------------------------------------------- */

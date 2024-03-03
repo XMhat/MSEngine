@@ -148,6 +148,39 @@ class Statistic
     // Return self so we can daisy chain
     return *this;
   }
+  /* -- Data by read only c-string ----------------------------------------- */
+  Statistic &Data(const char*const cpStr)
+  { // Return if there are no headers
+    if(hdHeaders.empty()) return *this;
+    // Get pointer to header data
+    Head &ttchD = hdHeaders[svValues.size() % Headers()];
+    // Copy the value into the last and put the string we inserted into a
+    // decoder and get length of the utf8 string
+    const int iLength = UtilIntOrMax<int>(
+      UtfDecoder{ *svValues.insert(svValues.cend(), cpStr) }.Length());
+    // If the length of this value is longer and is not the last header value
+    // then set the header longer
+    if(iLength > ttchD.iMaxLen) ttchD.iMaxLen = iLength;
+    // Return self so we can daisy chain
+    return *this;
+  }
+  /* -- Data by read only string view -------------------------------------- */
+  Statistic &Data(const string_view &strvVal)
+  { // Return if there are no headers
+    if(hdHeaders.empty()) return *this;
+    // Get pointer to header data
+    Head &ttchD = hdHeaders[svValues.size() % Headers()];
+    // Copy the value into the last and put the string we inserted into a
+    // decoder and get length of the utf8 string
+    const int iLength = UtilIntOrMax<int>(
+      UtfDecoder{ *svValues.insert(svValues.cend(),
+        string{ strvVal }) }.Length());
+    // If the length of this value is longer and is not the last header value
+    // then set the header longer
+    if(iLength > ttchD.iMaxLen) ttchD.iMaxLen = iLength;
+    // Return self so we can daisy chain
+    return *this;
+  }
   /* -- Data by read-only lvalue string copy ------------------------------- */
   Statistic &Data(const string &strVal={})
   { // Return if there are no headers
@@ -199,21 +232,23 @@ class Statistic
     return *this;
   }
   /* -- Sort a table by specified primary or secondary column -------------- */
-  void SortTwo(const size_t stColPri, const size_t stColSec,
+  void SortTwo(const ssize_t sstColPri, const ssize_t sstColSec,
     const bool bDescending=false)
   { // Ignore if no headers, values or both columns the same
-    if(hdHeaders.empty() || svValues.empty() || stColPri == stColSec) return;
+    if(hdHeaders.empty() || svValues.empty() || sstColPri == sstColSec) return;
     // Sorting list
     struct StrRef { StrVectorIt sliRow, sliColPri, sliColSec; };
     typedef vector<StrRef> StrRefVec;
     StrRefVec srvList;
     srvList.reserve(svValues.size() / Headers());
+    // Get headers as ssize_t (prevents signed casting warning).
+    const ssize_t sstHeaders = UtilIntOrMax<ssize_t>(Headers());
     // For each value. Add row start iterator and column iterator to list
     for(StrVectorIt sliRow{ svValues.begin() };
                     sliRow != svValues.end();
-                    sliRow = next(sliRow, Headers()))
-      srvList.push_back({ sliRow, next(sliRow, stColPri),
-                                  next(sliRow, stColSec) });
+                    sliRow = next(sliRow, sstHeaders))
+      srvList.push_back({ sliRow, next(sliRow, sstColPri),
+                                  next(sliRow, sstColSec) });
     // Now enumerate all the primary and secondary columns and sort them
     StdSort(par_unseq, srvList.begin(), srvList.end(), bDescending ?
       [](const StrRef &srRow1, const StrRef &srRow2)
@@ -243,7 +278,7 @@ class Statistic
     svValuesNew.reserve(svValues.size());
     for(const StrRef &srRow : srvList)
       for(StrVectorIt sliCol{ srRow.sliRow },
-                      sliColEnd{ next(sliCol, Headers()) };
+                      sliColEnd{ next(sliCol, sstHeaders) };
                       sliCol != sliColEnd;
                     ++sliCol)
         svValuesNew.emplace_back(StdMove(*sliCol));
@@ -251,7 +286,7 @@ class Statistic
     svValues.swap(svValuesNew);
   }
   /* -- Sort a table by specified primary column --------------------------- */
-  void Sort(const size_t stColumn, const bool bDescending=false)
+  void Sort(const ssize_t sstColumn, const bool bDescending=false)
   { // Ignore if no headers or values
     if(hdHeaders.empty() || svValues.empty()) return;
     // Sorting list
@@ -259,11 +294,13 @@ class Statistic
     typedef vector<StrRef> StrRefVec;
     StrRefVec srvList;
     srvList.reserve(svValues.size() / Headers());
+    // Get headers as ssize_t (prevents signed casting warning).
+    const ssize_t sstHeaders = UtilIntOrMax<ssize_t>(Headers());
     // For each value. Add row start iterator and column iterator to list
     for(StrVectorIt sliRow{ svValues.begin() };
                    sliRow != svValues.end();
-                   sliRow = next(sliRow, Headers()))
-      srvList.push_back({ sliRow, next(sliRow, stColumn) });
+                   sliRow = next(sliRow, sstHeaders))
+      srvList.push_back({ sliRow, next(sliRow, sstColumn) });
     // Now enumerate all the primary columns and sort them
     StdSort(par_unseq, srvList.begin(), srvList.end(), bDescending ?
       [](const StrRef &srRow1, const StrRef &srRow2)
@@ -275,7 +312,7 @@ class Statistic
     svValuesNew.reserve(svValues.size());
     for(const StrRef &srRow : srvList)
       for(StrVectorIt sliCol{ srRow.sliRow },
-                      sliColEnd{ next(sliCol, Headers()) };
+                      sliColEnd{ next(sliCol, sstHeaders) };
                       sliCol != sliColEnd;
                     ++sliCol)
         svValuesNew.emplace_back(StdMove(*sliCol));
@@ -309,8 +346,8 @@ BEGIN_COLLECTORDUO(Stats, Stat, CLHelperUnsafe, ICHelperUnsafe),
 { /* -- Constructor ------------------------------------------------ */ public:
   Stat(void) :                         // No parameters
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperStat{ *cStats, this },     // Automatic (de)registration
-    IdentCSlave{ cParent.CtrNext() }   // Initialise identification number
+    ICHelperStat{ cStats, this },      // Automatic (de)registration
+    IdentCSlave{ cParent->CtrNext() }  // Initialise identification number
     /* -- No code ---------------------------------------------------------- */
     { }                                // Do nothing else
   /* ----------------------------------------------------------------------- */

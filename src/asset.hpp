@@ -24,20 +24,20 @@ namespace P {                          // Start of public module namespace
 BUILD_FLAGS(Asset,                     // Asset loading flags
   /* -- Commands ----------------------------------------------------------- */
   // Leave the file loaded as is?      Decode the specified block?
-  CD_NONE                {0x00000000}, CD_DECODE              {0x00000001},
+  CD_NONE                   {Flag[0]}, CD_DECODE                 {Flag[1]},
   // Copy the specified block?         Encrypt the specified block?
-  CD_ENCODE_RAW          {0x00000002}, CD_ENCODE_AES          {0x00000004},
+  CD_ENCODE_RAW             {Flag[2]}, CD_ENCODE_AES             {Flag[3]},
   // Deflate the specified block?      Compress the specified block?
-  CD_ENCODE_ZLIB         {0x00000008}, CD_ENCODE_LZMA         {0x00000010},
+  CD_ENCODE_ZLIB            {Flag[4]}, CD_ENCODE_LZMA            {Flag[5]},
   // Deflate+encrypt specified block?  Compress+encrypt specified block?
-  CD_ENCODE_ZLIBAES      {0x00000020}, CD_ENCODE_LZMAAES      {0x00000040},
+  CD_ENCODE_ZLIBAES         {Flag[6]}, CD_ENCODE_LZMAAES         {Flag[7]},
   /* -- Options ------------------------------------------------------------ */
   // Fastest compression (less mem)?   Fast compression?
-  CD_LEVEL_FASTEST       {0x08000000}, CD_LEVEL_FAST          {0x10000000},
+  CD_LEVEL_FASTEST         {Flag[60]}, CD_LEVEL_FAST            {Flag[61]},
   // Medium compression?               Good compression?
-  CD_LEVEL_MODERATE      {0x20000000}, CD_LEVEL_SLOW          {0x40000000},
+  CD_LEVEL_MODERATE        {Flag[62]}, CD_LEVEL_SLOW            {Flag[63]},
   // Maximum compression (more mem)?
-  CD_LEVEL_SLOWEST       {0x80000000},
+  CD_LEVEL_SLOWEST         {Flag[64]},
   /* -- All options -------------------------------------------------------- */
   CD_MASK{ CD_DECODE|CD_ENCODE_RAW|CD_ENCODE_AES|CD_ENCODE_ZLIB|CD_ENCODE_LZMA|
            CD_ENCODE_ZLIBAES|CD_ENCODE_LZMAAES|CD_LEVEL_FASTEST|CD_LEVEL_FAST|
@@ -54,7 +54,7 @@ static FileMap AssetLoadFromDisk(const string &strFile)
   if(FileMap fmFile{ strFile })
   { // Put in the log that we loaded the file successfully
     cLog->LogDebugExSafe("Assets mapped resource '$'[$]!",
-      strFile, fmFile.Size());
+      strFile, fmFile.MemSize());
     // Return file class to caller
     return fmFile;
   } // Failed so throw exception
@@ -81,24 +81,24 @@ static FileMap AssetExtract(const string &strFile)
     "Archives", ArchiveGetNames());
 }
 /* == Asset object class =================================================== */
-BEGIN_MEMBERCLASS(Assets, Asset, ICHelperUnsafe),
+BEGIN_ASYNCMEMBERCLASS(Assets, Asset, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
-  public AsyncLoader<Asset>,           // For loading assets off main thread
-  public Memory,                       // Memory storage for this asset
+  public Ident,                        // Asset file name
+  public AsyncLoaderAsset,             // For loading assets off main thread
   public Lockable,                     // Lua garbage collector instruction
   public AssetFlags                    // Asset settings
 { /* -------------------------------------------------------------- */ private:
   void SwapAsset(Asset &aOther)
   { // Swap settings flags
     FlagSwap(aOther);
-    SwapMemory(StdMove(aOther));
+    MemSwap(StdMove(aOther));
     LockSwap(aOther);
     IdentSwap(aOther);
     CollectorSwapRegistration(aOther);
   }
   /* -- Perform decoding --------------------------------------------------- */
   template<class Codec>void CodecExec(FileMap &fC, size_t stLevel=0)
-    { SwapMemory(Block<Codec>{ fC, stLevel }); }
+    { MemSwap(Block<Codec>{ fC, stLevel }); }
   /* -- Perform decoding converting flags to compression level ------------- */
   template<class Codec>void CodecExecEx(FileMap &fC)
     { CodecExec<Codec>(fC, FlagIsSet(CD_LEVEL_FASTEST)  ? 1 :
@@ -123,7 +123,7 @@ BEGIN_MEMBERCLASS(Assets, Asset, ICHelperUnsafe),
     // Guest wants data decoded from a magic block (no user flags)
     else if(FlagIsSet(CD_DECODE)) CodecExec<CoDecoder>(fC);
     // Guest wants data untouched but we need to copy it all from the map
-    else SwapMemory(fC.FileMapDecouple());
+    else MemSwap(fC.FileMapDecouple());
   }
   /* -- Load data from string asynchronously ------------------------------- */
   void InitAsyncString(lua_State*const lS)
@@ -182,7 +182,8 @@ BEGIN_MEMBERCLASS(Assets, Asset, ICHelperUnsafe),
     Asset &aInput = *LuaUtilGetPtr<Asset>(lS, 3, "Asset");
     LuaUtilCheckFuncs(lS, 4, "ErrorFunc", 5, "ProgressFunc", 6, "SuccessFunc");
     // Load asset from file asynchronously
-    AsyncInitCmdLine(lS, strCmdLine, StrAppend("CLP", aInput.Size()), aInput);
+    AsyncInitCmdLine(lS, strCmdLine,
+      StrAppend("CLP", aInput.MemSize()), aInput);
   }
   /* -- Init from file ----------------------------------------------------- */
   void InitFile(const string &strFilename, const AssetFlagsConst &lfS)
@@ -213,9 +214,9 @@ BEGIN_MEMBERCLASS(Assets, Asset, ICHelperUnsafe),
   /* -- For loading via LUA ------------------------------------------------ */
   Asset(void) :
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperAsset{ *cAssets },         // Initially unregistered
-    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
-    AsyncLoader<Asset>{ this,          // Initialise async class with this
+    ICHelperAsset{ cAssets },          // Initially unregistered
+    IdentCSlave{ cParent->CtrNext() }, // Initialise identification number
+    AsyncLoaderAsset{ *this, this,     // Initialise async class with this
       EMC_MP_ASSET },                  // ...and the event id for it.
     AssetFlags{ CD_NONE }              // Np asset load flags initially
     /* -- No code ---------------------------------------------------------- */
@@ -258,8 +259,7 @@ static CVarReturn AssetSetFSOverride(const bool bState)
   { return CVarSimpleSetInt(cAssets->bOverride, bState); }
 /* -- Set pipe buffer size ------------------------------------------------- */
 static CVarReturn AssetSetPipeBufferSize(const size_t stSize)
-  { return CVarSimpleSetIntNLG(cAssets->stPipeBufSize, stSize,
-      static_cast<size_t>(1), static_cast<size_t>(4096)); }
+  { return CVarSimpleSetIntNLG(cAssets->stPipeBufSize, stSize, 1UL, 4096UL); }
 /* -- Set pipe buffer size ------------------------------------------------- */
 static size_t AssetGetPipeBufferSize(void) { return cAssets->stPipeBufSize; }
 /* ------------------------------------------------------------------------- */
