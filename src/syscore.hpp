@@ -664,7 +664,7 @@ static class System final :            // The main system class
       StrToBytes(RAMTotal()), StrToBytes(RAMFree()), StrToBytes(RAMProcUse()),
       OSName(), OSMajor(), OSMinor(), OSBuild(), OSBits(), OSLocale(),
         IsOSNameExSet() ? StrAppend(" via ", OSNameEx()) : cCommon->Blank(),
-      cmHiRes.ToDurationLongString(),
+      StrLongFromDuration(GetUptime()),
       cmSys.FormatTime(), cmSys.FormatTimeUTC(),
       StrFromBoolTF(OSIsAdmin()), StrFromBoolTF(EXEBundled()));
   }

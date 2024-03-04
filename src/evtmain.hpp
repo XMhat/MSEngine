@@ -216,8 +216,7 @@ static class EvtMain final :           // Event list for render thread
     /* -- Initialisers ----------------------------------------------------- */
     IHelper{ __FUNCTION__ },           // Initialise helper
     EvtCore{"EventMain"},              // Set name of this object
-    Thread{ "engine",                  // Set up engine thread
-      SysThread::Engine },             // High performance sandbox thread
+    Thread{ "engine", STP_ENGINE },    // Set up high perf engine thread
     emcPending(EMC_NONE),              // Not exiting yet
     emcExit(EMC_NONE),                 // Not exited yet
     uiConfirm(0),                      // Exit not confirmed yet

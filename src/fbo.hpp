@@ -174,7 +174,7 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
     // Set polygon fill mode
     cOgl->SetPolygonMode(ePolyMode);
     // For each 2D shader...
-    for(Shader &shBuiltIn : cFboBase->sh2DBuiltIns)
+    for(const Shader &shBuiltIn : cFboBase->sh2DBuiltIns)
       shBuiltIn.UpdateOrtho(oiRef);
     // Buffer the new vertex data
     cOgl->BufferStaticData(oiRef.siVertices, ftlActive.data());

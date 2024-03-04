@@ -210,7 +210,7 @@ BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
   }
   /* ----------------------------------------------------------------------- */
   template<typename T>int ToFile(const string &strFile) const
-    { return FStream{ strFile, FStream::FM_W_T }.
+    { return FStream{ strFile, FM_W_T }.
         FStreamWriteStringSafe(StrFromNum<T>()) ? 0 : StdGetError(); }
   /* ----------------------------------------------------------------------- */
   void AsyncReady(FileMap &fC)

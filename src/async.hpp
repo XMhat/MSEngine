@@ -575,7 +575,7 @@ template<typename MemberType>class AsyncLoader :
     cAsyncOwner{ *cO },                // Initialise owner of this class
     evtAsyncEvent(eC),                 // Initialise event id
     lesAsync{ cO, eC },                // Initialise Lua event class
-    tAsyncThread{ SysThread::Low },    // Initialise low priority thread
+    tAsyncThread{ STP_LOW },           // Initialise low priority thread
     aiAsyncType(BA_NONE),              // Initialise load source type
     uiAsyncPid(0)                      // Initialise pid for BA_EXECUTE
     /* --------------------------------------------------------------------- */

@@ -741,6 +741,10 @@ static class Input final :             // Handles keyboard, mouse & controllers
   JoyInfo &GetJoyData(const size_t stId) { return GetJoyList()[stId]; }
   /* -- Return joysticks count --------------------------------------------- */
   size_t GetJoyCount(void) const { return GetConstJoyList().size(); }
+  /* -- Disable input events ----------------------------------------------- */
+  void DisableInputEvents(void) { cEvtMain->UnregisterEx(*this); }
+  /* -- Enable input events ------------------------------------------------ */
+  void EnableInputEvents(void) { cEvtMain->RegisterEx(*this); }
   /* -- Init --------------------------------------------------------------- */
   void Init(void)
   { // if window not available? This should never happen but we will put
@@ -755,7 +759,7 @@ static class Input final :             // Handles keyboard, mouse & controllers
     // Log progress
     cLog->LogDebugSafe("Input interface is initialising...");
     // Init input engine events
-    cEvtMain->RegisterEx(*this);
+    EnableInputEvents();
     // Init input settings
     SetRawMouseEnabled(cCVars->GetInternalSafe<bool>(INP_RAWMOUSE));
     SetStickyKeyEnabled(cCVars->GetInternalSafe<bool>(INP_STICKYKEY));
@@ -777,7 +781,7 @@ static class Input final :             // Handles keyboard, mouse & controllers
     // Unregister joystick callback
     glfwSetJoystickCallback(nullptr);
     // Deinit engine events in the order they were registered
-    cEvtMain->UnregisterEx(*this);
+    DisableInputEvents();
     // Log progress
     cLog->LogDebugSafe("Input interface deinitialised.");
   }

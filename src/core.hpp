@@ -718,7 +718,7 @@ class Core                             // Members initially private
       INITHELPER(DIH, cDisplay->Init(),
         cEvtMain->ThreadDeInit();
         cDisplay->DeInit());
-      // Clear window manager events list
+      // Full window events
       cEvtWin->Flush();
       // If window threading enabled
       if(cDisplay->FlagIsSet(DF_WINTHREADED))
@@ -755,17 +755,11 @@ class Core                             // Members initially private
   /* -- Main function ------------------------------------------------------ */
   int CoreMain(const int iArgs, ArgType**const lArgs, ArgType**const lEnv) try
   { // Set this thread's name for debugger and that it is high performance
-    SysInitThread("main", SysThread::Main);
-    // Due to limitations in C++ right now we don't want to initialise our
-    // subsystems as global classes as there is no real way to safely
-    // error check these classes initialising so we use global pointers to the
-    // classes below instead. This means we need to use a de-init helper
-    // using a simple destructor in order to nullptr the pointer to the class
-    // so that it is easier for the engine to crash if we accidentally use the
-    // subsystems after the class below has been freed to prevent use of
-    // freed memory. The following is a helper macro to create a class,
-    // assign the global pointer version to it (makes compiler optimise the
-    // pointers to references) and clear the pointer when the scope is lost.
+    SysInitThread("main", STP_MAIN);
+    // Create static classes to engine components and set the pointer to that
+    // component (which should get optimised to static) so all the other
+    // components can access each other. Then nullptr them on destruction so
+    // any accidental access to them is easily identifiable by the debugger.
 #define INITSS(x, ...) DEINITHELPER(dih ## x, c ## x = nullptr); \
       x eng ## x{ __VA_ARGS__ }; c ## x = &eng ## x
     // Initialise critical command-line and logging systems. We cannot really
@@ -776,7 +770,7 @@ class Core                             // Members initially private
     INITSS(Log);                       // cppcheck-suppress danglingLifetime
     // Capture exceptions so we can log any errors
     try
-    { // Dependencies
+    { // Dependencies required only in this scope
       using namespace IArgs;           using namespace IBin::P;
       using namespace ICert::P;        using namespace IClipboard::P;
       using namespace ICmdLine::P;     using namespace IClock::P;
@@ -846,7 +840,7 @@ class Core                             // Members initially private
       INITSS(Palettes);                // cppcheck-suppress danglingLifetime
       INITSS(Fonts);                   // cppcheck-suppress danglingLifetime
       INITSS(Videos);                  // cppcheck-suppress danglingLifetime
-      // Lua always has to be last so it can clean up properly
+      // Lua always has to be last so it is first to clean up the sandbox
       INITSS(Console, conLibList);     // cppcheck-suppress danglingLifetime
       INITSS(Lua);                     // cppcheck-suppress danglingLifetime
       // Done with this macro
@@ -885,8 +879,7 @@ class Core                             // Members initially private
         // Perform the initial draw of the console.
         cConsole->FlushToLog();
         // Graphical mode requested too?
-        if(cSystem->IsGraphicalMode())
-          CoreEnterGraphicalMode();
+        if(cSystem->IsGraphicalMode()) CoreEnterGraphicalMode();
         // Only text mode requested?
         else
         { // Reset window icon

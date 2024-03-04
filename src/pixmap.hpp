@@ -11,8 +11,8 @@
 #pragma once                           // Only one incursion allowed
 /* == Windows file mapping class =========================================== */
 class SysMap :
-  /* -- Derivced classes --------------------------------------------------- */
-  public FStream                       // Allow access to file mappings
+  /* -- Base classes ------------------------------------------------------- */
+  public FStreamBase                   // File stream base class
 { /* ----------------------------------------------------------------------- */
   StdFStatStruct   sData;              // File data
   char            *cpMem;              // Handle to memory
@@ -26,9 +26,9 @@ class SysMap :
     // ~FStream() will close the file
   }
   /* -- Setup handle ------------------------------------------------------- */
-  FStream SysMapSetupFile(const string &strF)
+  FStreamBase SysMapSetupFile(const string &strF)
   { // Open file and return it if opened else show error
-    if(FStream fsFile{ strF, FStream::FM_R_B }) return fsFile;
+    if(FStream fsFile{ strF, FM_R_B }) return fsFile;
     XCS("Open file for file mapping failed!", "File", strF);
   }
   /* -- Setup file information --------------------------------------------- */
@@ -100,7 +100,7 @@ class SysMap :
   /* -- Constructor with just id initialisation ---------------------------- */
   SysMap(const string &strF, const StdTimeT tC, const StdTimeT tM) :
     /* -- Initialisers------------------------------------------------------ */
-    FStream{ strF },                   // Open specified file
+    FStreamBase{ strF },               // Open specified file
 #if defined(LINUX)                     // Using Linux?
     // Note that all these zeros cause an error for other systems because
     // the structure may contain padding values so this needs to be changed to
@@ -137,15 +137,15 @@ class SysMap :
   /* ----------------------------------------------------------------------- */
   SysMap(SysMap &&smOther) :
     /* -- Initialisers ----------------------------------------------------- */
-    FStream{ StdMove(smOther) },          // Move stream over
-    sData{ StdMove(smOther.sData) },      // Move file data over
+    FStreamBase{ StdMove(smOther) },   // Move stream over
+    sData{ StdMove(smOther.sData) },   // Move file data over
     cpMem(smOther.cpMem)               // Move memory pointer over
     /* -- So other class doesn't destruct ---------------------------------- */
     { smOther.SysMapClearVarsInternal(); }
   /* -- Constructor -------------------------------------------------------- */
   explicit SysMap(const string &strF) :
     /* -- Initialisers ----------------------------------------------------- */
-    FStream{ SysMapSetupFile(strF) },      // Iniitalise file handle
+    FStreamBase{ SysMapSetupFile(strF) }, // Iniitalise file handle
     sData{ SMSetupInfo() },            // Initialise file data
     cpMem(SMSetupMemory())             // Initialise file pointer
     /* --------------------------------------------------------------------- */

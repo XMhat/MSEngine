@@ -32,8 +32,8 @@ BUILD_FLAGS(Display,
   /* -- Active flags ------------------------------------------------------- */
   // No display flags                  // Window is focused?
   DF_NONE                {0x00000000}, DF_FOCUSED             {0x00000001},
-  // Exclusive mode full-screen?       Display system restarting?
-  DF_EXCLUSIVE           {0x00000002}, DF_RESTARTING          {0x00000004},
+  // Exclusive mode full-screen?
+  DF_EXCLUSIVE           {0x00000002},
   // Window is in it's own thread?     Window is actually in fullscreen?
   DF_WINTHREADED         {0x00000008}, DF_INFULLSCREEN        {0x00000010},
   // Full-screen locked?
@@ -472,23 +472,22 @@ static class Display final :
     // Update window position
     cGlFW->WinMove(iX, iY);
   }
-  /* -- Set new full screen setting ---------------------------------------- */
-  void SetFullScreenSetting(const bool bState) const
-    { cCVars->SetInternalSafe<bool>(VID_FS, bState); }
   /* -- Toggle full-screen event (Engine thread) --------------------------- */
   void OnToggleFS(const EvtWin::Cell &ewcArgs)
   { // Ignore further requests if already restarting or using native fullscreen
-    if(FlagIsAnyOfSet(DF_RESTARTING, DF_NATIVEFS)) return;
-    // Changing window settings, accept no more events of this type
-    FlagSet(DF_RESTARTING);
+    if(FlagIsSet(DF_NATIVEFS)) return;
+    // Disable input events to prevent the full-screen toggler being repeated
+    cInput->DisableInputEvents();
     // If an argument was not specified?
     if(ewcArgs.vParams.empty())
     { // Set full screen depending on current state
-      SetFullScreenSetting(FlagIsClear(DF_FULLSCREEN));
+      cCVars->SetInternalSafe<bool>(VID_FS, FlagIsClear(DF_FULLSCREEN));
       // We can do quick re-init
       SetFullScreen(FlagIsSet(DF_FULLSCREEN));
     } // Use requested setting instead
     else SetFullScreen(ewcArgs.vParams[0].b);
+    // Re-enable input events
+    cInput->EnableInputEvents();
   }
   /* -- Apply gamma setting ------------------------------------------------ */
   void ApplyGamma(void)
@@ -496,62 +495,6 @@ static class Display final :
     GlFWSetGamma(moSelected->Context(), fGamma);
     // Report
     cLog->LogDebugExSafe("Display set gamma to $$.", fixed, fGamma);
-  }
-  /* -- ReInit desktop mode window ----------------------------------------- */
-  void ReInitDesktopModeWindow(void)
-  { // Not in full-screen mode or native mode
-    FlagClear(DF_INFULLSCREEN|DF_NATIVEFS);
-    // Trnslate user specified window size
-    int iW, iH; TranslateUserSize(iW, iH);
-    TranslateUserCoords(iWinPosX, iWinPosY, iW, iH);
-    // Is a desktop mode window (Could change via OnFBReset())
-    fsType = FST_WINDOW;
-    // We need to adjust to the position of the currently selected monitor so
-    // it actually appears on that monitor.
-    iWinPosX += moSelected->CoordGetX();
-    iWinPosY += moSelected->CoordGetY();
-    // Instruct glfw to change to window mode
-    cGlFW->WinSetMonitor(nullptr, iWinPosX, iWinPosY, iW, iH, 0);
-    // Window mode so update users window border
-    cGlFW->WinSetDecoratedAttrib(FlagIsSet(DF_BORDER));
-    cGlFW->WinSetResizableAttrib(FlagIsSet(DF_SIZABLE));
-    // Log that we switched to window mode
-    cLog->LogInfoExSafe("Display switched to desktop window $x$ at $x$.",
-      iW, iH, iWinPosX, iWinPosY);
-  }
-  /* -- ReInit full-screen mode window ------------------------------------- */
-  void ReInitFullScreenModeWindow(void)
-  { // Actually in full screen mode window
-    FlagSet(DF_INFULLSCREEN);
-    // Chosen settings
-    GLFWmonitor *mUsing;
-    const char *cpType;
-    // Exclusive full-screen window requested?
-    if(FlagIsSet(DF_EXCLUSIVE))
-    { // Set video mode and label
-      mUsing = moSelected->Context();
-      cpType = "exclusive";
-      fsType = FST_EXCLUSIVE;
-    } // Not exclusive full-screen mode?
-    else
-    { // Not using exclusive full-screen mode
-      mUsing = nullptr;
-      cpType = "borderless";
-      fsType = FST_BORDERLESS;
-      // Need to disable decoration and resizing
-      cGlFW->WinSetDecoratedAttribDisabled();
-      cGlFW->WinSetResizableAttribDisabled();
-    } // Position is top-left in full-screen
-    iWinPosX = iWinPosY = 0;
-    // Instruct glfw to set full-screen window
-    cGlFW->WinSetMonitor(mUsing, iWinPosX, iWinPosY,
-      rSelected->Width(), rSelected->Height(), rSelected->Refresh());
-    // Log that we switched to full-screen mode
-    cLog->LogInfoExSafe(
-      "Display switch to $ full-screen $x$ (M:$>$;V:$>$;R:$).",
-      cpType, rSelected->Width(), rSelected->Height(), stMRequested,
-      moSelected->Index(), stVRequested, rSelected->Index(),
-      rSelected->Refresh());
   }
   /* -- Translate user specified window dimensions ------------------------- */
   void TranslateUserSize(int &iW, int &iH) const
@@ -598,17 +541,74 @@ static class Display final :
   }
   /* -- Re-initialise window ----------------------------------------------- */
   void ReInitWindow(const bool bState)
-  { // Full-screen selected?
-    if(bState) ReInitFullScreenModeWindow();
-    // Window mode selected
-    else ReInitDesktopModeWindow();
-    // Update window attributes
+  { // Initial width and height of window
+    int iWidth, iHeight;
+    // Full-screen selected?
+    if(bState)
+    { // Actually in full screen mode window
+      FlagSet(DF_INFULLSCREEN);
+      // Chosen settings
+      GLFWmonitor *mUsing;
+      const char *cpType;
+      // Exclusive full-screen window requested?
+      if(FlagIsSet(DF_EXCLUSIVE))
+      { // Set video mode and label
+        mUsing = moSelected->Context();
+        cpType = "exclusive";
+        fsType = FST_EXCLUSIVE;
+      } // Not exclusive full-screen mode?
+      else
+      { // Not using exclusive full-screen mode
+        mUsing = nullptr;
+        cpType = "borderless";
+        fsType = FST_BORDERLESS;
+        // Need to disable decoration and resizing
+        cGlFW->WinSetDecoratedAttribDisabled();
+        cGlFW->WinSetResizableAttribDisabled();
+      } // Position is top-left in full-screen
+      iWinPosX = iWinPosY = 0;
+      // Set initial window width and height
+      iWidth = rSelected->Width();
+      iHeight = rSelected->Height();
+      // Instruct glfw to set full-screen window
+      cGlFW->WinSetMonitor(mUsing, iWinPosX, iWinPosY,
+        iWidth, iHeight, rSelected->Refresh());
+      // Log that we switched to full-screen mode
+      cLog->LogInfoExSafe(
+        "Display switch to $ full-screen $x$ (M:$>$;V:$>$;R:$).",
+        cpType, iWidth, iHeight, stMRequested, moSelected->Index(),
+        stVRequested, rSelected->Index(), rSelected->Refresh());
+    } // Window mode selected
+    else
+    { // Not in full-screen mode or native mode
+      FlagClear(DF_INFULLSCREEN|DF_NATIVEFS);
+      // Trnslate user specified window size
+      TranslateUserSize(iWidth, iHeight);
+      TranslateUserCoords(iWinPosX, iWinPosY, iWidth, iHeight);
+      // Is a desktop mode window (Could change via OnFBReset())
+      fsType = FST_WINDOW;
+      // We need to adjust to the position of the currently selected monitor so
+      // it actually appears on that monitor.
+      iWinPosX += moSelected->CoordGetX();
+      iWinPosY += moSelected->CoordGetY();
+      // Instruct glfw to change to window mode
+      cGlFW->WinSetMonitor(nullptr, iWinPosX, iWinPosY, iWidth, iHeight, 0);
+      // Window mode so update users window border
+      cGlFW->WinSetDecoratedAttrib(FlagIsSet(DF_BORDER));
+      cGlFW->WinSetResizableAttrib(FlagIsSet(DF_SIZABLE));
+      // Log that we switched to window mode
+      cLog->LogInfoExSafe("Display switched to desktop window $x$ at $x$.",
+        iWidth, iHeight, iWinPosX, iWinPosY);
+    } // Update window attributes
     cGlFW->WinSetFloatingAttrib(FlagIsSet(DF_FLOATING));
     cGlFW->WinSetAutoIconifyAttrib(FlagIsSet(DF_AUTOICONIFY));
     cGlFW->WinSetFocusOnShowAttrib(FlagIsSet(DF_AUTOFOCUS));
     // Store current window position
     cGlFW->WinGetPos(iWinPosX, iWinPosY);
-    cInput->UpdateWindowSize();
+    // Store initial window size. This needs to be done because on Linux, the
+    // window size isn't sent so we need to store the value.
+    cInput->SetWindowSize(iWidth, iHeight);
+    // Get scale of window
     cGlFW->WinGetScale(fWinScaleWidth, fWinScaleHeight);
     // Need to fix a GLFW scaling bug with this :(
 #if defined(MACOS)
@@ -633,13 +633,21 @@ static class Display final :
     cFboMain->DimSet(static_cast<GLsizei>(cInput->GetWindowWidth()),
                      static_cast<GLsizei>(cInput->GetWindowHeight()));
 #endif
+    // Force
     // Show and focus the window
     cGlFW->WinShow();
     cGlFW->WinFocus();
     // Update cursor visibility as OS or glfw can mess it up
     cInput->CommitCursor();
     // Focused and no longer restarting
-    FlagSetAndClear(DF_FOCUSED, DF_RESTARTING);
+    FlagSet(DF_FOCUSED);
+    // Update initial window size.
+    // If we're in Linux?
+#if defined(LINUX)
+    // Send a event to recalculate the matrix because it seems the fbo resize
+    // event isn't being sent on the GLFW that came with Ubuntu.
+    cEvtMain->Add(EMC_VID_MATRIX_REINIT);
+#endif
   }
   /* -- Get monitors list ------------------------------------------ */ public:
   const GlFWMonitors &GetMonitors(void) const { return mlData; }
@@ -657,17 +665,26 @@ static class Display final :
     { cEvtWin->AddUnblock(EWC_WIN_MOVE, iX, iY); }
   /* -- Request from alternative thread to centre the window --------------- */
   void RequestCentre(void) { cEvtWin->AddUnblock(EWC_WIN_CENTRE); }
-  /* -- Request from alternative thread to fullscreen toggle without save -- */
-  void RequestFSToggle(const bool bState)
-    { cEvtWin->AddUnblock(EWC_WIN_TOGGLE_FS, bState); }
   /* -- Request from alternative thread to reposition the window ----------- */
   void RequestReposition(void) { cEvtWin->AddUnblock(EWC_WIN_RESET); }
   /* -- Request to close window -------------------------------------------- */
   void RequestClose(void) { cEvtWin->Add(EWC_WIN_HIDE); }
+  /* -- Request from alternative thread to fullscreen toggle without save -- */
+  void RequestFSToggle(const bool bState)
+    { cEvtWin->AddUnblock(EWC_WIN_TOGGLE_FS, bState); }
   /* -- Set full screen in Window thread ----------------------------------- */
   void SetFullScreen(const bool bState)
   {// Return if setting not different than actual
     if(FlagIsEqualToBool(DF_INFULLSCREEN, bState)) return;
+    // If using Linux?
+#if defined(LINUX)
+    // Here appears to be yet another issue with GLFW on Linux. Changing back
+    // to window mode from full-screen isn't working for some reason so I'm
+    // just going to work around that by just quitting the thread and doing a
+    // full re-initialisation until I can (ever?) figure out why this is
+    // happening on Linux and not on MacOS or Windows.
+    if(!bState) return cEvtMain->Add(EMC_QUIT_THREAD);
+#endif
     // Update new fullscreen setting and re-initialise if successful
     ReInitWindow(bState);
     // Update viewport

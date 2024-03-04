@@ -275,6 +275,8 @@ class SysCore :
       SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<const char*>(&dwW),
         sizeof(dwW)) < 0 ? 2 : 0);
   }
+  /* -- Get uptime from clock class ---------------------------------------- */
+  StdTimeT GetUptime(void) const { return cmHiRes.GetTimeS(); }
   /* -- Terminate a process ------------------------------------------------ */
   bool TerminatePid(const unsigned int uiPid) const
   { // Return result
@@ -571,7 +573,7 @@ class SysCore :
   /* -- Get executable size from header ------------------------------------ */
   size_t GetExeSize(const string &strFile) const
   { // Open exe file and return on error
-    if(FStream fExe{ strFile, FStream::FM_R_B })
+    if(FStream fExe{ strFile, FM_R_B })
     { // Create memblock for file header, must be at least 4K
       Memory mExe{ 4096 };
       // Get minimum amount of data we need to read

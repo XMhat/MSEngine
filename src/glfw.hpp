@@ -36,14 +36,24 @@ static class GlFW final :              // Root engine class
   static void ErrorHandler(int, const char*const);
   /* -- Error handler converted to thiscall -------------------------------- */
   void HandleError(const int iCode, const char*const cpDesc)
-  { // We HAVE to ignore clipboard errors as grabbing text with GetClipboard
-    // always seems to fail and call this routine. Is this because of a bug?
-    if(iCode == GLFW_FORMAT_UNAVAILABLE) return;
-    // Send an exception for the first infringement
-    if(!uiErrorLevel++) XC(cpDesc, "Code", iCode);
-    // Put further errors in the log to prevent message box spam
-    cLog->LogWarningExSafe("GlFW got API error $/$: $!",
-      uiErrorLevel, iCode, cpDesc);
+  { // What's the error code?
+    switch(iCode)
+    { // Errors that are safe to ignore
+      case GLFW_FORMAT_UNAVAILABLE: [[fallthrough]];
+      case GLFW_FEATURE_UNIMPLEMENTED: [[fallthrough]];
+      case GLFW_FEATURE_UNAVAILABLE:
+        return cLog->LogDebugExSafe("GlFW ignored API error $: $!",
+          iCode, cpDesc);
+      // Anything else?
+      default:
+        // Send an exception for the first infringement
+        if(!uiErrorLevel++) XC(cpDesc, "Code", iCode);
+        // Put further errors in the log to prevent message box spam
+        cLog->LogWarningExSafe("GlFW got API error $/$: $!",
+          uiErrorLevel, iCode, cpDesc);
+        // Done
+        return;
+    }
   }
   /* -- DeInitialiser ---------------------------------------------- */ public:
   void DeInit(void)

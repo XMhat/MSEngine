@@ -1198,10 +1198,10 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 /* ------------------------------------------------------------------------- */
 { CF_VIDEO, "vid_bpp",
 /* ------------------------------------------------------------------------- */
-#if defined(WINDOWS)
-  cCommon->Zero(),                     // Win32 doesn't need forcing depth
-#else
+#if defined(MACOS)
   "10",                                // Force RGBA10101010
+#else
+  cCommon->Zero(),                     // Win32/Wayland doesn't need
 #endif
 /* ------------------------------------------------------------------------- */
   CB(cDisplay->SetForcedBitDepth, int), TUINTEGER|PANY },
@@ -1599,15 +1599,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? the in the application configuration file and not saved to the persistence
 // ? database.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "win_thread",
-  /* ----------------------------------------------------------------------- */
-#if defined(LINUX)
-  cCommon->Zero(),                                 // Wayland oddities
-#else
-  cCommon->One(),
-#endif
-  /* ----------------------------------------------------------------------- */
-  NoOp, TBOOLEANSAVE|PANY },
+{ CF_VIDEO, "win_thread", cCommon->One(), NoOp, TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! WIN_WIDTH
 // ? Sets the initial width of the window. This value is saved to the

@@ -50,9 +50,9 @@ class SysProcess                       // Need this before of System init order
   SysProcess(void) :
     /* -- Initialisers ----------------------------------------------------- */
     fsProcStat{ "/proc/stat",          // Open proc cpu stats stream
-                FStream::FM_R_B },     // - Read/Binary mode
+                FM_R_B },              // - Read/Binary mode
     fsProcStatM{ "/proc/self/statm",   // Open proc memory stats stream
-                 FStream::FM_R_B },    // - Read/Binary mode
+                 FM_R_B },             // - Read/Binary mode
     ctUser(0),                         // Init user cpu time
     ctLow(0),                          // Init low cpu time
     ctSystem(0),                       // Init system cpu time
@@ -73,7 +73,7 @@ class SysCore :
   public SysProcess,                   // System process object
   public SysCon,                       // Defined in 'pixcon.hpp"
   public SysCommon                     // Common system object
-{ /* -- Variables ------------------------------------------------- */ private:
+{ /* -- Variables ---------------------------------------------------------- */
   bool             bWindowInitialised; // Is window initialised?
   /* --------------------------------------------------------------- */ public:
   void UpdateMemoryUsageData(void)
@@ -116,6 +116,14 @@ class SysCore :
     else memData.qMTotal = memData.qMFree = memData.qMUsed = 0,
          memData.stMFree = 0,
          memData.dMLoad = 0;
+  }
+  /* -- Return operating system uptime (cmHiRes.GetTimeS() doesn't work!) -- */
+  StdTimeT GetUptime(void)
+  { // Get uptime
+    struct timespec tsData;
+    clock_gettime(CLOCK_MONOTONIC, &tsData);
+    // Return as time_t (future ref, also has t.tv_nsec)
+    return static_cast<time_t>(tsData.tv_sec);
   }
   /* -- Terminate a process ------------------------------------------------ */
   bool TerminatePid(const unsigned int uiPid) const
@@ -233,7 +241,7 @@ class SysCore :
       ELFDATA2MSB;
 #endif
     // Open exe file and return on error
-    if(FStream fExe{ strFile, FStream::FM_R_B })
+    if(FStream fExe{ strFile, FM_R_B })
     { // Read in the header
       Elf64_Ehdr ehData;
       if(const size_t stRead = fExe.FStreamReadSafe(&ehData, sizeof(ehData)))
@@ -365,7 +373,7 @@ class SysCore :
   /* ----------------------------------------------------------------------- */
   CPUData GetProcessorData(void)
   {  // Open cpu information file
-    if(FStream fsCpuInfo{ "/proc/cpuinfo", FStream::FM_R_B })
+    if(FStream fsCpuInfo{ "/proc/cpuinfo", FM_R_B })
     { // Read file and if we got data?
       const string strFile{ fsCpuInfo.FStreamReadStringChunked() };
       if(!strFile.empty())
@@ -435,7 +443,7 @@ class SysCore :
   bool DetectElevation(void) { return getuid() == 0; }
   /* -- Return data from /dev/urandom -------------------------------------- */
   Memory GetEntropy(void) const
-    { return FStream{ "/dev/random", FStream::FM_R_B }.
+    { return FStream{ "/dev/random", FM_R_B }.
         FStreamReadBlockSafe(1024); }
   /* ----------------------------------------------------------------------- */
   void *GetWindowHandle(void) const { return nullptr; }

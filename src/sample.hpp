@@ -37,18 +37,18 @@ BEGIN_MEMBERCLASSEX(Samples, Sample, ICHelperUnsafe, /* n/a */),
     // Return state
     return static_cast<IntType>(iV);
   }
-  /* -- Get buffer frequency ----------------------------------------------- */
-  ALsizei GetFrequency(void) const
+  /* -- Get buffer information y ----------------------------------------------- */
+  ALsizei GetALFrequency(void) const
     { return GetBufferInt<ALsizei>(AL_FREQUENCY); }
-  ALsizei GetBits(void) const
+  ALsizei GetALBits(void) const
     { return GetBufferInt<ALsizei>(AL_BITS); }
-  ALsizei GetChannels(void) const
+  ALsizei GetALChannels(void) const
     { return GetBufferInt<ALsizei>(AL_CHANNELS); }
-  ALsizei GetSize(void) const
+  ALsizei GetALSize(void) const
     { return GetBufferInt<ALsizei>(AL_SIZE); }
   ALdouble GetDuration(void) const
-    { return (static_cast<ALdouble>(GetSize()) * 8 /
-        (GetChannels() * GetBits())) / GetFrequency(); }
+    { return (static_cast<ALdouble>(GetALSize()) * 8 /
+        (GetALChannels() * GetALBits())) / GetALFrequency(); }
   /* -- Unload buffers ----------------------------------------------------- */
   void UnloadBuffer(void)
   { // Bail if buffers not allocated

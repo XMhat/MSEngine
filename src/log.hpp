@@ -269,7 +269,7 @@ static class Log final :
   { // If already opened or open/create log failed? Ignore. We're using
     // trusted here because this is only changable with the cvar and the cvar
     // has already checked that this filename is valid.
-    if(FStreamOpen(strFN, FStream::FM_W_T)) return false;
+    if(FStreamOpen(strFN, FM_W_T)) return false;
     // Write log file
     WriteString(StrFormat("Log file is '$'.", IdentGet()));
     // Success

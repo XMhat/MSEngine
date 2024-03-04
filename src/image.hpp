@@ -610,7 +610,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
         // Set activated flag
         SetActiveRGBOrder();
       } // Conversion did not happen so log that too
-      else cLog->LogDebugExSafe("Image '$'[$] re-order to RGB skipped!",
+      else cLog->LogDebugExSafe("Image '$' re-order to RGB skipped!",
         IdentGet());
     } // Reverse the image pixels
     if(IsConvertReverse())

@@ -433,8 +433,7 @@ static class Audio final :             // Audio manager class
     /* -- Initialisers ----------------------------------------------------- */
     IHelper{ __FUNCTION__ },           // Initialise class name
     AudioFlags{ AF_NONE },             // Initialise no audio flags
-    Thread{ "audio",                   // Initialise thread name
-      SysThread::Audio,                // " high performance thread
+    Thread{ "audio", STP_AUDIO,        // Initialise high perf audio thread
       bind(&Audio::AudioThreadMain,    // " with reference to callback
         this, _1) },                   // " function
     cdCheckRate{ seconds{ 0 } }        // Initialise thread check time

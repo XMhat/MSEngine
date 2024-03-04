@@ -78,7 +78,7 @@ static void ImageSave(const size_t stFId, const string &strN,
   { // Create file on disk and report error if failed. Closed automatically
     // when leaving this scope. If there is an exception then the stream is
     // automatically closed
-    if(FStream fC{ strNX, FStream::FM_W_B })
+    if(FStream fC{ strNX, FM_W_B })
     { // Created file
       bCreated = true;
       // Save the image and log the result if succeeded?

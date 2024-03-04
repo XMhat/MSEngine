@@ -222,7 +222,7 @@ LLFUNCEX(ToString, 1, LCPUSHVAR(LCGETPTR(1, Asset)->ToString()));
 // ? Dumps the array to the specified file on disk. Useful for debugging.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(ToFile, 1,
-  LCPUSHVAR(FStream(LCGETCPPFILE(2, "File"), FStream::FM_W_B).
+  LCPUSHVAR(FStream(LCGETCPPFILE(2, "File"), FM_W_B).
     FStreamWriteBlockSafe(*LCGETPTR(1, Asset))));
 /* ========================================================================= */
 // $ Asset:Size

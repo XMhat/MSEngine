@@ -34,11 +34,8 @@ Diggers will always be a work-in-progress since it is difficult and incredibly t
   * _MacOS:_ `100%`…
     * All functions accounted for.
   * _Linux:_ `100%`…
-    * Some upstream issues with GLFW.
-      * Initial screen corruption when putting window in its own thread only on Wayland so single threaded for now. Can be overridden with `win_thread=1` argument.
-      * Problem with `Alt+Enter` not working properly. Think maybe GLFW is duplicating the event.
-    * Problems initialising with error EGL_BAD_ATTRIBUTE on older OpenGL 3.3 compatible Nouveau driver GPU's.
-    * Skipping one rendered frame every few seconds only on Wayland, perhaps due to using a `59.97hz` NTSC display. Help needed with this one.
+    * Sometimes the full-screen/window toggle key might not work properly because of duplicated input keys. Hopefully will be fixed in Ubuntu 24.04 LTS.
+    * Skipping one rendered frame every few seconds only on Wayland, perhaps when only using a `59.97hz` NTSC display. Probably need to make animations based on time and not frames which could be extremely difficult.
     * All other functions accounted for.
 * *Graphics*: `100%`…
   * All other graphics accounted for.

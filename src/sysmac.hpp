@@ -27,7 +27,7 @@ namespace SysBase {                    // Start of module namespace
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
 class SysProcess                       // Need this before of System init order
-{ /* -- Private variables ----------------------------------------- */ private:
+{ /* -- Private variables -------------------------------------------------- */
   const pid_t      ullProcessId;       // Process id
   const pthread_t  vpThreadId;         // Thread id
   /* -- Protected variables ------------------------------------- */ protected:
@@ -57,7 +57,7 @@ class SysCore :
   public SysProcess,                   // Process information class
   public SysCon,                       // Defined in 'pixcon.hpp'
   public SysCommon                     // Common functions class
-{ /* -- Variables ------------------------------------------------- */ private:
+{ /* -- Variables ---------------------------------------------------------- */
   bool             bWindowInitialised; // Is window initialised?
   /* ----------------------------------------------------------------------- */
   const string GetSysCTLInfoString(const char *cpS)
@@ -111,6 +111,8 @@ class SysCore :
     memData.dMLoad =
       static_cast<double>(memData.qMUsed) / memData.qMTotal * 100;
   }
+  /* -- Get uptime from clock class ---------------------------------------- */
+  StdTimeT GetUptime(void) const { return cmHiRes.GetTimeS(); }
   /* -- Send signal -------------------------------------------------------- */
   static int SendSignal(const unsigned int uiPid, const int iSignal)
     { return kill(static_cast<pid_t>(uiPid), iSignal); }
@@ -381,7 +383,7 @@ class SysCore :
   /* -- Get executable size from header (N/A on OSX) ----------------------- */
   static size_t GetExeSize(const string &strFile)
   { // Open exe file and return on error
-    if(FStream fExe{ strFile, FStream::FM_R_B })
+    if(FStream fExe{ strFile, FM_R_B })
     { // Possible MachO header magic values
       enum MachOMagic : uint32_t {
 #if defined(LITTLE_ENDIAN)             // Intel and ARM?
@@ -689,8 +691,7 @@ class SysCore :
   bool DetectElevation(void) { return getuid() == 0; }
   /* -- Return data from /dev/random -------------------------------------- */
   Memory GetEntropy(void) const
-    { return FStream{ "/dev/random", FStream::FM_R_B }.
-        FStreamReadBlockSafe(1024); }
+    { return FStream{ "/dev/random", FM_R_B }.FStreamReadBlockSafe(1024); }
   /* ----------------------------------------------------------------------- */
   void *GetWindowHandle(void) const { return nullptr; }
   /* -- A window was created ----------------------------------------------- */

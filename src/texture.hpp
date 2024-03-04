@@ -100,7 +100,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
   { /* -- Load as raw uncompressed pixels ---------------------------------- */
     struct RAW                         // Uniform pixels (R,RG,RGB,RGBA, etc.)
     { /* -- Default constructor -------------------------------------------- */
-      RAW(Texture &tRef, const size_t stSubTexId,
+      RAW(const Texture &tRef, const size_t stSubTexId,
         const GLint iMipLevel, const GLint iNICFormat,
         const GLenum eNXCFormat, const ImageSlot &sData)
       { // Upload uncompressed texture to video ram
@@ -119,7 +119,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
     /* -- Load as compressed dxt pixels ------------------------------------ */
     struct DXT                         // DXT1, DXT3 or DXT5
     { /* -- Default constructor -------------------------------------------- */
-      DXT(Texture &tRef, const size_t stSubTexId,
+      DXT(const Texture &tRef, const size_t stSubTexId,
         const GLint iMipLevel, const GLint,
         const GLenum, const ImageSlot &sData)
       { // Upload pre-compressed texture to video ram

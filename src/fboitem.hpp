@@ -81,19 +81,19 @@ class FboItem
   /* -- Set vertex bounds with angle --------------------------------------- */
   void SetVertex(const GLfloat fX1, const GLfloat fY1,
      const GLfloat fX2, const GLfloat fY2, const GLfloat fA)
-  { // UtilDenormalise the angle to radians                             (M_PI)
+  { // UtilDenormalise the angle to radians                          (M_PI)
     const GLfloat fAR = fA * 2.0f * 3.141592653589793238462643383279502884f,
     // Calculate centre
     fXC = (fX2-fX1)/2, fYC = (fY2-fY1)/2,
     // Rotate vertices
-    fC1 = atan2(-fYC,fXC)+fAR,         fC2 = atan2(-fYC,-fXC)+fAR,
-    fC3 = atan2( fYC,fXC)+fAR,         fC4 = atan2( fYC,-fXC)+fAR,
-    fC5 = sqrt(-fYC*-fYC+fXC*fXC),     fC6 = sqrt(-fYC*-fYC+-fXC*-fXC),
-    fC7 = sqrt( fYC* fYC+fXC*fXC),     fC8 = sqrt( fYC* fYC+-fXC*-fXC),
-    fCa = cos(fC2)*fC5,                fCb = sin(fC2)*fC5,
-    fCc = cos(fC1)*fC6,                fCd = sin(fC1)*fC6,
-    fCe = cos(fC4)*fC7,                fCf = sin(fC4)*fC7,
-    fCg = cos(fC3)*fC8,                fCh = sin(fC3)*fC8;
+    fC1 = atan2f(-fYC,fXC)+fAR,         fC2 = atan2f(-fYC,-fXC)+fAR,
+    fC3 = atan2f( fYC,fXC)+fAR,         fC4 = atan2f( fYC,-fXC)+fAR,
+    fC5 = sqrtf(-fYC*-fYC+fXC*fXC),     fC6 = sqrtf(-fYC*-fYC+-fXC*-fXC),
+    fC7 = sqrtf( fYC* fYC+fXC*fXC),     fC8 = sqrtf( fYC* fYC+-fXC*-fXC),
+    fCa = cosf(fC2)*fC5,                fCb = sinf(fC2)*fC5,
+    fCc = cosf(fC1)*fC6,                fCd = sinf(fC1)*fC6,
+    fCe = cosf(fC4)*fC7,                fCf = sinf(fC4)*fC7,
+    fCg = cosf(fC3)*fC8,                fCh = sinf(fC3)*fC8;
     // Update the first triangle of the quad
     TriPosData &tdT1 = GetVData(0);
     tdT1[0] = fX1+fCa; tdT1[1] = fY1+fCb; // Vertex 1 / Triangle 1

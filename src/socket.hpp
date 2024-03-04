@@ -1391,8 +1391,8 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     sSSL(nullptr),                     // Invalid ssl (openssl)
     qRX(0), qTX(0),                    // No RX or TX bytes
     qRXp(0), qTXp(0),                  // No RX or TX packets
-    tReader{ SysThread::Low },         // Low priority reader thread
-    tWriter{ SysThread::Low },         // Low priority writer thread
+    tReader{ STP_LOW },                // Low priority reader thread
+    tWriter{ STP_LOW },                // Low priority writer thread
     bUnlock(false),                    // Block sock writer thread
     uiPort(0),                         // No port
     iError(0),                         // No error

@@ -100,8 +100,7 @@ static class SShot final :             // Members initially private
   /* -- Default constructor ------------------------------------------------ */
   SShot(void) :                        // No parameters
     /* -- Initialisers ----------------------------------------------------- */
-    Thread{ "sshot",                   // Prepare screenshot thread
-      SysThread::Low,                  // Non-critical low performance
+    Thread{ "sshot", STP_LOW,          // Prepare low perf screenshot thread
       bind(&SShot::DumpThread,         // Dump thread entry function
         this, _1) },                   // Send this class pointer
     stFormatId(0)                      // Not truly initialised yet

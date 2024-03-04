@@ -76,7 +76,7 @@ static Memory LuaCodeCompileFunction(lua_State*const lS, const bool bDebug)
   // Until no blocks level or position reaches end
   while(!mdData.mlBlocks.empty() && stPos < mdData.stTotal)
   { // Get memory block and write it to our big final black
-    Memory &mbBlock = *mdData.mlBlocks.begin();
+    const Memory &mbBlock = *mdData.mlBlocks.begin();
     mbData.WriteBlock(stPos, mbBlock);
     // Incrememnt position and erase the block
     stPos += mbBlock.Size();

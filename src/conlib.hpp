@@ -911,7 +911,7 @@ if(aList.size() == 2)
 { // Get slot data and return if it is a bad slot
   const size_t stId = StrToNum<size_t>(aList[1]);
   if(stId >= cImages->size()) return cConsole->AddLine("Invalid image id!");
-  Image &iCref = **next(cImages->cbegin(), static_cast<ssize_t>(stId));
+  const Image &iCref = **next(cImages->cbegin(), static_cast<ssize_t>(stId));
   // Text table class to help us write neat output
   Statistic tData;
   tData.Header("SIZX").Header("SIZY").Header("SIZE")

@@ -81,12 +81,13 @@ class SysBase :                        // Safe exception handler namespace
     const void*const vpStack) const
   { // Information about the object
     Dl_info diData;
+    // Tokenise the stack after removing duplicate whitespaces. Note that objc
+    // calls will have spaces in them.
+    const Token tokData{ StrCompact(cpStack), cCommon->Space() };
     // Need some extra work on Apple
 #if defined(MACOS)
-    // Tokenise the stack after removing duplicate whitespaces. Note that objc
-    // calls will have spaces in them but the last two tokens should always be
-    // a + and a number which we will grab.
-    const Token tokData{ StrCompact(cpStack), " " };
+    // The last two tokens should always be a + and a number which we will
+    // grab.
     switch(tokData.size())
     { // Not enough data?
       case  0: staData.Data(cCommon->Unspec()).Data(cCommon->Unspec());
@@ -132,15 +133,13 @@ class SysBase :                        // Safe exception handler namespace
     // What is the return code for this call?
     else switch(iStatus)
     { // Memory error?
-      case -1: staData.Data(StrFormat("<MAE:$>", diData.dli_sname)); break;
+      case -1: staData.Data(StrFormat("<MAE:$>", tokData[1])); break;
       // Not a valid name?
       case -2: staData.Data(diData.dli_sname); break;
       // Invalid argument?
-      case -3: staData.Data(StrFormat("<IA:$>", diData.dli_sname)); break;
+      case -3: staData.Data(StrFormat("<IA:$>", tokData[1])); break;
       // Success (impossible) or unknown?
-      default:
-        staData.Data(StrFormat("<$:$>", iStatus, diData.dli_sname));
-        break;
+      default: staData.Data(StrFormat("<$:$>", iStatus, tokData[1])); break;
     }
   }
   /* ----------------------------------------------------------------------- */
@@ -237,7 +236,7 @@ class SysBase :                        // Safe exception handler namespace
          << ". This means that the engine must now terminate and we apologise "
             "for the inconvenience with the loss of any unsaved progress. ";
     // Create the debug log and exit if failed
-    if(FStream fOut{ StdMove(strFileName), FStream::FM_W_T })
+    if(FStream fOut{ StdMove(strFileName), FM_W_T })
     { // Write to crash output file
       fOut.FStreamWriteString(strMsg);
       // We wrote the crash log
@@ -409,68 +408,6 @@ class SysBase :                        // Safe exception handler namespace
               reinterpret_cast<void*>(&tRT), sizeof(tRT)) < 0 ? 1 : 0) |
            (setsockopt(iFd, SOL_SOCKET, SO_SNDTIMEO,
               reinterpret_cast<void*>(&tWT), sizeof(tWT)) < 0 ? 2 : 0);
-  }
-  /* ----------------------------------------------------------------------- */
-  static bool SysInitThread(const char*const cpName, const SysThread stLevel)
-  { // Get this thread handle
-    pthread_t ptHandle = pthread_self();
-    // Set thread name
-#if defined(MACOS)
-    pthread_setname_np(cpName);
-#else
-    pthread_setname_np(ptHandle, cpName);
-#endif
-    // Container for current scheduler parameters
-    struct sched_param spParam;
-    // Container for current policy level
-    int iPolicy;
-    // Get current thread settings
-    if(pthread_getschedparam(ptHandle, &iPolicy, &spParam)) return false;
-    // Get bounds
-    const int iMinPriority = sched_get_priority_min(iPolicy),
-              iMaxPriority = sched_get_priority_max(iPolicy);
-    // What level was requested?
-    switch(stLevel)
-    { // Reserved for main thread
-      case SysThread::Main:
-        // Use high priority parameters
-        spParam.sched_priority = iMinPriority+1;
-        iPolicy = SCHED_RR;
-        // Done
-        break;
-      // Reserved for engine thread
-      case SysThread::Engine:
-        // Use high priority parameters
-        spParam.sched_priority = iMinPriority;
-        iPolicy = SCHED_RR;
-        // Done
-        break;
-      // Reserved for audio thread
-      case SysThread::Audio:
-        // Use high priority parameters
-        spParam.sched_priority = iMinPriority+2;
-        iPolicy = SCHED_RR;
-        // Done
-        break;
-      // Aux thread high priority
-      case SysThread::High:
-        // Use high priority parameters
-        spParam.sched_priority = iMinPriority+3;
-        iPolicy = SCHED_RR;
-        // Done
-        break;
-      // Aux thread low priority
-      case SysThread::Low:
-        // Use high priority parameters
-        spParam.sched_priority = iMaxPriority;
-        iPolicy = SCHED_OTHER;
-        // Done
-        break;
-    } // Clamp the value
-    spParam.sched_priority =
-      UtilClamp(spParam.sched_priority, iMinPriority, iMaxPriority);
-    // Set the new parameters and return true if succeeded
-    return !pthread_setschedparam(ptHandle, iPolicy, &spParam);
   }
   /* ----------------------------------------------------------------------- */
   SysBase(SysModList &&svVersion, const size_t stI) :
