@@ -366,13 +366,13 @@ cConsole->AddLineExA(StrPluraliseNum(cConsole->ToLog(), "line", "lines"),
 cSystem->UpdateCPUUsage();
 // Write detected processor information
 cConsole->AddLineEx(
-  "CPU: $$MHz x $ x $.\n"
-  "CPUID: $; Load: $% ($%).\n"
+  "$$x$MHz/$ (FMS:$;$;$); Load: $% ($%).\n"
   "Start: $; Last: $; Limit: $; Accu: $.\n"
   "Mode: $ ($); TimeOut: $ ($x$).\n"
   "FPS: $/s; Delay: $/s; Ticks: $.",
-    fixed, cSystem->CPUSpeed(), cSystem->CPUCount(), cSystem->CPUName(),
-    cSystem->CPUIdentifier(), cSystem->CPUUsage(), cSystem->CPUUsageSystem(),
+    fixed, cSystem->CPUCount(), cSystem->CPUSpeed(), cSystem->CPUName(),
+      cSystem->CPUFamily(), cSystem->CPUModel(), cSystem->CPUStepping(),
+      cSystem->CPUUsage(), cSystem->CPUUsageSystem(),
     cTimer->TimerGetStart(), cTimer->TimerGetDuration(),
       cTimer->TimerGetLimit(), cTimer->TimerGetAccumulator(),
     cSystem->GetCoreFlags(), cSystem->GetCoreFlagsString(),

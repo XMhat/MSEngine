@@ -100,7 +100,7 @@ LLFUNC(SetVertex, LCGETPTR(1, Video)->SetFBOVertex(
 LLFUNC(SetVertexA, LCGETPTR(1, Video)->SetFBOVertex(
   LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom"),
-  LCGETNUM(GLfloat, 6, "Angle")));
+  LCGETNORM(GLfloat, 6, "Angle")));
 /* ========================================================================= */
 // $ Video:SetTexCoord
 // > Left:number=The left co-ordinate.

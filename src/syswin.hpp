@@ -813,27 +813,48 @@ class SysCore :
   }
   /* ----------------------------------------------------------------------- */
   CPUData GetProcessorData(void)
-  { // Key to open
+  { // Try to open the specified below registry key and if successful?
     const string strK{ "HARDWARE\\DESCRIPTION\\System\\CentralProcessor" };
-    // Open the key
-    const SysReg rgClass{ HKEY_LOCAL_MACHINE, strK, KEY_ENUMERATE_SUB_KEYS };
-    if(rgClass.NotOpened())
-      XCS("Failed to open registry key!", "Key", strK);
-    // Enumerate subkeys
-    const StrVector klData{ rgClass.QuerySubKeys() };
-    // Open first subkey, usually "0".
-    const SysReg rgSubClass{ rgClass.GetHandle(),
-      *klData.cbegin(), KEY_QUERY_VALUE };
-    if(rgSubClass.NotOpened())
-      XCS("Failed to enumerate first subkey!", "Key", strK);
-    // Return data
-    return { rgSubClass.QueryString("VendorIdentifier"),
-             rgSubClass.QueryString("ProcessorNameString"),
-             rgSubClass.QueryString("Identifier"),
-             thread::hardware_concurrency(),
-             rgSubClass.Query<DWORD>("~MHz"),
-             rgSubClass.Query<DWORD>("FeatureSet"),
-             rgSubClass.Query<DWORD>("Platform ID") };
+    if(const SysReg srRoot{ HKEY_LOCAL_MACHINE, strK, KEY_ENUMERATE_SUB_KEYS })
+    { // Enumerate subkeys
+      const StrVector svKeys{ srRoot.QuerySubKeys() };
+      // Open first subkey, usually "0" and if succeeded?
+      const string &strSK = *svKeys.cbegin();
+      if(const SysReg srSub{ srRoot.GetHandle(), strSK, KEY_QUERY_VALUE })
+      { // Query required values
+        string strVendor{ srSub.QueryString("VendorIdentifier") },
+               strName{ srSub.QueryString("ProcessorNameString") },
+               strIdent{ srSub.QueryString("Identifier") };
+        // Remove unnecessary whitespaces from strings
+        StrCompactRef(strVendor);
+        StrCompactRef(strName);
+        StrCompactRef(strIdent);
+        // Fail-safe empty strings
+        if(strVendor.empty()) strVendor = cCommon->Unspec();
+        if(strName.empty()) strName = strVendor;
+        if(strIdent.empty()) strIdent = cCommon->Unspec();
+        // Detect family model and stepping from string (A F 0 M 0 S)
+        unsigned int uiFamily, uiModel, uiStepping;
+        Token tTokens{ strIdent, cCommon->Space() };
+        if(tTokens.size() >= 7 && tTokens[1] == "Family" &&
+          tTokens[3] == "Model" && tTokens[5] == "Stepping")
+        { // Convert strings to numbers
+          uiFamily = StrToNum<unsigned int>(tTokens[2]);
+          uiModel = StrToNum<unsigned int>(tTokens[4]);
+          uiStepping= StrToNum<unsigned int>(tTokens[6]);
+        } // Invalid syntax
+        else uiFamily = uiModel = uiStepping = 0;
+        // Return data
+        return { thread::hardware_concurrency(), srSub.Query<DWORD>("~MHz"),
+                 uiFamily, uiModel, uiStepping, strName };
+      } // Log that we couldn't open the subkey
+      else cLog->LogWarningExSafe("System could not open registry key $ "
+        "sub-key $! $", strK, strSK, SysError());
+    } // Log that we couldn't open the root key
+    else cLog->LogWarningExSafe("System could not open registry key $! $",
+      strK, SysError());
+    // Return default data we could not read
+    return { thread::hardware_concurrency(), 0, 0, 0, 0, cCommon->Unspec() };
   }
   /* ----------------------------------------------------------------------- */
   void UpdateMemoryUsageData(void)

@@ -238,13 +238,12 @@ class SysCommon                        // Common system structs and funcs
   /* ----------------------------------------------------------------------- */
   const struct CPUData                 // Processor data
   { /* --------------------------------------------------------------------- */
-    const string       sVendorId;      // VendorIdentifier
-    const string       sProcessorName; // ProcessorNameString
-    const string       sIdentifier;    // Identifier
     const size_t       stCpuCount;     // Cpu count
-    const unsigned int ulSpeed;        // ~MHz
-    const unsigned int ulFeatureSet;   // FeatureSet
-    const unsigned int ulPlatformId;   // Platform ID
+    const unsigned int ulSpeed,        // ~MHz
+                       ulFamily,       // Family
+                       ulModel,        // Model
+                       ulStepping;     // Stepping
+    const string       sProcessorName; // CPU id or vendor
   } /* --------------------------------------------------------------------- */
   cpuData;                             // System processor data
   /* ----------------------------------------------------------------------- */
@@ -302,13 +301,12 @@ class SysCommon                        // Common system structs and funcs
   bool OSIsAdmin(void) const { return osData.bIsAdmin; }
   bool OSIsAdminDefault(void) const { return osData.bIsAdminDef; }
   /* ----------------------------------------------------------------------- */
-  const string &CPUVendor(void) const { return cpuData.sVendorId; }
-  const string &CPUName(void) const { return cpuData.sProcessorName; }
-  const string &CPUIdentifier(void) const { return cpuData.sIdentifier; }
   size_t CPUCount(void) const { return cpuData.stCpuCount; }
   unsigned int CPUSpeed(void) const { return cpuData.ulSpeed; }
-  unsigned int CPUFeatures(void) const { return cpuData.ulFeatureSet; }
-  unsigned int CPUPlatform(void) const { return cpuData.ulPlatformId; }
+  unsigned int CPUFamily(void) const { return cpuData.ulFamily; }
+  unsigned int CPUModel(void) const { return cpuData.ulModel; }
+  unsigned int CPUStepping(void) const { return cpuData.ulStepping; }
+  const string &CPUName(void) const { return cpuData.sProcessorName; }
   double CPUUsage(void) const { return cpuUData.fdProcess; }
   double CPUUsageSystem(void) const { return cpuUData.fdSystem; }
   /* ----------------------------------------------------------------------- */
@@ -634,8 +632,7 @@ static class System final :            // The main system class
 #if !defined(MACOS)
        "+ Priority is $<0x$$$> with affinity $<0x$$$> and mask $<0x$$$>.\n"
 #endif
-       "+ Processor is $ <$ x $ MHz>.\n"
-       "+ Type is $<0x$$$>.\n"
+       "+ Processor is $ <$x$MHz;FMS:$,$,$>.\n"
        "+ Memory has $ with $ free and $ initial.\n"
        "+ System is $ v$.$.$ ($-bit) in $$.\n"
        "+ Uptime is $.\n"
@@ -659,8 +656,8 @@ static class System final :            // The main system class
         GetAffinity(false), hex, GetAffinity(false), dec,
         GetAffinity(true), hex, GetAffinity(true), dec,
 #endif
-      CPUName(), CPUCount(), CPUSpeed(),
-        CPUIdentifier(), hex, CPUFeatures(), dec,
+      CPUName(), CPUCount(), CPUSpeed(), CPUFamily(), CPUModel(),
+        CPUStepping(),
       StrToBytes(RAMTotal()), StrToBytes(RAMFree()), StrToBytes(RAMProcUse()),
       OSName(), OSMajor(), OSMinor(), OSBuild(), OSBits(), OSLocale(),
         IsOSNameExSet() ? StrAppend(" via ", OSNameEx()) : cCommon->Blank(),

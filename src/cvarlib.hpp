@@ -1204,7 +1204,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
   cCommon->Zero(),                     // Win32/Wayland doesn't need
 #endif
 /* ------------------------------------------------------------------------- */
-  CB(cDisplay->SetForcedBitDepth, int), TUINTEGER|PANY },
+  CB(cDisplay->SetForcedBitDepth, int), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_CONTEXT
 // ? Specifies the context version to use. This is only used for

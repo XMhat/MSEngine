@@ -31,6 +31,7 @@ namespace P {                          // Start of public module namespace
 #define LCGETNUMLGE(t,a,l,ge,n)        LuaUtilGetNumLGE<t>(lS, a, l, ge, n)
 #define LCGETNUMLG(t,a,l,g,n)          LuaUtilGetNumLG<t>(lS, a, l, g, n)
 #define LCGETNUM(t,a,n)                LuaUtilGetNum<t>(lS, a, n)
+#define LCGETNORM(t,a,n)               LuaUtilGetNormal<t>(lS, a, n)
 #define LCGETBOOL(a,n)                 LuaUtilGetBool(lS, a, n)
 #define LCGETSTRING(t,a,n)             LuaUtilGetStr<t>(lS, a, n)
 #define LCGETCPPSTRING(a,n)            LuaUtilGetCppStr(lS, a, n)
@@ -150,6 +151,7 @@ template<typename IntType=int, typename AnyType, IntType itSize>
 #undef LCGETNUMLGE
 #undef LCGETNUMLG
 #undef LCGETNUM
+#undef LCGETNORM
 #undef LCCHECKFUNC
 #undef LCCHECKPARAMS
 #undef LCCHECKMAINSTATE

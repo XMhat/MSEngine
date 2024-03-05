@@ -61,7 +61,7 @@ LLFUNC(SetLTRB, LCGETPTR(1, Texture)->SetVertex(
 LLFUNC(BlitLTRBA, LCGETPTR(1, Texture)->BlitLTRBA(0, 0,
   LCGETNUM(GLfloat, 2, "X"),     LCGETNUM(GLfloat, 3, "Y"),
   LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom"),
-  LCGETNUM(GLfloat, 6, "Angle")));
+  LCGETNORM(GLfloat, 6, "Angle")));
 /* ========================================================================= */
 // $ Texture:SetLTRBA
 // > X:number=The X screen position of the string.
@@ -74,7 +74,7 @@ LLFUNC(BlitLTRBA, LCGETPTR(1, Texture)->BlitLTRBA(0, 0,
 LLFUNC(SetLTRBA, LCGETPTR(1, Texture)->SetVertex(
   LCGETNUM(GLfloat, 2, "X"),     LCGETNUM(GLfloat, 3, "Y"),
   LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom"),
-  LCGETNUM(GLfloat, 6, "Angle")));
+  LCGETNORM(GLfloat, 6, "Angle")));
 /* ========================================================================= */
 // $ Texture:BlitSLTRB
 // > TileIndex:integer=The tile index of the texture to blit.
@@ -213,7 +213,7 @@ LLFUNCBEGIN(BlitSLTRBA)
     LCGETNUM   (GLfloat, 4,                       "Top"),
     LCGETNUM   (GLfloat, 5,                       "Right"),
     LCGETNUM   (GLfloat, 6,                       "Bottom"),
-    LCGETNUM   (GLfloat, 7,                       "Rotation"));
+    LCGETNORM  (GLfloat, 7,                       "Angle"));
 LLFUNCEND
 /* ========================================================================= */
 // $ Texture:BlitILTRB
@@ -253,7 +253,7 @@ LLFUNCBEGIN(BlitILTRBA)
     LCGETNUM   (GLfloat, 4,                      "Top"),
     LCGETNUM   (GLfloat, 5,                      "Right"),
     LCGETNUM   (GLfloat, 6,                      "Bottom"),
-    LCGETNUM   (GLfloat, 7,                      "Rotation"));
+    LCGETNORM  (GLfloat, 7,                      "Angle"));
 LLFUNCEND
 /* ========================================================================= */
 // $ Texture:BlitISLTRB
@@ -297,7 +297,7 @@ LLFUNCBEGIN(BlitISLTRBA)
     LCGETNUM   (GLfloat, 5,                       "Top"),
     LCGETNUM   (GLfloat, 6,                       "Right"),
     LCGETNUM   (GLfloat, 7,                       "Bottom"),
-    LCGETNUM   (GLfloat, 8,                       "Rotation"));
+    LCGETNORM  (GLfloat, 8,                       "Angle"));
 LLFUNCEND
 /* ========================================================================= */
 // $ Texture:BlitLT
@@ -319,7 +319,7 @@ LLFUNC(BlitLT, LCGETPTR(1, Texture)->BlitLT(0, 0,
 /* ------------------------------------------------------------------------- */
 LLFUNC(BlitLTA, LCGETPTR(1, Texture)->BlitLTA(0, 0,
   LCGETNUM(GLfloat, 2, "Left"), LCGETNUM(GLfloat, 3, "Top"),
-  LCGETNUM(GLfloat, 4, "Rotation")));
+  LCGETNORM(GLfloat, 4, "Angle")));
 /* ========================================================================= */
 // $ Texture:BlitSLT
 // > TileIndex:integer=The tile index of the texture to blit.
@@ -351,7 +351,7 @@ LLFUNCBEGIN(BlitSLTA)
     LCGETINTLGE(size_t,  2, 0, tCref.GetTileCount(), "TileIndex"),
     LCGETNUM   (GLfloat, 3,                       "Left"),
     LCGETNUM   (GLfloat, 4,                       "Top"),
-    LCGETNUM   (GLfloat, 5,                       "Rotation"));
+    LCGETNORM  (GLfloat, 5,                       "Angle"));
 LLFUNCEND
 /* ========================================================================= */
 // $ Texture:BlitILT
@@ -384,7 +384,7 @@ LLFUNCBEGIN(BlitILTA)
     LCGETINTLGE(size_t,  2, 0, tCref.GetSubCount(), "TexIndex"), 0,
     LCGETNUM   (GLfloat, 3,                      "Left"),
     LCGETNUM   (GLfloat, 4,                      "Top"),
-    LCGETNUM   (GLfloat, 5,                      "Angle"));
+    LCGETNORM  (GLfloat, 5,                      "Angle"));
 LLFUNCEND
 /* ========================================================================= */
 // $ Texture:BlitISLT
@@ -422,7 +422,7 @@ LLFUNCBEGIN(BlitISLTA)
     LCGETINTLGE(size_t,  3, 0, tCref.GetTileCount(), "TileIndex"),
     LCGETNUM   (GLfloat, 4,                          "Left"),
     LCGETNUM   (GLfloat, 5,                          "Top"),
-    LCGETNUM   (GLfloat, 6,                          "Angle"));
+    LCGETNORM  (GLfloat, 6,                          "Angle"));
 LLFUNCEND
 /* ========================================================================= */
 // $ Texture:SetCRGB
@@ -886,7 +886,7 @@ LLFUNC(SetTC, LCGETPTR(1, Texture)->SetTexCoord(
 LLFUNC(SetVA, LCGETPTR(1, Texture)->SetVertex(
   LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom"),
-  LCGETNUM(GLfloat, 6, "Angle")));
+  LCGETNORM(GLfloat, 6, "Angle")));
 /* ========================================================================= */
 // $ Texture:PushColour
 // ? Saves the currently set colour by SetCRGBA. Use PopColour to restore it.

@@ -606,19 +606,18 @@ class SysCore :
   }
   /* ----------------------------------------------------------------------- */
   CPUData GetProcessorData(void)
-  { // Get processor information
-    const size_t stCpuCount = thread::hardware_concurrency();
-    // Using arm cpu?
+  { // Using arm cpu?
 #if defined(RISC)
+    // Get family model and stepping (improvised for X-platform consistency)
     const unsigned int
-      ulFeatureSet = GetSysCTLInfoNum<unsigned int>("hw.cpufamily"),
-      ulPlatformId = GetSysCTLInfoNum<unsigned int>("hw.cputype");
-    const string strIdentifier{
-      StrFormat("Arm64 Family $ Model $",
-        GetSysCTLInfoNum<uint32_t>("hw.cpusubfamily"),
-        GetSysCTLInfoNum<uint32_t>("hw.cpusubtype"))
-    }, strProcessorName{ GetSysCTLInfoString("machdep.cpu.brand_string") },
-       strVendorId{ "Apple" };
+      uiFamily = GetSysCTLInfoNum<unsigned int>("hw.cpusubfamily"),
+      uiModel = GetSysCTLInfoNum<uint32_t>("hw.cpusubtype"),
+      uiStepping = 0;
+    // Get processor name
+    string strProcessorName{ GetSysCTLInfoString("machdep.cpu.brand_string") },
+      strVendorId{ "Apple" };
+    // Remove unnecessary whitespaces
+    StrCompactRef(strProcessorName);
     // Processor speeds common speeds (lowest vs highest speed).
     typedef array<const unsigned int, 2> UIntDouble;
     const UIntDouble uidM1{ { 2064, 3228 } }, // Apple M1
@@ -643,24 +642,26 @@ class SysCore :
       smListIt->second[1];
     // Using INTEL processor?
 #elif defined(CISC)
+    // Get family model and stepping
     const unsigned int
       uiSpeed = GetSysCTLInfoNum<uint64_t>("hw.cpufrequency")/1000000,
-      ulFeatureSet = GetSysCTLInfoNum<uint64_t>("machdep.cpu.feature_bits"),
-      ulPlatformId = GetSysCTLInfoNum<uint32_t>("machdep.cpu.signature");
-    const string strIdentifier{
-      StrFormat("Intel$ Family $ Model $ Stepping $",
-        sizeof(void*) == 8 ? "64" : cCommon->Blank(),
-        GetSysCTLInfoNum<uint32_t>("machdep.cpu.family"),
-        GetSysCTLInfoNum<uint32_t>("machdep.cpu.model"),
-        GetSysCTLInfoNum<uint32_t>("machdep.cpu.stepping"))
-    }, strProcessorName{ GetSysCTLInfoString("machdep.cpu.brand_string") },
-       strVendorId{ GetSysCTLInfoString("machdep.cpu.vendor") };
+      uiFamily = GetSysCTLInfoNum<uint32_t>("machdep.cpu.family"),
+      uiModel = GetSysCTLInfoNum<uint32_t>("machdep.cpu.model"),
+      uiStepping = GetSysCTLInfoNum<uint32_t>("machdep.cpu.stepping");
+    // Get processor id and vendor
+    string strProcessorName{ GetSysCTLInfoString("machdep.cpu.brand_string") },
+      strVendorId{ GetSysCTLInfoString("machdep.cpu.vendor") };
+    // Remove unnecessary whitespaces
+    StrCompactRef(strVendorId);
+    StrCompactRef(strProcessorName);
+    // Fail-safe empty strings
+    if(strVendorId.empty()) strVendorId = cCommon->Unspec();
 #endif
+    // Check processor name is specified
+    if(strProcessorName.empty()) strProcessorName = strVendorId;
     // Return default data we could not read
-    return { StdMove(strVendorId),   StdMove(strProcessorName),
-             StdMove(strIdentifier), stCpuCount,
-             uiSpeed,                ulFeatureSet,
-             ulPlatformId };
+    return { thread::hardware_concurrency(), uiSpeed, uiFamily, uiModel,
+               uiStepping, StdMove(strProcessorName) };
   }
   /* ----------------------------------------------------------------------- */
   bool DebuggerRunning(void) const

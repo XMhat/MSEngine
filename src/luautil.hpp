@@ -527,6 +527,12 @@ template<typename IntType>
     "Parameter", iIndex, "Name",            cpName, "Supplied", itVal,
     "NotLesser", itMin,  "NotGreaterEqual", itMax);
 }
+/* -- Try to get and force a value between -1.0 and 1.0 -------------------- */
+template<typename IntType>
+  static IntType LuaUtilGetNormal(lua_State*const lS, const int iIndex,
+    const char*const cpName)
+      { return static_cast<IntType>(fmod(LuaUtilGetNum<lua_Number>(lS,
+          iIndex, cpName), 1.0)); }
 /* -- Try to get and check a valid integer --------------------------------- */
 template<typename IntType>
   static IntType LuaUtilGetInt(lua_State*const lS, const int iIndex,

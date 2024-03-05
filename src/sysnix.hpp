@@ -378,27 +378,37 @@ class SysCore :
       const string strFile{ fsCpuInfo.FStreamReadStringChunked() };
       if(!strFile.empty())
       { // Parse the variables and if we got some?
-        VarsConst vVars(strFile, StrGetReturnFormat(strFile), ':');
+        VarsConst vVars{ strFile, StrGetReturnFormat(strFile), ':' };
         if(!vVars.empty())
-        { // Read variables
+        { // Move stirngs from loaded variables
           string strCpuId{ StdMove(vVars["model name"]) },
                  strSpeed{ StdMove(vVars["cpu MHz"]) },
                  strVendor{ StdMove(vVars["vendor_id"]) },
                  strFamily{ StdMove(vVars["cpu family"]) },
                  strModel{ StdMove(vVars["model"]) },
                  strStepping{ StdMove(vVars["stepping"]) };
-          // Return default data we could not read
-          return { strVendor.empty() ? cCommon->Unspec() : StdMove(strVendor),
-                   strCpuId.empty() ? cCommon->Unspec() : StdMove(strCpuId),
-                   strFamily.empty() &&
-                   strModel.empty() &&
-                   strStepping.empty() ? cCommon->Unspec() :
-                     StdMove(StrFormat("$ Family $ Model $ Stepping $",
-                       StdMove(strVendor), StdMove(strFamily),
-                       StdMove(strModel), StdMove(strStepping))),
-                   thread::hardware_concurrency(),
-                   strSpeed.empty() ? 0 : StrToNum<unsigned int>(strSpeed),
-                   0, 0 };
+          // Remove excessive whitespaces from strings
+          StrCompactRef(strCpuId);
+          StrCompactRef(strSpeed);
+          StrCompactRef(strVendor);
+          StrCompactRef(strFamily);
+          StrCompactRef(strModel);
+          StrCompactRef(strStepping);
+          // Fail-safe any empty strings
+          if(strSpeed.empty()) strSpeed = cCommon->Zero();
+          if(strVendor.empty()) strVendor = cCommon->Unspec();
+          if(strCpuId.empty()) strCpuId = strVendor;
+          if(strFamily.empty()) strFamily = cCommon->Zero();
+          if(strModel.empty()) strModel = cCommon->Zero();
+          if(strStepping.empty()) strStepping = cCommon->Zero();
+          // Make processor id so it is consistent with the other platforms
+          // Return strings
+          return { thread::hardware_concurrency(),
+                   StrToNum<unsigned int>(strSpeed),
+                   StrToNum<unsigned int>(strFamily),
+                   StrToNum<unsigned int>(strModel),
+                   StrToNum<unsigned int>(strStepping),
+                   StdMove(strCpuId) };
         } // Failed to parse cpu variables
         else cLog->LogWarningSafe("Could not parse cpu information file!");
       } // Failed to read cpu info failed
@@ -408,8 +418,7 @@ class SysCore :
     else cLog->LogWarningExSafe("Could not open cpu information file: $!",
       StrFromErrNo());
     // Return default data we could not read
-    return { "Unknown", "Unknown", "Unknown",
-      thread::hardware_concurrency(), 0, 0, 0 };
+    return { thread::hardware_concurrency(), 0, 0, 0, 0, cCommon->Unspec() };
   }
   /* ----------------------------------------------------------------------- */
   bool DebuggerRunning(void) const { return false; }

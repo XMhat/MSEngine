@@ -124,7 +124,7 @@ LLFUNC(SetVertex, LCGETULPTR(1, Fbo)->SetVertex(
 LLFUNC(SetVertexA, LCGETULPTR(1, Fbo)->SetVertex(
   LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom"),
-  LCGETNUM(GLfloat, 6, "Angle")));
+  LCGETNORM(GLfloat, 6, "Angle")));
 /* ========================================================================= */
 // $ Fbo:SetOrtho
 // > Left:number=The left co-ordinate.
