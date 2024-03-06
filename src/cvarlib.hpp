@@ -742,7 +742,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? device, otherwise it is the index number of a specific audio device to
 // ? use.
 /* ------------------------------------------------------------------------- */
-{ CF_AUDIO, "aud_interface", "-1", NoOp, TINTEGERSAVE|PANY },
+{ CF_AUDIO, "aud_interface", cCommon->NOne(), NoOp, TINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! AUD_CHECK
 // ? Specifies an interval (in number of milliseconds) of checking for audio
@@ -1069,7 +1069,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? [0]  JOY_DISABLE = Disable gamepads completely.
 // ? [1]  JOY_ENABLE  = Enable gamepads and always try to detect new gamepads.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "inp_joystick", "-1",
+{ CF_VIDEO, "inp_joystick", cCommon->NOne(),
   CB(cInput->SetJoystickEnabled, int), TINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! INP_FSTOGGLER
@@ -1168,13 +1168,6 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 { CF_NOTHING, "net_useragent", cCommon->Blank(),
   CBSTR(SocketAgentModified), TSTRING|MTRIM|PBOOT|PSYSTEM },
 /* == Video cvars ========================================================== */
-// ! VID_ALPHA
-// ? Specifies that the main frame buffer has alpha (GL_RGBA) which is needed
-// ? for transparent windows. Default is 0 to use GL_RGB.
-/* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_alpha", cCommon->Zero(),
-  CB(cDisplay->SetWindowTransparency, bool), TBOOLEAN|PSYSTEM },
-/* ------------------------------------------------------------------------- */
 // ! VID_API
 // ? Specifies the API to use. This is only used for troubleshooting purposes
 // ? only and serves no other purpose. Select 0 (default) for GLFW_OPENGL_API,
@@ -1188,31 +1181,87 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? for double-buffering, 1 for triple-buffering or -1 to let the OpenGL
 // ? driver decide.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_auxbuffers", "-1",
+{ CF_VIDEO, "vid_auxbuffers", cCommon->NOne(),
   CB(cDisplay->AuxBuffersChanged, int), TINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
-// ! VID_BPP
-// ? Set default framebuffer bits-per-pixel. On Windows, the driver can decide
-// ? properly what depth to use, but on others we force the bit depth to 10-bit
-// ? to resolve colour banding issues but you can override that if you like.
+// ! VID_FBALPHA
+// ? Override alpha component bit-depth. Default is -1 for GLFW_DONT_CARE.
+// ? Mainly for troubleshooting or expert purposes. This value is also saved to
+// ? the configuration database if changed.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_bpp",
+{ CF_VIDEO, "vid_fbalpha",
 /* ------------------------------------------------------------------------- */
 #if defined(MACOS)
   "10",                                // Force RGBA10101010
 #else
-  cCommon->Zero(),                     // Win32/Wayland doesn't need
+  cCommon->NOne(),                     // Win32/Wayland doesn't need
 #endif
 /* ------------------------------------------------------------------------- */
-  CB(cDisplay->SetForcedBitDepth, int), TUINTEGERSAVE|PANY },
+  CB(cDisplay->SetForcedBitDepthA, int), TINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
-// ! VID_CONTEXT
-// ? Specifies the context version to use. This is only used for
+// ! VID_FBBLUE
+// ? Override red component bit-depth. Default is -1 for GLFW_DONT_CARE or 10
+// ? on MacOS to prevent gradient banding issues. Mainly for troubleshooting
+// ? or expert purposes. This value is also saved to the configuration database
+// ? if changed.
+/* ------------------------------------------------------------------------- */
+{ CF_VIDEO, "vid_fbblue",
+/* ------------------------------------------------------------------------- */
+#if defined(MACOS)
+  "10",                                // Force RGBA10101010
+#else
+  cCommon->NOne(),                     // Win32/Wayland doesn't need
+#endif
+/* ------------------------------------------------------------------------- */
+  CB(cDisplay->SetForcedBitDepthB, int), TINTEGERSAVE|PANY },
+/* ------------------------------------------------------------------------- */
+// ! VID_FBGREEN
+// ? Override red component bit-depth. Default is -1 for GLFW_DONT_CARE or 10
+// ? on MacOS to prevent gradient banding issues. Mainly for troubleshooting or
+// ? expert purposes. This value is also saved to the configuration database if
+// ? changed.
+/* ------------------------------------------------------------------------- */
+{ CF_VIDEO, "vid_fbgreen",
+/* ------------------------------------------------------------------------- */
+#if defined(MACOS)
+  "10",                                // Force RGBA10101010
+#else
+  cCommon->NOne(),                     // Win32/Wayland doesn't need
+#endif
+/* ------------------------------------------------------------------------- */
+  CB(cDisplay->SetForcedBitDepthG, int), TINTEGERSAVE|PANY },
+/* ------------------------------------------------------------------------- */
+// ! VID_FBRED
+// ? Override red component bit-depth. Default is -1 for GLFW_DONT_CARE or 10
+// ? on MacOS to prevent gradient banding issues. Mainly for troubleshooting or
+// ? expert purposes. This value is also saved to the configuration database if
+// ? changed.
+/* ------------------------------------------------------------------------- */
+{ CF_VIDEO, "vid_fbred",
+/* ------------------------------------------------------------------------- */
+#if defined(MACOS)
+  "10",                                // Force RGBA10101010
+#else
+  cCommon->NOne(),                     // Win32/Wayland doesn't need
+#endif
+/* ------------------------------------------------------------------------- */
+  CB(cDisplay->SetForcedBitDepthR, int), TINTEGERSAVE|PANY },
+/* ------------------------------------------------------------------------- */
+// ! VID_CTXMAJOR
+// ? Specifies the major context version to use. This is only used for
 // ? troubleshooting purposes only and serves no other purpose. The default is
-// ? 3.2 for OpenGL Core Profile.
+// ? 3 with a core profile.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_context", "3.2",
-  CBSTR(cDisplay->CtxVersionChanged), TSTRING|MTRIM|CNOTEMPTY|PBOOT|PSYSTEM },
+{ CF_VIDEO, "vid_ctxmajor", "3",
+  CB(cDisplay->CtxMajorChanged, int), TINTEGER|PBOOT|PSYSTEM },
+/* ------------------------------------------------------------------------- */
+// ! VID_CTXMINOR
+// ? Specifies the minor context version to use. This is only used for
+// ? troubleshooting purposes only and serves no other purpose. The default is
+// ? 2 with a core profile.
+/* ------------------------------------------------------------------------- */
+{ CF_VIDEO, "vid_ctxminor", "2",
+  CB(cDisplay->CtxMinorChanged, int), TINTEGER|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_CLEAR
 // ? Specifies to clear the main frame buffer every frame.
@@ -1252,7 +1301,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? textures if you frequently blit textures at an different angles other than
 // ? 0, 90, 180 or 270 degrees.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_fsaa", "-1",
+{ CF_VIDEO, "vid_fsaa", cCommon->NOne(),
   CB(cDisplay->FsaaChanged, int), TINTEGERSAVE|CPOW2Z|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_FORWARD
@@ -1273,7 +1322,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 { CF_VIDEO, "vid_fsmode",
   /* ----------------------------------------------------------------------- */
 #if defined(MACOS)
-  "-1",
+  cCommon->NOne(),
 #else
   "-2",
 #endif
@@ -1312,7 +1361,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? Specifies the monitor id to use. Use the 'mlist' console command to see
 // ? possible values or just use -1 to let the operating system decide.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "vid_monitor", "-1",
+{ CF_VIDEO, "vid_monitor", cCommon->NOne(),
   CB(cDisplay->MonitorChanged, int), TINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_NOERRORS
@@ -1497,6 +1546,13 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 /* ------------------------------------------------------------------------- */
 { CF_VIDEO, "vid_vsync", cCommon->One(),
   CB(cOgl->SetVSyncMode, int), TINTEGERSAVE|PANY },
+/* ------------------------------------------------------------------------- */
+// ! WIN_ALPHA
+// ? Specifies that the window has alpha which is needed for transparent
+// ? windows. Default is 0 for no.
+/* ------------------------------------------------------------------------- */
+{ CF_VIDEO, "win_alpha", cCommon->Zero(),
+  CB(cDisplay->SetWindowTransparency, bool), TBOOLEAN|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! WIN_ASPECT
 // ? Force the window to have an aspect ratio. Specify as a floating point

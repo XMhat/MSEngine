@@ -81,7 +81,10 @@ static class Display final :
                    iCtxMinor,          // Selected context minor version
                    iRobustness,        // Selected context robustness
                    iRelease,           // Selected context release behaviour
-                   iBPPSelected,       // Selected bit depth mode
+                   iFBDepthR,          // Selected red bit depth mode
+                   iFBDepthG,          // Selected green bit depth mode
+                   iFBDepthB,          // Selected blue bit depth mode
+                   iFBDepthA,          // Selected alpha bit depth mode
                    iWinPosX, iWinPosY, // Window position
                    iAuxBuffers,        // Auxilliary buffers to use
                    iSamples;           // FSAA setting to use
@@ -708,8 +711,14 @@ static class Display final :
   CVarReturn SetWindowTransparency(const bool bState)
     { FlagSetOrClear(DF_TRANSPARENT, bState); return ACCEPT; }
   /* -- Set default orthagonal width  -------------------------------------- */
-  CVarReturn SetForcedBitDepth(const int iBPP)
-    { return CVarSimpleSetIntNLG(iBPPSelected, iBPP, 0, 16); }
+  CVarReturn SetForcedBitDepthR(const int iRed)
+    { return CVarSimpleSetIntNLG(iFBDepthR, iRed, GLFW_DONT_CARE, 16); }
+  CVarReturn SetForcedBitDepthG(const int iGreen)
+    { return CVarSimpleSetIntNLG(iFBDepthG, iGreen, GLFW_DONT_CARE, 16); }
+  CVarReturn SetForcedBitDepthB(const int iBlue)
+    { return CVarSimpleSetIntNLG(iFBDepthB, iBlue, GLFW_DONT_CARE, 16); }
+  CVarReturn SetForcedBitDepthA(const int iAlpha)
+    { return CVarSimpleSetIntNLG(iFBDepthA, iAlpha, GLFW_DONT_CARE, 16); }
   /* -- Set default orthagonal width  -------------------------------------- */
   CVarReturn SetOrthoWidth(const GLfloat fWidth)
     { return CVarSimpleSetIntNLG(fOrthoWidth, fWidth, 320.0f, 16384.0f); }
@@ -722,6 +731,12 @@ static class Display final :
   /* -- Set aux buffers count ---------------------------------------------- */
   CVarReturn AuxBuffersChanged(const int iCount)
     { return CVarSimpleSetIntNLG(iAuxBuffers, iCount, GLFW_DONT_CARE, 16); }
+  /* -- Set major context version required --------------------------------- */
+  CVarReturn CtxMajorChanged(const int iMajor)
+    { return CVarSimpleSetIntNLG(iCtxMajor, iMajor, GLFW_DONT_CARE, 4); }
+  /* -- Set minor context version required --------------------------------- */
+  CVarReturn CtxMinorChanged(const int iMinor)
+    { return CVarSimpleSetIntNLG(iCtxMinor, iMinor, GLFW_DONT_CARE, 6); }
   /* -- Set window width --------------------------------------------------- */
   CVarReturn WidthChanged(const int iWidth)
     { DimSetWidth(iWidth); return ACCEPT; }
@@ -851,17 +866,6 @@ static class Display final :
     CoordSetY(iNewY);
     // Apply window position if window is available
     if(cGlFW && cGlFW->WinIsAvailable()) RequestReposition();
-    // Success
-    return ACCEPT;
-  }
-  /* -- Context version changed -------------------------------------------- */
-  CVarReturn CtxVersionChanged(const string &strF, string&)
-  { // Deny change if string is not formatted correctly
-    if(strF.length() != 3 || !isdigit(strF[0]) || strF[1] != '.' ||
-       !isdigit(strF[2])) return DENY;
-    // Now set the version
-    iCtxMajor = strF[0] - '0';
-    iCtxMinor = strF[2] - '0';
     // Success
     return ACCEPT;
   }
@@ -1017,9 +1021,10 @@ static class Display final :
     EnumerateMonitorsAndVideoModes();
     // Inform main fbo class of our transparency setting
     cFboMain->fboMain.SetTransparency(FlagIsSet(DF_TRANSPARENT));
-    // Set api, profile and context settings
+    // Set context settings
     cGlFW->GlFWSetClientAPI(iApi);
-    cGlFW->GlFWSetContextVersion(iCtxMajor, iCtxMinor);
+    cGlFW->GlFWSetCtxMajor(iCtxMajor);
+    cGlFW->GlFWSetCtxMinor(iCtxMinor);
     cGlFW->GlFWSetCoreProfile(iProfile);
     cGlFW->GlFWSetForwardCompat(FlagIsSet(DF_FORWARD));
     cGlFW->GlFWSetRobustness(iRobustness);
@@ -1034,15 +1039,12 @@ static class Display final :
     cGlFW->GlFWSetMaximised(FlagIsSet(DF_MAXIMISED));
     cGlFW->GlFWSetStereo(FlagIsSet(DF_STEREO));
     cGlFW->GlFWSetTransparency(cFboMain->fboMain.IsTransparencyEnabled());
-    cGlFW->GlFWSetDepthBits(0);
-    cGlFW->GlFWSetStencilBits(0);
-    // Force custom bit-depth?
-    if(iBPPSelected)
-      cGlFW->GlFWSetColourDepth(iBPPSelected, iBPPSelected, iBPPSelected,
-        cFboMain->fboMain.IsTransparencyEnabled() ? iBPPSelected : 0);
-    // Use default? Set regular depth buffer bits
-    else cGlFW->GlFWSetColourDepth(rSelected->Red(), rSelected->Green(),
-      rSelected->Blue(), cFboMain->fboMain.IsTransparencyEnabled() ? 8 : 0);
+    cGlFW->GlFWSetDepthBits(0);   // 2D framebuffer
+    cGlFW->GlFWSetStencilBits(0); // No use (yet)
+    cGlFW->GlFWSetRedBits(iFBDepthR);
+    cGlFW->GlFWSetGreenBits(iFBDepthG);
+    cGlFW->GlFWSetBlueBits(iFBDepthB);
+    cGlFW->GlFWSetAlphaBits(iFBDepthA);
     // Set Apple operating system only settings
 #if defined(MACOS)
     cGlFW->GlFWSetRetinaMode(FlagIsSet(DF_HIDPI));
@@ -1148,16 +1150,20 @@ static class Display final :
     fGamma(0),                         // Gamma initialised by CVars
     fOrthoWidth(0.0f),                 // Ortho width initialised by CVars
     fOrthoHeight(0.0f),                // Ortho height initialised by CVars
-    iApi(GL_NONE),                     // Api type set by cvars
-    iProfile(GL_NONE),                 // Profile type set by cvars
-    iCtxMajor(GL_NONE),                // Context major version set by cvars
-    iCtxMinor(GL_NONE),                // Context major version set by cvars
-    iRobustness(GL_NONE),              // Context robustness set by cvars
-    iRelease(GL_NONE),                 // Context release behaviour set by cvar
-    iBPPSelected(-1),                  // Bit depth not selected yet
-    iWinPosX(-1), iWinPosY(-1),        // No initial window position
-    iAuxBuffers(0),                    // No auxiliary buffers specified
-    iSamples(0),                       // No anti-aliasing samples specified
+    iApi(GLFW_DONT_CARE),              // Api type set by cvars
+    iProfile(GLFW_DONT_CARE),          // Profile type set by cvars
+    iCtxMajor(GLFW_DONT_CARE),         // Context major version set by cvars
+    iCtxMinor(GLFW_DONT_CARE),         // Context major version set by cvars
+    iRobustness(GLFW_DONT_CARE),       // Context robustness set by cvars
+    iRelease(GLFW_DONT_CARE),          // Context release behaviour set by cvar
+    iFBDepthR(GLFW_DONT_CARE),         // Bit depth not selected yet
+    iFBDepthG(GLFW_DONT_CARE),         // Bit depth not selected yet
+    iFBDepthB(GLFW_DONT_CARE),         // Bit depth not selected yet
+    iFBDepthA(GLFW_DONT_CARE),         // Bit depth not selected yet
+    iWinPosX(GLFW_DONT_CARE),          // No initial window X position
+    iWinPosY(GLFW_DONT_CARE),          // No initial window Y position
+    iAuxBuffers(GLFW_DONT_CARE),       // No auxiliary buffers specified
+    iSamples(GLFW_DONT_CARE),          // No anti-aliasing samples specified
     fWinScaleWidth(1.0f),              // No initial scale width
     fWinScaleHeight(1.0f),             // No initial scale height
     lrFocused{ "OnFocused" },          // Set name for OnFocused lua event

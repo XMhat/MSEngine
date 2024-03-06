@@ -17,6 +17,7 @@ static const class Common final        // Members initially private
 { /* -- Private variables -------------------------------------------------- */
   const string     strTrue,            // C++ string as "true"
                    strFalse,           // C++ string as "false"
+                   strNOne,            // C++ string as "-1"
                    strZero,            // C++ string as "0"
                    strOne,             // C++ string as "1"
                    strSpace,           // C++ string with whitespace
@@ -40,6 +41,8 @@ static const class Common final        // Members initially private
   const string &Tru(void) const { return strTrue; }
   /* ----------------------------------------------------------------------- */
   const string &Fals(void) const { return strFalse; }
+  /* ----------------------------------------------------------------------- */
+  const string &NOne(void) const { return strNOne; }
   /* ----------------------------------------------------------------------- */
   const string &Zero(void) const { return strZero; }
   /* ----------------------------------------------------------------------- */
@@ -66,11 +69,11 @@ static const class Common final        // Members initially private
   Common(void) :                       // No parameters
     /* -- Initialisers ----------------------------------------------------- */
     strTrue{ "true" },                 strFalse{ "false" },
-    strZero{ "0" },                    strOne{ "1" },
-    strSpace{ " " },                   strCr{ "\r" },
-    strLf{ "\n" },                     strCrLf{ strCr + strLf },
-    strCrLf2{ strCrLf + strCrLf },     strLfCr{ strLf + strCr },
-    strFSlash{ "/" },
+    strNOne{ "-1" },                   strZero{ "0" },
+    strOne{ "1" },                     strSpace{ " " },
+    strCr{ "\r" },                     strLf{ "\n" },
+    strCrLf{ strCr + strLf },          strCrLf2{ strCrLf + strCrLf },
+    strLfCr{ strLf + strCr },          strFSlash{ "/" },
     strUnspec{ "<Unspecified>" },      strNull{ "<NullPtr>" },
     cpBlank(strBlank.c_str()),         lLocaleCurrent{ strBlank }
     /* -- No code ---------------------------------------------------------- */

@@ -99,14 +99,6 @@ class GlFWUtil                         // Members initially private
   SET(Release, CONTEXT_RELEASE_BEHAVIOR) // Set context release behaviour
   /* ----------------------------------------------------------------------- */
 #undef SET                             // Done with this macro
-  /* -- Set window bits all in one ----------------------------------------- */
-  void GlFWSetColourDepth(const int iRed, const int iGreen,
-    const int iBlue, const int iAlpha)
-  { GlFWSetRedBits(iRed); GlFWSetGreenBits(iGreen);
-    GlFWSetBlueBits(iBlue); GlFWSetAlphaBits(iAlpha); }
-  /* -- Set opengl context version in one function ------------------------- */
-  void GlFWSetContextVersion(const int iMajor, const int iMinor)
-    { GlFWSetCtxMajor(iMajor); GlFWSetCtxMinor(iMinor); }
   /* -- Create functions to access all attributes -------------------------- */
 #define SET(nc,nu) \
   /* ---------------------------------------------------------------------- */\

@@ -25,6 +25,9 @@ class SysBase :                        // Safe exception handler namespace
   public SysVersion,                   // Version information class
   public Ident                         // Mutex name
 { /* ----------------------------------------------------------------------- */
+  typedef map<const int, struct rlimit> ResourceLimit; // Modifyable
+  ResourceLimit    rLimits;            // Resource limits database
+  /* ----------------------------------------------------------------------- */
   enum ExitState { ES_SAFE, ES_UNSAFE, ES_CRITICAL }; // Signal exit types
   /* --------------------------------------------------------------- */ public:
   int DoDeleteGlobalMutex(const string &strTitle)
@@ -412,7 +415,20 @@ class SysBase :                        // Safe exception handler namespace
   /* ----------------------------------------------------------------------- */
   SysBase(SysModList &&svVersion, const size_t stI) :
     /* -- Initialisers ----------------------------------------------------- */
-    SysVersion{ StdMove(svVersion), stI } // Initialise version info class
+    SysVersion{                        // Initialise version info class
+      StdMove(svVersion), stI },       // Move sent mod list into ours
+    rLimits{{                          // Limits data
+#if !defined(MACOS)                    // Not all resources supported
+      { RLIMIT_LOCKS,  { 0, 0 } },     { RLIMIT_MSGQUEUE,   { 0, 0 } },
+      { RLIMIT_NICE,   { 0, 0 } },     { RLIMIT_RTPRIO,     { 0, 0 } },
+      { RLIMIT_RTTIME, { 0, 0 } },     { RLIMIT_SIGPENDING, { 0, 0 } },
+#endif                                 // Mac check
+      { RLIMIT_AS,     { 0, 0 } },     { RLIMIT_CORE,       { 0, 0 } },
+      { RLIMIT_CPU,    { 0, 0 } },     { RLIMIT_DATA,       { 0, 0 } },
+      { RLIMIT_FSIZE,  { 0, 0 } },     { RLIMIT_MEMLOCK,    { 0, 0 } },
+      { RLIMIT_NOFILE, { 0, 0 } },     { RLIMIT_NPROC,      { 0, 0 } },
+      { RLIMIT_RSS,    { 0, 0 } },     { RLIMIT_STACK,      { 0, 0 } }
+    }}
     /* -- ------------------------------------------------------------------ */
   { // Now install all those signal handlers
     for(auto &aSignal : iaSignals)
@@ -420,6 +436,30 @@ class SysBase :                        // Safe exception handler namespace
       aSignal.second = signal(aSignal.first, HandleSignalStatic);
       if(aSignal.second == SIG_ERR)
         XCL("Failed to install signal handler!", "Id", aSignal.first);
+    } // Increase resource limits we can change so the engine can do more
+    for(auto &aResource : rLimits)
+    { // Get the limit for this resource
+      if(!getrlimit(aResource.first, &aResource.second))
+      { // Ignore if value doesn't need to change
+        if(aResource.second.rlim_cur >= aResource.second.rlim_max) continue;
+        // Set maximum allowed and if failed?
+        const rlim_t rtOld = aResource.second.rlim_cur;
+        aResource.second.rlim_cur = aResource.second.rlim_max;
+        if(setrlimit(aResource.first, &aResource.second))
+        { // Restore original value
+          aResource.second.rlim_cur = rtOld;
+          // Log a message
+          cLog->LogWarningExSafe(
+            "System failed to set resource limit $<0x$$$> from $<0x$$$> to "
+            "$<0x$$$>: $!",
+            aResource.first, hex, aResource.first, dec, rtOld, hex, rtOld, dec,
+            aResource.second.rlim_max, hex, aResource.second.rlim_max, dec,
+            SysError());
+        }
+      } // Failed to get limit so log the error and why
+      else cLog->LogWarningExSafe(
+        "System failed to get limit for resource $<0x$$$>: $!",
+        aResource.first, hex, aResource.first, dec, SysError());
     }
   }
   /* ----------------------------------------------------------------------- */
