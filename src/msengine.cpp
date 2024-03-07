@@ -81,10 +81,10 @@ namespace E {                          // Start of engine namespace
 #include "bin.hpp"                     // Bin packing class header
 #include "image.hpp"                   // Image load and save handling header
 #include "shader.hpp"                  // OpenGL Shader handling header
-#include "fbobase.hpp"                 // Frame buffer object base class header
+#include "shaders.hpp"                 // Actual shaders core
 #include "fboitem.hpp"                 // Frame buffer object item class header
 #include "fbo.hpp"                     // Frame buffer object class header
-#include "fbomain.hpp"                 // Core frame buffer object class header
+#include "fbocore.hpp"                 // Core frame buffer object class header
 #include "sshot.hpp"                   // Screenshot handling class header
 #include "texture.hpp"                 // Texture handling class header
 #include "palette.hpp"                 // Palette handling class header

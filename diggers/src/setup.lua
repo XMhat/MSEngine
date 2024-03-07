@@ -384,11 +384,11 @@ local function RenderBackgroundStart(nId)
   for iY = iStageT+6, iStageB, 16 do
     local nTimeM2SX<const> = nTimeM2 - iY;
     for iX = iStageLP6, iStageR, 16 do
-      local nVal = nTimeM2SX - iX;
-      nVal = 0.5 + ((cos(nVal) * sin(nVal)));
-      texSpr:SetCA(nVal*0.75);
-      local nVal2<const> = nVal * 16;
-      texSpr:BlitSLTRBA(444, iX, iY, iX + nVal2, iY + nVal2, nVal);
+      local nAngle = nTimeM2SX - iX;
+      nAngle = 0.5 + ((cos(nAngle) * sin(nAngle)));
+      texSpr:SetCA(nAngle * 0.75);
+      local nDim<const> = nAngle * 16;
+      texSpr:BlitSLTWHA(444, iX, iY, nDim, nDim, nAngle);
     end
   end
   -- Draw background for text

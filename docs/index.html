@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<!-- Reference for the MS-Engine API version 24.3.4.49 -->
-<!-- Automatically built at Mon Mar 04 17:40:14 2024 +0000 -->
-<!-- With MS-Engine Project Management Utility version 24.3.4.49 -->
+<!-- Reference for the MS-Engine API version 24.3.7.22 -->
+<!-- Automatically built at Thu Mar 07 00:25:50 2024 +0000 -->
+<!-- With MS-Engine Project Management Utility version 24.3.7.22 -->
 <!-- Copyright (c) 2006-2024 MS-Design, All Rights Reserved Worldwide -->
 <HTML lang="en-GB">
 <HEAD>
@@ -11,18 +11,18 @@
 	<META name="apple-mobile-web-app-title" content="MS-Engine API">
 	<META name="author" content="MS-Design">
 	<META name="copyright" content="Copyright © 2006-2024 MS-Design, All Rights Reserved">
-	<META name="description" content="Reference for the MS-Engine API version 24.3.4.49">
+	<META name="description" content="Reference for the MS-Engine API version 24.3.7.22">
 	<META name="format-detection" content="telephone=no">
-	<META name="generator" content="MS-Engine Project Management Utility version 24.3.4.49">
+	<META name="generator" content="MS-Engine Project Management Utility version 24.3.7.22">
 	<META name="google-site-verification" content="BvWxrqmgaIxqe_W8AW3OGK0fdCI_JfB_-gcOOxCF9_4">
 	<META name="googlebot" content="index,follow">
-	<META name="og:description" content="Reference for the MS-Engine API version 24.3.4.49">
+	<META name="og:description" content="Reference for the MS-Engine API version 24.3.7.22">
 	<META name="og:image" content="https://repository-images.githubusercontent.com/611875607/ee7aa468-9797-4763-9a2d-ea3d782ef413">
-	<META name="og:title" content="MS-Engine 24.3.4.49 API reference">
+	<META name="og:title" content="MS-Engine 24.3.7.22 API reference">
 	<META name="og:url" content="https://xmhat.github.io/MSEngine/">
 	<META name="robots" content="index,follow">
 	<META name="viewport" content="width=device-width, initial-scale=1">
-	<TITLE>MS-Engine 24.3.4.49 API reference</TITLE>
+	<TITLE>MS-Engine 24.3.7.22 API reference</TITLE>
 	<STYLE media="screen">
 	* { margin:0; padding:0 }
 	BODY { background-color:#111; border:0; font-family:sans-serif; overflow-x:hidden }
@@ -52,9 +52,9 @@
 	</STYLE>
 </HEAD>
 <BODY id="top">
-	<H1>MS-Engine 24.3.4.49 API reference</H1>
+	<H1>MS-Engine 24.3.7.22 API reference</H1>
 	<H2>Table of contents:-</H2>
-	<P>This build of the MS-Engine API consists of 775 functions (376 members, 399 methods) and 25 consts in 32 namespaces with 203 cvars.</P>
+	<P>This build of the MS-Engine API consists of 792 functions (376 members, 416 methods) and 25 consts in 32 namespaces with 207 cvars.</P>
 	<OL id="toc">
 		<LI id="idx">
 			<A href="#idx">Namespaces</A> <I>(32 namespaces)</I>
@@ -495,7 +495,6 @@
 				<LI>
 					<B>Members</B> <I>(10 members)</I>
 					<OL>
-						<LI><A href="#Fbo.Blend">Blend</A></LI>
 						<LI><A href="#Fbo.ConEnabled">ConEnabled</A></LI>
 						<LI><A href="#Fbo.ConHeight">ConHeight</A></LI>
 						<LI><A href="#Fbo.ConLock">ConLock</A></LI>
@@ -505,10 +504,11 @@
 						<LI><A href="#Fbo.IsDrawing">IsDrawing</A></LI>
 						<LI><A href="#Fbo.Main">Main</A></LI>
 						<LI><A href="#Fbo.OnRedraw">OnRedraw</A></LI>
+						<LI><A href="#Fbo.SetBlend">SetBlend</A></LI>
 					</OL>
 				</LI>
 				<LI>
-					<B>Methods</B> <I>(23 methods)</I>
+					<B>Methods</B> <I>(26 methods)</I>
 					<OL>
 						<LI><A href="#Fbo:Activate">Activate</A></LI>
 						<LI><A href="#Fbo:Blit">Blit</A></LI>
@@ -517,21 +517,24 @@
 						<LI><A href="#Fbo:Dump">Dump</A></LI>
 						<LI><A href="#Fbo:Finish">Finish</A></LI>
 						<LI><A href="#Fbo:GetFloatCount">GetFloatCount</A></LI>
-						<LI><A href="#Fbo:GetLastFloatCount">GetLastFloatCount</A></LI>
+						<LI><A href="#Fbo:GetLFloatCount">GetLFloatCount</A></LI>
 						<LI><A href="#Fbo:GetMatrix">GetMatrix</A></LI>
 						<LI><A href="#Fbo:IsFinished">IsFinished</A></LI>
 						<LI><A href="#Fbo:Reserve">Reserve</A></LI>
+						<LI><A href="#Fbo:SetCRGBA">SetCRGBA</A></LI>
+						<LI><A href="#Fbo:SetCX">SetCX</A></LI>
 						<LI><A href="#Fbo:SetClear">SetClear</A></LI>
 						<LI><A href="#Fbo:SetClearColour">SetClearColour</A></LI>
-						<LI><A href="#Fbo:SetColour">SetColour</A></LI>
-						<LI><A href="#Fbo:SetColourEx">SetColourEx</A></LI>
 						<LI><A href="#Fbo:SetFilter">SetFilter</A></LI>
 						<LI><A href="#Fbo:SetOrtho">SetOrtho</A></LI>
-						<LI><A href="#Fbo:SetTexCoord">SetTexCoord</A></LI>
-						<LI><A href="#Fbo:SetTexCoordEx">SetTexCoordEx</A></LI>
-						<LI><A href="#Fbo:SetVertex">SetVertex</A></LI>
-						<LI><A href="#Fbo:SetVertexA">SetVertexA</A></LI>
-						<LI><A href="#Fbo:SetVertexEx">SetVertexEx</A></LI>
+						<LI><A href="#Fbo:SetTCLTRB">SetTCLTRB</A></LI>
+						<LI><A href="#Fbo:SetTCLTWH">SetTCLTWH</A></LI>
+						<LI><A href="#Fbo:SetTCX">SetTCX</A></LI>
+						<LI><A href="#Fbo:SetVLTRB">SetVLTRB</A></LI>
+						<LI><A href="#Fbo:SetVLTRBA">SetVLTRBA</A></LI>
+						<LI><A href="#Fbo:SetVLTWH">SetVLTWH</A></LI>
+						<LI><A href="#Fbo:SetVLTWHA">SetVLTWHA</A></LI>
+						<LI><A href="#Fbo:SetVX">SetVX</A></LI>
 						<LI><A href="#Fbo:SetWireframe">SetWireframe</A></LI>
 					</OL>
 				</LI>
@@ -1221,7 +1224,7 @@
 					</OL>
 				</LI>
 				<LI>
-					<B>Methods</B> <I>(65 methods)</I>
+					<B>Methods</B> <I>(76 methods)</I>
 					<OL>
 						<LI><A href="#Texture:Blit">Blit</A></LI>
 						<LI><A href="#Texture:BlitI">BlitI</A></LI>
@@ -1229,27 +1232,37 @@
 						<LI><A href="#Texture:BlitILTA">BlitILTA</A></LI>
 						<LI><A href="#Texture:BlitILTRB">BlitILTRB</A></LI>
 						<LI><A href="#Texture:BlitILTRBA">BlitILTRBA</A></LI>
+						<LI><A href="#Texture:BlitILTWH">BlitILTWH</A></LI>
+						<LI><A href="#Texture:BlitILTWHA">BlitILTWHA</A></LI>
 						<LI><A href="#Texture:BlitIS">BlitIS</A></LI>
 						<LI><A href="#Texture:BlitISLT">BlitISLT</A></LI>
 						<LI><A href="#Texture:BlitISLTA">BlitISLTA</A></LI>
 						<LI><A href="#Texture:BlitISLTRB">BlitISLTRB</A></LI>
 						<LI><A href="#Texture:BlitISLTRBA">BlitISLTRBA</A></LI>
+						<LI><A href="#Texture:BlitISLTWH">BlitISLTWH</A></LI>
+						<LI><A href="#Texture:BlitISLTWHA">BlitISLTWHA</A></LI>
 						<LI><A href="#Texture:BlitLT">BlitLT</A></LI>
 						<LI><A href="#Texture:BlitLTA">BlitLTA</A></LI>
 						<LI><A href="#Texture:BlitLTRB">BlitLTRB</A></LI>
 						<LI><A href="#Texture:BlitLTRBA">BlitLTRBA</A></LI>
+						<LI><A href="#Texture:BlitLTWH">BlitLTWH</A></LI>
+						<LI><A href="#Texture:BlitLTWHA">BlitLTWHA</A></LI>
 						<LI><A href="#Texture:BlitM">BlitM</A></LI>
+						<LI><A href="#Texture:BlitP">BlitP</A></LI>
+						<LI><A href="#Texture:BlitPI">BlitPI</A></LI>
+						<LI><A href="#Texture:BlitPIS">BlitPIS</A></LI>
+						<LI><A href="#Texture:BlitPS">BlitPS</A></LI>
+						<LI><A href="#Texture:BlitPT">BlitPT</A></LI>
+						<LI><A href="#Texture:BlitPTI">BlitPTI</A></LI>
+						<LI><A href="#Texture:BlitPTIS">BlitPTIS</A></LI>
+						<LI><A href="#Texture:BlitPTS">BlitPTS</A></LI>
 						<LI><A href="#Texture:BlitS">BlitS</A></LI>
 						<LI><A href="#Texture:BlitSLT">BlitSLT</A></LI>
 						<LI><A href="#Texture:BlitSLTA">BlitSLTA</A></LI>
 						<LI><A href="#Texture:BlitSLTRB">BlitSLTRB</A></LI>
 						<LI><A href="#Texture:BlitSLTRBA">BlitSLTRBA</A></LI>
-						<LI><A href="#Texture:BlitT">BlitT</A></LI>
-						<LI><A href="#Texture:BlitTI">BlitTI</A></LI>
-						<LI><A href="#Texture:BlitTIS">BlitTIS</A></LI>
-						<LI><A href="#Texture:BlitTS">BlitTS</A></LI>
-						<LI><A href="#Texture:BlitX">BlitX</A></LI>
-						<LI><A href="#Texture:BlitXI">BlitXI</A></LI>
+						<LI><A href="#Texture:BlitSLTWH">BlitSLTWH</A></LI>
+						<LI><A href="#Texture:BlitSLTWHA">BlitSLTWHA</A></LI>
 						<LI><A href="#Texture:Destroy">Destroy</A></LI>
 						<LI><A href="#Texture:Download">Download</A></LI>
 						<LI><A href="#Texture:Dump">Dump</A></LI>
@@ -1266,13 +1279,14 @@
 						<LI><A href="#Texture:SetCRGB">SetCRGB</A></LI>
 						<LI><A href="#Texture:SetCRGBA">SetCRGBA</A></LI>
 						<LI><A href="#Texture:SetCRGBAI">SetCRGBAI</A></LI>
-						<LI><A href="#Texture:SetLTRB">SetLTRB</A></LI>
-						<LI><A href="#Texture:SetLTRBA">SetLTRBA</A></LI>
-						<LI><A href="#Texture:SetTC">SetTC</A></LI>
-						<LI><A href="#Texture:SetV">SetV</A></LI>
-						<LI><A href="#Texture:SetVA">SetVA</A></LI>
-						<LI><A href="#Texture:SetVCRGBA">SetVCRGBA</A></LI>
-						<LI><A href="#Texture:SetVTC">SetVTC</A></LI>
+						<LI><A href="#Texture:SetCX">SetCX</A></LI>
+						<LI><A href="#Texture:SetTCLTRB">SetTCLTRB</A></LI>
+						<LI><A href="#Texture:SetTCLTWH">SetTCLTWH</A></LI>
+						<LI><A href="#Texture:SetTCX">SetTCX</A></LI>
+						<LI><A href="#Texture:SetVLTRB">SetVLTRB</A></LI>
+						<LI><A href="#Texture:SetVLTRBA">SetVLTRBA</A></LI>
+						<LI><A href="#Texture:SetVLTWH">SetVLTWH</A></LI>
+						<LI><A href="#Texture:SetVLTWHA">SetVLTWHA</A></LI>
 						<LI><A href="#Texture:SetVX">SetVX</A></LI>
 						<LI><A href="#Texture:TileA">TileA</A></LI>
 						<LI><A href="#Texture:TileAD">TileAD</A></LI>
@@ -1386,7 +1400,7 @@
 					</OL>
 				</LI>
 				<LI>
-					<B>Methods</B> <I>(30 methods)</I>
+					<B>Methods</B> <I>(33 methods)</I>
 					<OL>
 						<LI><A href="#Video:Awaken">Awaken</A></LI>
 						<LI><A href="#Video:Blit">Blit</A></LI>
@@ -1408,14 +1422,17 @@
 						<LI><A href="#Video:Pause">Pause</A></LI>
 						<LI><A href="#Video:Play">Play</A></LI>
 						<LI><A href="#Video:Rewind">Rewind</A></LI>
-						<LI><A href="#Video:SetColour">SetColour</A></LI>
+						<LI><A href="#Video:SetCRGBA">SetCRGBA</A></LI>
 						<LI><A href="#Video:SetFilter">SetFilter</A></LI>
 						<LI><A href="#Video:SetKeyColour">SetKeyColour</A></LI>
 						<LI><A href="#Video:SetKeyed">SetKeyed</A></LI>
 						<LI><A href="#Video:SetLoop">SetLoop</A></LI>
-						<LI><A href="#Video:SetTexCoord">SetTexCoord</A></LI>
-						<LI><A href="#Video:SetVertex">SetVertex</A></LI>
-						<LI><A href="#Video:SetVertexA">SetVertexA</A></LI>
+						<LI><A href="#Video:SetTCLTRB">SetTCLTRB</A></LI>
+						<LI><A href="#Video:SetTCLTWH">SetTCLTWH</A></LI>
+						<LI><A href="#Video:SetVLTRB">SetVLTRB</A></LI>
+						<LI><A href="#Video:SetVLTRBA">SetVLTRBA</A></LI>
+						<LI><A href="#Video:SetVLTWH">SetVLTWH</A></LI>
+						<LI><A href="#Video:SetVLTWHA">SetVLTWHA</A></LI>
 						<LI><A href="#Video:SetVolume">SetVolume</A></LI>
 						<LI><A href="#Video:Stop">Stop</A></LI>
 					</OL>
@@ -1429,7 +1446,7 @@
 				<LI><A href="#idx:Video">&#x25B2; Return to summary</A> / <A href="#toc">top</A></LI>
 			</OL>
 		</LI>
-		<LI id="cvidx"><A href="#cvars">CVars</A> <I>(203 cvars)</I>
+		<LI id="cvidx"><A href="#cvars">CVars</A> <I>(207 cvars)</I>
 			<OL>
 				<LI><P>Variables that change the behaviour of the engine.</P></LI>
 				<LI>
@@ -1578,15 +1595,18 @@
 						<LI><A href="#cv.sql_loadconfig">sql_loadconfig</A></LI>
 						<LI><A href="#cv.sql_synchronous">sql_synchronous</A></LI>
 						<LI><A href="#cv.sql_tempstore">sql_tempstore</A></LI>
-						<LI><A href="#cv.vid_alpha">vid_alpha</A></LI>
 						<LI><A href="#cv.vid_api">vid_api</A></LI>
 						<LI><A href="#cv.vid_auxbuffers">vid_auxbuffers</A></LI>
-						<LI><A href="#cv.vid_bpp">vid_bpp</A></LI>
 						<LI><A href="#cv.vid_clear">vid_clear</A></LI>
 						<LI><A href="#cv.vid_clearcolour">vid_clearcolour</A></LI>
-						<LI><A href="#cv.vid_context">vid_context</A></LI>
+						<LI><A href="#cv.vid_ctxmajor">vid_ctxmajor</A></LI>
+						<LI><A href="#cv.vid_ctxminor">vid_ctxminor</A></LI>
 						<LI><A href="#cv.vid_dblbuff">vid_dblbuff</A></LI>
 						<LI><A href="#cv.vid_debug">vid_debug</A></LI>
+						<LI><A href="#cv.vid_fbalpha">vid_fbalpha</A></LI>
+						<LI><A href="#cv.vid_fbblue">vid_fbblue</A></LI>
+						<LI><A href="#cv.vid_fbgreen">vid_fbgreen</A></LI>
+						<LI><A href="#cv.vid_fbred">vid_fbred</A></LI>
 						<LI><A href="#cv.vid_forward">vid_forward</A></LI>
 						<LI><A href="#cv.vid_fs">vid_fs</A></LI>
 						<LI><A href="#cv.vid_fsaa">vid_fsaa</A></LI>
@@ -1620,6 +1640,7 @@
 						<LI><A href="#cv.vid_subpixround">vid_subpixround</A></LI>
 						<LI><A href="#cv.vid_texfilter">vid_texfilter</A></LI>
 						<LI><A href="#cv.vid_vsync">vid_vsync</A></LI>
+						<LI><A href="#cv.win_alpha">win_alpha</A></LI>
 						<LI><A href="#cv.win_aspect">win_aspect</A></LI>
 						<LI><A href="#cv.win_border">win_border</A></LI>
 						<LI><A href="#cv.win_closeable">win_closeable</A></LI>
@@ -3761,16 +3782,6 @@
 		<PRE>Returns a table of key&#x2f;value pairs that identify the states of the window&#x2e;<BR>ID   Keyname     Meaning &#x3d;&#x3d;&#x3d;  &#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;     &#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d; [0]  WINDOW      Decorated and can be moved and sized around the desktop&#x2e;<BR>[1]  EXCLUSIVE   Undecorated&#x2c; covers the whole screen and set resolution&#x2e;<BR>[2]  BORDERLESS  Undecorated&#x2c; covers the whole screen only&#x2e;<BR>[3]  NATIVE      &#x28;MacOS only&#x29; Same as BORDERLESS but disables toggler&#x2e;<BR>&#x3d;&#x3d;&#x3d;  &#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;     &#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d; </PRE>
 		<H4><A href="#idx:Display" onclick="r('Display.FSTypes')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Fbo.Blend">
-		<H3>Fbo.Blend</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Fbo.Blend(<I><U>srcRGB</U>, <U>dstRGB</U>, <U>srcAlpha</U>, <U>dstAlpha</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>srcRGB</U> <I>(integer)</I> = How the source RGB blending factors are computed.<BR><U>dstRGB</U> <I>(integer)</I> = How the dest RGB blending factors are computed.<BR><U>srcAlpha</U> <I>(integer)</I> = How the alpha source blending factor is computed.<BR><U>dstAlpha</U> <I>(integer)</I> = How the alpha destination blending factor is computed.<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Sets the alpha blending function formula of the back buffer using glBlendFuncSeparate&#x2e; The parameters are a zero index of the formula you want to use&#x2e; These values are available in Fbo&#x2e;Blends&#x28;&#x29;&#x2e;<BR></PRE>
-		<H4><A href="#idx:Fbo" onclick="r('Fbo.Blend')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
 	<DIV id="Fbo.ConEnabled">
 		<H3>Fbo.ConEnabled</H3>
 		<H4>Syntax:-</H4>
@@ -3861,6 +3872,16 @@
 		<PRE>When OpenGL needs to be reinitialised&#x2c; the specified callback will be called so the guest can redraw FBO&#x27;s and maybe do other stuff&#x2e; All texture and fbo data is already preserved so there is no need to reinitialise any of that&#x2c; you just need to redraw them&#x2e;<BR></PRE>
 		<H4><A href="#idx:Fbo" onclick="r('Fbo.OnRedraw')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
+	<DIV id="Fbo.SetBlend">
+		<H3>Fbo.SetBlend</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Fbo.SetBlend(<I><U>srcRGB</U>, <U>dstRGB</U>, <U>srcAlpha</U>, <U>dstAlpha</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>srcRGB</U> <I>(integer)</I> = How the source RGB blending factors are computed.<BR><U>dstRGB</U> <I>(integer)</I> = How the dest RGB blending factors are computed.<BR><U>srcAlpha</U> <I>(integer)</I> = How the alpha source blending factor is computed.<BR><U>dstAlpha</U> <I>(integer)</I> = How the alpha destination blending factor is computed.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Sets the alpha blending function formula of the back buffer using glBlendFuncSeparate&#x2e; The parameters are a zero index of the formula you want to use&#x2e; These values are available in Fbo&#x2e;Blends&#x28;&#x29;&#x2e;<BR></PRE>
+		<H4><A href="#idx:Fbo" onclick="r('Fbo.SetBlend')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
 	<DIV id="Fbo:Activate">
 		<H3>Fbo:Activate</H3>
 		<H4>Syntax:-</H4>
@@ -3923,15 +3944,15 @@
 		<PRE>Returns the number of floating point numbers currently entered into the display list&#x2e;<BR></PRE>
 		<H4><A href="#idx:Fbo" onclick="r('Fbo:GetFloatCount')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Fbo:GetLastFloatCount">
-		<H3>Fbo:GetLastFloatCount</H3>
+	<DIV id="Fbo:GetLFloatCount">
+		<H3>Fbo:GetLFloatCount</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Count</U> = Fbo:GetLastFloatCount()</PRE>
+		<PRE><U>Count</U> = Fbo:GetLFloatCount()</PRE>
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Count</U> <I>(integer)</I> = Number of floats in display lists.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Returns the number of floating point numbers entered into the display list on the last rendered frame&#x2e;<BR></PRE>
-		<H4><A href="#idx:Fbo" onclick="r('Fbo:GetLastFloatCount')">&#x25B2; Return to table of contents</A></H4>
+		<H4><A href="#idx:Fbo" onclick="r('Fbo:GetLFloatCount')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Fbo:GetMatrix">
 		<H3>Fbo:GetMatrix</H3>
@@ -3963,6 +3984,26 @@
 		<PRE>Reserves memory the respective number of items&#x2e; Use this if the first complex frame you draw is slow&#x2e; It&#x27;s probably because of this as the default reservation level for the lists is 1024 x 64&#x2d;bit float&#x2f;command&#x2e;<BR></PRE>
 		<H4><A href="#idx:Fbo" onclick="r('Fbo:Reserve')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
+	<DIV id="Fbo:SetCRGBA">
+		<H3>Fbo:SetCRGBA</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Fbo:SetCRGBA(<I><U>Red</U>, <U>Green</U>, <U>Blue</U>, <U>Alpha</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Red</U> <I>(number)</I> = The entire fbo texture red colour intensity (0 to 1).<BR><U>Green</U> <I>(number)</I> = The entire fbo texture green colour intensity (0 to 1).<BR><U>Blue</U> <I>(number)</I> = The entire fbo texture blue colour intensity (0 to 1).<BR><U>Alpha</U> <I>(number)</I> = The entire fbo texture alpha colour intensity (0 to 1).<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Sets the colour intensity of all the vertexes for the entire fbo texture&#x2e;<BR></PRE>
+		<H4><A href="#idx:Fbo" onclick="r('Fbo:SetCRGBA')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Fbo:SetCX">
+		<H3>Fbo:SetCX</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Fbo:SetCX(<I><U>TriIndex</U>, <U>V1Red</U>, <U>V1Green</U>, <U>V1Blue</U>, <U>V1Alpha</U>, <U>V2Red</U>, <U>V2Green</U>, <U>V2Blue</U>, <U>V2Alpha</U>, <U>V3Red</U>, <U>V3Green</U>, <U>V3Blue</U>, <U>V3Alpha</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>TriIndex</U> <I>(integer)</I> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<BR><U>V1Red</U> <I>(number)</I> = Red component of vertex #1 of the specified triangle.<BR><U>V1Green</U> <I>(number)</I> = Green component of vertex #1 of the specified triangle.<BR><U>V1Blue</U> <I>(number)</I> = Blue component of vertex #1 of the specified triangle.<BR><U>V1Alpha</U> <I>(number)</I> = Alpha component of vertex #1 of the specified triangle.<BR><U>V2Red</U> <I>(number)</I> = Red component of vertex #2 of the specified triangle.<BR><U>V2Green</U> <I>(number)</I> = Green component of vertex #2 of the specified triangle.<BR><U>V2Blue</U> <I>(number)</I> = Blue component of vertex #2 of the specified triangle.<BR><U>V2Alpha</U> <I>(number)</I> = Alpha component of vertex #2 of the specified triangle.<BR><U>V3Red</U> <I>(number)</I> = Red component of vertex #3 of the specified triangle.<BR><U>V3Green</U> <I>(number)</I> = Green component of vertex #3 of the specified triangle.<BR><U>V3Blue</U> <I>(number)</I> = Blue component of vertex #3 of the specified triangle.<BR><U>V3Alpha</U> <I>(number)</I> = Alpha component of vertex #3 of the specified triangle.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Stores the specified colour intensities on each vertex for the Fbo&#x3a;Blit&#x28;&#x29; function&#x2e;<BR></PRE>
+		<H4><A href="#idx:Fbo" onclick="r('Fbo:SetCX')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
 	<DIV id="Fbo:SetClear">
 		<H3>Fbo:SetClear</H3>
 		<H4>Syntax:-</H4>
@@ -3982,26 +4023,6 @@
 		<H4>Synopsis:-</H4>
 		<PRE>Same as glClearColour&#x28;&#x29;&#x2e; Allows you to set the colour for glClear&#x28;&#x29;&#x2c; meaning the fbo is cleared with this colour on each new frame loop&#x2e;<BR>See&#x3a; https&#x3a;&#x2f;&#x2f;www&#x2e;opengl&#x2e;org&#x2f;sdk&#x2f;docs&#x2f;man2&#x2f;xhtml&#x2f;glClear&#x2e;xml&#x2e;<BR>See&#x3a; https&#x3a;&#x2f;&#x2f;www&#x2e;opengl&#x2e;org&#x2f;sdk&#x2f;docs&#x2f;man2&#x2f;xhtml&#x2f;glClearColor&#x2e;xml&#x2e;<BR></PRE>
 		<H4><A href="#idx:Fbo" onclick="r('Fbo:SetClearColour')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Fbo:SetColour">
-		<H3>Fbo:SetColour</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Fbo:SetColour(<I><U>Red</U>, <U>Green</U>, <U>Blue</U>, <U>Alpha</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>Red</U> <I>(number)</I> = The entire fbo texture red colour intensity (0 to 1).<BR><U>Green</U> <I>(number)</I> = The entire fbo texture green colour intensity (0 to 1).<BR><U>Blue</U> <I>(number)</I> = The entire fbo texture blue colour intensity (0 to 1).<BR><U>Alpha</U> <I>(number)</I> = The entire fbo texture alpha colour intensity (0 to 1).<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Sets the colour intensity of all the vertexes for the entire fbo texture&#x2e;<BR>See Fbo&#x3a;SetColourEx&#x28;&#x29; for full control over each individual vertex&#x2e;<BR></PRE>
-		<H4><A href="#idx:Fbo" onclick="r('Fbo:SetColour')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Fbo:SetColourEx">
-		<H3>Fbo:SetColourEx</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Fbo:SetColourEx(<I><U>TriIndex</U>, <U>RV1</U>, <U>GV1</U>, <U>BV1</U>, <U>AV1</U>, <U>RV2</U>, <U>GV2</U>, <U>BV2</U>, <U>AV2</U>, <U>RV3</U>, <U>GV3</U>, <U>BV3</U>, <U>AV3</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>TriIndex</U> <I>(integer)</I> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<BR><U>RV1</U> <I>(number)</I> = Red component of vertex #1 of the specified triangle.<BR><U>GV1</U> <I>(number)</I> = Green component of vertex #1 of the specified triangle.<BR><U>BV1</U> <I>(number)</I> = Blue component of vertex #1 of the specified triangle.<BR><U>AV1</U> <I>(number)</I> = Alpha component of vertex #1 of the specified triangle.<BR><U>RV2</U> <I>(number)</I> = Red component of vertex #2 of the specified triangle.<BR><U>GV2</U> <I>(number)</I> = Green component of vertex #2 of the specified triangle.<BR><U>BV2</U> <I>(number)</I> = Blue component of vertex #2 of the specified triangle.<BR><U>AV2</U> <I>(number)</I> = Alpha component of vertex #2 of the specified triangle.<BR><U>RV3</U> <I>(number)</I> = Red component of vertex #3 of the specified triangle.<BR><U>GV3</U> <I>(number)</I> = Green component of vertex #3 of the specified triangle.<BR><U>BV3</U> <I>(number)</I> = Blue component of vertex #3 of the specified triangle.<BR><U>AV3</U> <I>(number)</I> = Alpha component of vertex #3 of the specified triangle.<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Allows you to full control over the colour of the fbo texture colour&#x2e;<BR></PRE>
-		<H4><A href="#idx:Fbo" onclick="r('Fbo:SetColourEx')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Fbo:SetFilter">
 		<H3>Fbo:SetFilter</H3>
@@ -4023,55 +4044,85 @@
 		<PRE>Sets the ortho of the specified fbo&#x2c; meaning&#x2c; these are the bounds of where you can draw&#x2e; Same as glOrtho&#x28;&#x29;&#x2e;<BR>See&#x3a; https&#x3a;&#x2f;&#x2f;www&#x2e;opengl&#x2e;org&#x2f;sdk&#x2f;docs&#x2f;man2&#x2f;xhtml&#x2f;glOrtho&#x2e;xml </PRE>
 		<H4><A href="#idx:Fbo" onclick="r('Fbo:SetOrtho')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Fbo:SetTexCoord">
-		<H3>Fbo:SetTexCoord</H3>
+	<DIV id="Fbo:SetTCLTRB">
+		<H3>Fbo:SetTCLTRB</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Fbo:SetTexCoord(<I><U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U></I>)</PRE>
+		<PRE>Fbo:SetTCLTRB(<I><U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Left</U> <I>(number)</I> = The left co-ordinate.<BR><U>Top</U> <I>(number)</I> = The top co-ordinate.<BR><U>Right</U> <I>(number)</I> = The right co-ordinate.<BR><U>Bottom</U> <I>(number)</I> = The bottom co-ordinate.<BR></PRE>
+		<PRE><U>Left</U> <I>(number)</I> = The destination left co-ordinate.<BR><U>Top</U> <I>(number)</I> = The destination top co-ordinate.<BR><U>Right</U> <I>(number)</I> = The destination right co-ordinate.<BR><U>Bottom</U> <I>(number)</I> = The destination bottom co-ordinate.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Allows you to set basic texture co&#x2d;ordinates when blitting the fbo&#x2e; For a more advanced version of this function&#x2c; see Fbo&#x3a;SetTexCoordEx&#x28;&#x29;&#x2e;<BR></PRE>
-		<H4><A href="#idx:Fbo" onclick="r('Fbo:SetTexCoord')">&#x25B2; Return to table of contents</A></H4>
+		<PRE>Stores the specified texture bounds used when blitting the frame buffer object&#x2e;<BR></PRE>
+		<H4><A href="#idx:Fbo" onclick="r('Fbo:SetTCLTRB')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Fbo:SetTexCoordEx">
-		<H3>Fbo:SetTexCoordEx</H3>
+	<DIV id="Fbo:SetTCLTWH">
+		<H3>Fbo:SetTCLTWH</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Fbo:SetTexCoordEx(<I><U>TriIndex</U>, <U>C1V1</U>, <U>C2V2</U>, <U>C1V3</U>, <U>C2V1</U>, <U>C1V2</U>, <U>C2V3</U></I>)</PRE>
+		<PRE>Fbo:SetTCLTWH(<I><U>Left</U>, <U>Top</U>, <U>Width</U>, <U>Height</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>TriIndex</U> <I>(integer)</I> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<BR><U>C1V1</U> <I>(number)</I> = GLfloat for coord #1 of vertex #1 of the specified triangle.<BR><U>C2V2</U> <I>(number)</I> = GLfloat for coord #2 of vertex #2 of the specified triangle.<BR><U>C1V3</U> <I>(number)</I> = GLfloat for coord #1 of vertex #3 of the specified triangle.<BR><U>C2V1</U> <I>(number)</I> = GLfloat for coord #2 of vertex #1 of the specified triangle.<BR><U>C1V2</U> <I>(number)</I> = GLfloat for coord #1 of vertex #2 of the specified triangle.<BR><U>C2V3</U> <I>(number)</I> = GLfloat for coord #2 of vertex #3 of the specified triangle.<BR></PRE>
+		<PRE><U>Left</U> <I>(number)</I> = The left destination co-ordinate.<BR><U>Top</U> <I>(number)</I> = The top destination co-ordinate.<BR><U>Width</U> <I>(number)</I> = The destination width.<BR><U>Height</U> <I>(number)</I> = The destination height.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Allows you to full control over the fbo texture co&#x2d;ordinates&#x2e;<BR></PRE>
-		<H4><A href="#idx:Fbo" onclick="r('Fbo:SetTexCoordEx')">&#x25B2; Return to table of contents</A></H4>
+		<PRE>Stores the specified texture co&#x2d;ords and dimensions when blitting the frame buffer object&#x2e;<BR></PRE>
+		<H4><A href="#idx:Fbo" onclick="r('Fbo:SetTCLTWH')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Fbo:SetVertex">
-		<H3>Fbo:SetVertex</H3>
+	<DIV id="Fbo:SetTCX">
+		<H3>Fbo:SetTCX</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Fbo:SetVertex(<I><U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U></I>)</PRE>
+		<PRE>Fbo:SetTCX(<I><U>TriIndex</U>, <U>TC1Left</U>, <U>TC1Top</U>, <U>TC2Left</U>, <U>TC2Top</U>, <U>TC3Left</U>, <U>TC3Top</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Left</U> <I>(number)</I> = The left co-ordinate.<BR><U>Top</U> <I>(number)</I> = The top co-ordinate.<BR><U>Right</U> <I>(number)</I> = The right co-ordinate.<BR><U>Bottom</U> <I>(number)</I> = The bottom co-ordinate.<BR></PRE>
+		<PRE><U>TriIndex</U> <I>(integer)</I> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<BR><U>TC1Left</U> <I>(number)</I> = Coord #1 of vertex #1 of the specified triangle.<BR><U>TC1Top</U> <I>(number)</I> = Coord #2 of vertex #2 of the specified triangle.<BR><U>TC2Left</U> <I>(number)</I> = Coord #1 of vertex #3 of the specified triangle.<BR><U>TC2Top</U> <I>(number)</I> = Coord #2 of vertex #1 of the specified triangle.<BR><U>TC3Left</U> <I>(number)</I> = Coord #1 of vertex #2 of the specified triangle.<BR><U>TC3Top</U> <I>(number)</I> = Coord #2 of vertex #3 of the specified triangle.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Allows you to set basic vertex co&#x2d;ordinates when blitting the fbo&#x2e; For a more advanced version of this function&#x2c; see Fbo&#x3a;SetVertexEx&#x28;&#x29;&#x2e;<BR></PRE>
-		<H4><A href="#idx:Fbo" onclick="r('Fbo:SetVertex')">&#x25B2; Return to table of contents</A></H4>
+		<PRE>Stores the specified texture co&#x2d;ordinates for when the frame buffer object is drawn&#x2e;<BR></PRE>
+		<H4><A href="#idx:Fbo" onclick="r('Fbo:SetTCX')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Fbo:SetVertexA">
-		<H3>Fbo:SetVertexA</H3>
+	<DIV id="Fbo:SetVLTRB">
+		<H3>Fbo:SetVLTRB</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Fbo:SetVertexA(<I><U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U>, <U>Angle</U></I>)</PRE>
+		<PRE>Fbo:SetVLTRB(<I><U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Left</U> <I>(number)</I> = The left co-ordinate.<BR><U>Top</U> <I>(number)</I> = The top co-ordinate.<BR><U>Right</U> <I>(number)</I> = The right co-ordinate.<BR><U>Bottom</U> <I>(number)</I> = The bottom co-ordinate.<BR><U>Angle</U> <I>(number)</I> = The angle of the vertex<BR></PRE>
+		<PRE><U>Left</U> <I>(number)</I> = The destination left co-ordinate.<BR><U>Top</U> <I>(number)</I> = The destination top co-ordinate.<BR><U>Right</U> <I>(number)</I> = The destination right co-ordinate.<BR><U>Bottom</U> <I>(number)</I> = The destination bottom co-ordinate.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Allows you to set basic vertex bounds when blitting the frame buffer object&#x2e;<BR></PRE>
+		<H4><A href="#idx:Fbo" onclick="r('Fbo:SetVLTRB')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Fbo:SetVLTRBA">
+		<H3>Fbo:SetVLTRBA</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Fbo:SetVLTRBA(<I><U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U>, <U>Angle</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Left</U> <I>(number)</I> = The destination left co-ordinate.<BR><U>Top</U> <I>(number)</I> = The destination top co-ordinate.<BR><U>Right</U> <I>(number)</I> = The destination right co-ordinate.<BR><U>Bottom</U> <I>(number)</I> = The destination bottom co-ordinate.<BR><U>Angle</U> <I>(number)</I> = The angle of the vertex.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Allows you to set basic vertex co&#x2d;ordinates when blitting the fbo with angle calculations&#x2e;<BR></PRE>
-		<H4><A href="#idx:Fbo" onclick="r('Fbo:SetVertexA')">&#x25B2; Return to table of contents</A></H4>
+		<H4><A href="#idx:Fbo" onclick="r('Fbo:SetVLTRBA')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Fbo:SetVertexEx">
-		<H3>Fbo:SetVertexEx</H3>
+	<DIV id="Fbo:SetVLTWH">
+		<H3>Fbo:SetVLTWH</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Fbo:SetVertexEx(<I><U>TriIndex</U>, <U>C1V1</U>, <U>C2V2</U>, <U>C1V3</U>, <U>C2V1</U>, <U>C1V2</U>, <U>C2V3</U></I>)</PRE>
+		<PRE>Fbo:SetVLTWH(<I><U>Left</U>, <U>Top</U>, <U>Width</U>, <U>Height</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>TriIndex</U> <I>(integer)</I> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<BR><U>C1V1</U> <I>(number)</I> = GLfloat for coord #1 of vertex #1 of the specified triangle.<BR><U>C2V2</U> <I>(number)</I> = GLfloat for coord #2 of vertex #2 of the specified triangle.<BR><U>C1V3</U> <I>(number)</I> = GLfloat for coord #1 of vertex #3 of the specified triangle.<BR><U>C2V1</U> <I>(number)</I> = GLfloat for coord #2 of vertex #1 of the specified triangle.<BR><U>C1V2</U> <I>(number)</I> = GLfloat for coord #1 of vertex #2 of the specified triangle.<BR><U>C2V3</U> <I>(number)</I> = GLfloat for coord #2 of vertex #3 of the specified triangle.<BR></PRE>
+		<PRE><U>Left</U> <I>(number)</I> = The destination left co-ordinate.<BR><U>Top</U> <I>(number)</I> = The destination top co-ordinate.<BR><U>Width</U> <I>(number)</I> = The destination width.<BR><U>Height</U> <I>(number)</I> = The destination height.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Allows you to full control over the fbo vertex co&#x2d;ordinates apart from the Z co&#x2d;ordinate which is not used in this 2D only engine&#x2e;<BR></PRE>
-		<H4><A href="#idx:Fbo" onclick="r('Fbo:SetVertexEx')">&#x25B2; Return to table of contents</A></H4>
+		<PRE>Allows you to set basic vertex co&#x2d;ordinates and dimensions when blitting the frame buffer object&#x2e;<BR></PRE>
+		<H4><A href="#idx:Fbo" onclick="r('Fbo:SetVLTWH')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Fbo:SetVLTWHA">
+		<H3>Fbo:SetVLTWHA</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Fbo:SetVLTWHA(<I><U>Left</U>, <U>Top</U>, <U>Width</U>, <U>Height</U>, <U>Angle</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Left</U> <I>(number)</I> = The destination left co-ordinate.<BR><U>Top</U> <I>(number)</I> = The destination top co-ordinate.<BR><U>Width</U> <I>(number)</I> = The destination width.<BR><U>Height</U> <I>(number)</I> = The destination height.<BR><U>Angle</U> <I>(number)</I> = The angle of the vertex.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Allows you to set basic vertex co&#x2d;ordinates when blitting the fbo with angle calculations&#x2e;<BR></PRE>
+		<H4><A href="#idx:Fbo" onclick="r('Fbo:SetVLTWHA')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Fbo:SetVX">
+		<H3>Fbo:SetVX</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Fbo:SetVX(<I><U>TriIndex</U>, <U>V1Left</U>, <U>V1Top</U>, <U>V2Left</U>, <U>V2Top</U>, <U>V3Left</U>, <U>V3Top</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>TriIndex</U> <I>(integer)</I> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<BR><U>V1Left</U> <I>(number)</I> = Coord #1 of vertex #1 of the specified triangle.<BR><U>V1Top</U> <I>(number)</I> = Coord #2 of vertex #2 of the specified triangle.<BR><U>V2Left</U> <I>(number)</I> = Coord #1 of vertex #3 of the specified triangle.<BR><U>V2Top</U> <I>(number)</I> = Coord #2 of vertex #1 of the specified triangle.<BR><U>V3Left</U> <I>(number)</I> = Coord #1 of vertex #2 of the specified triangle.<BR><U>V3Top</U> <I>(number)</I> = Coord #2 of vertex #3 of the specified triangle.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Stores the specified vertex co&#x2d;ordinates when using the &#x27;Fbo&#x3a;Blit&#x27; function&#x2e;<BR></PRE>
+		<H4><A href="#idx:Fbo" onclick="r('Fbo:SetVX')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Fbo:SetWireframe">
 		<H3>Fbo:SetWireframe</H3>
@@ -8114,7 +8165,7 @@
 		<H4>Syntax:-</H4>
 		<PRE><U>Handle</U> = Texture.Create(<I><U>Source</U>, <U>Filter</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Source</U> <I>(image)</I> = The image class to load from<BR><U>Filter</U> <I>(integer)</I> = The default filter to use<BR></PRE>
+		<PRE><U>Source</U> <I>(image)</I> = The image class to load from.<BR><U>Filter</U> <I>(integer)</I> = The default filter to use<BR></PRE>
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Handle</U> <I>(Texture)</I> = A handle to the texture(s) created.<BR></PRE>
 		<H4>Synopsis:-</H4>
@@ -8126,7 +8177,7 @@
 		<H4>Syntax:-</H4>
 		<PRE><U>Handle</U> = Texture.CreateTS(<I><U>Source</U>, <U>TWidth</U>, <U>THeight</U>, <U>PWidth</U>, <U>PHeight</U>, <U>Filter</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Source</U> <I>(image)</I> = The image class to load from<BR><U>TWidth</U> <I>(integer)</I> = The width of each tile in the image.<BR><U>THeight</U> <I>(integer)</I> = The height of each tile in the image.<BR><U>PWidth</U> <I>(integer)</I> = The width padding between each tile in the image.<BR><U>PHeight</U> <I>(integer)</I> = The height padding between each tile in the image.<BR><U>Filter</U> <I>(integer)</I> = The filtering setting to use on texture<BR></PRE>
+		<PRE><U>Source</U> <I>(image)</I> = The image class to load from.<BR><U>TWidth</U> <I>(integer)</I> = The width of each tile in the image.<BR><U>THeight</U> <I>(integer)</I> = The height of each tile in the image.<BR><U>PWidth</U> <I>(integer)</I> = The width padding between each tile in the image.<BR><U>PHeight</U> <I>(integer)</I> = The height padding between each tile in the image.<BR><U>Filter</U> <I>(integer)</I> = The filtering setting to use on texture<BR></PRE>
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Handle</U> <I>(Texture)</I> = A handle to the texture(s) created.<BR></PRE>
 		<H4>Synopsis:-</H4>
@@ -8138,7 +8189,7 @@
 		<H4>Syntax:-</H4>
 		<PRE>Texture:Blit()</PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Blits tile 0 of texture 0 with the current stored position&#x2e;<BR></PRE>
+		<PRE>Blits texture 0 with the stored preset texcoord &#x28;SetTC&#x2a;&#x29;&#x2c; vertex &#x28;SetV&#x2a;&#x29; and colour &#x28;SetC&#x2a;&#x29;&#x2e; Using the Blit&#x2a; functions will overwrite this stored preset data&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:Blit')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Texture:BlitI">
@@ -8154,9 +8205,9 @@
 	<DIV id="Texture:BlitILT">
 		<H3>Texture:BlitILT</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitILT(<I><U>TexIndex</U>, <U>X</U>, <U>Y</U></I>)</PRE>
+		<PRE>Texture:BlitILT(<I><U>TexIndex</U>, <U>Left</U>, <U>Top</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>TexIndex</U> <I>(integer)</I> = The texture index to blit.<BR><U>X</U> <I>(number)</I> = The X screen position of the string.<BR><U>Y</U> <I>(number)</I> = The Y screen position of the string.<BR></PRE>
+		<PRE><U>TexIndex</U> <I>(integer)</I> = The texture index to use.<BR><U>Left</U> <I>(number)</I> = The starting column to draw from.<BR><U>Top</U> <I>(number)</I> = The starting row to draw from.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Blits tile &#x27;TileIndex&#x27; of texture 0 at the specified screen co&#x2d;ordinates with the internal tile width and height calculated when created&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:BlitILT')">&#x25B2; Return to table of contents</A></H4>
@@ -8164,9 +8215,9 @@
 	<DIV id="Texture:BlitILTA">
 		<H3>Texture:BlitILTA</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitILTA(<I><U>TexIndex</U>, <U>X</U>, <U>Y</U>, <U>Angle</U></I>)</PRE>
+		<PRE>Texture:BlitILTA(<I><U>TexIndex</U>, <U>Left</U>, <U>Top</U>, <U>Angle</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>TexIndex</U> <I>(integer)</I> = The texture index to blit.<BR><U>X</U> <I>(number)</I> = The X screen position of the string.<BR><U>Y</U> <I>(number)</I> = The Y screen position of the string.<BR><U>Angle</U> <I>(number)</I> = The angle of the blit in degrees.<BR></PRE>
+		<PRE><U>TexIndex</U> <I>(integer)</I> = The texture index to use.<BR><U>Left</U> <I>(number)</I> = The starting column to draw from.<BR><U>Top</U> <I>(number)</I> = The starting row to draw from.<BR><U>Angle</U> <I>(number)</I> = The angle in which to rotate from the centre point (-1 to 1).<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Blits tile &#x27;TileIndex&#x27; of texture 0 at the specified screen co&#x2d;ordinates with the internal tile width and height calculated when created and with the specified angle&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:BlitILTA')">&#x25B2; Return to table of contents</A></H4>
@@ -8174,22 +8225,42 @@
 	<DIV id="Texture:BlitILTRB">
 		<H3>Texture:BlitILTRB</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitILTRB(<I><U>TexIndex</U>, <U>X</U>, <U>Y</U>, <U>Width</U>, <U>Height</U></I>)</PRE>
+		<PRE>Texture:BlitILTRB(<I><U>TexIndex</U>, <U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>TexIndex</U> <I>(integer)</I> = The texture index to blit.<BR><U>X</U> <I>(number)</I> = The X screen position of the string.<BR><U>Y</U> <I>(number)</I> = The Y screen position of the string.<BR><U>Width</U> <I>(number)</I> = A value between 0-1 specifing the red component intensity.<BR><U>Height</U> <I>(number)</I> = A value between 0-1 specifing the green component intensity.<BR></PRE>
+		<PRE><U>TexIndex</U> <I>(integer)</I> = The texture index to use.<BR><U>Left</U> <I>(number)</I> = The starting column to draw from.<BR><U>Top</U> <I>(number)</I> = The starting row to draw from.<BR><U>Right</U> <I>(number)</I> = The ending column pixel to draw to.<BR><U>Bottom</U> <I>(number)</I> = The ending row pixel to draw to.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Blits tile 0 of texture &#x27;TexIndex&#x27; at the specified screen co&#x2d;ordinates and with the specified dimensions&#x2e;<BR></PRE>
+		<PRE>Blits tile 0 of texture &#x27;TexIndex&#x27; at the specified bounds&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:BlitILTRB')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Texture:BlitILTRBA">
 		<H3>Texture:BlitILTRBA</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitILTRBA(<I><U>TexIndex</U>, <U>X</U>, <U>Y</U>, <U>Width</U>, <U>Height</U>, <U>Angle</U></I>)</PRE>
+		<PRE>Texture:BlitILTRBA(<I><U>TexIndex</U>, <U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U>, <U>Angle</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>TexIndex</U> <I>(integer)</I> = The texture index to blit.<BR><U>X</U> <I>(number)</I> = The X screen position of the string.<BR><U>Y</U> <I>(number)</I> = The Y screen position of the string.<BR><U>Width</U> <I>(number)</I> = A value between 0-1 specifing the red component intensity.<BR><U>Height</U> <I>(number)</I> = A value between 0-1 specifing the green component intensity.<BR><U>Angle</U> <I>(number)</I> = The angle to blit the texture at (1.0=full rotation).<BR></PRE>
+		<PRE><U>TexIndex</U> <I>(integer)</I> = The texture index to use.<BR><U>Left</U> <I>(number)</I> = The starting column to draw from.<BR><U>Top</U> <I>(number)</I> = The starting row to draw from.<BR><U>Right</U> <I>(number)</I> = The ending column pixel to draw to.<BR><U>Bottom</U> <I>(number)</I> = The ending row pixel to draw to.<BR><U>Angle</U> <I>(number)</I> = The angle in which to rotate from the centre point (-1 to 1).<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Blits tile 0 of texture &#x27;TexIndex&#x27; at the specified screen co&#x2d;ordinates and with the specified dimensions with the specified angle&#x2e;<BR></PRE>
+		<PRE>Blits tile 0 of texture &#x27;TexIndex&#x27; at the specified bounds&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:BlitILTRBA')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Texture:BlitILTWH">
+		<H3>Texture:BlitILTWH</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Texture:BlitILTWH(<I><U>TexIndex</U>, <U>Left</U>, <U>Top</U>, <U>Width</U>, <U>Height</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>TexIndex</U> <I>(integer)</I> = The texture index to use.<BR><U>Left</U> <I>(number)</I> = The starting column to draw from.<BR><U>Top</U> <I>(number)</I> = The starting row to draw from.<BR><U>Width</U> <I>(number)</I> = The width of the quad to draw.<BR><U>Height</U> <I>(number)</I> = The height of the quad to draw<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Blits tile 0 of texture &#x27;TexIndex&#x27; at the specified screen co&#x2d;ordinates and with the specified dimensions&#x2e;<BR></PRE>
+		<H4><A href="#idx:Texture" onclick="r('Texture:BlitILTWH')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Texture:BlitILTWHA">
+		<H3>Texture:BlitILTWHA</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Texture:BlitILTWHA(<I><U>TexIndex</U>, <U>Left</U>, <U>Top</U>, <U>Width</U>, <U>Height</U>, <U>Angle</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>TexIndex</U> <I>(integer)</I> = The texture index to use.<BR><U>Left</U> <I>(number)</I> = The starting column to draw from.<BR><U>Top</U> <I>(number)</I> = The starting row to draw from.<BR><U>Width</U> <I>(number)</I> = The width of the quad to draw.<BR><U>Height</U> <I>(number)</I> = The height of the quad to draw<BR><U>Angle</U> <I>(number)</I> = The angle in which to rotate from the centre point (-1 to 1).<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Blits tile 0 of texture &#x27;TexIndex&#x27; at the specified screen co&#x2d;ordinates and with the specified dimensions at the specified angle&#x2e;<BR></PRE>
+		<H4><A href="#idx:Texture" onclick="r('Texture:BlitILTWHA')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Texture:BlitIS">
 		<H3>Texture:BlitIS</H3>
@@ -8204,9 +8275,9 @@
 	<DIV id="Texture:BlitISLT">
 		<H3>Texture:BlitISLT</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitISLT(<I><U>TexIndex</U>, <U>TileIndex</U>, <U>X</U>, <U>Y</U></I>)</PRE>
+		<PRE>Texture:BlitISLT(<I><U>TexIndex</U>, <U>TileIndex</U>, <U>Left</U>, <U>Top</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>TexIndex</U> <I>(integer)</I> = The texture index to blit.<BR><U>TileIndex</U> <I>(integer)</I> = The tile index of the texture to blit.<BR><U>X</U> <I>(number)</I> = The X screen position of the string.<BR><U>Y</U> <I>(number)</I> = The Y screen position of the string.<BR></PRE>
+		<PRE><U>TexIndex</U> <I>(integer)</I> = The texture index to use.<BR><U>TileIndex</U> <I>(integer)</I> = The tile index of the texture to blit.<BR><U>Left</U> <I>(number)</I> = The starting column to draw from.<BR><U>Top</U> <I>(number)</I> = The starting row to draw from.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Blits tile &#x27;TileIndex&#x27; of texture &#x27;TexIndex&#x27; at the specified screen co&#x2d;ordinates with the internal tile width and height calculated when created&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:BlitISLT')">&#x25B2; Return to table of contents</A></H4>
@@ -8214,9 +8285,9 @@
 	<DIV id="Texture:BlitISLTA">
 		<H3>Texture:BlitISLTA</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitISLTA(<I><U>TexIndex</U>, <U>TileIndex</U>, <U>X</U>, <U>Y</U>, <U>Angle</U></I>)</PRE>
+		<PRE>Texture:BlitISLTA(<I><U>TexIndex</U>, <U>TileIndex</U>, <U>Left</U>, <U>Top</U>, <U>Angle</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>TexIndex</U> <I>(integer)</I> = The texture index to blit.<BR><U>TileIndex</U> <I>(integer)</I> = The tile index of the texture to blit.<BR><U>X</U> <I>(number)</I> = The X screen position of the string.<BR><U>Y</U> <I>(number)</I> = The Y screen position of the string.<BR><U>Angle</U> <I>(number)</I> = The angle of the blit in degrees.<BR></PRE>
+		<PRE><U>TexIndex</U> <I>(integer)</I> = The texture index to use.<BR><U>TileIndex</U> <I>(integer)</I> = The tile index of the texture to blit.<BR><U>Left</U> <I>(number)</I> = The starting column to draw from.<BR><U>Top</U> <I>(number)</I> = The starting row to draw from.<BR><U>Angle</U> <I>(number)</I> = The angle in which to rotate from the centre point (-1 to 1).<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Blits tile &#x27;TileIndex&#x27; of texture &#x27;TexIndex&#x27; at the specified screen co&#x2d;ordinates with the internal tile width and height calculated when created&#x2c; and with the specified angle&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:BlitISLTA')">&#x25B2; Return to table of contents</A></H4>
@@ -8224,29 +8295,49 @@
 	<DIV id="Texture:BlitISLTRB">
 		<H3>Texture:BlitISLTRB</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitISLTRB(<I><U>TexIndex</U>, <U>TileIndex</U>, <U>X</U>, <U>Y</U>, <U>Width</U>, <U>Height</U></I>)</PRE>
+		<PRE>Texture:BlitISLTRB(<I><U>TexIndex</U>, <U>TileIndex</U>, <U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>TexIndex</U> <I>(integer)</I> = The texture index to blit.<BR><U>TileIndex</U> <I>(integer)</I> = The tile index to blit.<BR><U>X</U> <I>(number)</I> = The X screen position of the string.<BR><U>Y</U> <I>(number)</I> = The Y screen position of the string.<BR><U>Width</U> <I>(number)</I> = A value between 0-1 specifing the red component intensity.<BR><U>Height</U> <I>(number)</I> = A value between 0-1 specifing the green component intensity.<BR></PRE>
+		<PRE><U>TexIndex</U> <I>(integer)</I> = The texture index to use.<BR><U>TileIndex</U> <I>(integer)</I> = The tile index to blit.<BR><U>Left</U> <I>(number)</I> = The starting column to draw from.<BR><U>Top</U> <I>(number)</I> = The starting row to draw from.<BR><U>Right</U> <I>(number)</I> = The ending column pixel to draw to.<BR><U>Bottom</U> <I>(number)</I> = The ending row pixel to draw to.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Blits tile &#x27;TileIndex&#x27; of texture &#x27;TexIndex&#x27; at the specified screen co&#x2d;ordinates and with the specified dimensions&#x2e;<BR></PRE>
+		<PRE>Blits tile &#x27;TileIndex&#x27; of texture &#x27;TexIndex&#x27; at the specified screen bounds&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:BlitISLTRB')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Texture:BlitISLTRBA">
 		<H3>Texture:BlitISLTRBA</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitISLTRBA(<I><U>TexIndex</U>, <U>TileIndex</U>, <U>X</U>, <U>Y</U>, <U>Width</U>, <U>Height</U>, <U>Angle</U></I>)</PRE>
+		<PRE>Texture:BlitISLTRBA(<I><U>TexIndex</U>, <U>TileIndex</U>, <U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U>, <U>Angle</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>TexIndex</U> <I>(integer)</I> = The texture index to blit.<BR><U>TileIndex</U> <I>(integer)</I> = The tile index to blit.<BR><U>X</U> <I>(number)</I> = The X screen position of the string.<BR><U>Y</U> <I>(number)</I> = The Y screen position of the string.<BR><U>Width</U> <I>(number)</I> = A value between 0-1 specifing the red component intensity.<BR><U>Height</U> <I>(number)</I> = A value between 0-1 specifing the green component intensity.<BR><U>Angle</U> <I>(number)</I> = The angle to blit the texture at (1.0=full rotation).<BR></PRE>
+		<PRE><U>TexIndex</U> <I>(integer)</I> = The texture index to use.<BR><U>TileIndex</U> <I>(integer)</I> = The tile index to blit.<BR><U>Left</U> <I>(number)</I> = The starting column to draw from.<BR><U>Top</U> <I>(number)</I> = The starting row to draw from.<BR><U>Right</U> <I>(number)</I> = The ending column pixel to draw to.<BR><U>Bottom</U> <I>(number)</I> = The ending row pixel to draw to.<BR><U>Angle</U> <I>(number)</I> = The angle in which to rotate from the centre point (-1 to 1).<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Blits tile &#x27;TileIndex&#x27; of texture &#x27;TexIndex&#x27; at the specified screen co&#x2d;ordinates and with the specified dimensions and the specified angle&#x2e;<BR></PRE>
+		<PRE>Blits tile &#x27;TileIndex&#x27; of texture &#x27;TexIndex&#x27; at the specified screen bounds&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:BlitISLTRBA')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Texture:BlitISLTWH">
+		<H3>Texture:BlitISLTWH</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Texture:BlitISLTWH(<I><U>TexIndex</U>, <U>TileIndex</U>, <U>Left</U>, <U>Top</U>, <U>Width</U>, <U>Height</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>TexIndex</U> <I>(integer)</I> = The texture index to use.<BR><U>TileIndex</U> <I>(integer)</I> = The tile index to blit.<BR><U>Left</U> <I>(number)</I> = The starting column to draw from.<BR><U>Top</U> <I>(number)</I> = The starting row to draw from.<BR><U>Width</U> <I>(number)</I> = The width of the quad to draw.<BR><U>Height</U> <I>(number)</I> = The height of the quad to draw<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Blits tile &#x27;TileIndex&#x27; of texture &#x27;TexIndex&#x27; at the specified screen co&#x2d;ordinates and with the specified dimensions&#x2e;<BR></PRE>
+		<H4><A href="#idx:Texture" onclick="r('Texture:BlitISLTWH')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Texture:BlitISLTWHA">
+		<H3>Texture:BlitISLTWHA</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Texture:BlitISLTWHA(<I><U>TexIndex</U>, <U>TileIndex</U>, <U>Left</U>, <U>Top</U>, <U>Width</U>, <U>Height</U>, <U>Angle</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>TexIndex</U> <I>(integer)</I> = The texture index to use.<BR><U>TileIndex</U> <I>(integer)</I> = The tile index to blit.<BR><U>Left</U> <I>(number)</I> = The starting column to draw from.<BR><U>Top</U> <I>(number)</I> = The starting row to draw from.<BR><U>Width</U> <I>(number)</I> = The width of the quad to draw.<BR><U>Height</U> <I>(number)</I> = The height of the quad to draw<BR><U>Angle</U> <I>(number)</I> = The angle in which to rotate from the centre point (-1 to 1).<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Blits tile &#x27;TileIndex&#x27; of texture &#x27;TexIndex&#x27; at the specified screen co&#x2d;ordinates and with the specified dimensions&#x2e;<BR></PRE>
+		<H4><A href="#idx:Texture" onclick="r('Texture:BlitISLTWHA')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Texture:BlitLT">
 		<H3>Texture:BlitLT</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitLT(<I><U>X</U>, <U>Y</U></I>)</PRE>
+		<PRE>Texture:BlitLT(<I><U>Left</U>, <U>Top</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>X</U> <I>(number)</I> = The X screen position of the string.<BR><U>Y</U> <I>(number)</I> = The Y screen position of the string.<BR></PRE>
+		<PRE><U>Left</U> <I>(number)</I> = The starting column to draw from.<BR><U>Top</U> <I>(number)</I> = The starting row to draw from.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Blits tile 0 of texture 0 at the specified screen co&#x2d;ordinates with the internal tile width and height calculated when created&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:BlitLT')">&#x25B2; Return to table of contents</A></H4>
@@ -8254,9 +8345,9 @@
 	<DIV id="Texture:BlitLTA">
 		<H3>Texture:BlitLTA</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitLTA(<I><U>X</U>, <U>Y</U>, <U>Angle</U></I>)</PRE>
+		<PRE>Texture:BlitLTA(<I><U>Left</U>, <U>Top</U>, <U>Angle</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>X</U> <I>(number)</I> = The X screen position of the string.<BR><U>Y</U> <I>(number)</I> = The Y screen position of the string.<BR><U>Angle</U> <I>(number)</I> = The angle of the blit in degrees.<BR></PRE>
+		<PRE><U>Left</U> <I>(number)</I> = The starting column to draw from.<BR><U>Top</U> <I>(number)</I> = The starting row to draw from.<BR><U>Angle</U> <I>(number)</I> = The angle in which to rotate from the centre point (-1 to 1).<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Blits tile 0 of texture 0 at the specified screen co&#x2d;ordinates with the internal tile width and height calculated when created and with the specified angle&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:BlitLTA')">&#x25B2; Return to table of contents</A></H4>
@@ -8264,22 +8355,42 @@
 	<DIV id="Texture:BlitLTRB">
 		<H3>Texture:BlitLTRB</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitLTRB(<I><U>X</U>, <U>Y</U>, <U>Width</U>, <U>Height</U></I>)</PRE>
+		<PRE>Texture:BlitLTRB(<I><U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>X</U> <I>(number)</I> = The X screen position of the string.<BR><U>Y</U> <I>(number)</I> = The Y screen position of the string.<BR><U>Width</U> <I>(number)</I> = A value between 0-1 specifing the red component intensity.<BR><U>Height</U> <I>(number)</I> = A value between 0-1 specifing the green component intensity.<BR></PRE>
+		<PRE><U>Left</U> <I>(number)</I> = The starting column to draw from.<BR><U>Top</U> <I>(number)</I> = The starting row to draw from.<BR><U>Right</U> <I>(number)</I> = The ending column pixel to draw to.<BR><U>Bottom</U> <I>(number)</I> = The ending row pixel to draw to.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Blits tile 0 of texture 0 at the specified screen co&#x2d;ordinates and with the specified dimensions&#x2e;<BR></PRE>
+		<PRE>Blits tile 0 of texture 0 at the specified bounds&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:BlitLTRB')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Texture:BlitLTRBA">
 		<H3>Texture:BlitLTRBA</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitLTRBA(<I><U>X</U>, <U>Y</U>, <U>Width</U>, <U>Height</U>, <U>Angle</U></I>)</PRE>
+		<PRE>Texture:BlitLTRBA(<I><U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U>, <U>Angle</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>X</U> <I>(number)</I> = The X screen position of the string.<BR><U>Y</U> <I>(number)</I> = The Y screen position of the string.<BR><U>Width</U> <I>(number)</I> = A value between 0-1 specifing the red component intensity.<BR><U>Height</U> <I>(number)</I> = A value between 0-1 specifing the green component intensity.<BR><U>Angle</U> <I>(number)</I> = The angle in which to rotate the texture (1.0=full rotation).<BR></PRE>
+		<PRE><U>Left</U> <I>(number)</I> = The starting column to draw from.<BR><U>Top</U> <I>(number)</I> = The starting row to draw from.<BR><U>Right</U> <I>(number)</I> = The ending column pixel to draw to.<BR><U>Bottom</U> <I>(number)</I> = The ending row pixel to draw to.<BR><U>Angle</U> <I>(number)</I> = The angle in which to rotate from the centre point (-1 to 1).<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Blits tile 0 of texture 0 at the specified screen co&#x2d;ordinates and with the specified dimensions and angle&#x2e; &#x28;FIXME&#x29; The angle isn&#x27;t in any known measurement at the moment&#x2e;<BR></PRE>
+		<PRE>Blits tile 0 of texture 0 at the specified screen bounds and angle from the centre of the quad&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:BlitLTRBA')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Texture:BlitLTWH">
+		<H3>Texture:BlitLTWH</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Texture:BlitLTWH(<I><U>Left</U>, <U>Top</U>, <U>Width</U>, <U>Height</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Left</U> <I>(number)</I> = The starting column to draw from.<BR><U>Top</U> <I>(number)</I> = The starting row to draw from.<BR><U>Width</U> <I>(number)</I> = The width of the quad to draw.<BR><U>Height</U> <I>(number)</I> = The height of the quad to draw<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Blits tile 0 of texture 0 at the specified screen co&#x2d;ordinates and with the specified dimensions&#x2e;<BR></PRE>
+		<H4><A href="#idx:Texture" onclick="r('Texture:BlitLTWH')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Texture:BlitLTWHA">
+		<H3>Texture:BlitLTWHA</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Texture:BlitLTWHA(<I><U>Left</U>, <U>Top</U>, <U>Width</U>, <U>Height</U>, <U>Angle</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Left</U> <I>(number)</I> = The starting column to draw from.<BR><U>Top</U> <I>(number)</I> = The starting row to draw from.<BR><U>Width</U> <I>(number)</I> = The width of the quad to draw.<BR><U>Height</U> <I>(number)</I> = The height of the quad to draw<BR><U>Angle</U> <I>(number)</I> = The angle in which to rotate from the centre point (-1 to 1).<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Blits tile 0 of texture 0 at the specified screen co&#x2d;ordinates and with the specified dimensions at the specified angle from the centre of the quad&#x2e;<BR></PRE>
+		<H4><A href="#idx:Texture" onclick="r('Texture:BlitLTWHA')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Texture:BlitM">
 		<H3>Texture:BlitM</H3>
@@ -8290,6 +8401,84 @@
 		<H4>Synopsis:-</H4>
 		<PRE>Blits multiple textures as one giant texture which is a workaround for texture size limits on OpenGL&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:BlitM')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Texture:BlitP">
+		<H3>Texture:BlitP</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Texture:BlitP()</PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Blits texture 0 and tile 0 with the stored preset vertex &#x28;SetV&#x2a;&#x29; and colour &#x28;SetC&#x2a;&#x29;&#x2e; Using the Blit&#x2a; functions will overwrite this stored preset data&#x2e;<BR></PRE>
+		<H4><A href="#idx:Texture" onclick="r('Texture:BlitP')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Texture:BlitPI">
+		<H3>Texture:BlitPI</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Texture:BlitPI(<I><U>TexIndex</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>TexIndex</U> <I>(integer)</I> = The texture id number<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Blits tile 0 of the specified sub&#x2d;texture with the stored preset vertex &#x28;SetV&#x2a;&#x29; and colour &#x28;SetC&#x2a;&#x29;&#x2e; Note that the Blit&#x2a; functions will overwrite the stored values&#x2e;<BR></PRE>
+		<H4><A href="#idx:Texture" onclick="r('Texture:BlitPI')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Texture:BlitPIS">
+		<H3>Texture:BlitPIS</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Texture:BlitPIS(<I><U>TexIndex</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>TexIndex</U> <I>(integer)</I> = The texture id number<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Blits the specified tile of the specified sub&#x2d;texture with the stored preset vertex &#x28;SetV&#x2a;&#x29; and colour &#x28;SetC&#x2a;&#x29;&#x2e; Note that the Blit&#x2a; functions will overwrite the stored values&#x2e;<BR></PRE>
+		<H4><A href="#idx:Texture" onclick="r('Texture:BlitPIS')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Texture:BlitPS">
+		<H3>Texture:BlitPS</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Texture:BlitPS(<I><U>TileIndex</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>TileIndex</U> <I>(integer)</I> = The tile id number.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Blits texture 0 with the specifed tile with the stored preset vertex &#x28;SetV&#x2a;&#x29; and colour &#x28;SetC&#x2a;&#x29;&#x2e; Note that the Blit&#x2a; functions will overwrite the stored values&#x2e;<BR></PRE>
+		<H4><A href="#idx:Texture" onclick="r('Texture:BlitPS')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Texture:BlitPT">
+		<H3>Texture:BlitPT</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Texture:BlitPT(<I><U>TriIndex</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>TriIndex</U> <I>(integer)</I> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Blits only the specified triangle to the screen with the stored preset vertex &#x28;SetV&#x2a;&#x29; and colour &#x28;SetC&#x2a;&#x29;&#x2e; Note that the Blit&#x2a; functions will overwrite the stored values&#x2e;<BR></PRE>
+		<H4><A href="#idx:Texture" onclick="r('Texture:BlitPT')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Texture:BlitPTI">
+		<H3>Texture:BlitPTI</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Texture:BlitPTI(<I><U>TriIndex</U>, <U>TexIndex</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>TriIndex</U> <I>(integer)</I> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<BR><U>TexIndex</U> <I>(integer)</I> = The texture id number.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Blits triangle &#x27;TId&#x27; of tile 0 of texture &#x27;TexIndex&#x27; with the current stored position&#x2e;<BR></PRE>
+		<H4><A href="#idx:Texture" onclick="r('Texture:BlitPTI')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Texture:BlitPTIS">
+		<H3>Texture:BlitPTIS</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Texture:BlitPTIS(<I><U>TriIndex</U>, <U>TexIndex</U>, <U>TileIndex</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>TriIndex</U> <I>(integer)</I> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<BR><U>TexIndex</U> <I>(integer)</I> = The texture id number.<BR><U>TileIndex</U> <I>(integer)</I> = The tile index of the texture to blit.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Blits triangle &#x27;TId&#x27; of texture id &#x27;TexIndex&#x27; with the specified tile id &#x27;TildIndex&#x27; to the current stored position&#x2e;<BR></PRE>
+		<H4><A href="#idx:Texture" onclick="r('Texture:BlitPTIS')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Texture:BlitPTS">
+		<H3>Texture:BlitPTS</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Texture:BlitPTS(<I><U>TriIndex</U>, <U>TileIndex</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>TriIndex</U> <I>(integer)</I> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<BR><U>TileIndex</U> <I>(integer)</I> = The tile index of the texture to blit.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Blits the specified triangle &#x27;TId&#x27; of the tile &#x27;TileIndex&#x27; of texture 0 with the current stored position&#x2e;<BR></PRE>
+		<H4><A href="#idx:Texture" onclick="r('Texture:BlitPTS')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Texture:BlitS">
 		<H3>Texture:BlitS</H3>
@@ -8304,9 +8493,9 @@
 	<DIV id="Texture:BlitSLT">
 		<H3>Texture:BlitSLT</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitSLT(<I><U>TileIndex</U>, <U>X</U>, <U>Y</U></I>)</PRE>
+		<PRE>Texture:BlitSLT(<I><U>TileIndex</U>, <U>Left</U>, <U>Top</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>TileIndex</U> <I>(integer)</I> = The tile index of the texture to blit.<BR><U>X</U> <I>(number)</I> = The X screen position of the string.<BR><U>Y</U> <I>(number)</I> = The Y screen position of the string.<BR></PRE>
+		<PRE><U>TileIndex</U> <I>(integer)</I> = The tile index of the texture to blit.<BR><U>Left</U> <I>(number)</I> = The starting column to draw from.<BR><U>Top</U> <I>(number)</I> = The starting row to draw from.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Blits tile &#x27;TileIndex&#x27; of texture 0 at the specified screen co&#x2d;ordinates with the internal tile width and height calculated when created&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:BlitSLT')">&#x25B2; Return to table of contents</A></H4>
@@ -8314,9 +8503,9 @@
 	<DIV id="Texture:BlitSLTA">
 		<H3>Texture:BlitSLTA</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitSLTA(<I><U>TileIndex</U>, <U>X</U>, <U>Y</U>, <U>Angle</U></I>)</PRE>
+		<PRE>Texture:BlitSLTA(<I><U>TileIndex</U>, <U>Left</U>, <U>Top</U>, <U>Angle</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>TileIndex</U> <I>(integer)</I> = The tile index of the texture to blit.<BR><U>X</U> <I>(number)</I> = The X screen position of the string.<BR><U>Y</U> <I>(number)</I> = The Y screen position of the string.<BR><U>Angle</U> <I>(number)</I> = The angle of the blit in degrees.<BR></PRE>
+		<PRE><U>TileIndex</U> <I>(integer)</I> = The tile index of the texture to blit.<BR><U>Left</U> <I>(number)</I> = The starting column to draw from.<BR><U>Top</U> <I>(number)</I> = The starting row to draw from.<BR><U>Angle</U> <I>(number)</I> = The angle in which to rotate from the centre point (-1 to 1).<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Blits tile &#x27;TileIndex&#x27; of texture 0 at the specified screen co&#x2d;ordinates with the internal tile width and height calculated when created and with the specified angle&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:BlitSLTA')">&#x25B2; Return to table of contents</A></H4>
@@ -8324,80 +8513,42 @@
 	<DIV id="Texture:BlitSLTRB">
 		<H3>Texture:BlitSLTRB</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitSLTRB(<I><U>TileIndex</U>, <U>X</U>, <U>Y</U>, <U>Width</U>, <U>Height</U></I>)</PRE>
+		<PRE>Texture:BlitSLTRB(<I><U>TileIndex</U>, <U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>TileIndex</U> <I>(integer)</I> = The tile index of the texture to blit.<BR><U>X</U> <I>(number)</I> = The X screen position of the string.<BR><U>Y</U> <I>(number)</I> = The Y screen position of the string.<BR><U>Width</U> <I>(number)</I> = A value between 0-1 specifing the red component intensity.<BR><U>Height</U> <I>(number)</I> = A value between 0-1 specifing the green component intensity.<BR></PRE>
+		<PRE><U>TileIndex</U> <I>(integer)</I> = The tile index of the texture to blit.<BR><U>Left</U> <I>(number)</I> = The starting column to draw from.<BR><U>Top</U> <I>(number)</I> = The starting row to draw from.<BR><U>Right</U> <I>(number)</I> = The ending column pixel to draw to.<BR><U>Bottom</U> <I>(number)</I> = The ending row pixel to draw to.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Blits tile &#x27;TileIndex&#x27; of texture 0 at the specified screen co&#x2d;ordinates and with the specified dimensions&#x2e;<BR></PRE>
+		<PRE>Blits tile &#x27;TileIndex&#x27; of texture 0 at the specified bounds&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:BlitSLTRB')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Texture:BlitSLTRBA">
 		<H3>Texture:BlitSLTRBA</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitSLTRBA(<I><U>TileIndex</U>, <U>X</U>, <U>Y</U>, <U>Width</U>, <U>Height</U>, <U>Angle</U></I>)</PRE>
+		<PRE>Texture:BlitSLTRBA(<I><U>TileIndex</U>, <U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U>, <U>Angle</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>TileIndex</U> <I>(integer)</I> = The tile index of the texture to blit.<BR><U>X</U> <I>(number)</I> = The X screen position of the string.<BR><U>Y</U> <I>(number)</I> = The Y screen position of the string.<BR><U>Width</U> <I>(number)</I> = A value between 0-1 specifing the red component intensity.<BR><U>Height</U> <I>(number)</I> = A value between 0-1 specifing the green component intensity.<BR><U>Angle</U> <I>(number)</I> = The angle of the blit the texture. (1.0=full rotation).<BR></PRE>
+		<PRE><U>TileIndex</U> <I>(integer)</I> = The tile index of the texture to blit.<BR><U>Left</U> <I>(number)</I> = The starting column to draw from.<BR><U>Top</U> <I>(number)</I> = The starting row to draw from.<BR><U>Right</U> <I>(number)</I> = The ending column pixel to draw to.<BR><U>Bottom</U> <I>(number)</I> = The ending row pixel to draw to.<BR><U>Angle</U> <I>(number)</I> = The angle in which to rotate from the centre point (-1 to 1).<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Blits tile &#x27;TileIndex&#x27; of texture 0 at the specified screen co&#x2d;ordinates and with the specified dimensions and angle&#x2e;<BR></PRE>
+		<PRE>Blits tile &#x27;TileIndex&#x27; of texture 0 at the specified screenbounds and angle&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:BlitSLTRBA')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Texture:BlitT">
-		<H3>Texture:BlitT</H3>
+	<DIV id="Texture:BlitSLTWH">
+		<H3>Texture:BlitSLTWH</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitT(<I><U>TriIndex</U></I>)</PRE>
+		<PRE>Texture:BlitSLTWH(<I><U>TileIndex</U>, <U>Left</U>, <U>Top</U>, <U>Width</U>, <U>Height</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>TriIndex</U> <I>(integer)</I> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<BR></PRE>
+		<PRE><U>TileIndex</U> <I>(integer)</I> = The tile index of the texture to blit.<BR><U>Left</U> <I>(number)</I> = The starting column to draw from.<BR><U>Top</U> <I>(number)</I> = The starting row to draw from.<BR><U>Width</U> <I>(number)</I> = The width of the quad to draw.<BR><U>Height</U> <I>(number)</I> = The height of the quad to draw<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Blits the specified triangle of tile 0 of texture 0 with the current stored position&#x2e;<BR></PRE>
-		<H4><A href="#idx:Texture" onclick="r('Texture:BlitT')">&#x25B2; Return to table of contents</A></H4>
+		<PRE>Blits tile &#x27;TileIndex&#x27; of texture 0 at the specified screen co&#x2d;ordinates and with the specified dimensions&#x2e;<BR></PRE>
+		<H4><A href="#idx:Texture" onclick="r('Texture:BlitSLTWH')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Texture:BlitTI">
-		<H3>Texture:BlitTI</H3>
+	<DIV id="Texture:BlitSLTWHA">
+		<H3>Texture:BlitSLTWHA</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitTI(<I><U>TriIndex</U>, <U>TexIndex</U></I>)</PRE>
+		<PRE>Texture:BlitSLTWHA(<I><U>TileIndex</U>, <U>Left</U>, <U>Top</U>, <U>Width</U>, <U>Height</U>, <U>Angle</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>TriIndex</U> <I>(integer)</I> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<BR><U>TexIndex</U> <I>(integer)</I> = The texture id number.<BR></PRE>
+		<PRE><U>TileIndex</U> <I>(integer)</I> = The tile index of the texture to blit.<BR><U>Left</U> <I>(number)</I> = The starting column to draw from.<BR><U>Top</U> <I>(number)</I> = The starting row to draw from.<BR><U>Width</U> <I>(number)</I> = The width of the quad to draw.<BR><U>Height</U> <I>(number)</I> = The height of the quad to draw<BR><U>Angle</U> <I>(number)</I> = The angle in which to rotate from the centre point (-1 to 1).<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Blits triangle &#x27;TId&#x27; of tile 0 of texture &#x27;TexIndex&#x27; with the current stored position&#x2e;<BR></PRE>
-		<H4><A href="#idx:Texture" onclick="r('Texture:BlitTI')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Texture:BlitTIS">
-		<H3>Texture:BlitTIS</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitTIS(<I><U>TriIndex</U>, <U>TexIndex</U>, <U>TileIndex</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>TriIndex</U> <I>(integer)</I> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<BR><U>TexIndex</U> <I>(integer)</I> = The texture id number.<BR><U>TileIndex</U> <I>(integer)</I> = The tile index of the texture to blit.<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Blits triangle &#x27;TId&#x27; of texture id &#x27;TexIndex&#x27; with the specified tile id &#x27;TildIndex&#x27; to the current stored position&#x2e;<BR></PRE>
-		<H4><A href="#idx:Texture" onclick="r('Texture:BlitTIS')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Texture:BlitTS">
-		<H3>Texture:BlitTS</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitTS(<I><U>TriIndex</U>, <U>TileIndex</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>TriIndex</U> <I>(integer)</I> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<BR><U>TileIndex</U> <I>(integer)</I> = The tile index of the texture to blit.<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Blits the specified triangle &#x27;TId&#x27; of the tile &#x27;TileIndex&#x27; of texture 0 with the current stored position&#x2e;<BR></PRE>
-		<H4><A href="#idx:Texture" onclick="r('Texture:BlitTS')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Texture:BlitX">
-		<H3>Texture:BlitX</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitX()</PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Blits with the currently stored texture at position 0 with the stored texcoord &#x28;SetTC&#x2a;&#x29;&#x2c; vertex &#x28;SetV&#x2a;&#x29; and colour &#x28;SetC&#x2a;&#x29;&#x2e; Note that the Blit&#x2a; functions will overwrite the stored values&#x2e;<BR></PRE>
-		<H4><A href="#idx:Texture" onclick="r('Texture:BlitX')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Texture:BlitXI">
-		<H3>Texture:BlitXI</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitXI(<I><U>TexIndex</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>TexIndex</U> <I>(integer)</I> = The texture id number<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Blits with the currently stored texture at position &#x27;TexIndex&#x27; with the stored texcoord &#x28;SetTC&#x2a;&#x29;&#x2c; vertex &#x28;SetV&#x2a;&#x29; and colour &#x28;SetC&#x2a;&#x29;&#x2e;<BR>Note that the Blit&#x2a; functions will overwrite the stored values&#x2e;<BR></PRE>
-		<H4><A href="#idx:Texture" onclick="r('Texture:BlitXI')">&#x25B2; Return to table of contents</A></H4>
+		<PRE>Blits tile &#x27;TileIndex&#x27; of texture 0 at the specified screen co&#x2d;ordinates and with the specified dimensions and angle&#x2e;<BR></PRE>
+		<H4><A href="#idx:Texture" onclick="r('Texture:BlitSLTWHA')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Texture:Destroy">
 		<H3>Texture:Destroy</H3>
@@ -8553,84 +8704,94 @@
 		<PRE>Sets the colour intensity of the texture for each component using a 32 bit integer&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:SetCRGBAI')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Texture:SetLTRB">
-		<H3>Texture:SetLTRB</H3>
+	<DIV id="Texture:SetCX">
+		<H3>Texture:SetCX</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Texture:SetLTRB(<I><U>X</U>, <U>Y</U>, <U>Width</U>, <U>Height</U></I>)</PRE>
+		<PRE>Texture:SetCX(<I><U>TriIndex</U>, <U>V1Red</U>, <U>V1Green</U>, <U>V1Blue</U>, <U>V1Alpha</U>, <U>V2Red</U>, <U>V2Green</U>, <U>V2Blue</U>, <U>V2Alpha</U>, <U>V3Red</U>, <U>V3Green</U>, <U>V3Blue</U>, <U>V3Alpha</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>X</U> <I>(number)</I> = The X screen position of the string.<BR><U>Y</U> <I>(number)</I> = The Y screen position of the string.<BR><U>Width</U> <I>(number)</I> = A value between 0-1 specifing the red component intensity.<BR><U>Height</U> <I>(number)</I> = A value between 0-1 specifing the green component intensity.<BR></PRE>
+		<PRE><U>TriIndex</U> <I>(integer)</I> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<BR><U>V1Red</U> <I>(number)</I> = Red component of vertex #1 of the specified triangle.<BR><U>V1Green</U> <I>(number)</I> = Green component of vertex #1 of the specified triangle.<BR><U>V1Blue</U> <I>(number)</I> = Blue component of vertex #1 of the specified triangle.<BR><U>V1Alpha</U> <I>(number)</I> = Alpha component of vertex #1 of the specified triangle.<BR><U>V2Red</U> <I>(number)</I> = Red component of vertex #2 of the specified triangle.<BR><U>V2Green</U> <I>(number)</I> = Green component of vertex #2 of the specified triangle.<BR><U>V2Blue</U> <I>(number)</I> = Blue component of vertex #2 of the specified triangle.<BR><U>V2Alpha</U> <I>(number)</I> = Alpha component of vertex #2 of the specified triangle.<BR><U>V3Red</U> <I>(number)</I> = Red component of vertex #3 of the specified triangle.<BR><U>V3Green</U> <I>(number)</I> = Green component of vertex #3 of the specified triangle.<BR><U>V3Blue</U> <I>(number)</I> = Blue component of vertex #3 of the specified triangle.<BR><U>V3Alpha</U> <I>(number)</I> = Alpha component of vertex #3 of the specified triangle.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Presets the position for the next blit&#x2e;<BR></PRE>
-		<H4><A href="#idx:Texture" onclick="r('Texture:SetLTRB')">&#x25B2; Return to table of contents</A></H4>
+		<PRE>Presets the specified colour intensities on each vertex for the Texture&#x3a;BlitP&#x2a; function&#x2e;<BR></PRE>
+		<H4><A href="#idx:Texture" onclick="r('Texture:SetCX')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Texture:SetLTRBA">
-		<H3>Texture:SetLTRBA</H3>
+	<DIV id="Texture:SetTCLTRB">
+		<H3>Texture:SetTCLTRB</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Texture:SetLTRBA(<I><U>X</U>, <U>Y</U>, <U>Width</U>, <U>Height</U>, <U>Angle</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>X</U> <I>(number)</I> = The X screen position of the string.<BR><U>Y</U> <I>(number)</I> = The Y screen position of the string.<BR><U>Width</U> <I>(number)</I> = A value between 0-1 specifing the red component intensity.<BR><U>Height</U> <I>(number)</I> = A value between 0-1 specifing the green component intensity.<BR><U>Angle</U> <I>(number)</I> = The angle in which to rotate the texture (1.0=full rotation).<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Presets the position for the next blit with angle&#x2e;<BR></PRE>
-		<H4><A href="#idx:Texture" onclick="r('Texture:SetLTRBA')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Texture:SetTC">
-		<H3>Texture:SetTC</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Texture:SetTC(<I><U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U></I>)</PRE>
+		<PRE>Texture:SetTCLTRB(<I><U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
 		<PRE><U>Left</U> <I>(number)</I> = The left co-ordinate.<BR><U>Top</U> <I>(number)</I> = The top co-ordinate.<BR><U>Right</U> <I>(number)</I> = The right co-ordinate.<BR><U>Bottom</U> <I>(number)</I> = The bottom co-ordinate.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Allows you to set basic texture co&#x2d;ordinates when blitting the fbo&#x2e; For a more advanced version of this function&#x2c; see Fbo&#x3a;SetTexCoordEx&#x28;&#x29;&#x2e;<BR></PRE>
-		<H4><A href="#idx:Texture" onclick="r('Texture:SetTC')">&#x25B2; Return to table of contents</A></H4>
+		<PRE>Preset the specified texture bounds for the Texture&#x3a;BlitP&#x2a; function&#x2e;<BR></PRE>
+		<H4><A href="#idx:Texture" onclick="r('Texture:SetTCLTRB')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Texture:SetV">
-		<H3>Texture:SetV</H3>
+	<DIV id="Texture:SetTCLTWH">
+		<H3>Texture:SetTCLTWH</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Texture:SetV(<I><U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U></I>)</PRE>
+		<PRE>Texture:SetTCLTWH(<I><U>Left</U>, <U>Top</U>, <U>Width</U>, <U>Height</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Left</U> <I>(number)</I> = The left co-ordinate.<BR><U>Top</U> <I>(number)</I> = The top co-ordinate.<BR><U>Right</U> <I>(number)</I> = The right co-ordinate.<BR><U>Bottom</U> <I>(number)</I> = The bottom co-ordinate.<BR></PRE>
+		<PRE><U>Left</U> <I>(number)</I> = The left co-ordinate.<BR><U>Top</U> <I>(number)</I> = The top co-ordinate.<BR><U>Width</U> <I>(number)</I> = The width of the tile.<BR><U>Height</U> <I>(number)</I> = The height of the tile.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Allows you to set basic vertex co&#x2d;ordinates when blitting the fbo&#x2e; For a more advanced version of this function&#x2c; see Fbo&#x3a;SetVX&#x28;&#x29;&#x2e;<BR></PRE>
-		<H4><A href="#idx:Texture" onclick="r('Texture:SetV')">&#x25B2; Return to table of contents</A></H4>
+		<PRE>Preset the specified texture co&#x2d;ordinates and dimensions for the Texture&#x3a;BlitP&#x2a; function&#x2e;<BR></PRE>
+		<H4><A href="#idx:Texture" onclick="r('Texture:SetTCLTWH')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Texture:SetVA">
-		<H3>Texture:SetVA</H3>
+	<DIV id="Texture:SetTCX">
+		<H3>Texture:SetTCX</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Texture:SetVA(<I><U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U>, <U>Angle</U></I>)</PRE>
+		<PRE>Texture:SetTCX(<I><U>TriIndex</U>, <U>TC1Left</U>, <U>TC1Top</U>, <U>TC2Left</U>, <U>TC2Top</U>, <U>TC3Left</U>, <U>TC3Top</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Left</U> <I>(number)</I> = The left co-ordinate.<BR><U>Top</U> <I>(number)</I> = The top co-ordinate.<BR><U>Right</U> <I>(number)</I> = The right co-ordinate.<BR><U>Bottom</U> <I>(number)</I> = The bottom co-ordinate.<BR><U>Angle</U> <I>(number)</I> = The angle of the vertex<BR></PRE>
+		<PRE><U>TriIndex</U> <I>(integer)</I> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<BR><U>TC1Left</U> <I>(number)</I> = GLfloat for X coord of vertex #1 of the specified triangle.<BR><U>TC1Top</U> <I>(number)</I> = GLfloat for Y coord of vertex #2 of the specified triangle.<BR><U>TC2Left</U> <I>(number)</I> = GLfloat for X coord of vertex #3 of the specified triangle.<BR><U>TC2Top</U> <I>(number)</I> = GLfloat for Y coord of vertex #1 of the specified triangle.<BR><U>TC3Left</U> <I>(number)</I> = GLfloat for X coord of vertex #2 of the specified triangle.<BR><U>TC3Top</U> <I>(number)</I> = GLfloat for Y coord of vertex #3 of the specified triangle.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Allows you to set basic vertex co&#x2d;ordinates when blitting the fbo with angle calculations&#x2e;<BR></PRE>
-		<H4><A href="#idx:Texture" onclick="r('Texture:SetVA')">&#x25B2; Return to table of contents</A></H4>
+		<PRE>Presets the specified texture co&#x2d;ordinates on the specified triangle for the Texture&#x3a;BlitP&#x2a; function&#x2e;<BR></PRE>
+		<H4><A href="#idx:Texture" onclick="r('Texture:SetTCX')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Texture:SetVCRGBA">
-		<H3>Texture:SetVCRGBA</H3>
+	<DIV id="Texture:SetVLTRB">
+		<H3>Texture:SetVLTRB</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Texture:SetVCRGBA(<I><U>TriIndex</U>, <U>RV1</U>, <U>GV1</U>, <U>BV1</U>, <U>AV1</U>, <U>RV2</U>, <U>GV2</U>, <U>BV2</U>, <U>AV2</U>, <U>RV3</U>, <U>GV3</U>, <U>BV3</U>, <U>AV3</U></I>)</PRE>
+		<PRE>Texture:SetVLTRB(<I><U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>TriIndex</U> <I>(integer)</I> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<BR><U>RV1</U> <I>(number)</I> = Red component of vertex #1 of the specified triangle.<BR><U>GV1</U> <I>(number)</I> = Green component of vertex #1 of the specified triangle.<BR><U>BV1</U> <I>(number)</I> = Blue component of vertex #1 of the specified triangle.<BR><U>AV1</U> <I>(number)</I> = Alpha component of vertex #1 of the specified triangle.<BR><U>RV2</U> <I>(number)</I> = Red component of vertex #2 of the specified triangle.<BR><U>GV2</U> <I>(number)</I> = Green component of vertex #2 of the specified triangle.<BR><U>BV2</U> <I>(number)</I> = Blue component of vertex #2 of the specified triangle.<BR><U>AV2</U> <I>(number)</I> = Alpha component of vertex #2 of the specified triangle.<BR><U>RV3</U> <I>(number)</I> = Red component of vertex #3 of the specified triangle.<BR><U>GV3</U> <I>(number)</I> = Green component of vertex #3 of the specified triangle.<BR><U>BV3</U> <I>(number)</I> = Blue component of vertex #3 of the specified triangle.<BR><U>AV3</U> <I>(number)</I> = Alpha component of vertex #3 of the specified triangle.<BR></PRE>
+		<PRE><U>Left</U> <I>(number)</I> = The starting column to draw from.<BR><U>Top</U> <I>(number)</I> = The starting row to draw from.<BR><U>Right</U> <I>(number)</I> = The ending column pixel to draw to.<BR><U>Bottom</U> <I>(number)</I> = The ending row pixel to draw to.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Allows you to full control over the colour of the texture&#x2e;<BR></PRE>
-		<H4><A href="#idx:Texture" onclick="r('Texture:SetVCRGBA')">&#x25B2; Return to table of contents</A></H4>
+		<PRE>Presets these screen bounds for the next use of Texture&#x3a;BlitP&#x2a;&#x2e;<BR></PRE>
+		<H4><A href="#idx:Texture" onclick="r('Texture:SetVLTRB')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Texture:SetVTC">
-		<H3>Texture:SetVTC</H3>
+	<DIV id="Texture:SetVLTRBA">
+		<H3>Texture:SetVLTRBA</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Texture:SetVTC(<I><U>TriIndex</U>, <U>C1V1</U>, <U>C2V2</U>, <U>C1V3</U>, <U>C2V1</U>, <U>C1V2</U>, <U>C2V3</U></I>)</PRE>
+		<PRE>Texture:SetVLTRBA(<I><U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U>, <U>Angle</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>TriIndex</U> <I>(integer)</I> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<BR><U>C1V1</U> <I>(number)</I> = GLfloat for coord #1 of vertex #1 of the specified triangle.<BR><U>C2V2</U> <I>(number)</I> = GLfloat for coord #2 of vertex #2 of the specified triangle.<BR><U>C1V3</U> <I>(number)</I> = GLfloat for coord #1 of vertex #3 of the specified triangle.<BR><U>C2V1</U> <I>(number)</I> = GLfloat for coord #2 of vertex #1 of the specified triangle.<BR><U>C1V2</U> <I>(number)</I> = GLfloat for coord #1 of vertex #2 of the specified triangle.<BR><U>C2V3</U> <I>(number)</I> = GLfloat for coord #2 of vertex #3 of the specified triangle.<BR></PRE>
+		<PRE><U>Left</U> <I>(number)</I> = The starting column to draw from.<BR><U>Top</U> <I>(number)</I> = The starting row to draw from.<BR><U>Right</U> <I>(number)</I> = The ending column pixel to draw to.<BR><U>Bottom</U> <I>(number)</I> = The ending row pixel to draw to.<BR><U>Angle</U> <I>(number)</I> = The angle in which to rotate from the centre point (-1 to 1).<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Allows you to full control over the texture co&#x2d;ordinates&#x2e;<BR></PRE>
-		<H4><A href="#idx:Texture" onclick="r('Texture:SetVTC')">&#x25B2; Return to table of contents</A></H4>
+		<PRE>Presets the specified screen bounds and angle for the next use of Texture&#x3a;BlitP&#x2a;&#x2e;<BR></PRE>
+		<H4><A href="#idx:Texture" onclick="r('Texture:SetVLTRBA')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Texture:SetVLTWH">
+		<H3>Texture:SetVLTWH</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Texture:SetVLTWH(<I><U>Left</U>, <U>Top</U>, <U>Width</U>, <U>Height</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Left</U> <I>(number)</I> = The starting column to draw from.<BR><U>Top</U> <I>(number)</I> = The starting row to draw from.<BR><U>Width</U> <I>(number)</I> = The width of the quad to draw.<BR><U>Height</U> <I>(number)</I> = The height of the quad to draw<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Presets the specified screen co&#x2d;ordinates and dimensions for the next use of Texture&#x3a;BlitP&#x2a;&#x2e;<BR></PRE>
+		<H4><A href="#idx:Texture" onclick="r('Texture:SetVLTWH')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Texture:SetVLTWHA">
+		<H3>Texture:SetVLTWHA</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Texture:SetVLTWHA(<I><U>Left</U>, <U>Top</U>, <U>Width</U>, <U>Height</U>, <U>Angle</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Left</U> <I>(number)</I> = The starting column to draw from.<BR><U>Top</U> <I>(number)</I> = The starting row to draw from.<BR><U>Width</U> <I>(number)</I> = The width of the quad to draw.<BR><U>Height</U> <I>(number)</I> = The height of the quad to draw<BR><U>Angle</U> <I>(number)</I> = The angle in which to rotate from the centre point (-1 to 1).<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Presets the specified screen co&#x2d;ordinates and dimensions with angle for the next use of Texture&#x3a;BlitP&#x2a;&#x2e;<BR></PRE>
+		<H4><A href="#idx:Texture" onclick="r('Texture:SetVLTWHA')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Texture:SetVX">
 		<H3>Texture:SetVX</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Texture:SetVX(<I><U>TriIndex</U>, <U>C1V1</U>, <U>C2V2</U>, <U>C1V3</U>, <U>C2V1</U>, <U>C1V2</U>, <U>C2V3</U></I>)</PRE>
+		<PRE>Texture:SetVX(<I><U>TriIndex</U>, <U>V1Left</U>, <U>V1Top</U>, <U>V2Left</U>, <U>V2Top</U>, <U>V3Left</U>, <U>V3Top</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>TriIndex</U> <I>(integer)</I> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<BR><U>C1V1</U> <I>(number)</I> = GLfloat for coord #1 of vertex #1 of the specified triangle.<BR><U>C2V2</U> <I>(number)</I> = GLfloat for coord #2 of vertex #2 of the specified triangle.<BR><U>C1V3</U> <I>(number)</I> = GLfloat for coord #1 of vertex #3 of the specified triangle.<BR><U>C2V1</U> <I>(number)</I> = GLfloat for coord #2 of vertex #1 of the specified triangle.<BR><U>C1V2</U> <I>(number)</I> = GLfloat for coord #1 of vertex #2 of the specified triangle.<BR><U>C2V3</U> <I>(number)</I> = GLfloat for coord #2 of vertex #3 of the specified triangle.<BR></PRE>
+		<PRE><U>TriIndex</U> <I>(integer)</I> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<BR><U>V1Left</U> <I>(number)</I> = GLfloat for X coord of vertex #1 of the specified triangle.<BR><U>V1Top</U> <I>(number)</I> = GLfloat for Y coord of vertex #1 of the specified triangle.<BR><U>V2Left</U> <I>(number)</I> = GLfloat for X coord of vertex #2 of the specified triangle.<BR><U>V2Top</U> <I>(number)</I> = GLfloat for Y coord of vertex #2 of the specified triangle.<BR><U>V3Left</U> <I>(number)</I> = GLfloat for X coord of vertex #3 of the specified triangle.<BR><U>V3Top</U> <I>(number)</I> = GLfloat for Y coord of vertex #3 of the specified triangle.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Allows you to full control over the vertex co&#x2d;ordinates apart from the Z co&#x2d;ordinate which is not used in this 2D only engine&#x2e;<BR></PRE>
+		<PRE>Presets the specified co&#x2d;ordinates on each vertex for the specified triangle for the Texture&#x3a;BlitP&#x2a; function&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:SetVX')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Texture:TileA">
@@ -8638,9 +8799,9 @@
 		<H4>Syntax:-</H4>
 		<PRE><U>Id</U> = Texture:TileA(<I><U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Left</U> <I>(integer)</I> = The left pixel position on the texture<BR><U>Top</U> <I>(integer)</I> = The top pixel position on the texture<BR><U>Right</U> <I>(integer)</I> = The right pixel position on the texture<BR><U>Bottom</U> <I>(integer)</I> = The bottom pixel position on the texture<BR></PRE>
+		<PRE><U>Left</U> <I>(integer)</I> = The left pixel position on the texture..<BR><U>Top</U> <I>(integer)</I> = The top pixel position on the texture..<BR><U>Right</U> <I>(integer)</I> = The right pixel position on the texture.<BR><U>Bottom</U> <I>(integer)</I> = The bottom pixel position on the texture.<BR></PRE>
 		<H4>Return Parameters:-</H4>
-		<PRE><U>Id</U> <I>(integer)</I> = The id number for the cached texcoords<BR></PRE>
+		<PRE><U>Id</U> <I>(integer)</I> = The id number for the cached texcoords..<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Caches the specified texture coordinates which you can use as a parameter to &#x27;tileid&#x27; on blitting functions&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:TileA')">&#x25B2; Return to table of contents</A></H4>
@@ -8650,9 +8811,9 @@
 		<H4>Syntax:-</H4>
 		<PRE><U>Id</U> = Texture:TileAD(<I><U>Left</U>, <U>Top</U>, <U>Width</U>, <U>Height</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Left</U> <I>(integer)</I> = The left pixel position on the texture<BR><U>Top</U> <I>(integer)</I> = The top pixel position on the texture<BR><U>Width</U> <I>(integer)</I> = The width of the texture<BR><U>Height</U> <I>(integer)</I> = The height of the texture<BR></PRE>
+		<PRE><U>Left</U> <I>(integer)</I> = The left pixel position on the texture.<BR><U>Top</U> <I>(integer)</I> = The top pixel position on the texture.<BR><U>Width</U> <I>(integer)</I> = The width of the texture.<BR><U>Height</U> <I>(integer)</I> = The height of the texture.<BR></PRE>
 		<H4>Return Parameters:-</H4>
-		<PRE><U>Id</U> <I>(integer)</I> = The id number for the cached texcoords<BR></PRE>
+		<PRE><U>Id</U> <I>(integer)</I> = The id number for the cached texcoords.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Caches the specified texture coordinates which you can use as a parameter to &#x27;tileid&#x27; on blitting functions&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:TileAD')">&#x25B2; Return to table of contents</A></H4>
@@ -8662,9 +8823,9 @@
 		<H4>Syntax:-</H4>
 		<PRE><U>Id</U> = Texture:TileAS(<I><U>Id</U>, <U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Id</U> <I>(integer)</I> = The id of the sub-texture to add to<BR><U>Left</U> <I>(integer)</I> = The left pixel position on the texture<BR><U>Top</U> <I>(integer)</I> = The top pixel position on the texture<BR><U>Right</U> <I>(integer)</I> = The right pixel position on the texture<BR><U>Bottom</U> <I>(integer)</I> = The bottom pixel position on the texture<BR></PRE>
+		<PRE><U>Id</U> <I>(integer)</I> = The id of the sub-texture to add to<BR><U>Left</U> <I>(integer)</I> = The left pixel position on the texture.<BR><U>Top</U> <I>(integer)</I> = The top pixel position on the texture.<BR><U>Right</U> <I>(integer)</I> = The right pixel position on the texture<BR><U>Bottom</U> <I>(integer)</I> = The bottom pixel position on the texture<BR></PRE>
 		<H4>Return Parameters:-</H4>
-		<PRE><U>Id</U> <I>(integer)</I> = The id number for the cached texcoords<BR></PRE>
+		<PRE><U>Id</U> <I>(integer)</I> = The id number for the cached texcoords.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Caches the specified texture coordinates which you can use as a parameter to &#x27;tileid&#x27; on blitting functions of the specified sub&#x2d;texture&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:TileAS')">&#x25B2; Return to table of contents</A></H4>
@@ -8674,9 +8835,9 @@
 		<H4>Syntax:-</H4>
 		<PRE><U>Id</U> = Texture:TileASD(<I><U>Id</U>, <U>Left</U>, <U>Top</U>, <U>Width</U>, <U>Height</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Id</U> <I>(integer)</I> = The id of the sub-texture to add to<BR><U>Left</U> <I>(integer)</I> = The left pixel position on the texture<BR><U>Top</U> <I>(integer)</I> = The top pixel position on the texture<BR><U>Width</U> <I>(integer)</I> = The width of the texture<BR><U>Height</U> <I>(integer)</I> = The height of the texture<BR></PRE>
+		<PRE><U>Id</U> <I>(integer)</I> = The id of the sub-texture to add to.<BR><U>Left</U> <I>(integer)</I> = The left pixel position on the texture..<BR><U>Top</U> <I>(integer)</I> = The top pixel position on the texture..<BR><U>Width</U> <I>(integer)</I> = The width of the texture..<BR><U>Height</U> <I>(integer)</I> = The height of the texture..<BR></PRE>
 		<H4>Return Parameters:-</H4>
-		<PRE><U>Id</U> <I>(integer)</I> = The id number for the cached texcoords<BR></PRE>
+		<PRE><U>Id</U> <I>(integer)</I> = The id number for the cached texcoords..<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Caches the specified texture coordinates which you can use as a parameter to &#x27;tileid&#x27; on blitting functions of the specified sub&#x2d;texture&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:TileASD')">&#x25B2; Return to table of contents</A></H4>
@@ -8708,7 +8869,7 @@
 		<H4>Syntax:-</H4>
 		<PRE>Texture:TileS(<I><U>Id</U>, <U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Id</U> <I>(integer)</I> = The id of the tile to change<BR><U>Left</U> <I>(integer)</I> = The left pixel position on the texture<BR><U>Top</U> <I>(integer)</I> = The top pixel position on the texture<BR><U>Right</U> <I>(integer)</I> = The right pixel position on the texture<BR><U>Bottom</U> <I>(integer)</I> = The bottom pixel position on the texture<BR></PRE>
+		<PRE><U>Id</U> <I>(integer)</I> = The id of the tile to change<BR><U>Left</U> <I>(integer)</I> = The left pixel position on the texture.<BR><U>Top</U> <I>(integer)</I> = The top pixel position on the texture.<BR><U>Right</U> <I>(integer)</I> = The right pixel position on the texture<BR><U>Bottom</U> <I>(integer)</I> = The bottom pixel position on the texture<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Changes the specified texture coordinates which you can use as a parameter to &#x27;tileid&#x27; on blitting functions&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:TileS')">&#x25B2; Return to table of contents</A></H4>
@@ -8718,7 +8879,7 @@
 		<H4>Syntax:-</H4>
 		<PRE>Texture:TileSD(<I><U>Id</U>, <U>Left</U>, <U>Top</U>, <U>Width</U>, <U>Height</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Id</U> <I>(integer)</I> = The id of the tile to change<BR><U>Left</U> <I>(integer)</I> = The left pixel position on the texture<BR><U>Top</U> <I>(integer)</I> = The top pixel position on the texture<BR><U>Width</U> <I>(integer)</I> = The width of the texture<BR><U>Height</U> <I>(integer)</I> = The height of the texture<BR></PRE>
+		<PRE><U>Id</U> <I>(integer)</I> = The id of the tile to change<BR><U>Left</U> <I>(integer)</I> = The left pixel position on the texture.<BR><U>Top</U> <I>(integer)</I> = The top pixel position on the texture.<BR><U>Width</U> <I>(integer)</I> = The width of the texture.<BR><U>Height</U> <I>(integer)</I> = The height of the texture.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Changes the specified texture coordinates which you can use as a parameter to &#x27;tileid&#x27; on blitting functions&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:TileSD')">&#x25B2; Return to table of contents</A></H4>
@@ -8728,7 +8889,7 @@
 		<H4>Syntax:-</H4>
 		<PRE>Texture:TileSS(<I><U>TexId</U>, <U>TileId</U>, <U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>TexId</U> <I>(integer)</I> = The id of the sub texture to change<BR><U>TileId</U> <I>(integer)</I> = The id of the tile id to change<BR><U>Left</U> <I>(integer)</I> = The left pixel position on the texture<BR><U>Top</U> <I>(integer)</I> = The top pixel position on the texture<BR><U>Right</U> <I>(integer)</I> = The right pixel position on the texture<BR><U>Bottom</U> <I>(integer)</I> = The bottom pixel position on the texture<BR></PRE>
+		<PRE><U>TexId</U> <I>(integer)</I> = The id of the sub texture to change.<BR><U>TileId</U> <I>(integer)</I> = The id of the tile id to change.<BR><U>Left</U> <I>(integer)</I> = The left pixel position on the texture.<BR><U>Top</U> <I>(integer)</I> = The top pixel position on the texture.<BR><U>Right</U> <I>(integer)</I> = The right pixel position on the texture<BR><U>Bottom</U> <I>(integer)</I> = The bottom pixel position on the texture<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Changes the specified texture coordinates which you can use as a parameter to &#x27;tileid&#x27; on blitting functions&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:TileSS')">&#x25B2; Return to table of contents</A></H4>
@@ -8738,7 +8899,7 @@
 		<H4>Syntax:-</H4>
 		<PRE>Texture:TileSSD(<I><U>TexId</U>, <U>TileId</U>, <U>Left</U>, <U>Top</U>, <U>Width</U>, <U>Height</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>TexId</U> <I>(integer)</I> = The id of the sub texture to change<BR><U>TileId</U> <I>(integer)</I> = The id of the tile id to change<BR><U>Left</U> <I>(integer)</I> = The left pixel position on the texture<BR><U>Top</U> <I>(integer)</I> = The top pixel position on the texture<BR><U>Width</U> <I>(integer)</I> = The width of the texture<BR><U>Height</U> <I>(integer)</I> = The height of the texture<BR></PRE>
+		<PRE><U>TexId</U> <I>(integer)</I> = The id of the sub texture to change.<BR><U>TileId</U> <I>(integer)</I> = The id of the tile id to change.<BR><U>Left</U> <I>(integer)</I> = The left pixel position on the texture.<BR><U>Top</U> <I>(integer)</I> = The top pixel position on the texture.<BR><U>Width</U> <I>(integer)</I> = The width of the texture.<BR><U>Height</U> <I>(integer)</I> = The height of the texture.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Changes the specified texture coordinates which you can use as a parameter to &#x27;tileid&#x27; on blitting functions&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:TileSSD')">&#x25B2; Return to table of contents</A></H4>
@@ -9823,15 +9984,15 @@
 		<PRE>Rewinds the specified video back to the beginning&#x2e;<BR></PRE>
 		<H4><A href="#idx:Video" onclick="r('Video:Rewind')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Video:SetColour">
-		<H3>Video:SetColour</H3>
+	<DIV id="Video:SetCRGBA">
+		<H3>Video:SetCRGBA</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Video:SetColour(<I><U>Red</U>, <U>Green</U>, <U>Blue</U>, <U>Alpha</U></I>)</PRE>
+		<PRE>Video:SetCRGBA(<I><U>Red</U>, <U>Green</U>, <U>Blue</U>, <U>Alpha</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
 		<PRE><U>Red</U> <I>(number)</I> = The entire fbo texture red colour intensity (0 to 1).<BR><U>Green</U> <I>(number)</I> = The entire fbo texture green colour intensity (0 to 1).<BR><U>Blue</U> <I>(number)</I> = The entire fbo texture blue colour intensity (0 to 1).<BR><U>Alpha</U> <I>(number)</I> = The entire fbo texture alpha colour intensity (0 to 1).<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Sets the colour intensity of all the vertexes for the entire video frame texture&#x2e;<BR></PRE>
-		<H4><A href="#idx:Video" onclick="r('Video:SetColour')">&#x25B2; Return to table of contents</A></H4>
+		<H4><A href="#idx:Video" onclick="r('Video:SetCRGBA')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Video:SetFilter">
 		<H3>Video:SetFilter</H3>
@@ -9860,7 +10021,7 @@
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Keyed</U> <I>(boolean)</I> = Video should be keyed with the set colour<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Enabling this allowed the video to be chroma keyed&#x2e; This also disables changing the colour intensity because the specified colour using SetColour will set the colour to be keyed&#x2e; If the pixel is greater or equal then the specified colour then the pixel is set to the specified alpha&#x2e;<BR></PRE>
+		<PRE>Enabling this allowed the video to be chroma keyed&#x2e; This also disables changing the colour intensity because the specified colour using SetCRGBA will set the colour to be keyed&#x2e; If the pixel is greater or equal then the specified colour then the pixel is set to the specified alpha&#x2e;<BR></PRE>
 		<H4><A href="#idx:Video" onclick="r('Video:SetKeyed')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Video:SetLoop">
@@ -9873,35 +10034,65 @@
 		<PRE>Sets the new playback loop count&#x2e;<BR></PRE>
 		<H4><A href="#idx:Video" onclick="r('Video:SetLoop')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Video:SetTexCoord">
-		<H3>Video:SetTexCoord</H3>
+	<DIV id="Video:SetTCLTRB">
+		<H3>Video:SetTCLTRB</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Video:SetTexCoord(<I><U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U></I>)</PRE>
+		<PRE>Video:SetTCLTRB(<I><U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
 		<PRE><U>Left</U> <I>(number)</I> = The left co-ordinate.<BR><U>Top</U> <I>(number)</I> = The top co-ordinate.<BR><U>Right</U> <I>(number)</I> = The right co-ordinate.<BR><U>Bottom</U> <I>(number)</I> = The bottom co-ordinate.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Allows you to set basic texture co&#x2d;ordinates when blitting the video frame texture&#x2e; For an advanced version of this function&#x2c; see Video&#x3a;SetTexCoordEx&#x28;&#x29;&#x2e;<BR></PRE>
-		<H4><A href="#idx:Video" onclick="r('Video:SetTexCoord')">&#x25B2; Return to table of contents</A></H4>
+		<PRE>Allows you to set basic texture co&#x2d;ordinates when blitting the video frame texture&#x2e;<BR></PRE>
+		<H4><A href="#idx:Video" onclick="r('Video:SetTCLTRB')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Video:SetVertex">
-		<H3>Video:SetVertex</H3>
+	<DIV id="Video:SetTCLTWH">
+		<H3>Video:SetTCLTWH</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Video:SetVertex(<I><U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U></I>)</PRE>
+		<PRE>Video:SetTCLTWH(<I><U>Left</U>, <U>Top</U>, <U>Width</U>, <U>Height</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Left</U> <I>(number)</I> = The left co-ordinate.<BR><U>Top</U> <I>(number)</I> = The top co-ordinate.<BR><U>Right</U> <I>(number)</I> = The right co-ordinate.<BR><U>Bottom</U> <I>(number)</I> = The bottom co-ordinate.<BR></PRE>
+		<PRE><U>Left</U> <I>(number)</I> = The left co-ordinate.<BR><U>Top</U> <I>(number)</I> = The top co-ordinate.<BR><U>Width</U> <I>(number)</I> = The width of the tile.<BR><U>Height</U> <I>(number)</I> = The height of the tile.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Allows you to set basic vertex co&#x2d;ordinates when blitting the fbo&#x2e; For a more advanced version of this function&#x2c; see Fbo&#x3a;SetVertexEx&#x28;&#x29;&#x2e;<BR></PRE>
-		<H4><A href="#idx:Video" onclick="r('Video:SetVertex')">&#x25B2; Return to table of contents</A></H4>
+		<PRE>Allows you to set basic texture co&#x2d;ordinates when blitting the video frame texture&#x2e;<BR></PRE>
+		<H4><A href="#idx:Video" onclick="r('Video:SetTCLTWH')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Video:SetVertexA">
-		<H3>Video:SetVertexA</H3>
+	<DIV id="Video:SetVLTRB">
+		<H3>Video:SetVLTRB</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Video:SetVertexA(<I><U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U>, <U>Angle</U></I>)</PRE>
+		<PRE>Video:SetVLTRB(<I><U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Left</U> <I>(number)</I> = The left co-ordinate.<BR><U>Top</U> <I>(number)</I> = The top co-ordinate.<BR><U>Right</U> <I>(number)</I> = The right co-ordinate.<BR><U>Bottom</U> <I>(number)</I> = The bottom co-ordinate.<BR><U>Angle</U> <I>(number)</I> = The angle of the vertex<BR></PRE>
+		<PRE><U>Left</U> <I>(number)</I> = The destination left co-ordinate.<BR><U>Top</U> <I>(number)</I> = The destination top co-ordinate.<BR><U>Right</U> <I>(number)</I> = The destination right co-ordinate.<BR><U>Bottom</U> <I>(number)</I> = The destination bottom co-ordinate.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Allows you to set basic vertex co&#x2d;ordinates when blitting the fbo&#x2e;<BR></PRE>
-		<H4><A href="#idx:Video" onclick="r('Video:SetVertexA')">&#x25B2; Return to table of contents</A></H4>
+		<PRE>Allows you to set basic vertex bounds when blitting the frame buffer object&#x2e;<BR></PRE>
+		<H4><A href="#idx:Video" onclick="r('Video:SetVLTRB')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Video:SetVLTRBA">
+		<H3>Video:SetVLTRBA</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Video:SetVLTRBA(<I><U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U>, <U>Angle</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Left</U> <I>(number)</I> = The destination left co-ordinate.<BR><U>Top</U> <I>(number)</I> = The destination top co-ordinate.<BR><U>Right</U> <I>(number)</I> = The destination right co-ordinate.<BR><U>Bottom</U> <I>(number)</I> = The destination bottom co-ordinate.<BR><U>Angle</U> <I>(number)</I> = The angle of the vertex<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Allows you to set basic vertex co&#x2d;ordinates when blitting the video&#x27;s frame buffer object&#x2e;<BR></PRE>
+		<H4><A href="#idx:Video" onclick="r('Video:SetVLTRBA')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Video:SetVLTWH">
+		<H3>Video:SetVLTWH</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Video:SetVLTWH(<I><U>Left</U>, <U>Top</U>, <U>Width</U>, <U>Height</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Left</U> <I>(number)</I> = The destination left co-ordinate.<BR><U>Top</U> <I>(number)</I> = The destination top co-ordinate.<BR><U>Width</U> <I>(number)</I> = The destination width.<BR><U>Height</U> <I>(number)</I> = The destination height.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Allows you to set basic vertex co&#x2d;ordinates and dimensions when blitting the videos frame buffer object&#x2e;<BR></PRE>
+		<H4><A href="#idx:Video" onclick="r('Video:SetVLTWH')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Video:SetVLTWHA">
+		<H3>Video:SetVLTWHA</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Video:SetVLTWHA(<I><U>Left</U>, <U>Top</U>, <U>Width</U>, <U>Height</U>, <U>Angle</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Left</U> <I>(number)</I> = The destination left co-ordinate.<BR><U>Top</U> <I>(number)</I> = The destination top co-ordinate.<BR><U>Width</U> <I>(number)</I> = The destination width.<BR><U>Height</U> <I>(number)</I> = The destination height.<BR><U>Angle</U> <I>(number)</I> = The angle of the vertex<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Allows you to set basic vertex co&#x2d;ordinates&#x2c; dimensions and angle when blitting the video&#x27;s frame buffer object&#x2e;<BR></PRE>
+		<H4><A href="#idx:Video" onclick="r('Video:SetVLTWHA')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Video:SetVolume">
 		<H3>Video:SetVolume</H3>
@@ -10651,11 +10842,6 @@
 		<PRE>Performs &#x27;pragma temp_store&#x27; when the database is opened to this value&#x2e;<BR></PRE>
 		<H4><A href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="cv.vid_alpha">
-		<H3>vid_alpha</H3>
-		<PRE>Specifies that the main frame buffer has alpha &#x28;GL_RGBA&#x29; which is needed for transparent windows&#x2e; Default is 0 to use GL_RGB&#x2e;<BR></PRE>
-		<H4><A href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
 	<DIV id="cv.vid_api">
 		<H3>vid_api</H3>
 		<PRE>Specifies the API to use&#x2e; This is only used for troubleshooting purposes only and serves no other purpose&#x2e; Select 0 &#x28;default&#x29; for GLFW_OPENGL_API&#x2c; 1 for GLFW_OPENGL_ES_API or 2 for GLFW_NO_API&#x2e;<BR></PRE>
@@ -10664,11 +10850,6 @@
 	<DIV id="cv.vid_auxbuffers">
 		<H3>vid_auxbuffers</H3>
 		<PRE>Specified the number of auxiliary swap chain buffers to use&#x2e; Specify 0 for double&#x2d;buffering&#x2c; 1 for triple&#x2d;buffering or &#x2d;1 to let the OpenGL driver decide&#x2e;<BR></PRE>
-		<H4><A href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="cv.vid_bpp">
-		<H3>vid_bpp</H3>
-		<PRE>Set default framebuffer bits&#x2d;per&#x2d;pixel&#x2e; On Windows&#x2c; the driver can decide properly what depth to use&#x2c; but on others we force the bit depth to 10&#x2d;bit to resolve colour banding issues but you can override that if you like&#x2e;<BR></PRE>
 		<H4><A href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="cv.vid_clear">
@@ -10681,9 +10862,14 @@
 		<PRE>Specifies the 32&#x2d;bit integer &#x28;0xAARRGGBB&#x29; as the default clear value&#x2e;<BR></PRE>
 		<H4><A href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="cv.vid_context">
-		<H3>vid_context</H3>
-		<PRE>Specifies the context version to use&#x2e; This is only used for troubleshooting purposes only and serves no other purpose&#x2e; The default is 3&#x2e;2 for OpenGL Core Profile&#x2e;<BR></PRE>
+	<DIV id="cv.vid_ctxmajor">
+		<H3>vid_ctxmajor</H3>
+		<PRE>Specifies the major context version to use&#x2e; This is only used for troubleshooting purposes only and serves no other purpose&#x2e; The default is 3 with a core profile&#x2e;<BR></PRE>
+		<H4><A href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="cv.vid_ctxminor">
+		<H3>vid_ctxminor</H3>
+		<PRE>Specifies the minor context version to use&#x2e; This is only used for troubleshooting purposes only and serves no other purpose&#x2e; The default is 2 with a core profile&#x2e;<BR></PRE>
 		<H4><A href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="cv.vid_dblbuff">
@@ -10694,6 +10880,26 @@
 	<DIV id="cv.vid_debug">
 		<H3>vid_debug</H3>
 		<PRE>Sets &#x27;GLFW_OPENGL_DEBUG_CONTEXT&#x27;&#x2e; Default is 0 &#x28;disabled&#x29;&#x2e;<BR></PRE>
+		<H4><A href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="cv.vid_fbalpha">
+		<H3>vid_fbalpha</H3>
+		<PRE>Override alpha component bit&#x2d;depth&#x2e; Default is &#x2d;1 for GLFW_DONT_CARE&#x2e;<BR>Mainly for troubleshooting or expert purposes&#x2e; This value is also saved to the configuration database if changed&#x2e;<BR></PRE>
+		<H4><A href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="cv.vid_fbblue">
+		<H3>vid_fbblue</H3>
+		<PRE>Override red component bit&#x2d;depth&#x2e; Default is &#x2d;1 for GLFW_DONT_CARE or 10 on MacOS to prevent gradient banding issues&#x2e; Mainly for troubleshooting or expert purposes&#x2e; This value is also saved to the configuration database if changed&#x2e;<BR></PRE>
+		<H4><A href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="cv.vid_fbgreen">
+		<H3>vid_fbgreen</H3>
+		<PRE>Override red component bit&#x2d;depth&#x2e; Default is &#x2d;1 for GLFW_DONT_CARE or 10 on MacOS to prevent gradient banding issues&#x2e; Mainly for troubleshooting or expert purposes&#x2e; This value is also saved to the configuration database if changed&#x2e;<BR></PRE>
+		<H4><A href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="cv.vid_fbred">
+		<H3>vid_fbred</H3>
+		<PRE>Override red component bit&#x2d;depth&#x2e; Default is &#x2d;1 for GLFW_DONT_CARE or 10 on MacOS to prevent gradient banding issues&#x2e; Mainly for troubleshooting or expert purposes&#x2e; This value is also saved to the configuration database if changed&#x2e;<BR></PRE>
 		<H4><A href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="cv.vid_forward">
@@ -10861,6 +11067,11 @@
 		<PRE>Enables vertical synchronisation which helps smooth the frame rate&#x2e; Set to 0 if you don&#x27;t care about the longevity of your GPU and make it draw as fast as possible&#x2c; or 1 to keep it synchronised to your monitors vertical refresh rate&#x2e; You can also use &#x2d;1 to use adaptive sync&#x2c; and 2 to half the refresh rate if you like&#x2e;<BR></PRE>
 		<H4><A href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
+	<DIV id="cv.win_alpha">
+		<H3>win_alpha</H3>
+		<PRE>Specifies that the window has alpha which is needed for transparent windows&#x2e; Default is 0 for no&#x2e;<BR></PRE>
+		<H4><A href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
 	<DIV id="cv.win_aspect">
 		<H3>win_aspect</H3>
 		<PRE>Force the window to have an aspect ratio&#x2e; Specify as a floating point number&#x2e; i&#x2e;e&#x2e; 16&#x2e;9 for 16&#x3a;9 or 4&#x2e;3 for 4&#x3a;3&#x2c; etc&#x2e; or 0 for numeric and&#x2f;or denominator for freedom for the end user to resize at will&#x2e;<BR></PRE>
@@ -10946,6 +11157,6 @@
 		<PRE>Sets the minimum width of the window&#x2e; This is only changable at the application configuration file and is not saved to persistence database&#x2e;<BR></PRE>
 		<H4><A href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<ADDRESS>Copyright &copy; 2024 MS-Design, All Rights Reserved.<BR>This document was created at Mon Mar 04 17:40:14 2024 +0000</ADDRESS>
+	<ADDRESS>Copyright &copy; 2024 MS-Design, All Rights Reserved.<BR>This document was created at Thu Mar 07 00:25:50 2024 +0000</ADDRESS>
 </BODY>
 </HTML>

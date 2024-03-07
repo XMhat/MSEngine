@@ -82,7 +82,7 @@ static class Timer final               // Members initially private
   void TimerSuspend(void) { TimerSuspend(1); }
   /* -- Thread suspense by requested duration ------------------------------ */
   void TimerSuspendRequested(void) { TimerSuspend(cdDelay); }
-  /* -- Force wait if delay is disabled (cFboMain->Render()) --------------- */
+  /* -- Force wait if delay is disabled (cFboCore->Render()) --------------- */
   void TimerForceWait(void)
     { if(cdDelay == seconds(0)) bWait = true; }
   /* -- Calculate time elapsed since c++  ---------------------------------- */

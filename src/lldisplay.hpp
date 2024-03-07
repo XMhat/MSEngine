@@ -17,7 +17,7 @@
 namespace LLDisplay {                  // Display namespace
 /* -- Dependencies --------------------------------------------------------- */
 using namespace IDisplay::P;           using namespace IEvtMain::P;
-using namespace IFboMain::P;           using namespace IGlFW::P;
+using namespace IFboCore::P;           using namespace IGlFW::P;
 using namespace IGlFWMonitor::P;       using namespace IInput::P;
 using namespace ILua::P;               using namespace IOgl::P;
 using namespace ITimer::P;             using namespace Lib::OS::GlFW;
@@ -170,7 +170,7 @@ LLFUNC(SetFullScreen, cDisplay->RequestFSToggle(LCGETBOOL(1, "State")));
 // ? aspect ratio to allow the automatic aspect ratio feature to work properly
 // ? for widescreen window sizes.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetMatrix, cFboMain->AutoMatrix(
+LLFUNC(SetMatrix, cFboCore->AutoMatrix(
   LCGETNUMLG(GLfloat, 1, 1, 16384, "Width"),
   LCGETNUMLG(GLfloat, 2, 1, 16384, "Height"), false));
 /* ========================================================================= */
@@ -266,7 +266,7 @@ LLFUNCENDEX(7)
 // < FPS:number=Frames per second.
 // ? Get GPU frames rendered in the second. Should be 60 for most people.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GPUFPS, 1, LCPUSHVAR(cFboMain->dRTFPS));
+LLFUNCEX(GPUFPS, 1, LCPUSHVAR(cFboCore->dRTFPS));
 /* ========================================================================= */
 // $ Display.SetInterval
 // > Ticks:integer=Number of ticks per second (min:1,max:200).

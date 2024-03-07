@@ -12,7 +12,12 @@ namespace IFbo {                       // Start of private module namespace
 namespace P {                          // Start of public module namespace
 /* == Fbo item class ======================================================= */
 class FboItem
-{ /* -- Typedefs for types we need --------------------------------- */ public:
+{ /* ----------------------------------------------------------------------- */
+  constexpr static const size_t
+    stUInt8Bits  = sizeof(uint8_t) * 8,
+    stUInt16Bits = sizeof(uint16_t) * 8,
+    stUInt24Bits = stUInt8Bits + stUInt16Bits;
+  /* -- Typedefs for types we need --------------------------------- */ public:
   typedef array<GLfloat, stFloatsPerCoord> TriCoordData; // Triangle TexCoords
   typedef array<TriCoordData, stTrisPerQuad> QuadCoordData; // Quad tex-coord
   typedef array<GLfloat, stFloatsPerPos> TriPosData; // Triangle positions
@@ -55,6 +60,10 @@ class FboItem
     tdT2[0] = fX2; tdT2[1] = fY2; tdT2[2] = fX1; // Triangle 2
     tdT2[3] = fY2; tdT2[4] = fX2; tdT2[5] = fY1; //     "
   }
+  /* -- Set vertex co-ordinates and dimensions ----------------------------- */
+  void SetVertexWH(const GLfloat fX, const GLfloat fY,
+                   const GLfloat fW, const GLfloat fH)
+    { SetVertex(fX, fY, fX+fW, fY+fH); }
   /* -- Set vertex bounds and return it ------------------------------------ */
   const QuadPosData &SetAndGetVertex(const GLfloat fX1, const GLfloat fY1,
                                      const GLfloat fX2, const GLfloat fY2)
@@ -77,7 +86,7 @@ class FboItem
   /* -- Set vertex bounds with modified left and right bounds and get ------ */
   const QuadPosData &SetAndGetVertex(const GLfloat fX1, const GLfloat fY1,
     const GLfloat fX2, const GLfloat fY2, const GLfloat fML, const GLfloat fMR)
-  { SetVertex(fX1, fY1, fX2, fY2, fML, fMR); return GetVData(); }
+      { SetVertex(fX1, fY1, fX2, fY2, fML, fMR); return GetVData(); }
   /* -- Set vertex bounds with angle --------------------------------------- */
   void SetVertex(const GLfloat fX1, const GLfloat fY1,
      const GLfloat fX2, const GLfloat fY2, const GLfloat fA)
@@ -105,11 +114,14 @@ class FboItem
     tdT2[2] = fX1+fCe; tdT2[3] = fY1+fCf; //   "    2 /     "    2
     tdT2[4] = fX1+fCc; tdT2[5] = fY1+fCd; //   "    3 /     "    2
   }
+  /* -- Set vertex with coords, dimensions and angle ----------------------- */
+  void SetVertexWH(const GLfloat fX, const GLfloat fY,
+    const GLfloat fW, const GLfloat fH, const GLfloat fA)
+      { SetVertex(fX, fY, fX+fW, fY+fH, fA); }
   /* -- Set vertex bounds and return it ------------------------------------ */
   const QuadPosData &SetAndGetVertex(const GLfloat fX1, const GLfloat fY1,
-                                     const GLfloat fX2, const GLfloat fY2,
-                                     const GLfloat fA)
-    { SetVertex(fX1, fY1, fX2, fY2, fA); return GetVData(); }
+    const GLfloat fX2, const GLfloat fY2, const GLfloat fA)
+      { SetVertex(fX1, fY1, fX2, fY2, fA); return GetVData(); }
   /* -- Set tex coords for FBO (Full and simple) --------------------------- */
   void SetTexCoord(const GLfloat fX1, const GLfloat fY1,
                    const GLfloat fX2, const GLfloat fY2)
@@ -124,6 +136,10 @@ class FboItem
     tdT2[2] = fX1; tdT2[3] = fY2;      // Vertex 2 of Triangle 2   / V2
     tdT2[4] = fX2; tdT2[5] = fY1;      // Vertex 3 of Triangle 2  V1 V0  T2
   }
+  /* -- Set texture coords and dimensions ---------------------------------- */
+  void SetTexCoordWH(const GLfloat fX, const GLfloat fY,
+    const GLfloat fW, const GLfloat fH)
+      { SetTexCoord(fX, fY, fX+fW, fY+fH); }
   /* -- Set tex coords for FBO based on horizontal scale normals ----------- */
   void SetTexCoord(const QuadCoordData &fTC, const GLfloat fML,
                    const GLfloat fMR)
@@ -164,8 +180,8 @@ class FboItem
   const GLvoid *GetVIndex(void) const
     { return reinterpret_cast<GLvoid*>(sizeof(sBuffer.c.qdCoord)); }
   const GLvoid *GetCIndex(void) const
-    { return reinterpret_cast<GLvoid*>(sizeof(sBuffer.c.qdCoord) +
-                                       sizeof(sBuffer.c.qdPos)); }
+    { return reinterpret_cast<GLvoid*>
+        (sizeof(sBuffer.c.qdCoord) + sizeof(sBuffer.c.qdPos)); }
   /* -- Get data ----------------------------------------------------------- */
   const GLvoid *GetData(void) const { return sBuffer.faData.data(); }
   GLsizei GetDataSize(void) const { return sizeof(sBuffer.faData); }
@@ -198,19 +214,17 @@ class FboItem
   void SetDefaults(void) { sBuffer = GetDefaultLookup(); }
   /* -- Set colour components (0xAARRGGBB) --------------------------------- */
   void SetQuadRGBAInt(const unsigned int uiC)
-    { SetQuadRGBA(
-        UtilNormaliseEx<GLfloat, sizeof(uint16_t)*8>(uiC),
-        UtilNormaliseEx<GLfloat, sizeof(uint8_t)*8>(uiC),
+    { SetQuadRGBA(UtilNormaliseEx<GLfloat, stUInt16Bits>(uiC),
+        UtilNormaliseEx<GLfloat, stUInt8Bits>(uiC),
         UtilNormaliseEx<GLfloat>(uiC),
-        UtilNormaliseEx<GLfloat, (sizeof(uint16_t)+sizeof(uint8_t))*8>(uiC)); }
+        UtilNormaliseEx<GLfloat, stUInt24Bits>(uiC)); }
   /* -- Set colour components (0xRRGGBB) ----------------------------------- */
   void SetQuadRGB(const GLfloat fR, const GLfloat fG, const GLfloat fB)
     { SetQuadRed(fR); SetQuadGreen(fG); SetQuadBlue(fB); }
   /* -- Set colour components by integer ----------------------------------- */
   void SetQuadRGBInt(const unsigned int uiC)
-    { SetQuadRGB(
-        UtilNormaliseEx<GLfloat, sizeof(uint16_t)*8>(uiC),
-        UtilNormaliseEx<GLfloat, sizeof(uint8_t)*8>(uiC),
+    { SetQuadRGB(UtilNormaliseEx<GLfloat, stUInt16Bits>(uiC),
+        UtilNormaliseEx<GLfloat, stUInt8Bits>(uiC),
         UtilNormaliseEx<GLfloat>(uiC)); }
   /* -- Update red component ----------------------------------------------- */
   void SetQuadRed(const GLfloat fRed)

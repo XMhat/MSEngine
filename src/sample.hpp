@@ -37,7 +37,7 @@ BEGIN_MEMBERCLASSEX(Samples, Sample, ICHelperUnsafe, /* n/a */),
     // Return state
     return static_cast<IntType>(iV);
   }
-  /* -- Get buffer information y ----------------------------------------------- */
+  /* -- Get buffer information --------------------------------------------- */
   ALsizei GetALFrequency(void) const
     { return GetBufferInt<ALsizei>(AL_FREQUENCY); }
   ALsizei GetALBits(void) const

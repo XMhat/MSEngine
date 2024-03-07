@@ -14,7 +14,7 @@ using namespace ICollector::P;         using namespace IConsole::P;
 using namespace ICVar::P;              using namespace ICVarDef::P;
 using namespace ICVarLib::P;           using namespace IDim;
 using namespace IDir::P;               using namespace IEvtMain::P;
-using namespace IEvtWin::P;            using namespace IFboMain::P;
+using namespace IEvtWin::P;            using namespace IFboCore::P;
 using namespace IFlags;                using namespace IFont::P;
 using namespace IGlFW::P;              using namespace IGlFWMonitor::P;
 using namespace IGlFWUtil::P;          using namespace IIdent::P;
@@ -202,7 +202,7 @@ static class Display final :
   { // Report that the window was resized
     cLog->LogDebugSafe("Display redrawing window contents.");
     // Set to force redraw the next frame
-    cFboMain->SetDraw();
+    cFboCore->SetDraw();
   }
   /* == Check if window resized ============================================ */
   void CheckWindowResized(const int iWidth, const int iHeight) const
@@ -236,7 +236,7 @@ static class Display final :
         return;
       // Restored? Redraw console at least and log event
       case GLFW_FALSE:
-        cFboMain->SetDraw();
+        cFboCore->SetDraw();
         cLog->LogDebugSafe("Display window state restored.");
         break;
       // Unknown state so log it
@@ -440,7 +440,7 @@ static class Display final :
 #endif
     // Resize main viewport and if it changed, re-initialise the console fbo
     // and redraw the console
-    if(cFboMain->AutoViewport(iWidth, iHeight)) cConsole->InitFBO();
+    if(cFboCore->AutoViewport(iWidth, iHeight)) cConsole->InitFBO();
     // Redraw the console if enabled
     else cConsole->SetRedrawIfEnabled();
   }
@@ -618,13 +618,13 @@ static class Display final :
     // Return if hidpi not enabled
     if(FlagIsClear(DF_HIDPI))
     { // Update the main fbo viewport size without scale
-      cFboMain->DimSet(static_cast<GLsizei>(cInput->GetWindowWidth()),
+      cFboCore->DimSet(static_cast<GLsizei>(cInput->GetWindowWidth()),
                        static_cast<GLsizei>(cInput->GetWindowHeight()));
       // Done
       return;
     } // Get window scale
     // Update the main fbo viewport size with scale
-    cFboMain->DimSet(static_cast<GLsizei>(cInput->GetWindowWidth()) *
+    cFboCore->DimSet(static_cast<GLsizei>(cInput->GetWindowWidth()) *
                        static_cast<GLsizei>(fWinScaleWidth),
                      static_cast<GLsizei>(cInput->GetWindowHeight()) *
                        static_cast<GLsizei>(fWinScaleHeight));
@@ -633,7 +633,7 @@ static class Display final :
     // Windows and linux doesn't need the scale
 #else
     // Update the main fbo viewport size without scale
-    cFboMain->DimSet(static_cast<GLsizei>(cInput->GetWindowWidth()),
+    cFboCore->DimSet(static_cast<GLsizei>(cInput->GetWindowWidth()),
                      static_cast<GLsizei>(cInput->GetWindowHeight()));
 #endif
     // Force
@@ -892,7 +892,7 @@ static class Display final :
   void SetDefaultMatrix(const bool bForce) const
   { // Set the default matrix from the configuration and if it was changed
     // also update the consoles FBO too.
-    if(cFboMain->AutoMatrix(fOrthoWidth, fOrthoHeight, bForce))
+    if(cFboCore->AutoMatrix(fOrthoWidth, fOrthoHeight, bForce))
       cConsole->InitFBO();
     // Else redraw the console if enabled
     else cConsole->SetRedrawIfEnabled();
@@ -1020,7 +1020,7 @@ static class Display final :
     // Enumerate monitors and video modes
     EnumerateMonitorsAndVideoModes();
     // Inform main fbo class of our transparency setting
-    cFboMain->fboMain.SetTransparency(FlagIsSet(DF_TRANSPARENT));
+    cFboCore->fboMain.SetTransparency(FlagIsSet(DF_TRANSPARENT));
     // Set context settings
     cGlFW->GlFWSetClientAPI(iApi);
     cGlFW->GlFWSetCtxMajor(iCtxMajor);
@@ -1038,7 +1038,7 @@ static class Display final :
     cGlFW->GlFWSetMultisamples(iSamples);
     cGlFW->GlFWSetMaximised(FlagIsSet(DF_MAXIMISED));
     cGlFW->GlFWSetStereo(FlagIsSet(DF_STEREO));
-    cGlFW->GlFWSetTransparency(cFboMain->fboMain.IsTransparencyEnabled());
+    cGlFW->GlFWSetTransparency(cFboCore->fboMain.IsTransparencyEnabled());
     cGlFW->GlFWSetDepthBits(0);   // 2D framebuffer
     cGlFW->GlFWSetStencilBits(0); // No use (yet)
     cGlFW->GlFWSetRedBits(iFBDepthR);

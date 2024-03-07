@@ -118,7 +118,7 @@ BEGIN_MEMBERCLASS(Clips, Clip, ICHelperUnsafe),
   /* -- Default constructor ------------------------------------------------ */
   Clip(void) :
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperClip{ *cClips }, // Initially unregistered
+    ICHelperClip{ *cClips },           // Initially unregistered
     IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     LuaEvtSlave{ this, EMC_CB_EVENT }  // Register Clip async event
     /* --------------------------------------------------------------------- */

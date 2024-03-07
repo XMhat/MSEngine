@@ -869,7 +869,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Default constructor ------------------------------------------------ */
   Image(void) :                        // No parameters
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperImage(*cImages),           // Initialise collector helper
+    ICHelperImage{ *cImages },         // Initialise collector helper
     IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
     AsyncLoader<Image>(this,           // Initialise async loader
       EMC_MP_IMAGE)                    // Initialise async event id

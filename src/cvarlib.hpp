@@ -1267,13 +1267,13 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? Specifies to clear the main frame buffer every frame.
 /* ------------------------------------------------------------------------- */
 { CF_VIDEO, "vid_clear", cCommon->One(),
-  CB(cFboMain->SetBackBufferClear, bool), TBOOLEAN|PSYSTEM },
+  CB(cFboCore->SetBackBufferClear, bool), TBOOLEAN|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_CLEARCOLOUR
 // ? Specifies the 32-bit integer (0xAARRGGBB) as the default clear value.
 /* ------------------------------------------------------------------------- */
 { CF_VIDEO, "vid_clearcolour", cCommon->Zero(),
-  CB(cFboMain->SetBackBufferClearColour, unsigned int), TUINTEGER|PSYSTEM },
+  CB(cFboCore->SetBackBufferClearColour, unsigned int), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_DBLBUFF
 // ? Specifies to use double-buffering. This is only used for troubleshooting
@@ -1355,7 +1355,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? size.
 /* ------------------------------------------------------------------------- */
 { CF_VIDEO, "vid_lock", cCommon->Zero(),
-  CB(cFboMain->SetLockViewport, bool), TBOOLEAN|PSYSTEM },
+  CB(cFboCore->SetLockViewport, bool), TBOOLEAN|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_MONITOR
 // ? Specifies the monitor id to use. Use the 'mlist' console command to see
@@ -1376,7 +1376,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? 'vid_simplematrix' cvar is set to 0.
 /* ------------------------------------------------------------------------- */
 { CF_VIDEO, "vid_oraspmax", "1.777778",
-  CB(cFboMain->SetMaxOrtho, GLfloat), TUFLOAT|PSYSTEM },
+  CB(cFboCore->SetMaxOrtho, GLfloat), TUFLOAT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_ORASPMIN
 // ? Specifies the minmum aspect ratio allowed in the main frame buffer. For
@@ -1384,7 +1384,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? 'vid_simplematrix' cvar is set to 0.
 /* ------------------------------------------------------------------------- */
 { CF_VIDEO, "vid_oraspmin", "1.25",
-  CB(cFboMain->SetMinOrtho, GLfloat), TUFLOAT|PSYSTEM },
+  CB(cFboCore->SetMinOrtho, GLfloat), TUFLOAT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_ORHEIGHT
 // ? Specifies the height of the main frame buffer.
@@ -1438,7 +1438,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? the application manifest.
 /* ------------------------------------------------------------------------- */
 { CF_VIDEO, "vid_rcmds", "1000",
-  CB(cFboMain->SetCommandReserve, size_t), TINTEGER|PSYSTEM|CUNSIGNED|PBOOT },
+  CB(cFboCore->SetCommandReserve, size_t), TINTEGER|PSYSTEM|CUNSIGNED|PBOOT },
 /* ------------------------------------------------------------------------- */
 // ! VID_RDFBO
 // ? Pre-allocates the specified number of frame buffer names to reserve in the
@@ -1482,7 +1482,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? the application manifest.
 /* ------------------------------------------------------------------------- */
 { CF_VIDEO, "vid_rfloats", "10000",
-  CB(cFboMain->SetFloatReserve, size_t), TINTEGER|PSYSTEM|CUNSIGNED|PBOOT },
+  CB(cFboCore->SetFloatReserve, size_t), TINTEGER|PSYSTEM|CUNSIGNED|PBOOT },
 /* ------------------------------------------------------------------------- */
 // ! VID_ROBUSTNESS
 // ? Specifies the robustness strategy of the context. This is only used
@@ -1499,7 +1499,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? 'vid_oraspmin' and 'vid_oraspmax).
 /* ------------------------------------------------------------------------- */
 { CF_VIDEO, "vid_simplematrix", cCommon->Zero(),
-  CB(cFboMain->SetSimpleMatrix, bool), TBOOLEAN|PSYSTEM },
+  CB(cFboCore->SetSimpleMatrix, bool), TBOOLEAN|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_SRGB
 // ? Enables SRGB colour space.
@@ -1528,14 +1528,14 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? 4 to use the roundEven() function.
 /* ------------------------------------------------------------------------- */
 { CF_VIDEO, "vid_subpixround", cCommon->Zero(),
-  CB(SetSPRoundingMethod, size_t), TUINTEGER|PSYSTEM },
+  CB(cShaderCore->SetSPRoundingMethod, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_TEXFILTER
 // ? Sets the texture filter id and equates to the values of the 'Fbo.Filters'
 // ? table.
 /* ------------------------------------------------------------------------- */
 { CF_VIDEO, "vid_texfilter", "3",
-  CB(cFboMain->SetFilter, size_t), TUINTEGERSAVE|PANY },
+  CB(cFboCore->SetFilter, size_t), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_VSYNC
 // ? Enables vertical synchronisation which helps smooth the frame rate. Set to

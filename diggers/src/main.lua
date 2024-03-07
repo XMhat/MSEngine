@@ -544,8 +544,8 @@ end
 local function VideoPlay(Handle)
   VideoStop();
   vidHandle = Handle;
-  vidHandle:SetVertex(0, 0, 320, 240);
-  vidHandle:SetTexCoord(0, 0, 1, 1);
+  vidHandle:SetVLTRB(0, 0, 320, 240);
+  vidHandle:SetTCLTRB(0, 0, 1, 1);
   vidHandle:SetFilter(true);
   vidHandle:Play();
   return vidHandle;

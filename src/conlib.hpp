@@ -753,8 +753,8 @@ tData.Header("ID").Header("FI").Header("TI").Header("FL").Header("FT")
 // Total triangles and commands
 size_t stTriangles = 0, stCommands = 0;
 // Show primary fbos info
-ShowFboInfo(cFboMain->fboMain, tData, stTriangles, stCommands);
-ShowFboInfo(cFboMain->fboConsole, tData, stTriangles, stCommands);
+ShowFboInfo(cFboCore->fboMain, tData, stTriangles, stCommands);
+ShowFboInfo(cFboCore->fboConsole, tData, stTriangles, stCommands);
 // Walk through textures classes
 for(const Fbo*const fCptr : *cFbos)
   ShowFboInfo(*fCptr, tData, stTriangles, stCommands);
@@ -880,24 +880,24 @@ cConsole->AddLineEx(
     cDisplay->GetWindowScaleWidth(), cDisplay->GetWindowScaleHeight(),
     hex, cDisplay->FlagGet(),
   dec, cDisplay->GetFSType(), cDisplay->GetFSTypeString(),
-  cOgl->MaxTexSize(), cFboMain->DimGetWidth(), cFboMain->DimGetHeight(),
-    StrFromRatio(cFboMain->DimGetWidth(), cFboMain->DimGetHeight()),
-    cFboMain->GetOrthoWidth(), cFboMain->GetOrthoHeight(),
-    StrFromRatio(cFboMain->GetOrthoWidth(), cFboMain->GetOrthoHeight()),
-    cFboMain->fboMain.GetCoRight(), cFboMain->fboMain.GetCoBottom(),
-    StrFromRatio(cFboMain->fboMain.GetCoRight(),
-      cFboMain->fboMain.GetCoBottom()),
-  cFboMain->fboMain.fcStage.GetCoLeft(), cFboMain->fboMain.fcStage.GetCoTop(),
-    cFboMain->fboMain.fcStage.GetCoRight(),
-    cFboMain->fboMain.fcStage.GetCoBottom(),
-    cFboMain->fboMain.DimGetWidth(), cFboMain->fboMain.DimGetHeight(),
+  cOgl->MaxTexSize(), cFboCore->DimGetWidth(), cFboCore->DimGetHeight(),
+    StrFromRatio(cFboCore->DimGetWidth(), cFboCore->DimGetHeight()),
+    cFboCore->GetOrthoWidth(), cFboCore->GetOrthoHeight(),
+    StrFromRatio(cFboCore->GetOrthoWidth(), cFboCore->GetOrthoHeight()),
+    cFboCore->fboMain.GetCoRight(), cFboCore->fboMain.GetCoBottom(),
+    StrFromRatio(cFboCore->fboMain.GetCoRight(),
+      cFboCore->fboMain.GetCoBottom()),
+  cFboCore->fboMain.fcStage.GetCoLeft(), cFboCore->fboMain.fcStage.GetCoTop(),
+    cFboCore->fboMain.fcStage.GetCoRight(),
+    cFboCore->fboMain.fcStage.GetCoBottom(),
+    cFboCore->fboMain.DimGetWidth(), cFboCore->fboMain.DimGetHeight(),
     hex, cOgl->FlagGet(),
-  dec, cFboMain->fboMain.GetTris(),
-    cFboMain->fboMain.GetTrisReserved(),
-    cFboMain->fboMain.GetCmds(),
-    cFboMain->fboMain.GetCmdsReserved(),
-  fixed, cFboMain->dRTFPS, cDisplay->GetRefreshRate(),
-  cFboMain->dRTFPS / cDisplay->GetRefreshRate() * 100,
+  dec, cFboCore->fboMain.GetTris(),
+    cFboCore->fboMain.GetTrisReserved(),
+    cFboCore->fboMain.GetCmds(),
+    cFboCore->fboMain.GetCmdsReserved(),
+  fixed, cFboCore->dRTFPS, cDisplay->GetRefreshRate(),
+  cFboCore->dRTFPS / cDisplay->GetRefreshRate() * 100,
   cOgl->GetLimit());
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'gpu' function

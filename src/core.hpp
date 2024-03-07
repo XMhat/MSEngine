@@ -18,15 +18,15 @@ using namespace ICVarDef::P;           using namespace ICVarLib::P;
 using namespace IDir::P;               using namespace IDisplay::P;
 using namespace IError::P;             using namespace IEvtMain::P;
 using namespace IEvtWin::P;            using namespace IFbo::P;
-using namespace IFboBase::P;           using namespace IFboMain::P;
-using namespace IFont::P;              using namespace IFtf::P;
-using namespace IGlFW::P;              using namespace IGlFWUtil::P;
-using namespace IImage::P;             using namespace IInput::P;
-using namespace IJson::P;              using namespace ILog::P;
-using namespace ILua::P;               using namespace ILuaCode::P;
-using namespace ILuaUtil::P;           using namespace IOgl::P;
-using namespace IPalette::P;           using namespace IPcm::P;
-using namespace IPSplit::P;            using namespace ISql::P;
+using namespace IFboCore::P;           using namespace IFont::P;
+using namespace IFtf::P;               using namespace IGlFW::P;
+using namespace IGlFWUtil::P;          using namespace IImage::P;
+using namespace IInput::P;             using namespace IJson::P;
+using namespace ILog::P;               using namespace ILua::P;
+using namespace ILuaCode::P;           using namespace ILuaUtil::P;
+using namespace IOgl::P;               using namespace IPalette::P;
+using namespace IPcm::P;               using namespace IPSplit::P;
+using namespace IShaders::P;           using namespace ISql::P;
 using namespace IStd::P;               using namespace IStream::P;
 using namespace IString::P;            using namespace ISystem::P;
 using namespace ISysUtil::P;           using namespace ITexture::P;
@@ -183,13 +183,13 @@ class Core                             // Members initially private
     // If using graphical inteactive mode?
     if(cSystem->IsGraphicalMode())
     { // Reset main fbo and back clear colour
-      cFboMain->ResetClearColour();
+      cFboCore->ResetClearColour();
       // Reset texture unit and shader program if in GUI mode
       cOgl->ResetBinds();
       // Reset default palette
       cPalettes->palDefault.Commit();
       // Set main framebuffer as default
-      cFboMain->ActivateMain();
+      cFboCore->ActivateMain();
       // Reset cursor type, show it and clear input states
       CursorReset();
       cInput->SetCursor(true);
@@ -222,7 +222,7 @@ class Core                             // Members initially private
       // Loop point incase we need to catchup game ticks
       TimerCatchupWinThread:
       { // Set main fbo by default on each frame
-        cFboMain->ActivateMain();
+        cFboCore->ActivateMain();
         // Poll joysticks
         cInput->PollJoysticks();
         // Execute a tick for each frame missed
@@ -230,14 +230,14 @@ class Core                             // Members initially private
         // If we should keep catching up frames?
         if(cTimer->TimerShouldTick())
         { // Flush the main fbo as we're not drawing it yet
-          cFboMain->RenderFbosAndFlushMain();
+          cFboCore->RenderFbosAndFlushMain();
           // Render again until we've caught up
           goto TimerCatchupWinThread;
         } // We've completed catching up at this point
       } // Add console fbo to render list
       cConsole->RenderToMain();
       // Render all fbos and copy the main fbo to screen
-      cFboMain->Render();
+      cFboCore->Render();
     } // Update timer
     cTimer->TimerUpdateInteractive();
   }
@@ -256,7 +256,7 @@ class Core                             // Members initially private
       { // Process window events
         GlFWPollEvents();
         // Set main fbo by default on each frame
-        cFboMain->ActivateMain();
+        cFboCore->ActivateMain();
         // Poll joysticks
         cInput->PollJoysticks();
         // Execute a tick for each frame missed
@@ -264,14 +264,14 @@ class Core                             // Members initially private
         // If we should keep catching up frames?
         if(cTimer->TimerShouldTick())
         { // Flush the main fbo as we're not drawing it yet
-          cFboMain->RenderFbosAndFlushMain();
+          cFboCore->RenderFbosAndFlushMain();
           // Render again until we've caught up
           goto TimerCatchupMainThread;
         } // We've completed catching up at this point
       } // Add console fbo to render list
       cConsole->RenderToMain();
       // Render all fbos and copy the main fbo to screen
-      cFboMain->Render();
+      cFboCore->Render();
     } // Update timer
     cTimer->TimerUpdateInteractive();
   }
@@ -429,9 +429,9 @@ class Core                             // Members initially private
         // Done
         break;
     } // Unload all fbos (NOT destroy);
-    cFboMain->DeInitAllObjectsAndBuiltIns();
+    cFboCore->DeInitAllObjectsAndBuiltIns();
     // De-init core shaders
-    cFboBase->DeInitShaders();
+    cShaderCore->DeInitShaders();
     // OpenGL de-initialised (do not throw error if de-initialised)
     cOgl->DeInit(true);
     // Request to close window
@@ -452,7 +452,7 @@ class Core                             // Members initially private
     // Render the console?
     if(bAndConsole) cConsole->RenderNow();
     // Render all fbos and copy the main fbo to screen
-    cFboMain->Render();
+    cFboCore->Render();
   }
   /* -- De-initialise everything ------------------------------------------- */
   void CoreDeInitEverything(void)
@@ -470,7 +470,7 @@ class Core                             // Members initially private
   { // Set context current and pass selected refresh rate
     cOgl->Init(cDisplay->GetRefreshRate());
     // Initialise core shaders
-    cFboBase->InitShaders();
+    cShaderCore->InitShaders();
     // If we're initialising for the first time?
     if(cEvtMain->IsExitReason(EMC_NONE))
     { // Initialise freetype, console, audio and input classes
@@ -832,9 +832,9 @@ class Core                             // Members initially private
       INITSS(Display);                 // cppcheck-suppress danglingLifetime
       INITSS(Cursors);                 // cppcheck-suppress danglingLifetime
       INITSS(Input);                   // cppcheck-suppress danglingLifetime
-      INITSS(FboBase);                 // cppcheck-suppress danglingLifetime
+      INITSS(ShaderCore);              // cppcheck-suppress danglingLifetime
       INITSS(Fbos);                    // cppcheck-suppress danglingLifetime
-      INITSS(FboMain);                 // cppcheck-suppress danglingLifetime
+      INITSS(FboCore);                 // cppcheck-suppress danglingLifetime
       INITSS(SShot);                   // cppcheck-suppress danglingLifetime
       INITSS(Textures);                // cppcheck-suppress danglingLifetime
       INITSS(Palettes);                // cppcheck-suppress danglingLifetime

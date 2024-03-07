@@ -11,7 +11,7 @@ namespace ISShot {                     // Start of private module namespace
 /* -- Dependencies --------------------------------------------------------- */
 using namespace IClock::P;             using namespace ICVar::P;
 using namespace ICVarDef::P;           using namespace ICVarLib::P;
-using namespace IFbo::P;               using namespace IFboMain::P;
+using namespace IFbo::P;               using namespace IFboCore::P;
 using namespace IImage::P;             using namespace IImageDef::P;
 using namespace IImageFormat::P;       using namespace IImageLib::P;
 using namespace ILog::P;               using namespace IMemory::P;
@@ -96,7 +96,7 @@ static class SShot final :             // Members initially private
     return true;
   }
   /* -- Dump main fbo ------------------------------------------------------ */
-  void DumpMain(void) { DumpFBO(cFboMain->fboMain); }
+  void DumpMain(void) { DumpFBO(cFboCore->fboMain); }
   /* -- Default constructor ------------------------------------------------ */
   SShot(void) :                        // No parameters
     /* -- Initialisers ----------------------------------------------------- */

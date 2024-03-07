@@ -12,7 +12,7 @@ namespace IInput {                     // Start of private module namespace
 using namespace ICollector::P;         using namespace IConsole::P;
 using namespace ICVar::P;              using namespace ICVarDef::P;
 using namespace ICVarLib::P;           using namespace IEvtMain::P;
-using namespace IEvtWin::P;            using namespace IFboMain::P;
+using namespace IEvtWin::P;            using namespace IFboCore::P;
 using namespace IFlags;                using namespace IGlFW::P;
 using namespace IGlFWUtil::P;          using namespace IIdent::P;
 using namespace ILog::P;               using namespace ILuaFunc::P;
@@ -375,13 +375,13 @@ static class Input final :             // Handles keyboard, mouse & controllers
     // More information:- https://www.glfw.org/docs/3.1/group__input.html
     // Calculate new position based on main fbo ortho matrix.
     const float
-      fAdjX = (epData.vParams[0].f - cFboMain->fboMain.fcStage.GetCoLeft()) /
-        cFboMain->fboMain.GetCoRight() * GetWindowWidth(),
-      fAdjY = (epData.vParams[1].f - cFboMain->fboMain.fcStage.GetCoTop()) /
-        cFboMain->fboMain.GetCoBottom() * GetWindowHeight(),
+      fAdjX = (epData.vParams[0].f - cFboCore->fboMain.fcStage.GetCoLeft()) /
+        cFboCore->fboMain.GetCoRight() * GetWindowWidth(),
+      fAdjY = (epData.vParams[1].f - cFboCore->fboMain.fcStage.GetCoTop()) /
+        cFboCore->fboMain.GetCoBottom() * GetWindowHeight(),
       // Clamp the new position to the window bounds.
-      fNewX = UtilClamp(fAdjX, 0.0f, cFboMain->fboMain.GetCoRight() - 1.0f),
-      fNewY = UtilClamp(fAdjY, 0.0f, cFboMain->fboMain.GetCoBottom() - 1.0f);
+      fNewX = UtilClamp(fAdjX, 0.0f, cFboCore->fboMain.GetCoRight() - 1.0f),
+      fNewY = UtilClamp(fAdjY, 0.0f, cFboCore->fboMain.GetCoBottom() - 1.0f);
     // Now translate that position back into the actual window cursor pos.
     cGlFW->WinSetCursorPos(static_cast<double>(fNewX),
                            static_cast<double>(fNewY));
@@ -432,12 +432,12 @@ static class Input final :             // Handles keyboard, mouse & controllers
   { // Recalculate cursor position based on framebuffer size and send the
     // new co-ordinates to the lua callback handler
     lfOnMouseMove.LuaFuncDispatch(
-      static_cast<double>(cFboMain->fboMain.fcStage.GetCoLeft()) +
+      static_cast<double>(cFboCore->fboMain.fcStage.GetCoLeft()) +
         ((epData.vParams[1].d/GetWindowWidth()) *
-        static_cast<double>(cFboMain->fboMain.GetCoRight())),
-      static_cast<double>(cFboMain->fboMain.fcStage.GetCoTop()) +
+        static_cast<double>(cFboCore->fboMain.GetCoRight())),
+      static_cast<double>(cFboCore->fboMain.fcStage.GetCoTop()) +
         ((epData.vParams[2].d/GetWindowHeight()) *
-        static_cast<double>(cFboMain->fboMain.GetCoBottom())));
+        static_cast<double>(cFboCore->fboMain.GetCoBottom())));
   }
   /* -- Unfiltered key pressed --------------------------------------------- */
   void OnKeyPress(const EvtMain::Cell &epData)
@@ -595,12 +595,12 @@ static class Input final :             // Handles keyboard, mouse & controllers
   { // Get the cursor position
     cGlFW->WinGetCursorPos(dX, dY);
     // Translate cursor position to framebuffer aspect
-    dX = static_cast<double>(cFboMain->fboMain.fcStage.GetCoLeft()) +
+    dX = static_cast<double>(cFboCore->fboMain.fcStage.GetCoLeft()) +
       ((dX/GetWindowWidth()) *
-        static_cast<double>(cFboMain->fboMain.GetCoRight()));
-    dY = static_cast<double>(cFboMain->fboMain.fcStage.GetCoTop()) +
+        static_cast<double>(cFboCore->fboMain.GetCoRight()));
+    dY = static_cast<double>(cFboCore->fboMain.fcStage.GetCoTop()) +
       ((dY/GetWindowHeight()) *
-        static_cast<double>(cFboMain->fboMain.GetCoBottom()));
+        static_cast<double>(cFboCore->fboMain.GetCoBottom()));
   }
   /* -- Forcefully move the cursor ----------------------------------------- */
   void SetCursorPos(const double dX, const double dY)

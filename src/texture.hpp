@@ -12,10 +12,10 @@
 namespace ITexture {                   // Start of private module namespace
 /* -- Dependencies --------------------------------------------------------- */
 using namespace ICollector::P;         using namespace IError::P;
-using namespace IFbo::P;               using namespace IFboBase::P;
-using namespace IImage::P;             using namespace IImageDef::P;
-using namespace ILog::P;               using namespace IMemory::P;
-using namespace IOgl::P;               using namespace IShader::P;
+using namespace IFbo::P;               using namespace IImage::P;
+using namespace IImageDef::P;          using namespace ILog::P;
+using namespace IMemory::P;            using namespace IOgl::P;
+using namespace IShader::P;            using namespace IShaders::P;
 using namespace IStd::P;               using namespace ISysUtil::P;
 using namespace IUtil::P;              using namespace Lib::OS::GlFW;
 /* ------------------------------------------------------------------------- */
@@ -363,12 +363,12 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
         // Is palleted?
         if(IsPalette())
         { // Set palette shader
-          shProgram = &cFboBase->sh2D8Pal;
+          shProgram = &cShaderCore->sh2D8Pal;
           // Force no filtering and no mipmapping or we get the wrong colours
           stTexFilter = 0;
           iTexMinFilter = iTexMagFilter = GL_NEAREST;
         } // No palette
-        else shProgram = &cFboBase->sh2D8;
+        else shProgram = &cShaderCore->sh2D8;
         // Set requested external format
         eNXCFormat = GetPixelType();
         // Break to upload raw pixels
@@ -376,7 +376,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
       // Texture is 16-bpp?
       case GL_RG:
         // Set GL_LUMINANCE_ALPHA decoding shader
-        shProgram = &cFboBase->sh2D16;
+        shProgram = &cShaderCore->sh2D16;
         eNXCFormat = GetPixelType();
         // Break to upload raw pixels
         break;
@@ -388,7 +388,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
           case GL_RGBA_DXT1: case GL_RGBA_DXT3: case GL_RGBA_DXT5:
             // Set compressed texture
             eNXCFormat = GetPixelType();
-            shProgram = &cFboBase->sh2D;
+            shProgram = &cShaderCore->sh2D;
             // Upload as compressed texture
             UploadTexture<TexCompFtor::DXT>(stSlots,
               sData, iICFormat, eNXCFormat);
@@ -397,21 +397,21 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
           // BGRA colour order type?
           case GL_BGRA:
             // Use BGR shader and redefine to RGBA.
-            shProgram = &cFboBase->sh2DBGR;
+            shProgram = &cShaderCore->sh2DBGR;
             eNXCFormat = GL_RGBA;
             // Break to upload raw pixels
             break;
           // BGR colour order type?
           case GL_BGR:
             // Use BGR shader and redefine to RGB.
-            shProgram = &cFboBase->sh2DBGR;
+            shProgram = &cShaderCore->sh2DBGR;
             eNXCFormat = GL_RGB;
             // Break to upload raw pixels
             break;
           // RGBA or RGB (Normal image).
           case GL_RGB: case GL_RGBA:
             // Use RGB shader. No format change.
-            shProgram = &cFboBase->sh2D;
+            shProgram = &cShaderCore->sh2D;
             eNXCFormat = GetPixelType();
             // Break to upload raw pixels
             break;
@@ -458,22 +458,22 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
   void SetTileDOR(const size_t stSubTexId, const size_t stTileId,
     const GLfloat fL, const GLfloat fT, const GLfloat fR, const GLfloat fB)
   { if(IsReversed()) SetTileR(stSubTexId, stTileId, fL, fT, fR, fB);
-                else SetTile(stSubTexId, stTileId, fL, fT, fR, fB); }
+    else SetTile(stSubTexId, stTileId, fL, fT, fR, fB); }
   /* -- Set a tile based on reversal with width and height setting --------- */
   void SetTileDORWH(const size_t stSubTexId, const size_t stTileId,
     const GLfloat fL, const GLfloat fT, const GLfloat fW, const GLfloat fH)
   { if(IsReversed()) SetTileRWH(stSubTexId, stTileId, fL, fT, fW, fH);
-                else SetTileWH(stSubTexId, stTileId, fL, fT, fW, fH); }
+    else SetTileWH(stSubTexId, stTileId, fL, fT, fW, fH); }
   /* -- Add a tile based on reversal setting ------------------------------- */
   void AddTileDOR(const size_t stSubTexId, const GLfloat fL, const GLfloat fT,
     const GLfloat fR, const GLfloat fB)
   { if(IsReversed()) AddTileR(stSubTexId, fL, fT, fR, fB);
-                else AddTile(stSubTexId, fL, fT, fR, fB); }
+    else AddTile(stSubTexId, fL, fT, fR, fB); }
   /* -- Add a tile with width and height based on reversal ----------------- */
   void AddTileDORWH(const size_t stSubTexId, const GLfloat fL,
     const GLfloat fT, const GLfloat fW, const GLfloat fH)
   { if(IsReversed()) AddTileRWH(stSubTexId, fL, fT, fW, fH);
-                else AddTileWH(stSubTexId, fL, fT, fW, fH); }
+    else AddTileWH(stSubTexId, fL, fT, fW, fH); }
   /* -- Blit a triangle ---------------------------------------------------- */
   void BlitTri(const GLuint uiGLTexId, const TriCoordData &tcoData,
     const TriPosData &tpData, const TriColData &tcData)
@@ -489,7 +489,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
     { BlitQuad(GetSubName(stSubTexId), clTiles[stSubTexId][stTileId],
         GetVData(), GetCData()); }
   /* -- Blit with currently stored position, texture and colour ------------ */
-  void BlitStored(const size_t stSubTexId)
+  void Blit(const size_t stSubTexId)
     { BlitQuad(GetSubName(stSubTexId), GetTCData(), GetVData(), GetCData()); }
   /* -- Blit specified triangle with currently stored position ------------- */
   void BlitT(const size_t stTriId, const size_t stTexId, const size_t stTileId)
@@ -508,10 +508,14 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
     const QuadColData &faC)
   { BlitQuad(GetSubName(stSubTexId), clTiles[stSubTexId][stTileId],
     SetAndGetVertex(fX1, fY1, fX2, fY2), faC); }
-  /* -- Blit quad with free co-ordinates and width ------------------------- */
+  /* -- Blit quad with bounds ---------------------------------------------- */
   void BlitLTRB(const size_t stSubTexId, const size_t stTileId,
     const GLfloat fX1, const GLfloat fY1, const GLfloat fX2, const GLfloat fY2)
-  { BlitLTRBC(stSubTexId, stTileId, fX1, fY1, fX2, fY2, GetCData()); }
+      { BlitLTRBC(stSubTexId, stTileId, fX1, fY1, fX2, fY2, GetCData()); }
+  /* -- Blit quad with coords and dimensions ------------------------------- */
+  void BlitLTWH(const size_t stSubTexId, const size_t stTileId,
+    const GLfloat fX, const GLfloat fY, const GLfloat fW, const GLfloat fH)
+      { BlitLTRB(stSubTexId, stTileId, fX, fY, fX+fW, fY+fH); }
   /* -- Blit quad with truncated texcoord width and colour ----------------- */
   void BlitLTRBSC(const size_t stSubTexId, const size_t stTileId,
     const GLfloat fX1, const GLfloat fY1, const GLfloat fX2, const GLfloat fY2,
@@ -532,12 +536,18 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
     BlitQuad(GetSubName(stSubTexId), tcItem,
       SetAndGetVertex(fX, fY, fX+tcItem.DimGetWidth(),
         fY+tcItem.DimGetHeight(), fA), GetCData()); }
-  /* -- Blit quad with full bounds and angle ------------------------------- */
+  /* -- Blit quad with bounds and angle ------------------------------------ */
   void BlitLTRBA(const size_t stSubTexId, const size_t stTileId,
     const GLfloat fX1, const GLfloat fY1, const GLfloat fX2, const GLfloat fY2,
     const GLfloat fA)
   { BlitQuad(GetSubName(stSubTexId), clTiles[stSubTexId][stTileId],
     SetAndGetVertex(fX1, fY1, fX2, fY2, fA), GetCData()); }
+  /* -- Blit quad with coords, dimensions and angle ------------------------ */
+  void BlitLTWHA(const size_t stSubTexId, const size_t stTileId,
+    const GLfloat fX, const GLfloat fY, const GLfloat fW, const GLfloat fH,
+    const GLfloat fA)
+  { BlitQuad(GetSubName(stSubTexId), clTiles[stSubTexId][stTileId],
+    SetAndGetVertex(fX, fY, fX+fW, fY+fH, fA), GetCData()); }
   /* -- Blit all quads as full image --------------------------------------- */
   void BlitMulti(const GLuint uiColumns, const GLfloat fL, const GLfloat fT,
     const GLfloat fR, const GLfloat fB)

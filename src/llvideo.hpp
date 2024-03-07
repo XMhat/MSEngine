@@ -77,45 +77,83 @@ LLFUNC(Stop, LCGETPTR(1, Video)->Stop());
 /* ------------------------------------------------------------------------- */
 LLFUNC(Awaken, LCGETPTR(1, Video)->Awaken());
 /* ========================================================================= */
-// $ Video:SetVertex
-// > Left:number=The left co-ordinate.
-// > Top:number=The top co-ordinate.
-// > Right:number=The right co-ordinate.
-// > Bottom:number=The bottom co-ordinate.
-// ? Allows you to set basic vertex co-ordinates when blitting the fbo. For a
-// ? more advanced version of this function, see Fbo:SetVertexEx().
+// $ Video:SetVLTRB
+// > Left:number=The destination left co-ordinate.
+// > Top:number=The destination top co-ordinate.
+// > Right:number=The destination right co-ordinate.
+// > Bottom:number=The destination bottom co-ordinate.
+// ? Allows you to set basic vertex bounds when blitting the frame buffer
+// ? object.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetVertex, LCGETPTR(1, Video)->SetFBOVertex(
+LLFUNC(SetVLTRB, LCGETPTR(1, Video)->SetFBOVertex(
   LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom")));
 /* ========================================================================= */
-// $ Video:SetVertexA
-// > Left:number=The left co-ordinate.
-// > Top:number=The top co-ordinate.
-// > Right:number=The right co-ordinate.
-// > Bottom:number=The bottom co-ordinate.
-// > Angle:number=The angle of the vertex
-// ? Allows you to set basic vertex co-ordinates when blitting the fbo.
+// $ Video:SetVLTWH
+// > Left:number=The destination left co-ordinate.
+// > Top:number=The destination top co-ordinate.
+// > Width:number=The destination width.
+// > Height:number=The destination height.
+// ? Allows you to set basic vertex co-ordinates and dimensions when blitting
+// ? the videos frame buffer object.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetVertexA, LCGETPTR(1, Video)->SetFBOVertex(
+LLFUNC(SetVLTWH, LCGETPTR(1, Video)->SetFBOVertexWH(
+  LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
+  LCGETNUM(GLfloat, 4, "Width"), LCGETNUM(GLfloat, 5, "Height")));
+/* ========================================================================= */
+// $ Video:SetVLTRBA
+// > Left:number=The destination left co-ordinate.
+// > Top:number=The destination top co-ordinate.
+// > Right:number=The destination right co-ordinate.
+// > Bottom:number=The destination bottom co-ordinate.
+// > Angle:number=The angle of the vertex
+// ? Allows you to set basic vertex co-ordinates when blitting the video's
+// ? frame buffer object.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetVLTRBA, LCGETPTR(1, Video)->SetFBOVertex(
   LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom"),
   LCGETNORM(GLfloat, 6, "Angle")));
 /* ========================================================================= */
-// $ Video:SetTexCoord
+// $ Video:SetVLTWHA
+// > Left:number=The destination left co-ordinate.
+// > Top:number=The destination top co-ordinate.
+// > Width:number=The destination width.
+// > Height:number=The destination height.
+// > Angle:number=The angle of the vertex
+// ? Allows you to set basic vertex co-ordinates, dimensions and angle when
+// ? blitting the video's frame buffer object.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetVLTWHA, LCGETPTR(1, Video)->SetFBOVertexWH(
+  LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
+  LCGETNUM(GLfloat, 4, "Width"), LCGETNUM(GLfloat, 5, "Height"),
+  LCGETNORM(GLfloat, 6, "Angle")));
+/* ========================================================================= */
+// $ Video:SetTCLTRB
 // > Left:number=The left co-ordinate.
 // > Top:number=The top co-ordinate.
 // > Right:number=The right co-ordinate.
 // > Bottom:number=The bottom co-ordinate.
 // ? Allows you to set basic texture co-ordinates when blitting the video frame
-// ? texture. For an advanced version of this function,
-// ? see Video:SetTexCoordEx().
+// ? texture.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetTexCoord, LCGETPTR(1, Video)->SetFBOTexCoord(
+LLFUNC(SetTCLTRB, LCGETPTR(1, Video)->SetFBOTexCoord(
   LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom")));
 /* ========================================================================= */
-// $ Video:SetColour
+// $ Video:SetTCLTWH
+// > Left:number=The left co-ordinate.
+// > Top:number=The top co-ordinate.
+// > Width:number=The width of the tile.
+// > Height:number=The height of the tile.
+// ? Allows you to set basic texture co-ordinates when blitting the video frame
+// ? texture.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetTCLTWH, LCGETPTR(1, Video)->SetFBOTexCoordWH(
+  LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
+  LCGETNUM(GLfloat, 4, "Width"), LCGETNUM(GLfloat, 5, "Height")));
+/* ========================================================================= */
+// $ Video:SetCRGBA
 // > Red:number=The entire fbo texture red colour intensity (0 to 1).
 // > Green:number=The entire fbo texture green colour intensity (0 to 1).
 // > Blue:number=The entire fbo texture blue colour intensity (0 to 1).
@@ -123,7 +161,7 @@ LLFUNC(SetTexCoord, LCGETPTR(1, Video)->SetFBOTexCoord(
 // ? Sets the colour intensity of all the vertexes for the entire video frame
 // ? texture.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetColour, LCGETPTR(1, Video)->SetFBOColour(
+LLFUNC(SetCRGBA, LCGETPTR(1, Video)->SetFBOColour(
   LCGETNUM(GLfloat, 2, "Red"),  LCGETNUM(GLfloat, 3, "Green"),
   LCGETNUM(GLfloat, 4, "Blue"), LCGETNUM(GLfloat, 5, "Alpha")));
 /* ========================================================================= */
@@ -196,7 +234,7 @@ LLFUNC(SetFilter, LCGETPTR(1, Video)->SetFilter(LCGETBOOL(2, "Filter")));
 // $ Video:SetKeyed
 // < Keyed:boolean=Video should be keyed with the set colour
 // ? Enabling this allowed the video to be chroma keyed. This also disables
-// ? changing the colour intensity because the specified colour using SetColour
+// ? changing the colour intensity because the specified colour using SetCRGBA
 // ? will set the colour to be keyed. If the pixel is greater or equal then the
 // ? specified colour then the pixel is set to the specified alpha.
 /* ------------------------------------------------------------------------- */
@@ -259,10 +297,12 @@ LLRSMFBEGIN                            // Video:* member functions begin
   LLRSFUNC(GetFramesLost), LLRSFUNC(GetHeight),    LLRSFUNC(GetLoop),
   LLRSFUNC(GetName),       LLRSFUNC(GetPlaying),   LLRSFUNC(GetTime),
   LLRSFUNC(GetWidth),      LLRSFUNC(OnEvent),      LLRSFUNC(Pause),
-  LLRSFUNC(Play),          LLRSFUNC(Rewind),       LLRSFUNC(SetColour),
+  LLRSFUNC(Play),          LLRSFUNC(Rewind),       LLRSFUNC(SetCRGBA),
   LLRSFUNC(SetFilter),     LLRSFUNC(SetKeyColour), LLRSFUNC(SetKeyed),
-  LLRSFUNC(SetLoop),       LLRSFUNC(SetTexCoord),  LLRSFUNC(SetVertex),
-  LLRSFUNC(SetVertexA),    LLRSFUNC(SetVolume),    LLRSFUNC(Stop),
+  LLRSFUNC(SetLoop),       LLRSFUNC(SetTCLTRB),    LLRSFUNC(SetTCLTWH),
+                           LLRSFUNC(SetVLTRB),     LLRSFUNC(SetVLTRBA),
+  LLRSFUNC(SetVLTWH),      LLRSFUNC(SetVLTWHA),
+  LLRSFUNC(SetVolume),     LLRSFUNC(Stop),
 LLRSEND                                // Video:* member functions end
 /* ========================================================================= */
 // $ Video.FileAsync

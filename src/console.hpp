@@ -16,7 +16,7 @@ using namespace ICollector::P;         using namespace IConDef::P;
 using namespace IConLib::P;            using namespace ICVar::P;
 using namespace ICVarDef::P;           using namespace ICVarLib::P;
 using namespace IError::P;             using namespace IEvtMain::P;
-using namespace IFbo::P;               using namespace IFboMain::P;
+using namespace IFbo::P;               using namespace IFboCore::P;
 using namespace IFlags;                using namespace IFont::P;
 using namespace IFtf::P;               using namespace IGlFW::P;
 using namespace IImage::P;             using namespace IImageDef::P;
@@ -119,11 +119,11 @@ static class Console final :           // Members initially private
   /* -- Do console redraw -------------------------------------------------- */
   void Redraw(void)
   { // Get reference to console fbo
-    Fbo &fboC = cFboMain->fboConsole;
+    Fbo &fboC = cFboCore->fboConsole;
     // Set main fbo to draw to
     fboC.SetActive();
     // Get reference to main fbo
-    Fbo &fboM = cFboMain->fboMain;
+    Fbo &fboM = cFboCore->fboMain;
     // Update ortho same as the main fbo
     fboC.SetOrtho(0, 0, fboM.GetCoRight(), fboM.GetCoBottom());
     // Set drawing position
@@ -165,7 +165,7 @@ static class Console final :           // Members initially private
     // Redrawn as requested
     rfFlags.FlagClear(RD_GRAPHICS);
     // Make sure the main fbo is updated
-    cFboMain->SetDraw();
+    cFboCore->SetDraw();
   }
   /* -- Do clear console, clear history and reset position ----------------- */
   void DoFlush(void) { clear(); clriPosition = rbegin(); }
@@ -240,7 +240,7 @@ static class Console final :           // Members initially private
   { // Ignore if font not available (not in graphical mode).
     if(GetFontRef().IsNotInitialised()) return;
     // Get console fbo and font
-    Fbo &fboC = cFboMain->fboConsole;
+    Fbo &fboC = cFboCore->fboConsole;
     // Set console text size so the scaled size is properly calculated
     CommitScale();
     // Estimate amount of triangles that would fit in the console and if
@@ -949,7 +949,7 @@ static class Console final :           // Members initially private
   /* -- Redraw the console fbo if the console contents changed ------------- */
   void Render(void) { if(rfFlags.FlagIsSet(RD_GRAPHICS)) Redraw(); }
   /* -- Render the console to main fbo if visible -------------------------- */
-  void RenderToMain(void) { if(IsVisible()) cFboMain->BlitConsoleToMain(); }
+  void RenderToMain(void) { if(IsVisible()) cFboCore->BlitConsoleToMain(); }
   /* -- Show the console and render it and render the fbo to main fbo ------ */
   void RenderNow(void)
   { // Show the console
@@ -957,7 +957,7 @@ static class Console final :           // Members initially private
     // Render it to main fbo
     Render();
     // Blit console to main fbo
-    cFboMain->BlitConsoleToMain();
+    cFboCore->BlitConsoleToMain();
   }
   /* -- Register console command ------------------------------------------- */
   const LibListIt RegisterCommand(const string &strName,
@@ -1079,7 +1079,7 @@ static class Console final :           // Members initially private
       // Redraw console
       SetRedraw();
       // We'll need to force a final draw in order to visibly hide the console
-      cFboMain->SetDraw();
+      cFboCore->SetDraw();
       // Log that the console has been disabled
       cLog->LogDebugSafe("Console has been disabled.");
     } // Say that nothing changed
@@ -1156,7 +1156,7 @@ static class Console final :           // Members initially private
   { // Ignore if bot mode
     if(GetFontRef().IsNotInitialised()) return;
     // Get reference to main FBO and initialise it
-    cFboMain->InitConsoleFBO();
+    cFboCore->InitConsoleFBO();
     // Redraw FBO
     SetRedraw();
   }

@@ -34,10 +34,10 @@ BEGIN_COLLECTOR(Fonts, Font, CLHelperUnsafe)
 // we do not have to initialise all these variables more than once as we have
 // more than one constructor in the main Font class.
 /* ------------------------------------------------------------------------- */
-class FontVariables :                  // Members initially private
+class FontBase :                       // Members initially private
   /* -- Base classes ------------------------------------------------------- */
   public Texture                       // Texture class
-{ /* -- Private typedefs ---------------------------------------- */ protected:
+{ /* -- Protected typedefs -------------------------------------- */ protected:
   typedef Rectangle<GLfloat> RectFloat;// Rectangle of GLfloats
   /* ----------------------------------------------------------------------- */
   class Glyph :                        // Members initially private
@@ -109,7 +109,7 @@ class FontVariables :                  // Members initially private
   enum RTCmd { RT_NONE, RT_FULL, RT_PARTIAL } rtCmd; // Reload texture command
   RectUint         rRedraw;            // Reload cordinates and dimensions
   /* -- Default constructor ------------------------------------------------ */
-  FontVariables(void) :                // No parameters
+  FontBase(void) :                     // No parameters
     /* --------------------------------------------------------------------- */
     Texture{ true },                   stMultiplier(1),
     fCharSpacing(0.0f),                fCharSpacingScale(0.0f),
@@ -126,12 +126,12 @@ class FontVariables :                  // Members initially private
     /* --------------------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(FontVariables)       // No copy constructors
+  DELETECOPYCTORS(FontBase)            // No copy constructors
 };/* ----------------------------------------------------------------------- */
 /* == Font Class (which inherits a Texture) ================================ */
 BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
   /* -- Base classes ------------------------------------------------------- */
-  public FontVariables                 // Font variables class
+  public FontBase                      // Font variables class
 {  /* -- Convert co-ordinates to absolute position ------------------------- */
   static size_t CoordsToAbsolute(const size_t stPosX, const size_t stPosY,
     const size_t stWidth, const size_t stBytesPerColumn=1)

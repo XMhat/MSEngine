@@ -13,9 +13,9 @@
 namespace IFbo {                       // Start of private module namespace
 /* -- Dependencies --------------------------------------------------------- */
 using namespace ICollector::P;         using namespace ICVarDef::P;
-using namespace IError::P;             using namespace IFboBase::P;
-using namespace IIdent::P;             using namespace ILog::P;
-using namespace IOgl::P;               using namespace IShader::P;
+using namespace IError::P;             using namespace IIdent::P;
+using namespace ILog::P;               using namespace IOgl::P;
+using namespace IShader::P;            using namespace IShaders::P;
 using namespace IStd::P;               using namespace IString::P;
 using namespace ISysUtil::P;           using namespace ITimer::P;
 /* ------------------------------------------------------------------------- */
@@ -48,15 +48,16 @@ OrderVec           ovActive;           /* Active fbo order list to render   */\
 typedef Fbos::OrderItem                FboOrderItem;  // Fbo order item
 typedef Fbos::OrderVec                 FboOrderVec;   // " vector for items
 typedef Fbos::OrderVec::const_iterator FboOrderVecIt; // "   "    iterator
-/* == Fbo variables class ================================================== */
-class FboVariables :                   // Fbo variables class
+/* == Fbo base class ======================================================= */
+class FboVariables :                  // Fbo variables class
   /* ----------------------------------------------------------------------- */
   // Only put vars used in the Fbo class in here. This is an optimisation so
   // we do not have to initialise all these variables more than once as we have
   // more than one constructor in the main Fbo class.
   /* -- Base classes ------------------------------------------------------- */
   public FboItem,                      // Fbo item class
-  public FboRenderItem                 // Render data
+  public FboRenderItem,                // Render data
+  public Lockable                      // Lua lockable class
 { /* -- Texture ---------------------------------------------------- */ public:
   size_t           stFilterId;         // Chosen filter value
   GLint            iMinFilter,         // Frame buffer minification filter
@@ -80,8 +81,9 @@ class FboVariables :                   // Fbo variables class
   GLuint           uiFBOtex;           // Frame buffer texture name
   FboFloatCoords   fcStage;            // Stage co-ordinates
   /* -- Constructor -------------------------------------------------------- */
-  explicit FboVariables(const GLint iPF) :
+  explicit FboVariables(const GLint iPF, const bool bLockable) :
     /* -- Initialisers ----------------------------------------------------- */
+    Lockable{ bLockable },
     stFilterId(0),                     iMinFilter(GL_NEAREST),
     iMagFilter(GL_NEAREST),            iWrapMode(GL_CLAMP_TO_EDGE),
     iPixFormat(iPF),                   ePolyMode(GL_FILL),
@@ -98,7 +100,6 @@ class FboVariables :                   // Fbo variables class
 /* == Fbo object class ===================================================== */
 BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
-  public Lockable,                     // Lua lockable class
   public Ident,                        // Identifier class
   public FboVariables                  // Fbo variables
 { /* -- Select texture --------------------------------------------- */ public:
@@ -174,7 +175,7 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
     // Set polygon fill mode
     cOgl->SetPolygonMode(ePolyMode);
     // For each 2D shader...
-    for(const Shader &shBuiltIn : cFboBase->sh2DBuiltIns)
+    for(const Shader &shBuiltIn : cShaderCore->sh2DBuiltIns)
       shBuiltIn.UpdateOrtho(oiRef);
     // Buffer the new vertex data
     cOgl->BufferStaticData(oiRef.siVertices, ftlActive.data());
@@ -283,7 +284,7 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
   /* -- Blit the specified triangle of the specifed fbo to this fbo -------- */
   void BlitTri(Fbo &fboSrc, const size_t stId)
     { Blit(fboSrc.uiFBOtex, fboSrc.GetVData(stId), fboSrc.GetTCData(stId),
-        fboSrc.GetCData(stId), 0, &cFboBase->sh2D); }
+        fboSrc.GetCData(stId), 0, &cShaderCore->sh2D); }
   /* -- Blit the specified fbo texture into this fbo ----------------------- */
   void Blit(Fbo &fboSrc)
     { for(size_t stId = 0; stId < stTrisPerQuad; ++stId)
@@ -503,8 +504,7 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
     /* -- Initialisers ----------------------------------------------------- */
     ICHelperFbo{ *cFbos, this },       // Initially registered
     IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
-    Lockable{ false },                 // Freeable by Lua GC
-    FboVariables{ GL_RGBA8 }           // Has alpha channel
+    FboVariables{ GL_RGBA8, false }    // Has alpha channel
     /* -- Code ------------------------------------------------------------- */
     { }                                // Do nothing else
   /* -- Constructor WITHOUT registration (used for core Fbos)--------------- */
@@ -512,8 +512,7 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
     /* -- Initialisers ----------------------------------------------------- */
     ICHelperFbo{ *cFbos },             // Initially unregistered
     IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
-    Lockable{ true },                  // Not freeable by Lua GC
-    FboVariables{ iPF }                // Creator chooses if has alpha channel
+    FboVariables{ iPF, true }          // Creator chooses if has alpha channel
     /* -- Code ------------------------------------------------------------- */
     { }                                // Do nothing else
   /* -- Destructor --------------------------------------------------------- */

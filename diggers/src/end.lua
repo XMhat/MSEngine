@@ -170,8 +170,7 @@ local function Init(iLId, aActivePlayer, aOpponentPlayer, sMusic, iEndTexId,
       -- Draw ending graphic
       texEnd:SetCA(nFade*2);
       local nScale<const> = nFade * 2;
-      texEnd:BlitSLTRBA(iEndTexId,
-        160, 120, 160+(159*nScale), 120+(95*nScale), nFade*2);
+      texEnd:BlitSLTWHA(iEndTexId, 160, 120, 159*nScale, 95*nScale, nFade*2);
       -- Set font colour and draw lines
       for iCollectionId = 1, #aTopaLinesBottom do
         DrawCollection(aTopaLinesBottom[iCollectionId]);

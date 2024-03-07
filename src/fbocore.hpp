@@ -9,21 +9,21 @@
 ** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IFboMain {                   // Start of private module namespace
+namespace IFboCore {                   // Start of private module namespace
 /* -- Dependencies --------------------------------------------------------- */
 using namespace IClock::P;            using namespace ICVar::P;
 using namespace ICVarDef::P;          using namespace ICVarLib::P;
 using namespace IEvtMain::P;          using namespace IFbo::P;
-using namespace IFboBase::P;          using namespace IGlFW::P;
-using namespace ILog::P;              using namespace IOgl::P;
-using namespace IShader::P;           using namespace IStd::P;
+using namespace IGlFW::P;             using namespace ILog::P;
+using namespace IOgl::P;              using namespace IShader::P;
+using namespace IShaders::P;          using namespace IStd::P;
 using namespace IString::P;           using namespace ISysUtil::P;
 using namespace ITimer::P;            using namespace IUtil::P;
 using namespace Lib::OS::GlFW;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* == Main fbo class ======================================================= */
-static class FboMain final :           // The main fbo operations manager
+static class FboCore final :           // The main fbo operations manager
   /* -- Base classes ------------------------------------------------------- */
   public FboColour,                    // Backbuffer clear colour
   public FboBlend,                     // Default blending mode
@@ -69,7 +69,7 @@ static class FboMain final :           // The main fbo operations manager
     // Bind the texture attached to the fbo
     cOgl->BindTexture(fboMain.uiFBOtex);
     // Select our basic 3D transform shader
-    cOgl->UseProgram(cFboBase->sh3D.GetProgram());
+    cOgl->UseProgram(cShaderCore->sh3D.GetProgram());
     // Set the viewport of the FBO size
     cOgl->SetViewport(DimGetWidth(), DimGetHeight());
     // Set the default alpha blending mode
@@ -303,7 +303,7 @@ static class FboMain final :           // The main fbo operations manager
   CVarReturn SetSimpleMatrix(const bool bState)
     { return CVarSimpleSetInt(bSimpleMatrix, bState); }
   /* -- Initialise fbos using a different constructor ---------------------- */
-  FboMain(void) :
+  FboCore(void) :
     /* -- Initialisers ----------------------------------------------------- */
     fOrthoMinimum(1.0f),               fOrthoMaximum(2.0f),
     fOrthoWidth(0.0f),                 fOrthoHeight(0.0f),
@@ -314,9 +314,9 @@ static class FboMain final :           // The main fbo operations manager
     /* -- Set pointer to main fbo ------------------------------------------ */
     { cFbos->fboMain = &fboMain; }
   /* -- Destructor --------------------------------------------------------- */
-  DTORHELPER(~FboMain, DestroyAllObjectsAndBuiltIns())
+  DTORHELPER(~FboCore, DestroyAllObjectsAndBuiltIns())
   /* -- FboCore::End ------------------------------------------------------- */
-} *cFboMain = nullptr;                 // Pointer to static class
+} *cFboCore = nullptr;                 // Pointer to static class
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */

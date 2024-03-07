@@ -13,12 +13,12 @@ using namespace IAsset::P;             using namespace IASync::P;
 using namespace IClock::P;             using namespace ICollector::P;
 using namespace ICVarDef::P;           using namespace IError::P;
 using namespace IEvtMain::P;           using namespace IFbo::P;
-using namespace IFboBase::P;           using namespace IFileMap::P;
-using namespace IFlags;                using namespace IIdent::P;
-using namespace ILog::P;               using namespace ILuaEvt::P;
-using namespace ILuaUtil::P;           using namespace IMemory::P;
-using namespace IOal::P;               using namespace IOgl::P;
-using namespace IPcmLib::P;            using namespace IShader::P;
+using namespace IFileMap::P;           using namespace IFlags;
+using namespace IIdent::P;             using namespace ILog::P;
+using namespace ILuaEvt::P;            using namespace ILuaUtil::P;
+using namespace IMemory::P;            using namespace IOal::P;
+using namespace IOgl::P;               using namespace IPcmLib::P;
+using namespace IShader::P;            using namespace IShaders::P;
 using namespace ISource::P;            using namespace IStd::P;
 using namespace IStream::P;            using namespace IString::P;
 using namespace ISysUtil::P;           using namespace IThread::P;
@@ -730,13 +730,20 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
   /* -- Set vertexes for FBO (Full and simple)------------------------------ */
   void SetFBOVertex(const GLfloat fX1, const GLfloat fY1, const GLfloat fX2,
     const GLfloat fY2) { fboC.SetVertex(fX1, fY1, fX2, fY2); }
+  void SetFBOVertexWH(const GLfloat fX, const GLfloat fY, const GLfloat fW,
+    const GLfloat fH) { fboC.SetVertexWH(fX, fY, fW, fH); }
   /* -- Set vertexes for FBO (Full and simple) with Angle ------------------ */
   void SetFBOVertex(const GLfloat fX1, const GLfloat fY1, const GLfloat fX2,
     const GLfloat fY2, const GLfloat fA)
       { fboC.SetVertex(fX1, fY1, fX2, fY2, fA); }
+  void SetFBOVertexWH(const GLfloat fX, const GLfloat fY, const GLfloat fW,
+    const GLfloat fH, const GLfloat fA)
+      { fboC.SetVertexWH(fX, fY, fW, fH, fA); }
   /* -- Set tex coords for FBO (Full and simple) --------------------------- */
   void SetFBOTexCoord(const GLfloat fX1, const GLfloat fY1, const GLfloat fX2,
     const GLfloat fY2) { fboC.SetTexCoord(fX1, fY1, fX2, fY2); }
+  void SetFBOTexCoordWH(const GLfloat fX, const GLfloat fY, const GLfloat fW,
+    const GLfloat fH) { fboC.SetTexCoordWH(fX, fY, fW, fH); }
   /* -- Blit specific triangle --------------------------------------------- */
   void BlitTri(const size_t stTId) { FboActive()->BlitTri(fboC, stTId); }
   /* -- Blit quad ---------------------------------------------------------- */
@@ -1091,7 +1098,8 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
   bool GetKeyed(void) const
     { return FlagIsSet(FL_KEYED); }
   void UpdateShader(void)
-    { shProgram = GetKeyed() ? &cFboBase->sh3DYUVK : &cFboBase->sh3DYUV; }
+    { shProgram = GetKeyed() ?
+        &cShaderCore->sh3DYUVK : &cShaderCore->sh3DYUV; }
   void SetKeyed(const bool bState)
     { FlagSetOrClear(FL_KEYED, bState); UpdateShader(); }
   /* -- Generate component textures ---------------------------------------- */
