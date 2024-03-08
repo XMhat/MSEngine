@@ -24,8 +24,8 @@ BEGIN_COLLECTORDUO(Files, File, CLHelperUnsafe, ICHelperUnsafe),
 { /* -- Basic constructor with no init ----------------------------- */ public:
   File(void) :
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperFile{ *cFiles, this },     // Register the object in collector
-    IdentCSlave{ cParent.CtrNext() }   // Initialise identification number
+    ICHelperFile{ cFiles, this },      // Register the object in collector
+    IdentCSlave{ cParent->CtrNext() }  // Initialise identification number
     /* --------------------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */

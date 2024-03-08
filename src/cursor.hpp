@@ -59,8 +59,8 @@ BEGIN_MEMBERCLASS(Cursors, Cursor, ICHelperUnsafe),
   /* -- Constructor -------------------------------------------------------- */
   Cursor(void) :
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperCursor{ *cCursors, this }, // Register cursor in list
-    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
+    ICHelperCursor{ cCursors, this },  // Register cursor in list
+    IdentCSlave{ cParent->CtrNext() }, // Initialise identification number
     pCursor(nullptr),                  // Default character
     iInternal(0)                       // Default id
     /* -- No code ---------------------------------------------------------- */

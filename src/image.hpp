@@ -25,7 +25,8 @@ namespace P {                          // Start of public module namespace
 /* == Image collector and member class ===================================== */
 BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
-  public AsyncLoader<Image>,           // For loading images off main thread
+  public Ident,                        // Image file name
+  public AsyncLoaderImage,             // For loading images off main thread
   public Lockable,                     // Lua garbage collector instruction
   public ImageData                     // Raw image data
 { /* -- Swap image data  ------------------------------------------- */ public:
@@ -869,10 +870,10 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Default constructor ------------------------------------------------ */
   Image(void) :                        // No parameters
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperImage{ *cImages },         // Initialise collector helper
-    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
-    AsyncLoader<Image>(this,           // Initialise async loader
-      EMC_MP_IMAGE)                    // Initialise async event id
+    ICHelperImage{ cImages },          // Initialise collector helper
+    IdentCSlave{ cParent->CtrNext() }, // Initialise identification number
+    AsyncLoaderImage{ *this, this,     // Initialise async loader
+      EMC_MP_IMAGE }                   // Initialise async event id
     /* -- Code ------------------------------------------------------------- */
     { }                                // Do nothing else
   /* -- Constructor -------------------------------------------------------- */

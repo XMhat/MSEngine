@@ -283,8 +283,8 @@ BEGIN_COLLECTORDUO(Bins, Bin, CLHelperUnsafe, ICHelperUnsafe),
 { /* -- Default constructor ---------------------------------------- */ public:
   Bin(void) :
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperBin{ *cBins, this },       // Register the object in collector
-    IdentCSlave{ cParent.CtrNext() }   // Initialise identification number
+    ICHelperBin{ cBins, this },        // Register the object in collector
+    IdentCSlave{ cParent->CtrNext() }  // Initialise identification number
     /* --------------------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */

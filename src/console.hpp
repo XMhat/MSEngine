@@ -121,22 +121,23 @@ static class Console final :           // Members initially private
   { // Get reference to console fbo
     Fbo &fboC = cFboCore->fboConsole;
     // Set main fbo to draw to
-    fboC.SetActive();
+    fboC.FboSetActive();
     // Get reference to main fbo
     Fbo &fboM = cFboCore->fboMain;
     // Update ortho same as the main fbo
-    fboC.SetOrtho(0, 0, fboM.GetCoRight(), fboM.GetCoBottom());
+    fboC.FboSetOrtho(0, 0, fboM.GetCoRight(), fboM.GetCoBottom());
     // Set drawing position
     const GLfloat fYAdj = fboM.fcStage.GetCoBottom() * (1 - fConsoleHeight);
-    fboC.SetVertex(fboM.fcStage.GetCoLeft(), fboM.fcStage.GetCoTop() - fYAdj,
-      fboM.fcStage.GetCoRight(), fboM.fcStage.GetCoBottom() - fYAdj);
+    fboC.FboItemSetVertex(fboM.fcStage.GetCoLeft(),
+      fboM.fcStage.GetCoTop() - fYAdj, fboM.fcStage.GetCoRight(),
+      fboM.fcStage.GetCoBottom() - fYAdj);
     // Set console texture colour and blit the console background
-    GetTextureRef().SetQuadRGBAInt(ulBgColour);
+    GetTextureRef().FboItemSetQuadRGBAInt(ulBgColour);
     GetTextureRef().BlitLTRB(0, 0, fboC.fcStage.GetCoLeft(),
       fboC.fcStage.GetCoTop(), fboC.fcStage.GetCoRight(),
       fboC.fcStage.GetCoBottom());
     // Set console input text colour
-    GetFontRef().SetQuadRGBAInt(ulFgColour);
+    GetFontRef().FboItemSetQuadRGBAInt(ulFgColour);
     // Restore spacing and scale as well
     CommitLetterSpacing();
     CommitLineSpacing();
@@ -154,14 +155,14 @@ static class Console final :           // Members initially private
     { // Get reference to console line data structure
       const ConLine &clD = *clI;
       // Set text foreground colour with opaqueness already set above
-      GetFontRef().SetQuadRGBInt(uiNDXtoRGB[clD.cColour]);
+      GetFontRef().FboItemSetQuadRGBInt(uiNDXtoRGB[clD.cColour]);
       // Draw the text and move upwards of the height that was used
       fY -= GetFontRef().PrintWU(fboC.fcStage.GetCoLeft(), fY,
         fboC.fcStage.GetCoRight(),
           GetFontRef().dfScale.DimGetWidth(), reinterpret_cast<const GLubyte*>
             (clD.strLine.c_str()));
     } // Finish and render
-    fboC.FinishAndRender();
+    fboC.FboFinishAndRender();
     // Redrawn as requested
     rfFlags.FlagClear(RD_GRAPHICS);
     // Make sure the main fbo is updated
@@ -251,7 +252,7 @@ static class Console final :           // Members initially private
        ceilf(fboC.DimGetHeight<GLfloat>() /
        ceilf(GetFontRef().dfScale.DimGetHeight()))) + 2))
       // Try to reserve the triangles and 2 commands and log if failed!
-      if(!fboC.Reserve(stTriangles, 2))
+      if(!fboC.FboReserve(stTriangles, 2))
         cLog->LogWarningExSafe("Console fbo failed to reserve $ triangles!",
           stTriangles);
   }

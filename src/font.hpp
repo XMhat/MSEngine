@@ -15,7 +15,7 @@ namespace IFont {                      // Start of private namespace
 /* -- Dependencies --------------------------------------------------------- */
 using namespace IAsset::P;             using namespace IBin::P;
 using namespace ICollector::P;         using namespace IDim;
-using namespace IError::P;             using namespace IFbo::P;
+using namespace IError::P;             using namespace IFboDef::P;
 using namespace IFileMap::P;           using namespace IFtf::P;
 using namespace IImageDef::P;          using namespace ILog::P;
 using namespace IMemory::P;            using namespace IOgl::P;
@@ -456,13 +456,13 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
   /* -- Constructor (Initialisation then registration) --------------------- */
   Font(void) :                         // No parameters
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperFont{ *cFonts, this }      // Initially registered
+    ICHelperFont{ cFonts, this }       // Initially registered
     /* --------------------------------------------------------------------- */
     { }                                // Do nothing else
   /* -- Constructor (without registration) --------------------------------- */
   explicit Font(const bool) :          // Dummy parameter
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperFont{ *cFonts }            // Initially unregistered
+    ICHelperFont{ cFonts }             // Initially unregistered
     /* --------------------------------------------------------------------- */
     { }                                // Do nothing else
   /* ----------------------------------------------------------------------- */

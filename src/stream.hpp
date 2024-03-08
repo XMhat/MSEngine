@@ -56,9 +56,10 @@ size_t             stBufSize;,,        /* Size of each buffer               */\
 /* -- Derived classes ------------------------------------------------------ */
 private LuaEvtMaster<Stream,LuaEvtTypeParam<Stream>>); /* Lua event handler */\
 /* ========================================================================= */
-BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
+BEGIN_ASYNCMEMBERCLASS(Streams, Stream, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
-  public AsyncLoader<Stream>,          // Asynchronous loading of Streams
+  public Ident,                        // Stream file name
+  public AsyncLoaderStream,            // Asynchronous loading of Streams
   public LuaEvtSlave<Stream>,          // Lua event system for Stream
   public Lockable,                     // Lua garbage collector instruction
   private Memory                       // Playback memory buffer
@@ -138,10 +139,10 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
   ogg_int64_t GetSamples(void) { return ov_pcm_total(&ovfContext, -1); }
   /* -- Convert stop reason to string -------------------------------------- */
   const string &StopReasonToString(const StreamStopReason srReason) const
-    { return cParent.srStrings.Get(srReason); }
+    { return cParent->srStrings.Get(srReason); }
   /* -- Convert stop reason to string -------------------------------------- */
   const string &StateReasonToString(const StreamPlayState psReason) const
-    { return cParent.psStrings.Get(psReason); }
+    { return cParent->psStrings.Get(psReason); }
   /* -- Stop (without locks) ----------------------------------------------- */
   void Stop(const StreamStopReason srReason)
   { // Don't have source class? There is nothing else to do!
@@ -553,7 +554,7 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
     // calls will fail. We'll add a minimum value of 1 too just incase we get
     // a stream with no data.
     vBuffers.resize(UtilClamp(static_cast<size_t>(ceil(static_cast<ALdouble>
-      (GetSamples()) / cParent.stBufSize)), 1, cParent.stBufCount));
+      (GetSamples()) / cParent->stBufSize)), 1, cParent->stBufCount));
     // Get info about ogg and copy it into our static buffer if succeeded,
     // else show an exception if failed. This removes dereferencing of the
     // vorbis info struct.
@@ -569,7 +570,7 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
       (cOal->Have32FPPB() ? AL_FORMAT_MONO_FLOAT32 : AL_FORMAT_MONO16) :
       (cOal->Have32FPPB() ? AL_FORMAT_STEREO_FLOAT32 : AL_FORMAT_STEREO16);
     // Allocate the buffer with size from global setting
-    InitBlank(cParent.stBufSize);
+    InitBlank(cParent->stBufSize);
     // Set default loop position to the end
     SetLoopRange(0, GetSamples());
     // Build a formatted table of meta data we can quickly access
@@ -623,9 +624,9 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
   /* -- Constructor -------------------------------------------------------- */
   Stream(void) :                       // No parameters
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperStream{ *cStreams },       // Initialise collector unregistered
-    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
-    AsyncLoader<Stream>{ this,         // Initialise async loader
+    ICHelperStream{ cStreams },        // Initialise collector unregistered
+    IdentCSlave{ cParent->CtrNext() }, // Initialise identification number
+    AsyncLoaderStream{ *this, this,    // Initialise async loader
       EMC_MP_STREAM },                 //   with our streaming event
     LuaEvtSlave{ this,                 // Initialise stream event manager
       EMC_STR_EVENT },                 //   with our stremaing event
@@ -651,7 +652,7 @@ BEGIN_MEMBERCLASS(Streams, Stream, ICHelperUnsafe),
     AsyncCancel();
     // Guard mutex from sources management. Meaning that destruction cannot
     // proceed until the audio thread has finished processing
-    const LockGuard lgProtectAudioMain{ cParent.CollectorGetMutex() };
+    const LockGuard lgProtectAudioMain{ cParent->CollectorGetMutex() };
     // Wait for any previous operations on this stream (such as rebuffering)
     // to complete and lock simultanius access to this streams buffers/memory
     const LockGuard lgStreamSync{ mMutex };

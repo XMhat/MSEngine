@@ -10,7 +10,7 @@
 namespace IPalette {                   // Start of private module namespace
 /* -- Dependencies --------------------------------------------------------- */
 using namespace ICollector::P;         using namespace IError::P;
-using namespace IFbo::P;               using namespace IIdent::P;
+using namespace IFboDef::P;            using namespace IIdent::P;
 using namespace IImage::P;             using namespace IImageDef::P;
 using namespace IShaders::P;           using namespace IStd::P;
 using namespace ISysUtil::P;           using namespace IUtil::P;
@@ -186,8 +186,8 @@ BEGIN_MEMBERCLASS(Palettes, Palette, ICHelperUnsafe),
   /* -- Default constructor ------------------------------------------------ */
   Palette(void) :                      // No parameters
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperPalette{*cPalettes, this}, // Register the object in collector
-    IdentCSlave{ cParent.CtrNext() }   // Initialise identification number
+    ICHelperPalette{ cPalettes, this },// Register the object in collector
+    IdentCSlave{ cParent->CtrNext() }  // Initialise identification number
     /* -- Code  ------------------------------------------------------------ */
     { }                                // No code
 };/* ----------------------------------------------------------------------- */

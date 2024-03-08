@@ -77,8 +77,8 @@ static struct Sql final :              // Members initially public
       const double        fdV;         // If data type is a 'double'
       const char*const    cpD;         // If data type is something else
     }; /* ------------------------------------------------------------------ */
-    const int iS;                      // Size of the block at 'cpD'
-    const int iT;                      // Sqlite data type id
+    const int iS,                      // Size of the block at 'cpD'
+              iT;                      // Sqlite data type id
     /* -- Constructor that stores a 64-bit integer ------------------------- */
     explicit Cell(const sqlite_int64 qV) :
       /* -- Initialisers --------------------------------------------------- */

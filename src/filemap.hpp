@@ -207,7 +207,7 @@ class FileMap :
     const StdTimeT tM) :
     /* -- Initialisers ----------------------------------------------------- */
     SysMap{ strF, tC, tM },            // Reuse system map variables
-    DataConst{ StdMove(dcData) },         // Init read-only memory block
+    DataConst{ StdMove(dcData) },      // Init read-only memory block
     stPosition(0)                      // Initialise position
     /* --------------------------------------------------------------------- */
     { }                                // Don't do anything else
@@ -220,8 +220,8 @@ class FileMap :
   /* -- Move filemap constructor ------------------------------------------- */
   FileMap(FileMap &&fmOther) :
     /* -- Initialisers ----------------------------------------------------- */
-    SysMap{ StdMove(fmOther) },           // Just moves SysMap members
-    DataConst{ StdMove(fmOther) },        // Just moves DataConst members
+    SysMap{ StdMove(fmOther) },        // Just moves SysMap members
+    DataConst{ StdMove(fmOther) },     // Just moves DataConst members
     stPosition(fmOther.FileMapTell())  // Copy other current position
     /* --------------------------------------------------------------------- */
     { fmOther.FileMapRewind(); }       // Reset other position

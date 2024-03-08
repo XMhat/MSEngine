@@ -338,8 +338,8 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Constructor -------------------------------------------------------- */
   Mask(void) :
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperMask{ *cMasks, this },     // Register this object in collector
-    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
+    ICHelperMask{ cMasks, this },      // Register this object in collector
+    IdentCSlave{ cParent->CtrNext() }, // Initialise identification number
     stAlloc(0)                         // Uninitialised allocated size
     /* -- No code ---------------------------------------------------------- */
     { }

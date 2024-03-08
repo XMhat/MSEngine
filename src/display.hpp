@@ -1020,7 +1020,7 @@ static class Display final :
     // Enumerate monitors and video modes
     EnumerateMonitorsAndVideoModes();
     // Inform main fbo class of our transparency setting
-    cFboCore->fboMain.SetTransparency(FlagIsSet(DF_TRANSPARENT));
+    cFboCore->fboMain.FboSetTransparency(FlagIsSet(DF_TRANSPARENT));
     // Set context settings
     cGlFW->GlFWSetClientAPI(iApi);
     cGlFW->GlFWSetCtxMajor(iCtxMajor);
@@ -1038,7 +1038,7 @@ static class Display final :
     cGlFW->GlFWSetMultisamples(iSamples);
     cGlFW->GlFWSetMaximised(FlagIsSet(DF_MAXIMISED));
     cGlFW->GlFWSetStereo(FlagIsSet(DF_STEREO));
-    cGlFW->GlFWSetTransparency(cFboCore->fboMain.IsTransparencyEnabled());
+    cGlFW->GlFWSetTransparency(cFboCore->fboMain.FboIsTransparencyEnabled());
     cGlFW->GlFWSetDepthBits(0);   // 2D framebuffer
     cGlFW->GlFWSetStencilBits(0); // No use (yet)
     cGlFW->GlFWSetRedBits(iFBDepthR);

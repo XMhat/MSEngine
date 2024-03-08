@@ -22,7 +22,8 @@ namespace P {                          // Start of public module namespace
 /* == Pcm collector and member class ======================================= */
 BEGIN_ASYNCCOLLECTORDUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
-  public AsyncLoader<Pcm>,             // For loading Pcm's off main-thread
+  public Ident,                        // Pcm file name
+  public AsyncLoaderPcm,               // For loading Pcm's off main-thread
   public Lockable,                     // Lua garbage collector instruction
   public PcmData                       // Pcm data
 { /* -- Split a stereo waveform into two seperate channels --------- */ public:
@@ -166,9 +167,9 @@ BEGIN_ASYNCCOLLECTORDUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Constructor -------------------------------------------------------- */
   Pcm(void) :                          // Default onstructor
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperPcm{ *cPcms },             // Initially unregistered
-    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
-    AsyncLoader<Pcm>{ this,            // Setup async loader with this class
+    ICHelperPcm{ cPcms },              // Initially unregistered
+    IdentCSlave{ cParent->CtrNext() }, // Initialise identification number
+    AsyncLoaderPcm{ *this, this,       // Setup async loader with this class
       EMC_MP_PCM }                     // ...and the event id for this class
     /* -- No code ---------------------------------------------------------- */
     { }

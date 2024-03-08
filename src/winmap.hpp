@@ -152,12 +152,12 @@ class SysMap :                         // Members initially private
   /* -- Move constructor --------------------------------------------------- */
   SysMap(SysMap &&smOther) :
     /* -- Initialisers ----------------------------------------------------- */
-    Ident{ StdMove(smOther) },            // Move other identifier
+    Ident{ StdMove(smOther) },         // Move other identifier
     hFile(smOther.hFile),              // Move other file handle
     qSize(smOther.qSize),              // Move other size
     hMap(smOther.hMap),                // Move other file map
     cpMem(smOther.cpMem),              // Move other memory pointer
-    atTime{ StdMove(smOther.atTime) }     // Move other file times
+    atTime{ StdMove(smOther.atTime) }  // Move other file times
     /* -- Clear other variables -------------------------------------------- */
     { smOther.SysMapClearVarsInternal(); }
   /* -- Constructor with actual initialisation ----------------------------- */

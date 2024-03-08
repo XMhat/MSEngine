@@ -309,8 +309,8 @@ BEGIN_COLLECTORDUO(Stats, Stat, CLHelperUnsafe, ICHelperUnsafe),
 { /* -- Constructor ------------------------------------------------ */ public:
   Stat(void) :                         // No parameters
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperStat{ *cStats, this },     // Automatic (de)registration
-    IdentCSlave{ cParent.CtrNext() }   // Initialise identification number
+    ICHelperStat{ cStats, this },      // Automatic (de)registration
+    IdentCSlave{ cParent->CtrNext() }  // Initialise identification number
     /* -- No code ---------------------------------------------------------- */
     { }                                // Do nothing else
   /* ----------------------------------------------------------------------- */

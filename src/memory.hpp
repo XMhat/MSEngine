@@ -77,7 +77,7 @@ class DataConst                        // Start of const Data Block Class
   /* -- Return if we can read this amount of data -------------------------- */
   bool CheckValid(const size_t stPos, const size_t stBytes) const
   { // Return if bounds are safe
-    return cpPtr                   &&  // Address is valid
+    return IsPtrSet()              &&  // Address is valid
            stPos         <  Size() &&  // Position is <= array size
            stBytes       <= Size() &&  // Bytes to copy is <= array size
            stPos+stBytes <= Size();    // End position <= array size
@@ -482,19 +482,19 @@ class Memory :
   /* -- Assignment constructor (rvalue) ------------------------------------ */
   Memory(Memory &&mbSrc) :
     /* -- Initialisers ----------------------------------------------------- */
-    Data(StdMove(mbSrc))             // Move other memory object
+    Data{ StdMove(mbSrc) }             // Move other memory object
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Take ownership of pointer (must originally be malloc'd) ------------ */
   explicit Memory(Data &&dSrc) :
     /* -- Initialisers ----------------------------------------------------- */
-    Data(StdMove(dSrc))              // Move other data object
+    Data{ StdMove(dSrc) }              // Move other data object
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Take ownership of pointer (must originally be malloc'd) ------------ */
   explicit Memory(DataConst &&dcSrc) :
     /* -- Initialisers ----------------------------------------------------- */
-    Data(StdMove(dcSrc))             // Move other read only memory object
+    Data{ StdMove(dcSrc) }             // Move other read only memory object
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Init from string --------------------------------------------------- */
@@ -514,7 +514,7 @@ class Memory :
   explicit Memory(const size_t stNSize) :
     /* -- Initialisers ----------------------------------------------------- */
     Data{ stNSize,                     // Initialise data base class
-      UtilMemAlloc<void>                   // Allocate memory (checked by CTOR)
+      UtilMemAlloc<void>               // Allocate memory (checked by CTOR)
         (UtilMaximum(stNSize, 1)) }    // Allocate requested size
     /* -- No code ---------------------------------------------------------- */
     { }

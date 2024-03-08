@@ -47,9 +47,9 @@ BEGIN_MEMBERCLASS(ImageFmts, ImageFmt, ICHelperUnsafe)
   explicit ImageFmt(const char*const cpN, const char*const cpE,
     CBLFunc &icL=NoLoader, CBSFunc &icS=NoSaver) :
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperImageFmt{ *cImageFmts,     // Register filter in filter list
+    ICHelperImageFmt{ cImageFmts,      // Register filter in filter list
       this },                          // Initialise filter parent
-    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
+    IdentCSlave{ cParent->CtrNext() }, // Initialise identification number
     cpExt(cpE),                        // Set extension for filter
     cpName(cpN),                       // Set name for filter
     icLoader{ icL },                   // Set loader function

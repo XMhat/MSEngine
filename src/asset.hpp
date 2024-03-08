@@ -81,9 +81,10 @@ static FileMap AssetExtract(const string &strFile)
     "Archives", ArchiveGetNames());
 }
 /* == Asset object class =================================================== */
-BEGIN_MEMBERCLASS(Assets, Asset, ICHelperUnsafe),
+BEGIN_ASYNCMEMBERCLASS(Assets, Asset, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
-  public AsyncLoader<Asset>,           // For loading assets off main thread
+  public Ident,                        // Asset file name
+  public AsyncLoaderAsset,             // For loading assets off main thread
   public Memory,                       // Memory storage for this asset
   public Lockable,                     // Lua garbage collector instruction
   public AssetFlags                    // Asset settings
@@ -213,9 +214,9 @@ BEGIN_MEMBERCLASS(Assets, Asset, ICHelperUnsafe),
   /* -- For loading via LUA ------------------------------------------------ */
   Asset(void) :
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperAsset{ *cAssets },         // Initially unregistered
-    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
-    AsyncLoader<Asset>{ this,          // Initialise async class with this
+    ICHelperAsset{ cAssets },          // Initially unregistered
+    IdentCSlave{ cParent->CtrNext() }, // Initialise identification number
+    AsyncLoaderAsset{ *this, this,     // Initialise async class with this
       EMC_MP_ASSET },                  // ...and the event id for it.
     AssetFlags{ CD_NONE }              // Np asset load flags initially
     /* -- No code ---------------------------------------------------------- */

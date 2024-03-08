@@ -216,8 +216,8 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
         // Increment received bytes and packet counters
         qRX += uiRX;
         ++qRXp;
-        cParent.qRX += uiRX;
-        ++cParent.qRXp;
+        cParent->qRX += uiRX;
+        ++cParent->qRXp;
         // Set last received timestamp
         duRead = cmHiRes.GetEpochTime();
         // Log status
@@ -259,8 +259,8 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
           // Increment sent bytes and packet counters
           qTX += uiTX;
           ++qTXp;
-          cParent.qTX += uiTX;
-          ++cParent.qTXp;
+          cParent->qTX += uiTX;
+          ++cParent->qTXp;
           // Set last sent timestamp
           duWrite = cmHiRes.GetEpochTime();
           // Return bytes written
@@ -365,7 +365,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     // Return if socket was never connected
     if(FlagIsClear(SS_CONNECTED)) return;
     // Decrement connection count
-    --cParent.stConnected;
+    --cParent->stConnected;
     // Report disconnection and statistics to log
     SocketLogUnsafe(LH_DEBUG, "Disconnected (RX:$/$;TX:$/$).",
       GetRXpkt(), GetRX(), GetTXpkt(), GetTX());
@@ -440,7 +440,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     SocketLogSafe(LH_DEBUG, "Connected to $", GetIPAddress());
     // Set socket read and send timeout
     switch(cSystem->SetSocketTimeout(iFd,
-      cParent.fdRecvTimeout, cParent.fdSendTimeout))
+      cParent->fdRecvTimeout, cParent->fdSendTimeout))
     { // Success
       case 0: break;
       // Failed so just log message
@@ -484,7 +484,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     // The callback when used on the client side should return a negative value
     // on error; 0 if the response is not acceptable (in which case the
     // handshake will fail) or a positive value if it is acceptable.
-    return cParent.iOCSP >= 2 ? 0 : 1;
+    return cParent->iOCSP >= 2 ? 0 : 1;
   }
   /* -- Socket initial connect function ------------------------------------ */
   int InitialConnect(void)
@@ -514,8 +514,8 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       // Set context to release buffers as we don't reuse the contexts
       SSL_CTX_set_mode(cContext, SSL_MODE_RELEASE_BUFFERS);
       // Set our shared certificate store if we have one
-      if(cParent.CertsIsStoreAvailable() &&
-        !CryptSSLCtxSet1VerifyCertStore(cContext, cParent.CertsGetStore()))
+      if(cParent->CertsIsStoreAvailable() &&
+        !CryptSSLCtxSet1VerifyCertStore(cContext, cParent->CertsGetStore()))
           return SetErrorStaticSafe("Cert store failure");
       // Setup verification, make a new verification context and if succeded?
       typedef unique_ptr<X509_VERIFY_PARAM,
@@ -579,7 +579,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       // Client mode
       BIO_set_ssl_mode(bSocket, 1);
       // OCSP verification option enabled?
-      if(cParent.iOCSP >= 1)
+      if(cParent->iOCSP >= 1)
       { // Setup OCSP verification
         if(!SSL_set_tlsext_status_type(sSSL, TLSEXT_STATUSTYPE_ocsp))
           SocketLogSafe(LH_WARNING, "Failed to setup OCSP verification!");
@@ -607,10 +607,10 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
         // Anything else?
         default:
         { // Find error code if the error code information is not found?
-          const auto xErrInfoIt{ cParent.CertsGetError(stRes) };
-          if(cParent.CertsIsNotErrorValid(xErrInfoIt))
+          const auto xErrInfoIt{ cParent->CertsGetError(stRes) };
+          if(cParent->CertsIsNotErrorValid(xErrInfoIt))
           { // Return success if user wants to bypass it
-            if(cParent.CertsIsNotX509BypassFlagSet(1, 0x8000000000000000ULL))
+            if(cParent->CertsIsNotX509BypassFlagSet(1, 0x8000000000000000ULL))
             { // Set error and return status
               SetErrorStaticSafe(StrAppend("X509_V_ERR_UNKNOWN_", stRes));
               return -1;
@@ -623,7 +623,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
             // Build error code
             const string strErr{ StrAppend("X509_V_ERR_", xErrInfo.cpErr) };
             // Return success if user wants to bypass it
-            if(cParent.CertsIsNotX509BypassFlagSet(
+            if(cParent->CertsIsNotX509BypassFlagSet(
                  xErrInfo.stBank, xErrInfo.qFlag))
             { // Set error and return status
               SetErrorStaticSafe(strErr);
@@ -671,7 +671,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     } // Now connected
     AddStatus(SS_CONNECTED, duConnected);
     // Increase connected count
-    ++cParent.stConnected;
+    ++cParent->stConnected;
     // Successful connect
     return 0;
   }
@@ -706,7 +706,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   { // Connect and send http request and break loop if failed.
     if(InitialConnect() == -1) return 1;
     // Check if this is a HEAD request
-    const bool bIsHead = GetRegistry(cParent.strRegVarMETHOD) == "HEAD";
+    const bool bIsHead = GetRegistry(cParent->strRegVarMETHOD) == "HEAD";
     // Set sending request status event
     AddStatus(SS_SENDREQUEST);
     { // Get first line request and body which will also be deleted from the
@@ -714,8 +714,8 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       // trying to optimise/one-line this as MSVC compiler WILL evaluate
       // expressions in the opposite direction.
       const string
-        strReq{ StdMove(GetRegistry(cParent.strRegVarREQ)) },
-        strBody{ StdMove(GetRegistry(cParent.strRegVarBODY)) },
+        strReq{ StdMove(GetRegistry(cParent->strRegVarREQ)) },
+        strBody{ StdMove(GetRegistry(cParent->strRegVarBODY)) },
         strHdrs{ StdMove(vlRegistry.VarsImplodeEx(": ", cCommon->CrLf())) },
         strPkt{ StdMove(StrAppend(strReq,
           strHdrs, cCommon->CrLf(), strBody)) };
@@ -728,7 +728,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     // Response headers
     string strHeaders;
     // Allocate memory for read buffer
-    Memory aPacket{ cParent.stBufferSize };
+    Memory aPacket{ cParent->stBufferSize };
     // Expecting reponse headers? and connection closed status
     bool bHeaders = true;
     // Begin monitoring for reply and break if thread should exit
@@ -806,7 +806,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       strHeaders.shrink_to_fit();
       // Find initial reponse (should be #0 set by VARS class)
       const StrNCStrMapConstIt
-        vlR{ vlRegistry.find(cParent.strRegVarRESPONSE) };
+        vlR{ vlRegistry.find(cParent->strRegVarRESPONSE) };
       if(vlR == vlRegistry.cend()) return SetErrorStaticSafe("Bad response");
       // Split into words. We should have got at least three words
       const Token tWords{ vlR->second, cCommon->Space() };
@@ -829,8 +829,8 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       else SocketLogSafe(LH_WARNING, "Status error $", strStatus);
       // Add protocol and status code to registry so guest can read them
       // without having to perform any special string operations
-      vlRegistry.VarsPushOrUpdatePair(cParent.strRegVarPROTO, strProtoRecv);
-      vlRegistry.VarsPushOrUpdatePair(cParent.strRegVarCODE, strStatus);
+      vlRegistry.VarsPushOrUpdatePair(cParent->strRegVarPROTO, strProtoRecv);
+      vlRegistry.VarsPushOrUpdatePair(cParent->strRegVarCODE, strStatus);
       // For each response var. Push key/value pair to TX registry
       for(const auto &vlI : vlRegistry)
         PushTXPairSafe(vlI.first, vlI.second);
@@ -959,7 +959,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     // Try to connect and if it didn't fail kill the thread
     if(InitialConnect() == -1) return 2;
     // Create read transfer buffer
-    Memory aPacket{ cParent.stBufferSize };
+    Memory aPacket{ cParent->stBufferSize };
     // Loop until thread should terminate
     while(tReader.ThreadShouldNotExit())
     { // Wait for new data to be read and kill thread on error
@@ -1262,7 +1262,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   /* -- Setup Cipher ------------------------------------------------------- */
   void SetupCipher(const string &strC)
   { // Default specified? Use defaults from both cvars
-    if(strC == cParent.strCipherDefault)
+    if(strC == cParent->strCipherDefault)
     { // Setup <=TLSv1.2 ciphers
       strCipherList = cCVars->GetInternalStrSafe(NET_CIPHERTLSv1);
       // Setup TLSv1.3 ciphers
@@ -1279,7 +1279,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       case 1:
       { // Set TLSv1.3 cipher suite
         const string &strSuite = tData.front();
-        strCipherSuite = strSuite == cParent.strCipherDefault ?
+        strCipherSuite = strSuite == cParent->strCipherDefault ?
           cCVars->GetInternalStrSafe(NET_CIPHERTLSv13) : strSuite;
         // Set <=TLSv1.2 cipher list
         strCipherList = cCVars->GetInternalStrSafe(NET_CIPHERTLSv1);
@@ -1289,11 +1289,11 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       case 2:
       { // Set TLSv1.3 cipher suite
         const string &strSuite = tData.front();
-        strCipherSuite = strSuite == cParent.strCipherDefault ?
+        strCipherSuite = strSuite == cParent->strCipherDefault ?
           cCVars->GetInternalStrSafe(NET_CIPHERTLSv13) : strSuite;
         // Set <= TLSv1.2 cipher list
         const string &strList = tData[1];
-        strCipherList = strList == cParent.strCipherDefault ?
+        strCipherList = strList == cParent->strCipherDefault ?
           cCVars->GetInternalStrSafe(NET_CIPHERTLSv1) : strList;
         // Done
         break;
@@ -1357,19 +1357,19 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       { "host", StdMove(strA) },
       // Push the formulated request line. Remove the right hand fragment from
       // the URL if neccesary.
-      { cParent.strRegVarREQ, StrAppend(strS, ' ',
+      { cParent->strRegVarREQ, StrAppend(strS, ' ',
           (StrUrlEncodeSpaces(stFrag == string::npos ?
             strR : strR.substr(0, stFrag))), " HTTP/1.0\r\n") },
       // Push method because we need to check if this is a HEAD request and
       // thus to know when to expect no output.
-      { cParent.strRegVarMETHOD, StdMove(strS) },
+      { cParent->strRegVarMETHOD, StdMove(strS) },
     });
     // Body specified?
     if(!strB.empty()) vlRegistry.VarsPushOrUpdatePairs({
       // Add length of body text
       { "content-length", StrFromNum(strB.length()) },
       // Add body text
-      { cParent.strRegVarBODY, StdMove(strB) }
+      { cParent->strRegVarBODY, StdMove(strB) }
     });
     // Init LUA references
     LuaEvtInitEx(lS);
@@ -1381,8 +1381,8 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   /* -- Constructor -------------------------------------------------------- */
   Socket(void) :
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperSocket{ *cSockets, this }, // Register in collector
-    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
+    ICHelperSocket{ cSockets, this },  // Register in collector
+    IdentCSlave{ cParent->CtrNext() }, // Initialise identification number
     LuaEvtSlave{ this,                 // Socket async events init
       EMC_MP_SOCKET },                 // ...with this id
     SocketFlags{ SS_STANDBY },         // Initially on standby

@@ -12,7 +12,7 @@ namespace IOgl {                       // Start of private module namespace
 using namespace IClock::P;             using namespace ICollector::P;
 using namespace ICVar::P;              using namespace ICVarDef::P;
 using namespace ICVarLib::P;           using namespace IError::P;
-using namespace IEvtWin::P;            using namespace IFbo::P;
+using namespace IEvtWin::P;            using namespace IFboDef::P;
 using namespace IFlags;                using namespace IGlFW::P;
 using namespace IGlFWUtil::P;          using namespace IIdent::P;
 using namespace ILog::P;               using namespace IStd::P;

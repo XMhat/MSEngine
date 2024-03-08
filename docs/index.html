@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<!-- Reference for the MS-Engine API version 24.3.7.22 -->
-<!-- Automatically built at Thu Mar 07 00:25:50 2024 +0000 -->
-<!-- With MS-Engine Project Management Utility version 24.3.7.22 -->
+<!-- Reference for the MS-Engine API version 24.3.8.1 -->
+<!-- Automatically built at Fri Mar 08 00:03:10 2024 +0000 -->
+<!-- With MS-Engine Project Management Utility version 24.3.8.1 -->
 <!-- Copyright (c) 2006-2024 MS-Design, All Rights Reserved Worldwide -->
 <HTML lang="en-GB">
 <HEAD>
@@ -11,18 +11,18 @@
 	<META name="apple-mobile-web-app-title" content="MS-Engine API">
 	<META name="author" content="MS-Design">
 	<META name="copyright" content="Copyright © 2006-2024 MS-Design, All Rights Reserved">
-	<META name="description" content="Reference for the MS-Engine API version 24.3.7.22">
+	<META name="description" content="Reference for the MS-Engine API version 24.3.8.1">
 	<META name="format-detection" content="telephone=no">
-	<META name="generator" content="MS-Engine Project Management Utility version 24.3.7.22">
+	<META name="generator" content="MS-Engine Project Management Utility version 24.3.8.1">
 	<META name="google-site-verification" content="BvWxrqmgaIxqe_W8AW3OGK0fdCI_JfB_-gcOOxCF9_4">
 	<META name="googlebot" content="index,follow">
-	<META name="og:description" content="Reference for the MS-Engine API version 24.3.7.22">
+	<META name="og:description" content="Reference for the MS-Engine API version 24.3.8.1">
 	<META name="og:image" content="https://repository-images.githubusercontent.com/611875607/ee7aa468-9797-4763-9a2d-ea3d782ef413">
-	<META name="og:title" content="MS-Engine 24.3.7.22 API reference">
+	<META name="og:title" content="MS-Engine 24.3.8.1 API reference">
 	<META name="og:url" content="https://xmhat.github.io/MSEngine/">
 	<META name="robots" content="index,follow">
 	<META name="viewport" content="width=device-width, initial-scale=1">
-	<TITLE>MS-Engine 24.3.7.22 API reference</TITLE>
+	<TITLE>MS-Engine 24.3.8.1 API reference</TITLE>
 	<STYLE media="screen">
 	* { margin:0; padding:0 }
 	BODY { background-color:#111; border:0; font-family:sans-serif; overflow-x:hidden }
@@ -52,9 +52,9 @@
 	</STYLE>
 </HEAD>
 <BODY id="top">
-	<H1>MS-Engine 24.3.7.22 API reference</H1>
+	<H1>MS-Engine 24.3.8.1 API reference</H1>
 	<H2>Table of contents:-</H2>
-	<P>This build of the MS-Engine API consists of 792 functions (376 members, 416 methods) and 25 consts in 32 namespaces with 207 cvars.</P>
+	<P>This build of the MS-Engine API consists of 795 functions (376 members, 419 methods) and 25 consts in 32 namespaces with 207 cvars.</P>
 	<OL id="toc">
 		<LI id="idx">
 			<A href="#idx">Namespaces</A> <I>(32 namespaces)</I>
@@ -1400,7 +1400,7 @@
 					</OL>
 				</LI>
 				<LI>
-					<B>Methods</B> <I>(33 methods)</I>
+					<B>Methods</B> <I>(36 methods)</I>
 					<OL>
 						<LI><A href="#Video:Awaken">Awaken</A></LI>
 						<LI><A href="#Video:Blit">Blit</A></LI>
@@ -1423,16 +1423,19 @@
 						<LI><A href="#Video:Play">Play</A></LI>
 						<LI><A href="#Video:Rewind">Rewind</A></LI>
 						<LI><A href="#Video:SetCRGBA">SetCRGBA</A></LI>
+						<LI><A href="#Video:SetCX">SetCX</A></LI>
 						<LI><A href="#Video:SetFilter">SetFilter</A></LI>
 						<LI><A href="#Video:SetKeyColour">SetKeyColour</A></LI>
 						<LI><A href="#Video:SetKeyed">SetKeyed</A></LI>
 						<LI><A href="#Video:SetLoop">SetLoop</A></LI>
 						<LI><A href="#Video:SetTCLTRB">SetTCLTRB</A></LI>
 						<LI><A href="#Video:SetTCLTWH">SetTCLTWH</A></LI>
+						<LI><A href="#Video:SetTCX">SetTCX</A></LI>
 						<LI><A href="#Video:SetVLTRB">SetVLTRB</A></LI>
 						<LI><A href="#Video:SetVLTRBA">SetVLTRBA</A></LI>
 						<LI><A href="#Video:SetVLTWH">SetVLTWH</A></LI>
 						<LI><A href="#Video:SetVLTWHA">SetVLTWHA</A></LI>
+						<LI><A href="#Video:SetVX">SetVX</A></LI>
 						<LI><A href="#Video:SetVolume">SetVolume</A></LI>
 						<LI><A href="#Video:Stop">Stop</A></LI>
 					</OL>
@@ -9994,6 +9997,16 @@
 		<PRE>Sets the colour intensity of all the vertexes for the entire video frame texture&#x2e;<BR></PRE>
 		<H4><A href="#idx:Video" onclick="r('Video:SetCRGBA')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
+	<DIV id="Video:SetCX">
+		<H3>Video:SetCX</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Video:SetCX(<I><U>TriIndex</U>, <U>V1Red</U>, <U>V1Green</U>, <U>V1Blue</U>, <U>V1Alpha</U>, <U>V2Red</U>, <U>V2Green</U>, <U>V2Blue</U>, <U>V2Alpha</U>, <U>V3Red</U>, <U>V3Green</U>, <U>V3Blue</U>, <U>V3Alpha</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>TriIndex</U> <I>(integer)</I> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<BR><U>V1Red</U> <I>(number)</I> = Red component of vertex #1 of the specified triangle.<BR><U>V1Green</U> <I>(number)</I> = Green component of vertex #1 of the specified triangle.<BR><U>V1Blue</U> <I>(number)</I> = Blue component of vertex #1 of the specified triangle.<BR><U>V1Alpha</U> <I>(number)</I> = Alpha component of vertex #1 of the specified triangle.<BR><U>V2Red</U> <I>(number)</I> = Red component of vertex #2 of the specified triangle.<BR><U>V2Green</U> <I>(number)</I> = Green component of vertex #2 of the specified triangle.<BR><U>V2Blue</U> <I>(number)</I> = Blue component of vertex #2 of the specified triangle.<BR><U>V2Alpha</U> <I>(number)</I> = Alpha component of vertex #2 of the specified triangle.<BR><U>V3Red</U> <I>(number)</I> = Red component of vertex #3 of the specified triangle.<BR><U>V3Green</U> <I>(number)</I> = Green component of vertex #3 of the specified triangle.<BR><U>V3Blue</U> <I>(number)</I> = Blue component of vertex #3 of the specified triangle.<BR><U>V3Alpha</U> <I>(number)</I> = Alpha component of vertex #3 of the specified triangle.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Stores the specified colour intensities on each vertex for the Video&#x3a;Blit&#x28;&#x29; function&#x2e;<BR></PRE>
+		<H4><A href="#idx:Video" onclick="r('Video:SetCX')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
 	<DIV id="Video:SetFilter">
 		<H3>Video:SetFilter</H3>
 		<H4>Syntax:-</H4>
@@ -10054,6 +10067,16 @@
 		<PRE>Allows you to set basic texture co&#x2d;ordinates when blitting the video frame texture&#x2e;<BR></PRE>
 		<H4><A href="#idx:Video" onclick="r('Video:SetTCLTWH')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
+	<DIV id="Video:SetTCX">
+		<H3>Video:SetTCX</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Video:SetTCX(<I><U>TriIndex</U>, <U>TC1Left</U>, <U>TC1Top</U>, <U>TC2Left</U>, <U>TC2Top</U>, <U>TC3Left</U>, <U>TC3Top</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>TriIndex</U> <I>(integer)</I> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<BR><U>TC1Left</U> <I>(number)</I> = Coord #1 of vertex #1 of the specified triangle.<BR><U>TC1Top</U> <I>(number)</I> = Coord #2 of vertex #2 of the specified triangle.<BR><U>TC2Left</U> <I>(number)</I> = Coord #1 of vertex #3 of the specified triangle.<BR><U>TC2Top</U> <I>(number)</I> = Coord #2 of vertex #1 of the specified triangle.<BR><U>TC3Left</U> <I>(number)</I> = Coord #1 of vertex #2 of the specified triangle.<BR><U>TC3Top</U> <I>(number)</I> = Coord #2 of vertex #3 of the specified triangle.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Stores the specified texture co&#x2d;ordinates for when the frame buffer object is drawn&#x2e;<BR></PRE>
+		<H4><A href="#idx:Video" onclick="r('Video:SetTCX')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
 	<DIV id="Video:SetVLTRB">
 		<H3>Video:SetVLTRB</H3>
 		<H4>Syntax:-</H4>
@@ -10093,6 +10116,16 @@
 		<H4>Synopsis:-</H4>
 		<PRE>Allows you to set basic vertex co&#x2d;ordinates&#x2c; dimensions and angle when blitting the video&#x27;s frame buffer object&#x2e;<BR></PRE>
 		<H4><A href="#idx:Video" onclick="r('Video:SetVLTWHA')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Video:SetVX">
+		<H3>Video:SetVX</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Video:SetVX(<I><U>TriIndex</U>, <U>V1Left</U>, <U>V1Top</U>, <U>V2Left</U>, <U>V2Top</U>, <U>V3Left</U>, <U>V3Top</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>TriIndex</U> <I>(integer)</I> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<BR><U>V1Left</U> <I>(number)</I> = Coord #1 of vertex #1 of the specified triangle.<BR><U>V1Top</U> <I>(number)</I> = Coord #2 of vertex #2 of the specified triangle.<BR><U>V2Left</U> <I>(number)</I> = Coord #1 of vertex #3 of the specified triangle.<BR><U>V2Top</U> <I>(number)</I> = Coord #2 of vertex #1 of the specified triangle.<BR><U>V3Left</U> <I>(number)</I> = Coord #1 of vertex #2 of the specified triangle.<BR><U>V3Top</U> <I>(number)</I> = Coord #2 of vertex #3 of the specified triangle.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Stores the specified vertex co&#x2d;ordinates when using the &#x27;Video&#x3a;Blit&#x27; function&#x2e;<BR></PRE>
+		<H4><A href="#idx:Video" onclick="r('Video:SetVX')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Video:SetVolume">
 		<H3>Video:SetVolume</H3>
@@ -11157,6 +11190,6 @@
 		<PRE>Sets the minimum width of the window&#x2e; This is only changable at the application configuration file and is not saved to persistence database&#x2e;<BR></PRE>
 		<H4><A href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<ADDRESS>Copyright &copy; 2024 MS-Design, All Rights Reserved.<BR>This document was created at Thu Mar 07 00:25:50 2024 +0000</ADDRESS>
+	<ADDRESS>Copyright &copy; 2024 MS-Design, All Rights Reserved.<BR>This document was created at Fri Mar 08 00:03:10 2024 +0000</ADDRESS>
 </BODY>
 </HTML>

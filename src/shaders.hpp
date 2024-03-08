@@ -153,12 +153,12 @@ static struct ShaderCore final
     sh2D16.Link();
   }
   /* ----------------------------------------------------------------------- */
-  void Init3DYUVTemplate(Shader &sh3DYUV, const char *cpName,
+  void Init3DYUVTemplate(Shader &shDest, const char*const cpName,
     const char*const cpCode)
   { // Add YUV to RGB shaders
-    sh3DYUV.LockSet();
-    AddVertexShaderWith3DTemplate(sh3DYUV, "VERT-3D");
-    sh3DYUV.AddShaderEx(cpName, GL_FRAGMENT_SHADER,
+    shDest.LockSet();
+    AddVertexShaderWith3DTemplate(shDest, "VERT-3D");
+    shDest.AddShaderEx(cpName, GL_FRAGMENT_SHADER,
       "in vec4 texcoordout;"           // Texture info
       "in vec4 colourout;"             // Colour info
       "out vec4 pixel;"                // Pixel out
@@ -174,8 +174,8 @@ static struct ShaderCore final
         "rgb = mat3(1,1,1,0,-0.344,1.77,1.403,-0.714,0)*yuv;"
         "pixel = vec4(rgb,$);"
       "}", cpCode);
-    sh3DYUV.Link();
-    sh3DYUV.Activate();
+    shDest.Link();
+    shDest.Activate();
     // For each texture unit
     static const array<const GLchar*const,3>
       acpCmp{ "texY", "texCb", "texCr" };

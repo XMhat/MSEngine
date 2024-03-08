@@ -11,7 +11,7 @@
 namespace IShader {                    // Start of private module namespace
 /* -- Dependencies --------------------------------------------------------- */
 using namespace ICollector::P;         using namespace IError::P;
-using namespace IFbo::P;               using namespace IIdent::P;
+using namespace IFboDef::P;            using namespace IIdent::P;
 using namespace ILog::P;               using namespace IOgl::P;
 using namespace IStd::P;               using namespace IString::P;
 using namespace ISysUtil::P;           using namespace Lib::OS::GlFW;
@@ -248,8 +248,8 @@ BEGIN_COLLECTORDUO(Shaders, Shader, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Constructor -------------------------------------------------------- */
   Shader(void) :                       // No parameters
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperShader{ *cShaders, this }, // Register in Shaders list
-    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
+    ICHelperShader{ cShaders, this },  // Register in Shaders list
+    IdentCSlave{ cParent->CtrNext() }, // Initialise identification number
     uiProgram(0),                      // No program set
     bLinked(false)                     // Not linked
     /* -- No code ---------------------------------------------------------- */

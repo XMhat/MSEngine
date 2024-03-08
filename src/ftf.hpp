@@ -124,7 +124,8 @@ static class FreeType final            // Members initially private
 /* == Ftf collector class for collector data and custom variables ========== */
 BEGIN_ASYNCCOLLECTORDUO(Ftfs, Ftf, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
-  public AsyncLoader<Ftf>,             // Asyncronous loading of data
+  public Ident,                        // Ftf file name
+  public AsyncLoaderFtf,               // Asyncronous loading of data
   public Lockable,                     // Lua garbage collector instruction
   public Dimensions<GLfloat>           // Requested font width/height
 { /* -- Private variables -------------------------------------------------- */
@@ -291,9 +292,9 @@ BEGIN_ASYNCCOLLECTORDUO(Ftfs, Ftf, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Default constructor ------------------------------------------------ */
   Ftf(void) :                          // No parameters
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperFtf{ *cFtfs },             // Initially unregistered
-    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
-    AsyncLoader<Ftf>{ this,            // Initialise async loader with class
+    ICHelperFtf{ cFtfs },              // Initially unregistered
+    IdentCSlave{ cParent->CtrNext() }, // Initialise identification number
+    AsyncLoaderFtf{ *this, this,       // Initialise async loader with class
       EMC_MP_FONT },                   // " and the event id
     fOutline(0.0f),                    // No outline size yet
     ftFace(nullptr),                   // No FreeType handle yet

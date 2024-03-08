@@ -730,18 +730,20 @@ cConsole->AddLineEx("$ and $.",
 const function ShowFboInfo{ [](const Fbo &fC, Statistic &tData,
   size_t &stTriangles, size_t &stCommands)
 { // Add to totals
-  stTriangles += fC.GetTris();
-  stCommands += fC.GetCmds();
+  stTriangles += fC.FboGetTris();
+  stCommands += fC.FboGetCmds();
   // Show FBO status
   tData.DataN(fC.CtrGet()).DataN(fC.uiFBO).DataN(fC.uiFBOtex)
        .Data(StrFromEvalTokens({
-          { fC.IsTransparencyEnabled(), 'A' }, { fC.IsClearEnabled(), 'C' },
+          { fC.FboIsTransparencyEnabled(), 'A' },
+          { fC.FboIsClearEnabled(),        'C' },
        }))
-       .DataN(fC.GetFilter()).DataN(fC.DimGetWidth()).DataN(fC.DimGetHeight())
-       .DataN(fC.fcStage.GetCoLeft()).DataN(fC.fcStage.GetCoTop())
-       .DataN(fC.fcStage.GetCoRight()).DataN(fC.fcStage.GetCoBottom())
-       .DataN(fC.GetTris()).DataN(fC.GetCmds()).DataN(fC.GetTrisReserved())
-       .DataN(fC.GetCmdsReserved()).Data(fC.IdentGet());
+       .DataN(fC.FboGetFilter()).DataN(fC.DimGetWidth())
+       .DataN(fC.DimGetHeight()).DataN(fC.fcStage.GetCoLeft())
+       .DataN(fC.fcStage.GetCoTop()).DataN(fC.fcStage.GetCoRight())
+       .DataN(fC.fcStage.GetCoBottom()).DataN(fC.FboGetTris())
+       .DataN(fC.FboGetCmds()).DataN(fC.FboGetTrisReserved())
+       .DataN(fC.FboGetCmdsReserved()).Data(fC.IdentGet());
 } };
 // Text table class to help us write neat output
 Statistic tData;
@@ -755,9 +757,11 @@ size_t stTriangles = 0, stCommands = 0;
 // Show primary fbos info
 ShowFboInfo(cFboCore->fboMain, tData, stTriangles, stCommands);
 ShowFboInfo(cFboCore->fboConsole, tData, stTriangles, stCommands);
-// Walk through textures classes
+// Enumerate fbo and video classes and show their infos
 for(const Fbo*const fCptr : *cFbos)
   ShowFboInfo(*fCptr, tData, stTriangles, stCommands);
+for(const Video*const vCptr : *cVideos)
+  ShowFboInfo(*vCptr, tData, stTriangles, stCommands);
 // Log counts
 cConsole->AddLineEx("$$ totalling $ and $.", tData.Finish(),
   StrPluraliseNum(2 + cFbos->size(), "framebuffer", "framebuffers"),
@@ -892,10 +896,10 @@ cConsole->AddLineEx(
     cFboCore->fboMain.fcStage.GetCoBottom(),
     cFboCore->fboMain.DimGetWidth(), cFboCore->fboMain.DimGetHeight(),
     hex, cOgl->FlagGet(),
-  dec, cFboCore->fboMain.GetTris(),
-    cFboCore->fboMain.GetTrisReserved(),
-    cFboCore->fboMain.GetCmds(),
-    cFboCore->fboMain.GetCmdsReserved(),
+  dec, cFboCore->fboMain.FboGetTris(),
+    cFboCore->fboMain.FboGetTrisReserved(),
+    cFboCore->fboMain.FboGetCmds(),
+    cFboCore->fboMain.FboGetCmdsReserved(),
   fixed, cFboCore->dRTFPS, cDisplay->GetRefreshRate(),
   cFboCore->dRTFPS / cDisplay->GetRefreshRate() * 100,
   cOgl->GetLimit());

@@ -296,7 +296,7 @@ BEGIN_MEMBERCLASSEX(Samples, Sample, ICHelperUnsafe, /* n/a */),
   /* -- Constructor -------------------------------------------------------- */
   Sample(void) :
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperSample{ *cSamples, this }  // Initialise collector class
+    ICHelperSample{ cSamples, this }   // Initialise collector class
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Destructor --------------------------------------------------------- */

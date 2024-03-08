@@ -268,8 +268,8 @@ BEGIN_MEMBERCLASS(Sources, Source, ICHelperSafe),
   /* -- Constructor default locked for immediate async usage --------------- */
   explicit Source(const bool bLocked=true) :
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperSource{ *cSources, this }, // Register in Sources list
-    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
+    ICHelperSource{ cSources, this },  // Register in Sources list
+    IdentCSlave{ cParent->CtrNext() }, // Initialise identification number
     uiId(cOal->CreateSource()),        // Initialise a new source from OpenAL
     bExternal(bLocked)                 // Set source managed flag
     /* -- Check for CreateSource error or initialise ----------------------- */

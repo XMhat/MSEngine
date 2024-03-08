@@ -18,10 +18,11 @@
 /* ========================================================================= */
 namespace LLFbo {                      // Fbo namespace
 /* -- Dependencies --------------------------------------------------------- */
-using namespace IConsole::P;           using namespace IFbo::P;
-using namespace IFboCore::P;           using namespace ILua::P;
-using namespace IOgl::P;               using namespace ISShot::P;
-using namespace IString::P;            using namespace Lib::OS::GlFW;
+using namespace IConsole::P;           using namespace IFboDef::P;
+using namespace IFbo::P;               using namespace IFboCore::P;
+using namespace ILua::P;               using namespace IOgl::P;
+using namespace ISShot::P;             using namespace IString::P;
+using namespace Lib::OS::GlFW;
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Fbo:* member functions                                              ## **
@@ -36,7 +37,7 @@ using namespace IString::P;            using namespace Lib::OS::GlFW;
 // ? glBlendFuncSeparate. The parameters are a zero index of the formula you
 // ? want to use. These values are available in Fbo.Blends().
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetBlend, LCGETPTR(1, Fbo)->SetBlend(
+LLFUNC(SetBlend, LCGETPTR(1, Fbo)->FboSetBlend(
   LCGETINTLGE(size_t, 2, 0, OB_MAX, "srcRGB"),
   LCGETINTLGE(size_t, 3, 0, OB_MAX, "dstRGB"),
   LCGETINTLGE(size_t, 4, 0, OB_MAX, "srcAlpha"),
@@ -54,7 +55,7 @@ LLFUNC(SetBlend, LCGETPTR(1, Fbo)->SetBlend(
 // ? function.
 /* ------------------------------------------------------------------------- */
 LLFUNC(SetVX, LCGETULPTR(1, Fbo)->
-  SetVertexEx(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex"), {
+  FboItemSetVertexEx(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex"), {
     LCGETNUM(GLfloat, 3, "V1Left"), LCGETNUM(GLfloat, 4, "V1Top"),
     LCGETNUM(GLfloat, 5, "V2Left"), LCGETNUM(GLfloat, 6, "V2Top"),
     LCGETNUM(GLfloat, 7, "V3Left"), LCGETNUM(GLfloat, 8, "V3Top")
@@ -72,7 +73,7 @@ LLFUNC(SetVX, LCGETULPTR(1, Fbo)->
 // ? is drawn.
 /* ------------------------------------------------------------------------- */
 LLFUNC(SetTCX, LCGETULPTR(1, Fbo)->
-  SetTexCoordEx(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex"), {
+  FboItemSetTexCoordEx(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex"), {
     LCGETNUM(GLfloat, 3, "TC1Left"), LCGETNUM(GLfloat, 4, "TC1Top"),
     LCGETNUM(GLfloat, 5, "TC2Left"), LCGETNUM(GLfloat, 6, "TC2Top"),
     LCGETNUM(GLfloat, 7, "TC3Left"), LCGETNUM(GLfloat, 8, "TC3Top")
@@ -96,7 +97,7 @@ LLFUNC(SetTCX, LCGETULPTR(1, Fbo)->
 // ? Fbo:Blit() function.
 /* ------------------------------------------------------------------------- */
 LLFUNC(SetCX, LCGETPTR(1, Fbo)->
-  SetColourEx(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex"), {
+  FboItemSetColourEx(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex"), {
     LCGETNUM(GLfloat, 3, "V1Red"), LCGETNUM(GLfloat, 4, "V1Green"),
     LCGETNUM(GLfloat, 5, "V1Blue"), LCGETNUM(GLfloat, 6, "V1Alpha"),
     LCGETNUM(GLfloat, 7, "V2Red"), LCGETNUM(GLfloat, 8, "V2Green"),
@@ -113,7 +114,7 @@ LLFUNC(SetCX, LCGETPTR(1, Fbo)->
 // ? Allows you to set basic vertex bounds when blitting the frame buffer
 // ? object.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetVLTRB, LCGETULPTR(1, Fbo)->SetVertex(
+LLFUNC(SetVLTRB, LCGETULPTR(1, Fbo)->FboItemSetVertex(
   LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom")));
 /* ========================================================================= */
@@ -125,7 +126,7 @@ LLFUNC(SetVLTRB, LCGETULPTR(1, Fbo)->SetVertex(
 // ? Allows you to set basic vertex co-ordinates and dimensions when blitting
 // ? the frame buffer object.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetVLTWH, LCGETULPTR(1, Fbo)->SetVertexWH(
+LLFUNC(SetVLTWH, LCGETULPTR(1, Fbo)->FboItemSetVertexWH(
   LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Width"), LCGETNUM(GLfloat, 5, "Height")));
 /* ========================================================================= */
@@ -138,7 +139,7 @@ LLFUNC(SetVLTWH, LCGETULPTR(1, Fbo)->SetVertexWH(
 // ? Allows you to set basic vertex co-ordinates when blitting the fbo with
 // ? angle calculations.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetVLTRBA, LCGETULPTR(1, Fbo)->SetVertex(
+LLFUNC(SetVLTRBA, LCGETULPTR(1, Fbo)->FboItemSetVertex(
   LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom"),
   LCGETNORM(GLfloat, 6, "Angle")));
@@ -152,7 +153,7 @@ LLFUNC(SetVLTRBA, LCGETULPTR(1, Fbo)->SetVertex(
 // ? Allows you to set basic vertex co-ordinates when blitting the fbo with
 // ? angle calculations.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetVLTWHA, LCGETULPTR(1, Fbo)->SetVertexWH(
+LLFUNC(SetVLTWHA, LCGETULPTR(1, Fbo)->FboItemSetVertexWH(
   LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Width"), LCGETNUM(GLfloat, 5, "Height"),
   LCGETNORM(GLfloat, 6, "Angle")));
@@ -166,7 +167,7 @@ LLFUNC(SetVLTWHA, LCGETULPTR(1, Fbo)->SetVertexWH(
 // ? where you can draw. Same as glOrtho().
 // ? See: https://www.opengl.org/sdk/docs/man2/xhtml/glOrtho.xml
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetOrtho, LCGETULPTR(1, Fbo)->SetOrtho(
+LLFUNC(SetOrtho, LCGETULPTR(1, Fbo)->FboSetOrtho(
   LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom")));
 /* ========================================================================= */
@@ -176,7 +177,7 @@ LLFUNC(SetOrtho, LCGETULPTR(1, Fbo)->SetOrtho(
 // ? mode (default).
 /* ------------------------------------------------------------------------- */
 LLFUNC(SetWireframe,
-  LCGETULPTR(1, Fbo)->SetWireframe(LCGETBOOL(2, "Wireframe")));
+  LCGETULPTR(1, Fbo)->FboSetWireframe(LCGETBOOL(2, "Wireframe")));
 /* ========================================================================= */
 // $ Fbo:SetTCLTRB
 // > Left:number=The destination left co-ordinate.
@@ -186,7 +187,7 @@ LLFUNC(SetWireframe,
 // ? Stores the specified texture bounds used when blitting the frame buffer
 // ? object.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetTCLTRB, LCGETULPTR(1, Fbo)->SetTexCoord(
+LLFUNC(SetTCLTRB, LCGETULPTR(1, Fbo)->FboItemSetTexCoord(
   LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom")));
 /* ========================================================================= */
@@ -198,7 +199,7 @@ LLFUNC(SetTCLTRB, LCGETULPTR(1, Fbo)->SetTexCoord(
 // ? Stores the specified texture co-ords and dimensions when blitting the
 // ? frame buffer object.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetTCLTWH, LCGETULPTR(1, Fbo)->SetTexCoordWH(
+LLFUNC(SetTCLTWH, LCGETULPTR(1, Fbo)->FboItemSetTexCoordWH(
   LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Width"), LCGETNUM(GLfloat, 5, "Height")));
 /* ========================================================================= */
@@ -206,7 +207,7 @@ LLFUNC(SetTCLTWH, LCGETULPTR(1, Fbo)->SetTexCoordWH(
 // > State:bool=New clear state
 // ? Sets if the fbo should be cleared before rendering to it
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetClear, LCGETPTR(1, Fbo)->SetClear(LCGETBOOL(2, "Clear")));
+LLFUNC(SetClear, LCGETPTR(1, Fbo)->FboSetClear(LCGETBOOL(2, "Clear")));
 /* ========================================================================= */
 // $ Fbo:SetClearColour
 // > Red:number=The red component intensity (0 to 1).
@@ -218,7 +219,7 @@ LLFUNC(SetClear, LCGETPTR(1, Fbo)->SetClear(LCGETBOOL(2, "Clear")));
 // ? See: https://www.opengl.org/sdk/docs/man2/xhtml/glClear.xml.
 // ? See: https://www.opengl.org/sdk/docs/man2/xhtml/glClearColor.xml.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetClearColour, LCGETPTR(1, Fbo)->SetClearColour(
+LLFUNC(SetClearColour, LCGETPTR(1, Fbo)->FboSetClearColour(
   LCGETNUM(GLfloat, 2, "Red"),  LCGETNUM(GLfloat, 3, "Green"),
   LCGETNUM(GLfloat, 4, "Blue"), LCGETNUM(GLfloat, 5, "Alpha")));
 /* ========================================================================= */
@@ -229,7 +230,7 @@ LLFUNC(SetClearColour, LCGETPTR(1, Fbo)->SetClearColour(
 // > Alpha:number=The entire fbo texture alpha colour intensity (0 to 1).
 // ? Sets the colour intensity of all the vertexes for the entire fbo texture.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetCRGBA, LCGETPTR(1, Fbo)->SetQuadRGBA(
+LLFUNC(SetCRGBA, LCGETPTR(1, Fbo)->FboItemSetQuadRGBA(
   LCGETNUM(GLfloat, 2, "Red"),  LCGETNUM(GLfloat, 3, "Green"),
   LCGETNUM(GLfloat, 4, "Blue"), LCGETNUM(GLfloat, 5, "Alpha")));
 /* ========================================================================= */
@@ -240,20 +241,20 @@ LLFUNC(SetCRGBA, LCGETPTR(1, Fbo)->SetQuadRGBA(
 // ? (Magnification / Minification). See 'Texture.Filters()' for more info.
 /* ------------------------------------------------------------------------- */
 LLFUNC(SetFilter, LCGETPTR(1, Fbo)->
-  SetFilterCommit(LCGETINTLGE(GLuint, 2, 0, OF_NM_MAX, "Filter")));
+  FboSetFilterCommit(LCGETINTLGE(GLuint, 2, 0, OF_NM_MAX, "Filter")));
 /* ========================================================================= */
 // $ Fbo:Activate
 // ? Makes the specified fbo the active fbo and all subsequent Texture:* calls
 // ? will apply to this fbo. This can be called on the main fbo.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Activate, LCGETPTR(1, Fbo)->SetActive());
+LLFUNC(Activate, LCGETPTR(1, Fbo)->FboSetActive());
 /* ========================================================================= */
 // $ Fbo:Finish
 // ? Queues the fbo for redrawing after LUA has finished it's tick function.
 // ? You only need to run this once, subsequent calls in the same frame will
 // ? be ignored as the fbo has already been queued for redrawing.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Finish, LCGETPTR(1, Fbo)->FinishAndRender());
+LLFUNC(Finish, LCGETPTR(1, Fbo)->FboFinishAndRender());
 /* ========================================================================= */
 // $ Fbo:Blit
 // ? Blits the SPECIFIED fbo to the currently ACTIVE fbo. This just adds
@@ -261,7 +262,7 @@ LLFUNC(Finish, LCGETPTR(1, Fbo)->FinishAndRender());
 // ? active fbo is finished and rendered. The currently stored vertex,
 // ? texcoord, colour and ortho values are used.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Blit, FboActive()->Blit(*LCGETPTR(1, Fbo)));
+LLFUNC(Blit, FboActive()->FboBlit(*LCGETPTR(1, Fbo)));
 /* ========================================================================= */
 // $ Fbo:BlitT
 // > TriIndex:integer=Triangle index. Triangle #1 (zero) or triangle #2 (one).
@@ -270,7 +271,7 @@ LLFUNC(Blit, FboActive()->Blit(*LCGETPTR(1, Fbo)));
 // ? actually render until the active fbo is finished and rendered. The
 // ? currently stored vertex, texcoord, colour and ortho values are used.
 /* ------------------------------------------------------------------------- */
-LLFUNC(BlitT, FboActive()->BlitTri(*LCGETPTR(1, Fbo),
+LLFUNC(BlitT, FboActive()->FboBlitTri(*LCGETPTR(1, Fbo),
   LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex")));
 /* ========================================================================= */
 // $ Fbo:GetLFloatCount
@@ -278,20 +279,20 @@ LLFUNC(BlitT, FboActive()->BlitTri(*LCGETPTR(1, Fbo),
 // ? Returns the number of floating point numbers entered into the display list
 // ? on the last rendered frame.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetLFloatCount, 1, LCPUSHVAR(LCGETPTR(1, Fbo)->GetTris()));
+LLFUNCEX(GetLFloatCount, 1, LCPUSHVAR(LCGETPTR(1, Fbo)->FboGetTris()));
 /* ========================================================================= */
 // $ Fbo:GetFloatCount
 // < Count:integer=Number of floats in display lists.
 // ? Returns the number of floating point numbers currently entered into the
 // ? display list.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetFloatCount, 1, LCPUSHVAR(LCGETPTR(1, Fbo)->GetTrisNow()));
+LLFUNCEX(GetFloatCount, 1, LCPUSHVAR(LCGETPTR(1, Fbo)->FboGetTrisNow()));
 /* ========================================================================= */
 // $ Fbo:IsFinished
 // < State:boolean=Is the fbo finished
 // ? Returns if the fbo has been finished.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(IsFinished, 1, LCPUSHVAR(!!LCGETPTR(1, Fbo)->GetFinishCount()));
+LLFUNCEX(IsFinished, 1, LCPUSHVAR(!!LCGETPTR(1, Fbo)->FboGetFinishCount()));
 /* ========================================================================= */
 // $ Fbo:GetMatrix
 // < Width:number=Total count of horizontal viewable pixels.
@@ -327,7 +328,7 @@ LLFUNC(Dump, cSShot->DumpFBO(*LCGETPTR(1, Fbo),
 // ? complex frame you draw is slow. It's probably because of this as the
 // ? default reservation level for the lists is 1024 x 64-bit float/command.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Reserve, LCGETPTR(1, Fbo)->Reserve(
+LLFUNC(Reserve, LCGETPTR(1, Fbo)->FboReserve(
   LCGETINTLG(size_t, 2, 1, 1000000, "Vertexes"),
   LCGETINTLG(size_t, 3, 1, 1000000, "Commands")));
 /* ========================================================================= */
@@ -371,7 +372,7 @@ LLFUNCEX(Main, 1, LCCLASSCREATEPTR(Fbo, &cFboCore->fboMain));
 // < Handle:Fbo=A handle to the newly created main fbo object.
 // ? Creates a new FBO of the specified size.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Create, 1, LCCLASSCREATE(Fbo)->Init(
+LLFUNCEX(Create, 1, LCCLASSCREATE(Fbo)->FboInit(
   LCGETCPPSTRINGNE(         1,                                 "Identifier"),
   LCGETINTLG      (GLsizei, 2, 1, cOgl->MaxTexSize<GLsizei>(), "Width"),
   LCGETINTLG      (GLsizei, 3, 1, cOgl->MaxTexSize<GLsizei>(), "Height")));

@@ -58,13 +58,14 @@ BUILD_FLAGS(Video,
   // Video is playing?
   FL_PLAY                {0x40000000}
 );/* ======================================================================= */
-BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
+BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
   /* -- Base classes ------------------------------------------------------- */
-  public AsyncLoader<Video>,           // Asynchronous laoding of videos
+  public Fbo,                          // Video file name
+  public AsyncLoaderVideo,             // Asynchronous laoding of videos
   public LuaEvtSlave<Video>,           // Lua asynchronous events
   public VideoFlags,                   // Video settings flags
   private ClockInterval<CoreClock>,    // Frame playback timing helper
-  public Lockable                      // Lua garbage collector instruction
+  public condition_variable            // Condition suspend variables
 { /* -- Typedefs ----------------------------------------------------------- */
   struct Frame                         // Frame data
   { /* --------------------------------------------------------------------- */
@@ -103,7 +104,6 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
   enum Event { VE_PLAY, VE_LOOP, VE_STOP, VE_PAUSE, VE_FINISH };
   /* -- Concurrency -------------------------------------------------------- */
   Thread           tThread;            // Video Decoding Thread
-  condition_variable cvBuffer;         // Re-buffer unblocker
   mutex            mBuffer,            // mutex for rebuffering CV
                    mUpload;            // mutex for uploading data
   Unblock          ubReason;           // Unlock condition variable
@@ -145,7 +145,6 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
   ALdouble         fdAudioBuffer;      // Audio buffered
   ALfloat          fAudioVolume;       // Audio volume
   /* -- OpenGL ------------------------------------------------------------- */
-  Fbo              fboC;               // Fbo for video
   FboItem          fiYUV;              // Blit data for actual YUV components
   array<GLuint,3>  uiYUV;              // Texture id's for YUV components
   Shader          *shProgram;          // Shader program to use
@@ -376,7 +375,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
       UniqueLock uLock{ mBuffer };
       // Wait for main thread to say we should rebuffer or when this thread
       // is requested to terminate.
-      cvBuffer.wait(uLock, [this]{
+      wait(uLock, [this]{
         return ubReason != UB_BLOCK || tThread.ThreadShouldExit(); });
       // Check reason for unblocking
       switch(ubReason)
@@ -486,7 +485,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     cLog->LogDebugExSafe("Video pre-allocated $ bytes for audio decoder.",
       mbAudio.Size());
     // Init maximum drift if have theora data too
-    if(FlagIsSet(FL_THEORA)) fdMaxDrift = cParent.fdMaxDrift;
+    if(FlagIsSet(FL_THEORA)) fdMaxDrift = cVideos->fdMaxDrift;
     // Reset audio position and drift
     fdAudioTime = fdDrift = 0.0;
   }
@@ -519,10 +518,9 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     // Verify colour space
     switch(GetColourSpace())
     { // Valid colour spaces
-      case TH_CS_UNSPECIFIED:          // No colour content?
-      case TH_CS_ITU_REC_470M:         // NTSC content?
-      case TH_CS_ITU_REC_470BG:        // PAL/SECAM content?
-        break;
+      case TH_CS_UNSPECIFIED: [[fallthrough]];  // No colour content?
+      case TH_CS_ITU_REC_470M: [[fallthrough]]; // NTSC content?
+      case TH_CS_ITU_REC_470BG: break;          // PAL/SECAM content?
       // Invalid colour space
       default: XC("The specified colour space is unsupported!",
                   "Identifier", IdentGet(), "ColourSpace", GetColourSpace());
@@ -550,22 +548,20 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     // OpenGL output initialised
     FlagSet(FL_GLINIT);
     // Init fbo
-    fboC.Init(IdentGet(), static_cast<GLsizei>(tIN.pic_width),
-                          static_cast<GLsizei>(tIN.pic_height));
-    fboC.CollectorRegister();
-    fboC.SetOrtho(0, 0, 0, 0);
-    fboC.LockSet();
-    fboC.SetTransparency(true);
-    fboC.SetTexCoord(0, 0, 1, 1);
+    FboInit(IdentGet(), static_cast<GLsizei>(tIN.pic_width),
+                        static_cast<GLsizei>(tIN.pic_height));
+    FboSetOrtho(0, 0, 0, 0);
+    FboSetTransparency(true);
+    FboItemSetTexCoord(0, 0, 1, 1);
     // Clear the fbo, initially transparent
-    fboC.SetClearColour(0, 0, 0, 0);
-    fboC.SetClear(false);
+    FboSetClearColour(0, 0, 0, 0);
+    FboSetClear(false);
     // Only 2 triangles and 3 commands are needed so reserve the memory
-    if(!fboC.Reserve(2, 3))
+    if(!FboReserve(2, 3))
       cLog->LogWarningExSafe("Video failed to reserve memory for fbo lists.");
     // We must discard the extra garbage from the ogg video. We can do that
     // with the GPU very easily by altering texture coords!
-    fiYUV.SetTexCoord(
+    fiYUV.FboItemSetTexCoord(
       static_cast<GLfloat>(tIN.pic_x) / tIN.frame_width,
       static_cast<GLfloat>(tIN.pic_y + tIN.pic_height) / tIN.frame_height,
       static_cast<GLfloat>(tIN.pic_x + tIN.pic_width) / tIN.frame_width,
@@ -686,10 +682,10 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
   }
   /* -- Convert colour space to name -------------------------------------- */
   const string &ColourSpaceToString(const th_colorspace csId) const
-    { return cParent.csStrings.Get(csId); }
+    { return cVideos->csStrings.Get(csId); }
   /* -- Convert pixel format to name --------------------------------------- */
   const string &PixelFormatToString(const th_pixel_fmt pfId) const
-    { return cParent.pfStrings.Get(pfId); }
+    { return cVideos->pfStrings.Get(pfId); }
   /* -- Video properties ------------------------------------------- */ public:
   double GetVideoTime(void) const { return fdVideoTime; }
   double GetAudioTime(void) const { return fdAudioTime; }
@@ -710,6 +706,10 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
   ALenum GetAudioFormat(void) const { return eFormat; }
   const string GetFormatAsIdentifier(void) const
     { return cOal->GetALFormat(eFormat); }
+  /* -- Reinitialise frame buffer object and texture ----------------------- */
+  void ReInitDisplayOutput(void) { FboReInit(); InitTexture(); }
+  /* -- De-initialise texture and frame buffer object ---------------------- */
+  void DeInitDisplayOutput(void) { DeInitTexture(); FboDeInit(); }
   /* -- Update volume ------------------------------------------------------ */
   void CommitVolume(void)
   { // Ignore if no source
@@ -724,30 +724,10 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     // Update volume
     CommitVolume();
   }
-  /* -- Set colour of vertexes --------------------------------------------- */
-  void SetFBOColour(const GLfloat fR, const GLfloat fG, const GLfloat fB,
-    const GLfloat fA) { fboC.SetQuadRGBA(fR, fG, fB, fA); }
-  /* -- Set vertexes for FBO (Full and simple)------------------------------ */
-  void SetFBOVertex(const GLfloat fX1, const GLfloat fY1, const GLfloat fX2,
-    const GLfloat fY2) { fboC.SetVertex(fX1, fY1, fX2, fY2); }
-  void SetFBOVertexWH(const GLfloat fX, const GLfloat fY, const GLfloat fW,
-    const GLfloat fH) { fboC.SetVertexWH(fX, fY, fW, fH); }
-  /* -- Set vertexes for FBO (Full and simple) with Angle ------------------ */
-  void SetFBOVertex(const GLfloat fX1, const GLfloat fY1, const GLfloat fX2,
-    const GLfloat fY2, const GLfloat fA)
-      { fboC.SetVertex(fX1, fY1, fX2, fY2, fA); }
-  void SetFBOVertexWH(const GLfloat fX, const GLfloat fY, const GLfloat fW,
-    const GLfloat fH, const GLfloat fA)
-      { fboC.SetVertexWH(fX, fY, fW, fH, fA); }
-  /* -- Set tex coords for FBO (Full and simple) --------------------------- */
-  void SetFBOTexCoord(const GLfloat fX1, const GLfloat fY1, const GLfloat fX2,
-    const GLfloat fY2) { fboC.SetTexCoord(fX1, fY1, fX2, fY2); }
-  void SetFBOTexCoordWH(const GLfloat fX, const GLfloat fY, const GLfloat fW,
-    const GLfloat fH) { fboC.SetTexCoordWH(fX, fY, fW, fH); }
   /* -- Blit specific triangle --------------------------------------------- */
-  void BlitTri(const size_t stTId) { FboActive()->BlitTri(fboC, stTId); }
+  void BlitTri(const size_t stTId) { FboActive()->FboBlitTri(*this, stTId); }
   /* -- Blit quad ---------------------------------------------------------- */
-  void Blit(void) { FboActive()->Blit(fboC); }
+  void Blit(void) { FboActive()->FboBlit(*this); }
   /* -- Upload the texture -------read ------------------------------------- */
   void UploadTexture(void)
   { // Try to lock and return if failed or no frames waiting
@@ -775,15 +755,15 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
       } // Reset unpack row length to default
       cOgl->SetUnpackRowLength(0);
       // Initialise Y texture id, active texture and shader program
-      fboC.ResetCache(uiYUV[0], 0, shProgram->GetProgram());
+      FboResetCache(uiYUV[0], 0, shProgram->GetProgram());
       // Commit the Y setup and configure the U setup
-      fboC.FinishAndReset(uiYUV[1], 1, shProgram->GetProgram());
+      FboFinishAndReset(uiYUV[1], 1, shProgram->GetProgram());
       // Commit the U setup
-      fboC.FinishAndReset(uiYUV[2], 2, shProgram->GetProgram());
+      FboFinishAndReset(uiYUV[2], 2, shProgram->GetProgram());
       // Blit the YUV multi-texture into the fbo
-      fboC.Blit(fiYUV, uiYUV[2], 2, shProgram);
+      FboBlit(fiYUV, uiYUV[2], 2, shProgram);
       // Commit the V texture and send everything to fbo list for rendering
-      fboC.FinishAndRender();
+      FboFinishAndRender();
       // No need to update again until decoder thread is done with another
       // frame
       fI.bDraw = false;
@@ -837,7 +817,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     // Modify the unlock boolean
     ubReason = ubNewReason;
     // Send notification
-    cvBuffer.notify_one();
+    notify_one();
   }
   /* -- Do pause video ----------------------------------------------------- */
   void Pause(const Unblock ubNewReason = UB_PAUSE)
@@ -874,8 +854,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
       FlagClear(FL_GLINIT);
       DeInitTexture();
       shProgram = nullptr;
-      fboC.DeInit();
-      fboC.CollectorUnregister();
+      FboDeInit();
     } // Vorbis audio stream was initialised?
     if(FlagIsSet(FL_VORBIS))
     { // Clear and reset it
@@ -1086,8 +1065,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
   /* -- Set filtering on video textures ------------------------------------ */
   void SetFilter(const bool bState)
   { // Set filter on fbo and commit
-    fboC.SetFilter(bState ? 3 : 0);
-    fboC.CommitFilter();
+    FboSetFilterCommit(bState ? 3 : 0);
     // Update filter
     FlagSetOrClear(FL_FILTER, bState);
   }
@@ -1250,7 +1228,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     // thats too late and the Manage() thread will access members when they are
     // being deinitialised and destroyed so the de-init needs to be serialised
     // properly.
-    CollectorUnregister();
+    ICHelperVideo::CollectorUnregister();
     // Stop the video. It will wait for the thread to terminate before
     // de-initialising everything so this should be safe.
     Stop();
@@ -1258,9 +1236,9 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
   /* -- Constructor -------------------------------------------------------- */
   Video(void) :
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperVideo{ *cVideos, this },
-    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
-    AsyncLoader<Video>{ this,
+    ICHelperVideo{ cVideos, this },    // Initialise collector class
+    Fbo{ GL_RGB8, false },
+    AsyncLoaderVideo{ *this, this,
       EMC_MP_VIDEO },
     LuaEvtSlave{ this,
       EMC_VID_EVENT },
@@ -1275,7 +1253,7 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     oSS{},
     oPG{},
     oPK{},
-    lIOBuf(cParent.lBufferSize),
+    lIOBuf(cVideos->lBufferSize),
     tSS{},
     tIN{},
     tCO{},
@@ -1299,7 +1277,6 @@ BEGIN_MEMBERCLASS(Videos, Video, ICHelperSafe),
     fdAudioTime(0.0),
     fdAudioBuffer(0.0),
     fAudioVolume(1.0f),
-    fboC(GL_RGB8),
     shProgram(nullptr),
     sCptr(nullptr),
     eFormat(AL_NONE)
@@ -1323,20 +1300,20 @@ END_ASYNCCOLLECTOR(Videos, Video, VIDEO, // Finish Videos collector class
 static void VideoReInitTextures(void)
 { // Ignore if no videos otherwise re-initialise ogl textures on all videos
   if(cVideos->empty()) return;
-  cLog->LogDebugExSafe("Videos re-initialising $ video textures...",
+  cLog->LogDebugExSafe("Videos re-initialising $ video surfaces...",
     cVideos->CollectorCountUnsafe());
-  for(Video*const vCptr : *cVideos) vCptr->InitTexture();
-  cLog->LogDebugExSafe("Videos re-initialised $ video textures!",
+  for(Video*const vCptr : *cVideos) vCptr->ReInitDisplayOutput();
+  cLog->LogDebugExSafe("Videos re-initialised $ video surfaces!",
     cVideos->CollectorCountUnsafe());
 }
 /* == De-init video textures (after thread shutdown) ======================= */
 static void VideoDeInitTextures(void)
 { // Ignore if no videos otherwise de-initialise ogl textures on all videos
   if(cVideos->empty()) return;
-  cLog->LogDebugExSafe("Videos de-initialising $ video textures...",
+  cLog->LogDebugExSafe("Videos de-initialising $ video surfaces...",
     cVideos->CollectorCountUnsafe());
-  for(Video*const vCptr : *cVideos) vCptr->DeInitTexture();
-  cLog->LogDebugExSafe("Videos de-initialised $ video textures!",
+  for(Video*const vCptr : *cVideos) vCptr->DeInitDisplayOutput();
+  cLog->LogDebugExSafe("Videos de-initialised $ video surfaces!",
     cVideos->CollectorCountUnsafe());
 }
 /* == Clear event callbacks on all videos (must be synchronised) =========== */

@@ -17,7 +17,7 @@
 /* ========================================================================= */
 namespace LLTexture {                  // Texture namespace
 /* -- Dependencies --------------------------------------------------------- */
-using namespace IConsole::P;           using namespace IFbo::P;
+using namespace IConsole::P;           using namespace IFboDef::P;
 using namespace IImage::P;             using namespace IOgl::P;
 using namespace ITexture::P;           using namespace Lib::OS::GlFW;
 /* ========================================================================= **
@@ -84,7 +84,7 @@ LLFUNC(BlitLTWHA, LCGETPTR(1, Texture)->BlitLTWHA(0, 0,
 // > Bottom:number=The ending row pixel to draw to.
 // ? Presets these screen bounds for the next use of Texture:BlitP*.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetVLTRB, LCGETPTR(1, Texture)->SetVertex(
+LLFUNC(SetVLTRB, LCGETPTR(1, Texture)->FboItemSetVertex(
   LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom")));
 /* ========================================================================= */
@@ -96,7 +96,7 @@ LLFUNC(SetVLTRB, LCGETPTR(1, Texture)->SetVertex(
 // ? Presets the specified screen co-ordinates and dimensions for the next use
 // ? of Texture:BlitP*.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetVLTWH, LCGETPTR(1, Texture)->SetVertexWH(
+LLFUNC(SetVLTWH, LCGETPTR(1, Texture)->FboItemSetVertexWH(
   LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Width"), LCGETNUM(GLfloat, 5, "Height")));
 /* ========================================================================= */
@@ -109,7 +109,7 @@ LLFUNC(SetVLTWH, LCGETPTR(1, Texture)->SetVertexWH(
 // ? Presets the specified screen bounds and angle for the next use of
 // ? Texture:BlitP*.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetVLTRBA, LCGETPTR(1, Texture)->SetVertex(
+LLFUNC(SetVLTRBA, LCGETPTR(1, Texture)->FboItemSetVertex(
   LCGETNUM(GLfloat, 2, "Left"), LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom"),
   LCGETNORM(GLfloat, 6, "Angle")));
@@ -123,7 +123,7 @@ LLFUNC(SetVLTRBA, LCGETPTR(1, Texture)->SetVertex(
 // ? Presets the specified screen co-ordinates and dimensions with angle for
 // ? the next use of Texture:BlitP*.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetVLTWHA, LCGETPTR(1, Texture)->SetVertexWH(
+LLFUNC(SetVLTWHA, LCGETPTR(1, Texture)->FboItemSetVertexWH(
   LCGETNUM(GLfloat, 2, "Left"), LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Width"), LCGETNUM(GLfloat, 5, "Height"),
   LCGETNORM(GLfloat, 6, "Angle")));
@@ -600,7 +600,7 @@ LLFUNCEND
 // ? Sets the colour intensity of the texture for each component. The change
 // ? affects all subsequent calls to all blitting functions.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetCRGB, LCGETPTR(1, Texture)->SetQuadRGB(
+LLFUNC(SetCRGB, LCGETPTR(1, Texture)->FboItemSetQuadRGB(
   LCGETNUM(GLfloat, 2, "Red"), LCGETNUM(GLfloat, 3, "Green"),
   LCGETNUM(GLfloat, 4, "Blue")));
 /* ========================================================================= */
@@ -612,7 +612,7 @@ LLFUNC(SetCRGB, LCGETPTR(1, Texture)->SetQuadRGB(
 // ? Sets the colour intensity of the texture for each component. The change
 // ? affects all subsequent calls to all blitting functions.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetCRGBA, LCGETPTR(1, Texture)->SetQuadRGBA(
+LLFUNC(SetCRGBA, LCGETPTR(1, Texture)->FboItemSetQuadRGBA(
   LCGETNUM(GLfloat, 2, "Red"),  LCGETNUM(GLfloat, 3, "Green"),
   LCGETNUM(GLfloat, 4, "Blue"), LCGETNUM(GLfloat, 5, "Alpha")));
 /* ========================================================================= */
@@ -621,40 +621,40 @@ LLFUNC(SetCRGBA, LCGETPTR(1, Texture)->SetQuadRGBA(
 // ? Sets the colour intensity of the texture for each component using a 32
 // ? bit integer.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetCRGBAI,
-  LCGETPTR(1, Texture)->SetQuadRGBAInt(LCGETINT(uint32_t, 2, "Colour")));
+LLFUNC(SetCRGBAI, LCGETPTR(1, Texture)->
+  FboItemSetQuadRGBAInt(LCGETINT(uint32_t, 2, "Colour")));
 /* ========================================================================= */
 // $ Texture:SetCR
 // > Red:number=The colour intensity of the texture's red component (0-1).
 // ? Sets the colour intensity of the texture for the red component. The change
 // ? affects all subsequent calls to all blitting functions.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetCR,
-  LCGETPTR(1, Texture)->SetQuadRed(LCGETNUM(GLfloat, 2, "Red")));
+LLFUNC(SetCR, LCGETPTR(1, Texture)->
+  FboItemSetQuadRed(LCGETNUM(GLfloat, 2, "Red")));
 /* ========================================================================= */
 // $ Texture:SetCG
 // > Green:number=The colour intensity of the texture's green component (0-1).
 // ? Sets the colour intensity of the texture for the green component. The
 // ? change affects all subsequent calls to all blitting functions.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetCG,
-  LCGETPTR(1, Texture)->SetQuadGreen(LCGETNUM(GLfloat, 2, "Green")));
+LLFUNC(SetCG, LCGETPTR(1, Texture)->
+  FboItemSetQuadGreen(LCGETNUM(GLfloat, 2, "Green")));
 /* ========================================================================= */
 // $ Texture:SetCB
 // > Blue:number=The colour intensity of the texture's blue component (0-1).
 // ? Sets the colour intensity of the texture for the blue component. The
 // ? change affects all subsequent calls to all blitting functions.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetCB,
-  LCGETPTR(1, Texture)->SetQuadBlue(LCGETNUM(GLfloat, 2, "Blue")));
+LLFUNC(SetCB, LCGETPTR(1, Texture)->
+  FboItemSetQuadBlue(LCGETNUM(GLfloat, 2, "Blue")));
 /* ========================================================================= */
 // $ Texture:SetCA
 // > Alpha:number=The transparency of the texture (0-1).
 // ? Sets the colour transparency of the texture. The change affects all
 // ? subsequent calls to all blitting functions.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetCA,
-  LCGETPTR(1, Texture)->SetQuadAlpha(LCGETNUM(GLfloat, 2, "Alpha")));
+LLFUNC(SetCA, LCGETPTR(1, Texture)->
+  FboItemSetQuadAlpha(LCGETNUM(GLfloat, 2, "Alpha")));
 /* ========================================================================= */
 // $ Texture:BlitM
 // > Columns:integer=The number of horizonal textures to blit.
@@ -667,7 +667,7 @@ LLFUNC(SetCA,
 /* ------------------------------------------------------------------------- */
 LLFUNC(BlitM, LCGETPTR(1, Texture)->BlitMulti(
   LCGETINT(GLuint,  2, "Columns"), LCGETNUM(GLfloat, 3, "Left"),
-  LCGETNUM(GLfloat, 4, "Top"),     LCGETNUM(GLfloat, 5, "Right"),
+  LCGETNUM(GLfloat, 4, "Top"), LCGETNUM(GLfloat, 5, "Right"),
   LCGETNUM(GLfloat, 6, "Bottom")));
 /* ========================================================================= */
 // $ Texture:TileSTC
@@ -970,7 +970,7 @@ LLFUNCEND
 // ? triangle for the Texture:BlitP* function.
 /* ------------------------------------------------------------------------- */
 LLFUNC(SetVX, LCGETPTR(1, Texture)->
-  SetVertexEx(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex"), {
+  FboItemSetVertexEx(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex"), {
     LCGETNUM(GLfloat, 3, "V1Left"), LCGETNUM(GLfloat, 4, "V1Top"),
     LCGETNUM(GLfloat, 5, "V2Left"), LCGETNUM(GLfloat, 6, "V2Top"),
     LCGETNUM(GLfloat, 7, "V3Left"), LCGETNUM(GLfloat, 8, "v3Top")
@@ -994,7 +994,7 @@ LLFUNC(SetVX, LCGETPTR(1, Texture)->
 // ? Texture:BlitP* function.
 /* ------------------------------------------------------------------------- */
 LLFUNC(SetCX, LCGETPTR(1, Texture)->
-  SetColourEx(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex"), {
+  FboItemSetColourEx(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex"), {
     LCGETNUM(GLfloat, 3, "V1Red"), LCGETNUM(GLfloat, 4, "V1Green"),
     LCGETNUM(GLfloat, 5, "V1Blue"), LCGETNUM(GLfloat, 6, "V1Alpha"),
     LCGETNUM(GLfloat, 7, "V2Red"), LCGETNUM(GLfloat, 8, "V2Green"),
@@ -1009,7 +1009,7 @@ LLFUNC(SetCX, LCGETPTR(1, Texture)->
 // > Bottom:number=The bottom co-ordinate.
 // ? Preset the specified texture bounds for the Texture:BlitP* function.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetTCLTRB, LCGETPTR(1, Texture)->SetTexCoord(
+LLFUNC(SetTCLTRB, LCGETPTR(1, Texture)->FboItemSetTexCoord(
   LCGETNUM(GLfloat, 2, "Left"), LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom")));
 /* ========================================================================= */
@@ -1021,7 +1021,7 @@ LLFUNC(SetTCLTRB, LCGETPTR(1, Texture)->SetTexCoord(
 // ? Preset the specified texture co-ordinates and dimensions for the
 // ? Texture:BlitP* function.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetTCLTWH, LCGETPTR(1, Texture)->SetTexCoordWH(
+LLFUNC(SetTCLTWH, LCGETPTR(1, Texture)->FboItemSetTexCoordWH(
   LCGETNUM(GLfloat, 2, "Left"), LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Width"), LCGETNUM(GLfloat, 5, "Height")));
 /* ========================================================================= */
@@ -1037,7 +1037,7 @@ LLFUNC(SetTCLTWH, LCGETPTR(1, Texture)->SetTexCoordWH(
 // ? the Texture:BlitP* function.
 /* ------------------------------------------------------------------------- */
 LLFUNC(SetTCX, LCGETPTR(1, Texture)->
-  SetTexCoordEx(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex"), {
+  FboItemSetTexCoordEx(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex"), {
     LCGETNUM(GLfloat, 3, "TC1Left"), LCGETNUM(GLfloat, 4, "TC1Top"),
     LCGETNUM(GLfloat, 5, "TC2Left"), LCGETNUM(GLfloat, 6, "TC2Top"),
     LCGETNUM(GLfloat, 7, "TC3Left"), LCGETNUM(GLfloat, 8, "TC3Top")
@@ -1046,12 +1046,12 @@ LLFUNC(SetTCX, LCGETPTR(1, Texture)->
 // $ Texture:PushColour
 // ? Saves the currently set colour by SetCRGBA. Use PopColour to restore it.
 /* ------------------------------------------------------------------------- */
-LLFUNC(PushColour, LCGETPTR(1, Texture)->PushQuadColour());
+LLFUNC(PushColour, LCGETPTR(1, Texture)->FboItemPushQuadColour());
 /* ========================================================================= */
 // $ Texture:PopColour
 // ? Restores the currently saved colour by PushColour.
 /* ------------------------------------------------------------------------- */
-LLFUNC(PopColour, LCGETPTR(1, Texture)->PopQuadColour());
+LLFUNC(PopColour, LCGETPTR(1, Texture)->FboItemPopQuadColour());
 /* ========================================================================= */
 // $ Texture:Destroy
 // ? Destroys the texture and frees all the memory associated with it. The

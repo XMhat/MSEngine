@@ -19,7 +19,7 @@
 /* ========================================================================= */
 namespace LLPalette {                  // Palette namespace
 /* -- Dependencies --------------------------------------------------------- */
-using namespace IFbo::P;               using namespace IImage::P;
+using namespace IFboDef::P;            using namespace IImage::P;
 using namespace IPalette::P;           using namespace IStd::P;
 using namespace ITexture::P;           using namespace Lib::OS::GlFW;
 /* ========================================================================= **

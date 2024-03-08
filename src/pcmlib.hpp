@@ -47,8 +47,8 @@ BEGIN_MEMBERCLASS(PcmFmts, PcmFmt, ICHelperUnsafe)
     CBLFunc acNewLoader=NoLoader,      // Loader function (static)
     CBSFunc acNewSaver=NoSaver         // Saver function (static)
     ): /* -- Initialisers -------------------------------------------------- */
-    ICHelperPcmFmt{ *cPcmFmts, this }, // Register pcm format in collector
-    IdentCSlave{ cParent.CtrNext() },  // Initialise identification number
+    ICHelperPcmFmt{ cPcmFmts, this },  // Register pcm format in collector
+    IdentCSlave{ cParent->CtrNext() }, // Initialise identification number
     cpName(cpNewName),                 // Set name of plugin
     cpExt(cpNewExt),                   // Set default extension of plugin
     acLoader{ acNewLoader },           // Set loader function

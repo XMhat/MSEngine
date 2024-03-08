@@ -111,7 +111,7 @@ class GlFWMonitor :                    // Members initially private
     ddInches{                        // Initialise physical size as inches
       UtilMillimetresToInches(DimGetWidth()),
       UtilMillimetresToInches(DimGetHeight()) },
-    fdDiagonal(UtilGetDiagLength(        // Initialise physical diagonal length
+    fdDiagonal(UtilGetDiagLength(    // Initialise physical diagonal length
       DimGetWidth(),
       DimGetHeight())),
     fdDiagonalInches(                // Initialise diagonal length in inches

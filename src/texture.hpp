@@ -12,7 +12,8 @@
 namespace ITexture {                   // Start of private module namespace
 /* -- Dependencies --------------------------------------------------------- */
 using namespace ICollector::P;         using namespace IError::P;
-using namespace IFbo::P;               using namespace IImage::P;
+using namespace IFboDef::P;            using namespace IFbo::P;
+using namespace IFboItem::P;           using namespace IImage::P;
 using namespace IImageDef::P;          using namespace ILog::P;
 using namespace IMemory::P;            using namespace IOgl::P;
 using namespace IShader::P;            using namespace IShaders::P;
@@ -23,7 +24,7 @@ namespace P {                          // Start of public module namespace
 /* -- Texture collector class for collector data and custom variables ------ */
 BEGIN_COLLECTOR(Textures, Texture, CLHelperUnsafe)
 /* ------------------------------------------------------------------------- */
-class TextureVars :                    // All members initially private
+class TextureBase :                    // All members initially private
   /* -- Base classes ------------------------------------------------------- */
   public FboItem,                      // Fbo item class with drawing co-ords
   public Image                         // Image class with raw image pixel data
@@ -70,7 +71,7 @@ class TextureVars :                    // All members initially private
   };/* --------------------------------------------------------------------- */
   typedef vector<CoordData> CoordList; // Tile coordinates data list
   typedef vector<CoordList> CoordsList;// A list of tile coords per sub-tex
-  typedef Dimensions<GLuint> DimUInt;    // Dimension of GLuint's
+  typedef Dimensions<GLuint> DimUInt;  // Dimension of GLuint's
   /* ----------------------------------------------------------------------- */
   CoordsList       clTiles;            // Texture coordinates for tiles
   GLUIntVector     vTexture;           // OpenGL texture handle list
@@ -80,7 +81,7 @@ class TextureVars :                    // All members initially private
                    dfImage,            // Texture image width and height (GL)
                    dfTile;             // Texture tile width and height (GL)
   /* -- Constructor -------------------------------------------------------- */
-  TextureVars(void) :                  // No parameters
+  TextureBase(void) :                  // No parameters
     /* -- Initialisers ----------------------------------------------------- */
     iTexMinFilter(GL_NONE),            // No minification filter set yet
     iTexMagFilter(GL_NONE),            // No magnification filter set et
@@ -90,11 +91,11 @@ class TextureVars :                    // All members initially private
     /* -- Code ------------------------------------------------------------- */
     { }                                // No code
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(TextureVars)         // No defaults
+  DELETECOPYCTORS(TextureBase)         // No defaults
 };/* ----------------------------------------------------------------------- */
 BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
   /* -- Base classes ------------------------------------------------------- */
-  public TextureVars                   // Texture class variables
+  public TextureBase                   // Texture class variables
 { /* -- Functors for upload texture function ------------------------------- */
   struct TexCompFtor                   // Keep functors categorised
   { /* -- Load as raw uncompressed pixels ---------------------------------- */
@@ -477,7 +478,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
   /* -- Blit a triangle ---------------------------------------------------- */
   void BlitTri(const GLuint uiGLTexId, const TriCoordData &tcoData,
     const TriPosData &tpData, const TriColData &tcData)
-  { FboActive()->Blit(uiGLTexId, tpData, tcoData, tcData, 0, shProgram); }
+  { FboActive()->FboBlit(uiGLTexId, tpData, tcoData, tcData, 0, shProgram); }
   /* -- Blit two triangles that form a square ------------------------------ */
   void BlitQuad(const GLuint uiGLTexId, const QuadCoordData &qcoData,
     const QuadPosData &qpData, const QuadColData &acData)
@@ -487,31 +488,33 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
   /* -- Blit with currently stored position -------------------------------- */
   void Blit(const size_t stSubTexId, const size_t stTileId)
     { BlitQuad(GetSubName(stSubTexId), clTiles[stSubTexId][stTileId],
-        GetVData(), GetCData()); }
+        FboItemGetVData(), FboItemGetCData()); }
   /* -- Blit with currently stored position, texture and colour ------------ */
   void Blit(const size_t stSubTexId)
-    { BlitQuad(GetSubName(stSubTexId), GetTCData(), GetVData(), GetCData()); }
+    { BlitQuad(GetSubName(stSubTexId), FboItemGetTCData(), FboItemGetVData(),
+        FboItemGetCData()); }
   /* -- Blit specified triangle with currently stored position ------------- */
   void BlitT(const size_t stTriId, const size_t stTexId, const size_t stTileId)
     { BlitTri(GetSubName(stTexId), clTiles[stTexId][stTileId][stTriId],
-        GetVData(stTriId), GetCData(stTriId)); }
+        FboItemGetVData(stTriId), FboItemGetCData(stTriId)); }
   /* -- Blit quad with position and stored size ---------------------------- */
   void BlitLT(const size_t stSubTexId, const size_t stTileId, const GLfloat fX,
     const GLfloat fY)
   { const CoordData &tcItem = clTiles[stSubTexId][stTileId];
     BlitQuad(GetSubName(stSubTexId), tcItem,
-      SetAndGetVertex(fX, fY, fX+tcItem.DimGetWidth(),
-        fY+tcItem.DimGetHeight()), GetCData()); }
+      FboItemSetAndGetVertex(fX, fY, fX+tcItem.DimGetWidth(),
+        fY+tcItem.DimGetHeight()), FboItemGetCData()); }
   /* -- Blit quad with custom colour (used by font) ------------------------ */
   void BlitLTRBC(const size_t stSubTexId, const size_t stTileId,
     const GLfloat fX1, const GLfloat fY1, const GLfloat fX2, const GLfloat fY2,
     const QuadColData &faC)
   { BlitQuad(GetSubName(stSubTexId), clTiles[stSubTexId][stTileId],
-    SetAndGetVertex(fX1, fY1, fX2, fY2), faC); }
+    FboItemSetAndGetVertex(fX1, fY1, fX2, fY2), faC); }
   /* -- Blit quad with bounds ---------------------------------------------- */
   void BlitLTRB(const size_t stSubTexId, const size_t stTileId,
     const GLfloat fX1, const GLfloat fY1, const GLfloat fX2, const GLfloat fY2)
-      { BlitLTRBC(stSubTexId, stTileId, fX1, fY1, fX2, fY2, GetCData()); }
+      { BlitLTRBC(stSubTexId, stTileId, fX1, fY1, fX2, fY2,
+          FboItemGetCData()); }
   /* -- Blit quad with coords and dimensions ------------------------------- */
   void BlitLTWH(const size_t stSubTexId, const size_t stTileId,
     const GLfloat fX, const GLfloat fY, const GLfloat fW, const GLfloat fH)
@@ -521,33 +524,33 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
     const GLfloat fX1, const GLfloat fY1, const GLfloat fX2, const GLfloat fY2,
     const GLfloat fML, const GLfloat fMR, const QuadColData &faC)
   { BlitQuad(GetSubName(stSubTexId),
-    SetAndGetCoord(clTiles[stSubTexId][stTileId], fML, fMR),
-    SetAndGetVertex(fX1, fY1, fX2, fY2, fML, fMR), faC); }
+    FboItemSetAndGetCoord(clTiles[stSubTexId][stTileId], fML, fMR),
+    FboItemSetAndGetVertex(fX1, fY1, fX2, fY2, fML, fMR), faC); }
   /* -- Blit quad with truncated texcoord width ---------------------------- */
   void BlitLTRBS(const size_t stSubTexId, const size_t stTileId,
     const GLfloat fX1, const GLfloat fY1, const GLfloat fX2,
     const GLfloat fY2, const GLfloat fML, const GLfloat fMR)
   { BlitLTRBSC(stSubTexId, stTileId, fX1, fY1, fX2, fY2, fML, fMR,
-      GetCData()); }
+      FboItemGetCData()); }
   /* -- Blit quad with position, stored size and with angle ---------------- */
   void BlitLTA(const size_t stSubTexId, const size_t stTileId,
     const GLfloat fX, const GLfloat fY, const GLfloat fA)
   { const CoordData &tcItem = clTiles[stSubTexId][stTileId];
     BlitQuad(GetSubName(stSubTexId), tcItem,
-      SetAndGetVertex(fX, fY, fX+tcItem.DimGetWidth(),
-        fY+tcItem.DimGetHeight(), fA), GetCData()); }
+      FboItemSetAndGetVertex(fX, fY, fX+tcItem.DimGetWidth(),
+        fY+tcItem.DimGetHeight(), fA), FboItemGetCData()); }
   /* -- Blit quad with bounds and angle ------------------------------------ */
   void BlitLTRBA(const size_t stSubTexId, const size_t stTileId,
     const GLfloat fX1, const GLfloat fY1, const GLfloat fX2, const GLfloat fY2,
     const GLfloat fA)
   { BlitQuad(GetSubName(stSubTexId), clTiles[stSubTexId][stTileId],
-    SetAndGetVertex(fX1, fY1, fX2, fY2, fA), GetCData()); }
+    FboItemSetAndGetVertex(fX1, fY1, fX2, fY2, fA), FboItemGetCData()); }
   /* -- Blit quad with coords, dimensions and angle ------------------------ */
   void BlitLTWHA(const size_t stSubTexId, const size_t stTileId,
     const GLfloat fX, const GLfloat fY, const GLfloat fW, const GLfloat fH,
     const GLfloat fA)
   { BlitQuad(GetSubName(stSubTexId), clTiles[stSubTexId][stTileId],
-    SetAndGetVertex(fX, fY, fX+fW, fY+fH, fA), GetCData()); }
+    FboItemSetAndGetVertex(fX, fY, fX+fW, fY+fH, fA), FboItemGetCData()); }
   /* -- Blit all quads as full image --------------------------------------- */
   void BlitMulti(const GLuint uiColumns, const GLfloat fL, const GLfloat fT,
     const GLfloat fR, const GLfloat fB)
@@ -777,13 +780,13 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
   /* -- Constructor (Initialisation then registration) --------------------- */
   Texture(void) :                      // No parameters
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperTexture{ *cTextures,this } // Automatic (de)registration
+    ICHelperTexture{ cTextures, this } // Automatic (de)registration
     /* -- Code ------------------------------------------------------------- */
     { }                                // Do nothing else
   /* -- Constructor (No registration, base class of Font class) ------------ */
   explicit Texture(const bool) :       // Parameter does nothing
     /* -- Initialisers ----------------------------------------------------- */
-    ICHelperTexture{ *cTextures }      // Initially unregistered
+    ICHelperTexture{ cTextures }       // Initially unregistered
     /* -- Code ------------------------------------------------------------- */
     { }                                // Do nothing else
   /* -- Destructor (Unregistration then deinitialisation) ------------------ */
