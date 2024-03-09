@@ -15,7 +15,7 @@ using namespace ILog::P;               using namespace IMemory::P;
 using namespace IStd::P;               using namespace IString::P;
 using namespace ISystem::P;            using namespace ISysUtil::P;
 using namespace IUtf;                  using namespace IUtil::P;
-using namespace Lib::OS::OpenSSL;
+using namespace Lib::OS::OpenSSL;      using namespace Lib::OS::SevenZip;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* -- Convert the specified character to hexadecimal ----------------------- */
@@ -59,7 +59,7 @@ static Memory CryptHexDecodeA(const string &strSrc)
   // The memory to output. We know what size will be
   Memory mbDst{ strSrc.size() / 2 };
   // Build 8-bit value from two ASCII characters
-  CryptHexDecodePtr(strSrc.c_str(), strSrc.length(), mbDst.Ptr<char>());
+  CryptHexDecodePtr(strSrc.c_str(), strSrc.length(), mbDst.MemPtr<char>());
   // Return memory
   return mbDst;
 }
@@ -137,8 +137,8 @@ static const string CryptBin2Hex(const uint8_t*const ucStr,
   // We're done. return the string!
   return strOut;
 }
-static const string CryptBin2Hex(const DataConst &dcIn)
-  { return CryptBin2Hex(dcIn.Ptr<uint8_t>(), dcIn.Size()); }
+static const string CryptBin2Hex(const MemConst &mcSrc)
+  { return CryptBin2Hex(mcSrc.MemPtr<uint8_t>(), mcSrc.MemSize()); }
 /* -- Convert the specified 8-bit char to a lowercase hex string ----------- */
 static const auto &CryptChar2HexL(const uint8_t ucP)
 { // Lookup table for lowercase conversion
@@ -201,8 +201,8 @@ static const string CryptBin2HexL(const uint8_t*const ucStr,
   // We're done. return the string!
   return strOut;
 }
-static const string CryptBin2HexL(const DataConst &dcIn)
-  { return CryptBin2HexL(dcIn.Ptr<uint8_t>(), dcIn.Size()); }
+static const string CryptBin2HexL(const MemConst &mcSrc)
+  { return CryptBin2HexL(mcSrc.MemPtr<uint8_t>(), mcSrc.MemSize()); }
 /* ------------------------------------------------------------------------- */
 static void CryptAddEntropy(void)
 { // Grab some data from the timer subsystem
@@ -443,8 +443,8 @@ static size_t CryptB64toPTR(void*const vpIn, const size_t stIn,
      "InSize", stIn, "OutSize", stOut, "Reason", CryptGetError());
 }
 /* ------------------------------------------------------------------------- */
-static const string CryptMBtoB64(const DataConst &dcIn)
-  { return CryptPTRtoB64(dcIn.Ptr<void>(), dcIn.Size()); }
+static const string CryptMBtoB64(const MemConst &mcSrc)
+  { return CryptPTRtoB64(mcSrc.MemPtr<void>(), mcSrc.MemSize()); }
 /* ------------------------------------------------------------------------- */
 static const string CryptStoB64(const string &strIn)
   { return CryptPTRtoB64(UtfToNonConstCast<void*>(strIn.data()),
@@ -452,12 +452,12 @@ static const string CryptStoB64(const string &strIn)
 /* ------------------------------------------------------------------------- */
 static Memory CryptB64toMB(const string &strIn)
 { // Output buffer
-  Memory aData{ strIn.length() };
+  Memory mData{ strIn.length() };
   // Do conversion and resize string after
-  aData.Resize(CryptB64toPTR(UtfToNonConstCast<void*>(strIn.data()),
-    strIn.length(), aData.Ptr(), aData.Size()));
+  mData.MemResize(CryptB64toPTR(UtfToNonConstCast<void*>(strIn.data()),
+    strIn.length(), mData.MemPtr(), mData.MemSize()));
   // Return data
-  return aData;
+  return mData;
 }
 /* ------------------------------------------------------------------------- */
 static const string CryptB64toS(const string &strIn)
@@ -512,22 +512,22 @@ static Memory CryptHMACCall(const EVP_MD*const fFunc,
     XC("Size of source data to hash too big!",
        "Requested", stSrcSize,  "Maximum", numeric_limits<int>::max());
   // Create output for HMAC-SHA hash
-  Memory aData{ EVP_MAX_MD_SIZE };
+  Memory mData{ EVP_MAX_MD_SIZE };
   // For storage of size. We really need to know the output size.
   unsigned int uiLen = 0;
   // Get hash. Remember that HMAC returns as binary as we need to send the
   // whole buffer to Base64 and NOT a null-terminated string.
   if(!HMAC(fFunc, vpSalt, static_cast<int>(stSaltSize), cpSrc, stSrcSize,
-    aData.Ptr<unsigned char>(), &uiLen))
+    mData.MemPtr<unsigned char>(), &uiLen))
       XC("Failed to perform salted-hash on source data!",
          "Function",    fFunc != nullptr,
          "SaltAddress", vpSalt != nullptr, "SaltSize", stSaltSize,
          "SrcAddress",  cpSrc != nullptr,  "SrcSize", stSrcSize,
          "OutLength",   uiLen);
   // Resize string
-  aData.Resize(uiLen);
+  mData.MemResize(uiLen);
   // Return memory block
-  return aData;
+  return mData;
 }
 /* -- Hashing functions ---------------------------------------------------- */
 #define DEFINE_HASH_FUNCS(x, s, f) \
@@ -535,7 +535,7 @@ static Memory CryptHMACCall(const EVP_MD*const fFunc,
     static Memory HashPtrRaw(const unsigned char*const ucpIn, \
       const size_t stLen) \
         { Memory mbOut{ s }; \
-          x(ucpIn, stLen, mbOut.Ptr<unsigned char>()); \
+          x(ucpIn, stLen, mbOut.MemPtr<unsigned char>()); \
           return mbOut; } \
     static const string HashPtr(const unsigned char*const ucpIn, \
       const size_t stLen) \
@@ -543,8 +543,8 @@ static Memory CryptHMACCall(const EVP_MD*const fFunc,
     static const string HashStr(const string &strIn) \
       { return HashPtr(reinterpret_cast<const unsigned char*>(strIn.data()), \
           strIn.length()); } \
-    static const string HashMB(const DataConst &dcIn) \
-      { return HashPtr(dcIn.Ptr<unsigned char>(), dcIn.Size()); } \
+    static const string HashMB(const MemConst &mcSrc) \
+      { return HashPtr(mcSrc.MemPtr<unsigned char>(), mcSrc.MemSize()); } \
     static Memory HashPtrRaw(const void*const vpSalt, const size_t stSaltSize,\
       const unsigned char*const cpDest, const size_t stDestSize) \
         { return CryptHMACCall(f(), vpSalt, stSaltSize, cpDest, stDestSize); }\
@@ -565,10 +565,10 @@ DEFINE_HASH_FUNCS(SHA512, SHA512_DIGEST_LENGTH, EVP_sha512); // Really secure
 #undef DEFINE_HASH_FUNCS
 /* -- Create CRC32 hash of specified string using LZMA API ----------------- */
 static unsigned int CryptToCRC32(const string &strIn)
-  { return Lib::OS::SevenZip::CrcCalc(strIn.data(), strIn.length()); }
+  { return CrcCalc(strIn.data(), strIn.length()); }
 /* -- Create CRC32 hash of specified memory block using LZMA API ----------- */
-static unsigned int CryptToCRC32(const DataConst &dcIn)
-  { return Lib::OS::SevenZip::CrcCalc(dcIn.Ptr<void>(), dcIn.Size()); }
+static unsigned int CryptToCRC32(const MemConst &mcSrc)
+  { return CrcCalc(mcSrc.MemPtr<void>(), mcSrc.MemSize()); }
 /* -- URL decode the specified c-string ------------------------------------ */
 static const string CryptURLDecode(const char*const cpURL)
 { // Bail if passed string is invalid
@@ -615,11 +615,11 @@ static const string CryptURLDecode(const char*const cpURL)
 /* ------------------------------------------------------------------------- */
 static const Memory CryptRandomBlock(const size_t stSize)
 { // Memory to hold data
-  Memory aData{ stSize };
+  Memory mData{ stSize };
   // Fill data with random data
-  CryptRandomPtr(aData.Ptr(), aData.Size());
+  CryptRandomPtr(mData.MemPtr(), mData.MemSize());
   // Return array
-  return aData;
+  return mData;
 }
 /* -- Crypt manager class -------------------------------------------------- */
 static class Crypt final :
@@ -851,7 +851,7 @@ static class Crypt final :
       if(!CRYPTO_set_mem_functions(OSSLAlloc, OSSLReAlloc, OSSLFree))
         XC("Failed to setup allocator for crypto interface!");
       // Generate CRC table (for lzma lib)
-      Lib::OS::SevenZip::CrcGenerateTable();
+      CrcGenerateTable();
       // Init openSSL
       OPENSSL_init();
       // Class initialised
@@ -859,9 +859,9 @@ static class Crypt final :
       // Loop until...
       do
       { // Get some random entropy from the system hardware
-        const Memory aData{ cSystem->GetEntropy() };
+        const Memory mData{ cSystem->GetEntropy() };
         // Set seed from system class to opensl
-        RAND_seed(aData.Ptr<void>(), aData.Size<int>());
+        RAND_seed(mData.MemPtr<void>(), mData.MemSize<int>());
         // Make a simple request to initialise more entropy
         CryptRandom<int>();
       } // ...PRNG is ready

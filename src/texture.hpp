@@ -101,38 +101,40 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
   { /* -- Load as raw uncompressed pixels ---------------------------------- */
     struct RAW                         // Uniform pixels (R,RG,RGB,RGBA, etc.)
     { /* -- Default constructor -------------------------------------------- */
-      RAW(const Texture &tRef, const size_t stSubTexId,
-        const GLint iMipLevel, const GLint iNICFormat,
-        const GLenum eNXCFormat, const ImageSlot &sData)
+      RAW(const Texture &tRef, const size_t stSubTexId, const GLint iMipLevel,
+        const GLint iNICFormat, const GLenum eNXCFormat,
+        const ImageSlot &isData)
       { // Upload uncompressed texture to video ram
-        GL(cOgl->UploadTexture(iMipLevel, sData.DimGetWidth<GLsizei>(),
-          sData.DimGetHeight<GLsizei>(), iNICFormat, eNXCFormat, sData.Ptr()),
-            "Could not upload uncompressed texture to video ram!",
-            "Identifier", tRef.IdentGet(),     "Index",  stSubTexId,
-            "TexId",      tRef.GetSubName(stSubTexId), "Level", iMipLevel,
-            "Width",      sData.DimGetWidth(), "Height", sData.DimGetHeight(),
-            "XCFormat",   cOgl->GetPixelFormat(tRef.GetPixelType()),
-            "NICFormat",  cOgl->GetPixelFormat(iNICFormat),
-            "NXCFormat",  cOgl->GetPixelFormat(eNXCFormat),
-            "Size",       sData.Size(),        "Data",   sData.Ptr<void>());
+        GL(cOgl->UploadTexture(iMipLevel, isData.DimGetWidth<GLsizei>(),
+          isData.DimGetHeight<GLsizei>(), iNICFormat, eNXCFormat,
+          isData.MemPtr()),
+          "Could not upload uncompressed texture to video ram!",
+          "Identifier", tRef.IdentGet(),     "Index", stSubTexId,
+          "TexId",      tRef.GetSubName(stSubTexId),
+          "Level",      iMipLevel,           "Width", isData.DimGetWidth(),
+          "Height",     isData.DimGetHeight(),
+          "XCFormat",   cOgl->GetPixelFormat(tRef.GetPixelType()),
+          "NICFormat",  cOgl->GetPixelFormat(iNICFormat),
+          "NXCFormat",  cOgl->GetPixelFormat(eNXCFormat),
+          "Size",       isData.MemSize(),     "Data", isData.MemPtr<void>());
       }
     };
     /* -- Load as compressed dxt pixels ------------------------------------ */
     struct DXT                         // DXT1, DXT3 or DXT5
     { /* -- Default constructor -------------------------------------------- */
-      DXT(const Texture &tRef, const size_t stSubTexId,
-        const GLint iMipLevel, const GLint,
-        const GLenum, const ImageSlot &sData)
+      DXT(const Texture &tRef, const size_t stSubTexId, const GLint iMipLevel,
+        const GLint, const GLenum, const ImageSlot &isData)
       { // Upload pre-compressed texture to video ram
         GL(cOgl->UploadCompressedTexture(iMipLevel, tRef.GetPixelType(),
-          sData.DimGetWidth<GLsizei>(), sData.DimGetHeight<GLsizei>(),
-          sData.Size<GLsizei>(), sData.Ptr()),
-            "Could not upload compressed texture to video ram!",
-            "Identifier", tRef.IdentGet(),     "Index",  stSubTexId,
-            "TexId",      tRef.GetSubName(stSubTexId), "Level", iMipLevel,
-            "Width",      sData.DimGetWidth(), "Height", sData.DimGetHeight(),
-            "XCFormat",   cOgl->GetPixelFormat(tRef.GetPixelType()),
-            "Size",       sData.Size(),        "Data",   sData.Ptr<void>());
+          isData.DimGetWidth<GLsizei>(), isData.DimGetHeight<GLsizei>(),
+          isData.MemSize<GLsizei>(), isData.MemPtr()),
+          "Could not upload compressed texture to video ram!",
+          "Identifier", tRef.IdentGet(),     "Index", stSubTexId,
+          "TexId",      tRef.GetSubName(stSubTexId),
+          "Level",      iMipLevel,           "Width", isData.DimGetWidth(),
+          "Height",     isData.DimGetHeight(),
+          "XCFormat",   cOgl->GetPixelFormat(tRef.GetPixelType()),
+          "Size",       isData.MemSize(),    "Data",  isData.MemPtr<void>());
       }
     };
   };
@@ -151,7 +153,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
   }
   /* -- Do load texture from image class ----------------------------------- */
   template<class TexCompFtor>
-    void UploadTexture(const size_t stSlots, const ImageSlot &sData,
+    void UploadTexture(const size_t stSlots, const ImageSlot &isData,
       const GLint iNICFormat, const GLenum eNXCFormat)
   { // Reset previous marked for deletion flag
     FlagClear(TF_DELETE);
@@ -164,14 +166,13 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
       // For each image slot
       for(size_t stSubTexId = 0; stSubTexId < stSlots; ++stSubTexId)
       { // Get next slot and verify that dimensions are different from slot 0
-        const ImageSlot &sSlot = GetSlots()[stSubTexId];
-        if(DimGetWidth() != sSlot.DimGetWidth() ||
-           DimGetHeight() != sSlot.DimGetHeight())
+        const ImageSlot &isSlot = GetSlots()[stSubTexId];
+        if(DimGetWidth() != isSlot.DimGetWidth() ||
+           DimGetHeight() != isSlot.DimGetHeight())
           XC("Alternating image sizes are not supported!",
-             "Identifier", IdentGet(), "LastWidth", DimGetWidth(),
-             "LastHeight", DimGetHeight(),
-             "ThisWidth",  sSlot.DimGetWidth(),
-             "ThisHeight", sSlot.DimGetHeight());
+             "Identifier", IdentGet(),     "LastWidth", DimGetWidth(),
+             "LastHeight", DimGetHeight(), "ThisWidth", isSlot.DimGetWidth(),
+             "ThisHeight", isSlot.DimGetHeight());
         // Get texture id and bind it
         const unsigned int uiTexId = GetSubName(stSubTexId);
         GL(cOgl->BindTexture(uiTexId), "Texture id failed to bind!",
@@ -180,7 +181,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
         // Configure the texture
         ConfigureTexture(stSubTexId);
         // Load the image
-        TexCompFtor(*this, stSubTexId, 0, iNICFormat, eNXCFormat, sSlot);
+        TexCompFtor(*this, stSubTexId, 0, iNICFormat, eNXCFormat, isSlot);
         // Automatically generate mipmaps if requested. This has to be done
         // for each uploaded texture
         ReGenerateMipmaps();
@@ -206,7 +207,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
       // Configure the texture
       ConfigureTexture(0);
       // Upload first mipmap
-      TexCompFtor(*this, 0, 0, iNICFormat, eNXCFormat, sData);
+      TexCompFtor(*this, 0, 0, iNICFormat, eNXCFormat, isData);
       // Done if there more slots to load
       if(stSlots <= 1) return;
       // Last mipmap size
@@ -214,17 +215,17 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
       // Load all the other mipmaps
       for(size_t stSubTexId = 1; stSubTexId < stSlots; ++stSubTexId)
       { // Get next slot
-        const ImageSlot &sSlot = GetSlotsConst()[stSubTexId];
+        const ImageSlot &isSlot = GetSlotsConst()[stSubTexId];
         // Make sure size is smaller than the last
-        if(sSlot.DimGetWidth() >= uiLWidth ||
-           sSlot.DimGetHeight() >= uiLHeight)
+        if(isSlot.DimGetWidth() >= uiLWidth ||
+           isSlot.DimGetHeight() >= uiLHeight)
           XC("Specified mipmap is not smaller than the last!",
              "Identifier", IdentGet(), "LastWidth", uiLWidth,
-             "LastHeight", uiLHeight,  "ThisWidth", sSlot.DimGetWidth(),
-             "ThisHeight", sSlot.DimGetHeight());
+             "LastHeight", uiLHeight,  "ThisWidth", isSlot.DimGetWidth(),
+             "ThisHeight", isSlot.DimGetHeight());
         // Load the mipmap
         TexCompFtor(*this, 0, static_cast<GLint>(stSubTexId), iNICFormat,
-          eNXCFormat, sSlot);
+          eNXCFormat, isSlot);
         // Update last mipmap size
         uiLWidth = DimGetWidth();
         uiLHeight = DimGetHeight();
@@ -232,15 +233,14 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
     } // Log progress
     cLog->LogDebugExSafe("Texture '$'[S:$;F:$/$;M:$;D:$x$] uploaded.",
       IdentGet(), stSlots, cOgl->GetPixelFormat(eNXCFormat),
-      cOgl->GetPixelFormat(iNICFormat), GetMipmaps(), sData.DimGetWidth(),
-      sData.DimGetHeight());
+      cOgl->GetPixelFormat(iNICFormat), GetMipmaps(), isData.DimGetWidth(),
+      isData.DimGetHeight());
   }
   /* -- Return a new tile -------------------------------------------------- */
   const CoordData NewTile(const GLfloat fL, const GLfloat fT, const GLfloat fR,
     const GLfloat fB, const GLfloat fW, const GLfloat fH)
-  { const GLfloat fLeft =      fL/GetFWidth(),  fRight  =      fR/GetFWidth(),
-                  fTop  = 1.0f-fT/GetFHeight(), fBottom = 1.0f-fB/GetFHeight();
-    return { fW, fH, fLeft, fTop, fRight, fBottom }; }
+  { return { fW, fH, fL/GetFWidth(), 1.0f-fT/GetFHeight(),
+      fR/GetFWidth(), 1.0f-fB/GetFHeight() }; }
   /* -- Set the texture co-ordinates of a tile ----------------------------- */
   void SetTile(const size_t stSubTexId, const size_t stTileId,
     const GLfloat fL, const GLfloat fT, const GLfloat fR, const GLfloat fB,
@@ -265,8 +265,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
     const GLfloat fL, const GLfloat fT, const GLfloat fW, const GLfloat fH)
   { // Calculate new top, right and bottom and add the tile
     const GLfloat fNT = GetFHeight()-fT, fNB = fNT+fH, fNR = fL+fW;
-    SetTile(stSubTexId, stTileId, fL, fT, fNR, fNB, fNR-fL, fNT-fNB);
-  }
+    SetTile(stSubTexId, stTileId, fL, fT, fNR, fNB, fNR-fL, fNT-fNB); }
   /* -- Do add a tile with custom width and height setting ----------------- */
   void AddTile(const size_t stSubTexId, const GLfloat fL, const GLfloat fT,
     const GLfloat fR, const GLfloat fB, const GLfloat fW, const GLfloat fH)
@@ -325,27 +324,27 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
   { // Get number of slots in this image and return if zero
     if(IsNoSlots()) XC("No data in image object!", "Identifier", IdentGet());
     // Get first slot
-    const ImageSlot &sData = GetSlotsConst().front();
+    const ImageSlot &isData = GetSlotsConst().front();
     // Copy image dimensions to texture dimensions
-    DimSet(sData);
+    DimSet(isData);
     // Set image dimensions as float for opengl
     dfImage.DimSet(DimGetWidth<GLfloat>(), DimGetHeight<GLfloat>());
     // Check width and height's are valid for the graphics device
     const unsigned int uiMaxSize = cOgl->MaxTexSize();
-    if(sData.DimIsNotSet() || sData.DimGetWidth() > uiMaxSize ||
-                              sData.DimGetHeight() > uiMaxSize)
+    if(isData.DimIsNotSet() || isData.DimGetWidth() > uiMaxSize ||
+       isData.DimGetHeight() > uiMaxSize)
       XC("Image dimensions not supported by graphics hardware!",
-         "Identifier", IdentGet(),           "Width",   sData.DimGetWidth(),
-         "Height",     sData.DimGetHeight(), "Maximum", uiMaxSize);
+         "Identifier", IdentGet(),            "Width",   isData.DimGetWidth(),
+         "Height",     isData.DimGetHeight(), "Maximum", uiMaxSize);
     // Internal pixel type chosen
     GLint iICFormat;
     // What is the colour type as we need to handle it differently
     switch(GetBytesPerPixel())
     { // Real possible values
-      case 1: iICFormat = GL_RED;  break; //  8-bpp (grayscale)
-      case 2: iICFormat = GL_RG;   break; // 16-bpp (grayscale + alpha)
-      case 3: iICFormat = GL_RGB;  break; // 24-bpp (RGB)
-      case 4: iICFormat = GL_RGBA; break; // 32-bpp (RGBA)
+      case BY_GRAY: iICFormat = GL_RED;  break;
+      case BY_GRAYALPHA: iICFormat = GL_RG; break;
+      case BY_RGB: iICFormat = GL_RGB;  break;
+      case BY_RGBA: iICFormat = GL_RGBA; break;
       // Unknown, bail out
       default: XC("Unsupported texture colour type!",
         "Identifier",   IdentGet(), "BytesPerPixel", GetBytesPerPixel(),
@@ -391,8 +390,8 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
             eNXCFormat = GetPixelType();
             shProgram = &cShaderCore->sh2D;
             // Upload as compressed texture
-            UploadTexture<TexCompFtor::DXT>(stSlots,
-              sData, iICFormat, eNXCFormat);
+            UploadTexture<TexCompFtor::DXT>
+              (stSlots, isData, iICFormat, eNXCFormat);
             // Return because we uploaded compressed pixels
             return;
           // BGRA colour order type?
@@ -426,7 +425,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
         "Identifier", IdentGet(), "ICFormat", iICFormat,
         "XCFormat", GetPixelType());
     } // The pixel type is raw uniform pixels so upload them
-    UploadTexture<TexCompFtor::RAW>(stSlots, sData, iICFormat, eNXCFormat);
+    UploadTexture<TexCompFtor::RAW>(stSlots, isData, iICFormat, eNXCFormat);
   }
   /* -- Return padding dimensions ---------------------------------- */ public:
   GLfloat GetPaddingWidth(void) const { return dfPad.DimGetWidth(); }
@@ -485,10 +484,6 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
   { for(size_t stTriId = 0; stTriId < stTrisPerQuad; ++stTriId)
       BlitTri(uiGLTexId, qcoData[stTriId], qpData[stTriId],
         acData[stTriId]); }
-  /* -- Blit with currently stored position -------------------------------- */
-  void Blit(const size_t stSubTexId, const size_t stTileId)
-    { BlitQuad(GetSubName(stSubTexId), clTiles[stSubTexId][stTileId],
-        FboItemGetVData(), FboItemGetCData()); }
   /* -- Blit with currently stored position, texture and colour ------------ */
   void Blit(const size_t stSubTexId)
     { BlitQuad(GetSubName(stSubTexId), FboItemGetTCData(), FboItemGetVData(),
@@ -609,7 +604,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
   { // Do the update
     UpdateEx(GetSubName(stSubTexId), iX, iY, imS.DimGetWidth<GLsizei>(),
       imS.DimGetHeight<GLsizei>(), imS.GetPixelType(),
-      imS.GetSlotsConst().front().Ptr());
+      imS.GetSlotsConst().front().MemPtr());
   }
   /* -- Replace texture in VRAM from array --------------------------------- */
   void Update(Image &imOther)
@@ -629,7 +624,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
       "Identifier", IdentGet(), "Index", stSubTexId);
     // Create memory block for texture data and read RGBA texture into it
     Memory mOut{ DimGetWidth() * DimGetHeight() * byDDepth };
-    GL(cOgl->ReadTexture(ePixType, mOut.Ptr<GLvoid>()),
+    GL(cOgl->ReadTexture(ePixType, mOut.MemPtr<GLvoid>()),
       "Download texture failed!",
       "Identifier", IdentGet(), "Index", stSubTexId,
       "StrFormat",     cOgl->GetPixelFormat(ePixType));

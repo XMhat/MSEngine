@@ -140,8 +140,8 @@ template<typename PtrType, typename IntType>
 { lua_pushlstring(lS, reinterpret_cast<const char*>(ptValue),
                       static_cast<size_t>(itSize)); }
 /* -- Push a memory block onto the stack as a string ----------------------- */
-static void LuaUtilPushMem(lua_State*const lS, const DataConst &dcItem)
-    { LuaUtilPushLStr(lS, dcItem.Ptr<char>(), dcItem.Size()); }
+static void LuaUtilPushMem(lua_State*const lS, const MemConst &mcSrc)
+    { LuaUtilPushLStr(lS, mcSrc.MemPtr<char>(), mcSrc.MemSize()); }
 /* -- Push a C++ string onto the stack ------------------------------------- */
 static void LuaUtilPushStr(lua_State*const lS, const string &strStr)
   { LuaUtilPushLStr(lS, strStr.data(), strStr.length()); }

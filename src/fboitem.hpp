@@ -129,8 +129,8 @@ class FboItem
     tdT2[4] = fX1+fCc; tdT2[5] = fY1+fCd; //   "    3 /     "    2
   }
   /* -- Set vertex with coords, dimensions and angle ----------------------- */
-  void FboItemSetVertexWH(const GLfloat fX, const GLfloat fY,
-    const GLfloat fW, const GLfloat fH, const GLfloat fA)
+  void FboItemSetVertexWH(const GLfloat fX, const GLfloat fY, const GLfloat fW,
+    const GLfloat fH, const GLfloat fA)
       { FboItemSetVertex(fX, fY, fX+fW, fY+fH, fA); }
   /* -- Set vertex bounds and return it ------------------------------------ */
   const QuadPosData &FboItemSetAndGetVertex(const GLfloat fX1,

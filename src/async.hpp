@@ -51,7 +51,9 @@ enum ASyncProgressCommand              // For lua callback events
   APC_EXECDATAWRITE,                   // Exec writing data (2=Pos,3=Total)
   APC_FILESTART,                       // File opened (2=Siz,3=MTime,4=CTime)
 };/* ----------------------------------------------------------------------- */
-template<class MemberType, class ColType>class AsyncLoader
+template<class MemberType, class ColType>class AsyncLoader :
+  /* -- Base classes ------------------------------------------------------- */
+  public Memory                        // Loading from memory data (reusable)
 { /* -- Private typedefs ------------------------------------------ */ private:
   enum AsyncResult                     // Async loading results
   { /* --------------------------------------------------------------------- */
@@ -87,7 +89,6 @@ template<class MemberType, class ColType>class AsyncLoader
   LuaEvtCallback   lesAsync;           // Async state and references
   Thread           tAsyncThread;       // Asynchronous loading
   string           strAsyncError;      // The last error exception
-  Memory           mAsyncLoadData;     // Loading from memory data
   ASyncCmdType     aiAsyncType;        // Async load init type
   SafeUInt         uiAsyncPid;         // Pid of executing process
   /* -- Dispatch event without parameter ----------------------------------- */
@@ -129,8 +130,7 @@ template<class MemberType, class ColType>class AsyncLoader
     const size_t stBuffer)
   { // Write a block of data and get how much we wrote. We hard fail if we did
     // not write the correct number of bytes
-    const size_t stWrote =
-      spProcess.Send(mAsyncLoadData.Read(stPosition), stBuffer);
+    const size_t stWrote = spProcess.Send(MemRead(stPosition), stBuffer);
     if(stWrote != stBuffer)
       XCS("Not enough data written to process pipe!",
         "Ident",    spProcess.IdentGet(), "Pid",    spProcess.GetPid(),
@@ -141,7 +141,21 @@ template<class MemberType, class ColType>class AsyncLoader
     // Send progress update
     AsyncProgress(APC_EXECDATAWRITE,
       static_cast<uint64_t>(stPosition),
-      static_cast<uint64_t>(mAsyncLoadData.Size()));
+      static_cast<uint64_t>(MemSize()));
+  }
+  /* ----------------------------------------------------------------------- */
+  void AsyncTidyUpVars(void)
+  { // Clear Lua stack string and recover memory as we are done with it. If
+    // the member class wants to reuse this string now they can.
+    strAsyncError.clear();
+    strAsyncError.shrink_to_fit();
+    // Clear other members
+    aiAsyncType = BA_NONE;
+    uiAsyncPid = 0;
+    // The 'Memory' used from the loading would have already been transferred
+    // to the 'FileMap' class on the callback so it will already be empty now.
+    // Also the member controls the 'Ident' class so it's up to them to manage
+    // it.
   }
   /* -- Init from file synchronously ---------------------------- */ protected:
   void SyncInitFile(const string &strFilename)
@@ -163,16 +177,15 @@ template<class MemberType, class ColType>class AsyncLoader
     // Send progress event
     AsyncProgress(APC_EXECSTART, static_cast<uint64_t>(uiAsyncPid.load()));
     // If we have data to send?
-    if(mAsyncLoadData.NotEmpty())
+    if(MemIsNotEmpty())
     { // Current position
       size_t stPosition = 0;
       // Buffer size to write (maybe configurable todo)
       const size_t stBuffer = AssetGetPipeBufferSize(),
         // Get amount of extra data to write
-        stExtra = mAsyncLoadData.Size() % stBuffer,
+        stExtra = MemSize() % stBuffer,
         // Clamp end position to number of pages
-        stEnd = mAsyncLoadData.Size() < stBuffer ?
-          mAsyncLoadData.Size() : mAsyncLoadData.Size() - stExtra;
+        stEnd = MemSize() < stBuffer ? MemSize() : MemSize() - stExtra;
       // If we are writing more than one page? Copy full pages of buffers
       // until we are left with remainders.
       if(stExtra > stBuffer)
@@ -187,7 +200,7 @@ template<class MemberType, class ColType>class AsyncLoader
         stPosition, spProcess.GetPid(),
         StrShortFromDuration(ccExecute.CCDeltaToDouble()));
       // Clear the memory to re-use for output
-      mAsyncLoadData.DeInit();
+      MemDeInit();
     } // List of output
     MemoryList mlBlocks;
     size_t stTotalRead = 0;
@@ -195,9 +208,9 @@ template<class MemberType, class ColType>class AsyncLoader
     while(tAsyncThread.ThreadShouldNotExit())
     { // Read process output and break out of loop if nothing read
       Memory mBuffer{ spProcess.ReadBlock() };
-      if(mBuffer.Empty()) break;
+      if(mBuffer.MemIsEmpty()) break;
       // Increase total bytes read
-      stTotalRead += mBuffer.Size();
+      stTotalRead += mBuffer.MemSize();
       // Move it into the packet list
       mlBlocks.emplace_back(StdMove(mBuffer));
     } // Finished with pipe. Also gets the exit code too.
@@ -212,16 +225,16 @@ template<class MemberType, class ColType>class AsyncLoader
     // If we have no memory stored? Return exit code
     if(!stTotalRead) return spProcess.SysPipeBaseGetStatus();
     // Initialise memory for program output data block
-    mAsyncLoadData.InitBlank(stTotalRead);
+    MemInitBlank(stTotalRead);
     // Byte offset counter
     size_t stOffset = 0;
     // Loop until...
     do
     { // Get packet memory block and copy it into our dest memory block
-      const DataConst &dcPacket = mlBlocks.front();
-      mAsyncLoadData.WriteBlock(stOffset, dcPacket);
+      const MemConst &dcPacket = mlBlocks.front();
+      MemWriteBlock(stOffset, dcPacket);
       // Increment counter
-      stOffset += dcPacket.Size();
+      stOffset += dcPacket.MemSize();
       // Pop packet
       mlBlocks.pop_front();
     } // ...list is fully emptied
@@ -233,7 +246,7 @@ template<class MemberType, class ColType>class AsyncLoader
   void AsyncParseFileMap(FileMap &fmFile)
   { // Send progress event with the file size
     AsyncProgress(APC_FILESTART,
-      static_cast<uint64_t>(fmFile.Size()),
+      static_cast<uint64_t>(fmFile.MemSize()),
       static_cast<uint64_t>(fmFile.FileMapModifiedTime()),
       static_cast<uint64_t>(fmFile.FileMapCreationTime()));
     // Move our memory block into a file map and send it to loader
@@ -241,8 +254,7 @@ template<class MemberType, class ColType>class AsyncLoader
   }
   /* -- Move the stored memory block into a new filemap and parse it ------- */
   void AsyncParseMemory(void)
-    { FileMap fmFile{ idName.IdentGet(),
-        StdMove(mAsyncLoadData), cmSys.GetTimeS() };
+    { FileMap fmFile{ idName.IdentGet(), StdMove(*this), cmSys.GetTimeS() };
       AsyncParseFileMap(fmFile); }
   /* -- Load the specified file and parse it ------------------------------- */
   void AsyncParseFile(void)
@@ -250,8 +262,8 @@ template<class MemberType, class ColType>class AsyncLoader
       AsyncParseFileMap(fmFile); }
   /* -- Async off-main thread function ------------------------------------- */
   int AsyncThreadMain(Thread&)
-  { // Capture exceptions. Remember that after these operations the memory
-    // at mAsyncLoadData should be de-initialised. So don't use it again.
+  { // Capture exceptions. Remember that after these operations the memory at
+    // mAsyncLoadData should be de-initialised. So don't use it again.
     try
     { // How are we loading?
       switch(aiAsyncType)
@@ -326,9 +338,6 @@ template<class MemberType, class ColType>class AsyncLoader
     if(lesAsync.LuaRefGetFunc(LR_ERROR))
     { // Push the error message
       LuaUtilPushStr(lesAsync.LuaRefGetState(), strAsyncError);
-      // The memory for the error is no longer needed
-      strAsyncError.clear();
-      strAsyncError.shrink_to_fit();
       // Wait for thread and register the class
       AsyncStopAndRegister();
       // Now do the callback. An exception could occur here.
@@ -338,6 +347,8 @@ template<class MemberType, class ColType>class AsyncLoader
       "event $ for '$' with luastate($) and fref($) from $ params!",
       epData.evtCommand, idName.IdentGet(), lesAsync.LuaRefStateIsSet(),
       lesAsync.LuaRefGetFunc(LR_ERROR), epData.vParams.size());
+    // The memory for the error is no longer needed
+    AsyncTidyUpVars();
   }
   /* -- Async do protected dispatch (assumes params already on lua stack) -- */
   void AsyncDoLuaProtectedDispatch(const EvtMain::Cell &epData,
@@ -409,7 +420,7 @@ template<class MemberType, class ColType>class AsyncLoader
   { // Loading from command-line
     aiAsyncType = BA_EXECUTE;
     // Set memory sent to stdin
-    mAsyncLoadData = StdMove(mbInput);
+    static_cast<Memory&>(*this) = StdMove(mbInput);
     // Init rest of members
     AsyncInit(lsS, strCmdLine, strLabel);
   }
@@ -417,7 +428,7 @@ template<class MemberType, class ColType>class AsyncLoader
   void AsyncInitArray(lua_State*const lsS, const string &strName,
     const string &strLabel, Memory &&mData)
   { // Set data to load from
-    mAsyncLoadData = StdMove(mData);
+    static_cast<Memory&>(*this) = StdMove(mData);
     // Loading from memory
     aiAsyncType = BA_MEMORY;
     // Init rest of members
@@ -560,10 +571,12 @@ template<class MemberType, class ColType>class AsyncLoader
           cLog->LogErrorExSafe(
             "AsyncLoader got unknown result $ after loading '$'!",
             uiAsyncResult, idName.IdentGet());
-        } // If the thread was told to abort? Clear references and just return
+        } // If the thread was told to abort? Just break to clear references
         case AR_ABORT: break;
       }
-    } // Clear references and state or Lua's GC won't ever delete the class
+    } // Tidy up the variables
+    AsyncTidyUpVars();
+    // Clear references and state or Lua's GC won't ever delete the class
     lesAsync.LuaRefDeInit();
   } // Exception occured? Disable lua callback/refs and rethrow
   catch(const exception&) { lesAsync.LuaRefDeInit(); throw; }

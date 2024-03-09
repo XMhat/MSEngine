@@ -96,9 +96,9 @@ static class Oal final :
       { alBufferData(uiBuffer, eFormat, vpData, stSize, stFrequency); }
   /* -- Upload data to audio device ---------------------------------------- */
   void BufferData(const ALuint uiBuffer, const ALenum eFormat,
-    const DataConst &dcData, const ALsizei stFrequency)
-      { BufferData(uiBuffer, eFormat, dcData.Ptr<ALvoid>(),
-          dcData.Size<ALsizei>(), stFrequency); }
+    const MemConst &mcSrc, const ALsizei stFrequency)
+      { BufferData(uiBuffer, eFormat, mcSrc.MemPtr<ALvoid>(),
+          mcSrc.MemSize<ALsizei>(), stFrequency); }
   /* -- Queue specified buffer count into source --------------------------- */
   void QueueBuffers(const ALuint uiSource,
     const ALsizei stCount, ALuint*const uipBuffer) const

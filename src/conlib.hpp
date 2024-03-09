@@ -80,12 +80,12 @@ tData.Header("ID").Header("BYTES").Header("PREVIEW", false)
 // Walk mask list and add size of it
 for(const Asset *aCptr : *cAssets)
 { // Get reference to memory block
-  const DataConst &dcCref = *aCptr;
+  const MemConst &mcRef = *aCptr;
 #if !defined(RELEASE)
   // Set preview size
-  const size_t stMax = UtilMinimum(dcCref.Size(), stCount);
+  const size_t stMax = UtilMinimum(mcRef.MemSize(), stCount);
   // Set id and size
-  tData.DataN(aCptr->CtrGet()).DataN(dcCref.Size());
+  tData.DataN(aCptr->CtrGet()).DataN(mcRef.MemSize());
   // Clear preview strings
   strHex.clear();
   strAscii.clear();
@@ -93,7 +93,7 @@ for(const Asset *aCptr : *cAssets)
   for(size_t stIndex = 0; stIndex < stMax; ++stIndex)
   { // Get character
     const unsigned int uiChar =
-      static_cast<unsigned int>(dcCref.ReadInt<uint8_t>(stIndex));
+      static_cast<unsigned int>(mcRef.MemReadInt<uint8_t>(stIndex));
     // Add hex of block
     strHex += StrHexFromInt(uiChar, 2) + ' ';
     // Put a dot if character is invalid
@@ -109,7 +109,7 @@ for(const Asset *aCptr : *cAssets)
   tData.Data(strHex).Data(strAscii);
 #endif
   // Add size of this array to the total size of all arrays
-  stTotal += dcCref.Size();
+  stTotal += mcRef.MemSize();
 } // Number of items in buffer. We're not showing data in release mode.
 #if defined(RELEASE)
 cConsole->AddLineEx("$ totalling $.",
@@ -923,7 +923,7 @@ if(aList.size() == 2)
   // For each slot
   for(const ImageSlot &imdD : iCref.GetSlotsConst())
     tData.DataN(imdD.DimGetWidth()).DataN(imdD.DimGetHeight())
-         .DataN(imdD.Size());
+         .DataN(imdD.MemSize());
   // Log texture counts
   cConsole->AddLineEx("$$ in $.", tData.Finish(),
     StrPluraliseNum(iCref.GetSlotCount(), "slot", "slots"), iCref.IdentGet());
@@ -1086,7 +1086,7 @@ cConsole->AddLineEx("$ bytes ($) freed.", stT, StrToBytes(stT));
 /* ------------------------------------------------------------------------- */
 // Colours for log levels
 static const array<Colour, LH_MAX> cColours{
-  COLOUR_LBLUE  /* LH_DISABLED */, COLOUR_LRED   /* LH_ERROR    */,
+  COLOUR_LBLUE  /* LH_CRITICAL */, COLOUR_LRED   /* LH_ERROR    */,
   COLOUR_YELLOW /* LH_WARNING  */, COLOUR_WHITE  /* LH_INFO     */,
   COLOUR_LGRAY  /* LH_DEBUG    */
 };
@@ -1147,7 +1147,7 @@ const int iCount = LuaUtilStackSize(lS);
 // Setup output spreadsheet
 Statistic tData;
 tData.Header("ID").Header("FLAGS").Header("NAME", false).Header("VALUE")
-     .Reserve(iCount);
+     .Reserve(static_cast<size_t>(iCount));
 // Enumerate each stack element (1 is the first item)
 for(int iIndex = 1; iIndex <= iCount; ++iIndex)
   tData.DataN(iIndex)
@@ -1244,11 +1244,11 @@ tData.Header("ID").Header("WIDTH").Header("HEIGHT").Header("TOTAL")
 // Walk mask list
 for(const Mask*const mCptr : *cMasks)
 { // Get mask
-  const Mask &dcCref = *mCptr;
+  const Mask &mcRef = *mCptr;
   // Add mask data to table
-  tData.DataN(dcCref.CtrGet()).DataN(dcCref.DimGetWidth())
-       .DataN(dcCref.DimGetHeight()).DataN(dcCref.size())
-       .DataN(dcCref.GetAlloc()).Data(dcCref.IdentGet());
+  tData.DataN(mcRef.CtrGet()).DataN(mcRef.DimGetWidth())
+       .DataN(mcRef.DimGetHeight()).DataN(mcRef.size())
+       .DataN(mcRef.GetAlloc()).Data(mcRef.IdentGet());
 } // Output data
 cConsole->AddLineExA(tData.Finish(),
   StrPluraliseNum(cMasks->size(), "mask.", "masks."));
@@ -1521,7 +1521,8 @@ for(const Sample*const sCptr : *cSamples)
 { // Get sample object reference
   const Sample &sCref = *sCptr;
   // Print totals info
-  tData.DataN(sCref.CtrGet()).DataN(sCref.front()).Data(sCref.IdentGet());
+  tData.DataN(sCref.CtrGet()).DataN(sCref.uivNames.front())
+       .Data(sCref.IdentGet());
 } // Number of items in buffer
 cConsole->AddLineExA(tData.Finish(),
   StrPluraliseNum(cSamples->size(), "sample.", "samples."));
@@ -1829,13 +1830,13 @@ if(cSql->ExecuteAndSuccess(StrImplode(aList, 1)))
         const Sql::DataListItem &mbOut = cItem.second;
         // Add row, column id, size and key name
         tData.DataN(stRecordId).DataN(stColumnId++)
-             .DataN(mbOut.Size()).Data(cItem.first);
+             .DataN(mbOut.MemSize()).Data(cItem.first);
         // What type is it?
         switch(mbOut.iT)
         { // 64-bit integer?
           case SQLITE_INTEGER:
           { // Get integer
-            const sqlite3_int64 qwVal = mbOut.ReadInt<sqlite3_int64>();
+            const sqlite3_int64 qwVal = mbOut.MemReadInt<sqlite3_int64>();
             // StrFormat and store in spreadsheet
             tData.Data("I")
                  .Data(StrFormat("$ (0x$$)", qwVal, hex, qwVal));
@@ -1843,11 +1844,11 @@ if(cSql->ExecuteAndSuccess(StrImplode(aList, 1)))
             break;
           } // 64-bit IEEE float?
           case SQLITE_FLOAT:
-            tData.Data("F").DataN(mbOut.ReadInt<double>()); break;
+            tData.Data("F").DataN(mbOut.MemReadInt<double>()); break;
           // Raw data? Just write number of bytes
           case SQLITE_BLOB: tData.Data("B").Data("<Blob>"); break;
           // Text?
-          case SQLITE_TEXT: tData.Data("T").Data(mbOut.ToString()); break;
+          case SQLITE_TEXT: tData.Data("T").Data(mbOut.MemToString()); break;
           // No data
           case SQLITE_NULL: tData.Data("N").Data("<Null>"); break;
           // Unknown type (impossible)

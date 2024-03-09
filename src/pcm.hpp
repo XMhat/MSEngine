@@ -31,23 +31,24 @@ BEGIN_ASYNCCOLLECTORDUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
   { // If pcm data only is single channel, we don't need to split channels.
     if(GetChannels() == 1) return;
     // If the right channel was already filled then we don't need to do it
-    if(!aPcmR.Empty()) return;
+    if(!aPcmR.MemIsEmpty()) return;
     // Move pcm file data to a temporary array
     const Memory aTemp{ StdMove(aPcmL) };
     // Initialise buffers, half the size since we're only splitting
-    aPcmL.InitBlank(aTemp.Size()/2);
-    aPcmR.InitBlank(aPcmL.Size());
+    aPcmL.MemInitBlank(aTemp.MemSize()/2);
+    aPcmR.MemInitBlank(aPcmL.MemSize());
     // Iterate through the samples
     for(size_t stIndex = 0,
                stSubIndex = 0,
                stBytes = GetBits() / 8,
                stStep = GetChannels() * stBytes;
-               stIndex < aTemp.Size();
+               stIndex < aTemp.MemSize();
                stIndex += stStep,
                stSubIndex += stBytes)
     { // De-interleave into seperate channels
-      aPcmL.Write(stSubIndex, aTemp.Read(stIndex, stBytes), stBytes);
-      aPcmR.Write(stSubIndex, aTemp.Read(stIndex + stBytes, stBytes), stBytes);
+      aPcmL.MemWrite(stSubIndex, aTemp.MemRead(stIndex, stBytes), stBytes);
+      aPcmR.MemWrite(stSubIndex, aTemp.MemRead(stIndex + stBytes, stBytes),
+        stBytes);
     }
   }
   /* -- Split a stereo waveform and set allocation size -------------------- */
@@ -55,7 +56,7 @@ BEGIN_ASYNCCOLLECTORDUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
   { // Split audio into two channels if audio in stereo
     Split();
     // Set allocated size
-    SetAlloc(aPcmL.Size() + aPcmR.Size());
+    SetAlloc(aPcmL.MemSize() + aPcmR.MemSize());
   }
   /* -- Load sample from memory -------------------------------------------- */
   void AsyncReady(FileMap &fC)
@@ -134,15 +135,15 @@ BEGIN_ASYNCCOLLECTORDUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
       "Identifier", strN, "Bits", uiB);
     // Calculate bytes per sample
     const size_t stBytesPerSample = GetRate() * GetChannels() * GetBits();
-    if(aData.Size() != stBytesPerSample)
+    if(aData.MemSize() != stBytesPerSample)
       XC("Argument not valid for specified array!",
          "Identifier",     strN,             "Rate", uiR,
          "Channels",       uiC,              "Bits", uiB,
-         "BytesPerSample", stBytesPerSample, "Size", aData.Size());
+         "BytesPerSample", stBytesPerSample, "Size", aData.MemSize());
     // Set members
     IdentSet(strN);
     SetDynamic();
-    aPcmL.SwapMemory(StdMove(aData));
+    aPcmL.MemSwap(StdMove(aData));
     SetRate(uiR);
     SetChannels(uiC);
     SetBits(uiB);

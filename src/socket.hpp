@@ -81,7 +81,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   struct Packet                        // Connection packet
   { /* --------------------------------------------------------------------- */
     ClkTimePoint   dTimestamp;         // Packet timestamp
-    Memory         aPacket;            // Memory block
+    Memory         mData;              // Memory block
   };/* --------------------------------------------------------------------- */
   typedef list<Packet> PacketList;     // list of blocks
   /* -- OpenSSL core variables --------------------------------------------- */
@@ -275,21 +275,21 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     { return SockWrite(strStr.data(),
         static_cast<unsigned int>(strStr.length())); }
   /* -- Write memory block class to socket --------------------------------- */
-  unsigned int SockWrite(const DataConst &dcBlock)
-    { return SockWrite(dcBlock.Ptr<char>(), dcBlock.Size<unsigned int>()); }
+  unsigned int SockWrite(const MemConst &mcSrc)
+    { return SockWrite(mcSrc.MemPtr<char>(), mcSrc.MemSize<unsigned int>()); }
   /* -- Convert packet to memblock for LUA API ----------------------------- */
-  double GetPacket(Memory &aPacket, PacketList &bData, size_t &stS)
+  double GetPacket(Memory &mDest, PacketList &bData, size_t &stS)
   { // Not empty? Return top memory block else through error
     if(bData.empty())
       XC("No packets remaining in blocklist!",
          "Address", strAddr, "Port", uiPort);
     // Get first top packet and move data to memblock supplied by caller
     Packet &pData = bData.front();
-    aPacket.SwapMemory(StdMove(pData.aPacket));
+    mDest.MemSwap(StdMove(pData.mData));
     // Copy record timestamp
     const ClkTimePoint dTS{ StdMove(pData.dTimestamp) };
     // Subtract total bytes counter
-    stS -= aPacket.Size();
+    stS -= mDest.MemSize();
     // Pop first RX packet
     bData.pop_front();
     // Return timestamp
@@ -327,8 +327,8 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     WriteUnblock();
   }
   /* -- Send data as other types ------------------------------------------- */
-  void Send(const DataConst &dcPacket)
-    { Send(dcPacket.Ptr<char>(), dcPacket.Size()); }
+  void Send(const MemConst &dcPacket)
+    { Send(dcPacket.MemPtr<char>(), dcPacket.MemSize()); }
   void SendString(const string &strData)
     { Send(strData.data(), strData.length()); }
   /* ----------------------------------------------------------------------- */
@@ -371,13 +371,13 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       GetRXpkt(), GetRX(), GetTXpkt(), GetTX());
   }
   /* -- Compact all packets into single packet ----------------------------- */
-  void Compact(Memory &aDest, PacketList &blData, size_t &stX)
+  void Compact(Memory &mDest, PacketList &blData, size_t &stX)
   { // Bail if no packets, but 0 bytes will still be allocated
-    if(blData.empty()) { aDest.InitBlank(); return; }
+    if(blData.empty()) { mDest.MemInitBlank(); return; }
     // If zero size just flush all the empty packets and return
-    if(!stX) { aDest.InitBlank(); return FlushPackets(blData, stX); }
+    if(!stX) { mDest.MemInitBlank(); return FlushPackets(blData, stX); }
     // Resize memblock to hold all data
-    aDest.InitBlank(stX);
+    mDest.MemInitBlank(stX);
     // Size of buffers is now zero
     stX = 0;
     // Byte offset counter
@@ -385,10 +385,10 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     // Loop until...
     do
     { // Get packet memory block and copy it into our destination memory block
-      const DataConst &dcPacket = blData.front().aPacket;
-      aDest.WriteBlock(stOffset, dcPacket);
+      const MemConst &dcPacket = blData.front().mData;
+      mDest.MemWriteBlock(stOffset, dcPacket);
       // Increment counter
-      stOffset += dcPacket.Size();
+      stOffset += dcPacket.MemSize();
       // Pop packet
       blData.pop_front();
     } // ...list is fully emptied
@@ -728,14 +728,14 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     // Response headers
     string strHeaders;
     // Allocate memory for read buffer
-    Memory aPacket{ cParent->stBufferSize };
+    Memory mDest{ cParent->stBufferSize };
     // Expecting reponse headers? and connection closed status
     bool bHeaders = true;
     // Begin monitoring for reply and break if thread should exit
     while(tReader.ThreadShouldNotExit())
     { // Wait for data from connected server
       const unsigned int uiBX =
-        SockRead(aPacket.Ptr<char>(), aPacket.Size<unsigned int>());
+        SockRead(mDest.MemPtr<char>(), mDest.MemSize<unsigned int>());
       // Connection error or server closed connection?
       if(uiBX == StdMaxUInt)
       { // If we were waiting for headers still?
@@ -758,7 +758,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
         stContentRead += uiBX;
         // Push data into RX list. Truncate bytes read if we have a content
         // length and the we read past the content length.
-        PushDataSafe(blRX, stRX, aPacket.Ptr<char>(),
+        PushDataSafe(blRX, stRX, mDest.MemPtr<char>(),
           stContentLength && stContentRead > stContentLength ?
             uiBX - static_cast<unsigned int>(stContentLength - stContentRead) :
             uiBX);
@@ -771,7 +771,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
         continue;
       } // Make string from response. There could be binary characters in this
       // but it does not matter
-      string strResp{ aPacket.Ptr<char>(), uiBX };
+      string strResp{ mDest.MemPtr<char>(), uiBX };
       // Find end of headers marker and if we do not have it yet?
       const size_t stEnd = strResp.find(cCommon->CrLf2());
       if(stEnd == string::npos)
@@ -788,7 +788,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       const size_t stInitial = strResp.length() - (stEnd + 4);
       if(stInitial > 0)
       { // Push data into RX list
-        PushDataSafe(blRX, stRX, aPacket.Read(stEnd+4), stInitial);
+        PushDataSafe(blRX, stRX, mDest.MemRead(stEnd+4), stInitial);
         // Increment content read
         stContentRead += stInitial;
         // Truncate extra bytes
@@ -899,8 +899,8 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   bool IsTXPacketAvailable(void)
     { const LockGuard lgSocketSync{ mMutex }; return !blTX.empty(); }
   /* -- Get memory to oldest TX packet ------------------------------------- */
-  const DataConst &GetOldestTXPacketSafe(void)
-    { const LockGuard lgSocketSync{ mMutex }; return blTX.front().aPacket; }
+  const MemConst &GetOldestTXPacketSafe(void)
+    { const LockGuard lgSocketSync{ mMutex }; return blTX.front().mData; }
   /* -- Pop oldest TX packet ----------------------------------------------- */
   void PopOldestTXPacketSafe(void)
     { const LockGuard lgSocketSync{ mMutex }; return blTX.pop_front(); }
@@ -911,10 +911,10 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     { // For each packet waiting to be written
       while(IsTXPacketAvailable())
       { // Get oldest available TX packet, send it, and kill thread on error
-        const DataConst &dcPacket = GetOldestTXPacketSafe();
+        const MemConst &dcPacket = GetOldestTXPacketSafe();
         if(SockWrite(dcPacket) == StdMaxUInt) return 2;
         // Subtract total bytes counter and pop the packet we just sent
-        stTX -= dcPacket.Size();
+        stTX -= dcPacket.MemSize();
         PopOldestTXPacketSafe();
       } // Setup lock for condition variable and wait for new data to write
       UniqueLock uLock{ mWriter };
@@ -959,15 +959,15 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     // Try to connect and if it didn't fail kill the thread
     if(InitialConnect() == -1) return 2;
     // Create read transfer buffer
-    Memory aPacket{ cParent->stBufferSize };
+    Memory mDest{ cParent->stBufferSize };
     // Loop until thread should terminate
     while(tReader.ThreadShouldNotExit())
     { // Wait for new data to be read and kill thread on error
       const unsigned int uiBX =
-        SockRead(aPacket.Ptr<char>(), aPacket.Size<unsigned int>());
+        SockRead(mDest.MemPtr<char>(), mDest.MemSize<unsigned int>());
       if(uiBX == StdMaxUInt) return 3;
       // Push data block into list ready for LUA to collect
-      PushDataSafe(blRX, stRX, aPacket.Ptr<char>(),
+      PushDataSafe(blRX, stRX, mDest.MemPtr<char>(),
         static_cast<size_t>(uiBX));
       // Send read event
       DispatchEvent(SS_READPACKET);
@@ -1091,7 +1091,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     const size_t stS)
       { const LockGuard lgSocketSync{ mMutex };
         PushData(blD, stX, cpD, stS); }
-  void SendSafe(const DataConst &dcPacket)
+  void SendSafe(const MemConst &dcPacket)
     { const LockGuard lgSocketSync{ mMutex }; Send(dcPacket); }
   void SendStringSafe(const string &strData)
     { const LockGuard lgSocketSync{ mMutex }; SendString(strData); }
@@ -1201,9 +1201,9 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
         Memory mbPacket;
         GetPacket(mbPacket, blTX, stTX);
         // If we haven't set the key name
-        if(strVar.empty()) { strVar = mbPacket.ToString(); continue; }
+        if(strVar.empty()) { strVar = mbPacket.MemToString(); continue; }
         // Get value string from packet and store entry
-        const string strVal{ mbPacket.ToString() };
+        const string strVal{ mbPacket.MemToString() };
         LuaUtilPushStr(lS, strVal);
         lua_setfield(lS, -2, strVar.c_str());
         // Clear string

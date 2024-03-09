@@ -10,13 +10,13 @@
 /* == Windows file mapping class =========================================== */
 class SysMap :                         // Members initially private
   /* -- Base classes ------------------------------------------------------- */
-  public Ident                         // Filename (could override)
+  public Ident                         // Filename
 { /* -- Private typedefs --------------------------------------------------- */
   typedef array<StdTimeT,2> TwoTime;   // The two time back to back 1993-1994
   /* -- Private variables -------------------------------------------------- */
-  HANDLE           hFile;              // Handle to the file
+  HANDLE           hFile,              // Handle to the file
+                   hMap;               // Handle to the file map
   uint64_t         qSize;              // Size of file
-  HANDLE           hMap;               // Handle to the file map
   char            *cpMem;              // Handle to memory
   TwoTime          atTime;             // File times (0=creation,1=time)
   /* -- De-init the file map ----------------------------------------------- */
@@ -133,8 +133,8 @@ class SysMap :                         // Members initially private
     /* -- Initialisers ----------------------------------------------------- */
     Ident{ strIn },                    // Initialise file name
     hFile(INVALID_HANDLE_VALUE),       // No file handle
-    qSize(0),                          // No file size
     hMap(nullptr),                     // No map handle
+    qSize(0),                          // No file size
     cpMem(nullptr),                    // No memory pointer
     atTime{ tC, tM }                   // Set file times
     /* --------------------------------------------------------------------- */

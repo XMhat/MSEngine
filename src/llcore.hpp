@@ -68,7 +68,7 @@ LLFUNC(End, cEvtMain->Add(EMC_LUA_END));
 // > Text:string=The line of text to write to the log.
 // ? Writes the specified line of text to the engine log with highest level.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Log, cLog->LogExSafe(LH_DISABLED, "(Lua) $",
+LLFUNC(Log, cLog->LogExSafe(LH_CRITICAL, "(Lua) $",
   LCGETSTRING(char, 1, "String")));
 /* ========================================================================= */
 // $ Core.LogEx
@@ -79,7 +79,7 @@ LLFUNC(Log, cLog->LogExSafe(LH_DISABLED, "(Lua) $",
 // ? log anything.
 /* ------------------------------------------------------------------------- */
 LLFUNC(LogEx,
-  cLog->LogExSafe(LCGETINTLGE(LHLevel, 2, LH_DISABLED, LH_MAX, "Level"),
+  cLog->LogExSafe(LCGETINTLGE(LHLevel, 2, LH_CRITICAL, LH_MAX, "Level"),
     "(Lua) $", LCGETSTRING(char, 1, "String")));
 /* ========================================================================= */
 // $ Core.Events
@@ -199,7 +199,7 @@ LLRSEND                                // Core.* namespace functions end
 // ? Returns a table of key/value pairs that identify possible log levels.
 /* ------------------------------------------------------------------------- */
 LLRSKTBEGIN(LogLevels)                 // Beginning of log levels
-  LLRSKTITEM(LH_,DISABLED),            LLRSKTITEM(LH_,ERROR),
+  LLRSKTITEM(LH_,CRITICAL),            LLRSKTITEM(LH_,ERROR),
   LLRSKTITEM(LH_,WARNING),             LLRSKTITEM(LH_,INFO),
   LLRSKTITEM(LH_,DEBUG),               LLRSKTITEM(LH_,MAX),
 LLRSKTEND                              // End of log levels

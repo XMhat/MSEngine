@@ -20,7 +20,7 @@ namespace P {                          // Start of public module namespace
 /* -- Credit library class ------------------------------------------------- */
 class CreditLib :                      // Members initially private
   /* -- Base classes ------------------------------------------------------- */
-  public DataConst                     // Licence data memory
+  public MemConst                     // Licence data memory
 { /* ----------------------------------------------------------------------- */
   const string     strName,            // Name of library
                    strVersion,         // String version
@@ -35,7 +35,7 @@ class CreditLib :                      // Members initially private
   CreditLib(const string &strN, const string &strV, const string &strA,
     const bool bC, const void*const vpData, const size_t stSize) :
     /* -- Initialisers ----------------------------------------------------- */
-    DataConst{ stSize, vpData },       // Init credit licence data
+    MemConst{ stSize, vpData },       // Init credit licence data
     strName{ strN },                   // Init credit name
     strVersion{ strV },                // Init credit version
     strAuthor{ strA },                 // Init credit author
@@ -90,12 +90,12 @@ static const class Credits final :     // Members initially private
   const string CreditGetItemText(const CreditLib &libItem) const try
   { // Using codec namespace
     using namespace ICodec;
-    return Block<CoDecoder>{ libItem }.ToString();
+    return Block<CoDecoder>{ libItem }.MemToString();
   } // exception occured?
   catch(const exception &e)
   { // Log failure and try to reset the initial var so this does not
     XC("Failed to decode licence text!",
-       "Name", libItem.GetName(), "Reason", e, "Length", libItem.Size());
+       "Name", libItem.GetName(), "Reason", e, "Length", libItem.MemSize());
   }
   /* -- Decompress a credit ------------------------------------------------ */
   const string CreditGetItemText(const CreditEnums ceIndex) const

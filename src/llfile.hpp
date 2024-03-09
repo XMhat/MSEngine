@@ -88,7 +88,7 @@ LLFUNCEX(SeekCur, 1, LCPUSHVAR(LCGETPTR(1, File)->
 // ? Uses fread() to read the specified number of bytes from the stream. The
 // ? data is returned as an array class.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Read, 1, LCCLASSCREATE(Asset)->SwapMemory(LCGETPTR(1, File)->
+LLFUNCEX(Read, 1, LCCLASSCREATE(Asset)->MemSwap(LCGETPTR(1, File)->
   FStreamReadBlockSafe(LCGETINT(size_t, 2, "Bytes"))));
 /* ========================================================================= */
 // $ File:Write

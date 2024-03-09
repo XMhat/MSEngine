@@ -361,7 +361,7 @@ LLFUNCEX(Bits, 1, LCPUSHVAR(StrToReadableBits(
 // < Result:string=The resulting string.
 // ? Converts the specified number into a human readable string.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Grouped, 1, LCPUSHVAR(StrToReadable(
+LLFUNCEX(Grouped, 1, LCPUSHVAR(StrToReadableGrouped(
   LCGETINT(uint64_t, 1, "Bits"), LCGETINT(int, 2, "Precision"))));
 /* ========================================================================= */
 // $ Util.PlusOrMinus

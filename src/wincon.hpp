@@ -49,20 +49,20 @@ class SysCon :                         // Members initially private
   const string    &strWine;            // Wine version
   /* -- Console data ----------------------------------------------- */ public:
   HANDLE           hIn, hOut;          // Handle to stdin and stdout
-  WORD             wColour;            // Current colour
-  WORD             wColourSaved;       // Saved colour
+  WORD             wColour,            // Current colour
+                   wColourSaved;       // Saved colour
   CharInfoVec      civBuf;             // Display buffers
   /* -- Co-ordinates and limits -------------------------------------------- */
-  size_t           stEndPos;           // End position
   DWORD            dwCurSize;          // Current Win32Cursor size
   SHORT            sCurX, sCurY;       // Current Win32 cursor position
-  size_t           stX, stY;           // X/Y cursor position
-  size_t           stW, stH;           // Console width and height
-  size_t           stWm1, stWm2;       // Console width minus 1 and 2
-  size_t           stHm1, stHm2;       // Console height minus 1 and 2
+  size_t           stEndPos,           // End position
+                   stX, stY,           // X/Y cursor position
+                   stW, stH,           // Console width and height
+                   stWm1, stWm2,       // Console width minus 1 and 2
+                   stHm1, stHm2,       // Console height minus 1 and 2
   /* -- Bounds ------------------------------------------------------------- */
-  size_t           stX1, stY1;         // These are the bounds that have
-  size_t           stX2, stY2;         // been updated in the last frame
+                   stX1, stY1,         // These are the bounds that have
+                   stX2, stY2;         // been updated in the last frame
   /* -- Reset drawing bounds ----------------------------------------------- */
   void ResetDrawingBounds(void)
     { stX1 = stY1 = StdMaxSizeT; stX2 = stY2 = 0; }
@@ -843,9 +843,9 @@ class SysCon :                         // Members initially private
     hIn(nullptr), hOut(nullptr),       // Handles to input and output streams
     wColour(0),                        // Default colour
     wColourSaved(0),                   // Saved colour
-    stEndPos(0),                       // Ending position
     dwCurSize(0),                      // Current cursor size
     sCurX(0), sCurY(0),                // Cursor to top-left of screen
+    stEndPos(0),                       // Ending position
     stX(0), stY(0),                    // Drawing position to top-left
     stW(0), stH(0),                    // Width and height of window not set
     stWm1(0), stWm2(0),                // Width and height of window-1 not set

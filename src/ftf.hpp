@@ -32,11 +32,12 @@ using namespace Lib::FreeType;         using namespace Lib::OS::GlFW;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* -- Freetype core class -------------------------------------------------- */
-static class FreeType final            // Members initially private
+static class FreeType final :          // Members initially private
+  /* -- Base classes ------------------------------------------------------- */
+  private mutex                        // Instance protection
 { /* -- Private variables -------------------------------------------------- */
   FT_Library    ftLibrary;             // Freetype instance
   FT_MemoryRec_ ftMemory;              // Freetype custom allocator
-  mutex         mMutex;                // Instance protection
   /* ----------------------------------------------------------------------- */
   bool DoDeInit(void)
   { // Return failed if library not available
@@ -67,19 +68,19 @@ static class FreeType final            // Members initially private
   /* ----------------------------------------------------------------------- */
   bool IsLibraryAvailable(void) { return ftLibrary != nullptr; }
   /* ----------------------------------------------------------------------- */
-  FT_Error NewFont(const DataConst &dcSrc, FT_Face &ftfDst)
+  FT_Error NewFont(const MemConst &mcSrc, FT_Face &ftfDst)
   { // Lock a mutex to protect FT_Library.
     // > freetype.org/freetype2/docs/reference/ft2-base_interface.html
-    const LockGuard lgFreeTypeSync{ mMutex };
+    const LockGuard lgFreeTypeSync{ *this };
     // Create the font, throw exception on error
-    return FT_New_Memory_Face(ftLibrary, dcSrc.Ptr<FT_Byte>(),
-      dcSrc.Size<FT_Long>(), 0, &ftfDst);
+    return FT_New_Memory_Face(ftLibrary, mcSrc.MemPtr<FT_Byte>(),
+      mcSrc.MemSize<FT_Long>(), 0, &ftfDst);
   }
   /* ----------------------------------------------------------------------- */
   void DestroyFont(FT_Face ftFace)
   { // Lock a mutex to protect FT_Library.
     // > freetype.org/freetype2/docs/reference/ft2-base_interface.html
-    const LockGuard lgFreeTypeSync{ mMutex };
+    const LockGuard lgFreeTypeSync{ *this };
     // Destroy the font
     FT_Done_Face(ftFace);
   }
@@ -184,8 +185,8 @@ BEGIN_ASYNCCOLLECTORDUO(Ftfs, Ftf, CLHelperUnsafe, ICHelperUnsafe),
       "Failed to create font!",
       "Identifier", IdentGet(),
       "Context",    cFreeType->IsLibraryAvailable(),
-      "Buffer",     fFTData.IsPtrSet(),
-      "Size",       fFTData.Size());
+      "Buffer",     fFTData.MemIsPtrSet(),
+      "Size",       fFTData.MemSize());
     // Update size
     UpdateSize();
     // Outline requested?

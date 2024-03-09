@@ -199,21 +199,23 @@ class Statistic
     return *this;
   }
   /* -- Sort a table by specified primary or secondary column -------------- */
-  void SortTwo(const size_t stColPri, const size_t stColSec,
+  void SortTwo(const ssize_t sstColPri, const ssize_t sstColSec,
     const bool bDescending=false)
   { // Ignore if no headers, values or both columns the same
-    if(hdHeaders.empty() || svValues.empty() || stColPri == stColSec) return;
+    if(hdHeaders.empty() || svValues.empty() || sstColPri == sstColSec) return;
     // Sorting list
     struct StrRef { StrVectorIt sliRow, sliColPri, sliColSec; };
     typedef vector<StrRef> StrRefVec;
     StrRefVec srvList;
     srvList.reserve(svValues.size() / Headers());
+    // Get headers as ssize_t (prevents signed casting warning).
+    const ssize_t sstHeaders = UtilIntOrMax<ssize_t>(Headers());
     // For each value. Add row start iterator and column iterator to list
     for(StrVectorIt sliRow{ svValues.begin() };
                     sliRow != svValues.end();
-                    sliRow = next(sliRow, Headers()))
-      srvList.push_back({ sliRow, next(sliRow, stColPri),
-                                  next(sliRow, stColSec) });
+                    sliRow = next(sliRow, sstHeaders))
+      srvList.push_back({ sliRow, next(sliRow, sstColPri),
+                                  next(sliRow, sstColSec) });
     // Now enumerate all the primary and secondary columns and sort them
     StdSort(par_unseq, srvList.begin(), srvList.end(), bDescending ?
       [](const StrRef &srRow1, const StrRef &srRow2)
@@ -243,7 +245,7 @@ class Statistic
     svValuesNew.reserve(svValues.size());
     for(const StrRef &srRow : srvList)
       for(StrVectorIt sliCol{ srRow.sliRow },
-                      sliColEnd{ next(sliCol, Headers()) };
+                      sliColEnd{ next(sliCol, sstHeaders) };
                       sliCol != sliColEnd;
                     ++sliCol)
         svValuesNew.emplace_back(StdMove(*sliCol));
@@ -251,7 +253,7 @@ class Statistic
     svValues.swap(svValuesNew);
   }
   /* -- Sort a table by specified primary column --------------------------- */
-  void Sort(const size_t stColumn, const bool bDescending=false)
+  void Sort(const ssize_t sstColumn, const bool bDescending=false)
   { // Ignore if no headers or values
     if(hdHeaders.empty() || svValues.empty()) return;
     // Sorting list
@@ -259,11 +261,13 @@ class Statistic
     typedef vector<StrRef> StrRefVec;
     StrRefVec srvList;
     srvList.reserve(svValues.size() / Headers());
+    // Get headers as ssize_t (prevents signed casting warning).
+    const ssize_t sstHeaders = UtilIntOrMax<ssize_t>(Headers());
     // For each value. Add row start iterator and column iterator to list
     for(StrVectorIt sliRow{ svValues.begin() };
                    sliRow != svValues.end();
-                   sliRow = next(sliRow, Headers()))
-      srvList.push_back({ sliRow, next(sliRow, stColumn) });
+                   sliRow = next(sliRow, sstHeaders))
+      srvList.push_back({ sliRow, next(sliRow, sstColumn) });
     // Now enumerate all the primary columns and sort them
     StdSort(par_unseq, srvList.begin(), srvList.end(), bDescending ?
       [](const StrRef &srRow1, const StrRef &srRow2)
@@ -275,7 +279,7 @@ class Statistic
     svValuesNew.reserve(svValues.size());
     for(const StrRef &srRow : srvList)
       for(StrVectorIt sliCol{ srRow.sliRow },
-                      sliColEnd{ next(sliCol, Headers()) };
+                      sliColEnd{ next(sliCol, sstHeaders) };
                       sliCol != sliColEnd;
                     ++sliCol)
         svValuesNew.emplace_back(StdMove(*sliCol));

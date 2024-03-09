@@ -140,7 +140,6 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
   vorbis_comment   vCO;                // Vorbis comment block
   vorbis_dsp_state vDS;                // Vorbis DSP state
   vorbis_block     vBL;                // Vorbis decoder block
-  Memory           mbAudio;            // Audio decoded data
   SafeDouble       fdAudioTime;        // Audio time index
   ALdouble         fdAudioBuffer;      // Audio buffered
   ALfloat          fAudioVolume;       // Audio volume
@@ -232,19 +231,19 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
         const size_t stChannels = static_cast<size_t>(vIN.channels);
         // Length of data
         size_t stFrameSize = sizeof(float) * stFrames * stChannels;
-        // Just incase we need more memory
-        mbAudio.ResizeUp(stFrameSize);
+        // Just incase we need more memory.
+        MemResizeUp(stFrameSize);
         // Send the PCM processing depending on if audio device can play
         // as floating point pcm or not. If we have 32-bit float support?
         // Convert data to native PCM float 32-bit audio
         if(cOal->Have32FPPB())
           Stream::VorbisFramesToF32PCM(fpPCM, stFrames, stChannels,
-            mbAudio.Ptr<ALfloat>());
+            MemPtr<ALfloat>());
         // Uploading as INTEGER 16-Bit PCM data
         else
         { // Convert data to native PCM integer 16-bit audio
           Stream::VorbisFramesToI16PCM(fpPCM, stFrames, stChannels,
-            mbAudio.Ptr<ALshort>());
+            MemPtr<ALshort>());
           // Now using half the buffer size (F32 is 4 bytes, I16 is 2)
           stFrameSize >>= 1;
         } // Generate a buffer for the pcm data and if succeeded?
@@ -253,7 +252,7 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
         if(alErr == AL_NO_ERROR)
         { // Buffer the data. Note that the size of mbAudio can be bigger than
           // the actual data so we have to pass in the calculated data size.
-          cOal->BufferData(uiBuffer, eFormat, mbAudio.Ptr(),
+          cOal->BufferData(uiBuffer, eFormat, MemPtr(),
             static_cast<ALsizei>(stFrameSize), static_cast<ALsizei>(vIN.rate));
           // If buffering succeeded?
           alErr = cOal->GetError();
@@ -279,7 +278,7 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
             // Log the error
             cLog->LogWarningExSafe("Video failed buffering attempt on '$' "
               "(B:$;F:$;A:$;S:$;R:$;AL:$<$$>)!",
-                IdentGet(), uiBuffer, eFormat, mbAudio.Ptr(), stFrameSize,
+                IdentGet(), uiBuffer, eFormat, MemPtr(), stFrameSize,
                 vIN.rate, cOal->GetALErr(alErr), hex, alErr);
             // Delete the buffers because of error
             ALL(cOal->DeleteBuffer(uiBuffer),
@@ -470,20 +469,20 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
     FlagSet(FL_VBINIT);
     // Calculate memory required for buffering audio and verify the size since
     // we don't know if someone's sending us dodgy bitrate values
-    const double fdMem =
-      UtilNearestPow2<double>(UtilMaximum(vIN.bitrate_upper,
-        vIN.bitrate_nominal) / 8);
+    const double fdMem = UtilNearestPow2<double>(UtilMaximum(vIN.bitrate_upper,
+      vIN.bitrate_nominal) / 8);
     if(fdMem < 0 || fdMem > 1048576)
       XC("Calculated erroneous memory size for audio buffer!",
         "Identifier", IdentGet(),        "Amount",  fdMem,
         "Upper",      vIN.bitrate_upper, "Nominal", vIN.bitrate_nominal,
         "Lower",      vIN.bitrate_lower, "Window",  vIN.bitrate_window);
     // Allocate enough memory for audio buffer. We may not actually use all the
-    // memory, but it is better than putting the alloc in the decoder tick
-    mbAudio.Resize(static_cast<size_t>(fdMem));
+    // memory, but it is better than putting the alloc in the decoder tick. We
+    // can reuse the 'Memory' class from the 'AsyncLoader' class.
+    MemResize(static_cast<size_t>(fdMem));
     // Show what we allocated
     cLog->LogDebugExSafe("Video pre-allocated $ bytes for audio decoder.",
-      mbAudio.Size());
+      MemSize());
     // Init maximum drift if have theora data too
     if(FlagIsSet(FL_THEORA)) fdMaxDrift = cVideos->fdMaxDrift;
     // Reset audio position and drift
@@ -701,7 +700,7 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
   int GetFrameWidth(void) const { return static_cast<int>(tIN.frame_width); }
   int GetHeight(void) const { return static_cast<int>(tIN.pic_height); }
   int GetWidth(void) const { return static_cast<int>(tIN.pic_width); }
-  uint64_t GetLength(void) const { return fmFile.Size(); }
+  uint64_t GetLength(void) const { return fmFile.MemSize(); }
   bool HaveAudio(void) const { return !!sCptr; }
   ALenum GetAudioFormat(void) const { return eFormat; }
   const string GetFormatAsIdentifier(void) const
@@ -914,7 +913,7 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
       ogg_sync_clear(&oSS);
       UtilClearStatic(oSS);
     } // De-init audio buffer
-    mbAudio.DeInit();
+    MemDeInit();
     // Clear frame data
     for(Frame &fFrame : fData) fFrame.Reset();
     // Reset other structs
@@ -1133,7 +1132,7 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
       "- Aspect ratio: $:$.\n"       "- Origin: $x$.\n"
       "- Pixel format: $ <$>.\n"     "- Colour space: $ <$>.\n"
       "- Frame rate: $ fps.\n"       "- Version: $.\n"
-      "- Audio channels: $.\n"       "- Bit rate: $ ($).\n"
+      "- Audio channels: $.\n"       "- Frequency: $ ($Hz).\n"
       "- Target bit rate: $ ($).\n"  "- Upper bit rate: $ ($).\n"
       "- Nominal bit rate: $ ($).\n" "- Lower bit rate: $ ($).\n"
       "- Bit window: $ ($).",
@@ -1151,7 +1150,7 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
       ColourSpaceToString(GetColourSpace()), GetColourSpace(), fdFPS,
       vIN.version,
       vIN.channels,
-      vIN.rate, StrToBits(vIN.rate),
+      vIN.rate, StrToGrouped(vIN.rate),
       tIN.target_bitrate, StrToBits(tIN.target_bitrate),
       vIN.bitrate_upper, StrToBits(vIN.bitrate_upper),
       vIN.bitrate_nominal, StrToBits(vIN.bitrate_nominal),

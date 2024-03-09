@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<!-- Reference for the MS-Engine API version 24.3.8.1 -->
-<!-- Automatically built at Fri Mar 08 00:03:10 2024 +0000 -->
-<!-- With MS-Engine Project Management Utility version 24.3.8.1 -->
+<!-- Reference for the MS-Engine API version 24.3.9.10 -->
+<!-- Automatically built at Sat Mar 09 01:07:44 2024 +0000 -->
+<!-- With MS-Engine Project Management Utility version 24.3.9.10 -->
 <!-- Copyright (c) 2006-2024 MS-Design, All Rights Reserved Worldwide -->
 <HTML lang="en-GB">
 <HEAD>
@@ -11,18 +11,18 @@
 	<META name="apple-mobile-web-app-title" content="MS-Engine API">
 	<META name="author" content="MS-Design">
 	<META name="copyright" content="Copyright © 2006-2024 MS-Design, All Rights Reserved">
-	<META name="description" content="Reference for the MS-Engine API version 24.3.8.1">
+	<META name="description" content="Reference for the MS-Engine API version 24.3.9.10">
 	<META name="format-detection" content="telephone=no">
-	<META name="generator" content="MS-Engine Project Management Utility version 24.3.8.1">
+	<META name="generator" content="MS-Engine Project Management Utility version 24.3.9.10">
 	<META name="google-site-verification" content="BvWxrqmgaIxqe_W8AW3OGK0fdCI_JfB_-gcOOxCF9_4">
 	<META name="googlebot" content="index,follow">
-	<META name="og:description" content="Reference for the MS-Engine API version 24.3.8.1">
+	<META name="og:description" content="Reference for the MS-Engine API version 24.3.9.10">
 	<META name="og:image" content="https://repository-images.githubusercontent.com/611875607/ee7aa468-9797-4763-9a2d-ea3d782ef413">
-	<META name="og:title" content="MS-Engine 24.3.8.1 API reference">
+	<META name="og:title" content="MS-Engine 24.3.9.10 API reference">
 	<META name="og:url" content="https://xmhat.github.io/MSEngine/">
 	<META name="robots" content="index,follow">
 	<META name="viewport" content="width=device-width, initial-scale=1">
-	<TITLE>MS-Engine 24.3.8.1 API reference</TITLE>
+	<TITLE>MS-Engine 24.3.9.10 API reference</TITLE>
 	<STYLE media="screen">
 	* { margin:0; padding:0 }
 	BODY { background-color:#111; border:0; font-family:sans-serif; overflow-x:hidden }
@@ -52,9 +52,9 @@
 	</STYLE>
 </HEAD>
 <BODY id="top">
-	<H1>MS-Engine 24.3.8.1 API reference</H1>
+	<H1>MS-Engine 24.3.9.10 API reference</H1>
 	<H2>Table of contents:-</H2>
-	<P>This build of the MS-Engine API consists of 795 functions (376 members, 419 methods) and 25 consts in 32 namespaces with 207 cvars.</P>
+	<P>This build of the MS-Engine API consists of 784 functions (376 members, 408 methods) and 25 consts in 32 namespaces with 207 cvars.</P>
 	<OL id="toc">
 		<LI id="idx">
 			<A href="#idx">Namespaces</A> <I>(32 namespaces)</I>
@@ -1224,17 +1224,15 @@
 					</OL>
 				</LI>
 				<LI>
-					<B>Methods</B> <I>(76 methods)</I>
+					<B>Methods</B> <I>(65 methods)</I>
 					<OL>
 						<LI><A href="#Texture:Blit">Blit</A></LI>
-						<LI><A href="#Texture:BlitI">BlitI</A></LI>
 						<LI><A href="#Texture:BlitILT">BlitILT</A></LI>
 						<LI><A href="#Texture:BlitILTA">BlitILTA</A></LI>
 						<LI><A href="#Texture:BlitILTRB">BlitILTRB</A></LI>
 						<LI><A href="#Texture:BlitILTRBA">BlitILTRBA</A></LI>
 						<LI><A href="#Texture:BlitILTWH">BlitILTWH</A></LI>
 						<LI><A href="#Texture:BlitILTWHA">BlitILTWHA</A></LI>
-						<LI><A href="#Texture:BlitIS">BlitIS</A></LI>
 						<LI><A href="#Texture:BlitISLT">BlitISLT</A></LI>
 						<LI><A href="#Texture:BlitISLTA">BlitISLTA</A></LI>
 						<LI><A href="#Texture:BlitISLTRB">BlitISLTRB</A></LI>
@@ -1248,15 +1246,6 @@
 						<LI><A href="#Texture:BlitLTWH">BlitLTWH</A></LI>
 						<LI><A href="#Texture:BlitLTWHA">BlitLTWHA</A></LI>
 						<LI><A href="#Texture:BlitM">BlitM</A></LI>
-						<LI><A href="#Texture:BlitP">BlitP</A></LI>
-						<LI><A href="#Texture:BlitPI">BlitPI</A></LI>
-						<LI><A href="#Texture:BlitPIS">BlitPIS</A></LI>
-						<LI><A href="#Texture:BlitPS">BlitPS</A></LI>
-						<LI><A href="#Texture:BlitPT">BlitPT</A></LI>
-						<LI><A href="#Texture:BlitPTI">BlitPTI</A></LI>
-						<LI><A href="#Texture:BlitPTIS">BlitPTIS</A></LI>
-						<LI><A href="#Texture:BlitPTS">BlitPTS</A></LI>
-						<LI><A href="#Texture:BlitS">BlitS</A></LI>
 						<LI><A href="#Texture:BlitSLT">BlitSLT</A></LI>
 						<LI><A href="#Texture:BlitSLTA">BlitSLTA</A></LI>
 						<LI><A href="#Texture:BlitSLTRB">BlitSLTRB</A></LI>
@@ -8195,16 +8184,6 @@
 		<PRE>Blits texture 0 with the stored preset texcoord &#x28;SetTC&#x2a;&#x29;&#x2c; vertex &#x28;SetV&#x2a;&#x29; and colour &#x28;SetC&#x2a;&#x29;&#x2e; Using the Blit&#x2a; functions will overwrite this stored preset data&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:Blit')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Texture:BlitI">
-		<H3>Texture:BlitI</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitI(<I><U>TexIndex</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>TexIndex</U> <I>(integer)</I> = The texture id number<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Blits tile 0 of texture &#x27;TexIndex&#x27; with the current stored position&#x2e;<BR></PRE>
-		<H4><A href="#idx:Texture" onclick="r('Texture:BlitI')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
 	<DIV id="Texture:BlitILT">
 		<H3>Texture:BlitILT</H3>
 		<H4>Syntax:-</H4>
@@ -8264,16 +8243,6 @@
 		<H4>Synopsis:-</H4>
 		<PRE>Blits tile 0 of texture &#x27;TexIndex&#x27; at the specified screen co&#x2d;ordinates and with the specified dimensions at the specified angle&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:BlitILTWHA')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Texture:BlitIS">
-		<H3>Texture:BlitIS</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitIS(<I><U>TexIndex</U>, <U>TileIndex</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>TexIndex</U> <I>(integer)</I> = The texture id number.<BR><U>TileIndex</U> <I>(integer)</I> = The tile index of the texture to blit.<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Blits tile 0 of texture &#x27;TexIndex&#x27; with the current stored position&#x2e;<BR></PRE>
-		<H4><A href="#idx:Texture" onclick="r('Texture:BlitIS')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Texture:BlitISLT">
 		<H3>Texture:BlitISLT</H3>
@@ -8404,94 +8373,6 @@
 		<H4>Synopsis:-</H4>
 		<PRE>Blits multiple textures as one giant texture which is a workaround for texture size limits on OpenGL&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture" onclick="r('Texture:BlitM')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Texture:BlitP">
-		<H3>Texture:BlitP</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitP()</PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Blits texture 0 and tile 0 with the stored preset vertex &#x28;SetV&#x2a;&#x29; and colour &#x28;SetC&#x2a;&#x29;&#x2e; Using the Blit&#x2a; functions will overwrite this stored preset data&#x2e;<BR></PRE>
-		<H4><A href="#idx:Texture" onclick="r('Texture:BlitP')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Texture:BlitPI">
-		<H3>Texture:BlitPI</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitPI(<I><U>TexIndex</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>TexIndex</U> <I>(integer)</I> = The texture id number<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Blits tile 0 of the specified sub&#x2d;texture with the stored preset vertex &#x28;SetV&#x2a;&#x29; and colour &#x28;SetC&#x2a;&#x29;&#x2e; Note that the Blit&#x2a; functions will overwrite the stored values&#x2e;<BR></PRE>
-		<H4><A href="#idx:Texture" onclick="r('Texture:BlitPI')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Texture:BlitPIS">
-		<H3>Texture:BlitPIS</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitPIS(<I><U>TexIndex</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>TexIndex</U> <I>(integer)</I> = The texture id number<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Blits the specified tile of the specified sub&#x2d;texture with the stored preset vertex &#x28;SetV&#x2a;&#x29; and colour &#x28;SetC&#x2a;&#x29;&#x2e; Note that the Blit&#x2a; functions will overwrite the stored values&#x2e;<BR></PRE>
-		<H4><A href="#idx:Texture" onclick="r('Texture:BlitPIS')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Texture:BlitPS">
-		<H3>Texture:BlitPS</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitPS(<I><U>TileIndex</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>TileIndex</U> <I>(integer)</I> = The tile id number.<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Blits texture 0 with the specifed tile with the stored preset vertex &#x28;SetV&#x2a;&#x29; and colour &#x28;SetC&#x2a;&#x29;&#x2e; Note that the Blit&#x2a; functions will overwrite the stored values&#x2e;<BR></PRE>
-		<H4><A href="#idx:Texture" onclick="r('Texture:BlitPS')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Texture:BlitPT">
-		<H3>Texture:BlitPT</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitPT(<I><U>TriIndex</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>TriIndex</U> <I>(integer)</I> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Blits only the specified triangle to the screen with the stored preset vertex &#x28;SetV&#x2a;&#x29; and colour &#x28;SetC&#x2a;&#x29;&#x2e; Note that the Blit&#x2a; functions will overwrite the stored values&#x2e;<BR></PRE>
-		<H4><A href="#idx:Texture" onclick="r('Texture:BlitPT')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Texture:BlitPTI">
-		<H3>Texture:BlitPTI</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitPTI(<I><U>TriIndex</U>, <U>TexIndex</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>TriIndex</U> <I>(integer)</I> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<BR><U>TexIndex</U> <I>(integer)</I> = The texture id number.<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Blits triangle &#x27;TId&#x27; of tile 0 of texture &#x27;TexIndex&#x27; with the current stored position&#x2e;<BR></PRE>
-		<H4><A href="#idx:Texture" onclick="r('Texture:BlitPTI')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Texture:BlitPTIS">
-		<H3>Texture:BlitPTIS</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitPTIS(<I><U>TriIndex</U>, <U>TexIndex</U>, <U>TileIndex</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>TriIndex</U> <I>(integer)</I> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<BR><U>TexIndex</U> <I>(integer)</I> = The texture id number.<BR><U>TileIndex</U> <I>(integer)</I> = The tile index of the texture to blit.<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Blits triangle &#x27;TId&#x27; of texture id &#x27;TexIndex&#x27; with the specified tile id &#x27;TildIndex&#x27; to the current stored position&#x2e;<BR></PRE>
-		<H4><A href="#idx:Texture" onclick="r('Texture:BlitPTIS')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Texture:BlitPTS">
-		<H3>Texture:BlitPTS</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitPTS(<I><U>TriIndex</U>, <U>TileIndex</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>TriIndex</U> <I>(integer)</I> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<BR><U>TileIndex</U> <I>(integer)</I> = The tile index of the texture to blit.<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Blits the specified triangle &#x27;TId&#x27; of the tile &#x27;TileIndex&#x27; of texture 0 with the current stored position&#x2e;<BR></PRE>
-		<H4><A href="#idx:Texture" onclick="r('Texture:BlitPTS')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Texture:BlitS">
-		<H3>Texture:BlitS</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Texture:BlitS(<I><U>TileIndex</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>TileIndex</U> <I>(integer)</I> = The tile index of the texture to blit.<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Blits tile &#x27;TileIndex&#x27; of texture 0 with the current stored position&#x2e;<BR></PRE>
-		<H4><A href="#idx:Texture" onclick="r('Texture:BlitS')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Texture:BlitSLT">
 		<H3>Texture:BlitSLT</H3>
@@ -10582,7 +10463,7 @@
 	</DIV>
 	<DIV id="cv.log_level">
 		<H3>log_level</H3>
-		<PRE>Specifies the logging level&#x2e;&#x2e;&#x2e;<BR>[0] LH_DISABLED &#x3d; Nothing&#x2e; Lua log function can still use this&#x2e;<BR>[1] LH_ERROR    &#x3d; For reporting only errors &#x28;which halt execution&#x29;&#x2e;<BR>[2] LH_WARNING  &#x3d; For reporting only warnings &#x28;recoverable errors&#x29;&#x2e;<BR>[3] LH_INFO     &#x3d; For reporting useful important messages&#x2e;<BR>[4] LH_DEBUG    &#x3d; For reporitng other information &#x28;debugging&#x29;&#x2e;<BR></PRE>
+		<PRE>Specifies the logging level&#x2e;&#x2e;&#x2e;<BR>[0] LH_CRITICAL &#x3d; For reporting only critical messages&#x2e;<BR>[1] LH_ERROR    &#x3d; For reporting only errors &#x28;which halt execution&#x29;&#x2e;<BR>[2] LH_WARNING  &#x3d; For reporting only warnings &#x28;recoverable errors&#x29;&#x2e;<BR>[3] LH_INFO     &#x3d; For reporting useful important messages&#x2e;<BR>[4] LH_DEBUG    &#x3d; For reporitng other information &#x28;debugging&#x29;&#x2e;<BR></PRE>
 		<H4><A href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="cv.log_lines">
@@ -11190,6 +11071,6 @@
 		<PRE>Sets the minimum width of the window&#x2e; This is only changable at the application configuration file and is not saved to persistence database&#x2e;<BR></PRE>
 		<H4><A href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<ADDRESS>Copyright &copy; 2024 MS-Design, All Rights Reserved.<BR>This document was created at Fri Mar 08 00:03:10 2024 +0000</ADDRESS>
+	<ADDRESS>Copyright &copy; 2024 MS-Design, All Rights Reserved.<BR>This document was created at Sat Mar 09 01:07:44 2024 +0000</ADDRESS>
 </BODY>
 </HTML>

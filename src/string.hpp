@@ -845,7 +845,18 @@ template<typename IntType>
 }
 /* ------------------------------------------------------------------------- */
 template<typename IntType>
-  static const string StrToReadable(const IntType itValue, int iPrecision)
+  static const string StrToGrouped(const IntType itValue, int iPrecision=2)
+{ // Process a human readable value for the specified number of bits
+  const char *cpSuffix = nullptr;
+  const double dVal =
+    StrToReadableHelper<IntType>(itValue, &cpSuffix, iPrecision);
+  // Move the stringstreams output string into the return value.
+  return StrAppend(fixed, setprecision(iPrecision), dVal, cpSuffix);
+}
+/* ------------------------------------------------------------------------- */
+template<typename IntType>
+  static const string StrToReadableGrouped(const IntType itValue,
+    int iPrecision)
 { // Process a human readable value for the specified number of bits
   const char *cpSuffix = nullptr;
   const double dVal =

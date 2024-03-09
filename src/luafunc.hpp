@@ -43,7 +43,8 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
     { if(iRefS != LUA_REFNIL) { iRef = iRefS; iRefS = LUA_REFNIL; } }
   /* -- Save reference and set main reference to empty function if set ----- */
   void LuaFuncDisable(void)
-    { if(iRefS == LUA_REFNIL) { iRefS = iRef; iRef = cParent->LuaRefGetId(); } }
+    { if(iRefS == LUA_REFNIL)
+        { iRefS = iRef; iRef = cParent->LuaRefGetId(); } }
   /* -- Returns the reference to this function ----------------------------- */
   int LuaFuncGet(void) const { return iRef; }
   /* -- Returns the saved reference to this function ----------------------- */

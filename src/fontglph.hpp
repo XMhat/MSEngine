@@ -157,7 +157,7 @@ void GlyphToTexture(const IntPackRect &iprRef, const FT_Bitmap &ftbRef,
   const size_t stDstX = iprRef.CoordGetX<size_t>(),
                stDstY = iprRef.CoordGetY<size_t>();
   // Put glyph data and size in a managed class
-  const DataConst dcSrc{ stSrcWidth * stSrcHeight, ftbRef.buffer };
+  const MemConst mcSrc{ stSrcWidth * stSrcHeight, ftbRef.buffer };
   // For each pixel row of glyph image
   for(size_t stPixPosY = 0; stPixPosY < stSrcHeight; ++stPixPosY)
   { // For each pixel column of glyph image
@@ -174,13 +174,13 @@ void GlyphToTexture(const IntPackRect &iprRef, const FT_Bitmap &ftbRef,
       const size_t stSrcPos =
         CoordsToAbsolute(stPixPosX, stPixPosY, stSrcWidth);
       const uint16_t usPixel = static_cast<uint16_t>(
-        static_cast<int>(dcSrc.ReadInt<uint8_t>(stSrcPos)) << 8 | 0xFF);
+        static_cast<int>(mcSrc.MemReadInt<uint8_t>(stSrcPos)) << 8 | 0xFF);
       // ...and the final offset position value
       const size_t stDstPos =
         CoordsToAbsolute(stPosX, stPosY, DimGetWidth(), 2);
       // If the paint position is in the tile bounds?
       // Copy pixels from source to destination.
-      mDst.WriteInt<uint16_t>(stDstPos, usPixel);
+      mDst.MemWriteInt<uint16_t>(stDstPos, usPixel);
     }
   } // Calculate texture bounds
   const GLfloat
@@ -313,7 +313,7 @@ template<class StrokerFuncType>
         // We need to fill it with transparent white pixels, since we can't
         // use memset, we'll use fill instead. !FIXME: Don't need to write to
         // 'all' pixels, just the new ones.
-        mDst.Fill<uint16_t>(0x00FF);
+        mDst.MemFill<uint16_t>(0x00FF);
         // Copy scanlines from the old image
         for(size_t stY = 0,
                    stBWidthx2 = DimGetWidth() * 2,
@@ -323,13 +323,13 @@ template<class StrokerFuncType>
         { // Calculate source and destination position and copy the scanline
           const size_t stSrcPos = (DimGetWidth() * stY) * 2,
                        stDestPos = (stBinWidth * stY) * 2;
-          mDst.Write(stDestPos, isRef.Read(stSrcPos, stBWidthx2),
+          mDst.MemWrite(stDestPos, isRef.MemRead(stSrcPos, stBWidthx2),
             stBWidthx2);
         } // This is the new image and the old one will be destroyed
-        const size_t stOldAlloc = isRef.Size();
-        isRef.SwapMemory(StdMove(mDst));
-        mDst.DeInit();
-        AdjustAlloc(stOldAlloc, isRef.Size());
+        const size_t stOldAlloc = isRef.MemSize();
+        isRef.MemSwap(StdMove(mDst));
+        mDst.MemDeInit();
+        AdjustAlloc(stOldAlloc, isRef.MemSize());
         // Calculate how much the image increased. This should really be 2
         // every time but we'll just make a calculation like this just
         // incase.

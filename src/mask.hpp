@@ -43,8 +43,8 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     // Bail if out of bounds
     if(iXMax <= iXMin || iYMax <= iYMin) return false;
     // Get bitmask surfaces for both masks
-    const unsigned char*const cpS = at(stSourceId).Ptr<unsigned char>(),
-                       *const cpD = mCdest[stDestId].Ptr<unsigned char>();
+    const unsigned char*const cpS = at(stSourceId).MemPtr<unsigned char>(),
+                       *const cpD = mCdest[stDestId].MemPtr<unsigned char>();
     // Walk through the pixels of the intersection and check the bits and
     // return if we found a match, else try next pixel
     for(int iY = iYMin; iY < iYMax; ++iY)
@@ -95,8 +95,8 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     // Bail if out of bounds
     if(iXMax <= iXMin || iYMax <= iYMin) return;
     // Get bitmask surfaces for both masks
-    const unsigned char*const cpS = mCsrc[stSourceId].Ptr<unsigned char>();
-          unsigned char*const cpD = at(stDestId).Ptr<unsigned char>();
+    const unsigned char*const cpS = mCsrc[stSourceId].MemPtr<unsigned char>();
+          unsigned char*const cpD = at(stDestId).MemPtr<unsigned char>();
     // Walk through the pixels of the intersection
     for(int iY = iYMin; iY < iYMax; ++iY)
       for(int iX = iXMin; iX < iXMax; ++iX)
@@ -121,8 +121,8 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     // Bail if out of bounds
     if(iXMax <= iXMin || iYMax <= iYMin) return;
     // Get bitmask surfaces for both masks
-          unsigned char*const cpD = at(0).Ptr<unsigned char>();
-    const unsigned char*const cpS = mCsrc[stSourceId].Ptr<unsigned char>();
+          unsigned char*const cpD = at(0).MemPtr<unsigned char>();
+    const unsigned char*const cpS = mCsrc[stSourceId].MemPtr<unsigned char>();
     // Walk through the pixels of the intersection
     // Check the bits and return if we found a match, else try next pixel
     for(int iY = iYMin; iY < iYMax; ++iY)
@@ -135,7 +135,7 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
   { // Bail if out of bounds
     if(DimGetWidth() <= 0 || DimGetHeight() <= 0) return;
     // Get bitmask surfaces for both masks
-    unsigned char*const cpD = at(stDestId).Ptr<unsigned char>();
+    unsigned char*const cpD = at(stDestId).MemPtr<unsigned char>();
     // Walk through the pixels of the intersection
     // Check the bits and return if we found a match, else try next pixel
     for(int iY = 0; iY < DimGetHeight(); ++iY)
@@ -153,7 +153,7 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     // Bail if out of bounds
     if(iXMax <= iXMin || iYMax <= iYMin) return;
     // Get bitmask surfaces for both masks
-    unsigned char*const cpD = at(0).Ptr<unsigned char>();
+    unsigned char*const cpD = at(0).MemPtr<unsigned char>();
     // Walk through the pixels of the intersection and set each bit
     for(int iY = iYMin; iY < iYMax; ++iY)
       for(int iX = iXMin; iX < iXMax; ++iX)
@@ -170,7 +170,7 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     // Bail if out of bounds
     if(iXMax <= iXMin || iYMax <= iYMin) return;
     // Get bitmask surfaces for both masks
-    unsigned char*const cpD = at(0).Ptr<unsigned char>();
+    unsigned char*const cpD = at(0).MemPtr<unsigned char>();
     // Walk through the pixels of the intersection and set each bit
     for(int iY = iYMin; iY < iYMax; ++iY)
       for(int iX = iXMin; iX < iXMax; ++iX)
@@ -196,16 +196,16 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
   { // Initialise new mask memory
     Init(uiW, uiH);
     // Now clear it
-    back().Fill();
+    back().MemFill();
   }
   /* -- Dump a tile to disk ------------------------------------------------ */
   void Dump(const size_t stId, const string &strFile) const
   { // Get source slot
-    const DataConst &dcSrc = (*this)[stId];
+    const MemConst &mcSrc = (*this)[stId];
     // Copy the slot because the image init moves it
-    Memory mDst{ dcSrc.Size(), dcSrc.Ptr() };
+    Memory mDst{ mcSrc.MemSize(), mcSrc.MemPtr() };
     // Byte swap it
-    mDst.ByteSwap8();
+    mDst.MemByteSwap8();
     // Setup raw image
     const Image imOut{ strFile, StdMove(mDst), DimGetWidth<unsigned int>(),
       DimGetHeight<unsigned int>(), BD_BINARY, GL_NONE };
@@ -282,7 +282,7 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     // Reserve memory for all the tiles
     reserve(stTotalX * stTotalY);
     // Get source buffer
-    const unsigned char*const ucpS = bData.Ptr<unsigned char>();
+    const unsigned char*const ucpS = bData.MemPtr<unsigned char>();
     // If bitmap is reversed?
     if(iC.IsReversed())
     { // Get height and width minus one.
@@ -296,7 +296,7 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
         { // Create cleared mask buffer, insert it into list and get ptr to
           // the memory.
           unsigned char*const ucpD = emplace(cend(),
-            Memory{ stBytes, true })->Ptr<unsigned char>();
+            Memory{ stBytes, true })->MemPtr<unsigned char>();
           // Copy source to buffer
           for(size_t stTY = stTHeightM1; stTY < stTHeight; --stTY)
             for(size_t stTX = 0; stTX < stTWidth; ++stTX)
@@ -312,7 +312,7 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
       { // Create cleared mask buffer, insert it into list and get ptr to
         // the memory.
         unsigned char*const ucpD = emplace(cend(),
-          Memory{ stBytes, true })->Ptr<unsigned char>();
+          Memory{ stBytes, true })->MemPtr<unsigned char>();
         // Copy source to buffer
         for(size_t stTY = 0; stTY < stTHeight; ++stTY)
           for(size_t stTX = 0; stTX < stTWidth; ++stTX)

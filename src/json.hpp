@@ -216,9 +216,9 @@ BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   void AsyncReady(FileMap &fC)
   { // Parse the string and return if succeeded
-    const ParseResult prData{ Parse<0>(fC.Ptr<char>(), fC.Size()) };
+    const ParseResult prData{ Parse<0>(fC.MemPtr<char>(), fC.MemSize()) };
     if(!prData) XC(GetParseError_En(prData.Code()),
-      "Identifier", fC.IdentGet(), "Size", fC.Size(),
+      "Identifier", fC.IdentGet(), "Size", fC.MemSize(),
       "JsonSize",   prData.Offset());
   }
   /* -- Load json from file asynchronously --------------------------------- */

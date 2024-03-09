@@ -61,8 +61,7 @@ BEGIN_ASYNCMEMBERCLASS(Streams, Stream, ICHelperUnsafe),
   public Ident,                        // Stream file name
   public AsyncLoaderStream,            // Asynchronous loading of Streams
   public LuaEvtSlave<Stream>,          // Lua event system for Stream
-  public Lockable,                     // Lua garbage collector instruction
-  private Memory                       // Playback memory buffer
+  public Lockable                      // Lua garbage collector instruction
 { /* -- Variables ---------------------------------------------------------- */
   FileMap          fmFile;             // FileMap class
   OggVorbis_File   ovfContext;         // Ogg vorbis file context
@@ -201,8 +200,8 @@ BEGIN_ASYNCMEMBERCLASS(Streams, Stream, ICHelperUnsafe),
         ALfloat **fpPCM;
         // Read buffer
         if(const long lResult = ov_read_float(&ovfContext, &fpPCM,
-          static_cast<int>((Size() - stBSize) / stChannels / sizeof(ALfloat)),
-          nullptr))
+          static_cast<int>((MemSize() - stBSize) / stChannels /
+            sizeof(ALfloat)), nullptr))
         { // Error?
           if(lResult < 0)
             XC("Failed to decode ogg stream to float pcm!",
@@ -211,7 +210,7 @@ BEGIN_ASYNCMEMBERCLASS(Streams, Stream, ICHelperUnsafe),
           // Get size as size_t
           const size_t stBytes = static_cast<size_t>(lResult);
           // Converted to float buffer
-          ALfloat*const fpPCMout = Read<ALfloat>(stBSize);
+          ALfloat*const fpPCMout = MemRead<ALfloat>(stBSize);
           // Process frames to buffer (iFI=FrameIndex / iCI=ChanIndex)
           VorbisFramesToF32PCM(fpPCM, stBytes, stChannels, fpPCMout);
           // Increase buffer
@@ -219,7 +218,7 @@ BEGIN_ASYNCMEMBERCLASS(Streams, Stream, ICHelperUnsafe),
         } // Break loop when no bytes read
         else break;
       } // ...until buffer is filled
-      while(stBSize < Size());
+      while(stBSize < MemSize());
     }
     else
     { // Two bytes per channel (short)
@@ -227,8 +226,9 @@ BEGIN_ASYNCMEMBERCLASS(Streams, Stream, ICHelperUnsafe),
       // Loop...
       do
       { // Read buffer
-        if(const long lResult = ov_read(&ovfContext, Read(stBSize),
-          static_cast<int>(Size() - stBSize), 0, sizeof(ALshort), 1, nullptr))
+        if(const long lResult = ov_read(&ovfContext, MemRead(stBSize),
+          static_cast<int>(MemSize() - stBSize), 0, sizeof(ALshort), 1,
+            nullptr))
         { // Check result
           if(lResult < 0)
             XC("Failed to decode ogg stream to integer pcm!",
@@ -239,7 +239,7 @@ BEGIN_ASYNCMEMBERCLASS(Streams, Stream, ICHelperUnsafe),
         } // Break loop when no bytes read
         else break;
       } // ...until buffer is filled
-      while(stBSize < Size());
+      while(stBSize < MemSize());
     } // Calculate pcm samples read in 32-bit floats
     const ogg_int64_t qS = static_cast<ogg_int64_t>(stBSize) /
                            static_cast<ogg_int64_t>(stBpc) /
@@ -251,18 +251,18 @@ BEGIN_ASYNCMEMBERCLASS(Streams, Stream, ICHelperUnsafe),
     // We cannot play the next part of the audio due to loop end position
     else
     { // Restrict number of samples to play, but don't go over the buffer size
-      stBSize = UtilMinimum(Size(),
+      stBSize = UtilMinimum(MemSize(),
         static_cast<size_t>(qLoopEnd - qDecPos) * stBpc * stChannels);
       // Push forward
       qDecPos += stBSize;
     } // Return failure if no bytes were buffered
     if(!stBSize) return false;
     // Buffer the PCM data if we have some
-    AL(cOal->BufferData(uiBufferId, GetFormat(), Ptr<ALvoid>(),
+    AL(cOal->BufferData(uiBufferId, GetFormat(), MemPtr<ALvoid>(),
       static_cast<ALsizei>(stBSize), static_cast<ALsizei>(GetRate())),
       "Failed to buffer ogg stream data!",
       "Identifier", IdentGet(),  "BufferId",   uiBufferId,
-      "StrFormat",     GetFormat(), "BufferData", Ptr<void>(),
+      "StrFormat",     GetFormat(), "BufferData", MemPtr<void>(),
       "BufferSize", stBSize,     "Rate",       GetRate());
     // Return status
     return true;
@@ -375,7 +375,7 @@ BEGIN_ASYNCMEMBERCLASS(Streams, Stream, ICHelperUnsafe),
   ogg_int64_t GetSamplesSafe(void)
     { const LockGuard lgStreamSync{ mMutex }; return GetSamples(); }
   /* ----------------------------------------------------------------------- */
-  ogg_int64_t GetOggBytes(void) const { return fmFile.Size<ogg_int64_t>(); }
+  ogg_int64_t GetOggBytes(void) const { return fmFile.MemSize<ogg_int64_t>(); }
   /* -- GetFormat ---------------------------------------------------------- */
   ALenum GetFormat(void) const { return eFormat; }
   const string GetFormatName(void) const { return cOal->GetALFormat(eFormat); }
@@ -569,8 +569,9 @@ BEGIN_ASYNCMEMBERCLASS(Streams, Stream, ICHelperUnsafe),
     eFormat = GetChannels() == 1 ?
       (cOal->Have32FPPB() ? AL_FORMAT_MONO_FLOAT32 : AL_FORMAT_MONO16) :
       (cOal->Have32FPPB() ? AL_FORMAT_STEREO_FLOAT32 : AL_FORMAT_STEREO16);
-    // Allocate the buffer with size from global setting
-    InitBlank(cParent->stBufSize);
+    // Allocate the buffer with size from global setting. We can re-use the
+    // 'Memory' class from the 'AsyncLoader' class.
+    MemInitBlank(cParent->stBufSize);
     // Set default loop position to the end
     SetLoopRange(0, GetSamples());
     // Build a formatted table of meta data we can quickly access
@@ -593,10 +594,9 @@ BEGIN_ASYNCMEMBERCLASS(Streams, Stream, ICHelperUnsafe),
     // Log ogg loaded
     cLog->LogInfoExSafe(
       "Stream loaded '$' (C=$;R=$;BR=$:$:$:$;D$=$;B=$;BS=$;V=$$).",
-      IdentGet(), GetChannels(), GetRate(),
-      viData.bitrate_upper, viData.bitrate_nominal,
-      viData.bitrate_lower, viData.bitrate_window,
-      fixed, GetDuration(), vBuffers.size(), Size(), hex, GetVersion());
+      IdentGet(), GetChannels(), GetRate(), viData.bitrate_upper,
+      viData.bitrate_nominal, viData.bitrate_lower, viData.bitrate_window,
+      fixed, GetDuration(), vBuffers.size(), MemSize(), hex, GetVersion());
   }
   /* -- Load stream from memory asynchronously ----------------------------- */
   void InitAsyncArray(lua_State*const lS)

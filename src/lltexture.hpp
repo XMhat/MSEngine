@@ -156,7 +156,7 @@ LLFUNCEND
 LLFUNCBEGIN(BlitSLTWH)
   Texture &tCref = *LCGETPTR(1, Texture);
   tCref.BlitLTWH(0,
-    LCGETINTLGE(size_t,  2, 0, tCref.GetTileCount(), "TileIndex"),
+    LCGETINTLGE(size_t, 2, 0, tCref.GetTileCount(), "TileIndex"),
     LCGETNUM(GLfloat, 3, "Left"), LCGETNUM(GLfloat, 4, "Top"),
     LCGETNUM(GLfloat, 5, "Width"), LCGETNUM(GLfloat, 6, "Height"));
 LLFUNCEND
@@ -167,124 +167,6 @@ LLFUNCEND
 // ? preset data.
 /* ------------------------------------------------------------------------- */
 LLFUNC(Blit, LCGETPTR(1, Texture)->Blit(0));
-/* ========================================================================= */
-// $ Texture:BlitP
-// ? Blits texture 0 and tile 0 with the stored preset vertex (SetV*) and
-// ? colour (SetC*). Using the Blit* functions will overwrite this stored
-// ? preset data.
-/* ------------------------------------------------------------------------- */
-LLFUNC(BlitP, LCGETPTR(1, Texture)->Blit(0, 0));
-/* ========================================================================= */
-// $ Texture:BlitPI
-// > TexIndex:integer=The texture id number
-// ? Blits tile 0 of the specified sub-texture with the stored preset vertex
-// ? (SetV*) and colour (SetC*). Note that the Blit* functions will overwrite
-// ? the stored values.
-/* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(BlitPI)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.Blit(LCGETINTLGE(size_t, 2, 0, tCref.GetSubCount(), "TexIndex"), 0);
-LLFUNCEND
-/* ========================================================================= */
-// $ Texture:BlitPS
-// > TileIndex:integer=The tile id number.
-// ? Blits texture 0 with the specifed tile with the stored preset vertex
-// ? (SetV*) and colour (SetC*). Note that the Blit* functions will overwrite
-// ? the stored values.
-/* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(BlitPS)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.Blit(0,
-    LCGETINTLGE(size_t,  2, 0, tCref.GetTileCount(), "TileIndex"));
-LLFUNCEND
-/* ========================================================================= */
-// $ Texture:BlitPIS
-// > TexIndex:integer=The texture id number
-// ? Blits the specified tile of the specified sub-texture with the stored
-// ? preset vertex (SetV*) and colour (SetC*). Note that the Blit* functions
-// ? will overwrite the stored values.
-/* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(BlitPIS)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.Blit(LCGETINTLGE(size_t, 2, 0, tCref.GetSubCount(), "TexIndex"),
-    LCGETINTLGE(size_t,  2, 0, tCref.GetTileCount(), "TileIndex"));
-LLFUNCEND
-/* ========================================================================= */
-// $ Texture:BlitPT
-// > TriIndex:integer=Triangle index. Triangle #1 (zero) or triangle #2 (one).
-// ? Blits only the specified triangle to the screen with the stored preset
-// ? vertex (SetV*) and colour (SetC*). Note that the Blit* functions will
-// ? overwrite the stored values.
-/* ------------------------------------------------------------------------- */
-LLFUNC(BlitPT, LCGETPTR(1, Texture)->
-  BlitT(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex"), 0, 0));
-/* ========================================================================= */
-// $ Texture:BlitPTS
-// > TriIndex:integer=Triangle index. Triangle #1 (zero) or triangle #2 (one).
-// > TileIndex:integer=The tile index of the texture to blit.
-// ? Blits the specified triangle 'TId' of the tile 'TileIndex' of texture 0
-// ? with the current stored position.
-/* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(BlitPTS)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.BlitT(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex"), 0,
-              LCGETINTLGE(size_t, 3, 0, tCref.GetTileCount(), "TileIndex"));
-LLFUNCEND
-/* ========================================================================= */
-// $ Texture:BlitPTI
-// > TriIndex:integer=Triangle index. Triangle #1 (zero) or triangle #2 (one).
-// > TexIndex:integer=The texture id number.
-// ? Blits triangle 'TId' of tile 0 of texture 'TexIndex' with the current
-// ? stored position.
-/* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(BlitPTI)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.BlitT(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad,         "TriIndex"),
-    LCGETINTLGE(size_t, 3, 0, tCref.GetSubCount(), "TexIndex"), 0);
-LLFUNCEND
-/* ========================================================================= */
-// $ Texture:BlitPTIS
-// > TriIndex:integer=Triangle index. Triangle #1 (zero) or triangle #2 (one).
-// > TexIndex:integer=The texture id number.
-// > TileIndex:integer=The tile index of the texture to blit.
-// ? Blits triangle 'TId' of texture id 'TexIndex' with the specified tile id
-// ? 'TildIndex' to the current stored position.
-/* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(BlitPTIS)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.BlitT(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex"),
-    LCGETINTLGE(size_t, 3, 0, tCref.GetSubCount(), "TexIndex"),
-    LCGETINTLGE(size_t, 4, 0, tCref.GetTileCount(), "TileIndex"));
-LLFUNCEND
-/* ========================================================================= */
-// $ Texture:BlitS
-// > TileIndex:integer=The tile index of the texture to blit.
-// ? Blits tile 'TileIndex' of texture 0 with the current stored position.
-/* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(BlitS)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.Blit(0, LCGETINTLGE(size_t, 2, 0, tCref.GetTileCount(), "TileIndex"));
-LLFUNCEND
-/* ========================================================================= */
-// $ Texture:BlitI
-// > TexIndex:integer=The texture id number
-// ? Blits tile 0 of texture 'TexIndex' with the current stored position.
-/* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(BlitI)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.Blit(LCGETINTLGE(size_t, 2, 0, tCref.GetSubCount(), "TexIndex"), 0);
-LLFUNCEND
-/* ========================================================================= */
-// $ Texture:BlitIS
-// > TexIndex:integer=The texture id number.
-// > TileIndex:integer=The tile index of the texture to blit.
-// ? Blits tile 0 of texture 'TexIndex' with the current stored position.
-/* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(BlitIS)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.Blit(LCGETINTLGE(size_t, 2, 0, tCref.GetSubCount(),  "TexIndex"),
-    LCGETINTLGE(size_t, 3, 0, tCref.GetTileCount(), "TileIndex"));
-LLFUNCEND
 /* ========================================================================= */
 // $ Texture:BlitSLTRBA
 // > TileIndex:integer=The tile index of the texture to blit.
@@ -1066,32 +948,28 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Texture));
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Texture:* member functions begin
-  LLRSFUNC(Blit),        LLRSFUNC(BlitI),       LLRSFUNC(BlitILT),
-  LLRSFUNC(BlitILTA),    LLRSFUNC(BlitILTRB),   LLRSFUNC(BlitILTRBA),
-  LLRSFUNC(BlitILTWH),   LLRSFUNC(BlitILTWHA),  LLRSFUNC(BlitIS),
-  LLRSFUNC(BlitISLT),    LLRSFUNC(BlitISLTA),   LLRSFUNC(BlitISLTRB),
-  LLRSFUNC(BlitISLTRBA), LLRSFUNC(BlitISLTWH),  LLRSFUNC(BlitISLTWHA),
-  LLRSFUNC(BlitLT),      LLRSFUNC(BlitLTA),     LLRSFUNC(BlitLTRB),
-  LLRSFUNC(BlitLTRBA),   LLRSFUNC(BlitLTWH),    LLRSFUNC(BlitLTWHA),
-  LLRSFUNC(BlitM),       LLRSFUNC(BlitP),       LLRSFUNC(BlitPI),
-  LLRSFUNC(BlitPIS),     LLRSFUNC(BlitPS),      LLRSFUNC(BlitPT),
-  LLRSFUNC(BlitPTI),     LLRSFUNC(BlitPTIS),    LLRSFUNC(BlitPTS),
-  LLRSFUNC(BlitS),       LLRSFUNC(BlitSLT),     LLRSFUNC(BlitSLTA),
-  LLRSFUNC(BlitSLTRB),   LLRSFUNC(BlitSLTRBA),  LLRSFUNC(BlitSLTWH),
-  LLRSFUNC(BlitSLTWHA),  LLRSFUNC(Destroy),     LLRSFUNC(Download),
-  LLRSFUNC(Dump),        LLRSFUNC(GetHeight),   LLRSFUNC(GetName),
-  LLRSFUNC(GetSubCount), LLRSFUNC(GetWidth),    LLRSFUNC(PopColour),
-  LLRSFUNC(PushColour),  LLRSFUNC(SetCA),       LLRSFUNC(SetCB),
-  LLRSFUNC(SetCG),       LLRSFUNC(SetCR),       LLRSFUNC(SetCRGB),
-  LLRSFUNC(SetCRGBA),    LLRSFUNC(SetCRGBAI),   LLRSFUNC(SetCX),
-  LLRSFUNC(SetTCLTRB),   LLRSFUNC(SetTCLTWH),   LLRSFUNC(SetTCX),
-  LLRSFUNC(SetVLTRB),    LLRSFUNC(SetVLTRBA),   LLRSFUNC(SetVLTWH),
-  LLRSFUNC(SetVLTWHA),   LLRSFUNC(SetVX),       LLRSFUNC(TileA),
-  LLRSFUNC(TileAD),      LLRSFUNC(TileAS),      LLRSFUNC(TileASD),
-  LLRSFUNC(TileGSTC),    LLRSFUNC(TileGTC),     LLRSFUNC(TileS),
-  LLRSFUNC(TileSD),      LLRSFUNC(TileSS),      LLRSFUNC(TileSSD),
-  LLRSFUNC(TileSSTC),    LLRSFUNC(TileSTC),     LLRSFUNC(Upload),
-  LLRSFUNC(UploadEx),
+  LLRSFUNC(Blit),        LLRSFUNC(BlitILT),     LLRSFUNC(BlitILTA),
+  LLRSFUNC(BlitILTRB),   LLRSFUNC(BlitILTRBA),  LLRSFUNC(BlitILTWH),
+  LLRSFUNC(BlitILTWHA),  LLRSFUNC(BlitISLT),    LLRSFUNC(BlitISLTA),
+  LLRSFUNC(BlitISLTRB),  LLRSFUNC(BlitISLTRBA), LLRSFUNC(BlitISLTWH),
+  LLRSFUNC(BlitISLTWHA), LLRSFUNC(BlitLT),      LLRSFUNC(BlitLTA),
+  LLRSFUNC(BlitLTRB),    LLRSFUNC(BlitLTRBA),   LLRSFUNC(BlitLTWH),
+  LLRSFUNC(BlitLTWHA),   LLRSFUNC(BlitM),       LLRSFUNC(BlitSLT),
+  LLRSFUNC(BlitSLTA),    LLRSFUNC(BlitSLTRB),   LLRSFUNC(BlitSLTRBA),
+  LLRSFUNC(BlitSLTWH),   LLRSFUNC(BlitSLTWHA),  LLRSFUNC(Destroy),
+  LLRSFUNC(Download),    LLRSFUNC(Dump),        LLRSFUNC(GetHeight),
+  LLRSFUNC(GetName),     LLRSFUNC(GetSubCount), LLRSFUNC(GetWidth),
+  LLRSFUNC(PopColour),   LLRSFUNC(PushColour),  LLRSFUNC(SetCA),
+  LLRSFUNC(SetCB),       LLRSFUNC(SetCG),       LLRSFUNC(SetCR),
+  LLRSFUNC(SetCRGB),     LLRSFUNC(SetCRGBA),    LLRSFUNC(SetCRGBAI),
+  LLRSFUNC(SetCX),       LLRSFUNC(SetTCLTRB),   LLRSFUNC(SetTCLTWH),
+  LLRSFUNC(SetTCX),      LLRSFUNC(SetVLTRB),    LLRSFUNC(SetVLTRBA),
+  LLRSFUNC(SetVLTWH),    LLRSFUNC(SetVLTWHA),   LLRSFUNC(SetVX),
+  LLRSFUNC(TileA),       LLRSFUNC(TileAD),      LLRSFUNC(TileAS),
+  LLRSFUNC(TileASD),     LLRSFUNC(TileGSTC),    LLRSFUNC(TileGTC),
+  LLRSFUNC(TileS),       LLRSFUNC(TileSD),      LLRSFUNC(TileSS),
+  LLRSFUNC(TileSSD),     LLRSFUNC(TileSSTC),    LLRSFUNC(TileSTC),
+  LLRSFUNC(Upload),      LLRSFUNC(UploadEx),
 LLRSEND                                // Texture:* member functions end
 /* ========================================================================= */
 // $ Texture.Create

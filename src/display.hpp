@@ -968,7 +968,7 @@ static class Display final :
         const ImageSlot &imsD = imC.GetSlotsConst().front();
         gilIcons.emplace_back(GLFWimage{
           imsD.DimGetWidth<int>(), imsD.DimGetHeight<int>(),
-          imsD.Ptr<unsigned char>() });
+          imsD.MemPtr<unsigned char>() });
       }
     } // Not in interactive mode?
     else

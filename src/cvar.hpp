@@ -166,8 +166,8 @@ class Item :                           // Members initially private
     return Commit() == CR_OK;
   }
   /* ----------------------------------------------------------------------- */
-  bool Commit(const DataConst &dcVal)
-    { return cSql->CVarCommitBlob(GetVar(), dcVal); }
+  bool Commit(const MemConst &mcSrc)
+    { return cSql->CVarCommitBlob(GetVar(), mcSrc); }
   /* ----------------------------------------------------------------------- */
   CommitResult Commit(void)
   { // Ignore if variable not modified, force saved or loaded

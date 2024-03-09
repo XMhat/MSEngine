@@ -65,11 +65,11 @@ class Certs                            // Certificates store
   { // Load the certificate
     const FileMap fC{ AssetExtract(StrAppend(strD, '/', strF)) };
     // Get pointer
-    const unsigned char*ucpPtr = fC.Ptr<unsigned char>();
+    const unsigned char*ucpPtr = fC.MemPtr<unsigned char>();
     // Load the raw certificate and ig it succeeded?
     typedef unique_ptr<X509, function<decltype(X509_free)>> X509Ptr;
     if(X509Ptr caCert{
-      d2i_X509(nullptr, &ucpPtr, fC.Size<long>()), X509_free })
+      d2i_X509(nullptr, &ucpPtr, fC.MemSize<long>()), X509_free })
     { // Get purpose struct of certificate
       if(X509_PURPOSE*const x509p = X509_PURPOSE_get0(X509_PURPOSE_SSL_SERVER))
       { // Get purpose id and reject if it is not a server CA certificate

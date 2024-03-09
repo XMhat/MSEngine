@@ -48,7 +48,7 @@ class PcmData :                        // Audio data structure
   /* ----------------------------------------------------------------------- */
   void ClearData(void)
     { for(size_t stIndex = 0; stIndex < aPcm.size(); ++stIndex)
-        aPcm[stIndex].DeInit(); }
+        aPcm[stIndex].MemDeInit(); }
   /* ----------------------------------------------------------------------- */
   unsigned int GetRate(void) const { return uiRate; }
   /* ----------------------------------------------------------------------- */
@@ -105,7 +105,7 @@ class PcmData :                        // Audio data structure
     swap(stAlloc, pcmRef.stAlloc);
     // Swap all channeld ata
     for(size_t stIndex = 0; stIndex < aPcm.size(); ++stIndex)
-      aPcm[stIndex].SwapMemory(StdMove(pcmRef.aPcm[stIndex]));
+      aPcm[stIndex].MemSwap(StdMove(pcmRef.aPcm[stIndex]));
   }
   /* -- Default constructor ------------------------------------------------ */
   PcmData(void) :

@@ -111,9 +111,9 @@ class SysCon :                         // All members initially private
     using namespace ICurses;
     // am just going to put this here just incase.
     if(isendwin()) return;
-    // Update size of terminal window
-    int iNewW, iNewH; getmaxyx(stdscr, iNewH, iNewW);
-    // Ignore if not changed
+    // Get new size of terminal window and return if not changed
+    const int iNewW = stdscr->_maxx+1, // getmaxx(stdscr)
+              iNewH = stdscr->_maxy+1; // getmaxy(stdscr)
     if(iNewW == DimGetWidth() && iNewH == DimGetHeight()) return;
     // Log the new size
     cLog->LogDebugExSafe("SysCon resized from $x$ to $x$.",

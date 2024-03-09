@@ -104,7 +104,7 @@ struct CodecDDS final :                // Members initially public
   /* ----------------------------------------------------------------------- */
   static bool Load(FileMap &fC, ImageData &ifD)
   { // Get file size
-    const size_t stSize = fC.Size();
+    const size_t stSize = fC.MemSize();
     // Quick check header which should be at least 128 bytes
     if(stSize < 128 || fC.FileMapReadVar32LE() != 0x20534444) return false;
     // Read the image size and flags and if we got them
@@ -298,8 +298,8 @@ struct CodecDDS final :                // Members initially public
       uiMipSize     = ((uiMipWidth+3)/4)*((uiMipHeight+3)/4)*uiBitDiv)
     { // Read compressed data from file and show error if not enough data
       Memory mPixels{ fC.FileMapReadBlock(uiMipSize) };
-      if(mPixels.Size() != uiMipSize)
-        XC("Read error!", "Expected", uiMipSize, "Actual", mPixels.Size());
+      if(mPixels.MemSize() != uiMipSize)
+        XC("Read error!", "Expected", uiMipSize, "Actual", mPixels.MemSize());
       // Push back a new slot for every new mipmap
       ifD.AddSlot(mPixels, uiMipWidth, uiMipHeight);
     } // Uncompressed image?
@@ -320,8 +320,8 @@ struct CodecDDS final :                // Members initially public
       uiMipSize = uiMipWidth*uiMipHeight*uiMipBPP) // New mipmap size
     { // Read uncompressed data from file and show error if not enough data
       Memory mData{ fC.FileMapReadBlock(uiMipSize) };
-      if(mData.Size() != uiMipSize)
-        XC("Read error!", "Expected", uiMipSize, "Actual", mData.Size());
+      if(mData.MemSize() != uiMipSize)
+        XC("Read error!", "Expected", uiMipSize, "Actual", mData.MemSize());
       // Push back a new slot for every new mipmap
       ifD.AddSlot(mData, uiMipWidth, uiMipHeight);
     } // Succeeded
@@ -369,12 +369,13 @@ class CodecGIF final :                 // Members initially private
   /* --------------------------------------------------------------- */ public:
   static bool Load(FileMap &fC, ImageData &ifD)
   { // Must have at least 10 bytes for header 'GIF9' and ending footer.
-    if(fC.Size() < 10 || fC.FileMapReadVar32LE() != 0x38464947) return false;
+    if(fC.MemSize() < 10 || fC.FileMapReadVar32LE() != 0x38464947)
+      return false;
     // Next word must be 7a or 9a. Else not a gif file.
     const unsigned int uiMagic2 = fC.FileMapReadVar16LE();
     if(uiMagic2 != 0x6137 && uiMagic2 != 0x6139) return false;
     // Read and check last 2 footer bytes of file
-    if(fC.FileMapReadVar16LEFrom(fC.Size() - sizeof(uint16_t)) != 0x3b00)
+    if(fC.FileMapReadVar16LEFrom(fC.MemSize() - sizeof(uint16_t)) != 0x3b00)
       return false;
     // Set gif callbacks
     nsgif_bitmap_cb_vt sBMPCB{ GIFCreate, GIFDestroy, GIFRead, GIFOpaque,
@@ -393,7 +394,7 @@ class CodecGIF final :                 // Members initially private
     try
     { // Decode the gif and report error if failed
       switch(const nsgif_error nsgErr =
-        nsgif_data_scan(nsgCtx, fC.Size(), fC.Ptr<unsigned char>()))
+        nsgif_data_scan(nsgCtx, fC.MemSize(), fC.MemPtr<unsigned char>()))
       { // Succeeded?
         case NSGIF_OK: break;
         // Anything else?
@@ -496,19 +497,19 @@ class CodecPNG final :                 // Members initially private
   }
   /* -- Save png file ---------------------------------------------- */ public:
   static bool Save(const FStream &fC, const ImageData &ifD,
-    const ImageSlot &bData)
+    const ImageSlot &isData)
   { // Check that dimensions are set
-    if(bData.DimIsNotSet())
+    if(isData.DimIsNotSet())
       XC("Dimensions are invalid!",
-         "Width",  bData.DimGetWidth(),
-         "Height", bData.DimGetHeight());
+         "Width",  isData.DimGetWidth(),
+         "Height", isData.DimGetHeight());
     // Check that there is data
-    if(bData.Empty()) XC("No image data!", "Size", bData.Size());
+    if(isData.MemIsEmpty()) XC("No image data!", "Size", isData.MemSize());
     // Png writer helper class
     class PngWriter
     { // Private variables
-      png_structp    psData;           // PNG struct data
-      png_infop      piData;           // PNG info struct data
+      png_structp  psData;             // PNG struct data
+      png_infop    piData;             // PNG info struct data
       // Call when finished writing image
       public: void Finish(void*const vpData)
       { // Send image data to png writer
@@ -572,7 +573,7 @@ class CodecPNG final :                 // Members initially private
     pwC.Meta("Source", "OpenGL");
     pwC.Meta("Comment", cCVars->GetInternalStrSafe(APP_WEBSITE));
     // Create vector array to hold pointers to each scanline
-    PngPtrVec ppvList{ bData.DimGetHeight<size_t>() };
+    PngPtrVec ppvList{ isData.DimGetHeight<size_t>() };
     // Bit depth and colour type of data
     int iColourType;
     // Compare bitrate
@@ -580,14 +581,15 @@ class CodecPNG final :                 // Members initially private
     { // Monochrome (1-bpp)?
       case BD_BINARY:
         // Set binary header type
-        pwC.Header(bData, 1, PNG_COLOR_TYPE_GRAY, PNG_INTERLACE_ADAM7,
+        pwC.Header(isData, 1, PNG_COLOR_TYPE_GRAY, PNG_INTERLACE_ADAM7,
           PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
         // Set location of each scanline from the bottom
         for(size_t stScanIndex = ppvList.size() - 1,
-                   stStride = bData.DimGetWidth() / 8;
+                   stStride = isData.DimGetWidth() / 8;
                    stScanIndex != StdMaxSizeT;
                  --stScanIndex)
-          ppvList[stScanIndex] = bData.Read<png_byte>(stScanIndex * stStride);
+          ppvList[stScanIndex] =
+            isData.MemRead<png_byte>(stScanIndex * stStride);
         // Done
         break;
       // Grayscale (8-bpp)?
@@ -599,16 +601,16 @@ class CodecPNG final :                 // Members initially private
       // True-colour with alpha (32-bpp)?
       case BD_RGBA: iColourType = PNG_COLOR_TYPE_RGB_ALPHA; goto BITNM;
         // All the other types (except binary) converge to here
-        BITNM:; pwC.Header(bData, 8, iColourType, PNG_INTERLACE_ADAM7,
+        BITNM:; pwC.Header(isData, 8, iColourType, PNG_INTERLACE_ADAM7,
           PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
         // Set location of each scanline
         for(size_t stScanIndex = 0,
                    stScanLinesM1 = ppvList.size() - 1,
-                   stStride = bData.DimGetWidth() * ifD.GetBytesPerPixel();
+                   stStride = isData.DimGetWidth() * ifD.GetBytesPerPixel();
                    stScanIndex < ppvList.size();
                  ++stScanIndex)
           ppvList[stScanIndex] =
-          bData.Read<png_byte>((stScanLinesM1 - stScanIndex) * stStride);
+            isData.MemRead<png_byte>((stScanLinesM1 - stScanIndex) * stStride);
         // Done
         break;
       // Un-supported format
@@ -622,7 +624,7 @@ class CodecPNG final :                 // Members initially private
   /* ----------------------------------------------------------------------- */
   static bool Load(FileMap &fC, ImageData &ifD)
   { // Not a PNG file if not at least 8 bytes or header is incorrect
-    if(fC.Size() < 8 || !png_check_sig(fC.FileMapReadPtr<png_byte>(8), 8))
+    if(fC.MemSize() < 8 || !png_check_sig(fC.FileMapReadPtr<png_byte>(8), 8))
       return false;
     // Crete safe reader struct and info
     struct PngReader
@@ -692,8 +694,9 @@ class CodecPNG final :                 // Members initially private
                      stRow = 0;
                      stRow < stHeight;
                    ++stRow)
-            ppvList[stRow] = mPixels.Read<png_byte>((stHeightM1 - stRow) *
-              stStride, stStride);
+            ppvList[stRow] =
+              mPixels.MemRead<png_byte>((stHeightM1 - stRow) *
+                stStride, stStride);
           // Read image
           png_read_image(psData, ppvList.data());
           png_read_end(psData, piData);
@@ -743,7 +746,7 @@ class CodecPNG final :                 // Members initially private
           if(png_get_hIST(psData, piData, &saHist))
             png_set_quantize(psData, palData, iPalette, 256, saHist, 0);
           // Initialise palette data
-          mPalette.InitData(static_cast<size_t>(iPalette)*BY_RGB,
+          mPalette.MemInitData(static_cast<size_t>(iPalette)*BY_RGB,
                             static_cast<void*>(palData));
         } // Done
         break;
@@ -826,7 +829,7 @@ class CodecPNG final :                 // Members initially private
                stRow < stHeight;
              ++stRow)
       ppvList[stRow] =
-        mPixels.Read<png_byte>((stHeightM1 - stRow) * stStride, stStride);
+        mPixels.MemRead<png_byte>((stHeightM1 - stRow) * stStride, stStride);
     // Read image
     png_read_image(psData, ppvList.data());
     png_read_end(psData, piData);
@@ -880,16 +883,16 @@ class CodecJPG final :                 // Members initially private
   }
   /* --------------------------------------------------------------- */ public:
   static bool Save(const FStream &fC, const ImageData &ifD,
-                   const ImageSlot &bData)
+                   const ImageSlot &isData)
   { // Only support 24-bit per pixel images
     if(ifD.GetBitsPerPixel() != BD_RGB)
       XC("Only RGB supported!", "BitsPerPixel", ifD.GetBitsPerPixel());
     // Check for valid dimensions
-    if(bData.DimIsNotSet())
+    if(isData.DimIsNotSet())
       XC("Dimensions are invalid!",
-         "Width",  bData.DimGetWidth(), "Height", bData.DimGetHeight());
+         "Width",  isData.DimGetWidth(), "Height", isData.DimGetHeight());
     // Have image data?
-    if(bData.Empty()) XC("No image data!", "Size", bData.Size());
+    if(isData.MemIsEmpty()) XC("No image data!", "Size", isData.MemSize());
     // Setup class to free pointer on exit
     struct JpegWriter
     { // Private variables
@@ -912,8 +915,8 @@ class CodecJPG final :                 // Members initially private
     // Get compress struct data
     struct jpeg_compress_struct &ciData = jwC.ciData;
     // Set image information
-    ciData.image_width = bData.DimGetWidth();
-    ciData.image_height = bData.DimGetHeight();
+    ciData.image_width = isData.DimGetWidth();
+    ciData.image_height = isData.DimGetHeight();
     ciData.input_components = ifD.GetBitsPerPixel() / 8;
     ciData.in_color_space = JCS_RGB;
     // Call the setup defualts helper function to give us a starting point.
@@ -929,7 +932,7 @@ class CodecJPG final :                 // Members initially private
     while(ciData.next_scanline < ciData.image_height)
     { // Get scanline
       JSAMPROW rPtr = reinterpret_cast<JSAMPROW>
-        (bData.Read((ciData.image_height-1-ciData.next_scanline)*
+        (isData.MemRead((ciData.image_height-1-ciData.next_scanline)*
           static_cast<unsigned int>(ciData.input_components)*
           ciData.image_width));
       // Write scanline to disk
@@ -942,7 +945,7 @@ class CodecJPG final :                 // Members initially private
   /* ----------------------------------------------------------------------- */
   static bool Load(FileMap &fC, ImageData &ifD)
   { // Make sure we have at least 12 bytes and the correct first 2 bytes
-    if(fC.Size() < 12 || fC.FileMapReadVar16LE() != 0xD8FF) return false;
+    if(fC.MemSize() < 12 || fC.FileMapReadVar16LE() != 0xD8FF) return false;
     // We need access to this from the exception block
     struct JpegReader
     { // Private variables
@@ -974,8 +977,8 @@ class CodecJPG final :                 // Members initially private
     jsmData.skip_input_data = JPegSkipInputData;
     jsmData.resync_to_restart = jpeg_resync_to_restart;
     jsmData.term_source = JPegTermSource;
-    jsmData.next_input_byte = fC.Ptr<JOCTET>();
-    jsmData.bytes_in_buffer = fC.Size();
+    jsmData.next_input_byte = fC.MemPtr<JOCTET>();
+    jsmData.bytes_in_buffer = fC.MemSize();
     // Read the header
     switch(jpeg_read_header(&ciData, static_cast<boolean>(true)))
     { // if SOS marker is reached?
@@ -1012,7 +1015,7 @@ class CodecJPG final :                 // Members initially private
     // Decompress scanlines
     while(ciData.output_scanline < ciData.output_height)
     { // For storing info
-      array<unsigned char*,1> caPtr{ mPixels.Read<unsigned char>(
+      array<unsigned char*,1> caPtr{ mPixels.MemRead<unsigned char>(
         static_cast<size_t>(ciData.output_scanline) * stRowStride, stRowStride)
       }; // Decompress the data
       jpeg_read_scanlines(&ciData, reinterpret_cast<JSAMPARRAY>(caPtr.data()),

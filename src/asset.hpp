@@ -54,7 +54,7 @@ static FileMap AssetLoadFromDisk(const string &strFile)
   if(FileMap fmFile{ strFile })
   { // Put in the log that we loaded the file successfully
     cLog->LogDebugExSafe("Assets mapped resource '$'[$]!",
-      strFile, fmFile.Size());
+      strFile, fmFile.MemSize());
     // Return file class to caller
     return fmFile;
   } // Failed so throw exception
@@ -85,21 +85,20 @@ BEGIN_ASYNCMEMBERCLASS(Assets, Asset, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
   public Ident,                        // Asset file name
   public AsyncLoaderAsset,             // For loading assets off main thread
-  public Memory,                       // Memory storage for this asset
   public Lockable,                     // Lua garbage collector instruction
   public AssetFlags                    // Asset settings
 { /* -------------------------------------------------------------- */ private:
   void SwapAsset(Asset &aOther)
   { // Swap settings flags
     FlagSwap(aOther);
-    SwapMemory(StdMove(aOther));
+    MemSwap(StdMove(aOther));
     LockSwap(aOther);
     IdentSwap(aOther);
     CollectorSwapRegistration(aOther);
   }
   /* -- Perform decoding --------------------------------------------------- */
   template<class Codec>void CodecExec(FileMap &fC, size_t stLevel=0)
-    { SwapMemory(Block<Codec>{ fC, stLevel }); }
+    { MemSwap(Block<Codec>{ fC, stLevel }); }
   /* -- Perform decoding converting flags to compression level ------------- */
   template<class Codec>void CodecExecEx(FileMap &fC)
     { CodecExec<Codec>(fC, FlagIsSet(CD_LEVEL_FASTEST)  ? 1 :
@@ -124,7 +123,7 @@ BEGIN_ASYNCMEMBERCLASS(Assets, Asset, ICHelperUnsafe),
     // Guest wants data decoded from a magic block (no user flags)
     else if(FlagIsSet(CD_DECODE)) CodecExec<CoDecoder>(fC);
     // Guest wants data untouched but we need to copy it all from the map
-    else SwapMemory(fC.FileMapDecouple());
+    else MemSwap(fC.FileMapDecouple());
   }
   /* -- Load data from string asynchronously ------------------------------- */
   void InitAsyncString(lua_State*const lS)
@@ -183,7 +182,8 @@ BEGIN_ASYNCMEMBERCLASS(Assets, Asset, ICHelperUnsafe),
     Asset &aInput = *LuaUtilGetPtr<Asset>(lS, 3, "Asset");
     LuaUtilCheckFuncs(lS, 4, "ErrorFunc", 5, "ProgressFunc", 6, "SuccessFunc");
     // Load asset from file asynchronously
-    AsyncInitCmdLine(lS, strCmdLine, StrAppend("CLP", aInput.Size()), aInput);
+    AsyncInitCmdLine(lS, strCmdLine,
+      StrAppend("CLP", aInput.MemSize()), aInput);
   }
   /* -- Init from file ----------------------------------------------------- */
   void InitFile(const string &strFilename, const AssetFlagsConst &lfS)

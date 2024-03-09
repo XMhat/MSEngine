@@ -456,7 +456,7 @@ static class System final :            // The main system class
       { // Memory block for data
         Memory mbData;
         // Try to allocate the memory and if succeeded
-        try { mbData.InitBlank(stActualMemory); }
+        try { mbData.MemInitBlank(stActualMemory); }
         // Allocation failed?
         catch(const exception &e)
         { // Throw memory error
@@ -468,7 +468,7 @@ static class System final :            // The main system class
             "Needed",  stMemory - RAMFree());
         } // Initialise the memory and record time spent
         const ClockChrono<CoreClock> tpStart;
-        mbData.Fill();
+        mbData.MemFill();
         fdDuration = tpStart.CCDeltaToDouble();
       } // Show result of test in log
       cLog->LogInfoExSafe("System heap init of $ ($+$) in $ ($/s).",

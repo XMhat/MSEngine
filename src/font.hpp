@@ -165,7 +165,7 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
           rRedraw.RectGetY1(), DimGetWidth(), 2);
         // Calculate position in buffer to read from
         const GLubyte*const ucpSrc =
-          GetSlots().front().Read<GLubyte>(stRTPos, DimGetWidth());
+          GetSlots().front().MemRead<GLubyte>(stRTPos, DimGetWidth());
         // Update partial texture
         UpdateEx(GetSubName(),
           rRedraw.RectGetX1<GLint>(), rRedraw.RectGetY1<GLint>(),
@@ -326,7 +326,7 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
     // parts that are padding will not be written to 'ever' and that would
     // cause display artifacts
     Memory mPixels{ DimGetWidth() * DimGetHeight() * 2 };
-    mPixels.Fill<uint16_t>(0x00FF);
+    mPixels.MemFill<uint16_t>(0x00FF);
     InitRaw(ftfData.IdentGet(), StdMove(mPixels), DimGetWidth(),
       DimGetHeight(), BD_GRAYALPHA, GL_RG);
     // Initialise image in GL. This class is responsible for updating the
@@ -353,7 +353,7 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
     // Get the file. It should at least be 3 bytes long
     const FileMap fC{ AssetExtract(strManfiest) };
     // Convert whole file data to a string
-    const string strBuffer{ fC.ToString() };
+    const string strBuffer{ fC.MemToString() };
     if(strBuffer.size() < 3)
       XC("Index file is possibly corrupted!",
          "Identifier", IdentGet(), "Manfiest", strManfiest);

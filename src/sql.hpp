@@ -156,9 +156,9 @@ static struct Sql final :              // Members initially public
       /* -- No code -------------------------------------------------------- */
       { }
     /* -- Initialise as a memory block ------------------------------------- */
-    explicit Cell(const DataConst &dcM) :
+    explicit Cell(const MemConst &mcD) :
       /* -- Initialisers --------------------------------------------------- */
-      Cell{ dcM.Ptr<char>(), UtilIntOrMax<int>(dcM.Size()) }
+      Cell{ mcD.MemPtr<char>(), UtilIntOrMax<int>(mcD.MemSize()) }
       /* -- No code -------------------------------------------------------- */
       { }
     /* -- Uninitialised constructor ---------------------------------------- */
@@ -180,11 +180,12 @@ static struct Sql final :              // Members initially public
     int       iT;                      // Type of memory in block
     /* -- Move assignment operator ----------------------------------------- */
     DataListItem &operator=(DataListItem &&dlOther)
-      { SwapMemory(StdMove(dlOther)); iT = dlOther.iT; return *this; }
+      { MemSwap(StdMove(dlOther)); iT = dlOther.iT; return *this; }
     /* -- Initialise with rvalue memory and type --------------------------- */
-    DataListItem(Memory &&memInit, const int iType) :
+    DataListItem(Memory &&mSrc,        // Memory to record data
+                 const int iType) :    // Type of the contents in record data
       /* -- Initialisers --------------------------------------------------- */
-      Memory{ StdMove(memInit) },       // Move other memory block other
+      Memory{ StdMove(mSrc) },         // Move other memory block other
       iT(iType)                        // Copy other type over
       /* -- No code -------------------------------------------------------- */
       { }
@@ -308,7 +309,7 @@ static struct Sql final :              // Members initially public
           case SQLITE_NULL:
           { // Copy to a memory block if there is something to copy
             DoPair(smbData, iType, sqlite3_column_name(stmtData, iCol),
-              NULL, 0);
+              nullptr, 0);
             break;
           } // Unknown data type (shouldn't ever get here?)
           default:
@@ -464,9 +465,9 @@ static struct Sql final :              // Members initially public
         // Variable is userdata
         case LUA_TUSERDATA:
         { // Get reference to memory block and push data to list
-          const DataConst &dcCref = *LuaUtilGetPtr<Asset>(lS, iI, "Asset");
+          const MemConst &mcRef = *LuaUtilGetPtr<Asset>(lS, iI, "Asset");
           vIn.emplace_back(
-            Cell{ dcCref.Ptr<char>(), static_cast<int>(dcCref.Size())} );
+            Cell{ mcRef.MemPtr<char>(), static_cast<int>(mcRef.MemSize())} );
           break;
         } // Other variable (ignore)
         default: XC("Unsupported parameter type!",
@@ -502,20 +503,20 @@ static struct Sql final :              // Members initially public
             break;
           // 64-bit integer?
           case SQLITE_INTEGER:
-            LuaUtilPushInt(lS, dliCData.ReadInt<lua_Integer>());
+            LuaUtilPushInt(lS, dliCData.MemReadInt<lua_Integer>());
             break;
           // 64-bit IEEE float?
           case SQLITE_FLOAT:
-            LuaUtilPushNum(lS, dliCData.ReadInt<lua_Number>());
+            LuaUtilPushNum(lS, dliCData.MemReadInt<lua_Number>());
             break;
           // Raw data? Save as array
           case SQLITE_BLOB:
           { // Create memory block array class
             Asset &aCref = *LuaUtilClassCreate<Asset>(lS, "Asset");
             // Initialise the memory block depending on if we have data
-            if(dliCData.NotEmpty())
-              aCref.InitData(dliCData.Size(), dliCData.Ptr<void*>());
-            else aCref.InitBlank();
+            if(dliCData.MemIsNotEmpty())
+              aCref.MemInitData(dliCData.MemSize(), dliCData.MemPtr<void*>());
+            else aCref.MemInitBlank();
             // Done
             break;
           } // No data? Push a 'false' since we can't have 'nil' in keypairs.
@@ -676,7 +677,7 @@ static struct Sql final :              // Members initially public
         "Sql integrity check failed to return result columns.");
       return false;
     } // Get result string. It should say 'ok' if everything went ok
-    const string strResult{ mbMap.cbegin()->second.ToString() };
+    const string strResult{ mbMap.cbegin()->second.MemToString() };
     if(strResult != "ok")
     { // Log and return failure
       cLog->LogErrorExSafe("Sql database corrupted: $", strResult);
@@ -732,7 +733,7 @@ static struct Sql final :              // Members initially public
       return StdMaxUInt64;
     // Return number of tables
     const uint64_t qPageSize =
-      smmPageSizeItem->second.ReadInt<uint64_t>();
+      smmPageSizeItem->second.MemReadInt<uint64_t>();
     // Get the database page count
     if(Execute("pragma page_count") || vKeys.empty())
       return StdMaxUInt64;
@@ -745,7 +746,7 @@ static struct Sql final :              // Members initially public
       return StdMaxUInt64;
     // Return number of tables
     const uint64_t qPageCount =
-      smmPageCountItem->second.ReadInt<uint64_t>();
+      smmPageCountItem->second.MemReadInt<uint64_t>();
     // Return result
     return qPageSize * qPageCount;
   }
@@ -792,7 +793,7 @@ static struct Sql final :              // Members initially public
         const RecordsIt smmItem{ smmPairs.cbegin() };
         if(smmItem->first == "count(*)")
         { // Get result because we're going to clean up after
-          const size_t stCount = smmItem->second.ReadInt<size_t>();
+          const size_t stCount = smmItem->second.MemReadInt<size_t>();
           // Clean up downloaded records
           Reset();
           // Return number of tables
@@ -939,9 +940,9 @@ static struct Sql final :              // Members initially public
     { return CVarCommitData(strVar, LF_NONE,
         SQLITE_TEXT, strVal.data(), strVal.length()); }
   /* ----------------------------------------------------------------------- */
-  bool CVarCommitBlob(const string &strVar, const DataConst &dcVal)
+  bool CVarCommitBlob(const string &strVar, const MemConst &mcSrc)
     { return CVarCommitData(strVar, LF_ENCRYPTED,
-        SQLITE_BLOB, dcVal.Ptr<char>(), dcVal.Size()); }
+        SQLITE_BLOB, mcSrc.MemPtr<char>(), mcSrc.MemSize()); }
   /* ----------------------------------------------------------------------- */
   PurgeResult CVarPurgeData(const char*const cpKey, const size_t stKey)
   { // Try to purge the cvar from the database and if it failed?
@@ -1097,15 +1098,15 @@ static struct Sql final :              // Members initially public
               stIndex, dliItem.iT);
             goto NewKey;
           } // Read record data. It must be 8 bytes. If it isnt?
-          if(dliItem.Size() != sizeof(sqlite3_int64))
+          if(dliItem.MemSize() != sizeof(sqlite3_int64))
           { // Log failure and create new private key table
             cLog->LogErrorExSafe(
               "Sql key table at column $ expected $ not $ bytes!",
-              stIndex, sizeof(sqlite3_int64), dliItem.Size());
+              stIndex, sizeof(sqlite3_int64), dliItem.MemSize());
             goto NewKey;
           } // Read in the value to the private key table
           cCrypt->WritePrivateKey(stIndex++,
-            static_cast<uint64_t>(dliItem.ReadInt<sqlite3_int64>()));
+            static_cast<uint64_t>(dliItem.MemReadInt<sqlite3_int64>()));
         } // Log result and return
         cLog->LogDebugExSafe(
           "Sql loaded key table from database successfully!");

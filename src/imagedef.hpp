@@ -219,7 +219,7 @@ class ImageData :                      // Members initially private
   { // Add the slot moving the memory over
     GetSlots().push_back({ StdMove(mData), uiSWidth, uiSHeight });
     // Add to memory bytes allocated counter
-    stAlloc += GetSlots().back().Size();
+    stAlloc += GetSlots().back().MemSize();
   }
   /* -- Add a new slot using our image size -------------------------------- */
   void AddSlot(Memory &mData)

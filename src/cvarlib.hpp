@@ -25,7 +25,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 /* == Core cvars (don't modify order) ====================================== */
 // ! LOG_LEVEL
 // ? Specifies the logging level...
-// ? [0] LH_DISABLED = Nothing. Lua log function can still use this.
+// ? [0] LH_CRITICAL = For reporting only critical messages.
 // ? [1] LH_ERROR    = For reporting only errors (which halt execution).
 // ? [2] LH_WARNING  = For reporting only warnings (recoverable errors).
 // ? [3] LH_INFO     = For reporting useful important messages.

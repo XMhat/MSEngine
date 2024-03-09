@@ -82,7 +82,7 @@ static void PcmLoadFile(const size_t stFId, FileMap &fC, PcmData &auD)
   } // Error occured. Error used as title
   catch(const exception &E)
   { // Throw an error with the specified reason
-    XC(E.what(), "Identifier", fC.IdentGet(),    "Size",     fC.Size(),
+    XC(E.what(), "Identifier", fC.IdentGet(),    "Size",     fC.MemSize(),
                  "Position",   fC.FileMapTell(), "FormatId", stFId,
                  "Plugin",     pCref.GetName());
   }
@@ -107,7 +107,7 @@ static void PcmLoadFile(FileMap &fC, PcmData &auD)
     } // Error occured. Error used as title
     catch(const exception &E)
     { // Throw an error with the specified reason
-      XC(E.what(), "Identifier", fC.IdentGet(),    "Size",   fC.Size(),
+      XC(E.what(), "Identifier", fC.IdentGet(),    "Size",   fC.MemSize(),
                    "Position",   fC.FileMapTell(), "Plugin", pCref.GetName());
     } // Rewind stream position
     fC.FileMapRewind();

@@ -64,9 +64,9 @@ static Memory LuaCodeCompileFunction(lua_State*const lS, const bool bDebug)
   if(mdData.mlBlocks.size() == 1)
   { // Get first memory block and if position not reached? Thats not right!
     Memory &mbData = *mdData.mlBlocks.begin();
-    if(mdData.stTotal != mbData.Size())
+    if(mdData.stTotal != mbData.MemSize())
       XC("Not enough bytes written to binary!",
-        "Written", mbData.Size(), "Needed", mdData.stTotal);
+        "Written", mbData.MemSize(), "Needed", mdData.stTotal);
     // Return memory block
     return StdMove(mbData);
   } // Make full memory block
@@ -77,9 +77,9 @@ static Memory LuaCodeCompileFunction(lua_State*const lS, const bool bDebug)
   while(!mdData.mlBlocks.empty() && stPos < mdData.stTotal)
   { // Get memory block and write it to our big final black
     const Memory &mbBlock = *mdData.mlBlocks.begin();
-    mbData.WriteBlock(stPos, mbBlock);
+    mbData.MemWriteBlock(stPos, mbBlock);
     // Incrememnt position and erase the block
-    stPos += mbBlock.Size();
+    stPos += mbBlock.MemSize();
     mdData.mlBlocks.erase(mdData.mlBlocks.cbegin());
   } // Error if position not reached
   if(stPos != mdData.stTotal)
@@ -100,7 +100,7 @@ static void LuaCodeCompileFunction(lua_State*const lS)
   // Compile the function
   Memory mbData{ LuaCodeCompileFunction(lS, bDebug) };
   // Return a newly created asset
-  LuaUtilClassCreate<Asset>(lS, "Asset")->SwapMemory(StdMove(mbData));
+  LuaUtilClassCreate<Asset>(lS, "Asset")->MemSwap(StdMove(mbData));
 }
 /* -- Compile a buffer ----------------------------------------------------- */
 static void LuaCodeDoCompileBuffer(lua_State*const lS, const char *cpBuf,
@@ -152,7 +152,8 @@ static LuaCompResult LuaCodeCompileBuffer(lua_State*const lS,
             "LuaCode will use cached version of '$'[$]($$)!",
               strRef, stSize, hex, uiCRC);
           // Do compile the buffer
-          LuaCodeDoCompileBuffer(lS, mbO.Ptr<char>(), mbO.Size(), strRef);
+          LuaCodeDoCompileBuffer(lS,
+            mbO.MemPtr<char>(), mbO.MemSize(), strRef);
           // Return that we used the cached version
           return LCR_CACHED;
         } // Invalid type
@@ -203,13 +204,14 @@ static LuaCompResult LuaCodeExecCallRet(lua_State*const lS,
 { LuaUtilCallFunc(lS, iRet); return lcrRes; }
 /* -- Compile a memory block ----------------------------------------------- */
 static LuaCompResult LuaCodeCompileBlock(lua_State*const lS,
-  const DataConst &dcData, const string &strRef)
-{ return LuaCodeCompileBuffer(lS, dcData.Ptr<char>(), dcData.Size(), strRef); }
+  const MemConst &mcSrc, const string &strRef)
+{ return LuaCodeCompileBuffer(lS,
+    mcSrc.MemPtr<char>(), mcSrc.MemSize(), strRef); }
 /* -- Execute specified block ---------------------------------------------- */
 static LuaCompResult LuaCodeExecuteBlock(lua_State*const lS,
-  const DataConst &dcData, const int iRet, const string &strRef)
+  const MemConst &mcSrc, const int iRet, const string &strRef)
 { return LuaCodeExecCallRet(lS,
-    LuaCodeCompileBlock(lS, dcData, strRef), iRet); }
+    LuaCodeCompileBlock(lS, mcSrc, strRef), iRet); }
 /* -- Execute specified string in unprotected ------------------------------ */
 static LuaCompResult LuaCodeExecuteString(lua_State*const lS,
   const string &strCode, const int iRet, const string &strRef)
@@ -218,7 +220,7 @@ static LuaCompResult LuaCodeExecuteString(lua_State*const lS,
 /* -- Compile contents of a file (returns function on lua stack) ----------- */
 static LuaCompResult LuaCodeCompileFile(lua_State*const lS,
   const FileMap &fScript)
-{ return LuaCodeCompileBuffer(lS, fScript.Ptr<char>(), fScript.Size(),
+{ return LuaCodeCompileBuffer(lS, fScript.MemPtr<char>(), fScript.MemSize(),
     fScript.IdentGetCStr()); }
 /* -- Copmile file and execute script that may be binary ------------------- */
 static LuaCompResult LuaCodeCompileFile(lua_State*const lS,

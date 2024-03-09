@@ -75,7 +75,7 @@ static class SShot final :             // Members initially private
       "Failed to bind FBO texture to dump!",
       "Identifier", fboRef.IdentGet(), "Id", fboRef.uiFBOtex);
     // Read into buffer
-    GL(cOgl->ReadTexture(eMode, mBuffer.Ptr<GLvoid>()),
+    GL(cOgl->ReadTexture(eMode, mBuffer.MemPtr<GLvoid>()),
       "Failed to read FBO pixel data!",
       "Identifier", fboRef.IdentGet(), "Mode", eMode);
     // Get new filename or original filename

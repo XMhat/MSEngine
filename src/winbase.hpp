@@ -534,7 +534,7 @@ class SysBase :                        // Members initially private
         DWORD_PTR dwOffsetFromSym;
         // Holds the memory for the symbol structure
         Memory aStruct{ 4096, true };
-        PIMAGEHLP_SYMBOL ihsData = aStruct.Ptr<IMAGEHLP_SYMBOL>();
+        PIMAGEHLP_SYMBOL ihsData = aStruct.MemPtr<IMAGEHLP_SYMBOL>();
         ihsData->SizeOfStruct = aStruct.Size<DWORD>();
         ihsData->MaxNameLength =
           static_cast<DWORD>(aStruct.Size() - sizeof(IMAGEHLP_SYMBOL));

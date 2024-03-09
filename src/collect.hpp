@@ -234,8 +234,7 @@ class CLHelperBase :
   explicit CLHelperBase(const string &strT) :
     /* -- Initialisers ----------------------------------------------------- */
     IHelper{ strT },                   // Set initialisation helper name
-    stMaximum(                         // Initialise maximum objects
-      StdMaxSizeT)   // " with maximum default objects
+    stMaximum(StdMaxSizeT)             // Initialise maximum objects
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
@@ -247,10 +246,9 @@ template<class MemberType,
          class BaseType = CLHelperBase<MemberType, ListType, IteratorType>>
 class CLHelperSafe :
   /* -- Base classes ------------------------------------------------------- */
-  public BaseType                      // The collector base type
-{ /* -- Private variables -------------------------------------------------- */
-  mutex            mMutex;             // Multi-thread locking protection
-  /* -- Protected functions ------------------------------------- */ protected:
+  public BaseType,                     // The collector base type
+  private mutex                        // Member list locking protection
+{ /* -- Protected functions ------------------------------------- */ protected:
   void CLLock(void) { CollectorGetMutex().lock(); }
   void CLUnlock(void) { CollectorGetMutex().unlock(); }
   /* -- Lock the mutex and return if empty --------------------------------- */
@@ -288,7 +286,7 @@ class CLHelperSafe :
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(CLHelperSafe)        // Don't need the default constructor
   /* -- Return the mutex ------------------------------------------- */ public:
-  mutex &CollectorGetMutex(void) { return mMutex; }
+  mutex &CollectorGetMutex(void) { return *this; }
 };/* ----------------------------------------------------------------------- */
 template<class MemberType,
          class ListType = list<MemberType*>,
@@ -476,9 +474,10 @@ class ICHelperSafe :                   // Members initially private
   /* -- Base classes ------------------------------------------------------- */
   public BaseType                      // ICHelper base class
 { /* -- Initialise (un)registered entry with synchronisation --------------- */
-  IteratorType ICHelperInit(CollectorType*const ctPtr, MemberType*const mtPtr) const
-    { const LockGuard lgInitRegistered{ ctPtr->CollectorGetMutex() };
-      return this->ICHelperBaseInit(ctPtr, mtPtr); }
+  IteratorType ICHelperInit(CollectorType*const ctPtr,
+    MemberType*const mtPtr) const
+      { const LockGuard lgInitRegistered{ ctPtr->CollectorGetMutex() };
+        return this->ICHelperBaseInit(ctPtr, mtPtr); }
   IteratorType ICHelperInit(CollectorType*const ctPtr) const
     { const LockGuard lgInitUnregistered{ ctPtr->CollectorGetMutex() };
       return this->ICHelperBaseInit(ctPtr); }
@@ -517,8 +516,9 @@ class ICHelperUnsafe :                 // Members initially private
   /* -- Base classes ------------------------------------------------------- */
   public BaseType                      // ICHelper base class
 { /* -- Initialise (un)registered entry without synchronisation ------------ */
-  IteratorType ICHelperInit(CollectorType*const ctPtr, MemberType*const mtPtr) const
-    { return this->ICHelperBaseInit(ctPtr, mtPtr); }
+  IteratorType ICHelperInit(CollectorType*const ctPtr,
+    MemberType*const mtPtr) const
+      { return this->ICHelperBaseInit(ctPtr, mtPtr); }
   IteratorType ICHelperInit(CollectorType*const ctPtr) const
     { return this->ICHelperBaseInit(ctPtr); }
   /* -- Push/Remove object into collector list ------------------ */ protected:

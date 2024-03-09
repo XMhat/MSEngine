@@ -438,7 +438,7 @@ class SysCore :
   /* ----------------------------------------------------------------------- */
   void SetIcon(const string &strId, const char *cpType, const UINT uiT,
     HICON &hI, const size_t stWidth, const size_t stHeight,
-    const size_t stBits, const DataConst &dcData)
+    const size_t stBits, const MemConst &mcSrc)
   { // Check parameters
     if(!stWidth || !stHeight)
       XC("Supplied icon dimensions invalid!",
@@ -447,19 +447,19 @@ class SysCore :
     if(stBits != 24 && stBits != 32)
       XC("Must be 24/32 bpp icon!",
          "Type", cpType, "Identifier", strId, "Bits", stBits);
-    if(dcData.Empty())
+    if(mcSrc.Empty())
       XC("Invalid icon data!", "Type", cpType, "Identifier", strId);
     // Create the icon. CreateIcon() seems to ignore the AND bits
     // on 24/32bpp icons but /analyse complains, so send original bits to it
     // The old icon will be preserved if the api call fails
     const HICON hNewIcon = CreateIcon(hInstance, static_cast<int>(stWidth),
       static_cast<int>(stHeight), 1, static_cast<BYTE>(stBits),
-      dcData.Ptr<BYTE>(), dcData.Ptr<BYTE>());
+      mcSrc.MemPtr<BYTE>(), mcSrc.MemPtr<BYTE>());
     if(!hNewIcon)
       XCS("Failed to create new icon!",
           "Type",   cpType,  "Identifier", strId,
           "Width",  stWidth, "Height",     stHeight,
-          "Bits",   stBits,  "Data",       !dcData.Empty(),
+          "Bits",   stBits,  "Data",       !mcSrc.Empty(),
           "Window", reinterpret_cast<void*>(GetWindowHandle()));
     // Destroy old icon if created and then assign the new icon
     if(hI && !DestroyIcon(hI))
@@ -475,13 +475,13 @@ class SysCore :
   }
   /* -- Set small or large icon -------------------------------------------- */
   void SetLargeIcon(const string &strId, const size_t stWidth,
-    const size_t stHeight, const size_t stBits, const DataConst &dcData)
+    const size_t stHeight, const size_t stBits, const MemConst &mcSrc)
       { SetIcon(strId, "large", ICON_BIG, hIconLarge, stWidth, stHeight,
-          stBits, dcData); }
+          stBits, mcSrc); }
   void SetSmallIcon(const string &strId, const size_t stWidth,
-    const size_t stHeight, const size_t stBits, const DataConst &dcData)
+    const size_t stHeight, const size_t stBits, const MemConst &mcSrc)
       { SetIcon(strId, "small", ICON_SMALL, hIconSmall, stWidth, stHeight,
-          stBits, dcData); }
+          stBits, mcSrc); }
   /* -- Free the library handle -------------------------------------------- */
   static bool LibFree(void*const vpModule)
     { return vpModule && !!FreeLibrary(reinterpret_cast<HMODULE>(vpModule)); }
@@ -510,10 +510,10 @@ class SysCore :
     Memory mStr{ _MAX_PATH * sizeof(ArgType) };
     // Get the library name and store it in the memory
     mStr.Resize(GetModuleFileNameEx(hProcess,
-      reinterpret_cast<HMODULE>(vpModule), mStr.Ptr<ArgType>(),
+      reinterpret_cast<HMODULE>(vpModule), mStr.MemPtr<ArgType>(),
       mStr.Size<DWORD>()) * sizeof(ArgType));
     // Use default name if empty or failed
-    return mStr.Empty() ? cpAltName : S16toUTF(mStr.Ptr<ArgType>());
+    return mStr.Empty() ? cpAltName : S16toUTF(mStr.MemPtr<ArgType>());
   }
   /* ----------------------------------------------------------------------- */
   void UpdateCPUUsageData(void)
@@ -580,7 +580,7 @@ class SysCore :
       const size_t stMinimum =
         sizeof(IMAGE_DOS_HEADER) + sizeof(IMAGE_NT_HEADERS32);
       // Read data into file and if failed? Report it
-      const size_t stActual = fExe.FStreamReadSafe(mExe.Ptr(), mExe.Size());
+      const size_t stActual = fExe.FStreamReadSafe(mExe.MemPtr(), mExe.Size());
       if(stActual < stMinimum)
         XCL("Failed to read enough data in executable!",
             "File",    strFile,       "Maximum", mExe.Size(),
@@ -632,8 +632,8 @@ class SysCore :
       } // Return size of executable hopefully
       return stSize;
     } // Failed so throw error
-    XCL("Failed to open executable!", "File", strFile, "Directory",
-      DirGetCWD());
+    XCL("Failed to open executable!",
+      "File", strFile, "Directory", DirGetCWD());
   }
   /* -- Enum modules ------------------------------------------------------- */
   SysModList EnumModules(void)
@@ -789,7 +789,7 @@ class SysCore :
     // Return data
     return {
       osOS.str(),                            // Version string
-      StdMove(strExtra),                        // Extra version string
+      StdMove(strExtra),                     // Extra version string
       osviData.dwMajorVersion,               // Major OS version
       osviData.dwMinorVersion,               // Minor OS version
       osviData.dwBuildNumber,                // OS build version
@@ -934,31 +934,31 @@ class SysCore :
       LARGE_INTEGER         liD[2];              // Current hires timers
     };
     // Allocate memory and assign a reference structure to this memory
-    Memory meData{ sizeof(EntropyData) };
-    EntropyData &eData = *meData.Ptr<EntropyData>();
+    Memory mData{ sizeof(EntropyData) };
+    EntropyData &edData = *mData.MemPtr<EntropyData>();
     // System time and local time entropy (Both return void).
-    GetSystemTime(&eData.sSTime);
-    GetLocalTime(&eData.sLTime);
+    GetSystemTime(&edData.sSTime);
+    GetLocalTime(&edData.sLTime);
     // Cursor position entropy
-    if(!GetCursorPos(&eData.pPos))
+    if(!GetCursorPos(&edData.pPos))
       XCS("Failed to query cursor position!");
     // Time zone information
-    if(!GetTimeZoneInformation(&eData.tzData))
+    if(!GetTimeZoneInformation(&edData.tzData))
       XCS("Failed to query timezone information!");
     // Cpu process times
-    if(!GetProcessTimes(hProcess, &eData.cpuD[0], &eData.cpuD[1],
-                                  &eData.cpuD[2], &eData.cpuD[3]))
+    if(!GetProcessTimes(hProcess, &edData.cpuD[0], &edData.cpuD[1],
+                                  &edData.cpuD[2], &edData.cpuD[3]))
       XCS("Failed to query process times!");
     // Cpu system times
-    if(!GetSystemTimes(&eData.cpuD[4], &eData.cpuD[5], &eData.cpuD[6]))
+    if(!GetSystemTimes(&edData.cpuD[4], &edData.cpuD[5], &edData.cpuD[6]))
       XCS("Failed to query system times!");
     // Cpu counters
-    if(!QueryPerformanceFrequency(&eData.liD[0]))
+    if(!QueryPerformanceFrequency(&edData.liD[0]))
       XCS("Failed to query performance frequency!");
-    if(!QueryPerformanceCounter(&eData.liD[1]))
+    if(!QueryPerformanceCounter(&edData.liD[1]))
       XCS("Failed to query performance counter!");
     // Return data
-    return meData;
+    return mData;
   }
   /* ---------------------------------------------------------------------- */
   void WindowInitialised(GlFW::GLFWwindow*const gwWindow)
@@ -987,18 +987,6 @@ class SysCore :
     } // It's not a big deal if this fails
     else cLog->LogWarningExSafe(
       "System failed to create new window brush: $!", SysError());
-  }
-  /* -- Help with debugging ------------------------------------------------ */
-  const char *HeapCheck(void)
-  { // Check the heap and store result
-    switch(_heapchk())
-    { case _HEAPBADBEGIN : return "Heap header corrupt";
-      case _HEAPBADNODE  : return "Heap bad node";
-      case _HEAPBADPTR   : return "Heap bad pointer";
-      case _HEAPEMPTY    : return "Heap not initialised";
-      case _HEAPOK       : return "Heap consistent";
-      default            : return "Heap check unknown result";
-    }
   }
   /* ----------------------------------------------------------------------- */
   int LastSocketOrSysError(void)

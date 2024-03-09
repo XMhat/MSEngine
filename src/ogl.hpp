@@ -810,8 +810,9 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
   void SetTexParam(const GLenum eVar, const GLint iVal) const
     { sAPI.glTexParameteri(GL_TEXTURE_2D, eVar, iVal); }
   /* -- Convert pixel mode to string --------------------------------------- */
-  const string &GetPixelFormat(const GLenum eMode) const
-    { return idFormatModes.Get(eMode); }
+  template<typename IntType> // Forcing any type to GLenum
+    const string &GetPixelFormat(const IntType itMode) const
+       { return idFormatModes.Get(static_cast<GLenum>(itMode)); }
   /* -- Update hint -------------------------------------------------------- */
   void SetHint(const GLenum eTarget, const GLenum eMode) const
   { // Get opengl hint and throw if not failed else set hint
@@ -1133,15 +1134,16 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
   /* -- Update window size limits ------------------------------------------ */
   void UpdateWindowSizeLimits(void)
   { // Get app specified minimums and maximums
-    const int iWMin = cCVars->GetInternalSafe<int>(WIN_WIDTHMIN),
-              iWMax = cCVars->GetInternalSafe<int>(WIN_HEIGHTMIN),
-              iHMin = cCVars->GetInternalSafe<int>(WIN_WIDTHMAX),
-              iHMax = cCVars->GetInternalSafe<int>(WIN_HEIGHTMAX);
+    const unsigned int
+      uiWMin = cCVars->GetInternalSafe<unsigned int>(WIN_WIDTHMIN),
+      uiWMax = cCVars->GetInternalSafe<unsigned int>(WIN_HEIGHTMIN),
+      uiHMin = cCVars->GetInternalSafe<unsigned int>(WIN_WIDTHMAX),
+      uiHMax = cCVars->GetInternalSafe<unsigned int>(WIN_HEIGHTMAX);
     // Set the window size limits. The specified maximum must not exceed the
     // video cards maximum texture size or perhaps BOOM! (not tested though).
-    cEvtWin->Add(EWC_WIN_LIMITS, iWMin, iWMax,
-      iHMin ? UtilMinimum(iHMin, MaxTexSize()) : MaxTexSize(),
-      iHMax ? UtilMinimum(iHMax, MaxTexSize()) : MaxTexSize());
+    cEvtWin->Add(EWC_WIN_LIMITS, uiWMin, uiWMax,
+      uiHMin ? UtilMinimum(uiHMin, MaxTexSize()) : MaxTexSize(),
+      uiHMax ? UtilMinimum(uiHMax, MaxTexSize()) : MaxTexSize());
   }
   /* -- Initialise --------------------------------------------------------- */
   void Init(const int iRefresh, const bool bForce=false)

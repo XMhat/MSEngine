@@ -19,7 +19,7 @@ namespace P {                          // Start of public module namespace
 /* -- Log levels ----------------------------------------------------------- */
 enum LHLevel                           // Log helper level flags
 { /* ----------------------------------------------------------------------- */
-  LH_DISABLED,                         // Log messages are disabled
+  LH_CRITICAL,                         // Log message is critical
   LH_ERROR,                            // Log message is an error (exception)
   LH_WARNING,                          // Log message is a warning
   LH_INFO,                             // Log message is informational only
@@ -73,8 +73,9 @@ static class Log final :
     { // Get reference to line
       const LogLine &llLine = *llciItem;
       // Write stored line and if succeeded
-      if(FStreamWriteString(StrFormat("[$$$] $\n", fixed,
-        setprecision(6), llLine.dTime, llLine.strLine)))
+      if(FStreamWriteString(StrFormat("[$$$]<$> $\n", fixed, setprecision(6),
+        llLine.dTime, LogLevelToString(llLine.lhLevel).front(),
+        llLine.strLine)))
       { // Flush the line to file straight away and continue if succeeded
         if(FStreamFlush()) continue;
         // Flush failed so close file
@@ -117,7 +118,7 @@ static class Log final :
   void WriteString(const LHLevel lhL, string &&strL) noexcept(true)
     { WriteLines(lhL, { StdMove(strL), cCommon->Lf(), stMaximum }); }
   /* ----------------------------------------------------------------------- */
-  void WriteString(const string &strL) { WriteString(LH_DISABLED, strL); }
+  void WriteString(const string &strL) { WriteString(LH_CRITICAL, strL); }
   /* ----------------------------------------------------------------------- */
   void DeInit(void)
   { // Bail if initialised
@@ -326,7 +327,7 @@ static class Log final :
   Log(void) :
     /* -- Initialisers ----------------------------------------------------- */
     llLevels{{                         // Initialise log level strings
-      "Disabled",                      // Shouldn't really be used
+      "Critical",                      // Log line is critical
       "Error",                         // Log line is an error
       "Warning",                       // Log line is a warning
       "Info",                          // Log line is information

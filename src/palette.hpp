@@ -176,9 +176,9 @@ BEGIN_MEMBERCLASS(Palettes, Palette, ICHelperUnsafe),
     { // Calculate position and set the new value
       const size_t stPos = stIndex * BY_RGB;
       GetSlot(stIndex) = {
-        isPalette.ReadInt<uint8_t>(stPos+sizeof(uint16_t)),
-        isPalette.ReadInt<uint8_t>(stPos+sizeof(uint8_t)),
-        isPalette.ReadInt<uint8_t>(stPos)
+        isPalette.MemReadInt<uint8_t>(stPos+sizeof(uint16_t)),
+        isPalette.MemReadInt<uint8_t>(stPos+sizeof(uint8_t)),
+        isPalette.MemReadInt<uint8_t>(stPos)
       };
     } // Fill the rest of the entries if we need to
     Fill(isPalette.DimGetWidth(), size() - isPalette.DimGetWidth());

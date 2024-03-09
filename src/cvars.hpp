@@ -339,7 +339,7 @@ static class CVars final               // Start of vars class
                    "File", vI.second, "Limit", stCVarConfigMaxLevel);
               // Log the include and parse it
               if(ParseBuffer(AssetExtract(StrTrim(vI.second.substr(1), ' ')).
-                ToString(), cF, uiNewLevel)) ++stGood; else ++stBad;
+                MemToString(), cF, uiNewLevel)) ++stGood; else ++stBad;
               // Done
               break;
             } // Something else?
@@ -612,7 +612,7 @@ static class CVars final               // Start of vars class
         return ParseBuffer(strBuffer, cF, uiLevel); }
   /* ----------------------------------------------------------------------- */
   bool LoadFromFile(const string &strFile, const CVarFlagsConst &cF)
-    { return ParseBufferSafe(AssetExtract(strFile).ToString(), cF); }
+    { return ParseBufferSafe(AssetExtract(strFile).MemToString(), cF); }
   /* ----------------------------------------------------------------------- */
   bool SetInitialVar(const string &strVar, const string &strVal,
     const CVarFlagsConst &cFlags, const CVarConditionFlagsConst &scFlags)
@@ -824,11 +824,12 @@ static class CVars final               // Start of vars class
       // If is not a string?
       if(mbO.iT != SQLITE_TEXT)
       { // Delete it from database and add to counter if ok and goto next cvar
-        if(cSql->CVarPurgeData(mbO.Ptr<char>(), mbO.Size()) == Sql::PR_OK)
+        if(cSql->CVarPurgeData(mbO.MemPtr<char>(), mbO.MemSize()) ==
+             Sql::PR_OK)
           ++stCommit;
         continue;
       } // Get string and find cvar name in live cvar list, ignore if it exists
-      const string strKey{ mbO.ToString() };
+      const string strKey{ mbO.MemToString() };
       if(VarExists(strKey)) continue;
       // Find item in initial/standby cvar list, delete it if found
       const ItemMapIt cvarItem{ imInactive.find(strKey) };
@@ -871,19 +872,20 @@ static class CVars final               // Start of vars class
         const Sql::DataListItem &mbKey = iRecKey->second;
         if(mbKey.iT != SQLITE_TEXT) return;
         // Convert the variable to string and ignore if invalid
-        const string strVar{ mbKey.ToString() };
+        const string strVar{ mbKey.MemToString() };
         // Get flags and goto next record if not found, else set the key string
         const Sql::RecordsIt iRecFlags{ smmPairs.find("F") };
         if(iRecFlags == smmPairs.cend()) return;
         const Sql::DataListItem &mbFlags = iRecFlags->second;
         if(mbFlags.iT != SQLITE_INTEGER) return;
-        const SqlCVarDataFlagsConst lFlags{ mbFlags.ReadInt<sqlite_int64>() };
+        const SqlCVarDataFlagsConst
+          scfFlags{ mbFlags.MemReadInt<sqlite_int64>() };
         // Get value and goto next record if not found, else set the value
         const Sql::RecordsIt iRecVal{ smmPairs.find("V") };
         if(iRecVal == smmPairs.cend()) return;
         const Sql::DataListItem &mbVal = iRecVal->second;
         // If the data pointed at 'V' is not encrypted?
-        if(lFlags.FlagIsClear(LF_ENCRYPTED))
+        if(scfFlags.FlagIsClear(LF_ENCRYPTED))
         { // Must be text
           if(mbVal.iT != SQLITE_TEXT)
           { // Show warning and ignore if not
@@ -891,7 +893,7 @@ static class CVars final               // Start of vars class
               "and not type $ for '$'!", SQLITE_TEXT, mbVal.iT, strVar);
             return;
           } // Store value directly with synchronisation and goto next
-          if(SetVarOrInitialSafe(strVar, mbVal.ToString(),
+          if(SetVarOrInitialSafe(strVar, mbVal.MemToString(),
             PUSR|SUDB, CCF_NOIOVERRIDE|CCF_NOTDECRYPTED))
               ++stLoaded;
           return;
@@ -902,7 +904,7 @@ static class CVars final               // Start of vars class
         // Capture exceptions because MagicBlock does that on error
         try
         { // Decrypt the value and get the result, and if that call fails?
-          strNewValue = Block<CoDecoder>{ mbVal }.ToString();
+          strNewValue = Block<CoDecoder>{ mbVal }.MemToString();
         } // exception occured?
         catch(const exception &e)
         { // Log failure and try to reset the initial var so this does not

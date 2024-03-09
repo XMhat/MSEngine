@@ -179,11 +179,11 @@ class FStreamBase :                    // File stream base class
   size_t FStreamWriteSafe(const void*const vpPtr, const size_t stBytes)
     { return FStreamIsReadyWrite() ? FStreamWrite(vpPtr, stBytes) : 0; }
   /* -- Write memory block to file ----------------------------------------- */
-  size_t FStreamWriteBlock(const DataConst &dcSrc)
-    { return FStreamWrite(dcSrc.Ptr(), dcSrc.Size()); }
-  size_t FStreamWriteBlockSafe(const DataConst &dcSrc)
-    { return FStreamIsReadyWrite() && !dcSrc.Empty() ?
-        FStreamWrite(dcSrc.Ptr(), dcSrc.Size()) : 0; }
+  size_t FStreamWriteBlock(const MemConst &mcSrc)
+    { return FStreamWrite(mcSrc.MemPtr(), mcSrc.MemSize()); }
+  size_t FStreamWriteBlockSafe(const MemConst &mcSrc)
+    { return FStreamIsReadyWrite() && !mcSrc.MemIsEmpty() ?
+        FStreamWrite(mcSrc.MemPtr(), mcSrc.MemSize()) : 0; }
   /* -- Write a string to the file ----------------------------------------- */
   size_t FStreamWriteString(const string &strString)
     { return FStreamWrite(strString.data(), strString.length()); }
@@ -213,7 +213,7 @@ class FStreamBase :                    // File stream base class
   { // Allocate initial memory of expected bytes to read
     Memory mOut{ stBytes };
     // Read file data into buffer and resize buffer to the amount acteally read
-    mOut.Resize(FStreamRead(mOut.Ptr(), stBytes));
+    mOut.MemResize(FStreamRead(mOut.MemPtr(), stBytes));
     // Return the new size of the buffer and the number of bytes read
     return mOut;
   }

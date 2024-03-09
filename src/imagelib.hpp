@@ -122,7 +122,7 @@ static void ImageLoad(const size_t stFId, FileMap &fC, ImageData &ifD)
   } // Error occured. Error used as title
   catch(const exception &E)
   { // Throw an error with the specified reason
-    XC(E.what(), "Identifier", fC.IdentGet(),  "Size",     fC.Size(),
+    XC(E.what(), "Identifier", fC.IdentGet(),    "Size",     fC.MemSize(),
                  "Position",   fC.FileMapTell(), "FormatId", stFId,
                  "Plugin",     iCref.GetName());
   }
@@ -144,7 +144,7 @@ static void ImageLoad(FileMap &fC, ImageData &ifD)
     } // Error occured. Error used as title
     catch(const exception &E)
     { // Throw an error with the specified reason
-      XC(E.what(), "Identifier", fC.IdentGet(),    "Size",   fC.Size(),
+      XC(E.what(), "Identifier", fC.IdentGet(),    "Size",   fC.MemSize(),
                    "Position",   fC.FileMapTell(), "Plugin", iCref.GetName());
     } // Rewind stream position
     fC.FileMapRewind();
