@@ -443,8 +443,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     // Reset allocation
     SetAlloc(0);
     // Get datas
-    const ImageSlot &isImage = slSrc.front(),
-                    &isPalette = slSrc.back();
+    const ImageSlot &isImage = slSrc.front(), &isPalette = slSrc.back();
     // Create output buffer and enumerate through the pixels
     Memory mOut{ DimGetWidth() * DimGetHeight() * byDepth };
     // If palette and output image are same depth?
@@ -549,8 +548,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
       // Run the function and log success if succeeded
       if(ConvertGPUCompatible())
       { // Log the successful result
-        cLog->LogInfoExSafe("Image '$' pixel-depth now safe.",
-          IdentGet());
+        cLog->LogInfoExSafe("Image '$' pixel-depth now safe.", IdentGet());
         // Set activated flag
         SetActiveGPUCompat();
       } // Conversion did not happen so log that too
@@ -559,13 +557,11 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     } // If a request to convert to 24-bits per pixel?
     else if(IsConvertRGB())
     { // Log that we're running this function
-      cLog->LogDebugExSafe("Image '$' force 24-bit request...",
-        IdentGet());
+      cLog->LogDebugExSafe("Image '$' force 24-bit request...", IdentGet());
       // Run the function and log success if succeeded
       if(ConvertRGB())
       { // Log the successful result
-        cLog->LogInfoExSafe("Image '$' pixel depth now 24-bit.",
-          IdentGet());
+        cLog->LogInfoExSafe("Image '$' pixel depth now 24-bit.", IdentGet());
         // Set activated flag
         SetActiveRGB();
       } // Conversion did not happen so log that too
@@ -574,13 +570,11 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     } // If a request to convert to RGBA?
     else if(IsConvertRGBA())
     { // Log that we're running this function
-      cLog->LogDebugExSafe("Image '$' force 32-bit request...",
-        IdentGet());
+      cLog->LogDebugExSafe("Image '$' force 32-bit request...", IdentGet());
       // Run the function and log success if succeeded
       if(ConvertRGBA())
       { // Log the successful result
-        cLog->LogInfoExSafe("Image '$' pixel depth now 32-bit.",
-          IdentGet());
+        cLog->LogInfoExSafe("Image '$' pixel depth now 32-bit.", IdentGet());
         // Set activated flag
         SetActiveRGBA();
       } // Conversion did not happen so log that too
@@ -589,13 +583,11 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     } // To BGR colour mode?
     if(IsConvertBGROrder())
     { // Log that we're running this function
-      cLog->LogDebugExSafe("Image '$' re-order to BGR request...",
-        IdentGet());
+      cLog->LogDebugExSafe("Image '$' re-order to BGR request...", IdentGet());
       // Run the function and log success if succeeded
       if(ForcePixelOrder(GL_BGR))
       { // Log the successful result
-        cLog->LogInfoExSafe("Image '$' re-ordered to BGR.",
-          IdentGet());
+        cLog->LogInfoExSafe("Image '$' re-ordered to BGR.", IdentGet());
         // Set activated flag
         SetActiveBGROrder();
       } // Conversion did not happen so log that too
@@ -604,13 +596,11 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     } // To RGB colour mode
     else if(IsConvertRGBOrder())
     { // Log that we're running this function
-      cLog->LogDebugExSafe("Image '$' re-order to RGB request...",
-        IdentGet());
+      cLog->LogDebugExSafe("Image '$' re-order to RGB request...", IdentGet());
       // Run the function and log success if succeeded
       if(ForcePixelOrder(GL_RGB))
       { // Log the successful result
-        cLog->LogInfoExSafe("Image '$' re-ordered now RGB.",
-          IdentGet());
+        cLog->LogInfoExSafe("Image '$' re-ordered now RGB.", IdentGet());
         // Set activated flag
         SetActiveRGBOrder();
       } // Conversion did not happen so log that too
@@ -619,13 +609,11 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     } // Reverse the image pixels
     if(IsConvertReverse())
     { // Log that we're running this function
-      cLog->LogDebugExSafe("Image '$' pixel reversal request...",
-        IdentGet());
+      cLog->LogDebugExSafe("Image '$' pixel reversal request...", IdentGet());
       // Run the function and log success if succeeded
       if(ReversePixels())
       { // Log the successful result
-        cLog->LogInfoExSafe("Image '$' pixels reversed!",
-          IdentGet());
+        cLog->LogInfoExSafe("Image '$' pixels reversed!", IdentGet());
         // Set activated flag
         SetActiveReverse();
       } // Conversion did not happen so log that too
@@ -687,7 +675,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
             cOgl->GetPixelFormat(GetPixelType()), GetPixelType(), dec) :
               cCommon->Blank(),
         stOld != GetAlloc() ?
-          StrFormat("\n- Memory usage: $ -> $ bytes.\n",
+          StrFormat("\n- Memory usage: $ -> $ bytes.",
             stOld, GetAlloc()) : cCommon->Blank(),
         IsActiveAtlas() ? "\n- Slots compacted to atlas." :
           cCommon->Blank(),
