@@ -215,8 +215,8 @@ static bool SysInitThread(const char*const cpName, const SysThread stLevel)
               fMax = static_cast<float>(sched_get_priority_max(iPolicy));
   // Calculate the priority by fractioning the range
   struct sched_param spParam{
-    static_cast<int>(floorf(fMax - ((fMax - fMin) * fFraction)))
-    ,{ }                               // __opaque (MacOS only)
+    static_cast<int>(floorf(fMax - ((fMax - fMin) * fFraction))),
+    { }                                // __opaque (MacOS only)
   };
   // Set the new parameters and return true if succeeded
   return !pthread_setschedparam(ptHandle, iPolicy, &spParam);

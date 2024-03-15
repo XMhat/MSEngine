@@ -135,17 +135,17 @@ static struct CmdLine final            // Members initially public
         const ArgType*const  atStr = *atPtr;
                            ++atPtr)
     { // Ignore if parameter empty
-      if(!*atStr) continue;
-      // Split argument into key/value pair. Ignore if no parameters
-      Token tokParam{ S16toUTF(atStr), "=", 2 };
-      if(tokParam.empty()) continue;
-      // Find key and insert it if not found then erase the EcId value
-      string &strKey = StrToUpCaseRef(tokParam.front());
-      const StrStrMapConstIt itArg{ ssmRet.find(strKey) };
-      if(itArg != ssmRet.cend()) ssmRet.erase(itArg);
-      // Insert new key/value into list
-      ssmRet.insert({ StdMove(strKey),
-        tokParam.size() > 1 ? StdMove(tokParam[1]) : cCommon->Blank() });
+      if(*atStr)
+        // Split argument into key/value pair. Ignore if no parameters
+        if(Token tokParam{ S16toUTF(atStr), cCommon->Equals(), 2 })
+        { // Find key and insert it if not found then erase the EcId value
+          string &strKey = StrToUpCaseRef(tokParam.front());
+          const StrStrMapConstIt itArg{ ssmRet.find(strKey) };
+          if(itArg != ssmRet.cend()) ssmRet.erase(itArg);
+          // Insert new key/value into list
+          ssmRet.insert({ StdMove(strKey),
+            tokParam.size() > 1 ? StdMove(tokParam[1]) : cCommon->Blank() });
+        }
     } // Return environment variables list
     return ssmRet;
   }

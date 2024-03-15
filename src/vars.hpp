@@ -16,10 +16,26 @@ using namespace IString::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* -- Vars class ----------------------------------------------------------- */
-template<class MapType>struct VarsBase :
+template<class VarsMapType,
+         class VarsMapTypeIterator = typename VarsMapType::const_iterator>
+  class VarsBase :
   /* -- Base classes ------------------------------------------------------- */
-  public MapType                       // Derive by specified map type
-{ /* ----------------------------------------------------------------------- */
+  public VarsMapType                   // Derive by specified map type
+{ /* -- Initialise entries from a string ----------------------------------- */
+  void VarsDoInit(const string &strS, const string &strLS,
+    const char cDelimiter)
+  { // Ignore if any of the variables are empty
+    if(strS.empty() || strLS.empty()) return;
+    // Location of next separator
+    size_t stStart = 0;
+    // Until eof, push each item split into list
+    for(size_t stLoc; (stLoc = strS.find(strLS, stStart)) != string::npos;
+                     stStart = stLoc + strLS.length())
+      VarsPushLine(strS, stStart, stLoc, cDelimiter);
+    // Push remainder of string if available
+    VarsPushLine(strS, stStart, strS.length(), cDelimiter);
+  }
+  /* --------------------------------------------------------------- */ public:
   void VarsPushPair(const string &strKey, const string &strValue)
     { this->insert({ strKey, strValue }); }
   void VarsPushPair(const string &strKey, string &&strValue)
@@ -41,12 +57,13 @@ template<class MapType>struct VarsBase :
   void VarsPushIfNotExist(string &&strKey, string &&strValue)
     { if(this->find(strKey) == this->end())
         VarsPushPair(StdMove(strKey), StdMove(strValue)); }
+  /* -- Direct conditional access ---------------------------------------- */
+  operator bool(void) const { return !this->empty(); }
   /* -- Value access by key name ------------------------------------------- */
-  const string &operator[](const string &strKey) const
+  const string &VarsGetAndRemove(const string &strKey) const
   { // Find key and return empty string or value
-    typedef typename MapType::const_iterator VarsBaseIterator;
-    const VarsBaseIterator vIter{ this->find(strKey) };
-    if(vIter != this->end()) return vIter->second;
+    const VarsMapTypeIterator vmtiIt{ this->find(strKey) };
+    if(vmtiIt != this->end()) return vmtiIt->second;
     XC("No such key in table!", "Key", strKey, "Count", this->size());
   }
   /* -- Converts the variables to a string --------------------------------- */
@@ -54,8 +71,8 @@ template<class MapType>struct VarsBase :
   { // String to return
     ostringstream osS;
     // For each key/value pair, implode it into a string
-    for(const auto &vlI : *this)
-      osS << vlI.first << strSep << vlI.second << strSuf;
+    for(const auto &aIt : *this)
+      osS << aIt.first << strSep << aIt.second << strSuf;
     // Return what we created
     return osS.str();
   }
@@ -81,9 +98,10 @@ template<class MapType>struct VarsBase :
           { // Find end of value name and if found? We can grab key/value
             const size_t stValEnd =
               StrFindCharNotBackwards(strS, stSegEnd-1, stValStart);
-            if(stValEnd != string::npos) return VarsPushPair(
-              StdMove(strS.substr(stKeyStart, stKeyEnd-stKeyStart+1)),
-              StdMove(strS.substr(stValStart, stValEnd-stValStart+1)));
+            if(stValEnd != string::npos)
+              return VarsPushPair(
+                StdMove(strS.substr(stKeyStart, stKeyEnd-stKeyStart+1)),
+                StdMove(strS.substr(stValStart, stValEnd-stValStart+1)));
           } // Could not prune suffixed whitespaces on value.
         }  // Could not prune prefixed whitespaces on value.
       }  // Could not prune suffixed whitespaces on key.
@@ -92,22 +110,16 @@ template<class MapType>struct VarsBase :
       StdMove(strS.substr(stSegStart, stSegEnd-stSegStart)));
   }
   /* -- Initialise or add entries from a string ---------------------------- */
+  void VarsReInit(const string &strS, const string &strLS,
+    const char cDelimiter)
+      { this->clear(); VarsDoInit(strS, strLS, cDelimiter); }
+  /* -- Initialise or add entries from a string ---------------------------- */
   VarsBase(const string &strS, const string &strLS, const char cDelimiter)
-  { // Ignore if any of the variables are empty
-    if(strS.empty() || strLS.empty()) return;
-    // Location of next separator
-    size_t stStart = 0;
-    // Until eof, push each item split into list
-    for(size_t stLoc; (stLoc = strS.find(strLS, stStart)) != string::npos;
-                     stStart = stLoc + strLS.length())
-      VarsPushLine(strS, stStart, stLoc, cDelimiter);
-    // Push remainder of string if available
-    VarsPushLine(strS, stStart, strS.length(), cDelimiter);
-  }
+    { VarsDoInit(strS, strLS, cDelimiter); }
   /* -- Move constructor --------------------------------------------------- */
-  VarsBase(VarsBase &&vbOther) :
+  VarsBase(VarsBase &&vbOther) :       // Other Vars class to move from
     /* -- Initialisers ----------------------------------------------------- */
-    MapType{ vbOther }
+    VarsMapType{ StdMove(vbOther) }    // Initialise moving vars
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor -------------------------------------------------------- */
@@ -115,84 +127,93 @@ template<class MapType>struct VarsBase :
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(VarsBase)            // Disable copy constructor/operator
 }; /* -- A Vars class where the values can be modified --------------------- */
-struct Vars :
+template<class VarsBaseType = VarsBase<StrNCStrMap>>struct Vars :
   /* -- Base classes ------------------------------------------------------- */
-  public VarsBase<StrNCStrMap>
+  public VarsBaseType                  // Base non-const type
 { /* ----------------------------------------------------------------------- */
   void VarsPushOrUpdatePair(const string &strKey, const string &strValue)
   { // Find key and if it exists, just update the value else insert a new one
-    const StrNCStrMapIt vIter{ find(strKey) };
-    if(vIter != end()) vIter->second = strValue;
-    else VarsPushPair(strKey, strValue);
+    const StrNCStrMapIt sncsmIt{ this->find(strKey) };
+    if(sncsmIt != this->end()) sncsmIt->second = strValue;
+    else this->VarsPushPair(strKey, strValue);
   }
   /* -- Try to move key but copy value ------------------------------------- */
   void VarsPushOrUpdatePair(string &&strKey, const string &strValue)
-  { const StrNCStrMapIt vIter{ find(strKey) };
-    if(vIter != end()) vIter->second = strValue;
-    else VarsPushPair(StdMove(strKey), strValue);
+  { const StrNCStrMapIt sncsmIt{ this->find(strKey) };
+    if(sncsmIt != this->end()) sncsmIt->second = strValue;
+    else this->VarsPushPair(StdMove(strKey), strValue);
   }
   /* -- Try to move value but copy key ------------------------------------- */
   void VarsPushOrUpdatePair(const string &strKey, string &&strValue)
-  { const StrNCStrMapIt vIter{ find(strKey) };
-    if(vIter != end()) vIter->second = StdMove(strValue);
-    else VarsPushPair(strKey, StdMove(strValue));
+  { const StrNCStrMapIt sncsmIt{ this->find(strKey) };
+    if(sncsmIt != this->end()) sncsmIt->second = StdMove(strValue);
+    else this->VarsPushPair(strKey, StdMove(strValue));
   }
   /* -- Try to move key and value ------------------------------------------ */
   void VarsPushOrUpdatePair(string &&strKey, string &&strValue)
-  { const StrNCStrMapIt vIter{ find(strKey) };
-    if(vIter != end()) vIter->second = StdMove(strValue);
-    else VarsPushPair(StdMove(strKey), StdMove(strValue));
+  { const StrNCStrMapIt sncsmIt{ this->find(strKey) };
+    if(sncsmIt != this->end()) sncsmIt->second = StdMove(strValue);
+    else this->VarsPushPair(StdMove(strKey), StdMove(strValue));
   }
   /* ----------------------------------------------------------------------- */
   void VarsPushOrUpdatePairs(const StrPairList &splValues)
   { // Add each value that was sent
     for(const StrPair &spKeyValue : splValues)
-      VarsPushOrUpdatePair(StdMove(spKeyValue.first),
+      this->VarsPushOrUpdatePair(StdMove(spKeyValue.first),
         StdMove(spKeyValue.second));
   }
   /* -- Extracts and deletes the specified key pair ------------------------ */
   const string Extract(const string &strKey)
   { // Find key and return empty string if not found
-    const StrNCStrMapIt vIter{ find(strKey) };
-    if(vIter == end()) return {};
+    const StrNCStrMapIt sncsmIt{ this->find(strKey) };
+    if(sncsmIt == this->end()) return {};
     // Take ownership of the string (faster than copy)
-    const string strOut{ StdMove(vIter->second) };
+    const string strOut{ StdMove(sncsmIt->second) };
     // Erase keypair
-    erase(vIter);
+    this->erase(sncsmIt);
     // Return the value
     return strOut;
   } /* -- Constructor ------------------------------------------------------ */
   Vars(void) { }
-  /* -- MOVE assignment operator ------------------------------------------- */
-  Vars& operator=(Vars &&vOther) { swap(vOther); return *this; }
   /* -- MOVE assignment constructor ---------------------------------------- */
-  Vars(Vars &&vOther) : VarsBase<StrNCStrMap>{ StdMove(vOther) } { }
-  /* -- Constructor -------------------------------------------------------- */
-  Vars(const string &strS, const string &strLS, const char cDelimiter) :
-    VarsBase<StrNCStrMap>(strS, strLS, cDelimiter) { }
-  /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Vars)                // Disable copy constructor/operator
-};/* ----------------------------------------------------------------------- */
-typedef VarsBase<StrStrMap> VarsBaseMap;
-/* -- A Vars class thats values cannot be modified at all ------------------ */
-struct VarsConst :
-  /* -- Base classes ------------------------------------------------------- */
-  public VarsBaseMap
-{ /* -- Constructor -------------------------------------------------------- */
-  VarsConst(void) { }
-  /* -- MOVE assignment operator ------------------------------------------- */
-  VarsConst& operator=(VarsConst &&vcOther) { swap(vcOther); return *this; }
-  /* -- MOVE assignment constructor ---------------------------------------- */
-  VarsConst(VarsConst &&vcOther) :     // Other vars
+  Vars(Vars &&vOther) :                // Other Vars class to move from
     /* -- Initialisers ----------------------------------------------------- */
-    VarsBaseMap{ StdMove(vcOther) }  // Move it over
+    VarsBaseType{ StdMove(vOther) }    // Initialise moving vars
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor -------------------------------------------------------- */
-  VarsConst(const string &strS, const string &strLS, const char cDelimiter) :
+  Vars(const string &strS,             // String to explode
+       const string &strLS,            // ...Record (line) separator
+       const char cDelimiter) :        // ...Key/value separator
     /* -- Initialisers ----------------------------------------------------- */
-    VarsBaseMap{ strS,                 // Initialise vars map...
-      strLS, cDelimiter }              // ...with specified values
+    VarsBaseType{ strS,                // Initialise string to explode
+                  strLS,               // Initialise record (line) separator
+                  cDelimiter }         // Initialise key/value separator
+    /* -- No code ---------------------------------------------------------- */
+    { }
+  /* ----------------------------------------------------------------------- */
+  DELETECOPYCTORS(Vars)                // Disable copy constructor/operator
+};/* -- A Vars class thats values cannot be modified at all ---------------- */
+template<class VarsBaseType = const VarsBase<const StrStrMap>>
+  struct VarsConst :
+  /* -- Base classes ------------------------------------------------------- */
+  public VarsBaseType                  // The base map type
+{ /* -- Constructor -------------------------------------------------------- */
+  VarsConst(void) { }
+  /* -- MOVE assignment constructor ---------------------------------------- */
+  VarsConst(VarsConst &&vcOther) :     // Other vars
+    /* -- Initialisers ----------------------------------------------------- */
+    VarsBaseType{ StdMove(vcOther) }   // Move it over
+    /* -- No code ---------------------------------------------------------- */
+    { }
+  /* -- Constructor -------------------------------------------------------- */
+  VarsConst(const string &strS,        // String to explode
+            const string &strLS,       // ...Record (line) separator
+            const char cDelimiter) :   // ...Key/value separator
+    /* -- Initialisers ----------------------------------------------------- */
+    VarsBaseType{ strS,                // Initialise string to explode
+                  strLS,               // Initialise record (line) separator
+                  cDelimiter }         // Initialise key/value separator
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */

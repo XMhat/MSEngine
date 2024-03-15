@@ -26,9 +26,9 @@ tData.Header("ID").Header("F").Header("D").Header("T").Header("U")
 // Total resources
 size_t stResources = 0;
 // Walk through archives
-for(const Archive*const oCptr : *cArchives)
-{ // Get pointer to class
-  const Archive &aCref = *oCptr;
+for(const Archive*const aCptr : *cArchives)
+{ // Get reference to class
+  const Archive &aCref = *aCptr;
   // Get number of resources in archive
   const size_t stFiles = aCref.GetFileList().size(),
                stDirs = aCref.GetDirList().size();
@@ -79,13 +79,14 @@ tData.Header("ID").Header("BYTES").Header("PREVIEW", false)
 #endif
 // Walk mask list and add size of it
 for(const Asset *aCptr : *cAssets)
-{ // Get reference to memory block
-  const MemConst &mcRef = *aCptr;
+{ // Get reference to class
+  const Asset &acRef = *aCptr;
+  // Don't show detail in release version
 #if !defined(RELEASE)
   // Set preview size
-  const size_t stMax = UtilMinimum(mcRef.MemSize(), stCount);
+  const size_t stMax = UtilMinimum(acRef.MemSize(), stCount);
   // Set id and size
-  tData.DataN(aCptr->CtrGet()).DataN(mcRef.MemSize());
+  tData.DataN(acRef.CtrGet()).DataN(acRef.MemSize());
   // Clear preview strings
   strHex.clear();
   strAscii.clear();
@@ -93,7 +94,7 @@ for(const Asset *aCptr : *cAssets)
   for(size_t stIndex = 0; stIndex < stMax; ++stIndex)
   { // Get character
     const unsigned int uiChar =
-      static_cast<unsigned int>(mcRef.MemReadInt<uint8_t>(stIndex));
+      static_cast<unsigned int>(acRef.MemReadInt<uint8_t>(stIndex));
     // Add hex of block
     strHex += StrHexFromInt(uiChar, 2) + ' ';
     // Put a dot if character is invalid
@@ -109,7 +110,7 @@ for(const Asset *aCptr : *cAssets)
   tData.Data(strHex).Data(strAscii);
 #endif
   // Add size of this array to the total size of all arrays
-  stTotal += mcRef.MemSize();
+  stTotal += acRef.MemSize();
 } // Number of items in buffer. We're not showing data in release mode.
 #if defined(RELEASE)
 cConsole->AddLineEx("$ totalling $.",
@@ -203,12 +204,11 @@ tData.Header("WIDTH").Header("HEIGHT").Header("OCCUPANCY").Header("TOTL")
      .Header("USED").Header("FREE").Reserve(cBins->size());
 // Walk through textures classes
 for(const Bin*const bCptr : *cBins)
-{ // Get pointer to class
+{ // Get reference to class and write its data to the table
   const Bin &bCref = *bCptr;
-  // Show data
   tData.DataN(bCref.DimGetWidth()).DataN(bCref.DimGetHeight())
-       .DataN(bCref.Occupancy(), 7).DataN(bCref.Total())
-       .DataN(bCref.Used()).DataN(bCref.Free());
+       .DataN(bCref.Occupancy(), 7).DataN(bCref.Total()).DataN(bCref.Used())
+       .DataN(bCref.Free());
 } // Log counts
 cConsole->AddLineExA(tData.Finish(),
   StrPluraliseNum(cBins->size(), "bin.", "bins."));
@@ -404,7 +404,7 @@ tData.Header("ID").Header("NAME", false).Header("VERSION")
      .Header("AUTHOR", false).Reserve(cCredits->CreditGetItemCount());
 // For each item, show library information
 for(size_t stIndex = 0; stIndex < cCredits->CreditGetItemCount(); ++stIndex)
-{ // Get credit for item and add the data for the credit
+{ // Get reference to class and write its data to the table
   const CreditLib &sD =
     cCredits->CreditGetItem(static_cast<CreditEnums>(stIndex));
   tData.DataN(stIndex).Data(sD.GetName()).Data(sD.GetVersion())
@@ -421,7 +421,8 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 // If we actually came from the 'cvpend' command, select internal 'load
 // from/save to' list else select the main public cvar list.
-const CVars::ItemMap &cimList = aList[0][2] == 'p' ? // Optimal and safe
+typedef CVars::ItemMap CVarsItemMap;
+const CVarsItemMap &cimList = aList[0][2] == 'p' ? // Optimal and safe
   cCVars->GetInitialVarList() : cCVars->GetVarList();
 // Ignore if empty
 if(cimList.empty())
@@ -432,25 +433,28 @@ const string &strFilter = aList.size() > 1 ? aList[1] : cCommon->Blank();
 const LockGuard lgCVarsSync{ cCVars->mMutex };
 // Try to find the cvar outright first (only make work when not in release)
 #if !defined(RELEASE)
-CVars::ItemMapItConst ciItem{ cimList.find(strFilter) };
-if(ciItem != cimList.cend())
+typedef CVars::ItemMapItConst CVarsItemMapItConst;
+CVarsItemMapItConst cimiIt{ cimList.find(strFilter) };
+if(cimiIt != cimList.cend())
 { // Get cvar data an flags
-  const Item &cD = ciItem->second;
+  const Item &cD = cimiIt->second;
   // Categories to add
-  StrList lCats{
+  StrList slCats{
     StrFormat("Status for CVar '$'...\n"
-           "- Registered by: $, Flags: 0x$$$, Callback: $.\n"
-           "- Current Value<$> = \"$\".",
+              "- Registered by: $, Flags: 0x$$$, Callback: $.\n"
+              "- Current Value<$> = \"$\".",
       strFilter, cD.FlagIsSet(TLUA) ? "Lua" : "Engine",
       hex, cD.FlagGet(), dec, cD.IsTriggerSet() ? "Set" : "None",
       cD.GetValueLength(), cD.GetValue()) };
   // Add default value if set
   if(cD.IsValueChanged())
-    lCats.emplace_back(StrFormat("- Default Value<$> = \"$\".",
+    slCats.emplace_back(StrFormat("- Default Value<$> = \"$\".",
       cD.GetDefLength(), cD.GetDefValue()));
   // Flags to test data
-  const vector<pair<const char*const,
-    const vector<pair<const CVarFlagsConst&, const char*const>>>> vcList{
+  typedef pair<const CVarFlagsConst&, const char*const> FlagPair;
+  typedef pair<const char*const, const vector<FlagPair>> CatPair;
+  typedef vector<CatPair> CatPairVecFlag;
+  const CatPairVecFlag vcList{
   { "Types", {
     { TSTRING,      "String"       }, { TBOOLEAN,     "Boolean"      },
     { TFLOAT,       "Float"        }, { TINTEGER,     "Integer"      } } },
@@ -471,24 +475,23 @@ if(ciItem != cimList.cend())
     { LOADED,       "LoadedFromDB" }, { COMMIT,       "Modified"     },
     { MTRIM,        "TrimSpaces"   }                                 } } };
   // Walk through test categories
-  for(const auto &cItem : vcList)
+  for(const CatPair &cpPair : vcList)
   { // Joined list of flags
-    StrList lDest;
+    StrList slDest;
     // Test each flag and add to list if set
-    for(const auto &tItem : cItem.second)
-      if(cD.FlagIsSet(tItem.first)) lDest.emplace_back(tItem.second);
+    for(const FlagPair &fpPair : cpPair.second)
+      if(cD.FlagIsSet(fpPair.first)) slDest.emplace_back(fpPair.second);
     // Add joined list to ca`1tegories list
-    lCats.emplace_back(StrFormat("- $<$> = $.", cItem.first, lDest.size(),
-      lDest.empty() ? string{ "None" } : StrImplode(lDest, ", ")));
+    slCats.emplace_back(StrFormat("- $<$> = $.", cpPair.first, slDest.size(),
+      slDest.empty() ? cCommon->Unspec(): StrImplode(slDest, ", ")));
   } // Print data about the cvar
-  return cConsole->AddLine(StrImplode(lCats, cCommon->Lf()));
+  return cConsole->AddLine(StrImplode(slCats, cCommon->Lf()));
 } // Try as a lower bound check?
-ciItem = cimList.lower_bound(strFilter);
 #else
 // Try as a lower bound check?
-auto ciItem{ cimList.lower_bound(strFilter) };
 #endif
-if(ciItem != cimList.cend())
+cimiIt = cimList.lower_bound(strFilter);
+if(cimiIt != cimList.cend())
 { // Formatted output. Can assume all variables will be printed
   Statistic tData;
   tData.Header("FLAGS").Header("NAME", false).Header("VALUE", false)
@@ -498,12 +501,12 @@ if(ciItem != cimList.cend())
   // Build output string
   do
   { // If no match found? return original string
-    const string &strKey = ciItem->first;
+    const string &strKey = cimiIt->first;
     if(strKey.compare(0, strFilter.size(), strFilter)) continue;
     // Increment matched counter
     ++stMatched;
     // Get cvar data and flags
-    const Item &cD = ciItem->second;
+    const Item &cD = cimiIt->second;
     // Add tokens
     tData.Data(StrFromEvalTokens({
       // Types
@@ -531,7 +534,7 @@ if(ciItem != cimList.cend())
     // Name and value
     })).Data(strKey).Data(cD.Protect());
   } // Until no more commands
-  while(++ciItem != cimList.cend());
+  while(++cimiIt != cimList.cend());
   // Print output if we matched commands
   if(stMatched)
     return cConsole->AddLineEx("$$ of $ matched.", tData.Finish(),
@@ -579,8 +582,8 @@ cConsole->GetCommand(CC_CVARS).ccbFunc(aList);
 /* ========================================================================= */
 { "cvsave", 1, 1, CF_NOTHING, [](const Args &){
 /* ------------------------------------------------------------------------- */
-cConsole->AddLineExA(StrPluraliseNum(cCVars->Save(),
-  "cvar", "cvars"), " commited.");
+cConsole->AddLineExA(StrPluraliseNum(cCVars->Save(), "cvar", "cvars"),
+                       " commited.");
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'cvsave' function
 /* ========================================================================= */
@@ -606,7 +609,7 @@ StrItemList silDirs, silFiles;
 const LockGuard lgArchivesSync{ cArchives->CollectorGetMutex() };
 // Iterate through the list
 for(const Archive*const aCptr : *cArchives)
-{ // Get archive class
+{ // Get reference to class
   const Archive &aCref = *aCptr;
   // Goto next archive if directory specified and is not found
   const StrUIntMap &suimDirs = aCref.GetDirList();
@@ -712,7 +715,7 @@ for(const auto &eVar : ssmEnv) tData.Data(eVar.first).Data(eVar.second);
 // Log counts
 cConsole->AddLineExA(tData.Finish(),
   StrPluraliseNum(ssmEnv.size(), "environment variable.",
-                              "environment variables."));
+                                 "environment variables."));
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'env' function
 /* ========================================================================= */
@@ -779,18 +782,14 @@ tData.Header("ID").Header("FLAG").Header("FD").Header("ERRNO")
      .Reserve(cFiles->size());
 // Walk through textures classes
 for(File*const fCptr : *cFiles)
-{ // Get pointer to class
+{ // Get reference to class and write its data to the table
   File &fCref = *fCptr;
-  // Show data
-  tData.DataN(fCref.CtrGet())
-       .Data(StrFromEvalTokens({
-         { fCref.FStreamOpened(),     'O' },
-         { fCref.FStreamFErrorSafe(), 'E' },
-         { fCref.FStreamIsEOFSafe(),  'X' }
-       }))
-       .DataN(fCref.FStreamGetIDSafe()).DataN(fCref.FStreamGetErrNo())
-       .DataN(fCref.FStreamGetPositionSafe()).DataN(fCref.FStreamSizeSafe())
-       .Data(fCref.IdentGet());
+  tData.DataN(fCref.CtrGet()).Data(StrFromEvalTokens({
+    { fCref.FStreamOpened(),    'O' }, { fCref.FStreamFErrorSafe(), 'E' },
+    { fCref.FStreamIsEOFSafe(), 'X' }
+  })).DataN(fCref.FStreamGetIDSafe()).DataN(fCref.FStreamGetErrNo())
+     .DataN(fCref.FStreamGetPositionSafe()).DataN(fCref.FStreamSizeSafe())
+     .Data(fCref.IdentGet());
 } // Log counts
 cConsole->AddLineExA(tData.Finish(),
   StrPluraliseNum(cFiles->size(), "file.", "files."));
@@ -845,9 +844,8 @@ tData.Header("ID").Header("GLYPH").Header("FW").Header("FH").Header("DW")
      .Header("FILENAME", false).Reserve(cFtfs->size());
 // Walk through textures classes
 for(const Ftf*const fCptr : *cFtfs)
-{ // Get pointer to class
+{ // Get reference to class and write its data to the table
   const Ftf &fCref = *fCptr;
-  // Show data
   tData.DataN(fCref.CtrGet()).DataN(fCref.GetGlyphCount())
        .DataN(fCref.DimGetWidth(),0).DataN(fCref.DimGetHeight(),0)
        .DataN(fCref.dDPI.DimGetWidth()).DataN(fCref.dDPI.DimGetHeight())
@@ -936,9 +934,8 @@ tData.Header("ID").Header("FLAGS", false).Header("SIZW").Header("SIZH")
      .Header("NAME", false).Reserve(cImages->size());
 // Walk through textures classes
 for(const Image*const iCptr : *cImages)
-{ // Convert to reference
+{ // Get reference to class and write its data to the table
   const Image &iCref = *iCptr;
-  // Add data to table
   tData.DataN(iCref.CtrGet()).Data(StrFromEvalTokens({
     { iCref.IsDynamic(),          'Y' }, { iCref.IsNotDynamic(),       'S' },
     { iCref.IsPurposeFont(),      'F' }, { iCref.IsPurposeImage(),     'I' },
@@ -973,13 +970,11 @@ tData.Header("ID").Header("FL").Header("EXT").Header("NAME", false)
      .Reserve(cImageFmts->size());
 // For each plugin
 for(const ImageFmt*const iCptr : *cImageFmts)
-{ // Get refernece to plugin
+{ // Get reference to class and write its data to the table
   const ImageFmt &iCref = *iCptr;
-  // Write data
-  tData.DataN(iCref.CtrGet())
-       .Data(StrFromEvalTokens({ { iCref.HaveLoader(), 'L' },
-                              { iCref.HaveSaver(),  'S' } }))
-       .Data(iCref.GetExt()).Data(iCref.GetName());
+  tData.DataN(iCref.CtrGet()).Data(StrFromEvalTokens({
+    { iCref.HaveLoader(), 'L' }, { iCref.HaveSaver(),  'S' }
+  })).Data(iCref.GetExt()).Data(iCref.GetName());
 } // Log total plugins
 cConsole->AddLineExA(tData.Finish(),
   StrPluraliseNum(cImageFmts->size(), "format.", "formats."));
@@ -1226,9 +1221,7 @@ Statistic tData;
 tData.Header("FLAGS").Header("NAME", false).Header("VALUE", false)
      .Reserve(smmList.size());
 for(const auto &sprIt : smmList)
-  tData.Data(sprIt.second.second)
-       .Data(sprIt.first)
-       .Data(sprIt.second.first);
+  tData.Data(sprIt.second.second).Data(sprIt.first).Data(sprIt.second.first);
 // Print number of items
 cConsole->AddLineExA(tData.Finish(),
   StrPluraliseNum(smmList.size(), "item.", "items."));
@@ -1243,9 +1236,8 @@ tData.Header("ID").Header("WIDTH").Header("HEIGHT").Header("TOTAL")
      .Header("ALLOC").Header("NAME", false).Reserve(cMasks->size());
 // Walk mask list
 for(const Mask*const mCptr : *cMasks)
-{ // Get mask
+{ // Get reference to class and write its data to the table
   const Mask &mcRef = *mCptr;
-  // Add mask data to table
   tData.DataN(mcRef.CtrGet()).DataN(mcRef.DimGetWidth())
        .DataN(mcRef.DimGetHeight()).DataN(mcRef.size())
        .DataN(mcRef.GetAlloc()).Data(mcRef.IdentGet());
@@ -1318,9 +1310,8 @@ tData.Header("ID").Header("A").Header("POSX").Header("POSY").Header("HORI")
      .Header("NAME", false).Reserve(cDisplay->GetMonitorsCount());
 // Walk the monitors list
 for(const GlFWMonitor &mItem : cDisplay->GetMonitors())
-{ // Get video mode information
+{ // Get reference to class and write its data to the table
   const GlFWRes &rItem = *mItem.Primary();
-  // Write id number
   tData.DataN(mItem.Index())
        .Data(StrFromBoolYN(&mItem == cDisplay->GetSelectedMonitor()))
        .DataN(mItem.CoordGetX()).DataN(mItem.CoordGetY())
@@ -1328,10 +1319,8 @@ for(const GlFWMonitor &mItem : cDisplay->GetMonitors())
        .Data(StrFromRatio(rItem.Width(), rItem.Height()))
        .DataN(rItem.Red()).DataN(rItem.Green()).DataN(rItem.Blue())
        .DataN(rItem.Depth()).DataN(rItem.Refresh())
-       .DataN(mItem.WidthInch(), 1)
-       .DataN(mItem.HeightInch(), 1)
-       .DataN(mItem.DiagonalInch(), 1)
-       .Data(mItem.Name());
+       .DataN(mItem.WidthInch(), 1).DataN(mItem.HeightInch(), 1)
+       .DataN(mItem.DiagonalInch(), 1).Data(mItem.Name());
 } // Write total monitors found
 cConsole->AddLineExA(tData.Finish(),
   StrPluraliseNum(cDisplay->GetMonitorsCount(), "monitor", "monitors"),
@@ -1349,7 +1338,7 @@ tData.Header("DESCRIPTION").Header("VERSION", false).Header("VENDOR", false)
 cSystem->EnumModules();
 // list modules
 for(const auto &mD : *cSystem)
-{ // Get mod data
+{ // Get reference to class and write its data to the table
   const SysModuleData &smdData = mD.second;
   tData.Data(smdData.GetDesc()).Data(smdData.GetVersion())
        .Data(smdData.GetVendor()).Data(smdData.GetFull());
@@ -1442,14 +1431,11 @@ tData.Header("ID").Header("FL").Header("EXT").Header("NAME", false)
      .Reserve(cPcmFmts->size());
 // For each plugin
 for(const PcmFmt*const pCptr : *cPcmFmts)
-{ // Get refernece to plugin
+{ // Get reference to class and write its data to the table
   const PcmFmt &pCref = *pCptr;
-  // Write data
-  tData.DataN(pCref.CtrGet())
-       .Data(StrFromEvalTokens({
-         { pCref.HaveLoader(), 'L' },
-         { pCref.HaveSaver(),  'S' } }))
-       .Data(pCref.GetExt()).Data(pCref.GetName());
+  tData.DataN(pCref.CtrGet()).Data(StrFromEvalTokens({
+      { pCref.HaveLoader(), 'L' }, { pCref.HaveSaver(),  'S' }
+  })).Data(pCref.GetExt()).Data(pCref.GetName());
 } // Log total plugins
 cConsole->AddLineExA(tData.Finish(),
   StrPluraliseNum(cPcmFmts->size(), "format.", "formats."));
@@ -1467,9 +1453,8 @@ tData.Header("ID").Header("FLAGS", false).Header("RATE")
      .Header("NAME", false).Reserve(cPcms->size());
 // Walk through textures classes
 for(const Pcm*const pCptr : *cPcms)
-{ // Get pointer to class
+{ // Get reference to class and write its data to the table
   const Pcm &pCref = *pCptr;
-  // Add data to table
   tData.DataN(pCref.CtrGet())
        .Data(StrFromEvalTokens({
     { pCref.IsDynamic(),           'Y' },
@@ -1518,9 +1503,8 @@ tData.Header("ID").Header("BID").Header("NAME", false)
      .Reserve(cSamples->size());
 // Walk sample object list
 for(const Sample*const sCptr : *cSamples)
-{ // Get sample object reference
+{ // Get reference to class and write its data to the table
   const Sample &sCref = *sCptr;
-  // Print totals info
   tData.DataN(sCref.CtrGet()).DataN(sCref.uivNames.front())
        .Data(sCref.IdentGet());
 } // Number of items in buffer
@@ -1540,7 +1524,7 @@ tData.Header("ID").Header("PID").Header("L").Header("C").Header("SID")
 size_t stShaders = 0;
 // Walk shader list
 for(const Shader*const sCptr : *cShaders)
-{ // Get shader and its list
+{ // Get reference to class
   const Shader &sCref = *sCptr;
   // Store shader information
   tData.DataN(sCref.CtrGet()).DataN(sCref.GetProgramId())
@@ -1642,29 +1626,27 @@ Statistic tData;
 tData.Header("ID").Header("FLAGS").Header("IP").Header("PORT")
      .Header("ADDRESS", false).Reserve(cSockets->size());
 // Walk through sockets
-for(const Socket*const oCptr : *cSockets)
-{ // Get pointer to class
-  const Socket &sCref = *oCptr;
-  // Get status
+for(const Socket*const aCptr : *cSockets)
+{ // Get reference to class and socket flags
+  const Socket &sCref = *aCptr;
   const SocketFlagsConst ssType{ sCref.FlagGet() };
   // Show status
-  tData.DataN(sCref.CtrGet())
-       .Data(StrFromEvalTokens({
-          { ssType.FlagIsSet(SS_INITIALISING),  'I' },
-          { ssType.FlagIsSet(SS_ENCRYPTION),    'X' },
-          { ssType.FlagIsSet(SS_CONNECTING),    'T' },
-          { ssType.FlagIsSet(SS_CONNECTED),     'O' },
-          { ssType.FlagIsSet(SS_SENDREQUEST),   'H' },
-          { ssType.FlagIsSet(SS_REPLYWAIT),     'R' },
-          { ssType.FlagIsSet(SS_DOWNLOADING),   'D' },
-          { ssType.FlagIsSet(SS_DISCONNECTING), 'N' },
-          { ssType.FlagIsSet(SS_STANDBY),       'B' },
-          { sCref.GetError() != 0,          'E' },
-          { ssType.FlagIsSet(SS_CLOSEDBYSERVER), 'S' },
-          { ssType.FlagIsSet(SS_CLOSEDBYCLIENT), 'C' } }))
-       .Data(sCref.GetIPAddress())
-       .DataN(sCref.GetPort())
-       .Data(sCref.GetAddress());
+  tData.DataN(sCref.CtrGet()).Data(StrFromEvalTokens({
+    { ssType.FlagIsSet(SS_INITIALISING),  'I' },
+    { ssType.FlagIsSet(SS_ENCRYPTION),    'X' },
+    { ssType.FlagIsSet(SS_CONNECTING),    'T' },
+    { ssType.FlagIsSet(SS_CONNECTED),     'O' },
+    { ssType.FlagIsSet(SS_SENDREQUEST),   'H' },
+    { ssType.FlagIsSet(SS_REPLYWAIT),     'R' },
+    { ssType.FlagIsSet(SS_DOWNLOADING),   'D' },
+    { ssType.FlagIsSet(SS_DISCONNECTING), 'N' },
+    { ssType.FlagIsSet(SS_STANDBY),       'B' },
+    { sCref.GetError() != 0,          'E' },
+    { ssType.FlagIsSet(SS_CLOSEDBYSERVER), 'S' },
+    { ssType.FlagIsSet(SS_CLOSEDBYCLIENT), 'C' } }
+  )).Data(sCref.GetIPAddress())
+    .DataN(sCref.GetPort())
+    .Data(sCref.GetAddress());
 } // Show result
 cConsole->AddLineEx("$$ ($ connected).\n"
   "Total RX Packets: $; Bytes: $ ($).\n"
@@ -1709,7 +1691,7 @@ tData.Header("ID").Header("SID").Header("FLAG").Header("S")
      .Header("MAXDIST", false).Reserve(cSources->size());
 // Walk through sources
 for(const Source*const sCptr : *cSources)
-{ // Get pointer to class
+{ // Get reference to class
   const Source &sCref = *sCptr;
   // Get source play state and type
   const ALenum alState = sCref.GetState();
@@ -1890,10 +1872,9 @@ tData.Header("ID").Header("L").Header("LENGTH").Header("TIME").Header()
      .Header("RATE").Header("TYPE").Header("BRU").Header("BRN").Header("BRL")
      .Header("BRW").Header("NAME", false).Reserve(cStreams->size());
 // Walk through sources
-for(const Stream*const sCptr : *cStreams)
-{ // Get pointer to class
-  Stream &sCref = *const_cast<Stream*>(sCptr);
-  // Add stream data to table
+for(Stream*const sCptr : *cStreams)
+{ // Get reference to class and write its data to the table
+  Stream &sCref = *sCptr;
   tData.DataN(sCref.CtrGet()).Data(StrFromBoolYN(sCref.LuaRefIsSet()))
        .DataN(sCref.GetOggBytes()).DataN(sCref.GetElapsedSafe(), 1)
        .DataN(sCref.GetDurationSafe(), 1).DataN(sCref.GetPositionSafe())
@@ -1957,9 +1938,8 @@ tData.Header("ID").Header("FLAG").Header("P").Header("EC").Header("STTIME")
      .Reserve(cThreads->size());
 // For each thread pointer
 for(const Thread*const tCptr : *cThreads)
-{ // Get reference to thread pointer
+{ // Get reference to class and write its data to the table
   const Thread &tCref = *tCptr;
-  // Store thread information
   tData.DataN(tCref.CtrGet()).Data(StrFromEvalTokens({
     { tCref.ThreadHaveCallback(), 'C' },
     { tCref.ThreadIsParamSet(),   'P' }, { tCref.ThreadIsRunning(),    'R' },
@@ -2016,9 +1996,8 @@ tData.Header("ID").Header("FLAGS").Header("PCMF").Header("P").Header("C")
      .Header("NAME", false).Reserve(cVideos->size());;
 // Walk through textures classes
 for(const Video*const vCptr : *cVideos)
-{ // Get pointer to class
+{ // Get reference to class and write its data to the table
   const Video &vCref = *vCptr;
-  // and write data
   tData.DataN(vCref.CtrGet())
     .Data(StrFromEvalTokens({
       { vCref.LuaRefIsSet(),       'L' }, { vCref.HaveAudio(),         'A' },
@@ -2061,14 +2040,13 @@ const GlFWMonitor &mItem = cDisplay->GetMonitors()[stMonitorSelected];
 if(mItem.size() > 1)
   tData.DupeHeader().Reserve(cDisplay->GetMonitorsCount() / 2);
 else tData.Reserve(1);
-// Enumerate video modes
+// Write each resolution to the table
 for(const GlFWRes &rItem : mItem)
-{ // Print resolution
   tData.DataN(rItem.Index()).Data(StrFromBoolYN(&rItem == mItem.Primary()))
        .DataN(rItem.Width()).DataN(rItem.Height()).DataN(rItem.Depth())
        .DataN(rItem.Refresh()).DataN(rItem.Red()).DataN(rItem.Green())
        .DataN(rItem.Blue()).Data(StrFromRatio(rItem.Width(), rItem.Height()));
-} // Print number of video modes
+// Print number of video modes
 cConsole->AddLineEx("$$ supported on monitor #$ ($).", tData.Finish(),
   StrPluraliseNum(mItem.size(), "mode", "modes"), stMonitorSelected,
   mItem.Name());

@@ -172,10 +172,10 @@ class SysCore :
           const TokenListNC tStats{ strStat, cCommon->Space(), 6 };
           if(tStats.size() >= 5)
           { // Get idle time
-            const clock_t cUserNow = StrToNum<clock_t>(tStats[2]);
-            const clock_t cLowNow = StrToNum<clock_t>(tStats[3]);
-            const clock_t cSystemNow = StrToNum<clock_t>(tStats[4]);
-            const clock_t cIdleNow = StrToNum<clock_t>(tStats[5]);
+            const clock_t cUserNow = StrToNum<clock_t>(tStats[2]),
+                          cLowNow = StrToNum<clock_t>(tStats[3]),
+                          cSystemNow = StrToNum<clock_t>(tStats[4]),
+                          cIdleNow = StrToNum<clock_t>(tStats[5]);
             // Check for valid time
             if(cUserNow < ctUser || cLowNow < ctLow ||
                cSystemNow < ctSystem || cIdleNow < ctIdle)

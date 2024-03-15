@@ -113,7 +113,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
                    strRealHost;        // Real hostname connected to
   PacketList       blRX, blTX;         // Transmit/Receive buffers
   size_t           stRX, stTX;         // Total bytes stored in buffers
-  Vars             vlRegistry;         // For storing keypairs
+  Vars<>           vlRegistry;         // For storing keypairs
   /* -- Timestamps --------------------------------------------------------- */
   SafeClkDuration  duConnect,          // Time socket was connecting
                    duConnected,        // Time socket was connected
@@ -799,7 +799,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       // Add rest of response to headers
       strHeaders += strResp;
       // Build output headers list by exploding header string
-      vlRegistry = Vars{ strHeaders, cCommon->CrLf(), ':' };
+      vlRegistry.VarsReInit(strHeaders, cCommon->CrLf(), ':');
       if(vlRegistry.empty()) return SetErrorStaticSafe("No response");
       // Done with the headers string
       strHeaders.clear();
@@ -1343,7 +1343,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     SetAddress(strA, uiP);
     SetupCipher(strC);
     // Initialise registry with headers
-    vlRegistry = { strH, cCommon->Lf(), ':' };
+    vlRegistry.VarsReInit(strH, cCommon->Lf(), ':');
     // Push default user agent if not specified already
     vlRegistry.VarsPushIfNotExist("user-agent",
       cCVars->GetInternalStrSafe(NET_USERAGENT));
@@ -1514,6 +1514,7 @@ static StrNCStrMap SocketOAuth11(const string &strMethod,
   const string &strReq, const string &strURLparams, const string &strParams)
 { // Input varlist and split params into it
   Vars vaIn{ strParams, cCommon->Lf(), '=' };
+  if(vaIn.empty()) return {};
   // Get consumer key
   const string strCK{ vaIn.Extract("oauth_consumer_key") };
   if(strCK.empty())

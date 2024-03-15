@@ -985,6 +985,20 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 { CF_VIDEO, "con_fonttexsize", cCommon->Zero(),
   NoOp, TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
+// ! CON_INPREFRESH
+// ? Specifies the time interval in microseconds between input polls. Only
+// ? applies to the text mode console. The default is 3125 microseconds on
+// ? windows (31.25 milliseconds) to prevent concurrency slowdowns and 10000
+// ? microseconds (10 milliseconds) on anything else.
+/* ------------------------------------------------------------------------- */
+{ CF_TERMINAL, "con_inprefresh",
+#if defined(WINDOWS)
+  "31250",                             // 31.25ms (0.003 sec)
+#else
+  "1000",                              // 1.00ms (0.0001 sec)
+#endif
+  CB(cConsole->InputRefreshModified, unsigned int), TUINTEGERSAVE|PANY },
+/* ------------------------------------------------------------------------- */
 // ! CON_INPUTMAX
 // ? Specifies the maximum number of characters that are allowed to be typed
 // ? into the console input buffer.
@@ -1022,7 +1036,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? is being typed.
 /* ------------------------------------------------------------------------- */
 { CF_TERMINAL, "con_tmcrefresh", "1000",
-  CB(cConsole->RefreshModified, unsigned int), TUINTEGERSAVE|PANY },
+  CB(cConsole->OutputRefreshModified, unsigned int), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_TMCNOCLOSE
 // ? Disables the X button and close in the application context menu. This does
@@ -1559,8 +1573,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? number. i.e. 16.9 for 16:9 or 4.3 for 4:3, etc. or 0 for numeric and/or
 // ? denominator for freedom for the end user to resize at will.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "win_aspect", cCommon->Zero(),
-  NoOp, TUFLOAT|PSYSTEM },
+{ CF_VIDEO, "win_aspect", cCommon->Zero(), NoOp, TUFLOAT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! WIN_BORDER
 // ? Specifies if the window should have a titlebar and a border.
@@ -1600,15 +1613,13 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? The upper value is clamped by the GPU's maximum texture size which is
 // ? normally 16384 on all modern GPU's. Specify 0 to use the GPU maximum.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "win_heightmax", cCommon->Zero(),
-  NoOp, TUINTEGER|PSYSTEM },
+{ CF_VIDEO, "win_heightmax", cCommon->Zero(), NoOp, TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! WIN_HEIGHTMIN
 // ? Sets the minimum height of the window. This is only changable at the
 // ? application configuration file and is not saved to persistence database.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "win_heightmin", cCommon->Zero(),
-  NoOp, TUINTEGER|PSYSTEM },
+{ CF_VIDEO, "win_heightmin", cCommon->Zero(), NoOp, TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! WIN_MAXIMISED
 // ? Specify 1 to have the window automatically maximised on creation or 0
@@ -1670,8 +1681,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? The upper value is clamped by the GPU's maximum texture size which is
 // ? normally 16384 on all modern GPU's. Specify 0 to use the GPU maximum.
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "win_widthmax", cCommon->Zero(),
-  NoOp, TUINTEGER|PSYSTEM },
+{ CF_VIDEO, "win_widthmax", cCommon->Zero(), NoOp, TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! WIN_WIDTHMIN
 // ? Sets the minimum width of the window. This is only changable at the

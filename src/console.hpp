@@ -92,8 +92,8 @@ static class Console final :           // Members initially private
   RedrawFlags      rfDefault,          // Default redraw type
                    rfFlags;            // Redraw flags
   /* -- Text mode ---------------------------------------------------------- */
-  ClockInterval<CoreClock> ciNextUpdate,   // Next screen buffer update time
-                           ciInputRefresh; // Time to wait before next peek
+  ClockInterval<CoreClock> ciOutputRefresh, // Next screen buffer update time
+                           ciInputRefresh;  // Time to wait before next peek
   string           strStatusLeft,      // Text-mode console left status text
                    strStatusRight,     // Text-mode console right status text
                    strTimeFormat;      // Default time format
@@ -288,7 +288,7 @@ static class Console final :           // Members initially private
   /* -- Push and get error callback function id ---------------------------- */
   static void LuaCallbackStatic(const Args &);
   void LuaCallback(const Args &aList)
-    { FindVirtualCommand(aList[0])->
+    { FindVirtualCommand(aList.front())->
         second.LuaFuncProtectedDispatch(0, aList); }
   /* -- Unregister user console command from lua --------------------------- */
   void UnregisterLuaCommand(const string &strCmd)
@@ -335,7 +335,8 @@ static class Console final :           // Members initially private
     const LibListItConst clItem{
       RegisterCommand(strCmd, uiMinimum, uiMaximum, LuaCallbackStatic) };
     // Add command to local list. Do not move the position of this call.
-    lfList.insert({ strCmd, LuaFunc(StrAppend("CC:", clItem->first), true) });
+    lfList.insert({ strCmd,
+      LuaFunc{ StrAppend("CC:", clItem->first), true } });
   }
   /* -- Add specified command line to history ------------------------------ */
   void AddHistory(const string &strCmdLine)
@@ -417,8 +418,7 @@ static class Console final :           // Members initially private
     // The mainmanual* functions will consume 100% of the thread load
     // when it doesn't request a request to redraw so make sure to
     // throttle it.
-    if(cSystem->IsNotGraphicalMode())
-      cTimer->TimerSetDelayIfZero();
+    if(cSystem->IsNotGraphicalMode()) cTimer->TimerSetDelayIfZero();
     // Can't disable console while paused
     SetCantDisable(true);
     // Write to console
@@ -448,7 +448,7 @@ static class Console final :           // Members initially private
   }
   /* -- OnForceRedraw ---------------- Force a bot console display update -- */
   void OnForceRedraw(const EvtMain::Cell &)
-    { SetRedraw(); ciNextUpdate.CISync(); }
+    { SetRedraw(); ciOutputRefresh.CISync(); }
   /* -- Size updated event (unused on win32) ------------------------------- */
   void OnResize(const EvtMain::Cell &ecParams)
   { // Send the event to SysCon
@@ -540,7 +540,7 @@ static class Console final :           // Members initially private
     // Start from the current line, and iterate until we get to the end. We
     // Should skip the current line so recursive executions of this command
     // work properly.
-    for(ConLinesConstRevIt clriLine(next(clriPosition, 1));
+    for(ConLinesConstRevIt clriLine{ next(clriPosition, 1) };
                            clriLine != rend();
                          ++clriLine)
     { // Get reference to console line data structure
@@ -693,8 +693,8 @@ static class Console final :           // Members initially private
     // it manually. If we init cvars after, then destructor will crash because
     // the cvars havn't been initialised
     Ftf fFTFont;
-    fFTFont.InitFile(cCVars->GetInternalStrSafe(CON_FONT),
-      fTextWidth, fTextHeight, 96, 96, 0.0);
+    fFTFont.InitFile(cCVars->GetInternalStrSafe(CON_FONT), fTextWidth,
+      fTextHeight, 96, 96, 0.0);
     GetFontRef().InitFTFont(fFTFont,
       cCVars->GetInternalSafe<GLuint>(CON_FONTTEXSIZE),
       cCVars->GetInternalSafe<GLuint>(CON_FONTPADDING), 11, GetFontRef());
@@ -731,7 +731,7 @@ static class Console final :           // Members initially private
   /* -- Execute arguments list --------------------------------------------- */
   void ExecuteArguments(const string &strCmd, const Args &aList)
   { // Get var or command name
-    const string &strVarOrCmd = aList[0];
+    const string &strVarOrCmd = aList.front();
     if(strVarOrCmd.empty()) return;
     // Dump whole input to log
     AddLineExC(COLOUR_YELLOW, '>', strCmd);
@@ -885,30 +885,24 @@ static class Console final :           // Members initially private
   }
   /* -- Tick for bot render ------------------------------------------------ */
   void FlushToLog(void)
-  { // If the engine is running as fast as possible?
-    // PeekConsoleInput has quite a bit of concurrency latency so we need to
-    // throttle calls to it as it will prevent the engine running at full
-    // speed. Picking a delay of 0.03125 because it's 1/32th of a second
-    // which is the largest repeat rate the keyboard subsystem allows.
-    if(cTimer->TimerGetDelay() == 0.0 && !ciInputRefresh.CITriggerStrict())
-      goto Done;
-    // Loop forever until no more keys are pressed
-    for(int iKey, iMods;;) switch(cSystem->GetKey(iKey, iMods))
-    { // No key is pressed (ignore)
-      case SysBase::SysCon::KT_NONE:
-        goto Done;
-      // A key was pressed
-      case SysBase::SysCon::KT_KEY:
-        OnKeyPress(iKey, GLFW_PRESS, iMods);
-        continue;
-      // A scan code was pressed
-      case SysBase::SysCon::KT_CHAR:
-        OnCharPress(static_cast<unsigned int>(iKey));
-        continue;
-    } // Check completed
-    Done:
-    // Status update elapsed?
-    if(ciNextUpdate.CITriggerStrict())
+  { // If thread delay enabled and input polling interval ready to poll?
+    if(cTimer->TimerGetDelay() != 0.0 || ciInputRefresh.CITriggerStrict())
+    {  // Loop forever until no more keys are pressed
+      for(int iKey, iMods;;) switch(cSystem->GetKey(iKey, iMods))
+      { // No key is pressed (ignore)
+        case SysBase::SysCon::KT_NONE: goto Done;
+        // A key was pressed
+        case SysBase::SysCon::KT_KEY:
+          OnKeyPress(iKey, GLFW_PRESS, iMods);
+          continue;
+        // A scan code was pressed
+        case SysBase::SysCon::KT_CHAR:
+          OnCharPress(static_cast<unsigned int>(iKey));
+          continue;
+      } // Only clean way to double-break without extra vars or functions
+      Done:;
+    } // Status update elapsed?
+    if(ciOutputRefresh.CITriggerStrict())
     { // Update memory and cpu status
       cSystem->UpdateMemoryUsageData();
       cSystem->UpdateCPUUsage();
@@ -942,9 +936,8 @@ static class Console final :           // Members initially private
   }
   /* -- Copy all console lines to log -------------------------------------- */
   size_t ToLog(void)
-  { // Write all console lines to log
+  { // Write all console lines to log and return lines in buffer
     for(const ConLine &clItem : *this) cLog->LogNLCDebugSafe(clItem.strLine);
-    // Return lines in buffer
     return size();
   }
   /* -- Redraw the console fbo if the console contents changed ------------- */
@@ -953,11 +946,9 @@ static class Console final :           // Members initially private
   void RenderToMain(void) { if(IsVisible()) cFboCore->BlitConsoleToMain(); }
   /* -- Show the console and render it and render the fbo to main fbo ------ */
   void RenderNow(void)
-  { // Show the console
+  { // Show the console, render it to main frame buffer and blit it
     DoSetVisible(true);
-    // Render it to main fbo
     Render();
-    // Blit console to main fbo
     cFboCore->BlitConsoleToMain();
   }
   /* -- Register console command ------------------------------------------- */
@@ -1010,20 +1001,20 @@ static class Console final :           // Members initially private
   /* -- Add line as string with specified text colour ----------------- */
   void AddLine(const string &strText, const Colour pColour)
   { // Tokenise lines into a list limited by the maximum number of lines.
-    const TokenList tLines{ strText, "\n", GetOutputMaximum() };
-    if(tLines.empty()) return;
-    // Remove old lines if there are too many to fit this amount
-    ReserveLines(tLines.size());
-    // Get if we're at the bottom of the log
-    const bool bAtBottom = clriPosition == rbegin();
-    // Add each line we separated
-    for(const string &sLine : tLines)
-      push_back({ cLog->CCDeltaToDouble(), pColour, StdMove(sLine) });
-    // Auto scroll enabled or were already at the bottom of log? Set the log
-    // to the bottom.
-    if(FlagIsSet(CF_AUTOSCROLL) || bAtBottom) clriPosition = rbegin();
-    // Redraw the buffer, it changed
-    SetRedraw();
+    if(const TokenList tLines{ strText, "\n", GetOutputMaximum() })
+    { // Remove old lines if there are too many to fit this amount
+      ReserveLines(tLines.size());
+      // Get if we're at the bottom of the log
+      const bool bAtBottom = clriPosition == rbegin();
+      // Add each line we separated
+      for(const string &sLine : tLines)
+        push_back({ cLog->CCDeltaToDouble(), pColour, StdMove(sLine) });
+      // Auto scroll enabled or were already at the bottom of log? Set the log
+      // to the bottom.
+      if(FlagIsSet(CF_AUTOSCROLL) || bAtBottom) clriPosition = rbegin();
+      // Redraw the buffer, it changed
+      SetRedraw();
+    }
   }
   /* -- Add line as string with default text colour ------------------- */
   void AddLine(const string &strText) { AddLine(strText, cTextColour); }
@@ -1052,9 +1043,8 @@ static class Console final :           // Members initially private
     if(FlagIsSet(CF_CANTDISABLE))
     { // Log that the console has beend disabled
       cLog->LogDebugSafe("Console visibility control has been disabled.");
-      // Make sure console is showing
+      // Make sure console is showing and set full height and return
       DoSetVisible(true);
-      // Set full height and return
       SetHeight(1);
       // Done
       return;
@@ -1117,11 +1107,11 @@ static class Console final :           // Members initially private
     // guest software actions and user usage.
     AddLine("Disclaimer: This scripting ENGINE is designed ONLY for "
       "legitimate and lawful multimedia solutions and is provided AS IS with "
-      "ZERO warranty. It also contains very strong cryptographic "
-      "technologies which might not be allowed to be imported in your "
-      "country. By using this software, whether you are the GUEST author or "
-      "the END user, you accept that the ENGINE author and ALL the authors of "
-      "ALL the components listed in the 'credits' command output disclaim ALL "
+      "ZERO warranty. It also contains very strong cryptographic technologies "
+      "which might not be allowed to be imported in your country. By using "
+      "this software, whether you are the GUEST author or the END user, you "
+      "accept that the ENGINE author and ALL the authors of ALL the "
+      "components listed in the 'credits' command output disclaim ALL "
       "liability for how the GUEST author or the END user chooses to use this "
       "software.", COLOUR_RED);
     // Write guest info in a different colour
@@ -1142,13 +1132,13 @@ static class Console final :           // Members initially private
   }
   /* -- DeInit console texture and font ------------------------------------ */
   void DeInitTextureAndFont(void)
-  { // Deinit console textures
+  { // Deinit console texture and font
     GetTextureRef().DeInit();
     GetFontRef().DeInit();
   }
   /* -- Reload console texture and font ------------------------------------ */
   void ReInitTextureAndFont(void)
-  { // Reload console textures
+  { // Reload console texture and font
     GetTextureRef().ReloadTexture();
     GetFontRef().ReloadTexture();
   }
@@ -1163,9 +1153,8 @@ static class Console final :           // Members initially private
   }
   /* -- Init console font and texture -------------------------------------- */
   void InitConsoleFontAndTexture(void)
-  { // Initialise the console font
+  { // Initialise the console font and texture
     InitConsoleFont();
-    // Initialise the console texture
     InitConsoleTexture();
   }
   /* -- Print a string using textures -------------------------------------- */
@@ -1234,11 +1223,9 @@ static class Console final :           // Members initially private
     DeInitTextureAndFont();
     // Remove font ftf
     GetFontRef().ftfData.DeInit();
-    // Clear input
+    // Clear console input, output and input history
     DoClearInput();
-    // Clear console history
     ClearHistory();
-    // Clear lines
     DoFlush();
     // Log progress
     cLog->LogInfoSafe("Console de-initialised successfully.");
@@ -1327,15 +1314,6 @@ static class Console final :           // Members initially private
     // Succeeded
     return ACCEPT;
   }
-  /* -- Set text-mode console refresh rate --------------------------------- */
-  CVarReturn RefreshModified(const unsigned int uiMS)
-  { // Ignore if invalid
-    if(uiMS < 100 || uiMS > 1000) return DENY;
-    // Set new rate
-    ciNextUpdate.CISetLimit(milliseconds(uiMS));
-    // Success
-    return ACCEPT;
-  }
   /* -- Set console height ------------------------------------------------- */
   CVarReturn SetHeight(const GLfloat fHeight)
     { return CVarSimpleSetIntNLG(fConsoleHeight, fHeight, 0.1f, 1.0f); }
@@ -1395,6 +1373,16 @@ static class Console final :           // Members initially private
   /* -- Set maximum command count ------------------------------------------ */
   CVarReturn MaxCountModified(const size_t stCount)
     { return CVarSimpleSetInt(stMaxCount, stCount); }
+  /* -- Set console input refresh rate ------------------------------------- */
+  CVarReturn InputRefreshModified(const unsigned int uiMicroseconds)
+    { if(uiMicroseconds < 1000 || uiMicroseconds > 1000000) return DENY;
+      ciInputRefresh.CISetLimit(microseconds{ uiMicroseconds });
+      return ACCEPT; }
+  /* -- Set text-mode console refresh rate --------------------------------- */
+  CVarReturn OutputRefreshModified(const unsigned int uiMilliseconds)
+    { if(uiMilliseconds < 100 || uiMilliseconds > 1000) return DENY;
+      ciOutputRefresh.CISetLimit(milliseconds{ uiMilliseconds });
+      return ACCEPT; }
   /* -- Console font flags modfiied ---------------------------------------- */
   CVarReturn ConsoleFontFlagsModified(const unsigned int uiFlags)
   { // Check that flags are valid
@@ -1417,10 +1405,8 @@ static class Console final :           // Members initially private
     stOutputMaximum(0),                // No maximum output lines
     stMaximumChars(0),                 // No maximum characters per line
     iPageLines(0),                     // No page up/down lines setting
-    rfDefault{RD_NONE},                // Default redraw initially set by Init
-    rfFlags{RD_NONE},                  // Redraw type
-    ciInputRefresh{                    // Init text mode refresh rate to...
-      microseconds{ 31250 } },         // ...0.031sec
+    rfDefault{ RD_NONE },              // Default redraw initially set by Init
+    rfFlags{ RD_NONE },                // Redraw type
     ulFgColour(                        // Set input text colour
       uiNDXtoRGB[COLOUR_YELLOW] |      // - Lookup RGB value for yellow
       0xFF000000),                     // - Force opaqueness
@@ -1432,8 +1418,8 @@ static class Console final :           // Members initially private
     fTextLineSpacing(0.0f),            // No text line spacing
     fTextWidth(0.0f),                  // No text width
     fTextHeight(0.0f),                 // No text height
-    ctConsole(true),                   // Console texture on stand-by
-    cfConsole(true),                   // COnsole font on stand-by
+    ctConsole{ true },                 // Console texture on stand-by
+    cfConsole{ true },                 // Console font on stand-by
     cCursor('|'),                      // Cursor shape
     conLibList{ ccslDef },             // Set default commands list
     stMaxCount(llCmds.max_size()),     // Maxmimum console commands

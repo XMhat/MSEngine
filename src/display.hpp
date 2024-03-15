@@ -115,13 +115,11 @@ static class Display final :
   const FSTStrings    fstStrings;      // " container
   /* -- Check if window moved ------------------------------------- */ private:
   void CheckWindowMoved(const int iNewX, const int iNewY)
-  { // If position not changed?
+  { // If position not changed? Report event and return
     if(iWinPosX == iNewX && iWinPosY == iNewY)
-    { // Report event and return
-      cLog->LogDebugExSafe("Display received window position of $x$.",
+      return cLog->LogDebugExSafe("Display received window position of $x$.",
         iNewX, iNewY);
-      return;
-    } // Report change
+    // Report change
     cLog->LogInfoExSafe("Display changed window position from $x$ to $x$.",
       iWinPosX, iWinPosY, iNewX, iNewY);
     // Update position
@@ -140,14 +138,12 @@ static class Display final :
   { // Get new values
     const float fNewWidth = ewcArgs.vParams[1].f,
                 fNewHeight = ewcArgs.vParams[2].f;
-    // If scale not changed?
+    // If scale not changed? Report event and return
     if(UtilIsFloatEqual(fNewWidth, fWinScaleWidth) &&
        UtilIsFloatEqual(fNewHeight, fWinScaleHeight))
-    { // Report event and return
-      cLog->LogDebugExSafe("Display received window scale of $x$.",
+      return cLog->LogDebugExSafe("Display received window scale of $x$.",
         fNewWidth, fNewHeight);
-      return;
-    } // Report change
+    // Report change
     cLog->LogInfoExSafe("Display changed window scale from $x$ to $x$.",
       fWinScaleWidth, fWinScaleHeight, fNewWidth, fNewHeight);
     // Set new value
@@ -232,8 +228,8 @@ static class Display final :
   { // Get state and check it
     switch(const int iState = ewcArgs.vParams[1].i)
     { // Minimized? Log that we minimised and return
-      case GLFW_TRUE: cLog->LogDebugSafe("Display window state minimised.");
-        return;
+      case GLFW_TRUE:
+        return cLog->LogDebugSafe("Display window state minimised.");
       // Restored? Redraw console at least and log event
       case GLFW_FALSE:
         cFboCore->SetDraw();
@@ -346,7 +342,7 @@ static class Display final :
           { // We recognise it so we can savely disconnect it
             cLog->LogInfoExSafe(
               "Display disconnected monitor '$', re-initialising...",
-                moAffected->Name());
+              moAffected->Name());
             // The selected device is no longer valid so make sure it is
             // cleared so DeInit() doesn't try to restore gamma and crash the
             // whole engine with an exception.
@@ -357,15 +353,15 @@ static class Display final :
           else
           { // We don't need to do anything but refresh the list
             cLog->LogInfoExSafe(
-             "Display disconnected monitor '$', refreshing device list...",
-               moAffected->Name());
+              "Display disconnected monitor '$', refreshing device list...",
+              moAffected->Name());
             // Re-enumerate monitors and video modes
             EnumerateMonitorsAndVideoModes();
           }
         } // We don't have it so ignore it
         else cLog->LogWarningExSafe(
           "Display already disconnected monitor '$'...",
-            GlFWGetMonitorName(mAffected));
+          GlFWGetMonitorName(mAffected));
         // Break to return
         break;
       // Unknown state?
@@ -401,7 +397,7 @@ static class Display final :
     // Log new viewport
     cLog->LogDebugExSafe(
       "Display received new frame buffer size of $x$ (P:$x$;W:$x$).",
-        iWidth, iHeight, iWinX, iWinY, iWinWidth, iWinHeight);
+      iWidth, iHeight, iWinX, iWinY, iWinWidth, iWinHeight);
     // What is the window type?
     // Frame buffer is covering the entire screen?
     if(!iWinX && !iWinY && rSelected->IsDim(iWinWidth, iWinHeight))
@@ -526,10 +522,9 @@ static class Display final :
     if(!moSelected->Context())
     { // Clear co-ordinates
       iX = iY = 0;
-      // Put message in  log
-      cLog->LogWarningSafe(
+      // Put message in log and return
+      return cLog->LogWarningSafe(
         "Display class cannot centre the window without monitor data.");
-      return;
     } // Get new co-ordinates
     iX = (rSelected->Width() / 2) - (iW / 2);
     iY = (rSelected->Height() / 2) - (iH / 2);
@@ -615,14 +610,10 @@ static class Display final :
     cGlFW->WinGetScale(fWinScaleWidth, fWinScaleHeight);
     // Need to fix a GLFW scaling bug with this :(
 #if defined(MACOS)
-    // Return if hidpi not enabled
+    // If hidpi not enabled? Update the main fbo viewport size without scale
     if(FlagIsClear(DF_HIDPI))
-    { // Update the main fbo viewport size without scale
-      cFboCore->DimSet(static_cast<GLsizei>(cInput->GetWindowWidth()),
-                       static_cast<GLsizei>(cInput->GetWindowHeight()));
-      // Done
-      return;
-    } // Get window scale
+      return cFboCore->DimSet(static_cast<GLsizei>(cInput->GetWindowWidth()),
+                              static_cast<GLsizei>(cInput->GetWindowHeight()));
     // Update the main fbo viewport size with scale
     cFboCore->DimSet(static_cast<GLsizei>(cInput->GetWindowWidth()) *
                        static_cast<GLsizei>(fWinScaleWidth),
@@ -636,7 +627,6 @@ static class Display final :
     cFboCore->DimSet(static_cast<GLsizei>(cInput->GetWindowWidth()),
                      static_cast<GLsizei>(cInput->GetWindowHeight()));
 #endif
-    // Force
     // Show and focus the window
     cGlFW->WinShow();
     cGlFW->WinFocus();
@@ -644,7 +634,6 @@ static class Display final :
     cInput->CommitCursor();
     // Focused and no longer restarting
     FlagSet(DF_FOCUSED);
-    // Update initial window size.
     // If we're in Linux?
 #if defined(LINUX)
     // Send a event to recalculate the matrix because it seems the fbo resize
@@ -924,7 +913,7 @@ static class Display final :
       { // Just log the error that occured
         cLog->LogWarningExSafe(
           "Display could not load $ icon files due to GlFW exception: $.",
-            gilIcons.size(), e.what());
+          gilIcons.size(), e.what());
         // Done
         return;
       } // Report that we updated the icons
@@ -933,13 +922,10 @@ static class Display final :
       // Show details?
       if(cLog->HasLevel(LH_DEBUG))
         for(Image &imC : ilIcons)
-        { // Get first icon
+        { // Get first icon and log data
           const ImageSlot &imsD = imC.GetSlotsConst().front();
-          // Write data
-          cLog->LogNLCDebugExSafe("- $x$x$: $.",
-            imsD.DimGetWidth(), imsD.DimGetHeight(),
-            imC.GetBitsPerPixel(),
-            imC.IdentGet());
+          cLog->LogNLCDebugExSafe("- $x$x$: $.", imsD.DimGetWidth(),
+            imsD.DimGetHeight(), imC.GetBitsPerPixel(), imC.IdentGet());
         }
     } // Using console mode
     else cSystem->UpdateIcons();
@@ -947,56 +933,54 @@ static class Display final :
   }
   /* -- Set window icons --------------------------------------------------- */
   bool SetIcon(const string &strNames)
-  { // Seperate icon names and return failure if we have more than three
-    Token tIcons{ strNames, ":" };
-    if(tIcons.empty() || tIcons.size() > 3) return false;
-    // If using interactive mode?
-    if(cSystem->IsGraphicalMode())
-    { // Clear images and icons
-      gilIcons.clear();
-      ilIcons.clear();
-      // Create contiguous memory for glfw icon descriptors and icon data
-      gilIcons.reserve(tIcons.size());
-      ilIcons.reserve(tIcons.size());
-      // Build icons
-      for(string &strName : tIcons)
-      { // Check filename
-        DirVerifyFileNameIsValid(strName);
-        // Load icon as RGB 32BPP.
-        const Image &imC = ilIcons.emplace_back(
-          Image{ StdMove(strName), IL_REVERSE|IL_TORGB|IL_TO32BPP });
-        const ImageSlot &imsD = imC.GetSlotsConst().front();
-        gilIcons.emplace_back(GLFWimage{
-          imsD.DimGetWidth<int>(), imsD.DimGetHeight<int>(),
-          imsD.MemPtr<unsigned char>() });
-      }
-    } // Not in interactive mode?
-    else
-    { // Only Win32 terminal windows can change the icon
-#if defined(WINDOWS)
-      // Have two icons at least?
-      if(tIcons.size() >= 2)
-      { // Get string
-        // Set small icon from the last icon specified
-        string &strFile = tIcons.back();
+  { // Seperate icon names and if we got an icon name
+    if(Token tIcons{ strNames, ":", 3 })
+    { // If using interactive mode?
+      if(cSystem->IsGraphicalMode())
+      { // Clear images and icons
+        gilIcons.clear();
+        ilIcons.clear();
+        // Create contiguous memory for glfw icon descriptors and icon data
+        gilIcons.reserve(tIcons.size());
+        ilIcons.reserve(tIcons.size());
+        // Build icons
+        for(string &strName : tIcons)
+        { // Check filename and load icon and force to RGB 32BPP.
+          DirVerifyFileNameIsValid(strName);
+          const Image &imC = ilIcons.emplace_back(
+            Image{ StdMove(strName), IL_REVERSE|IL_TORGB|IL_TO32BPP });
+          const ImageSlot &imsD = imC.GetSlotsConst().front();
+          gilIcons.emplace_back(GLFWimage{ imsD.DimGetWidth<int>(),
+            imsD.DimGetHeight<int>(), imsD.MemPtr<unsigned char>() });
+        }
+      } // Not in interactive mode?
+      else
+      { // Only Win32 terminal windows can change the icon
+  #if defined(WINDOWS)
+        // Have two icons at least?
+        if(tIcons.size() >= 2)
+        { // Get string and set small icon from the last icon specified
+          string &strFile = tIcons.back();
+          const Image imC{ StdMove(strFile), IL_REVERSE|IL_TOBGR };
+          const ImageSlot &imsD = imC.GetSlotsConst().front();
+          cSystem->SetSmallIcon(imC.IdentGet(), imsD.DimGetWidth(),
+            imsD.DimGetHeight(), imC.GetBitsPerPixel(), imsD);
+        } // Set large icon from the first icon specified
+        string &strFile = tIcons.front();
         const Image imC{ StdMove(strFile), IL_REVERSE|IL_TOBGR };
         const ImageSlot &imsD = imC.GetSlotsConst().front();
-        cSystem->SetSmallIcon(imC.IdentGet(), imsD.DimGetWidth(),
+        cSystem->SetLargeIcon(imC.IdentGet(), imsD.DimGetWidth(),
           imsD.DimGetHeight(), imC.GetBitsPerPixel(), imsD);
-      } // Set large icon from the first icon specified
-      string &strFile = tIcons.front();
-      const Image imC{ StdMove(strFile), IL_REVERSE|IL_TOBGR };
-      const ImageSlot &imsD = imC.GetSlotsConst().front();
-      cSystem->SetLargeIcon(imC.IdentGet(), imsD.DimGetWidth(),
-        imsD.DimGetHeight(), imC.GetBitsPerPixel(), imsD);
-     // Not using windows?
-#else
-     // Log that we cannot set icons
-     cLog->LogDebugSafe("Display cannot set icons on this mode and system.");
-     // Windows check?
-#endif
-    } // Success
-    return true;
+       // Not using windows?
+  #else
+       // Log that we cannot set icons
+       cLog->LogDebugSafe("Display cannot set icons on this mode and system.");
+       // Windows check?
+  #endif
+      } // Success
+      return true;
+    } // Failure
+    return false;
   }
   /* -- Update icons and refresh icon if succeeded ------------------------- */
   void SetIconFromLua(const string &strNames)

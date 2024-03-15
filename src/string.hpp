@@ -17,6 +17,7 @@ static const class Common final        // Members initially private
 { /* -- Private variables -------------------------------------------------- */
   const string     strTrue,            // C++ string as "true"
                    strFalse,           // C++ string as "false"
+                   strEquals,          // C++ string as "="
                    strNOne,            // C++ string as "-1"
                    strZero,            // C++ string as "0"
                    strOne,             // C++ string as "1"
@@ -41,6 +42,8 @@ static const class Common final        // Members initially private
   const string &Tru(void) const { return strTrue; }
   /* ----------------------------------------------------------------------- */
   const string &Fals(void) const { return strFalse; }
+  /* ----------------------------------------------------------------------- */
+  const string &Equals(void) const { return strEquals; }
   /* ----------------------------------------------------------------------- */
   const string &NOne(void) const { return strNOne; }
   /* ----------------------------------------------------------------------- */
@@ -69,13 +72,14 @@ static const class Common final        // Members initially private
   Common(void) :                       // No parameters
     /* -- Initialisers ----------------------------------------------------- */
     strTrue{ "true" },                 strFalse{ "false" },
-    strNOne{ "-1" },                   strZero{ "0" },
-    strOne{ "1" },                     strSpace{ " " },
-    strCr{ "\r" },                     strLf{ "\n" },
-    strCrLf{ strCr + strLf },          strCrLf2{ strCrLf + strCrLf },
-    strLfCr{ strLf + strCr },          strFSlash{ "/" },
-    strUnspec{ "<Unspecified>" },      strNull{ "<NullPtr>" },
-    cpBlank(strBlank.c_str()),         lLocaleCurrent{ strBlank }
+    strEquals{ "=" },                  strNOne{ "-1" },
+    strZero{ "0" },                    strOne{ "1" },
+    strSpace{ " " },                   strCr{ "\r" },
+    strLf{ "\n" },                     strCrLf{ strCr + strLf },
+    strCrLf2{ strCrLf + strCrLf },     strLfCr{ strLf + strCr },
+    strFSlash{ "/" },                  strUnspec{ "<Unspecified>" },
+    strNull{ "<NullPtr>" },            cpBlank(strBlank.c_str()),
+    lLocaleCurrent{ strBlank }
     /* -- No code ---------------------------------------------------------- */
     { }
 } /* ----------------------------------------------------------------------- */
@@ -610,7 +614,8 @@ template<typename DequeType>
 }
 /* -- Converts the key/value pairs to a stringvector ----------------------- */
 static const string ImplodeMap(const StrNCStrMap &ssmSrc,
-  const string &strLineSep=cCommon->Space(), const string &strKeyValSep="=",
+  const string &strLineSep=cCommon->Space(),
+  const string &strKeyValSep=cCommon->Equals(),
   const string &strValEncaps="\"")
 { // Done if empty
   if(ssmSrc.empty()) return {};

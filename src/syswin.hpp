@@ -447,7 +447,7 @@ class SysCore :
     if(stBits != 24 && stBits != 32)
       XC("Must be 24/32 bpp icon!",
          "Type", cpType, "Identifier", strId, "Bits", stBits);
-    if(mcSrc.Empty())
+    if(mcSrc.MemIsEmpty())
       XC("Invalid icon data!", "Type", cpType, "Identifier", strId);
     // Create the icon. CreateIcon() seems to ignore the AND bits
     // on 24/32bpp icons but /analyse complains, so send original bits to it
@@ -459,7 +459,7 @@ class SysCore :
       XCS("Failed to create new icon!",
           "Type",   cpType,  "Identifier", strId,
           "Width",  stWidth, "Height",     stHeight,
-          "Bits",   stBits,  "Data",       !mcSrc.Empty(),
+          "Bits",   stBits,  "Data",       !mcSrc.MemIsEmpty(),
           "Window", reinterpret_cast<void*>(GetWindowHandle()));
     // Destroy old icon if created and then assign the new icon
     if(hI && !DestroyIcon(hI))
@@ -509,11 +509,11 @@ class SysCore :
     // Storage for library name.
     Memory mStr{ _MAX_PATH * sizeof(ArgType) };
     // Get the library name and store it in the memory
-    mStr.Resize(GetModuleFileNameEx(hProcess,
+    mStr.MemResize(GetModuleFileNameEx(hProcess,
       reinterpret_cast<HMODULE>(vpModule), mStr.MemPtr<ArgType>(),
-      mStr.Size<DWORD>()) * sizeof(ArgType));
+      mStr.MemSize<DWORD>()) * sizeof(ArgType));
     // Use default name if empty or failed
-    return mStr.Empty() ? cpAltName : S16toUTF(mStr.MemPtr<ArgType>());
+    return mStr.MemIsEmpty() ? cpAltName : S16toUTF(mStr.MemPtr<ArgType>());
   }
   /* ----------------------------------------------------------------------- */
   void UpdateCPUUsageData(void)
@@ -580,18 +580,19 @@ class SysCore :
       const size_t stMinimum =
         sizeof(IMAGE_DOS_HEADER) + sizeof(IMAGE_NT_HEADERS32);
       // Read data into file and if failed? Report it
-      const size_t stActual = fExe.FStreamReadSafe(mExe.MemPtr(), mExe.Size());
+      const size_t stActual =
+        fExe.FStreamReadSafe(mExe.MemPtr(), mExe.MemSize());
       if(stActual < stMinimum)
         XCL("Failed to read enough data in executable!",
-            "File",    strFile,       "Maximum", mExe.Size(),
+            "File",    strFile,       "Maximum", mExe.MemSize(),
             "Minimum", stMinimum,     "Actual",  stActual,
             "Size",    fExe.FStreamSize());
       // Align a dos header structure to buffer
       const IMAGE_DOS_HEADER &pdhData =
-        *mExe.Read<IMAGE_DOS_HEADER>(0, sizeof(IMAGE_DOS_HEADER));
+        *mExe.MemRead<IMAGE_DOS_HEADER>(0, sizeof(IMAGE_DOS_HEADER));
       // Read PE header and throw error if it is not valid MZ signature
       const IMAGE_NT_HEADERS32 &pnthData =
-        *mExe.Read<IMAGE_NT_HEADERS32>(pdhData.e_lfanew,
+        *mExe.MemRead<IMAGE_NT_HEADERS32>(pdhData.e_lfanew,
           sizeof(IMAGE_NT_HEADERS32));
       if(pdhData.e_magic != IMAGE_DOS_SIGNATURE)
         XC("Executable does not have a valid MZ signature!",
@@ -622,7 +623,7 @@ class SysCore :
                ++stI, stPtr += sizeof(IMAGE_SECTION_HEADER))
       { // Get reference to section data
         const IMAGE_SECTION_HEADER &pshData =
-          *mExe.Read<IMAGE_SECTION_HEADER>
+          *mExe.MemRead<IMAGE_SECTION_HEADER>
             (stHdrsOffset + stPtr, sizeof(IMAGE_SECTION_HEADER));
         // Get pointer to raw data and ignore if we're not there yet
         if(pshData.PointerToRawData <= stPos) continue;

@@ -535,9 +535,9 @@ class SysBase :                        // Members initially private
         // Holds the memory for the symbol structure
         Memory aStruct{ 4096, true };
         PIMAGEHLP_SYMBOL ihsData = aStruct.MemPtr<IMAGEHLP_SYMBOL>();
-        ihsData->SizeOfStruct = aStruct.Size<DWORD>();
+        ihsData->SizeOfStruct = aStruct.MemSize<DWORD>();
         ihsData->MaxNameLength =
-          static_cast<DWORD>(aStruct.Size() - sizeof(IMAGEHLP_SYMBOL));
+          static_cast<DWORD>(aStruct.MemSize() - sizeof(IMAGEHLP_SYMBOL));
         // Retreive function and if succeeded?
         if(SymGetSymFromAddr(hProcess, sfData.AddrPC.Offset, &dwOffsetFromSym,
           ihsData))

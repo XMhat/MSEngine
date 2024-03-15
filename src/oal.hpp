@@ -463,12 +463,9 @@ static class Oal final :
       "- Maximum stereo sources: $.\n"
       "- Have ext.device enumerator: $.\n"
       "- Extensions count: $.",
-        StrFromBoolTF(FlagIsClear(AFL_INITRESET)),
-        StrFromBoolTF(Have32FPPB()),
-        uiMaxMonoSources,
-        uiMaxStereoSources,
-        StrFromBoolTF(FlagIsSet(AFL_HAVEENUMEXT)),
-        tlExtensions.size());
+      StrFromBoolTF(FlagIsClear(AFL_INITRESET)), StrFromBoolTF(Have32FPPB()),
+      uiMaxMonoSources, uiMaxStereoSources,
+      StrFromBoolTF(FlagIsSet(AFL_HAVEENUMEXT)), tlExtensions.size());
     // Log extensions if debug is enabled
     for(const auto &mI : mExts)
       cLog->LogNLCDebugExSafe("- Have extension '$' (#$).",

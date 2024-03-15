@@ -9,7 +9,7 @@
 /* ------------------------------------------------------------------------- */
 namespace IUrl {                       // Start of private module namespace
 /* -- Dependencies --------------------------------------------------------- */
-using namespace IString::P;
+using namespace IStd::P;               using namespace IString::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* == Class to break apart urls ============================================ */

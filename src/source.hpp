@@ -181,8 +181,7 @@ BEGIN_MEMBERCLASS(Sources, Source, ICHelperSafe),
   /* -- Queue one buffer --------------------------------------------------- */
   void QueueBuffer(const ALuint uiBuffer) const
   { // Queue buffers
-    AL(cOal->QueueBuffer(uiId, uiBuffer),
-      "Queue one buffer failed on source!",
+    AL(cOal->QueueBuffer(uiId, uiBuffer), "Queue one buffer failed on source!",
       "Index", uiId, "Buffer", uiBuffer);
   }
   /* -- UnQueueBuffers ----------------------------------------------------- */
@@ -265,8 +264,10 @@ BEGIN_MEMBERCLASS(Sources, Source, ICHelperSafe),
     // Play the source
     AL(cOal->PlaySource(uiId), "Play failed on source!", "Index", uiId);
   }
-  /* -- Constructor default locked for immediate async usage --------------- */
-  explicit Source(const bool bLocked=true) :
+  /* -- Constructor -------------------------------------------------------- */
+  explicit Source(
+    /* -- Parameters ------------------------------------------------------- */
+    const bool bLocked=true) :         // The source is initially locked?
     /* -- Initialisers ----------------------------------------------------- */
     ICHelperSource{ cSources, this },  // Register in Sources list
     IdentCSlave{ cParent->CtrNext() }, // Initialise identification number
@@ -294,21 +295,19 @@ static unsigned int SourceStop(const ALUIntVector &uiBuffers)
   // Buffers closed counter
   unsigned int uiStopped = 0;
   // Iterate through sources
-  for(Source *sCptr : *cSources)
-  { // Get reference
-    Source &sCref = *sCptr;
-    // Ignore if locked stream or no sour
-    if(sCref.GetExternal()) continue;
+  for(Source*const sCptr : *cSources)
+  { // Ignore if locked stream or no sour
+    if(sCptr->GetExternal()) continue;
     // Get sources buffer id and ignore if it is not set
-    if(const ALuint uiSB = sCref.GetBuffer())
+    if(const ALuint uiSB = sCptr->GetBuffer())
     { // Find a matching buffer and skip if source doesn't have this buffer id
       if(StdFindIf(par_unseq, uiBuffers.cbegin(), uiBuffers.cend(),
         [uiSB](const ALuint &uiB) { return uiSB == uiB; }) == uiBuffers.cend())
           continue;
       // Stop buffer and add to stopped counter if succeeded
-      if(sCref.Stop()) ++uiStopped;
+      if(sCptr->Stop()) ++uiStopped;
       // Clear the buffer from the source so the buffer can unload
-      sCref.ClearBuffer();
+      sCptr->ClearBuffer();
     } // Else buffer id not acquired
   } // Else return stopped buffers
   return uiStopped;
@@ -317,12 +316,10 @@ static unsigned int SourceStop(const ALUIntVector &uiBuffers)
 static Source *SourceGetFree(void)
 { // Iterate through available sources
   for(Source*const sCptr : *cSources)
-  { // Get reference to source class then set next class
-    Source &sCref = *sCptr;
-    // Is a locked stream? Then it's active and locked!
-    if(sCref.GetExternal() || sCref.IsPlaying()) continue;
+  { // Is a locked stream? Then it's active and locked!
+    if(sCptr->GetExternal() || sCptr->IsPlaying()) continue;
     // Reset source
-    sCref.ReInit();
+    sCptr->ReInit();
     // Return the source
     return sCptr;
   } // Couldn't find one

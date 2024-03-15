@@ -132,22 +132,15 @@ class Core                             // Members initially private
         if(strArg.empty())
           cLog->LogWarningExSafe(
             "Core rejected empty command-line argument at $!", stArg);
-        // Not empty argument?
-        else
-        { // Tokenise the argument into a key/value pair. We only want a
-          // maximum of two tokens, the seperator is allowed on the second
-          // token. Log the failure and continue if we didn't parse a key/value
-          // pair.
-          const Token tKeyVal{ strArg, "=", 2 };
-          if(tKeyVal.empty())
-            cLog->LogWarningExSafe("Core rejected invalid command-line "
-              "argument at $: '$'!", stArg, strArg);
-          // Argument is valid? Set the variable from command line with full
-          // permission because we should allow any variable to be overriden
-          // from the command line. Also show an error if the variable could
-          // not be set.
-          else if(cCVars->SetVarOrInitial(tKeyVal[0], tKeyVal.size() <= 1 ?
-            cCommon->Blank() : tKeyVal[1], SCMDLINE|PBOOT, CCF_NOTHING))
+        // Not empty argument? Tokenise the argument into a key/value pair. We
+        // only want a maximum of two tokens, the seperator is allowed on the
+        // second token and if succeeded?
+        else if(const Token tKeyVal{ strArg, cCommon->Equals(), 2 })
+        { // Set the variable from command line with full permission because we
+          // should allow any variable to be overridden from the command line.
+          // Also show an error if the variable could not be set.
+          if(cCVars->SetVarOrInitial(tKeyVal.front(), tKeyVal.size() <= 1 ?
+            cCommon->Blank() : tKeyVal.back(), SCMDLINE|PBOOT, CCF_NOTHING))
           { // Append argument to accepted command line and add a space
             strV.append(strArg);
             strV.append(cCommon->Space());
@@ -156,7 +149,10 @@ class Core                             // Members initially private
           } // Failure? Log the failure
           else cLog->LogWarningExSafe(
             "Core rejected command-line argument at $: '$'!", stArg, strArg);
-        } // Next argument
+        } // Log the failure and continue to next argument
+        else cLog->LogWarningExSafe("Core rejected invalid command-line "
+          "argument at $: '$'!", stArg, strArg);
+        // Next argument
         ++stArg;
       } // Remove empty space if not empty
       if(!strV.empty()) strV.pop_back();
@@ -220,20 +216,18 @@ class Core                             // Members initially private
       // Render video textures (if any)
       VideoRender();
       // Loop point incase we need to catchup game ticks
-      TimerCatchupWinThread:
+      for(;;)
       { // Set main fbo by default on each frame
         cFboCore->ActivateMain();
         // Poll joysticks
         cInput->PollJoysticks();
         // Execute a tick for each frame missed
         cLua->ExecuteMain();
-        // If we should keep catching up frames?
-        if(cTimer->TimerShouldTick())
-        { // Flush the main fbo as we're not drawing it yet
-          cFboCore->RenderFbosAndFlushMain();
-          // Render again until we've caught up
-          goto TimerCatchupWinThread;
-        } // We've completed catching up at this point
+        // Break if we've caught up
+        if(cTimer->TimerShouldNotTick()) break;
+        // Flush the main fbo as we're not drawing it yet
+        cFboCore->RenderFbosAndFlushMain();
+        // Render again until we've caught up
       } // Add console fbo to render list
       cConsole->RenderToMain();
       // Render all fbos and copy the main fbo to screen
@@ -252,7 +246,7 @@ class Core                             // Members initially private
       // Render video textures (if any)
       VideoRender();
       // Loop point incase we need to catchup game ticks
-      TimerCatchupMainThread:
+      for(;;)
       { // Process window events
         GlFWPollEvents();
         // Set main fbo by default on each frame
@@ -261,13 +255,11 @@ class Core                             // Members initially private
         cInput->PollJoysticks();
         // Execute a tick for each frame missed
         cLua->ExecuteMain();
-        // If we should keep catching up frames?
-        if(cTimer->TimerShouldTick())
-        { // Flush the main fbo as we're not drawing it yet
-          cFboCore->RenderFbosAndFlushMain();
-          // Render again until we've caught up
-          goto TimerCatchupMainThread;
-        } // We've completed catching up at this point
+        // Break if we've caught up
+        if(cTimer->TimerShouldNotTick()) break;
+        // Flush the main fbo as we're not drawing it yet
+        cFboCore->RenderFbosAndFlushMain();
+        // Render again until we've caught up
       } // Add console fbo to render list
       cConsole->RenderToMain();
       // Render all fbos and copy the main fbo to screen
@@ -502,8 +494,7 @@ class Core                             // Members initially private
     // Non-interactive mode?
     if(cSystem->IsTextMode())
     { // And interactive mode?
-      if(cSystem->IsGraphicalMode())
-        CoreInitGraphicalSubsystems();
+      if(cSystem->IsGraphicalMode()) CoreInitGraphicalSubsystems();
       // No interactive mode so if we're not initialising for the first time?
       else if(cEvtMain->IsExitReason(EMC_NONE))
       { // Initialise freetype and console
@@ -515,9 +506,8 @@ class Core                             // Members initially private
     else if(cSystem->IsGraphicalMode())
       CoreInitGraphicalSubsystems();
     // With audio mode enabled? Initialise audio class.
-    if(cSystem->IsAudioMode() &&
-      cEvtMain->IsExitReason(EMC_NONE))
-        cAudio->Init();
+    if(cSystem->IsAudioMode() && cEvtMain->IsExitReason(EMC_NONE))
+      cAudio->Init();
     // Lua loop with initialisation. Compare event code
     SandBoxInit: switch(cEvtMain->GetExitReason())
     { // Ignore LUA initialisation if we're re-initialising other components
