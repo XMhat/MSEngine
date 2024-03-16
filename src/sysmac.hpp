@@ -246,7 +246,7 @@ class SysCore :
             fExe.FStreamReadSafe(&lcData, sizeof(lcData)))
           { // We read enough bytes?
             if(stReadCmd == sizeof(lcData))
-            { // StrFormat command data
+            { // Format command data
               lcData.cmd = Swap32Type(lcData.cmd).v;
               lcData.cmdsize = Swap32Type(lcData.cmdsize).v;
               // We are only interested in segments
@@ -261,7 +261,7 @@ class SysCore :
                     sizeof(scItem)))
                   { // We read enough bytes?
                     if(stReadSeg == sizeof(scItem))
-                    { // StrFormat segment data
+                    { // Format segment data
                       scItem.fileoff = Swap64Type(scItem.fileoff).v;
                       scItem.filesize = Swap64Type(scItem.filesize).v;
                       // Get highest point in exe
@@ -290,7 +290,7 @@ class SysCore :
                     sizeof(scItem)))
                   { // We read enough bytes?
                     if(stReadSeg == sizeof(scItem))
-                    { // StrFormat needed segment data
+                    { // Format needed segment data
                       scItem.fileoff = Swap32Type(scItem.fileoff).v;
                       scItem.filesize = Swap32Type(scItem.filesize).v;
                       // Get highest point in exe
@@ -355,7 +355,7 @@ class SysCore :
             fExe.FStreamReadSafe(&faData, sizeof(faData)))
           { // We read enough bytes?
             if(stReadArch == sizeof(faData))
-            { // StrFormat needed segment data
+            { // Format needed segment data
               faData.offset = SwapType(faData.offset).v;
               faData.size = SwapType(faData.size).v;
               // Get highest point in exe
@@ -386,12 +386,12 @@ class SysCore :
     if(FStream fExe{ strFile, FM_R_B })
     { // Possible MachO header magic values
       enum MachOMagic : uint32_t {
-#if defined(LITTLE_ENDIAN)             // Intel and ARM?
+#if defined(LITTLEENDIAN)         // Intel and ARM?
         MACHO_LE32     = MH_MAGIC,     MACHO_LE64     = MH_MAGIC_64,
         MACHO_BE32     = MH_CIGAM,     MACHO_BE64     = MH_CIGAM_64,
         MACHO_FAT_LE32 = FAT_MAGIC,    MACHO_FAT_LE64 = FAT_MAGIC_64,
         MACHO_FAT_BE32 = FAT_CIGAM,    MACHO_FAT_BE64 = FAT_CIGAM_64,
-#elif defined(BIG_ENDIAN)              // PPC?
+#elif defined(BIGENDIAN)          // PPC?
         MACHO_LE32     = MH_CIGAM,     MACHO_LE64     = MH_CIGAM_64,
         MACHO_BE32     = MH_MAGIC,     MACHO_BE64     = MH_MAGIC_64,
         MACHO_FAT_LE32 = FAT_CIGAM,    MACHO_FAT_LE64 = FAT_CIGAM_64,

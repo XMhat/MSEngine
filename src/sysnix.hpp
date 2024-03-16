@@ -235,9 +235,9 @@ class SysCore :
   static size_t GetExeSize(const string &strFile)
   { // Machine byte order magic
     constexpr const unsigned int uiELFDataNative =
-#if defined(LITTLE_ENDIAN)             // Intel, ARM, etc.
+#if defined(LITTLEENDIAN)         // Intel, ARM, etc.
       ELFDATA2LSB;
-#elif defined(BIG_ENDIAN)              // PPC, etc.
+#elif defined(BIGENDIAN)          // PPC, etc.
       ELFDATA2MSB;
 #endif
     // Open exe file and return on error

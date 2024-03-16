@@ -82,8 +82,8 @@ class CodecWAV final :
     for(size_t stHeaderPos = fC.FileMapTell();
       stHeaderPos + stTwoDWords < fC.MemSize(); stHeaderPos = fC.FileMapTell())
     { // Get chunk header and size
-      const unsigned int uiHeader = fC.FileMapReadVar32LE();
-      const unsigned int uiSize = fC.FileMapReadVar32LE();
+      const unsigned int uiHeader = fC.FileMapReadVar32LE(),
+                         uiSize = fC.FileMapReadVar32LE();
       // Which chunk is it?
       switch(uiHeader)
       { // Is it the wave format chunk?
@@ -110,13 +110,27 @@ class CodecWAV final :
             XC("Wave format has invalid sample rate!",
                "Rate", auD.GetRate(), "Minimum", HL_U32LE_MINRATE,
                "Maximum", HL_U32LE_MAXRATE);
-          // Un-used memebers
-          const unsigned int ulAvgBytesPerSec = fC.FileMapReadVar32LE();
-          UNUSED_VARIABLE(ulAvgBytesPerSec);
-          const unsigned int usBlockAlign = fC.FileMapReadVar16LE();
-          UNUSED_VARIABLE(usBlockAlign);
-          // Get bits
+          // Get bytes per second and block align
+          const unsigned int uiAvgBytesPerSec = fC.FileMapReadVar32LE();
+          const unsigned int uiBlockAlign = fC.FileMapReadVar16LE();
+          // Get bits and calculate bytes per channel
           auD.SetBits(fC.FileMapReadVar16LE());
+          // Get and check bytes per second
+          const unsigned int uiCalcAvgBytes =
+            auD.GetRate() * auD.GetChannels() * auD.GetBytes();
+          if(uiCalcAvgBytes != uiAvgBytesPerSec)
+            XC("Average bytes per second mismatch!",
+               "Rate",     auD.GetRate(),    "Channels",   auD.GetChannels(),
+               "BitsPC",   auD.GetBits(),    "BytesPC",    auD.GetBytes(),
+               "Expected", uiAvgBytesPerSec, "Calculated", uiCalcAvgBytes);
+          // Check block align
+          const unsigned int uiCalcBlockAlign =
+            auD.GetChannels() * auD.GetBytes();
+          if(uiCalcBlockAlign != uiBlockAlign)
+            XC("Block align size mismatch!",
+               "Channels",   auD.GetChannels(), "BitsPC",   auD.GetBits(),
+               "BytesPC",    auD.GetBytes(),    "Expected", uiBlockAlign,
+               "Calculated", uiCalcBlockAlign);
           // Determine openal format type from the WAV file structure
           if(!auD.ParseOALFormat())
             XC("Wave format not supported by AL!",
@@ -127,12 +141,9 @@ class CodecWAV final :
           break;
         } // This is a data chunk?
         case HL_U32LE_CNKT_DATA:
-        { // Store pcm data
-          Memory mData{ uiSize, fC.FileMapReadPtr(uiSize) };
-          auD.SetSlot(mData);
-          // We got the data chunk
+        { // Store pcm data, mark that we got the data chunk and break
+          auD.aPcmL.MemInitData(uiSize, fC.FileMapReadPtr(uiSize));
           chunkFlags.FlagSet(WL_GOTDATA);
-          // We are done!
           break;
         } // Unknown chunk?
         default:
@@ -198,7 +209,7 @@ class CodecCAF final :
   /* -- Loader for CAF files ----------------------------------------------- */
   static bool Load(FileMap &fC, PcmData &auD)
   { // CAF data endian types
-    enum HeaderFlags { HF_NONE, HF_BIG_ENDIAN, HF_LITTLE_ENDIAN };
+    BUILD_FLAGS(Header, HF_NONE{0}, HF_ISFLOAT{1}, HF_ISPCMLE{2});
     // Check size at least 44 bytes for a file header, and 'desc' chunk and
     // a 'data' chunk of 0 bytes
     if(fC.MemSize() < HL_MINIMUM ||
@@ -212,7 +223,7 @@ class CodecCAF final :
       XC("CAF version not supported!",
         "Expected", HL_U32BE_V_V1, "Actual", ulVersion);
     // Detected file flags
-    HeaderFlags uiFlags = HF_NONE;
+    HeaderFlags hPcmFmtFlags{ HF_NONE };
     // The .caf file contains dynamic 'chunks' of data. We need to iterate
     // through each one until we hit the end-of-file.
     while(fC.FileMapIsNotEOF())
@@ -243,7 +254,8 @@ class CodecCAF final :
             XC("CAF data chunk type not supported!",
               "Expected", HL_U32LE_V_LPCM, "Header", ulHdr);
           // Check that FormatFlags(4) is valid
-          uiFlags = static_cast<HeaderFlags>(fC.FileMapReadVar32BE());
+          hPcmFmtFlags.FlagReset(
+            static_cast<HeaderFlags>(fC.FileMapReadVar32BE()));
           // Check that BytesPerPacket(4) is valid
           const unsigned int ulBPP = fC.FileMapReadVar32BE();
           if(ulBPP != 4)
@@ -265,47 +277,58 @@ class CodecCAF final :
           break;
         } // Is it the 'data' chunk?
         case HL_U32LE_V_DATA:
-        { // Store pcm data
-          Memory mData{ stSize, fC.FileMapReadPtr(stSize) };
-          auD.SetSlot(mData);
-          // Done
+        { // Store pcm data and break
+          auD.aPcmL.MemInitData(stSize, fC.FileMapReadPtr(stSize));
           break;
-        } // Unknown header
-        default:
-        { // Ignore unknown channel
-          fC.FileMapSeek(stSize, SEEK_CUR);
-          // Done
-          break;
-        }
+        } // Unknown header so ignore unknown channel and break
+        default: fC.FileMapSeek(stSize, SEEK_CUR); break;
       }
     } // Got \desc\ chunk?
     if(!auD.GetRate()) XC("CAF has no 'desc' chunk!");
     // Got 'data' chunk?
     if(auD.aPcmL.MemIsEmpty()) XC("CAF has no 'data' chunk!");
-    // IF data is in big-endian byte-order then we need to convert to little
-    if(!(uiFlags & HF_LITTLE_ENDIAN)) switch(auD.GetBits())
+    // Type of endianness conversion required for log (if required)
+    const char *cpConversion;
+    // If data is in little-endian mode?
+    if(hPcmFmtFlags.FlagIsSet(HF_ISPCMLE))
+    { // ... and using a little-endian cpu?
+#ifdef LITTLEENDIAN
+      // No conversion needed
+      return true;
+#else
+      // Set conversion label
+      cpConversion = "little to big";
+#endif
+    } // If data is in big-endian mode?
+    else
+    { // ... and using big-endian cpu?
+#ifdef BIGENDIAN
+      // No conversion needed
+      return true;
+#else
+      // Set conversion label
+      cpConversion = "big to little";
+#endif
+    } // Compare bitrate
+    switch(auD.GetBits())
     { // No conversion required if 8-bits per channel
       case 8: break;
       // 16-bits per channel (2 bytes)
       case 16:
-      { // Log that we're doing some modifications
-        cLog->LogDebugSafe(
-          "Pcm converting 16-bit big-endian byte-order to little-endian!");
-        // Walk through the data and reverse all the bits
+        // Log and perform byte swap
+        cLog->LogDebugExSafe(
+          "Pcm performing 16-bit $ byte-order conversion...", cpConversion);
         auD.aPcmL.MemByteSwap16();
-        // Done
         break;
-      } // 32-bits per channel (4 bytes)
+      // 32-bits per channel (4 bytes)
       case 32:
-      { // Log that we're doing some modifications
-        cLog->LogDebugSafe(
-          "Pcm converting 32-bit big-endian byte-order to little-endian!");
-        // Walk through the data and reverse all the bits
+        // Log and perform byte swap
+        cLog->LogDebugExSafe(
+          "Pcm performing 32-bit $ byte-order conversion...", cpConversion);
         auD.aPcmL.MemByteSwap32();
-        // Done
         break;
-      } // Not supported
-      default: XC("Pcm bit count with big-endian data not supported!",
+      // Not supported
+      default: XC("Pcm bit count not supported for endian conversion!",
                   "Bits", auD.GetBits());
     } // Done
     return true;
@@ -344,7 +367,7 @@ class CodecOGG final :
         FileMapTell()); }
   /* -- Loader for WAV files --------------------------------------- */ public:
   static bool Load(FileMap &fC, PcmData &auD)
-  { // Check magic and that the file has the OggS string
+  { // Check magic and that the file has the OggS string header
     if(fC.MemSize() < 4 || fC.FileMapReadVar32LE() != 0x5367674FUL)
       return false;
     // Reset position for library to read it as well

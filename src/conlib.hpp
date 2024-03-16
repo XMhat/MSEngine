@@ -368,8 +368,8 @@ cSystem->UpdateCPUUsage();
 cConsole->AddLineEx(
   "$$x$MHz/$ (FMS:$;$;$); Load: $% ($%).\n"
   "Start: $; Last: $; Limit: $; Accu: $.\n"
-  "Mode: $ ($); TimeOut: $ ($x$).\n"
-  "FPS: $/s; Delay: $/s; Ticks: $.",
+  "Mode: $ ($); TimeOut: $ ($x$); Ticks: $.\n"
+  "FPS: $/s ($/s); Eff: $%; Delay: $/s.",
     fixed, cSystem->CPUCount(), cSystem->CPUSpeed(), cSystem->CPUName(),
       cSystem->CPUFamily(), cSystem->CPUModel(), cSystem->CPUStepping(),
       cSystem->CPUUsage(), cSystem->CPUUsageSystem(),
@@ -377,9 +377,10 @@ cConsole->AddLineEx(
       cTimer->TimerGetLimit(), cTimer->TimerGetAccumulator(),
     cSystem->GetCoreFlags(), cSystem->GetCoreFlagsString(),
       cTimer->TimerGetTimeOut(), cTimer->TimerGetTriggers(),
-      cLua->GetOpsInterval(),
-    cTimer->TimerGetSecond(), cTimer->TimerGetDelay(),
-      cTimer->TimerGetTicks());
+      cLua->GetOpsInterval(), cTimer->TimerGetTicks(),
+    cTimer->TimerGetFPS(), cTimer->TimerGetFPSLimit(),
+      UtilMakePercentage(cTimer->TimerGetFPS(), cTimer->TimerGetFPSLimit()),
+      cTimer->TimerGetDelay());
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'cpu' function
 /* ========================================================================= */
@@ -899,7 +900,7 @@ cConsole->AddLineEx(
     cFboCore->fboMain.FboGetCmds(),
     cFboCore->fboMain.FboGetCmdsReserved(),
   fixed, cFboCore->dRTFPS, cDisplay->GetRefreshRate(),
-  cFboCore->dRTFPS / cDisplay->GetRefreshRate() * 100,
+  UtilMakePercentage(cFboCore->dRTFPS, cDisplay->GetRefreshRate()),
   cOgl->GetLimit());
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'gpu' function
@@ -1449,24 +1450,19 @@ const LockGuard lgPcmsSync{ cPcms->CollectorGetMutex() };
 // Text table class to help us write neat output
 Statistic tData;
 tData.Header("ID").Header("FLAGS", false).Header("RATE")
-     .Header("C").Header("BT").Header("PFMT").Header("ALLOC")
+     .Header("C").Header("BT").Header("B").Header("PFMT").Header("ALLOC")
      .Header("NAME", false).Reserve(cPcms->size());
 // Walk through textures classes
 for(const Pcm*const pCptr : *cPcms)
 { // Get reference to class and write its data to the table
   const Pcm &pCref = *pCptr;
-  tData.DataN(pCref.CtrGet())
-       .Data(StrFromEvalTokens({
-    { pCref.IsDynamic(),           'Y' },
-    { pCref.IsNotDynamic(),        'S' },
-    { pCref.FlagIsSet(PL_FCE_WAV), 'W' },
-    { pCref.FlagIsSet(PL_FCE_CAF), 'C' },
-    { pCref.FlagIsSet(PL_FCE_OGG), 'O' },
-    { pCref.FlagIsSet(PL_FCE_MP3), 'M' } }))
-       .DataN(pCref.GetRate()).DataN(pCref.GetChannels())
-       .DataN(pCref.GetBits()).DataH(pCref.GetFormat(),4)
-       .DataN(pCref.GetAlloc())
-       .Data(pCref.IdentGet());
+  tData.DataN(pCref.CtrGet()).Data(StrFromEvalTokens({
+    { pCref.IsDynamic(),           'Y' }, { pCref.IsNotDynamic(),        'S' },
+    { pCref.FlagIsSet(PL_FCE_WAV), 'W' }, { pCref.FlagIsSet(PL_FCE_CAF), 'C' },
+    { pCref.FlagIsSet(PL_FCE_OGG), 'O' }, { pCref.FlagIsSet(PL_FCE_MP3), 'M' }
+  })).DataN(pCref.GetRate()).DataN(pCref.GetChannels()).DataN(pCref.GetBits())
+     .DataN(pCref.GetBytes()).DataH(pCref.GetFormat(),4)
+     .DataN(pCref.GetAlloc()).Data(pCref.IdentGet());
 } // Log texture counts
 cConsole->AddLineExA(tData.Finish(),
   StrPluraliseNum(cPcms->size(), "pcm.", "pcms."));

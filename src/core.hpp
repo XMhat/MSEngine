@@ -232,8 +232,10 @@ class Core                             // Members initially private
       cConsole->RenderToMain();
       // Render all fbos and copy the main fbo to screen
       cFboCore->Render();
-    } // Update timer
-    cTimer->TimerUpdateInteractive();
+      // Update timer
+      cTimer->TimerUpdateInteractive();
+    } // Update interim timer without storing entire duration
+    else cTimer->TimerUpdateInteractiveInterim();
   }
   /* -- Graphical core main thread tick ------------------------------------ */
   void CoreMainThreadTick(void)
@@ -264,8 +266,10 @@ class Core                             // Members initially private
       cConsole->RenderToMain();
       // Render all fbos and copy the main fbo to screen
       cFboCore->Render();
-    } // Update timer
-    cTimer->TimerUpdateInteractive();
+      // Update timer
+      cTimer->TimerUpdateInteractive();
+    } // Update interim timer without storing entire duration
+    else cTimer->TimerUpdateInteractiveInterim();
   }
   /* -- Fired when Lua enters the sandbox ---------------------------------- */
   int CoreThreadSandbox(lua_State*const lS)
@@ -358,9 +362,9 @@ class Core                             // Members initially private
       }
     } // exception occured so throw LUA stackdump and leave the sandbox
     catch(const exception &E)
-    { // Allow Lue to process error. WARNING!! This prevents destructors on
-      // all statically initialised classes to NEVER call so make sure we do
-      // not statically create something above!
+    { // Allow Lue to process error. WARNING!! This prevents destructors on all
+      // statically initialised classes to NEVER call so make sure we do not
+      // statically create something above!
       LuaUtilPushErr(lS, E.what());
     } // Returning nothing
     return 0;

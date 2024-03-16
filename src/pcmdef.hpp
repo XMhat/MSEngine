@@ -35,8 +35,9 @@ class PcmData :                        // Audio data structure
 { /* ----------------------------------------------------------------------- */
   unsigned int     uiRate,             // Samples per second (Frequency/Hz)
                    uiChannels,         // Channels per sample
-                   uiBits;             // Bits per channel
-  ALenum           eFormat,            // StrFormat type for openal
+                   uiBits,             // Bits per channel
+                   uiBytes;            // Bytes per channel
+  ALenum           eFormat,            // Format type for openal
                    eSFormat;           // Single channel format for openal
   array<Memory,2>  aPcm;               // Pcm data (aPcmR used if stereo)
   size_t           stAlloc;            // Bytes allocated
@@ -63,7 +64,13 @@ class PcmData :                        // Audio data structure
   /* ----------------------------------------------------------------------- */
   unsigned int GetBits(void) const { return uiBits; }
   /* ----------------------------------------------------------------------- */
-  void SetBits(unsigned int uiNBits) { uiBits = uiNBits; }
+  void SetBits(unsigned int uiNBits)
+    { uiBits = uiNBits; uiBytes = uiBits/8; }
+  /* ----------------------------------------------------------------------- */
+  unsigned int GetBytes(void) const { return uiBytes; }
+  /* ----------------------------------------------------------------------- */
+  void SetBytes(unsigned int uiNBytes)
+    { uiBytes = uiNBytes; uiBits = uiBytes*8; }
   /* ----------------------------------------------------------------------- */
   ALenum GetFormat(void) const { return eFormat; }
   /* ----------------------------------------------------------------------- */
@@ -84,8 +91,6 @@ class PcmData :                        // Audio data structure
   /* -- Set allocated data size -------------------------------------------- */
   void SetAlloc(const size_t stNAlloc) { stAlloc = stNAlloc; }
   /* ----------------------------------------------------------------------- */
-  void SetSlot(Memory &mData) { aPcmL = StdMove(mData); }
-  /* ----------------------------------------------------------------------- */
   void ResetAllData(void)
   { // Reset all data
     uiRate = uiChannels = uiBits = 0;
@@ -100,6 +105,7 @@ class PcmData :                        // Audio data structure
     swap(uiRate, pcmRef.uiRate);
     swap(uiChannels, pcmRef.uiChannels);
     swap(uiBits, pcmRef.uiBits);
+    swap(uiBytes, pcmRef.uiBytes);
     swap(eFormat, pcmRef.eFormat);
     swap(eSFormat, pcmRef.eSFormat);
     swap(stAlloc, pcmRef.stAlloc);
@@ -114,8 +120,9 @@ class PcmData :                        // Audio data structure
     uiRate(0),                         // Rate not initialised
     uiChannels(0),                     // Channels not initialised
     uiBits(0),                         // Bits per channel not initialised
-    eFormat(AL_NONE),                  // StrFormat not initialised
-    eSFormat(AL_NONE),                 // Singal channel format not initialised
+    uiBytes(0),                        // Bytes per channel not initialised
+    eFormat(AL_NONE),                  // Format not initialised
+    eSFormat(AL_NONE),                 // Single channel format not initialised
     stAlloc(0),                        // No memory allocated
     aPcmL(aPcm.front()),               // Alias of first pcm channel
     aPcmR(aPcm.back())                 // Alias of second pcm channel

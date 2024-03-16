@@ -126,9 +126,8 @@ struct CodecDDS final :                // Members initially public
     if(!ifD.SetDimSafe(fC.FileMapReadVar32LE(), fC.FileMapReadVar32LE()))
       XC("Dimensions invalid!",
          "Width",  ifD.DimGetWidth(), "Height", ifD.DimGetHeight());
-    // Ignore pitch or linear size (total bytes length of a scanline)
+    // Check that scanline length is equal to the width
     const unsigned int uiPitchOrLinearSize = fC.FileMapReadVar32LEFrom(20);
-    UNUSED_VARIABLE(uiPitchOrLinearSize);
     // Get bit-depth and we'll verify it later
     const unsigned int uiBPP = static_cast<ByteDepth>(fC.FileMapReadVar32LE());
     // Get and check mipmap count. Theres still 1 image if this is zero.
@@ -274,7 +273,15 @@ struct CodecDDS final :                // Members initially public
       XC("Unimplemented quaternary flags!", "Flags", uiCaps4);
     if(const unsigned int uiReserved2 = fC.FileMapReadVar32LE())
       XC("Reserved flags must not be set!", "Data", uiReserved2);
-    // Alocate slots as mipmaps
+    // Scan-line length is specified?
+    if(uiPitchOrLinearSize)
+    { // Calculate actual memory for each scanline and check that it is same
+      const unsigned int uiScanSize = ifD.DimGetWidth()*ifD.GetBytesPerPixel();
+      if(uiScanSize != uiPitchOrLinearSize)
+        XC("Scan line size mismatch versus calculated!",
+           "Width",      ifD.DimGetWidth(), "ByDepth",  ifD.GetBytesPerPixel(),
+           "Calculated", uiScanSize,        "Expected", uiPitchOrLinearSize);
+    } // Alocate slots as mipmaps
     ifD.ReserveSlots(uiMipMapCount);
     // DDS's are reversed
     ifD.SetReversed();

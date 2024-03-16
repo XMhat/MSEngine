@@ -65,7 +65,7 @@ static void ImageSave(const size_t stFId, const string &strN,
   const ImageData &ifD, const ImageSlot &sData)
 { // Ignore if plugin is invalid
   if(stFId >= cImageFmts->size())
-    XC("StrFormat invalid!",
+    XC("Format invalid!",
        "Identifier", strN, "FormatId", stFId, "Maximum", cImageFmts->size());
   // Get plugin class
   const ImageFmt &iCref = **next(cImageFmts->cbegin(),

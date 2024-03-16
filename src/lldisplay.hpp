@@ -275,7 +275,9 @@ LLFUNCEX(GPUFPS, 1, LCPUSHVAR(cFboCore->dRTFPS));
 // ? detatched from GPU rendering which will always render as fast as possible.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(SetInterval, 1,
-  cTimer->TimerSetInterval(LCGETNUMLG(double, 1, 1, 200, "Interval")));
+  cTimer->TimerSetInterval(LCGETNUMLG(uint64_t, 1,
+     cTimer->TimerGetMinInterval(), cTimer->TimerGetMaxInterval(),
+    "Interval")));
 /* ========================================================================= */
 // $ Display.FSType
 // < Type:integer=Type of full-screen

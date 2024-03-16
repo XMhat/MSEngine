@@ -459,7 +459,7 @@ class SysCore :
       XCS("Failed to create new icon!",
           "Type",   cpType,  "Identifier", strId,
           "Width",  stWidth, "Height",     stHeight,
-          "Bits",   stBits,  "Data",       !mcSrc.MemIsEmpty(),
+          "Bits",   stBits,  "Data",       mcSrc.MemIsNotEmpty(),
           "Window", reinterpret_cast<void*>(GetWindowHandle()));
     // Destroy old icon if created and then assign the new icon
     if(hI && !DestroyIcon(hI))

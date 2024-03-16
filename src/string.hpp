@@ -153,7 +153,7 @@ template<typename ...VarArgs>
   if(UtfIsCStringNotValid(cpFmt)) return {};
   // Stream to write to
   ostringstream osS;
-  // StrFormat the text
+  // Format the text
   StrFormatHelper(osS, cpFmt, vaVars...);
   // Return formated text
   return osS.str();

@@ -627,7 +627,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
     GL(cOgl->ReadTexture(ePixType, mOut.MemPtr<GLvoid>()),
       "Download texture failed!",
       "Identifier", IdentGet(), "Index", stSubTexId,
-      "StrFormat",     cOgl->GetPixelFormat(ePixType));
+      "Format",     cOgl->GetPixelFormat(ePixType));
     // Return a newly created image class containing this data
     return Image{ IdentGet(), StdMove(mOut), DimGetWidth(), DimGetHeight(),
       bdDDepth, ePixType };

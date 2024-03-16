@@ -909,7 +909,7 @@ static class Console final :           // Members initially private
       // Redraw title
       cSystem->RedrawTitleBar(StrFormat("CPU:$$$%  FPS:$$  MEM:$  NET:$  UP:$",
         fixed, setprecision(1), cSystem->CPUUsage(), setprecision(0),
-        cTimer->TimerGetSecond(), StrToBytes(cSystem->RAMProcUse(), 0),
+        cTimer->TimerGetFPS(), StrToBytes(cSystem->RAMProcUse(), 0),
         cSockets->stConnected.load(),
         StrShortFromDuration(cLog->CCDeltaToDouble(), 0)),
         cmSys.FormatTime(strTimeFormat.c_str()));

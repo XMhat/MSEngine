@@ -15,7 +15,7 @@
 // ! This allows the programmer to load pcm wave forms or decompress encoded
 // ! pcm waveforms and send the objects to the OpenAL if needed. You can use
 // ! the command 'pcmfmts' to see what formats are usable which are WAV
-// ! (WaveForm Audio StrFormat) PCM/INT/FLOAT/LE, CAF (CoreAudio StrFormat),
+// ! (WaveForm Audio Format) PCM/INT/FLOAT/LE, CAF (CoreAudio Format),
 // ! PCM/INT/FLOAT/LE/BE, OGG (OGG Vorbis) and MP3 (MPEG-Layer III).
 /* ========================================================================= */
 namespace LLPcm {                      // Pcm namespace

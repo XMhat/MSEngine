@@ -182,7 +182,7 @@ class FStreamBase :                    // File stream base class
   size_t FStreamWriteBlock(const MemConst &mcSrc)
     { return FStreamWrite(mcSrc.MemPtr(), mcSrc.MemSize()); }
   size_t FStreamWriteBlockSafe(const MemConst &mcSrc)
-    { return FStreamIsReadyWrite() && !mcSrc.MemIsEmpty() ?
+    { return FStreamIsReadyWrite() && mcSrc.MemIsNotEmpty() ?
         FStreamWrite(mcSrc.MemPtr(), mcSrc.MemSize()) : 0; }
   /* -- Write a string to the file ----------------------------------------- */
   size_t FStreamWriteString(const string &strString)

@@ -512,9 +512,8 @@ static bool DirMkDirEx(const string &strDir)
   // Break apart so we can check the directories. Will always be non-empty.
   if(const Token tParts{ StrAppend(psParts.strDir, psParts.strFileExt),
     cCommon->FSlash() })
-  { // This will be the string that wile sent to mkdir multiple times gradually.
-    // Do not try to construct the oss with the drive string because it won't
-    // work and thats not how the constructor works it seems!
+  { // This will be the string that wile sent to mkdir multiple times
+    // gradually.
     ostringstream osS; osS << psParts.strDrive;
     // Get the first item and if it is not empty?
     const string &strFirst = tParts.front();

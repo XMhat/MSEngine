@@ -35,7 +35,7 @@ static const string SysError(const int iError)
   LPWSTR lpszError = nullptr;
   // Capture exceptions
   try
-  { // StrFormat the system error code and catch result
+  { // Format the system error code and catch result
     switch(const DWORD dwLen = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|
       FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_IGNORE_INSERTS, nullptr,
       dwError, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),

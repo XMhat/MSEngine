@@ -956,7 +956,7 @@ static class Display final :
       } // Not in interactive mode?
       else
       { // Only Win32 terminal windows can change the icon
-  #if defined(WINDOWS)
+#if defined(WINDOWS)
         // Have two icons at least?
         if(tIcons.size() >= 2)
         { // Get string and set small icon from the last icon specified
@@ -972,11 +972,11 @@ static class Display final :
         cSystem->SetLargeIcon(imC.IdentGet(), imsD.DimGetWidth(),
           imsD.DimGetHeight(), imC.GetBitsPerPixel(), imsD);
        // Not using windows?
-  #else
+#else
        // Log that we cannot set icons
        cLog->LogDebugSafe("Display cannot set icons on this mode and system.");
        // Windows check?
-  #endif
+#endif
       } // Success
       return true;
     } // Failure

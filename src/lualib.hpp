@@ -50,7 +50,7 @@ namespace P {                          // Start of public module namespace
 #define LCGETULPTR(p,t)                LuaUtilGetUnlockedPtr<t>(lS, p, #t)
 /* -- Macros to simplify try/catch on each lualib function ----------------- */
 #define LLFUNCBEGIN(n)                 static int Cb ## n(lua_State*const lS) {
-#define LLFUNCENDEX(p)                 UNUSED_VARIABLE(lS); return p; }
+#define LLFUNCENDEX(p)                 (void)(lS); return p; }
 #define LLFUNCBEGINEX(n,p)             LLFUNCBEGIN(n) LCCHECKPARAMS(p);
 #define LLFUNCBEGINTEMPLATE(n)         template<typename T>LLFUNCBEGIN(n)
 #define LLFUNCEND                      LLFUNCENDEX(0)

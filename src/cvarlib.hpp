@@ -531,12 +531,12 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
   TSTRING|CNOTEMPTY|MTRIM|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! APP_TICKRATE
-// ? Specifies the base tick rate of the guest application in ticks when using
-// ? the timer accumulator. The engine locks to this tick rate regardless of
-// ? lag. It can also be changed dynamically with Lua.
+// ? Specifies the base tick rate of the guest application in nanoseconds.
+// ? The engine locks to this tick rate regardless of lag. It can also be
+// ? changed dynamically with Lua. The default is 0.016666667 seconds (60fps).
 /* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "app_tickrate", "60",
-  CB(cTimer->TimerTickRateModified, unsigned int), TUINTEGER|PSYSTEM },
+{ CF_VIDEO, "app_tickrate", "16666667",
+  CB(cTimer->TimerTickRateModified, uint64_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! APP_DELAY
 // ? Specifies an artificial delay to force for bot mode in milliseconds. This

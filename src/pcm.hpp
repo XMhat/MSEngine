@@ -40,7 +40,7 @@ BEGIN_ASYNCCOLLECTORDUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
     // Iterate through the samples
     for(size_t stIndex = 0,
                stSubIndex = 0,
-               stBytes = GetBits() / 8,
+               stBytes = GetBytes(),
                stStep = GetChannels() * stBytes;
                stIndex < aTemp.MemSize();
                stIndex += stStep,
@@ -127,12 +127,14 @@ BEGIN_ASYNCCOLLECTORDUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
   void InitRaw(const string &strN, Memory &&aData, const unsigned int uiR,
     const unsigned int uiC, const unsigned int uiB)
   { // Validate parameters
-    if(uiR < 1 || uiR > 5644800) XC("Bogus sample rate!",
-      "Identifier", strN, "Rate", uiR);
-    if(uiC < 1 || uiC > 2) XC("Bogus channels per sample!",
-      "Identifier", strN, "Channels", uiC);
-    if(uiB < 1 || uiB > 4 || !StdIntIsPOW2(uiB)) XC("Bogus bits-per-channel!",
-      "Identifier", strN, "Bits", uiB);
+    if(uiR < 1 || uiR > 5644800)
+      XC("Bogus sample rate!", "Identifier", strN, "Rate", uiR);
+    if(uiC < 1 || uiC > 2)
+      XC("Bogus channels per sample!",
+         "Identifier", strN, "Channels", uiC);
+    if(uiB < 1 || uiB > 4 || !StdIntIsPOW2(uiB))
+      XC("Bogus bits-per-channel!",
+         "Identifier", strN, "Bits", uiB);
     // Calculate bytes per sample
     const size_t stBytesPerSample = GetRate() * GetChannels() * GetBits();
     if(aData.MemSize() != stBytesPerSample)
@@ -149,7 +151,7 @@ BEGIN_ASYNCCOLLECTORDUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
     SetBits(uiB);
     // Check that format is supported in OpenAL
     if(!ParseOALFormat())
-      XC("StrFormat not supported by audio driver!",
+      XC("Format not supported by audio driver!",
          "Identifier", IdentGet(),
          "Channels",   GetChannels(), "Bits", GetBits());
     // Split audio into two channels if audio in stereo

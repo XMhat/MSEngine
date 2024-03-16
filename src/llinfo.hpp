@@ -195,7 +195,7 @@ LLFUNCEX(Ticks, 1, LCPUSHVAR(cTimer->TimerGetTicks()));
 // ? Get CPU loops processed in the last second. Should be the same as GPU for
 // ? most people but at times may be different, sometimes much higher.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(CPUFPS, 1, LCPUSHVAR(cTimer->TimerGetSecond()));
+LLFUNCEX(CPUFPS, 1, LCPUSHVAR(cTimer->TimerGetFPS()));
 /* ========================================================================= */
 // $ Info.Delay
 // < Time:number=Delay time in seconds.
