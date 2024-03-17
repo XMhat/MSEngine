@@ -221,7 +221,7 @@ class SysBase :                        // Safe exception handler namespace
     // Dump the stack
     DumpStack(osS);
     // Add extra information if set
-    if(*cpExtra) osS << "\n" << cpExtra << "\n";
+    if(*cpExtra) osS << cCommon->Lf() << cpExtra << cCommon->Lf();
     // Print it to stderr
     fputs(osS.str().c_str(), stderr);
     // Dump mods to log

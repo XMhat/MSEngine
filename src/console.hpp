@@ -79,16 +79,21 @@ static class Console final :           // Members initially private
   typedef map<const string,const ConLib> LibList; // Map of commands type
   typedef LibList::iterator              LibListIt;
   typedef LibList::const_iterator        LibListItConst;
+  typedef queue<ConLine>                 ConLineQueue;
   /* -- Input -------------------------------------------------------------- */
+  ConLineQueue     clqOutput;          // Console lines pending
   ConLinesConstRevIt clriPosition;     // Console output position
   StrList          slHistory;          // Console history
   StrListConstRevIt slriInputPosition; // History position
-  size_t           stInputMaximum,     // Maximum number of input lines
-                   stOutputMaximum,    // Maximum number of output lines
-                   stMaximumChars;     // Maximum number of chars per line
+  size_t           stInputMaximum,     // Maximum no. of input lines
+                   stOutputMaximum,    // Maximum no. of output lines
+                   stMaxInputLine,     // Maximum no. of chars in input
+                   stMaxOutputLine,    // Maximum no. of chars per output line
+                   stMaxOutputLineE;   // Maximum no. of chars with ellipsis
   string           strConsoleBegin,    // Console input line (before cursor)
                    strConsoleEnd;      // Console input line (after cursor)
-  int              iPageLines;         // Lines to move when paging up or down
+  ssize_t          sstPageLines,       // Lines to move when paging up or down
+                   sstPageLinesNeg;    // As above but negative version
   RedrawFlags      rfDefault,          // Default redraw type
                    rfFlags;            // Redraw flags
   /* -- Text mode ---------------------------------------------------------- */
@@ -266,10 +271,6 @@ static class Console final :           // Members initially private
   size_t GetOutputMaximum(void) const { return stOutputMaximum; }
   /* -- Return maximum number of input history lines ----------------------- */
   size_t GetInputMaximum(void) const { return stInputMaximum; }
-  /* -- Return maximum number of input characters -------------------------- */
-  size_t GetMaximumChars(void) const { return stMaximumChars; }
-  /* -- Return number of pgup/dn lines ------------------------------------- */
-  int GetPageLines(void) const { return iPageLines; }
   /* -- Return lua commands list ------------------------------------------- */
   const LuaFunc::Map &GetLuaCmds(void) const { return lfList; }
   /* -- Return information about a console command ------------------------- */
@@ -560,16 +561,16 @@ static class Console final :           // Members initially private
   /* -- Move log by a certain amount --------------------------------------- */
   void MoveLogPage(const ConLinesConstRevIt &clriBegin,
     const ConLinesConstRevIt &clriEnd, const ConLinesConstRevIt &clriReset,
-    const int iAmount, const int iMove)
+    const ssize_t sstAmount, const ssize_t sstMove)
   { // Ignore if already at reset position
     if(clriPosition == clriReset) return;
     // Redrawing
     SetRedraw();
     // If we can advance that far? distance should always return positive
     // value since we're moving forwards
-    if(distance(clriBegin, clriEnd) < iAmount) clriPosition = clriReset;
+    if(distance(clriBegin, clriEnd) < sstAmount) clriPosition = clriReset;
     // Can safely advance forwards
-    else advance(clriPosition, iMove);
+    else advance(clriPosition, sstMove);
   }
   /* -- Functions to move the active console line -------------------------- */
   void MoveLogHome(void)
@@ -582,10 +583,10 @@ static class Console final :           // Members initially private
     { if(clriPosition != crbegin()){ SetRedraw(); --clriPosition; }}
   void MoveLogPageUp(void)
     { MoveLogPage(clriPosition, crend(), crend(),
-        GetPageLines(), GetPageLines()); }
+        sstPageLines, sstPageLines); }
   void MoveLogPageDown(void)
     { MoveLogPage(crbegin(), clriPosition, crbegin(),
-        GetPageLines(), -GetPageLines()); }
+        sstPageLines, sstPageLinesNeg); }
   /* -- OnLastItem event ---------------------- Selects last console item -- */
   void HistoryMoveBack(void)
   { // Ignore if no history lines or there is text after the cursor
@@ -642,7 +643,7 @@ static class Console final :           // Members initially private
   /* -- Input manipulation ------------------------------------------------- */
   void AddInputChar(const unsigned int uiChar)
   { // Make sure line is under max characters
-    if(strConsoleBegin.size() + strConsoleEnd.size() >= GetMaximumChars())
+    if(strConsoleBegin.size() + strConsoleEnd.size() >= stMaxInputLine)
       return;
     // Encode character to utf-8
     UtfAppend(uiChar, strConsoleBegin);
@@ -781,8 +782,6 @@ static class Console final :           // Members initially private
           case CVS_NOTUNSIGNED: osS << "must be equal or over zero!"; break;
           // Not power of two
           case CVS_NOTPOW2: osS << "must be power of two!"; break;
-          // Not power of two or zero
-          case CVS_NOTPOW2Z: osS << "must be power of two or zero!"; break;
           // Must only contain letters
           case CVS_NOTALPHA: osS << "must contain only letters!"; break;
           // Must only contain digits
@@ -797,6 +796,8 @@ static class Console final :           // Members initially private
             osS << "not set due to exception! " << cCVars->GetCBError(); break;
           // String empty
           case CVS_EMPTY: osS << "must not be empty!"; break;
+          // Integer is zero
+          case CVS_ZERO: osS << "must not be zero!"; break;
           // No type is set
           case CVS_NOTYPESET: osS << "not set due to unknown type!"; break;
         }
@@ -885,7 +886,9 @@ static class Console final :           // Members initially private
   }
   /* -- Tick for bot render ------------------------------------------------ */
   void FlushToLog(void)
-  { // If thread delay enabled and input polling interval ready to poll?
+  { // Process queued console log lines
+    MoveQueuedLines();
+    // If thread delay enabled and input polling interval ready to poll?
     if(cTimer->TimerGetDelay() != 0.0 || ciInputRefresh.CITriggerStrict())
     {  // Loop forever until no more keys are pressed
       for(int iKey, iMods;;) switch(cSystem->GetKey(iKey, iMods))
@@ -940,8 +943,39 @@ static class Console final :           // Members initially private
     for(const ConLine &clItem : *this) cLog->LogNLCDebugSafe(clItem.strLine);
     return size();
   }
+  /* -- Process queued console lines -------------------------------------- */
+  void MoveQueuedLines(void)
+  { // If there are console lines in the queue?
+    if(clqOutput.empty()) return;
+    // Stagger the queue to the output buffer but enough so it completes fast
+    // and compensates for a growing queue. At minimum the number of elements
+    // or the most of half of the number of elements or five.
+    size_t stLines = UtilMinimum(clqOutput.size(),
+      UtilMaximum(5, clqOutput.size()/2));
+    ReserveLines(stLines);
+    // Get if we're at the bottom of the log
+    const bool bAtBottom = clriPosition == rbegin();
+    // Repeat...
+    do
+    { // Move item into main console render buffer
+      emplace_back(StdMove(clqOutput.front()));
+      // remove the old item
+      clqOutput.pop();
+    } // ...until we've moved enough lines
+    while(--stLines != 0);
+    // Auto scroll enabled or were already at the bottom of log? Set the log
+    // to the bottom.
+    if(FlagIsSet(CF_AUTOSCROLL) || bAtBottom) clriPosition = rbegin();
+    // Redraw the buffer, it changed
+    SetRedraw();
+  }
   /* -- Redraw the console fbo if the console contents changed ------------- */
-  void Render(void) { if(rfFlags.FlagIsSet(RD_GRAPHICS)) Redraw(); }
+  void Render(void)
+  { // Shift console lines
+    MoveQueuedLines();
+    // Redraw if we're to redraw
+    if(rfFlags.FlagIsSet(RD_GRAPHICS)) Redraw();
+  }
   /* -- Render the console to main fbo if visible -------------------------- */
   void RenderToMain(void) { if(IsVisible()) cFboCore->BlitConsoleToMain(); }
   /* -- Show the console and render it and render the fbo to main fbo ------ */
@@ -998,22 +1032,20 @@ static class Console final :           // Members initially private
     // Remove it
     llCmds.erase(ccbItem);
   }
-  /* -- Add line as string with specified text colour ----------------- */
+  /* -- Add line as string with specified text colour ---------------------- */
   void AddLine(const string &strText, const Colour pColour)
   { // Tokenise lines into a list limited by the maximum number of lines.
-    if(const TokenList tLines{ strText, "\n", GetOutputMaximum() })
-    { // Remove old lines if there are too many to fit this amount
-      ReserveLines(tLines.size());
-      // Get if we're at the bottom of the log
-      const bool bAtBottom = clriPosition == rbegin();
-      // Add each line we separated
+    if(const TokenList tLines{ strText, cCommon->Lf(), GetOutputMaximum() })
+    { // Add all the lines to the output queue
+      const double dTime = cLog->CCDeltaToDouble();
       for(const string &sLine : tLines)
-        push_back({ cLog->CCDeltaToDouble(), pColour, StdMove(sLine) });
-      // Auto scroll enabled or were already at the bottom of log? Set the log
-      // to the bottom.
-      if(FlagIsSet(CF_AUTOSCROLL) || bAtBottom) clriPosition = rbegin();
-      // Redraw the buffer, it changed
-      SetRedraw();
+      { // Move the line across if it is long enough
+        if(sLine.length() <= stMaxOutputLine)
+          clqOutput.push({ dTime, pColour, StdMove(sLine) });
+        // Push a truncated line
+        else clqOutput.push({ dTime, pColour,
+          sLine.substr(0, stMaxOutputLineE) + cCommon->Ellipsis() });
+      }
     }
   }
   /* -- Add line as string with default text colour ------------------- */
@@ -1231,8 +1263,14 @@ static class Console final :           // Members initially private
     cLog->LogInfoSafe("Console de-initialised successfully.");
   }
   /* -- Set page move count ------------------------------------------------ */
-  CVarReturn SetPageMoveCount(int iAmount)
-    { return CVarSimpleSetInt(iPageLines, iAmount); }
+  CVarReturn SetPageMoveCount(const ssize_t sstAmount)
+  { // Deny if invalid value
+    if(CVarSimpleSetInt(sstPageLines, sstAmount) == DENY) return DENY;
+    // Set negative too
+    sstPageLinesNeg = -sstPageLines;
+    // Success
+    return ACCEPT;
+  }
   /* -- Set time format ---------------------------------------------------- */
   CVarReturn SetTimeFormat(const string &strFmt, string &)
   { // Verify the new time format and log it
@@ -1244,7 +1282,7 @@ static class Console final :           // Members initially private
     return ACCEPT;
   }
   /* -- Set maximum console line length ------------------------------------ */
-  CVarReturn SetMaxConLineChars(const size_t stChars)
+  CVarReturn SetMaxInputChars(const size_t stChars)
   { // Deny if out of range
     if(stChars < 256 ||
        stChars > UtilMinimum(UtilMinimum(strConsoleBegin.max_size(),
@@ -1254,10 +1292,21 @@ static class Console final :           // Members initially private
     strConsoleBegin.reserve(stChars);
     strConsoleEnd.reserve(stChars);
     // Set new maximum length
-    stMaximumChars = stChars;
+    stMaxInputLine = stChars;
     // Redraw the buffer, it changed
     SetRedraw();
     // Value allowed
+    return ACCEPT;
+  }
+  /* -- Set maximum console line length ------------------------------------ */
+  CVarReturn SetMaxOutputChars(const size_t stChars)
+  { // Check, set the new value and return if not acceptable
+    if(CVarSimpleSetIntNLG(stMaxOutputLine, stChars, static_cast<size_t>(1024),
+      static_cast<size_t>(65536)) == DENY)
+        return DENY;
+    // Set subtracted value from ellipsis size
+    stMaxOutputLineE = stMaxOutputLine - cCommon->Ellipsis().length();
+    // Value accepted
     return ACCEPT;
   }
   /* -- Set console buffers ------------------------------------------------ */
@@ -1403,8 +1452,11 @@ static class Console final :           // Members initially private
       slHistory.crend() },             // ...at beginning
     stInputMaximum(0),                 // No maximum input characters
     stOutputMaximum(0),                // No maximum output lines
-    stMaximumChars(0),                 // No maximum characters per line
-    iPageLines(0),                     // No page up/down lines setting
+    stMaxInputLine(0),                 // No maximum characters per line
+    stMaxOutputLine(0),                // No maximum output line
+    stMaxOutputLineE(0),               // No maximum output line with ellipsis
+    sstPageLines(0),                   // No page up/down lines setting
+    sstPageLinesNeg(0),                // No neg page up/down lines setting
     rfDefault{ RD_NONE },              // Default redraw initially set by Init
     rfFlags{ RD_NONE },                // Redraw type
     ulFgColour(                        // Set input text colour

@@ -1513,7 +1513,7 @@ static StrNCStrMap SocketOAuth11(const string &strMethod,
   const string &strScheme, const string &strHost, const string &strPort,
   const string &strReq, const string &strURLparams, const string &strParams)
 { // Input varlist and split params into it
-  Vars vaIn{ strParams, cCommon->Lf(), '=' };
+  Vars<> vaIn{ strParams, cCommon->Lf(), '=' };
   if(vaIn.empty()) return {};
   // Get consumer key
   const string strCK{ vaIn.Extract("oauth_consumer_key") };
@@ -1563,7 +1563,7 @@ static StrNCStrMap SocketOAuth11(const string &strMethod,
   StrNCStrMap vaUP{ vaOA };
   vaUP.insert(vaIn.cbegin(), vaIn.cend());
   // Split URL parameters and put each one in unsigned parameters list
-  const VarsConst vaURLP{ strURLparams, "&", '=' };
+  const VarsConst<> vaURLP{ strURLparams, "&", '=' };
   vaUP.insert(vaURLP.cbegin(), vaURLP.cend());
   // Now for each unsigned parameter. Encode it into the signed param table.
   const string strOAParams{ CryptImplodeMapAndEncode(vaUP, "&") };

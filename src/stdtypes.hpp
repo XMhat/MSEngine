@@ -11,9 +11,9 @@
 /* -- Storage spaces ------------------------------------------------------- */
 using ::std::array;                    using ::std::deque;
 using ::std::list;                     using ::std::map;
-using ::std::pair;                     using ::std::set;
-using ::std::string;                   using ::std::vector;
-using ::std::wstring;
+using ::std::queue;                    using ::std::pair;
+using ::std::set;                      using ::std::string;
+using ::std::vector;                   using ::std::wstring;
 /* -- Exceptions ----------------------------------------------------------- */
 using ::std::exception;                using ::std::runtime_error;
 /* -- Other ---------------------------------------------------------------- */

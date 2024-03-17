@@ -46,7 +46,6 @@ enum CVarSetEnums                      // Cvar set return codes
   CVS_NOTBOOLEAN,                      // Parameter set was not a boolean
   CVS_NOTUNSIGNED,                     // Parameter set was not >= 0
   CVS_NOTPOW2,                         // Parameter set was not power of two
-  CVS_NOTPOW2Z,                        // Same as above, but not zero too
   CVS_NOTALPHA,                        // Must contain only letters
   CVS_NOTNUMERIC,                      // Must contain only digits
   CVS_NOTALPHANUMERIC,                 // Must contain only alphanumerics
@@ -54,6 +53,7 @@ enum CVarSetEnums                      // Cvar set return codes
   CVS_TRIGGERDENIED,                   // Trigger callback denied change
   CVS_TRIGGEREXCEPTION,                // exception occured in trigger
   CVS_EMPTY,                           // Parameter set was an empty string
+  CVS_ZERO,                            // Parameter not allowed to be zero
   CVS_NOTYPESET,                       // No type is set
 };/* ----------------------------------------------------------------------- */
 BUILD_FLAGS(CVarCondition,             // For Set() functions
@@ -403,25 +403,25 @@ class Item :                           // Members initially private
         XC("CVar specified is not a valid integer!",
            "Variable", GetVar(), "Value", strNValue);
       } // Deny negative values if unsigned only needed
-      else if(FlagIsSet(CUNSIGNED) && strNValue.front() == '-')
+      if(FlagIsSet(CUNSIGNED) && strNValue.front() == '-')
       { // If we should not abort? Just return error else throw exception
         if(ccfFlags.FlagIsClear(CCF_THROWONERROR))
           return CVS_NOTUNSIGNED;
         XC("CVar specified must be an unsigned integer!",
            "Variable", GetVar(), "Value", strNValue);
+      } // Deny non-power of two numbers but allow zero?
+      if(FlagIsSet(CNOTEMPTY) && !StrToNum<uint64_t>(strNValue))
+      { // If we should not abort? Just return error else throw exception
+        if(ccfFlags.FlagIsClear(CCF_THROWONERROR))
+          return CVS_ZERO;
+        XC("CVar specified must be non-zero!",
+           "Variable", GetVar(), "Value", strNValue);
       } // Deny non-power of two numbers?
-      else if(FlagIsSet(CPOW2) && !StrIsNumPOW2(strNValue))
+      if(FlagIsSet(CPOW2) && !StrIsNumPOW2(strNValue))
       { // If we should not abort? Just return error else throw exception
         if(ccfFlags.FlagIsClear(CCF_THROWONERROR))
           return CVS_NOTPOW2;
         XC("CVar specified must be power of two!",
-           "Variable", GetVar(), "Value", strNValue);
-      } // Deny non-power of two numbers but allow zero?
-      else if(FlagIsSet(CPOW2Z) && !StrIsNumPOW2Zero(strNValue))
-      { // If we should not abort? Just return error else throw exception
-        if(ccfFlags.FlagIsClear(CCF_THROWONERROR))
-          return CVS_NOTPOW2Z;
-        XC("CVar specified must be power of two or zero!",
            "Variable", GetVar(), "Value", strNValue);
       } // Next step
       return SetValue(strNValue, ccfFlags, mLock, strCBError);
@@ -435,7 +435,7 @@ class Item :                           // Members initially private
         XC("CVar specified is not a valid number!",
            "Variable", GetVar(), "Value", strNValue);
       } // Deny negative values if unsigned only needed
-      else if(FlagIsSet(CUNSIGNED) && strNValue.front() == '-')
+      if(FlagIsSet(CUNSIGNED) && strNValue.front() == '-')
       { // If we should not abort? Just return error else throw exception
         if(ccfFlags.FlagIsClear(CCF_THROWONERROR))
           return CVS_NOTUNSIGNED;

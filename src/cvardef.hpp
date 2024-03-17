@@ -76,12 +76,12 @@ BUILD_FLAGS(CVar,
   CALPHA                 {0x00000010}, CNUMERIC               {0x00000020},
   // Variable is written to database?  Variable is protected?
   CSAVEABLE              {0x00000040}, CPROTECTED             {0x00000080},
-  // Variable is compressed?           Variable string cannot be empty?
+  // Variable is compressed?           Var cannot be empty (str) or zero? (int)
   CDEFLATE               {0x00000100}, CNOTEMPTY              {0x00000200},
   // Variable must be unsigned?        Variable integer must be power of two?
   CUNSIGNED              {0x00000400}, CPOW2                  {0x00000800},
-  // Must be Pow2 but zero is allowed? Variable must be a valid filename
-  CPOW2Z                 {0x00001000}, CFILENAME              {0x00002000},
+  // Variable must be a valid filename?
+  CFILENAME              {0x00001000},
   /* -- Manipulation (M) --------------------------------------------------- */
   MTRIM                  {0x00004000}, // Variable string should be trimmed
   /* -- Other (O) ---------------------------------------------------------- */
@@ -122,7 +122,7 @@ BUILD_FLAGS(CVar,
   CVREGMASK{ COMMIT|SANY },            CALPHANUMERIC{ CALPHA|CNUMERIC },
   /* -- Allowed bits ------------------------------------------------------- */
   MASK{ TSTRING|TINTEGER|TFLOAT|TBOOLEAN|CALPHA|CNUMERIC|CSAVEABLE|CPROTECTED|
-        CDEFLATE|CNOTEMPTY|CUNSIGNED|CPOW2|CPOW2Z|CFILENAME|MTRIM|OSAVEFORCE };
+        CDEFLATE|CNOTEMPTY|CUNSIGNED|CPOW2|CFILENAME|MTRIM|OSAVEFORCE };
 );/* ----------------------------------------------------------------------- */
 class Item;                            // (Prototype) Cvar callback data
 typedef CVarReturn (*CbFunc)(Item&, const string&); // Callback return type
@@ -183,8 +183,9 @@ enum CVarEnums : size_t
   CON_FONT,         CON_FONTFLAGS,     CON_FONTCOLOUR,      CON_FONTHEIGHT,
   CON_FONTPADDING,  CON_FONTPCMIN,     CON_FONTPCMAX,       CON_FONTSCALE,
   CON_FONTSPACING,  CON_FONTLSPACING,  CON_FONTWIDTH,       CON_FONTTEXSIZE,
-  CON_INPREFRESH,   CON_INPUTMAX,      CON_PAGELINES,       CON_TMCCOLS,
-  CON_TMCROWS,      CON_TMCREFRESH,    CON_TMCNOCLOSE,      CON_TMCTFORMAT,
+  CON_INPREFRESH,   CON_INPUTMAX,      CON_OUTPUTMAX,       CON_PAGELINES,
+  CON_TMCCOLS,      CON_TMCROWS,       CON_TMCREFRESH,      CON_TMCNOCLOSE,
+  CON_TMCTFORMAT,
   /* -- Fmv cvars ---------------------------------------------------------- */
   FMV_IOBUFFER,     FMV_MAXDRIFT,
   /* -- Input cvars -------------------------------------------------------- */

@@ -364,7 +364,7 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
          "Identifier",   IdentGet(), "Manfiest", strManfiest,
          "BufferLength", strBuffer.length());
     // Split variables and throw error if there are no vars
-    const VarsConst vC{ strBuffer, strTokens, '=' };
+    const VarsConst<> vC{ strBuffer, strTokens, '=' };
     if(!vC.size())
       XC("No metadata in index file!",
          "Identifier", IdentGet(), "Manfiest", strManfiest);

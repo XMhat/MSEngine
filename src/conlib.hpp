@@ -231,7 +231,7 @@ for(const auto &caPair : cSockets->GetCertList())
   tData.Data(StrFromBoolYN(CertIsExpired(caPair.second)))
        .Data(caPair.first);
   // Split subject key/value pairs. We couldn't split the data if empty
-  const VarsConst ssD{ CertGetSubject(caPair), cCommon->FSlash(), '=' };
+  const VarsConst<> ssD{ CertGetSubject(caPair), cCommon->FSlash(), '=' };
   if(ssD.empty()) { tData.Data("??").Data("<No sub>"); continue; }
   // Print country and certificate name
   const StrStrMapConstIt iC{ ssD.find("C") }, iCN{ ssD.find("CN") };
@@ -335,7 +335,6 @@ cConsole->AddLineEx("No match from $.",
 cConsole->AddLineEx("Console flags are currently 0x$$$ ($).\n"
                     "- Output lines: $ (Maximum: $).\n"
                     "- Input commands: $ (Maximum: $).\n"
-                    "- Max input characters: $; Page lines: $.\n"
                     "- Command functions: $ (Lua: $).",
   hex, cConsole->FlagGet(), dec, StrFromEvalTokens({
     { cConsole->FlagIsSet(CF_CANTDISABLE), 'D' },
@@ -347,7 +346,6 @@ cConsole->AddLineEx("Console flags are currently 0x$$$ ($).\n"
   }),
   cConsole->GetOutputCount(), cConsole->GetOutputMaximum(),
   cConsole->GetInputCount(), cConsole->GetInputMaximum(),
-  cConsole->GetMaximumChars(), cConsole->GetPageLines(),
   cConsole->GetCmdsList().size(), cConsole->GetLuaCmds().size());
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'con' function

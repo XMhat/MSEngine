@@ -311,7 +311,7 @@ static class CVars final               // Start of vars class
       cLog->LogErrorSafe("CVars failed to detect config file type!");
       return false;
     } // Initialise it and log and return failed if there are no lines
-    const VarsConst varLoaded{ strBuffer, strSplit, '=' };
+    const VarsConst<> varLoaded{ strBuffer, strSplit, '=' };
     if(varLoaded.empty())
     { // Log the issue and return failure
       cLog->LogWarningSafe("CVars detected no readable variables!");

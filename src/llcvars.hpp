@@ -124,10 +124,10 @@ LLRSKTBEGIN(Flags)                     // Beginning of cvar register flags
   LLRSKTITEM(T,STRINGSAVE),            LLRSKTITEM(T,BOOLEANSAVE),
   LLRSKTITEM(C,SAVEABLE),              LLRSKTITEM(C,PROTECTED),
   LLRSKTITEM(C,NOTEMPTY),              LLRSKTITEM(C,UNSIGNED),
-  LLRSKTITEM(C,POW2),                  LLRSKTITEM(C,POW2Z),
-  LLRSKTITEM(C,DEFLATE),               LLRSKTITEM(C,ALPHA),
-  LLRSKTITEM(C,FILENAME),              LLRSKTITEM(C,NUMERIC),
-  LLRSKTITEM(M,TRIM),                  LLRSKTITEM(O,SAVEFORCE),
+  LLRSKTITEM(C,POW2),                  LLRSKTITEM(C,DEFLATE),
+  LLRSKTITEM(C,ALPHA),                 LLRSKTITEM(C,FILENAME),
+  LLRSKTITEM(C,NUMERIC),               LLRSKTITEM(M,TRIM),
+  LLRSKTITEM(O,SAVEFORCE),
 LLRSKTEND                              // End of cvar register status flags
 /* ========================================================================= */
 // @ CVars.Result

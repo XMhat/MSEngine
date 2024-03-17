@@ -656,7 +656,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? as resulting infinite loops in Lua cannot be recovered and will require
 // ? force termination of the entire process.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "lua_ticktimeout", "10",
+{ CF_NOTHING, "lua_ticktimeout", "1",
   CB(cTimer->TimerSetTimeOut, unsigned int), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! LUA_TICKCHECK
@@ -1003,15 +1003,23 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? Specifies the maximum number of characters that are allowed to be typed
 // ? into the console input buffer.
 /* ------------------------------------------------------------------------- */
-{ CF_NOTHING, "con_inputmax", "1000",
-  CB(cConsole->SetMaxConLineChars, size_t), TUINTEGERSAVE|PANY },
+{ CF_NOTHING, "con_inputmax", "1024",
+  CB(cConsole->SetMaxInputChars, size_t), TUINTEGERSAVE|PANY },
+/* ------------------------------------------------------------------------- */
+// ! CON_OUTPUTMAX
+// ? Specifies the maximum number of characters that are allowed on each
+// ? console output line. It is needed to limit stalling the engine and GPU
+// ? with very long lines.
+/* ------------------------------------------------------------------------- */
+{ CF_NOTHING, "con_outputmax", "4096",
+  CB(cConsole->SetMaxOutputChars, size_t), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_PAGELINES
 // ? The number of lines that are scrolled when pressing CONTROL and PAGEUP or
 // ? PAGEDOWN keys.
 /* ------------------------------------------------------------------------- */
 { CF_NOTHING, "con_pagelines", "10",
-  CB(cConsole->SetPageMoveCount, int), TUINTEGERSAVE|PANY },
+  CB(cConsole->SetPageMoveCount, ssize_t), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_TMCCOLS
 // ? In bot mode, this is the maximum number of columns to draw. The larger
@@ -1316,7 +1324,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? 0, 90, 180 or 270 degrees.
 /* ------------------------------------------------------------------------- */
 { CF_VIDEO, "vid_fsaa", cCommon->NOne(),
-  CB(cDisplay->FsaaChanged, int), TINTEGERSAVE|CPOW2Z|PANY },
+  CB(cDisplay->FsaaChanged, int), TINTEGERSAVE|CPOW2|CNOTEMPTY|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_FORWARD
 // ? Specifies to use a forward compatible context. This is only used for

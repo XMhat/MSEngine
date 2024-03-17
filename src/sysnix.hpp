@@ -378,7 +378,7 @@ class SysCore :
       const string strFile{ fsCpuInfo.FStreamReadStringChunked() };
       if(!strFile.empty())
       { // Parse the variables and if we got some?
-        VarsConst vVars{ strFile, StrGetReturnFormat(strFile), ':' };
+        VarsConst<> vVars{ strFile, StrGetReturnFormat(strFile), ':' };
         if(!vVars.empty())
         { // Move stirngs from loaded variables
           string strCpuId{ StdMove(vVars["model name"]) },

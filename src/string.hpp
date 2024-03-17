@@ -22,6 +22,7 @@ static const class Common final        // Members initially private
                    strZero,            // C++ string as "0"
                    strOne,             // C++ string as "1"
                    strSpace,           // C++ string with whitespace
+                   strEllipsis,        // C++ string for "..."
                    strBlank,           // Empty c++ string
                    strCr,              // Carriage return c++ string
                    strLf,              // Linefeed c++ string
@@ -63,6 +64,8 @@ static const class Common final        // Members initially private
   /* ----------------------------------------------------------------------- */
   const string &Space(void) const { return strSpace; }
   /* ----------------------------------------------------------------------- */
+  const string &Ellipsis(void) const { return strEllipsis; }
+  /* ----------------------------------------------------------------------- */
   const string &FSlash(void) const { return strFSlash; }
   /* ----------------------------------------------------------------------- */
   const string &Unspec(void) const { return strUnspec; }
@@ -74,12 +77,12 @@ static const class Common final        // Members initially private
     strTrue{ "true" },                 strFalse{ "false" },
     strEquals{ "=" },                  strNOne{ "-1" },
     strZero{ "0" },                    strOne{ "1" },
-    strSpace{ " " },                   strCr{ "\r" },
-    strLf{ "\n" },                     strCrLf{ strCr + strLf },
-    strCrLf2{ strCrLf + strCrLf },     strLfCr{ strLf + strCr },
-    strFSlash{ "/" },                  strUnspec{ "<Unspecified>" },
-    strNull{ "<NullPtr>" },            cpBlank(strBlank.c_str()),
-    lLocaleCurrent{ strBlank }
+    strSpace{ " " },                   strEllipsis{ "..." },
+    strCr{ "\r" },                     strLf{ "\n" },
+    strCrLf{ strCr + strLf },          strCrLf2{ strCrLf + strCrLf },
+    strLfCr{ strLf + strCr },          strFSlash{ "/" },
+    strUnspec{ "<Unspecified>" },      strNull{ "<NullPtr>" },
+    cpBlank(strBlank.c_str()),         lLocaleCurrent{ strBlank }
     /* -- No code ---------------------------------------------------------- */
     { }
 } /* ----------------------------------------------------------------------- */
@@ -230,14 +233,6 @@ static bool StrIsFloat(const string &strValue)
 static bool StrIsNumPOW2(const string &strValue)
   { return !strValue.empty() &&
       StdIntIsPOW2(StdAbsolute(StrToNum(strValue))); }
-/* -- Return true if string is a value number to the power of 2 ------------ */
-static bool StrIsNumPOW2Zero(const string &strValue)
-{ // Failed if empty
-  if(strValue.empty()) return false;
-  // Convert string to number and return positive if value is zero or power 2
-  const int64_t qwVal = StdAbsolute(StrToNum(strValue));
-  return !qwVal || StdIntIsPOW2(qwVal);
-}
 /* -- Convert error number to string --------------------------------------- */
 static const string StrFromErrNo(const int iErrNo=errno)
 { // Buffer to store error message into
