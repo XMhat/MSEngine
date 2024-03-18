@@ -97,8 +97,8 @@ static class Console final :           // Members initially private
   RedrawFlags      rfDefault,          // Default redraw type
                    rfFlags;            // Redraw flags
   /* -- Text mode ---------------------------------------------------------- */
-  ClockInterval<CoreClock> ciOutputRefresh, // Next screen buffer update time
-                           ciInputRefresh;  // Time to wait before next peek
+  ClockInterval<>  ciOutputRefresh,    // Next screen buffer update time
+                   ciInputRefresh;     // Time to wait before next peek
   string           strStatusLeft,      // Text-mode console left status text
                    strStatusRight,     // Text-mode console right status text
                    strTimeFormat;      // Default time format
@@ -121,58 +121,6 @@ static class Console final :           // Members initially private
   size_t           stMaxCount;         // Maximum console commands allowed
   /* -- Lua ---------------------------------------------------------------- */
   LuaFunc::Map     lfList;             // Lua console callbacks list
-  /* -- Do console redraw -------------------------------------------------- */
-  void Redraw(void)
-  { // Get reference to console fbo
-    Fbo &fboC = cFboCore->fboConsole;
-    // Set main fbo to draw to
-    fboC.FboSetActive();
-    // Get reference to main fbo
-    Fbo &fboM = cFboCore->fboMain;
-    // Update ortho same as the main fbo
-    fboC.FboSetOrtho(0, 0, fboM.GetCoRight(), fboM.GetCoBottom());
-    // Set drawing position
-    const GLfloat fYAdj = fboM.fcStage.GetCoBottom() * (1 - fConsoleHeight);
-    fboC.FboItemSetVertex(fboM.fcStage.GetCoLeft(),
-      fboM.fcStage.GetCoTop() - fYAdj, fboM.fcStage.GetCoRight(),
-      fboM.fcStage.GetCoBottom() - fYAdj);
-    // Set console texture colour and blit the console background
-    GetTextureRef().FboItemSetQuadRGBAInt(ulBgColour);
-    GetTextureRef().BlitLTRB(0, 0, fboC.fcStage.GetCoLeft(),
-      fboC.fcStage.GetCoTop(), fboC.fcStage.GetCoRight(),
-      fboC.fcStage.GetCoBottom());
-    // Set console input text colour
-    GetFontRef().FboItemSetQuadRGBAInt(ulFgColour);
-    // Restore spacing and scale as well
-    CommitLetterSpacing();
-    CommitLineSpacing();
-    CommitScale();
-    // Get below baseline height
-    const GLfloat fBL = (fboC.fcStage.GetCoBottom() -
-      GetFontRef().GetBaselineBelow('g')) + GetFontRef().fLineSpacing;
-    // Draw input text and subtract the height drawn from Y position
-    GLfloat fY = fBL - GetFontRef().PrintWU(fboC.fcStage.GetCoLeft(), fBL,
-      fboC.fcStage.GetCoRight(), GetFontRef().dfScale.DimGetWidth(),
-        reinterpret_cast<const GLubyte*>(StrFormat(">$\rc000000ff$\rr$",
-        strConsoleBegin, cCursor, strConsoleEnd).c_str()));
-    // For each line or until we clip the top of the screen, print the text
-    for(ConLinesConstRevIt clI{ clriPosition }; clI!=crend() && fY>0; ++clI)
-    { // Get reference to console line data structure
-      const ConLine &clD = *clI;
-      // Set text foreground colour with opaqueness already set above
-      GetFontRef().FboItemSetQuadRGBInt(uiNDXtoRGB[clD.cColour]);
-      // Draw the text and move upwards of the height that was used
-      fY -= GetFontRef().PrintWU(fboC.fcStage.GetCoLeft(), fY,
-        fboC.fcStage.GetCoRight(),
-          GetFontRef().dfScale.DimGetWidth(), reinterpret_cast<const GLubyte*>
-            (clD.strLine.c_str()));
-    } // Finish and render
-    fboC.FboFinishAndRender();
-    // Redrawn as requested
-    rfFlags.FlagClear(RD_GRAPHICS);
-    // Make sure the main fbo is updated
-    cFboCore->SetDraw();
-  }
   /* -- Do clear console, clear history and reset position ----------------- */
   void DoFlush(void) { clear(); clriPosition = rbegin(); }
   /* -- Check that the console variable name is valid ---------------------- */
@@ -855,6 +803,32 @@ static class Console final :           // Members initially private
   /* -- Commit default line spacing ---------------------------------------- */
   void CommitLineSpacing(void)
     { GetFontRef().SetLineSpacing(fTextLineSpacing); }
+  /* -- Process queued console lines --------------------------------------- */
+  void MoveQueuedLines(void)
+  { // If there are console lines in the queue?
+    if(clqOutput.empty()) return;
+    // Stagger the queue to the output buffer but enough so it completes fast
+    // and compensates for a growing queue. At minimum the number of elements
+    // or the most of half of the number of elements or five.
+    size_t stLines = UtilMinimum(clqOutput.size(),
+      UtilMaximum(5, clqOutput.size()/2));
+    ReserveLines(stLines);
+    // Get if we're at the bottom of the log
+    const bool bAtBottom = clriPosition == rbegin();
+    // Repeat...
+    do
+    { // Move item into main console render buffer
+      emplace_back(StdMove(clqOutput.front()));
+      // remove the old item
+      clqOutput.pop();
+    } // ...until we've moved enough lines
+    while(--stLines != 0);
+    // Auto scroll enabled or were already at the bottom of log? Set the log
+    // to the bottom.
+    if(FlagIsSet(CF_AUTOSCROLL) || bAtBottom) clriPosition = rbegin();
+    // Redraw the buffer, it changed
+    SetRedraw();
+  }
   /* -- Get console textures --------------------------------------- */ public:
   Texture &GetTextureRef(void) { return ctConsole; }
   Font &GetFontRef(void) { return cfConsole; }
@@ -918,7 +892,7 @@ static class Console final :           // Members initially private
         cmSys.FormatTime(strTimeFormat.c_str()));
       // Not redrawing?
       if(rfFlags.FlagIsClear(RD_TEXT))
-      { // Redraw status if imput empty. Input status doesn't need redrawing
+      { // Redraw status if imput empty. Input redraw handled elseware.
         if(InputEmpty())
           cSystem->RedrawStatusBar(strStatusLeft, strStatusRight);
         // Commit and return buffer
@@ -943,38 +917,61 @@ static class Console final :           // Members initially private
     for(const ConLine &clItem : *this) cLog->LogNLCDebugSafe(clItem.strLine);
     return size();
   }
-  /* -- Process queued console lines -------------------------------------- */
-  void MoveQueuedLines(void)
-  { // If there are console lines in the queue?
-    if(clqOutput.empty()) return;
-    // Stagger the queue to the output buffer but enough so it completes fast
-    // and compensates for a growing queue. At minimum the number of elements
-    // or the most of half of the number of elements or five.
-    size_t stLines = UtilMinimum(clqOutput.size(),
-      UtilMaximum(5, clqOutput.size()/2));
-    ReserveLines(stLines);
-    // Get if we're at the bottom of the log
-    const bool bAtBottom = clriPosition == rbegin();
-    // Repeat...
-    do
-    { // Move item into main console render buffer
-      emplace_back(StdMove(clqOutput.front()));
-      // remove the old item
-      clqOutput.pop();
-    } // ...until we've moved enough lines
-    while(--stLines != 0);
-    // Auto scroll enabled or were already at the bottom of log? Set the log
-    // to the bottom.
-    if(FlagIsSet(CF_AUTOSCROLL) || bAtBottom) clriPosition = rbegin();
-    // Redraw the buffer, it changed
-    SetRedraw();
-  }
   /* -- Redraw the console fbo if the console contents changed ------------- */
   void Render(void)
-  { // Shift console lines
+  { // Shift queued console lines
     MoveQueuedLines();
-    // Redraw if we're to redraw
-    if(rfFlags.FlagIsSet(RD_GRAPHICS)) Redraw();
+    // Return if we're not to redraw
+    if(rfFlags.FlagIsClear(RD_GRAPHICS)) return;
+    // Get reference to console fbo
+    Fbo &fboC = cFboCore->fboConsole;
+    // Set main fbo to draw to
+    fboC.FboSetActive();
+    // Get reference to main fbo
+    Fbo &fboM = cFboCore->fboMain;
+    // Update ortho same as the main fbo
+    fboC.FboSetOrtho(0, 0, fboM.GetCoRight(), fboM.GetCoBottom());
+    // Set drawing position
+    const GLfloat fYAdj = fboM.fcStage.GetCoBottom() * (1 - fConsoleHeight);
+    fboC.FboItemSetVertex(fboM.fcStage.GetCoLeft(),
+      fboM.fcStage.GetCoTop() - fYAdj, fboM.fcStage.GetCoRight(),
+      fboM.fcStage.GetCoBottom() - fYAdj);
+    // Set console texture colour and blit the console background
+    GetTextureRef().FboItemSetQuadRGBAInt(ulBgColour);
+    GetTextureRef().BlitLTRB(0, 0, fboC.fcStage.GetCoLeft(),
+      fboC.fcStage.GetCoTop(), fboC.fcStage.GetCoRight(),
+      fboC.fcStage.GetCoBottom());
+    // Set console input text colour
+    GetFontRef().FboItemSetQuadRGBAInt(ulFgColour);
+    // Restore spacing and scale as well
+    CommitLetterSpacing();
+    CommitLineSpacing();
+    CommitScale();
+    // Get below baseline height
+    const GLfloat fBL = (fboC.fcStage.GetCoBottom() -
+      GetFontRef().GetBaselineBelow('g')) + GetFontRef().fLineSpacing;
+    // Draw input text and subtract the height drawn from Y position
+    GLfloat fY = fBL - GetFontRef().PrintWU(fboC.fcStage.GetCoLeft(), fBL,
+      fboC.fcStage.GetCoRight(), GetFontRef().dfScale.DimGetWidth(),
+        reinterpret_cast<const GLubyte*>(StrFormat(">$\rc000000ff$\rr$",
+        strConsoleBegin, cCursor, strConsoleEnd).c_str()));
+    // For each line or until we clip the top of the screen, print the text
+    for(ConLinesConstRevIt clI{ clriPosition }; clI!=crend() && fY>0; ++clI)
+    { // Get reference to console line data structure
+      const ConLine &clD = *clI;
+      // Set text foreground colour with opaqueness already set above
+      GetFontRef().FboItemSetQuadRGBInt(uiNDXtoRGB[clD.cColour]);
+      // Draw the text and move upwards of the height that was used
+      fY -= GetFontRef().PrintWU(fboC.fcStage.GetCoLeft(), fY,
+        fboC.fcStage.GetCoRight(),
+          GetFontRef().dfScale.DimGetWidth(), reinterpret_cast<const GLubyte*>
+            (clD.strLine.c_str()));
+    } // Finish and render
+    fboC.FboFinishAndRender();
+    // Redrawn as requested
+    rfFlags.FlagClear(RD_GRAPHICS);
+    // Make sure the main fbo is updated
+    cFboCore->SetDraw();
   }
   /* -- Render the console to main fbo if visible -------------------------- */
   void RenderToMain(void) { if(IsVisible()) cFboCore->BlitConsoleToMain(); }
@@ -1020,9 +1017,7 @@ static class Console final :           // Members initially private
   }
   /* -- Command exists? ---------------------------------------------------- */
   bool CommandIsRegistered(const string &strName) const
-  { // Return command status
-    return llCmds.find(strName) != llCmds.cend();
-  }
+    { return llCmds.find(strName) != llCmds.cend(); }
   /* -- Unregister console command ----------------------------------------- */
   void UnregisterCommand(const string &strName)
   { // Get existing callback and if the command does not exist? Failure!
@@ -1265,7 +1260,8 @@ static class Console final :           // Members initially private
   /* -- Set page move count ------------------------------------------------ */
   CVarReturn SetPageMoveCount(const ssize_t sstAmount)
   { // Deny if invalid value
-    if(CVarSimpleSetInt(sstPageLines, sstAmount) == DENY) return DENY;
+    if(!CVarToBoolReturn(CVarSimpleSetInt(sstPageLines, sstAmount)))
+      return DENY;
     // Set negative too
     sstPageLinesNeg = -sstPageLines;
     // Success
@@ -1301,8 +1297,8 @@ static class Console final :           // Members initially private
   /* -- Set maximum console line length ------------------------------------ */
   CVarReturn SetMaxOutputChars(const size_t stChars)
   { // Check, set the new value and return if not acceptable
-    if(CVarSimpleSetIntNLG(stMaxOutputLine, stChars, static_cast<size_t>(1024),
-      static_cast<size_t>(65536)) == DENY)
+    if(!CVarToBoolReturn(CVarSimpleSetIntNLG(stMaxOutputLine, stChars,
+      static_cast<size_t>(1024), static_cast<size_t>(65536))))
         return DENY;
     // Set subtracted value from ellipsis size
     stMaxOutputLineE = stMaxOutputLine - cCommon->Ellipsis().length();
@@ -1385,7 +1381,8 @@ static class Console final :           // Members initially private
   CVarReturn TextScaleModified(const GLfloat fNewScale)
   { // Failed if supplied scale is not in range
     if(!CVarToBoolReturn(CVarSimpleSetIntNLG(fTextScale,
-      fNewScale, 0.01f, 1.00f))) return DENY;
+      fNewScale, 0.01f, 1.00f)))
+        return DENY;
     // Set new font scale
     CommitScale();
     // Reallocate memory if neccesary for fbo lists

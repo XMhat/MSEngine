@@ -682,15 +682,13 @@ class SysCon :                         // All members initially private
       if(can_change_color())
       { // Make sure we initialise all the pairs
         for(size_t stIndex = 1; stIndex < stPairs; ++stIndex)
-        { // Get saved palette entry
+        { // Get saved palette entry and restore it
           ShortPair &spEntry = ptPairs[stIndex];
-          // Restore pair entry
           init_pair(static_cast<short>(stIndex), spEntry[0], spEntry[1]);
         } // For each palette entry
         for(size_t stIndex = 1; stIndex < stPalette; ++stIndex)
-        { // Get saved palette entry
+        { // Get saved palette entry and restore it
           ShortTri &stEntry = ctPalette[stIndex];
-          // Restore palette entry
           init_color(static_cast<short>(stIndex),
             stEntry[0], stEntry[1], stEntry[2]);
         }

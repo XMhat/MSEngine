@@ -84,9 +84,8 @@ template<class ClockType = CoreClock>struct ClockManager
     unsigned int uiCompMax = StdMaxUInt) const
       { return StrLongFromDuration(GetTimeS() - tDuration, uiCompMax); }
   /* -- Convert time to long duration -------------------------------------- */
-  const string ToDurationLongString(unsigned int uiCompMax =
-    StdMaxUInt) const
-      { return ToDurationRel(0, uiCompMax); }
+  const string ToDurationLongString(unsigned int uiCompMax = StdMaxUInt) const
+    { return ToDurationRel(0, uiCompMax); }
   /* -- Unused constructor ------------------------------------------------- */
   ClockManager(void) { }
 };/* -- Global functors / System time clock functor ------------------------ */
@@ -195,7 +194,8 @@ class ClockChrono :                    // Members intially private
     ctpStart{ this->GetTime() }        // Set start time
     /* -- No code ---------------------------------------------------------- */
     { }
-};/* ----------------------------------------------------------------------- */
+};
+/* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */
 }                                      // End of private module namespace

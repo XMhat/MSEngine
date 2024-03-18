@@ -415,7 +415,7 @@ static class System final :            // The main system class
   /* ----------------------------------------------------------------------- */
   const ModeList   mList;              // Modes list
   CoreFlags        cfMode;             // Requested core subsystem flags
-  ClockInterval<CoreClock> tdhCPU;     // For getting cpu usage
+  ClockInterval<>  ciCpu;              // For getting cpu usage
   const size_t     stProcessId;        // Readable process id
   const size_t     stThreadId;         // Readable thread id
   /* ----------------------------------------------------------------------- */
@@ -429,7 +429,7 @@ static class System final :            // The main system class
   size_t GetReadableTid(void) const { return stThreadId; }
   /* -- Update CPU usage information --------------------------------------- */
   void UpdateCPUUsage(void)
-    { if(tdhCPU.CITriggerStrict()) UpdateCPUUsageData(); }
+    { if(ciCpu.CITriggerStrict()) UpdateCPUUsageData(); }
   /* -- Update and return process CPU usage -------------------------------- */
   double UpdateAndGetCPUUsage(void)
     { UpdateCPUUsage(); return CPUUsage(); }
@@ -607,7 +607,7 @@ static class System final :            // The main system class
       "text+audio+video",              // [7<1|2|4>] (text+audio+video)
     }},                                // Mode strings list initialised
     cfMode(CF_MASK),                   // Guimode initially set by cvars
-    tdhCPU{ seconds{ 1 } },            // Cpu refresh time is one seconds
+    ciCpu{ seconds{ 1 } },            // Cpu refresh time is one seconds
     stProcessId(GetPid<size_t>()),     // Init readable proceess id
     stThreadId(GetTid<size_t>()),      // Init readable thread id
     thHandler(set_terminate(           // Store current termination handler

@@ -360,7 +360,7 @@ static struct Sql final :              // Members initially public
   { // Reset previous results
     Reset();
     // Set query start time
-    const ClockInterval<> tpStart;
+    const ClockInterval<> ciStart;
     // Statement preparation
     sqlite3_stmt *stmtData = nullptr;
     SetError(sqlite3_prepare_v2(sqlDB, strC.c_str(),
@@ -420,7 +420,7 @@ static struct Sql final :              // Members initially public
       } // Make sure we process the last record
       DoStep(stmtData);
     } // Get end query time to get total execution duration
-    duQuery = tpStart.CIDelta();
+    duQuery = ciStart.CIDelta();
   }
   /* -- Is sqlite database opened? --------------------------------- */ public:
   bool IsOpened(void) { return !!sqlDB; }

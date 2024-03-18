@@ -25,10 +25,8 @@ namespace P {                          // Start of public module namespace
                    PCV,                /* Extra class body arguments (no ,) */\
                    ...)                /* Extra derivced classes            */\
   class SCR;                           /* Member class prototype            */\
-  typedef CLH<SCR,PCI<SCR>>            /* Make an alias to the locktype     */\
-    PCR ## CLHelper;                   /*   for the collector helper        */\
   static struct PCR final :            /* Begin collector object class      */\
-    public PCR ## CLHelper             /* Derive by collector helper class  */\
+    public CLH<SCR,PCI<SCR>>           /* Derive by collector helper class  */\
     __VA_ARGS__                        /* Any other custom class derives    */\
   { DELETECOPYCTORS(PCR)               /* Remove default functions          */\
     PCR(void);                         /* Constructor prototype             */\
@@ -168,7 +166,7 @@ class IHelper :                        // The Init Helper class
   /* -- Constructors -------------------------------------------- */ protected:
   explicit IHelper(const string &strIdent) :
     /* -- Initialisers ----------------------------------------------------- */
-    IdentConst(strIdent),              // Initialise name
+    IdentConst{strIdent},              // Initialise name
     ctInitialised{seconds{0}},         // Clear initialised time
     ctDeinitialised{cmHiRes.GetTime()} // Set deinitialised time
     /* -- No code ---------------------------------------------------------- */
@@ -449,8 +447,8 @@ struct ICHelperBase                    // Members initially public
   /* ----------------------------------------------------------------------- */
   explicit ICHelperBase(CollectorType*const ctPtr, IteratorType &&itObj) :
     /* -- Initialisers ----------------------------------------------------- */
-    cParent{ ctPtr },
-    cIterator{ StdMove(itObj) }
+    cParent{ ctPtr },                  // Initialise pointer to collector class
+    cIterator{ StdMove(itObj) }        // Initialise iterator
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
@@ -579,9 +577,12 @@ struct ICHelper :                      // Members initially public
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor with automatic registration ---------------------------- */
-  explicit ICHelper(CollectorType*const ctPtr, MemberType*const mtPtr) :
-    /* -- Initialisers ----------------------------------------------------- */
-    LockType{ ctPtr, mtPtr }
+  explicit ICHelper(
+    /* -- Parameters ------------------------------------------------------- */
+    CollectorType*const ctPtr,         // Pointer to collector class
+    MemberType*const mtPtr             // Pointer to member class
+    ): /* -- Initialisers -------------------------------------------------- */
+    LockType{ ctPtr, mtPtr }           // Initialise lock type
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
@@ -599,13 +600,11 @@ class Lockable                         // Members initially private
   bool             bLocked;            // Class is locked from being dealloced
   /* -- Set locked status -------------------------------------------------- */
   void LockSet(const bool bState) { bLocked = bState; }
-  /* -- Return true if lock is set --------------------------------- */ public:
+  /* -- Return true if lock is (not) set --------------------------- */ public:
   bool LockIsSet(void) const { return bLocked; }
-  /* -- Return true if lock is not set ------------------------------------- */
   bool LockIsNotSet(void) const { return !LockIsSet(); }
-  /* -- Set locked status -------------------------------------------------- */
+  /* -- Set/clear locked status -------------------------------------------- */
   void LockSet(void) { LockSet(true); }
-  /* -- Clear locked status ------------------------------------------------ */
   void LockClear(void) { LockSet(false); }
   /* -- Swap lock status with another class -------------------------------- */
   void LockSwap(Lockable &lOther) { swap(bLocked, lOther.bLocked); }
