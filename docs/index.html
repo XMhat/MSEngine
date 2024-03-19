@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<!-- Reference for the MS-Engine API version 24.3.17.1 -->
-<!-- Automatically built at Sun Mar 17 00:10:10 2024 +0000 -->
-<!-- With MS-Engine Project Management Utility version 24.3.17.1 -->
+<!-- Reference for the MS-Engine API version 24.3.19.12 -->
+<!-- Automatically built at Tue Mar 19 00:31:16 2024 +0000 -->
+<!-- With MS-Engine Project Management Utility version 24.3.19.12 -->
 <!-- Copyright (c) 2006-2024 MS-Design, All Rights Reserved Worldwide -->
 <HTML lang="en-GB">
 <HEAD>
@@ -11,18 +11,18 @@
 	<META name="apple-mobile-web-app-title" content="MS-Engine API">
 	<META name="author" content="MS-Design">
 	<META name="copyright" content="Copyright © 2006-2024 MS-Design, All Rights Reserved">
-	<META name="description" content="Reference for the MS-Engine API version 24.3.17.1">
+	<META name="description" content="Reference for the MS-Engine API version 24.3.19.12">
 	<META name="format-detection" content="telephone=no">
-	<META name="generator" content="MS-Engine Project Management Utility version 24.3.17.1">
+	<META name="generator" content="MS-Engine Project Management Utility version 24.3.19.12">
 	<META name="google-site-verification" content="BvWxrqmgaIxqe_W8AW3OGK0fdCI_JfB_-gcOOxCF9_4">
 	<META name="googlebot" content="index,follow">
-	<META name="og:description" content="Reference for the MS-Engine API version 24.3.17.1">
+	<META name="og:description" content="Reference for the MS-Engine API version 24.3.19.12">
 	<META name="og:image" content="https://repository-images.githubusercontent.com/611875607/ee7aa468-9797-4763-9a2d-ea3d782ef413">
-	<META name="og:title" content="MS-Engine 24.3.17.1 API reference">
+	<META name="og:title" content="MS-Engine 24.3.19.12 API reference">
 	<META name="og:url" content="https://xmhat.github.io/MSEngine/">
 	<META name="robots" content="index,follow">
 	<META name="viewport" content="width=device-width, initial-scale=1">
-	<TITLE>MS-Engine 24.3.17.1 API reference</TITLE>
+	<TITLE>MS-Engine 24.3.19.12 API reference</TITLE>
 	<STYLE media="screen">
 	* { margin:0; padding:0 }
 	BODY { background-color:#111; border:0; font-family:sans-serif; overflow-x:hidden }
@@ -52,9 +52,9 @@
 	</STYLE>
 </HEAD>
 <BODY id="top">
-	<H1>MS-Engine 24.3.17.1 API reference</H1>
+	<H1>MS-Engine 24.3.19.12 API reference</H1>
 	<H2>Table of contents:-</H2>
-	<P>This build of the MS-Engine API consists of 784 functions (376 members, 408 methods) and 25 consts in 32 namespaces with 209 cvars.</P>
+	<P>This build of the MS-Engine API consists of 785 functions (376 members, 409 methods) and 25 consts in 32 namespaces with 209 cvars.</P>
 	<OL id="toc">
 		<LI id="idx">
 			<A href="#idx">Namespaces</A> <I>(32 namespaces)</I>
@@ -1389,8 +1389,9 @@
 					</OL>
 				</LI>
 				<LI>
-					<B>Methods</B> <I>(36 methods)</I>
+					<B>Methods</B> <I>(37 methods)</I>
 					<OL>
+						<LI><A href="#Video:Advance">Advance</A></LI>
 						<LI><A href="#Video:Awaken">Awaken</A></LI>
 						<LI><A href="#Video:Blit">Blit</A></LI>
 						<LI><A href="#Video:BlitT">BlitT</A></LI>
@@ -9684,12 +9685,20 @@
 		<PRE>Halts main&#x2d;thread execution until all async video stream events have completed&#x2e;<BR></PRE>
 		<H4><A href="#idx:Video" onclick="r('Video.WaitAsync')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
+	<DIV id="Video:Advance">
+		<H3>Video:Advance</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Video:Advance()</PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Advances one frame&#x2e; The video must be paused or stopped and it only happens in the engine thread and not its own thread&#x2e;<BR></PRE>
+		<H4><A href="#idx:Video" onclick="r('Video:Advance')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
 	<DIV id="Video:Awaken">
 		<H3>Video:Awaken</H3>
 		<H4>Syntax:-</H4>
 		<PRE>Video:Awaken()</PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Re&#x2d;initialises the video after being stopped&#x2e;<BR></PRE>
+		<PRE>Initialises the audio and video structures after loading or after being manually stopped&#x2e;<BR></PRE>
 		<H4><A href="#idx:Video" onclick="r('Video:Awaken')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Video:Blit">
@@ -10025,7 +10034,7 @@
 		<H4>Syntax:-</H4>
 		<PRE>Video:Stop()</PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Stops and unloads the specified video&#x2c; this frees resources&#x2e;<BR></PRE>
+		<PRE>Stops and unloads the specified video&#x2c; this also unloads the audio and video output structures&#x2e;<BR></PRE>
 		<H4><A href="#idx:Video" onclick="r('Video:Stop')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Video.Events">
@@ -11083,6 +11092,6 @@
 		<PRE>Sets the minimum width of the window&#x2e; This is only changable at the application configuration file and is not saved to persistence database&#x2e;<BR></PRE>
 		<H4><A href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<ADDRESS>Copyright &copy; 2024 MS-Design, All Rights Reserved.<BR>This document was created at Sun Mar 17 00:10:10 2024 +0000</ADDRESS>
+	<ADDRESS>Copyright &copy; 2024 MS-Design, All Rights Reserved.<BR>This document was created at Tue Mar 19 00:31:16 2024 +0000</ADDRESS>
 </BODY>
 </HTML>

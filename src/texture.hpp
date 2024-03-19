@@ -565,23 +565,23 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
   }
   /* -- Replace partial texture in VRAM from raw data ---------------------- */
   void UpdateEx(const GLuint uiTexId, const GLint iX, const GLint iY,
-    const GLsizei uiW, const GLsizei uiH, const GLenum ePixType,
+    const GLsizei siW, const GLsizei siH, const GLenum ePixType,
     const GLvoid*const vpData)
   { // Bind the specified texture
     GL(cOgl->BindTexture(uiTexId), "Failed to bind texture to update!",
       "Identifier", IdentGet(), "TexId", uiTexId);
     // Upload the texture area
-    GL(cOgl->UploadTextureSub(iX, iY, uiW, uiH, ePixType, vpData),
+    GL(cOgl->UploadTextureSub(iX, iY, siW, siH, ePixType, vpData),
       "Failed to update VRAM with image!",
       "Identifier", IdentGet(), "OffsetX", iX,
-      "OffsetY",    iY,         "Width",   uiW,
-      "Height",     uiH,        "SrcType", cOgl->GetPixelFormat(ePixType));
+      "OffsetY",    iY,         "Width",   siW,
+      "Height",     siH,        "SrcType", cOgl->GetPixelFormat(ePixType));
     // Whats the minification value? We might need to regenerate mipmaps! If
     // we already had mipmaps, they will be overwritten.
     ReGenerateMipmaps();
     // Write that we updated the VRAM
     cLog->LogDebugExSafe("Texture '$'[$<$x$>] updated at $x$ with type $!",
-      IdentGet(), uiTexId, uiW, uiH, iX, iY, cOgl->GetPixelFormat(ePixType));
+      IdentGet(), uiTexId, siW, siH, iX, iY, cOgl->GetPixelFormat(ePixType));
   }
   /* -- Replace partial texture in VRAM from partial raw data -------------- */
   void UpdateEx(const GLuint uiTexId, const GLint iX, const GLint iY,
@@ -655,7 +655,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
     cLog->LogInfoExSafe("Texture loaded $ textures from '$'!",
       GetSubCount(), IdentGet());
   }
-  /* -- Init from a image class ------------------------------------------- */
+  /* -- Init from a image class -------------------------------------------- */
   void InitImage(Image &imgSrc, const GLuint uiTileWidth,
     const GLuint uiTileHeight, const GLuint uiPadX, const GLuint uiPadY,
     const size_t stFilter, const bool bGenerateTileset = true)
@@ -689,8 +689,8 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
       if(duTileOR.DimIsSet()) duTile.DimSet(duTileOR);
       // Else clamp bounds to image size if unspecified or invalid size
       else if(duTile.DimIsNotSet() ||
-         duTile.DimGetWidth() > DimGetWidth() ||
-         duTile.DimGetHeight() > DimGetHeight())
+          duTile.DimGetWidth() > DimGetWidth() ||
+          duTile.DimGetHeight() > DimGetHeight())
         duTile.DimSet(*this);
       // Set tile dimensions as opengl float
       dfTile.DimSet(duTile.DimGetWidth<GLfloat>(),

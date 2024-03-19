@@ -68,12 +68,20 @@ LLFUNC(Pause, LCGETPTR(1, Video)->Pause());
 LLFUNC(Rewind, LCGETPTR(1, Video)->Rewind());
 /* ========================================================================= */
 // $ Video:Stop
-// ? Stops and unloads the specified video, this frees resources.
+// ? Stops and unloads the specified video, this also unloads the audio and
+// ? video output structures.
 /* ------------------------------------------------------------------------- */
 LLFUNC(Stop, LCGETPTR(1, Video)->Stop());
 /* ========================================================================= */
+// $ Video:Advance
+// ? Advances one frame. The video must be paused or stopped and it only
+// ? happens in the engine thread and not its own thread.
+/* ------------------------------------------------------------------------- */
+LLFUNC(Advance, LCGETPTR(1, Video)->Advance());
+/* ========================================================================= */
 // $ Video:Awaken
-// ? Re-initialises the video after being stopped.
+// ? Initialises the audio and video structures after loading or after being
+// ? manually stopped.
 /* ------------------------------------------------------------------------- */
 LLFUNC(Awaken, LCGETPTR(1, Video)->Awaken());
 /* ========================================================================= */
@@ -354,6 +362,7 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Video));
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Video:* member functions begin
+  LLRSFUNC(Advance),
   LLRSFUNC(Awaken),        LLRSFUNC(Blit),         LLRSFUNC(BlitT),
   LLRSFUNC(Destroy),       LLRSFUNC(GetATime),     LLRSFUNC(GetDrift),
   LLRSFUNC(GetFPS),        LLRSFUNC(GetFrame),     LLRSFUNC(GetFrames),

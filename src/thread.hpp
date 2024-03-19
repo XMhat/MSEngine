@@ -194,6 +194,7 @@ BEGIN_MEMBERCLASS(Threads, Thread, ICHelperUnsafe),
   void ThreadJoin(void) { return join(); }
   /* ----------------------------------------------------------------------- */
   bool ThreadIsExited(void) const { return ThreadGetExitCode() != -1; }
+  bool ThreadIsNotExited(void) const { return !ThreadIsExited(); }
   /* ----------------------------------------------------------------------- */
   bool ThreadIsException(void) const { return ThreadGetExitCode() == -2; }
   /* ----------------------------------------------------------------------- */

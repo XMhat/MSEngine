@@ -166,6 +166,9 @@ template<class MemberType, class ColType>class AsyncLoader :
     // Send to derived class and register
     SyncLoadDataAndRegister(fmData);
   }
+  /* -- Get thread --------------------------------------------------------- */
+  bool AsyncThreadIsCurrent(void) const
+    { return tAsyncThread.ThreadIsCurrent(); }
   /* -- Execute function (returns exit code) ----------------------- */ public:
   int64_t AsyncExecute(void)
   { // Duration of execution

@@ -99,7 +99,8 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
       /* -- No code -------------------------------------------------------- */
       { }
   };/* --------------------------------------------------------------------- */
-  enum Unblock { UB_BLOCK, UB_DATA, UB_REINIT, UB_PLAY, UB_STOP, UB_PAUSE };
+  enum Unblock { UB_STANDBY, UB_BLOCK, UB_DATA, UB_REINIT, UB_PLAY, UB_STOP,
+                 UB_PAUSE, UB_FINISH };
   /* --------------------------------------------------------------- */ public:
   enum Event { VE_PLAY, VE_LOOP, VE_STOP, VE_PAUSE, VE_FINISH };
   /* -- Concurrency -------------------------------------------------------- */
@@ -194,107 +195,118 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
   void UpdateVideoPosition(void)
     { fdVideoTime = th_granule_time(tdcPtr, iVideoGranulePos); }
   /* -- Manage video decoding thread --------------------------------------- */
-  int ManageVideo(void)
+  int VideoHandle(void)
   { // Audio and/or video availability flags
     BUILD_FLAGS(Avail, AF_NONE{0x0},  // Video or audio not ready?
                       AF_VIDEO{0x1},  // Enough video buffered?
                       AF_AUDIO{0x2}); // Enough audio buffered?
     // Video and audio was rendered successfully?
     AvailFlags afStatus{ AF_NONE };
-    // Try to read as much audio as possible
-    while(FlagIsSet(FL_VORBIS) && sCptr)
-    { // OpenAL buffer
-      ALuint uiBuffer;
-      // Get number of buffers queued
-      for(ALsizei stP = sCptr->GetBuffersProcessed(); stP; --stP)
-      { // Unqueue a buffer and break if failed
-        uiBuffer = sCptr->UnQueueBuffer();
-        if(cOal->HaveError()) continue;
-        // Remove buffer time
-        fdAudioBuffer -=
-          UtilMaximum(cOal->GetBufferInt<ALdouble>(uiBuffer, AL_SIZE) /
-            viData.rate, 0);
-        // Delete the buffer that was returned continue if successful
-        ALL(cOal->DeleteBuffer(uiBuffer),
-          "Video failed to delete unqueued buffer $ in '$'!",
-             uiBuffer, IdentGet());
-      } // No need to process more if we have more than 1 sec of audio...
-      if(fdAudioBuffer >= 1.0 ||
-        // ... or audio time is ahead of video by 1 second
-        (FlagIsSet(FL_THEORA) && fdAudioTime > fdVideoTime + 1)) break;
-      // Get PCM data stored as float
-      ALfloat **fpPCM;
-      // If frames are available, but we're way behind the video?
-      if(const size_t stFrames =
-        static_cast<size_t>(vorbis_synthesis_pcmout(&vdsData, &fpPCM)))
-      { // Get channels as size_t
-        const size_t stChannels = static_cast<size_t>(viData.channels);
-        // Length of data
-        size_t stFrameSize = sizeof(float) * stFrames * stChannels;
-        // Just incase we need more memory.
-        MemResizeUp(stFrameSize);
-        // Send the PCM processing depending on if audio device can play
-        // as floating point pcm or not. If we have 32-bit float support?
-        // Convert data to native PCM float 32-bit audio
-        if(cOal->Have32FPPB())
-          Stream::VorbisFramesToF32PCM(fpPCM, stFrames, stChannels,
-            MemPtr<ALfloat>());
-        // Uploading as INTEGER 16-Bit PCM data
-        else
-        { // Convert data to native PCM integer 16-bit audio
-          Stream::VorbisFramesToI16PCM(fpPCM, stFrames, stChannels,
-            MemPtr<ALshort>());
-          // Now using half the buffer size (F32 is 4 bytes, I16 is 2)
-          stFrameSize >>= 1;
-        } // Generate a buffer for the pcm data and if succeeded?
-        cOal->CreateBuffer(uiBuffer);
-        ALenum alErr = cOal->GetError();
-        if(alErr == AL_NO_ERROR)
-        { // Buffer the data. Note that the size of mbAudio can be bigger than
-          // the actual data so we have to pass in the calculated data size.
-          cOal->BufferData(uiBuffer, eFormat, MemPtr(),
-            static_cast<ALsizei>(stFrameSize),
-            static_cast<ALsizei>(viData.rate));
-          // If buffering succeeded?
-          alErr = cOal->GetError();
+    // Have audio stream?
+    if(FlagIsSet(FL_VORBIS))
+    { // Have an audio source?
+      if(sCptr) do
+      { // OpenAL buffer id
+        ALuint uiBuffer;
+        // Get number of buffers queued
+        for(ALsizei stP = sCptr->GetBuffersProcessed(); stP; --stP)
+        { // Unqueue a buffer and break if failed
+          uiBuffer = sCptr->UnQueueBuffer();
+          if(cOal->HaveError()) continue;
+          // Remove buffer time
+          fdAudioBuffer -=
+            UtilMaximum(cOal->GetBufferInt<ALdouble>(uiBuffer, AL_SIZE) /
+              viData.rate, 0);
+          // Delete the buffer that was returned continue if successful
+          ALL(cOal->DeleteBuffer(uiBuffer),
+            "Video failed to delete unqueued buffer $ in '$'!",
+               uiBuffer, IdentGet());
+        } // No need to process more if we have more than 1 sec of audio...
+        if(fdAudioBuffer >= 1.0 ||
+          // ... or audio time is ahead of video by 1 second
+          (FlagIsSet(FL_THEORA) && fdAudioTime > fdVideoTime + 1)) break;
+        // Get PCM data stored as float
+        ALfloat **fpPCM;
+        // If frames are available, but we're way behind the video?
+        if(const size_t stFrames =
+          static_cast<size_t>(vorbis_synthesis_pcmout(&vdsData, &fpPCM)))
+        { // Get channels as size_t
+          const size_t stChannels = static_cast<size_t>(viData.channels);
+          // Length of data
+          size_t stFrameSize = sizeof(float) * stFrames * stChannels;
+          // Just incase we need more memory.
+          MemResizeUp(stFrameSize);
+          // Send the PCM processing depending on if audio device can play
+          // as floating point pcm or not. If we have 32-bit float support?
+          // Convert data to native PCM float 32-bit audio
+          if(cOal->Have32FPPB())
+            Stream::VorbisFramesToF32PCM(fpPCM, stFrames, stChannels,
+              MemPtr<ALfloat>());
+          // Uploading as INTEGER 16-Bit PCM data
+          else
+          { // Convert data to native PCM integer 16-bit audio
+            Stream::VorbisFramesToI16PCM(fpPCM, stFrames, stChannels,
+              MemPtr<ALshort>());
+            // Now using half the buffer size (F32 is 4 bytes, I16 is 2)
+            stFrameSize >>= 1;
+          } // Generate a buffer for the pcm data and if succeeded?
+          cOal->CreateBuffer(uiBuffer);
+          ALenum alErr = cOal->GetError();
           if(alErr == AL_NO_ERROR)
-          { // Requeue the buffers and if succeeded?
-            sCptr->QueueBuffer(uiBuffer);
+          { // Buffer the data. Note that the size of mbAudio can be bigger
+            // than the actual data so we have to pass in the calculated data
+            // size.
+            cOal->BufferData(uiBuffer, eFormat, MemPtr(),
+              static_cast<ALsizei>(stFrameSize),
+              static_cast<ALsizei>(viData.rate));
+            // If buffering succeeded?
             alErr = cOal->GetError();
             if(alErr == AL_NO_ERROR)
-            { // Play the source
-              sCptr->Play();
-              // We ate everything so set audio time and add to buffer
-              vorbis_synthesis_read(&vdsData, static_cast<int>(stFrames));
-              fdAudioTime = vorbis_granule_time(&vdsData, vdsData.granulepos);
-              fdAudioBuffer +=
-                static_cast<ALdouble>(stFrameSize) / viData.rate;
-              // We got audio
-              afStatus.FlagSet(AF_AUDIO);
-            } // Queue failed? Jump to delete buffer failed
-            else goto DeleteBuffer;
-          } // Buffer data had failed?
-          else
-          { // Label to delete the buffer
-            DeleteBuffer:
-            // Log the error
-            cLog->LogWarningExSafe("Video failed buffering attempt on '$' "
-              "(B:$;F:$;A:$;S:$;R:$;AL:$<$$>)!",
-                IdentGet(), uiBuffer, eFormat, MemPtr(), stFrameSize,
-                viData.rate, cOal->GetALErr(alErr), hex, alErr);
-            // Delete the buffers because of error
-            ALL(cOal->DeleteBuffer(uiBuffer),
-              "Video failed to delete buffer $ in '$' "
-              "after failed data upload attempt!", uiBuffer, IdentGet());
+            { // Requeue the buffers and if succeeded?
+              sCptr->QueueBuffer(uiBuffer);
+              alErr = cOal->GetError();
+              if(alErr == AL_NO_ERROR)
+              { // Play the source
+                sCptr->Play();
+                // We ate everything so set audio time and add to buffer
+                vorbis_synthesis_read(&vdsData, static_cast<int>(stFrames));
+                fdAudioTime = vorbis_granule_time(&vdsData, vdsData.granulepos);
+                fdAudioBuffer +=
+                  static_cast<ALdouble>(stFrameSize) / viData.rate;
+                // We got audio
+                afStatus.FlagSet(AF_AUDIO);
+              } // Queue failed? Jump to delete buffer failed
+              else goto DeleteBuffer;
+            } // Buffer data had failed?
+            else
+            { // Label to delete the buffer
+              DeleteBuffer:
+              // Log the error
+              cLog->LogWarningExSafe("Video failed buffering attempt on '$' "
+                "(B:$;F:$;A:$;S:$;R:$;AL:$<$$>)!",
+                  IdentGet(), uiBuffer, eFormat, MemPtr(), stFrameSize,
+                  viData.rate, cOal->GetALErr(alErr), hex, alErr);
+              // Delete the buffers because of error
+              ALL(cOal->DeleteBuffer(uiBuffer),
+                "Video failed to delete buffer $ in '$' "
+                "after failed data upload attempt!", uiBuffer, IdentGet());
+            }
           }
         }
-      }
-      // No audio available left in current packet? Try to feed another packet
-      // to the Vorbis stream.
-      else if(ogg_stream_packetout(&ostsVorbis, &opkData) <= 0) break;
-      // We still have audio, synthesize a packet and reloop to try again
-      else if(!vorbis_synthesis(&vbData, &opkData))
-        vorbis_synthesis_blockin(&vdsData, &vbData);
+        // No audio available left in current packet? Try to feed another
+        // packet to the Vorbis stream.
+        else if(ogg_stream_packetout(&ostsVorbis, &opkData) <= 0) break;
+        // We still have audio, synthesize a packet and reloop to try again
+        else if(!vorbis_synthesis(&vbData, &opkData))
+          vorbis_synthesis_blockin(&vdsData, &vbData);
+      } // Repeat until break or no audio source
+      while(sCptr);
+      // No audio source so just try to keep up with the video at least
+      else if(FlagIsSet(FL_THEORA))
+        // Flush audio packets
+        while(ogg_stream_packetout(&ostsVorbis, &opkData) > 0)
+          if(!vorbis_synthesis(&vbData, &opkData))
+            vorbis_synthesis_blockin(&vdsData, &vbData);
     } // Have theora stream and we've got audio buffered?
     if(FlagIsSet(FL_THEORA) &&
       ((FlagIsSet(FL_VORBIS) && fdAudioBuffer >= 1.0) ||
@@ -379,17 +391,9 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
       // is requested to terminate.
       wait(uLock, [this]{
         return ubReason != UB_BLOCK || tThread.ThreadShouldExit(); });
-      // Check reason for unblocking
-      switch(ubReason)
-      { // Re-initialising, stopping or pausing?
-        case UB_REINIT: [[fallthrough]];
-        case UB_STOP: [[fallthrough]];
-        case UB_PAUSE: return 1;
-        // Just for data reasons or for playing?
-        case UB_DATA: [[fallthrough]];
-        case UB_PLAY: [[fallthrough]];
-        case UB_BLOCK: break;
-      } // Reset unlock flag
+      // Return if thread should exit
+      if(tThread.ThreadShouldExit()) return 1;
+      // Reset unlock flag
       ubReason = UB_BLOCK;
     } // Didn't process a video frame or audio frame?
     else if(afStatus.FlagIsClear(AF_AUDIO))
@@ -399,18 +403,20 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
         case 0:
           // Is end of file?
           if(fmFile.FileMapIsEOF())
-          { // We should loop?
+          { // Rewind video
+            fmFile.FileMapRewind();
+            // Tell theora we reset the video position
+            SetParameter<ogg_int64_t>(TH_DECCTL_SET_GRANPOS, 0);
+            // We should loop?
             if(stLoop > 0)
-            { // Rewind video
-              Rewind();
-              // Reduce loops if not infinity
+            { // Reduce loops if not infinity
               if(stLoop != StdMaxSizeT) --stLoop;
               // Send looping event
               LuaEvtDispatch(VE_LOOP);
             } // No more loops so we're done if everything is played
             else
-            { // Override reason for thread exit
-              ubReason = UB_STOP;
+            { // Set finished reason for exiting
+              ubReason = UB_FINISH;
               // Exit the thread
               return 2;
             }
@@ -440,145 +446,401 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
         reinterpret_cast<void*>(&atV), sizeof(atV)); }
   template<typename AnyType=int>AnyType GetParameter(const int iW) const
     { return static_cast<AnyType>(th_decode_ctl(tdcPtr, iW, nullptr, 0)); }
-  /* -- Initialise audio ouput support ------------------------------------- */
-  void InitAudioStream(void)
-  { // Don't need to initialise anything if there is no audio stream
-    if(FlagIsClear(FL_VORBIS)) return;
-    // Make sure rate is sane
-    if(viData.rate < 1 || viData.rate > 192000)
-    { // We'll treat this as a warning as we can just disable audio playback
-      cLog->LogWarningExSafe(
-        "Video '$' playback rate of $ not valid at this time.",
-        IdentGet(), viData.channels);
-      // Disable playback
-      FlagClear(FL_VORBIS);
-      // Done
-      return;
-    } // Make sure channels are correct
-    if(viData.channels < 1 || viData.channels > 2)
-    { // We'll treat this as a warning as we can just disable audio playback
-      cLog->LogWarningExSafe(
-        "Video '$' playback channel count of $ not supported.",
-        IdentGet(), viData.channels);
-      // Disable playback
-      FlagClear(FL_VORBIS);
-      // Done
-      return;
-    } // Initialise vorbis synthesis
-    if(vorbis_synthesis_init(&vdsData, &viData))
-      XC("Failed to initialise vorbis synthesis!", "Identifier", IdentGet());
-    FlagSet(FL_VDINIT);
-    // Initialise vorbis block
-    if(vorbis_block_init(&vdsData, &vbData))
-      XC("Failed to initialise vorbis block!", "Identifier", IdentGet());
-    FlagSet(FL_VBINIT);
-    // Calculate memory required for buffering audio and verify the size since
-    // we don't know if someone's sending us dodgy bitrate values
-    const double fdMem =
-      UtilNearestPow2<double>(UtilMaximum(viData.bitrate_upper,
-        viData.bitrate_nominal) / 8);
-    if(fdMem < 0 || fdMem > 1048576)
-      XC("Calculated erroneous memory size for audio buffer!",
-        "Identifier", IdentGet(),        "Amount",  fdMem,
-        "Upper",      viData.bitrate_upper, "Nominal", viData.bitrate_nominal,
-        "Lower",      viData.bitrate_lower, "Window",  viData.bitrate_window);
-    // Allocate enough memory for audio buffer. We may not actually use all the
-    // memory, but it is better than putting the alloc in the decoder tick. We
-    // can reuse the 'Memory' class from the 'AsyncLoader' class.
-    MemResize(static_cast<size_t>(fdMem));
-    // Show what we allocated
-    cLog->LogDebugExSafe("Video pre-allocated $ bytes for audio decoder.",
-      MemSize());
-    // Init maximum drift if have theora data too
-    if(FlagIsSet(FL_THEORA)) fdMaxDrift = cVideos->fdMaxDrift;
-    // Reset audio position and drift
-    fdAudioTime = fdDrift = 0.0;
+  /* -- Convert colour space to name -------------------------------------- */
+  const string &ColourSpaceToString(const th_colorspace csId) const
+    { return cVideos->csStrings.Get(csId); }
+  /* -- Convert pixel format to name --------------------------------------- */
+  const string &PixelFormatToString(const th_pixel_fmt pfId) const
+    { return cVideos->pfStrings.Get(pfId); }
+  /* -- Video properties ------------------------------------------- */ public:
+  double GetVideoTime(void) const { return fdVideoTime; }
+  double GetAudioTime(void) const { return fdAudioTime; }
+  double GetDrift(void) const { return fdDrift; }
+  double GetFPS(void) const { return fdFPS; }
+  unsigned int GetFrame(void) const
+    { return static_cast<unsigned int>(GetVideoTime() * GetFPS()); }
+  unsigned int GetFrames(void) const { return uiVideoFrames; }
+  unsigned int GetFramesSkipped(void) const { return uiVideoFramesLost; }
+  th_pixel_fmt GetPixelFormat(void) const { return tiData.pixel_fmt; }
+  th_colorspace GetColourSpace(void) const { return tiData.colorspace; }
+  int GetFrameHeight(void) const
+    { return static_cast<int>(tiData.frame_height); }
+  int GetFrameWidth(void) const
+    { return static_cast<int>(tiData.frame_width); }
+  int GetHeight(void) const { return static_cast<int>(tiData.pic_height); }
+  int GetWidth(void) const { return static_cast<int>(tiData.pic_width); }
+  uint64_t GetLength(void) const { return fmFile.MemSize(); }
+  bool HaveAudio(void) const { return !!sCptr; }
+  ALenum GetAudioFormat(void) const { return eFormat; }
+  const string GetFormatAsIdentifier(void) const
+    { return cOal->GetALFormat(eFormat); }
+  /* -- Reinitialise frame buffer object and texture ----------------------- */
+  void ReInitDisplayOutput(void) { FboReInit(); InitTexture(); }
+  /* -- De-initialise texture and frame buffer object ---------------------- */
+  void DeInitDisplayOutput(void) { DeInitTexture(); FboDeInit(); }
+  /* -- Update volume ------------------------------------------------------ */
+  void CommitVolume(void)
+  { // Ignore if no source
+    if(!sCptr) return;
+    // Set volume
+    sCptr->SetGain(fAudioVolume * cSources->fVVolume * cSources->fGVolume);
   }
-  /* -- Initialise video stream portion of file ---------------------------- */
-  void InitVideoStream(void)
-  { // Don't need to initialise anything if there is no video stream
+  /* -- Set volume --------------------------------------------------------- */
+  void SetVolume(const ALfloat fVolume)
+  { // Set volume
+    fAudioVolume = fVolume;
+    // Update volume
+    CommitVolume();
+  }
+  /* -- Blit specific triangle --------------------------------------------- */
+  void BlitTri(const size_t stTId) { FboActive()->FboBlitTri(*this, stTId); }
+  /* -- Blit quad ---------------------------------------------------------- */
+  void Blit(void) { FboActive()->FboBlit(*this); }
+  /* -- Upload the texture -------read ------------------------------------- */
+  void UploadTexture(void)
+  { // Try to lock and return if failed or no frames waiting
+    const UniqueLock ulWaitForProcessing{ mUpload, try_to_lock };
+    if(!ulWaitForProcessing.owns_lock() || !stFWaiting) return;
+    // Get frame
+    Frame &frRef = faData[stFActive];
+    // Skip ahead frames if we need to catch up with audio
+    // If we should draw?
+    if(frRef.bDraw)
+    { // Upload texture data. This is quite safe because this data isnt
+      // written to until the decoding routine thread has finished setting
+      // these values.
+      for(auto &aP : frRef.aP)
+      { // Bind the texture for this colour component
+        cOgl->BindTexture(uiaYUV[aP.stI]);
+        // Get data
+        th_img_plane &tipD = aP.tipP;
+        // Set unpack row length because of how the image data is formatted by
+        // the vorbis api
+        cOgl->SetUnpackRowLength(tipD.stride);
+        // Now upload the image data to opengl, the memory is already
+        // pre-allocated
+        cOgl->UploadTextureSub(tipD.width, tipD.height, GL_RED, tipD.data);
+      } // Reset unpack row length to default
+      cOgl->SetUnpackRowLength(0);
+      // Initialise Y texture id, active texture and shader program
+      FboResetCache(uiaYUV[0], 0, shProgram->GetProgram());
+      // Commit the Y setup and configure the U setup
+      FboFinishAndReset(uiaYUV[1], 1, shProgram->GetProgram());
+      // Commit the U setup
+      FboFinishAndReset(uiaYUV[2], 2, shProgram->GetProgram());
+      // Blit the YUV multi-texture into the fbo
+      FboBlit(fboYUV, uiaYUV[2], 2, shProgram);
+      // Commit the V texture and send everything to fbo list for rendering
+      FboFinishAndRender();
+      // No need to update again until decoder thread is done with another
+      // frame
+      frRef.bDraw = false;
+    } // One less buffer to wait
+    --stFWaiting;
+    ++stFFree;
+    stFActive = (stFActive + 1) % faData.size();
+  }
+  /* -- Manage videos from main thread ------------------------------------- */
+  void Render(void)
+  { // Upload the texture if there are any waiting
+    UploadTexture();
+    // Tell the thread to continue rebuffering if still running
+    if(tThread.ThreadIsNotExited()) Unsuspend(UB_DATA);
+  }
+  /* -- Video is playing? -------------------------------------------------- */
+  bool IsPlaying(void) const { return tThread.ThreadIsRunning(); }
+  /* -- DeInitialise audio ouput (because re-initialising) ----------------- */
+  void DeInitAudio(void)
+  { // Return if there is no audio in this video or video is not playing
+    if(FlagIsClear(FL_VORBIS) || !IsPlaying()) return;
+    // Pause the video from re-initialisation
+    Pause(UB_REINIT);
+  }
+  /* -- ReInitialise audio (because audio is restarting) ------------------- */
+  void ReInitAudio(void)
+  { // Return if there is no audio in this video or video was not playing
+    if(FlagIsClear(FL_VORBIS) || ubReason != UB_REINIT) return;
+    // Remove playback after re-init flag
+    ubReason = UB_BLOCK;
+    // Continue playback from re-initialisation
+    Play(UB_REINIT);
+  }
+  /* -- Stop and unload audio buffers -------------------------------------- */
+  void StopAudioAndUnloadBuffers(void)
+  { // Ignore if no source or no vorbis stream
+    if(!sCptr || FlagIsClear(FL_VORBIS)) return;
+    // Stop from playing so all buffers are unqueued and wait for stop
+    // then unqueue and delete the buffer
+    sCptr->StopUnQueueAndDeleteAllBuffers();
+    // Audio buffers are empty
+    fdAudioBuffer = 0.0;
+    // Unlock the source so the source manager can recycle it
+    sCptr->Unlock();
+    sCptr = nullptr;
+  }
+  /* -- Unblock rebuffer --------------------------------------------------- */
+  void Unsuspend(const Unblock ubNewReason)
+  { // Acquire unique lock
+    const UniqueLock ulGuard{ mBuffer };
+    // Modify the unlock boolean
+    ubReason = ubNewReason;
+    // Send notification
+    notify_one();
+  }
+  /* -- Tell worker thread to exit ----------------------------------------- */
+  void InformExit(const Unblock ubNewReason = UB_PAUSE)
+  { // DeInit the thread, unblock the worker thread and stop and unload buffers
+    tThread.ThreadSetExit();
+    Unsuspend(ubNewReason);
+    tThread.ThreadStop();
+  }
+  /* -- Do pause video ----------------------------------------------------- */
+  void Pause(const Unblock ubNewReason = UB_PAUSE)
+  { // Make sure playing flag is removed
+    FlagClear(FL_PLAY);
+    // Inform the thread to exit
+    InformExit(ubNewReason);
+  }
+  /* -- Stop video and free everything ------------------------------------- */
+  void Stop(const Unblock ubNewReason = UB_STOP)
+  { // Ignore if already stopped
+    if(FlagIsSet(FL_STOP)) return;
+    FlagSet(FL_STOP);
+    // Pause playback and synchronise
+    Pause(ubNewReason);
+    // Set the reason for stopping
+    ubReason = ubNewReason;
+    // De-initialise the OpenGL segment
+    if(FlagIsSet(FL_GLINIT)) { DeInitTexture(); FboDeInit(); }
+    // De-initialise the OpenAL segment
+    StopAudioAndUnloadBuffers();
+    // Reset counters
+    uiVideoFrames = uiVideoFramesLost = 0;
+    iVideoGranulePos = 0;
+    fdVideoTime = fdAudioTime = fdAudioBuffer = fdFPS = fdDrift = 0.0;
+    // Reset buffer status
+    stFActive = stFNext = stFWaiting = stFFree = stLoop = 0;
+    // Rewind data stream
+    fmFile.FileMapRewind();
+    // Tell theora we reset the video position
+    SetParameter<ogg_int64_t>(TH_DECCTL_SET_GRANPOS, 0);
+    // Log that the video was stopped
+    cLog->LogDebugExSafe("Video '$' stopped with reason $.",
+      IdentGet(), ubNewReason);
+  }
+  /* -- Advance a frame ---------------------------------------------------- */
+  void Advance(void)
+  { // Ignore if playing, no video stream or theres an audio stream (todo)
+    if(tThread.ThreadIsNotExited() || FlagIsClear(FL_THEORA) ||
+      FlagIsSet(FL_VORBIS)) return;
+    // Temporarily disable audio output
+    //Source*const sCptrSave = sCptr;
+    //sCptr = nullptr;
+    // Run video manager until we render a frame
+    while(!stFWaiting && !VideoHandle());
+    // Restore audio source
+    //sCptr = sCptrSave;
+  }
+  /* -- Awaken the video --------------------------------------------------- */
+  void Awaken(void)
+  { // If theres a video segment and GL portion is initialised?
+    if(FlagIsSetAndClear(FL_THEORA, FL_GLINIT))
+    { // OpenGL output initialised
+      FlagSet(FL_GLINIT);
+      // Init fbo
+      FboInit(IdentGet(), static_cast<GLsizei>(tiData.pic_width),
+                          static_cast<GLsizei>(tiData.pic_height));
+      FboSetOrtho(0, 0, 0, 0);
+      FboSetTransparency(true);
+      FboItemSetTexCoord(0, 0, 1, 1);
+      // Clear the fbo, initially transparent
+      FboSetClearColour(0, 0, 0, 0);
+      FboSetClear(false);
+      // Only 2 triangles and 3 commands are needed so reserve the memory
+      if(!FboReserve(2, 3))
+        cLog->LogWarningExSafe(
+          "Video failed to reserve memory for fbo lists.");
+      // We must discard the extra garbage from the ogg video. We can do that
+      // with the GPU very easily by altering texture coords!
+      fboYUV.FboItemSetTexCoord(
+        static_cast<GLfloat>(tiData.pic_x) / tiData.frame_width,
+        static_cast<GLfloat>(tiData.pic_y +
+          tiData.pic_height) / tiData.frame_height,
+        static_cast<GLfloat>(tiData.pic_x +
+          tiData.pic_width) / tiData.frame_width,
+        static_cast<GLfloat>(tiData.pic_y) / tiData.frame_height);
+      // Init texture
+      InitTexture();
+    } // If theres a audio segment and AL portion is initialised?
+    if(FlagIsSet(FL_VORBIS) && !sCptr)
+    { // Compare number of channels in file to set appropriate format. This is
+      // here and not at the files init stage as it handles re-inits too and
+      // the FP supported audio format flag have changed.
+      switch(viData.channels)
+      { // 1 channel mono?
+        case 1: eFormat = cOal->Have32FPPB() ? AL_FORMAT_MONO_FLOAT32 :
+                                               AL_FORMAT_MONO16;
+                break;
+        // 2 channel stereo?
+        case 2: eFormat = cOal->Have32FPPB() ? AL_FORMAT_STEREO_FLOAT32 :
+                                               AL_FORMAT_STEREO16;
+                break;
+        // Unknown channel count. Problem should already be handled at init.
+        default: cLog->LogWarningExSafe("Video '$' audio playback failed. "
+          "Invalid channel count of $!", IdentGet(), viData.channels); return;
+      } // Get a new sound source and if we got it update volume and return
+      sCptr = GetSource();
+      if(sCptr) CommitVolume();
+      // Tell log
+      else cLog->LogWarningExSafe(
+        "Video '$' audio playback failed. Out of sources!", IdentGet());
+    }
+  }
+  /* -- Play video --------------------------------------------------------- */
+  void Play(const Unblock ubNewReason = UB_PLAY)
+  { // If playing flag is already set?
+    if(FlagIsSet(FL_PLAY))
+    { // Thread is not started?
+      if(tThread.ThreadIsExited())
+      { // Set reason for playing
+        ubReason = ubNewReason;
+        // Reset update time so the frame draws immediately
+        CISync();
+        // Thread is stopped? Just start it again
+        tThread.ThreadStart(this);
+        // Log that the video was restarted
+        cLog->LogDebugExSafe("Video '$' restarted with reason $.",
+          IdentGet(), ubNewReason);
+      } // Log that the command was ignored
+      else cLog->LogWarningExSafe(
+        "Video '$' play request with reason $ ignored!",
+        IdentGet(), ubNewReason);
+      // Done
+      return;
+    } // Check that OpenGL and OpenAL is initialised
+    Awaken();
+    // Set reason for playing
+    ubReason = ubNewReason;
+    // Reset update time so the frame draws immediately
+    CISync();
+    // Set playing flag
+    FlagSet(FL_PLAY);
+    // Start decoding if we're still playing
+    tThread.ThreadStart(this);
+    // Log that the video was started
+    cLog->LogDebugExSafe("Video '$' playing with reason $!",
+      IdentGet(), ubNewReason);
+  }
+  /* -- Rewind video ------------------------------------------------------- */
+  void Rewind(void)
+  { // Ignore if already rewound
+    if(iVideoGranulePos <= 0) return;
+    // Rewind video to start
+    fmFile.FileMapRewind();
+    // Reset granule position and frames rendered
+    iVideoGranulePos = 0;
+    uiVideoFrames = uiVideoFramesLost = 0;
+    // Tell theora we reset the video position
+    SetParameter<ogg_int64_t>(TH_DECCTL_SET_GRANPOS, 0);
+    // Reset counters
+    fdVideoTime = fdAudioTime = fdDrift = fdAudioBuffer = 0.0;
+    // Tell the thread to continue rebuffering
+    Unsuspend(UB_DATA);
+    // Log that the video was rewound
+    cLog->LogDebugExSafe("Video '$' rewound!", IdentGet());
+  }
+  /* -- (De)Initialise video ouput ----------------------------------------- */
+  void DeInitTexture(void)
+  { // Delete the component textures
+    GLL(cOgl->SetDeleteTextures(uiaYUV),
+      "Failed to delete $ texture components", uiaYUV.size());
+    ClearTextures();
+  }
+  /* -- Generate texture for specified video component --------------------- */
+  void ConfigTexture(const GLuint uiTU, const int iW, const int iH)
+  { // Get texture id
+    GLuint &uiT = uiaYUV[uiTU];
+    // Bind texture
+    GL(cOgl->BindTexture(uiT), "Failed to bind video component texture!",
+      "Identifier", IdentGet(), "Index", uiTU, "Texture", uiT);
+    // Allocate VRAM for texture
+    GL(cOgl->UploadTexture(0, iW, iH, GL_R8, GL_RED, nullptr),
+      "Failed to reserve texture memory for image component!",
+        "Identifier", IdentGet(), "Index",  uiTU, "Texture", uiT,
+        "Width",      iW,        "Height", iH);
+    // Set filtering. Only need to use GL_NEAREST because the FBO is the same
+    // size as the video textures.
+    GL(cOgl->SetTexParam(GL_TEXTURE_MIN_FILTER, GL_LINEAR),
+      "Failed to set minification filter for video component!",
+      "Identifier", IdentGet(), "Index", uiTU, "Texture", uiT);
+    GL(cOgl->SetTexParam(GL_TEXTURE_MAG_FILTER, GL_LINEAR),
+      "Failed to set magnification filter for video component!",
+        "Identifier", IdentGet(), "Index", uiTU, "Texture", uiT);
+    // Set to repeat and disable filter
+    GL(cOgl->SetTexParam(GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT),
+      "Failed to set texture wrapping S mode for video component!",
+        "Identifier", IdentGet(), "Index", uiTU, "Texture", uiT);
+    GL(cOgl->SetTexParam(GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT),
+      "Failed to set texture wrapping T mode for video component!",
+        "Identifier", IdentGet(), "Index", uiTU, "Texture", uiT);
+    // Say what we did
+    cLog->LogDebugExSafe("Video texture $x$ created for channel $.",
+      iW, iH, uiTU);
+  }
+  /* -- Set filtering on video textures ------------------------------------ */
+  void SetFilter(const bool bState)
+  { // Set filter on fbo and commit
+    FboSetFilterCommit(bState ? 3 : 0);
+    // Update filter
+    FlagSetOrClear(FL_FILTER, bState);
+  }
+  /* -- Looping functions -------------------------------------------------- */
+  size_t GetLoop(void) const { return stLoop; }
+  void SetLoop(const size_t stL) { stLoop = stL; }
+  /* -- Colour key functions ----------------------------------------------- */
+  bool GetKeyed(void) const
+    { return FlagIsSet(FL_KEYED); }
+  void UpdateShader(void)
+    { shProgram = GetKeyed() ?
+        &cShaderCore->sh3DYUVK : &cShaderCore->sh3DYUV; }
+  void SetKeyed(const bool bState)
+    { FlagSetOrClear(FL_KEYED, bState); UpdateShader(); }
+  /* -- Generate component textures ---------------------------------------- */
+  void InitTexture(void)
+  { // Ignore if we don't have a video stream
     if(FlagIsClear(FL_THEORA)) return;
-    // Decoder context not initialised?
-    if(!tdcPtr)
-    { // Allocate a new one and throw error if not allocated
-      tdcPtr = th_decode_alloc(&tiData, tsiPtr);
-      if(!tdcPtr)
-        XC("Error creating theora decoder context!", "Identifier", IdentGet());
-    } // We're done with the codec setup data if we have it.
-    if(tsiPtr) { th_setup_free(tsiPtr); tsiPtr = nullptr; }
-    // Calculate FPS of video
-    fdFPS = static_cast<double>(tiData.fps_numerator) /
-            static_cast<double>(tiData.fps_denominator);
-    // Sanity check FPS
-    if(fdFPS<1 || fdFPS>200)
-      XC("Ambiguous frame rate in video!",
-        "Identifier", IdentGet(), "FPS", fdFPS);
-    // Make sure GPU can support texture size
-    if(static_cast<GLuint>(tiData.frame_width) > cOgl->MaxTexSize() ||
-       static_cast<GLuint>(tiData.frame_height) > cOgl->MaxTexSize())
-      XC("The currently active graphics device does not support a "
-         "texture size that would fit the video dimensions!",
-         "Identifier", IdentGet(),       "Width", tiData.frame_width,
-         "Height",     tiData.frame_height, "Limit", cOgl->MaxTexSize());
-    // Verify colour space
-    switch(GetColourSpace())
-    { // Valid colour spaces
-      case TH_CS_UNSPECIFIED: [[fallthrough]];  // No colour content?
-      case TH_CS_ITU_REC_470M: [[fallthrough]]; // NTSC content?
-      case TH_CS_ITU_REC_470BG: break;          // PAL/SECAM content?
-      // Invalid colour space
-      default: XC("The specified colour space is unsupported!",
-                  "Identifier", IdentGet(), "ColourSpace", GetColourSpace());
-    } // Verify chroma subsampling type
+    // Chosen divisors
+    int iWDIV, iHDIV;
+    // Set divisor based on pixel format
     switch(GetPixelFormat())
-    { // Valid chroma types
-      case TH_PF_420: [[fallthrough]]; // YUV 4:2:0
-      case TH_PF_422: [[fallthrough]]; // YUV 4:2:2
-      case TH_PF_444: break;           // YUV 4:4:4
-      // Invalid chroma type
-      default: XC("Only 420, 422 or 444 pixel format is supported!",
-                  "Identifier", IdentGet(), "PixelFormat", GetPixelFormat());
-    } // Set buffer id's
-    stFActive = stFWaiting = stFNext = 0;
-    stFFree = faData.size();
-    fdVideoTime = fdDrift = 0;
-    // Update frame immediately
-    CISetLimit(1.0 / fdFPS);
+    { // YUV420p : Y = Full size; UV = Half width and height
+      case TH_PF_420: iWDIV = iHDIV = 2; break;
+      // YUV422p : Y = Full size; UV = Half width and full height
+      case TH_PF_422: iWDIV = 2; iHDIV = 1; break;
+      // YUV444p : Y = Full size; UV = Full width and height
+      case TH_PF_444: iWDIV = iHDIV = 1; break;
+      // Unknown so throw error
+      default: XC("Unsupported or unknown theora pixel format!",
+        "Identifier", IdentGet(), "PixelFormat", GetPixelFormat());
+    } // Create textures for Y/Cb/Cr multitexture
+    GL(cOgl->CreateTextures(uiaYUV),
+      "Failed to create texture components for YUV texture!",
+      "Identifier", IdentGet(), "Components", uiaYUV.size());
+    // Configure the Y component (always full size)
+    ConfigTexture(0, GetFrameWidth(), GetFrameHeight());
+    // Configure the Cb/Cr components
+    for(GLuint uiIndex = 1; uiIndex <= 2; ++uiIndex)
+      ConfigTexture(uiIndex, GetFrameWidth()/iWDIV, GetFrameHeight()/iHDIV);
+    // Update fbo filter on fbo
+    SetFilter(FlagIsSet(FL_FILTER));
+    // Update choice of shader to use
+    UpdateShader();
   }
-  /* -- Initialise video display output support ---------------------------- */
-  void InitDisplayOutput(void)
-  { // Don't need to initialise anything if there is no video stream or the
-    // OpenGL portion is already initialised.
-    if(FlagIsSet(FL_GLINIT) || FlagIsClear(FL_THEORA)) return;
-    // OpenGL output initialised
-    FlagSet(FL_GLINIT);
-    // Init fbo
-    FboInit(IdentGet(), static_cast<GLsizei>(tiData.pic_width),
-                        static_cast<GLsizei>(tiData.pic_height));
-    FboSetOrtho(0, 0, 0, 0);
-    FboSetTransparency(true);
-    FboItemSetTexCoord(0, 0, 1, 1);
-    // Clear the fbo, initially transparent
-    FboSetClearColour(0, 0, 0, 0);
-    FboSetClear(false);
-    // Only 2 triangles and 3 commands are needed so reserve the memory
-    if(!FboReserve(2, 3))
-      cLog->LogWarningExSafe("Video failed to reserve memory for fbo lists.");
-    // We must discard the extra garbage from the ogg video. We can do that
-    // with the GPU very easily by altering texture coords!
-    fboYUV.FboItemSetTexCoord(
-      static_cast<GLfloat>(tiData.pic_x) / tiData.frame_width,
-      static_cast<GLfloat>(tiData.pic_y +
-        tiData.pic_height) / tiData.frame_height,
-      static_cast<GLfloat>(tiData.pic_x +
-        tiData.pic_width) / tiData.frame_width,
-      static_cast<GLfloat>(tiData.pic_y) / tiData.frame_height);
-    // Init texture
-    InitTexture();
-  }
-  /* -- Initialise ogg headers and look for audio/video streams ------------ */
-  void InitOggHeaders(void)
-  { // Ok, Ogg parsing. The idea here is we have a bitstream that is made up of
+  /* -- When data has asynchronously loaded -------------------------------- */
+  void AsyncReady(FileMap &fClass)
+  { // Move filemap into ours
+    fmFile.FileMapSwap(fClass);
+    // Ok, Ogg parsing. The idea here is we have a bitstream that is made up of
     // Ogg pages. The libogg sync layer will find them for us. There may be
     // pages from several logical streams interleaved; we find the first theora
     // stream and ignore any others. Then we pass the pages for our stream to
@@ -686,446 +948,95 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
     } // Set flags of what headers we got
     if(iGotTheoraPage) FlagSet(FL_THEORA);
     if(iGotVorbisPage) FlagSet(FL_VORBIS);
-  }
-  /* -- Convert colour space to name -------------------------------------- */
-  const string &ColourSpaceToString(const th_colorspace csId) const
-    { return cVideos->csStrings.Get(csId); }
-  /* -- Convert pixel format to name --------------------------------------- */
-  const string &PixelFormatToString(const th_pixel_fmt pfId) const
-    { return cVideos->pfStrings.Get(pfId); }
-  /* -- Video properties ------------------------------------------- */ public:
-  double GetVideoTime(void) const { return fdVideoTime; }
-  double GetAudioTime(void) const { return fdAudioTime; }
-  double GetDrift(void) const { return fdDrift; }
-  double GetFPS(void) const { return fdFPS; }
-  unsigned int GetFrame(void) const
-    { return static_cast<unsigned int>(GetVideoTime() * GetFPS()); }
-  unsigned int GetFrames(void) const { return uiVideoFrames; }
-  unsigned int GetFramesSkipped(void) const { return uiVideoFramesLost; }
-  th_pixel_fmt GetPixelFormat(void) const { return tiData.pixel_fmt; }
-  th_colorspace GetColourSpace(void) const { return tiData.colorspace; }
-  int GetFrameHeight(void) const
-    { return static_cast<int>(tiData.frame_height); }
-  int GetFrameWidth(void) const
-    { return static_cast<int>(tiData.frame_width); }
-  int GetHeight(void) const { return static_cast<int>(tiData.pic_height); }
-  int GetWidth(void) const { return static_cast<int>(tiData.pic_width); }
-  uint64_t GetLength(void) const { return fmFile.MemSize(); }
-  bool HaveAudio(void) const { return !!sCptr; }
-  ALenum GetAudioFormat(void) const { return eFormat; }
-  const string GetFormatAsIdentifier(void) const
-    { return cOal->GetALFormat(eFormat); }
-  /* -- Reinitialise frame buffer object and texture ----------------------- */
-  void ReInitDisplayOutput(void) { FboReInit(); InitTexture(); }
-  /* -- De-initialise texture and frame buffer object ---------------------- */
-  void DeInitDisplayOutput(void) { DeInitTexture(); FboDeInit(); }
-  /* -- Update volume ------------------------------------------------------ */
-  void CommitVolume(void)
-  { // Ignore if no source
-    if(!sCptr) return;
-    // Set volume
-    sCptr->SetGain(fAudioVolume * cSources->fVVolume * cSources->fGVolume);
-  }
-  /* -- Set volume --------------------------------------------------------- */
-  void SetVolume(const ALfloat fVolume)
-  { // Set volume
-    fAudioVolume = fVolume;
-    // Update volume
-    CommitVolume();
-  }
-  /* -- Blit specific triangle --------------------------------------------- */
-  void BlitTri(const size_t stTId) { FboActive()->FboBlitTri(*this, stTId); }
-  /* -- Blit quad ---------------------------------------------------------- */
-  void Blit(void) { FboActive()->FboBlit(*this); }
-  /* -- Upload the texture -------read ------------------------------------- */
-  void UploadTexture(void)
-  { // Try to lock and return if failed or no frames waiting
-    const UniqueLock ulWaitForProcessing{ mUpload, try_to_lock };
-    if(!ulWaitForProcessing.owns_lock() || !stFWaiting) return;
-    // Get frame
-    Frame &frRef = faData[stFActive];
-    // Skip ahead frames if we need to catch up with audio
-    // If we should draw?
-    if(frRef.bDraw)
-    { // Upload texture data. This is quite safe because this data isnt
-      // written to until the decoding routine thread has finished setting
-      // these values.
-      for(auto &aP : frRef.aP)
-      { // Bind the texture for this colour component
-        cOgl->BindTexture(uiaYUV[aP.stI]);
-        // Get data
-        th_img_plane &tipD = aP.tipP;
-        // Set unpack row length because of how the image data is formatted by
-        // the vorbis api
-        cOgl->SetUnpackRowLength(tipD.stride);
-        // Now upload the image data to opengl, the memory is already
-        // pre-allocated
-        cOgl->UploadTextureSub(tipD.width, tipD.height, GL_RED, tipD.data);
-      } // Reset unpack row length to default
-      cOgl->SetUnpackRowLength(0);
-      // Initialise Y texture id, active texture and shader program
-      FboResetCache(uiaYUV[0], 0, shProgram->GetProgram());
-      // Commit the Y setup and configure the U setup
-      FboFinishAndReset(uiaYUV[1], 1, shProgram->GetProgram());
-      // Commit the U setup
-      FboFinishAndReset(uiaYUV[2], 2, shProgram->GetProgram());
-      // Blit the YUV multi-texture into the fbo
-      FboBlit(fboYUV, uiaYUV[2], 2, shProgram);
-      // Commit the V texture and send everything to fbo list for rendering
-      FboFinishAndRender();
-      // No need to update again until decoder thread is done with another
-      // frame
-      frRef.bDraw = false;
-    } // One less buffer to wait
-    --stFWaiting;
-    ++stFFree;
-    stFActive = (stFActive + 1) % faData.size();
-  }
-  /* -- Manage videos from main thread ------------------------------------- */
-  void Render(void)
-  { // If decoder thread is updating, then ignore
-    UploadTexture();
-    // Tell the thread to continue rebuffering
-    Unsuspend(UB_DATA);
-  }
-  /* -- Video is playing? -------------------------------------------------- */
-  bool IsPlaying(void) const { return tThread.ThreadIsRunning(); }
-  /* -- DeInitialise audio ouput (because re-initialising) ----------------- */
-  void DeInitAudio(void)
-  { // Return if there is no audio in this video or video is not playing
-    if(FlagIsClear(FL_VORBIS) || !IsPlaying()) return;
-    // Pause the video from re-initialisation
-    Pause(UB_REINIT);
-  }
-  /* -- Initialise audio (because audio is restarting) --------------------- */
-  void InitAudio(void)
-  { // Return if there is no audio in this video or video was not playing
-    if(FlagIsClear(FL_VORBIS) || ubReason != UB_REINIT) return;
-    // Remove playback after re-init flag
-    ubReason = UB_BLOCK;
-    // Continue playback from re-initialisation
-    Play(UB_REINIT);
-  }
-  /* -- Stop and unload audio buffers -------------------------------------- */
-  void StopAudioAndUnloadBuffers(void)
-  { // Ignore if no source or no vorbis stream
-    if(!sCptr || FlagIsClear(FL_VORBIS)) return;
-    // Stop from playing so all buffers are unqueued and wait for stop
-    // then unqueue and delete the buffer
-    sCptr->StopUnQueueAndDeleteAllBuffers();
-    // Audio buffers are empty
-    fdAudioBuffer = 0.0;
-    // Unlock the source so the source manager can recycle it
-    sCptr->Unlock();
-    sCptr = nullptr;
-  }
-  /* -- Unblock rebuffer --------------------------------------------------- */
-  void Unsuspend(const Unblock ubNewReason)
-  { // Acquire unique lock
-    const UniqueLock ulGuard{ mBuffer };
-    // Modify the unlock boolean
-    ubReason = ubNewReason;
-    // Send notification
-    notify_one();
-  }
-  /* -- Do pause video ----------------------------------------------------- */
-  void Pause(const Unblock ubNewReason = UB_PAUSE)
-  { // Return if not playing
-    if(FlagIsClear(FL_PLAY)) return;
-    // Remove playing flag
-    FlagClear(FL_PLAY);
-    // DeInit the thread
-    tThread.ThreadSetExit();
-    // Unblock the rebuffering thread
-    Unsuspend(ubNewReason);
-    // Wait for the thread to stop
-    tThread.ThreadStop();
-    // Stop and unload buffers
-    StopAudioAndUnloadBuffers();
-    // Flush video data
-    FlushVideoData();
-  }
-  /* -- Stop video and free everything ------------------------------------- */
-  void Stop(const Unblock ubNewReason = UB_STOP)
-  { // Ignore if already stopped
-    if(FlagIsSet(FL_STOP)) return;
-    // Hard stop
-    FlagSet(FL_STOP);
-    // If thread already exited? Send stop event
-    if(tThread.ThreadIsExited()) LuaEvtDispatch(VE_STOP);
-    // Pause playback and synchronise
-    Pause(ubNewReason);
-    // Set the reason for stopping
-    ubReason = ubNewReason;
-    // Deinit texture and reset parameters
-    if(FlagIsSet(FL_GLINIT))
-    { // Remove opengl related initialisations
-      FlagClear(FL_GLINIT);
-      DeInitTexture();
-      shProgram = nullptr;
-      FboDeInit();
-    } // Vorbis audio stream was initialised?
-    if(FlagIsSet(FL_VORBIS))
-    { // Clear and reset it
-      FlagClear(FL_VORBIS);
-      ogg_stream_clear(&ostsVorbis);
-      UtilClearStatic(ostsVorbis);
-    } // Vorbis block data initialised?
-    if(FlagIsSet(FL_VBINIT))
-    { // Clear and reset it
-      FlagClear(FL_VBINIT);
-      vorbis_block_clear(&vbData);
-      UtilClearStatic(vbData);
-    } // Vorbis is dsp data initialised?
-    if(FlagIsSet(FL_VDINIT))
-    { // Clear and reset it
-      FlagClear(FL_VDINIT);
-      vorbis_dsp_clear(&vdsData);
-      UtilClearStatic(vdsData);
-    } // Vorbis info data initialised?
-    if(FlagIsSet(FL_VIINIT))
-    { // Clear and reset it
-      FlagClear(FL_VIINIT);
-      vorbis_info_clear(&viData);
-      UtilClearStatic(viData);
-    } // Vorbis comment data initialised?
-    if(FlagIsSet(FL_VCINIT))
-    { // Clear and reset it
-      FlagClear(FL_VCINIT);
-      vorbis_comment_clear(&vcData);
-      UtilClearStatic(vcData);
-    } // Theora video stream initialised?
-    if(FlagIsSet(FL_THEORA))
-    { // Clear and reset it
-      FlagClear(FL_THEORA);
-      ogg_stream_clear(&ostsTheora);
-      UtilClearStatic(ostsTheora);
-    } // Free theora decoding data if initialised
-    if(tdcPtr) th_decode_free(tdcPtr);
-    // Free theora setup data if initialised
-    if(tsiPtr) th_setup_free(tsiPtr);
-    // Theora info data initialised?
-    if(FlagIsSet(FL_TIINIT))
-    { // Clear and reset it
-      FlagClear(FL_TIINIT);
-      th_info_clear(&tiData);
-      UtilClearStatic(tiData);
-    } // Theora comment data initialised?
-    if(FlagIsSet(FL_TCINIT))
-    { // Clear and reset it
-      FlagClear(FL_TCINIT);
-      th_comment_clear(&tcData);
-      UtilClearStatic(tcData);
-    } // Ogg synchronisation data initialised?
-    if(FlagIsSet(FL_OSINIT))
-    { // Clear and reset it
-      FlagClear(FL_OSINIT);
-      ogg_sync_clear(&osysData);
-      UtilClearStatic(osysData);
-    } // De-init audio buffer
-    MemDeInit();
-    // Clear frame data
-    for(Frame &fFrame : faData) fFrame.Reset();
-    // Reset other structs
-    UtilClearStatic(opgData);
-    UtilClearStatic(opkData);
-    UtilClearStatic(opgData);
-    UtilClearStatic(tybData);
-    // Reset Theora stuff
-    tsiPtr = nullptr;
-    tdcPtr = nullptr;
-    // Reset counters
-    uiVideoFrames = uiVideoFramesLost = 0;
-    iVideoGranulePos = -1;
-    fdVideoTime = fdAudioTime = fdAudioBuffer = fdFPS = fdDrift = 0.0;
-    // Reset buffer status
-    stFActive = stFNext = stFWaiting = stFFree = stLoop = 0;
-    // Reset OpenAL stuff
-    sCptr = nullptr;
-    eFormat = AL_NONE;
-    // Rewind data stream
-    fmFile.FileMapRewind();
-  }
-  /* -- Awaken stream if hard stopped -------------------------------------- */
-  void Awaken(void)
-  { // Ignore if not hardstopped
-    if(FlagIsClear(FL_STOP)) return;
-    // Re-initialise as all memory was free'd
-    FindVideoAndAudioStreams();
-    // Initialise opengl if needed
-    InitDisplayOutput();
-    // Remove hardstop flag
-    FlagClear(FL_STOP);
-  }
-  /* -- Play video --------------------------------------------------------- */
-  void Play(const Unblock ubNewReason = UB_PLAY)
-  { // Return if there is no audio in this video or video was not playing
-    if(FlagIsSet(FL_PLAY)) return;
-    // Re-open if hard stopped
-    Awaken();
-    // Get a source from OpenAL
-    if(FlagIsSet(FL_VORBIS) && !sCptr)
-    { // Compare number of channels in file to set appropriate format. This is
-      // here and not at the files init stage as it handles re-inits too and
-      // the FP supported audio format flag have changed.
-      switch(viData.channels)
-      { // 1 channel mono?
-        case 1: eFormat = cOal->Have32FPPB() ? AL_FORMAT_MONO_FLOAT32 :
-                                               AL_FORMAT_MONO16;
-                break;
-        // 2 channel stereo?
-        case 2: eFormat = cOal->Have32FPPB() ? AL_FORMAT_STEREO_FLOAT32 :
-                                               AL_FORMAT_STEREO16;
-                break;
-        // Unknown channel count. Problem should already be handled at init.
-        default: cLog->LogWarningExSafe("Video '$' audio playback failed. "
-          "Invalid channel count of $!", IdentGet(), viData.channels); return;
-      } // Get a new sound source and if we got it update volume and return
-      sCptr = GetSource();
-      if(sCptr) CommitVolume();
-      // Tell log
-      else cLog->LogWarningExSafe(
-        "Video '$' audio playback failed. Out of sources!", IdentGet());
-    } // Set playing flag
-    FlagSet(FL_PLAY);
-    // Reset update time so the frame draws immediately
-    CISync();
-    // Set reason for playing
-    ubReason = ubNewReason;
-    // Start decoding
-    tThread.ThreadStart(this);
-  }
-  /* -- Flush video frame data --------------------------------------------- */
-  void FlushVideoData(void)
-  { // Wait until async frame process
-    const LockGuard lgWaitForUpload{ mUpload };
-    // Disable draw and drop  all frames
-    for(Frame &fSlot : faData) if(fSlot.bDraw)
-    { // Do not show anymore
-      fSlot.bDraw = false;
-      // Now lost
-      ++uiVideoFrames;
-    } // Reset buffer index counters
-    stFWaiting = stFActive = stFNext = 0;
-    stFFree = faData.size();
-    // Next frame will be drawn immediately
-    CISync();
-  }
-  /* -- Rewind video ------------------------------------------------------- */
-  void Rewind(void)
-  { // Rewind video to start
-    fmFile.FileMapRewind();
-    // Reset granule position and frames rendered
-    iVideoGranulePos = 0;
-    uiVideoFrames = uiVideoFramesLost = 0;
-    // Tell theora we reset the video position
-    SetParameter<ogg_int64_t>(TH_DECCTL_SET_GRANPOS, 0);
-    // Reset counters
-    fdVideoTime = fdAudioTime = fdDrift = fdAudioBuffer = 0.0;
-    // Tell the thread to continue rebuffering
-    Unsuspend(UB_DATA);
-  }
-  /* -- (De)Initialise video ouput ----------------------------------------- */
-  void DeInitTexture(void)
-  { // Delete the component textures
-    GLL(cOgl->SetDeleteTextures(uiaYUV),
-      "Failed to delete $ texture components", uiaYUV.size());
-    ClearTextures();
-  }
-  /* -- Generate texture for specified video component --------------------- */
-  void ConfigTexture(const GLuint uiTU, const int iW, const int iH)
-  { // Get texture id
-    GLuint &uiT = uiaYUV[uiTU];
-    // Bind texture
-    GL(cOgl->BindTexture(uiT), "Failed to bind video component texture!",
-      "Identifier", IdentGet(), "Index", uiTU, "Texture", uiT);
-    // Allocate VRAM for texture
-    GL(cOgl->UploadTexture(0, iW, iH, GL_R8, GL_RED, nullptr),
-      "Failed to reserve texture memory for image component!",
-        "Identifier", IdentGet(), "Index",  uiTU, "Texture", uiT,
-        "Width",      iW,        "Height", iH);
-    // Set filtering. Only need to use GL_NEAREST because the FBO is the same
-    // size as the video textures.
-    GL(cOgl->SetTexParam(GL_TEXTURE_MIN_FILTER, GL_LINEAR),
-      "Failed to set minification filter for video component!",
-      "Identifier", IdentGet(), "Index", uiTU, "Texture", uiT);
-    GL(cOgl->SetTexParam(GL_TEXTURE_MAG_FILTER, GL_LINEAR),
-      "Failed to set magnification filter for video component!",
-        "Identifier", IdentGet(), "Index", uiTU, "Texture", uiT);
-    // Set to repeat and disable filter
-    GL(cOgl->SetTexParam(GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT),
-      "Failed to set texture wrapping S mode for video component!",
-        "Identifier", IdentGet(), "Index", uiTU, "Texture", uiT);
-    GL(cOgl->SetTexParam(GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT),
-      "Failed to set texture wrapping T mode for video component!",
-        "Identifier", IdentGet(), "Index", uiTU, "Texture", uiT);
-    // Say what we did
-    cLog->LogDebugExSafe("Video texture $x$ created for channel $.",
-      iW, iH, uiTU);
-  }
-  /* -- Set filtering on video textures ------------------------------------ */
-  void SetFilter(const bool bState)
-  { // Set filter on fbo and commit
-    FboSetFilterCommit(bState ? 3 : 0);
-    // Update filter
-    FlagSetOrClear(FL_FILTER, bState);
-  }
-  /* -- Looping functions -------------------------------------------------- */
-  size_t GetLoop(void) const { return stLoop; }
-  void SetLoop(const size_t stL) { stLoop = stL; }
-  /* -- Colour key functions ----------------------------------------------- */
-  bool GetKeyed(void) const
-    { return FlagIsSet(FL_KEYED); }
-  void UpdateShader(void)
-    { shProgram = GetKeyed() ?
-        &cShaderCore->sh3DYUVK : &cShaderCore->sh3DYUV; }
-  void SetKeyed(const bool bState)
-    { FlagSetOrClear(FL_KEYED, bState); UpdateShader(); }
-  /* -- Generate component textures ---------------------------------------- */
-  void InitTexture(void)
-  { // Ignore if we don't have a video stream
-    if(FlagIsClear(FL_THEORA)) return;
-    // Chosen divisors
-    int iWDIV, iHDIV;
-    // Set divisor based on pixel format
-    switch(GetPixelFormat())
-    { // YUV420p : Y = Full size; UV = Half width and height
-      case TH_PF_420: iWDIV = iHDIV = 2; break;
-      // YUV422p : Y = Full size; UV = Half width and full height
-      case TH_PF_422: iWDIV = 2; iHDIV = 1; break;
-      // YUV444p : Y = Full size; UV = Full width and height
-      case TH_PF_444: iWDIV = iHDIV = 1; break;
-      // Unknown so throw error
-      default: XC("Unsupported or unknown theora pixel format!",
-        "Identifier", IdentGet(), "PixelFormat", GetPixelFormat());
-    } // Create textures for Y/Cb/Cr multitexture
-    GL(cOgl->CreateTextures(uiaYUV),
-      "Failed to create texture components for YUV texture!",
-      "Identifier", IdentGet(), "Components", uiaYUV.size());
-    // Configure the Y component (always full size)
-    ConfigTexture(0, GetFrameWidth(), GetFrameHeight());
-    // Configure the Cb/Cr components
-    for(GLuint uiIndex = 1; uiIndex <= 2; ++uiIndex)
-      ConfigTexture(uiIndex, GetFrameWidth()/iWDIV, GetFrameHeight()/iHDIV);
-    // Update fbo filter on fbo
-    SetFilter(FlagIsSet(FL_FILTER));
-    // Update choice of shader to use
-    UpdateShader();
-  }
-  /* -- ReInitialise video from hard stop ---------------------------------- */
-  void FindVideoAndAudioStreams(void)
-  { // Ignore if headers already processed
-    if(FlagIsSet(FL_THEORA) || FlagIsSet(FL_VORBIS)) return;
-    // Look for audio/video streams
-    InitOggHeaders();
     // And now we should have it all if not, well die
     if(FlagIsClear(FL_THEORA) && FlagIsClear(FL_VORBIS))
       XC("Could not find a Theora and/or Vorbis stream!",
          "Identifier", IdentGet());
-    // Initialise video and audio stream parameters
-    InitVideoStream();
-    InitAudioStream();
-    // Log success
+    // If there is a video stream?
+    if(FlagIsSet(FL_THEORA))
+    { // Allocate a new one and throw error if not allocated
+      tdcPtr = th_decode_alloc(&tiData, tsiPtr);
+      if(!tdcPtr)
+        XC("Error creating theora decoder context!",
+           "Identifier", IdentGet());
+      // Calculate FPS of video
+      fdFPS = static_cast<double>(tiData.fps_numerator) /
+              static_cast<double>(tiData.fps_denominator);
+      // Sanity check FPS
+      if(fdFPS<1 || fdFPS>200)
+        XC("Ambiguous frame rate in video!",
+          "Identifier", IdentGet(), "FPS", fdFPS);
+      // Make sure GPU can support texture size
+      if(static_cast<GLuint>(tiData.frame_width) > cOgl->MaxTexSize() ||
+         static_cast<GLuint>(tiData.frame_height) > cOgl->MaxTexSize())
+        XC("The currently active graphics device does not support a "
+           "texture size that would fit the video dimensions!",
+           "Identifier", IdentGet(),       "Width", tiData.frame_width,
+           "Height",     tiData.frame_height, "Limit", cOgl->MaxTexSize());
+      // Verify colour space
+      switch(GetColourSpace())
+      { // Valid colour spaces
+        case TH_CS_UNSPECIFIED: [[fallthrough]];  // No colour content?
+        case TH_CS_ITU_REC_470M: [[fallthrough]]; // NTSC content?
+        case TH_CS_ITU_REC_470BG: break;          // PAL/SECAM content?
+        // Invalid colour space
+        default: XC("The specified colour space is unsupported!",
+                    "Identifier", IdentGet(), "ColourSpace", GetColourSpace());
+      } // Verify chroma subsampling type
+      switch(GetPixelFormat())
+      { // Valid chroma types
+        case TH_PF_420: [[fallthrough]]; // YUV 4:2:0
+        case TH_PF_422: [[fallthrough]]; // YUV 4:2:2
+        case TH_PF_444: break;           // YUV 4:4:4
+        // Invalid chroma type
+        default: XC("Only 420, 422 or 444 pixel format is supported!",
+                    "Identifier", IdentGet(), "PixelFormat", GetPixelFormat());
+      } // Set buffer id's
+      stFActive = stFWaiting = stFNext = 0;
+      stFFree = faData.size();
+      fdVideoTime = fdDrift = 0;
+      // Update frame immediately
+      CISetLimit(1.0 / fdFPS);
+    } // If there is an audio stream?
+    if(FlagIsSet(FL_VORBIS))
+    { // Make sure rate is sane
+      if(viData.rate < 1 || viData.rate > 192000)
+        XC("Video playback rate not valid at this time!",
+           "Identifier", IdentGet(), "Rate", viData.rate);
+      // Make sure channels are correct
+      if(viData.channels < 1 || viData.channels > 2)
+        XC("Video playback channel count of not supported!",
+           "Identifier", IdentGet(), "Channels", viData.channels);
+      // Initialise vorbis synthesis
+      if(vorbis_synthesis_init(&vdsData, &viData))
+        XC("Failed to initialise vorbis synthesis!", "Identifier", IdentGet());
+      FlagSet(FL_VDINIT);
+      // Initialise vorbis block
+      if(vorbis_block_init(&vdsData, &vbData))
+        XC("Failed to initialise vorbis block!", "Identifier", IdentGet());
+      FlagSet(FL_VBINIT);
+      // Calculate memory required for buffering audio and verify the size
+      // since we don't know if someone's sending us dodgy bitrate values
+      const double fdMem =
+        UtilNearestPow2<double>(UtilMaximum(viData.bitrate_upper,
+          viData.bitrate_nominal) / 8);
+      if(fdMem < 0 || fdMem > 1048576)
+        XC("Calculated erroneous memory size for audio buffer!",
+          "Identifier", IdentGet(), "Amount", fdMem,
+          "Upper", viData.bitrate_upper, "Nominal", viData.bitrate_nominal,
+          "Lower", viData.bitrate_lower, "Window", viData.bitrate_window);
+      // Allocate enough memory for audio buffer. We may not actually use all
+      // the memory, but it is better than putting the alloc in the decoder
+      // tick. We can reuse the 'Memory' class from the 'AsyncLoader' class.
+      MemResize(static_cast<size_t>(fdMem));
+      // Show what we allocated
+      cLog->LogDebugExSafe("Video pre-allocated $ bytes for audio decoder.",
+        MemSize());
+      // Init maximum drift if have theora data too
+      if(FlagIsSet(FL_THEORA)) fdMaxDrift = cVideos->fdMaxDrift;
+      // Reset audio position and drift
+      fdAudioTime = fdDrift = 0.0;
+    } // Log success
     cLog->LogInfoExSafe("Video loaded '$' successfully.", IdentGet());
     // Log debug inforation
     cLog->LogDebugExSafe(
@@ -1158,13 +1069,6 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
       viData.bitrate_nominal, StrToBits(viData.bitrate_nominal),
       viData.bitrate_lower, StrToBits(viData.bitrate_lower),
       viData.bitrate_window, StrToBits(viData.bitrate_window));
-  }
-  /* -- When data has asynchronously loaded -------------------------------- */
-  void AsyncReady(FileMap &fClass)
-  { // Move filemap into ours
-    fmFile.FileMapSwap(fClass);
-    // Initialise ogg video and audio
-    FindVideoAndAudioStreams();
     // Set stopped
     FlagSet(FL_STOP);
   }
@@ -1195,25 +1099,30 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
     if(ubReason != UB_REINIT) LuaEvtDispatch(VE_PLAY);
     // Loop forever until thread should exit and manage video stream.
     // Capture return value and keep looping until non-zero exit.
-    for(int iReason = 0;
-        !tClass.ThreadShouldExit() && !iReason;
-        iReason = ManageVideo());
-    // Check reason for exiting
+    while(!tClass.ThreadShouldExit() && !VideoHandle());
+    // Log the reason why the thread should be terminated
+    cLog->LogDebugExSafe("Video '$' main loop exit with reason $!",
+      IdentGet(), ubReason);
+    // Why did the video manager terminate?
     switch(ubReason)
-    { // Blocking mode set? Normal exit
-      case UB_BLOCK: return 1;
-      // Stopping or finishing?
-      case UB_STOP: LuaEvtDispatch(VE_STOP); return 2;
-      // Pausing?
-      case UB_PAUSE: LuaEvtDispatch(VE_PAUSE); return 3;
-      // Finishing?
-      case UB_DATA: LuaEvtDispatch(VE_FINISH); return 4;
-      // Re-initialising?
-      case UB_REINIT: return 2;
-      // Playing? (not possible)
-      case UB_PLAY: return -3;
-    } // Shouldn't get here
-    return -2;
+    { // The thread was in standby? Shouldn't happen! Restart the thread
+      case UB_STANDBY: [[fallthrough]];
+      // The thread was blocking? Shouldn't happen! Restart the thread
+      case UB_BLOCK: [[fallthrough]];
+      // The video was playing? Shouldn't happen! Restart the thread
+      case UB_PLAY: [[fallthrough]];
+      // The video was re-initialised? Shouldn't happen! Restart the thread
+      case UB_REINIT: [[fallthrough]];
+      // The thread was terminated? Just break
+      case UB_DATA: break;
+      // The video finished playing? Send finish event
+      case UB_FINISH: LuaEvtDispatch(VE_FINISH); break;
+      // The video was stopped? Send stop event to guest
+      case UB_STOP: LuaEvtDispatch(VE_STOP); break;
+      // The video was paused? Send pause event to guest
+      case UB_PAUSE: LuaEvtDispatch(VE_PAUSE); break;
+    } // Exit thread cleanly with specified reason
+    return 1;
   } // exception occured?
   catch(const exception &E)
   { // Report it to log
@@ -1225,14 +1134,38 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
   ~Video(void)
   { // Stop any pending async operations
     AsyncCancel();
-    // Remove the registration now! The destructor of ICHelper will do this but
-    // thats too late and the Manage() thread will access members when they are
-    // being deinitialised and destroyed so the de-init needs to be serialised
-    // properly.
+    // Remove the registration now so it is no longer polled
     ICHelperVideo::CollectorUnregister();
-    // Stop the video. It will wait for the thread to terminate before
-    // de-initialising everything so this should be safe.
-    Stop();
+    // Prevent more events being generated
+    LuaEvtDeInit();
+    // Make sure the thread is stopped
+    InformExit(UB_FINISH);
+    // Stop and unload buffers
+    StopAudioAndUnloadBuffers();
+    // Deinit texture and reset parameters
+    if(FlagIsSet(FL_GLINIT)) { DeInitTexture(); FboDeInit(); }
+    // Clean up vorbis ogg stream if allocated
+    if(FlagIsSet(FL_VORBIS)) ogg_stream_clear(&ostsVorbis);
+    // Clean up vorbis block structures if allocated
+    if(FlagIsSet(FL_VBINIT)) vorbis_block_clear(&vbData);
+    // Clean up vorbis dsp structures if allocated
+    if(FlagIsSet(FL_VDINIT)) vorbis_dsp_clear(&vdsData);
+    // Clean up vorbis info structures if allocated
+    if(FlagIsSet(FL_VIINIT)) vorbis_info_clear(&viData);
+    // Clean up vorbis comment structures if allocated
+    if(FlagIsSet(FL_VCINIT)) vorbis_comment_clear(&vcData);
+    // Clean up theora ogg stream if allocated
+    if(FlagIsSet(FL_THEORA)) ogg_stream_clear(&ostsTheora);
+    // Free theora decoding data if initialised
+    if(tdcPtr) th_decode_free(tdcPtr);
+    // Free theora setup data if initialised
+    if(tsiPtr) th_setup_free(tsiPtr);
+    // Clean up theora info structures if allocated
+    if(FlagIsSet(FL_TIINIT)) th_info_clear(&tiData);
+    // Clean up theora comment structures if allocated
+    if(FlagIsSet(FL_TCINIT)) th_comment_clear(&tcData);
+    // Clean up ogg sync data structures if allocated
+    if(FlagIsSet(FL_OSINIT)) ogg_sync_clear(&osysData);
   }
   /* -- Constructor -------------------------------------------------------- */
   Video(void) :
@@ -1247,7 +1180,7 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
     tThread{ "video", STP_HIGH,        // Initialise thread with high priority
       bind(&Video::VideoThreadMain,    // ...preset callback
         this, _1) },                   // ...class as parameter
-    ubReason(UB_BLOCK),                // Initially set to blocked
+    ubReason(UB_STANDBY),              // Initially set to blocked
     stLoop(0),                         // Initialise no loops remaining
     fdDrift(0.0),                      // Initialise drift time
     fdMaxDrift(0.0),                   // Initialise maximum drift time
@@ -1263,7 +1196,7 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
     tsiPtr(nullptr),                   // Initialise Theora setup information
     tdcPtr(nullptr),                   // Initialise Theora decoder context
     tybData{},                         // Clear Theora pixel colour buffers
-    iVideoGranulePos(-1),              // Initialise granule position
+    iVideoGranulePos(0),               // Initialise granule position
     fdVideoTime(0),                    // Initialise position
     fdFPS(0),                          // Initialise fps
     uiVideoFrames(0),                  // Initialise frames processed
@@ -1352,7 +1285,7 @@ static void VideoReInit(void)
   if(cVideos->empty()) return;
   cLog->LogDebugExSafe("Videos re-initialising $ videos...",
     cVideos->CollectorCountUnsafe());
-  for(Video*const vCptr : *cVideos) vCptr->InitAudio();
+  for(Video*const vCptr : *cVideos) vCptr->ReInitAudio();
   cLog->LogDebugExSafe("Videos re-initialised $ videos!",
     cVideos->CollectorCountUnsafe());
 }

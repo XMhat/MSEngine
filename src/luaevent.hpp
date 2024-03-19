@@ -311,6 +311,8 @@ class LuaEvtSlave :
     cMember(mtObject)                  // Set pointer to member object
     /* -- No code ---------------------------------------------------------- */
     { }
+  /* -- Destructor to clean up any leftover events and references ---------- */
+  ~LuaEvtSlave(void) { LuaEvtDeInit(); }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(LuaEvtSlave)         // Disable copy constructor
 };/* ----------------------------------------------------------------------- */
