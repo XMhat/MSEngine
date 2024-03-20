@@ -19,8 +19,8 @@ static struct ShaderCore final
 { /* -- 3D shader references ----------------------------------------------- */
   array<Shader,3> sh3DBuiltIns;        // list of built-in 3D shaders
   Shader          &sh3D;               // Basic 3D transformation shader
-  Shader          &sh3DYUV;            // 3D YUV transformation shader
-  Shader          &sh3DYUVK;           // 3D YUV ckey transformation shader
+  Shader          &sh3DYCbCr;          // 3D YCbCr transformation shader
+  Shader          &sh3DYCbCrK;         // 3D YCbCr ckey transformation shader
   /* -- 2D shader references ----------------------------------------------- */
   array<Shader,5> sh2DBuiltIns;        // list of built-in 2D shaders
   Shader          &sh2D;               // 2D-3D transformation shader
@@ -153,9 +153,9 @@ static struct ShaderCore final
     sh2D16.Link();
   }
   /* ----------------------------------------------------------------------- */
-  void Init3DYUVTemplate(Shader &shDest, const char*const cpName,
+  void Init3DYCbCrTemplate(Shader &shDest, const char*const cpName,
     const char*const cpCode)
-  { // Add YUV to RGB shaders
+  { // Add YCbCr to RGB shaders
     shDest.LockSet();
     AddVertexShaderWith3DTemplate(shDest, "VERT-3D");
     shDest.AddShaderEx(cpName, GL_FRAGMENT_SHADER,
@@ -166,12 +166,12 @@ static struct ShaderCore final
       "uniform sampler2D texCb;"       // MultiTex unit 1 for Cb component data
       "uniform sampler2D texCr;"       // MultiTex unit 2 for Cr component data
       "void main(void){"
-        "mediump vec3 yuv;"
+        "mediump vec3 ycbcr;"
         "lowp vec3 rgb;"
-        "yuv.x = texture(texY,vec2(texcoordout)).r;"
-        "yuv.y = texture(texCb,vec2(texcoordout)).r-0.5;"
-        "yuv.z = texture(texCr,vec2(texcoordout)).r-0.5;"
-        "rgb = mat3(1,1,1,0,-0.344,1.77,1.403,-0.714,0)*yuv;"
+        "ycbcr.x = texture(texY,vec2(texcoordout)).r;"
+        "ycbcr.y = texture(texCb,vec2(texcoordout)).r-0.5;"
+        "ycbcr.z = texture(texCr,vec2(texcoordout)).r-0.5;"
+        "rgb = mat3(1,1,1,0,-0.344,1.77,1.403,-0.714,0)*ycbcr;"
         "pixel = vec4(rgb,$);"
       "}", cpCode);
     shDest.Link();
@@ -183,24 +183,24 @@ static struct ShaderCore final
     { // Get location of specified variable in gpu shader and set to the
       // required texture unit.
       const GLchar*const cpUniform = acpCmp[stIndex];
-      const GLint &iUniformId = sh3DYUV.GetUniformLocation(cpUniform);
-      GLC("Failed to get uniform location from YUV shader!",
+      const GLint &iUniformId = sh3DYCbCr.GetUniformLocation(cpUniform);
+      GLC("Failed to get uniform location from YCbCr shader!",
         "Variable", cpUniform, "Index", stIndex);
       GL(cOgl->Uniform(iUniformId, static_cast<GLint>(stIndex)),
-        "Failed to set YUV uniform texture unit!",
+        "Failed to set YCbCr uniform texture unit!",
         "Variable", cpUniform, "Index", stIndex, "Uniform", iUniformId);
     }
   }
   /* ----------------------------------------------------------------------- */
-  void Init3DYUVShader(void)
-  { // Initialuse YUV 3D shader with basic conversion
-    Init3DYUVTemplate(sh3DYUV, "FRAG-3D YUV>RGB",
+  void Init3DYCbCrShader(void)
+  { // Initialuse YCbCr 3D shader with basic conversion
+    Init3DYCbCrTemplate(sh3DYCbCr, "FRAG-3D YCbCr>RGB",
       "texture(texCr,vec2(texcoordout)).a");
   }
   /* ----------------------------------------------------------------------- */
-  void Init3DYUVKShader(void)
-  { // Initialuse YUV 3D shader with colour key decoder
-    Init3DYUVTemplate(sh3DYUVK, "FRAG-3D YUV>RGB>CK",
+  void Init3DYCbCrKShader(void)
+  { // Initialuse YCbCr 3D shader with colour key decoder
+    Init3DYCbCrTemplate(sh3DYCbCrK, "FRAG-3D YCbCr>RGB>CK",
       "abs(colourout.r-rgb.r)<=colourout.a&&"
       "abs(colourout.g-rgb.g)<=colourout.a&&"
       "abs(colourout.b-rgb.b)<=colourout.a?0:1");
@@ -221,8 +221,8 @@ static struct ShaderCore final
       sh3DBuiltIns.size());
     // Setup 3D shaders
     Init3DShader();
-    Init3DYUVShader();
-    Init3DYUVKShader();
+    Init3DYCbCrShader();
+    Init3DYCbCrKShader();
     cLog->LogDebugExSafe(
       "ShaderCore initialising $ built-in 2D shader objects...",
       sh2DBuiltIns.size());
@@ -255,8 +255,8 @@ static struct ShaderCore final
   /* ----------------------------------------------------------------------- */
   ShaderCore(void) :                   // No parameters
     /* -- Initialisers ----------------------------------------------------- */
-    sh3D{ sh3DBuiltIns[0] },           sh3DYUV{ sh3DBuiltIns[1] },
-    sh3DYUVK{ sh3DBuiltIns[2] },       sh2D{ sh2DBuiltIns[0] },
+    sh3D{ sh3DBuiltIns[0] },           sh3DYCbCr{ sh3DBuiltIns[1] },
+    sh3DYCbCrK{ sh3DBuiltIns[2] },     sh2D{ sh2DBuiltIns[0] },
     sh2DBGR{ sh2DBuiltIns[1] },        sh2D8{ sh2DBuiltIns[2] },
     sh2D8Pal{ sh2DBuiltIns[3] },       sh2D16{ sh2DBuiltIns[4] },
     /* -- Rounding list ---------------------------------------------------- */

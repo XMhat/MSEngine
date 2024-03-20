@@ -101,6 +101,11 @@ class FlagsConst :
   template<typename ...VarArgs>
     bool FlagIsAnyOfSet(const FlagsConst &fO, const VarArgs &...vaVars) const
   { return FlagIsSet(fO) ? true : FlagIsAnyOfSet(vaVars...); }
+  /* -- Is any of these flags clear? --------------------------------------- */
+  bool FlagIsAnyOfClear(void) const { return false; }
+  template<typename ...VarArgs>
+    bool FlagIsAnyOfClear(const FlagsConst &fO, const VarArgs &...vaVars) const
+  { return FlagIsClear(fO) ? true : FlagIsAnyOfClear(vaVars...); }
   /* -- Is bits set? ------------------------------------------------------- */
   bool FlagIsEqualToBool(const FlagsConst &fO, const bool bS) const
     { return FlagIsSet(fO) == bS; }

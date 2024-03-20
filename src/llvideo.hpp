@@ -244,7 +244,7 @@ LLFUNC(SetCRGBA, LCGETPTR(1, Video)->FboItemSetQuadRGBA(
 // ? Allows a certain colour to be phased out on the video. You must enable
 // ? keying colour with the SetKeyed() function before using this
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetKeyColour, LCGETPTR(1, Video)->fboYUV.FboItemSetQuadRGBA(
+LLFUNC(SetKeyColour, LCGETPTR(1, Video)->fboYCbCr.FboItemSetQuadRGBA(
   LCGETNUM(GLfloat, 2, "Red"),  LCGETNUM(GLfloat, 3, "Green"),
   LCGETNUM(GLfloat, 4, "Blue"), LCGETNUM(GLfloat, 5, "Intensity")));
 /* ========================================================================= */
