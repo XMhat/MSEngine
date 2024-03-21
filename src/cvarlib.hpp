@@ -1061,16 +1061,18 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 /* == Fmv cvars ============================================================ */
 // ! FMV_IOBUFFER
 // ? For each 'Video' class, this amount of memory is allocated as buffering
-// ? from disk.
+// ? from disk. Changing this value only takes effect the next time a 'Video'
+// ? object is constructed.
 /* ------------------------------------------------------------------------- */
 { CF_AUDIOVIDEO, "fmv_iobuffer", "65536",
   CB(VideoSetBufferSize, long), TUINTEGERSAVE|CPOW2|PANY },
 /* ------------------------------------------------------------------------- */
 // ! FMV_MAXDRIFT
 // ? The amount of time allowed to drift between audio and video before we
-// ? start dropping frames.
+// ? start speeding up or slowing down audio. Changing this value only takes
+// ? effect the next time a 'Video' object is constructed.
 /* ------------------------------------------------------------------------- */
-{ CF_AUDIOVIDEO, "fmv_maxdrift", "0.1",
+{ CF_AUDIOVIDEO, "fmv_maxdrift", "0.25",
   CB(VideoSetMaximumDrift, double), TUFLOAT|PANY },
 /* == Input cvars ========================================================== */
 // ! INP_JOYDEFFDZ

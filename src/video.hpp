@@ -66,8 +66,7 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
   public AsyncLoaderVideo,             // Asynchronous laoding of videos
   public LuaEvtSlave<Video>,           // Lua asynchronous events
   public VideoFlags,                   // Video settings flags
-  private ClockInterval<>,             // Frame playback timing helper
-  public condition_variable            // Condition suspend variables
+  private ClockInterval<>              // Frame playback timing helper
 { /* -- Typedefs ----------------------------------------------------------- */
   struct Frame                         // Frame data
   { /* --------------------------------------------------------------------- */
@@ -111,6 +110,7 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
   atomic<Unblock>  ubReason;           // Unlock condition variable
   SafeSizeT        stLoop;             // Loops count
   double           fdDrift,            // Drift between audio and video
+                   fdMaxDriftNeg,      // Maximum allowed drift (negative
                    fdMaxDrift;         // Maximum allowed drift
   SafeBool         bPause;             // Only pause the stream?
   /* -- Ogg ---------------------------------------------------------------- */
@@ -222,13 +222,19 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
           // Remove buffer time
           fdAudioBuffer = UtilMaximum(fdAudioBuffer -
             (cOal->GetBufferInt<ALdouble>(uiBuffer, AL_SIZE) /
-              viData.rate), 0.0);
+              viData.rate / viData.channels), 0.0);
           // Delete the buffer that was returned continue if successful
           ALL(cOal->DeleteBuffer(uiBuffer),
             "Video failed to delete unqueued buffer $ in '$'!",
                uiBuffer, IdentGet());
-        } // Break if we have enough audio buffered or...
-        if(fdAudioBuffer >= 1.0) break;
+        } // Raise pitch if behind
+        if(fdDrift > fdMaxDrift) sCptr->SetPitch(1.1f);
+        // Lower pitch if ahead
+        else if(fdDrift < fdMaxDriftNeg) sCptr->SetPitch(0.9f);
+        // No pitch adjustment required
+        else sCptr->SetPitch(1.0f);
+        // Break if we have enough audio buffered or...
+        if(fdAudioBuffer >= fdMaxDrift) break;
         // Get PCM data stored as float
         ALfloat **fpPCM;
         // If frames are available, but we're way behind the video?
@@ -279,8 +285,8 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
               { // Play the source
                 sCptr->Play();
                 // We ate everything so set audio time and add to buffer
-                fdAudioBuffer +=
-                  static_cast<ALdouble>(stFrameSize) / viData.rate;
+                fdAudioBuffer += static_cast<ALdouble>(stFrameSize) /
+                  viData.rate / viData.channels;
                 // Success grabbing and uploading audio so break the loop
                 break;
               } // Log the error
@@ -293,15 +299,15 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
               "(B:$;F:$;A:$;S:$;R:$;AL:$<$$>)!",
               IdentGet(), uiBuffer, eFormat, MemPtr(), stFrameSize,
               viData.rate, cOal->GetALErr(alErr), hex, alErr);
+            // Delete the buffers because of error
+            ALL(cOal->DeleteBuffer(uiBuffer),
+              "Video failed to delete buffer $ in '$' "
+              "after failed data upload attempt!", uiBuffer, IdentGet());
           } // Log the error
           else cLog->LogWarningExSafe("Video create buffer failed on '$' "
-            "(B:$;F:$;A:$;S:$;R:$;AL:$<$$>)!",
-            IdentGet(), uiBuffer, eFormat, MemPtr(), stFrameSize,
-            viData.rate, cOal->GetALErr(alErr), hex, alErr);
-          // Delete the buffers because of error
-          ALL(cOal->DeleteBuffer(uiBuffer),
-            "Video failed to delete buffer $ in '$' "
-            "after failed data upload attempt!", uiBuffer, IdentGet());
+            "(F:$;A:$;S:$;R:$;AL:$<$$>)!",
+            IdentGet(), eFormat, MemPtr(), stFrameSize, viData.rate,
+            cOal->GetALErr(alErr), hex, alErr);
           // Success grabbing audio anyway so break
           break;
         } // No audio left so try to feed another packet and break if failed
@@ -335,7 +341,7 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
       while(afStatus.FlagIsClear(AF_AUDIO));
     } // Have theora stream and we've got enough audio buffered?
     if(FlagIsSet(FL_THEORA) &&
-      ((FlagIsSet(FL_VORBIS) && fdAudioBuffer >= 1.0) ||
+      ((FlagIsSet(FL_VORBIS) && fdAudioBuffer >= fdMaxDrift) ||
       FlagIsClear(FL_VORBIS)))
     { // Force to suspend if we haven't reached the time we expect to draw yet
       if(CINoTrigger()) afStatus.FlagSet(AF_VIDEO);
@@ -445,14 +451,7 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
         if(stLoop > 0)
         { // Reduce loops if not infinity
           if(stLoop != StdMaxSizeT) --stLoop;
-          // Process the rest of the data thats queued to prevent lag
-          while(ogg_sync_pageout(&osysData, &opgData) > 0)
-          { // Find more theora and vorbis data
-            if(FlagIsSet(FL_THEORA))
-              ogg_stream_pagein(&ostsTheora, &opgData);
-            if(FlagIsSet(FL_VORBIS))
-              ogg_stream_pagein(&ostsVorbis, &opgData);
-          } // Send looping event
+          // Send looping event
           LuaEvtDispatch(VE_LOOP);
         } // No more loops so we're done if everything is played
         else
@@ -466,7 +465,7 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
         cLog->LogWarningExSafe("Video '$' failed to read file data: $!",
           IdentGet(), StdGetError());
       // Break apart file data to useful packets
-      while(const int iR = ogg_sync_pageout(&osysData, &opgData) > 0)
+      while(ogg_sync_pageout(&osysData, &opgData) > 0)
       { // Find more theora and vorbis data
         if(FlagIsSet(FL_THEORA)) ogg_stream_pagein(&ostsTheora, &opgData);
         if(FlagIsSet(FL_VORBIS)) ogg_stream_pagein(&ostsVorbis, &opgData);
@@ -736,9 +735,13 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
       // Show what we allocated
       cLog->LogDebugExSafe("Video pre-allocated $ bytes for audio decoder.",
         MemSize());
-      // Init maximum drift if have theora data too
-      if(FlagIsSet(FL_THEORA)) fdMaxDrift = cVideos->fdMaxDrift;
-      // Reset audio position and drift
+      // Have video stream?
+      if(FlagIsSet(FL_THEORA))
+      { // Set maximum drift
+        fdMaxDrift = cVideos->fdMaxDrift;
+        // Save a negated version of the drift too
+        fdMaxDriftNeg = -fdMaxDrift;
+      } // Reset audio position and drift
       fdAudioTime = fdDrift = 0.0;
     } // Log success
     cLog->LogInfoExSafe("Video loaded '$' successfully.", IdentGet());
@@ -1159,6 +1162,7 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
     ubReason(UB_STANDBY),              // Initially set to blocked
     stLoop(0),                         // Initialise no loops remaining
     fdDrift(0.0),                      // Initialise drift time
+    fdMaxDriftNeg(0.0),                // Initialise maximum drift time
     fdMaxDrift(0.0),                   // Initialise maximum drift time
     osysData{},                        // Clear ogg sync state
     opgData{},                         // Clear ogg page data
