@@ -1059,13 +1059,20 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 { CF_TERMINAL, "con_tmctformat", "%y-%m-%d %T",
   CBSTR(cConsole->SetTimeFormat), TSTRINGSAVE|MTRIM|CNOTEMPTY|PSYSTEM|PUSR },
 /* == Fmv cvars ============================================================ */
+// ! FMV_ABUFFER
+// ? The size of the audio buffer in seconds. Changing this value only takes
+// ? effect the next time a 'Video' object is constructed.
+/* ------------------------------------------------------------------------- */
+{ CF_AUDIOVIDEO, "fmv_abuffer", "0.25",
+  CB(VideoSetAudioBufferSize, double), TUFLOATSAVE|CPOW2|PANY },
+/* ------------------------------------------------------------------------- */
 // ! FMV_IOBUFFER
 // ? For each 'Video' class, this amount of memory is allocated as buffering
 // ? from disk. Changing this value only takes effect the next time a 'Video'
 // ? object is constructed.
 /* ------------------------------------------------------------------------- */
 { CF_AUDIOVIDEO, "fmv_iobuffer", "65536",
-  CB(VideoSetBufferSize, long), TUINTEGERSAVE|CPOW2|PANY },
+  CB(VideoSetIOBufferSize, size_t), TUINTEGERSAVE|CPOW2|PANY },
 /* ------------------------------------------------------------------------- */
 // ! FMV_MAXDRIFT
 // ? The amount of time allowed to drift between audio and video before we
@@ -1073,7 +1080,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? effect the next time a 'Video' object is constructed.
 /* ------------------------------------------------------------------------- */
 { CF_AUDIOVIDEO, "fmv_maxdrift", "0.25",
-  CB(VideoSetMaximumDrift, double), TUFLOAT|PANY },
+  CB(VideoSetMaximumDrift, double), TUFLOATSAVE|PANY },
 /* == Input cvars ========================================================== */
 // ! INP_JOYDEFFDZ
 // ? Specifies the gamepad forward deadzone.

@@ -35,7 +35,7 @@ BEGIN_MEMBERCLASS(Sources, Source, ICHelperSafe),
   /* -- Base classes ------------------------------------------------------- */
   public Lockable                      // Lua garbage collector instruction
 { /* -- Private variables -------------------------------------------------- */
-  ALuint           uiId;               // Source id
+  const ALuint     uiId;               // Source id
   bool             bExternal;          // Ignore class in audio thread?
   /* -- Get/set source float ----------------------------------------------- */
   void SetSourceFloat(const ALenum eP, const ALfloat fV) const
@@ -79,11 +79,21 @@ BEGIN_MEMBERCLASS(Sources, Source, ICHelperSafe),
           "Index", uiId, "Param", eP, "X", fX, "Y", fY, "Z", fZ); }
   /* -- Reset parameters ------------------------------------------- */ public:
   void Init(void)
-  { ClearBuffer();        SetPosition(0, 0, 0);
-    SetVelocity(0, 0, 0); SetDirection(0, 0, 0); SetRollOff(0.0);
-    SetRefDist(0.5);      SetMaxDist(1);         SetGain(1);
-    SetMinGain(0);        SetMaxGain(1);         SetPitch(1);
-    SetRelative(false);   SetLooping(false);
+  { // Reset each property of the source since there is no function to do it
+    Rewind();                          // Rewind the source
+    ClearBuffer();                     // Reset bound buffer id
+    SetPosition(0.0f, 0.0f, 0.0f);     // Reset position
+    SetVelocity(0.0f, 0.0f, 0.0f);     // Reset velocity
+    SetDirection(0.0f, 0.0f, 0.0f);    // Reset direction
+    SetRollOff(0.0f);                  // Reset roll off
+    SetRefDist(0.5f);                  // Reset reference distance
+    SetMaxDist(1.0f);                  // Reset maximum distance
+    SetGain(1.0f);                     // Reset current gain
+    SetMinGain(0.0f);                  // Reset minimum gain
+    SetMaxGain(1.0f);                  // Reset maximum gain
+    SetPitch(1.0f);                    // Reset pitch
+    SetRelative(false);                // Reset relative flag
+    SetLooping(false);                 // Reset looping flag
   }
   /* -- Reset parameters --------------------------------------------------- */
   void ReInit(void) { Init(); SetExternal(true); }
@@ -244,7 +254,7 @@ BEGIN_MEMBERCLASS(Sources, Source, ICHelperSafe),
     // Unqueue and delete all buffers
     UnQueueAndDeleteAllBuffers();
   }
-  /* -- Stop ------------------------------------------------------- */
+  /* -- Stop --------------------------------------------------------------- */
   bool Stop(void)
   { // If source already stopped? return!
     if(IsStopped()) return false;
@@ -253,11 +263,16 @@ BEGIN_MEMBERCLASS(Sources, Source, ICHelperSafe),
     // Sucesss
     return true;
   }
-  /* -- IsStopped -------------------------------------------------- */
+  /* -- IsStopped ---------------------------------------------------------- */
   bool IsStopped(void) const { return GetState() == AL_STOPPED; }
-  /* -- IsPlaying -------------------------------------------------- */
+  /* -- IsPlaying ---------------------------------------------------------- */
   bool IsPlaying(void) const { return GetState() == AL_PLAYING; }
-  /* -- Play ------------------------------------------------------- */
+  /* -- Rewind ------------------------------------------------------------- */
+  void Rewind(void)
+  { // Play the source
+    AL(cOal->RewindSource(uiId), "Rewind failed on source!", "Index", uiId);
+  }
+  /* -- Play --------------------------------------------------------------- */
   void Play(void)
   { // If playing return
     if(IsPlaying()) return;
@@ -337,7 +352,7 @@ static Source *SourceGetFromLua(lua_State*const lS)
   return SourceCanMakeNew() ?
     LuaUtilClassCreate<Source>(lS, "Source") : nullptr;
 }
-/* == Manage sources ======================================================= */
+/* == Return a free source ================================================= */
 static Source *GetSource(void)
 { // Try to get an idle source and return it if possible
   if(Source*const soNew = SourceGetFree()) return soNew;

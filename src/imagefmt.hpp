@@ -689,14 +689,13 @@ class CodecPNG final :                 // Members initially private
           ifD.DimSet(png_get_image_width(psData, piData),
                      png_get_image_height(psData, piData));
           // Initialise memory
-          Memory mPixels{ UtilMaximum(static_cast<size_t>(1),
-            ifD.TotalPixels() / 8) };
+          Memory mPixels{ UtilMaximum(1UL, ifD.TotalPixels() / 8) };
           // Create vector array to hold scanline pointers and size it
           PngPtrVec ppvList{ ifD.DimGetHeight<size_t>() };
           // For each scanline
           for(size_t stHeight = ifD.DimGetHeight<size_t>(),
                      stHeightM1 = stHeight - 1,
-                     stStride = UtilMaximum(static_cast<size_t>(1),
+                     stStride = UtilMaximum(1UL,
                        ifD.DimGetWidth<size_t>() / 8),
                      stRow = 0;
                      stRow < stHeight;

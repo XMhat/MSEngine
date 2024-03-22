@@ -146,6 +146,12 @@ static class Oal final :
   /* -- Play a source ------------------------------------------------------ */
   void PlaySource(const ALuint uiSource) const
     { alSourcePlay(uiSource); }
+  /* -- Rewind a source ---------------------------------------------------- */
+  void RewindSource(const ALuint uiSource) const
+    { alSourceRewind(uiSource); }
+  /* -- Pause a source ---------------------------------------------------- */
+  void PauseSource(const ALuint uiSource) const
+    { alSourcePause(uiSource); }
   /* -- Play more than one source simultaniously --------------------------- */
   template<class ArrayType>void PlaySources(const ArrayType &atArray)
     { alSourcePlayv(static_cast<ALsizei>(atArray.size()), atArray.data()); }
@@ -159,13 +165,13 @@ static class Oal final :
   ALuint CreateSource(void) const
     { ALuint uiSource; CreateSource(uiSource); return uiSource; }
   /* -- Delete multiple sources -------------------------------------------- */
-  void DeleteSources(const ALsizei stCount, ALuint*const uipSource) const
+  void DeleteSources(const ALsizei stCount, const ALuint*const uipSource) const
     { alDeleteSources(stCount, uipSource); }
   /* -- Delete multiple sources -------------------------------------------- */
-  template<class List>void DeleteSources(List &tList) const
+  template<class List>void DeleteSources(const List &tList) const
     { DeleteSources(static_cast<ALsizei>(tList.size()), tList.data()); }
   /* -- Delete one source -------------------------------------------------- */
-  void DeleteSource(ALuint &uiSourceRef) const
+  void DeleteSource(const ALuint &uiSourceRef) const
     { DeleteSources(1, &uiSourceRef); }
   /* -- Create multiple buffers -------------------------------------------- */
   void CreateBuffers(const ALsizei stCount, ALuint*const uipBuffer) const
@@ -180,13 +186,13 @@ static class Oal final :
   ALuint CreateBuffer(void) const
     { ALuint uiBuffer; CreateBuffer(uiBuffer); return uiBuffer; }
   /* -- Delete multiple buffers -------------------------------------------- */
-  void DeleteBuffers(const ALsizei stCount, ALuint*const uipBuffer) const
+  void DeleteBuffers(const ALsizei stCount, const ALuint*const uipBuffer) const
     { alDeleteBuffers(stCount, uipBuffer); }
   /* -- Delete multiple sources -------------------------------------------- */
-  template<class List>void DeleteBuffers(List &tList) const
+  template<class List>void DeleteBuffers(const List &tList) const
     { DeleteBuffers(static_cast<ALsizei>(tList.size()), tList.data()); }
   /* -- Delete one buffer -------------------------------------------------- */
-  void DeleteBuffer(ALuint &uiBufferRef) const
+  void DeleteBuffer(const ALuint &uiBufferRef) const
     { DeleteBuffers(1, &uiBufferRef); }
   /* -- Get buffer parameter as integer ------------------------------------ */
   void GetBufferInt(const ALuint uiBId, const ALenum eId, ALint *iDest) const

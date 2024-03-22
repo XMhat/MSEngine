@@ -1298,7 +1298,7 @@ static class Console final :           // Members initially private
   CVarReturn SetMaxOutputChars(const size_t stChars)
   { // Check, set the new value and return if not acceptable
     if(!CVarToBoolReturn(CVarSimpleSetIntNLG(stMaxOutputLine, stChars,
-      static_cast<size_t>(1024), static_cast<size_t>(65536))))
+      1024UL, 65536UL)))
         return DENY;
     // Set subtracted value from ellipsis size
     stMaxOutputLineE = stMaxOutputLine - cCommon->Ellipsis().length();

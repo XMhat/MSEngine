@@ -187,7 +187,7 @@ enum CVarEnums : size_t
   CON_TMCCOLS,      CON_TMCROWS,       CON_TMCREFRESH,      CON_TMCNOCLOSE,
   CON_TMCTFORMAT,
   /* -- Fmv cvars ---------------------------------------------------------- */
-  FMV_IOBUFFER,     FMV_MAXDRIFT,
+  FMV_ABUFFER,      FMV_IOBUFFER,      FMV_MAXDRIFT,
   /* -- Input cvars -------------------------------------------------------- */
   INP_JOYDEFFDZ,    INP_JOYDEFRDZ,     INP_JOYSTICK,        INP_FSTOGGLER,
   INP_RAWMOUSE,     INP_STICKYKEY,     INP_STICKYMOUSE,

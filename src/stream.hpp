@@ -730,8 +730,7 @@ static void StreamCommitVolume(void)
 }
 /* == Set number of buffers to allocate per stream ========================= */
 static CVarReturn StreamSetBufferCount(const size_t stNewCount)
-  { return CVarSimpleSetIntNLG(cStreams->stBufCount, stNewCount,
-      static_cast<size_t>(2), static_cast<size_t>(16)); }
+  { return CVarSimpleSetIntNLG(cStreams->stBufCount, stNewCount, 2UL, 16UL); }
 /* == Set all streams base volume ========================================== */
 static CVarReturn StreamSetVolume(const ALfloat fNewVolume)
 { // Ignore if invalid value
@@ -746,7 +745,7 @@ static CVarReturn StreamSetVolume(const ALfloat fNewVolume)
 /* -- Set memory allocated per buffer -------------------------------------- */
 static CVarReturn StreamSetBufferSize(const size_t stNewSize)
   { return CVarSimpleSetIntNLG(cStreams->stBufSize, stNewSize,
-      static_cast<size_t>(4096), static_cast<size_t>(65536)); }
+      4096UL, 65536UL); }
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */

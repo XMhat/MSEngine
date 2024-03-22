@@ -472,7 +472,7 @@ static Archive *ArchiveInitNew(const string &strFile, const size_t stSize=0)
 /* -- Set extraction buffer size ------------------------------------------- */
 static CVarReturn ArchiveSetBufferSize(const size_t stSize)
   { return CVarSimpleSetIntNLG(cArchives->stExtractBufSize, stSize,
-      static_cast<size_t>(262144), static_cast<size_t>(16777216)); }
+      262144UL, 16777216UL); }
 /* -- Loads the archive from executable ------------------------------------ */
 static CVarReturn ArchiveInitExe(const bool bCheck)
 { // If we're checking the executable for archive?

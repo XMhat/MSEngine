@@ -170,7 +170,7 @@ static class CVars final               // Start of vars class
   /* ----------------------------------------------------------------------- */
   bool IsTypeValidInFlags(const CVarFlagsConst &cFlags) const
   { // Check that the var has at least one type
-    return cFlags.FlagIsAnyOfSet(TSTRING, TINTEGER, TFLOAT, TBOOLEAN) &&
+    return cFlags.FlagIsAnyOfSet(TSTRING|TINTEGER|TFLOAT|TBOOLEAN) &&
       // Check that types are not mixed
       cFlags.FlagIsAnyOfSetAndClear(
         TSTRING,  /* <- Set? & Clear? -> */ TINTEGER|TFLOAT|TBOOLEAN,  /* Or */

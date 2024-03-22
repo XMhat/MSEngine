@@ -259,8 +259,7 @@ static CVarReturn AssetSetFSOverride(const bool bState)
   { return CVarSimpleSetInt(cAssets->bOverride, bState); }
 /* -- Set pipe buffer size ------------------------------------------------- */
 static CVarReturn AssetSetPipeBufferSize(const size_t stSize)
-  { return CVarSimpleSetIntNLG(cAssets->stPipeBufSize, stSize,
-      static_cast<size_t>(1), static_cast<size_t>(4096)); }
+  { return CVarSimpleSetIntNLG(cAssets->stPipeBufSize, stSize, 1UL, 4096UL); }
 /* -- Set pipe buffer size ------------------------------------------------- */
 static size_t AssetGetPipeBufferSize(void) { return cAssets->stPipeBufSize; }
 /* ------------------------------------------------------------------------- */

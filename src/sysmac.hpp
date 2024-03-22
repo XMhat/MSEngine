@@ -462,9 +462,9 @@ class SysCore :
     const string strVersion{ StrAppend(sizeof(void*)*8, "-bit version") };
     // Mod list
     SysModList mlData;
-    mlData.emplace(make_pair(static_cast<size_t>(0),
-      SysModule{ GetExeName(), VER_MAJOR, VER_MINOR, VER_BUILD, VER_REV,
-        VER_AUTHOR, VER_NAME, string(strVersion), VER_STR }));
+    mlData.emplace(make_pair(0UL, SysModule{ GetExeName(), VER_MAJOR,
+      VER_MINOR, VER_BUILD, VER_REV, VER_AUTHOR, VER_NAME, string(strVersion),
+      VER_STR }));
     // Now walk through all the dylibs loaded. Skip the first entry which is
     // always the executable. We already added it!
     for(uint32_t ulIndex = 1, ulEnd = _dyld_image_count();

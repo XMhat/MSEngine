@@ -34,8 +34,9 @@ typedef IdList<TH_CS_NSPACES> CSStrings;
 const CSStrings    csStrings;          /* Colour space strings list         */\
 typedef IdList<TH_PF_NFORMATS> PFStrings;
 const PFStrings    pfStrings;          /* Pixel format strings list         */\
-SafeLong           lBufferSize;        /* Default buffer size               */\
-SafeDouble         fdMaxDrift;,,       /* Maximum drift before drop frames  */\
+double             fdAudioBufferSize;  /* Default audio buffer size         */\
+size_t             stIOBufferSize;     /* Default IO buffer size            */\
+double             fdMaxDrift;,,       /* Maximum drift before drop frames  */\
 /* -- Derived classes ------------------------------------------------------ */
 private LuaEvtMaster<Video, LuaEvtTypeParam<Video>>); // Lua event
 /* ------------------------------------------------------------------------- */
@@ -109,16 +110,16 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
   mutex            mUpload;            // mutex for uploading data
   atomic<Unblock>  ubReason;           // Unlock condition variable
   SafeSizeT        stLoop;             // Loops count
-  double           fdDrift,            // Drift between audio and video
-                   fdMaxDriftNeg,      // Maximum allowed drift (negative
-                   fdMaxDrift;         // Maximum allowed drift
+  double           fdDrift;            // Drift between audio and video
+  const double     fdMaxDrift,         // Maximum allowed drift
+                   fdMaxDriftNeg;      // Maximum allowed drift (negative
   SafeBool         bPause;             // Only pause the stream?
   /* -- Ogg ---------------------------------------------------------------- */
   ogg_sync_state   osysData;           // Ogg sync state
   ogg_page         opgData;            // Ogg page
   ogg_packet       opkData;            // Ogg packet
-  const long       lIOBuf;             // IO buffer size
   const size_t     stIOBuf;            // IO buffer size
+  const long       lIOBuf;             // IO buffer size
   FileMap          fmFile;             // File map for reading file
   /* -- Theora ------------------------------------------------------------- */
   ogg_stream_state ostsTheora;         // Ogg (Theora) stream states
@@ -138,6 +139,7 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
                    stFWaiting;         // Frames waiting to be processed
   SafeSizeT        stFFree;            // Frames free to be processed
   /* -- Vorbis ------------------------------------------------------------- */
+  const double     fdAudBufMax;        // Audio buffer size
   ogg_stream_state ostsVorbis;         // Ogg (Vorbis) stream states
   vorbis_info      viData;             // Vorbis decoder info
   vorbis_comment   vcData;             // Vorbis comment block
@@ -184,9 +186,6 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
     // Reset counters
     fdVideoTime = fdAudioTime = fdDrift = fdAudioBuffer = 0.0;
   }
-  /* -- Update video position ---------------------------------------------- */
-  void UpdateVideoPosition(void)
-    { fdVideoTime = th_granule_time(tdcPtr, iVideoGranulePos); }
   /* -- Tell worker thread to exit ----------------------------------------- */
   void InformExit(const Unblock ubNewReason = UB_PAUSE)
   { // Set exit reason
@@ -200,248 +199,509 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
         reinterpret_cast<void*>(&atV), sizeof(atV)); }
   template<typename AnyType=int>AnyType GetParameter(const int iW) const
     { return static_cast<AnyType>(th_decode_ctl(tdcPtr, iW, nullptr, 0)); }
-  /* -- Manage video decoding thread --------------------------------------- */
-  int VideoHandle(void)
-  { // Audio and/or video availability flags
-    BUILD_FLAGS(Avail, AF_NONE{0x0},  // Video or audio not ready?
-                      AF_VIDEO{0x1},  // Enough video buffered?
-                      AF_AUDIO{0x2}); // Enough audio buffered?
-    // Video and audio was rendered successfully?
-    AvailFlags afStatus{ AF_NONE };
-    // Have audio stream?
-    if(FlagIsSet(FL_VORBIS))
-    { // Have audio source?
-      if(sCptr) do
-      { // OpenAL buffer id
-        ALuint uiBuffer;
-        // Get number of buffers queued
-        for(ALsizei stP = sCptr->GetBuffersProcessed(); stP; --stP)
-        { // Unqueue a buffer and break if failed
-          uiBuffer = sCptr->UnQueueBuffer();
-          if(cOal->HaveError()) continue;
-          // Remove buffer time
-          fdAudioBuffer = UtilMaximum(fdAudioBuffer -
-            (cOal->GetBufferInt<ALdouble>(uiBuffer, AL_SIZE) /
-              viData.rate / viData.channels), 0.0);
-          // Delete the buffer that was returned continue if successful
-          ALL(cOal->DeleteBuffer(uiBuffer),
-            "Video failed to delete unqueued buffer $ in '$'!",
-               uiBuffer, IdentGet());
-        } // Raise pitch if behind
-        if(fdDrift > fdMaxDrift) sCptr->SetPitch(1.1f);
-        // Lower pitch if ahead
-        else if(fdDrift < fdMaxDriftNeg) sCptr->SetPitch(0.9f);
-        // No pitch adjustment required
-        else sCptr->SetPitch(1.0f);
-        // Break if we have enough audio buffered or...
-        if(fdAudioBuffer >= fdMaxDrift) break;
-        // Get PCM data stored as float
-        ALfloat **fpPCM;
-        // If frames are available, but we're way behind the video?
-        if(const size_t stFrames =
-          static_cast<size_t>(vorbis_synthesis_pcmout(&vdsData, &fpPCM)))
-        { // Tell vorbis how much we read
-          vorbis_synthesis_read(&vdsData, static_cast<int>(stFrames));
-          // Set audio time
-          fdAudioTime = vorbis_granule_time(&vdsData, vdsData.granulepos);
-          // Set that we got audio
-          afStatus.FlagSet(AF_AUDIO);
-          // Get channels as size_t
-          const size_t stChannels = static_cast<size_t>(viData.channels);
-          // Length of data
-          size_t stFrameSize = sizeof(float) * stFrames * stChannels;
-          // Just incase we need more memory.
-          MemResizeUp(stFrameSize);
-          // Send the PCM processing depending on if audio device can play
-          // as floating point pcm or not. If we have 32-bit float support?
-          // Convert data to native PCM float 32-bit audio
-          if(cOal->Have32FPPB())
-            Stream::VorbisFramesToF32PCM(fpPCM, stFrames, stChannels,
-              MemPtr<ALfloat>());
-          // Uploading as INTEGER 16-Bit PCM data
-          else
-          { // Convert data to native PCM integer 16-bit audio
-            Stream::VorbisFramesToI16PCM(fpPCM, stFrames, stChannels,
-              MemPtr<ALshort>());
-            // Now using half the buffer size (F32 is 4 bytes, I16 is 2)
-            stFrameSize >>= 1;
-          } // Generate a buffer for the pcm data and if succeeded?
-          cOal->CreateBuffer(uiBuffer);
-          ALenum alErr = cOal->GetError();
-          if(alErr == AL_NO_ERROR)
-          { // Buffer the data. Note that the size of mbAudio can be bigger
-            // than the actual data so we have to pass in the calculated data
-            // size.
-            cOal->BufferData(uiBuffer, eFormat, MemPtr(),
-              static_cast<ALsizei>(stFrameSize),
-              static_cast<ALsizei>(viData.rate));
-            // If buffering succeeded?
-            alErr = cOal->GetError();
-            if(alErr == AL_NO_ERROR)
-            { // Requeue the buffers and if succeeded?
-              sCptr->QueueBuffer(uiBuffer);
-              alErr = cOal->GetError();
-              if(alErr == AL_NO_ERROR)
-              { // Play the source
-                sCptr->Play();
-                // We ate everything so set audio time and add to buffer
-                fdAudioBuffer += static_cast<ALdouble>(stFrameSize) /
-                  viData.rate / viData.channels;
-                // Success grabbing and uploading audio so break the loop
-                break;
-              } // Log the error
-              else cLog->LogWarningExSafe("Video queue buffer failed on '$' "
-                 "(B:$;F:$;A:$;S:$;R:$;AL:$<$$>)!",
-                 IdentGet(), uiBuffer, eFormat, MemPtr(), stFrameSize,
-                 viData.rate, cOal->GetALErr(alErr), hex, alErr);
-            } // Log the error
-            else cLog->LogWarningExSafe("Video buffering failed attempt on '$' "
-              "(B:$;F:$;A:$;S:$;R:$;AL:$<$$>)!",
-              IdentGet(), uiBuffer, eFormat, MemPtr(), stFrameSize,
-              viData.rate, cOal->GetALErr(alErr), hex, alErr);
-            // Delete the buffers because of error
-            ALL(cOal->DeleteBuffer(uiBuffer),
-              "Video failed to delete buffer $ in '$' "
-              "after failed data upload attempt!", uiBuffer, IdentGet());
-          } // Log the error
-          else cLog->LogWarningExSafe("Video create buffer failed on '$' "
-            "(F:$;A:$;S:$;R:$;AL:$<$$>)!",
-            IdentGet(), eFormat, MemPtr(), stFrameSize, viData.rate,
-            cOal->GetALErr(alErr), hex, alErr);
-          // Success grabbing audio anyway so break
-          break;
-        } // No audio left so try to feed another packet and break if failed
-        else if(ogg_stream_packetout(&ostsVorbis, &opkData) <= 0) break;
-        // We still have data? synthesize a packet and reloop to try again
-        else if(!vorbis_synthesis(&vbData, &opkData))
-          vorbis_synthesis_blockin(&vdsData, &vbData);
-      } // ...until we got audio or lost the source
-      while(afStatus.FlagIsClear(AF_AUDIO) && sCptr);
-      // Have no audio source? Repeat...
-      else do
-      { // Get PCM data stored as float
-        ALfloat **fpPCM;
-        // If frames are available, but we're way behind the video?
-        if(const size_t stFrames =
-          static_cast<size_t>(vorbis_synthesis_pcmout(&vdsData, &fpPCM)))
-        { // Tell vorbis how much we read
-          vorbis_synthesis_read(&vdsData, static_cast<int>(stFrames));
-          // Set audio time
-          fdAudioTime = vorbis_granule_time(&vdsData, vdsData.granulepos);
-          // Set that we got audio
-          afStatus.FlagSet(AF_AUDIO);
-          // Done with this loop for now
-          break;
-        } // No audio left so try to feed another packet and break if failed
-        else if(ogg_stream_packetout(&ostsVorbis, &opkData) <= 0) break;
-        // We still have data? synthesize a packet and reloop to try again
-        else if(!vorbis_synthesis(&vbData, &opkData))
-          vorbis_synthesis_blockin(&vdsData, &vbData);
-      } // ...until we got a source
-      while(afStatus.FlagIsClear(AF_AUDIO));
-    } // Have theora stream and we've got enough audio buffered?
-    if(FlagIsSet(FL_THEORA) &&
-      ((FlagIsSet(FL_VORBIS) && fdAudioBuffer >= fdMaxDrift) ||
-      FlagIsClear(FL_VORBIS)))
-    { // Force to suspend if we haven't reached the time we expect to draw yet
-      if(CINoTrigger()) afStatus.FlagSet(AF_VIDEO);
-      // Assemble Theora packets and if successful?
-      else if(ogg_stream_packetout(&ostsTheora, &opkData) > 0)
-      { // Decode the packet and if we get a positive result?
-        switch(const int iR =
-          th_decode_packetin(tdcPtr, &opkData, &iVideoGranulePos))
+  /* -- Manage video decoding thread for ogg supporting only audio --------- */
+  int VideoHandleAudioOnly(void)
+  { // Have a source?
+    if(sCptr)
+    { // Get number of buffers queued
+      for(ALsizei stP = sCptr->GetBuffersProcessed(); stP; --stP)
+      { // Unqueue a buffer and break if failed
+        const ALuint uiBuffer = sCptr->UnQueueBuffer();
+        if(cOal->HaveError()) continue;
+        // Remove buffer time
+        fdAudioBuffer = UtilMaximum(fdAudioBuffer -
+          (cOal->GetBufferInt<ALdouble>(uiBuffer, AL_SIZE) /
+            viData.rate / viData.channels), 0.0);
+        // Delete the buffer that was returned continue if successful
+        ALL(cOal->DeleteBuffer(uiBuffer),
+          "Video failed to delete unqueued buffer $ in '$'!",
+             uiBuffer, IdentGet());
+      }
+    } // Return if we don't need to do anything
+    if(fdAudioBuffer >= fdAudBufMax && fdAudioTime >= 0.0)
+    { // Suspend thread a little bit
+      cTimer->TimerSuspend(10);
+      // Done
+      return 0;
+    } // If frames are available, but we're way behind the video?
+    ALfloat **fpPCM;
+    if(const int iFrames = vorbis_synthesis_pcmout(&vdsData, &fpPCM))
+    { // Tell vorbis how much we read
+      vorbis_synthesis_read(&vdsData, iFrames);
+      // Set audio time
+      fdAudioTime = vorbis_granule_time(&vdsData, vdsData.granulepos);
+      // Done if no source
+      if(!sCptr) return 0;
+      // Convert vorbis frames to correct type dealing with memory
+      const size_t stFrames = static_cast<size_t>(iFrames),
+        // Get number of channels as size_t
+        stChannels = static_cast<size_t>(viData.channels);
+      // Length of data (may need to be modified if 16-bit required)
+      size_t stFrameSize = sizeof(float) * stFrames * stChannels;
+      // If the hardware supports 32-bit (4b) floating point playback?
+      if(cOal->Have32FPPB())
+      { // Allocate required memory and do the conversion
+        MemResizeUp(stFrameSize);
+        Stream::VorbisFramesToF32PCM(fpPCM, stFrames, stChannels,
+          MemPtr<ALfloat>());
+      } // If the hardware only supports 16-bit (2b) integer playback?
+      else
+      { // Allocate half the required memory and do the conversion. Note
+        // that we can't optimise this var and use MemSize() because this
+        // memory buffer might be bigger than we need and would be a waste
+        // of CPU time to keep reallocating it hence the MemResizeUp().
+        stFrameSize >>= 1;
+        MemResizeUp(stFrameSize);
+        Stream::VorbisFramesToI16PCM(fpPCM, stFrames, stChannels,
+          MemPtr<ALshort>());
+      } // Generate a buffer for the pcm data and if succeeded?
+      const ALuint uiBuffer = cOal->CreateBuffer();
+      ALenum alErr = cOal->GetError();
+      if(alErr == AL_NO_ERROR) try
+      { // Buffer the data and throw exception if failed
+        cOal->BufferData(uiBuffer, eFormat, MemPtr(),
+          static_cast<ALsizei>(stFrameSize),
+          static_cast<ALsizei>(viData.rate));
+        alErr = cOal->GetError();
+        if(alErr != AL_NO_ERROR) throw "buffering";
+        // Requeue the buffers and throw exception if failed
+        sCptr->QueueBuffer(uiBuffer);
+        alErr = cOal->GetError();
+        if(alErr != AL_NO_ERROR) throw "queuing";
+        // We ate everything so set audio time and add to buffer
+        fdAudioBuffer += static_cast<ALdouble>(stFrameSize) /
+          viData.rate / viData.channels;
+        // Play the source if we have enough pcm data
+        if(fdAudioTime > 0.0) sCptr->Play();
+        // Break the loop
+        return 0;
+      } // Exception occured?
+      catch(const char*const cpReason)
+      { // Delete the buffers because of error
+        ALL(cOal->DeleteBuffer(uiBuffer),
+          "Video failed to delete buffer $ in '$' "
+          "after failed data upload attempt!", uiBuffer, IdentGet());
+        // Log the warning
+        cLog->LogWarningExSafe("Video '$' $ audio failed "
+          "(B:$;F:$;A:$;S:$;R:$;AL:$<$$>)!",
+          IdentGet(), cpReason, uiBuffer, eFormat, MemPtr(), stFrameSize,
+          viData.rate, cOal->GetALErr(alErr), hex, alErr);
+      } // Create buffers failed?
+      else cLog->LogWarningExSafe("Video create buffers failed on '$' "
+        "(F:$;A:$;S:$;R:$;AL:$<$$>)!",
+        IdentGet(), uiBuffer, eFormat, MemPtr(), stFrameSize, viData.rate,
+        cOal->GetALErr(alErr), hex, alErr);
+    } // No audio left so try to feed another packet and break if failed
+    else switch(const int iR = ogg_stream_packetout(&ostsVorbis, &opkData))
+    { // If a packet was assembled normally?
+      case 1:
+        // Synthesise it and compare result
+        switch(const int iR = vorbis_synthesis(&vbData, &opkData))
         { // Success?
           case 0:
-            // Need a scope for destructing upcoming sychronisation
-            { // Wait until uploading is done
-              const LockGuard lgWaitForUpload{ mUpload };
-              // No buffers free? Force this next buffer to be free
-              if(!stFFree) { ++stFFree; --stFWaiting; }
-              // Get next frame to draw
-              Frame &frRef = faData[stFNext];
-              // If decoding the frame failed?
-              if(th_decode_ycbcr_out(tdcPtr, tybData))
-              { // Skip the frame
-                frRef.bDraw = false;
-                // We lost this frame
-                ++uiVideoFramesLost;
-              } // Decoding succeeded?
-              else
-              { // Set pointers to planes and we will be drawing this frame
-                for(auto &aPlane : frRef.aP) aPlane.tipP = tybData[aPlane.stI];
-                frRef.bDraw = true;
-                // We processed this frame
-                ++uiVideoFrames;
-              } // Buffer filled
-              stFNext = (stFNext + 1) % faData.size();
-              ++stFWaiting;
-              --stFFree;
-            } // We processed a video frame
-            afStatus.FlagSet(AF_VIDEO);
-            // Update position
-            UpdateVideoPosition();
-            // Set next frome time and fall through to break
-            CIAccumulate();
-            // Done
+            // Submits vorbis_block for assembly into the final PCM audio
+            if(vorbis_synthesis_blockin(&vdsData, &vbData) == OV_EINVAL)
+              cLog->LogWarningExSafe(
+                "Video '$' vorbis synthesis failed!", IdentGet());
+            // See if there is more audio
             break;
-          // Duplicate frame? We don't need to decode anything
-          case TH_DUPFRAME:
-            // We processed a video frame
-            afStatus.FlagSet(AF_VIDEO);
-            // Update video time and increment frames counter
-            ++uiVideoFrames;
-            // Update position
-            UpdateVideoPosition();
-            // Set next frame time and fall through to break
-            CIAccumulate();
-            // Done
-            break;
-          // Bad packet? (ignore)
-          case TH_EBADPACKET: break;
-          // Anything else?
-          default:
-            // Just put warning in log
-            cLog->LogWarningExSafe("Video '$' decode failure code $!",
-              IdentGet(), iR);
-            // Done
-            break;
-        }
-      }
-    } // If we processed a video frame?
+          // If the packet is not an audio packet?
+          case OV_ENOTAUDIO: break;
+          // if there was an error in the packet?
+          case OV_EBADPACKET: break;
+          // Unknown error
+          default: XC("Unknown audio synthesis result!",
+                      "Identifier", IdentGet(), "Result", iR);
+        } // See if there is more vorbis packets
+        return 0;
+      // If we are out of sync and there is a gap in the data?
+      case -1: [[fallthrough]];
+      // If there is insufficient data available to complete a packet?
+      case 0:
+        // Is end of file?
+        if(fmFile.FileMapIsEOF())
+        { // Rewind video
+          DoRewind();
+          // We should loop?
+          if(stLoop > 0)
+          { // Reduce loops if not infinity
+            if(stLoop != StdMaxSizeT) --stLoop;
+            // Send looping event
+            LuaEvtDispatch(VE_LOOP);
+          } // No more loops so set finished reason and exit the thread
+          else { ubReason = UB_FINISH; return 2; }
+        } // Load more data
+        else if(DoIOBuffer())
+          cLog->LogWarningExSafe("Video '$' failed to read file data: $!",
+            IdentGet(), StdGetError());
+        // Loop until we've parsed as much raw data as we can
+        for(;;)
+        { // Break apart file data to useful packets
+          switch(const int iR = ogg_sync_pageout(&osysData, &opgData))
+          { // A page was synced and returned.
+            case 1:
+              // Parse more video and audio data. No point logging failures.
+              ogg_stream_pagein(&ostsVorbis, &opgData);
+              // Search for more useful data
+              continue;
+            // Stream has not yet captured sync (bytes were skipped).
+            case -1: break;
+            // More data needed or an internal error occurred.
+            case 0: break;
+            // Unknown error
+            default: XC("Unknown sync page out result!",
+                        "Identifier", IdentGet(), "Result", iR);
+          } // Break loop
+          break;
+        } // Done
+        break;
+      // Unknown error
+      default: XC("Unknown audio stream packet out result!",
+                  "Identifier", IdentGet(), "Result", iR);
+    } // Done
+    return 0;
+  }
+  /* -- Manage video decoding thread for ogg supporting only video --------- */
+  int VideoHandleVideoOnly(void)
+  { // Status flags    A/V unready?  Video ready?
+    BUILD_FLAGS(Avail, AF_NONE{0x0}, AF_VIDEO{0x1});
+    // Video and audio was rendered successfully?
+    AvailFlags afStatus{ AF_NONE };
+    // If it is not time to process a frame yet?
+    if(CIIsNotTriggered())
+    { // Wait a little bit if we can
+      if(CIIsNotTriggered(milliseconds{1})) cTimer->TimerSuspend(1);
+      // Done
+      return 0;
+    } // Time to check for new packets? Repeat...
+    else do
+    { // See if theres a new packet and get result
+      switch(const int iR = ogg_stream_packetout(&ostsTheora, &opkData))
+      { // if a packet was assembled normally?
+        case 1:
+          // Decode the packet and if we get a positive result?
+          switch(const int iR =
+            th_decode_packetin(tdcPtr, &opkData, &iVideoGranulePos))
+          { // Success?
+            case 0:
+              // Need a scope for destructing upcoming sychronisation
+              { // Wait until uploading is done
+                const LockGuard lgWaitForUpload{ mUpload };
+                // Get next frame to draw
+                Frame &frRef = faData[stFNext];
+                // If decoding the frame failed?
+                if(th_decode_ycbcr_out(tdcPtr, tybData))
+                { // Skip the frame
+                  frRef.bDraw = false;
+                  // We lost this frame
+                  ++uiVideoFramesLost;
+                } // Decoding succeeded?
+                else
+                { // Set pointers to planes and we will be drawing this frame
+                  for(auto &aPlane : frRef.aP)
+                    aPlane.tipP = tybData[aPlane.stI];
+                  frRef.bDraw = true;
+                  // We processed this frame
+                  ++uiVideoFrames;
+                } // Buffer filled
+                stFNext = (stFNext + 1) % faData.size();
+                ++stFWaiting;
+                --stFFree;
+              } // We processed a video frame
+              afStatus.FlagSet(AF_VIDEO);
+              // Set next frome time and fall through to break
+              CIAccumulate();
+              // See if we can accumulate more packets
+              continue;
+            // Duplicate frame? We don't need to decode anything
+            case TH_DUPFRAME:
+              // We processed a video frame
+              afStatus.FlagSet(AF_VIDEO);
+              // Update video time and increment frames counter
+              ++uiVideoFrames;
+              // Set next frame time and fall through to break
+              CIAccumulate();
+              // See if we can accumulate more packets
+              continue;
+            // Bad packet? (ignore)
+            case TH_EBADPACKET: break;
+            // Unknown error
+            default: XC("Unknown video decode packet in result!",
+                        "Identifier", IdentGet(), "Result", iR);
+          } // Check for more packets
+          break;
+        // We are out of sync and there is a gap in the data, try again
+        case -1: continue;
+        // There is insufficient data available to complete a packet
+        case 0: break;
+        // Unknown error
+        default: XC("Unknown stream packet out result!",
+                    "Identifier", IdentGet(), "Result", iR);
+      } // Break out of loop
+      break;
+    } // ...whilst the timer continues to trigger
+    while(CIIsTriggered());
+    // If we processed a video frame? Update drift.
     if(afStatus.FlagIsSet(AF_VIDEO))
-    { // If stream has audio and not at the beginning?
-      if(FlagIsSet(FL_VORBIS) && fdAudioTime > 0.0)
-      { // Update drift and if drifting too much?
-        fdDrift = fdVideoTime - fdAudioTime;
-        if(fdDrift >= fdMaxDrift)
-        { // Wait until uploading is done
-          const LockGuard lgWaitForUpload{ mUpload };
-          // Reset buffer statistics. Don't reset buffer id though
-          stFFree = faData.size();
-          stFWaiting = 0;
-          // Create a counter to hold skipped frames. Since the counter in the
-          // class is atomic, we'll just make sure we modify it once.
-          unsigned int uiSkipped = 0;
-          // For each frame...
-          for(Frame &fSlot : faData)
-          { // Ignore if not set to draw
-            if(!fSlot.bDraw) continue;
-            // Reset the frame data
-            fSlot.Reset();
-            // Increment skipped frames counter
-            ++uiSkipped;
-          } // Add to frames lost
-          uiVideoFramesLost += uiSkipped;
-          // Read and decode a new packet and return if succeeded
-          if(ogg_stream_packetout(&ostsTheora, &opkData) > 0
-            && th_decode_packetin(tdcPtr, &opkData, &iVideoGranulePos) >= 0)
-              UpdateVideoPosition();
-          // Next frame can show immediately
-          CISync();
-        }
-      } // Wait a little bit
-      else cTimer->TimerSuspend(1);
-    } // Didn't process a video frame or audio frame?
+    { // Update video position and drift
+      fdVideoTime = th_granule_time(tdcPtr, iVideoGranulePos);
+    } // Didn't process a video nor audio frame?
+    else
+    { // Is end of file?
+      if(fmFile.FileMapIsEOF())
+      { // Rewind video
+        DoRewind();
+        // We should loop?
+        if(stLoop > 0)
+        { // Reduce loops if not infinity
+          if(stLoop != StdMaxSizeT) --stLoop;
+          // Send looping event
+          LuaEvtDispatch(VE_LOOP);
+        } // No more loops so set finished reason and exit the thread
+        else { ubReason = UB_FINISH; return 2; }
+      } // Load more data
+      else if(DoIOBuffer())
+        cLog->LogWarningExSafe("Video '$' failed to read file data: $!",
+          IdentGet(), StdGetError());
+      // Loop until we've parsed as much raw data as we can
+      for(;;)
+      { // Break apart file data to useful packets
+        switch(const int iR = ogg_sync_pageout(&osysData, &opgData))
+        { // A page was synced and returned.
+          case 1:
+            // Parse more video and audio data. No point logging failures.
+            ogg_stream_pagein(&ostsTheora, &opgData);
+            // Search for more useful data
+            continue;
+          // Stream has not yet captured sync (bytes were skipped).
+          case -1: break;
+          // More data needed or an internal error occurred.
+          case 0: break;
+          // Unknown error
+          default: XC("Unknown sync page out result!",
+                      "Identifier", IdentGet(), "Result", iR);
+        } // Break loop
+        break;
+      }
+    } // Keep thread loop alive
+    return 0;
+  }
+  /* -- Manage video decoding thread for ogg supporting audio and video ---- */
+  int VideoHandleAudioVideo(void)
+  { // Status flags    A/V unready?  Audio ready?   Video ready?
+    BUILD_FLAGS(Avail, AF_NONE{0x0}, AF_AUDIO{0x1}, AF_VIDEO{0x2});
+    // Video and audio was rendered successfully?
+    AvailFlags afStatus{ AF_NONE };
+    // Have a source?
+    if(sCptr)
+    { // Get number of buffers queued
+      for(ALsizei stP = sCptr->GetBuffersProcessed(); stP; --stP)
+      { // Unqueue a buffer and break if failed
+        const ALuint uiBuffer = sCptr->UnQueueBuffer();
+        if(cOal->HaveError()) continue;
+        // Remove buffer time
+        fdAudioBuffer = UtilMaximum(fdAudioBuffer -
+          (cOal->GetBufferInt<ALdouble>(uiBuffer, AL_SIZE) /
+            viData.rate / viData.channels), 0.0);
+        // Delete the buffer that was returned continue if successful
+        ALL(cOal->DeleteBuffer(uiBuffer),
+          "Video failed to delete unqueued buffer $ in '$'!",
+             uiBuffer, IdentGet());
+      } // Raise pitch if behind
+      if(fdDrift > fdMaxDrift) sCptr->SetPitch(1.1f);
+      // Lower pitch if ahead
+      else if(fdDrift < fdMaxDriftNeg) sCptr->SetPitch(0.9f);
+      // No pitch adjustment required
+      else sCptr->SetPitch(1.0f);
+    } // No source or buffer needs topping up? Repeat until we have audio
+    if(!sCptr || fdAudioBuffer < fdAudBufMax) for(;;)
+    { // If frames are available, but we're way behind the video?
+      ALfloat **fpPCM;
+      if(const int iFrames = vorbis_synthesis_pcmout(&vdsData, &fpPCM))
+      { // Tell vorbis how much we read
+        vorbis_synthesis_read(&vdsData, iFrames);
+        // Set audio time
+        fdAudioTime = vorbis_granule_time(&vdsData, vdsData.granulepos);
+        // Set that we got audio
+        afStatus.FlagSet(AF_AUDIO);
+        // Done if no source
+        if(!sCptr) break;
+        // Convert vorbis frames to correct type dealing with memory
+        const size_t stFrames = static_cast<size_t>(iFrames),
+          // Get number of channels as size_t
+          stChannels = static_cast<size_t>(viData.channels);
+        // Length of data (may need to be modified if 16-bit required)
+        size_t stFrameSize = sizeof(float) * stFrames * stChannels;
+        // If the hardware supports 32-bit (4b) floating point playback?
+        if(cOal->Have32FPPB())
+        { // Allocate required memory and do the conversion
+          MemResizeUp(stFrameSize);
+          Stream::VorbisFramesToF32PCM(fpPCM, stFrames, stChannels,
+            MemPtr<ALfloat>());
+        } // If the hardware only supports 16-bit (2b) integer playback?
+        else
+        { // Allocate half the required memory and do the conversion. Note
+          // that we can't optimise this var and use MemSize() because this
+          // memory buffer might be bigger than we need and would be a waste
+          // of CPU time to keep reallocating it hence the MemResizeUp().
+          stFrameSize >>= 1;
+          MemResizeUp(stFrameSize);
+          Stream::VorbisFramesToI16PCM(fpPCM, stFrames, stChannels,
+            MemPtr<ALshort>());
+        } // Generate a buffer for the pcm data and if succeeded?
+        const ALuint uiBuffer = cOal->CreateBuffer();
+        ALenum alErr = cOal->GetError();
+        if(alErr == AL_NO_ERROR) try
+        { // Buffer the data and throw exception if failed
+          cOal->BufferData(uiBuffer, eFormat, MemPtr(),
+            static_cast<ALsizei>(stFrameSize),
+            static_cast<ALsizei>(viData.rate));
+          alErr = cOal->GetError();
+          if(alErr != AL_NO_ERROR) throw "buffering";
+          // Requeue the buffers and throw exception if failed
+          sCptr->QueueBuffer(uiBuffer);
+          alErr = cOal->GetError();
+          if(alErr != AL_NO_ERROR) throw "queuing";
+          // We ate everything so set audio time and add to buffer
+          fdAudioBuffer += static_cast<ALdouble>(stFrameSize) /
+            viData.rate / viData.channels;
+          // Play the source
+          sCptr->Play();
+          // Break the loop
+          break;
+        } // Exception occured?
+        catch(const char*const cpReason)
+        { // Delete the buffers because of error
+          ALL(cOal->DeleteBuffer(uiBuffer),
+            "Video failed to delete buffer $ in '$' "
+            "after failed data upload attempt!", uiBuffer, IdentGet());
+          // Log the warning
+          cLog->LogWarningExSafe("Video '$' $ audio failed "
+            "(B:$;F:$;A:$;S:$;R:$;AL:$<$$>)!",
+            IdentGet(), cpReason, uiBuffer, eFormat, MemPtr(), stFrameSize,
+            viData.rate, cOal->GetALErr(alErr), hex, alErr);
+        } // Create buffers failed?
+        else cLog->LogWarningExSafe("Video create buffers failed on '$' "
+          "(F:$;A:$;S:$;R:$;AL:$<$$>)!",
+          IdentGet(), uiBuffer, eFormat, MemPtr(), stFrameSize, viData.rate,
+          cOal->GetALErr(alErr), hex, alErr);
+      } // No audio left so try to feed another packet and break if failed
+      else switch(const int iR = ogg_stream_packetout(&ostsVorbis, &opkData))
+      { // If a packet was assembled normally?
+        case 1:
+          // Synthesise it and compare result
+          switch(const int iR = vorbis_synthesis(&vbData, &opkData))
+          { // Success?
+            case 0:
+              // Submits vorbis_block for assembly into the final PCM audio
+              if(vorbis_synthesis_blockin(&vdsData, &vbData) == OV_EINVAL)
+                cLog->LogWarningExSafe(
+                  "Video '$' vorbis synthesis failed!", IdentGet());
+              // See if there is more audio
+              break;
+            // If the packet is not an audio packet?
+            case OV_ENOTAUDIO: break;
+            // if there was an error in the packet?
+            case OV_EBADPACKET: break;
+            // Unknown error
+            default: XC("Unknown audio synthesis result!",
+                        "Identifier", IdentGet(), "Result", iR);
+          } // See if there is more vorbis packets
+          continue;
+        // If we are out of sync and there is a gap in the data?
+        case -1: break;
+        // If there is insufficient data available to complete a packet?
+        case 0: break;
+        // Unknown error
+        default: XC("Unknown audio stream packet out result!",
+                    "Identifier", IdentGet(), "Result", iR);
+      } // Break loop
+      break;
+    } // Have theora stream and we've got enough audio buffered?
+    if(fdAudioBuffer >= fdAudBufMax)
+    { // If it is not time to process a frame yet?
+      if(CIIsNotTriggered())
+      { // We got audio? Update drift
+        if(afStatus.FlagIsSet(AF_AUDIO))
+          fdDrift = fdAudioTime > 0.0 ? fdVideoTime - fdAudioTime : 0.0;
+        // Wait a little bit if we can
+        else if(CIIsNotTriggered(milliseconds{1})) cTimer->TimerSuspend(1);
+        // Done
+        return 0;
+      } // Time to check for new packets? Repeat...
+      else do
+      { // See if theres a new packet and get result
+        switch(const int iR = ogg_stream_packetout(&ostsTheora, &opkData))
+        { // if a packet was assembled normally?
+          case 1:
+            // Decode the packet and if we get a positive result?
+            switch(const int iR =
+              th_decode_packetin(tdcPtr, &opkData, &iVideoGranulePos))
+            { // Success?
+              case 0:
+                // Need a scope for destructing upcoming sychronisation
+                { // Wait until uploading is done
+                  const LockGuard lgWaitForUpload{ mUpload };
+                  // Get next frame to draw
+                  Frame &frRef = faData[stFNext];
+                  // If decoding the frame failed?
+                  if(th_decode_ycbcr_out(tdcPtr, tybData))
+                  { // Skip the frame
+                    frRef.bDraw = false;
+                    // We lost this frame
+                    ++uiVideoFramesLost;
+                  } // Decoding succeeded?
+                  else
+                  { // Set pointers to planes and we will be drawing this frame
+                    for(auto &aPlane : frRef.aP)
+                      aPlane.tipP = tybData[aPlane.stI];
+                    frRef.bDraw = true;
+                    // We processed this frame
+                    ++uiVideoFrames;
+                  } // Buffer filled
+                  stFNext = (stFNext + 1) % faData.size();
+                  ++stFWaiting;
+                  --stFFree;
+                } // We processed a video frame
+                afStatus.FlagSet(AF_VIDEO);
+                // Set next frome time and fall through to break
+                CIAccumulate();
+                // See if we can accumulate more packets
+                continue;
+              // Duplicate frame? We don't need to decode anything
+              case TH_DUPFRAME:
+                // We processed a video frame
+                afStatus.FlagSet(AF_VIDEO);
+                // Update video time and increment frames counter
+                ++uiVideoFrames;
+                // Set next frame time and fall through to break
+                CIAccumulate();
+                // See if we can accumulate more packets
+                continue;
+              // Bad packet? (ignore)
+              case TH_EBADPACKET: break;
+              // Unknown error
+              default: XC("Unknown video decode packet in result!",
+                          "Identifier", IdentGet(), "Result", iR);
+            } // Check for more packets
+            break;
+          // We are out of sync and there is a gap in the data, try again
+          case -1: continue;
+          // There is insufficient data available to complete a packet
+          case 0: break;
+          // Unknown error
+          default: XC("Unknown stream packet out result!",
+                      "Identifier", IdentGet(), "Result", iR);
+        } // Break out of loop
+        break;
+      } // ...whilst the timer continues to trigger
+      while(CIIsTriggered());
+    } // If we processed a video frame? Update drift.
+    if(afStatus.FlagIsSet(AF_VIDEO))
+    { // Update video position and drift
+      fdVideoTime = th_granule_time(tdcPtr, iVideoGranulePos);
+      fdDrift = fdAudioTime > 0.0 ? fdVideoTime - fdAudioTime : 0.0;
+    } // Didn't process a video nor audio frame?
     else if(afStatus.FlagIsClear(AF_AUDIO))
     { // Is end of file?
       if(fmFile.FileMapIsEOF())
@@ -453,22 +713,32 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
           if(stLoop != StdMaxSizeT) --stLoop;
           // Send looping event
           LuaEvtDispatch(VE_LOOP);
-        } // No more loops so we're done if everything is played
-        else
-        { // Set finished reason for exiting
-          ubReason = UB_FINISH;
-          // Exit the thread
-          return 2;
-        }
+        } // No more loops so set finished reason and exit the thread
+        else { ubReason = UB_FINISH; return 2; }
       } // Load more data
       else if(DoIOBuffer())
         cLog->LogWarningExSafe("Video '$' failed to read file data: $!",
           IdentGet(), StdGetError());
-      // Break apart file data to useful packets
-      while(ogg_sync_pageout(&osysData, &opgData) > 0)
-      { // Find more theora and vorbis data
-        if(FlagIsSet(FL_THEORA)) ogg_stream_pagein(&ostsTheora, &opgData);
-        if(FlagIsSet(FL_VORBIS)) ogg_stream_pagein(&ostsVorbis, &opgData);
+      // Loop until we've parsed as much raw data as we can
+      for(;;)
+      { // Break apart file data to useful packets
+        switch(const int iR = ogg_sync_pageout(&osysData, &opgData))
+        { // A page was synced and returned.
+          case 1:
+            // Parse more video and audio data. No point logging failures.
+            ogg_stream_pagein(&ostsTheora, &opgData);
+            ogg_stream_pagein(&ostsVorbis, &opgData);
+            // Search for more useful data
+            continue;
+          // Stream has not yet captured sync (bytes were skipped).
+          case -1: break;
+          // More data needed or an internal error occurred.
+          case 0: break;
+          // Unknown error
+          default: XC("Unknown sync page out result!",
+                      "Identifier", IdentGet(), "Result", iR);
+        } // Break loop
+        break;
       }
     } // Keep thread loop alive
     return 0;
@@ -477,9 +747,13 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
   int VideoThreadMain(const Thread &tClass) try
   { // Send playing event if we're not temporarily de-initialising
     if(ubReason != UB_REINIT) LuaEvtDispatch(VE_PLAY);
-    // Loop forever until thread should exit and manage video stream.
-    // Capture return value and keep looping until non-zero exit.
-    while(!tClass.ThreadShouldExit() && !VideoHandle());
+    // Loop until thread should exit
+    if(FlagIsSet(FL_THEORA|FL_VORBIS)) // Ogg has both audio and video streams?
+      while(!tClass.ThreadShouldExit() && !VideoHandleAudioVideo());
+    else if(FlagIsSet(FL_VORBIS))      // Ogg has audio only stream?
+      while(!tClass.ThreadShouldExit() && !VideoHandleAudioOnly());
+    else if(FlagIsSet(FL_THEORA))      // Ogg has video only stream?
+      while(!tClass.ThreadShouldExit() && !VideoHandleVideoOnly());
     // Log the reason why the thread should be terminated
     cLog->LogDebugExSafe("Video '$' main loop exit with reason $!",
       IdentGet(), ubReason.load());
@@ -601,7 +875,7 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
               { ostsTheora = ossTest; FlagSet(FL_STINIT); iGotTheoraPage = 1; }
           // Not Theora, try Vorbis. If it is vorbis -- save this stream state
           else if(!iGotVorbisPage &&
-            vorbis_synthesis_headerin(&viData, &vcData, &opkData) >= 0)
+            vorbis_synthesis_headerin(&viData, &vcData, &opkData) == 0)
               { ostsVorbis = ossTest; FlagSet(FL_SVINIT); iGotVorbisPage = 1; }
           // Whatever it is, we don't care about it
           else ogg_stream_clear(&ossTest);
@@ -735,13 +1009,7 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
       // Show what we allocated
       cLog->LogDebugExSafe("Video pre-allocated $ bytes for audio decoder.",
         MemSize());
-      // Have video stream?
-      if(FlagIsSet(FL_THEORA))
-      { // Set maximum drift
-        fdMaxDrift = cVideos->fdMaxDrift;
-        // Save a negated version of the drift too
-        fdMaxDriftNeg = -fdMaxDrift;
-      } // Reset audio position and drift
+      // Reset audio position and drift
       fdAudioTime = fdDrift = 0.0;
     } // Log success
     cLog->LogInfoExSafe("Video loaded '$' successfully.", IdentGet());
@@ -906,10 +1174,13 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
   }
   /* -- Advance a frame ---------------------------------------------------- */
   void Advance(void)
-  { // If not playing and no there is a video stream?
-    if(tThread.ThreadIsExited() && FlagIsSet(FL_THEORA))
-      // Run video manager until we render a frame or thread termination
-      while(tThread.ThreadShouldNotExit() && !VideoHandle() && !stFWaiting);
+  { // If not playing
+    if(tThread.ThreadIsNotExited()) return;
+    // Loop until thread should exit
+    if(FlagIsSet(FL_THEORA|FL_VORBIS)) // Ogg has both audio and video streams?
+      while(!VideoHandleAudioVideo() && !stFWaiting);
+    else if(FlagIsSet(FL_THEORA))      // Ogg has video only stream?
+      while(!VideoHandleVideoOnly() && !stFWaiting);
   }
   /* -- Awaken the video --------------------------------------------------- */
   void Awaken(void)
@@ -1162,14 +1433,13 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
     ubReason(UB_STANDBY),              // Initially set to blocked
     stLoop(0),                         // Initialise no loops remaining
     fdDrift(0.0),                      // Initialise drift time
-    fdMaxDriftNeg(0.0),                // Initialise maximum drift time
-    fdMaxDrift(0.0),                   // Initialise maximum drift time
+    fdMaxDrift(cVideos->fdMaxDrift),   // Initialise maximum drift time
+    fdMaxDriftNeg(-fdMaxDrift),        // Initialise negated max drift time
     osysData{},                        // Clear ogg sync state
     opgData{},                         // Clear ogg page data
     opkData{},                         // Clear ogg packet data
-    lIOBuf(cVideos->lBufferSize),      // Initialise buffer length
-    stIOBuf(static_cast                // Make a size_t version too so we...
-      <size_t>(lIOBuf)),               // ...don't have to cast it
+    stIOBuf(cVideos->stIOBufferSize),  // Initialise buffer length
+    lIOBuf(static_cast<long>(stIOBuf)),// Initialise buffer length as long
     ostsTheora{},                      // Clear ogg stream state
     tiData{},                          // Clear Theora info struct
     tcData{},                          // Clear Theora comment struct
@@ -1185,6 +1455,8 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
     stFNext(0),                        // Initialise next frame id
     stFWaiting(0),                     // Initialise frames waiting
     stFFree{0},                        // Initialise free frames
+    fdAudBufMax(cVideos->              // Initialise maximum audio buffer size
+      fdAudioBufferSize),
     ostsVorbis{},                      // Clear Vorbis stream status data
     viData{},                          // Clear Vorbis decoder data
     vcData{},                          // Clear Vorbis comment data
@@ -1210,8 +1482,9 @@ END_ASYNCCOLLECTOR(Videos, Video, VIDEO, // Finish Videos collector class
     "TH_PF_420", "TH_PF_RSVD",         // 0-1
     "TH_PF_422", "TH_PF_444",          // 2-3
   }, "TH_PF_UNSUPPORTED" },            // End of pixel format strings list
-  lBufferSize{0},                      // Buffer size initialised by cvar
-  fdMaxDrift{0.0}                      // Max drift initialised by cvar
+  fdAudioBufferSize(0),                // Audio buffer size init by cvar
+  stIOBufferSize(0),                   // Buffer size initialised by cvar
+  fdMaxDrift(0.0)                      // Max drift initialised by cvar
 )/* == Reinit textures (after engine thread shutdown) ====================== */
 static void VideoReInitTextures(void)
 { // Ignore if no videos otherwise re-initialise ogl textures on all videos
@@ -1276,11 +1549,16 @@ static void VideoRender(void)
 static void VideoCommitVolume(void)
   { for(Video*const vCptr : *cVideos) vCptr->CommitVolume(); }
 /* == Set buffer size ====================================================== */
-static CVarReturn VideoSetBufferSize(const long lSize)
-  { return CVarSimpleSetIntNLG(cVideos->lBufferSize, lSize, 4096, 16777216); }
+static CVarReturn VideoSetIOBufferSize(const size_t stSize)
+  { return CVarSimpleSetIntNLG(cVideos->stIOBufferSize,
+      stSize, 4096UL, 16777216UL); }
 /* == Set drift length maximum ============================================= */
 static CVarReturn VideoSetMaximumDrift(const double fdMax)
   { return CVarSimpleSetIntNLG(cVideos->fdMaxDrift, fdMax, 0.01, 1.00); }
+/* == Set audio buffer length maximum ====================================== */
+static CVarReturn VideoSetAudioBufferSize(const double fdMax)
+  { return CVarSimpleSetIntNLG(cVideos->fdAudioBufferSize,
+      fdMax, 0.01, 1.00); }
 /* == Set all streams base volume ========================================== */
 static CVarReturn VideoSetVolume(const ALfloat fVolume)
 { // Ignore if invalid value

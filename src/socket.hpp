@@ -1481,7 +1481,7 @@ static CVarReturn SocketOCSPModified(const int iState)
 /* == Return if cvar can be set (accept only 1024-16384 for now) =========== */
 static CVarReturn SocketSetBufferSize(const size_t stSize)
   { return CVarSimpleSetIntNLG(cSockets->stBufferSize,
-      stSize, static_cast<size_t>(4096), static_cast<size_t>(1048576)); }
+      stSize, 4096UL, 1048576UL); }
 /* ========================================================================= */
 static CVarReturn SocketSetRXTimeout(const double fdNew)
   { return CVarSimpleSetIntNLG(cSockets->fdRecvTimeout, fdNew, 0, 3600); }

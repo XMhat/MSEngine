@@ -334,9 +334,9 @@ class SysCore :
     string strVersion{ StrAppend(sizeof(void*)*8, "-bit version") };
     // Mod list
     SysModList mlData;
-    mlData.emplace(make_pair(static_cast<size_t>(0),
-      SysModule{ GetExeName(), VER_MAJOR, VER_MINOR, VER_BUILD, VER_REV,
-        VER_AUTHOR, VER_NAME, StdMove(strVersion), VER_STR }));
+    mlData.emplace(make_pair(0UL, SysModule{ GetExeName(), VER_MAJOR,
+      VER_MINOR, VER_BUILD, VER_REV, VER_AUTHOR, VER_NAME, StdMove(strVersion),
+      VER_STR }));
     // Module list which includes the executable module
     return mlData;
   }

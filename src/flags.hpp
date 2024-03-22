@@ -76,19 +76,25 @@ class FlagsConst :
   bool FlagIsNonZero(void) const { return !FlagIsZero(); }
   /* -- Is flag set with specified value? ---------------------------------- */
   bool FlagIsSet(const FlagsConst &fO) const
-    { return this->FlagGet() & fO.FlagGet(); }
+    { return (this->FlagGet() & fO.FlagGet()) == fO.FlagGet(); }
+  /* -- Is any flag set with specified value? ------------------------------ */
+  bool FlagIsAnyOfSet(const FlagsConst &fO) const
+    { return (this->FlagGet() & fO.FlagGet()) != 0; }
+  /* -- Is bit clear of specified value? ----------------------------------- */
+  bool FlagIsClear(const FlagsConst &fO) const
+    { return (~this->FlagGet() & fO.FlagGet()) == fO.FlagGet(); }
+  /* -- Is bit clear of specified value? ----------------------------------- */
+  bool FlagIsAnyOfClear(const FlagsConst &fO) const
+    { return (~this->FlagGet() & fO.FlagGet()) != 0; }
+  /* -- Is flag set with specified value and clear with another? ----------- */
+  bool FlagIsSetAndClear(const FlagsConst &fO1, const FlagsConst &fO2) const
+    { return FlagIsSet(fO1) && FlagIsClear(fO2); }
   /* -- Flags are not masked in specified other flags? --------------------- */
   bool FlagIsNotInMask(const FlagsConst &fO) const
     { return this->FlagGet() & ~fO.FlagGet(); }
   /* -- Flags are masked in specified other flags? ------------------------- */
   bool FlagIsInMask(const FlagsConst &fO) const
     { return !FlagIsNotInMask(fO); }
-  /* -- Is bit clear of specified value? ----------------------------------- */
-  bool FlagIsClear(const FlagsConst &fO) const
-    { return !FlagIsSet(fO); }
-  /* -- Is flag set with specified value and clear with another? ----------- */
-  bool FlagIsSetAndClear(const FlagsConst &fO1, const FlagsConst &fO2) const
-    { return FlagIsSet(fO1) && FlagIsClear(fO2); }
   /* -- Is any of these flags set and cleared? ----------------------------- */
   bool FlagIsAnyOfSetAndClear(void) const { return false; }
   template<typename ...VarArgs>
@@ -96,16 +102,6 @@ class FlagsConst :
       const VarArgs &...vaVars) const
   { return FlagIsSetAndClear(fO1, fO2) ?
       true : FlagIsAnyOfSetAndClear(vaVars...); }
-  /* -- Is any of these flags set? ----------------------------------------- */
-  bool FlagIsAnyOfSet(void) const { return false; }
-  template<typename ...VarArgs>
-    bool FlagIsAnyOfSet(const FlagsConst &fO, const VarArgs &...vaVars) const
-  { return FlagIsSet(fO) ? true : FlagIsAnyOfSet(vaVars...); }
-  /* -- Is any of these flags clear? --------------------------------------- */
-  bool FlagIsAnyOfClear(void) const { return false; }
-  template<typename ...VarArgs>
-    bool FlagIsAnyOfClear(const FlagsConst &fO, const VarArgs &...vaVars) const
-  { return FlagIsClear(fO) ? true : FlagIsAnyOfClear(vaVars...); }
   /* -- Is bits set? ------------------------------------------------------- */
   bool FlagIsEqualToBool(const FlagsConst &fO, const bool bS) const
     { return FlagIsSet(fO) == bS; }
