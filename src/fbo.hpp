@@ -62,7 +62,7 @@ class FboBase :                        // Fbo base class
   public Ident,                        // Identifier class
   public Lockable                      // Lua lockable class
 { /* -- Texture ---------------------------------------------------- */ public:
-  size_t           stFilterId;         // Chosen filter value
+  OglFilterEnum    ofeFilterId;         // Chosen filter value
   GLint            iMinFilter,         // Frame buffer minification filter
                    iMagFilter,         // Frame buffer magnification filter
                    iWrapMode,          // Frame buffer wrapping mode
@@ -86,7 +86,7 @@ class FboBase :                        // Fbo base class
   /* -- Constructor -------------------------------------------------------- */
   explicit FboBase(const GLint iPF, const bool bLockable) :
     /* -- Initialisers ----------------------------------------------------- */
-    Lockable{ bLockable },             stFilterId(0),
+    Lockable{ bLockable },             ofeFilterId(OF_N_N),
     iMinFilter(GL_NEAREST),            iMagFilter(GL_NEAREST),
     iWrapMode(GL_CLAMP_TO_EDGE),       iPixFormat(iPF),
     ePolyMode(GL_FILL),                uiTextureCache(0),
@@ -323,12 +323,12 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
         "Identifier", IdentGet(), "Mode", iWrapMode, "Type", pItem.cWrap);
   }
   /* -- Set filtering by ID ------------------------------------------------ */
-  size_t FboGetFilter(void) const { return stFilterId; }
-  void FboSetFilter(const size_t stId)
+  OglFilterEnum FboGetFilter(void) const { return ofeFilterId; }
+  void FboSetFilter(const OglFilterEnum ofeId)
   { // Translate our filter id to min and mag filter
-    cOgl->SetFilterById(stId, iMinFilter, iMagFilter);
+    cOgl->SetFilterById(ofeId, iMinFilter, iMagFilter);
     // Record filter id
-    stFilterId = stId;
+    ofeFilterId = ofeId;
   }
   /* -- Commit new filter modes -------------------------------------------- */
   void FboCommitFilter(void)
@@ -345,15 +345,16 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
       "MagFilter",  iMagFilter);
   }
   /* -- Set filtering by ID and commit ------------------------------------- */
-  void FboSetFilterCommit(const size_t stId)
+  void FboSetFilterCommit(const OglFilterEnum ofeId)
   { // New filters
-    FboSetFilter(stId);
+    FboSetFilter(ofeId);
     // Apply the filters
     FboCommitFilter();
   }
   /* -- Set backbuffer blending mode --------------------------------------- */
-  void FboSetBlend(const size_t stSFactorRGB, const size_t stDFactorRGB,
-    const size_t stSFactorA, const size_t stDFactorA)
+  void FboSetBlend(const OglBlendEnum obeSFactorRGB,
+    const OglBlendEnum obeDFactorRGB, const OglBlendEnum obeSFactorA,
+    const OglBlendEnum obeDFactorA)
   { // OpenGL blending flags
     typedef array<const GLenum, OB_MAX> BlendFunctions;
     static const BlendFunctions aBlends
@@ -375,10 +376,10 @@ BEGIN_MEMBERCLASS(Fbos, Fbo, ICHelperUnsafe),
       GL_SRC_ALPHA_SATURATE            // 14 (i,i,i)            1      S_A_S
     };
     // Lookup values and set
-    SetSrcRGB(aBlends[stSFactorRGB]);
-    SetDstRGB(aBlends[stDFactorRGB]);
-    SetSrcAlpha(aBlends[stSFactorA]);
-    SetDstAlpha(aBlends[stDFactorA]);
+    SetSrcRGB(aBlends[obeSFactorRGB]);
+    SetDstRGB(aBlends[obeDFactorRGB]);
+    SetSrcAlpha(aBlends[obeSFactorA]);
+    SetDstAlpha(aBlends[obeDFactorA]);
   }
   /* -- Set clear state ---------------------------------------------------- */
   void FboSetClear(const bool bState) { bClear = bState; }

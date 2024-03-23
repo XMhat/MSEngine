@@ -529,7 +529,7 @@ LLFUNCEX(Create, 1, LCCLASSCREATE(Font)->InitFTFont(
  *LCGETPTR (                  1, Ftf),
   LCGETINTLG(GLuint,          2, 0, cOgl->MaxTexSize(),  "TexSize"),
   LCGETINTLG(GLuint,          3, 0, 16,                  "Padding"),
-  LCGETINTLG(GLuint,          4, 0, 11,                  "Filter"),
+  LCGETINTLGE(OglFilterEnum,  4, OF_N_N, OF_MAX,         "Filter"),
   LCGETFLAGS(ImageFlagsConst, 5, FF_MASK,                "Flags")));
 /* ========================================================================= */
 // $ Font.Console

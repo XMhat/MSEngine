@@ -36,14 +36,14 @@ BUILD_FLAGS(Ogl,
   // Have ATI memory avail info?       Devices shares memory with system
   GFL_HAVEATIMEM         {0x00000008}, GFL_SHARERAM           {0x00000010}
 );/* ----------------------------------------------------------------------- */
-enum OglFilterEnum                     // Available filter combinations
+enum OglFilterEnum : size_t            // Available filter combinations
 { /* ----------------------------------------------------------------------- */
   OF_N_N,     OF_N_L,    OF_L_N,      OF_L_L,      OF_NM_MAX,
   OF_N_N_MM_N=OF_NM_MAX, OF_L_N_MM_N, OF_N_N_MM_L, OF_L_N_MM_L,
   OF_N_L_MM_N,           OF_L_L_MM_N, OF_N_L_MM_L, OF_L_L_MM_L,
   OF_MAX,
 };/* ----------------------------------------------------------------------- */
-enum OglBlendEnum                      // Available blend combinations
+enum OglBlendEnum : size_t             // Available blend combinations
 { /* ----------------------------------------------------------------------- */
   OB_Z,   OB_O,       OB_S_C,   OB_O_M_S_C, OB_D_C, OB_O_M_D_C,
   OB_S_A, OB_O_M_S_A, OB_D_A,   OB_O_M_D_A, OB_C_C, OB_O_M_C_C,
@@ -185,21 +185,21 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
     void CheckLogError(const char*const cpFormat,
       const VarArgs &...vaArgs) const
   { // While there are OpenGL errors
-    for(GLenum glError = sAPI.glGetError();
-               glError != GL_NO_ERROR;
-               glError = sAPI.glGetError())
+    for(GLenum eCode = sAPI.glGetError();
+               eCode != GL_NO_ERROR;
+               eCode = sAPI.glGetError())
     cLog->LogWarningExSafe("GL call failed: $ ($/$$).",
-      StrFormat(cpFormat, vaArgs...), GetGLErr(glError), hex, glError);
+      StrFormat(cpFormat, vaArgs...), GetGLErr(eCode), hex, eCode);
   }
   /* -- GL error handler --------------------------------------------------- */
   template<typename ...VarArgs>
     void CheckExceptError(const char*const cpFormat,
       const VarArgs &...vaArgs) const
   { // If there is no error then return
-    const GLenum glError = sAPI.glGetError();
-    if(glError == GL_NO_ERROR) return;
+    const GLenum eCode = sAPI.glGetError();
+    if(eCode == GL_NO_ERROR) return;
     // Raise exception with error details
-    XC(cpFormat, "Code", glError, "Reason", GetGLErr(glError), vaArgs...);
+    XC(cpFormat, "Code", eCode, "Reason", GetGLErr(eCode), vaArgs...);
   }
   /* -- Flag setter ----------------------------------------------- */ private:
   void SetFlagExt(const char*const cpName, const OglFlagsConst &glFlag)
@@ -502,9 +502,9 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
       GetShaderInfoLog(uiId, static_cast<GLsizei>(sErrMsg.size()),
         UtfToNonConstCast<GLchar*>(sErrMsg.data()))));
     // Get error and if an error occured put it as a failure reason
-    const GLenum glError = GetError();
-    if(glError != GL_NO_ERROR || sErrMsg.empty())
-      return StrFormat("Problem getting reason (0x$$)", hex, glError);
+    const GLenum eCode = GetError();
+    if(eCode != GL_NO_ERROR || sErrMsg.empty())
+      return StrFormat("Problem getting reason (0x$$)", hex, eCode);
     // Return the string while chopping off return characters
     return StrChop(sErrMsg);
   }
@@ -530,9 +530,9 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
       static_cast<GLsizei>(sErrMsg.size()),
       UtfToNonConstCast<GLchar*>(sErrMsg.data()))));
     // Get error and if an error occured put it as a failure reason
-    const GLenum glError = GetError();
-    if(glError != GL_NO_ERROR || sErrMsg.empty())
-      return StrFormat("Problem getting reason ($$)", hex, glError);
+    const GLenum eCode = GetError();
+    if(eCode != GL_NO_ERROR || sErrMsg.empty())
+      return StrFormat("Problem getting reason ($$)", hex, eCode);
     // Return the string while chopping off return characters
     return StrChop(sErrMsg);
   }
@@ -881,7 +881,7 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
     FlagSet(GFL_INITIALISED);
   }
   /* -- Set texture mode by filter id -------------------------------------- */
-  void SetFilterById(const size_t stId, GLint &iMin, GLint &iMag) const
+  void SetFilterById(const OglFilterEnum ofeId, GLint &iMin, GLint &iMag) const
   { // Filter table
     typedef array<const GLint, 2> TwoGLints;
     typedef array<const TwoGLints, OF_NM_MAX> TexFilterNMList;
@@ -891,12 +891,13 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
       { GL_LINEAR,  GL_NEAREST }, { GL_LINEAR,  GL_LINEAR }, // 02-03
     }};
     // Get filter lookup id and set values
-    const TwoGLints &tfItem = tfList[stId];
+    const TwoGLints &tfItem = tfList[ofeId];
     iMag = tfItem.front();
     iMin = tfItem.back();
   }
   /* -- Set texture mode by filter id -------------------------------------- */
-  void SetMipMapFilterById(const size_t stId, GLint &iMin, GLint &iMag) const
+  void SetMipMapFilterById(const OglFilterEnum ofeId, GLint &iMin,
+    GLint &iMag) const
   { // Filter table
     typedef array<const GLint, 2> TwoGLints;
     typedef array<const TwoGLints, OF_MAX> TexFilterList;
@@ -915,7 +916,7 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
       { GL_LINEAR,  GL_LINEAR_MIPMAP_LINEAR }    // 11
     } };
     // Get filter lookup id and set values
-    const TwoGLints &iaPair = tfList[stId];
+    const TwoGLints &iaPair = tfList[ofeId];
     iMag = iaPair.front();
     iMin = iaPair.back();
   }

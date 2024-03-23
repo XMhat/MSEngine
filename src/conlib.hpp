@@ -1985,7 +1985,8 @@ const LockGuard lgVideosSync{ cVideos->CollectorGetMutex() };
 // Text table class to help us write neat output
 Statistic tData;
 tData.Header("ID").Header("FLAGS").Header("PCMF").Header("P").Header("C")
-     .Header("FRMW").Header("FRMH").Header("FPS").Header("TIME").Header("FD")
+     .Header("FRMW").Header("FRMH").Header("PICW").Header("PICH")
+     .Header("OX").Header("OY").Header("FPS").Header("TIME").Header("FD")
      .Header("FR").Header("FL").Header("AVD").Header("LEN")
      .Header("NAME", false).Reserve(cVideos->size());;
 // Walk through textures classes
@@ -1998,18 +1999,16 @@ for(const Video*const vCptr : *cVideos)
       { vCref.FlagIsSet(FL_FILTER),'F' }, { vCref.GetKeyed(),          'K' },
       { vCref.FlagIsSet(FL_PLAY),  'P' }, { vCref.FlagIsSet(FL_STOP),  'S' },
       { vCref.FlagIsSet(FL_THEORA),'T' }, { vCref.FlagIsSet(FL_VORBIS),'V' },
-      { vCref.FlagIsSet(FL_VDINIT),'1' }, { vCref.FlagIsSet(FL_VBINIT),'2' },
-      { vCref.FlagIsSet(FL_OSINIT),'3' }, { vCref.FlagIsSet(FL_TCINIT),'4' },
-      { vCref.FlagIsSet(FL_TIINIT),'5' }, { vCref.FlagIsSet(FL_VCINIT),'6' },
-      { vCref.FlagIsSet(FL_VIINIT),'7' },
     }))
    .Data(vCref.GetFormatAsIdentifier()).DataH(vCref.GetPixelFormat(),4)
    .DataN(vCref.GetColourSpace())      .DataN(vCref.GetFrameWidth())
-   .DataN(vCref.GetFrameHeight())      .DataN(vCref.GetFPS(), 2)
+   .DataN(vCref.GetFrameHeight())      .DataN(vCref.GetWidth())
+   .DataN(vCref.GetHeight())           .DataN(vCref.GetOriginX())
+   .DataN(vCref.GetOriginY())          .DataN(vCref.GetFPS(), 2)
    .DataN(vCref.GetVideoTime(), 3)     .DataN(vCref.GetFrame())
    .DataN(vCref.GetFrames())           .DataN(vCref.GetFramesSkipped())
-   .DataN(vCref.HaveAudio() ? vCref.GetDrift() : 0, 2)
-   .DataN(vCref.GetLength())           .Data(vCref.IdentGet());
+   .DataN(vCref.GetDrift(), 2)         .DataN(vCref.GetLength())
+   .Data(vCref.IdentGet());
 } // Log counts
 cConsole->AddLineExA(tData.Finish(),
   StrPluraliseNum(cVideos->size(), "video.", "videos."));

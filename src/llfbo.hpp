@@ -38,10 +38,10 @@ using namespace Lib::OS::GlFW;
 // ? want to use. These values are available in Fbo.Blends().
 /* ------------------------------------------------------------------------- */
 LLFUNC(SetBlend, LCGETPTR(1, Fbo)->FboSetBlend(
-  LCGETINTLGE(size_t, 2, 0, OB_MAX, "srcRGB"),
-  LCGETINTLGE(size_t, 3, 0, OB_MAX, "dstRGB"),
-  LCGETINTLGE(size_t, 4, 0, OB_MAX, "srcAlpha"),
-  LCGETINTLGE(size_t, 5, 0, OB_MAX, "dstAlpha")));
+  LCGETINTLGE(OglBlendEnum, 2, OB_Z, OB_MAX, "srcRGB"),
+  LCGETINTLGE(OglBlendEnum, 3, OB_Z, OB_MAX, "dstRGB"),
+  LCGETINTLGE(OglBlendEnum, 4, OB_Z, OB_MAX, "srcAlpha"),
+  LCGETINTLGE(OglBlendEnum, 5, OB_Z, OB_MAX, "dstAlpha")));
 /* ========================================================================= */
 // $ Fbo:SetVX
 // > TriIndex:integer=Triangle index. Triangle #1 (zero) or triangle #2 (one).
@@ -240,8 +240,8 @@ LLFUNC(SetCRGBA, LCGETPTR(1, Fbo)->FboItemSetQuadRGBA(
 // ? automatically generated if a mipmapping id is selected.
 // ? (Magnification / Minification). See 'Texture.Filters()' for more info.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetFilter, LCGETPTR(1, Fbo)->
-  FboSetFilterCommit(LCGETINTLGE(GLuint, 2, 0, OF_NM_MAX, "Filter")));
+LLFUNC(SetFilter, LCGETPTR(1, Fbo)->FboSetFilterCommit(
+  LCGETINTLGE(OglFilterEnum, 2, OF_N_N, OF_NM_MAX, "Filter")));
 /* ========================================================================= */
 // $ Fbo:Activate
 // ? Makes the specified fbo the active fbo and all subsequent Texture:* calls

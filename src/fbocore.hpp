@@ -271,9 +271,11 @@ static class FboCore final :           // The main fbo operations manager
   CVarReturn SetFilter(const size_t stV)
   { // Check value
     if(stV >= OF_MAX) return DENY;
+    // Convert to correct type
+    const OglFilterEnum ofeV = static_cast<OglFilterEnum>(stV);
     // Set filtering of main and console fbo
-    fboMain.FboSetFilter(stV);
-    fboConsole.FboSetFilter(stV);
+    fboMain.FboSetFilter(ofeV);
+    fboConsole.FboSetFilter(ofeV);
     // Accept the change anyway if opengl not initialised
     if(cOgl->IsGLNotInitialised()) return ACCEPT;
     // Commit the filters

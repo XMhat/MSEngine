@@ -22,12 +22,12 @@ using namespace IFtf::P;               using namespace IGlFW::P;
 using namespace IImage::P;             using namespace IImageDef::P;
 using namespace ILog::P;               using namespace ILua::P;
 using namespace ILuaUtil::P;           using namespace ILuaFunc::P;
-using namespace IStd::P;               using namespace IString::P;
-using namespace ISocket::P;            using namespace ISystem::P;
-using namespace ISysUtil::P;           using namespace ITexture::P;
-using namespace ITimer::P;             using namespace IToken::P;
-using namespace IUtf;                  using namespace IUtil::P;
-using namespace Lib::OS::GlFW;
+using namespace IOgl::P;               using namespace IStd::P;
+using namespace IString::P;            using namespace ISocket::P;
+using namespace ISystem::P;            using namespace ISysUtil::P;
+using namespace ITexture::P;           using namespace ITimer::P;
+using namespace IToken::P;             using namespace IUtf;
+using namespace IUtil::P;              using namespace Lib::OS::GlFW;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public namespace
 /* == Typedefs ============================================================= */
@@ -646,7 +646,8 @@ static class Console final :           // Members initially private
       fTextHeight, 96, 96, 0.0);
     GetFontRef().InitFTFont(fFTFont,
       cCVars->GetInternalSafe<GLuint>(CON_FONTTEXSIZE),
-      cCVars->GetInternalSafe<GLuint>(CON_FONTPADDING), 11, GetFontRef());
+      cCVars->GetInternalSafe<GLuint>(CON_FONTPADDING), OF_L_L_MM_L,
+        GetFontRef());
     // Get minimum precache range and if valid?
     if(const unsigned int uiCharMin =
       cCVars->GetInternalSafe<unsigned int>(CON_FONTPCMIN))
@@ -668,12 +669,12 @@ static class Console final :           // Members initially private
     if(strCT.empty())
     { // Create simple image for solid colour and load it into a texture
       Image imgData{ 0xFFFFFFFF };
-      GetTextureRef().InitImage(imgData, 0, 0, 0, 0, 0);
+      GetTextureRef().InitImage(imgData, 0, 0, 0, 0, OF_N_N);
     } // Else filename specified so load it!
     else
     { // Load image from disk and load it into a texture
       Image imgData{ strCT, IL_NONE };
-      GetTextureRef().InitImage(imgData, 0, 0, 0, 0, 11);
+      GetTextureRef().InitImage(imgData, 0, 0, 0, 0, OF_L_L_MM_L);
     } // LUA will not be allowed to garbage collect this texture class!
     GetTextureRef().LockSet();
   }
@@ -1260,7 +1261,7 @@ static class Console final :           // Members initially private
   /* -- Set page move count ------------------------------------------------ */
   CVarReturn SetPageMoveCount(const ssize_t sstAmount)
   { // Deny if invalid value
-    if(!CVarToBoolReturn(CVarSimpleSetInt(sstPageLines, sstAmount)))
+    if(!CVarToBoolReturn(CVarSimpleSetIntNLG(sstPageLines, sstAmount, 1, 100)))
       return DENY;
     // Set negative too
     sstPageLinesNeg = -sstPageLines;

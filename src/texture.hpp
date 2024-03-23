@@ -34,7 +34,7 @@ class TextureBase :                    // All members initially private
   GLint            iTexMinFilter,      // GL texture minification setting
                    iTexMagFilter,      // GL texture magnification setting
                    iMipmaps;           // Sub-image's are mipmaps (count)
-  size_t           stTexFilter;        // Texture filter (for reference)
+  OglFilterEnum    ofeTexFilter;       // Texture filter (for reference)
   /* -- Tile co-ordinates class ------------------------------------ */ public:
   struct CoordData :                   // All members are public
     /* -- Initialisers ----------------------------------------------------- */
@@ -86,7 +86,7 @@ class TextureBase :                    // All members initially private
     iTexMinFilter(GL_NONE),            // No minification filter set yet
     iTexMagFilter(GL_NONE),            // No magnification filter set et
     iMipmaps(0),                       // No mipmaps yet
-    stTexFilter(0),                    // No texture filter index set yet
+    ofeTexFilter(OF_N_N),              // No texture filter index set yet
     shProgram(nullptr)                 // No shader programme yet
     /* -- Code ------------------------------------------------------------- */
     { }                                // No code
@@ -365,7 +365,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
         { // Set palette shader
           shProgram = &cShaderCore->sh2D8Pal;
           // Force no filtering and no mipmapping or we get the wrong colours
-          stTexFilter = 0;
+          ofeTexFilter = OF_N_N;
           iTexMinFilter = iTexMagFilter = GL_NEAREST;
         } // No palette
         else shProgram = &cShaderCore->sh2D8;
@@ -445,7 +445,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
   /* -- Return the number of mipmaps in the texture ------------------------ */
   GLint GetMipmaps(void) const { return iMipmaps; }
   /* -- Return the current texture filter index setting -------------------- */
-  size_t GetTexFilter(void) const { return stTexFilter; }
+  OglFilterEnum GetTexFilter(void) const { return ofeTexFilter; }
   /* -- Return the OpenGL texture name for the specified sub-textures ------ */
   GLuint GetSubName(const size_t stSubTexId=0) const
     { return vTexture[stSubTexId]; }
@@ -658,7 +658,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
   /* -- Init from a image class -------------------------------------------- */
   void InitImage(Image &imgSrc, const GLuint uiTileWidth,
     const GLuint uiTileHeight, const GLuint uiPadX, const GLuint uiPadY,
-    const size_t stFilter, const bool bGenerateTileset = true)
+    const OglFilterEnum ofeFilter, const bool bGenerateTileset = true)
   { // Show filename
     cLog->LogDebugExSafe("Texture loading from image '$'.", imgSrc.IdentGet());
     // If source and destination image class are not the same?
@@ -676,8 +676,8 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
     } // We'll set flaot versions for faster calculations later on
     dfPad.DimSet(static_cast<GLfloat>(uiPadX), static_cast<GLfloat>(uiPadY));
     // Set filter
-    stTexFilter = stFilter;
-    cOgl->SetMipMapFilterById(stFilter, iTexMinFilter, iTexMagFilter);
+    ofeTexFilter = ofeFilter;
+    cOgl->SetMipMapFilterById(ofeFilter, iTexMinFilter, iTexMagFilter);
     // Initialise
     LoadFromImage();
     // Set specified tile dimensions and generate default tileset if needed

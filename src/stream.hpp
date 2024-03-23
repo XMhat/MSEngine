@@ -540,6 +540,29 @@ BEGIN_ASYNCMEMBERCLASS(Streams, Stream, ICHelperUnsafe),
   /* -- Stop with lock ----------------------------------------------------- */
   void StopSafe(const StreamStopReason srReason)
     {  const LockGuard lgStreamSync{ mMutex }; Stop(srReason); }
+  /* -- Parse vorbis comments block ---------------------------------------- */
+  static StrNCStrMap ParseComments(char **clpPtr)
+  { // Return if no strings
+    if(!clpPtr) return {};
+    // Metadata to return
+    StrNCStrMap ssMetaData;
+    // Enumerate the strings
+    while(char*const cpStr = *clpPtr)
+    { // Ignore if string is valid but empty
+      if(!*cpStr) continue;
+      // Find equals delimiter and if we find it?
+      if(char*const cpStrPtr = strchr(cpStr, '='))
+      { // Remove separator (safe), add key/value pair and readd separator
+        *cpStrPtr = '\0';
+        ssMetaData.insert(ssMetaData.cend(), { cpStr, cpStrPtr+1 });
+        *cpStrPtr = '=';
+      } // We at least have a string so add it as key with empty value
+      else ssMetaData.insert(ssMetaData.cend(), { cpStr, cCommon->CBlank() });
+      // Next item
+      ++clpPtr;
+    } // Return built metadata
+    return ssMetaData;
+  }
   /* -- Load from memory --------------------------------------------------- */
   void AsyncReady(FileMap &fClass)
   { // Set file class
@@ -574,22 +597,12 @@ BEGIN_ASYNCMEMBERCLASS(Streams, Stream, ICHelperUnsafe),
     MemInitBlank(cParent->stBufSize);
     // Set default loop position to the end
     SetLoopRange(0, GetSamples());
-    // Build a formatted table of meta data we can quickly access
-    if(const vorbis_comment*const vcStrings = ov_comment(&ovfContext, -1))
-      for(char*const *clpPtr = vcStrings->user_comments;
-          char*const cpStr = *clpPtr; ++clpPtr)
-      { // Ignore if string is valid but empty
-        if(!*cpStr) continue;
-        // Find equals delimiter and if we find it?
-        if(char*const cpStrPtr = strchr(cpStr, '='))
-        { // Remove separator (safe), add key/value pair and readd separator
-          *cpStrPtr = ' ';
-          ssMetaData.insert(ssMetaData.cend(), { cpStr, cpStrPtr+1 });
-          *cpStrPtr = '=';
-        } // We at least have a string so add it as key with empty value
-        else ssMetaData.insert(ssMetaData.cend(),
-          { cpStr, cCommon->CBlank() });
-      } // Generate buffers, recommending this amount
+    // Parse vorbis comments and if we got them?
+    if(vorbis_comment*const vcStrings = ov_comment(&ovfContext, -1))
+    { // Parse the comments and then free the strings
+      ssMetaData = StdMove(ParseComments(vcStrings->user_comments));
+      vorbis_comment_clear(vcStrings);
+    } // Generate buffers, recommending this amount
     GenerateBuffers();
     // Log ogg loaded
     cLog->LogInfoExSafe(

@@ -979,7 +979,7 @@ LLRSEND                                // Texture:* member functions end
 // ? Creates the specified texture from the specified image class.
 /* ========================================================================= */
 LLFUNCEX(Create, 1, LCCLASSCREATE(Texture)->InitImage(*LCGETPTR(1, Image),
-  0, 0, 0, 0, LCGETINTLGE(size_t, 2, 0, OF_MAX, "Filter")));
+  0, 0, 0, 0, LCGETINTLGE(OglFilterEnum, 2, OF_N_N, OF_MAX, "Filter")));
 /* ========================================================================= */
 // $ Texture.CreateTS
 // > Source:image=The image class to load from.
@@ -996,7 +996,7 @@ LLFUNCEX(CreateTS, 1, LCCLASSCREATE(Texture)->InitImage(*LCGETPTR(1, Image),
   LCGETINTLG(GLuint, 3, 0, UINT_MAX, "THeight"),
   LCGETINTLG(GLuint, 4, 0, UINT_MAX, "PWidth"),
   LCGETINTLG(GLuint, 5, 0, UINT_MAX, "PHeight"),
-  LCGETINTLGE(size_t, 6, 0, OF_MAX, "Filter")));
+  LCGETINTLGE(OglFilterEnum, 6, OF_N_N, OF_MAX, "Filter")));
 /* ========================================================================= */
 // $ Texture.Console
 // < Handle:Texture=Texture handle to console texture

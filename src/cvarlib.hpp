@@ -1330,10 +1330,11 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ! VID_FSAA
 // ? Enables full-scene anti-aliasing. Only needed to smooth the edges of
 // ? textures if you frequently blit textures at an different angles other than
-// ? 0, 90, 180 or 270 degrees.
+// ? 0, 90, 180 or 270 degrees. This cvar has been semi-disabled as instability
+// ? occurs with any setting other than the default on a Mac.
 /* ------------------------------------------------------------------------- */
 { CF_VIDEO, "vid_fsaa", cCommon->NOne(),
-  CB(cDisplay->FsaaChanged, int), TINTEGERSAVE|CPOW2|CNOTEMPTY|PANY },
+  CB(cDisplay->FsaaChanged, int), TINTEGER|CPOW2|PBOOT },
 /* ------------------------------------------------------------------------- */
 // ! VID_FORWARD
 // ? Specifies to use a forward compatible context. This is only used for

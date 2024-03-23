@@ -76,10 +76,8 @@ static class GlFW final :              // Root engine class
   void Init(void)
   { // Report initialisation attempt
     cLog->LogDebugSafe("GlFW subsystem initialising...");
-    // GLFW 3.4.0 won't compile for Windows XP mode yet even though they said
-    // they still wanted to support it for a bit longer. Also GLFW 3.4.0 won't
-    // run properly on my 23.04 so we're still using the built-in 3.6.6.
-#if defined(MACOS)
+    // Only available on 3.4 and above
+#if GLFW_VERSION_MAJOR >= 3 && GLFW_VERSION_MINOR >= 4
     // Setup custom allocator
     GLFWallocator gaInfo{ GlFWAlloc, GlFWReAlloc, GlFWFree, this };
     glfwInitAllocator(&gaInfo);
