@@ -225,8 +225,8 @@ class GlFWWindow :                     // GLFW window class
   void WinGetFBSize(int &iW, int &iH) const
     { glfwGetFramebufferSize(WinGetHandle(), &iW, &iH); }
   /* -- Set or clear cursor graphic ---------------------------------------- */
-  void WinSetCursorGraphic(GLFWcursor*const gcC) const
-    { glfwSetCursor(WinGetHandle(), gcC); }
+  void WinSetCursorGraphic(GLFWcursor*const gcContext = nullptr) const
+    { GlFWSetCursor(WinGetHandle(), gcContext); }
   /* -- Toggle cursor visibility ------------------------------------------- */
   void WinSetCursor(const bool bS) const
     { glfwSetInputMode(WinGetHandle(), GLFW_CURSOR,

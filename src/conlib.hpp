@@ -1362,7 +1362,7 @@ typedef list<MemoryUsageItem> MemoryUsageItems;
 // Build memory usage items database
 MemoryUsageItems muiData{ {
   MSS(Archive), MSS(Asset),   MSS(Bin),     MSS(Clip),
-  MSSEX(strCmds, cConsole->GetCmdCount(), ConLib),        MSS(Cursor),
+  MSSEX(strCmds, cConsole->GetCmdCount(), ConLib),
   MSSEX(strCVars,cCVars->GetVarCount(),   Item),          MSS(Fbo),
   MSS(File),    MSS(Font),    MSS(Ftf),     MSS(Image),   MSS(ImageFmt),
   MSS(Json),    MSS(LuaFunc), MSS(Mask),    MSS(Palette), MSS(Pcm),

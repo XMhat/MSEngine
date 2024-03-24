@@ -35,7 +35,7 @@ static CVarShowFlags csfShowFlags{CSF_NONE}; // Console cvar display flags
 ** -- Default no-op for cvar lib callback functions ------------------------ */
 static CVarReturn NoOp(Item&, const string&) { return ACCEPT; }
 /* ------------------------------------------------------------------------- */
-enum CVarSetEnums                      // Cvar set return codes
+enum CVarSetEnums : unsigned int       // Cvar set return codes
 { /* ----------------------------------------------------------------------- */
   CVS_OK,                              // Parameter set successful
   CVS_OKNOTCHANGED,                    // Parameter set successful, no change
@@ -75,7 +75,7 @@ class Item :                           // Members initially private
 { /* -- Private typedefs --------------------------------------------------- */
   typedef int64_t ValueIntType;        // When handling integral values
   /* ----------------------------------------------------------------------- */
-  enum CommitResult                    // Result to a commit request
+  enum CommitResult : unsigned int     // Result to a commit request
   { /* --------------------------------------------------------------------- */
     CR_OK,                             // Sql call commited the variable
     CR_FAIL,                           // Sql call update cvar failed

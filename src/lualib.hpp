@@ -87,7 +87,6 @@ template<typename IntType=int, typename AnyType, IntType itSize>
 #include "llcredit.hpp"                // Credit namespace and methods
 #include "llcrypt.hpp"                 // Crypt namespace and methods
 #include "llcvars.hpp"                 // Cvars namespace and methods
-#include "llcursor.hpp"                // Cursor namespace and methods
 #include "lldisplay.hpp"               // Display namespace and methods
 #include "llfbo.hpp"                   // Fbo namespace and methods
 #include "llfile.hpp"                  // File namespace and methods
@@ -199,17 +198,17 @@ const LuaLibStatic luaLibList[] =
   LLSMX(Clip,    CF_VIDEO),            LLSXC(Core,    CF_NOTHING),
   LLSXX(Credit,  CF_NOTHING),          LLSXC(CVars,   CF_NOTHING),
   LLSXC(Console, CF_NOTHING),          LLSXX(Crypt,   CF_NOTHING),
-  LLSMC(Cursor,  CF_VIDEO),            LLSXC(Display, CF_VIDEO),
-  LLSMC(Fbo,     CF_VIDEO),            LLSMC(File,    CF_NOTHING),
-  LLSMC(Font,    CF_VIDEO),            LLSMX(Ftf,     CF_NOTHING),
-  LLSMC(Image,   CF_NOTHING),          LLSXX(Info,    CF_NOTHING),
-  LLSXC(Input,   CF_VIDEO),            LLSMX(Json,    CF_NOTHING),
-  LLSMX(Mask,    CF_NOTHING),          LLSMX(Palette, CF_VIDEO),
-  LLSMC(Pcm,     CF_NOTHING),          LLSMX(Sample,  CF_AUDIO),
-  LLSMX(Stat,    CF_NOTHING),          LLSMC(Socket,  CF_NOTHING),
-  LLSMX(Source,  CF_AUDIO),            LLSXC(Sql,     CF_NOTHING),
-  LLSMC(Stream,  CF_AUDIO),            LLSMX(Texture, CF_VIDEO),
-  LLSXX(Util,    CF_NOTHING),          LLSMC(Video,   CF_AUDIOVIDEO),
+  LLSXC(Display, CF_VIDEO),            LLSMC(Fbo,     CF_VIDEO),
+  LLSMC(File,    CF_NOTHING),          LLSMC(Font,    CF_VIDEO),
+  LLSMX(Ftf,     CF_NOTHING),          LLSMC(Image,   CF_NOTHING),
+  LLSXX(Info,    CF_NOTHING),          LLSXC(Input,   CF_VIDEO),
+  LLSMX(Json,    CF_NOTHING),          LLSMX(Mask,    CF_NOTHING),
+  LLSMX(Palette, CF_VIDEO),            LLSMC(Pcm,     CF_NOTHING),
+  LLSMX(Sample,  CF_AUDIO),            LLSMX(Stat,    CF_NOTHING),
+  LLSMC(Socket,  CF_NOTHING),          LLSMX(Source,  CF_AUDIO),
+  LLSXC(Sql,     CF_NOTHING),          LLSMC(Stream,  CF_AUDIO),
+  LLSMX(Texture, CF_VIDEO),            LLSXX(Util,    CF_NOTHING),
+  LLSMC(Video,   CF_AUDIOVIDEO),
   /* -- Last item, do not delete ------------------------------------------- */
   { nullptr, CF_NOTHING, LLNOCONSTS(), LLNOMETHODS(), LLNOCONSTS() }
 };/* -- Done with these macros --------------------------------------------- */

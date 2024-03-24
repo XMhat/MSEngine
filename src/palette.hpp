@@ -16,9 +16,9 @@ using namespace IShaders::P;           using namespace IStd::P;
 using namespace ISysUtil::P;           using namespace IUtil::P;
 using namespace Lib::OS::GlFW;
 /* ------------------------------------------------------------------------- */
-namespace P {                          // Start of public module namespace
-/* ------------------------------------------------------------------------- */
 typedef array<FboColour, 256> PalData; // Palette data
+/* ------------------------------------------------------------------------- */
+namespace P {                          // Start of public module namespace
 /* ------------------------------------------------------------------------- */
 struct Pal :                           // Members initially public
   /* -- Base classes ------------------------------------------------------- */

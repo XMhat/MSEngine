@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<!-- Reference for the MS-Engine API version 24.3.23.8 -->
-<!-- Automatically built at Sat Mar 23 00:36:02 2024 +0000 -->
-<!-- With MS-Engine Project Management Utility version 24.3.23.8 -->
+<!-- Reference for the MS-Engine API version 24.3.23.85 -->
+<!-- Automatically built at Sat Mar 23 19:49:31 2024 +0000 -->
+<!-- With MS-Engine Project Management Utility version 24.3.23.85 -->
 <!-- Copyright (c) 2006-2024 MS-Design, All Rights Reserved Worldwide -->
 <HTML lang="en-GB">
 <HEAD>
@@ -11,18 +11,18 @@
 	<META name="apple-mobile-web-app-title" content="MS-Engine API">
 	<META name="author" content="MS-Design">
 	<META name="copyright" content="Copyright © 2006-2024 MS-Design, All Rights Reserved">
-	<META name="description" content="Reference for the MS-Engine API version 24.3.23.8">
+	<META name="description" content="Reference for the MS-Engine API version 24.3.23.85">
 	<META name="format-detection" content="telephone=no">
-	<META name="generator" content="MS-Engine Project Management Utility version 24.3.23.8">
+	<META name="generator" content="MS-Engine Project Management Utility version 24.3.23.85">
 	<META name="google-site-verification" content="BvWxrqmgaIxqe_W8AW3OGK0fdCI_JfB_-gcOOxCF9_4">
 	<META name="googlebot" content="index,follow">
-	<META name="og:description" content="Reference for the MS-Engine API version 24.3.23.8">
+	<META name="og:description" content="Reference for the MS-Engine API version 24.3.23.85">
 	<META name="og:image" content="https://repository-images.githubusercontent.com/611875607/ee7aa468-9797-4763-9a2d-ea3d782ef413">
-	<META name="og:title" content="MS-Engine 24.3.23.8 API reference">
+	<META name="og:title" content="MS-Engine 24.3.23.85 API reference">
 	<META name="og:url" content="https://xmhat.github.io/MSEngine/">
 	<META name="robots" content="index,follow">
 	<META name="viewport" content="width=device-width, initial-scale=1">
-	<TITLE>MS-Engine 24.3.23.8 API reference</TITLE>
+	<TITLE>MS-Engine 24.3.23.85 API reference</TITLE>
 	<STYLE media="screen">
 	* { margin:0; padding:0 }
 	BODY { background-color:#111; border:0; font-family:sans-serif; overflow-x:hidden }
@@ -52,12 +52,12 @@
 	</STYLE>
 </HEAD>
 <BODY id="top">
-	<H1>MS-Engine 24.3.23.8 API reference</H1>
+	<H1>MS-Engine 24.3.23.85 API reference</H1>
 	<H2>Table of contents:-</H2>
-	<P>This build of the MS-Engine API consists of 785 functions (376 members, 409 methods) and 25 consts in 32 namespaces with 210 cvars.</P>
+	<P>This build of the MS-Engine API consists of 783 functions (376 members, 407 methods) and 25 consts in 31 namespaces with 209 cvars.</P>
 	<OL id="toc">
 		<LI id="idx">
-			<A href="#idx">Namespaces</A> <I>(32 namespaces)</I>
+			<A href="#idx">Namespaces</A> <I>(31 namespaces)</I>
 			<OL>
 				<LI><P>Categorised functions that interact with the engine.</P></LI>
 				<LI>
@@ -72,7 +72,6 @@
 						<LI><A href="#idx:Core">Core</A></LI>
 						<LI><A href="#idx:Credit">Credit</A></LI>
 						<LI><A href="#idx:Crypt">Crypt</A></LI>
-						<LI><A href="#idx:Cursor">Cursor</A></LI>
 						<LI><A href="#idx:Display">Display</A></LI>
 						<LI><A href="#idx:Fbo">Fbo</A></LI>
 						<LI><A href="#idx:File">File</A></LI>
@@ -411,37 +410,11 @@
 				<LI><A href="#idx:Crypt">&#x25B2; Return to summary</A> / <A href="#toc">top</A></LI>
 			</OL>
 		</LI>
-		<LI id="idx:Cursor"><A href="#idx:Cursor">Cursor namespace</A>
-			<OL>
-        <LI><P>The cursor class contains functions to create custom hardware cursors.</P></LI>
-				<LI>
-					<B>Members</B> <I>(2 members)</I>
-					<OL>
-						<LI><A href="#Cursor.Reset">Reset</A></LI>
-						<LI><A href="#Cursor.Standard">Standard</A></LI>
-					</OL>
-				</LI>
-				<LI>
-					<B>Methods</B> <I>(2 methods)</I>
-					<OL>
-						<LI><A href="#Cursor:Activate">Activate</A></LI>
-						<LI><A href="#Cursor:Destroy">Destroy</A></LI>
-					</OL>
-				</LI>
-				<LI>
-					<B>Consts</B> <I>(1 const)</I>
-					<OL>
-						<LI><A href="#Cursor.Codes">Codes</A></LI>
-					</OL>
-				</LI>
-				<LI><A href="#idx:Cursor">&#x25B2; Return to summary</A> / <A href="#toc">top</A></LI>
-			</OL>
-		</LI>
 		<LI id="idx:Display"><A href="#idx:Display">Display namespace</A>
 			<OL>
         <LI><P>The window class contains functions for manipulating the Window.</P></LI>
 				<LI>
-					<B>Members</B> <I>(35 members)</I>
+					<B>Members</B> <I>(37 members)</I>
 					<OL>
 						<LI><A href="#Display.Attention">Attention</A></LI>
 						<LI><A href="#Display.Centre">Centre</A></LI>
@@ -464,8 +437,10 @@
 						<LI><A href="#Display.Monitors">Monitors</A></LI>
 						<LI><A href="#Display.OnFocused">OnFocused</A></LI>
 						<LI><A href="#Display.Reset">Reset</A></LI>
+						<LI><A href="#Display.ResetCursor">ResetCursor</A></LI>
 						<LI><A href="#Display.Resizable">Resizable</A></LI>
 						<LI><A href="#Display.Restore">Restore</A></LI>
+						<LI><A href="#Display.SetCursor">SetCursor</A></LI>
 						<LI><A href="#Display.SetFullScreen">SetFullScreen</A></LI>
 						<LI><A href="#Display.SetInterval">SetInterval</A></LI>
 						<LI><A href="#Display.SetMatrix">SetMatrix</A></LI>
@@ -481,8 +456,9 @@
 					</OL>
 				</LI>
 				<LI>
-					<B>Consts</B> <I>(1 const)</I>
+					<B>Consts</B> <I>(2 consts)</I>
 					<OL>
+						<LI><A href="#Display.Cursors">Cursors</A></LI>
 						<LI><A href="#Display.FSTypes">FSTypes</A></LI>
 					</OL>
 				</LI>
@@ -1439,7 +1415,7 @@
 				<LI><A href="#idx:Video">&#x25B2; Return to summary</A> / <A href="#toc">top</A></LI>
 			</OL>
 		</LI>
-		<LI id="cvidx"><A href="#cvars">CVars</A> <I>(210 cvars)</I>
+		<LI id="cvidx"><A href="#cvars">CVars</A> <I>(209 cvars)</I>
 			<OL>
 				<LI><P>Variables that change the behaviour of the engine.</P></LI>
 				<LI>
@@ -1558,7 +1534,6 @@
 						<LI><A href="#cv.obj_binmax">obj_binmax</A></LI>
 						<LI><A href="#cv.obj_clipmax">obj_clipmax</A></LI>
 						<LI><A href="#cv.obj_cmdmax">obj_cmdmax</A></LI>
-						<LI><A href="#cv.obj_cursormax">obj_cursormax</A></LI>
 						<LI><A href="#cv.obj_cvarimax">obj_cvarimax</A></LI>
 						<LI><A href="#cv.obj_cvarmax">obj_cvarmax</A></LI>
 						<LI><A href="#cv.obj_fbomax">obj_fbomax</A></LI>
@@ -3384,52 +3359,6 @@
 		<PRE>URL encodes the specified string&#x2e;<BR></PRE>
 		<H4><A href="#idx:Crypt" onclick="r('Crypt.UrlEncode')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Cursor.Reset">
-		<H3>Cursor.Reset</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Cursor.Reset()</PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Resets to the default cursor graphic&#x2e;<BR></PRE>
-		<H4><A href="#idx:Cursor" onclick="r('Cursor.Reset')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Cursor.Standard">
-		<H3>Cursor.Standard</H3>
-		<H4>Syntax:-</H4>
-		<PRE><U>Data</U> = Cursor.Standard(<I><U>Id</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>Id</U> <I>(integer)</I> = The id number of the cursor to load.<BR></PRE>
-		<H4>Return Parameters:-</H4>
-		<PRE><U>Data</U> <I>(Cursor)</I> = The cursor class returned.<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Loads a new standard cursor from the operating system&#x2e;<BR></PRE>
-		<H4><A href="#idx:Cursor" onclick="r('Cursor.Standard')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Cursor:Activate">
-		<H3>Cursor:Activate</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Cursor:Activate()</PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Activates the currently loaded cursor&#x2e;<BR></PRE>
-		<H4><A href="#idx:Cursor" onclick="r('Cursor:Activate')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Cursor:Destroy">
-		<H3>Cursor:Destroy</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Cursor:Destroy()</PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Destroys the cursor and frees all the memory associated with it&#x2e; The object will no longer be useable after this call and an error will be generated if accessed&#x2e;<BR></PRE>
-		<H4><A href="#idx:Cursor" onclick="r('Cursor:Destroy')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Cursor.Codes">
-		<H3>Cursor.Codes</H3>
-		<H4>Syntax:-</H4>
-		<PRE><U>Data</U> = Cursor.Codes</PRE>
-		<H4>Return Parameters:-</H4>
-		<PRE><U>Data</U> <I>(table)</I> = The entire list of cursor codes GLFW supports<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Returns a table of key&#x2f;value pairs that identify a specific cursor with its corresponding GLFW code &#x28;for use with SetCursorShape&#x29;&#x2e;<BR></PRE>
-		<H4><A href="#idx:Cursor" onclick="r('Cursor.Codes')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
 	<DIV id="Display.Attention">
 		<H3>Display.Attention</H3>
 		<H4>Syntax:-</H4>
@@ -3630,6 +3559,14 @@
 		<PRE>Resets the size and position of the window&#x2e;<BR></PRE>
 		<H4><A href="#idx:Display" onclick="r('Display.Reset')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
+	<DIV id="Display.ResetCursor">
+		<H3>Display.ResetCursor</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Display.ResetCursor()</PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Resets to the standard cursor graphic </PRE>
+		<H4><A href="#idx:Display" onclick="r('Display.ResetCursor')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
 	<DIV id="Display.Resizable">
 		<H3>Display.Resizable</H3>
 		<H4>Syntax:-</H4>
@@ -3647,6 +3584,16 @@
 		<H4>Synopsis:-</H4>
 		<PRE>Restores the window from a minimized state&#x2e; This may not work in full&#x2d;screen mode&#x2e; Check Display&#x2e;Focus&#x28;&#x29;&#x2e;<BR></PRE>
 		<H4><A href="#idx:Display" onclick="r('Display.Restore')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Display.SetCursor">
+		<H3>Display.SetCursor</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Id</U> = Display.SetCursor()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Id</U> <I>(integer)</I> = The id of the new cursor<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>This function sets a new standard cursor id&#x2e; This operation is asynchronous and won&#x27;t take effect until the next frame&#x2e;<BR></PRE>
+		<H4><A href="#idx:Display" onclick="r('Display.SetCursor')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Display.SetFullScreen">
 		<H3>Display.SetFullScreen</H3>
@@ -3767,6 +3714,16 @@
 		<H4>Synopsis:-</H4>
 		<PRE>Indicates whether the window is visible&#x2e;<BR></PRE>
 		<H4><A href="#idx:Display" onclick="r('Display.Visible')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Display.Cursors">
+		<H3>Display.Cursors</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Data</U> = Display.Cursors</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Data</U> <I>(table)</I> = The available standard cursor types<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns a table of key&#x2f;value pairs that identify standard cursors </PRE>
+		<H4><A href="#idx:Display" onclick="r('Display.Cursors')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Display.FSTypes">
 		<H3>Display.FSTypes</H3>
@@ -10618,11 +10575,6 @@
 		<PRE>Specifies the maximum number of console commands allowed to be registered by the engine&#x2e; This includes the internal default commands&#x2e; An exception is generated if more cvars than this are allocated&#x2e;<BR></PRE>
 		<H4><A href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="cv.obj_cursormax">
-		<H3>obj_cursormax</H3>
-		<PRE>Specifies the maximum number of cursor objects allowed to be registered by the engine&#x2e; An exception is generated if more cvars than this are allocated&#x2e;<BR></PRE>
-		<H4><A href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
 	<DIV id="cv.obj_cvarimax">
 		<H3>obj_cvarimax</H3>
 		<PRE>Specifies the maximum number of initial cvars allowed to be registered by the engine&#x2e; Initial cvars are in a temporary state&#x2c; they are used when the corresponding cvar is registered&#x2c; and passed back to this temporary state when the cvar is unregistered&#x2e; The temporary state of all initial cvars are then commited to database at exit and on&#x2d;demand&#x2e; An exception is generated if more initial cvars than this are allocated&#x2e;<BR></PRE>
@@ -11098,6 +11050,6 @@
 		<PRE>Sets the minimum width of the window&#x2e; This is only changable at the application configuration file and is not saved to persistence database&#x2e;<BR></PRE>
 		<H4><A href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<ADDRESS>Copyright &copy; 2024 MS-Design, All Rights Reserved.<BR>This document was created at Sat Mar 23 00:36:02 2024 +0000</ADDRESS>
+	<ADDRESS>Copyright &copy; 2024 MS-Design, All Rights Reserved.<BR>This document was created at Sat Mar 23 19:49:31 2024 +0000</ADDRESS>
 </BODY>
 </HTML>

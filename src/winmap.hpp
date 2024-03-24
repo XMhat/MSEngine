@@ -10,9 +10,9 @@
 /* == Windows file mapping class =========================================== */
 class SysMap :                         // Members initially private
   /* -- Base classes ------------------------------------------------------- */
-  public Ident                         // Filename
+  public Ident                         // File name to the map
 { /* -- Private typedefs --------------------------------------------------- */
-  typedef array<StdTimeT,2> TwoTime;   // The two time back to back 1993-1994
+  typedef array<StdTimeT,2> TwoTime;   // For holding two unix timestamps
   /* -- Private variables -------------------------------------------------- */
   HANDLE           hFile,              // Handle to the file
                    hMap;               // Handle to the file map

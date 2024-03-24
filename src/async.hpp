@@ -45,7 +45,7 @@ using namespace ISysUtil::P;           using namespace IThread::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* ------------------------------------------------------------------------- */
-enum ASyncProgressCommand              // For lua callback events
+enum ASyncProgressCommand : unsigned int // For lua callback events
 { /* ----------------------------------------------------------------------- */
   APC_EXECSTART,                       // Exec started (2=Pid)
   APC_EXECDATAWRITE,                   // Exec writing data (2=Pos,3=Total)
@@ -55,7 +55,7 @@ template<class MemberType, class ColType>class AsyncLoader :
   /* -- Base classes ------------------------------------------------------- */
   public Memory                        // Loading from memory data (reusable)
 { /* -- Private typedefs ------------------------------------------ */ private:
-  enum AsyncResult                     // Async loading results
+  enum AsyncResult : unsigned int      // Async loading results
   { /* --------------------------------------------------------------------- */
     AR_STANDBY,                        // Loading has not started
     AR_LOADING,                        // Resource is loading

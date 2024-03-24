@@ -17,7 +17,7 @@ using namespace ISysUtil::P;           using namespace IToken::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* -- Log levels ----------------------------------------------------------- */
-enum LHLevel                           // Log helper level flags
+enum LHLevel : unsigned int            // Log helper level flags
 { /* ----------------------------------------------------------------------- */
   LH_CRITICAL,                         // Log message is critical
   LH_ERROR,                            // Log message is an error (exception)

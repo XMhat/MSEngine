@@ -13,25 +13,25 @@ namespace ICore {                      // Start of private module namespace
 using namespace IArchive::P;           using namespace IAsset::P;
 using namespace IAudio::P;             using namespace ICmdLine::P;
 using namespace IConDef::P;            using namespace IConsole::P;
-using namespace ICursor::P;            using namespace ICVar::P;
-using namespace ICVarDef::P;           using namespace ICVarLib::P;
-using namespace IDir::P;               using namespace IDisplay::P;
-using namespace IError::P;             using namespace IEvtMain::P;
-using namespace IEvtWin::P;            using namespace IFbo::P;
-using namespace IFboCore::P;           using namespace IFont::P;
-using namespace IFtf::P;               using namespace IGlFW::P;
-using namespace IGlFWUtil::P;          using namespace IImage::P;
-using namespace IInput::P;             using namespace IJson::P;
-using namespace ILog::P;               using namespace ILua::P;
-using namespace ILuaCode::P;           using namespace ILuaUtil::P;
-using namespace IOgl::P;               using namespace IPalette::P;
-using namespace IPcm::P;               using namespace IPSplit::P;
-using namespace IShaders::P;           using namespace ISql::P;
-using namespace IStd::P;               using namespace IStream::P;
-using namespace IString::P;            using namespace ISystem::P;
-using namespace ISysUtil::P;           using namespace ITexture::P;
-using namespace IThread::P;            using namespace ITimer::P;
-using namespace IToken::P;             using namespace IVideo::P;
+using namespace ICVar::P;              using namespace ICVarDef::P;
+using namespace ICVarLib::P;           using namespace IDir::P;
+using namespace IDisplay::P;           using namespace IError::P;
+using namespace IEvtMain::P;           using namespace IEvtWin::P;
+using namespace IFbo::P;               using namespace IFboCore::P;
+using namespace IFont::P;              using namespace IFtf::P;
+using namespace IGlFW::P;              using namespace IGlFWUtil::P;
+using namespace IImage::P;             using namespace IInput::P;
+using namespace IJson::P;              using namespace ILog::P;
+using namespace ILua::P;               using namespace ILuaCode::P;
+using namespace ILuaUtil::P;           using namespace IOgl::P;
+using namespace IPalette::P;           using namespace IPcm::P;
+using namespace IPSplit::P;            using namespace IShaders::P;
+using namespace ISql::P;               using namespace IStd::P;
+using namespace IStream::P;            using namespace IString::P;
+using namespace ISystem::P;            using namespace ISysUtil::P;
+using namespace ITexture::P;           using namespace IThread::P;
+using namespace ITimer::P;             using namespace IToken::P;
+using namespace IVideo::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* -- Prototype ------------------------------------------------------------ */
@@ -187,21 +187,22 @@ class Core                             // Members initially private
       // Set main framebuffer as default
       cFboCore->ActivateMain();
       // Reset cursor type, show it and clear input states
-      CursorReset();
       cInput->SetCursor(true);
       // Reset main matrix. No need to force a change if it's already set.
       cDisplay->SetDefaultMatrix(false);
       // Cant't disable console if leaving, can if entering
       cConsole->SetCantDisable(bLeaving);
+      // Reset cursor if leaving
+      if(bLeaving) cDisplay->RequestResetCursor();
       // Set console enabled if entering.
-      if(!bLeaving) cConsole->SetVisible(false);
+      else cConsole->SetVisible(false);
       // Restore console font properties
       cConsole->RestoreDefaultProperties();
-    } // Bot mode? Clear status texts
+    } // Bot mode? Clear bottom status texts
     if(cSystem->IsTextMode()) cConsole->ClearStatus();
     // Reset timer
     cTimer->TimerReset(bLeaving);
-    // Clear lingering events
+    // Clear any lingering engine events
     cEvtMain->Flush();
     // Log that we've reset the environment
     cLog->LogDebugExSafe("Core environment $!",
@@ -407,7 +408,6 @@ class Core                             // Members initially private
         VideoDeInitTextures();
         FontDeInitTextures();
         TextureDeInitTextures();
-        CursorDeInit();
         // Done
         break;
       // Were exiting to de-initialise everything
@@ -480,7 +480,6 @@ class Core                             // Members initially private
     // Reset window icon
     cDisplay->UpdateIcons();
     // Reload cursor, fbo, console, fonts, textures and videos objects
-    CursorReInit();
     FboReInit();
     cConsole->ReInitTextureAndFont();
     FontReInitTextures();
@@ -824,7 +823,6 @@ class Core                             // Members initially private
       INITSS(Shaders);                 // cppcheck-suppress danglingLifetime
       INITSS(Clips);                   // cppcheck-suppress danglingLifetime
       INITSS(Display);                 // cppcheck-suppress danglingLifetime
-      INITSS(Cursors);                 // cppcheck-suppress danglingLifetime
       INITSS(Input);                   // cppcheck-suppress danglingLifetime
       INITSS(ShaderCore);              // cppcheck-suppress danglingLifetime
       INITSS(Fbos);                    // cppcheck-suppress danglingLifetime

@@ -322,14 +322,6 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 { CF_NOTHING, "obj_binmax", "1000",
   CB(cBins->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
-// ! OBJ_CURSORMAX
-// ? Specifies the maximum number of cursor objects allowed to be registered by
-// ? the engine. An exception is generated if more cvars than this are
-// ? allocated.
-/* ------------------------------------------------------------------------- */
-{ CF_VIDEO, "obj_cursormax", "1000",
-  CB(cCursors->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
-/* ------------------------------------------------------------------------- */
 // ! OBJ_FBOMAX
 // ? Specifies the maximum number of framebuffer objects allowed to be
 // ? registered by the engine. An exception is generated if more cvars than

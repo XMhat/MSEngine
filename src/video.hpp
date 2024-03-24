@@ -709,7 +709,8 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
     // If there is a video stream?
     if(FlagIsSet(FL_THEORA))
     { // Parse the comments and then free the strings
-      ssThMetaData = StdMove(Stream::ParseComments(tcData.user_comments));
+      ssThMetaData =
+        StdMove(Stream::ParseComments(tcData.user_comments, tcData.comments));
       th_comment_clear(&tcData);
       // Allocate a new one and throw error if not allocated
       tdcPtr = th_decode_alloc(&tiData, tsiPtr);
@@ -761,7 +762,8 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
     } // If there is an audio stream?
     if(FlagIsSet(FL_VORBIS))
     { // Parse the comments and then free the strings
-      ssVoMetaData = StdMove(Stream::ParseComments(vcData.user_comments));
+      ssVoMetaData =
+        StdMove(Stream::ParseComments(vcData.user_comments, vcData.comments));
       vorbis_comment_clear(&vcData);
       // Make sure rate is sane
       if(viData.rate < 1 || viData.rate > 192000)

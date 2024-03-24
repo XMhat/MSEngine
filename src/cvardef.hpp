@@ -14,7 +14,7 @@ using namespace IFlags;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* ------------------------------------------------------------------------- */
-enum CVarReturn                        // Callback return values
+enum CVarReturn : unsigned int         // Callback return values
 { /* ----------------------------------------------------------------------- */
   DENY,                                // The new cvar value is not acceptable
   ACCEPT,                              // The new var value is acceptable
@@ -156,12 +156,12 @@ enum CVarEnums : size_t
   LOG_FILE,         APP_LONGNAME,      APP_CLEARMUTEX,      ERR_INSTANCE,
   /* -- Object cvars ------------------------------------------------------- */
   OBJ_CLIPMAX,      OBJ_CMDMAX,        OBJ_CVARMAX,         OBJ_CVARIMAX,
-  OBJ_ARCHIVEMAX,   OBJ_ASSETMAX,      OBJ_BINMAX,          OBJ_CURSORMAX,
-  OBJ_FBOMAX,       OBJ_FONTMAX,       OBJ_FILEMAX,         OBJ_FTFMAX,
-  OBJ_FUNCMAX,      OBJ_IMGMAX,        OBJ_IMGFMTMAX,       OBJ_JSONMAX,
-  OBJ_MASKMAX,      OBJ_PCMMAX,        OBJ_PCMFMTMAX,       OBJ_SAMPLEMAX,
-  OBJ_SHADERMAX,    OBJ_SOCKETMAX,     OBJ_SOURCEMAX,       OBJ_STATMAX,
-  OBJ_STREAMMAX,    OBJ_TEXTUREMAX,    OBJ_THREADMAX,       OBJ_VIDEOMAX,
+  OBJ_ARCHIVEMAX,   OBJ_ASSETMAX,      OBJ_BINMAX,          OBJ_FBOMAX,
+  OBJ_FONTMAX,      OBJ_FILEMAX,       OBJ_FTFMAX,          OBJ_FUNCMAX,
+  OBJ_IMGMAX,       OBJ_IMGFMTMAX,     OBJ_JSONMAX,         OBJ_MASKMAX,
+  OBJ_PCMMAX,       OBJ_PCMFMTMAX,     OBJ_SAMPLEMAX,       OBJ_SHADERMAX,
+  OBJ_SOCKETMAX,    OBJ_SOURCEMAX,     OBJ_STATMAX,         OBJ_STREAMMAX,
+  OBJ_TEXTUREMAX,   OBJ_THREADMAX,     OBJ_VIDEOMAX,
   /* -- Base cvars --------------------------------------------------------- */
   APP_DESCRIPTION,  APP_VERSION,       APP_ICON,            APP_COPYRIGHT,
   APP_WEBSITE,      APP_TICKRATE,      APP_DELAY,           APP_TITLE,

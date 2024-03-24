@@ -28,23 +28,29 @@ using namespace Lib::Ogg;              using namespace Lib::OpenAL;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* ------------------------------------------------------------------------- */
-enum StreamEvents { SE_PLAY, SE_STOP }; // Playback events
+enum StreamEvents : unsigned int { SE_PLAY, SE_STOP }; // Playback events
 /* ------------------------------------------------------------------------- */
-enum StreamPlayState { PS_STANDBY,     // Is not playing
-                       PS_PLAYING,     // Is playing
-                       PS_FINISHING,   // Was stopping (no more data)
-                       PS_WASPLAYING,  // Was playing (audio reset)
-                       PS_MAX };       // Maximum number of states
+enum StreamPlayState : unsigned int    // Current playback state
+{ /* ----------------------------------------------------------------------- */
+  PS_STANDBY,                          // Is not playing?
+  PS_PLAYING,                          // Is playing?
+  PS_FINISHING,                        // Was stopping? (no more data)
+  PS_WASPLAYING,                       // Was playing? (audio re-init)
+  PS_MAX                               // Maximum number of states
+};/* ----------------------------------------------------------------------- */
 typedef IdList<PS_MAX> PSList;         // Play state strings
 /* ------------------------------------------------------------------------- */
-enum StreamStopReason { SR_STOPNOUNQ,  // Successful stop with no unqueue
-                        SR_STOPUNQ,    // Successful stop with unqueue
-                        SR_REBUFFAIL,  // Rebuffer failed
-                        SR_RWREBUFFAIL,// Rewind/Rebuffer failed
-                        SR_GENBUFFAIL, // Generate source and buffer failed
-                        SR_STOPALL,    // Stopping all buffers (reset/quit)
-                        SR_LUA,        // Requested by Lua (guest).
-                        SR_MAX };      // Maximum number of stop reasons
+enum StreamStopReason : unsigned int   // Reason playback stopped
+{ /* ----------------------------------------------------------------------- */
+  SR_STOPNOUNQ,                        // Successful stop with no unqueue
+  SR_STOPUNQ,                          // Successful stop with unqueue
+  SR_REBUFFAIL,                        // Rebuffer failed
+  SR_RWREBUFFAIL,                      // Rewind/Rebuffer failed
+  SR_GENBUFFAIL,                       // Generate source and buffer failed
+  SR_STOPALL,                          // Stopping all buffers (reset/quit)
+  SR_LUA,                              // Requested by Lua (guest).
+  SR_MAX                               // Maximum number of stop reasons
+};/* ----------------------------------------------------------------------- */
 typedef IdList<SR_MAX> SRList;         // Stop reason strings
 /* -- Stream collector class for collector data and custom variables ------- */
 BEGIN_ASYNCCOLLECTOREX(Streams, Stream, CLHelperSafe,
@@ -541,26 +547,19 @@ BEGIN_ASYNCMEMBERCLASS(Streams, Stream, ICHelperUnsafe),
   void StopSafe(const StreamStopReason srReason)
     {  const LockGuard lgStreamSync{ mMutex }; Stop(srReason); }
   /* -- Parse vorbis comments block ---------------------------------------- */
-  static StrNCStrMap ParseComments(char **clpPtr)
-  { // Return if no strings
-    if(!clpPtr) return {};
-    // Metadata to return
+  static StrNCStrMap ParseComments(char **const clpPtr, const int iCount)
+  { // Metadata to return
     StrNCStrMap ssMetaData;
-    // Enumerate the strings
-    while(char*const cpStr = *clpPtr)
-    { // Ignore if string is valid but empty
-      if(!*cpStr) continue;
-      // Find equals delimiter and if we find it?
-      if(char*const cpStrPtr = strchr(cpStr, '='))
+    // Enumerate all the strings...
+    StdForEach(seq, clpPtr, clpPtr+iCount, [&ssMetaData](char*const cpStr)
+    { // Find equals delimiter and if we find it?
+      if(char*const cpPtr = strchr(cpStr, '='))
       { // Remove separator (safe), add key/value pair and readd separator
-        *cpStrPtr = '\0';
-        ssMetaData.insert(ssMetaData.cend(), { cpStr, cpStrPtr+1 });
-        *cpStrPtr = '=';
+        *cpPtr = '\0';
+        ssMetaData.insert(ssMetaData.cend(), { cpStr, cpPtr+1 });
       } // We at least have a string so add it as key with empty value
       else ssMetaData.insert(ssMetaData.cend(), { cpStr, cCommon->CBlank() });
-      // Next item
-      ++clpPtr;
-    } // Return built metadata
+    }); // Return built metadata
     return ssMetaData;
   }
   /* -- Load from memory --------------------------------------------------- */
@@ -600,7 +599,8 @@ BEGIN_ASYNCMEMBERCLASS(Streams, Stream, ICHelperUnsafe),
     // Parse vorbis comments and if we got them?
     if(vorbis_comment*const vcStrings = ov_comment(&ovfContext, -1))
     { // Parse the comments and then free the strings
-      ssMetaData = StdMove(ParseComments(vcStrings->user_comments));
+      ssMetaData = StdMove(ParseComments(vcStrings->user_comments,
+        vcStrings->comments));
       vorbis_comment_clear(vcStrings);
     } // Generate buffers, recommending this amount
     GenerateBuffers();

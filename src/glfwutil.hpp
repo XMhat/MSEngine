@@ -212,6 +212,9 @@ static const char *GlFWGetMonitorName(GLFWmonitor*const mDevice)
 /* -- Is the context not set ----------------------------------------------- */
 static GLFWwindow *GlFWContext(void) { return glfwGetCurrentContext(); }
 /* ------------------------------------------------------------------------- */
+static void GlFWSetCursor(GLFWwindow*const gwCtx, GLFWcursor*const gcCtx)
+  { glfwSetCursor(gwCtx, gcCtx); }
+/* ------------------------------------------------------------------------- */
 static GLFWglproc GlFWGetProcAddress(const char*const cpFunction)
 { // Get function and return it if we have it
   if(GLFWglproc fCB = glfwGetProcAddress(cpFunction)) return fCB;

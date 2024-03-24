@@ -346,11 +346,10 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
     IdentSet(imSrc.IdentGet());
     // Show filename
     cLog->LogDebugExSafe("Font loading '$' from bitmap.", IdentGet());
-    // Strip path name and set descriptor file name
-    const PathSplit pathData{ IdentGet() };
+    // Strip path name, build manifest  file name and open it
+    const PathSplit psFont{ IdentGet() };
     const string strManfiest{
-      StrAppend(pathData.strLoc, pathData.strFile, ".txt") };
-    // Get the file. It should at least be 3 bytes long
+      StrAppend(psFont.strLoc, psFont.strFile, ".txt") };
     const FileMap fC{ AssetExtract(strManfiest) };
     // Convert whole file data to a string
     const string strBuffer{ fC.MemToString() };
@@ -437,7 +436,7 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
     StdFill(par_unseq, gvData.begin()+uiCharEnd, gvData.end(), gRef);
     // Initialise memory for texture tile co-ordinates
     clTiles.resize(1);
-    CoordList &clFirst = clTiles[0];
+    CoordList &clFirst = clTiles.front();
     clFirst.reserve(uiCharEnd);
     clFirst.resize(uiCharOffset);
     // Get extra tile padding dimensions. Also clamped by texture class

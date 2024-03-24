@@ -17,7 +17,7 @@ using namespace Lib::OS::ZLib;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* ------------------------------------------------------------------------- */
-enum EncMode                           // Encoding flags (DONT REORDER!!!)
+enum EncMode : unsigned int            // Encoding flags (DONT REORDER!!!)
 { /* ----------------------------------------------------------------------- */
   ENCMODE_RAW,                         // Raw format (Copy)
   ENCMODE_AES,                         // Encrypted with AES (openssl)
@@ -58,7 +58,7 @@ class EncData                          // Encoded data returned by callback
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* -- Magic block header data -------------------------------------------- */
-enum Header                            // Buffer header integer location flags
+enum Header : unsigned long            // Buffer header integer location flags
 { /* ----------------------------------------------------------------------- */
   ENCHDR_MAGIC           = 0x1A43444D, // Magic (MDC[esc])
   ENCHDR_VERSION         =          1, // Structure version

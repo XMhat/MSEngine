@@ -18,9 +18,10 @@ namespace LLDisplay {                  // Display namespace
 /* -- Dependencies --------------------------------------------------------- */
 using namespace IDisplay::P;           using namespace IEvtMain::P;
 using namespace IFboCore::P;           using namespace IGlFW::P;
-using namespace IGlFWMonitor::P;       using namespace IInput::P;
-using namespace ILua::P;               using namespace IOgl::P;
-using namespace ITimer::P;             using namespace Lib::OS::GlFW;
+using namespace IGlFWCursor::P;        using namespace IGlFWMonitor::P;
+using namespace IInput::P;             using namespace ILua::P;
+using namespace IOgl::P;               using namespace ITimer::P;
+using namespace Lib::OS::GlFW;
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Display.* namespace functions                                       ## **
@@ -285,6 +286,19 @@ LLFUNCEX(SetInterval, 1,
 // ? Display.FSTypes table for a list of possible values.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(FSType, 1, LCPUSHVAR(cDisplay->GetFSType()));
+/* ========================================================================= */
+// $ Display.ResetCursor
+// ? Resets to the standard cursor graphic
+/* ------------------------------------------------------------------------- */
+LLFUNC(ResetCursor, cDisplay->RequestResetCursor());
+/* ========================================================================= */
+// $ Display.SetCursor
+// < Id:integer=The id of the new cursor
+// ? This function sets a new standard cursor id. This operation is
+// ? asynchronous and won't take effect until the next frame.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetCursor, cDisplay->RequestSetCursor(LCGETINTLGE(GlFWCursorType, 1,
+  CUR_ARROW, CUR_MAX, "CursorId")));
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Display.* namespace functions structure                             ## **
@@ -298,17 +312,31 @@ LLRSBEGIN                              // Display.* namespace func
   LLRSFUNC(Iconified),   LLRSFUNC(Iconify),       LLRSFUNC(Maximise),
   LLRSFUNC(Maximised),   LLRSFUNC(Monitor),       LLRSFUNC(MonitorData),
   LLRSFUNC(Monitors),    LLRSFUNC(OnFocused),     LLRSFUNC(Reset),
-  LLRSFUNC(Resizable),   LLRSFUNC(Restore),       LLRSFUNC(SetFullScreen),
-  LLRSFUNC(SetInterval), LLRSFUNC(SetMatrix),     LLRSFUNC(SetPos),
-  LLRSFUNC(SetSize),     LLRSFUNC(Transparent),   LLRSFUNC(VidMode),
-  LLRSFUNC(VidModeData), LLRSFUNC(VidModes),      LLRSFUNC(Visible),
-  LLRSFUNC(VRAM),        LLRSFUNC(VReset),
+  LLRSFUNC(ResetCursor), LLRSFUNC(Resizable),     LLRSFUNC(Restore),
+  LLRSFUNC(SetCursor),   LLRSFUNC(SetFullScreen), LLRSFUNC(SetInterval),
+  LLRSFUNC(SetMatrix),   LLRSFUNC(SetPos),        LLRSFUNC(SetSize),
+  LLRSFUNC(Transparent), LLRSFUNC(VidMode),       LLRSFUNC(VidModeData),
+  LLRSFUNC(VidModes),    LLRSFUNC(Visible),       LLRSFUNC(VRAM),
+  LLRSFUNC(VReset),
 LLRSEND                                // Display.* namespace functions end
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Display.* namespace constants                                       ## **
 ** ######################################################################### **
 ** ========================================================================= */
+// @ Display.Cursors
+// < Data:table=The available standard cursor types
+// ? Returns a table of key/value pairs that identify standard cursors
+/* ------------------------------------------------------------------------- */
+LLRSKTBEGIN(Cursors)                   // Beginning of cursor codes
+  LLRSKTITEM(CUR_,ARROW),              LLRSKTITEM(CUR_,CROSSHAIR),
+  LLRSKTITEM(CUR_,HAND),               LLRSKTITEM(CUR_,HRESIZE),
+  LLRSKTITEM(CUR_,IBEAM),              LLRSKTITEM(CUR_,NOT_ALLOWED),
+  LLRSKTITEM(CUR_,RESIZE_ALL),         LLRSKTITEM(CUR_,RESIZE_EW),
+  LLRSKTITEM(CUR_,RESIZE_NESW),        LLRSKTITEM(CUR_,RESIZE_NS),
+  LLRSKTITEM(CUR_,RESIZE_NWSE),        LLRSKTITEM(CUR_,VRESIZE),
+LLRSKTEND                              // End of cursor codes
+/* ========================================================================= */
 // @ Display.FSTypes
 // < Data:table=The available full-screen types
 // ? Returns a table of key/value pairs that identify the states of the window.
@@ -330,7 +358,7 @@ LLRSKTEND                              // End of mouse codes
 ** ######################################################################### **
 ** ========================================================================= */
 LLRSCONSTBEGIN                         // Display.* namespace consts begin
-  LLRSCONST(FSTypes),
+  LLRSCONST(Cursors), LLRSCONST(FSTypes),
 LLRSCONSTEND                           // Display.* namespace consts end
 /* ========================================================================= */
 }                                      // End of Display namespace

@@ -18,15 +18,15 @@ using namespace ISysUtil::P;           using namespace Lib::OS::GlFW;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* -- Public typedefs ------------------------------------------------------ */
-enum ShaderUniformId {                 // Mandatory uniforms
-  /* ----------------------------------------------------------------------- */
+enum ShaderUniformId : size_t          // Mandatory uniforms
+{ /* ----------------------------------------------------------------------- */
   U_ORTHO,                             // Ortho uniform vec4
   U_PALETTE,                           // Palette uniform vec4
   /* ----------------------------------------------------------------------- */
   U_MAX                                // Max no of mandatory uniforms
 };/* ----------------------------------------------------------------------- */
-enum ShaderAttributeId {               // Mandatory attributes
-  /* ----------------------------------------------------------------------- */
+enum ShaderAttributeId : GLuint        // Mandatory attributes
+{ /* ----------------------------------------------------------------------- */
   A_COORD,                             // TexCoord attribute vec2 array
   A_VERTEX,                            // Vertex attribute vec2 array
   A_COLOUR,                            // Colour attribute vec4 array
@@ -80,31 +80,31 @@ BEGIN_COLLECTORDUO(Shaders, Shader, CLHelperUnsafe, ICHelperUnsafe),
   /* -- SHader is linked? -------------------------------------------------- */
   bool IsLinked(void) const { return bLinked; }
   /* -- Verify the specified attribute is at the specified location -------- */
-  void VerifyAttribLocation(const char *cpAttr, const GLuint uiI)
+  void VerifyAttribLocation(const char *cpAttr, const ShaderAttributeId saiId)
   { // Get attribute location
-    GL(cOgl->BindAttribLocation(uiProgram, uiI, cpAttr),
+    GL(cOgl->BindAttribLocation(uiProgram, saiId, cpAttr),
       "Failed to get attribute location from shader!",
-      "Attrib", cpAttr, "Program", uiProgram, "Index", uiI);
+      "Attrib", cpAttr, "Program", uiProgram, "Index", saiId);
     // Enable the vertex attrib array. Keep an eye on this if you have problems
     // with glVertexAttribPointer. You'll have to restore Enable/Disable vertex
     // attrib pointers before both glDrawArrays calls if you add more shaders
     // and this call fails.
-    GL(cOgl->EnableVertexAttribArray(uiI),
+    GL(cOgl->EnableVertexAttribArray(saiId),
       "Failed to enable vertex attrib array!",
-      "Attrib", cpAttr, "Program", uiProgram, "Index", uiI);
+      "Attrib", cpAttr, "Program", uiProgram, "Index", saiId);
     // Report location in log
     cLog->LogDebugExSafe("Shader bound attribute '$' at location $.",
-      cpAttr, uiI);
+      cpAttr, saiId);
   }
   /* -- Verify the specified uniform is at the specified location ---------- */
-  void VerifyUniformLocation(const char *cpUni,const size_t stI)
+  void VerifyUniformLocation(const char *cpUni, const ShaderUniformId suiId)
   { // Get attribute location
-    GL(aUniforms[stI] = GetUniformLocation(cpUni),
+    GL(aUniforms[suiId] = GetUniformLocation(cpUni),
       "Failed to get uniform location from shader!",
-      "Uniform", cpUni, "Program", uiProgram, "Assign", stI);
+      "Uniform", cpUni, "Program", uiProgram, "Assign", suiId);
     // Report location in log
     cLog->LogDebugExSafe("Shader attribute for '$' at location $ and index $.",
-      cpUni, aUniforms[stI], stI);
+      cpUni, GetUID(suiId), suiId);
   }
   /* -- Update palette ----------------------------------------------------- */
   void UpdatePalette(const size_t stSize, const GLfloat*const fpData) const
@@ -157,7 +157,7 @@ BEGIN_COLLECTORDUO(Shaders, Shader, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Get shader program name -------------------------------------------- */
   GLuint GetProgram(void) const { return uiProgram; }
   /* -- Uniform value ------------------------------------------------------ */
-  GLint GetUID(const size_t stI) const { return aUniforms[stI]; }
+  GLint GetUID(const ShaderUniformId suiId) const { return aUniforms[suiId]; }
   /* -- Variable location -------------------------------------------------- */
   GLint GetUniformLocation(const char*const cpVar) const
     { return cOgl->GetUniformLocation(uiProgram, cpVar); }

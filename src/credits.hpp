@@ -35,7 +35,7 @@ class CreditLib :                      // Members initially private
   CreditLib(const string &strN, const string &strV, const string &strA,
     const bool bC, const void*const vpData, const size_t stSize) :
     /* -- Initialisers ----------------------------------------------------- */
-    MemConst{ stSize, vpData },       // Init credit licence data
+    MemConst{ stSize, vpData },        // Init credit licence data
     strName{ strN },                   // Init credit name
     strVersion{ strV },                // Init credit version
     strAuthor{ strA },                 // Init credit author
@@ -44,7 +44,7 @@ class CreditLib :                      // Members initially private
     { }
 };/* ----------------------------------------------------------------------- */
 /* -- Credits list lookup table -------------------------------------------- */
-enum CreditEnums                       // Credit ids
+enum CreditEnums : size_t              // Credit ids
 { /* ----------------------------------------------------------------------- */
   CL_FIRST,                            // The first item (see llcredit.hpp)
   /* ----------------------------------------------------------------------- */

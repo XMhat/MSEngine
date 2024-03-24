@@ -10,17 +10,20 @@
 namespace IGlFW {                      // Start of module namespace
 /* ------------------------------------------------------------------------- */
 using namespace ICollector::P;         using namespace IError::P;
-using namespace IGlFWUtil::P;          using namespace IGlFWWindow::P;
-using namespace ILog::P;               using namespace IStd::P;
-using namespace ISysUtil::P;           using namespace IUtil::P;
-using namespace Lib::OS::GlFW;
+using namespace IGlFWCursor::P;        using namespace IGlFWUtil::P;
+using namespace IGlFWWindow::P;        using namespace ILog::P;
+using namespace IStd::P;               using namespace ISysUtil::P;
+using namespace IUtil::P;              using namespace Lib::OS::GlFW;
+/* ------------------------------------------------------------------------- */
+typedef array<GlFWCursor, CUR_MAX> CursorStandard;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* ========================================================================= */
 static class GlFW final :              // Root engine class
   /* -- Base classes ------------------------------------------------------- */
   public IHelper,                      // Initialisation helper
-  public GlFWWindow                    // GLFW window class
+  public GlFWWindow,                   // GLFW window class
+  private CursorStandard               // Standard cursors list
 { /* -- Private variables and functions ------------------------------------ */
   unsigned int     uiErrorLevel;       // Ignore further glfw errors
   /* -- Custom allocator --------------------------------------------------- */
@@ -63,12 +66,31 @@ static class GlFW final :              // Root engine class
     cLog->LogDebugSafe("GlFW subsystem de-initialising...");
     // Destroy window if created
     this->WinDeInit();
+    // De-Initialise standard cursors
+    DeInitCursors();
     // Terminate glfw
     glfwTerminate();
     // Delete error handler
     glfwSetErrorCallback(nullptr);
     // Report de-initialisation successful
     cLog->LogInfoSafe("GlFW subsystem de-initialised.");
+  }
+  /* -- Set the specified cursor ------------------------------------------- */
+  void SetCursor(const GlFWCursorType gctCursorId)
+    { WinSetCursorGraphic(at(gctCursorId).CursorGetContext()); }
+  /* -- DeInitialise all standard cursors ---------------------------------- */
+  void DeInitCursors(void)
+  { // Enumerate each created fbo and deinitialise it (NOT destroy it)
+    cLog->LogDebugExSafe("GlFW de-initialising $ standard cursors...", size());
+    for(GlFWCursor &gcObj : *this) gcObj.CursorDeInit();
+    cLog->LogInfoExSafe("GlFW de-initialised $ standard cursors.", size());
+  }
+  /* -- Initialise all standard cursors ------------------------------------ */
+  void InitCursors(void)
+  { // Enumerate each created fbo and reinitialise it
+    cLog->LogDebugExSafe("GlFW initialising $ standard cursors...", size());
+    for(GlFWCursor &gcObj : *this) gcObj.CursorInit();
+    cLog->LogInfoExSafe("GlFW initialised $ standard cursors.", size());
   }
   /* -- Reset error level -------------------------------------------------- */
   void ResetErrorLevel(void) { uiErrorLevel = 0; }
@@ -89,6 +111,8 @@ static class GlFW final :              // Root engine class
     if(!glfwInit()) XC("GLFW initialisation failed!");
     // Class initialised
     IHInitialise();
+    // Initialise standard cursors
+    InitCursors();
     // Report initialisation successful
     cLog->LogInfoSafe("GlFW subsystem initialised.");
   }
@@ -98,6 +122,20 @@ static class GlFW final :              // Root engine class
   GlFW(void) :                         // Default constructor (No arguments)
     /* -- Initialisers ----------------------------------------------------- */
     IHelper{ __FUNCTION__ },           // Set class function name
+    /* --------------------------------------------------------------------- */
+#define CURSOR(x) { GLFW_ ## x ## _CURSOR }
+    /* --------------------------------------------------------------------- */
+    CursorStandard{{                   // Define standard cursors
+      CURSOR(ARROW),                   CURSOR(CROSSHAIR),
+      CURSOR(HAND),                    CURSOR(HRESIZE),
+      CURSOR(IBEAM),                   CURSOR(NOT_ALLOWED),
+      CURSOR(RESIZE_ALL),              CURSOR(RESIZE_EW),
+      CURSOR(RESIZE_NESW),             CURSOR(RESIZE_NS),
+      CURSOR(RESIZE_NWSE),             CURSOR(VRESIZE)
+    }},
+    /* --------------------------------------------------------------------- */
+#undef CURSOR                          // Done with this macro
+    /* --------------------------------------------------------------------- */
     uiErrorLevel(0)                    // No errors occured
     /* -- No code ---------------------------------------------------------- */
     { }

@@ -49,8 +49,8 @@ enum OglBlendEnum : size_t             // Available blend combinations
   OB_S_A, OB_O_M_S_A, OB_D_A,   OB_O_M_D_A, OB_C_C, OB_O_M_C_C,
   OB_C_A, OB_O_M_C_A, OB_S_A_S, OB_MAX
 };/* ---------------------------------------------------------------------- */
-enum OglUndefinedEnums : GLenum {      // Some undefined OpenGL consts
-  /* ----------------------------------------------------------------------- */
+enum OglUndefinedEnums : GLenum        // Some undefined OpenGL consts
+{ /* ----------------------------------------------------------------------- */
   GL_RGBA_DXT1               = 0x83F1, // GL_COMPRESSED_RGBA_S3TC_DXT1_EXT
   GL_RGBA_DXT3               = 0x83F2, // GL_COMPRESSED_RGBA_S3TC_DXT3_EXT
   GL_RGBA_DXT5               = 0x83F3, // GL_COMPRESSED_RGBA_S3TC_DXT5_EXT

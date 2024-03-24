@@ -15,7 +15,7 @@ using namespace IMemory::P;            using namespace IUtil::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* -- Typedefs ------------------------------------------------------------- */
-enum FStreamMode                       // Open types allowed
+enum FStreamMode : size_t              // Open types allowed
 { /* ----------------------------------------------------------------------- */
   FM_R_T,                              // [00] "rt"  Read|Exists|Text
   FM_W_T,                              // [01] "wt"  Write|New|Trunc|Text

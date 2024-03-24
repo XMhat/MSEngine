@@ -16,15 +16,15 @@ using namespace ICVarLib::P;           using namespace IDim;
 using namespace IDir::P;               using namespace IEvtMain::P;
 using namespace IEvtWin::P;            using namespace IFboCore::P;
 using namespace IFlags;                using namespace IFont::P;
-using namespace IGlFW::P;              using namespace IGlFWMonitor::P;
-using namespace IGlFWUtil::P;          using namespace IIdent::P;
-using namespace IImage::P;             using namespace IImageDef::P;
-using namespace IInput::P;             using namespace ILog::P;
-using namespace ILuaFunc::P;           using namespace IStd::P;
-using namespace IString::P;            using namespace ISystem::P;
-using namespace ISysUtil::P;           using namespace ITexture::P;
-using namespace IToken::P;             using namespace IUtil::P;
-using namespace Lib::OS::GlFW;
+using namespace IGlFW::P;              using namespace IGlFWCursor::P;
+using namespace IGlFWMonitor::P;       using namespace IGlFWUtil::P;
+using namespace IIdent::P;             using namespace IImage::P;
+using namespace IImageDef::P;          using namespace IInput::P;
+using namespace ILog::P;               using namespace ILuaFunc::P;
+using namespace IStd::P;               using namespace IString::P;
+using namespace ISystem::P;            using namespace ISysUtil::P;
+using namespace ITexture::P;           using namespace IToken::P;
+using namespace IUtil::P;              using namespace Lib::OS::GlFW;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* ------------------------------------------------------------------------- */
@@ -133,6 +133,13 @@ static class Display final :
   void OnSetIcon(const EvtWin::Cell&) { UpdateIcons(); }
   /* -- Window was asked to be hidden -------------------------------------- */
   void OnHide(const EvtWin::Cell&) { cGlFW->WinHide(); }
+  /* -- Window cursor request ---------------------------------------------- */
+  void OnSetCursor(const EvtWin::Cell &ewcArgs)
+    { cGlFW->SetCursor(static_cast<GlFWCursorType>
+        (ewcArgs.vParams.front().z)); }
+  /* -- Window reset cursor request ---------------------------------------- */
+  void OnResetCursor(const EvtWin::Cell&)
+    { cGlFW->WinSetCursorGraphic(); }
   /* -- Window scale change request ---------------------------------------- */
   void OnScale(const EvtMain::Cell &ewcArgs)
   { // Get new values
@@ -655,6 +662,11 @@ static class Display final :
   /* -- Request from alternative thread to move window --------------------- */
   void RequestMove(const int iX, const int iY)
     { cEvtWin->AddUnblock(EWC_WIN_MOVE, iX, iY); }
+  /* -- Request the window set a new cursor graphic ------------------------ */
+  void RequestSetCursor(const GlFWCursorType gctType)
+    { cEvtWin->AddUnblock(EWC_WIN_CURSET, gctType); }
+  /* -- Request the window reset the cursor graphic ------------------------ */
+  void RequestResetCursor(void) { cEvtWin->AddUnblock(EWC_WIN_CURRESET); }
   /* -- Request from alternative thread to centre the window --------------- */
   void RequestCentre(void) { cEvtWin->AddUnblock(EWC_WIN_CENTRE); }
   /* -- Request from alternative thread to reposition the window ----------- */
@@ -1117,14 +1129,16 @@ static class Display final :
       { EMC_WIN_SCALE,         bind(&Display::OnScale,       this, _1) },
     },
     EvtWin::RegVec{                    // Register window events
-      { EWC_WIN_RESET,     bind(&Display::OnReset,    this, _1) },
-      { EWC_WIN_TOGGLE_FS, bind(&Display::OnToggleFS, this, _1) },
-      { EWC_WIN_CENTRE,    bind(&Display::OnCentre,   this, _1) },
-      { EWC_WIN_RESIZE,    bind(&Display::OnResize,   this, _1) },
-      { EWC_WIN_LIMITS,    bind(&Display::OnLimits,   this, _1) },
-      { EWC_WIN_MOVE,      bind(&Display::OnMove,     this, _1) },
-      { EWC_WIN_SETICON,   bind(&Display::OnSetIcon,  this, _1) },
-      { EWC_WIN_HIDE,      bind(&Display::OnHide,     this, _1) },
+      { EWC_WIN_CENTRE,    bind(&Display::OnCentre,      this, _1) },
+      { EWC_WIN_CURRESET,  bind(&Display::OnResetCursor, this, _1) },
+      { EWC_WIN_CURSET,    bind(&Display::OnSetCursor,   this, _1) },
+      { EWC_WIN_HIDE,      bind(&Display::OnHide,        this, _1) },
+      { EWC_WIN_LIMITS,    bind(&Display::OnLimits,      this, _1) },
+      { EWC_WIN_MOVE,      bind(&Display::OnMove,        this, _1) },
+      { EWC_WIN_RESET,     bind(&Display::OnReset,       this, _1) },
+      { EWC_WIN_RESIZE,    bind(&Display::OnResize,      this, _1) },
+      { EWC_WIN_SETICON,   bind(&Display::OnSetIcon,     this, _1) },
+      { EWC_WIN_TOGGLE_FS, bind(&Display::OnToggleFS,    this, _1) },
     },
     DimCoInt{ -1, -1, 0, 0 },          // Requested position and size
     moSelected(nullptr),               // No monitor selected

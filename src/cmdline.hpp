@@ -25,14 +25,14 @@ static struct CmdLine final            // Members initially public
                     Restart,           // Restart with parameters
                     RestartUI };       // Same as above but in UI mode
   /* -- Command-line and environment variables ---------------------*/ private:
-  EcId             ecExit;             // Exit mode
   const string     strCWD;             // Current startup working directory
   int              iArgC;              // Arguments count
   ArgType        **lArgV;              // Arguments list
-  ArgType        **lEnvP;              // Environment list
   const StrVector  svArg;              // Arguments list
+  ArgType        **lEnvP;              // Environment list
   const StrStrMap  lEnv;               // Formatted environment variables
   string           strHD;              // Persistant directory
+  EcId             ecExit;             // Exit mode
   /* -- Set persistant directory ----------------------------------- */ public:
   void SetHome(const string &strDir) { strHD = strDir; }
   /* -- Get persistant directory ------------------------------------------- */
@@ -85,7 +85,7 @@ static struct CmdLine final            // Members initially public
   StrVector ParseArgumentsArray(void)
   { // Check that args are valid
     if(iArgC < 1) XC("Arguments array count corrupted!", "Count", iArgC);
-     // Check that args are valid
+    // Check that args are valid
     if(!lArgV) XC("Arguments array corrupted!");
     if(!*lArgV) XC("Arguments array executable string corrupted!");
     if(!**lArgV) XC("Arguments array executable string is empty!");
@@ -134,31 +134,26 @@ static struct CmdLine final            // Members initially public
     for(const ArgType*const *atPtr = lEnvP;
         const ArgType*const  atStr = *atPtr;
                            ++atPtr)
-    { // Ignore if parameter empty
+    { // Ignore if string is empty
       if(!*atStr) continue;
       // Split argument into key/value pair. Ignore if no parameters
       if(Token tokParam{ S16toUTF(atStr), cCommon->Equals(), 2 })
-      { // Find key and insert it if not found then erase the EcId value
-        string &strKey = StrToUpCaseRef(tokParam.front());
-        const StrStrMapConstIt itArg{ ssmRet.find(strKey) };
-        if(itArg != ssmRet.cend()) ssmRet.erase(itArg);
-        // Insert new key/value into list
-        ssmRet.insert({ StdMove(strKey),
-          tokParam.size() > 1 ? StdMove(tokParam[1]) : cCommon->Blank() });
-      }
+        ssmRet.insert({ StdMove(tokParam.front()),
+          tokParam.size() == 2 ?
+            StdMove(tokParam.back()) : cCommon->Blank() });
     } // Return environment variables list
     return ssmRet;
   }
   /* -- Assign arguments ------------------------------------------- */ public:
   CmdLine(const int iArgs, ArgType**const atArgs, ArgType**const atEnv) :
     /* -- Initialisers ----------------------------------------------------- */
-    ecExit(EcId::Quit),                // Initialise exit code
     strCWD{ DirGetCWD() },             // Initialise current working directory
     iArgC(iArgs),                      // Initialise stdlib args count
     lArgV(atArgs),                     // Initialise stdlib args ptr
-    lEnvP(atEnv),                      // Initialise stdlib environment ptr
     svArg{ ParseArgumentsArray() },    // Initialise command line arguments
-    lEnv{ ParseEnvironmentArray() }    // Initialise environment variables
+    lEnvP(atEnv),                      // Initialise stdlib environment ptr
+    lEnv{ ParseEnvironmentArray() },   // Initialise environment variables
+    ecExit(EcId::Quit)                 // Initialise exit code
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Destructor --------------------------------------------------------- */

@@ -21,7 +21,7 @@ namespace P {                          // Start of public module namespace
 /* -- Consts --------------------------------------------------------------- */
 static enum LuaCache { LCC_OFF, LCC_FULL, LCC_MINIMUM, LCC_MAX } lcSetting;
 /* -- Cache and compilation results ---------------------------------------- */
-enum LuaCompResult
+enum LuaCompResult : unsigned int
 { /* ----------------------------------------------------------------------- */
   LCR_CACHED,                          // [0] Using cached version
   LCR_RECOMPILE,                       // [1] Code compiled and stored

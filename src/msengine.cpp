@@ -44,6 +44,7 @@ namespace E {                          // Start of engine namespace
 #include "evtmain.hpp"                 // Main engine events system header
 #include "condef.hpp"                  // Console definitions header
 #include "glfwutil.hpp"                // GLFW utility class header
+#include "glfwcrsr.hpp"                 // GLFW cursor class header
 #include "glfwwin.hpp"                 // GLFW window class header
 #include "glfw.hpp"                    // GLFW utilities header
 #include "dim.hpp"                     // Data grouping classes header
@@ -103,7 +104,6 @@ namespace E {                          // Start of engine namespace
 #include "video.hpp"                   // Theora video playback class header
 #include "audio.hpp"                   // Audio base management class header
 #include "json.hpp"                    // Json handling class header
-#include "cursor.hpp"                  // Cursor activation class header
 #include "input.hpp"                   // Input handling class header
 #include "glfwmon.hpp"                 // GLFW monitor class header
 #include "display.hpp"                 // Window handling class header

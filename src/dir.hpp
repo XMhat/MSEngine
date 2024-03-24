@@ -15,7 +15,7 @@ using namespace IString::P;            using namespace IToken::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* ------------------------------------------------------------------------- */
-enum ValidResult                       // Return values for ValidName()
+enum ValidResult : unsigned int        // Return values for ValidName()
 { /* ----------------------------------------------------------------------- */
   VR_OK,                               // 00: The filename is valid!
   VR_EMPTY,                            // 01: The filename is empty!
@@ -34,7 +34,7 @@ enum ValidResult                       // Return values for ValidName()
   /* ----------------------------------------------------------------------- */
   VR_MAX,                              // 14: Maximum number of errors
 };/* ----------------------------------------------------------------------- */
-enum ValidType                         // Types for ValidName()
+enum ValidType : unsigned int          // Types for ValidName()
 { /* ----------------------------------------------------------------------- */
   VT_TRUSTED,                          // Trusted caller
   VT_UNTRUSTED,                        // Untrusted caller (chroot-like)
