@@ -22,7 +22,9 @@ BUILD_FLAGS(CVarShow,
   // Show no confidential cvars        Show private cvars
   CSF_NONE               {0x00000000}, CSF_CONFIDENTIAL           {0x00000001},
   // Show protected cvars
-  CSF_PROTECTED          {0x00000002}
+  CSF_PROTECTED          {0x00000002},
+  /* ----------------------------------------------------------------------- */
+  CSF_MASK { CSF_CONFIDENTIAL|CSF_PROTECTED }
 );/* ----------------------------------------------------------------------- */
 static CVarShowFlags csfShowFlags{CSF_NONE}; // Console cvar display flags
 /* == Notes ================================================================ **

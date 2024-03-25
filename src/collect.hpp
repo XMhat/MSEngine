@@ -308,8 +308,8 @@ class CLHelperUnsafe :                 // Members initially private
   IteratorType CLErase(IteratorType &itObj)
     { return this->CLBaseEraseUnsafe(itObj); }
   /* -- Set maximum objects ------------------------------------------------ */
-  CVarReturn CLSetLimit(const size_t stL)
-    { return this->CLBaseSetLimitUnsafe(stL); }
+  CVarReturn CLSetLimit(const size_t stLimit)
+    { return this->CLBaseSetLimitUnsafe(stLimit); }
   /* -- Constructor -------------------------------------------------------- */
   explicit CLHelperUnsafe(const char*const cpT) :
     /* -- Initialisers ----------------------------------------------------- */

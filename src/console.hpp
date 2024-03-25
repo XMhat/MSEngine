@@ -1014,7 +1014,7 @@ static class Console final :           // Members initially private
          "Command", strName, "Maximum", stMaxCount);
     // Checks passed. Now add it
     return llCmds.insert({ strName,
-      { strName, uiMin, uiMax, CF_NOTHING, ccbFunc } }).first;
+      { strName, uiMin, uiMax, CFL_NONE, ccbFunc } }).first;
   }
   /* -- Command exists? ---------------------------------------------------- */
   bool CommandIsRegistered(const string &strName) const
@@ -1338,12 +1338,12 @@ static class Console final :           // Members initially private
     return ACCEPT;
   }
   /* -- Set console auto complete flags ------------------------------------ */
-  CVarReturn SetAutoComplete(const unsigned int uiFlags)
+  CVarReturn SetAutoComplete(const AutoCompleteFlagsType acftFlags)
   { // Deny if flags are too much
-    if(uiFlags > AC_MASK.FlagGet()) return DENY;
+    if(acftFlags != AC_NONE && (acftFlags & ~AC_MASK)) return DENY;
     // Set new flags
-    acFlags.FlagReset(AutoCompleteFlagsConst(uiFlags));
-    // OK
+    acFlags.FlagReset(acftFlags);
+    // Success
     return ACCEPT;
   }
   /* -- Set console auto copy cvar state ----------------------------------- */
@@ -1431,11 +1431,11 @@ static class Console final :           // Members initially private
       ciOutputRefresh.CISetLimit(milliseconds{ uiMilliseconds });
       return ACCEPT; }
   /* -- Console font flags modfiied ---------------------------------------- */
-  CVarReturn ConsoleFontFlagsModified(const unsigned int uiFlags)
+  CVarReturn ConsoleFontFlagsModified(const ImageFlagsType iftFlags)
   { // Check that flags are valid
-    if(uiFlags & ~FF_MASK) return DENY;
+    if(iftFlags != IL_NONE && (iftFlags & ~FF_MASK)) return DENY;
     // Set console flags
-    GetFontRef().FlagSet(static_cast<ImageFlags>(uiFlags));
+    GetFontRef().FlagReset(iftFlags);
     // Success
     return ACCEPT;
   }

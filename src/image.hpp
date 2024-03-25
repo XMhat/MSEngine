@@ -729,7 +729,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     // Get and check parameters
     const string strName{ LuaUtilGetCppStrNE(lS, 1, "Identifier") };
     Asset &aData = *LuaUtilGetPtr<Asset>(lS, 2, "Asset");
-    FlagSet(LuaUtilGetFlags(lS, 3, IL_MASK, "Flags"));
+    FlagReset(LuaUtilGetFlags(lS, 3, IL_MASK, "Flags"));
     LuaUtilCheckFuncs(lS, 4, "ErrorFunc", 5, "ProgressFunc", 6, "SuccessFunc");
     // The decoded image will be kept in memory
     SetDynamic();
@@ -742,7 +742,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
     LuaUtilCheckParams(lS, 6);
     // Get and check parameters
     const string strFile{ LuaUtilGetCppFile(lS, 1, "File") };
-    FlagSet(LuaUtilGetFlags(lS, 2, IL_MASK, "Flags"));
+    FlagReset(LuaUtilGetFlags(lS, 2, IL_MASK, "Flags"));
     LuaUtilCheckFuncs(lS, 3, "ErrorFunc", 4, "ProgressFunc", 5, "SuccessFunc");
     // Load image from file asynchronously
     AsyncInitFile(lS, strFile, "bmpfile");
@@ -852,7 +852,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Init from file ----------------------------------------------------- */
   void InitFile(const string &strFileName, const ImageFlagsConst &lfS)
   { // Set the loading flags
-    FlagSet(lfS);
+    FlagReset(lfS);
     // Load the file normally
     SyncInitFileSafe(strFileName);
   }
@@ -862,7 +862,7 @@ BEGIN_ASYNCCOLLECTORDUO(Images, Image, CLHelperUnsafe, ICHelperUnsafe),
   { // Is dynamic because it was not loaded from disk
     SetDynamic();
     // Set the loading flags
-    FlagSet(lfS);
+    FlagReset(lfS);
     // Load the array normally
     SyncInitArray(strName, StdMove(mbD));
   }

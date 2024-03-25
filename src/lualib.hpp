@@ -193,24 +193,24 @@ template<typename IntType=int, typename AnyType, IntType itSize>
 /* -- Define the ms-engine api list loaded at startup ---------------------- */
 const LuaLibStatic luaLibList[] =
 { /* -- Use the above macros to define namespaces -------------------------- */
-  LLSMX(Archive, CF_NOTHING),          LLSMC(Asset,   CF_NOTHING),
-  LLSXX(Audio,   CF_AUDIO),            LLSMX(Bin,     CF_NOTHING),
-  LLSMX(Clip,    CF_VIDEO),            LLSXC(Core,    CF_NOTHING),
-  LLSXX(Credit,  CF_NOTHING),          LLSXC(CVars,   CF_NOTHING),
-  LLSXC(Console, CF_NOTHING),          LLSXX(Crypt,   CF_NOTHING),
-  LLSXC(Display, CF_VIDEO),            LLSMC(Fbo,     CF_VIDEO),
-  LLSMC(File,    CF_NOTHING),          LLSMC(Font,    CF_VIDEO),
-  LLSMX(Ftf,     CF_NOTHING),          LLSMC(Image,   CF_NOTHING),
-  LLSXX(Info,    CF_NOTHING),          LLSXC(Input,   CF_VIDEO),
-  LLSMX(Json,    CF_NOTHING),          LLSMX(Mask,    CF_NOTHING),
-  LLSMX(Palette, CF_VIDEO),            LLSMC(Pcm,     CF_NOTHING),
-  LLSMX(Sample,  CF_AUDIO),            LLSMX(Stat,    CF_NOTHING),
-  LLSMC(Socket,  CF_NOTHING),          LLSMX(Source,  CF_AUDIO),
-  LLSXC(Sql,     CF_NOTHING),          LLSMC(Stream,  CF_AUDIO),
-  LLSMX(Texture, CF_VIDEO),            LLSXX(Util,    CF_NOTHING),
-  LLSMC(Video,   CF_AUDIOVIDEO),
+  LLSMX(Archive, CFL_NONE),            LLSMC(Asset,   CFL_NONE),
+  LLSXX(Audio,   CFL_AUDIO),           LLSMX(Bin,     CFL_NONE),
+  LLSMX(Clip,    CFL_VIDEO),           LLSXC(Core,    CFL_NONE),
+  LLSXX(Credit,  CFL_NONE),            LLSXC(CVars,   CFL_NONE),
+  LLSXC(Console, CFL_NONE),            LLSXX(Crypt,   CFL_NONE),
+  LLSXC(Display, CFL_VIDEO),           LLSMC(Fbo,     CFL_VIDEO),
+  LLSMC(File,    CFL_NONE),            LLSMC(Font,    CFL_VIDEO),
+  LLSMX(Ftf,     CFL_NONE),            LLSMC(Image,   CFL_NONE),
+  LLSXX(Info,    CFL_NONE),            LLSXC(Input,   CFL_VIDEO),
+  LLSMX(Json,    CFL_NONE),            LLSMX(Mask,    CFL_NONE),
+  LLSMX(Palette, CFL_VIDEO),           LLSMC(Pcm,     CFL_NONE),
+  LLSMX(Sample,  CFL_AUDIO),           LLSMX(Stat,    CFL_NONE),
+  LLSMC(Socket,  CFL_NONE),            LLSMX(Source,  CFL_AUDIO),
+  LLSXC(Sql,     CFL_NONE),            LLSMC(Stream,  CFL_AUDIO),
+  LLSMX(Texture, CFL_VIDEO),           LLSXX(Util,    CFL_NONE),
+  LLSMC(Video,   CFL_AUDIOVIDEO),
   /* -- Last item, do not delete ------------------------------------------- */
-  { nullptr, CF_NOTHING, LLNOCONSTS(), LLNOMETHODS(), LLNOCONSTS() }
+  { nullptr, CFL_NONE, LLNOCONSTS(), LLNOMETHODS(), LLNOCONSTS() }
 };/* -- Done with these macros --------------------------------------------- */
 #undef LLSXC
 #undef LLSMC

@@ -15,7 +15,7 @@ const ConCmdStaticList conLibList{{    // Default console commands list
 // ! archives
 // ? Lists archives that are loaded into the game engine.
 /* ------------------------------------------------------------------------- */
-{ "archives", 1, 1, CF_NOTHING, [](const Args &){
+{ "archives", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Get reference to assets collector class and lock it so it's not changed
 const LockGuard lgAssetsSync{ cArchives->CollectorGetMutex() };
@@ -48,7 +48,7 @@ cConsole->AddLineEx("$$ and $.", tData.Finish(),
 // ! areset
 // ? Resets the audio interface.
 /* ------------------------------------------------------------------------- */
-{ "areset", 1, 1, CF_AUDIO, [](const Args &){
+{ "areset", 1, 1, CFL_AUDIO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Reset the audio subsystem and print result of the reset call
 cConsole->AddLineExA("Audio subsystem reset ",
@@ -59,7 +59,7 @@ cConsole->AddLineExA("Audio subsystem reset ",
 // ! assets
 // ? Lists assets that are loaded into the game engine.
 /* ------------------------------------------------------------------------- */
-{ "assets", 1, 1, CF_NOTHING, [](const Args &){
+{ "assets", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Get reference to arrays collector class and lock it so it's not changed
 const LockGuard lgAssetsSync{ cAssets->CollectorGetMutex() };
@@ -127,7 +127,7 @@ cConsole->AddLineEx("$$ totalling $.", tData.Finish(),
 // ! audins
 // ? Lists available audio input devices (unused by engine right now).
 /* ------------------------------------------------------------------------- */
-{ "audins", 1, 1, CF_AUDIO, [](const Args &){
+{ "audins", 1, 1, CFL_AUDIO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Ignore if no audio subsystem initialised
 if(!cOal->IsInitialised())
@@ -149,7 +149,7 @@ cConsole->AddLineExA(tData.Finish(),
 // ! audio
 // ? Shows information about the currently loaded audio device.
 /* ------------------------------------------------------------------------- */
-{ "audio", 1, 1, CF_AUDIO, [](const Args &){
+{ "audio", 1, 1, CFL_AUDIO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Write information about current audio device
 cConsole->AddLineEx(
@@ -174,7 +174,7 @@ cConsole->AddLineEx(
 // ! audouts
 // ? Lists available audio output devices.
 /* ------------------------------------------------------------------------- */
-{ "audouts", 1, 1, CF_AUDIO, [](const Args &){
+{ "audouts", 1, 1, CFL_AUDIO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Ignore if no audio subsystem initialised
 if(!cOal->IsInitialised())
@@ -196,7 +196,7 @@ cConsole->AddLineExA(tData.Finish(),
 // ! bins
 // ? Lists currently loaded bin objects.
 /* ------------------------------------------------------------------------- */
-{ "bins", 1, 1, CF_NOTHING, [](const Args &){
+{ "bins", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Text table class to help us write neat output
 Statistic tData;
@@ -219,7 +219,7 @@ cConsole->AddLineExA(tData.Finish(),
 // ? Lists currently loaded X509 certificates which are populated by the
 // ? 'net_castore' cvar on startup.
 /* ------------------------------------------------------------------------- */
-{ "certs", 1, 1, CF_NOTHING, [](const Args &){
+{ "certs", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Make a table to automatically format our data neatly
 Statistic tData;
@@ -247,7 +247,7 @@ cConsole->AddLineExA(tData.Finish(),
 // ! cla
 // ? Lists all command-line arguments sent to the process.
 /* ------------------------------------------------------------------------- */
-{ "cla", 1, 2, CF_NOTHING, [](const Args &aList){
+{ "cla", 1, 2, CFL_NONE, [](const Args &aList){
 /* ------------------------------------------------------------------------- */
 // Get list of environment variables
 const StrVector &svArgs = cCmdLine->GetArgList();
@@ -276,7 +276,7 @@ cConsole->AddLineExA(tData.Finish(),
 // ! clh
 // ? Flushes the historic use of commands entered into the console.
 /* ------------------------------------------------------------------------- */
-{ "clh", 1, 1, CF_NOTHING, [](const Args &){
+{ "clh", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 cConsole->ClearHistory();
 /* ------------------------------------------------------------------------- */
@@ -285,7 +285,7 @@ cConsole->ClearHistory();
 // ! cls
 // ? Flushes the console output buffer.
 /* ------------------------------------------------------------------------- */
-{ "cls", 1, 1, CF_NOTHING, [](const Args &){
+{ "cls", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 cConsole->Flush();
 /* ------------------------------------------------------------------------- */
@@ -295,7 +295,7 @@ cConsole->Flush();
 // ? Shows all the available console commands. You can optionally specify
 // ? [partial] to partially match the beginning of each command.
 /* ------------------------------------------------------------------------- */
-{ "cmds", 1, 2, CF_NOTHING, [](const Args &aList){
+{ "cmds", 1, 2, CFL_NONE, [](const Args &aList){
 /* ------------------------------------------------------------------------- */
 // Setup iterator to find items and return if no commands.
 const auto &cbCmds = cConsole->GetCmdsList();
@@ -329,7 +329,7 @@ cConsole->AddLineEx("No match from $.",
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'cmds' function
 /* ========================================================================= */
-{ "con", 1, 1, CF_NOTHING, [](const Args &){
+{ "con", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Write console status
 cConsole->AddLineEx("Console flags are currently 0x$$$ ($).\n"
@@ -350,7 +350,7 @@ cConsole->AddLineEx("Console flags are currently 0x$$$ ($).\n"
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'con' function
 /* ========================================================================= */
-{ "conlog", 1, 1, CF_NOTHING, [](const Args &){
+{ "conlog", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Copy all the console lines to log and report how many lines we copied
 cConsole->AddLineExA(StrPluraliseNum(cConsole->ToLog(), "line", "lines"),
@@ -358,7 +358,7 @@ cConsole->AddLineExA(StrPluraliseNum(cConsole->ToLog(), "line", "lines"),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'conlog' function
 /* ========================================================================= */
-{ "cpu", 1, 1, CF_NOTHING, [](const Args &){
+{ "cpu", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Update cpu usage times
 cSystem->UpdateCPUUsage();
@@ -382,13 +382,13 @@ cConsole->AddLineEx(
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'cpu' function
 /* ========================================================================= */
-{ "crash", 1, 1, CF_NOTHING, [](const Args &){
+{ "crash", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 System::CriticalHandler("Requested operation");
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'crash' function
 /* ========================================================================= */
-{ "credits", 1, 2, CF_NOTHING, [](const Args &aList){
+{ "credits", 1, 2, CFL_NONE, [](const Args &aList){
 /* ------------------------------------------------------------------------- */
 // Do we have a parameter?
 if(aList.size() > 1)
@@ -416,7 +416,7 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'credits' function
 /* ========================================================================= */
-{ "cvars", 1, 2, CF_NOTHING, [](const Args &aList){
+{ "cvars", 1, 2, CFL_NONE, [](const Args &aList){
 /* ------------------------------------------------------------------------- */
 // If we actually came from the 'cvpend' command, select internal 'load
 // from/save to' list else select the main public cvar list.
@@ -544,21 +544,21 @@ cConsole->AddLineEx("No match from $.",
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'cvars' function
 /* ========================================================================= */
-{ "cvclr", 1, 1, CF_NOTHING, [](const Args &){
+{ "cvclr", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 cConsole->AddLineExA(StrPluraliseNum(cCVars->Clean(),
   "cvar", "cvars"), " purged.");
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'cvclr' function
 /* ========================================================================= */
-{ "cvload", 1, 1, CF_NOTHING, [](const Args &){
+{ "cvload", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 cConsole->AddLineExA(StrPluraliseNum(cCVars->LoadFromDatabase(),
   "cvar", "cvars"), " reloaded.");
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'cvload' function
 /* ========================================================================= */
-{ "cvnpk", 1, 1, CF_NOTHING, [](const Args &){
+{ "cvnpk", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Create the private key and if succeeded? Show the result
 if(cSql->CreatePrivateKey())
@@ -569,7 +569,7 @@ else cConsole->AddLine("Failed to create new private key!");
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'cvnpk' function
 /* ========================================================================= */
-{ "cvpend", 1, 2, CF_NOTHING, [](const Args &aList){
+{ "cvpend", 1, 2, CFL_NONE, [](const Args &aList){
 /* ------------------------------------------------------------------------- */
 // We can reuse the 'cvars' callback here but the only way to get to it from
 // here is to access this list from the 'CVars' class since it keeps a
@@ -579,14 +579,14 @@ cConsole->GetCommand(CC_CVARS).ccbFunc(aList);
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'cvpend' function
 /* ========================================================================= */
-{ "cvsave", 1, 1, CF_NOTHING, [](const Args &){
+{ "cvsave", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 cConsole->AddLineExA(StrPluraliseNum(cCVars->Save(), "cvar", "cvars"),
                        " commited.");
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'cvsave' function
 /* ========================================================================= */
-{ "dir", 1, 2, CF_NOTHING, [](const Args &aList){
+{ "dir", 1, 2, CFL_NONE, [](const Args &aList){
 /* ------------------------------------------------------------------------- */
 // Make and checkfilename
 const string &strVal = aList.size() > 1 ? aList[1] : ".";
@@ -693,7 +693,7 @@ cConsole->AddLineEx("$$ and $ totalling $ ($) in $.",
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'dir' function
 /* ========================================================================= */
-{ "env", 1, 2, CF_NOTHING, [](const Args &aList){
+{ "env", 1, 2, CFL_NONE, [](const Args &aList){
 /* ------------------------------------------------------------------------- */
 // Get list of environment variables
 const StrStrMap &ssmEnv = cCmdLine->GetEnvList();
@@ -718,7 +718,7 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'env' function
 /* ========================================================================= */
-{ "events", 1, 1, CF_NOTHING, [](const Args &){
+{ "events", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Log event counts
 cConsole->AddLineEx("$ and $.",
@@ -727,7 +727,7 @@ cConsole->AddLineEx("$ and $.",
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'events' function
 /* ========================================================================= */
-{ "fbos", 1, 1, CF_VIDEO, [](const Args &){
+{ "fbos", 1, 1, CFL_VIDEO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 const function ShowFboInfo{ [](const Fbo &fC, Statistic &tData,
   size_t &stTriangles, size_t &stCommands)
@@ -772,7 +772,7 @@ cConsole->AddLineEx("$$ totalling $ and $.", tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'fbos' function
 /* ========================================================================= */
-{ "files", 1, 1, CF_NOTHING, [](const Args &){
+{ "files", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Text table class to help us write neat output
 Statistic tData;
@@ -795,14 +795,14 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'files' function
 /* ========================================================================= */
-{ "find", 2, 0, CF_NOTHING, [](const Args &aList){
+{ "find", 2, 0, CFL_NONE, [](const Args &aList){
 /* ------------------------------------------------------------------------- */
 // Find text in console backlog and if not found, show message
 cConsole->FindText(StrImplode(aList, 1));
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'find' function
 /* ========================================================================= */
-{ "fonts", 1, 1, CF_VIDEO, [](const Args &){
+{ "fonts", 1, 1, CFL_VIDEO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 const function ShowFontInfo{ [](Statistic &tData, const Font &fC)
   { tData.DataN(fC.CtrGet())
@@ -832,7 +832,7 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'fonts' function
 /* ========================================================================= */
-{ "ftfs", 1, 1, CF_NOTHING, [](const Args &){
+{ "ftfs", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Get reference to fonts collector class and lock it so it's not changed
 const LockGuard lgFtfsSync{ cFtfs->CollectorGetMutex() };
@@ -856,7 +856,7 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'ftfs' function
 /* ========================================================================= */
-{ "gpu", 1, 1, CF_VIDEO, [](const Args &){
+{ "gpu", 1, 1, CFL_VIDEO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Write opengl rendering stats
 cConsole->AddLineEx(
@@ -903,7 +903,7 @@ cConsole->AddLineEx(
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'gpu' function
 /* ========================================================================= */
-{ "images", 1, 2, CF_NOTHING, [](const Args &aList){
+{ "images", 1, 2, CFL_NONE, [](const Args &aList){
 /* ------------------------------------------------------------------------- */
 // Get reference to images collector class and lock it so it's not changed
 const LockGuard lgImagesSync{ cImages->CollectorGetMutex() };
@@ -961,7 +961,7 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'images' function
 /* ========================================================================= */
-{ "imgfmts", 1, 1, CF_NOTHING, [](const Args &){
+{ "imgfmts", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Text table class to help us write neat output
 Statistic tData;
@@ -980,7 +980,7 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'imgfmts' function
 /* ========================================================================= */
-{ "input", 1, 1, CF_VIDEO, [](const Args &){
+{ "input", 1, 1, CFL_VIDEO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Get joysticks data
 const JoyList &jlList = cInput->GetConstJoyList();
@@ -1006,7 +1006,7 @@ cConsole->AddLineEx("$$ ($ supported).", tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'input' function
 /* ========================================================================= */
-{ "jsons", 1, 1, CF_NOTHING, [](const Args &){
+{ "jsons", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Get reference to jsons collector class and lock it so it's not changed
 const LockGuard lgJsonsSync{ cJsons->CollectorGetMutex() };
@@ -1015,14 +1015,14 @@ cConsole->AddLineExA(StrPluraliseNum(cJsons->size(), "json.", "jsons."));
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'jsons' function
 /* ========================================================================= */
-{ "lcalc", 2, 0, CF_NOTHING, [](const Args &aList){
+{ "lcalc", 2, 0, CFL_NONE, [](const Args &aList){
 /* ------------------------------------------------------------------------- */
 cConsole->AddLine(cLua->CompileStringAndReturnResult(
   StrFormat("return $", StrImplode(aList, 1))));
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'lcalc' function
 /* ========================================================================= */
-{ "lend", 1, 1, CF_NOTHING, [](const Args &){
+{ "lend", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Re-init lua and inform user of the result
 cConsole->AddLine(cLua->TryEventOrForce(EMC_LUA_END) ?
@@ -1031,13 +1031,13 @@ cConsole->AddLine(cLua->TryEventOrForce(EMC_LUA_END) ?
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'lend' function
 /* ========================================================================= */
-{ "lexec", 2, 0, CF_NOTHING, [](const Args &aList){
+{ "lexec", 2, 0, CFL_NONE, [](const Args &aList){
 /* ------------------------------------------------------------------------- */
 cConsole->AddLine(cLua->CompileStringAndReturnResult(StrImplode(aList, 1)));
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'lexec' function
 /* ========================================================================= */
-{ "lfuncs", 1, 1, CF_NOTHING, [](const Args &){
+{ "lfuncs", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Get reference to luarefs collector class and lock it so it's not changed
 const LockGuard lgLuaRefsSync(cLuaFuncs->CollectorGetMutex());
@@ -1065,7 +1065,7 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'lfuncs' function
 /* ========================================================================= */
-{ "lgc", 1, 1, CF_NOTHING, [](const Args &){
+{ "lgc", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Free data and get bytes freed
 const size_t stT = cLua->GarbageCollect();
@@ -1076,7 +1076,7 @@ cConsole->AddLineEx("$ bytes ($) freed.", stT, StrToBytes(stT));
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'lgc' function
 /* ========================================================================= */
-{ "log", 1, 1, CF_NOTHING, [](const Args &){
+{ "log", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Colours for log levels
 static const array<Colour, LH_MAX> cColours{
@@ -1095,7 +1095,7 @@ cConsole->AddLineExA(StrPluraliseNum(cLog->size(), "line.", "lines."));
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'log' function
 /* ========================================================================= */
-{ "logclr", 1, 1, CF_NOTHING, [](const Args &){
+{ "logclr", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Lock access to the log
 const LockGuard lgLogSync{ cLog->GetMutex() };
@@ -1111,13 +1111,13 @@ cConsole->AddLineExA(StrPluraliseNum(stCount,
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'logclr' function
 /* ========================================================================= */
-{ "lpause", 1, 1, CF_NOTHING, [](const Args &){
+{ "lpause", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 cEvtMain->Add(EMC_LUA_PAUSE);
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'lpause' function
 /* ========================================================================= */
-{ "lreset", 1, 1, CF_NOTHING, [](const Args &){
+{ "lreset", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Re-init lua and inform user of the result
 cConsole->AddLine(cLua->TryEventOrForce(EMC_LUA_REINIT) ?
@@ -1126,13 +1126,13 @@ cConsole->AddLine(cLua->TryEventOrForce(EMC_LUA_REINIT) ?
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'lreset' function
 /* ========================================================================= */
-{ "lresume", 1, 1, CF_NOTHING, [](const Args &){
+{ "lresume", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 cEvtMain->Add(EMC_LUA_RESUME);
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'lresume' function
 /* ========================================================================= */
-{ "lstack", 1, 1, CF_NOTHING, [](const Args &){
+{ "lstack", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Get lua state
 lua_State*const lS = cLua->GetState();
@@ -1154,7 +1154,7 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'lstack' function
 /* ========================================================================= */
-{ "lvars", 1, 0, CF_NOTHING, [](const Args &aList){
+{ "lvars", 1, 0, CFL_NONE, [](const Args &aList){
 /* ------------------------------------------------------------------------- */
 // Get lua state
 lua_State*const lS = cLua->GetState();
@@ -1227,7 +1227,7 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'lvars' function
 /* ========================================================================= */
-{ "masks", 1, 1, CF_NOTHING, [](const Args &){
+{ "masks", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Text table class to help us write neat output
 Statistic tData;
@@ -1246,7 +1246,7 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'masks' function
 /* ========================================================================= */
-{ "mem", 1, 1, CF_NOTHING, [](const Args &){
+{ "mem", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Update counters
 cSystem->UpdateMemoryUsageData();
@@ -1299,7 +1299,7 @@ cConsole->AddLine(tData.Finish(false));
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'mem' function
 /* ========================================================================= */
-{ "mlist", 1, 1, CF_VIDEO, [](const Args &){
+{ "mlist", 1, 1, CFL_VIDEO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Header (to be printed twice)
 Statistic tData;
@@ -1327,7 +1327,7 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'mlist' function
 /* ========================================================================= */
-{ "mods", 1, 1, CF_NOTHING, [](const Args &){
+{ "mods", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Make a table to automatically format our data neatly
 Statistic tData;
@@ -1347,7 +1347,7 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'mods' function
 /* ========================================================================= */
-{ "objs", 1, 1, CF_NOTHING, [](const Args &){
+{ "objs", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Typedefs for building memory usage data
 struct MemoryUsageItem
@@ -1394,7 +1394,7 @@ cConsole->AddLineEx("$$ totalling $ ($).", stData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'objs' function
 /* ========================================================================= */
-{ "oglext", 2, 2, CF_VIDEO, [](const Args &aList){
+{ "oglext", 2, 2, CFL_VIDEO, [](const Args &aList){
 /* ------------------------------------------------------------------------- */
 // Get extension name and output if the extension is supported
 const string &strX = aList[1];
@@ -1404,7 +1404,7 @@ cConsole->AddLineEx(
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'oglext' function
 /* ========================================================================= */
-{ "oglfunc", 2, 2, CF_VIDEO, [](const Args &aList){
+{ "oglfunc", 2, 2, CFL_VIDEO, [](const Args &aList){
 /* ------------------------------------------------------------------------- */
 // Get function name and output if the extension is supported
 const string &strF = aList[1];
@@ -1414,7 +1414,7 @@ cConsole->AddLineEx(
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'oglfunc' function
 /* ========================================================================= */
-{ "palettes", 2, 2, CF_VIDEO, [](const Args &){
+{ "palettes", 2, 2, CFL_VIDEO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Print totals
 cConsole->AddLineExA(StrPluraliseNum(cPalettes->size(),
@@ -1422,7 +1422,7 @@ cConsole->AddLineExA(StrPluraliseNum(cPalettes->size(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'palettes' function
 /* ========================================================================= */
-{ "pcmfmts", 1, 1, CF_NOTHING, [](const Args &){
+{ "pcmfmts", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Text table class to help us write neat output
 Statistic tData;
@@ -1441,7 +1441,7 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'pcmfmts' function
 /* ========================================================================= */
-{ "pcms", 1, 1, CF_NOTHING, [](const Args &){
+{ "pcms", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Get reference to pcms collector class and lock it so it's not changed
 const LockGuard lgPcmsSync{ cPcms->CollectorGetMutex() };
@@ -1467,7 +1467,7 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'pcms' function
 /* ========================================================================= */
-{ "quit", 1, 1, CF_NOTHING, [](const Args &){
+{ "quit", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Quit the engine and inform user of the result
 cConsole->AddLine(cLua->TryEventOrForce(EMC_QUIT) ?
@@ -1476,7 +1476,7 @@ cConsole->AddLine(cLua->TryEventOrForce(EMC_QUIT) ?
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'quit' function
 /* ========================================================================= */
-{ "restart", 1, 2, CF_NOTHING, [](const Args &aList){
+{ "restart", 1, 2, CFL_NONE, [](const Args &aList){
 /* ------------------------------------------------------------------------- */
 // Restart the process and inform user of the result
 cConsole->AddLine(aList.size() == 2 ?
@@ -1489,7 +1489,7 @@ cConsole->AddLine(aList.size() == 2 ?
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'restart' function
 /* ========================================================================= */
-{ "samples", 1, 1, CF_AUDIO, [](const Args &){
+{ "samples", 1, 1, CFL_AUDIO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Make a table to automatically format our data neatly
 Statistic tData;
@@ -1507,7 +1507,7 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'samples' function
 /* ========================================================================= */
-{ "shaders", 1, 2, CF_VIDEO, [](const Args &){
+{ "shaders", 1, 2, CFL_VIDEO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Make a table to automatically format our data neatly
 Statistic tData;
@@ -1538,13 +1538,13 @@ cConsole->AddLineEx("$$ and $.", tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'shaders' function
 /* ========================================================================= */
-{ "shot", 1, 1, CF_VIDEO, [](const Args &){
+{ "shot", 1, 1, CFL_VIDEO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 cSShot->DumpMain();
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'shot' function
 /* ========================================================================= */
-{ "sockets", 1, 2, CF_NOTHING, [](const Args &aList){
+{ "sockets", 1, 2, CFL_NONE, [](const Args &aList){
 /* ------------------------------------------------------------------------- */
 // Id specified?
 if(aList.size() == 2)
@@ -1654,7 +1654,7 @@ cConsole->AddLineEx("$$ ($ connected).\n"
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'sockets' function
 /* ========================================================================= */
-{ "sockreset", 2, 2, CF_NOTHING, [](const Args &aList){
+{ "sockreset", 2, 2, CFL_NONE, [](const Args &aList){
 /* ------------------------------------------------------------------------- */
 // Get parameter and if user requested to close all connections? Close all
 // the sockets and report how many we closed and return
@@ -1673,7 +1673,7 @@ else cConsole->AddLineEx("Connection $ $ closed.",
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'sockreset' function
 /* ========================================================================= */
-{ "sources", 1, 1, CF_AUDIO, [](const Args &){
+{ "sources", 1, 1, CFL_AUDIO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Get reference to sources collector class and lock it so it's not changed
 const LockGuard lgSourcesSync{ cSources->CollectorGetMutex() };
@@ -1711,7 +1711,7 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'sources' function
 /* ========================================================================= */
-{ "sqlcheck", 1, 1, CF_NOTHING, [](const Args &){
+{ "sqlcheck", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Don't continue if theres a transaction in progress
 if(cSql->Active())
@@ -1724,7 +1724,7 @@ cSql->Reset();
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'sqlcheck' function
 /* ========================================================================= */
-{ "sqldefrag", 1, 1, CF_NOTHING, [](const Args &){
+{ "sqldefrag", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Don't continue if theres a transaction in progress
 if(cSql->Active())
@@ -1756,7 +1756,7 @@ cConsole->AddLine(qChange ?
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'sqldefrag' function
 /* ========================================================================= */
-{ "sqlend", 1, 1, CF_NOTHING, [](const Args &){
+{ "sqlend", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Don't continue if theres a transaction in progress
 if(!cSql->Active()) return cConsole->AddLine("Sql transaction not active!");
@@ -1766,7 +1766,7 @@ cConsole->AddLineEx("Sql transaction$ ended.",
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'sqlend' function
 /* ========================================================================= */
-{ "sqlexec", 2, 0, CF_NOTHING, [](const Args &aList){
+{ "sqlexec", 2, 0, CFL_NONE, [](const Args &aList){
 /* ------------------------------------------------------------------------- */
 // Don't continue if theres a transaction in progress
 if(cSql->Active())
@@ -1846,7 +1846,7 @@ cSql->Reset();
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'sqlexec' function
 /* ========================================================================= */
-{ "stopall", 1, 1, CF_AUDIO, [](const Args &){
+{ "stopall", 1, 1, CFL_AUDIO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Tell audio to stop all sounds from playing
 cAudio->Stop();
@@ -1855,7 +1855,7 @@ cConsole->AddLine("Stopping all sounds from playing.");
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'stopall' function
 /* ========================================================================= */
-{ "streams", 1, 1, CF_AUDIO, [](const Args &){
+{ "streams", 1, 1, CFL_AUDIO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Synchronise the streams collector list
 const LockGuard lgStreamsSync{ cStreams->CollectorGetMutex() };
@@ -1885,7 +1885,7 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'streams' function
 /* ========================================================================= */
-{ "system", 1, 1, CF_NOTHING, [](const Args &){
+{ "system", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Print OS stats
 cConsole->AddLineEx("$-bit $ version $.$ build $ locale $.",
@@ -1894,7 +1894,7 @@ cConsole->AddLineEx("$-bit $ version $.$ build $ locale $.",
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'system' function
 /* ========================================================================= */
-{ "textures", 1, 1, CF_VIDEO, [](const Args &){
+{ "textures", 1, 1, CFL_VIDEO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 const function ShowTextureInfo{ [](Statistic &tData, const Texture &tC)
 { // Add data to table
@@ -1923,7 +1923,7 @@ cConsole->AddLineExA(tData.Finish(), StrPluraliseNum(cTextures->size() +
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'textures' function
 /* ========================================================================= */
-{ "threads", 1, 1, CF_NOTHING, [](const Args &){
+{ "threads", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Make a table to automatically format our data neatly
 Statistic tData;
@@ -1956,7 +1956,7 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'threads' function
 /* ========================================================================= */
-{ "time", 1, 1, CF_NOTHING, [](const Args &){
+{ "time", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Timestamp to use
 const char*const cpFmt = "%a %b %d %H:%M:%S %Y %z";
@@ -1972,13 +1972,13 @@ else cConsole->AddLineEx("Local time is $.\nUniversal time is $.",
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'time' function
 /* ========================================================================= */
-{ "version", 1, 1, CF_NOTHING, [](const Args &){
+{ "version", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 cConsole->PrintVersion();
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'version' function
 /* ========================================================================= */
-{ "videos", 1, 1, CF_AUDIOVIDEO, [](const Args &){
+{ "videos", 1, 1, CFL_AUDIOVIDEO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Get reference to videos collector class and lock it so it's not changed
 const LockGuard lgVideosSync{ cVideos->CollectorGetMutex() };
@@ -2015,7 +2015,7 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'videos' function
 /* ========================================================================= */
-{ "vmlist", 1, 2, CF_VIDEO, [](const Args &aList){
+{ "vmlist", 1, 2, CFL_VIDEO, [](const Args &aList){
 /* ------------------------------------------------------------------------- */
 // Monitor number and return if invalid
 const size_t stMonitorSelected =
@@ -2046,13 +2046,13 @@ cConsole->AddLineEx("$$ supported on monitor #$ ($).", tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'vmlist' function
 /* ========================================================================= */
-{ "vreset", 1, 1, CF_VIDEO, [](const Args &){
+{ "vreset", 1, 1, CFL_VIDEO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 cEvtMain->Add(EMC_QUIT_THREAD);
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'vreset' function
 /* ========================================================================= */
-{ "wreset", 1, 1, CF_VIDEO, [](const Args &){
+{ "wreset", 1, 1, CFL_VIDEO, [](const Args &){
 /* ------------------------------------------------------------------------- */
 cDisplay->RequestReposition();
 /* ------------------------------------------------------------------------- */

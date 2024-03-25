@@ -303,32 +303,29 @@ class JoyInfo :
     /* -- Initialisers ----------------------------------------------------- */
     JoyFlags(JF_NONE),                 // Set no flags
     /* -- Initialise joystick axises --------------------------------------- */
-    JoyAxisList{ {
-      JoyAxisInfo(GLFW_GAMEPAD_AXIS_LEFT_X),       // Axis 0 of 6
-      JoyAxisInfo(GLFW_GAMEPAD_AXIS_LEFT_Y),       // Axis 1 of 6
-      JoyAxisInfo(GLFW_GAMEPAD_AXIS_RIGHT_X),      // Axis 2 of 6
-      JoyAxisInfo(GLFW_GAMEPAD_AXIS_RIGHT_Y),      // Axis 3 of 6
-      JoyAxisInfo(GLFW_GAMEPAD_AXIS_LEFT_TRIGGER), // Axis 4 of 6
-      JoyAxisInfo(GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER) // Axis 5 of 6
-    } },
+#define JAI(x) JoyAxisInfo{ GLFW_GAMEPAD_AXIS_ ## x }
+    /* --------------------------------------------------------------------- */
+    JoyAxisList{ {                     // Initialise joystick axises ids
+      /* ------------------------------------------------------------------- */
+      JAI(LEFT_X),  JAI(LEFT_Y),       JAI(RIGHT_X),
+      JAI(RIGHT_Y), JAI(LEFT_TRIGGER), JAI(RIGHT_TRIGGER)
+      /* ------------------------------------------------------------------- */
+    } },                               // End of joystic axises ids init
+    /* --------------------------------------------------------------------- */
+#undef JAI                             // Done with this macro
     /* -- Initialise joystick buttons -------------------------------------- */
-    JoyButtonList{ {
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_A),
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_B),
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_X),
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_Y),
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_LEFT_BUMPER),
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER),
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_BACK),
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_START),
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_GUIDE),
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_LEFT_THUMB),
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_RIGHT_THUMB),
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_DPAD_UP),
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_DPAD_RIGHT),
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_DPAD_DOWN),
-      JoyButtonInfo(GLFW_GAMEPAD_BUTTON_DPAD_LEFT)
-    } },
+#define JBL(x) JoyButtonInfo{ GLFW_GAMEPAD_BUTTON_ ## x }
+    /* --------------------------------------------------------------------- */
+    JoyButtonList{ {                   // Initialise joystick buttons ids
+      /* ------------------------------------------------------------------- */
+      JBL(A),           JBL(B),            JBL(X),           JBL(Y),
+      JBL(LEFT_BUMPER), JBL(RIGHT_BUMPER), JBL(BACK),        JBL(START),
+      JBL(GUIDE),       JBL(LEFT_THUMB),   JBL(RIGHT_THUMB), JBL(DPAD_UP),
+      JBL(DPAD_RIGHT),  JBL(DPAD_DOWN),    JBL(DPAD_LEFT)
+      /* ------------------------------------------------------------------- */
+    } },                               // End of joystick button ids init
+    /* --------------------------------------------------------------------- */
+#undef JBL                             // Done with this macro
     /* -- Other initialisers ----------------------------------------------- */
     iId(iNId),                         // Set unique joystick id
     stAxises(0),                       // Set no axies
@@ -338,6 +335,13 @@ class JoyInfo :
 };/* -- Joystick state typedefs -------------------------------------------- */
 typedef array<JoyInfo, GLFW_JOYSTICK_LAST+1> JoyList; // Actual joystick data
 typedef JoyList::const_iterator JoyListIt; // Iterator for vector of joys
+/* ========================================================================= */
+enum JoyStatus : int                   // Joystick init status
+{ /* ----------------------------------------------------------------------- */
+  JOY_DETECT = -1,                     // Automatically detect at startup
+  JOY_DISABLE,                         // Joystick polling is disabled
+  JOY_ENABLE                           // Joystick polling is enabled
+};/* ----------------------------------------------------------------------- */
 /* == Input class ========================================================== */
 static class Input final :             // Handles keyboard, mouse & controllers
   /* -- Base classes ------------------------------------------------------- */
@@ -345,9 +349,7 @@ static class Input final :             // Handles keyboard, mouse & controllers
   public InputFlags,                   // Input configuration settings
   private JoyList,                     // Joystick data
   private EvtMain::RegVec              // Events list to register
-{ /* -------------------------------------------------------------- */ private:
-  enum JoyStatus { JOY_DETECT=-1, JOY_DISABLE, JOY_ENABLE };
-  /* -- Console ------------------------------------------------------------ */
+{ /* -- Console ------------------------------------------------------------ */
   int              iConsoleKey1,       // First console key
                    iConsoleKey2;       // Second console key
   /* -- Events ----------------------------------------------------- */ public:
@@ -710,27 +712,22 @@ static class Input final :             // Handles keyboard, mouse & controllers
     // CVar allowed to be set
     return ACCEPT;
   }
-  // -- CVar callback to toggling joystick polling ------------------------- */
-  CVarReturn SetJoystickEnabled(const int iState)
-  { // If input already initialised? Get new joystick setting
-    if(IHIsInitialised() && cGlFW) switch(iState)
+  // -- Initialise joysticks ----------------------------------------------- */
+  void BeginDetection(void)
+  { // Check current user setting
+    switch(jsStatus)
     { // Set to detection mode or enable? Redetect joysticks
       case JOY_DETECT: case JOY_ENABLE: AutoDetectJoystick(); break;
       // Disable it? Set to disabled and clear joystick states
       case JOY_DISABLE: ClearJoystickButtons(); break;
       // Invalid value
-      default: return DENY;
-    } // Not initialised so just check joystick setting
-    else switch(iState)
-    { // Valid enum? Set state and return succees
-      case JOY_DETECT: case JOY_DISABLE: case JOY_ENABLE: break;
-      // Invalid value
-      default: return DENY;
-    } // Update status
-    jsStatus = static_cast<JoyStatus>(iState);
-    // CVar allowed to set
-    return ACCEPT;
+      default: break;
+    }
   }
+  // -- CVar callback to toggling joystick polling ------------------------- */
+  CVarReturn SetJoystickEnabled(const JoyStatus jsNewStatus)
+    { return CVarSimpleSetIntNLGE(jsStatus, jsNewStatus,
+        JOY_DETECT, JOY_ENABLE); }
   /* -- Clear joystick state ----------------------------------------------- */
   void ClearJoystickButtons(void)
     { StdForEach(par_unseq, GetJoyList().begin(), GetJoyList().end(),

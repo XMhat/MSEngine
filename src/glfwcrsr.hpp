@@ -45,7 +45,7 @@ class GlFWCursor
   /* -- Destruct that de-initialises the cursor ---------------------------- */
   ~GlFWCursor(void) { if(CursorGetContext()) CursorDoDeInit(); }
   /* -- Standby constructor ------------------------------------------------ */
-  GlFWCursor(const int iId) :
+  explicit GlFWCursor(const int iId) :
     /* -- Initialisers ----------------------------------------------------- */
     iCursorId(iId),                    // Assign cursor id for re-init
     gcContext(nullptr)                 // Create standard cursor...

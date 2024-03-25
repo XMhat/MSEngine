@@ -22,6 +22,13 @@ using namespace ISysUtil::P;           using namespace IVars::P;
 using namespace Lib::Sqlite;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public namespace
+/* ------------------------------------------------------------------------- */
+enum CVarDefaults : unsigned int       // Flags when loaded from DB
+{ /* -- (Note: Don't ever change these around) ----------------------------- */
+  DC_NONE,                             // Accept current configuration
+  DC_OVERWRITE,                        // Overwrite core variables only
+  DC_REFRESH                           // Wipe database completely
+}; /* ---------------------------------------------------------------------- */
 /* == CVars class ========================================================== */
 static class CVars final               // Start of vars class
 { /* ----------------------------------------------------------------------- */
@@ -31,13 +38,7 @@ static class CVars final               // Start of vars class
     stCVarConfigMaxLevel    = 10,      // Maximum recursive level
     stCVarMinLength         = 5,       // Minimum length of a cvar name
     stCVarMaxLength         = 255;     // Maximum length of a cvar name
-  /* --------------------------------------------------------------- */ public:
-  enum DefaultsCommand                 // Flags when loaded from DB
-  { /* -- (Note: Don't ever change these around) --------------------------- */
-    DC_NONE,                           // Accept current configuration
-    DC_OVERWRITE,                      // Overwrite core variables only
-    DC_REFRESH                         // Wipe database completely
-  };/* -- Lua -------------------------------------------------------------- */
+  /* -- Lua -------------------------------------------------------- */ public:
   LuaFunc::Map     lfList;             // Lua cvar list
   mutex            mMutex;             // Synchronisation support
   /* ----------------------------------------------------------------------- */
@@ -679,9 +680,9 @@ static class CVars final               // Start of vars class
     void SetSafe(const string &strVar, const AnyType atV)
       { SetSafe(strVar, StrFromNum(atV)); }
   /* ----------------------------------------------------------------------- */
-  CVarReturn SetDefaults(const unsigned int uiVal)
+  CVarReturn SetDefaults(const CVarDefaults dcVal)
   { // Compare defaults setting
-    switch(static_cast<DefaultsCommand>(uiVal))
+    switch(dcVal)
     { // Use current configuration
       case DC_NONE: break;
       // Set defaults only? Overwrite engine variables with defaults
@@ -938,9 +939,11 @@ static class CVars final               // Start of vars class
     return stLoaded;
   }
   /* ----------------------------------------------------------------------- */
-  CVarReturn SetDisplayFlags(const unsigned int uiFlags)
-  { // Set the flags
-    csfShowFlags.FlagReset(CVarShowFlagsConst{ uiFlags });
+  CVarReturn SetDisplayFlags(const CVarShowFlagsType cstFlags)
+  { // Failed if flags are not valid
+    if(cstFlags != CSF_NONE && (cstFlags & ~CSF_MASK)) return DENY;
+    // Set the new flags
+    csfShowFlags.FlagReset(cstFlags);
     // Done
     return ACCEPT;
   }

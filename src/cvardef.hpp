@@ -58,12 +58,12 @@ template<typename AnyToType, typename AnyFromType, typename AnyRangeType>
 BUILD_FLAGS(Core,
   /* ----------------------------------------------------------------------- */
   // No flags?                         Want text mode console?
-  CF_NOTHING             {0x00000000}, CF_TERMINAL            {0x00000001},
+  CFL_NONE               {0x00000000}, CFL_TERMINAL           {0x00000001},
   // Want audio sub-system?            Want opengl window?
-  CF_AUDIO               {0x00000002}, CF_VIDEO               {0x00000004},
+  CFL_AUDIO              {0x00000002}, CFL_VIDEO              {0x00000004},
   /* ----------------------------------------------------------------------- */
-  CF_AUDIOVIDEO{ CF_AUDIO|CF_VIDEO },
-  CF_MASK{ CF_TERMINAL|CF_AUDIOVIDEO }
+  CFL_AUDIOVIDEO{ CFL_AUDIO|CFL_VIDEO },
+  CFL_MASK{ CFL_TERMINAL|CFL_AUDIOVIDEO }
 );/* -- CVar flags --------------------------------------------------------- */
 BUILD_FLAGS(CVar,
   /* -- Types (T) ---------------------------------------------------------- */

@@ -145,9 +145,11 @@ struct Flags :
 { /* -- Swap function ------------------------------------------------------ */
   void FlagSwap(Flags &fO) { this->FlagSwapStorage(fO); }
   /* -- Set bits ----------------------------------------------------------- */
+  void FlagSet(const IntType &itO) { this->FlagSetInt(this->FlagGet() | itO); }
   void FlagSet(const ConstType &fO)
     { this->FlagSetInt(this->FlagGet() | fO.FlagGet()); }
   /* -- Set all bits ------------------------------------------------------- */
+  void FlagReset(const IntType itO) { this->FlagSetInt(itO); }
   void FlagReset(const ConstType &fO) { this->FlagSetInt(fO.FlagGet()); }
   void FlagReset(void) { this->FlagSetInt(0); }
   /* -- Not specified bits ------------------------------------------------- */
@@ -168,9 +170,11 @@ struct Flags :
   /* -- Add and clear bits from specified enum ----------------------------- */
   void FlagSetAndClear(const ConstType &fS, const ConstType &fC)
     { FlagSet(fS); FlagClear(fC); }
-  /* -- nit constructors -------------------------------------------------- */
+  /* -- Init constructors -------------------------------------------------- */
   explicit Flags(const IntType &itO) : ConstType{ itO } {}
   explicit Flags(const ConstType &ctO) : ConstType{ ctO } {}
+  /* -- Default constructor ------------------------------------------------ */
+  Flags(void) : ConstType{ 0 } {}
 };/* ----------------------------------------------------------------------- */
 /* == Safe flags helper class ============================================== **
 ** ######################################################################### **

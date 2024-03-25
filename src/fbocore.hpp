@@ -268,11 +268,9 @@ static class FboCore final :           // The main fbo operations manager
   CVarReturn SetCommandReserve(const size_t stCount)
     { return BoolToCVarReturn(fboMain.FboReserveCommands(stCount)); }
   /* -- Set main fbo filters (cvar event) ---------------------------------- */
-  CVarReturn SetFilter(const size_t stV)
+  CVarReturn SetFilter(const OglFilterEnum ofeV)
   { // Check value
-    if(stV >= OF_MAX) return DENY;
-    // Convert to correct type
-    const OglFilterEnum ofeV = static_cast<OglFilterEnum>(stV);
+    if(ofeV >= OF_MAX) return DENY;
     // Set filtering of main and console fbo
     fboMain.FboSetFilter(ofeV);
     fboConsole.FboSetFilter(ofeV);

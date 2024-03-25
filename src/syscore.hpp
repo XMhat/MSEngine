@@ -481,11 +481,11 @@ static class System final :            // The main system class
   /* -- Restore old unexpected and termination handlers -------------------- */
   ~System(void) { set_terminate(thHandler); }
   /* -- Set/Get GUI mode status -------------------------------------------- */
-  CVarReturn SetCoreFlags(const unsigned int uiNGM)
+  CVarReturn SetCoreFlags(const CoreFlagsType cftFlags)
   { // Failed if bad value
-    if(uiNGM > CF_MASK) return DENY;
+    if(cftFlags != CFL_NONE && (cftFlags & ~CFL_MASK)) return DENY;
     // Set new value
-    cfMode.FlagReset(static_cast<CoreFlags>(uiNGM));
+    cfMode.FlagReset(cftFlags);
     // Accepted
     return ACCEPT;
   }
@@ -570,13 +570,13 @@ static class System final :            // The main system class
   bool IsCoreFlagsHave(const CoreFlagsConst cfFlags) const
     { return !cfFlags || GetCoreFlags().FlagIsSet(cfFlags); }
   bool IsGraphicalMode(void) const
-    { return GetCoreFlags().FlagIsSet(CF_VIDEO); }
+    { return GetCoreFlags().FlagIsSet(CFL_VIDEO); }
   bool IsNotGraphicalMode(void) const { return !IsGraphicalMode(); }
   bool IsTextMode(void) const
-    { return GetCoreFlags().FlagIsSet(CF_TERMINAL); }
+    { return GetCoreFlags().FlagIsSet(CFL_TERMINAL); }
   bool IsNotTextMode(void) const { return !IsTextMode(); }
   bool IsAudioMode(void) const
-    { return GetCoreFlags().FlagIsSet(CF_AUDIO); }
+    { return GetCoreFlags().FlagIsSet(CFL_AUDIO); }
   bool IsNotAudioMode(void) const { return !IsAudioMode(); }
   /* -- Return users roaming directory ------------------------------------- */
   const string &GetRoamingDir(void) const { return strRoamingDir; }
@@ -606,8 +606,8 @@ static class System final :            // The main system class
       "audio+video",                   // [6<  2|4>] (video+audio)
       "text+audio+video",              // [7<1|2|4>] (text+audio+video)
     }},                                // Mode strings list initialised
-    cfMode(CF_MASK),                   // Guimode initially set by cvars
-    ciCpu{ seconds{ 1 } },            // Cpu refresh time is one seconds
+    cfMode{ CFL_MASK },                // Guimode initially set by cvars
+    ciCpu{ seconds{ 1 } },             // Cpu refresh time is one seconds
     stProcessId(GetPid<size_t>()),     // Init readable proceess id
     stThreadId(GetTid<size_t>()),      // Init readable thread id
     thHandler(set_terminate(           // Store current termination handler

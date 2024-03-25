@@ -38,24 +38,22 @@ namespace P {                          // Start of public module namespace
 class Core;                            // Core class prototype
 static Core *cCore = nullptr;          // Pointer to static class
 /* ------------------------------------------------------------------------- */
+enum CoreErrorFlags                    // Lua error mode behaviour
+{ /* ----------------------------------------------------------------------- */
+  CEF_IGNORE,                          // Ignore errors and try to continue
+  CEF_RESET,                           // Automatically reset on error
+  CEF_SHOW,                            // Open console and show error
+  CEF_CRITICAL,                        // Terminate engine with error
+  CEF_MAX,                             // Maximum number of options supported
+};/* ----------------------------------------------------------------------- */
 class Core                             // Members initially private
-{/* ------------------------------------------------------------------------ */
-  enum ErrorBehaviour                  // Lua error mode behaviour
-  { /* --------------------------------------------------------------------- */
-    LEM_IGNORE,                        // Ignore errors and try to continue
-    LEM_RESET,                         // Automatically reset on error
-    LEM_SHOW,                          // Open console and show error
-    LEM_CRITICAL,                      // Terminate engine with error
-    LEM_MAX,                           // Maximum number of options supported
-  } /* --------------------------------------------------------------------- */
-  ebErrorMode;                         // Lua error mode behaviour
-  /* -- Public Variables --------------------------------------------------- */
-  unsigned int uiErrorCount,           // Number of errors occured
-               uiErrorLimit;           // Number of errors allowed
+{ /* -- Public Variables --------------------------------------------------- */
+  CoreErrorFlags   cefMode;            // Lua error mode behaviour
+  unsigned int     uiErrorCount,       // Number of errors occured
+                   uiErrorLimit;       // Number of errors allowed
   /* -- Set lua error mode behaviour --------------------------------------- */
-  CVarReturn CoreErrorBehaviourModified(const unsigned int uiState)
-    { return CVarSimpleSetIntNGE(ebErrorMode,
-        static_cast<ErrorBehaviour>(uiState), LEM_MAX); }
+  CVarReturn CoreErrorBehaviourModified(const CoreErrorFlags cefNMode)
+    { return CVarSimpleSetIntNGE(cefMode, cefNMode, CEF_MAX); }
   /* -- Title modified ----------------------------------------------------- */
   CVarReturn CoreTitleModified(const string &strN, string &strV)
   { // Do not allow user to set this variable, only empty is allowed
@@ -312,9 +310,7 @@ class Core                             // Members initially private
           // this to something different when they cleanly exit their loops.
           cEvtMain->SetExitReason(EMC_LUA_ERROR);
           // Scan for game controllers and inform scripts if enabled
-          if(cSystem->IsGraphicalMode())
-            cInput->SetJoystickEnabled(
-              cCVars->GetInternalSafe<int>(INP_JOYSTICK));
+          if(cSystem->IsGraphicalMode()) cInput->BeginDetection();
           // Execute startup script
           LuaCodeExecuteFile(lS, cCVars->GetInternalStrSafe(LUA_SCRIPT));
           // Done
@@ -537,9 +533,9 @@ class Core                             // Members initially private
           // If we are not in the exit script?
           if(!cLua->Exiting())
           { // Compare error mode behaviour
-            switch(ebErrorMode)
+            switch(cefMode)
             { // Ignore errors and try to continue? Execute again
-              case LEM_IGNORE:
+              case CEF_IGNORE:
                 // Write ignore exception to log and pause if at the limit.
                 if(uiErrorCount >= uiErrorLimit) goto Pause;
                 cLog->LogErrorExSafe(
@@ -550,7 +546,7 @@ class Core                             // Members initially private
                 // Go back into the sandbox.
                 goto SandBox;
               // Automatically reset on error?
-              case LEM_RESET:
+              case CEF_RESET:
                 // Write ignore exception to log and pause if at the limit.
                 if(uiErrorCount >= uiErrorLimit) goto Pause;
                 cLog->LogErrorExSafe(
@@ -563,7 +559,7 @@ class Core                             // Members initially private
                 // Go back into the sandbox
                 goto SandBox;
               // Open console and show error? Just break to other code.
-              case LEM_SHOW: Pause:      // May come here from above too
+              case CEF_SHOW: Pause:      // May come here from above too
                 // Write ignore exception to log.
                 cLog->LogErrorExSafe("Core sandbox run-time exception: $",
                   E.what());
@@ -578,11 +574,11 @@ class Core                             // Members initially private
                 // Report it!
                 cLog->LogErrorExSafe(
                   "Core exception with unknown behaviour $: $",
-                  ebErrorMode, E.what());
-                // Fall through to LEM_CRITICAL
+                  cefMode, E.what());
+                // Fall through to CEF_CRITICAL
                 [[fallthrough]];
               // Terminate engine with error? Throw to critical error dialog.
-              case LEM_CRITICAL:
+              case CEF_CRITICAL:
                 // Redraw the console.
                 CoreForceRedrawFrameBuffer(false);
                 // Throw to critical error dialog
@@ -659,7 +655,7 @@ class Core                             // Members initially private
         goto SandBoxInit;
       // Unknown value so report it and fall through.
       default: cLog->LogWarningExSafe("Core has unknown error behaviour of $!",
-        ebErrorMode); [[fallthrough]];
+        cefMode); [[fallthrough]];
       // Execution ended because of error. Shouldn't get here. Fall through.
       case EMC_LUA_ERROR: [[fallthrough]];
       // Restarting engine completely? Fall through.
@@ -907,7 +903,7 @@ class Core                             // Members initially private
             cCmdLine->GetTotalCArgs());
           // Set exit procedure
           cCmdLine->SetRestart(cSystem->IsGraphicalMode() ?
-            CmdLine::EcId::RestartUI : CmdLine::EcId::Restart);
+            EO_UI_REBOOT : EO_TERM_REBOOT);
           // Have debugging enabled?
           if(cLog->HasLevel(LH_DEBUG))
           { // Create a counter for argument number
@@ -925,10 +921,10 @@ class Core                             // Members initially private
             "Core signalled to restart without parameters!");
           // Set exit procedure
           cCmdLine->SetRestart(cSystem->IsGraphicalMode() ?
-            CmdLine::EcId::RestartNoParamUI : CmdLine::EcId::RestartNoParam);
+            EO_UI_REBOOT_NOARG : EO_TERM_REBOOT_NOARG);
           // Clean-up and restart
           return 4;
-        // Normal exit (which is already set to EC_QUIT)
+        // Normal exit (which is already set to EO_QUIT)
         default: break;
       }
     } // Safe loggable exception occured?
@@ -951,7 +947,7 @@ class Core                             // Members initially private
   /* -- Default constructor ------------------------------------------------ */
   Core(void) :                         // No parameters
     /* -- Initialisers ----------------------------------------------------- */
-    ebErrorMode(LEM_CRITICAL),         // Init lua error mode behaviour
+    cefMode(CEF_CRITICAL),         // Init lua error mode behaviour
     uiErrorCount(0),                   // Init number of errors occured
     uiErrorLimit(0)                    // Init number of errors allowed
     /* -- Set pointer to this class ---------------------------------------- */

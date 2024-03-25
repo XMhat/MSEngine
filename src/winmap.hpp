@@ -13,10 +13,10 @@ class SysMap :                         // Members initially private
   public Ident                         // File name to the map
 { /* -- Private typedefs --------------------------------------------------- */
   typedef array<StdTimeT,2> TwoTime;   // For holding two unix timestamps
-  /* -- Private variables -------------------------------------------------- */
-  HANDLE           hFile,              // Handle to the file
-                   hMap;               // Handle to the file map
+  /* -- Private variables (don't change order!) ---------------------------- */
+  HANDLE           hFile;              // Handle to the file
   uint64_t         qSize;              // Size of file
+  HANDLE           hMap;               // Handle to the file map
   char            *cpMem;              // Handle to memory
   TwoTime          atTime;             // File times (0=creation,1=time)
   /* -- De-init the file map ----------------------------------------------- */
@@ -133,8 +133,8 @@ class SysMap :                         // Members initially private
     /* -- Initialisers ----------------------------------------------------- */
     Ident{ strIn },                    // Initialise file name
     hFile(INVALID_HANDLE_VALUE),       // No file handle
-    hMap(nullptr),                     // No map handle
     qSize(0),                          // No file size
+    hMap(nullptr),                     // No map handle
     cpMem(nullptr),                    // No memory pointer
     atTime{ tC, tM }                   // Set file times
     /* --------------------------------------------------------------------- */

@@ -12,7 +12,8 @@ namespace IGlFW {                      // Start of module namespace
 using namespace ICollector::P;         using namespace IError::P;
 using namespace IGlFWCursor::P;        using namespace IGlFWUtil::P;
 using namespace IGlFWWindow::P;        using namespace ILog::P;
-using namespace IStd::P;               using namespace ISysUtil::P;
+using namespace IStd::P;               using namespace IString::P;
+using namespace IToken::P;             using namespace ISysUtil::P;
 using namespace IUtil::P;              using namespace Lib::OS::GlFW;
 /* ------------------------------------------------------------------------- */
 typedef array<GlFWCursor, CUR_MAX> CursorStandard;
@@ -26,6 +27,9 @@ static class GlFW final :              // Root engine class
   private CursorStandard               // Standard cursors list
 { /* -- Private variables and functions ------------------------------------ */
   unsigned int     uiErrorLevel;       // Ignore further glfw errors
+  const string     strIntVersion;      // Internal (headers) version number
+  string           strExtVersion;      // External (library) version number
+  StrSet           ssFeatures;         // Features included
   /* -- Custom allocator --------------------------------------------------- */
   static void *GlFWAlloc(size_t stSize, void*const)
     { return UtilMemAlloc<void>(stSize); }
@@ -94,27 +98,52 @@ static class GlFW final :              // Root engine class
   }
   /* -- Reset error level -------------------------------------------------- */
   void ResetErrorLevel(void) { uiErrorLevel = 0; }
+  /* -- Verify the GLFW library -------------------------------------------- */
+  void VerifyVersion(void)
+  { // Get GLFW's identity
+    if(const char*const cpIdentity = glfwGetVersionString())
+    { // Parse each token (0 is always the version), rest is the features
+      if(const Token tIdentity{ cpIdentity, cCommon->Space() })
+      { // Store library version and If first token which says the version
+        // mismatches with our version? Write a log message. It's not really a
+        // problem since GlFW's headers maintain compatibility across versions.
+        strExtVersion = StdMove(tIdentity.front());
+        if(strExtVersion != strIntVersion)
+          cLog->LogInfoExSafe("GlFW compiled with version '$' headers.",
+            strIntVersion);
+        // Parse features into a list
+        StdForEach(seq, tIdentity.cbegin()+1, tIdentity.cend(),
+          [this](const string &strStr)
+            { ssFeatures.emplace(StdMove(strStr)); });
+        // Write the features
+        cLog->LogDebugExSafe("GlFW library $ features $ ($).",
+          strExtVersion, StrExplodeEx(ssFeatures, ", ", " and "),
+          ssFeatures.size());
+      } // Failed to parse tokens
+      else cLog->LogWarningExSafe("GlFW identity parse '$' fail!", cpIdentity);
+    } // Failed to get identity
+    else cLog->LogWarningSafe("GlFW failed to retrieve identity!");
+  }
   /* -- Initialiser -------------------------------------------------------- */
   void Init(void)
   { // Report initialisation attempt
     cLog->LogDebugSafe("GlFW subsystem initialising...");
-    // Only available on 3.4 and above
-#if GLFW_VERSION_MAJOR >= 3 && GLFW_VERSION_MINOR >= 4
     // Setup custom allocator
-    GLFWallocator gaInfo{ GlFWAlloc, GlFWReAlloc, GlFWFree, this };
+    const GLFWallocator gaInfo{ GlFWAlloc, GlFWReAlloc, GlFWFree, this };
     glfwInitAllocator(&gaInfo);
-#endif
     // Set error callback which just throws an exception and reset error level
     glfwSetErrorCallback(ErrorHandler);
     ResetErrorLevel();
     // Initialise GlFW and throw exception if failed
-    if(!glfwInit()) XC("GLFW initialisation failed!");
+    if(!glfwInit()) XC("GlFW initialisation failed!");
+    // Report internal library version
+    VerifyVersion();
     // Class initialised
     IHInitialise();
-    // Initialise standard cursors
+    // Initialise standard built-in operating system cursors
     InitCursors();
     // Report initialisation successful
-    cLog->LogInfoSafe("GlFW subsystem initialised.");
+    cLog->LogInfoExSafe("GlFW subsystem initialised.");
   }
   /* -- Destructor --------------------------------------------------------- */
   DTORHELPER(~GlFW, DeInit())          // Try to de-initialise glfw
@@ -123,20 +152,31 @@ static class GlFW final :              // Root engine class
     /* -- Initialisers ----------------------------------------------------- */
     IHelper{ __FUNCTION__ },           // Set class function name
     /* --------------------------------------------------------------------- */
-#define CURSOR(x) { GLFW_ ## x ## _CURSOR }
+#define CURSOR(x) GlFWCursor{ GLFW_ ## x ## _CURSOR }
     /* --------------------------------------------------------------------- */
     CursorStandard{{                   // Define standard cursors
-      CURSOR(ARROW),                   CURSOR(CROSSHAIR),
-      CURSOR(HAND),                    CURSOR(HRESIZE),
-      CURSOR(IBEAM),                   CURSOR(NOT_ALLOWED),
-      CURSOR(RESIZE_ALL),              CURSOR(RESIZE_EW),
-      CURSOR(RESIZE_NESW),             CURSOR(RESIZE_NS),
-      CURSOR(RESIZE_NWSE),             CURSOR(VRESIZE)
-    }},
+      CURSOR(ARROW),                   // [00] GLFW_ARROW_CURSOR
+      CURSOR(CROSSHAIR),               // [01] GLFW_CROSSHAIR_CURSOR
+      CURSOR(HAND),                    // [02] GLFW_HAND_CURSOR
+      CURSOR(HRESIZE),                 // [03] GLFW_HRESIZE_CURSOR
+      CURSOR(IBEAM),                   // [04] GLFW_IBEAM_CURSOR
+      CURSOR(NOT_ALLOWED),             // [05] GLFW_NOT_ALLOWED_CURSOR
+      CURSOR(RESIZE_ALL),              // [06] GLFW_RESIZE_ALL_CURSOR
+      CURSOR(RESIZE_EW),               // [07] GLFW_RESIZE_EW_CURSOR
+      CURSOR(RESIZE_NESW),             // [08] GLFW_RESIZE_NESW_CURSOR
+      CURSOR(RESIZE_NS),               // [09] GLFW_RESIZE_NS_CURSOR
+      CURSOR(RESIZE_NWSE),             // [10] GLFW_RESIZE_NWSE_CURSOR
+      CURSOR(VRESIZE)                  // [11] GLFW_VRESIZE_CURSOR
+    }},                                // Should have specified CUR_MAX cursors
     /* --------------------------------------------------------------------- */
 #undef CURSOR                          // Done with this macro
     /* --------------------------------------------------------------------- */
-    uiErrorLevel(0)                    // No errors occured
+    uiErrorLevel(0),                   // No errors occured
+    strIntVersion{                     // Init internal version number
+      STR(GLFW_VERSION_MAJOR) "."      // (?.x.x) Major
+      STR(GLFW_VERSION_MINOR) "."      // (x.?.x) Minor
+      STR(GLFW_VERSION_REVISION)       // (x.x.?) Revision
+    }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */

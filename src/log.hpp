@@ -134,16 +134,16 @@ static class Log final :
   const string &LogLevelToString(const LHLevel lhId)
     { return llLevels.Get(lhId); }
   /* -- Safe access to members ------------------------------------- */ public:
-  CVarReturn SetLevel(const unsigned int uiLevel)
+  CVarReturn SetLevel(const LHLevel lhNewLevel)
   { // Deny if invalid level
-    if(uiLevel >= LH_MAX) return DENY;
+    if(lhNewLevel >= LH_MAX) return DENY;
     // Set new logging state
     const LHLevel lhOldLevel = lhLevel;
-    lhLevel = static_cast<LHLevel>(uiLevel);
+    lhLevel = lhNewLevel;
     // Report state, we could disable logging so we should force report it
     LogNLCDebugExSafe("Log change verbosity from $ ($) to $ ($).",
       LogLevelToString(lhOldLevel), lhOldLevel,
-      LogLevelToString(lhLevel.load()), lhLevel.load());
+      LogLevelToString(lhNewLevel), lhNewLevel);
     // Success
     return ACCEPT;
   }

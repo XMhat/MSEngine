@@ -19,7 +19,15 @@ using namespace Lib::Sqlite;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* -- Consts --------------------------------------------------------------- */
-static enum LuaCache { LCC_OFF, LCC_FULL, LCC_MINIMUM, LCC_MAX } lcSetting;
+static enum LuaCache : unsigned int    // User cache setting
+{ /* ----------------------------------------------------------------------- */
+  LCC_OFF,                             // No code caching
+  LCC_FULL,                            // Cache with full debug information
+  LCC_MINIMUM,                         // Cache with minimum debug information
+  /* ----------------------------------------------------------------------- */
+  LCC_MAX                              // Maximum number of settings
+} /* ----------------------------------------------------------------------- */
+lcSetting;                             // Initialised by CVar later
 /* -- Cache and compilation results ---------------------------------------- */
 enum LuaCompResult : unsigned int
 { /* ----------------------------------------------------------------------- */
@@ -31,9 +39,8 @@ enum LuaCompResult : unsigned int
   LCR_MAX,                             // [6] Number of used result codes
 };/* ----------------------------------------------------------------------- */
 /* -- Set lua cache setting ------------------------------------------------ */
-static CVarReturn LuaCodeSetCache(const unsigned int uiVal)
-  { return CVarSimpleSetIntNGE(lcSetting,
-      static_cast<LuaCache>(uiVal), LCC_MAX); }
+static CVarReturn LuaCodeSetCache(const LuaCache lcVal)
+  { return CVarSimpleSetIntNGE(lcSetting, lcVal, LCC_MAX); }
 /* -- Callback for lua_dump ------------------------------------------------ */
 namespace LuaCodeDumpHelper
 { /* -- Memory blocks structure for dump function -------------------------- */

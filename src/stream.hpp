@@ -602,6 +602,13 @@ BEGIN_ASYNCMEMBERCLASS(Streams, Stream, ICHelperUnsafe),
       ssMetaData = StdMove(ParseComments(vcStrings->user_comments,
         vcStrings->comments));
       vorbis_comment_clear(vcStrings);
+      // Write vorbis comments to log
+      if(cLog->HasLevel(LH_DEBUG))
+      { // Write Vorbis comments
+        for(auto &aPair : ssMetaData)
+          cLog->LogNLCDebugExSafe("- Vorbis comment: $ -> $.",
+            aPair.first, aPair.second);
+      }
     } // Generate buffers, recommending this amount
     GenerateBuffers();
     // Log ogg loaded

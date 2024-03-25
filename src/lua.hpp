@@ -27,13 +27,14 @@ using namespace ITimer::P;             using namespace IUtil::P;
 namespace P {                          // Start of public module namespace
 /* -- Flags for setting up environment ------------------------------------- */
 BUILD_FLAGS(Lua,
+  /* ----------------------------------------------------------------------- */
   // Load nothing                      // Load engine core api
   LUF_NONE               {0x00000000}, LUF_ENGINE           {0x00000001},
   // Load lua core api
   LUF_CORE               {0x00000002},
-  // Mask bits
+  /* -- Mask bits ---------------------------------------------------------- */
   LUF_MASK{ LUF_ENGINE|LUF_CORE }
-);
+);/* ----------------------------------------------------------------------- */
 /* == Lua class ============================================================ */
 static class Lua final :
   /* -- Base classes ------------------------------------------------------- */
@@ -57,12 +58,12 @@ static class Lua final :
   /* -- Return lua state --------------------------------------------------- */
   lua_State *GetState(void) const { return lsState.get(); }
   /* -- Set GC step -------------------------------------------------------- */
-  CVarReturn SetFlags(const unsigned int uiV)
+  CVarReturn SetFlags(const LuaFlagsType lftFlags)
   { // Convert flags and fail if flags are invalid
-    const LuaFlagsConst lfcFlags{ uiV };
-    if(LUF_MASK.FlagIsLesser(lfcFlags)) return DENY;
+    if(lftFlags != LUF_MASK && (lftFlags & ~LUF_MASK)) return DENY;
     // Flags validated so set and return success
-    FlagSet(lfcFlags);
+    FlagReset(lftFlags);
+    // Accepted
     return ACCEPT;
   }
   /* -- Set a lua reference (LuaFunc can't have this check) ---------------- */

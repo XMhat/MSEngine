@@ -184,14 +184,25 @@ template<typename IntType>static const string StrFromNum(const IntType itV,
 /* -- Quickly convert numbered string to integer --------------------------- */
 template<typename IntType=int64_t>
   static const IntType StrToNum(const string &strValue)
-{ // Value to store into
-  IntType itN;
-  // Put value into input string stream
+{ // Put value into input string stream
   istringstream isS{ strValue };
   // Push value into integer
-  isS >> itN;
-  // Return result
-  return itN;
+  if constexpr(is_enum_v<IntType>)
+  { // Underlying value of the enum type to store into
+    underlying_type_t<IntType> utN;
+    // Store the value
+    isS >> utN;
+    // Return converting it back to the original type (no performance loss)
+    return static_cast<IntType>(utN);
+  } // Value is not enum type?
+  else
+  { // Value to store into
+    IntType itN;
+    // Store the value
+    isS >> itN;
+    // Return the value
+    return itN;
+  }
 }
 /* -- Quickly convert hex string to integer ------------------------------== */
 template<typename IntType=int64_t>
@@ -985,6 +996,33 @@ template<typename FloatType>
   } // Return lowest numerator and denominator
   return StrAppend(fixed, setprecision(0), ceil(fdAntecedent / fdDivisor), ':',
     ceil(fdConsequent / fdDivisor));
+}
+/* -- Convert list to exploded string -------------------------------------- */
+template<class ListType>string StrExplodeEx(const ListType &lType,
+  const string &strSep, const string &strLast)
+{ // String to return
+  ostringstream ossOut;
+  // What is the size of this string
+  switch(lType.size())
+  { // Empty list? Just break to return empty string
+    case 0: break;
+    // Only one? Just return the string directly
+    case 1: return *lType.cbegin();
+    // Two? Return a simple appendage.
+    case 2: ossOut << *lType.cbegin() << strLast << *lType.crbegin(); break;
+    // More than two? Write the first item first
+    default: ossOut << *lType.cbegin();
+             // Write the rest but one prefixed with the separator
+             StdForEach(seq,
+               next(lType.cbegin(), 1), next(lType.crbegin(), 1).base(),
+                 [&ossOut, &strSep](const auto &strStr)
+                   { ossOut << strSep << strStr; });
+             // and now append the last separator and string from list
+             ossOut << strLast << *lType.crbegin();
+             // Done
+             break;
+  } // Return the compacted string
+  return ossOut.str();
 }
 /* -- Convert string to lower case ----------------------------------------- */
 static const string StrToLowCase[[maybe_unused]](const string &strSrc)
