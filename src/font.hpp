@@ -19,11 +19,11 @@ using namespace IError::P;             using namespace IFboDef::P;
 using namespace IFileMap::P;           using namespace IFtf::P;
 using namespace IImageDef::P;          using namespace ILog::P;
 using namespace IMemory::P;            using namespace IOgl::P;
-using namespace IPSplit::P;            using namespace IStd::P;
-using namespace IString::P;            using namespace ISysUtil::P;
-using namespace ITexture::P;           using namespace IToken::P;
-using namespace IUtf;                  using namespace IUtil::P;
-using namespace IVars::P;              using namespace Lib::FreeType;
+using namespace IParser::P;            using namespace IPSplit::P;
+using namespace IStd::P;               using namespace IString::P;
+using namespace ISysUtil::P;           using namespace ITexture::P;
+using namespace IToken::P;             using namespace IUtf;
+using namespace IUtil::P;              using namespace Lib::FreeType;
 using namespace Lib::OS::GlFW;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public namespace
@@ -363,21 +363,23 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
          "Identifier",   IdentGet(), "Manfiest", strManfiest,
          "BufferLength", strBuffer.length());
     // Split variables and throw error if there are no vars
-    const VarsConst<> vC{ strBuffer, strTokens, '=' };
-    if(!vC.size())
+    const ParserConst<> pManifest{ strBuffer, strTokens, '=' };
+    if(!pManifest.size())
       XC("No metadata in index file!",
          "Identifier", IdentGet(), "Manfiest", strManfiest);
     // Get number of characters and offset.
     const unsigned int
-      uiCharCount = StrToNum<unsigned int>(vC.VarsGetAndRemove("range")),
-      uiCharOffset = StrToNum<unsigned int>(vC.VarsGetAndRemove("rangestart"));
+      uiCharCount =
+        StrToNum<unsigned int>(pManifest.ParserGetAndRemove("range")),
+      uiCharOffset =
+        StrToNum<unsigned int>(pManifest.ParserGetAndRemove("rangestart"));
     if(!uiCharCount)
       XC("Invalid character count in metadata!",
          "Identifier", IdentGet(),   "Manfiest", strManfiest,
          "Offset",     uiCharOffset, "Count",    uiCharCount);
     const unsigned int uiCharEnd = uiCharOffset + uiCharCount;
     // Set and check default character and if it's a number
-    const string strDefaultChar{ vC.VarsGetAndRemove("default") };
+    const string strDefaultChar{ pManifest.ParserGetAndRemove("default") };
     if(strDefaultChar.empty())
       XC("Empty default character index in metadata!",
          "Identifier", IdentGet());
@@ -396,12 +398,12 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
          "Count",      uiCharCount);
     // Get filter
     ofeFilter = static_cast<OglFilterEnum>(
-      StrToNum<size_t>(vC.VarsGetAndRemove("filter")));
+      StrToNum<size_t>(pManifest.ParserGetAndRemove("filter")));
     if(ofeFilter >= OF_MAX)
       XC("Invalid filter index specified in font metadata!",
          "Identifier", IdentGet(), "Filter", ofeFilter);
     // Look for widths and throw if there are none then report them in log
-    const string strWidths{ vC.VarsGetAndRemove("width") };
+    const string strWidths{ pManifest.ParserGetAndRemove("width") };
     if(strWidths.empty())
       XC("No widths found in metadata!",
          "Identifier", IdentGet(), "Manfiest", strManfiest);
@@ -418,8 +420,10 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
     gvData.resize(uiCharOffset);
     // Read size of tile. Texture init will clamp this if needed.
     const unsigned int
-      uiTW = StrToNum<unsigned int>(vC.VarsGetAndRemove("tilewidth")),
-      uiTH = StrToNum<unsigned int>(vC.VarsGetAndRemove("tileheight"));
+      uiTW = StrToNum<unsigned int>(
+        pManifest.ParserGetAndRemove("tilewidth")),
+      uiTH = StrToNum<unsigned int>(
+        pManifest.ParserGetAndRemove("tileheight"));
     // Convert to float as we need a float version of this in the next loop
     const GLfloat fW = static_cast<GLfloat>(uiTW),
                   fH = static_cast<GLfloat>(uiTH);
@@ -441,8 +445,10 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
     clFirst.resize(uiCharOffset);
     // Get extra tile padding dimensions. Also clamped by texture class
     const unsigned int
-      uiPX = StrToNum<unsigned int>(vC.VarsGetAndRemove("tilespacingwidth")),
-      uiPY = StrToNum<unsigned int>(vC.VarsGetAndRemove("tilespacingheight"));
+      uiPX = StrToNum<unsigned int>(
+        pManifest.ParserGetAndRemove("tilespacingwidth")),
+      uiPY = StrToNum<unsigned int>(
+        pManifest.ParserGetAndRemove("tilespacingheight"));
     // Init texture with custom parameters and generate tileset
     InitImage(imSrc, uiTW, uiTH, uiPX, uiPY, ofeFilter);
     // Initialise the uninitialised texcoords with the default character that
@@ -451,7 +457,7 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
     StdFill(par_unseq, clFirst.begin(),clFirst.begin()+uiCharOffsetM1, cdRef);
     StdFill(par_unseq, clFirst.begin()+uiCharEnd, clFirst.end(), cdRef);
     // Initialise font scale
-    SetSize(StrToNum<GLfloat>(vC.VarsGetAndRemove("scale")));
+    SetSize(StrToNum<GLfloat>(pManifest.ParserGetAndRemove("scale")));
     // Show that we've loaded the file
     cLog->LogInfoExSafe("Font '$' loaded from bitmap (T:$x$;F:$).",
       IdentGet(), uiTW, uiTH, ofeFilter);

@@ -272,12 +272,11 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
   CB(cClips->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! OBJ_CMDMAX
-// ? Specifies the maximum number of console commands allowed to be registered
-// ? by the engine. This includes the internal default commands. An exception
-// ? is generated if more cvars than this are allocated.
+// ? Specifies the maximum number of Lua console commands allowed to be
+// ? registered by the engine.
 /* ------------------------------------------------------------------------- */
 { CFL_NONE, "obj_cmdmax", "1000",
-  CB(cConsole->MaxCountModified, size_t), TUINTEGER|PSYSTEM },
+  CB(cCommands->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! OBJ_CVARMAX
 // ? Specifies the maximum number of cvars allowed to be registered by the
@@ -285,7 +284,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? generated if more cvars than this are allocated.
 /* ------------------------------------------------------------------------- */
 { CFL_NONE, "obj_cvarmax", "1000",
-  CB(cCVars->MaxCountModified, size_t), TUINTEGER|PSYSTEM },
+  CB(cVariables->CollectorSetLimit, size_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! OBJ_CVARIMAX
 // ? Specifies the maximum number of initial cvars allowed to be registered by

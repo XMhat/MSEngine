@@ -18,10 +18,10 @@ local format<const>, insert<const>, remove<const>, random<const>, ceil<const>,
   math.floor, math.min, math.max, assert, error, math.abs, math.maxinteger;
 -- M-Engine function aliases ----------------------------------------------- --
 local UtilClampInt<const>, UtilClamp<const>, UtilBlank<const>, CoreLog<const>,
-  ConsoleWrite<const>, InfoTicks<const>, UtilFormatNTime<const>,
+  CoreWrite<const>, InfoTicks<const>, UtilFormatNTime<const>,
   InfoTime<const>, MaskCreateNew<const>, CoreQuit<const>
   = -- --------------------------------------------------------------------- --
-  Util.ClampInt, Util.Clamp, Util.Blank, Core.Log, Console.WriteEx, Info.Ticks,
+  Util.ClampInt, Util.Clamp, Util.Blank, Core.Log, CoreWriteEx, Info.Ticks,
   Util.FormatNTime, Info.Time, Mask.CreateNew, Core.Quit;
 -- Game module namespace (because of MAXVARS limit) ------------------------ --
 local function GameLuaModule()
@@ -808,7 +808,7 @@ local function CreatePlayer(iX, iY, iId, iRace, bIsAI)
         aDigger.PL = aDigger.PW + 3600;
       end
     -- Failed so show map maker in console that the objid is invalid
-    else ConsoleWrite("Warning! Digger "..iIndex..
+    else CoreWrite("Warning! Digger "..iIndex..
       " not created for player "..iId.."! Id="..iRace..", X="..iX..
       ", Y="..iY..".", 9) end;
     -- Next digger
@@ -3746,7 +3746,7 @@ local function LoadLevel(Id, Music, P1R, P1AI, P2R, P2AI, TP, TR, TI)
               local aPlayerFound<const> = aPlayersFound[iPlayer];
               if aPlayerFound then
                 -- Show map maker in console that the player exists
-                ConsoleWrite("Warning! Player "..iPlayer..
+                CoreWrite("Warning! Player "..iPlayer..
                   " already exists! X="..iX..", Y="..iY..", Abs="..
                   iPosition..". Originally found at X="..aPlayerFound[1]..
                   ", Y="..aPlayerFound[2]..".", 9);
@@ -3769,13 +3769,13 @@ local function LoadLevel(Id, Music, P1R, P1AI, P2R, P2AI, TP, TR, TI)
           if iObjId ~= 0 then
             if iObjId < iMinObjId or iObjId >= iMaxObjId then
               -- Show map maker in console that the objid is invalid
-              ConsoleWrite("Warning! Object id invalid! Id="..
+              CoreWrite("Warning! Object id invalid! Id="..
                 iObjId..", X="..iX..", Y="..iY..", Abs="..
                 iPosition..", Slot="..iPos..", Max="..iMaxObjId..".", 9);
             -- Object id is valid? Create the object
             elseif not CreateObject(iObjId, iPreciseX, iPreciseY) then
               -- Show map maker in console that the objid is invalid
-              ConsoleWrite("Warning! Couldn't create object! Id="..
+              CoreWrite("Warning! Couldn't create object! Id="..
                 iObjId..", X="..iX..", Y="..iY..", Abs="..
                 iPosition..", Slot="..iPos..", Max="..iMaxObjId..".", 9);
             end

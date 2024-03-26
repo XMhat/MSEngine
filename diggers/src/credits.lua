@@ -13,8 +13,6 @@
 local random<const>, remove<const>, insert<const>
       = -- ----------------------------------------------------------------- --
       math.random, table.remove, table.insert;
--- M-Engine function aliases ----------------------------------------------- --
-local ConsoleWrite<const> = Console.Write;
 -- Diggers function and data aliases --------------------------------------- --
 local LoadResources, Fade, SetCallbacks, InitScore, PlayMusic, GetMusic,
   aCreditsData, aCreditsXData, aLevelData, aObjectTypes, LoadLevel,

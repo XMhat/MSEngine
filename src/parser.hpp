@@ -1,4 +1,4 @@
-/* == VARS.HPP ============================================================= **
+/* == PARSER.HPP =========================================================== **
 ** ######################################################################### **
 ** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
 ** ######################################################################### **
@@ -9,20 +9,20 @@
 ** ========================================================================= */
 #pragma once                           // Only one incursion allowed
 /* ------------------------------------------------------------------------- */
-namespace IVars {                      // Start of private module namespace
+namespace IParser {                    // Start of private module namespace
 /* ------------------------------------------------------------------------- */
 using namespace IError::P;             using namespace IStd::P;
 using namespace IString::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
-/* -- Vars class ----------------------------------------------------------- */
-template<class VarsMapType,
-         class VarsMapTypeIterator = typename VarsMapType::const_iterator>
-  class VarsBase :
+/* -- Parser class --------------------------------------------------------- */
+template<class ParserMapType,
+         class ParserMapTypeIterator = typename ParserMapType::const_iterator>
+  class ParserBase :
   /* -- Base classes ------------------------------------------------------- */
-  public VarsMapType                   // Derive by specified map type
+  public ParserMapType                   // Derive by specified map type
 { /* -- Initialise entries from a string ----------------------------------- */
-  void VarsDoInit(const string &strS, const string &strLS,
+  void ParserDoInit(const string &strS, const string &strLS,
     const char cDelimiter)
   { // Ignore if any of the variables are empty
     if(strS.empty() || strLS.empty()) return;
@@ -31,43 +31,43 @@ template<class VarsMapType,
     // Until eof, push each item split into list
     for(size_t stLoc; (stLoc = strS.find(strLS, stStart)) != string::npos;
                      stStart = stLoc + strLS.length())
-      VarsPushLine(strS, stStart, stLoc, cDelimiter);
+      ParserPushLine(strS, stStart, stLoc, cDelimiter);
     // Push remainder of string if available
-    VarsPushLine(strS, stStart, strS.length(), cDelimiter);
+    ParserPushLine(strS, stStart, strS.length(), cDelimiter);
   }
   /* --------------------------------------------------------------- */ public:
-  void VarsPushPair(const string &strKey, const string &strValue)
+  void ParserPushPair(const string &strKey, const string &strValue)
     { this->insert({ strKey, strValue }); }
-  void VarsPushPair(const string &strKey, string &&strValue)
+  void ParserPushPair(const string &strKey, string &&strValue)
     { this->insert({ strKey, StdMove(strValue) }); }
-  void VarsPushPair(string &&strKey, const string &strValue)
+  void ParserPushPair(string &&strKey, const string &strValue)
     { this->insert({ StdMove(strKey), strValue }); }
-  void VarsPushPair(string &&strKey, string &&strValue)
+  void ParserPushPair(string &&strKey, string &&strValue)
     { this->insert({ StdMove(strKey), StdMove(strValue) }); }
   /* -- Insert new key if we don't have it --------------------------------- */
-  void VarsPushIfNotExist(const string &strKey, const string &strValue)
+  void ParserPushIfNotExist(const string &strKey, const string &strValue)
     { if(this->find(strKey) == this->end())
-        VarsPushPair(strKey, strValue); }
-  void VarsPushIfNotExist(string &&strKey, const string &strValue)
+        ParserPushPair(strKey, strValue); }
+  void ParserPushIfNotExist(string &&strKey, const string &strValue)
     { if(this->find(strKey) == this->end())
-        VarsPushPair(StdMove(strKey), strValue); }
-  void VarsPushIfNotExist(const string &strKey, string &&strValue)
+        ParserPushPair(StdMove(strKey), strValue); }
+  void ParserPushIfNotExist(const string &strKey, string &&strValue)
     { if(this->find(strKey) == this->end())
-        VarsPushPair(strKey, StdMove(strValue)); }
-  void VarsPushIfNotExist(string &&strKey, string &&strValue)
+        ParserPushPair(strKey, StdMove(strValue)); }
+  void ParserPushIfNotExist(string &&strKey, string &&strValue)
     { if(this->find(strKey) == this->end())
-        VarsPushPair(StdMove(strKey), StdMove(strValue)); }
+        ParserPushPair(StdMove(strKey), StdMove(strValue)); }
   /* -- Direct conditional access ---------------------------------------- */
   operator bool(void) const { return !this->empty(); }
   /* -- Value access by key name ------------------------------------------- */
-  const string &VarsGetAndRemove(const string &strKey) const
+  const string &ParserGetAndRemove(const string &strKey) const
   { // Find key and return empty string or value
-    const VarsMapTypeIterator vmtiIt{ this->find(strKey) };
+    const ParserMapTypeIterator vmtiIt{ this->find(strKey) };
     if(vmtiIt != this->end()) return vmtiIt->second;
     XC("No such key in table!", "Key", strKey, "Count", this->size());
   }
   /* -- Converts the variables to a string --------------------------------- */
-  const string VarsImplodeEx(const string &strSep, const string &strSuf) const
+  const string ParserImplodeEx(const string &strSep, const string &strSuf) const
   { // String to return
     ostringstream osS;
     // For each key/value pair, implode it into a string
@@ -77,7 +77,7 @@ template<class VarsMapType,
     return osS.str();
   }
   /* ----------------------------------------------------------------------- */
-  void VarsPushLine(const string &strS, const size_t stSegStart,
+  void ParserPushLine(const string &strS, const size_t stSegStart,
     const size_t stSegEnd, const char cDelimiter)
   { // Look for separator and if found?
     const size_t stSepLoc =
@@ -99,67 +99,67 @@ template<class VarsMapType,
             const size_t stValEnd =
               StrFindCharNotBackwards(strS, stSegEnd-1, stValStart);
             if(stValEnd != string::npos)
-              return VarsPushPair(
+              return ParserPushPair(
                 StdMove(strS.substr(stKeyStart, stKeyEnd-stKeyStart+1)),
                 StdMove(strS.substr(stValStart, stValEnd-stValStart+1)));
           } // Could not prune suffixed whitespaces on value.
         }  // Could not prune prefixed whitespaces on value.
       }  // Could not prune suffixed whitespaces on key.
     } // Could not prune prefixed whitespaces on key. Add full value for debug
-    return VarsPushPair(StrAppend('\255', this->size()),
+    return ParserPushPair(StrAppend('\255', this->size()),
       StdMove(strS.substr(stSegStart, stSegEnd-stSegStart)));
   }
   /* -- Initialise or add entries from a string ---------------------------- */
-  void VarsReInit(const string &strS, const string &strLS,
+  void ParserReInit(const string &strS, const string &strLS,
     const char cDelimiter)
-      { this->clear(); VarsDoInit(strS, strLS, cDelimiter); }
+      { this->clear(); ParserDoInit(strS, strLS, cDelimiter); }
   /* -- Initialise or add entries from a string ---------------------------- */
-  VarsBase(const string &strS, const string &strLS, const char cDelimiter)
-    { VarsDoInit(strS, strLS, cDelimiter); }
+  ParserBase(const string &strS, const string &strLS, const char cDelimiter)
+    { ParserDoInit(strS, strLS, cDelimiter); }
   /* -- Move constructor --------------------------------------------------- */
-  VarsBase(VarsBase &&vbOther) :       // Other Vars class to move from
+  ParserBase(ParserBase &&vbOther) :   // Other Parser class to move from
     /* -- Initialisers ----------------------------------------------------- */
-    VarsMapType{ StdMove(vbOther) }    // Initialise moving vars
+    ParserMapType{ StdMove(vbOther) }  // Initialise moving vars
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor -------------------------------------------------------- */
-  VarsBase(void) { }
+  ParserBase(void) { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(VarsBase)            // Disable copy constructor/operator
-}; /* -- A Vars class where the values can be modified --------------------- */
-template<class VarsBaseType = VarsBase<StrNCStrMap>>struct Vars :
+  DELETECOPYCTORS(ParserBase)          // Disable copy constructor/operator
+}; /* -- A Parser class where the values can be modified --------------------- */
+template<class ParserBaseType = ParserBase<StrNCStrMap>>struct Parser :
   /* -- Base classes ------------------------------------------------------- */
-  public VarsBaseType                  // Base non-const type
+  public ParserBaseType                // Base non-const type
 { /* ----------------------------------------------------------------------- */
-  void VarsPushOrUpdatePair(const string &strKey, const string &strValue)
+  void ParserPushOrUpdatePair(const string &strKey, const string &strValue)
   { // Find key and if it exists, just update the value else insert a new one
     const StrNCStrMapIt sncsmIt{ this->find(strKey) };
     if(sncsmIt != this->end()) sncsmIt->second = strValue;
-    else this->VarsPushPair(strKey, strValue);
+    else this->ParserPushPair(strKey, strValue);
   }
   /* -- Try to move key but copy value ------------------------------------- */
-  void VarsPushOrUpdatePair(string &&strKey, const string &strValue)
+  void ParserPushOrUpdatePair(string &&strKey, const string &strValue)
   { const StrNCStrMapIt sncsmIt{ this->find(strKey) };
     if(sncsmIt != this->end()) sncsmIt->second = strValue;
-    else this->VarsPushPair(StdMove(strKey), strValue);
+    else this->ParserPushPair(StdMove(strKey), strValue);
   }
   /* -- Try to move value but copy key ------------------------------------- */
-  void VarsPushOrUpdatePair(const string &strKey, string &&strValue)
+  void ParserPushOrUpdatePair(const string &strKey, string &&strValue)
   { const StrNCStrMapIt sncsmIt{ this->find(strKey) };
     if(sncsmIt != this->end()) sncsmIt->second = StdMove(strValue);
-    else this->VarsPushPair(strKey, StdMove(strValue));
+    else this->ParserPushPair(strKey, StdMove(strValue));
   }
   /* -- Try to move key and value ------------------------------------------ */
-  void VarsPushOrUpdatePair(string &&strKey, string &&strValue)
+  void ParserPushOrUpdatePair(string &&strKey, string &&strValue)
   { const StrNCStrMapIt sncsmIt{ this->find(strKey) };
     if(sncsmIt != this->end()) sncsmIt->second = StdMove(strValue);
-    else this->VarsPushPair(StdMove(strKey), StdMove(strValue));
+    else this->ParserPushPair(StdMove(strKey), StdMove(strValue));
   }
   /* ----------------------------------------------------------------------- */
-  void VarsPushOrUpdatePairs(const StrPairList &splValues)
+  void ParserPushOrUpdatePairs(const StrPairList &splValues)
   { // Add each value that was sent
     for(const StrPair &spKeyValue : splValues)
-      this->VarsPushOrUpdatePair(StdMove(spKeyValue.first),
+      this->ParserPushOrUpdatePair(StdMove(spKeyValue.first),
         StdMove(spKeyValue.second));
   }
   /* -- Extracts and deletes the specified key pair ------------------------ */
@@ -174,50 +174,50 @@ template<class VarsBaseType = VarsBase<StrNCStrMap>>struct Vars :
     // Return the value
     return strOut;
   } /* -- Constructor ------------------------------------------------------ */
-  Vars(void) { }
+  Parser(void) { }
   /* -- MOVE assignment constructor ---------------------------------------- */
-  Vars(Vars &&vOther) :                // Other Vars class to move from
+  Parser(Parser &&vOther) :            // Other Parser class to move from
     /* -- Initialisers ----------------------------------------------------- */
-    VarsBaseType{ StdMove(vOther) }    // Initialise moving vars
+    ParserBaseType{ StdMove(vOther) }  // Initialise moving vars
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor -------------------------------------------------------- */
-  Vars(const string &strS,             // String to explode
+  Parser(const string &strS,           // String to explode
        const string &strLS,            // ...Record (line) separator
        const char cDelimiter) :        // ...Key/value separator
     /* -- Initialisers ----------------------------------------------------- */
-    VarsBaseType{ strS,                // Initialise string to explode
+    ParserBaseType{ strS,              // Initialise string to explode
                   strLS,               // Initialise record (line) separator
                   cDelimiter }         // Initialise key/value separator
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Vars)                // Disable copy constructor/operator
-};/* -- A Vars class thats values cannot be modified at all ---------------- */
-template<class VarsBaseType = const VarsBase<const StrStrMap>>
-  struct VarsConst :
+  DELETECOPYCTORS(Parser)              // Disable copy constructor/operator
+};/* -- A Parser class thats values cannot be modified at all ---------------- */
+template<class ParserBaseType = const ParserBase<const StrStrMap>>
+  struct ParserConst :
   /* -- Base classes ------------------------------------------------------- */
-  public VarsBaseType                  // The base map type
+  public ParserBaseType                // The base map type
 { /* -- Constructor -------------------------------------------------------- */
-  VarsConst(void) { }
+  ParserConst(void) { }
   /* -- MOVE assignment constructor ---------------------------------------- */
-  VarsConst(VarsConst &&vcOther) :     // Other vars
+  ParserConst(ParserConst &&vcOther) : // Other vars
     /* -- Initialisers ----------------------------------------------------- */
-    VarsBaseType{ StdMove(vcOther) }   // Move it over
+    ParserBaseType{ StdMove(vcOther) } // Move it over
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor -------------------------------------------------------- */
-  VarsConst(const string &strS,        // String to explode
-            const string &strLS,       // ...Record (line) separator
-            const char cDelimiter) :   // ...Key/value separator
+  ParserConst(const string &strS,      // String to explode
+              const string &strLS,     // ...Record (line) separator
+              const char cDelimiter) : // ...Key/value separator
     /* -- Initialisers ----------------------------------------------------- */
-    VarsBaseType{ strS,                // Initialise string to explode
-                  strLS,               // Initialise record (line) separator
-                  cDelimiter }         // Initialise key/value separator
+    ParserBaseType{ strS,              // Initialise string to explode
+                    strLS,             // Initialise record (line) separator
+                    cDelimiter }       // Initialise key/value separator
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(VarsConst)           // Disable copy constructor/operator
+  DELETECOPYCTORS(ParserConst)         // Disable copy constructor/operator
 };/* ----------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */

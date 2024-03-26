@@ -121,8 +121,9 @@ BUILD_FLAGS(CVar,
   // Registration mask bits            Only alphanumeric characeters
   CVREGMASK{ COMMIT|SANY },            CALPHANUMERIC{ CALPHA|CNUMERIC },
   /* -- Allowed bits ------------------------------------------------------- */
-  MASK{ TSTRING|TINTEGER|TFLOAT|TBOOLEAN|CALPHA|CNUMERIC|CSAVEABLE|CPROTECTED|
-        CDEFLATE|CNOTEMPTY|CUNSIGNED|CPOW2|CFILENAME|MTRIM|OSAVEFORCE };
+  CVMASK{ TSTRING|TINTEGER|TFLOAT|TBOOLEAN|CALPHA|CNUMERIC|CSAVEABLE|
+          CPROTECTED|CDEFLATE|CNOTEMPTY|CUNSIGNED|CPOW2|CFILENAME|MTRIM|
+          OSAVEFORCE };
 );/* ----------------------------------------------------------------------- */
 class Item;                            // (Prototype) Cvar callback data
 typedef CVarReturn (*CbFunc)(Item&, const string&); // Callback return type
@@ -218,7 +219,8 @@ enum CVarEnums : size_t
   LOG_CREDITS,      LOG_DYLIBS,
   /* -- Other -------------------------------------------------------------- */
   APP_COMFLAGS,                        // Compatibility flags. DO NOT (RE)MOVE
-  MAX_CVAR                             // Maximum cvars. DO NOT (RE)MOVE!
+  MAX_CVAR,                            // Maximum cvars. DO NOT (RE)MOVE!
+  CVAR_FIRST = 0,                      // The first cvar item
 };/* ----------------------------------------------------------------------- */
 struct ItemStatic                      // Start of CVar static struct
 { /* ----------------------------------------------------------------------- */

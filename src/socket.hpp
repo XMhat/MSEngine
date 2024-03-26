@@ -16,11 +16,11 @@ using namespace ICVarLib::P;           using namespace IError::P;
 using namespace IEvtMain::P;           using namespace IFlags;
 using namespace IIdent::P;             using namespace ILog::P;
 using namespace ILuaEvt::P;            using namespace ILuaUtil::P;
-using namespace IMemory::P;            using namespace IStd::P;
-using namespace IString::P;            using namespace ISystem::P;
-using namespace ISysUtil::P;           using namespace IThread::P;
-using namespace IToken::P;             using namespace IUtil::P;
-using namespace IUtf;                  using namespace IVars::P;
+using namespace IMemory::P;            using namespace IParser::P;
+using namespace IStd::P;               using namespace IString::P;
+using namespace ISystem::P;            using namespace ISysUtil::P;
+using namespace IThread::P;            using namespace IToken::P;
+using namespace IUtil::P;              using namespace IUtf;
 using namespace Lib::OS::OpenSSL;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
@@ -113,7 +113,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
                    strRealHost;        // Real hostname connected to
   PacketList       blRX, blTX;         // Transmit/Receive buffers
   size_t           stRX, stTX;         // Total bytes stored in buffers
-  Vars<>           vlRegistry;         // For storing keypairs
+  Parser<>         pRegistry;          // For storing keypairs
   /* -- Timestamps --------------------------------------------------------- */
   SafeClkDuration  duConnect,          // Time socket was connecting
                    duConnected,        // Time socket was connected
@@ -687,11 +687,11 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   /* -- Get and delete registry item --------------------------------------- */
   const string GetRegistry(const string &strItem)
   { // Find item and if we didn't find it? Return default string
-    const StrNCStrMapIt vlItem{ vlRegistry.find(strItem) };
-    if(vlItem == vlRegistry.cend()) return {};
+    const StrNCStrMapIt vlItem{ pRegistry.find(strItem) };
+    if(vlItem == pRegistry.cend()) return {};
     // Get the value and delete it. We will move instead of copying
     const string strReq{ StdMove(vlItem->second) };
-    vlRegistry.erase(vlItem);
+    pRegistry.erase(vlItem);
     return strReq;
   }
   /* -- String is binary? Returns location of binary ----------------------- */
@@ -716,7 +716,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       const string
         strReq{ StdMove(GetRegistry(cParent->strRegVarREQ)) },
         strBody{ StdMove(GetRegistry(cParent->strRegVarBODY)) },
-        strHdrs{ StdMove(vlRegistry.VarsImplodeEx(": ", cCommon->CrLf())) },
+        strHdrs{ StdMove(pRegistry.ParserImplodeEx(": ", cCommon->CrLf())) },
         strPkt{ StdMove(StrAppend(strReq,
           strHdrs, cCommon->CrLf(), strBody)) };
       // Write the full request to the server and return if failed
@@ -799,15 +799,15 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       // Add rest of response to headers
       strHeaders += strResp;
       // Build output headers list by exploding header string
-      vlRegistry.VarsReInit(strHeaders, cCommon->CrLf(), ':');
-      if(vlRegistry.empty()) return SetErrorStaticSafe("No response");
+      pRegistry.ParserReInit(strHeaders, cCommon->CrLf(), ':');
+      if(pRegistry.empty()) return SetErrorStaticSafe("No response");
       // Done with the headers string
       strHeaders.clear();
       strHeaders.shrink_to_fit();
       // Find initial reponse (should be #0 set by VARS class)
       const StrNCStrMapConstIt
-        vlR{ vlRegistry.find(cParent->strRegVarRESPONSE) };
-      if(vlR == vlRegistry.cend()) return SetErrorStaticSafe("Bad response");
+        vlR{ pRegistry.find(cParent->strRegVarRESPONSE) };
+      if(vlR == pRegistry.cend()) return SetErrorStaticSafe("Bad response");
       // Split into words. We should have got at least three words
       const Token tWords{ vlR->second, cCommon->Space() };
       if(tWords.size() < 3) return SetErrorStaticSafe("Unknown response");
@@ -829,18 +829,18 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       else SocketLogSafe(LH_WARNING, "Status error $", strStatus);
       // Add protocol and status code to registry so guest can read them
       // without having to perform any special string operations
-      vlRegistry.VarsPushOrUpdatePair(cParent->strRegVarPROTO, strProtoRecv);
-      vlRegistry.VarsPushOrUpdatePair(cParent->strRegVarCODE, strStatus);
+      pRegistry.ParserPushOrUpdatePair(cParent->strRegVarPROTO, strProtoRecv);
+      pRegistry.ParserPushOrUpdatePair(cParent->strRegVarCODE, strStatus);
       // For each response var. Push key/value pair to TX registry
-      for(const auto &vlI : vlRegistry)
+      for(const auto &vlI : pRegistry)
         PushTXPairSafe(vlI.first, vlI.second);
       // If we got a content type?
-      const StrNCStrMapConstIt vlT{ vlRegistry.find("content-type") };
-      if(vlT != vlRegistry.cend())
+      const StrNCStrMapConstIt vlT{ pRegistry.find("content-type") };
+      if(vlT != pRegistry.cend())
         SocketLogSafe(LH_DEBUG, "Type is $", vlT->second);
       // Should get content length
-      const StrNCStrMapConstIt vlL{ vlRegistry.find("content-length") };
-      if(vlL != vlRegistry.cend())
+      const StrNCStrMapConstIt vlL{ pRegistry.find("content-length") };
+      if(vlL != pRegistry.cend())
       { // Get reference to string and if it's not valid?
         const string &strVal = vlL->second;
         if(!StrIsInt(strVal))
@@ -1343,14 +1343,14 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     SetAddress(strA, uiP);
     SetupCipher(strC);
     // Initialise registry with headers
-    vlRegistry.VarsReInit(strH, cCommon->Lf(), ':');
+    pRegistry.ParserReInit(strH, cCommon->Lf(), ':');
     // Push default user agent if not specified already
-    vlRegistry.VarsPushIfNotExist("user-agent",
+    pRegistry.ParserPushIfNotExist("user-agent",
       cCVars->GetInternalStrSafe(NET_USERAGENT));
     // Find if the request contains a bookmark fragment
     const size_t stFrag = strR.find('#');
     // Start building registry for connector thread
-    vlRegistry.VarsPushOrUpdatePairs({
+    pRegistry.ParserPushOrUpdatePairs({
       // Also disable keep-alive, we don't support it (yet?).
       { "connection", "close" },
       // Push the source address
@@ -1365,7 +1365,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       { cParent->strRegVarMETHOD, StdMove(strS) },
     });
     // Body specified?
-    if(!strB.empty()) vlRegistry.VarsPushOrUpdatePairs({
+    if(!strB.empty()) pRegistry.ParserPushOrUpdatePairs({
       // Add length of body text
       { "content-length", StrFromNum(strB.length()) },
       // Add body text
@@ -1513,31 +1513,31 @@ static StrNCStrMap SocketOAuth11(const string &strMethod,
   const string &strScheme, const string &strHost, const string &strPort,
   const string &strReq, const string &strURLparams, const string &strParams)
 { // Input varlist and split params into it
-  Vars<> vaIn{ strParams, cCommon->Lf(), '=' };
-  if(vaIn.empty()) return {};
+  Parser<> pParams{ strParams, cCommon->Lf(), '=' };
+  if(pParams.empty()) return {};
   // Get consumer key
-  const string strCK{ vaIn.Extract("oauth_consumer_key") };
+  const string strCK{ pParams.Extract("oauth_consumer_key") };
   if(strCK.empty())
     XC("No 'oauth_consumer_key' specified!",
        "Method",  strMethod, "Scheme", strScheme,
        "Host",    strHost,   "Port",   strPort,
        "Request", strReq,    "Params", strParams);
   // Get token
-  const string strTok{ vaIn.Extract("oauth_token") };
+  const string strTok{ pParams.Extract("oauth_token") };
   if(strTok.empty())
     XC("No 'oauth_token' specified!",
        "Method",  strMethod, "Scheme", strScheme,
        "Host",    strHost,   "Port",   strPort,
        "Request", strReq,    "Params", strParams);
   // Get user secret
-  const string strUS{ vaIn.Extract("oauth_user_secret") };
+  const string strUS{ pParams.Extract("oauth_user_secret") };
   if(strUS.empty())
     XC("No 'oauth_user_secret' specified!",
        "Method",  strMethod, "Scheme", strScheme,
        "Host",    strHost,   "Port",   strPort,
        "Request", strReq,    "Params", strParams);
   // Get consumer secret
-  const string strCS{ vaIn.Extract("oauth_consumer_secret") };
+  const string strCS{ pParams.Extract("oauth_consumer_secret") };
   if(strCS.empty())
     XC("No 'oauth_consumer_secret' specified!",
        "Method",  strMethod, "Scheme", strScheme,
@@ -1551,7 +1551,7 @@ static StrNCStrMap SocketOAuth11(const string &strMethod,
   string strAddr{ StrAppend(strScheme, "://", strHost, strCPort, strReq) };
   // Put basic stuff in. Be careful of using StrPair with CStrings as
   // you cant use string& with cstrings, so use CSTR*PAIR's instead.
-  StrNCStrMap vaOA{{
+  StrNCStrMap ssmFinal{{
     { "oauth_consumer_key",                       StdMove(strCK) },
     { "oauth_nonce", SHA1functions::HashMB(CryptRandomBlock(64)) },
     { "oauth_timestamp",              StrFromNum(cmSys.GetTimeS()) },
@@ -1560,27 +1560,26 @@ static StrNCStrMap SocketOAuth11(const string &strMethod,
     { "oauth_version",                                     "1.0" }
   }};
   // Copy config vars and oauth vars into unsigned params map
-  StrNCStrMap vaUP{ vaOA };
-  vaUP.insert(vaIn.cbegin(), vaIn.cend());
+  StrNCStrMap ssmDupe{ ssmFinal };
+  ssmDupe.insert(pParams.cbegin(), pParams.cend());
   // Split URL parameters and put each one in unsigned parameters list
-  const VarsConst<> vaURLP{ strURLparams, "&", '=' };
-  vaUP.insert(vaURLP.cbegin(), vaURLP.cend());
+  const ParserConst<> pUrl{ strURLparams, "&", '=' };
+  ssmDupe.insert(pUrl.cbegin(), pUrl.cend());
   // Now for each unsigned parameter. Encode it into the signed param table.
-  const string strOAParams{ CryptImplodeMapAndEncode(vaUP, "&") };
-  // Whats left in vaIn should be body parameters so lets sign them
-  const string strBody{ CryptImplodeMapAndEncode(vaIn, "&") };
+  const string strOAParams{ CryptImplodeMapAndEncode(ssmDupe, "&") };
+  // Whats left in pParams should be body parameters so lets sign them
+  const string strBody{ CryptImplodeMapAndEncode(pParams, "&") };
   // Hash the string with the key and return empty if fail
-  vaOA.insert({ "oauth_signature",
+  ssmFinal.insert({ "oauth_signature",
     CryptURLEncode(CryptMBtoB64(StdMove(SHA1functions::HashStrRaw(
       StrAppend(CryptURLEncode(strCS), '&', CryptURLEncode(strUS)),
-      StrAppend(CryptURLEncode(strMethod), '&',
-             CryptURLEncode(strAddr), '&',
-             CryptURLEncode(strOAParams))
+      StrAppend(CryptURLEncode(strMethod), '&', CryptURLEncode(strAddr), '&',
+                CryptURLEncode(strOAParams))
   )))) });
   // Build final oauth string
-  const string strKV{ ImplodeMap(vaOA, ", ") };
-  // Whats left in vaURLP should be body parameters so lets sign them
-  string strURLParams{ CryptImplodeMapAndEncode(vaURLP, "&") };
+  const string strKV{ ImplodeMap(ssmFinal, ", ") };
+  // Whats left in pUrl should be body parameters so lets sign them
+  string strURLParams{ CryptImplodeMapAndEncode(pUrl, "&") };
   // This is the URL resource + parameters
   string strResParams{ strReq };
   // Have parameters?

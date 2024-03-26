@@ -24,7 +24,7 @@ namespace E {                          // Start of engine namespace
 #include "string.hpp"                  // String utilities header
 #include "error.hpp"                   // Error handling utility header
 #include "token.hpp"                   // String tokenisation utility header
-#include "vars.hpp"                    // String variables utility header
+#include "parser.hpp"                  // String parsing utility header
 #include "psplit.hpp"                  // Path handling utilities header
 #include "ident.hpp"                   // Identifier utility header
 #include "dir.hpp"                     // Directory handling utility header
@@ -44,7 +44,7 @@ namespace E {                          // Start of engine namespace
 #include "evtmain.hpp"                 // Main engine events system header
 #include "condef.hpp"                  // Console definitions header
 #include "glfwutil.hpp"                // GLFW utility class header
-#include "glfwcrsr.hpp"                 // GLFW cursor class header
+#include "glfwcrsr.hpp"                // GLFW cursor class header
 #include "glfwwin.hpp"                 // GLFW window class header
 #include "glfw.hpp"                    // GLFW utilities header
 #include "dim.hpp"                     // Data grouping classes header
@@ -107,6 +107,8 @@ namespace E {                          // Start of engine namespace
 #include "input.hpp"                   // Input handling class header
 #include "glfwmon.hpp"                 // GLFW monitor class header
 #include "display.hpp"                 // Window handling class header
+#include "luacmd.hpp"                  // Lua console command class
+#include "luavar.hpp"                  // Lua variable class
 #include "core.hpp"                    // Core class header
 #include "lualib.hpp"                  // Lua lua function api library
 /* ------------------------------------------------------------------------- */

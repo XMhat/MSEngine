@@ -62,7 +62,9 @@ static class GlFW final :              // Root engine class
         return;
     }
   }
-  /* -- DeInitialiser ---------------------------------------------- */ public:
+  /* --------------------------------------------------------------- */ public:
+  const string &GetInternalVersion(void) const { return strIntVersion; }
+  /* -- DeInitialiser ------------------------------------------------------ */
   void DeInit(void)
   { // Ignore if class not initialised
     if(IHDeInitialise()) return;
@@ -108,9 +110,9 @@ static class GlFW final :              // Root engine class
         // mismatches with our version? Write a log message. It's not really a
         // problem since GlFW's headers maintain compatibility across versions.
         strExtVersion = StdMove(tIdentity.front());
-        if(strExtVersion != strIntVersion)
+        if(strExtVersion != GetInternalVersion())
           cLog->LogInfoExSafe("GlFW compiled with version '$' headers.",
-            strIntVersion);
+            GetInternalVersion());
         // Parse features into a list
         StdForEach(seq, tIdentity.cbegin()+1, tIdentity.cend(),
           [this](const string &strStr)

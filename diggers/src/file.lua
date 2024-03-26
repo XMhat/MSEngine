@@ -14,16 +14,14 @@ local tonumber<const>, format<const>, pairs<const>, floor<const>
       = -- ----------------------------------------------------------------- --
       tonumber,string.format, pairs, math.floor;
 -- M-Engine function aliases ----------------------------------------------- --
-local UtilFormatTime<const>, InfoOSTime<const>, CVarsGet<const>,
-      CVarsSet<const>,       CVarsSave<const>
+local UtilFormatTime<const>, InfoOSTime<const>, VariableSave<const>
       = -- ----------------------------------------------------------------- --
-      Util.FormatTime,       Info.OSTime,       CVars.Get,
-      CVars.Set,             CVars.Save;
+      Util.FormatTime,       Info.OSTime,       Variable.Save;
 -- Diggers function and data aliases --------------------------------------- --
-local LoadResources, Fade, SetCallbacks, IsMouseInBounds,
+local aSaveSlot, LoadResources, Fade, SetCallbacks, IsMouseInBounds,
   IsMouseNotInBounds, aCursorIdData, SetCursor, PlayStaticSound, aSfxData,
   InitCon, aObjectTypes, aLevelData, aObjectData, IsButtonReleased, texSpr,
-  fontSpeech, SetBottomRightTipAndShadow, RenderShadow;
+  fontSpeech, SetBottomRightTipAndShadow, RenderShadow = { };
 -- Match text -------------------------------------------------------------- --
 local sFileMatchText<const> =
   "^(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),"..
@@ -60,7 +58,7 @@ local function LoadSaveData()
   -- Get game data cvars
   for iIndex = 1, 4 do
     -- Get cvar and if not empty
-    local sData<const> = CVarsGet("gam_data"..iIndex);
+    local sData<const> = aSaveSlot[iIndex]:Get();
     if #sData > 0 then
       -- Get data for num
       -- We need 5 comma seperated values (Last value optional)
@@ -264,7 +262,7 @@ local function InitFile()
           -- Play sound
           PlayStaticSound(aSfxData.SELECT);
           -- Write data
-          CVarsSet("gam_data"..iSelected,
+          aSaveSlot[iSelected]:Set(
             format("%u,%u,%u,%d,%d,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%s",
               InfoOSTime(), aGlobalData.gTotalTimeTaken,
               aGlobalData.gSelectedRace, aGlobalData.gBankBalance,
@@ -279,7 +277,7 @@ local function InitFile()
           -- Can exit to title
           aGlobalData.gGameSaved = true;
           -- Commit cvars on the game engine to persistant storage
-          CVarsSave();
+          VariableSave();
           -- Refresh data
           aFileData, aNameData = LoadSaveData();
         -- File 1 clicked?
@@ -328,13 +326,15 @@ return {
     LoadResources, SetCallbacks, SetCursor, IsMouseInBounds, PlayStaticSound,
     Fade, IsMouseNotInBounds, aCursorIdData, aSfxData, InitCon, aObjectTypes,
     aLevelData, aObjectData, IsButtonReleased, texSpr, fontSpeech,
-    SetBottomRightTipAndShadow, RenderShadow
+    SetBottomRightTipAndShadow, RenderShadow, aSaveSlot[1], aSaveSlot[2],
+    aSaveSlot[3], aSaveSlot[4]
     = -- ------------------------------------------------------------------- --
     GetAPI("LoadResources", "SetCallbacks", "SetCursor", "IsMouseInBounds",
       "PlayStaticSound", "Fade", "IsMouseNotInBounds", "aCursorIdData",
       "aSfxData", "InitCon", "aObjectTypes", "aLevelData", "aObjectData",
       "IsButtonReleased", "texSpr", "fontSpeech", "SetBottomRightTipAndShadow",
-      "RenderShadow");
+      "RenderShadow", "VarGameData1", "VarGameData2", "VarGameData3",
+      "VarGameData4");
     -- --------------------------------------------------------------------- --
   end
 };

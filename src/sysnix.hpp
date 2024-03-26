@@ -378,15 +378,15 @@ class SysCore :
       const string strFile{ fsCpuInfo.FStreamReadStringChunked() };
       if(!strFile.empty())
       { // Parse the variables and if we got some?
-        VarsConst<> vVars{ strFile, StrGetReturnFormat(strFile), ':' };
-        if(!vVars.empty())
+        ParserConst<> pcParser{ strFile, StrGetReturnFormat(strFile), ':' };
+        if(!pcParser.empty())
         { // Move stirngs from loaded variables
-          string strCpuId{ StdMove(vVars["model name"]) },
-                 strSpeed{ StdMove(vVars["cpu MHz"]) },
-                 strVendor{ StdMove(vVars["vendor_id"]) },
-                 strFamily{ StdMove(vVars["cpu family"]) },
-                 strModel{ StdMove(vVars["model"]) },
-                 strStepping{ StdMove(vVars["stepping"]) };
+          string strCpuId{ StdMove(pcParser["model name"]) },
+                 strSpeed{ StdMove(pcParser["cpu MHz"]) },
+                 strVendor{ StdMove(pcParser["vendor_id"]) },
+                 strFamily{ StdMove(pcParser["cpu family"]) },
+                 strModel{ StdMove(pcParser["model"]) },
+                 strStepping{ StdMove(pcParser["stepping"]) };
           // Remove excessive whitespaces from strings
           StrCompactRef(strCpuId);
           StrCompactRef(strSpeed);

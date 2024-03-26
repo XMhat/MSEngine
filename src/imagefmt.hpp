@@ -600,15 +600,15 @@ class CodecPNG final :                 // Members initially private
         // Done
         break;
       // Grayscale (8-bpp)?
-      case BD_GRAY: iColourType = PNG_COLOR_TYPE_GRAY; goto BITNM;
+      case BD_GRAY: iColourType = PNG_COLOR_TYPE_GRAY; goto Scan;
       // Grayscale with alpha (16-bpp)?
-      case BD_GRAYALPHA: iColourType = PNG_COLOR_TYPE_GRAY_ALPHA; goto BITNM;
+      case BD_GRAYALPHA: iColourType = PNG_COLOR_TYPE_GRAY_ALPHA; goto Scan;
       // True-colour (24-bpp)?
-      case BD_RGB: iColourType = PNG_COLOR_TYPE_RGB; goto BITNM;
+      case BD_RGB: iColourType = PNG_COLOR_TYPE_RGB; goto Scan;
       // True-colour with alpha (32-bpp)?
-      case BD_RGBA: iColourType = PNG_COLOR_TYPE_RGB_ALPHA; goto BITNM;
+      case BD_RGBA: iColourType = PNG_COLOR_TYPE_RGB_ALPHA;
         // All the other types (except binary) converge to here
-        BITNM:; pwC.Header(isData, 8, iColourType, PNG_INTERLACE_ADAM7,
+        Scan:; pwC.Header(isData, 8, iColourType, PNG_INTERLACE_ADAM7,
           PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
         // Set location of each scanline
         for(size_t stScanIndex = 0,

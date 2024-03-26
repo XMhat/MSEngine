@@ -314,19 +314,19 @@ class SysCore :
               cLog->LogWarningExSafe("System process $ parent $ not $!",
                 dwPid, pedData.th32ParentProcessID, GetPid());
             } // Terminate the process and if failed?
-            else if(!TerminateProcess(hPid, static_cast<UINT>(-1)))
-            { // Failed result
-              bResult = false;
-              // Write that we couldnt terminate processes
-              cLog->LogWarningExSafe(
-                "System failed to terminate process $: $!", uiPid, SysError());
-            } // Success so set success result
-            else
+            else if(TerminateProcess(hPid, static_cast<UINT>(-1)))
             { // Success result
               bResult = true;
               // Write that we couldnt terminate processes
               cLog->LogInfoExSafe(
                 "System forcefully terminated process $!", uiPid);
+            } // Success so set success result
+            else
+            { // Failed result
+              bResult = false;
+              // Write that we couldnt terminate processes
+              cLog->LogWarningExSafe(
+                "System failed to terminate process $: $!", uiPid, SysError());
             } // We're finished
             goto Finished;
             // ...until no more processes.

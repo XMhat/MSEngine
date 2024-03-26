@@ -82,11 +82,10 @@ template<typename IntType=int, typename AnyType, IntType itSize>
 #include "llaudio.hpp"                 // Audio namespace and methods
 #include "llbin.hpp"                   // Bin namespace and methods
 #include "llclip.hpp"                  // Clipboard namespace and methods
-#include "llconsole.hpp"               // Console namespace and methods
+#include "llcommand.hpp"               // Command namespace and methods
 #include "llcore.hpp"                  // Core namespace and methods
 #include "llcredit.hpp"                // Credit namespace and methods
 #include "llcrypt.hpp"                 // Crypt namespace and methods
-#include "llcvars.hpp"                 // Cvars namespace and methods
 #include "lldisplay.hpp"               // Display namespace and methods
 #include "llfbo.hpp"                   // Fbo namespace and methods
 #include "llfile.hpp"                  // File namespace and methods
@@ -107,6 +106,7 @@ template<typename IntType=int, typename AnyType, IntType itSize>
 #include "lltexture.hpp"               // Texture namespace and methods
 #include "llpalette.hpp"               // Palette namespace and methods
 #include "llutil.hpp"                  // Util namespace and methods
+#include "llvar.hpp"                   // Variable namespace and methods
 #include "llvideo.hpp"                 // Video namespace and methods
 /* -- Done with these macros ----------------------------------------------- */
 #undef LLRSEND
@@ -193,22 +193,22 @@ template<typename IntType=int, typename AnyType, IntType itSize>
 /* -- Define the ms-engine api list loaded at startup ---------------------- */
 const LuaLibStatic luaLibList[] =
 { /* -- Use the above macros to define namespaces -------------------------- */
-  LLSMX(Archive, CFL_NONE),            LLSMC(Asset,   CFL_NONE),
-  LLSXX(Audio,   CFL_AUDIO),           LLSMX(Bin,     CFL_NONE),
-  LLSMX(Clip,    CFL_VIDEO),           LLSXC(Core,    CFL_NONE),
-  LLSXX(Credit,  CFL_NONE),            LLSXC(CVars,   CFL_NONE),
-  LLSXC(Console, CFL_NONE),            LLSXX(Crypt,   CFL_NONE),
-  LLSXC(Display, CFL_VIDEO),           LLSMC(Fbo,     CFL_VIDEO),
-  LLSMC(File,    CFL_NONE),            LLSMC(Font,    CFL_VIDEO),
-  LLSMX(Ftf,     CFL_NONE),            LLSMC(Image,   CFL_NONE),
-  LLSXX(Info,    CFL_NONE),            LLSXC(Input,   CFL_VIDEO),
-  LLSMX(Json,    CFL_NONE),            LLSMX(Mask,    CFL_NONE),
-  LLSMX(Palette, CFL_VIDEO),           LLSMC(Pcm,     CFL_NONE),
-  LLSMX(Sample,  CFL_AUDIO),           LLSMX(Stat,    CFL_NONE),
-  LLSMC(Socket,  CFL_NONE),            LLSMX(Source,  CFL_AUDIO),
-  LLSXC(Sql,     CFL_NONE),            LLSMC(Stream,  CFL_AUDIO),
-  LLSMX(Texture, CFL_VIDEO),           LLSXX(Util,    CFL_NONE),
-  LLSMC(Video,   CFL_AUDIOVIDEO),
+  LLSMX(Archive,  CFL_NONE),           LLSMC(Asset,    CFL_NONE),
+  LLSXX(Audio,    CFL_AUDIO),          LLSMX(Bin,      CFL_NONE),
+  LLSMX(Clip,     CFL_VIDEO),          LLSXC(Core,     CFL_NONE),
+  LLSXX(Credit,   CFL_NONE),           LLSMX(Command,  CFL_NONE),
+  LLSXX(Crypt,    CFL_NONE),           LLSXC(Display,  CFL_VIDEO),
+  LLSMC(Fbo,      CFL_VIDEO),          LLSMC(File,     CFL_NONE),
+  LLSMC(Font,     CFL_VIDEO),          LLSMX(Ftf,      CFL_NONE),
+  LLSMC(Image,    CFL_NONE),           LLSXX(Info,     CFL_NONE),
+  LLSXC(Input,    CFL_VIDEO),          LLSMX(Json,     CFL_NONE),
+  LLSMX(Mask,     CFL_NONE),           LLSMX(Palette,  CFL_VIDEO),
+  LLSMC(Pcm,      CFL_NONE),           LLSMX(Sample,   CFL_AUDIO),
+  LLSMX(Stat,     CFL_NONE),           LLSMC(Socket,   CFL_NONE),
+  LLSMX(Source,   CFL_AUDIO),          LLSXC(Sql,      CFL_NONE),
+  LLSMC(Stream,   CFL_AUDIO),          LLSMX(Texture,  CFL_VIDEO),
+  LLSXX(Util,     CFL_NONE),           LLSMC(Variable, CFL_NONE),
+  LLSMC(Video,    CFL_AUDIOVIDEO),
   /* -- Last item, do not delete ------------------------------------------- */
   { nullptr, CFL_NONE, LLNOCONSTS(), LLNOMETHODS(), LLNOCONSTS() }
 };/* -- Done with these macros --------------------------------------------- */

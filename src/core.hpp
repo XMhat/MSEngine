@@ -284,6 +284,8 @@ class Core                             // Members initially private
         case EMC_LUA_END:
           // Setup lua default environment (libraries, config, etc.)
           cLua->SetupEnvironment();
+          // Build cvars ids list
+          cCVars->BuildCVarIDsList(cLua->GetState());
           // Force timer delay to 1ms to prevent 100% thread use on Main*
           cTimer->TimerSetDelayIfZero();
           // Exceptions from here on are recoverable
@@ -304,6 +306,8 @@ class Core                             // Members initially private
           CoreResetEnvironment(false);
           // Setup lua default environment (libraries, config, etc.)
           cLua->SetupEnvironment();
+          // Build cvars ids list
+          cCVars->BuildCVarIDsList(cLua->GetState());
           // Default event code is error status. This is so if even c++
           // exceptions or C (LUA) exceptions occur, the underlying scope knows
           // to handle the error and try to recover. The actual loops will set
@@ -377,10 +381,7 @@ class Core                             // Members initially private
   }
   /* -- Lua deinitialiser helper which updates all the classes that use it - */
   void CoreLuaDeInitHelper(void)
-  { // Unregister all lua cvars and console commands
-    cCVars->UnregisterAllLuaCVars();
-    cConsole->UnregisterAllLuaCommands();
-    // De-init lua and update systems that use Lua
+  { // De-init lua and update systems that use Lua
     cLua->DeInit();
     // Reset environment (leaving)
     CoreResetEnvironment(true);
@@ -767,14 +768,15 @@ class Core                             // Members initially private
       using namespace ICrypt::P;       using namespace IFile::P;
       using namespace IGlFWMonitor::P; using namespace IImageDef::P;
       using namespace IImageFormat::P; using namespace IImageLib::P;
-      using namespace ILuaFunc::P;     using namespace IMask::P;
+      using namespace ILuaCommand::P;  using namespace ILuaFunc::P;
+      using namespace ILuaVariable::P; using namespace IMask::P;
       using namespace IMemory::P;      using namespace IOal::P;
-      using namespace IPcmFormat::P;   using namespace IPcmLib::P;
-      using namespace ISample::P;      using namespace IShader::P;
-      using namespace ISocket::P;      using namespace ISource::P;
-      using namespace ISShot::P;       using namespace IStat::P;
-      using namespace IUtil::P;        using namespace IUtf;
-      using namespace IVars::P;        using namespace Lib::OpenAL;
+      using namespace IParser::P;      using namespace IPcmFormat::P;
+      using namespace IPcmLib::P;      using namespace ISample::P;
+      using namespace IShader::P;      using namespace ISocket::P;
+      using namespace ISource::P;      using namespace ISShot::P;
+      using namespace IStat::P;        using namespace IUtil::P;
+      using namespace IUtf;            using namespace Lib::OpenAL;
       using namespace Lib::OS::GlFW;   using namespace Lib::Sqlite;
       // Include cvar varaiables array that we will send to CVars class
 #include "cvarlib.hpp"
@@ -788,13 +790,13 @@ class Core                             // Members initially private
       INITSS(EvtMain);                 // cppcheck-suppress danglingLifetime
       INITSS(System);                  // cppcheck-suppress danglingLifetime
       INITSS(LuaFuncs);                // cppcheck-suppress danglingLifetime
-      INITSS(Credits);                 // cppcheck-suppress danglingLifetime
       INITSS(Archives);                // cppcheck-suppress danglingLifetime
       INITSS(Assets);                  // cppcheck-suppress danglingLifetime
       INITSS(Crypt);                   // cppcheck-suppress danglingLifetime
       INITSS(Timer);                   // cppcheck-suppress danglingLifetime
       INITSS(Sql);                     // cppcheck-suppress danglingLifetime
       INITSS(GlFW);                    // cppcheck-suppress danglingLifetime
+      INITSS(Credits);                 // cppcheck-suppress danglingLifetime
       INITSS(CVars, cvEngList);        // cppcheck-suppress danglingLifetime
       INITSS(FreeType);                // cppcheck-suppress danglingLifetime
       INITSS(Ftfs);                    // cppcheck-suppress danglingLifetime
@@ -828,9 +830,11 @@ class Core                             // Members initially private
       INITSS(Palettes);                // cppcheck-suppress danglingLifetime
       INITSS(Fonts);                   // cppcheck-suppress danglingLifetime
       INITSS(Videos);                  // cppcheck-suppress danglingLifetime
-      // Lua always has to be last so it is first to clean up the sandbox
       INITSS(Console, conLibList);     // cppcheck-suppress danglingLifetime
+      // Lua always has to be last so it is first to clean up the sandbox
       INITSS(Lua);                     // cppcheck-suppress danglingLifetime
+      INITSS(Commands);                // cppcheck-suppress danglingLifetime
+      INITSS(Variables);               // cppcheck-suppress danglingLifetime
       // Done with this macro
 #undef INITSS
       // Codec helper macro. Do not change the order or you will have to update
@@ -906,12 +910,10 @@ class Core                             // Members initially private
             EO_UI_REBOOT : EO_TERM_REBOOT);
           // Have debugging enabled?
           if(cLog->HasLevel(LH_DEBUG))
-          { // Create a counter for argument number
+          { // Log each argument that will be sent
             size_t stId = 0;
-            // Log each argument that will be sent. Could be wchar_t or char.
-            for(const ArgType*const *atListPtr = cCmdLine->GetCArgs();
-                const ArgType*const atPtr = *atListPtr; ++atListPtr)
-              cLog->LogNLCDebugExSafe("- Arg $: $.", stId++, S16toUTF(atPtr));
+            for(const string &strArg : cCmdLine->GetArgList())
+              cLog->LogNLCDebugExSafe("- Arg $: $.", stId++, strArg);
           } // Clean-up and restart
           return 3;
         // If we're to restart process without parameters? Set to do so.

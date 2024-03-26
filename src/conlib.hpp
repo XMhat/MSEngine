@@ -231,12 +231,14 @@ for(const auto &caPair : cSockets->GetCertList())
   tData.Data(StrFromBoolYN(CertIsExpired(caPair.second)))
        .Data(caPair.first);
   // Split subject key/value pairs. We couldn't split the data if empty
-  const VarsConst<> ssD{ CertGetSubject(caPair), cCommon->FSlash(), '=' };
-  if(ssD.empty()) { tData.Data("??").Data("<No sub>"); continue; }
+  const ParserConst<> pSubject{
+    CertGetSubject(caPair), cCommon->FSlash(), '=' };
+  if(pSubject.empty()) { tData.Data("??").Data("<No sub>"); continue; }
   // Print country and certificate name
-  const StrStrMapConstIt iC{ ssD.find("C") }, iCN{ ssD.find("CN") };
-  tData.Data(iC == ssD.cend() ? "--" : CryptURLDecode(iC->second)).
-        Data(iCN == ssD.cend() ? "<Unknown>" : CryptURLDecode(iCN->second));
+  const StrStrMapConstIt iC{ pSubject.find("C") }, iCN{ pSubject.find("CN") };
+  tData.Data(iC == pSubject.cend() ? "--" : CryptURLDecode(iC->second))
+       .Data(iCN == pSubject.cend() ?
+          cCommon->Unspec() : CryptURLDecode(iCN->second));
 } // Print output and number of shaders listed
 cConsole->AddLineExA(tData.Finish(),
   StrPluraliseNum(cSockets->GetCertListSize(),
@@ -247,14 +249,14 @@ cConsole->AddLineExA(tData.Finish(),
 // ! cla
 // ? Lists all command-line arguments sent to the process.
 /* ------------------------------------------------------------------------- */
-{ "cla", 1, 2, CFL_NONE, [](const Args &aList){
+{ "cla", 1, 2, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Get list of environment variables
 const StrVector &svArgs = cCmdLine->GetArgList();
 // If parameter was specified?
-if(aList.size() > 1)
+if(aArgs.size() > 1)
 { // Convert parmeter to number
-  const size_t stArg = StrToNum<size_t>(aList[1]);
+  const size_t stArg = StrToNum<size_t>(aArgs[1]);
   if(stArg >= svArgs.size())
     return cConsole->AddLine("Command line argument index invalid!");
   // Print it and return
@@ -295,13 +297,13 @@ cConsole->Flush();
 // ? Shows all the available console commands. You can optionally specify
 // ? [partial] to partially match the beginning of each command.
 /* ------------------------------------------------------------------------- */
-{ "cmds", 1, 2, CFL_NONE, [](const Args &aList){
+{ "cmds", 1, 2, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Setup iterator to find items and return if no commands.
 const auto &cbCmds = cConsole->GetCmdsList();
 if(cbCmds.empty()) return cConsole->AddLine("No commands are found!");
 // Set filter if specified and look for command and if we found one?
-const string &strFilter = aList.size() > 1 ? aList[1] : cCommon->Blank();
+const string &strFilter = aArgs.size() > 1 ? aArgs[1] : cCommon->Blank();
 auto ciItem{ cbCmds.lower_bound(strFilter) };
 if(ciItem != cbCmds.cend())
 { // Output string
@@ -388,12 +390,12 @@ System::CriticalHandler("Requested operation");
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'crash' function
 /* ========================================================================= */
-{ "credits", 1, 2, CFL_NONE, [](const Args &aList){
+{ "credits", 1, 2, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Do we have a parameter?
-if(aList.size() > 1)
+if(aArgs.size() > 1)
 {  // Get index and show decompressed text for it or invalid
-  const size_t stIndex = StrToNum<size_t>(aList[1]);
+  const size_t stIndex = StrToNum<size_t>(aArgs[1]);
   return cConsole->AddLine(stIndex >= cCredits->CreditGetItemCount() ?
     "The specified credit index is invalid!" :
     cCredits->CreditGetItemText(static_cast<CreditEnums>(stIndex)));
@@ -416,18 +418,18 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'credits' function
 /* ========================================================================= */
-{ "cvars", 1, 2, CFL_NONE, [](const Args &aList){
+{ "cvars", 1, 2, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // If we actually came from the 'cvpend' command, select internal 'load
 // from/save to' list else select the main public cvar list.
 typedef CVars::ItemMap CVarsItemMap;
-const CVarsItemMap &cimList = aList[0][2] == 'p' ? // Optimal and safe
+const CVarsItemMap &cimList = aArgs[0][2] == 'p' ? // Optimal and safe
   cCVars->GetInitialVarList() : cCVars->GetVarList();
 // Ignore if empty
 if(cimList.empty())
   return cConsole->AddLine("No cvars exist in this category!");
 // Set filter if specified
-const string &strFilter = aList.size() > 1 ? aList[1] : cCommon->Blank();
+const string &strFilter = aArgs.size() > 1 ? aArgs[1] : cCommon->Blank();
 // Lock cvars list
 const LockGuard lgCVarsSync{ cCVars->mMutex };
 // Try to find the cvar outright first (only make work when not in release)
@@ -569,13 +571,13 @@ else cConsole->AddLine("Failed to create new private key!");
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'cvnpk' function
 /* ========================================================================= */
-{ "cvpend", 1, 2, CFL_NONE, [](const Args &aList){
+{ "cvpend", 1, 2, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // We can reuse the 'cvars' callback here but the only way to get to it from
 // here is to access this list from the 'CVars' class since it keeps a
 // reference to this list. Compiler will most probably just optimise this away
 // anyway to a direct access.
-cConsole->GetCommand(CC_CVARS).ccbFunc(aList);
+cConsole->GetCommand(CC_CVARS).ccbFunc(aArgs);
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'cvpend' function
 /* ========================================================================= */
@@ -586,10 +588,10 @@ cConsole->AddLineExA(StrPluraliseNum(cCVars->Save(), "cvar", "cvars"),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'cvsave' function
 /* ========================================================================= */
-{ "dir", 1, 2, CFL_NONE, [](const Args &aList){
+{ "dir", 1, 2, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Make and checkfilename
-const string &strVal = aList.size() > 1 ? aList[1] : ".";
+const string &strVal = aArgs.size() > 1 ? aArgs[1] : ".";
 const ValidResult vResult = DirValidName(strVal);
 if(vResult != VR_OK)
   return cConsole->AddLineEx("Cannot check directory '$': $!",
@@ -597,7 +599,7 @@ if(vResult != VR_OK)
 // Enumerate local directories on disk
 const Dir dPath{ StdMove(strVal) };
 // Set directory and get directories and files
-const string &strDir = aList.size() > 1 ? aList[1] : cCommon->Blank();
+const string &strDir = aArgs.size() > 1 ? aArgs[1] : cCommon->Blank();
 // Directory data we are enumerating
 struct Item { const uint64_t qwSize;
               const unsigned int uiId;
@@ -693,14 +695,14 @@ cConsole->AddLineEx("$$ and $ totalling $ ($) in $.",
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'dir' function
 /* ========================================================================= */
-{ "env", 1, 2, CFL_NONE, [](const Args &aList){
+{ "env", 1, 2, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Get list of environment variables
 const StrStrMap &ssmEnv = cCmdLine->GetEnvList();
 // If parameter was specified?
-if(aList.size() > 1)
+if(aArgs.size() > 1)
 { // Get parameter name and find it
-  const StrStrMapConstIt &ssmciVar = ssmEnv.find(aList[1]);
+  const StrStrMapConstIt &ssmciVar = ssmEnv.find(aArgs[1]);
   if(ssmciVar == ssmEnv.cend())
     return cConsole->AddLine("Environment variable not found!");
   // Print it and return
@@ -795,10 +797,10 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'files' function
 /* ========================================================================= */
-{ "find", 2, 0, CFL_NONE, [](const Args &aList){
+{ "find", 2, 0, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Find text in console backlog and if not found, show message
-cConsole->FindText(StrImplode(aList, 1));
+cConsole->FindText(StrImplode(aArgs, 1));
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'find' function
 /* ========================================================================= */
@@ -903,14 +905,14 @@ cConsole->AddLineEx(
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'gpu' function
 /* ========================================================================= */
-{ "images", 1, 2, CFL_NONE, [](const Args &aList){
+{ "images", 1, 2, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Get reference to images collector class and lock it so it's not changed
 const LockGuard lgImagesSync{ cImages->CollectorGetMutex() };
 // If we have more than one parameter?
-if(aList.size() == 2)
+if(aArgs.size() == 2)
 { // Get slot data and return if it is a bad slot
-  const size_t stId = StrToNum<size_t>(aList[1]);
+  const size_t stId = StrToNum<size_t>(aArgs[1]);
   if(stId >= cImages->size()) return cConsole->AddLine("Invalid image id!");
   const Image &iCref = **next(cImages->cbegin(), static_cast<ssize_t>(stId));
   // Text table class to help us write neat output
@@ -1015,12 +1017,46 @@ cConsole->AddLineExA(StrPluraliseNum(cJsons->size(), "json.", "jsons."));
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'jsons' function
 /* ========================================================================= */
-{ "lcalc", 2, 0, CFL_NONE, [](const Args &aList){
+{ "lcalc", 2, 0, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 cConsole->AddLine(cLua->CompileStringAndReturnResult(
-  StrFormat("return $", StrImplode(aList, 1))));
+  StrFormat("return $", StrImplode(aArgs, 1))));
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'lcalc' function
+/* ========================================================================= */
+{ "lcmds", 1, 2, CFL_NONE, [](const Args &aArgs){
+/* ------------------------------------------------------------------------- */
+// Setup iterator to find items and return if no commands.
+const auto &cbCmds = cConsole->GetLuaCmdsList();
+if(cbCmds.empty()) return cConsole->AddLine("No Lua commands are found!");
+// Set filter if specified and look for command and if we found one?
+const string &strFilter = aArgs.size() > 1 ? aArgs[1] : cCommon->Blank();
+auto ciItem{ cbCmds.lower_bound(strFilter) };
+if(ciItem != cbCmds.cend())
+{ // Output string
+  ostringstream osS;
+  // Commands matched
+  size_t stMatched = 0;
+  // Build output string
+  do
+  { // If no match found? return original string
+    const string &strKey = ciItem->first;
+    if(strKey.compare(0, strFilter.size(), strFilter)) continue;
+    // Increment matched counter
+    ++stMatched;
+    // Add command to command list
+    osS << ' ' << strKey;
+  } // Until no more commands
+  while(++ciItem != cbCmds.cend());
+  // Print output if we matched commands
+  if(stMatched)
+    return cConsole->AddLineEx("$:$.", StrPluraliseNum(stMatched,
+      "matching Lua command", "matching Lua commands"), osS.str());
+} // No matches
+cConsole->AddLineEx("No match from $.",
+  StrPluraliseNum(cbCmds.size(), "Lua command", "Lua commands"));
+/* ------------------------------------------------------------------------- */
+} },                                   // End of 'lcmds' function
 /* ========================================================================= */
 { "lend", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
@@ -1031,9 +1067,9 @@ cConsole->AddLine(cLua->TryEventOrForce(EMC_LUA_END) ?
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'lend' function
 /* ========================================================================= */
-{ "lexec", 2, 0, CFL_NONE, [](const Args &aList){
+{ "lexec", 2, 0, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
-cConsole->AddLine(cLua->CompileStringAndReturnResult(StrImplode(aList, 1)));
+cConsole->AddLine(cLua->CompileStringAndReturnResult(StrImplode(aArgs, 1)));
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'lexec' function
 /* ========================================================================= */
@@ -1045,9 +1081,9 @@ const LockGuard lgLuaRefsSync(cLuaFuncs->CollectorGetMutex());
 Statistic tData;
 tData.Header("ID").Header("FLAGS").Header("DATA", false).Header("MID")
      .Header("SID").Header("NAME", false).Reserve(cLuaFuncs->size());
-// Walk sample list
+// Walk Lua function list
 for(const LuaFunc*const lCptr : *cLuaFuncs)
-{ // Get sample
+{ // Get Lua function
   const LuaFunc &lCref = *lCptr;
   // Put on stack
   lCref.LuaFuncPushFunc();
@@ -1154,7 +1190,7 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'lstack' function
 /* ========================================================================= */
-{ "lvars", 1, 0, CFL_NONE, [](const Args &aList){
+{ "lvars", 1, 0, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Get lua state
 lua_State*const lS = cLua->GetState();
@@ -1164,13 +1200,13 @@ lua_State*const lS = cLua->GetState();
 // class creation simplifies the cleanup process.
 const LuaStackSaver lssSaved{ lS };
 // We need free items on the stack, leave empty if not
-if(!LuaUtilIsStackAvail(lS, aList.size()))
+if(!LuaUtilIsStackAvail(lS, aArgs.size()))
   return cConsole->AddLine("Too many path components!");
 // Get iterator to second argument. First is actually the command name. The
 // second argument in this instance is the root table name in globals.
 // Store if we have arguments and if we have them?
-auto clItem{ aList.cbegin() + 1 };
-if(clItem != aList.cend())
+auto clItem{ aArgs.cbegin() + 1 };
+if(clItem != aArgs.cend())
 { // Get root table
   const string &strRoot = *clItem;
   if(strRoot.empty()) return cConsole->AddLine("Empty table name!");
@@ -1182,7 +1218,7 @@ if(clItem != aList.cend())
       lua_isnil(lS, -1) ? "does not exist" : "is not valid");
   // Save index so we can keep recursing the same table and check if each
   // remaining argument is a table until we reach no more arguments.
-  for(const int iIndex = LuaUtilStackSize(lS); ++clItem != aList.cend();)
+  for(const int iIndex = LuaUtilStackSize(lS); ++clItem != aArgs.cend();)
   { // Get name of parameter and if it's empty? Return empty sub-table
     const string &strParam = *clItem;
     if(strParam.empty()) return cConsole->AddLine("Empty sub-table name!");
@@ -1289,12 +1325,7 @@ if(cOgl->FlagIsSet(GFL_HAVEMEM))
   tData.DataN(qwA).DataB(qwA).Data("Renderer free")
        .DataN(qwU).DataB(qwU).Data("Renderer usage")
        .DataN(qwT).DataB(qwT).Data("Renderer total");
-} // Compiling in debug mode?
-#if defined(ALPHA)
-// Add heap check result
-tData.Data().Data().Data(cSystem->HeapCheck());
-#endif
-// Output all the data we built up
+} // Output all the data we built up
 cConsole->AddLine(tData.Finish(false));
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'mem' function
@@ -1353,21 +1384,20 @@ cConsole->AddLineExA(tData.Finish(),
 struct MemoryUsageItem
   { const string &strName; size_t stCount, stBytes; }
     muiTotal{ cCommon->Blank(), 0, 0 };
-const string strCmds{"Cmds"}, strCVars{"CVars"};
+const string strCmds{"EngCmds"}, strCVars{"CVars"};
 typedef list<MemoryUsageItem> MemoryUsageItems;
 // Helper macros so there is not as much spam
-#define MSSEX(x,f,i) { x, f, f * sizeof(i) }
-#define MSS(x) \
-  MSSEX(c ## x ## s->IdentGet(), c ## x ## s->CollectorCount(), x)
+#define MSS(x) { c ## x ## s->IdentGet(), \
+                 c ## x ## s->CollectorCount(), \
+                 c ## x ## s->CollectorCount() * sizeof(x) }
 // Build memory usage items database
 MemoryUsageItems muiData{ {
-  MSS(Archive), MSS(Asset),   MSS(Bin),     MSS(Clip),
-  MSSEX(strCmds, cConsole->GetCmdCount(), ConLib),
-  MSSEX(strCVars,cCVars->GetVarCount(),   Item),          MSS(Fbo),
-  MSS(File),    MSS(Font),    MSS(Ftf),     MSS(Image),   MSS(ImageFmt),
-  MSS(Json),    MSS(LuaFunc), MSS(Mask),    MSS(Palette), MSS(Pcm),
-  MSS(PcmFmt),  MSS(Sample),  MSS(Shader),  MSS(Socket),  MSS(Source),
-  MSS(Stat),    MSS(Stream),  MSS(Texture), MSS(Thread),  MSS(Video)
+  MSS(Archive),  MSS(Asset),  MSS(Bin),     MSS(Clip),    MSS(Command),
+  MSS(Fbo),      MSS(File),   MSS(Font),    MSS(Ftf),     MSS(Image),
+  MSS(ImageFmt), MSS(Json),   MSS(LuaFunc), MSS(Mask),    MSS(Palette),
+  MSS(Pcm),      MSS(PcmFmt), MSS(Sample),  MSS(Shader),  MSS(Socket),
+  MSS(Source),   MSS(Stat),   MSS(Stream),  MSS(Texture), MSS(Thread),
+  MSS(Variable), MSS(Video)
 } };
 // Done with these macros
 #undef MSS
@@ -1394,20 +1424,20 @@ cConsole->AddLineEx("$$ totalling $ ($).", stData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'objs' function
 /* ========================================================================= */
-{ "oglext", 2, 2, CFL_VIDEO, [](const Args &aList){
+{ "oglext", 2, 2, CFL_VIDEO, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Get extension name and output if the extension is supported
-const string &strX = aList[1];
+const string &strX = aArgs[1];
 cConsole->AddLineEx(
   "Extension '$' is$ supported by the selected graphics device.",
     strX, cOgl->HaveExtension(strX.c_str()) ? cCommon->Blank() : " NOT");
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'oglext' function
 /* ========================================================================= */
-{ "oglfunc", 2, 2, CFL_VIDEO, [](const Args &aList){
+{ "oglfunc", 2, 2, CFL_VIDEO, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Get function name and output if the extension is supported
-const string &strF = aList[1];
+const string &strF = aArgs[1];
 cConsole->AddLineEx(
   "Function '$' is$ supported by the selected graphics device.",
     strF, GlFWProcExists(strF.c_str()) ? cCommon->Blank() : " NOT");
@@ -1476,10 +1506,10 @@ cConsole->AddLine(cLua->TryEventOrForce(EMC_QUIT) ?
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'quit' function
 /* ========================================================================= */
-{ "restart", 1, 2, CFL_NONE, [](const Args &aList){
+{ "restart", 1, 2, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Restart the process and inform user of the result
-cConsole->AddLine(aList.size() == 2 ?
+cConsole->AddLine(aArgs.size() == 2 ?
   (cLua->TryEventOrForce(EMC_QUIT_RESTART_NP) ?
     "Bypassing guest end routine and restarting engine with no args!" :
     "Asking guest to end execution and restarting engine with no args.") :
@@ -1544,12 +1574,12 @@ cSShot->DumpMain();
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'shot' function
 /* ========================================================================= */
-{ "sockets", 1, 2, CFL_NONE, [](const Args &aList){
+{ "sockets", 1, 2, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Id specified?
-if(aList.size() == 2)
+if(aArgs.size() == 2)
 { // Parse the specified id
-  const unsigned int uiId = StrToNum<unsigned int>(aList[1]);
+  const unsigned int uiId = StrToNum<unsigned int>(aArgs[1]);
   // For each socket. Try to find the FD specified and return the class
   // if we can't find, tell the console we could not find it.
   const auto sItem{ SocketFind(uiId) };
@@ -1654,11 +1684,11 @@ cConsole->AddLineEx("$$ ($ connected).\n"
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'sockets' function
 /* ========================================================================= */
-{ "sockreset", 2, 2, CFL_NONE, [](const Args &aList){
+{ "sockreset", 2, 2, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Get parameter and if user requested to close all connections? Close all
 // the sockets and report how many we closed and return
-const string &strId = aList[1];
+const string &strId = aArgs[1];
 if(strId == "*")
   return cConsole->AddLineExA(StrPluraliseNum(SocketReset(),
     "connection", "connections"), " closed.");
@@ -1766,19 +1796,19 @@ cConsole->AddLineEx("Sql transaction$ ended.",
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'sqlend' function
 /* ========================================================================= */
-{ "sqlexec", 2, 0, CFL_NONE, [](const Args &aList){
+{ "sqlexec", 2, 0, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Don't continue if theres a transaction in progress
 if(cSql->Active())
   return cConsole->AddLine("Sql transaction already active!");
 // Execute the string and catch exceptions
-if(cSql->ExecuteAndSuccess(StrImplode(aList, 1)))
+if(cSql->ExecuteAndSuccess(StrImplode(aArgs, 1)))
 { // Get records and if we did not have any?
   const Sql::Result &vData = cSql->GetRecords();
   if(vData.empty())
   { // If we should show the rows affected. This is sloppy but sqllite
     // doesn't support resetting sqlite3_changes result yet :(
-    const string &strFirst = StrToLowCaseRef(UtilToNonConst(aList[1]));
+    const string &strFirst = StrToLowCaseRef(UtilToNonConst(aArgs[1]));
     // Show rows affected if we have them
     if(strFirst == "insert" || strFirst == "update" || strFirst == "delete")
       cConsole->AddLineEx("$ affected in $.",
@@ -2015,11 +2045,11 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'videos' function
 /* ========================================================================= */
-{ "vmlist", 1, 2, CFL_VIDEO, [](const Args &aList){
+{ "vmlist", 1, 2, CFL_VIDEO, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Monitor number and return if invalid
 const size_t stMonitorSelected =
-  aList.size() == 1 ? 0 : StrToNum<size_t>(aList[1]);
+  aArgs.size() == 1 ? 0 : StrToNum<size_t>(aArgs[1]);
 if(stMonitorSelected >= cDisplay->GetMonitorsCount())
   return cConsole->AddLineEx("Invalid monitor $ specified!",
     stMonitorSelected);

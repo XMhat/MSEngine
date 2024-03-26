@@ -12,7 +12,7 @@
 namespace ICredit {                    // Start of private module namespace
 /* -- Dependencies --------------------------------------------------------- */
 using namespace ICodec::P;             using namespace ICVarDef::P;
-using namespace IError::P;             using namespace ILog::P;
+using namespace IGlFW::P;              using namespace IError::P;             using namespace ILog::P;
 using namespace IMemory::P;            using namespace IString::P;
 using namespace ISystem::P;
 /* ------------------------------------------------------------------------- */
@@ -126,9 +126,8 @@ static const class Credits final :     // Members initially private
         MSENGINE),
       LD("FreeType", STR(FREETYPE_MAJOR) "." STR(FREETYPE_MINOR) "."
         STR(FREETYPE_PATCH), "The FreeType Project", true, FREETYPE),
-      LD("GLFW", STR(GLFW_VERSION_MAJOR) "." STR(GLFW_VERSION_MINOR) "."
-        STR(GLFW_VERSION_REVISION), "Marcus Geelnard & Camilla Löwy", true,
-        GLFW),
+      LD("GLFW", cGlFW->GetInternalVersion(),
+        "Marcus Geelnard & Camilla Löwy", true, GLFW),
       LD("JPEGTurbo", STR(LIBJPEG_TURBO_VERSION), "IJG/Contributing authors",
         true, LIBJPEGTURBO),
       LD("LibNSGif", "1.0.0", "Richard Wilson & Sean Fox", true,

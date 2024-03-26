@@ -118,7 +118,6 @@ static class Console final :           // Members initially private
   /* -- Other -------------------------------------------------------------- */
   const ConCmdStaticList &conLibList;  // Default console cmds list
   LibList          llCmds;             // Console commands list
-  size_t           stMaxCount;         // Maximum console commands allowed
   /* -- Lua ---------------------------------------------------------------- */
   LuaFunc::Map     lfList;             // Lua console callbacks list
   /* -- Do clear console, clear history and reset position ----------------- */
@@ -215,6 +214,7 @@ static class Console final :           // Members initially private
   const EvtMain::RegVec reEvents;       // Events list to register
   /* -- Return commands list --------------------------------------- */ public:
   const LibList &GetCmdsList(void) const { return llCmds; }
+  const LuaFunc::Map &GetLuaCmdsList(void) const { return lfList; }
   /* -- Return maximum number of output history lines ---------------------- */
   size_t GetOutputMaximum(void) const { return stOutputMaximum; }
   /* -- Return maximum number of input history lines ----------------------- */
@@ -239,43 +239,22 @@ static class Console final :           // Members initially private
   void LuaCallback(const Args &aList)
     { FindVirtualCommand(aList.front())->
         second.LuaFuncProtectedDispatch(0, aList); }
-  /* -- Unregister user console command from lua --------------------------- */
-  void UnregisterLuaCommand(const string &strCmd)
-  { // Find command and throw error if failed
-    const auto itCmd{ FindVirtualCommand(strCmd) };
-    // Unregister the command
-    UnregisterCommand(itCmd->first);
-    // Erase the reference
-    lfList.erase(itCmd);
-  }
+  /* -- Returns the end of the lua console command list -------------------- */
+  LuaFunc::MapIt GetLuaConCmdListEnd(void) { return lfList.end(); }
   /* -- Unregister all console commands ------------------------------------ */
-  void UnregisterAllLuaCommands(void)
-  { // Bail if no commands
-    if(lfList.empty()) return;
-    // Say arrays unloadinghow many arrays loaded
-    cLog->LogDebugExSafe("Console unloading $ virtual commands...",
-      lfList.size());
-    // Unregister each lua command until...
-    do UnregisterLuaCommand(lfList.begin()->first);
-    // ...the command list is empty
-    while(!lfList.empty());
-    // Say how many arrays loaded
-    cLog->LogInfoSafe("Console unloaded virtual commands.");
+  LuaFunc::MapIt UnregisterLuaCommand(const LuaFunc::MapIt lfmiCommand)
+  { // Iterator is registered?
+    if(lfmiCommand != lfList.cend())
+    { // Unregister the command and erase the reference
+      UnregisterCommand(lfmiCommand->first);
+      lfList.erase(lfmiCommand);
+    } // Return the last iterator
+    return lfList.end();
   }
   /* -- Register user console command from lua ----------------------------- */
-  void RegisterLuaCommand(lua_State*const lS)
-  { // Must be running on the main thread
-    cLua->StateAssert(lS);
-    // Must have 4 parameters
-    LuaUtilCheckParams(lS, 4);
-    // Get command name, min and max parameter count
-    const string strCmd{ LuaUtilGetCppStrNE(lS, 1, "Name") };
-    const unsigned int
-      uiMinimum = LuaUtilGetInt<unsigned int>(lS, 2, "Minimum"),
-      uiMaximum = LuaUtilGetInt<unsigned int>(lS, 3, "Maximum");
-    // Check that the fourth parameter is a function
-    LuaUtilCheckFunc(lS, 4, "Callback");
-    // Find command and throw exception if already exists
+  LuaFunc::MapIt RegisterLuaCommand(string &strCmd,
+    const unsigned int uiMinimum, const unsigned int uiMaximum)
+  { // Find command and throw exception if already exists
     const auto lfItem{ lfList.find(strCmd) };
     if(lfItem != lfList.cend())
       XC("Virtual command already exists!",
@@ -284,8 +263,8 @@ static class Console final :           // Members initially private
     const LibListItConst clItem{
       RegisterCommand(strCmd, uiMinimum, uiMaximum, LuaCallbackStatic) };
     // Add command to local list. Do not move the position of this call.
-    lfList.insert({ strCmd,
-      LuaFunc{ StrAppend("CC:", clItem->first), true } });
+    return lfList.insert(lfList.cend(),
+      { StdMove(strCmd), LuaFunc{ StrAppend("CC:", clItem->first), true } });
   }
   /* -- Add specified command line to history ------------------------------ */
   void AddHistory(const string &strCmdLine)
@@ -837,8 +816,6 @@ static class Console final :           // Members initially private
   Font *GetFont(void) { return &GetFontRef(); }
   /* -- SetRedraw ---------------------------------------------------------- */
   void SetRedrawIfEnabled(void) { if(IsVisible()) SetRedraw(); }
-  /* -- Get console callbacks ---------------------------------------------- */
-  size_t GetCmdCount(void) const { return llCmds.size(); }
   /* -- Get console lines -------------------------------------------------- */
   size_t GetOutputCount(void) { return size(); }
   size_t GetInputCount(void) { return slHistory.size(); }
@@ -1008,10 +985,6 @@ static class Console final :           // Members initially private
       XC("Command already registered!",
          "Identifier", strName, "Minimum",  uiMin,
          "Maximum",    uiMax,   "Function", &ccbFunc);
-    // Check that we can create another variable
-    if(llCmds.size() >= stMaxCount)
-      XC("Console command count upper threshold reached!",
-         "Command", strName, "Maximum", stMaxCount);
     // Checks passed. Now add it
     return llCmds.insert({ strName,
       { strName, uiMin, uiMax, CFL_NONE, ccbFunc } }).first;
@@ -1417,9 +1390,6 @@ static class Console final :           // Members initially private
   /* -- Set text height ---------------------------------------------------- */
   CVarReturn TextHeightModified(const GLfloat fNewHeight)
     { return CVarSimpleSetIntNG(fTextHeight, fNewHeight, 4096.0f); }
-  /* -- Set maximum command count ------------------------------------------ */
-  CVarReturn MaxCountModified(const size_t stCount)
-    { return CVarSimpleSetInt(stMaxCount, stCount); }
   /* -- Set console input refresh rate ------------------------------------- */
   CVarReturn InputRefreshModified(const unsigned int uiMicroseconds)
     { if(uiMicroseconds < 1000 || uiMicroseconds > 1000000) return DENY;
@@ -1472,7 +1442,6 @@ static class Console final :           // Members initially private
     cfConsole{ true },                 // Console font on stand-by
     cCursor('|'),                      // Cursor shape
     conLibList{ ccslDef },             // Set default commands list
-    stMaxCount(llCmds.max_size()),     // Maxmimum console commands
     /* --------------------------------------------------------------------- */
     reEvents{                          // Default events
       { EMC_LUA_PAUSE,  bind(&Console::OnLuaPause,    this, _1) },

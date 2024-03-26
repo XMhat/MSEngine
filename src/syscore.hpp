@@ -19,11 +19,11 @@ using namespace IDim;                  using namespace IDir::P;
 using namespace IError::P;             using namespace IEvtMain::P;
 using namespace IFlags;                using namespace IFStream::P;
 using namespace IIdent::P;             using namespace ILog::P;
-using namespace IMemory::P;            using namespace IPSplit::P;
-using namespace IStat::P;              using namespace IStd::P;
-using namespace IString::P;            using namespace ISysUtil::P;
-using namespace IToken::P;             using namespace IUtf;
-using namespace IUtil::P;              using namespace IVars::P;
+using namespace IMemory::P;            using namespace IParser::P;
+using namespace IPSplit::P;            using namespace IStat::P;
+using namespace IStd::P;               using namespace IString::P;
+using namespace ISysUtil::P;           using namespace IToken::P;
+using namespace IUtf;                  using namespace IUtil::P;
 using namespace Lib::OS;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace

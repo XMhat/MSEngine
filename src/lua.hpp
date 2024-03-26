@@ -209,7 +209,8 @@ static class Lua final :
   int GetOpsInterval(void) { return iOperations; }
   /* -- Init lua library and configuration --------------------------------- */
   void SetupEnvironment(void)
-  { StopGC();
+  { // Stop the garbage collector
+    StopGC();
     // Init references
     LuaFuncInitRef(GetState());
     // Set default end function to automatically exit the engine

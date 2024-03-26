@@ -584,7 +584,7 @@ static struct Sql final :              // Members initially public
     } // Initialise the db and if succeeded?
     if(Init(strV))
     { // Set full path name of the database
-      SQLINITOK: strV = StdMove(PathSplit{ strV, true }.strFull);
+      SqlInitOK: strV = StdMove(PathSplit{ strV, true }.strFull);
       // Success
       return ACCEPT_HANDLED;
     } // If we have a persistant directory?
@@ -592,7 +592,7 @@ static struct Sql final :              // Members initially public
     { // Set a new filename in the users home directory
       strV = cCmdLine->GetHome(PathSplit{ strV }.strFileExt);
       // Try opening that and if succeeded then return success
-      if(Init(strV)) goto SQLINITOK;
+      if(Init(strV)) goto SqlInitOK;
     } // Use memory database instead
     strV = strMemoryDBName;
     // Now open the memory database which should ALWAYS succeed.

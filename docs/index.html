@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<!-- Reference for the MS-Engine API version 24.3.25.1 -->
-<!-- Automatically built at Mon Mar 25 00:00:27 2024 +0000 -->
-<!-- With MS-Engine Project Management Utility version 24.3.25.1 -->
+<!-- Reference for the MS-Engine API version 24.3.26.16 -->
+<!-- Automatically built at Tue Mar 26 00:58:55 2024 +0000 -->
+<!-- With MS-Engine Project Management Utility version 24.3.26.16 -->
 <!-- Copyright (c) 2006-2024 MS-Design, All Rights Reserved Worldwide -->
 <HTML lang="en-GB">
 <HEAD>
@@ -11,18 +11,18 @@
 	<META name="apple-mobile-web-app-title" content="MS-Engine API">
 	<META name="author" content="MS-Design">
 	<META name="copyright" content="Copyright © 2006-2024 MS-Design, All Rights Reserved">
-	<META name="description" content="Reference for the MS-Engine API version 24.3.25.1">
+	<META name="description" content="Reference for the MS-Engine API version 24.3.26.16">
 	<META name="format-detection" content="telephone=no">
-	<META name="generator" content="MS-Engine Project Management Utility version 24.3.25.1">
+	<META name="generator" content="MS-Engine Project Management Utility version 24.3.26.16">
 	<META name="google-site-verification" content="BvWxrqmgaIxqe_W8AW3OGK0fdCI_JfB_-gcOOxCF9_4">
 	<META name="googlebot" content="index,follow">
-	<META name="og:description" content="Reference for the MS-Engine API version 24.3.25.1">
+	<META name="og:description" content="Reference for the MS-Engine API version 24.3.26.16">
 	<META name="og:image" content="https://repository-images.githubusercontent.com/611875607/ee7aa468-9797-4763-9a2d-ea3d782ef413">
-	<META name="og:title" content="MS-Engine 24.3.25.1 API reference">
+	<META name="og:title" content="MS-Engine 24.3.26.16 API reference">
 	<META name="og:url" content="https://xmhat.github.io/MSEngine/">
 	<META name="robots" content="index,follow">
 	<META name="viewport" content="width=device-width, initial-scale=1">
-	<TITLE>MS-Engine 24.3.25.1 API reference</TITLE>
+	<TITLE>MS-Engine 24.3.26.16 API reference</TITLE>
 	<STYLE media="screen">
 	* { margin:0; padding:0 }
 	BODY { background-color:#111; border:0; font-family:sans-serif; overflow-x:hidden }
@@ -52,9 +52,9 @@
 	</STYLE>
 </HEAD>
 <BODY id="top">
-	<H1>MS-Engine 24.3.25.1 API reference</H1>
+	<H1>MS-Engine 24.3.26.16 API reference</H1>
 	<H2>Table of contents:-</H2>
-	<P>This build of the MS-Engine API consists of 783 functions (376 members, 407 methods) and 25 consts in 31 namespaces with 209 cvars.</P>
+	<P>This build of the MS-Engine API consists of 787 functions (373 members, 414 methods) and 25 consts in 31 namespaces with 209 cvars.</P>
 	<OL id="toc">
 		<LI id="idx">
 			<A href="#idx">Namespaces</A> <I>(31 namespaces)</I>
@@ -66,9 +66,8 @@
 						<LI><A href="#idx:Asset">Asset</A></LI>
 						<LI><A href="#idx:Audio">Audio</A></LI>
 						<LI><A href="#idx:Bin">Bin</A></LI>
-						<LI><A href="#idx:CVars">CVars</A></LI>
 						<LI><A href="#idx:Clip">Clip</A></LI>
-						<LI><A href="#idx:Console">Console</A></LI>
+						<LI><A href="#idx:Command">Command</A></LI>
 						<LI><A href="#idx:Core">Core</A></LI>
 						<LI><A href="#idx:Credit">Credit</A></LI>
 						<LI><A href="#idx:Crypt">Crypt</A></LI>
@@ -92,6 +91,7 @@
 						<LI><A href="#idx:Stream">Stream</A></LI>
 						<LI><A href="#idx:Texture">Texture</A></LI>
 						<LI><A href="#idx:Util">Util</A></LI>
+						<LI><A href="#idx:Variable">Variable</A></LI>
 						<LI><A href="#idx:Video">Video</A></LI>
 					</OL>
 				</LI>
@@ -244,32 +244,6 @@
 				<LI><A href="#idx:Bin">&#x25B2; Return to summary</A> / <A href="#toc">top</A></LI>
 			</OL>
 		</LI>
-		<LI id="idx:CVars"><A href="#idx:CVars">CVars namespace</A>
-			<OL>
-        <LI><P>The cvars class allows the programmer to create their own cvars and to retrieve and modify their own or built-in CVars.</P></LI>
-				<LI>
-					<B>Members</B> <I>(8 members)</I>
-					<OL>
-						<LI><A href="#CVars.Empty">Empty</A></LI>
-						<LI><A href="#CVars.Exists">Exists</A></LI>
-						<LI><A href="#CVars.Get">Get</A></LI>
-						<LI><A href="#CVars.Register">Register</A></LI>
-						<LI><A href="#CVars.Reset">Reset</A></LI>
-						<LI><A href="#CVars.Save">Save</A></LI>
-						<LI><A href="#CVars.Set">Set</A></LI>
-						<LI><A href="#CVars.Unregister">Unregister</A></LI>
-					</OL>
-				</LI>
-				<LI>
-					<B>Consts</B> <I>(2 consts)</I>
-					<OL>
-						<LI><A href="#CVars.Flags">Flags</A></LI>
-						<LI><A href="#CVars.Result">Result</A></LI>
-					</OL>
-				</LI>
-				<LI><A href="#idx:CVars">&#x25B2; Return to summary</A> / <A href="#toc">top</A></LI>
-			</OL>
-		</LI>
 		<LI id="idx:Clip"><A href="#idx:Clip">Clip namespace</A>
 			<OL>
         <LI><P>Contains functions for retrieving and setting text in the Clip.</P></LI>
@@ -291,37 +265,31 @@
 				<LI><A href="#idx:Clip">&#x25B2; Return to summary</A> / <A href="#toc">top</A></LI>
 			</OL>
 		</LI>
-		<LI id="idx:Console"><A href="#idx:Console">Console namespace</A>
+		<LI id="idx:Command"><A href="#idx:Command">Command namespace</A>
 			<OL>
-        <LI><P>The console class allows manipulation of the game console.</P></LI>
+        <LI><P>The Command class allows creation and manipulation of console commands</P></LI>
 				<LI>
-					<B>Members</B> <I>(9 members)</I>
+					<B>Members</B> <I>(2 members)</I>
 					<OL>
-						<LI><A href="#Console.Exists">Exists</A></LI>
-						<LI><A href="#Console.Register">Register</A></LI>
-						<LI><A href="#Console.ScrollDown">ScrollDown</A></LI>
-						<LI><A href="#Console.ScrollUp">ScrollUp</A></LI>
-						<LI><A href="#Console.StatusLeft">StatusLeft</A></LI>
-						<LI><A href="#Console.StatusRight">StatusRight</A></LI>
-						<LI><A href="#Console.Unregister">Unregister</A></LI>
-						<LI><A href="#Console.Write">Write</A></LI>
-						<LI><A href="#Console.WriteEx">WriteEx</A></LI>
+						<LI><A href="#Command.Exists">Exists</A></LI>
+						<LI><A href="#Command.Register">Register</A></LI>
 					</OL>
 				</LI>
 				<LI>
-					<B>Consts</B> <I>(1 const)</I>
+					<B>Methods</B> <I>(2 methods)</I>
 					<OL>
-						<LI><A href="#Console.Colours">Colours</A></LI>
+						<LI><A href="#Command:Destroy">Destroy</A></LI>
+						<LI><A href="#Command:Name">Name</A></LI>
 					</OL>
 				</LI>
-				<LI><A href="#idx:Console">&#x25B2; Return to summary</A> / <A href="#toc">top</A></LI>
+				<LI><A href="#idx:Command">&#x25B2; Return to summary</A> / <A href="#toc">top</A></LI>
 			</OL>
 		</LI>
 		<LI id="idx:Core"><A href="#idx:Core">Core namespace</A>
 			<OL>
         <LI><P>The core class allows manipulation of the game engine itself.</P></LI>
 				<LI>
-					<B>Members</B> <I>(20 members)</I>
+					<B>Members</B> <I>(26 members)</I>
 					<OL>
 						<LI><A href="#Core.Delay">Delay</A></LI>
 						<LI><A href="#Core.Done">Done</A></LI>
@@ -339,15 +307,22 @@
 						<LI><A href="#Core.Restart">Restart</A></LI>
 						<LI><A href="#Core.RestartFresh">RestartFresh</A></LI>
 						<LI><A href="#Core.RestoreDelay">RestoreDelay</A></LI>
+						<LI><A href="#Core.ScrollDown">ScrollDown</A></LI>
+						<LI><A href="#Core.ScrollUp">ScrollUp</A></LI>
 						<LI><A href="#Core.SetDelay">SetDelay</A></LI>
 						<LI><A href="#Core.SetIcon">SetIcon</A></LI>
 						<LI><A href="#Core.Stack">Stack</A></LI>
+						<LI><A href="#Core.StatusLeft">StatusLeft</A></LI>
+						<LI><A href="#Core.StatusRight">StatusRight</A></LI>
 						<LI><A href="#Core.WaitAsync">WaitAsync</A></LI>
+						<LI><A href="#Core.Write">Write</A></LI>
+						<LI><A href="#Core.WriteEx">WriteEx</A></LI>
 					</OL>
 				</LI>
 				<LI>
-					<B>Consts</B> <I>(1 const)</I>
+					<B>Consts</B> <I>(2 consts)</I>
 					<OL>
+						<LI><A href="#Core.Colours">Colours</A></LI>
 						<LI><A href="#Core.LogLevels">LogLevels</A></LI>
 					</OL>
 				</LI>
@@ -1348,6 +1323,40 @@
 					</OL>
 				</LI>
 				<LI><A href="#idx:Util">&#x25B2; Return to summary</A> / <A href="#toc">top</A></LI>
+			</OL>
+		</LI>
+		<LI id="idx:Variable"><A href="#idx:Variable">Variable namespace</A>
+			<OL>
+        <LI><P>The Variable class allows creation and manipulation of console commands</P></LI>
+				<LI>
+					<B>Members</B> <I>(6 members)</I>
+					<OL>
+						<LI><A href="#Variable.Exists">Exists</A></LI>
+						<LI><A href="#Variable.GetInt">GetInt</A></LI>
+						<LI><A href="#Variable.Register">Register</A></LI>
+						<LI><A href="#Variable.ResetInt">ResetInt</A></LI>
+						<LI><A href="#Variable.Save">Save</A></LI>
+						<LI><A href="#Variable.SetInt">SetInt</A></LI>
+					</OL>
+				</LI>
+				<LI>
+					<B>Methods</B> <I>(5 methods)</I>
+					<OL>
+						<LI><A href="#Variable:Default">Default</A></LI>
+						<LI><A href="#Variable:Destroy">Destroy</A></LI>
+						<LI><A href="#Variable:Get">Get</A></LI>
+						<LI><A href="#Variable:Name">Name</A></LI>
+						<LI><A href="#Variable:Set">Set</A></LI>
+					</OL>
+				</LI>
+				<LI>
+					<B>Consts</B> <I>(2 consts)</I>
+					<OL>
+						<LI><A href="#Variable.Flags">Flags</A></LI>
+						<LI><A href="#Variable.Result">Result</A></LI>
+					</OL>
+				</LI>
+				<LI><A href="#idx:Variable">&#x25B2; Return to summary</A> / <A href="#toc">top</A></LI>
 			</OL>
 		</LI>
 		<LI id="idx:Video"><A href="#idx:Video">Video namespace</A>
@@ -2501,112 +2510,6 @@
 		<PRE>Returns the width of the bin in units&#x2e;<BR></PRE>
 		<H4><A href="#idx:Bin" onclick="r('Bin:Width')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="CVars.Empty">
-		<H3>CVars.Empty</H3>
-		<H4>Syntax:-</H4>
-		<PRE><U>IsEmpty</U> = CVars.Empty(<I><U>Name</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>Name</U> <I>(string)</I> = The engine cvar name.<BR></PRE>
-		<H4>Return Parameters:-</H4>
-		<PRE><U>IsEmpty</U> <I>(boolean)</I> = The specified cvar is empty.<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Checks if the specified cvar is empty&#x2e; Perhaps a little faster than using CVars&#x2e;Get which builds a new string&#x2c; especially if the string is long&#x2e;<BR></PRE>
-		<H4><A href="#idx:CVars" onclick="r('CVars.Empty')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="CVars.Exists">
-		<H3>CVars.Exists</H3>
-		<H4>Syntax:-</H4>
-		<PRE><U>Exists</U> = CVars.Exists(<I><U>Name</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>Name</U> <I>(string)</I> = The engine cvar name.<BR></PRE>
-		<H4>Return Parameters:-</H4>
-		<PRE><U>Exists</U> <I>(boolean)</I> = Does the cvar exist?<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Returns TRUE if the cvar is registered or FALSE if not&#x2e; Any attempt to read or write from invalid cvars will raise an exception&#x2c; this function allows you to make sure the cvar exists before you peform that operation&#x2e;<BR></PRE>
-		<H4><A href="#idx:CVars" onclick="r('CVars.Exists')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="CVars.Get">
-		<H3>CVars.Get</H3>
-		<H4>Syntax:-</H4>
-		<PRE><U>Value</U> = CVars.Get(<I><U>Name</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>Name</U> <I>(string)</I> = The engine cvar name.<BR></PRE>
-		<H4>Return Parameters:-</H4>
-		<PRE><U>Value</U> <I>(mixed)</I> = The engine cvar value.<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Retrieves the value of the specified cvar name&#x2e; An exception is raised if the specified cvar does not exist&#x2e;<BR></PRE>
-		<H4><A href="#idx:CVars" onclick="r('CVars.Get')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="CVars.Register">
-		<H3>CVars.Register</H3>
-		<H4>Syntax:-</H4>
-		<PRE>CVars.Register(<I><U>Name</U>, <U>Default</U>, <U>Flags</U>, <U>Callback</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>Name</U> <I>(string)</I> = The engine cvar name.<BR><U>Default</U> <I>(string)</I> = The default cvar value.<BR><U>Flags</U> <I>(integer)</I> = The cvar flags.<BR><U>Callback</U> <I>(function)</I> = The callback global function name.<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Registers the specified cvar name with the specified default value&#x2e; The default value is ignored if there is already a saved value in the Sql cvars database&#x2e; If the saved value is a corrupted encrypted value then the default is used&#x2e; If the cvar already exists then an exception is thrown so make sure you check for it first if do not expect this call to garauntee success&#x2e; Normally it is unless there is a memory allocation issue&#x2e; You can register an unlimited amount of variables&#x2e;<BR>See CVars&#x2e;Flags to see available flags&#x2e;<BR></PRE>
-		<H4><A href="#idx:CVars" onclick="r('CVars.Register')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="CVars.Reset">
-		<H3>CVars.Reset</H3>
-		<H4>Syntax:-</H4>
-		<PRE>CVars.Reset(<I><U>Name</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>Name</U> <I>(string)</I> = The engine cvar name.<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Resets the value of the cvar to the engine&#x27;s built&#x2d;in value&#x2e;<BR></PRE>
-		<H4><A href="#idx:CVars" onclick="r('CVars.Reset')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="CVars.Save">
-		<H3>CVars.Save</H3>
-		<H4>Syntax:-</H4>
-		<PRE><U>Count</U> = CVars.Save()</PRE>
-		<H4>Return Parameters:-</H4>
-		<PRE><U>Count</U> <I>(number)</I> = Number of items saved<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Commits all modified variables to database&#x2e; Returns number of items written&#x2e;<BR></PRE>
-		<H4><A href="#idx:CVars" onclick="r('CVars.Save')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="CVars.Set">
-		<H3>CVars.Set</H3>
-		<H4>Syntax:-</H4>
-		<PRE>CVars.Set(<I><U>Name</U>, <U>Value</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>Name</U> <I>(string)</I> = The engine cvar name.<BR><U>Value</U> <I>(string)</I> = The new engine cvar value.<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Sets the new value of the specified engine cvar name&#x2e; An exception is raised if any error occurds&#x2e; See CVars&#x2e;Result to see the possible results&#x2e;<BR></PRE>
-		<H4><A href="#idx:CVars" onclick="r('CVars.Set')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="CVars.Unregister">
-		<H3>CVars.Unregister</H3>
-		<H4>Syntax:-</H4>
-		<PRE>CVars.Unregister(<I><U>Name</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>Name</U> <I>(string)</I> = The engine cvar name.<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Unregisters the specified cvar name created with CVars&#x2e;Register&#x28;&#x29;&#x2e;<BR></PRE>
-		<H4><A href="#idx:CVars" onclick="r('CVars.Unregister')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="CVars.Flags">
-		<H3>CVars.Flags</H3>
-		<H4>Syntax:-</H4>
-		<PRE><U>Data</U> = CVars.Flags</PRE>
-		<H4>Return Parameters:-</H4>
-		<PRE><U>Data</U> <I>(table)</I> = A table of const string/int key pairs<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Returns all the cvar flags supported by the engine in the form of a string&#x2f;int key pairs which can be used with the CVars&#x2e;Register&#x28;&#x29; command </PRE>
-		<H4><A href="#idx:CVars" onclick="r('CVars.Flags')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="CVars.Result">
-		<H3>CVars.Result</H3>
-		<H4>Syntax:-</H4>
-		<PRE><U>Data</U> = CVars.Result</PRE>
-		<H4>Return Parameters:-</H4>
-		<PRE><U>Data</U> <I>(table)</I> = A table of const string/int key pairs<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Returns the possible values that can be returned with the CVars&#x2e;Set&#x28;&#x29; function&#x2e;<BR></PRE>
-		<H4><A href="#idx:CVars" onclick="r('CVars.Result')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
 	<DIV id="Clip.Get">
 		<H3>Clip.Get</H3>
 		<H4>Syntax:-</H4>
@@ -2655,103 +2558,47 @@
 		<PRE>Returns the value sent with Clip&#x2e;Set or the value retrieved with Clip&#x2e;Get&#x2e;<BR></PRE>
 		<H4><A href="#idx:Clip" onclick="r('Clip:Value')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Console.Exists">
-		<H3>Console.Exists</H3>
+	<DIV id="Command.Exists">
+		<H3>Command.Exists</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Registered</U> = Console.Exists(<I><U>Command</U></I>)</PRE>
+		<PRE><U>Registered</U> = Command.Exists(<I><U>Command</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
 		<PRE><U>Command</U> <I>(string)</I> = The console command name to lookup<BR></PRE>
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Registered</U> <I>(boolean)</I> = True if the command is registered<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Returns if the specified console command is registered </PRE>
-		<H4><A href="#idx:Console" onclick="r('Console.Exists')">&#x25B2; Return to table of contents</A></H4>
+		<PRE>Returns if the specified console command is registered which includes the built&#x2d;in engine console commands too&#x2e;<BR></PRE>
+		<H4><A href="#idx:Command" onclick="r('Command.Exists')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Console.Register">
-		<H3>Console.Register</H3>
+	<DIV id="Command.Register">
+		<H3>Command.Register</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Console.Register(<I><U>Name</U>, <U>Minimum</U>, <U>Maximum</U>, <U>Callback</U></I>)</PRE>
+		<PRE><U>Object</U> = Command.Register(<I><U>Name</U>, <U>Minimum</U>, <U>Maximum</U>, <U>Callback</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
 		<PRE><U>Name</U> <I>(string)</I> = The console command name.<BR><U>Minimum</U> <I>(integer)</I> = The minimum number of parameters allowed.<BR><U>Maximum</U> <I>(integer)</I> = The maximum number of parameters allowed.<BR><U>Callback</U> <I>(function)</I> = Pointer to the function to callback.<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Registers the specified console command&#x2e; When the console command is called&#x2c; the function specified is called&#x2e;<BR></PRE>
-		<H4><A href="#idx:Console" onclick="r('Console.Register')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Console.ScrollDown">
-		<H3>Console.ScrollDown</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Console.ScrollDown()</PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Scrolls the console up one line </PRE>
-		<H4><A href="#idx:Console" onclick="r('Console.ScrollDown')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Console.ScrollUp">
-		<H3>Console.ScrollUp</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Console.ScrollUp()</PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Scrolls the console up one line </PRE>
-		<H4><A href="#idx:Console" onclick="r('Console.ScrollUp')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Console.StatusLeft">
-		<H3>Console.StatusLeft</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Console.StatusLeft(<I><U>Text</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>Text</U> <I>(string)</I> = Console status text<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>In bot mode&#x2c; this function will set the text to appear when no text is input into the input bar&#x2e; Useful for customised stats&#x2e; It will update every second&#x2e;<BR></PRE>
-		<H4><A href="#idx:Console" onclick="r('Console.StatusLeft')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Console.StatusRight">
-		<H3>Console.StatusRight</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Console.StatusRight(<I><U>Text</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>Text</U> <I>(string)</I> = Console status text<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>In bot mode&#x2c; this function will set the text to appear when no text is input into the input bar&#x2e; Useful for customised stats&#x2e; It will update every second&#x2e;<BR></PRE>
-		<H4><A href="#idx:Console" onclick="r('Console.StatusRight')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Console.Unregister">
-		<H3>Console.Unregister</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Console.Unregister(<I><U>Command</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>Command</U> <I>(string)</I> = The console command name.<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Unregisters the specified console command created by Console&#x2e;Register&#x2e;<BR></PRE>
-		<H4><A href="#idx:Console" onclick="r('Console.Unregister')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Console.Write">
-		<H3>Console.Write</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Console.Write(<I><U>Text</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>Text</U> <I>(string)</I> = Text to write to console.<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Writes the specified line of text directly to the console with no regard to colour of text&#x2e;<BR></PRE>
-		<H4><A href="#idx:Console" onclick="r('Console.Write')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Console.WriteEx">
-		<H3>Console.WriteEx</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Console.WriteEx(<I><U>Text</U>, <U>Colour</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>Text</U> <I>(string)</I> = Text to write to console.<BR><U>Colour</U> <I>(integer)</I> = The optional colour to use.<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Writes the specified line of text directly to the console with the specified text colour&#x2e;<BR></PRE>
-		<H4><A href="#idx:Console" onclick="r('Console.WriteEx')">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Console.Colours">
-		<H3>Console.Colours</H3>
-		<H4>Syntax:-</H4>
-		<PRE><U>Data</U> = Console.Colours</PRE>
 		<H4>Return Parameters:-</H4>
-		<PRE><U>Data</U> <I>(table)</I> = A table of const string/int key pairs<BR></PRE>
+		<PRE><U>Object</U> <I>(Command)</I> = The class object created.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Returns all the colour palette of colours&#x2e;<BR></PRE>
-		<H4><A href="#idx:Console" onclick="r('Console.Colours')">&#x25B2; Return to table of contents</A></H4>
+		<PRE>Registers the specified console command and returns a reference to the newly created object which unregisters the console command when garbage collected&#x2e;<BR></PRE>
+		<H4><A href="#idx:Command" onclick="r('Command.Register')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Command:Destroy">
+		<H3>Command:Destroy</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Command:Destroy()</PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Unregisters the specified console command&#x2e;<BR></PRE>
+		<H4><A href="#idx:Command" onclick="r('Command:Destroy')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Command:Name">
+		<H3>Command:Name</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Name</U> = Command:Name()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Name</U> <I>(string)</I> = The name of the console command.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the name of the console command this object was registered with&#x2e;<BR></PRE>
+		<H4><A href="#idx:Command" onclick="r('Command:Name')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Core.Delay">
 		<H3>Core.Delay</H3>
@@ -2903,6 +2750,22 @@
 		<PRE>Restores the frame thread suspend value set via cvars </PRE>
 		<H4><A href="#idx:Core" onclick="r('Core.RestoreDelay')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
+	<DIV id="Core.ScrollDown">
+		<H3>Core.ScrollDown</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Core.ScrollDown()</PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Scrolls the console up one line </PRE>
+		<H4><A href="#idx:Core" onclick="r('Core.ScrollDown')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Core.ScrollUp">
+		<H3>Core.ScrollUp</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Core.ScrollUp()</PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Scrolls the console up one line </PRE>
+		<H4><A href="#idx:Core" onclick="r('Core.ScrollUp')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
 	<DIV id="Core.SetDelay">
 		<H3>Core.SetDelay</H3>
 		<H4>Syntax:-</H4>
@@ -2935,6 +2798,26 @@
 		<PRE>Returns the current stack as a string formatted by the engine and not Lua This is needed for example when you use xpcall&#x28;&#x29; with an error handler Note that pcall&#x28;&#x29; error messages do not include the stack&#x2e;<BR></PRE>
 		<H4><A href="#idx:Core" onclick="r('Core.Stack')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
+	<DIV id="Core.StatusLeft">
+		<H3>Core.StatusLeft</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Core.StatusLeft(<I><U>Text</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Text</U> <I>(string)</I> = Console status text<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>In bot mode&#x2c; this function will set the text to appear when no text is input into the input bar&#x2e; Useful for customised stats&#x2e; It will update every second&#x2e;<BR></PRE>
+		<H4><A href="#idx:Core" onclick="r('Core.StatusLeft')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Core.StatusRight">
+		<H3>Core.StatusRight</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Core.StatusRight(<I><U>Text</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Text</U> <I>(string)</I> = Console status text<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>In bot mode&#x2c; this function will set the text to appear when no text is input into the input bar&#x2e; Useful for customised stats&#x2e; It will update every second&#x2e;<BR></PRE>
+		<H4><A href="#idx:Core" onclick="r('Core.StatusRight')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
 	<DIV id="Core.WaitAsync">
 		<H3>Core.WaitAsync</H3>
 		<H4>Syntax:-</H4>
@@ -2942,6 +2825,36 @@
 		<H4>Synopsis:-</H4>
 		<PRE>Delays main thread execution until ALL asynchronous threads have completed Please note that the engine will be unresponsive during this time and therefore this call should only really be used in emergencies&#x2e; Sockets are NOT synchronied&#x2e; Use Sockets&#x2e;CloseAll&#x28;&#x29; to do that&#x2e;<BR></PRE>
 		<H4><A href="#idx:Core" onclick="r('Core.WaitAsync')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Core.Write">
+		<H3>Core.Write</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Core.Write(<I><U>Text</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Text</U> <I>(string)</I> = Text to write to console.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Writes the specified line of text directly to the console with no regard to colour of text&#x2e;<BR></PRE>
+		<H4><A href="#idx:Core" onclick="r('Core.Write')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Core.WriteEx">
+		<H3>Core.WriteEx</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Core.WriteEx(<I><U>Text</U>, <U>Colour</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Text</U> <I>(string)</I> = Text to write to console.<BR><U>Colour</U> <I>(integer)</I> = The optional colour to use.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Writes the specified line of text directly to the console with the specified text colour&#x2e;<BR></PRE>
+		<H4><A href="#idx:Core" onclick="r('Core.WriteEx')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Core.Colours">
+		<H3>Core.Colours</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Data</U> = Core.Colours</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Data</U> <I>(table)</I> = A table of const string/int key pairs<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns all the colour palette of console colours used with ConWrite&#x2e;<BR></PRE>
+		<H4><A href="#idx:Core" onclick="r('Core.Colours')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Core.LogLevels">
 		<H3>Core.LogLevels</H3>
@@ -9583,6 +9496,140 @@
 		<PRE>Word wraps the specified string into a table of lines&#x2e;<BR></PRE>
 		<H4><A href="#idx:Util" onclick="r('Util.WordWrap')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
+	<DIV id="Variable.Exists">
+		<H3>Variable.Exists</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Registered</U> = Variable.Exists(<I><U>Variable</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Variable</U> <I>(string)</I> = The console command name to lookup<BR></PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Registered</U> <I>(boolean)</I> = True if the command is registered<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns if the specified console command is registered which includes the built&#x2d;in engine console commands too&#x2e;<BR></PRE>
+		<H4><A href="#idx:Variable" onclick="r('Variable.Exists')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Variable.GetInt">
+		<H3>Variable.GetInt</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Value</U> = Variable.GetInt(<I><U>Id</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Id</U> <I>(integer)</I> = The engine cvar index.<BR></PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Value</U> <I>(mixed)</I> = The engine internal id value.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Retrieves the value of the specified cvar given at the specified id&#x2e; The id&#x27;s are populated as key&#x2f;value pairs in the &#x27;Variable&#x2e;Internal&#x27; table&#x2e;<BR></PRE>
+		<H4><A href="#idx:Variable" onclick="r('Variable.GetInt')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Variable.Register">
+		<H3>Variable.Register</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Class</U> = Variable.Register(<I><U>Name</U>, <U>Default</U>, <U>Flags</U>, <U>Callback</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Name</U> <I>(string)</I> = The engine cvar name.<BR><U>Default</U> <I>(string)</I> = The default cvar value.<BR><U>Flags</U> <I>(integer)</I> = The cvar flags.<BR><U>Callback</U> <I>(function)</I> = The callback global function name.<BR></PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Class</U> <I>(Variable)</I> = The Variable object created.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Registers the specified cvar name with the specified default value&#x2e; The default value is ignored if there is already a saved value in the Sql cvars database&#x2e; If the saved value is a corrupted encrypted value then the default is used&#x2e; If the cvar already exists then an exception is thrown so make sure you check for it first if do not expect this call to garauntee success&#x2e; Normally it is unless there is a memory allocation issue&#x2e; You can register an unlimited amount of variables&#x2e;<BR>See Variable&#x2e;Flags to see available flags&#x2e;<BR></PRE>
+		<H4><A href="#idx:Variable" onclick="r('Variable.Register')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Variable.ResetInt">
+		<H3>Variable.ResetInt</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Variable.ResetInt(<I><U>Id</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Id</U> <I>(integer)</I> = The engine cvar index.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Resets the specified cvar to its default variable&#x2e;<BR></PRE>
+		<H4><A href="#idx:Variable" onclick="r('Variable.ResetInt')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Variable.Save">
+		<H3>Variable.Save</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Count</U> = Variable.Save()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Count</U> <I>(number)</I> = Number of items saved<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Commits all modified variables to database&#x2e; Returns number of items written&#x2e;<BR></PRE>
+		<H4><A href="#idx:Variable" onclick="r('Variable.Save')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Variable.SetInt">
+		<H3>Variable.SetInt</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Variable.SetInt(<I><U>Id</U>, <U>Value</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Id</U> <I>(integer)</I> = The engine cvar index.<BR><U>Value</U> <I>(string)</I> = The new engine cvar value.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Sets the new value of the specified engine cvar name&#x2e; An exception is raised if any error occurds&#x2e; See CVars&#x2e;Result to see the possible results&#x2e;<BR></PRE>
+		<H4><A href="#idx:Variable" onclick="r('Variable.SetInt')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Variable:Default">
+		<H3>Variable:Default</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Value</U> = Variable:Default()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Value</U> <I>(string)</I> = The engine default cvar value.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Retrieves the value of the specified cvar name&#x2e; An exception is raised if the specified cvar does not exist&#x2e;<BR></PRE>
+		<H4><A href="#idx:Variable" onclick="r('Variable:Default')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Variable:Destroy">
+		<H3>Variable:Destroy</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Variable:Destroy()</PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Unregisters the specified console command&#x2e;<BR></PRE>
+		<H4><A href="#idx:Variable" onclick="r('Variable:Destroy')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Variable:Get">
+		<H3>Variable:Get</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Value</U> = Variable:Get()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Value</U> <I>(mixed)</I> = The engine cvar value.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Retrieves the value of the specified cvar name&#x2e; An exception is raised if the specified cvar does not exist&#x2e;<BR></PRE>
+		<H4><A href="#idx:Variable" onclick="r('Variable:Get')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Variable:Name">
+		<H3>Variable:Name</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Name</U> = Variable:Name()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Name</U> <I>(string)</I> = The name of the console command.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the name of the console command this object was registered with&#x2e;<BR></PRE>
+		<H4><A href="#idx:Variable" onclick="r('Variable:Name')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Variable:Set">
+		<H3>Variable:Set</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Variable:Set(<I><U>Name</U>, <U>Value</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Name</U> <I>(string)</I> = The engine cvar name.<BR><U>Value</U> <I>(string)</I> = The new engine cvar value.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Sets the new value of the specified engine cvar name&#x2e; An exception is raised if any error occurds&#x2e; See CVars&#x2e;Result to see the possible results&#x2e;<BR></PRE>
+		<H4><A href="#idx:Variable" onclick="r('Variable:Set')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Variable.Flags">
+		<H3>Variable.Flags</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Data</U> = Variable.Flags</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Data</U> <I>(table)</I> = A table of const string/int key pairs<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns all the cvar flags supported by the engine in the form of a string&#x2f;int key pairs which can be used with the Variable&#x2e;Register&#x28;&#x29; command&#x2e;<BR></PRE>
+		<H4><A href="#idx:Variable" onclick="r('Variable.Flags')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Variable.Result">
+		<H3>Variable.Result</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Data</U> = Variable.Result</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Data</U> <I>(table)</I> = A table of const string/int key pairs<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the possible values that can be returned with the Variable&#x2e;Set&#x28;&#x29; function&#x2e;<BR></PRE>
+		<H4><A href="#idx:Variable" onclick="r('Variable.Result')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
 	<DIV id="Video.ArrayAsync">
 		<H3>Video.ArrayAsync</H3>
 		<H4>Syntax:-</H4>
@@ -10572,7 +10619,7 @@
 	</DIV>
 	<DIV id="cv.obj_cmdmax">
 		<H3>obj_cmdmax</H3>
-		<PRE>Specifies the maximum number of console commands allowed to be registered by the engine&#x2e; This includes the internal default commands&#x2e; An exception is generated if more cvars than this are allocated&#x2e;<BR></PRE>
+		<PRE>Specifies the maximum number of Lua console commands allowed to be registered by the engine&#x2e;<BR></PRE>
 		<H4><A href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="cv.obj_cvarimax">
@@ -11051,6 +11098,6 @@
 		<H4><A href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<ADDRESS>Copyright &copy; 2024 MS-Design, All Rights Reserved.<BR>
-	This document was generated at Mon Mar 25 00:00:27 2024 +0000</ADDRESS>
+	This document was generated at Tue Mar 26 00:58:55 2024 +0000</ADDRESS>
 </BODY>
 </HTML>
