@@ -23,13 +23,9 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
   public Ident                         // Object name
 { /* -- Private variables -------------------------------------------------- */
-  int              iRef;               // The reference
-  int              iRefS;              // The reference (when lua is paused)
-  /* -- Public typedefs -------------------------------------------- */ public:
-  typedef map<const string, LuaFunc> Map;        // Map for cvars/console
-  typedef Map::iterator              MapIt;      // Map iterator
-  typedef Map::const_iterator        MapItConst; // Map const iterator
-  /* -- Public functions --------------------------------------------------- */
+  int              iRef,               // The reference
+                   iRefS;              // The reference (when lua is paused)
+  /* -- Public functions ------------------------------------------- */ public:
   void LuaFuncSwap(LuaFunc &oCref)
   { // Convert to non-const and swap members
     swap(iRef, oCref.iRef);
@@ -50,7 +46,8 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
   /* -- Returns the saved reference to this function ----------------------- */
   int LuaFuncGetSaved(void) const { return iRefS; }
   /* -- Check to see if we can add the specified number of parameters ------ */
-  bool LuaFuncCheckAddParams(const size_t stParams, const char*const cpType)
+  bool LuaFuncCheckAddParams(const size_t stParams,
+    const char*const cpType) const
   { // Return if value is valid
     if(LuaUtilIsStackAvail(cParent->LuaRefGetState(), stParams)) return true;
     // Write warning to log
@@ -61,11 +58,11 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
     return false;
   }
   /* -- Send nothing ------------------------------------------------------- */
-  void LuaFuncParams(int&) { }
+  void LuaFuncParams(int&) const { }
   /* -- Send string vector ------------------------------------------------- */
   template<typename ...VarArgs>
     void LuaFuncParams(int &iParams, const StrVector &svList,
-      const VarArgs &...vaVars)
+      const VarArgs &...vaVars) const
   { // If we have items
     if(!svList.empty())
     { // Make sure the number of parameters would not overflow
@@ -81,7 +78,7 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   template<typename ...VarArgs>
     void LuaFuncParams(int &iParams, const string &strVal,
-      const VarArgs &...vaVars)
+      const VarArgs &...vaVars) const
   { // Make sure the number of parameters would not overflow
     if(!LuaFuncCheckAddParams(1, "string")) return;
     // Copy string to stack
@@ -133,6 +130,7 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
   /* -- Dispatch the requested variables safely ---------------------------- */
   template<typename ...VarArgs>
     void LuaFuncProtectedDispatch(const int iReturns, const VarArgs &...vArgs)
+      const
   { // Save stack position so we can restore it on error
     const int iStack = LuaUtilStackSize(cParent->LuaRefGetState()),
     // Push generic error function. This needs to be cleaned up after
@@ -200,7 +198,8 @@ BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
         !LuaUtilRmRefSafe(cParent->LuaRefGetState(),
           iRef, cParent->LuaRefGetId()))
             cLog->LogErrorExSafe(
-              "LuaFunc couldn't delete old ref for function!");
+              "LuaFunc couldn't delete old ref '$' for function!",
+              cParent->LuaRefGetId());
       // Set reference to regular function
       if(!LuaUtilRefInit(cParent->LuaRefGetState(), iRef))
         XC("Failed to create refid to function!",

@@ -62,12 +62,13 @@ template<class ParserMapType,
   /* -- Value access by key name ------------------------------------------- */
   const string &ParserGetAndRemove(const string &strKey) const
   { // Find key and return empty string or value
-    const ParserMapTypeIterator vmtiIt{ this->find(strKey) };
-    if(vmtiIt != this->end()) return vmtiIt->second;
+    const ParserMapTypeIterator pmtiIt{ this->find(strKey) };
+    if(pmtiIt != this->end()) return pmtiIt->second;
     XC("No such key in table!", "Key", strKey, "Count", this->size());
   }
   /* -- Converts the variables to a string --------------------------------- */
-  const string ParserImplodeEx(const string &strSep, const string &strSuf) const
+  const string ParserImplodeEx(const string &strSep,
+    const string &strSuf) const
   { // String to return
     ostringstream osS;
     // For each key/value pair, implode it into a string
@@ -117,42 +118,42 @@ template<class ParserMapType,
   ParserBase(const string &strS, const string &strLS, const char cDelimiter)
     { ParserDoInit(strS, strLS, cDelimiter); }
   /* -- Move constructor --------------------------------------------------- */
-  ParserBase(ParserBase &&vbOther) :   // Other Parser class to move from
+  ParserBase(ParserBase &&pbOther) :   // Other Parser class to move from
     /* -- Initialisers ----------------------------------------------------- */
-    ParserMapType{ StdMove(vbOther) }  // Initialise moving vars
+    ParserMapType{ StdMove(pbOther) }  // Initialise moving vars
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor -------------------------------------------------------- */
   ParserBase(void) { }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(ParserBase)          // Disable copy constructor/operator
-}; /* -- A Parser class where the values can be modified --------------------- */
+}; /* -- A Parser class where the values can be modified ------------------- */
 template<class ParserBaseType = ParserBase<StrNCStrMap>>struct Parser :
   /* -- Base classes ------------------------------------------------------- */
   public ParserBaseType                // Base non-const type
 { /* ----------------------------------------------------------------------- */
   void ParserPushOrUpdatePair(const string &strKey, const string &strValue)
   { // Find key and if it exists, just update the value else insert a new one
-    const StrNCStrMapIt sncsmIt{ this->find(strKey) };
-    if(sncsmIt != this->end()) sncsmIt->second = strValue;
+    const StrNCStrMapIt sncsmiIt{ this->find(strKey) };
+    if(sncsmiIt != this->end()) sncsmiIt->second = strValue;
     else this->ParserPushPair(strKey, strValue);
   }
   /* -- Try to move key but copy value ------------------------------------- */
   void ParserPushOrUpdatePair(string &&strKey, const string &strValue)
-  { const StrNCStrMapIt sncsmIt{ this->find(strKey) };
-    if(sncsmIt != this->end()) sncsmIt->second = strValue;
+  { const StrNCStrMapIt sncsmiIt{ this->find(strKey) };
+    if(sncsmiIt != this->end()) sncsmiIt->second = strValue;
     else this->ParserPushPair(StdMove(strKey), strValue);
   }
   /* -- Try to move value but copy key ------------------------------------- */
   void ParserPushOrUpdatePair(const string &strKey, string &&strValue)
-  { const StrNCStrMapIt sncsmIt{ this->find(strKey) };
-    if(sncsmIt != this->end()) sncsmIt->second = StdMove(strValue);
+  { const StrNCStrMapIt sncsmiIt{ this->find(strKey) };
+    if(sncsmiIt != this->end()) sncsmiIt->second = StdMove(strValue);
     else this->ParserPushPair(strKey, StdMove(strValue));
   }
   /* -- Try to move key and value ------------------------------------------ */
   void ParserPushOrUpdatePair(string &&strKey, string &&strValue)
-  { const StrNCStrMapIt sncsmIt{ this->find(strKey) };
-    if(sncsmIt != this->end()) sncsmIt->second = StdMove(strValue);
+  { const StrNCStrMapIt sncsmiIt{ this->find(strKey) };
+    if(sncsmiIt != this->end()) sncsmiIt->second = StdMove(strValue);
     else this->ParserPushPair(StdMove(strKey), StdMove(strValue));
   }
   /* ----------------------------------------------------------------------- */
@@ -165,20 +166,20 @@ template<class ParserBaseType = ParserBase<StrNCStrMap>>struct Parser :
   /* -- Extracts and deletes the specified key pair ------------------------ */
   const string Extract(const string &strKey)
   { // Find key and return empty string if not found
-    const StrNCStrMapIt sncsmIt{ this->find(strKey) };
-    if(sncsmIt == this->end()) return {};
+    const StrNCStrMapIt sncsmiIt{ this->find(strKey) };
+    if(sncsmiIt == this->end()) return {};
     // Take ownership of the string (faster than copy)
-    const string strOut{ StdMove(sncsmIt->second) };
+    const string strOut{ StdMove(sncsmiIt->second) };
     // Erase keypair
-    this->erase(sncsmIt);
+    this->erase(sncsmiIt);
     // Return the value
     return strOut;
   } /* -- Constructor ------------------------------------------------------ */
   Parser(void) { }
   /* -- MOVE assignment constructor ---------------------------------------- */
-  Parser(Parser &&vOther) :            // Other Parser class to move from
+  Parser(Parser &&pOther) :            // Other Parser class to move from
     /* -- Initialisers ----------------------------------------------------- */
-    ParserBaseType{ StdMove(vOther) }  // Initialise moving vars
+    ParserBaseType{ StdMove(pOther) }  // Initialise moving vars
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor -------------------------------------------------------- */
@@ -187,13 +188,13 @@ template<class ParserBaseType = ParserBase<StrNCStrMap>>struct Parser :
        const char cDelimiter) :        // ...Key/value separator
     /* -- Initialisers ----------------------------------------------------- */
     ParserBaseType{ strS,              // Initialise string to explode
-                  strLS,               // Initialise record (line) separator
-                  cDelimiter }         // Initialise key/value separator
+                    strLS,             // Initialise record (line) separator
+                    cDelimiter }       // Initialise key/value separator
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Parser)              // Disable copy constructor/operator
-};/* -- A Parser class thats values cannot be modified at all ---------------- */
+};/* -- A Parser class thats values cannot be modified at all -------------- */
 template<class ParserBaseType = const ParserBase<const StrStrMap>>
   struct ParserConst :
   /* -- Base classes ------------------------------------------------------- */
@@ -201,9 +202,9 @@ template<class ParserBaseType = const ParserBase<const StrStrMap>>
 { /* -- Constructor -------------------------------------------------------- */
   ParserConst(void) { }
   /* -- MOVE assignment constructor ---------------------------------------- */
-  ParserConst(ParserConst &&vcOther) : // Other vars
+  ParserConst(ParserConst &&pcOther) : // Other vars
     /* -- Initialisers ----------------------------------------------------- */
-    ParserBaseType{ StdMove(vcOther) } // Move it over
+    ParserBaseType{ StdMove(pcOther) } // Move it over
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor -------------------------------------------------------- */

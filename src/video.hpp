@@ -996,8 +996,7 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
       FboSetClear(false);
       // Only 2 triangles and 3 commands are needed so reserve the memory
       if(!FboReserve(2, 3))
-        cLog->LogWarningExSafe(
-          "Video failed to reserve memory for fbo lists.");
+        cLog->LogWarningSafe("Video failed to reserve memory for fbo lists.");
       // We must discard the extra garbage from the ogg video. We can do that
       // with the GPU very easily by altering texture coords!
       fboYCbCr.FboItemSetTexCoord(

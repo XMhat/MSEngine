@@ -857,7 +857,7 @@ static struct Sql final :              // Members initially public
         GetErrorStr(), GetError());
       return CTR_FAIL;
     } // Write success in console and return success
-    cLog->LogDebugExSafe("Sql destroyed CVars table successfully.");
+    cLog->LogDebugSafe("Sql destroyed CVars table successfully.");
     return CTR_OK;
   }
   /* ----------------------------------------------------------------------- */
@@ -875,7 +875,7 @@ static struct Sql final :              // Members initially public
         GetErrorStr(), GetError());
       return CTR_FAIL;
     } // Write success in console and return success
-    cLog->LogDebugExSafe("Sql created CVars table successfully.");
+    cLog->LogDebugSafe("Sql created CVars table successfully.");
     return CTR_OK;
   }
   /* ----------------------------------------------------------------------- */
@@ -890,7 +890,7 @@ static struct Sql final :              // Members initially public
         GetErrorStr(), GetError());
       return CTR_FAIL;
     } // Write success in console and return success
-    cLog->LogDebugExSafe("Sql destroyed cache table successfully.");
+    cLog->LogDebugSafe("Sql destroyed cache table successfully.");
     return CTR_OK;
   }
   /* ----------------------------------------------------------------------- */
@@ -911,7 +911,7 @@ static struct Sql final :              // Members initially public
         GetErrorStr(), GetError());
       return CTR_FAIL;
     } // Write success in console and return success
-    cLog->LogDebugExSafe("Sql created cache table successfully.");
+    cLog->LogDebugSafe("Sql created cache table successfully.");
     return CTR_OK;
   }
   /* ----------------------------------------------------------------------- */
@@ -1047,7 +1047,7 @@ static struct Sql final :              // Members initially public
         return false;
       }
     } // Log result and return success
-    cLog->LogDebugExSafe(
+    cLog->LogDebugSafe(
       "Sql wrote a new key table into database successfully!");
     return true;
   }
@@ -1108,7 +1108,7 @@ static struct Sql final :              // Members initially public
           cCrypt->WritePrivateKey(stIndex++,
             static_cast<uint64_t>(dliItem.MemReadInt<sqlite3_int64>()));
         } // Log result and return
-        cLog->LogDebugExSafe(
+        cLog->LogDebugSafe(
           "Sql loaded key table from database successfully!");
         return;
       }

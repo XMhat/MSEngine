@@ -20,9 +20,9 @@ BEGIN_COLLECTORDUO(Commands, Command, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
   public Lockable                      // Lua garbage collector instruction
 { /* -- Private variables -------------------------------------------------- */
-  LuaFunc::MapIt lfmiIterator;         // Iterator to command Console gives us
+  LuaCmdMapIt      lcmiIt;             // Iterator to command Console gives us
   /* -- Unregister the console command from lua -------------------- */ public:
-  const string &Name(void) const { return lfmiIterator->first; }
+  const string &Name(void) const { return lcmiIt->first; }
   /* -- Register user console command from lua ----------------------------- */
   void Init(lua_State*const lS)
   { // Must be running on the main thread
@@ -42,17 +42,17 @@ BEGIN_COLLECTORDUO(Commands, Command, CLHelperUnsafe, ICHelperUnsafe),
     // class which calls luaL_ref will fail as it ONLY reads position -1.
     lua_pushvalue(lS, 4);
     // Register the console command
-    lfmiIterator = cConsole->RegisterLuaCommand(strName, uiMinimum, uiMaximum);
+    lcmiIt = cConsole->RegisterLuaCommand(strName, uiMinimum, uiMaximum);
   }
   /* -- Destructor that unregisters the cvar ------------------------------- */
-  ~Command(void) { cConsole->UnregisterLuaCommand(lfmiIterator); }
+  ~Command(void) { cConsole->UnregisterLuaCommand(lcmiIt); }
   /* -- Basic constructor with no init ----------------------------- */ public:
   Command(void) :
     /* -- Initialisers ----------------------------------------------------- */
     ICHelperCommand{                   // Initialise and register the object
       cCommands, this },
     IdentCSlave{ cParent->CtrNext() }, // Initialise identification number
-    lfmiIterator{ cConsole->           // Initialise iterator to the last...
+    lcmiIt{ cConsole->                 // Initialise iterator to the last...
       GetLuaConCmdListEnd() }          // ...Lua console command in the map
     /* --------------------------------------------------------------------- */
     { }

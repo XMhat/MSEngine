@@ -2,7 +2,7 @@
 ** ######################################################################### **
 ** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
 ** ######################################################################### **
-** ## Defines the 'Command' namespace and methods for the guest to use in  ## **
+** ## Defines the 'Command' namespace and methods for the guest to use in ## **
 ** ## registering their own console commands. This file is invoked by     ## **
 ** ## 'lualib.hpp'.                                                       ## **
 ** ######################################################################### **
@@ -24,6 +24,12 @@ using namespace IConsole::P;           using namespace ILuaCommand::P;
 /* ------------------------------------------------------------------------- */
 LLFUNC(Destroy, LCCLASSDESTROY(1, Command));
 /* ========================================================================= */
+// $ Command:Id
+// < Id:integer=The id of the command.
+// ? Returns the unique id of the command.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(Id, 1, LCPUSHVAR(LCGETPTR(1, Command)->CtrGet()));
+/* ========================================================================= */
 // $ Command:Name
 // < Name:string=The name of the console command.
 // ? Returns the name of the console command this object was registered with.
@@ -31,15 +37,15 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Command));
 LLFUNCEX(Name, 1, LCGETPTR(1, Command)->Name());
 /* ========================================================================= **
 ** ######################################################################### **
-** ## Command:* member functions structure                                 ## **
+** ## Command:* member functions structure                                ## **
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Command:* member functions begin
-  LLRSFUNC(Destroy), LLRSFUNC(Name),
+  LLRSFUNC(Destroy), LLRSFUNC(Id), LLRSFUNC(Name),
 LLRSEND                                // Command:* member functions end
 /* ========================================================================= **
 ** ######################################################################### **
-** ## Command.* namespace functions                                        ## **
+** ## Command.* namespace functions                                       ## **
 ** ######################################################################### **
 ** ========================================================================= */
 // $ Command.Register
@@ -64,7 +70,7 @@ LLFUNCEX(Exists, 1,
   LCPUSHVAR(cConsole->CommandIsRegistered(LCGETCPPSTRINGNE(1, "Command"))));
 /* ========================================================================= **
 ** ######################################################################### **
-** ## Command.* namespace functions structure                              ## **
+** ## Command.* namespace functions structure                             ## **
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Command.* namespace functions begin

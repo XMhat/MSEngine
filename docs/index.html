@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<!-- Reference for the MS-Engine API version 24.3.26.16 -->
-<!-- Automatically built at Tue Mar 26 00:58:55 2024 +0000 -->
-<!-- With MS-Engine Project Management Utility version 24.3.26.16 -->
+<!-- Reference for the MS-Engine API version 24.3.27.9 -->
+<!-- Automatically built at Wed Mar 27 00:50:57 2024 +0000 -->
+<!-- With MS-Engine Project Management Utility version 24.3.27.9 -->
 <!-- Copyright (c) 2006-2024 MS-Design, All Rights Reserved Worldwide -->
 <HTML lang="en-GB">
 <HEAD>
@@ -11,18 +11,18 @@
 	<META name="apple-mobile-web-app-title" content="MS-Engine API">
 	<META name="author" content="MS-Design">
 	<META name="copyright" content="Copyright © 2006-2024 MS-Design, All Rights Reserved">
-	<META name="description" content="Reference for the MS-Engine API version 24.3.26.16">
+	<META name="description" content="Reference for the MS-Engine API version 24.3.27.9">
 	<META name="format-detection" content="telephone=no">
-	<META name="generator" content="MS-Engine Project Management Utility version 24.3.26.16">
+	<META name="generator" content="MS-Engine Project Management Utility version 24.3.27.9">
 	<META name="google-site-verification" content="BvWxrqmgaIxqe_W8AW3OGK0fdCI_JfB_-gcOOxCF9_4">
 	<META name="googlebot" content="index,follow">
-	<META name="og:description" content="Reference for the MS-Engine API version 24.3.26.16">
+	<META name="og:description" content="Reference for the MS-Engine API version 24.3.27.9">
 	<META name="og:image" content="https://repository-images.githubusercontent.com/611875607/ee7aa468-9797-4763-9a2d-ea3d782ef413">
-	<META name="og:title" content="MS-Engine 24.3.26.16 API reference">
+	<META name="og:title" content="MS-Engine 24.3.27.9 API reference">
 	<META name="og:url" content="https://xmhat.github.io/MSEngine/">
 	<META name="robots" content="index,follow">
 	<META name="viewport" content="width=device-width, initial-scale=1">
-	<TITLE>MS-Engine 24.3.26.16 API reference</TITLE>
+	<TITLE>MS-Engine 24.3.27.9 API reference</TITLE>
 	<STYLE media="screen">
 	* { margin:0; padding:0 }
 	BODY { background-color:#111; border:0; font-family:sans-serif; overflow-x:hidden }
@@ -52,9 +52,9 @@
 	</STYLE>
 </HEAD>
 <BODY id="top">
-	<H1>MS-Engine 24.3.26.16 API reference</H1>
+	<H1>MS-Engine 24.3.27.9 API reference</H1>
 	<H2>Table of contents:-</H2>
-	<P>This build of the MS-Engine API consists of 787 functions (373 members, 414 methods) and 25 consts in 31 namespaces with 209 cvars.</P>
+	<P>This build of the MS-Engine API consists of 790 functions (373 members, 417 methods) and 25 consts in 31 namespaces with 209 cvars.</P>
 	<OL id="toc">
 		<LI id="idx">
 			<A href="#idx">Namespaces</A> <I>(31 namespaces)</I>
@@ -276,9 +276,10 @@
 					</OL>
 				</LI>
 				<LI>
-					<B>Methods</B> <I>(2 methods)</I>
+					<B>Methods</B> <I>(3 methods)</I>
 					<OL>
 						<LI><A href="#Command:Destroy">Destroy</A></LI>
+						<LI><A href="#Command:Id">Id</A></LI>
 						<LI><A href="#Command:Name">Name</A></LI>
 					</OL>
 				</LI>
@@ -1340,11 +1341,13 @@
 					</OL>
 				</LI>
 				<LI>
-					<B>Methods</B> <I>(5 methods)</I>
+					<B>Methods</B> <I>(7 methods)</I>
 					<OL>
 						<LI><A href="#Variable:Default">Default</A></LI>
 						<LI><A href="#Variable:Destroy">Destroy</A></LI>
+						<LI><A href="#Variable:Empty">Empty</A></LI>
 						<LI><A href="#Variable:Get">Get</A></LI>
+						<LI><A href="#Variable:Id">Id</A></LI>
 						<LI><A href="#Variable:Name">Name</A></LI>
 						<LI><A href="#Variable:Set">Set</A></LI>
 					</OL>
@@ -2589,6 +2592,16 @@
 		<H4>Synopsis:-</H4>
 		<PRE>Unregisters the specified console command&#x2e;<BR></PRE>
 		<H4><A href="#idx:Command" onclick="r('Command:Destroy')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Command:Id">
+		<H3>Command:Id</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Id</U> = Command:Id()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Id</U> <I>(integer)</I> = The id of the command.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the unique id of the command&#x2e;<BR></PRE>
+		<H4><A href="#idx:Command" onclick="r('Command:Id')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Command:Name">
 		<H3>Command:Name</H3>
@@ -9580,6 +9593,16 @@
 		<PRE>Unregisters the specified console command&#x2e;<BR></PRE>
 		<H4><A href="#idx:Variable" onclick="r('Variable:Destroy')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
+	<DIV id="Variable:Empty">
+		<H3>Variable:Empty</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Empty</U> = Variable:Empty()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Empty</U> <I>(boolean)</I> = Is the value empty?<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns if the value is empty&#x2e;<BR></PRE>
+		<H4><A href="#idx:Variable" onclick="r('Variable:Empty')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
 	<DIV id="Variable:Get">
 		<H3>Variable:Get</H3>
 		<H4>Syntax:-</H4>
@@ -9589,6 +9612,16 @@
 		<H4>Synopsis:-</H4>
 		<PRE>Retrieves the value of the specified cvar name&#x2e; An exception is raised if the specified cvar does not exist&#x2e;<BR></PRE>
 		<H4><A href="#idx:Variable" onclick="r('Variable:Get')">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Variable:Id">
+		<H3>Variable:Id</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Id</U> = Variable:Id()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Id</U> <I>(integer)</I> = The id of the variable.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the unique id of the variable&#x2e;<BR></PRE>
+		<H4><A href="#idx:Variable" onclick="r('Variable:Id')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Variable:Name">
 		<H3>Variable:Name</H3>
@@ -11098,6 +11131,6 @@
 		<H4><A href="#cvidx" onclick="r('cvidx')">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<ADDRESS>Copyright &copy; 2024 MS-Design, All Rights Reserved.<BR>
-	This document was generated at Tue Mar 26 00:58:55 2024 +0000</ADDRESS>
+	This document was generated at Wed Mar 27 00:50:57 2024 +0000</ADDRESS>
 </BODY>
 </HTML>

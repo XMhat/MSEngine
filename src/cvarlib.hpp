@@ -17,11 +17,11 @@
 /* == Built-in CVar definition struct ====================================== */
 const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 /* -- Use this when cvar is an integer ------------------------------------- */
-#define CB(f,t) [](Item &, const string &strV)->CVarReturn\
+#define CB(f,t) [](CVarItem&, const string &strV)->CVarReturn \
   { return f(StrToNum<t>(strV)); }
 /* -- Use this when cvar is a string (NoOp for no callback needed) --------- */
-#define CBSTR(f) [](Item &ciD, const string &strV)->CVarReturn\
-  { return f(strV, ciD.GetModifyableValue()); }
+#define CBSTR(f) [](CVarItem &cviItem, const string &strV)->CVarReturn \
+  { return f(strV, cviItem.GetModifyableValue()); }
 /* == Core cvars (don't modify order) ====================================== */
 // ! LOG_LEVEL
 // ? Specifies the logging level...

@@ -149,7 +149,7 @@ static LuaCompResult LuaCodeCompileBuffer(lua_State*const lS,
     { // If we should show the rows affected. This is sloppy but sqllite
       // doesn't support resetting sqlite3_changes result yet :(
       const Sql::Records &sslPairs = *vData.cbegin();
-      const Sql::RecordsIt smmI(sslPairs.find("D"));
+      const Sql::RecordsIt smmI{ sslPairs.find("D") };
       if(smmI != sslPairs.cend())
       { // Get value and if its a blob? Set new buffer to load
         const Sql::DataListItem &mbO = smmI->second;

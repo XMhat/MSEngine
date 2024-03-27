@@ -288,7 +288,7 @@ BEGIN_MEMBERCLASSEX(Samples, Sample, ICHelperUnsafe, /* n/a */),
       // The pcm passed in the arguments is usually still allocated by LUA and
       // will still be registered, so lets put a note in the pcm sample to show
       // that this sample class has nicked the pcm sample.
-      pcmSrc.IdentSet("!SAM!$!", IdentGet());
+      pcmSrc.IdentSetEx("!SAM!$!", IdentGet());
     } // Initialise
     LoadSample(*this);
     // Remove all sample data because we can just load it from file again

@@ -330,7 +330,7 @@ static class Display final :
               "Display connected monitor '$', refreshing device list...",
               cpName);
           // Monitor name not specified so OS could be messing around
-          else cLog->LogInfoExSafe("Display hardware shuffle in progress, "
+          else cLog->LogInfoSafe("Display hardware shuffle in progress, "
             "refreshing device list...");
           // Re-enumerate monitors and video modes
           EnumerateMonitorsAndVideoModes();
@@ -415,8 +415,7 @@ static class Display final :
         // In native full-screen mode also re-init the console fbo as well.
         FlagSet(DF_INFULLSCREEN|DF_NATIVEFS);
         // Log non-standard full-screen switch
-        cLog->LogDebugExSafe(
-          "Display received external full-screen switch!");
+        cLog->LogDebugSafe("Display received external full-screen switch!");
         // Update viewport and check if window moved/resized as glfw wont
         goto UpdateViewport;
       }
@@ -427,7 +426,7 @@ static class Display final :
       // Not in native full-screen mode and re-init console fbo
       FlagClear(DF_INFULLSCREEN|DF_NATIVEFS);
       // Log non-standard full-screen switch
-      cLog->LogDebugExSafe("Display received external desktop switch!");
+      cLog->LogDebugSafe("Display received external desktop switch!");
       // Update viewport jump from above if/condition scope
       UpdateViewport: cEvtMain->Add(EMC_VID_MATRIX_REINIT);
       // Check if window moved/resized as glfw wont send these
@@ -1012,7 +1011,7 @@ static class Display final :
   { // Class initialised
     IHInitialise();
     // Log progress
-    cLog->LogDebugExSafe("Display class starting up...");
+    cLog->LogDebugSafe("Display class starting up...");
     // Enumerate monitors and video modes
     EnumerateMonitorsAndVideoModes();
     // Inform main fbo class of our transparency setting
@@ -1069,14 +1068,14 @@ static class Display final :
     cEvtMain->RegisterEx(*this);
     cEvtWin->RegisterEx(*this);
     // Log progress
-    cLog->LogInfoExSafe("Display class started successfully.");
+    cLog->LogInfoSafe("Display class started successfully.");
   }
   /* -- DeInit ------------------------------------------------------------- */
   void DeInit(void)
   { // Ignore if class not initialised
     if(IHNotDeInitialise()) return;
     // Log progress
-    cLog->LogDebugExSafe("Display class deinitialising...");
+    cLog->LogDebugSafe("Display class deinitialising...");
     // Remove events we personally handle
     glfwSetMonitorCallback(nullptr);
     // Remove invalidated active flags
@@ -1099,18 +1098,18 @@ static class Display final :
       // Actually destroy window
       cGlFW->WinDeInit();
       // Log progress
-      cLog->LogDebugExSafe("Display window handle and context destroyed.");
+      cLog->LogDebugSafe("Display window handle and context destroyed.");
     } // Don't have window
     else
     { // Skipped removal of window
-      cLog->LogDebugExSafe(
+      cLog->LogDebugSafe(
         "Display window handle and context destruction skipped.");
       // Can't restore gamma without window
       moSelected = nullptr;
     } // Clear selected video mode
     rSelected = nullptr;
     // Log progress
-    cLog->LogInfoExSafe("Display class deinitialised successfully.");
+    cLog->LogInfoSafe("Display class deinitialised successfully.");
   }
   /* -- Constructor -------------------------------------------------------- */
   Display(void) :

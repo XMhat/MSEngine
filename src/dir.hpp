@@ -282,9 +282,9 @@ class DirCore                          // System specific implementation
     // Set next handle
     dPtrNext = &dPtr;
     // Data for stat
-    struct stat sData;
+    struct stat sfssData;
     // Get information about the filename
-    if(stat(StrAppend(strPrefix, strFile).c_str(), &sData) == -1)
+    if(stat(StrAppend(strPrefix, strFile).c_str(), &sfssData) == -1)
     { // Not a directory (unknown)
       bIsDir = false;
       // Set the file data as blank
@@ -292,10 +292,10 @@ class DirCore                          // System specific implementation
     } // Stat was successful?
     else
     { // Set if is directory
-      bIsDir = S_ISDIR(sData.st_mode);
+      bIsDir = S_ISDIR(sfssData.st_mode);
       // Set data
-      dItem = { sData.st_ctime, sData.st_atime, sData.st_mtime,
-        static_cast<uint64_t>(sData.st_size), sData.st_mode };
+      dItem = { sfssData.st_ctime, sfssData.st_atime, sfssData.st_mtime,
+        static_cast<uint64_t>(sfssData.st_size), sfssData.st_mode };
     } // Success
     return true;
   }
@@ -325,11 +325,11 @@ class DirCore                          // System specific implementation
   { // Read the filename and if failed
     if(struct dirent*const dPtr = readdir(dData))
     { // Data for stat
-      struct stat sData;
+      struct stat sfssData;
       // Set filename
       strFile = dPtr->d_name;
       // Get information about the filename
-      if(stat(StrAppend(strPrefix, strFile).c_str(), &sData) == -1)
+      if(stat(StrAppend(strPrefix, strFile).c_str(), &sfssData) == -1)
       { // Not a directory (unknown)
         bIsDir = false;
         // Set the file data as blank
@@ -337,10 +337,10 @@ class DirCore                          // System specific implementation
       } // Stat was successful?
       else
       { // Set if is directory
-        bIsDir = S_ISDIR(sData.st_mode);
+        bIsDir = S_ISDIR(sfssData.st_mode);
         // Set data
-        dItem = { sData.st_ctime, sData.st_atime, sData.st_mtime,
-          static_cast<uint64_t>(sData.st_size), sData.st_mode };
+        dItem = { sfssData.st_ctime, sfssData.st_atime, sfssData.st_mtime,
+          static_cast<uint64_t>(sfssData.st_size), sfssData.st_mode };
       } // Success
       return true;
     } // Failed
@@ -373,64 +373,64 @@ class Dir :                            // Directory information class
   /* -- Base classes ------------------------------------------------------- */
   public DirFile                       // Files container class
 { /* -- Do scan --------------------------------------------------- */ private:
-  static void RemoveEntry(DirFile::EntMap &dflList, const char*const cpEntry)
+  static void RemoveEntry(DirFile::EntMap &dfemMap, const char*const cpEntry)
   { // Remove specified entry
-    const DirFile::EntMapIt dliItem(dflList.find(cpEntry));
-    if(dliItem != dflList.cend()) dflList.erase(dliItem);
+    const DirFile::EntMapIt dfemiIt{ dfemMap.find(cpEntry) };
+    if(dfemiIt != dfemMap.cend()) dfemMap.erase(dfemiIt);
   }
   /* -- Remove current and parent directory entries ------------------------ */
-  static void RemoveParentAndCurrentDirectory(DirFile::EntMap &dflList)
+  static void RemoveParentAndCurrentDirectory(DirFile::EntMap &dfemMap)
   { // Remove "." and ".." current directory entries
-    RemoveEntry(dflList, ".");
-    RemoveEntry(dflList, "..");
+    RemoveEntry(dfemMap, ".");
+    RemoveEntry(dfemMap, "..");
   }
   /* -- Scan with no match checking ---------------------------------------- */
   static DirFile ScanDir(const string &strDir={})
   { // Directory and file list
-    DirFile::EntMap dliDirs, dliFiles;
+    DirFile::EntMap dfemDirs, dfemFiles;
     // Load up the specification and return if failed
-    DirCore dfcInterface(strDir);
-    if(dfcInterface.IsOpened())
+    DirCore dcInterface{ strDir };
+    if(dcInterface.IsOpened())
     { // Repeat...
       do
       { // Add directory if is a directory
-        if(dfcInterface.bIsDir)
-          dliDirs.insert({ StdMove(dfcInterface.strFile),
-                           StdMove(dfcInterface.dItem) });
+        if(dcInterface.bIsDir)
+          dfemDirs.insert({ StdMove(dcInterface.strFile),
+                            StdMove(dcInterface.dItem) });
         // Insert into files list
-        else dliFiles.insert({ StdMove(dfcInterface.strFile),
-                               StdMove(dfcInterface.dItem) });
+        else dfemFiles.insert({ StdMove(dcInterface.strFile),
+                                StdMove(dcInterface.dItem) });
         // ...until no more entries
-      } while(dfcInterface.GetNextFile());
+      } while(dcInterface.GetNextFile());
       // Remove '.' and '..' entries
-      RemoveParentAndCurrentDirectory(dliDirs);
+      RemoveParentAndCurrentDirectory(dfemDirs);
     } // Return list of files and directories
-    return { StdMove(dliDirs), StdMove(dliFiles) };
+    return { StdMove(dfemDirs), StdMove(dfemFiles) };
   }
   /* -- Scan with match checking ------------------------------------------- */
   static DirFile ScanDirExt(const string &strDir, const string &strExt)
   { // Directory and file list
-    DirFile::EntMap dliDirs, dliFiles;
+    DirFile::EntMap dfemDirs, dfemFiles;
     // Load up the specification and return if failed
-    DirCore dfcInterface(strDir);
-    if(dfcInterface.IsOpened())
+    DirCore dcInterface{ strDir };
+    if(dcInterface.IsOpened())
     { // Repeat...
       do
       { // Add directory if is a directory
-        if(dfcInterface.bIsDir)
-          dliDirs.insert({ StdMove(dfcInterface.strFile),
-                           StdMove(dfcInterface.dItem) });
+        if(dcInterface.bIsDir)
+          dfemDirs.insert({ StdMove(dcInterface.strFile),
+                            StdMove(dcInterface.dItem) });
         // Is a file and extension doesn't match? Ignore it
-        else if(PathSplit{ dfcInterface.strFile }.strExt != strExt) continue;
+        else if(PathSplit{ dcInterface.strFile }.strExt != strExt) continue;
         // Insert into files list
-        else dliFiles.insert({ StdMove(dfcInterface.strFile),
-                               StdMove(dfcInterface.dItem) });
+        else dfemFiles.insert({ StdMove(dcInterface.strFile),
+                                StdMove(dcInterface.dItem) });
         // ...until no more entries
-      } while(dfcInterface.GetNextFile());
+      } while(dcInterface.GetNextFile());
       // Remove '.' and '..' entries
-      RemoveParentAndCurrentDirectory(dliDirs);
+      RemoveParentAndCurrentDirectory(dfemDirs);
     } // Return list of files and directories
-    return { StdMove(dliDirs), StdMove(dliFiles) };
+    return { StdMove(dfemDirs), StdMove(dfemFiles) };
   }
   /* -- Constructor of current directory without safety --------- */ protected:
   explicit Dir(DirFile &&dfList) :
@@ -571,16 +571,16 @@ static bool DirRmDirEx(const string &strDir)
 /* -- Delete a file -------------------------------------------------------- */
 static bool DirFileUnlink(const string &strF) { return !StdUnlink(strF); }
 /* -- Get file size - ------------------------------------------------------ */
-static int DirFileSize(const string &strF, StdFStatStruct &sData)
-  { return StdFStat(strF, &sData) ? StdGetError() : 0; }
+static int DirFileSize(const string &strF, StdFStatStruct &sfssData)
+  { return StdFStat(strF, &sfssData) ? StdGetError() : 0; }
 /* -- True if specified file has the specified mode ------------------------ */
 static bool DirFileHasMode(const string &strF, const int iMode,
   const int iNegate)
 { // Get file information and and if succeeded?
-  StdFStatStruct sData;
-  if(!DirFileSize(strF, sData))
+  StdFStatStruct sfssData;
+  if(!DirFileSize(strF, sfssData))
   { // If file attributes have specified mode then success
-    if((sData.st_mode ^ iNegate) & iMode) return true;
+    if((sfssData.st_mode ^ iNegate) & iMode) return true;
     // Set error number
     StdSetError(ENOTDIR);
   } // Failed

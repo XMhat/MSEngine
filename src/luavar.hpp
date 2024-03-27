@@ -21,18 +21,18 @@ BEGIN_COLLECTORDUO(Variables, Variable, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
   public Lockable                      // Lua garbage collector instruction
 { /* -- Private variables -------------------------------------------------- */
-  LuaFunc::MapIt lfmiIterator;         // Iterator to command Console gives us
+  LuaCVarMapIt     lcvmiIt;            // Iterator to command Console gives us
   /* -- Unregister the console command from lua -------------------- */ public:
-  const string &Name(void) const { return lfmiIterator->first; }
+  const string &Name(void) const { return lcvmiIt->first; }
   /* -- Get current value as string ---------------------------------------- */
-  const string Get(void) const
-   { return cCVars->GetStrSafe(lfmiIterator->first); }
+  const string Get(void) const { return cCVars->GetStrSafe(lcvmiIt); }
   /* -- Get default value as string ---------------------------------------- */
-  const string Default(void) const
-    { return cCVars->GetDefStrSafe(lfmiIterator->first); }
+  const string Default(void) const { return cCVars->GetDefStrSafe(lcvmiIt); }
+  /* -- Returns if value is empty ------------------------------------------ */
+  bool Empty(void) const { return cCVars->IsVarStrEmptySafe(lcvmiIt); }
   /* -- Set value ---------------------------------------------------------- */
   CVarSetEnums Set(const string &strValue) const
-    { return cCVars->SetSafe(lfmiIterator->first, strValue); }
+    { return cCVars->SetSafe(lcvmiIt, strValue); }
   /* -- Register user console command from lua ----------------------------- */
   void Init(lua_State*const lS)
   { // Must be running on the main thread
@@ -56,17 +56,17 @@ BEGIN_COLLECTORDUO(Variables, Variable, CLHelperUnsafe, ICHelperUnsafe),
     // class which calls luaL_ref will fail as it ONLY reads position -1.
     lua_pushvalue(lS, 4);
     // Register the console command
-    lfmiIterator = cCVars->RegisterLuaVar(strName, strD, cF);
+    lcvmiIt = cCVars->RegisterLuaVar(strName, strD, cF);
   }
   /* -- Destructor that unregisters the cvar ------------------------------- */
-  ~Variable(void) { cCVars->UnregisterLuaVar(lfmiIterator); }
+  ~Variable(void) { cCVars->UnregisterLuaVar(lcvmiIt); }
   /* -- Basic constructor with no init ------------------------------------- */
   Variable(void) :
     /* -- Initialisers ----------------------------------------------------- */
     ICHelperVariable{                  // Initialise and register the object
       cVariables, this },
     IdentCSlave{ cParent->CtrNext() }, // Initialise identification number
-    lfmiIterator{ cCVars->             // Initialise iterator to the last...
+    lcvmiIt{ cCVars->                  // Initialise iterator to the last...
       GetLuaVarListEnd() }             // ...Lua console command in the map
     /* --------------------------------------------------------------------- */
     { }

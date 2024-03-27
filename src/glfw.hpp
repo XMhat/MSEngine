@@ -145,7 +145,7 @@ static class GlFW final :              // Root engine class
     // Initialise standard built-in operating system cursors
     InitCursors();
     // Report initialisation successful
-    cLog->LogInfoExSafe("GlFW subsystem initialised.");
+    cLog->LogInfoSafe("GlFW subsystem initialised.");
   }
   /* -- Destructor --------------------------------------------------------- */
   DTORHELPER(~GlFW, DeInit())          // Try to de-initialise glfw

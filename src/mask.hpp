@@ -187,7 +187,7 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     emplace_back(Memory{ stLen });
     stAlloc += stLen;
     // Set name of mask
-    IdentSet(":$*$", uiW, uiH);
+    IdentSetEx(":$*$", uiW, uiH);
     // Set width and height
     DimSet(static_cast<int>(uiW), static_cast<int>(uiH));
   }
@@ -325,7 +325,7 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     // The mask passed in the arguments is usually still allocated by LUA and
     // will still be registered, sp lets put a note in the mask to show that
     // this function has nicked the mask.
-    iC.IdentSet("!MAS!$!", iC.IdentGet());
+    iC.IdentSetEx("!MAS!$!", iC.IdentGet());
     // Tell log what we did
     cLog->LogInfoExSafe("Mask created $ ($x$) tiles from a $x$ $ bitmask.",
       size(), stTWidth, stTHeight, stWidth, stHeight,

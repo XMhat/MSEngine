@@ -669,7 +669,7 @@ BEGIN_MEMBERCLASSEX(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
       // The image passed in the arguments is usually still allocated by LUA
       // and will still be registered, so lets put a note in the image to show
       // that this function has nicked by this image class.
-      imgSrc.IdentSet("!TEX!$!", IdentGet());
+      imgSrc.IdentSetEx("!TEX!$!", IdentGet());
       // Image now being used in a Texture class
       ClearPurposeImage();
       SetPurposeTexture();

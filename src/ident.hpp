@@ -59,7 +59,7 @@ struct Ident :                         // Members initially public
   void IdentSet(const IdentBase &ibO) { strIdentifier = ibO.IdentGet(); }
   /* -- Formatted set using StrFormat() ------------------------------------ */
   template<typename ...VarArgs>
-    void IdentSet(const char*const cpFormat, const VarArgs &...vaArgs)
+    void IdentSetEx(const char*const cpFormat, const VarArgs &...vaArgs)
       { IdentSet(StrFormat(cpFormat, vaArgs...)); }
   /* -- Formatted set using StrAppend() ------------------------------------ */
   template<typename ...VarArgs>

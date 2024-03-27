@@ -61,7 +61,16 @@ BUILD_FLAGS(Redraw,
   RD_GRAPHICS            {0x00000002},
   /* ----------------------------------------------------------------------- */
   RD_BOTH{ RD_TEXT|RD_GRAPHICS }       // All flags
-);/* ======================================================================= */
+);/* ----------------------------------------------------------------------- */
+typedef map<const string,const ConLib> CmdMap; // Map of commands type
+typedef CmdMap::iterator               CmdMapIt;
+typedef CmdMap::const_iterator         CmdMapItConst;
+/* ------------------------------------------------------------------------- */
+typedef pair<LuaFunc, CmdMapIt>        LuaCmdPair;       // Lua id/cvar list
+typedef map<const string, LuaCmdPair>  LuaCmdMap;        // Map for lua vars
+typedef LuaCmdMap::iterator            LuaCmdMapIt;      // Map iterator
+typedef LuaCmdMap::const_iterator      LuaCmdMapItConst; // Map const it
+/* ========================================================================= */
 static class Console final :           // Members initially private
   /* -- Base classes ------------------------------------------------------- */
   private ConLines,                    // Console text lines list
@@ -73,13 +82,8 @@ static class Console final :           // Members initially private
   constexpr static const size_t
     stConCmdMinLength = 1,             // Minimum length of a console command
     stConCmdMaxLength = 255;           // Maximum length of a console command
-  /* -- Public typedefs ---------------------------------------------------- */
-  AutoCompleteFlags acFlags;           // Flags for autocomplete
-  /* ----------------------------------------------------------------------- */
-  typedef map<const string,const ConLib> LibList; // Map of commands type
-  typedef LibList::iterator              LibListIt;
-  typedef LibList::const_iterator        LibListItConst;
-  typedef queue<ConLine>                 ConLineQueue;
+  /* -- Private typedefs --------------------------------------------------- */
+  typedef queue<ConLine>               ConLineQueue;
   /* -- Input -------------------------------------------------------------- */
   ConLineQueue     clqOutput;          // Console lines pending
   ConLinesConstRevIt clriPosition;     // Console output position
@@ -115,11 +119,13 @@ static class Console final :           // Members initially private
   Texture          ctConsole;          // Console background texture
   Font             cfConsole;          // Console font
   char             cCursor;            // Cursor character to use
-  /* -- Other -------------------------------------------------------------- */
-  const ConCmdStaticList &conLibList;  // Default console cmds list
-  LibList          llCmds;             // Console commands list
   /* -- Lua ---------------------------------------------------------------- */
-  LuaFunc::Map     lfList;             // Lua console callbacks list
+  LuaCmdMap       lcmMap;              // Lua console callbacks list
+  /* -- Other -------------------------------------------------------------- */
+  AutoCompleteFlags acFlags;           // Flags for autocomplete
+  const ConCmdStaticList &conCmdMap;   // Default console cmds list
+  CmdMap          cmMap;               // Console commands list
+  const EvtMain::RegVec reEvents;      // Events list to register
   /* -- Do clear console, clear history and reset position ----------------- */
   void DoFlush(void) { clear(); clriPosition = rbegin(); }
   /* -- Check that the console variable name is valid ---------------------- */
@@ -147,13 +153,13 @@ static class Console final :           // Members initially private
     // If too many lines would be written?
     if(stLines >= GetInputMaximum()) return ClearHistory();
     // Iterator to find
-    const StrListConstIt sliIt{ slriInputPosition.base() };
+    const StrListConstIt slciIt{ slriInputPosition.base() };
     // Lines to prune to
     const size_t stRemove = slHistory.size() - stLines;
     // Repeat...
     do
     { // If this item is not selected in the history? Erase and next
-      if(slHistory.cbegin() != sliIt) { slHistory.pop_front(); continue; }
+      if(slHistory.cbegin() != slciIt) { slHistory.pop_front(); continue; }
       // Now we know that this iterator is selected we can erase the rest
       slriInputPosition = StrListConstRevIt{
         slHistory.erase(slHistory.cbegin(), next(slHistory.cbegin(),
@@ -173,13 +179,13 @@ static class Console final :           // Members initially private
     // If too many lines would be written?
     if(stLines >= GetOutputMaximum()) return DoFlush();
     // Iterator to find
-    const ConLinesConstIt cliIt{ clriPosition.base() };
+    const ConLinesConstIt clciIt{ clriPosition.base() };
     // Lines to prune to
     const size_t stRemove = size() - stLines;
     // Repeat...
     do
     { // If this item is not selected in the output history? Erase and next
-      if(cbegin() != cliIt) { pop_front(); continue; }
+      if(cbegin() != clciIt) { pop_front(); continue; }
       // Get items remaining to remove
       clriPosition = ConLinesConstRevIt{ erase(cbegin(),
         next(cbegin(), static_cast<ssize_t>(size() - stRemove))) };
@@ -210,27 +216,23 @@ static class Console final :           // Members initially private
   }
   /* -- Clear console line ------------------------------------------------- */
   void DoClearInput(void) { strConsoleBegin.clear(); strConsoleEnd.clear(); }
-  /* -- Events list -------------------------------------------------------- */
-  const EvtMain::RegVec reEvents;       // Events list to register
   /* -- Return commands list --------------------------------------- */ public:
-  const LibList &GetCmdsList(void) const { return llCmds; }
-  const LuaFunc::Map &GetLuaCmdsList(void) const { return lfList; }
+  const CmdMap &GetCmdsList(void) const { return cmMap; }
+  const LuaCmdMap &GetLuaCmdsList(void) const { return lcmMap; }
   /* -- Return maximum number of output history lines ---------------------- */
   size_t GetOutputMaximum(void) const { return stOutputMaximum; }
   /* -- Return maximum number of input history lines ----------------------- */
   size_t GetInputMaximum(void) const { return stInputMaximum; }
-  /* -- Return lua commands list ------------------------------------------- */
-  const LuaFunc::Map &GetLuaCmds(void) const { return lfList; }
   /* -- Return information about a console command ------------------------- */
   const ConLib &GetCommand(const ConCmdEnums cceId) const
-    { return conLibList[cceId]; }
+    { return conCmdMap[cceId]; }
   /* -- Clear console and redraw ------------------------------------------- */
   void Flush(void) { DoFlush(); SetRedraw(); }
   /* -- Find a virtual command and throw error if not found ---------------- */
-  auto FindVirtualCommand(const string &strCmd)
+  LuaCmdMapIt FindVirtualCommand(const string &strCmd)
   { // Find command in console command list and throw if we don't have it
-    auto lfItem{ lfList.find(strCmd) };
-    if(lfItem != lfList.cend()) return lfItem;
+    LuaCmdMapIt lcmiIt{ lcmMap.find(strCmd) };
+    if(lcmiIt != lcmMap.cend()) return lcmiIt;
     // Not found so throw error
     XC("Virtual console command not found!", "Command", strCmd);
   }
@@ -238,33 +240,44 @@ static class Console final :           // Members initially private
   static void LuaCallbackStatic(const Args &);
   void LuaCallback(const Args &aList)
     { FindVirtualCommand(aList.front())->
-        second.LuaFuncProtectedDispatch(0, aList); }
+        second.first.LuaFuncProtectedDispatch(0, aList); }
   /* -- Returns the end of the lua console command list -------------------- */
-  LuaFunc::MapIt GetLuaConCmdListEnd(void) { return lfList.end(); }
+  LuaCmdMapIt GetLuaConCmdListEnd(void) { return lcmMap.end(); }
   /* -- Unregister all console commands ------------------------------------ */
-  LuaFunc::MapIt UnregisterLuaCommand(const LuaFunc::MapIt lfmiCommand)
+  LuaCmdMapIt UnregisterLuaCommand(const LuaCmdMapIt lfmiCommand)
   { // Iterator is registered?
-    if(lfmiCommand != lfList.cend())
+    if(lfmiCommand != lcmMap.cend())
     { // Unregister the command and erase the reference
       UnregisterCommand(lfmiCommand->first);
-      lfList.erase(lfmiCommand);
+      lcmMap.erase(lfmiCommand);
     } // Return the last iterator
-    return lfList.end();
+    return lcmMap.end();
   }
   /* -- Register user console command from lua ----------------------------- */
-  LuaFunc::MapIt RegisterLuaCommand(string &strCmd,
-    const unsigned int uiMinimum, const unsigned int uiMaximum)
+  LuaCmdMapIt RegisterLuaCommand(string &strCmd, const unsigned int uiMinimum,
+    const unsigned int uiMaximum)
   { // Find command and throw exception if already exists
-    const auto lfItem{ lfList.find(strCmd) };
-    if(lfItem != lfList.cend())
+    const LuaCmdMapIt lcmiIt{ lcmMap.find(strCmd) };
+    if(lcmiIt != lcmMap.cend())
       XC("Virtual command already exists!",
-         "Command", strCmd, "Reference", lfItem->second.LuaFuncGet());
-    // Register real command
-    const LibListItConst clItem{
-      RegisterCommand(strCmd, uiMinimum, uiMaximum, LuaCallbackStatic) };
-    // Add command to local list. Do not move the position of this call.
-    return lfList.insert(lfList.cend(),
-      { StdMove(strCmd), LuaFunc{ StrAppend("CC:", clItem->first), true } });
+         "Command", strCmd, "Reference", lcmiIt->second.first.LuaFuncGet());
+    // Iterators to the cvar item and the lua cvar item
+    CmdMapIt itVar;
+    LuaCmdMapIt itLVar;
+    // Capture exceptions as we need to remove the cvar if theres a problem.
+    try
+    { // Register the variable and get the iterator to the new cvar. Don't
+      // forget the lua reference needs to be in place for when the callback
+      // is called.
+      itVar = RegisterCommand(strCmd, uiMinimum, uiMaximum, LuaCallbackStatic);
+      // Create a function and reference the function on the lua stack and
+      // insert the reference into the list
+      itLVar = lcmMap.insert(lcmMap.cend(), { StdMove(strCmd),
+        make_pair(LuaFunc{ StrAppend("CC:", itVar->first), true }, itVar) });
+    } // Exception occured during registration so remove cvar and rethrow
+    catch(const exception &) { cmMap.erase(itVar); throw; }
+    // Return the item that was registered
+    return itLVar;
   }
   /* -- Add specified command line to history ------------------------------ */
   void AddHistory(const string &strCmdLine)
@@ -314,7 +327,7 @@ static class Console final :           // Members initially private
     if(strWhat.empty()) return false;
     // Walk through all the cvars and check if the partial command matches
     if(acFlags.FlagIsSet(AC_COMMANDS) &&
-      TestAutoComplete(llCmds, stBPos, stEPos, strWhat))
+      TestAutoComplete(cmMap, stBPos, stEPos, strWhat))
         return true;
     // Return if cvars not being checked
     if(acFlags.FlagIsClear(AC_CVARS)) return false;
@@ -669,8 +682,8 @@ static class Console final :           // Members initially private
     // Push entire text input to recall history
     AddHistory(strCmd);
     // Find console callback function and function not found?
-    const auto cblItem{ llCmds.find(strVarOrCmd) };
-    if(cblItem == llCmds.cend())
+    const CmdMapIt cmiIt{ cmMap.find(strVarOrCmd) };
+    if(cmiIt == cmMap.cend())
     { // Output string
       ostringstream osS;
       // If the cvar exists?
@@ -686,7 +699,7 @@ static class Console final :           // Members initially private
             cGlFW->WinSetClipboardString(StrFormat("$ \"$\"",
               strVarOrCmd, cCVars->GetStrSafe(strVarOrCmd)));
         } // Else set item and get return value
-        else switch(const CVarSetEnums cscResult =
+        else switch(const CVarSetEnums cvseResult =
           aList[1] == "~" ? cCVars->ResetSafe(strVarOrCmd) :
           cCVars->SetSafe(strVarOrCmd, aList[1]))
         { // Success. Show result
@@ -753,7 +766,7 @@ static class Console final :           // Members initially private
     } // Command found?
     else
     { // Get data structure and check if enough parameters specified
-      const ConLib &clData = cblItem->second;
+      const ConLib &clData = cmiIt->second;
       if(clData.uiMinimum && aList.size() < clData.uiMinimum)
         AddLine("Required parameter missing!");
       else if(clData.uiMaximum && aList.size() > clData.uiMaximum)
@@ -961,7 +974,7 @@ static class Console final :           // Members initially private
     cFboCore->BlitConsoleToMain();
   }
   /* -- Register console command ------------------------------------------- */
-  const LibListIt RegisterCommand(const string &strName,
+  const CmdMapIt RegisterCommand(const string &strName,
     const unsigned int uiMin, const unsigned int uiMax,
     const ConCbFunc ccbFunc)
   { // Check that the console command is valid
@@ -980,40 +993,40 @@ static class Console final :           // Members initially private
          "Identifier", strName, "Minimum",  uiMin,
          "Maximum",    uiMax,   "Function", &ccbFunc);
     // Get existing callback and if command already exists?
-    const auto ccbItem{ llCmds.find(strName) };
-    if(ccbItem != llCmds.cend())
+    const CmdMapIt cmiIt{ cmMap.find(strName) };
+    if(cmiIt != cmMap.cend())
       XC("Command already registered!",
          "Identifier", strName, "Minimum",  uiMin,
          "Maximum",    uiMax,   "Function", &ccbFunc);
     // Checks passed. Now add it
-    return llCmds.insert({ strName,
+    return cmMap.insert({ strName,
       { strName, uiMin, uiMax, CFL_NONE, ccbFunc } }).first;
   }
   /* -- Command exists? ---------------------------------------------------- */
   bool CommandIsRegistered(const string &strName) const
-    { return llCmds.find(strName) != llCmds.cend(); }
+    { return cmMap.contains(strName); }
   /* -- Unregister console command ----------------------------------------- */
   void UnregisterCommand(const string &strName)
   { // Get existing callback and if the command does not exist? Failure!
-    const auto ccbItem{ llCmds.find(strName) };
-    if(ccbItem == llCmds.cend())
+    const CmdMapIt cmiIt{ cmMap.find(strName) };
+    if(cmiIt == cmMap.cend())
       XC("Console command not registered!", "Command", strName);
     // Remove it
-    llCmds.erase(ccbItem);
+    cmMap.erase(cmiIt);
   }
   /* -- Add line as string with specified text colour ---------------------- */
-  void AddLine(const string &strText, const Colour pColour)
+  void AddLine(const string &strText, const Colour cColour)
   { // Tokenise lines into a list limited by the maximum number of lines.
-    if(const TokenList tLines{ strText, cCommon->Lf(), GetOutputMaximum() })
+    if(const TokenList tlLines{ strText, cCommon->Lf(), GetOutputMaximum() })
     { // Add all the lines to the output queue
-      const double dTime = cLog->CCDeltaToDouble();
-      for(const string &sLine : tLines)
+      const double fdTime = cLog->CCDeltaToDouble();
+      for(const string &strLine : tlLines)
       { // Move the line across if it is long enough
-        if(sLine.length() <= stMaxOutputLine)
-          clqOutput.push({ dTime, pColour, StdMove(sLine) });
+        if(strLine.length() <= stMaxOutputLine)
+          clqOutput.push({ fdTime, cColour, StdMove(strLine) });
         // Push a truncated line
-        else clqOutput.push({ dTime, pColour,
-          sLine.substr(0, stMaxOutputLineE) + cCommon->Ellipsis() });
+        else clqOutput.push({ fdTime, cColour,
+          strLine.substr(0, stMaxOutputLineE) + cCommon->Ellipsis() });
       }
     }
   }
@@ -1024,12 +1037,12 @@ static class Console final :           // Members initially private
     const VarArgs &...vaArgs)
       { AddLine(StrFormat(cpFormat, vaArgs...)); }
   /* -- Formatted console output with colour ------------------------------- */
-  template<typename ...VarArgs>void AddLineEx(const Colour pColour,
+  template<typename ...VarArgs>void AddLineEx(const Colour cColour,
     const char*const cpFormat, const VarArgs &...vaArgs)
-      { AddLine(StrFormat(cpFormat, vaArgs...), pColour); }
+      { AddLine(StrFormat(cpFormat, vaArgs...), cColour); }
   /* -- Formatted console output using StrAppend() ------------------------- */
-  template<typename ...VarArgs>void AddLineExC(const Colour pColour,
-    const VarArgs &...vaArgs) { AddLine(StrAppend(vaArgs...), pColour); }
+  template<typename ...VarArgs>void AddLineExC(const Colour cColour,
+    const VarArgs &...vaArgs) { AddLine(StrAppend(vaArgs...), cColour); }
   template<typename ...VarArgs>void AddLineExA(const VarArgs &...vaArgs)
     { AddLineExC(cTextColour, vaArgs...); }
   /* -- Set Console status ------------------------------------------------- */
@@ -1164,7 +1177,7 @@ static class Console final :           // Members initially private
     IHInitialise();
     // Log progress
     cLog->LogDebugExSafe("Console initialising with $ built-in commands...",
-      conLibList.size());
+      conCmdMap.size());
     // Reset cursor position
     clriPosition = rbegin();
     // Graphical mode?
@@ -1185,10 +1198,9 @@ static class Console final :           // Members initially private
     cEvtMain->RegisterEx(reEvents);
     // Show version information
     PrintVersion();
-    // Iterate each item and register it
-    for(const ConLib &clD : conLibList)
-      // Register command if the required core flags are set
-      if(cSystem->IsCoreFlagsHave(clD.cfRequired))
+    // Iterate each item and register command if required core flags match
+    for(const ConLib &clD : conCmdMap)
+      if(cSystem->IsCoreFlagsHave(clD.cfcRequired))
         RegisterCommand(clD.strName, clD.uiMinimum, clD.uiMaximum,
           clD.ccbFunc);
       // Write in log to say we skipped registration of this command
@@ -1196,7 +1208,7 @@ static class Console final :           // Members initially private
         "Console ignoring registration of command '$'.", clD.strName);
     // Say how many commands we registered
     cLog->LogInfoExSafe("Console initialised with $ of $ built-in commands.",
-      llCmds.size(), conLibList.size());
+      cmMap.size(), conCmdMap.size());
   }
   /* -- DeInit ------------------------------------------------------------- */
   void DeInit(void)
@@ -1209,14 +1221,14 @@ static class Console final :           // Members initially private
     // Initially shown and not closable. All other flags removed.
     FlagReset(CF_CANTDISABLE|CF_ENABLED|CF_INSERT);
     // If commands registered?
-    switch(const size_t stCount = llCmds.size())
+    switch(const size_t stCount = cmMap.size())
     { // Impossible?
       case 0: break;
       // Anything else?
       default:
         // Remove all commands quickly and report it
         cLog->LogDebugExSafe("Console flushing $ commands...", stCount);
-        llCmds.clear();
+        cmMap.clear();
         cLog->LogDebugExSafe("Console flushed $ commands.", stCount);
         // Done
         break;
@@ -1414,7 +1426,6 @@ static class Console final :           // Members initially private
     /* -- Initialisers ----------------------------------------------------- */
     IHelper{ __FUNCTION__ },           // Init helper function name
     Flags{ CF_NONE },                  // No initial flags
-    acFlags{ AC_NONE },                // No autocomplete flags
     clriPosition{ rbegin() },          // Input position at beginning
     slriInputPosition{                 // Init log position...
       slHistory.crend() },             // ...at beginning
@@ -1441,7 +1452,8 @@ static class Console final :           // Members initially private
     ctConsole{ true },                 // Console texture on stand-by
     cfConsole{ true },                 // Console font on stand-by
     cCursor('|'),                      // Cursor shape
-    conLibList{ ccslDef },             // Set default commands list
+    acFlags{ AC_NONE },                // No autocomplete flags
+    conCmdMap{ ccslDef },              // Set default commands list
     /* --------------------------------------------------------------------- */
     reEvents{                          // Default events
       { EMC_LUA_PAUSE,  bind(&Console::OnLuaPause,    this, _1) },

@@ -250,7 +250,7 @@ static class Lua final :
         iTotalTables += llRef.iLLKICount;
         ++iTotal;
         // Ignore if this API is not allowed in the current operation mode
-        if(!cSystem->IsCoreFlagsHave(llRef.cfRequired)) continue;
+        if(!cSystem->IsCoreFlagsHave(llRef.cfcRequired)) continue;
         // Increment used statistics
         iMembers += llRef.iLLCount;
         iMethods += llRef.iLLMFCount;
@@ -383,7 +383,7 @@ static class Lua final :
   { // Return if class already initialised
     if(!lsState) return;
     // Report progress
-    cLog->LogDebugExSafe("Lua sandbox deinitialising...");
+    cLog->LogDebugSafe("Lua sandbox deinitialising...");
     // De-init instruction count hook?
     LuaUtilSetHookCallback(GetState(), nullptr, 0);
     // Disable garbage collector

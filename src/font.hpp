@@ -277,7 +277,7 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
       // The ftf passed in the arguments is usually still allocated by LUA
       // and will still be registered, so lets put a note in the image to show
       // that this function has nicked this font class.
-      _ftfData.IdentSet("!FON!$!", ftfData.IdentGet());
+      _ftfData.IdentSetEx("!FON!$!", ftfData.IdentGet());
     }
     // Set initial font size. Since the font size is a float we should round
     // to next whole number so there is enough space.

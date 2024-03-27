@@ -31,7 +31,7 @@ namespace P {                          // Start of public module namespace
 extern const struct LuaLibStatic       // Name of struct
 { /* ----------------------------------------------------------------------- */
   const char*const     cpName;         // Name of library
-  const CoreFlagsConst cfRequired;     // Required core flags to register
+  const CoreFlagsConst cfcRequired;    // Required core flags to register
   const luaL_Reg*const libList;        // Library functions
   const int            iLLCount;       // Size of library functions
   const luaL_Reg*const libmfList;      // Member library functions

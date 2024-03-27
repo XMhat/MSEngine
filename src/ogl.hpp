@@ -214,7 +214,7 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
     SetFlagExt("GL_NVX_gpu_memory_info", GFL_HAVENVMEM);
     SetFlagExt("GL_ATI_meminfo", GFL_HAVEATIMEM);
     // Set flag if have either
-    FlagSet(FlagIsSet(GFL_HAVENVMEM) || FlagIsSet(GFL_HAVEATIMEM) ?
+    FlagSet(FlagIsAnyOfSet(GFL_HAVENVMEM|GFL_HAVEATIMEM) ?
       GFL_HAVEMEM : GFL_SHARERAM|GFL_HAVEMEM);
     // Cache maximum texture size (Minimum hardware support for 3.2 is 1024^2)
     uiTexSize = GetInteger<GLuint>(GL_MAX_TEXTURE_SIZE);
@@ -875,7 +875,7 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
           mI.first, mI.second);
     } // Show warning if not enough texture units
     if(uiTexUnits < 3)
-      cLog->LogWarningExSafe("Ogl detected only $ of the three texture units "
+      cLog->LogWarningSafe("Ogl detected only $ of the three texture units "
         "that are required for video playback!");
     // Set the initialised flag
     FlagSet(GFL_INITIALISED);

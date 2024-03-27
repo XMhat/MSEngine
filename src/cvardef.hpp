@@ -125,8 +125,8 @@ BUILD_FLAGS(CVar,
           CPROTECTED|CDEFLATE|CNOTEMPTY|CUNSIGNED|CPOW2|CFILENAME|MTRIM|
           OSAVEFORCE };
 );/* ----------------------------------------------------------------------- */
-class Item;                            // (Prototype) Cvar callback data
-typedef CVarReturn (*CbFunc)(Item&, const string&); // Callback return type
+class CVarItem;                        // (Prototype) Cvar callback data
+typedef CVarReturn (*CbFunc)(CVarItem&, const string&); // Callback return type
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */
@@ -217,20 +217,20 @@ enum CVarEnums : size_t
   WIN_WIDTHMAX,     WIN_WIDTHMIN,
   /* -- Logging cvars ------------------------------------------------------ */
   LOG_CREDITS,      LOG_DYLIBS,
-  /* -- Other -------------------------------------------------------------- */
-  APP_COMFLAGS,                        // Compatibility flags. DO NOT (RE)MOVE
-  MAX_CVAR,                            // Maximum cvars. DO NOT (RE)MOVE!
-  CVAR_FIRST = 0,                      // The first cvar item
+  /* -- Misc (do not (re)move) --------------------------------------------- */
+  APP_COMFLAGS,                        // Compatibility flags
+  CVAR_MAX,                            // Maximum cvars
+  CVAR_FIRST = LOG_LEVEL,              // The first cvar item
 };/* ----------------------------------------------------------------------- */
 struct ItemStatic                      // Start of CVar static struct
 { /* ----------------------------------------------------------------------- */
-  const CoreFlagsConst cfRequired;     // Required core flags
+  const CoreFlagsConst cfcRequired;    // Required core flags
   const string         &strVar;        // Variable name
   const string         &strValue;      // Variable default value
   const CbFunc         cbTrigger;      // Callback trigger event
   const CVarFlagsConst &cFlags;        // Variable flags
 };/* ----------------------------------------------------------------------- */
-typedef array<const ItemStatic, MAX_CVAR> ItemStaticList;
+typedef array<const ItemStatic, CVAR_MAX> ItemStaticList;
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */

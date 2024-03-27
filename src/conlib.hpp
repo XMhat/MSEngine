@@ -348,7 +348,7 @@ cConsole->AddLineEx("Console flags are currently 0x$$$ ($).\n"
   }),
   cConsole->GetOutputCount(), cConsole->GetOutputMaximum(),
   cConsole->GetInputCount(), cConsole->GetInputMaximum(),
-  cConsole->GetCmdsList().size(), cConsole->GetLuaCmds().size());
+  cConsole->GetCmdsList().size(), cConsole->GetLuaCmdsList().size());
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'con' function
 /* ========================================================================= */
@@ -422,8 +422,7 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 // If we actually came from the 'cvpend' command, select internal 'load
 // from/save to' list else select the main public cvar list.
-typedef CVars::ItemMap CVarsItemMap;
-const CVarsItemMap &cimList = aArgs[0][2] == 'p' ? // Optimal and safe
+const CVarMap &cimList = aArgs[0][2] == 'p' ? // Optimal and safe
   cCVars->GetInitialVarList() : cCVars->GetVarList();
 // Ignore if empty
 if(cimList.empty())
@@ -434,23 +433,22 @@ const string &strFilter = aArgs.size() > 1 ? aArgs[1] : cCommon->Blank();
 const LockGuard lgCVarsSync{ cCVars->mMutex };
 // Try to find the cvar outright first (only make work when not in release)
 #if !defined(RELEASE)
-typedef CVars::ItemMapItConst CVarsItemMapItConst;
-CVarsItemMapItConst cimiIt{ cimList.find(strFilter) };
+CVarMapItConst cimiIt{ cimList.find(strFilter) };
 if(cimiIt != cimList.cend())
 { // Get cvar data an flags
-  const Item &cD = cimiIt->second;
+  const CVarItem &cviVar = cimiIt->second;
   // Categories to add
   StrList slCats{
     StrFormat("Status for CVar '$'...\n"
               "- Registered by: $, Flags: 0x$$$, Callback: $.\n"
               "- Current Value<$> = \"$\".",
-      strFilter, cD.FlagIsSet(TLUA) ? "Lua" : "Engine",
-      hex, cD.FlagGet(), dec, cD.IsTriggerSet() ? "Set" : "None",
-      cD.GetValueLength(), cD.GetValue()) };
+      strFilter, cviVar.FlagIsSet(TLUA) ? "Lua" : "Engine",
+      hex, cviVar.FlagGet(), dec, cviVar.IsTriggerSet() ? "Set" : "None",
+      cviVar.GetValueLength(), cviVar.GetValue()) };
   // Add default value if set
-  if(cD.IsValueChanged())
+  if(cviVar.IsValueChanged())
     slCats.emplace_back(StrFormat("- Default Value<$> = \"$\".",
-      cD.GetDefLength(), cD.GetDefValue()));
+      cviVar.GetDefLength(), cviVar.GetDefValue()));
   // Flags to test data
   typedef pair<const CVarFlagsConst&, const char*const> FlagPair;
   typedef pair<const char*const, const vector<FlagPair>> CatPair;
@@ -481,7 +479,7 @@ if(cimiIt != cimList.cend())
     StrList slDest;
     // Test each flag and add to list if set
     for(const FlagPair &fpPair : cpPair.second)
-      if(cD.FlagIsSet(fpPair.first)) slDest.emplace_back(fpPair.second);
+      if(cviVar.FlagIsSet(fpPair.first)) slDest.emplace_back(fpPair.second);
     // Add joined list to ca`1tegories list
     slCats.emplace_back(StrFormat("- $<$> = $.", cpPair.first, slDest.size(),
       slDest.empty() ? cCommon->Unspec(): StrImplode(slDest, ", ")));
@@ -507,33 +505,42 @@ if(cimiIt != cimList.cend())
     // Increment matched counter
     ++stMatched;
     // Get cvar data and flags
-    const Item &cD = cimiIt->second;
+    const CVarItem &cviVar = cimiIt->second;
     // Add tokens
     tData.Data(StrFromEvalTokens({
       // Types
-      { true, cD.FlagIsSet(CFILENAME)  ? 'F' :
-             (cD.FlagIsSet(CTRUSTEDFN) ? 'T' :
-             (cD.FlagIsSet(TSTRING)    ? 'S' :
-             (cD.FlagIsSet(TINTEGER)   ? 'I' :
-             (cD.FlagIsSet(TFLOAT)     ? 'N' :
-             (cD.FlagIsSet(TBOOLEAN)   ? 'B' :
+      { true, cviVar.FlagIsSet(CFILENAME)  ? 'F' :
+             (cviVar.FlagIsSet(CTRUSTEDFN) ? 'T' :
+             (cviVar.FlagIsSet(TSTRING)    ? 'S' :
+             (cviVar.FlagIsSet(TINTEGER)   ? 'I' :
+             (cviVar.FlagIsSet(TFLOAT)     ? 'N' :
+             (cviVar.FlagIsSet(TBOOLEAN)   ? 'B' :
                                          '?'))))) },
       // Permissions
-      { cD.FlagIsSet(PBOOT),        '1' }, { cD.FlagIsSet(PSYSTEM),      '2' },
-      { cD.FlagIsSet(PUSR),         '3' },
+      { cviVar.FlagIsSet(PBOOT),        '1' },
+      { cviVar.FlagIsSet(PSYSTEM),      '2' },
+      { cviVar.FlagIsSet(PUSR),         '3' },
       // Sources
-      { cD.FlagIsSet(SENGINE),      '6' }, { cD.FlagIsSet(SCMDLINE),     '7' },
-      { cD.FlagIsSet(SAPPCFG),      '8' }, { cD.FlagIsSet(SUDB) ,        '9' },
+      { cviVar.FlagIsSet(SENGINE),      '6' },
+      { cviVar.FlagIsSet(SCMDLINE),     '7' },
+      { cviVar.FlagIsSet(SAPPCFG),      '8' },
+      { cviVar.FlagIsSet(SUDB) ,        '9' },
       // Conditions and operations
-      { cD.FlagIsSet(CUNSIGNED),    'U' }, { cD.FlagIsSet(TLUA),         'L' },
-      { cD.FlagIsSet(CONFIDENTIAL), 'C' }, { cD.FlagIsSet(CPROTECTED),   'P' },
-      { cD.FlagIsSet(CDEFLATE),     'D' }, { cD.FlagIsSet(COMMIT),       'M' },
-      { cD.FlagIsSet(LOADED),       'O' }, { cD.FlagIsSet(CSAVEABLE),    'V' },
-      { cD.FlagIsSet(OSAVEFORCE),   'Z' }, { cD.FlagIsSet(CPOW2),        'W' },
-      { cD.FlagIsSet(CNOTEMPTY),    'Y' }, { cD.FlagIsSet(MTRIM),        'R' },
-      { cD.IsTriggerSet(),      'K' }
+      { cviVar.FlagIsSet(CUNSIGNED),    'U' },
+      { cviVar.FlagIsSet(TLUA),         'L' },
+      { cviVar.FlagIsSet(CONFIDENTIAL), 'C' },
+      { cviVar.FlagIsSet(CPROTECTED),   'P' },
+      { cviVar.FlagIsSet(CDEFLATE),     'D' },
+      { cviVar.FlagIsSet(COMMIT),       'M' },
+      { cviVar.FlagIsSet(LOADED),       'O' },
+      { cviVar.FlagIsSet(CSAVEABLE),    'V' },
+      { cviVar.FlagIsSet(OSAVEFORCE),   'Z' },
+      { cviVar.FlagIsSet(CPOW2),        'W' },
+      { cviVar.FlagIsSet(CNOTEMPTY),    'Y' },
+      { cviVar.FlagIsSet(MTRIM),        'R' },
+      { cviVar.IsTriggerSet(),          'K' }
     // Name and value
-    })).Data(strKey).Data(cD.Protect());
+    })).Data(strKey).Data(cviVar.Protect());
   } // Until no more commands
   while(++cimiIt != cimList.cend());
   // Print output if we matched commands
@@ -614,7 +621,7 @@ for(const Archive*const aCptr : *cArchives)
   const Archive &aCref = *aCptr;
   // Goto next archive if directory specified and is not found
   const StrUIntMap &suimDirs = aCref.GetDirList();
-  if(!strDir.empty() && suimDirs.find(strDir) == suimDirs.cend()) continue;
+  if(!strDir.empty() && !suimDirs.contains(strDir)) continue;
   // Enumerate directories
   for(const auto &dI : suimDirs)
   { // Skip directory if start of directory does not match
@@ -1101,6 +1108,79 @@ cConsole->AddLineExA(tData.Finish(),
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'lfuncs' function
 /* ========================================================================= */
+{ "lg", 1, 0, CFL_NONE, [](const Args &aArgs){
+/* ------------------------------------------------------------------------- */
+// Get lua state
+lua_State*const lS = cLua->GetState();
+// Save stack position and restore it when this function call completes. We
+// do this because we could write any number of values to the stack
+// depending on how many child variables the user specifies. This simple
+// class creation simplifies the cleanup process.
+const LuaStackSaver lssSaved{ lS };
+// We need free items on the stack, leave empty if not
+if(!LuaUtilIsStackAvail(lS, aArgs.size()))
+  return cConsole->AddLine("Too many path components!");
+// Get iterator to second argument. First is actually the command name. The
+// second argument in this instance is the root table name in globals.
+// Store if we have arguments and if we have them?
+auto clItem{ aArgs.cbegin() + 1 };
+if(clItem != aArgs.cend())
+{ // Get root table
+  const string &strRoot = *clItem;
+  if(strRoot.empty()) return cConsole->AddLine("Empty table name!");
+  // Push variable specified on command line and if it's not a table?
+  // Tell user the table is invalid and return
+  lua_getglobal(lS, strRoot.c_str());
+  if(!lua_istable(lS, -1))
+    return cConsole->AddLineEx("Table '$' $!", strRoot,
+      lua_isnil(lS, -1) ? "does not exist" : "is not valid");
+  // Save index so we can keep recursing the same table and check if each
+  // remaining argument is a table until we reach no more arguments.
+  for(const int iIndex = LuaUtilStackSize(lS); ++clItem != aArgs.cend();)
+  { // Get name of parameter and if it's empty? Return empty sub-table
+    const string &strParam = *clItem;
+    if(strParam.empty()) return cConsole->AddLine("Empty sub-table name!");
+    // ...and if its a valid number?
+    if(StrIsInt(strParam))
+    { // Get value by index and keep searching for more tables
+      LuaUtilGetRefEx(lS, -1, StrToNum<lua_Integer>(strParam));
+      if(lua_istable(lS, -1)) continue;
+      // Restore where we were in the stack
+      LuaUtilPruneStack(lS, iIndex);
+    } // Find subtable. It must be a table
+    lua_getfield(lS, -1, strParam.c_str());
+    if(lua_istable(lS, -1)) continue;
+    // Tell user the table is invalid
+    cConsole->AddLineEx("Sub-table '$' $!", strParam,
+      lua_isnil(lS, -1) ? "does not exist" : "is not valid");
+    // Done
+    return;
+  }
+} // Push global namspace and throw error if it is invalid
+else lua_pushglobaltable(lS);
+// Items for sorting (Name, Value, Tokens)
+map<const string, const pair<const string,const string>> smmList;
+// Make sure theres two elements
+for(LuaUtilPushNil(lS); lua_next(lS, -2); LuaUtilRmStack(lS))
+{ // Index is an integer? Create item info struct and add to list
+  if(lua_isinteger(lS, -2))
+    smmList.insert({ StrFromNum(lua_tointeger(lS, -2)),
+      { LuaUtilGetStackType(lS, -1), LuaUtilGetStackTokens(lS, -1) } });
+  // For everything else. Create item info struct and add to list
+  else smmList.insert({ lua_tostring(lS, -2),
+    { LuaUtilGetStackType(lS, -1), LuaUtilGetStackTokens(lS, -1) } });
+} // Build string to output
+Statistic tData;
+tData.Header("FLAGS").Header("NAME", false).Header("VALUE", false)
+     .Reserve(smmList.size());
+for(const auto &sprIt : smmList)
+  tData.Data(sprIt.second.second).Data(sprIt.first).Data(sprIt.second.first);
+// Print number of items
+cConsole->AddLineExA(tData.Finish(),
+  StrPluraliseNum(smmList.size(), "item.", "items."));
+/* ------------------------------------------------------------------------- */
+} },                                   // End of 'lg' function
+/* ========================================================================= */
 { "lgc", 1, 1, CFL_NONE, [](const Args &){
 /* ------------------------------------------------------------------------- */
 // Free data and get bytes freed
@@ -1192,74 +1272,132 @@ cConsole->AddLineExA(tData.Finish(),
 /* ========================================================================= */
 { "lvars", 1, 0, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
-// Get lua state
-lua_State*const lS = cLua->GetState();
-// Save stack position and restore it when this function call completes. We
-// do this because we could write any number of values to the stack
-// depending on how many child variables the user specifies. This simple
-// class creation simplifies the cleanup process.
-const LuaStackSaver lssSaved{ lS };
-// We need free items on the stack, leave empty if not
-if(!LuaUtilIsStackAvail(lS, aArgs.size()))
-  return cConsole->AddLine("Too many path components!");
-// Get iterator to second argument. First is actually the command name. The
-// second argument in this instance is the root table name in globals.
-// Store if we have arguments and if we have them?
-auto clItem{ aArgs.cbegin() + 1 };
-if(clItem != aArgs.cend())
-{ // Get root table
-  const string &strRoot = *clItem;
-  if(strRoot.empty()) return cConsole->AddLine("Empty table name!");
-  // Push variable specified on command line and if it's not a table?
-  // Tell user the table is invalid and return
-  lua_getglobal(lS, strRoot.c_str());
-  if(!lua_istable(lS, -1))
-    return cConsole->AddLineEx("Table '$' $!", strRoot,
-      lua_isnil(lS, -1) ? "does not exist" : "is not valid");
-  // Save index so we can keep recursing the same table and check if each
-  // remaining argument is a table until we reach no more arguments.
-  for(const int iIndex = LuaUtilStackSize(lS); ++clItem != aArgs.cend();)
-  { // Get name of parameter and if it's empty? Return empty sub-table
-    const string &strParam = *clItem;
-    if(strParam.empty()) return cConsole->AddLine("Empty sub-table name!");
-    // ...and if its a valid number?
-    if(StrIsInt(strParam))
-    { // Get value by index and keep searching for more tables
-      LuaUtilGetRefEx(lS, -1, StrToNum<lua_Integer>(strParam));
-      if(lua_istable(lS, -1)) continue;
-      // Restore where we were in the stack
-      LuaUtilPruneStack(lS, iIndex);
-    } // Find subtable. It must be a table
-    lua_getfield(lS, -1, strParam.c_str());
-    if(lua_istable(lS, -1)) continue;
-    // Tell user the table is invalid
-    cConsole->AddLineEx("Sub-table '$' $!", strParam,
-      lua_isnil(lS, -1) ? "does not exist" : "is not valid");
-    // Done
-    return;
-  }
-} // Push global namspace and throw error if it is invalid
-else lua_pushglobaltable(lS);
-// Items for sorting (Name, Value, Tokens)
-map<const string, const pair<const string,const string>> smmList;
-// Make sure theres two elements
-for(LuaUtilPushNil(lS); lua_next(lS, -2); LuaUtilRmStack(lS))
-{ // Index is an integer? Create item info struct and add to list
-  if(lua_isinteger(lS, -2))
-    smmList.insert({ StrFromNum(lua_tointeger(lS, -2)),
-      { LuaUtilGetStackType(lS, -1), LuaUtilGetStackTokens(lS, -1) } });
-  // For everything else. Create item info struct and add to list
-  else smmList.insert({ lua_tostring(lS, -2),
-    { LuaUtilGetStackType(lS, -1), LuaUtilGetStackTokens(lS, -1) } });
-} // Build string to output
-Statistic tData;
-tData.Header("FLAGS").Header("NAME", false).Header("VALUE", false)
-     .Reserve(smmList.size());
-for(const auto &sprIt : smmList)
-  tData.Data(sprIt.second.second).Data(sprIt.first).Data(sprIt.second.first);
-// Print number of items
-cConsole->AddLineExA(tData.Finish(),
-  StrPluraliseNum(smmList.size(), "item.", "items."));
+// Get list and return if empty
+const LuaCVarMap &lcvmList = cCVars->GetLuaVarList();
+if(lcvmList.empty()) return cConsole->AddLine("No Lua cvars exist!");
+// Set filter if specified
+const string &strFilter = aArgs.size() > 1 ? aArgs[1] : cCommon->Blank();
+// Lock cvars list
+const LockGuard lgCVarsSync{ cCVars->mMutex };
+// Try to find the cvar outright first (only make work when not in release)
+#if !defined(RELEASE)
+LuaCVarMapItConst cimiIt{ lcvmList.find(strFilter) };
+if(cimiIt != lcvmList.cend())
+{ // Get cvar data an flags
+  const CVarItem &cviVar = cimiIt->second.second->second;
+  // Categories to add
+  StrList slCats{
+    StrFormat("Status for Lua CVar '$'...\n"
+              "- Registered by: $, Flags: 0x$$$, Callback: $.\n"
+              "- Current Value<$> = \"$\".",
+      strFilter, cviVar.FlagIsSet(TLUA) ? "Lua" : "Engine",
+      hex, cviVar.FlagGet(), dec, cviVar.IsTriggerSet() ? "Set" : "None",
+      cviVar.GetValueLength(), cviVar.GetValue()) };
+  // Add default value if set
+  if(cviVar.IsValueChanged())
+    slCats.emplace_back(StrFormat("- Default Value<$> = \"$\".",
+      cviVar.GetDefLength(), cviVar.GetDefValue()));
+  // Flags to test data
+  typedef pair<const CVarFlagsConst&, const char*const> FlagPair;
+  typedef pair<const char*const, const vector<FlagPair>> CatPair;
+  typedef vector<CatPair> CatPairVecFlag;
+  const CatPairVecFlag vcList{
+  { "Types", {
+    { TSTRING,      "String"       }, { TBOOLEAN,     "Boolean"      },
+    { TFLOAT,       "Float"        }, { TINTEGER,     "Integer"      } } },
+  { "Sources", {
+    { SENGINE,      "Internal"     }, { SCMDLINE,     "CmdLine"      },
+    { SAPPCFG,      "AppConfig"    }, { SUDB,         "Database"     } } },
+  { "Permissions", {
+    { PSYSTEM,      "AppManifest"  }, { PBOOT,        "CommandLine"  },
+    { PUSR,         "User"         }                                 } },
+  { "Conditions", {
+    { CDEFLATE,     "Compressed"   }, { CPROTECTED,   "Encrypted"    },
+    { CALPHA,       "Alpha",       }, { CNUMERIC,     "Numeric",     },
+    { CNOTEMPTY,    "NotEmpty"     }, { CPOW2,        "PowerOfTwo"   },
+    { CSAVEABLE,    "SaveToDB"     }, { CFILENAME,    "FileUntrusted"},
+    { CTRUSTEDFN,   "FileTrusted", }, { CUNSIGNED,    "NotNegative", } } },
+  { "Other Flags", {
+    { CONFIDENTIAL, "Confidential" }, { OSAVEFORCE,   "ForceSave"    },
+    { LOADED,       "LoadedFromDB" }, { COMMIT,       "Modified"     },
+    { MTRIM,        "TrimSpaces"   }                                 } } };
+  // Walk through test categories
+  for(const CatPair &cpPair : vcList)
+  { // Joined list of flags
+    StrList slDest;
+    // Test each flag and add to list if set
+    for(const FlagPair &fpPair : cpPair.second)
+      if(cviVar.FlagIsSet(fpPair.first)) slDest.emplace_back(fpPair.second);
+    // Add joined list to ca`1tegories list
+    slCats.emplace_back(StrFormat("- $<$> = $.", cpPair.first, slDest.size(),
+      slDest.empty() ? cCommon->Unspec(): StrImplode(slDest, ", ")));
+  } // Print data about the cvar
+  return cConsole->AddLine(StrImplode(slCats, cCommon->Lf()));
+} // Try as a lower bound check?
+#else
+// Try as a lower bound check?
+#endif
+cimiIt = lcvmList.lower_bound(strFilter);
+if(cimiIt != lcvmList.cend())
+{ // Formatted output. Can assume all variables will be printed
+  Statistic tData;
+  tData.Header("FLAGS").Header("NAME", false).Header("VALUE", false)
+       .Reserve(lcvmList.size());
+  // Number of variables matched and tokens mask
+  size_t stMatched = 0;
+  // Build output string
+  do
+  { // If no match found? return original string
+    const string &strKey = cimiIt->first;
+    if(strKey.compare(0, strFilter.size(), strFilter)) continue;
+    // Increment matched counter
+    ++stMatched;
+    // Get cvar data and flags
+    const CVarItem &cviVar = cimiIt->second.second->second;
+    // Add tokens
+    tData.Data(StrFromEvalTokens({
+      // Types
+      { true, cviVar.FlagIsSet(CFILENAME)  ? 'F' :
+             (cviVar.FlagIsSet(CTRUSTEDFN) ? 'T' :
+             (cviVar.FlagIsSet(TSTRING)    ? 'S' :
+             (cviVar.FlagIsSet(TINTEGER)   ? 'I' :
+             (cviVar.FlagIsSet(TFLOAT)     ? 'N' :
+             (cviVar.FlagIsSet(TBOOLEAN)   ? 'B' :
+                                         '?'))))) },
+      // Permissions
+      { cviVar.FlagIsSet(PBOOT),        '1' },
+      { cviVar.FlagIsSet(PSYSTEM),      '2' },
+      { cviVar.FlagIsSet(PUSR),         '3' },
+      // Sources
+      { cviVar.FlagIsSet(SENGINE),      '6' },
+      { cviVar.FlagIsSet(SCMDLINE),     '7' },
+      { cviVar.FlagIsSet(SAPPCFG),      '8' },
+      { cviVar.FlagIsSet(SUDB) ,        '9' },
+      // Conditions and operations
+      { cviVar.FlagIsSet(CUNSIGNED),    'U' },
+      { cviVar.FlagIsSet(TLUA),         'L' },
+      { cviVar.FlagIsSet(CONFIDENTIAL), 'C' },
+      { cviVar.FlagIsSet(CPROTECTED),   'P' },
+      { cviVar.FlagIsSet(CDEFLATE),     'D' },
+      { cviVar.FlagIsSet(COMMIT),       'M' },
+      { cviVar.FlagIsSet(LOADED),       'O' },
+      { cviVar.FlagIsSet(CSAVEABLE),    'V' },
+      { cviVar.FlagIsSet(OSAVEFORCE),   'Z' },
+      { cviVar.FlagIsSet(CPOW2),        'W' },
+      { cviVar.FlagIsSet(CNOTEMPTY),    'Y' },
+      { cviVar.FlagIsSet(MTRIM),        'R' },
+      { cviVar.IsTriggerSet(),          'K' }
+    // Name and value
+    })).Data(strKey).Data(cviVar.Protect());
+  } // Until no more commands
+  while(++cimiIt != lcvmList.cend());
+  // Print output if we matched commands
+  if(stMatched)
+    return cConsole->AddLineEx("$$ of $ matched.", tData.Finish(),
+      stMatched, StrPluraliseNum(lcvmList.size(), "Lua cvar", "Lua cvars"));
+} // No matches
+cConsole->AddLineEx("No match from $.",
+  StrPluraliseNum(lcvmList.size(), "Lua cvar", "Lua cvars"));
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'lvars' function
 /* ========================================================================= */
@@ -1384,14 +1522,13 @@ cConsole->AddLineExA(tData.Finish(),
 struct MemoryUsageItem
   { const string &strName; size_t stCount, stBytes; }
     muiTotal{ cCommon->Blank(), 0, 0 };
-const string strCmds{"EngCmds"}, strCVars{"CVars"};
 typedef list<MemoryUsageItem> MemoryUsageItems;
 // Helper macros so there is not as much spam
 #define MSS(x) { c ## x ## s->IdentGet(), \
                  c ## x ## s->CollectorCount(), \
                  c ## x ## s->CollectorCount() * sizeof(x) }
 // Build memory usage items database
-MemoryUsageItems muiData{ {
+const MemoryUsageItems muiData{ {
   MSS(Archive),  MSS(Asset),  MSS(Bin),     MSS(Clip),    MSS(Command),
   MSS(Fbo),      MSS(File),   MSS(Font),    MSS(Ftf),     MSS(Image),
   MSS(ImageFmt), MSS(Json),   MSS(LuaFunc), MSS(Mask),    MSS(Palette),

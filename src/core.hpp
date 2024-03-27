@@ -851,7 +851,7 @@ class Core                             // Members initially private
 #undef INITCODEC
       // Register default cvars and pass over the current gui mode by ref. All
       // the core parts of the engine are initialised from cvar callbacks.
-      cCVars->RegisterDefaults();
+      cCVars->Init();
       // Text mode requested?
       if(cSystem->IsTextMode())
       { // Bail out if logging to standard output because this will prevent

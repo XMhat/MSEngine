@@ -501,7 +501,7 @@ static CVarReturn ArchiveInit(const string &strFileMask, string&)
   // Return if no files found (rare but not impossible)
   if(dList.dFiles.empty())
   { // Log no files and return success
-    cLog->LogWarningExSafe("Archives matched no potential archive filenames!");
+    cLog->LogWarningSafe("Archives matched no potential archive filenames!");
     return ACCEPT;
   } // Start processing filenames
   cLog->LogDebugExSafe("Archives loading $ files in working directory...",

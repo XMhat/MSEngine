@@ -99,7 +99,9 @@ template<typename AnyType, typename ...VarArgs>
 /* -- Append main function ------------------------------------------------- */
 template<typename ...VarArgs>
   static const string StrAppend(const VarArgs &...vaVars)
-{ // Stream to write to
+{ // Theres no need to call this if theres no parameters
+  static_assert(sizeof...(VarArgs) > 0, "Not enough parameters!");
+  // Stream to write to
   ostringstream osS;
   // Build string
   StrAppendHelper(osS, vaVars...);
@@ -109,7 +111,9 @@ template<typename ...VarArgs>
 /* -- Append with formatted numbers ---------------------------------------- */
 template<typename ...VarArgs>
   static const string StrAppendImbue(const VarArgs &...vaVars)
-{ // Stream to write to
+{ // Theres no need to call this if theres no parameters
+  static_assert(sizeof...(VarArgs) > 0, "Not enough parameters!");
+  // Stream to write to
   ostringstream osS;
   // Imbue current locale
   osS.imbue(cCommon->Locale());
@@ -152,7 +156,9 @@ template<typename AnyType, typename ...VarArgs>
 template<typename ...VarArgs>
   static const string StrFormat(const char*const cpFmt,
     const VarArgs &...vaVars)
-{ // Return if string empty of invalid
+{ // Theres no need to call this if theres no parameters
+  static_assert(sizeof...(VarArgs) > 0, "Not enough parameters!");
+  // Return if string empty of invalid
   if(UtfIsCStringNotValid(cpFmt)) return {};
   // Stream to write to
   ostringstream osS;

@@ -3,7 +3,7 @@
 ** ## MS-ENGINE              Copyright (c) MS-Design, All Rights Reserved ## **
 ** ######################################################################### **
 ** ## Defines the 'Variable' namespace and methods for the guest to use   ## **
-** ## in registering their own cvars. This file is invoked by             ## **
+** ## in registering their own cvars. This file is invoked by             ## **
 ** ## 'lualib.hpp'.                                                       ## **
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
@@ -24,6 +24,18 @@ using namespace ILuaVariable::P;
 // ? Unregisters the specified console command.
 /* ------------------------------------------------------------------------- */
 LLFUNC(Destroy, LCCLASSDESTROY(1, Variable));
+/* ========================================================================= */
+// $ Variable:Empty
+// < Empty:boolean=Is the value empty?
+// ? Returns if the value is empty.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(Empty, 1, LCPUSHVAR(LCGETPTR(1, Variable)->Empty()));
+/* ========================================================================= */
+// $ Variable:Id
+// < Id:integer=The id of the variable.
+// ? Returns the unique id of the variable.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(Id, 1, LCPUSHVAR(LCGETPTR(1, Variable)->CtrGet()));
 /* ========================================================================= */
 // $ Variable:Name
 // < Name:string=The name of the console command.
@@ -60,8 +72,8 @@ LLFUNCEX(Set, 1,
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Variable:* member functions begin
-  LLRSFUNC(Default), LLRSFUNC(Destroy), LLRSFUNC(Get), LLRSFUNC(Name),
-  LLRSFUNC(Set),
+  LLRSFUNC(Default), LLRSFUNC(Destroy), LLRSFUNC(Get), LLRSFUNC(Id),
+  LLRSFUNC(Name),    LLRSFUNC(Set),
 LLRSEND                                // Variable:* member functions end
 /* ========================================================================= **
 ** ######################################################################### **
@@ -101,7 +113,7 @@ LLFUNCEX(Exists, 1,
 // ? id's are populated as key/value pairs in the 'Variable.Internal' table.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(GetInt, 1, LCPUSHVAR(cCVars->GetInternalStrSafe(
-  LCGETINTLGE(CVarEnums, 1, CVAR_FIRST, MAX_CVAR, "Id"))));
+  LCGETINTLGE(CVarEnums, 1, CVAR_FIRST, CVAR_MAX, "Id"))));
 /* ========================================================================= */
 // $ Variable.SetInt
 // > Id:integer=The engine cvar index.
@@ -111,7 +123,7 @@ LLFUNCEX(GetInt, 1, LCPUSHVAR(cCVars->GetInternalStrSafe(
 // ? results.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(SetInt, 1, LCPUSHVAR(cCVars->SetInternalSafe(
-  LCGETINTLGE(CVarEnums, 1, CVAR_FIRST, MAX_CVAR, "Id"),
+  LCGETINTLGE(CVarEnums, 1, CVAR_FIRST, CVAR_MAX, "Id"),
   LCGETCPPSTRING(2, "Value"))));
 /* ========================================================================= */
 // $ Variable.ResetInt
@@ -119,7 +131,7 @@ LLFUNCEX(SetInt, 1, LCPUSHVAR(cCVars->SetInternalSafe(
 // ? Resets the specified cvar to its default variable.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(ResetInt, 1, LCPUSHVAR(cCVars->ResetInternalSafe(
-  LCGETINTLGE(CVarEnums, 1, CVAR_FIRST, MAX_CVAR, "Id"))));
+  LCGETINTLGE(CVarEnums, 1, CVAR_FIRST, CVAR_MAX, "Id"))));
 /* ========================================================================= */
 // $ Variable.Save
 // < Count:number=Number of items saved
@@ -133,8 +145,8 @@ LLFUNCEX(Save, 1, LCPUSHVAR(cCVars->Save()));
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Variable.* namespace functions begin
-  LLRSFUNC(Exists), LLRSFUNC(GetInt), LLRSFUNC(Register), LLRSFUNC(ResetInt),
-  LLRSFUNC(Save), LLRSFUNC(SetInt),
+  LLRSFUNC(Empty),    LLRSFUNC(Exists), LLRSFUNC(GetInt), LLRSFUNC(Register),
+  LLRSFUNC(ResetInt), LLRSFUNC(Save),   LLRSFUNC(SetInt),
 LLRSEND                                // Variable.* namespace functions end
 /* ========================================================================= **
 ** ######################################################################### **
