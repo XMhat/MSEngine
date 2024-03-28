@@ -407,14 +407,15 @@ LLFUNC(OnRedraw, LCSETEVENTCB(cLua->lrMainRedraw));
 // ? function is in Fbo because it only applies to opengl mode. It also
 // ? overrides the 'con_disabled' setting.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ConSet, 1, LCPUSHVAR(cConsole->DoSetVisible(LCGETBOOL(1, "State"))));
+LLFUNCEX(ConSet, 1,
+  LCPUSHVAR(cConGraphics->DoSetVisible(LCGETBOOL(1, "State"))));
 /* ========================================================================= */
 // $ Fbo.ConHeight
 // > State:number=The console height.
 // ? Sets the console height normal without modifying the cvar. This function
 // ? is in Fbo because it only applies to opengl mode.
 /* ------------------------------------------------------------------------- */
-LLFUNC(ConHeight, cConsole->SetHeight(LCGETNUMLG(GLfloat, 1, 0, 1, "Height")));
+LLFUNC(ConHeight, cConGraphics->SetHeight(LCGETNUMLG(GLfloat, 1, 0, 1, "Height")));
 /* ========================================================================= */
 // $ Fbo.ConEnabled
 // < State:boolean=The console state.
@@ -428,7 +429,7 @@ LLFUNCEX(ConEnabled, 1, LCPUSHVAR(cConsole->IsVisible()));
 // ? Lock the visibility of the console on or off. This function is in Fbo
 // ? because it only applies to opengl mode.
 /* ------------------------------------------------------------------------- */
-LLFUNC(ConLock, cConsole->SetCantDisable(LCGETBOOL(1, "State")));
+LLFUNC(ConLock, cConGraphics->SetCantDisable(LCGETBOOL(1, "State")));
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Fbo.* namespace functions structure                                 ## **

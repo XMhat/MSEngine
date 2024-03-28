@@ -9,15 +9,15 @@
 /* ------------------------------------------------------------------------- */
 namespace ISShot {                     // Start of private module namespace
 /* -- Dependencies --------------------------------------------------------- */
-using namespace IClock::P;             using namespace ICVar::P;
-using namespace ICVarDef::P;           using namespace ICVarLib::P;
+using namespace IClock::P;             using namespace ICVarDef::P;
 using namespace IFbo::P;               using namespace IFboCore::P;
 using namespace IImage::P;             using namespace IImageDef::P;
 using namespace IImageFormat::P;       using namespace IImageLib::P;
 using namespace ILog::P;               using namespace IMemory::P;
 using namespace IOgl::P;               using namespace IStd::P;
-using namespace IString::P;            using namespace ISysUtil::P;
-using namespace IThread::P;            using namespace Lib::OS::GlFW;
+using namespace IString::P;            using namespace ISystem::P;
+using namespace ISysUtil::P;           using namespace IThread::P;
+using namespace Lib::OS::GlFW;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* -- Core fbo wrapper class ----------------------------------------------- */
@@ -79,9 +79,8 @@ static class SShot final :             // Members initially private
       "Failed to read FBO pixel data!",
       "Identifier", fboRef.IdentGet(), "Mode", eMode);
     // Get new filename or original filename
-    Image::IdentSet(strFN.empty() ?
-      StrAppend(cCVars->GetInternalStrSafe(APP_SHORTNAME),
-        cmSys.FormatTime("-%Y%m%d-%H%M%S")) : strFN);
+    Image::IdentSet(strFN.empty() ? StrAppend(cSystem->GetGuestShortTitle(),
+      cmSys.FormatTime("-%Y%m%d-%H%M%S")) : strFN);
     // Log status
     cLog->LogDebugExSafe("SShot '$' screen capture to '$' ($x$x$)...",
       fboRef.IdentGet(), Image::IdentGet(), fboRef.DimGetWidth(),

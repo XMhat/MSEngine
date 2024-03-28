@@ -58,7 +58,7 @@ static class FboCore final :           // The main fbo operations manager
     fboConsole.FboResetClearColour();
     // Commit the default backbuffer clear colour
     cOgl->SetClearColourInt(
-      cCVars->GetInternalSafe<unsigned int>(VID_CLEARCOLOUR));
+      cCVars->GetInternal<unsigned int>(VID_CLEARCOLOUR));
   }
   /* -- Perform rendering to the back buffer ----------------------- */ public:
   void SwapBuffers(void)

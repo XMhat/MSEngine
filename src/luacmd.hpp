@@ -9,18 +9,42 @@
 /* ------------------------------------------------------------------------- */
 namespace ILuaCommand {                // Start of private module namespace
 /* -- Dependencies --------------------------------------------------------- */
-using namespace ICollector::P;         using namespace IConsole::P;
-using namespace IIdent::P;             using namespace ILuaUtil::P;
-using namespace ILuaFunc::P;           using namespace ILua::P;
-using namespace IStd::P;               using namespace ISysUtil::P;
+using namespace IArgs;                 using namespace ICollector::P;
+using namespace IConsole::P;           using namespace IError::P;
+using namespace IIdent::P;             using namespace ILog::P;
+using namespace ILuaUtil::P;           using namespace ILuaFunc::P;
+using namespace ILua::P;               using namespace IStd::P;
+using namespace IString::P;            using namespace ISysUtil::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
-/* -- File collector and member class -------------------------------------- */
-BEGIN_COLLECTORDUO(Commands, Command, CLHelperUnsafe, ICHelperUnsafe),
+/* ------------------------------------------------------------------------- */
+typedef pair<LuaFunc, CmdMapIt>        LuaCmdPair;       // Lua id/cvar list
+typedef map<const string, LuaCmdPair>  LuaCmdMap;        // Map for lua vars
+typedef LuaCmdMap::iterator            LuaCmdMapIt;      // Map iterator
+typedef LuaCmdMap::const_iterator      LuaCmdMapItConst; // Map const it
+/* -- Variables ollector class for collector data and custom variables ----- */
+BEGIN_COLLECTOREX(Commands, Command, CLHelperSafe,
+  LuaCmdMap        lcmMap;             /* Lua console command list          */\
+);/* -- Lua command collector and member class ----------------------------- */
+BEGIN_MEMBERCLASS(Commands, Command, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
   public Lockable                      // Lua garbage collector instruction
 { /* -- Private variables -------------------------------------------------- */
   LuaCmdMapIt      lcmiIt;             // Iterator to command Console gives us
+  /* -- Returns the lua command list --------------------------------------- */
+  LuaCmdMap &GetLuaCmdsList(void) { return cParent->lcmMap; }
+  /* -- Returns the end of the lua command list ---------------------------- */
+  LuaCmdMapIt GetLuaCmdsListEnd(void) { return GetLuaCmdsList().end(); }
+  /* -- Push and get error callback function id ---------------------------- */
+  static void LuaCallbackStatic(const Args &aArgs)
+  { // Find command in console command list and log if not found (impossible)
+    const LuaCmdMapIt lcmiIt{ cCommands->lcmMap.find(aArgs.front()) };
+    if(lcmiIt == cCommands->lcmMap.end())
+      cLog->LogWarningExSafe("Command can't find virtual command '$'!",
+        aArgs.front());
+    // Call the function callback in Lua
+    lcmiIt->second.first.LuaFuncProtectedDispatch(0, aArgs);
+  }
   /* -- Unregister the console command from lua -------------------- */ public:
   const string &Name(void) const { return lcmiIt->first; }
   /* -- Register user console command from lua ----------------------------- */
@@ -41,19 +65,35 @@ BEGIN_COLLECTORDUO(Commands, Command, CLHelperUnsafe, ICHelperUnsafe),
     // sure the callback function is ahead of it in arg 6 or the LuaFunc()
     // class which calls luaL_ref will fail as it ONLY reads position -1.
     lua_pushvalue(lS, 4);
-    // Register the console command
-    lcmiIt = cConsole->RegisterLuaCommand(strName, uiMinimum, uiMaximum);
+    // Find command and throw exception if already exists
+    if(GetLuaCmdsList().contains(strName))
+      XC("Virtual command already exists!", "Command", strName);
+    // Register the variable and get the iterator to the new cvar. Don't
+    // forget the lua reference needs to be in place for when the callback
+    // is called. Create a function and reference the function on the lua
+    // stack and insert the reference into the list
+    lcmiIt = GetLuaCmdsList().insert(GetLuaCmdsListEnd(), { StdMove(strName),
+      make_pair(LuaFunc{ StrAppend("CC:", strName), true },
+        cConsole->RegisterCommand(strName,
+          uiMinimum, uiMaximum, LuaCallbackStatic)) });
   }
   /* -- Destructor that unregisters the cvar ------------------------------- */
-  ~Command(void) { cConsole->UnregisterLuaCommand(lcmiIt); }
+  ~Command(void)
+  { // Return if iterator is not registered
+    if(lcmiIt == GetLuaCmdsListEnd()) return;
+    // Unregister the command if set
+    if(lcmiIt->second.second != cConsole->GetCmdsListEnd())
+      cConsole->UnregisterCommand(lcmiIt->second.second);
+    // Erase the item from the list
+    GetLuaCmdsList().erase(lcmiIt);
+  }
   /* -- Basic constructor with no init ----------------------------- */ public:
   Command(void) :
     /* -- Initialisers ----------------------------------------------------- */
     ICHelperCommand{                   // Initialise and register the object
       cCommands, this },
     IdentCSlave{ cParent->CtrNext() }, // Initialise identification number
-    lcmiIt{ cConsole->                 // Initialise iterator to the last...
-      GetLuaConCmdListEnd() }          // ...Lua console command in the map
+    lcmiIt{ GetLuaCmdsListEnd() }      // Initialise iterator to the last
     /* --------------------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */

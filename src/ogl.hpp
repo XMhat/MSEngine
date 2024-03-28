@@ -1136,10 +1136,10 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
   void UpdateWindowSizeLimits(void)
   { // Get app specified minimums and maximums
     const unsigned int
-      uiWMin = cCVars->GetInternalSafe<unsigned int>(WIN_WIDTHMIN),
-      uiWMax = cCVars->GetInternalSafe<unsigned int>(WIN_HEIGHTMIN),
-      uiHMin = cCVars->GetInternalSafe<unsigned int>(WIN_WIDTHMAX),
-      uiHMax = cCVars->GetInternalSafe<unsigned int>(WIN_HEIGHTMAX);
+      uiWMin = cCVars->GetInternal<unsigned int>(WIN_WIDTHMIN),
+      uiWMax = cCVars->GetInternal<unsigned int>(WIN_HEIGHTMIN),
+      uiHMin = cCVars->GetInternal<unsigned int>(WIN_WIDTHMAX),
+      uiHMax = cCVars->GetInternal<unsigned int>(WIN_HEIGHTMAX);
     // Set the window size limits. The specified maximum must not exceed the
     // video cards maximum texture size or perhaps BOOM! (not tested though).
     cEvtWin->Add(EWC_WIN_LIMITS, uiWMin, uiWMax,
@@ -1176,22 +1176,22 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
     // Set hints. Indicates the accuracy of the derivative calculation for the
     // GL shading language fragment processing built-in functions: dFdx, dFdy,
     // and fwidth.
-    SetQShaderHint(cCVars->GetInternalSafe<size_t>(VID_QSHADER));
+    SetQShaderHint(cCVars->GetInternal<size_t>(VID_QSHADER));
     // Indicates the sampling quality of antialiased lines. If a larger filter
     // function is applied, hinting GL_NICEST can result in more pixel
     // fragments being generated during rasterization.
-    SetQLineHint(cCVars->GetInternalSafe<size_t>(VID_QLINE));
+    SetQLineHint(cCVars->GetInternal<size_t>(VID_QLINE));
     // Indicates the sampling quality of antialiased polygons. Hinting
     // GL_NICEST can result in more pixel fragments being generated during
     // rasterization, if a larger filter function is applied.
-    SetQPolygonHint(cCVars->GetInternalSafe<size_t>(VID_QPOLYGON));
+    SetQPolygonHint(cCVars->GetInternal<size_t>(VID_QPOLYGON));
     // Indicates the quality and performance of the compressing texture images.
     // Hinting GL_FASTEST indicates that texture images should be compressed as
     // quickly as possible, while GL_NICEST indicates that texture images
     // should be compressed with as little image quality loss as possible.
     // GL_NICEST should be selected if the texture is to be retrieved by
     // glGetCompressedTexImage for reuse.
-    SetQCompressHint(cCVars->GetInternalSafe<size_t>(VID_QCOMPRESS));
+    SetQCompressHint(cCVars->GetInternal<size_t>(VID_QCOMPRESS));
     // Setup window size limits
     UpdateWindowSizeLimits();
     // Set pack alignment for grabbing screenshots and unpack alignment for

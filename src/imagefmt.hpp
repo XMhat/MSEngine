@@ -568,17 +568,18 @@ class CodecPNG final :                 // Members initially private
     } // Send file stream to constructor
     pwC{ fC };
     // Set metadata
-    pwC.Meta("Title", cCVars->GetInternalStrSafe(APP_LONGNAME));
-    pwC.Meta("Author", cCVars->GetInternalStrSafe(APP_AUTHOR));
-    pwC.Meta("Copyright", cCVars->GetInternalStrSafe(APP_COPYRIGHT));
-    pwC.Meta("Creation Time", cmSys.FormatTime().c_str());
+    pwC.Meta("Title", cSystem->GetGuestTitle());
+    pwC.Meta("Version", cSystem->GetGuestVersion());
+    pwC.Meta("Author", cSystem->GetGuestAuthor());
+    pwC.Meta("Copyright", cSystem->GetGuestCopyright());
+    pwC.Meta("Creation Time", cmSys.FormatTime());
     pwC.Meta("Description", cSystem->ENGName()+" Exported Image");
     pwC.Meta("Software", StrFormat("$ ($) v$.$.$.$ ($-bit) by $",
       cSystem->ENGName(), cSystem->ENGBuildType(), cSystem->ENGMajor(),
       cSystem->ENGMinor(), cSystem->ENGBuild(), cSystem->ENGRevision(),
       cSystem->ENGBits(), cSystem->ENGAuthor()));
     pwC.Meta("Source", "OpenGL");
-    pwC.Meta("Comment", cCVars->GetInternalStrSafe(APP_WEBSITE));
+    pwC.Meta("Comment", cSystem->GetGuestWebsite());
     // Create vector array to hold pointers to each scanline
     PngPtrVec ppvList{ isData.DimGetHeight<size_t>() };
     // Bit depth and colour type of data

@@ -1004,7 +1004,7 @@ LLFUNCEX(CreateTS, 1, LCCLASSCREATE(Texture)->InitImage(*LCGETPTR(1, Image),
 // ? texture in your application. Careful not to mess around with it's
 // ? properties!
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Console, 1, LCCLASSCREATEPTR(Texture, cConsole->GetTexture()));
+LLFUNCEX(Console, 1, LCCLASSCREATEPTR(Texture, cConGraphics->GetTexture()));
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Texture.* namespace functions structure                             ## **

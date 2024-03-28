@@ -1277,9 +1277,9 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
   { // Default specified? Use defaults from both cvars
     if(strC == cParent->strCipherDefault)
     { // Setup <=TLSv1.2 ciphers
-      strCipherList = cCVars->GetInternalStrSafe(NET_CIPHERTLSv1);
+      strCipherList = cCVars->GetStrInternal(NET_CIPHERTLSv1);
       // Setup TLSv1.3 ciphers
-      strCipherSuite = cCVars->GetInternalStrSafe(NET_CIPHERTLSv13);
+      strCipherSuite = cCVars->GetStrInternal(NET_CIPHERTLSv13);
       // Done
       return;
     } // Split ciphers into two tokens
@@ -1293,9 +1293,9 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       { // Set TLSv1.3 cipher suite
         const string &strSuite = tData.front();
         strCipherSuite = strSuite == cParent->strCipherDefault ?
-          cCVars->GetInternalStrSafe(NET_CIPHERTLSv13) : strSuite;
+          cCVars->GetStrInternal(NET_CIPHERTLSv13) : strSuite;
         // Set <=TLSv1.2 cipher list
-        strCipherList = cCVars->GetInternalStrSafe(NET_CIPHERTLSv1);
+        strCipherList = cCVars->GetStrInternal(NET_CIPHERTLSv1);
         // Done
         break;
       } // Two tokens specified?
@@ -1303,11 +1303,11 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
       { // Set TLSv1.3 cipher suite
         const string &strSuite = tData.front();
         strCipherSuite = strSuite == cParent->strCipherDefault ?
-          cCVars->GetInternalStrSafe(NET_CIPHERTLSv13) : strSuite;
+          cCVars->GetStrInternal(NET_CIPHERTLSv13) : strSuite;
         // Set <= TLSv1.2 cipher list
         const string &strList = tData[1];
         strCipherList = strList == cParent->strCipherDefault ?
-          cCVars->GetInternalStrSafe(NET_CIPHERTLSv1) : strList;
+          cCVars->GetStrInternal(NET_CIPHERTLSv1) : strList;
         // Done
         break;
       } // Invalid
@@ -1359,7 +1359,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     pRegistry.ParserReInit(strH, cCommon->Lf(), ':');
     // Push default user agent if not specified already
     pRegistry.ParserPushIfNotExist("user-agent",
-      cCVars->GetInternalStrSafe(NET_USERAGENT));
+      cCVars->GetStrInternal(NET_USERAGENT));
     // Find if the request contains a bookmark fragment
     const size_t stFrag = strR.find('#');
     // Start building registry for connector thread
@@ -1511,8 +1511,7 @@ static CVarReturn SocketAgentModified(const string &strN, string &strV)
   strV = StrFormat("Mozilla/5.0 ($; $-bit; v$.$.$.$) $/$",
     cSystem->ENGName(), cSystem->ENGBits(), cSystem->ENGMajor(),
     cSystem->ENGMinor(), cSystem->ENGBuild(), cSystem->ENGRevision(),
-    cCVars->GetInternalStrSafe(APP_SHORTNAME),
-    cCVars->GetInternalStrSafe(APP_VERSION));
+    cSystem->GetGuestShortTitle(), cSystem->GetGuestVersion());
   // We changed the value so return that
   return ACCEPT_HANDLED;
 }

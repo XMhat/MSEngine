@@ -337,7 +337,7 @@ cConsole->AddLineEx("No match from $.",
 cConsole->AddLineEx("Console flags are currently 0x$$$ ($).\n"
                     "- Output lines: $ (Maximum: $).\n"
                     "- Input commands: $ (Maximum: $).\n"
-                    "- Command functions: $ (Lua: $).",
+                    "- Engine commands: $.",
   hex, cConsole->FlagGet(), dec, StrFromEvalTokens({
     { cConsole->FlagIsSet(CF_CANTDISABLE), 'D' },
     { cConsole->FlagIsSet(CF_IGNOREKEY),   'K' },
@@ -348,7 +348,7 @@ cConsole->AddLineEx("Console flags are currently 0x$$$ ($).\n"
   }),
   cConsole->GetOutputCount(), cConsole->GetOutputMaximum(),
   cConsole->GetInputCount(), cConsole->GetInputMaximum(),
-  cConsole->GetCmdsList().size(), cConsole->GetLuaCmdsList().size());
+  cConsole->GetCmdsList().size());
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'con' function
 /* ========================================================================= */
@@ -429,8 +429,6 @@ if(cimList.empty())
   return cConsole->AddLine("No cvars exist in this category!");
 // Set filter if specified
 const string &strFilter = aArgs.size() > 1 ? aArgs[1] : cCommon->Blank();
-// Lock cvars list
-const LockGuard lgCVarsSync{ cCVars->mMutex };
 // Try to find the cvar outright first (only make work when not in release)
 #if !defined(RELEASE)
 CVarMapItConst cimiIt{ cimList.find(strFilter) };
@@ -832,7 +830,7 @@ tData.Header("ID").Header("R").Header("FLAG").Header("SCALE")
      .Header("TEXOCPCY").Header("CC").Header("NAME", false)
      .Reserve(1 + cFonts->size());
 // Include console font
-ShowFontInfo(tData, cConsole->GetFontRef());
+ShowFontInfo(tData, cConGraphics->GetFontRef());
 // Walk through textures classes
 for(const Font*const fCptr : *cFonts) ShowFontInfo(tData, *fCptr);
 // Log counts including the static console font class
@@ -1034,7 +1032,7 @@ cConsole->AddLine(cLua->CompileStringAndReturnResult(
 { "lcmds", 1, 2, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Setup iterator to find items and return if no commands.
-const auto &cbCmds = cConsole->GetLuaCmdsList();
+const auto &cbCmds = cCommands->lcmMap;
 if(cbCmds.empty()) return cConsole->AddLine("No Lua commands are found!");
 // Set filter if specified and look for command and if we found one?
 const string &strFilter = aArgs.size() > 1 ? aArgs[1] : cCommon->Blank();
@@ -1273,12 +1271,10 @@ cConsole->AddLineExA(tData.Finish(),
 { "lvars", 1, 0, CFL_NONE, [](const Args &aArgs){
 /* ------------------------------------------------------------------------- */
 // Get list and return if empty
-const LuaCVarMap &lcvmList = cCVars->GetLuaVarList();
+const LuaCVarMap &lcvmList = cVariables->lcvmMap;
 if(lcvmList.empty()) return cConsole->AddLine("No Lua cvars exist!");
 // Set filter if specified
 const string &strFilter = aArgs.size() > 1 ? aArgs[1] : cCommon->Blank();
-// Lock cvars list
-const LockGuard lgCVarsSync{ cCVars->mMutex };
 // Try to find the cvar outright first (only make work when not in release)
 #if !defined(RELEASE)
 LuaCVarMapItConst cimiIt{ lcvmList.find(strFilter) };
@@ -2079,8 +2075,8 @@ tData.Header("ID").Header("D").Header("SC").Header("MM").Header("TF")
      .Header("TSPY").Header("IDENTIFIER", false)
      .Reserve(2 + cFonts->size() + cTextures->size());
 // Include console texture and font
-ShowTextureInfo(tData, cConsole->GetTextureRef());
-ShowTextureInfo(tData, cConsole->GetFontRef());
+ShowTextureInfo(tData, cConGraphics->GetTextureRef());
+ShowTextureInfo(tData, cConGraphics->GetFontRef());
 // Walk through font textures and textures classes
 for(const Font*const fCptr : *cFonts) ShowTextureInfo(tData, *fCptr);
 for(const Texture*const tCptr : *cTextures) ShowTextureInfo(tData, *tCptr);

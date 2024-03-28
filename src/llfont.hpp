@@ -537,7 +537,7 @@ LLFUNCEX(Create, 1, LCCLASSCREATE(Font)->InitFTFont(
 // ? Returns the handle to the console font. Useful if you want to reuse the
 // ? font in your application. Careful not to mess around with it's properties!
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Console, 1, LCCLASSCREATEPTR(Font, cConsole->GetFont()));
+LLFUNCEX(Console, 1, LCCLASSCREATEPTR(Font, cConGraphics->GetFont()));
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Font.* namespace functions structure                                ## **

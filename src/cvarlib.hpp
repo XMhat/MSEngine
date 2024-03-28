@@ -114,7 +114,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? purposes only and can be requested by the guest and only set in the
 // ? app.cfg file.
 /* ------------------------------------------------------------------------- */
-{ CFL_NONE, "app_author", "Anonymous", NoOp,
+{ CFL_NONE, "app_author", "Anonymous", CBSTR(cSystem->SetGuestAuthor),
   TSTRING|CNOTEMPTY|MTRIM|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! APP_SHORTNAME
@@ -122,7 +122,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? display purposes only to the end-user. It can be requested by the guest
 // ? and only set in the app.cfg file.
 /* ------------------------------------------------------------------------- */
-{ CFL_NONE, "app_shortname", "Untitled", NoOp,
+{ CFL_NONE, "app_shortname", "Untitled", CBSTR(cSystem->SetGuestShortTitle),
   TSTRING|CNOTEMPTY|MTRIM|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! APP_HOMEDIR
@@ -235,7 +235,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? window title and for display purposes only to the end-user. It can be
 // ? requested by the guest and only set in the app.cfg file.
 /* ------------------------------------------------------------------------- */
-{ CFL_NONE, "app_longname", "Untitled", NoOp,
+{ CFL_NONE, "app_longname", "Untitled", CBSTR(cSystem->SetGuestTitle),
   TSTRING|CNOTEMPTY|MTRIM|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! APP_CLEARMUTEX
@@ -486,15 +486,15 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? display purposes only to the end-user. It can be requested by the guest
 // ? and only set in the app.cfg file.
 /* ------------------------------------------------------------------------- */
-{ CFL_NONE, "app_description", "Undescribed", NoOp,
-  TSTRING|CNOTEMPTY|MTRIM|PSYSTEM },
+{ CFL_NONE, "app_description", "Undescribed",
+  CBSTR(cSystem->SetGuestDescription), TSTRING|CNOTEMPTY|MTRIM|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! APP_VERSION
 // ? Specifies a version for the guest application. It is purely for display
 // ? purposes only to the end-user. It can be requested by the guest and only
 // ? set in the app.cfg file.
 /* ------------------------------------------------------------------------- */
-{ CFL_NONE, "app_version", "0.0", NoOp,
+{ CFL_NONE, "app_version", "0.0", CBSTR(cSystem->SetGuestVersion),
   TSTRING|CNOTEMPTY|MTRIM|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! APP_ICON
@@ -510,15 +510,15 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? purely for display purposes only to the end-user. It can be requested by
 // ? the guest and only set in the app.cfg file.
 /* ------------------------------------------------------------------------- */
-{ CFL_NONE, "app_copyright", "Public Domain", NoOp,
-  TSTRING|CNOTEMPTY|MTRIM|PSYSTEM },
+{ CFL_NONE, "app_copyright", "Public Domain",
+  CBSTR(cSystem->SetGuestCopyright), TSTRING|CNOTEMPTY|MTRIM|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! APP_WEBSITE
 // ? Specifies a website for the guest application. It is purely for display
 // ? purposes only to the end-user. It can be requested by the guest and only
 // ? set in the app.cfg file.
 /* ------------------------------------------------------------------------- */
-{ CFL_NONE, "app_website", "about:blank", NoOp,
+{ CFL_NONE, "app_website", "about:blank", CBSTR(cSystem->SetGuestWebsite),
   TSTRING|CNOTEMPTY|MTRIM|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! APP_TICKRATE
@@ -843,7 +843,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? is covering the whole screen, and 0 means the console is not showing.
 /* ------------------------------------------------------------------------- */
 { CFL_VIDEO, "con_height", "0.5",
-  CB(cConsole->SetHeight, GLfloat), TUFLOATSAVE|PANY },
+  CB(cConGraphics->SetHeight, GLfloat), TUFLOATSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_BLOUTPUT
 // ? Specifies the maximum number of lines to keep in the console. Excess
@@ -870,7 +870,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
   cCommon->Zero(),
 #endif
   /* ----------------------------------------------------------------------- */
-  CB(cConsole->CantDisableModified, bool), TBOOLEAN|PBOOT|PSYSTEM },
+  CB(cConGraphics->CantDisableModified, bool), TBOOLEAN|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! CON_CVSHOWFLAGS
 // ? Flags specifying how to show CVar values in the console to protect
@@ -887,7 +887,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? 0xAARRGGBB or an integral number.
 /* ------------------------------------------------------------------------- */
 { CFL_VIDEO, "con_bgcolour", "2130706432",
-  CB(cConsole->TextBackgroundColourModified, uint32_t), TUINTEGERSAVE|PANY },
+  CB(cConGraphics->TextBackgroundColourModified, uint32_t), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_BGTEXTURE
 // ? The texture file to load that will be used as the background for the
@@ -908,7 +908,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? possible values
 /* ------------------------------------------------------------------------- */
 { CFL_VIDEO, "con_fontflags", cCommon->Zero(),
-  CB(cConsole->ConsoleFontFlagsModified, ImageFlagsType), TUINTEGER|PANY },
+  CB(cConGraphics->ConsoleFontFlagsModified, ImageFlagsType), TUINTEGER|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_FONTCOLOUR
 // ? Specifies the default colour of the console text. See the Console.Colours
@@ -923,7 +923,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? Specifies the height of the loaded console FreeType font.
 /* ------------------------------------------------------------------------- */
 { CFL_VIDEO, "con_fontheight", "20",
-  CB(cConsole->TextHeightModified, GLfloat), TUINTEGER|PSYSTEM },
+  CB(cConGraphics->TextHeightModified, GLfloat), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! CON_FONTPADDING
 // ? Specifies any extra padding to add to each FreeType font glyph to prevent
@@ -947,25 +947,25 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? cause interpolation to occur so filtering is advised.
 /* ------------------------------------------------------------------------- */
 { CFL_VIDEO, "con_fontscale", cCommon->One(),
-  CB(cConsole->TextScaleModified, GLfloat), TUFLOATSAVE|PANY },
+  CB(cConGraphics->TextScaleModified, GLfloat), TUFLOATSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! CON_FONTSPACING
 // ? Specifies the amount of padding to add after each cahracter rendered.
 /* ------------------------------------------------------------------------- */
 { CFL_VIDEO, "con_fontspacing", cCommon->Zero(),
-  CB(cConsole->TextLetterSpacingModified, GLfloat), TFLOAT|PSYSTEM },
+  CB(cConGraphics->TextLetterSpacingModified, GLfloat), TFLOAT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! CON_FONTLSPACING
 // ? Specifies the amount of padding to add below each line of text rendered.
 /* ------------------------------------------------------------------------- */
 { CFL_VIDEO, "con_fontlspacing", cCommon->Zero(),
-  CB(cConsole->TextLineSpacingModified, GLfloat), TFLOAT|PSYSTEM },
+  CB(cConGraphics->TextLineSpacingModified, GLfloat), TFLOAT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! CON_FONTWIDTH
 // ? Specifies the width of the loaded console FreeType font.
 /* ------------------------------------------------------------------------- */
 { CFL_VIDEO, "con_fontwidth", "20",
-  CB(cConsole->TextWidthModified, GLfloat), TUINTEGER|PSYSTEM },
+  CB(cConGraphics->TextWidthModified, GLfloat), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! CON_FONTTEXSIZE
 // ? Specifies the initial size of the texture canvas in pixels. Do not set
@@ -973,8 +973,7 @@ const ItemStaticList cvEngList{ {      // Default cvars (from cvars.hpp)
 // ? this value. An exception is thrown if not. Zero means start with enough
 // ? size for one character.
 /* ------------------------------------------------------------------------- */
-{ CFL_VIDEO, "con_fonttexsize", cCommon->Zero(),
-  NoOp, TUINTEGER|PSYSTEM },
+{ CFL_VIDEO, "con_fonttexsize", cCommon->Zero(), NoOp, TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! CON_INPREFRESH
 // ? Specifies the time interval in microseconds between input polls. Only

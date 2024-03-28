@@ -15,6 +15,7 @@ namespace ILua {                       // Start of private module namespace
 /* -- Dependencies --------------------------------------------------------- */
 using namespace IClock::P;             using namespace ICollector::P;
 using namespace ICrypt::P;             using namespace ICVarDef::P;
+using namespace ICVar::P;              using namespace ICVarLib::P;
 using namespace IError::P;             using namespace IEvtMain::P;
 using namespace IFlags;                using namespace ILog::P;
 using namespace ILuaDef;               using namespace ILuaCode::P;
@@ -353,6 +354,27 @@ static class Lua final :
     } // Standard library not available so we can only set C-Lib seed
     else StdSRand(!!liSeed ? static_cast<unsigned int>(liSeed) :
                              CryptRandom<unsigned int>());
+    // Get variables namespace
+    lua_getglobal(GetState(), "Variable");
+    // Create a table of the specified number of variables
+    LuaUtilPushTable(GetState(), CVAR_MAX, 0);
+    // Push each cvar id to the table
+    lua_Integer liIndex = 0;
+    for(const CVarMapIt &cvmiIt : cCVars->GetInternalList())
+    { // If stored iterator is valid?
+      if(cvmiIt != cCVars->GetVarListEnd())
+      { // Push internal id value name
+        LuaUtilPushInt(GetState(), liIndex);
+        // Assign the id to the cvar name
+        lua_setfield(GetState(), -2, cvmiIt->first.c_str());
+      } // Next id
+      ++liIndex;
+    } // Push cvar id table into the core namespace
+    lua_setfield(GetState(), -2, "Internal");
+    // Remove the table
+    LuaUtilRmStack(GetState());
+    // Log that we added the variables
+    cLog->LogDebugExSafe("Lua published $ engine cvars.",  CVAR_MAX);
     // Use a timeout hook?
     if(iOperations > 0)
     { // Set the hook

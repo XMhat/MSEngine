@@ -82,7 +82,7 @@ template<typename IntType=int, typename AnyType, IntType itSize>
 #include "llaudio.hpp"                 // Audio namespace and methods
 #include "llbin.hpp"                   // Bin namespace and methods
 #include "llclip.hpp"                  // Clipboard namespace and methods
-#include "llcommand.hpp"               // Command namespace and methods
+#include "llcmd.hpp"                   // Command namespace and methods
 #include "llcore.hpp"                  // Core namespace and methods
 #include "llcredit.hpp"                // Credit namespace and methods
 #include "llcrypt.hpp"                 // Crypt namespace and methods

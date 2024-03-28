@@ -104,7 +104,7 @@ LLFUNCEX(Register, 1, LCCLASSCREATE(Variable)->Init(lS));
 // ? the built-in engine console commands too.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Exists, 1,
-  LCPUSHVAR(cCVars->VarExistsSafe(LCGETCPPSTRINGNE(1, "Variable"))));
+  LCPUSHVAR(cCVars->VarExists(LCGETCPPSTRINGNE(1, "Variable"))));
 /* ========================================================================= */
 // $ Variable.GetInt
 // > Id:integer=The engine cvar index.
@@ -112,7 +112,7 @@ LLFUNCEX(Exists, 1,
 // ? Retrieves the value of the specified cvar given at the specified id. The
 // ? id's are populated as key/value pairs in the 'Variable.Internal' table.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetInt, 1, LCPUSHVAR(cCVars->GetInternalStrSafe(
+LLFUNCEX(GetInt, 1, LCPUSHVAR(cCVars->GetStrInternal(
   LCGETINTLGE(CVarEnums, 1, CVAR_FIRST, CVAR_MAX, "Id"))));
 /* ========================================================================= */
 // $ Variable.SetInt
@@ -122,7 +122,7 @@ LLFUNCEX(GetInt, 1, LCPUSHVAR(cCVars->GetInternalStrSafe(
 // ? raised if any error occurds. See CVars.Result to see the possible
 // ? results.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(SetInt, 1, LCPUSHVAR(cCVars->SetInternalSafe(
+LLFUNCEX(SetInt, 1, LCPUSHVAR(cCVars->SetInternal(
   LCGETINTLGE(CVarEnums, 1, CVAR_FIRST, CVAR_MAX, "Id"),
   LCGETCPPSTRING(2, "Value"))));
 /* ========================================================================= */
@@ -130,8 +130,8 @@ LLFUNCEX(SetInt, 1, LCPUSHVAR(cCVars->SetInternalSafe(
 // > Id:integer=The engine cvar index.
 // ? Resets the specified cvar to its default variable.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ResetInt, 1, LCPUSHVAR(cCVars->ResetInternalSafe(
-  LCGETINTLGE(CVarEnums, 1, CVAR_FIRST, CVAR_MAX, "Id"))));
+LLFUNCEX(ResetInt, 1, LCPUSHVAR(cCVars->Reset(LCGETINTLGE(CVarEnums,
+  1, CVAR_FIRST, CVAR_MAX, "Id"))));
 /* ========================================================================= */
 // $ Variable.Save
 // < Count:number=Number of items saved

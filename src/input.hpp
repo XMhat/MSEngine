@@ -419,15 +419,18 @@ static class Input final :             // Handles keyboard, mouse & controllers
   }
   /* -- Mouse wheel scroll ------------------------------------------------- */
   void OnMouseWheel(const EvtMain::Cell &epData)
-  { // Set event to lua callbacks
-    lfOnMouseScroll.LuaFuncDispatch(epData.vParams[1].d, epData.vParams[2].d);
+  { // Get movements
+    const double fdX = epData.vParams[1].d, fdY = epData.vParams[2].d;
+    // If console is enabled, send it to console instead
+    if(cConsole->IsVisible()) return cConGraphics->OnMouseWheel(fdX, fdY);
+    // Set event to lua callbacks
+    lfOnMouseScroll.LuaFuncDispatch(fdX, fdY);
   }
   /* -- Mouse button clicked ----------------------------------------------- */
   void OnMouseClick(const EvtMain::Cell &epData)
   { // Set event to lua callbacks
-    lfOnMouseClick.LuaFuncDispatch(epData.vParams[1].i,
-                                   epData.vParams[2].i,
-                                   epData.vParams[3].i);
+    lfOnMouseClick.LuaFuncDispatch(epData.vParams[1].i, epData.vParams[2].i,
+      epData.vParams[3].i);
   }
   /* -- Mouse button clicked ----------------------------------------------- */
   void OnMouseMove(const EvtMain::Cell &epData)
@@ -453,17 +456,22 @@ static class Input final :             // Handles keyboard, mouse & controllers
     if(iKey == GLFW_KEY_ENTER &&       // If the ENTER key was pressed? and
        iMod == GLFW_MOD_ALT &&         // ...ALT key is held? and
        FlagIsSet(IF_FSTOGGLER))        // ...FullScreen key enabled?
-    { // Toggle full-screen if key released
-      if(iState == GLFW_RELEASE) cEvtWin->AddUnblock(EWC_WIN_TOGGLE_FS);
-      // Just being held so ignore further presses so the guest cannot
-      // interpret unintended return keypresses.
+    { // Return if keys not released
+      if(iState != GLFW_RELEASE) return;
+      // Get inverted full-screen setting
+      const bool bFullScreen = !cCVars->GetInternal<bool>(VID_FS);
+      // Set full screen setting depending on current state
+      cCVars->SetInternal<bool>(VID_FS, bFullScreen);
+      // Send command to toggle full-screen
+      cEvtWin->AddUnblock(EWC_WIN_TOGGLE_FS, bFullScreen);
+      // We handled this key so do not dispatch it to scripts
       return;
     } // Console is enabled?
     if(cConsole->IsVisible())
     { // Add normal key pressed. Since GLFW inconveniently gives us 3 int
       // parameters, we need to pack 2 ints together. Luckily, GLFW_RELEASE etc
       // is only 8-bit, we'll pack the modifiers with this value.
-      cConsole->OnKeyPress(iKey, iState, iMod);
+      cConGraphics->OnKeyPress(iKey, iState, iMod);
       // We handled this key so do not dispatch it to scripts
       return;
     } // Ignore the ESCAPE generated from hiding the console
@@ -479,7 +487,7 @@ static class Input final :             // Handles keyboard, mouse & controllers
     { // Set console enabled and if enabled? Ignore first key as registering
       // OnCharPress will trigger this keystroke and print it out in the
       // console.
-      if(cConsole->SetVisible(true)) cConsole->FlagSet(CF_IGNOREKEY);
+      if(cConGraphics->SetVisible(true)) cConsole->FlagSet(CF_IGNOREKEY);
       // We handled this key so do not dispatch it to scripts
       return;
     } // Send lua event for key
@@ -758,9 +766,9 @@ static class Input final :             // Handles keyboard, mouse & controllers
     // Init input engine events
     EnableInputEvents();
     // Init input settings
-    SetRawMouseEnabled(cCVars->GetInternalSafe<bool>(INP_RAWMOUSE));
-    SetStickyKeyEnabled(cCVars->GetInternalSafe<bool>(INP_STICKYKEY));
-    SetStickyMouseEnabled(cCVars->GetInternalSafe<bool>(INP_STICKYMOUSE));
+    SetRawMouseEnabled(cCVars->GetInternal<bool>(INP_RAWMOUSE));
+    SetStickyKeyEnabled(cCVars->GetInternal<bool>(INP_STICKYKEY));
+    SetStickyMouseEnabled(cCVars->GetInternal<bool>(INP_STICKYMOUSE));
     // Set/Restore cursor state
     SetCursor(FlagIsSet(IF_CURSOR));
     // Register joystick callback

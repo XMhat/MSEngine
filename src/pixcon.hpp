@@ -725,6 +725,8 @@ class SysCon :                         // All members initially private
       XC("Failed to disable interrupt flush!");
     // Enable special keys
     if(keypad(stdscr, TRUE) == ERR) XC("Failed to enable special keys!");
+    // Disable the annoying one second escape key delay
+    set_escdelay(0);
     // If we can use colour?
     if(can_change_color())
     { // Using colour

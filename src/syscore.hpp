@@ -416,10 +416,17 @@ static class System final :            // The main system class
   const ModeList   mList;              // Modes list
   CoreFlags        cfMode;             // Requested core subsystem flags
   ClockInterval<>  ciCpu;              // For getting cpu usage
-  const size_t     stProcessId;        // Readable process id
-  const size_t     stThreadId;         // Readable thread id
+  const size_t     stProcessId,        // Readable process id
+                   stThreadId;         // Readable thread id
+  string           strTitle,           // Guest title
+                   strShortTitle,      // Guest short title
+                   strVersion,         // Guest version
+                   strAuthor,          // Guest author
+                   strCopyright,       // Guest copyright
+                   strDescription,     // Guest description
+                   strWebsite;         // Guest website
   /* ----------------------------------------------------------------------- */
-  terminate_handler  thHandler;        // Old C++ termination handler
+  terminate_handler thHandler;         // Old C++ termination handler
   /* ----------------------------------------------------------------------- */
   const string     strRoamingDir;      // Roaming directory
   /* -- Default handler for std::unexpected -------------------------------- */
@@ -441,6 +448,29 @@ static class System final :            // The main system class
     unsigned int uiFlags = MB_ICONSTOP) const
       { return SysMessage(GetWindowHandle(),
           StrAppend(ENGName(), ' ', strReason), strMessage, uiFlags); }
+  /* -- Get descriptor strings --------------------------------------------- */
+  const string &GetGuestTitle(void) const { return strTitle; }
+  const string &GetGuestShortTitle(void) const { return strShortTitle; }
+  const string &GetGuestVersion(void) const { return strVersion; }
+  const string &GetGuestAuthor(void) const { return strAuthor; }
+  const string &GetGuestCopyright(void) const { return strCopyright; }
+  const string &GetGuestDescription(void) const { return strDescription; }
+  const string &GetGuestWebsite(void) const { return strWebsite; }
+  /* -- Update descriptor strings ------------------------------------------ */
+  CVarReturn SetGuestTitle(const string &strV, string &)
+    { strTitle = strV; return ACCEPT; }
+  CVarReturn SetGuestShortTitle(const string &strV, string &)
+    { strShortTitle = strV; return ACCEPT; }
+  CVarReturn SetGuestVersion(const string &strV, string &)
+    { strVersion = strV; return ACCEPT; }
+  CVarReturn SetGuestAuthor(const string &strV, string &)
+    { strAuthor = strV; return ACCEPT; }
+  CVarReturn SetGuestCopyright(const string &strV, string &)
+    { strCopyright = strV; return ACCEPT; }
+  CVarReturn SetGuestDescription(const string &strV, string &)
+    { strDescription = strV; return ACCEPT; }
+  CVarReturn SetGuestWebsite(const string &strV, string &)
+    { strWebsite = strV; return ACCEPT; }
   /* -- Update minimum RAM ------------------------------------------------- */
   CVarReturn SetMinRAM(const uint64_t qwMinValue)
   { // If we're to check for minimum memory free

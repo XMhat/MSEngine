@@ -442,7 +442,7 @@ static class Display final :
 #endif
     // Resize main viewport and if it changed, re-initialise the console fbo
     // and redraw the console
-    if(cFboCore->AutoViewport(iWidth, iHeight)) cConsole->InitFBO();
+    if(cFboCore->AutoViewport(iWidth, iHeight)) cConGraphics->InitFBO();
     // Redraw the console if enabled
     else cConsole->SetRedrawIfEnabled();
   }
@@ -483,14 +483,8 @@ static class Display final :
     if(FlagIsSet(DF_NATIVEFS)) return;
     // Disable input events to prevent the full-screen toggler being repeated
     cInput->DisableInputEvents();
-    // If an argument was not specified?
-    if(ewcArgs.vParams.empty())
-    { // Set full screen depending on current state
-      cCVars->SetInternalSafe<bool>(VID_FS, FlagIsClear(DF_FULLSCREEN));
-      // We can do quick re-init
-      SetFullScreen(FlagIsSet(DF_FULLSCREEN));
-    } // Use requested setting instead
-    else SetFullScreen(ewcArgs.vParams[0].b);
+    // Use requested setting instead
+    SetFullScreen(ewcArgs.vParams.front().b);
     // Re-enable input events
     cInput->EnableInputEvents();
   }
@@ -893,7 +887,7 @@ static class Display final :
   { // Set the default matrix from the configuration and if it was changed
     // also update the consoles FBO too.
     if(cFboCore->AutoMatrix(fOrthoWidth, fOrthoHeight, bForce))
-      cConsole->InitFBO();
+      cConGraphics->InitFBO();
     // Else redraw the console if enabled
     else cConsole->SetRedrawIfEnabled();
   }
@@ -1047,7 +1041,7 @@ static class Display final :
 #endif
     // Get window name and use it for frame and instance name. It's assumed
     // that 'cpTitle' won't be freed while using it these two times.
-    const char*const cpTitle = cCVars->GetInternalCStrSafe(APP_TITLE);
+    const char*const cpTitle = cCVars->GetCStrInternal(APP_TITLE);
     cGlFW->GlFWSetFrameName(cpTitle);
     // Initialise basic window. We will modify it after due to limitations in
     // this particular function. For example, this can't set the refresh rate.
@@ -1055,7 +1049,7 @@ static class Display final :
     // Re-adjust the window
     ReInitWindow(FlagIsSet(DF_FULLSCREEN));
     // Set forced aspect ratio
-    cGlFW->WinSetAspectRatio(cCVars->GetInternalStrSafe(WIN_ASPECT));
+    cGlFW->WinSetAspectRatio(cCVars->GetStrInternal(WIN_ASPECT));
     // Register monitor removal event. We can't use our events system for this
     // because once the event callback is over, the data for the monitor is
     // freed.

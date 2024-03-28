@@ -96,6 +96,8 @@ class CVarItem :                       // Members initially private
   CbFunc         cfTrigger;            // Callback trigger event
   /* --------------------------------------------------------------- */ public:
   const CbFunc &GetTrigger(void) const { return cfTrigger; }
+  /* -- To stop a false positive in CppCheck ------------------------------- */
+  void NullOp(void) { }
   /* ----------------------------------------------------------------------- */
   void SetTrigger(const CbFunc &cfCb) { cfTrigger = cfCb; }
   /* ----------------------------------------------------------------------- */
@@ -253,31 +255,21 @@ class CVarItem :                       // Members initially private
   }
   /* ----------------------------------------------------------------------- */
   CVarSetEnums SetValue(const string &strNValue,
-    const CVarConditionFlagsConst &ccfcFlags, mutex &mLock, string &strCBError)
+    const CVarConditionFlagsConst &ccfcFlags, string &strCBError)
   { // If value is equal as current value then ignore it. We'll allow the
     // change when setting new vars because the triggers should trigger
     if(strNValue == GetValue() && ccfcFlags.FlagIsClear(CCF_NEWCVAR))
       return CVS_OKNOTCHANGED;
     // Result storage
     CVarReturn cbrResult;
-    // Mutex unlock/lock helper class to temporarily unlock and then relock
-    // a mutex class.
-    class MutexRelockHelper                // Members initially private
-    { mutex &mMutex;                       // Reference to mutex to use
-      public: explicit MutexRelockHelper(mutex &mMutexRef) : mMutex(mMutexRef)
-        { mMutex.unlock(); }
-      ~MutexRelockHelper(void) { mMutex.lock(); }
-    }; // If it is a lua cvar?
+    // If it is a lua cvar?
     if(FlagIsSet(TLUA))
     { // Lock the cvar from being unregistered
       FlagSet(LOCKED);
       // If this is a safe call? Capture exceptions so we can clean up
       if(ccfcFlags.FlagIsSet(CCF_SAFECALL)) try
-      { // Temporarily unlock mutex so cvars can continue to be manipulated
-        const MutexRelockHelper mrhUnlockRelock{ mLock };
-        // Call the trigger and capture the result of the callback
+      { // Call the trigger and capture the result of the callback
         cbrResult = GetTrigger()(*this, strNValue);
-        // Relock the mutex so further changes can be made
       } // exception occured
       catch(const exception &E)
       { // Remove the lock on the cvar
@@ -302,9 +294,7 @@ class CVarItem :                       // Members initially private
       FlagClear(LOCKED);
     } // This is not a LUA callback, so if this is a safecall?
     else if(ccfcFlags.FlagIsSet(CCF_SAFECALL)) try
-    { // Temporarily unlock mutex so cvars can continue to be manipulated
-      const MutexRelockHelper mrhUnlockRelock{ mLock };
-      // Call the trigger and capture the result of the callback
+    { // Call the trigger and capture the result of the callback
       cbrResult = GetTrigger()(*this, strNValue);
     } // exception occured
     catch(const exception &E)
@@ -366,7 +356,7 @@ class CVarItem :                       // Members initially private
   /* ----------------------------------------------------------------------- */
   CVarSetEnums SetValue(const string &strNValue,
     const CVarFlagsConst &cvfcFlags, const CVarConditionFlagsConst &ccfcFlags,
-    mutex &mLock, string &strCBError)
+    string &strCBError)
   { // Failed if not writable
     if(FlagIsClear(cvfcFlags))
     { // If we should not abort? Just return error else throw exception
@@ -381,7 +371,7 @@ class CVarItem :                       // Members initially private
       // converted value.
       if(strNValue.length() > 2 && strNValue[0] == '0' && strNValue[1] == 'x')
         return SetValue(StrFromNum(StrHexToInt<ValueIntType>
-          (strNValue.substr(2))), ccfcFlags, mLock, strCBError);
+          (strNValue.substr(2))), ccfcFlags, strCBError);
       // If specified value is not a valid integer?
       if(!StrIsInt(strNValue))
       { // If we should not abort? Just return error else throw exception
@@ -407,7 +397,7 @@ class CVarItem :                       // Members initially private
         XC("CVar specified must be power of two!",
            "Variable", GetVar(), "Value", strNValue);
       } // Next step
-      return SetValue(strNValue, ccfcFlags, mLock, strCBError);
+      return SetValue(strNValue, ccfcFlags, strCBError);
     } // If float? Bail if not a floating point number
     if(FlagIsSet(TFLOAT))
     { // If specified value is not a valid floating point number?
@@ -425,24 +415,24 @@ class CVarItem :                       // Members initially private
         XC("CVar specified must be a non-negative float!",
            "Variable", GetVar(), "Value", strNValue);
       } // Next step
-      return SetValue(strNValue, ccfcFlags, mLock, strCBError);
+      return SetValue(strNValue, ccfcFlags, strCBError);
     } // Is a boolean?
     if(FlagIsSet(TBOOLEAN))
     { // Must be one byte, then test first character
       if(strNValue.size() == 1) switch(strNValue.front())
       { // Is zero or one? OK
         case '0': case '1':
-          return SetValue(strNValue, ccfcFlags, mLock, strCBError);
+          return SetValue(strNValue, ccfcFlags, strCBError);
         // Invalid value
         default: break;
       } // True?
       else if(strNValue.size() == 4 &&
         StrToLowCase(strNValue) == cCommon->Tru())
-          return SetValue(cCommon->One(), ccfcFlags, mLock, strCBError);
+          return SetValue(cCommon->One(), ccfcFlags, strCBError);
       // False?
       else if(strNValue.size() == 5 &&
         StrToLowCase(strNValue) == cCommon->Fals())
-          return SetValue(cCommon->Zero(), ccfcFlags, mLock, strCBError);
+          return SetValue(cCommon->Zero(), ccfcFlags, strCBError);
       // If we should not abort? Just return error else throw exception
       if(ccfcFlags.FlagIsClear(CCF_THROWONERROR))
         return CVS_NOTBOOLEAN;
@@ -511,7 +501,7 @@ class CVarItem :                       // Members initially private
         XC("CVar specified must only contain numeric characters!",
            "Variable", GetVar());
       } // Next step
-      return SetValue(strNewValue, ccfcFlags, mLock, strCBError);
+      return SetValue(strNewValue, ccfcFlags, strCBError);
     } // If we should not throw error? Just return code else throw exception
     if(ccfcFlags.FlagIsClear(CCF_THROWONERROR)) return CVS_NOTYPESET;
     XC("CVar type is not set!",
@@ -520,9 +510,8 @@ class CVarItem :                       // Members initially private
   }
   /* ----------------------------------------------------------------------- */
   CVarSetEnums ResetValue(const CVarFlagsConst &cvfcFlags,
-    const CVarConditionFlagsConst &ccfcFlags, mutex &mLock, string &strCBError)
-      { return SetValue(strDefValue,
-          cvfcFlags, ccfcFlags, mLock, strCBError); }
+    const CVarConditionFlagsConst &ccfcFlags, string &strCBError)
+      { return SetValue(strDefValue, cvfcFlags, ccfcFlags, strCBError); }
   /* -- Move constructor --------------------------------------------------- */
   CVarItem(CVarItem &&ciOther) :       // Other item
     /* -- Initialisers ----------------------------------------------------- */
