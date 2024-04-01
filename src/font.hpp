@@ -16,19 +16,20 @@ namespace IFont {                      // Start of private namespace
 using namespace IAsset::P;             using namespace IBin::P;
 using namespace ICollector::P;         using namespace IDim;
 using namespace IError::P;             using namespace IFboDef::P;
-using namespace IFileMap::P;           using namespace IFtf::P;
-using namespace IImageDef::P;          using namespace ILog::P;
-using namespace IMemory::P;            using namespace IOgl::P;
-using namespace IParser::P;            using namespace IPSplit::P;
-using namespace IStd::P;               using namespace IString::P;
-using namespace ISysUtil::P;           using namespace ITexture::P;
+using namespace IFileMap::P;           using namespace IFreeType::P;
+using namespace IFtf::P;               using namespace IImageDef::P;
+using namespace ILog::P;               using namespace IMemory::P;
+using namespace IOgl::P;               using namespace IParser::P;
+using namespace IPSplit::P;            using namespace IStd::P;
+using namespace IString::P;            using namespace ISysUtil::P;
+using namespace ITexDef::P;            using namespace ITexture::P;
 using namespace IToken::P;             using namespace IUtf;
 using namespace IUtil::P;              using namespace Lib::FreeType;
 using namespace Lib::OS::GlFW;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public namespace
 /* == Font collector class for collector data and custom variables ========= */
-BEGIN_COLLECTOR(Fonts, Font, CLHelperUnsafe)
+CTOR_BEGIN_NOBB(Fonts, Font, CLHelperUnsafe)
 /* == Font Variables Class ================================================= */
 // Only put vars used in the Font class in here. This is an optimisation so
 // we do not have to initialise all these variables more than once as we have
@@ -129,7 +130,7 @@ class FontBase :                       // Members initially private
   DELETECOPYCTORS(FontBase)            // No copy constructors
 };/* ----------------------------------------------------------------------- */
 /* == Font Class (which inherits a Texture) ================================ */
-BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
+CTOR_MEM_BEGIN(Fonts, Font, ICHelperUnsafe, /* n/a */),
   /* -- Base classes ------------------------------------------------------- */
   public FontBase                      // Font variables class
 {  /* -- Convert co-ordinates to absolute position ------------------------- */
@@ -281,11 +282,11 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
     }
     // Set initial font size. Since the font size is a float we should round
     // to next whole number so there is enough space.
-    duTile.DimSet(static_cast<unsigned int>(ceil(ftfData.DimGetWidth())),
+    duiTile.DimSet(static_cast<unsigned int>(ceil(ftfData.DimGetWidth())),
                   static_cast<unsigned int>(ceil(ftfData.DimGetHeight())));
     // Update tile size as GLfloat for opengl
-    dfTile.DimSet(duTile.DimGetWidth<GLfloat>(),
-                  duTile.DimGetHeight<GLfloat>());
+    dfTile.DimSet(duiTile.DimGetWidth<GLfloat>(),
+                  duiTile.DimGetHeight<GLfloat>());
     // Initialise other data
     dfFont.DimSet(ftfData);
     uiPadding = _uiPadding;
@@ -303,21 +304,21 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
     // Set initial size of image. The image size starts here and can
     // automatically grow by the power of 2 if more space is needed.
     DimSet(uiISize ? uiISize :
-      GetMaxTexSizeFromBounds(0, 0, duTile.DimGetWidth(),
-        duTile.DimGetHeight(), 1));
+      GetMaxTexSizeFromBounds(0, 0, duiTile.DimGetWidth(),
+        duiTile.DimGetHeight(), 1));
     // Check if texture size is valid
     if(DimGetWidth() > cOgl->MaxTexSize() ||
-       duTile.DimGetWidth() > cOgl->MaxTexSize())
+       duiTile.DimGetWidth() > cOgl->MaxTexSize())
       XC("Texture dimensions for font not supported by graphics processor!",
          "Identifier", IdentGet(),          "Requested",  uiISize,
          "Width",      DimGetWidth(),       "Height",     DimGetHeight(),
-         "TileWidth",  duTile.DimGetWidth(),
-         "TileHeight", duTile.DimGetHeight(),
+         "TileWidth",  duiTile.DimGetWidth(),
+         "TileHeight", duiTile.DimGetHeight(),
          "Maximum",    cOgl->MaxTexSize());
     // Estimate how many glyphs we're fitting in here to prevent unnecessary
     // alocations
-    const size_t stGColumns = DimGetWidth() / duTile.DimGetWidth(),
-                 stGRows = DimGetHeight() / duTile.DimGetHeight(),
+    const size_t stGColumns = DimGetWidth() / duiTile.DimGetWidth(),
+                 stGRows = DimGetHeight() / duiTile.DimGetHeight(),
                  stGTotal = UtilNearestPow2<size_t>(stGColumns * stGRows);
     // Init bin packer so we can tightly pack glyphs together. We're trying to
     // guess the size of the rlFree and rlUsed structs are too.
@@ -328,10 +329,10 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
     Memory mPixels{ DimGetWidth() * DimGetHeight() * 2 };
     mPixels.MemFill<uint16_t>(0x00FF);
     InitRaw(ftfData.IdentGet(), StdMove(mPixels), DimGetWidth(),
-      DimGetHeight(), BD_GRAYALPHA, GL_RG);
+      DimGetHeight(), BD_GRAYALPHA);
     // Initialise image in GL. This class is responsible for updating the
     // texture tile co-ords set.
-    InitImage(*this, duTile.DimGetWidth(), duTile.DimGetHeight(),
+    InitImage(*this, duiTile.DimGetWidth(), duiTile.DimGetHeight(),
       uiPadding, uiPadding, ofeFilter, false);
     // Make enough space for initial tex coords set
     clTiles.resize(1);
@@ -471,7 +472,7 @@ BEGIN_MEMBERCLASSEX(Fonts, Font, ICHelperUnsafe, /* n/a */),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Font)                // Omit copy constructor for safety
 };/* ----------------------------------------------------------------------- */
-END_COLLECTOR(Fonts)                   // End of collector class
+CTOR_END_NOINITS(Fonts)                // End of collector class
 /* -- DeInit Font Textures ------------------------------------------------- */
 static void FontDeInitTextures(void)
 { // Ignore if no fonts

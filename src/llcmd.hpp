@@ -25,8 +25,8 @@ using namespace IConsole::P;           using namespace ILuaCommand::P;
 LLFUNC(Destroy, LCCLASSDESTROY(1, Command));
 /* ========================================================================= */
 // $ Command:Id
-// < Id:integer=The id of the command.
-// ? Returns the unique id of the command.
+// < Id:integer=The id of the Command object.
+// ? Returns the unique id of the Command object.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Id, 1, LCPUSHVAR(LCGETPTR(1, Command)->CtrGet()));
 /* ========================================================================= */

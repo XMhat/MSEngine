@@ -21,9 +21,9 @@ using namespace ISysUtil::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* -- Image libraries collector class as a vector for direct access -------- */
-BEGIN_CUSTCTR_COLLECTOR(ImageLibs, ImageLib, vector, CLHelperUnsafe)
+CTOR_BEGIN_CUSTCTR(ImageLibs, ImageLib, vector, CLHelperUnsafe)
 /* -- Image libraries format object class ---------------------------------- */
-BEGIN_MEMBERCLASS(ImageLibs, ImageLib, ICHelperUnsafe)
+CTOR_MEM_BEGIN_CSLAVE(ImageLibs, ImageLib, ICHelperUnsafe)
 { /* -- Typedefs -------------------------------------------------- */ private:
   typedef bool (&CBLFunc)(FileMap&, ImageData&);
   typedef bool (&CBSFunc)(const FStream&, const ImageData&, const ImageSlot&);
@@ -76,15 +76,11 @@ BEGIN_MEMBERCLASS(ImageLibs, ImageLib, ICHelperUnsafe)
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(ImageLib)            // Omit copy constructor for safety
 };/* -- End of objects collector (reserve and set limit for formats) ------- */
-END_COLLECTOREX(ImageLibs, reserve(IFMT_MAX); CollectorSetLimit(IFMT_MAX),)
+CTOR_END(ImageLibs, reserve(IFMT_MAX); CollectorSetLimit(IFMT_MAX),)
 /* -- Save a image using a specific type ----------------------------------- */
 static void ImageSave(const ImageFormat ifId, const string &strFile,
   const ImageData &idData, const ImageSlot &isData)
-{ // Ignore if plugin is invalid
-  if(ifId >= cImageLibs->size())
-    XC("Format invalid!",
-       "Identifier", strFile, "FormatId", ifId, "Maximum", cImageLibs->size());
-  // Get plugin class
+{ // Get plugin class
   const ImageLib &ilRef = *cImageLibs->at(ifId);
   // Set filename with forced extension so we can delete it if it fails
   const string strFileNX{ StrAppend(strFile, '.', ilRef.GetExt()) };
@@ -119,35 +115,31 @@ static void ImageSave(const ImageFormat ifId, const string &strFile,
   }
 }
 /* -- Load a image using a specific type ----------------------------------- */
-static void ImageLoad(const ImageFormat ifId, FileMap &fsData,
+static void ImageLoad(const ImageFormat ifId, FileMap &fmData,
   ImageData &idData)
-{ // Ignore if plugin is invalid
-  if(ifId >= cImageLibs->size())
-    XC("Plugin invalid!", "Identifier", fsData.IdentGet(), "FormatId", ifId,
-                          "Maximum",    cImageLibs->size());
-  // Get plugin class
+{ // Get plugin class
   const ImageLib &ilRef = *cImageLibs->at(ifId);
   // Capture exceptions
   try
   { // Load the image, log and return and if succeeded
-    if(ilRef.GetLoader()(fsData, idData))
+    if(ilRef.GetLoader()(fmData, idData))
       return cLog->LogInfoExSafe("Image loaded '$' directly as $<$>! ($x$x$)",
-        fsData.IdentGet(), ilRef.GetExt(), ifId, idData.DimGetWidth(),
+        fmData.IdentGet(), ilRef.GetExt(), ifId, idData.DimGetWidth(),
         idData.DimGetHeight(), idData.GetBitsPerPixel());
     // Could not detect format so throw error
     throw runtime_error{ "Unable to load image!" };
   } // Error occured. Error used as title
   catch(const exception &E)
   { // Throw an error with the specified reason
-    XC(E.what(), "Identifier", fsData.IdentGet(),
-                 "Size",       fsData.MemSize(),
-                 "Position",   fsData.FileMapTell(),
+    XC(E.what(), "Identifier", fmData.IdentGet(),
+                 "Size",       fmData.MemSize(),
+                 "Position",   fmData.FileMapTell(),
                  "FormatId",   ifId,
                  "Plugin",     ilRef.GetName());
   }
 }
 /* -- Load a image and automatically detect type --------------------------- */
-static void ImageLoad(FileMap &fsData, ImageData &idData)
+static void ImageLoad(FileMap &fmData, ImageData &idData)
 { // For each plugin registered
   for(ImageLib*const ilPtr : *cImageLibs)
   { // Get reference to plugin
@@ -155,23 +147,23 @@ static void ImageLoad(FileMap &fsData, ImageData &idData)
     // Capture exceptions
     try
     { // Load the image, log and return if we loaded successfully
-      if(ilRef.GetLoader()(fsData, idData))
+      if(ilRef.GetLoader()(fmData, idData))
         return cLog->LogInfoExSafe("Image loaded '$' ($x$x$) as $!",
-          fsData.IdentGet(), idData.DimGetWidth(), idData.DimGetHeight(),
+          fmData.IdentGet(), idData.DimGetWidth(), idData.DimGetHeight(),
           idData.GetBitsPerPixel(), ilRef.GetExt());
     } // Error occured. Error used as title
     catch(const exception &E)
     { // Throw an error with the specified reason
-      XC(E.what(), "Identifier", fsData.IdentGet(),
-                   "Size",       fsData.MemSize(),
-                   "Position",   fsData.FileMapTell(),
+      XC(E.what(), "Identifier", fmData.IdentGet(),
+                   "Size",       fmData.MemSize(),
+                   "Position",   fmData.FileMapTell(),
                    "Plugin",     ilRef.GetName());
     } // Rewind stream position
-    fsData.FileMapRewind();
+    fmData.FileMapRewind();
     // Reset other members to try next filter
     idData.ResetAllData();
   } // Could not detect so throw error
-  XC("Unable to determine image format!", "Identifier", fsData.IdentGet());
+  XC("Unable to determine image format!", "Identifier", fmData.IdentGet());
 }
 /* ------------------------------------------------------------------------- */
 static int ImageSwapPixels(char*const cpSrc, const size_t stSrc,

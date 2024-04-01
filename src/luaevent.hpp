@@ -43,29 +43,29 @@ class LuaEvts :
   }
   /* -- Check if enough parameters ----------------------------------------- */
   template<size_t stMinimum>
-    bool LuaEvtsCheckParams(const EvtMain::Params &eParams)
+    bool LuaEvtsCheckParams(const EvtMain::Params &empArgs)
   { // Minimum arguments must be two or more
     static_assert(stMinimum >= 2, "Must specify two parameters or more!");
     // If we have at least two parameters remove the iterator
-    if(eParams.size() >= 2) LuaEvtsRemoveIterator(eParams[1].z);
+    if(empArgs.size() >= 2) LuaEvtsRemoveIterator(empArgs[1].z);
     // Return true if required args is 2 because we've already checked that
     if constexpr(stMinimum == 2) return true;
     // Return success if we have enough parameters
-    return eParams.size() >= stMinimum;
+    return empArgs.size() >= stMinimum;
   }
   /* -- Add a new event and stab iterator ---------------------------------- */
-  template<typename ...VarArgs>void LuaEvtsDispatch(const EvtMainCmd &eCmd,
-    const void*const vpClass, const VarArgs &...vaVars)
+  template<typename ...VarArgs>void LuaEvtsDispatch(const EvtMainCmd &emcCmd,
+    const void*const vpClass, const VarArgs &...vaArgs)
   { // Iterator to return
     EvtMain::QueueConstIt qciItem;
     // Lock access to the list
     const LockGuard lgLuaEvtsSync{ LuaEvtsGetMutex() };
     // Current parameters list for event
-    EvtMain::Params pData;
+    EvtMain::Params empArgs;
     // Reserve memory for parameters
-    pData.reserve(sizeof...(VarArgs));
+    empArgs.reserve(sizeof...(VarArgs));
     // Create a new params list with the class and the events list size
-    cEvtMain->AddExParam(eCmd, qciItem, pData, vpClass, size(), vaVars...);
+    cEvtMain->AddExParam(emcCmd, qciItem, empArgs, vpClass, size(), vaArgs...);
     // Insert the iterator the new event.
     emplace_back(StdMove(qciItem));
   }
@@ -79,12 +79,12 @@ class LuaEvts :
     // app will crash because the class may have been destroyed.
     while(!empty())
     { // Get interator to the stored iterators
-      const auto lrIter{ cbegin() };
+      const LuaEvtsList::const_iterator lelciIt{ cbegin() };
       // Get iterator to the event iterator and remove it if valid
-      const EvtMain::QueueConstIt qIter{ *lrIter };
-      if(qIter != cEvtMain->Last()) cEvtMain->Remove(qIter);
+      const EvtMain::QueueConstIt qciIt{ *lelciIt };
+      if(qciIt != cEvtMain->Last()) cEvtMain->Remove(qciIt);
       // Erase the queue iterator from the queue
-      erase(lrIter);
+      erase(lelciIt);
     }
   }
   /* -- Constructor -------------------------------------------------------- */
@@ -97,22 +97,22 @@ class LuaEvts :
 /* == Class type for master class (send parameters on event trigger) ======= */
 template<class MemberType>struct LuaEvtTypeParam
 { /* -- Send event to thiscall with no parameters -------------------------- */
-  static void OnEvent(const EvtMain::Cell &eD)
+  static void OnEvent(const EvtMain::Cell &emcArgs)
   { // Get reference to parameters and if there are no parameters?
-    const EvtMain::Params &vParams = eD.vParams;
-    if(vParams.empty())
+    const EvtMain::Params &empArgs = emcArgs.vParams;
+    if(empArgs.empty())
     { // Not enough parameters so show error in log
       cLog->LogErrorExSafe("LuaEvt got generic event $ with zero params!",
-        eD.evtCommand);
+        emcArgs.evtCommand);
       // Done
       return;
     } // Get pointer to class and call if if it is valid
-    MemberType*const cPtr = reinterpret_cast<MemberType*>(vParams[0].vp);
-    if(cPtr) return cPtr->LuaEvtCallbackParam(eD);
+    MemberType*const mtPtr = reinterpret_cast<MemberType*>(empArgs.front().vp);
+    if(mtPtr) return mtPtr->LuaEvtCallbackParam(emcArgs);
     // Show error so show error in log
     cLog->LogErrorExSafe(
       "LuaEvt got generic event $ with null class ptr from $ params!",
-        eD.evtCommand, vParams.size());
+        emcArgs.evtCommand, empArgs.size());
   }
   /* -- Constructor (not interested) --------------------------------------- */
   LuaEvtTypeParam(void) { }
@@ -122,22 +122,23 @@ template<class MemberType>struct LuaEvtTypeParam
 /* == Class type for master class (send no parameters on event trigger) ==== */
 template<class MemberType>struct LuaEvtTypeAsync // Used in async class
 { /* -- Send event to thiscall with no parameters -------------------------- */
-  static void OnEvent(const EvtMain::Cell &eD)
+  static void OnEvent(const EvtMain::Cell &emcArgs)
   { // Get reference to parameters and if we don't have any?
-    const EvtMain::Params &vParams = eD.vParams;
-    if(vParams.empty())
+    const EvtMain::Params &empArgs = emcArgs.vParams;
+    if(empArgs.empty())
     { // Not enough parameters so show error in log
       cLog->LogErrorExSafe("LuaEvt got async event $ with zero params!",
-        eD.evtCommand);
+        emcArgs.evtCommand);
       // Done
       return;
     } // Get pointer to class and call if if it is valid
-    if(MemberType*const mtPtr = reinterpret_cast<MemberType*>(vParams[0].vp))
-      return mtPtr->LuaEvtCallbackAsync(eD);
+    if(MemberType*const mtPtr =
+      reinterpret_cast<MemberType*>(empArgs.front().vp))
+        return mtPtr->LuaEvtCallbackAsync(emcArgs);
     // Show error so show error in log
     cLog->LogErrorExSafe(
       "LuaEvt got async event $ with null class ptr from $ params!",
-        eD.evtCommand, vParams.size());
+        emcArgs.evtCommand, empArgs.size());
   }
   /* -- Constructor (not interested) --------------------------------------- */
   LuaEvtTypeAsync(void) { }
@@ -148,76 +149,76 @@ template<class MemberType>struct LuaEvtTypeAsync // Used in async class
 template<class MemberType,             // Member object type
          class EventType>              // Event type object
 class LuaEvtMaster :
-  /* -- Derived classes ---------------------------------------------------- */
+  /* -- Base classes ------------------------------------------------------- */
   private EventType                    // Event type class
 { /* -- Private variables -------------------------------------------------- */
-  const EvtMainCmd evtCmd;             // Event command
+  const EvtMainCmd emcCmd;             // Event command
   /* -- Register the event ----------------------------------------- */ public:
-  explicit LuaEvtMaster(const EvtMainCmd eC) :
+  explicit LuaEvtMaster(const EvtMainCmd emcNCmd) :
     /* -- Initialisers ----------------------------------------------------- */
-    evtCmd(eC)                         // Set the event id
+    emcCmd(emcNCmd)                    // Set the event id
     /* -- Register the event ----------------------------------------------- */
-    { cEvtMain->Register(evtCmd, this->OnEvent); }
+    { cEvtMain->Register(emcCmd, this->OnEvent); }
   /* -- Unregister the event ----------------------------------------------- */
-  ~LuaEvtMaster(void) { cEvtMain->Unregister(evtCmd); }
+  ~LuaEvtMaster(void) { cEvtMain->Unregister(emcCmd); }
   /* -- Delete defaults ---------------------------------------------------- */
   DELETECOPYCTORS(LuaEvtMaster)        // Remove Assignment operator/ctor
 };/* == Routines for a collectors child class ============================== */
 template<class MemberType,             // Member object type
-         size_t Refs=1>                // Number of references to store
+         size_t stRefs=1>              // Number of references to store
 class LuaEvtSlave :
   /* -- Base classes ------------------------------------------------------- */
   public LuaEvts,                      // Events handler
-  public LuaRef<Refs>                  // Lua raw reference class
+  public LuaRef<stRefs>                // Lua raw reference class
 { /* -- Private variables -------------------------------------------------- */
-  EvtMainCmd       evtCmd;             // Event associated with this
-  MemberType*const cMember;            // Parent of this class
+  EvtMainCmd       emcCmd;             // Event associated with this
+  MemberType*const mtPtr;              // Parent of this class
   /* -- Event dispatch --------------------------------------------- */ public:
-  template<typename ...VarArgs>void LuaEvtDispatch(const VarArgs &...vaVars)
+  template<typename ...VarArgs>void LuaEvtDispatch(const VarArgs &...vaArgs)
   { // Return if no callback is set. No point firing an event!
     if(!this->LuaRefIsSet()) return;
     // Insert a new event. We need to store the id of the iterator too so we
     // can remove it when we process the event in LuaEvtCallbackParam().
-    LuaEvtsDispatch(evtCmd, reinterpret_cast<void*>(cMember), vaVars...);
+    LuaEvtsDispatch(emcCmd, reinterpret_cast<void*>(mtPtr), vaArgs...);
   }
   /* -- Event callback on main thread -------------------------------------- */
-  void LuaEvtCallbackParam(const EvtMain::Cell &epData) try
+  void LuaEvtCallbackParam(const EvtMain::Cell &emcArgs) try
   { // Sanity check get number of mandatory parameters
     const size_t stMandatory = 2;
     // Get number of parameters and make sure we have enough parameters
-    size_t stMax = epData.vParams.size();
+    size_t stMax = emcArgs.vParams.size();
     if(stMax < stMandatory)
       XC("Not enough parameters to generic Lua event callback!",
-         "Identifier", cMember->IdentGet(), "Event", epData.evtCommand,
-         "Count",      stMax,            "Maximum", stMandatory);
+         "Identifier", mtPtr->IdentGet(), "Event",   emcArgs.evtCommand,
+         "Count",      stMax,             "Maximum", stMandatory);
     // Remove iterator from our events dispatched list
-    LuaEvtsRemoveIterator(static_cast<size_t>(epData.vParams[1].ui));
+    LuaEvtsRemoveIterator(static_cast<size_t>(emcArgs.vParams[1].ui));
     // Lua is paused?
-    if(bLuaPaused)
+    if(uiLuaPaused)
     { // Show error in log
       cLog->LogWarningExSafe(
         "LuaEvt for generic event $ for '$' ignored because lua is paused!",
-        epData.evtCommand,  cMember->IdentGet(), this->LuaRefStateIsSet(),
+        emcArgs.evtCommand,  mtPtr->IdentGet(), this->LuaRefStateIsSet(),
         this->LuaRefGetId(), stMax);
       // Just return
       return;
     } // Check to see if we can write the function and it's parameters, if not?
     if(!LuaUtilIsStackAvail(this->LuaRefGetState(), stMax - 1))
       XC("Not enough stack space or memory, or param count overflowed!",
-         "Identifier", cMember->IdentGet(),         "Event", epData.evtCommand,
-         "HaveState",  this->LuaRefStateIsSet(), "Ref", this->LuaRefGetId(),
+         "Identifier", mtPtr->IdentGet(),        "Event", emcArgs.evtCommand,
+         "HaveState",  this->LuaRefStateIsSet(), "Ref",   this->LuaRefGetId(),
          "Params",     stMax);
     // Not have function?
     if(!this->LuaRefGetFunc())
       XC("Could not get callback function!",
-         "Identifier", cMember->IdentGet(),         "Event", epData.evtCommand,
-         "HaveState",  this->LuaRefStateIsSet(), "Ref", this->LuaRefGetId(),
+         "Identifier", mtPtr->IdentGet(),        "Event", emcArgs.evtCommand,
+         "HaveState",  this->LuaRefStateIsSet(), "Ref",   this->LuaRefGetId(),
          "Params",     stMax);
     // Enumerate add the rest of the parameters
     for(size_t stIndex = 2; stIndex < stMax; ++stIndex)
     { // Using event core namespace
       using namespace IEvtCore;
-      const MVar &mvParam = epData.vParams[stIndex];
+      const MVar &mvParam = emcArgs.vParams[stIndex];
       // Compare type
       switch(mvParam.t)
       { // Boolean?
@@ -279,7 +280,7 @@ class LuaEvtSlave :
   { // Initialise reference and if failed
     if(!this->LuaRefInit(lS))
       XC("Failed to reference variables!",
-        "Identifier", cMember->IdentGet(), "Count", Refs);
+        "Identifier", mtPtr->IdentGet(), "Count", stRefs);
   }
   /* -- Initialise new variables ------------------------------------------- */
   void LuaEvtInitEx(lua_State*const lS, const size_t stId)
@@ -289,12 +290,12 @@ class LuaEvtSlave :
          "stored as the internal storage only supports storing one state "
          "for multiple references!",
         "StoredState", this->LuaRefStateIsSet(), "SentState", lS != nullptr,
-        "Identifier",  cMember->IdentGet(),         "Reference", stId,
-        "Count",       Refs);
+        "Identifier",  mtPtr->IdentGet(),        "Reference", stId,
+        "Count",       stRefs);
     // Initialise reference and if failed
     if(!this->LuaRefInitEx(stId))
       XC("Failed to reference new variable!",
-        "Identifier", cMember->IdentGet(), "Reference", stId, "Count", Refs);
+        "Identifier", mtPtr->IdentGet(), "Reference", stId, "Count", stRefs);
   }
   /* -- Initialise with empty function ------------------------------------- */
   void LuaEvtInit(lua_State*const lS)
@@ -305,10 +306,10 @@ class LuaEvtSlave :
     LuaEvtInitEx(lS);
   }
   /* -- Standby constructor ------------------------------------------------ */
-  LuaEvtSlave(MemberType*const mtObject, const EvtMainCmd emcCmd) :
+  LuaEvtSlave(MemberType*const mtNPtr, const EvtMainCmd emcNCmd) :
     /* -- Initialisers ----------------------------------------------------- */
-    evtCmd(emcCmd),                    // Command event id
-    cMember(mtObject)                  // Set pointer to member object
+    emcCmd(emcNCmd),                   // Command event id
+    mtPtr(mtNPtr)                      // Set pointer to member object
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Destructor to clean up any leftover events and references ---------- */

@@ -10,7 +10,8 @@
 namespace IImageDef {                  // Start of private module namespace
 /* -- Dependencies --------------------------------------------------------- */
 using namespace IDim;                  using namespace IFlags;
-using namespace IMemory::P;            using namespace IStd::P;
+using namespace IMemory::P;            using namespace IOgl::P;
+using namespace IStd::P;               using namespace ITexDef::P;
 using namespace Lib::OS::GlFW;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
@@ -104,14 +105,6 @@ enum BitDepth : unsigned int           // Human readable bit-depths
   BD_RGB        = 24,                  // 1 pixel per 3 bytes (R+G+B)
   BD_RGBA       = 32                   // 1 pixel per 4 bytes (R+G+B+Alpha)
 };/* ----------------------------------------------------------------------- */
-enum ByteDepth : unsigned int          // Human readable byte-depths
-{ /* ----------------------------------------------------------------------- */
-  BY_NONE,                             // [0] Not initialised yet
-  BY_GRAY,                             // [1] Gray channel format
-  BY_GRAYALPHA,                        // [2] Gray + alpha channel format
-  BY_RGB,                              // [3] 1 pixel per 3 bytes (R+G+B)
-  BY_RGBA,                             // [4] 1 pixel per 4 bytes (R+G+B+Alpha)
-};/* ----------------------------------------------------------------------- */
 class ImageData :                      // Members initially private
   /* ----------------------------------------------------------------------- */
   public ImageFlags,                   // Shared with 'Image' class if needed
@@ -119,7 +112,7 @@ class ImageData :                      // Members initially private
 { /* ----------------------------------------------------------------------- */
   BitDepth         bdDepth;            // Image bits per pixel
   ByteDepth        byDepth;            // Image bytes per pixel
-  GLenum           glPixelType;        // Image colour-byte bits
+  TextureType      ttType;             // Image colour-byte bits
   size_t           stAlloc;            // Image data allocated in slots
   /* ------------------------------------------------------------ */ protected:
   SlotList         slSlots;            // Image data
@@ -135,7 +128,7 @@ class ImageData :                      // Members initially private
     // Swap values
     swap(bdDepth, imdRef.bdDepth);
     swap(byDepth, imdRef.byDepth);
-    swap(glPixelType, imdRef.glPixelType);
+    swap(ttType, imdRef.ttType);
     swap(stAlloc, imdRef.stAlloc);
     // Swap tiles and dimensions
     duTileOR.DimSwap(imdRef.duTileOR);
@@ -204,9 +197,9 @@ class ImageData :                      // Members initially private
   /* ----------------------------------------------------------------------- */
 #undef FH                              // Done with this macro
   /* ----------------------------------------------------------------------- */
-  void SetPixelType(const GLenum eMode) { glPixelType = eMode; }
+  void SetPixelType(const TextureType ttNType) { ttType = ttNType; }
   /* ----------------------------------------------------------------------- */
-  GLenum GetPixelType(void) const { return glPixelType; }
+  TextureType GetPixelType(void) const { return ttType; }
   /* ----------------------------------------------------------------------- */
   size_t TotalPixels(void) const
     { return DimGetWidth<size_t>() * DimGetHeight<size_t>(); }
@@ -226,7 +219,7 @@ class ImageData :                      // Members initially private
   { // Add the slot moving the memory over
     GetSlots().push_back({ StdMove(mData), uiSWidth, uiSHeight });
     // Add to memory bytes allocated counter
-    stAlloc += GetSlots().back().MemSize();
+    IncreaseAlloc(GetSlots().back().MemSize());
   }
   /* -- Add a new slot using our image size -------------------------------- */
   void AddSlot(Memory &mData)
@@ -264,7 +257,7 @@ class ImageData :                      // Members initially private
     DimSet();
     SetBitsPerPixel(BD_NONE);
     SetBytesPerPixel(BY_NONE);
-    SetPixelType(GL_NONE);
+    SetPixelType(TT_NONE);
     // Remove image property flags
     ClearMipmaps();
     ClearReversed();
@@ -279,7 +272,7 @@ class ImageData :                      // Members initially private
     ImageFlags{ IP_IMAGE },            // Set initial flags
     bdDepth(BD_NONE),                  // Bit depth not initialised yet
     byDepth(BY_NONE),                  // Bytes per pixel not initialised yet
-    glPixelType(GL_NONE),              // Pixel type not initialised yet
+    ttType(TT_NONE),                   // Pixel type not initialised yet
     stAlloc(0),                        // Allocated memory not initialised yet
     stTiles(0)                         // No number of tiles
     /* -- Code ------------------------------------------------------------- */

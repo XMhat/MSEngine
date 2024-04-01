@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<!-- Reference for the MS-Engine API version 24.4.1.20 -->
-<!-- Automatically built at Mon Apr 01 00:40:01 2024 +0100 -->
-<!-- With MS-Engine Project Management Utility version 24.4.1.20 -->
+<!-- Reference for the MS-Engine API version 24.6.14.8 -->
+<!-- Automatically built at Fri Jun 14 16:50:20 2024 +0100 -->
+<!-- With MS-Engine Project Management Utility version 24.6.14.8 -->
 <!-- Copyright (c) 2006-2024 MS-Design, All Rights Reserved Worldwide -->
 <HTML lang="en-GB">
 <HEAD>
@@ -11,18 +11,18 @@
 	<META name="apple-mobile-web-app-title" content="MS-Engine API">
 	<META name="author" content="MS-Design">
 	<META name="copyright" content="Copyright © 2006-2024 MS-Design, All Rights Reserved">
-	<META name="description" content="Reference for the MS-Engine API version 24.4.1.20">
+	<META name="description" content="Reference for the MS-Engine API version 24.6.14.8">
 	<META name="format-detection" content="telephone=no">
-	<META name="generator" content="MS-Engine Project Management Utility version 24.4.1.20">
+	<META name="generator" content="MS-Engine Project Management Utility version 24.6.14.8">
 	<META name="google-site-verification" content="BvWxrqmgaIxqe_W8AW3OGK0fdCI_JfB_-gcOOxCF9_4">
 	<META name="googlebot" content="index,follow">
-	<META name="og:description" content="Reference for the MS-Engine API version 24.4.1.20">
+	<META name="og:description" content="Reference for the MS-Engine API version 24.6.14.8">
 	<META name="og:image" content="https://repository-images.githubusercontent.com/611875607/ee7aa468-9797-4763-9a2d-ea3d782ef413">
-	<META name="og:title" content="MS-Engine 24.4.1.20 API reference">
+	<META name="og:title" content="MS-Engine 24.6.14.8 API reference">
 	<META name="og:url" content="https://xmhat.github.io/MSEngine/">
 	<META name="robots" content="index,follow">
 	<META name="viewport" content="width=device-width, initial-scale=1">
-	<TITLE>MS-Engine 24.4.1.20 API reference</TITLE>
+	<TITLE>MS-Engine 24.6.14.8 API reference</TITLE>
 	<STYLE media="screen">
 	* { margin:0; padding:0 }
 	BODY { background-color:#111; border:0; font-family:sans-serif; overflow-x:hidden; text-shadow: 1px 1px #111 }
@@ -60,7 +60,7 @@
 	</STYLE>
 </HEAD>
 <BODY id="idx.top">
-	<H1>MS-Engine 24.4.1.20 API reference</H1>
+	<H1>MS-Engine 24.6.14.8 API reference</H1>
 	<NOSCRIPT>
 		<H2>JavaScript is required to show and hide elements.</H2>
 	</NOSCRIPT>
@@ -99,12 +99,12 @@
 	</SCRIPT>
 	<DIV id="idx" style="display:none">
 		<H2>Table of contents:-</H2>
-		<P>This build of the MS-Engine API consists of 791 functions (373 members, 418 methods) and 25 consts in 31 namespaces with 83 commands and 207 cvars.</P>
+		<P>This build of the MS-Engine API consists of 816 functions (375 members, 441 methods) and 26 consts in 32 namespaces with 83 commands and 209 cvars.</P>
 		<OL id="toc">
 			<LI id="idx.ns">
 				<DIV>
 					<DIV>
-						<A href="#idx.ns">Namespaces</A> <I>(31 namespaces)</I>
+						<A href="#idx.ns">Namespaces</A> <I>(32 namespaces)</I>
 						<OL>
 							<LI><P>Categorised functions that interact with the engine.</P></LI>
 							<LI>
@@ -130,6 +130,7 @@
 									<LI><A href="#idx:Mask">Mask</A></LI>
 									<LI><A href="#idx:Palette">Palette</A></LI>
 									<LI><A href="#idx:Pcm">Pcm</A></LI>
+									<LI><A href="#idx:SShot">SShot</A></LI>
 									<LI><A href="#idx:Sample">Sample</A></LI>
 									<LI><A href="#idx:Socket">Socket</A></LI>
 									<LI><A href="#idx:Source">Source</A></LI>
@@ -169,7 +170,7 @@
 								</OL>
 							</LI>
 							<LI>
-								<B>Methods</B> <I>(10 methods)</I>
+								<B>Methods</B> <I>(11 methods)</I>
 								<OL>
 									<LI><A href="#Archive:Destroy">Destroy</A></LI>
 									<LI><A href="#Archive:Dir">Dir</A></LI>
@@ -178,6 +179,7 @@
 									<LI><A href="#Archive:File">File</A></LI>
 									<LI><A href="#Archive:FileList">FileList</A></LI>
 									<LI><A href="#Archive:Files">Files</A></LI>
+									<LI><A href="#Archive:Id">Id</A></LI>
 									<LI><A href="#Archive:Name">Name</A></LI>
 									<LI><A href="#Archive:Size">Size</A></LI>
 									<LI><A href="#Archive:Total">Total</A></LI>
@@ -220,7 +222,7 @@
 								</OL>
 							</LI>
 							<LI>
-								<B>Methods</B> <I>(24 methods)</I>
+								<B>Methods</B> <I>(25 methods)</I>
 								<OL>
 									<LI><A href="#Asset:BitClear">BitClear</A></LI>
 									<LI><A href="#Asset:BitFlip">BitFlip</A></LI>
@@ -233,6 +235,7 @@
 									<LI><A href="#Asset:Fill">Fill</A></LI>
 									<LI><A href="#Asset:Find">Find</A></LI>
 									<LI><A href="#Asset:FindEx">FindEx</A></LI>
+									<LI><A href="#Asset:Id">Id</A></LI>
 									<LI><A href="#Asset:Invert">Invert</A></LI>
 									<LI><A href="#Asset:Name">Name</A></LI>
 									<LI><A href="#Asset:ReadInt">ReadInt</A></LI>
@@ -304,11 +307,12 @@
 								</OL>
 							</LI>
 							<LI>
-								<B>Methods</B> <I>(7 methods)</I>
+								<B>Methods</B> <I>(8 methods)</I>
 								<OL>
 									<LI><A href="#Bin:Destroy">Destroy</A></LI>
 									<LI><A href="#Bin:Enlarge">Enlarge</A></LI>
 									<LI><A href="#Bin:Height">Height</A></LI>
+									<LI><A href="#Bin:Id">Id</A></LI>
 									<LI><A href="#Bin:Insert">Insert</A></LI>
 									<LI><A href="#Bin:Occupancy">Occupancy</A></LI>
 									<LI><A href="#Bin:Test">Test</A></LI>
@@ -334,10 +338,11 @@
 								</OL>
 							</LI>
 							<LI>
-								<B>Methods</B> <I>(3 methods)</I>
+								<B>Methods</B> <I>(4 methods)</I>
 								<OL>
 									<LI><A href="#Clip:Destroy">Destroy</A></LI>
 									<LI><A href="#Clip:Id">Id</A></LI>
+									<LI><A href="#Clip:Name">Name</A></LI>
 									<LI><A href="#Clip:Value">Value</A></LI>
 								</OL>
 							</LI>
@@ -569,17 +574,18 @@
 								</OL>
 							</LI>
 							<LI>
-								<B>Methods</B> <I>(26 methods)</I>
+								<B>Methods</B> <I>(27 methods)</I>
 								<OL>
 									<LI><A href="#Fbo:Activate">Activate</A></LI>
 									<LI><A href="#Fbo:Blit">Blit</A></LI>
 									<LI><A href="#Fbo:BlitT">BlitT</A></LI>
 									<LI><A href="#Fbo:Destroy">Destroy</A></LI>
-									<LI><A href="#Fbo:Dump">Dump</A></LI>
 									<LI><A href="#Fbo:Finish">Finish</A></LI>
 									<LI><A href="#Fbo:GetFloatCount">GetFloatCount</A></LI>
+									<LI><A href="#Fbo:GetId">GetId</A></LI>
 									<LI><A href="#Fbo:GetLFloatCount">GetLFloatCount</A></LI>
 									<LI><A href="#Fbo:GetMatrix">GetMatrix</A></LI>
+									<LI><A href="#Fbo:GetName">GetName</A></LI>
 									<LI><A href="#Fbo:IsFinished">IsFinished</A></LI>
 									<LI><A href="#Fbo:Reserve">Reserve</A></LI>
 									<LI><A href="#Fbo:SetCRGBA">SetCRGBA</A></LI>
@@ -587,7 +593,7 @@
 									<LI><A href="#Fbo:SetClear">SetClear</A></LI>
 									<LI><A href="#Fbo:SetClearColour">SetClearColour</A></LI>
 									<LI><A href="#Fbo:SetFilter">SetFilter</A></LI>
-									<LI><A href="#Fbo:SetOrtho">SetOrtho</A></LI>
+									<LI><A href="#Fbo:SetMatrix">SetMatrix</A></LI>
 									<LI><A href="#Fbo:SetTCLTRB">SetTCLTRB</A></LI>
 									<LI><A href="#Fbo:SetTCLTWH">SetTCLTWH</A></LI>
 									<LI><A href="#Fbo:SetTCX">SetTCX</A></LI>
@@ -647,7 +653,7 @@
 								</OL>
 							</LI>
 							<LI>
-								<B>Methods</B> <I>(19 methods)</I>
+								<B>Methods</B> <I>(20 methods)</I>
 								<OL>
 									<LI><A href="#File:Close">Close</A></LI>
 									<LI><A href="#File:Destroy">Destroy</A></LI>
@@ -656,6 +662,7 @@
 									<LI><A href="#File:ErrorStr">ErrorStr</A></LI>
 									<LI><A href="#File:FError">FError</A></LI>
 									<LI><A href="#File:Flush">Flush</A></LI>
+									<LI><A href="#File:Id">Id</A></LI>
 									<LI><A href="#File:Name">Name</A></LI>
 									<LI><A href="#File:Opened">Opened</A></LI>
 									<LI><A href="#File:Read">Read</A></LI>
@@ -696,11 +703,12 @@
 								</OL>
 							</LI>
 							<LI>
-								<B>Methods</B> <I>(44 methods)</I>
+								<B>Methods</B> <I>(45 methods)</I>
 								<OL>
 									<LI><A href="#Font:Destroy">Destroy</A></LI>
 									<LI><A href="#Font:Dump">Dump</A></LI>
 									<LI><A href="#Font:GetHeight">GetHeight</A></LI>
+									<LI><A href="#Font:GetId">GetId</A></LI>
 									<LI><A href="#Font:GetName">GetName</A></LI>
 									<LI><A href="#Font:GetWidth">GetWidth</A></LI>
 									<LI><A href="#Font:LoadChars">LoadChars</A></LI>
@@ -772,11 +780,12 @@
 								</OL>
 							</LI>
 							<LI>
-								<B>Methods</B> <I>(5 methods)</I>
+								<B>Methods</B> <I>(6 methods)</I>
 								<OL>
 									<LI><A href="#Ftf:Destroy">Destroy</A></LI>
 									<LI><A href="#Ftf:Family">Family</A></LI>
 									<LI><A href="#Ftf:Glyphs">Glyphs</A></LI>
+									<LI><A href="#Ftf:Id">Id</A></LI>
 									<LI><A href="#Ftf:Name">Name</A></LI>
 									<LI><A href="#Ftf:Style">Style</A></LI>
 								</OL>
@@ -806,20 +815,22 @@
 								</OL>
 							</LI>
 							<LI>
-								<B>Methods</B> <I>(6 methods)</I>
+								<B>Methods</B> <I>(7 methods)</I>
 								<OL>
 									<LI><A href="#Image:Depth">Depth</A></LI>
 									<LI><A href="#Image:Destroy">Destroy</A></LI>
 									<LI><A href="#Image:Height">Height</A></LI>
+									<LI><A href="#Image:Id">Id</A></LI>
 									<LI><A href="#Image:Name">Name</A></LI>
 									<LI><A href="#Image:Save">Save</A></LI>
 									<LI><A href="#Image:Width">Width</A></LI>
 								</OL>
 							</LI>
 							<LI>
-								<B>Consts</B> <I>(1 const)</I>
+								<B>Consts</B> <I>(2 consts)</I>
 								<OL>
 									<LI><A href="#Image.Flags">Flags</A></LI>
+									<LI><A href="#Image.Formats">Formats</A></LI>
 								</OL>
 							</LI>
 							<LI><A href="#idx:Image">&#x25B2; Return to summary</A> / <A href="#idx.top">top</A></LI>
@@ -936,9 +947,10 @@
 								</OL>
 							</LI>
 							<LI>
-								<B>Methods</B> <I>(7 methods)</I>
+								<B>Methods</B> <I>(8 methods)</I>
 								<OL>
 									<LI><A href="#Json:Destroy">Destroy</A></LI>
+									<LI><A href="#Json:Id">Id</A></LI>
 									<LI><A href="#Json:Name">Name</A></LI>
 									<LI><A href="#Json:ToFile">ToFile</A></LI>
 									<LI><A href="#Json:ToHRFile">ToHRFile</A></LI>
@@ -967,7 +979,7 @@
 								</OL>
 							</LI>
 							<LI>
-								<B>Methods</B> <I>(13 methods)</I>
+								<B>Methods</B> <I>(14 methods)</I>
 								<OL>
 									<LI><A href="#Mask:Clear">Clear</A></LI>
 									<LI><A href="#Mask:Copy">Copy</A></LI>
@@ -976,6 +988,7 @@
 									<LI><A href="#Mask:Erase">Erase</A></LI>
 									<LI><A href="#Mask:Fill">Fill</A></LI>
 									<LI><A href="#Mask:Height">Height</A></LI>
+									<LI><A href="#Mask:Id">Id</A></LI>
 									<LI><A href="#Mask:IsCollide">IsCollide</A></LI>
 									<LI><A href="#Mask:Merge">Merge</A></LI>
 									<LI><A href="#Mask:Name">Name</A></LI>
@@ -1006,7 +1019,7 @@
 								</OL>
 							</LI>
 							<LI>
-								<B>Methods</B> <I>(28 methods)</I>
+								<B>Methods</B> <I>(29 methods)</I>
 								<OL>
 									<LI><A href="#Palette:Commit">Commit</A></LI>
 									<LI><A href="#Palette:Copy">Copy</A></LI>
@@ -1018,6 +1031,7 @@
 									<LI><A href="#Palette:GetBI">GetBI</A></LI>
 									<LI><A href="#Palette:GetG">GetG</A></LI>
 									<LI><A href="#Palette:GetGI">GetGI</A></LI>
+									<LI><A href="#Palette:GetId">GetId</A></LI>
 									<LI><A href="#Palette:GetName">GetName</A></LI>
 									<LI><A href="#Palette:GetR">GetR</A></LI>
 									<LI><A href="#Palette:GetRGBA">GetRGBA</A></LI>
@@ -1061,9 +1075,10 @@
 								</OL>
 							</LI>
 							<LI>
-								<B>Methods</B> <I>(2 methods)</I>
+								<B>Methods</B> <I>(3 methods)</I>
 								<OL>
 									<LI><A href="#Pcm:Destroy">Destroy</A></LI>
+									<LI><A href="#Pcm:Id">Id</A></LI>
 									<LI><A href="#Pcm:Name">Name</A></LI>
 								</OL>
 							</LI>
@@ -1074,6 +1089,32 @@
 								</OL>
 							</LI>
 							<LI><A href="#idx:Pcm">&#x25B2; Return to summary</A> / <A href="#idx.top">top</A></LI>
+						</OL>
+					</DIV>
+				</DIV>
+			</LI>
+			<LI id="idx:SShot">
+				<DIV>
+					<DIV>
+						<A href="#idx:SShot">SShot namespace</A>
+						<OL>
+							<LI><P>Contains functions for making a screenshot</P></LI>
+							<LI>
+								<B>Members</B> <I>(2 members)</I>
+								<OL>
+									<LI><A href="#SShot.Fbo">Fbo</A></LI>
+									<LI><A href="#SShot.Screen">Screen</A></LI>
+								</OL>
+							</LI>
+							<LI>
+								<B>Methods</B> <I>(3 methods)</I>
+								<OL>
+									<LI><A href="#SShot:Destroy">Destroy</A></LI>
+									<LI><A href="#SShot:Id">Id</A></LI>
+									<LI><A href="#SShot:Name">Name</A></LI>
+								</OL>
+							</LI>
+							<LI><A href="#idx:SShot">&#x25B2; Return to summary</A> / <A href="#idx.top">top</A></LI>
 						</OL>
 					</DIV>
 				</DIV>
@@ -1091,10 +1132,11 @@
 								</OL>
 							</LI>
 							<LI>
-								<B>Methods</B> <I>(7 methods)</I>
+								<B>Methods</B> <I>(8 methods)</I>
 								<OL>
 									<LI><A href="#Sample:Destroy">Destroy</A></LI>
 									<LI><A href="#Sample:Duration">Duration</A></LI>
+									<LI><A href="#Sample:Id">Id</A></LI>
 									<LI><A href="#Sample:Name">Name</A></LI>
 									<LI><A href="#Sample:Play">Play</A></LI>
 									<LI><A href="#Sample:PlayEx">PlayEx</A></LI>
@@ -1185,12 +1227,13 @@
 						<OL>
 							<LI><P>The source is a sound channel in OpenAL that can be manipulated such as */ changing volume, pitch, position and other things. It can only be       */ created by the Sample:Play() function.</P></LI>
 							<LI>
-								<B>Methods</B> <I>(30 methods)</I>
+								<B>Methods</B> <I>(31 methods)</I>
 								<OL>
 									<LI><A href="#Source:Destroy">Destroy</A></LI>
 									<LI><A href="#Source:GetDirection">GetDirection</A></LI>
 									<LI><A href="#Source:GetElapsed">GetElapsed</A></LI>
 									<LI><A href="#Source:GetGain">GetGain</A></LI>
+									<LI><A href="#Source:GetId">GetId</A></LI>
 									<LI><A href="#Source:GetLooping">GetLooping</A></LI>
 									<LI><A href="#Source:GetMaxDist">GetMaxDist</A></LI>
 									<LI><A href="#Source:GetMaxGain">GetMaxGain</A></LI>
@@ -1271,7 +1314,7 @@
 								</OL>
 							</LI>
 							<LI>
-								<B>Methods</B> <I>(11 methods)</I>
+								<B>Methods</B> <I>(13 methods)</I>
 								<OL>
 									<LI><A href="#Stat:Data">Data</A></LI>
 									<LI><A href="#Stat:DataI">DataI</A></LI>
@@ -1281,6 +1324,8 @@
 									<LI><A href="#Stat:Header">Header</A></LI>
 									<LI><A href="#Stat:HeaderDupe">HeaderDupe</A></LI>
 									<LI><A href="#Stat:Headers">Headers</A></LI>
+									<LI><A href="#Stat:Id">Id</A></LI>
+									<LI><A href="#Stat:Name">Name</A></LI>
 									<LI><A href="#Stat:Reserve">Reserve</A></LI>
 									<LI><A href="#Stat:Sort">Sort</A></LI>
 									<LI><A href="#Stat:SortTwo">SortTwo</A></LI>
@@ -1309,7 +1354,7 @@
 								</OL>
 							</LI>
 							<LI>
-								<B>Methods</B> <I>(29 methods)</I>
+								<B>Methods</B> <I>(30 methods)</I>
 								<OL>
 									<LI><A href="#Stream:Destroy">Destroy</A></LI>
 									<LI><A href="#Stream:GetBitRate">GetBitRate</A></LI>
@@ -1317,6 +1362,7 @@
 									<LI><A href="#Stream:GetChannels">GetChannels</A></LI>
 									<LI><A href="#Stream:GetDuration">GetDuration</A></LI>
 									<LI><A href="#Stream:GetElapsed">GetElapsed</A></LI>
+									<LI><A href="#Stream:GetId">GetId</A></LI>
 									<LI><A href="#Stream:GetLoop">GetLoop</A></LI>
 									<LI><A href="#Stream:GetLoopBegin">GetLoopBegin</A></LI>
 									<LI><A href="#Stream:GetLoopEnd">GetLoopEnd</A></LI>
@@ -1370,7 +1416,7 @@
 								</OL>
 							</LI>
 							<LI>
-								<B>Methods</B> <I>(65 methods)</I>
+								<B>Methods</B> <I>(66 methods)</I>
 								<OL>
 									<LI><A href="#Texture:Blit">Blit</A></LI>
 									<LI><A href="#Texture:BlitILT">BlitILT</A></LI>
@@ -1402,6 +1448,7 @@
 									<LI><A href="#Texture:Download">Download</A></LI>
 									<LI><A href="#Texture:Dump">Dump</A></LI>
 									<LI><A href="#Texture:GetHeight">GetHeight</A></LI>
+									<LI><A href="#Texture:GetId">GetId</A></LI>
 									<LI><A href="#Texture:GetName">GetName</A></LI>
 									<LI><A href="#Texture:GetSubCount">GetSubCount</A></LI>
 									<LI><A href="#Texture:GetWidth">GetWidth</A></LI>
@@ -1587,7 +1634,7 @@
 								</OL>
 							</LI>
 							<LI>
-								<B>Methods</B> <I>(37 methods)</I>
+								<B>Methods</B> <I>(38 methods)</I>
 								<OL>
 									<LI><A href="#Video:Advance">Advance</A></LI>
 									<LI><A href="#Video:Awaken">Awaken</A></LI>
@@ -1601,6 +1648,7 @@
 									<LI><A href="#Video:GetFrames">GetFrames</A></LI>
 									<LI><A href="#Video:GetFramesLost">GetFramesLost</A></LI>
 									<LI><A href="#Video:GetHeight">GetHeight</A></LI>
+									<LI><A href="#Video:GetId">GetId</A></LI>
 									<LI><A href="#Video:GetLoop">GetLoop</A></LI>
 									<LI><A href="#Video:GetName">GetName</A></LI>
 									<LI><A href="#Video:GetPlaying">GetPlaying</A></LI>
@@ -1658,7 +1706,7 @@
 									<LI><A href="#cc.cla">cla</A></LI>
 									<LI><A href="#cc.clh">clh</A></LI>
 									<LI><A href="#cc.cls">cls</A></LI>
-									<LI><A href="#cc.cmds [partial]">cmds [partial]</A></LI>
+									<LI><A href="#cc.cmds">cmds</A></LI>
 									<LI><A href="#cc.con">con</A></LI>
 									<LI><A href="#cc.conlog">conlog</A></LI>
 									<LI><A href="#cc.cpu">cpu</A></LI>
@@ -1740,7 +1788,7 @@
 			<LI id="idx.cv">
 				<DIV>
 					<DIV>
-						<A href="#cvars">CVars</A> <I>(207 cvars)</I>
+						<A href="#cvars">CVars</A> <I>(209 cvars)</I>
 						<OL>
 							<LI><P>Variables that change the behaviour of the engine.</P></LI>
 							<LI>
@@ -1887,6 +1935,8 @@
 									<LI><A href="#cv.sql_incvacuum">sql_incvacuum</A></LI>
 									<LI><A href="#cv.sql_journalmode">sql_journalmode</A></LI>
 									<LI><A href="#cv.sql_loadconfig">sql_loadconfig</A></LI>
+									<LI><A href="#cv.sql_retrycount">sql_retrycount</A></LI>
+									<LI><A href="#cv.sql_retrysuspend">sql_retrysuspend</A></LI>
 									<LI><A href="#cv.sql_synchronous">sql_synchronous</A></LI>
 									<LI><A href="#cv.sql_tempstore">sql_tempstore</A></LI>
 									<LI><A href="#cv.vid_api">vid_api</A></LI>
@@ -2061,6 +2111,16 @@
 		<PRE><U>Files</U> <I>(integer)</I> = Total number of files inside the archive<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Returns total number of the files inside the archive&#x2e;<BR></PRE>
+		<H4><A href="#idx:Archive">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Archive:Id" style="display:none">
+		<H3>Archive:Id</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Id</U> = Archive:Id()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Id</U> <I>(integer)</I> = The id number of the Archive object.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the unique id of the Archive object&#x2e;<BR></PRE>
 		<H4><A href="#idx:Archive">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Archive:Name" style="display:none">
@@ -2435,6 +2495,16 @@
 		<PRE>Finds the first occurence of &#x27;Text&#x27; in array from the specified position&#x2e;<BR></PRE>
 		<H4><A href="#idx:Asset">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
+	<DIV id="Asset:Id" style="display:none">
+		<H3>Asset:Id</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Id</U> = Asset:Id()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Id</U> <I>(integer)</I> = The id number of the Asset object.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the unique id of the Asset object&#x2e;<BR></PRE>
+		<H4><A href="#idx:Asset">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
 	<DIV id="Asset:Invert" style="display:none">
 		<H3>Asset:Invert</H3>
 		<H4>Syntax:-</H4>
@@ -2783,6 +2853,16 @@
 		<PRE>Returns the height of the bin in units&#x2e;<BR></PRE>
 		<H4><A href="#idx:Bin">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
+	<DIV id="Bin:Id" style="display:none">
+		<H3>Bin:Id</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Id</U> = Bin:Id()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Id</U> <I>(integer)</I> = The id number of the Bin object.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the unique id of the Bin object&#x2e;<BR></PRE>
+		<H4><A href="#idx:Bin">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
 	<DIV id="Bin:Insert" style="display:none">
 		<H3>Bin:Insert</H3>
 		<H4>Syntax:-</H4>
@@ -2858,7 +2938,17 @@
 	<DIV id="Clip:Id" style="display:none">
 		<H3>Clip:Id</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Identifier</U> = Clip:Id()</PRE>
+		<PRE><U>Id</U> = Clip:Id()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Id</U> <I>(integer)</I> = The id number of the Clip object.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the unique id of the Clip object&#x2e;<BR></PRE>
+		<H4><A href="#idx:Clip">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Clip:Name" style="display:none">
+		<H3>Clip:Name</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Identifier</U> = Clip:Name()</PRE>
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Identifier</U> <I>(string )</I> =  The identifier given at creation.<BR></PRE>
 		<H4>Synopsis:-</H4>
@@ -2912,9 +3002,9 @@
 		<H4>Syntax:-</H4>
 		<PRE><U>Id</U> = Command:Id()</PRE>
 		<H4>Return Parameters:-</H4>
-		<PRE><U>Id</U> <I>(integer)</I> = The id of the command.<BR></PRE>
+		<PRE><U>Id</U> <I>(integer)</I> = The id of the Command object.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Returns the unique id of the command&#x2e;<BR></PRE>
+		<PRE>Returns the unique id of the Command object&#x2e;<BR></PRE>
 		<H4><A href="#idx:Command">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Command:Name" style="display:none">
@@ -3860,9 +3950,9 @@
 		<H4>Syntax:-</H4>
 		<PRE>Display.SetMatrix(<I><U>Width</U>, <U>Height</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Width</U> <I>(number)</I> = Ortho width.<BR><U>Height</U> <I>(number)</I> = Ortho height.<BR></PRE>
+		<PRE><U>Width</U> <I>(number)</I> = Matrix width.<BR><U>Height</U> <I>(number)</I> = Matrix height.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Sets the aspect &#x28;ortho&#x29; size of the viewport&#x2e; Recommended to use a 4&#x3a;3 aspect ratio to allow the automatic aspect ratio feature to work properly for widescreen window sizes&#x2e;<BR></PRE>
+		<PRE>Sets the 2D aspect size of the matrix&#x2e; Recommended to use a 4&#x3a;3 aspect ratio to allow the automatic aspect ratio feature to work properly for widescreen window sizes&#x2e;<BR></PRE>
 		<H4><A href="#idx:Display">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Display.SetPos" style="display:none">
@@ -4040,9 +4130,11 @@
 	<DIV id="Fbo.IsDrawing" style="display:none">
 		<H3>Fbo.IsDrawing</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Fbo.IsDrawing()</PRE>
+		<PRE><U>State</U> = Fbo.IsDrawing()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>State</U> <I>(boolean)</I> = Is the main fbo set to redraw?<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>&#x3c; State&#x3a;boolean&#x3d;Is the main fbo set to redraw&#x3f; Returns if the main fbo is set to redraw&#x2e;<BR></PRE>
+		<PRE>Returns if the main fbo is set to redraw&#x2e;<BR></PRE>
 		<H4><A href="#idx:Fbo">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Fbo.Main" style="display:none">
@@ -4088,7 +4180,7 @@
 		<H4>Syntax:-</H4>
 		<PRE>Fbo:Blit()</PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Blits the SPECIFIED fbo to the currently ACTIVE fbo&#x2e; This just adds to the active FBO drawing arrays and doesn&#x27;t actually render until the active fbo is finished and rendered&#x2e; The currently stored vertex&#x2c; texcoord&#x2c; colour and ortho values are used&#x2e;<BR></PRE>
+		<PRE>Blits the SPECIFIED fbo to the currently ACTIVE fbo&#x2e; This just adds to the active FBO drawing arrays and doesn&#x27;t actually render until the active fbo is finished and rendered&#x2e; The currently stored vertex&#x2c; texcoord&#x2c; colour and matrix values are used&#x2e;<BR></PRE>
 		<H4><A href="#idx:Fbo">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Fbo:BlitT" style="display:none">
@@ -4098,7 +4190,7 @@
 		<H4>Function Parameters:-</H4>
 		<PRE><U>TriIndex</U> <I>(integer)</I> = Triangle index. Triangle #1 (zero) or triangle #2 (one).<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Blits the SPECIFIED triangle of the SPECIFIED fbo to the currently ACTIVE fbo&#x2e; This just adds to the active FBO drawing arrays and doesn&#x27;t actually render until the active fbo is finished and rendered&#x2e; The currently stored vertex&#x2c; texcoord&#x2c; colour and ortho values are used&#x2e;<BR></PRE>
+		<PRE>Blits the SPECIFIED triangle of the SPECIFIED fbo to the currently ACTIVE fbo&#x2e; This just adds to the active FBO drawing arrays and doesn&#x27;t actually render until the active fbo is finished and rendered&#x2e; The currently stored vertex&#x2c; texcoord&#x2c; colour and matrix values are used&#x2e;<BR></PRE>
 		<H4><A href="#idx:Fbo">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Fbo:Destroy" style="display:none">
@@ -4107,16 +4199,6 @@
 		<PRE>Fbo:Destroy()</PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Destroys the FBO and frees all the memory associated with it&#x2e; The OpenGL handles and VRAM allocated by it are freed after the main FBO has has been rendered&#x2e; The object will no longer be useable after this call and an error will be generated if accessed&#x2e;<BR></PRE>
-		<H4><A href="#idx:Fbo">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Fbo:Dump" style="display:none">
-		<H3>Fbo:Dump</H3>
-		<H4>Syntax:-</H4>
-		<PRE><U>Dest</U>, <U>File</U> = Fbo:Dump()</PRE>
-		<H4>Return Parameters:-</H4>
-		<PRE><U>Dest</U> <I>(Fbo)</I> = The frame buffer to dump.<BR><U>File</U> <I>(string)</I> = (Optional) File to save to.<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Takes a screenshot of the specified FBO&#x2e; You must completely omit the &#x27;file&#x27; parameter to use an engine generated file&#x2e;<BR></PRE>
 		<H4><A href="#idx:Fbo">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Fbo:Finish" style="display:none">
@@ -4137,6 +4219,16 @@
 		<PRE>Returns the number of floating point numbers currently entered into the display list&#x2e;<BR></PRE>
 		<H4><A href="#idx:Fbo">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
+	<DIV id="Fbo:GetId" style="display:none">
+		<H3>Fbo:GetId</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Id</U> = Fbo:GetId()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Id</U> <I>(integer)</I> = The id number of the Fbo object.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the unique id of the Fbo object&#x2e;<BR></PRE>
+		<H4><A href="#idx:Fbo">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
 	<DIV id="Fbo:GetLFloatCount" style="display:none">
 		<H3>Fbo:GetLFloatCount</H3>
 		<H4>Syntax:-</H4>
@@ -4150,11 +4242,21 @@
 	<DIV id="Fbo:GetMatrix" style="display:none">
 		<H3>Fbo:GetMatrix</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Width</U>, <U>Height</U>, <U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U>, <U>OrthoWidth</U>, <U>OrthoHeight</U> = Fbo:GetMatrix()</PRE>
+		<PRE><U>Width</U>, <U>Height</U>, <U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U>, <U>MatrixWidth</U>, <U>MatrixHeight</U> = Fbo:GetMatrix()</PRE>
 		<H4>Return Parameters:-</H4>
-		<PRE><U>Width</U> <I>(number)</I> = Total count of horizontal viewable pixels.<BR><U>Height</U> <I>(number)</I> = Total count of vertical viewable pixels.<BR><U>Left</U> <I>(number)</I> = Minimum viewable matrix X position.<BR><U>Top</U> <I>(number)</I> = Minimum viewable matrix Y position.<BR><U>Right</U> <I>(number)</I> = Maximum viewable matrix X position.<BR><U>Bottom</U> <I>(number)</I> = Maximum viewable matrix Y position.<BR><U>OrthoWidth</U> <I>(number)</I> = Current requested ortho width.<BR><U>OrthoHeight</U> <I>(number)</I> = Current requested ortho height.<BR></PRE>
+		<PRE><U>Width</U> <I>(number)</I> = Total count of horizontal viewable pixels.<BR><U>Height</U> <I>(number)</I> = Total count of vertical viewable pixels.<BR><U>Left</U> <I>(number)</I> = Minimum viewable matrix X position.<BR><U>Top</U> <I>(number)</I> = Minimum viewable matrix Y position.<BR><U>Right</U> <I>(number)</I> = Maximum viewable matrix X position.<BR><U>Bottom</U> <I>(number)</I> = Maximum viewable matrix Y position.<BR><U>MatrixWidth</U> <I>(number)</I> = Current requested matrix width.<BR><U>MatrixHeight</U> <I>(number)</I> = Current requested matrix height.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Returns the current matrix information for the specified fbo&#x2e;<BR></PRE>
+		<H4><A href="#idx:Fbo">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Fbo:GetName" style="display:none">
+		<H3>Fbo:GetName</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Id</U> = Fbo:GetName()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Id</U> <I>(string)</I> = The video identifier<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the identifier of the Fbo object&#x2e;<BR></PRE>
 		<H4><A href="#idx:Fbo">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Fbo:IsFinished" style="display:none">
@@ -4227,14 +4329,14 @@
 		<PRE>Sets the texture filtering id for the fbo texture&#x2e; Mipmaps are automatically generated if a mipmapping id is selected&#x2e;<BR>&#x28;Magnification &#x2f; Minification&#x29;&#x2e; See &#x27;Texture&#x2e;Filters&#x28;&#x29;&#x27; for more info&#x2e;<BR></PRE>
 		<H4><A href="#idx:Fbo">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Fbo:SetOrtho" style="display:none">
-		<H3>Fbo:SetOrtho</H3>
+	<DIV id="Fbo:SetMatrix" style="display:none">
+		<H3>Fbo:SetMatrix</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Fbo:SetOrtho(<I><U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U></I>)</PRE>
+		<PRE>Fbo:SetMatrix(<I><U>Left</U>, <U>Top</U>, <U>Right</U>, <U>Bottom</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
 		<PRE><U>Left</U> <I>(number)</I> = The left co-ordinate.<BR><U>Top</U> <I>(number)</I> = The top co-ordinate.<BR><U>Right</U> <I>(number)</I> = The right co-ordinate.<BR><U>Bottom</U> <I>(number)</I> = The bottom co-ordinate.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Sets the ortho of the specified fbo&#x2c; meaning&#x2c; these are the bounds of where you can draw&#x2e; Same as glOrtho&#x28;&#x29;&#x2e;<BR>See&#x3a; https&#x3a;&#x2f;&#x2f;www&#x2e;opengl&#x2e;org&#x2f;sdk&#x2f;docs&#x2f;man2&#x2f;xhtml&#x2f;glOrtho&#x2e;xml </PRE>
+		<PRE>Sets the matrix of the specified fbo&#x2c; meaning&#x2c; these are the bounds of where you can draw&#x2e; Same as glOrtho&#x28;&#x29;&#x2e;<BR>See&#x3a; https&#x3a;&#x2f;&#x2f;www&#x2e;opengl&#x2e;org&#x2f;sdk&#x2f;docs&#x2f;man2&#x2f;xhtml&#x2f;glOrtho&#x2e;xml </PRE>
 		<H4><A href="#idx:Fbo">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Fbo:SetTCLTRB" style="display:none">
@@ -4703,6 +4805,16 @@
 		<PRE>By default writing to a file stream is buffered&#x2e; This calls fflush&#x28;&#x29; and makes sure that any unwritten data to disk is written straight away&#x2e;<BR></PRE>
 		<H4><A href="#idx:File">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
+	<DIV id="File:Id" style="display:none">
+		<H3>File:Id</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Id</U> = File:Id()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Id</U> <I>(integer)</I> = The id number of the File object.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the unique id of the File object&#x2e;<BR></PRE>
+		<H4><A href="#idx:File">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
 	<DIV id="File:Name" style="display:none">
 		<H3>File:Name</H3>
 		<H4>Syntax:-</H4>
@@ -4903,6 +5015,16 @@
 		<PRE><U>Height</U> <I>(integer)</I> = The tile height of the font.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Returns height of the font tile&#x2e; If this font is a free&#x2d;type font&#x2c; this will just be the height of the white&#x2d;space character only&#x2e;<BR></PRE>
+		<H4><A href="#idx:Font">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Font:GetId" style="display:none">
+		<H3>Font:GetId</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Id</U> = Font:GetId()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Id</U> <I>(integer)</I> = The id number of the Font object.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the unique id of the Font object&#x2e;<BR></PRE>
 		<H4><A href="#idx:Font">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Font:GetName" style="display:none">
@@ -5419,6 +5541,16 @@
 		<PRE>Returns the internal number of glyphs supported by this freetype font&#x2e;<BR></PRE>
 		<H4><A href="#idx:Ftf">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
+	<DIV id="Ftf:Id" style="display:none">
+		<H3>Ftf:Id</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Id</U> = Ftf:Id()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Id</U> <I>(integer)</I> = The id number of the Ftf object.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the unique id of the Ftf object&#x2e;<BR></PRE>
+		<H4><A href="#idx:Ftf">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
 	<DIV id="Ftf:Name" style="display:none">
 		<H3>Ftf:Name</H3>
 		<H4>Syntax:-</H4>
@@ -5510,13 +5642,13 @@
 	<DIV id="Image.Raw" style="display:none">
 		<H3>Image.Raw</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Handle</U> = Image.Raw(<I><U>Data</U></I>)</PRE>
+		<PRE><U>Handle</U> = Image.Raw(<I><U>Data</U>, <U>Width</U>, <U>Height</U>, <U>Bits</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Data</U> <I>(Asset)</I> = The data of the image to load<BR></PRE>
+		<PRE><U>Data</U> <I>(Asset)</I> = The data of the image to load which is consumed.<BR><U>Width</U> <I>(integer)</I> = The width of the image being sent (1-65535)<BR><U>Height</U> <I>(integer)</I> = The height of the image being sent (1-65535)<BR><U>Bits</U> <I>(integer)</I> = Bits per pixel of the image being sent (1,8,16,24 or 32)<BR></PRE>
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Handle</U> <I>(Image)</I> = The image object<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Loads a image on the main thread from the specified array object&#x2e;<BR>Returns the image object&#x2e;<BR></PRE>
+		<PRE>Loads a image on the main thread from the specified array object&#x2e;<BR></PRE>
 		<H4><A href="#idx:Image">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Image.WaitAsync" style="display:none">
@@ -5553,6 +5685,16 @@
 		<PRE><U>Height</U> <I>(integer)</I> = The height of the image in pixels<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Returns the height if the image&#x2e;<BR></PRE>
+		<H4><A href="#idx:Image">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Image:Id" style="display:none">
+		<H3>Image:Id</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Id</U> = Image:Id()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Id</U> <I>(integer)</I> = The id number of the Image object.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the unique id of the Image object&#x2e;<BR></PRE>
 		<H4><A href="#idx:Image">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Image:Name" style="display:none">
@@ -5593,6 +5735,16 @@
 		<PRE><U>Codes</U> <I>(table)</I> = The table of key/value pairs of available flags<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Returns the image plugins available&#x2e; Returned as key&#x2f;value pairs&#x2e; The value is a unique identifier to the flag&#x2e;<BR></PRE>
+		<H4><A href="#idx:Image">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Image.Formats" style="display:none">
+		<H3>Image.Formats</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Codes</U> = Image.Formats</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Codes</U> <I>(table)</I> = The table of key/value pairs of available texture formats<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the texture formats supported&#x2e;<BR></PRE>
 		<H4><A href="#idx:Image">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Info.CPU" style="display:none">
@@ -5858,7 +6010,7 @@
 		<H4>Function Parameters:-</H4>
 		<PRE><U>X</U> <I>(integer)</I> = The X co-ordinate of the mouse cursor.<BR><U>Y</U> <I>(integer)</I> = The Y co-ordinate of the mouse cursor.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Sets the position of the mouse cursor relative to the top&#x2d;left of the main FBO ortho&#x2c; meaning X could be negative&#x2e;<BR></PRE>
+		<PRE>Sets the position of the mouse cursor relative to the top&#x2d;left of the main FBO matrix&#x2c; meaning X could be negative&#x2e;<BR></PRE>
 		<H4><A href="#idx:Input">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Input.GetJoyAxis" style="display:none">
@@ -6076,7 +6228,7 @@
 		<H4>Function Parameters:-</H4>
 		<PRE><U>X</U> <I>(integer)</I> = The X co-ordinate of the mouse cursor.<BR><U>Y</U> <I>(integer)</I> = The Y co-ordinate of the mouse cursor.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Sets the position of the mouse cursor relative to the top&#x2d;left of the main FBO ortho&#x2c; meaning X could be negative&#x2e;<BR></PRE>
+		<PRE>Sets the position of the mouse cursor relative to the top&#x2d;left of the main FBO matrix&#x2c; meaning X could be negative&#x2e;<BR></PRE>
 		<H4><A href="#idx:Input">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Input.SetJoyAxisDeadZones" style="display:none">
@@ -6219,6 +6371,16 @@
 		<PRE>Destroys the json object and frees all the memory associated with it&#x2e; The object will no longer be useable after this call and an error will be generated if accessed&#x2e;<BR></PRE>
 		<H4><A href="#idx:Json">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
+	<DIV id="Json:Id" style="display:none">
+		<H3>Json:Id</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Id</U> = Json:Id()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Id</U> <I>(integer)</I> = The id number of the Json object.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the unique id of the Json object&#x2e;<BR></PRE>
+		<H4><A href="#idx:Json">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
 	<DIV id="Json:Name" style="display:none">
 		<H3>Json:Name</H3>
 		<H4>Syntax:-</H4>
@@ -6298,9 +6460,9 @@
 	<DIV id="Mask.CreateBlank" style="display:none">
 		<H3>Mask.CreateBlank</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Handle</U> = Mask.CreateBlank(<I><U>Width</U>, <U>Height</U></I>)</PRE>
+		<PRE><U>Handle</U> = Mask.CreateBlank(<I><U>Identifier</U>, <U>Width</U>, <U>Height</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Width</U> <I>(integer)</I> = The width of the new mask.<BR><U>Height</U> <I>(integer)</I> = The height of the new mask.<BR></PRE>
+		<PRE><U>Identifier</U> <I>(string)</I> = The identifier of the mask.<BR><U>Width</U> <I>(integer)</I> = The width of the new mask.<BR><U>Height</U> <I>(integer)</I> = The height of the new mask.<BR></PRE>
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Handle</U> <I>(Mask)</I> = The handle of the new mask created.<BR></PRE>
 		<H4>Synopsis:-</H4>
@@ -6310,9 +6472,9 @@
 	<DIV id="Mask.CreateNew" style="display:none">
 		<H3>Mask.CreateNew</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Handle</U> = Mask.CreateNew(<I><U>Width</U>, <U>Height</U></I>)</PRE>
+		<PRE><U>Handle</U> = Mask.CreateNew(<I><U>Identifier</U>, <U>Width</U>, <U>Height</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Width</U> <I>(integer)</I> = The width of the new mask.<BR><U>Height</U> <I>(integer)</I> = The height of the new mask.<BR></PRE>
+		<PRE><U>Identifier</U> <I>(string)</I> = The identifier of the mask.<BR><U>Width</U> <I>(integer)</I> = The width of the new mask.<BR><U>Height</U> <I>(integer)</I> = The height of the new mask.<BR></PRE>
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Handle</U> <I>(Mask)</I> = The handle of the new mask created.<BR></PRE>
 		<H4>Synopsis:-</H4>
@@ -6385,6 +6547,16 @@
 		<PRE><U>Height</U> <I>(integer)</I> = Height of each tile in sub-masks.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Returns the height of each sub&#x2d;mask in the mask&#x2e;<BR></PRE>
+		<H4><A href="#idx:Mask">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Mask:Id" style="display:none">
+		<H3>Mask:Id</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Id</U> = Mask:Id()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Id</U> <I>(integer)</I> = The id number of the Mask object.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the unique id of the Mask object&#x2e;<BR></PRE>
 		<H4><A href="#idx:Mask">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Mask:IsCollide" style="display:none">
@@ -6615,6 +6787,16 @@
 		<PRE><U>Green</U> <I>(integer)</I> = The green intensity integer (0-255).<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Use this function to get the green palette entry&#x2e; This function is mainly for convenience only and has slightly more overhead than with &#x3a;GetG&#x28;&#x29; as the palette values have to be stored as GLfloats in the GPU and thus extra calculations are required as a result&#x2e;<BR></PRE>
+		<H4><A href="#idx:Palette">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Palette:GetId" style="display:none">
+		<H3>Palette:GetId</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Id</U> = Palette:GetId()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Id</U> <I>(integer)</I> = The id number of the Palette object.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the unique id of the Palette object&#x2e;<BR></PRE>
 		<H4><A href="#idx:Palette">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Palette:GetName" style="display:none">
@@ -6877,6 +7059,16 @@
 		<PRE>Destroys the pcm object and frees all the memory associated with it&#x2e; The object will no longer be useable after this call and an error will be generated if accessed&#x2e;<BR></PRE>
 		<H4><A href="#idx:Pcm">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
+	<DIV id="Pcm:Id" style="display:none">
+		<H3>Pcm:Id</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Id</U> = Pcm:Id()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Id</U> <I>(integer)</I> = The id number of the PCM object.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the unique id of the PCM object&#x2e;<BR></PRE>
+		<H4><A href="#idx:Pcm">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
 	<DIV id="Pcm:Name" style="display:none">
 		<H3>Pcm:Name</H3>
 		<H4>Syntax:-</H4>
@@ -6896,6 +7088,56 @@
 		<H4>Synopsis:-</H4>
 		<PRE>Returns the pcm flags available&#x2e; Returned as key&#x2f;value pairs&#x2e; The value is a unique identifier to the flag&#x2e;<BR></PRE>
 		<H4><A href="#idx:Pcm">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="SShot.Fbo" style="display:none">
+		<H3>SShot.Fbo</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Object</U> = SShot.Fbo(<I><U>Dest</U>, <U>File</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Dest</U> <I>(Fbo)</I> = The frame buffer to dump.<BR><U>File</U> <I>(string)</I> = (Optional) File to save to.<BR></PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Object</U> <I>(SShot)</I> = The screenshot object created.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Takes a screenshot of the specified FBO&#x2e; You must completely omit the &#x27;file&#x27; parameter to use an engine generated file&#x2e;<BR></PRE>
+		<H4><A href="#idx:SShot">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="SShot.Screen" style="display:none">
+		<H3>SShot.Screen</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Object</U> = SShot.Screen()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Object</U> <I>(SShot)</I> = The screenshot object created.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Takes a screenshot of the screen&#x2e;<BR></PRE>
+		<H4><A href="#idx:SShot">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="SShot:Destroy" style="display:none">
+		<H3>SShot:Destroy</H3>
+		<H4>Syntax:-</H4>
+		<PRE>SShot:Destroy()</PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Destroys the specified screenshot object&#x2e;<BR></PRE>
+		<H4><A href="#idx:SShot">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="SShot:Id" style="display:none">
+		<H3>SShot:Id</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Id</U> = SShot:Id()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Id</U> <I>(integer)</I> = The id number of the SShot object.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the unique id of the SShot object&#x2e;<BR></PRE>
+		<H4><A href="#idx:SShot">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="SShot:Name" style="display:none">
+		<H3>SShot:Name</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Name</U> = SShot:Name()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Name</U> <I>(string)</I> = The name of the SShot object.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the filename generated on this screenshot object&#x2e;<BR></PRE>
+		<H4><A href="#idx:SShot">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Sample.Create" style="display:none">
 		<H3>Sample.Create</H3>
@@ -6925,6 +7167,16 @@
 		<PRE><U>Duration</U> <I>(number)</I> = Duration of buffer in seconds<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Returns the duration of the buffer in seconds </PRE>
+		<H4><A href="#idx:Sample">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Sample:Id" style="display:none">
+		<H3>Sample:Id</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Id</U> = Sample:Id()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Id</U> <I>(integer)</I> = The id number of the Sample object.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the unique id of the Sample object&#x2e;<BR></PRE>
 		<H4><A href="#idx:Sample">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Sample:Name" style="display:none">
@@ -7216,9 +7468,9 @@
 		<H4>Syntax:-</H4>
 		<PRE><U>Id</U> = Socket:GetId()</PRE>
 		<H4>Return Parameters:-</H4>
-		<PRE><U>Id</U> <I>(integer)</I> = The id of the socket.<BR></PRE>
+		<PRE><U>Id</U> <I>(integer)</I> = The id of the Socket object.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Returns the unique id of the socket&#x2e;<BR></PRE>
+		<PRE>Returns the unique id of the Socket object&#x2e;<BR></PRE>
 		<H4><A href="#idx:Socket">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Socket:GetRXBytes" style="display:none">
@@ -7467,6 +7719,16 @@
 		<PRE><U>Gain</U> <I>(number)</I> = The current gain value.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Returns the current gain of the source&#x2e;<BR></PRE>
+		<H4><A href="#idx:Source">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Source:GetId" style="display:none">
+		<H3>Source:GetId</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Id</U> = Source:GetId()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Id</U> <I>(integer)</I> = The id number of the Source object.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the unique id of the Source object&#x2e;<BR></PRE>
 		<H4><A href="#idx:Source">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Source:GetLooping" style="display:none">
@@ -7937,6 +8199,26 @@
 		<PRE>Returns the number of headers in the table </PRE>
 		<H4><A href="#idx:Stat">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
+	<DIV id="Stat:Id" style="display:none">
+		<H3>Stat:Id</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Id</U> = Stat:Id()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Id</U> <I>(integer)</I> = The id number of the Stat object.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the unique id of the Stat object&#x2e;<BR></PRE>
+		<H4><A href="#idx:Stat">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Stat:Name" style="display:none">
+		<H3>Stat:Name</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Id</U> = Stat:Name()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Id</U> <I>(string)</I> = The stat identifier<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the identifier of the Stat object&#x2e;<BR></PRE>
+		<H4><A href="#idx:Stat">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
 	<DIV id="Stat:Reserve" style="display:none">
 		<H3>Stat:Reserve</H3>
 		<H4>Syntax:-</H4>
@@ -8083,6 +8365,16 @@
 		<PRE><U>Duration</U> <I>(number)</I> = Elapsed time in seconds<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Returns the time elapsed of the stream&#x2e; This is the position of the codec and not the actual playback position&#x2e;<BR></PRE>
+		<H4><A href="#idx:Stream">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Stream:GetId" style="display:none">
+		<H3>Stream:GetId</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Id</U> = Stream:GetId()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Id</U> <I>(integer)</I> = The id number of the Stream object.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the unique id of the Stream object&#x2e;<BR></PRE>
 		<H4><A href="#idx:Stream">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Stream:GetLoop" style="display:none">
@@ -8671,6 +8963,16 @@
 		<PRE><U>Height</U> <I>(integer)</I> = The handle of the new mask created.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Returns height of texture&#x2e;<BR></PRE>
+		<H4><A href="#idx:Texture">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Texture:GetId" style="display:none">
+		<H3>Texture:GetId</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Id</U> = Texture:GetId()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Id</U> <I>(integer)</I> = The id number of the Texture object.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the unique id of the Texture object&#x2e;<BR></PRE>
 		<H4><A href="#idx:Texture">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Texture:GetName" style="display:none">
@@ -9932,9 +10234,9 @@
 		<H4>Syntax:-</H4>
 		<PRE><U>Id</U> = Variable:Id()</PRE>
 		<H4>Return Parameters:-</H4>
-		<PRE><U>Id</U> <I>(integer)</I> = The id of the variable.<BR></PRE>
+		<PRE><U>Id</U> <I>(integer)</I> = The id of the Variable object.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Returns the unique id of the variable&#x2e;<BR></PRE>
+		<PRE>Returns the unique id of the Variable object&#x2e;<BR></PRE>
 		<H4><A href="#idx:Variable">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Variable:Name" style="display:none">
@@ -10066,7 +10368,7 @@
 		<H4>Syntax:-</H4>
 		<PRE>Video:Blit()</PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Blits the specified video texture frame to the currently ACTIVE fbo&#x2e; This just adds to the active FBO drawing arrays and doesn&#x27;t actually render until the active fbo is finished and rendered&#x2e; The currently stored vertex&#x2c; texcoord&#x2c; colour and ortho values are used&#x2e;<BR></PRE>
+		<PRE>Blits the specified video texture frame to the currently ACTIVE fbo&#x2e; This just adds to the active FBO drawing arrays and doesn&#x27;t actually render until the active fbo is finished and rendered&#x2e; The currently stored vertex&#x2c; texcoord&#x2c; colour and matrix values are used&#x2e;<BR></PRE>
 		<H4><A href="#idx:Video">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Video:BlitT" style="display:none">
@@ -10074,7 +10376,7 @@
 		<H4>Syntax:-</H4>
 		<PRE>Video:BlitT()</PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>TriIndex&#x3a;integer&#x3d;The specified triangle id&#x2e;<BR>Blits the specified video texture frame to the currently ACTIVE fbo&#x2e; This just adds to the active FBO drawing arrays and doesn&#x27;t actually render until the active fbo is finished and rendered&#x2e; The currently stored vertex&#x2c; texcoord&#x2c; colour and ortho values are used&#x2e;<BR></PRE>
+		<PRE>TriIndex&#x3a;integer&#x3d;The specified triangle id&#x2e;<BR>Blits the specified video texture frame to the currently ACTIVE fbo&#x2e; This just adds to the active FBO drawing arrays and doesn&#x27;t actually render until the active fbo is finished and rendered&#x2e; The currently stored vertex&#x2c; texcoord&#x2c; colour and matrix values are used&#x2e;<BR></PRE>
 		<H4><A href="#idx:Video">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Video:Destroy" style="display:none">
@@ -10153,6 +10455,16 @@
 		<PRE><U>Width</U> <I>(integer)</I> = The height of the video<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Returns the height of the video </PRE>
+		<H4><A href="#idx:Video">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Video:GetId" style="display:none">
+		<H3>Video:GetId</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Id</U> = Video:GetId()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Id</U> <I>(integer)</I> = The id number of the Video object.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the unique id of the Video object&#x2e;<BR></PRE>
 		<H4><A href="#idx:Video">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Video:GetLoop" style="display:none">
@@ -10462,9 +10774,9 @@
 		<PRE>Flushes the console output buffer&#x2e;<BR></PRE>
 		<H4><A href="#idx.cc">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="cc.cmds [partial]" style="display:none">
-		<H3>cmds [partial]</H3>
-		<PRE>Shows all the available console commands&#x2e; You can optionally specify [partial] to partially match the beginning of each command&#x2e;<BR></PRE>
+	<DIV id="cc.cmds" style="display:none">
+		<H3>cmds</H3>
+		<PRE>Shows all the available console commands&#x2e; You can optionally specify an argument to partially match the beginning of each command&#x2e;<BR></PRE>
 		<H4><A href="#idx.cc">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="cc.con" style="display:none">
@@ -10634,7 +10946,7 @@
 	</DIV>
 	<DIV id="cc.lpause" style="display:none">
 		<H3>lpause</H3>
-		<PRE>No explanation yet&#x2e;<BR></PRE>
+		<PRE>Requests to pause the engine&#x2e;<BR></PRE>
 		<H4><A href="#idx.cc">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="cc.lreset" style="display:none">
@@ -11532,6 +11844,16 @@
 		<PRE>Actually loads cvars from the configuration database&#x2e;<BR></PRE>
 		<H4><A href="#idx.cv">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
+	<DIV id="cv.sql_retrycount" style="display:none">
+		<H3>sql_retrycount</H3>
+		<PRE>Specifies the number of times a Sql query can be retried before giving up&#x2e; Set to &#x2d;1 for infinite&#x2e; The default value is 1000&#x2e;<BR></PRE>
+		<H4><A href="#idx.cv">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="cv.sql_retrysuspend" style="display:none">
+		<H3>sql_retrysuspend</H3>
+		<PRE>Specifies the number of milliseconds to suspend before retrying the operation&#x2e; The default value is 1 and the the maximum value is 1000 for safety reasons&#x2e; Setting to zero disables but yields the calling thread&#x2e;<BR></PRE>
+		<H4><A href="#idx.cv">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
 	<DIV id="cv.sql_synchronous" style="display:none">
 		<H3>sql_synchronous</H3>
 		<PRE>Performs &#x27;pragma synchronous x&#x27; when the database is opened to this value&#x2e;<BR></PRE>
@@ -11858,6 +12180,6 @@
 		<H4><A href="#idx.cv">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<ADDRESS>Copyright &copy; 2024 MS-Design, All Rights Reserved.<BR>
-	This document was generated at Mon Apr 01 00:40:01 2024 +0100</ADDRESS>
+	This document was generated at Fri Jun 14 16:50:20 2024 +0100</ADDRESS>
 </BODY>
 </HTML>

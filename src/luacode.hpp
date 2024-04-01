@@ -141,32 +141,31 @@ static LuaCompResult LuaCodeCompileBuffer(lua_State*const lS,
   const unsigned int uiCRC = CrcCalc(cpBuf, stSize);
   // Check if we have cached this in the sql database and if we have?
   if(cSql->ExecuteAndSuccess(StrFormat("SELECT `$` from `$` WHERE R=? AND C=?",
-    cSql->strCodeColumn, cSql->strLuaCacheTable),
-      { Sql::Cell(strRef), Sql::Cell(uiCRC) }))
+    cSql->strvLCCodeColumn, cSql->strvLCTable), strRef, uiCRC))
   { // Get records and if we have results?
-    const Sql::Result &vData = cSql->GetRecords();
-    if(!vData.empty())
+    const SqlResult &srData = cSql->GetRecords();
+    if(!srData.empty())
     { // If we should show the rows affected. This is sloppy but sqllite
       // doesn't support resetting sqlite3_changes result yet :(
-      const Sql::Records &sslPairs = *vData.cbegin();
-      const Sql::RecordsIt smmI{ sslPairs.find("D") };
-      if(smmI != sslPairs.cend())
+      const SqlRecordsMap &srmRef = *srData.cbegin();
+      const SqlRecordsMapConstIt srmciIt{ srmRef.find("D") };
+      if(srmciIt != srmRef.cend())
       { // Get value and if its a blob? Set new buffer to load
-        const Sql::DataListItem &mbO = smmI->second;
-        if(mbO.iT == SQLITE_BLOB)
+        const SqlData &sdRef = srmciIt->second;
+        if(sdRef.iType == SQLITE_BLOB)
         { // Cache is valid
           cLog->LogDebugExSafe(
             "LuaCode will use cached version of '$'[$]($$)!",
               strRef, stSize, hex, uiCRC);
           // Do compile the buffer
           LuaCodeDoCompileBuffer(lS,
-            mbO.MemPtr<char>(), mbO.MemSize(), strRef);
+            sdRef.MemPtr<char>(), sdRef.MemSize(), strRef);
           // Return that we used the cached version
           return LCR_CACHED;
         } // Invalid type
         else cLog->LogWarningExSafe(
           "LuaCode will recompile '$'[$]($$$) as it has a bad type of $!",
-            strRef, stSize, hex, uiCRC, dec, mbO.iT);
+            strRef, stSize, hex, uiCRC, dec, sdRef.iType);
       } // Invalid keyname?
       else cLog->LogWarningExSafe(
         "LuaCode will recompile '$'[$]($$) as it has a bad keyname!",
@@ -175,68 +174,66 @@ static LuaCompResult LuaCodeCompileBuffer(lua_State*const lS,
     else cLog->LogDebugExSafe(
       "LuaCode will compile '$'[$]($$) for the first time!",
         strRef, stSize, hex, uiCRC);
-  } // Error reading database
-  else
-  { // Try to rebuild table
-    cSql->LuaCacheDropTable();
-    cSql->LuaCacheCreateTable();
-  } // Do compile the buffer
+  } // Error reading database so try to rebuild table
+  else cSql->LuaCacheRebuildTable();
+  // Do compile the buffer
   LuaCodeDoCompileBuffer(lS, cpBuf, stSize, strRef);
   // Compile the function
   Memory mbData{ LuaCodeCompileFunction(lS, lcSetting == LCC_FULL) };
   // Send to sql database and return if succeeded
   if(cSql->ExecuteAndSuccess(StrFormat(
-       "INSERT or REPLACE into `$`(`$`,`$`,`$`,`$`) VALUES(?,?,?,?)",
-       cSql->strLuaCacheTable, cSql->strCRCColumn, cSql->strTimeColumn,
-       cSql->strRefColumn, cSql->strCodeColumn),
-    { Sql::Cell(uiCRC), Sql::Cell(cmSys.GetTimeNS<sqlite3_int64>()),
-      Sql::Cell(strRef), Sql::Cell(mbData) })) return LCR_RECOMPILE;
+         "INSERT or REPLACE into `$`(`$`,`$`,`$`,`$`) VALUES(?,?,?,?)",
+         cSql->strvLCTable, cSql->strvLCCRCColumn, cSql->strvLCTimeColumn,
+         cSql->strvLCRefColumn, cSql->strvLCCodeColumn),
+       uiCRC, cmSys.GetTimeNS<sqlite3_int64>(), strRef, mbData))
+    return LCR_RECOMPILE;
   // Show error
   cLog->LogWarningExSafe(
     "LuaCode failed to store cache for '$' because $ ($)!",
     strRef, cSql->GetErrorStr(), cSql->GetError());
   // Try to rebuild table
-  cSql->LuaCacheDropTable();
-  cSql->LuaCacheCreateTable();
+  cSql->LuaCacheRebuildTable();
   // Return compiled but not stored
   return LCR_DBERR;
 }
 /* -- Compile a string ----------------------------------------------------- */
 static LuaCompResult LuaCodeCompileString(lua_State*const lS,
   const string &strBuf, const string &strRef)
-{ return LuaCodeCompileBuffer(lS, strBuf.data(), strBuf.length(), strRef); }
+    { return LuaCodeCompileBuffer(lS,
+        strBuf.data(), strBuf.length(), strRef); }
 /* -- Executes the function and returns the compilation result ------------- */
 static LuaCompResult LuaCodeExecCallRet(lua_State*const lS,
   const LuaCompResult lcrRes, const int iRet)
-{ LuaUtilCallFunc(lS, iRet); return lcrRes; }
+    { LuaUtilCallFunc(lS, iRet); return lcrRes; }
 /* -- Compile a memory block ----------------------------------------------- */
 static LuaCompResult LuaCodeCompileBlock(lua_State*const lS,
   const MemConst &mcSrc, const string &strRef)
-{ return LuaCodeCompileBuffer(lS,
-    mcSrc.MemPtr<char>(), mcSrc.MemSize(), strRef); }
+    { return LuaCodeCompileBuffer(lS,
+        mcSrc.MemPtr<char>(), mcSrc.MemSize(), strRef); }
 /* -- Execute specified block ---------------------------------------------- */
 static LuaCompResult LuaCodeExecuteBlock(lua_State*const lS,
   const MemConst &mcSrc, const int iRet, const string &strRef)
-{ return LuaCodeExecCallRet(lS,
-    LuaCodeCompileBlock(lS, mcSrc, strRef), iRet); }
+    { return LuaCodeExecCallRet(lS,
+        LuaCodeCompileBlock(lS, mcSrc, strRef), iRet); }
 /* -- Execute specified string in unprotected ------------------------------ */
 static LuaCompResult LuaCodeExecuteString(lua_State*const lS,
   const string &strCode, const int iRet, const string &strRef)
-{ return LuaCodeExecCallRet(lS,
-    LuaCodeCompileString(lS, strCode, strRef), iRet); }
+    { return LuaCodeExecCallRet(lS,
+        LuaCodeCompileString(lS, strCode, strRef), iRet); }
 /* -- Compile contents of a file (returns function on lua stack) ----------- */
 static LuaCompResult LuaCodeCompileFile(lua_State*const lS,
   const FileMap &fScript)
-{ return LuaCodeCompileBuffer(lS, fScript.MemPtr<char>(), fScript.MemSize(),
-    fScript.IdentGetCStr()); }
+    { return LuaCodeCompileBuffer(lS, fScript.MemPtr<char>(),
+        fScript.MemSize(), fScript.IdentGetCStr()); }
 /* -- Copmile file and execute script that may be binary ------------------- */
 static LuaCompResult LuaCodeCompileFile(lua_State*const lS,
   const string &strFilename)
-{ return LuaCodeCompileFile(lS, AssetExtract(strFilename)); }
+    { return LuaCodeCompileFile(lS, AssetExtract(strFilename)); }
 /* -- Load file and execute script that may be binary ---------------------- */
 static LuaCompResult LuaCodeExecuteFile(lua_State*const lS,
   const string &strFilename, const int iRet=0)
-{ return LuaCodeExecCallRet(lS, LuaCodeCompileFile(lS, strFilename), iRet); }
+    { return LuaCodeExecCallRet(lS, LuaCodeCompileFile(lS, strFilename),
+        iRet); }
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */

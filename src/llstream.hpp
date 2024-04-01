@@ -138,6 +138,12 @@ LLFUNCEX(IsPlaying, 1, LCPUSHVAR(LCGETPTR(1, Stream)->IsPlaying()));
 LLFUNCEX(GetLoop, 1,
   LCPUSHVAR(static_cast<lua_Integer>(LCGETPTR(1, Stream)->GetLoopSafe())));
 /* ========================================================================= */
+// $ Stream:GetId
+// < Id:integer=The id number of the Stream object.
+// ? Returns the unique id of the Stream object.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(GetId, 1, LCPUSHVAR(LCGETPTR(1, Stream)->CtrGet()));
+/* ========================================================================= */
 // $ Stream:GetName
 // < Name:string=Filename of stream
 // ? Returns the stream indentifier or filename
@@ -274,16 +280,16 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Stream));
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Stream:* member functions begin
-  LLRSFUNC(OnEvent),      LLRSFUNC(GetBitRate),      LLRSFUNC(GetBytes),
-  LLRSFUNC(GetChannels),  LLRSFUNC(GetDuration),     LLRSFUNC(GetElapsed),
-  LLRSFUNC(GetName),      LLRSFUNC(GetPosition),     LLRSFUNC(GetLoop),
-  LLRSFUNC(GetLoopBegin), LLRSFUNC(GetLoopEnd),      LLRSFUNC(GetRate),
-  LLRSFUNC(GetSamples),   LLRSFUNC(GetVersion),      LLRSFUNC(GetVolume),
-  LLRSFUNC(GetMetaData),  LLRSFUNC(IsPlaying),       LLRSFUNC(OnEvent),
-  LLRSFUNC(Play),         LLRSFUNC(SetElapsed),      LLRSFUNC(SetElapsedPage),
-  LLRSFUNC(SetPosition),  LLRSFUNC(SetPositionPage), LLRSFUNC(SetLoop),
-  LLRSFUNC(SetLoopBegin), LLRSFUNC(SetLoopEnd),      LLRSFUNC(SetLoopRange),
-  LLRSFUNC(SetVolume),    LLRSFUNC(Stop),
+  LLRSFUNC(OnEvent),        LLRSFUNC(GetBitRate),   LLRSFUNC(GetBytes),
+  LLRSFUNC(GetChannels),    LLRSFUNC(GetDuration),  LLRSFUNC(GetElapsed),
+  LLRSFUNC(GetId),          LLRSFUNC(GetName),      LLRSFUNC(GetPosition),
+  LLRSFUNC(GetLoop),        LLRSFUNC(GetLoopBegin), LLRSFUNC(GetLoopEnd),
+  LLRSFUNC(GetRate),        LLRSFUNC(GetSamples),   LLRSFUNC(GetVersion),
+  LLRSFUNC(GetVolume),      LLRSFUNC(GetMetaData),  LLRSFUNC(IsPlaying),
+  LLRSFUNC(OnEvent),        LLRSFUNC(Play),         LLRSFUNC(SetElapsed),
+  LLRSFUNC(SetElapsedPage), LLRSFUNC(SetPosition),  LLRSFUNC(SetPositionPage),
+  LLRSFUNC(SetLoop),        LLRSFUNC(SetLoopBegin), LLRSFUNC(SetLoopEnd),
+  LLRSFUNC(SetLoopRange),   LLRSFUNC(SetVolume),    LLRSFUNC(Stop),
 LLRSEND                                // Stream:* member functions end
 /* ========================================================================= */
 // $ Stream.FileAsync

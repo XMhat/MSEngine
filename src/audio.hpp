@@ -309,28 +309,7 @@ static class Audio final :             // Audio manager class
     } // Problems, problems
     cLog->LogErrorSafe("Audio couldn't access playback devices list.");
   }
-  /* --------------------------------------------------------------- */ public:
-  CVarReturn SetAudCheckRate(const unsigned int uiTime)
-    { return CVarSimpleSetIntNLG(cdCheckRate,
-        milliseconds{ uiTime }, milliseconds{ 100 }, milliseconds{ 60000 }); }
-  /* ----------------------------------------------------------------------- */
-  CVarReturn SetAudThreadDelay(const ALuint uiTime)
-    { return CVarSimpleSetIntNG(cdThreadDelay,
-        milliseconds{ uiTime }, milliseconds{ 1000 }); }
-  /* -- Set global volume -------------------------------------------------- */
-  CVarReturn SetGlobalVolume(const ALfloat fVolume)
-  { // Ignore if invalid value
-    if(fVolume < 0.0f || fVolume > 1.0f) return DENY;
-    // Store volume
-    cSources->fGVolume = fVolume;
-    // Update volumes on streams and videos
-    StreamCommitVolume();
-    VideoCommitVolume();
-    SampleUpdateVolume();
-    // Done
-    return ACCEPT;
-  }
-  /* -- Set distance model ------------------------------------------------- */
+  /* -- Set distance model ----------------------------------------- */ public:
   void SetDistanceModel(const ALenum eModel) const
     { AL(cOal->SetDistanceModel(eModel),
         "Failed to set audio distance model!", "Model", eModel); }
@@ -443,6 +422,27 @@ static class Audio final :             // Audio manager class
   DTORHELPER(~Audio, DeInit())         // Destructor helper
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Audio)               // Omit copy constructor for safety
+  /* ----------------------------------------------------------------------- */
+  CVarReturn SetAudCheckRate(const unsigned int uiTime)
+    { return CVarSimpleSetIntNLG(cdCheckRate,
+        milliseconds{ uiTime }, milliseconds{ 100 }, milliseconds{ 60000 }); }
+  /* ----------------------------------------------------------------------- */
+  CVarReturn SetAudThreadDelay(const ALuint uiTime)
+    { return CVarSimpleSetIntNG(cdThreadDelay,
+        milliseconds{ uiTime }, milliseconds{ 1000 }); }
+  /* -- Set global volume -------------------------------------------------- */
+  CVarReturn SetGlobalVolume(const ALfloat fVolume)
+  { // Ignore if invalid value
+    if(fVolume < 0.0f || fVolume > 1.0f) return DENY;
+    // Store volume
+    cSources->fGVolume = fVolume;
+    // Update volumes on streams and videos
+    StreamCommitVolume();
+    VideoCommitVolume();
+    SampleUpdateVolume();
+    // Done
+    return ACCEPT;
+  }
   /* -- End ---------------------------------------------------------------- */
 } *cAudio = nullptr;                   // Pointer to static class
 /* ------------------------------------------------------------------------- */

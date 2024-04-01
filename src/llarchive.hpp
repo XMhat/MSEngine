@@ -108,6 +108,12 @@ LLFUNCENDEX(1)
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Total, 1, LCPUSHVAR(LCGETPTR(1, Archive)->GetTotal()));
 /* ========================================================================= */
+// $ Archive:Id
+// < Id:integer=The id number of the Archive object.
+// ? Returns the unique id of the Archive object.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(Id, 1, LCPUSHVAR(LCGETPTR(1, Archive)->CtrGet()));
+/* ========================================================================= */
 // $ Archive:Name
 // < Name:string=Name of the archive.
 // ? Returns the name of the archive which was loaded.
@@ -127,8 +133,8 @@ LLFUNCBEGIN(Destroy) LCCLASSDESTROY(1, Archive); LLFUNCEND
 ** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Archive:* member functions begin
   LLRSFUNC(Destroy), LLRSFUNC(Dir),   LLRSFUNC(Dirs),     LLRSFUNC(DirList),
-  LLRSFUNC(File),    LLRSFUNC(Files), LLRSFUNC(FileList), LLRSFUNC(Name),
-  LLRSFUNC(Size),    LLRSFUNC(Total),
+  LLRSFUNC(File),    LLRSFUNC(Files), LLRSFUNC(FileList), LLRSFUNC(Id),
+  LLRSFUNC(Name),    LLRSFUNC(Size),  LLRSFUNC(Total),
 LLRSEND                                // Archive:* member functions end
 /* ========================================================================= */
 // $ Archive.Load

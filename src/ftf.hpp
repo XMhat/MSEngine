@@ -24,272 +24,186 @@ namespace IFtf {                       // Start of private module namespace
 using namespace IAsset::P;             using namespace IASync::P;
 using namespace ICollector::P;         using namespace IDim;
 using namespace IError::P;             using namespace IEvtMain::P;
-using namespace IFileMap::P;           using namespace IIdent::P;
-using namespace ILog::P;               using namespace ILuaUtil::P;
-using namespace IMemory::P;            using namespace IStd::P;
-using namespace ISysUtil::P;           using namespace IUtil::P;
-using namespace Lib::FreeType;         using namespace Lib::OS::GlFW;
+using namespace IFileMap::P;           using namespace IFreeType::P;
+using namespace IIdent::P;             using namespace ILog::P;
+using namespace ILuaUtil::P;           using namespace IMemory::P;
+using namespace IStd::P;               using namespace ISysUtil::P;
+using namespace IUtil::P;              using namespace Lib::OS::GlFW;
+using namespace Lib::FreeType;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
-/* -- Freetype core class -------------------------------------------------- */
-static class FreeType final :          // Members initially private
-  /* -- Base classes ------------------------------------------------------- */
-  private mutex                        // Instance protection
-{ /* -- Private variables -------------------------------------------------- */
-  FT_Library    ftLibrary;             // Freetype instance
-  FT_MemoryRec_ ftMemory;              // Freetype custom allocator
-  /* ----------------------------------------------------------------------- */
-  bool DoDeInit(void)
-  { // Return failed if library not available
-    if(!IsLibraryAvailable()) return false;
-    // Unload freetype library
-    cLog->LogDebugSafe("FreeType subsystem deinitialising...");
-    FT_Done_Library(ftLibrary);
-    cLog->LogDebugSafe("FreeType subsystem deinitialised.");
-    // Success
-    return true;
-  }
-  /* --------------------------------------------------------------- */ public:
-  static FT_Error ApplyStrokerFull(FT_Glyph &gData, FT_Stroker ftStroker)
-    { return FT_Glyph_Stroke(&gData, ftStroker, true); }
-  /* ----------------------------------------------------------------------- */
-  static FT_Error ApplyStrokerPartial(FT_Glyph &gData, FT_Stroker ftStroker,
-    const bool bInside)
-      { return FT_Glyph_StrokeBorder(&gData, ftStroker, bInside, true); }
-  /* ----------------------------------------------------------------------- */
-  static FT_Error ApplyStrokerOutside(FT_Glyph &gData, FT_Stroker ftStroker)
-    { return ApplyStrokerPartial(gData, ftStroker, false); }
-  /* ----------------------------------------------------------------------- */
-  static FT_Error ApplyStrokerInside(FT_Glyph &gData, FT_Stroker ftStroker)
-    { return ApplyStrokerPartial(gData, ftStroker, true); }
-  /* ----------------------------------------------------------------------- */
-  FT_Error NewStroker(FT_Stroker &ftsDst) const
-    { return FT_Stroker_New(ftLibrary, &ftsDst); }
-  /* ----------------------------------------------------------------------- */
-  bool IsLibraryAvailable(void) { return ftLibrary != nullptr; }
-  /* ----------------------------------------------------------------------- */
-  FT_Error NewFont(const MemConst &mcSrc, FT_Face &ftfDst)
-  { // Lock a mutex to protect FT_Library.
-    // > freetype.org/freetype2/docs/reference/ft2-base_interface.html
-    const LockGuard lgFreeTypeSync{ *this };
-    // Create the font, throw exception on error
-    return FT_New_Memory_Face(ftLibrary, mcSrc.MemPtr<FT_Byte>(),
-      mcSrc.MemSize<FT_Long>(), 0, &ftfDst);
-  }
-  /* ----------------------------------------------------------------------- */
-  void DestroyFont(FT_Face ftFace)
-  { // Lock a mutex to protect FT_Library.
-    // > freetype.org/freetype2/docs/reference/ft2-base_interface.html
-    const LockGuard lgFreeTypeSync{ *this };
-    // Destroy the font
-    FT_Done_Face(ftFace);
-  }
-  /* -- Error checker with custom error details ---------------------------- */
-  template<typename ...VarArgs>
-    static void CheckError(const FT_Error ftErr,
-      const char*cpMessage, const VarArgs &...vaArgs)
-  { if(ftErr) XC(cpMessage, "Code", ftErr, "Reason", FT_Error_String(ftErr),
-                vaArgs...); }
-  /* ----------------------------------------------------------------------- */
-  void Init(void)
-  { // Class initialised
-    if(IsLibraryAvailable()) XC("Freetype already initialised!");
-    // Log initialisation and do the init
-    cLog->LogDebugSafe("FreeType subsystem initialising...");
-    // Create the memory
-    CheckError(FT_New_Library(&ftMemory, &ftLibrary),
-      "Failed to initialise FreeType!");
-    // Documentation says we must run this function (fails if not)
-    // https://www.freetype.org/freetype2/docs/design/design-4.html
-    FT_Add_Default_Modules(ftLibrary);
-    // Log successful initialisation
-    cLog->LogDebugSafe("FreeType subsystem initialised.");
-  }
-  /* ----------------------------------------------------------------------- */
-  void DeInit(void) { if(DoDeInit()) ftLibrary = nullptr; }
-  /* ----------------------------------------------------------------------- */
-  FreeType(void) : ftLibrary(nullptr), ftMemory{ this,
-    [](FT_Memory, long lBytes)->void*
-      { return UtilMemAlloc<void>(lBytes); },
-    [](FT_Memory, void*const vpAddress)
-      { UtilMemFree(vpAddress); },
-    [](FT_Memory, long, long lBytes, void*const vpAddress)->void*
-      { return UtilMemReAlloc(vpAddress, lBytes); }
-  } { }
-  /* ----------------------------------------------------------------------- */
-  DTORHELPER(~FreeType, DoDeInit())
-  /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(FreeType)            // No copying of class allowed
-  /* ----------------------------------------------------------------------- */
-} *cFreeType = nullptr;                   // Pointer to static class
 /* == Ftf collector class for collector data and custom variables ========== */
-BEGIN_ASYNCCOLLECTORDUO(Ftfs, Ftf, CLHelperUnsafe, ICHelperUnsafe),
+CTOR_BEGIN_ASYNC_DUO(Ftfs, Ftf, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
-  public Ident,                        // Ftf file name
   public AsyncLoaderFtf,               // Asyncronous loading of data
   public Lockable,                     // Lua garbage collector instruction
-  public Dimensions<GLfloat>           // Requested font width/height
+  public Dimensions<GLfloat>,          // Requested font width/height
+  public FileMap                       // FT ttf file data (persistant)
 { /* -- Private variables -------------------------------------------------- */
   GLfloat          fOutline;           // FT outline size
-  FT_Face          ftFace;             // FT Char handle
-  FT_Stroker       ftStroker;          // FT Outline handle
-  FileMap          fFTData;            // FT ttf file data (persistant)
+  FT_Face          ftfFace;            // FT Char handle
+  FT_Stroker       ftsStroker;         // FT Outline handle
   /* --------------------------------------------------------------- */ public:
-  Dimensions<>     dDPI;               // FT DPI width and height
+  Dimensions<>     diDPI;              // FT DPI width and height
   /* -------------------------------------------------------------- */ private:
   void DoDeInit(void)
   { // Clear freetype handles if created
-    if(LoadedStroker()) FT_Stroker_Done(ftStroker);
-    if(Loaded()) cFreeType->DestroyFont(ftFace);
+    if(LoadedStroker()) FT_Stroker_Done(ftsStroker);
+    if(Loaded()) cFreeType->DestroyFont(ftfFace);
   }
   /* -- Returns if face is loaded----------------------------------- */ public:
-  bool Loaded(void) const { return !!ftFace; }
-  bool LoadedStroker(void) const { return !!ftStroker; }
-  FT_Stroker GetStroker(void) const { return ftStroker; }
-  unsigned int GetDPIWidth(void) const { return dDPI.DimGetWidth(); }
-  unsigned int GetDPIHeight(void) const { return dDPI.DimGetHeight(); }
+  bool Loaded(void) const { return !!ftfFace; }
+  bool LoadedStroker(void) const { return !!ftsStroker; }
+  FT_Stroker GetStroker(void) const { return ftsStroker; }
+  unsigned int GetDPIWidth(void) const { return diDPI.DimGetWidth(); }
+  unsigned int GetDPIHeight(void) const { return diDPI.DimGetHeight(); }
   GLfloat GetOutline(void) const { return fOutline; }
   bool IsOutline(void) const { return GetOutline() > 0.0f; }
-  FT_GlyphSlot GetGlyphData(void) const { return ftFace->glyph; }
-  const FT_String *GetFamily(void) const { return ftFace->family_name; }
-  const FT_String *GetStyle(void) const { return ftFace->style_name; }
-  FT_Long GetGlyphCount(void) const { return ftFace->num_glyphs; }
+  FT_GlyphSlot GetGlyphData(void) const { return ftfFace->glyph; }
+  const FT_String *GetFamily(void) const { return ftfFace->family_name; }
+  const FT_String *GetStyle(void) const { return ftfFace->style_name; }
+  FT_Long GetGlyphCount(void) const { return ftfFace->num_glyphs; }
   /* -- Set ftf size ------------------------------------------------------- */
   void UpdateSize(void)
   { // For some twisted reason, FreeType measures char size in terms f 1/64ths
     // of pixels. Thus, to make a char 'h' pixels high, we need to request a
     // size of 'h*64'.
-    cFreeType->CheckError(FT_Set_Char_Size(ftFace,
+    cFreeType->CheckError(FT_Set_Char_Size(ftfFace,
       static_cast<FT_F26Dot6>(DimGetWidth() * 64),
       static_cast<FT_F26Dot6>(DimGetHeight() * 64),
-      static_cast<FT_UInt>(dDPI.DimGetWidth()),
-      static_cast<FT_UInt>(dDPI.DimGetHeight())),
+      static_cast<FT_UInt>(diDPI.DimGetWidth()),
+      static_cast<FT_UInt>(diDPI.DimGetHeight())),
       "Failed to set character size!",
-      "Identifier", IdentGet(),         "Width",    DimGetWidth(),
-      "Height",     DimGetHeight(),     "DPIWidth", dDPI.DimGetWidth(),
-      "DPIHeight",  dDPI.DimGetHeight());
+      "Identifier", IdentGet(),     "Width",    DimGetWidth(),
+      "Height",     DimGetHeight(), "DPIWidth", diDPI.DimGetWidth(),
+      "DPIHeight",  diDPI.DimGetHeight());
   }
   /* -- Convert character to glyph index --------------------------- */ public:
   FT_UInt CharToGlyph(const FT_ULong dwChar)
-    { return FT_Get_Char_Index(ftFace, dwChar); }
+    { return FT_Get_Char_Index(ftfFace, dwChar); }
   /* -- Load a glyph ------------------------------------------------------- */
   FT_Error LoadGlyph(const FT_UInt uiIndex)
-    { return FT_Load_Glyph(ftFace, uiIndex,
+    { return FT_Load_Glyph(ftfFace, uiIndex,
         FT_LOAD_CROP_BITMAP|FT_LOAD_NO_AUTOHINT|FT_LOAD_NO_HINTING); }
   /* -- Load ftf from memory ----------------------------------------------- */
-  void AsyncReady(FileMap &fC)
+  void AsyncReady(FileMap &fmData)
   { // Take ownership of the file data
-    fFTData.FileMapSwap(fC);
+    FileMapSwap(fmData);
     // Load font
-    cFreeType->CheckError(cFreeType->NewFont(fFTData, ftFace),
-      "Failed to create font!",
-      "Identifier", IdentGet(),
-      "Context",    cFreeType->IsLibraryAvailable(),
-      "Buffer",     fFTData.MemIsPtrSet(),
-      "Size",       fFTData.MemSize());
+    cFreeType->CheckError(
+      cFreeType->NewFont(static_cast<FileMap&>(*this), ftfFace),
+        "Failed to create font!",
+        "Identifier", IdentGet(),
+        "Context",    cFreeType->IsLibraryAvailable(),
+        "Buffer",     FileMap::MemIsPtrSet(),
+        "Size",       FileMap::MemSize());
     // Update size
     UpdateSize();
     // Outline requested?
     if(IsOutline())
     { // Create stroker handle
-      cFreeType->CheckError(cFreeType->NewStroker(ftStroker),
+      cFreeType->CheckError(cFreeType->NewStroker(ftsStroker),
         "Failed to create stroker!",
         "Identifier", IdentGet(), "Context", cFreeType->IsLibraryAvailable());
       // Set properties of stroker handle
-      FT_Stroker_Set(ftStroker, static_cast<FT_Fixed>(GetOutline() * 64),
+      FT_Stroker_Set(ftsStroker, static_cast<FT_Fixed>(GetOutline() * 64),
        FT_STROKER_LINECAP_ROUND, FT_STROKER_LINEJOIN_ROUND, 0);
     } // Report loaded font
     cLog->LogInfoExSafe("Ftf loaded '$' (FF:$;FS:$;S:$$$x$;D:$x$;B:$).",
       IdentGet(), GetFamily(), GetStyle(), setprecision(0), fixed,
-      DimGetWidth(), DimGetHeight(), GetDPIWidth(),
-      GetDPIHeight(), GetOutline());
+      DimGetWidth(), DimGetHeight(), GetDPIWidth(), GetDPIHeight(),
+      GetOutline());
   }
   /* -- Check and initialise supplied variables ---------------------------- */
-  void InitVars(const GLfloat fW, const GLfloat fH, const unsigned int uiDW,
-    const unsigned int uiDH, const GLfloat fO)
+  void InitVars(const GLfloat fWidth, const GLfloat fHeight,
+    const unsigned int uiDpiWidth, const unsigned int uiDpiHeight,
+    const GLfloat fNOutline)
   { // Set width and height
-    DimSet(fW, fH);
+    DimSet(fWidth, fHeight);
     // Set DPI width and height
-    dDPI.DimSet(uiDW, uiDH);
+    diDPI.DimSet(uiDpiWidth, uiDpiHeight);
     // Set outline
-    fOutline = fO;
+    fOutline = fNOutline;
   }
   /* -- Load pcm from memory asynchronously -------------------------------- */
   void InitAsyncArray(lua_State*const lS)
   { // We need eleven parameters
     LuaUtilCheckParams(lS, 11);
     // Get name and init parameters
-    const string strName{ LuaUtilGetCppStrNE(lS, 1, "Identifier") };
+    IdentSet(LuaUtilGetCppStrNE(lS, 1, "Identifier"));
     Asset &aData = *LuaUtilGetPtr<Asset>(lS, 2, "Asset");
-    const GLfloat fW = LuaUtilGetNumLG<GLfloat>(lS, 3, 1, 4096, "Width"),
-                  fH = LuaUtilGetNumLG<GLfloat>(lS, 4, 1, 4096, "Height");
+    const GLfloat fWidth = LuaUtilGetNumLG<GLfloat>(lS, 3, 1, 4096, "Width"),
+                  fHeight = LuaUtilGetNumLG<GLfloat>(lS, 4, 1, 4096, "Height");
     const unsigned int
-      uiDW = LuaUtilGetIntLG<unsigned int>(lS, 5, 1, 1024, "DPIWidth"),
-      uiDH = LuaUtilGetIntLG<unsigned int>(lS, 6, 1, 1024, "DPIHeight");
-    const GLfloat fO = LuaUtilGetNumLG<GLfloat>(lS, 7, 0, 1024, "OutLine");
+      uiDpiWidth = LuaUtilGetIntLG<unsigned int>(lS, 5, 1, 1024, "DPIWidth"),
+      uiDpiHeight = LuaUtilGetIntLG<unsigned int>(lS, 6, 1, 1024, "DPIHeight");
+    const GLfloat fNOutline =
+      LuaUtilGetNumLG<GLfloat>(lS, 7, 0, 1024, "OutLine");
     // Check callbacks
     LuaUtilCheckFuncs(lS,
       8, "ErrorFunc", 9, "ProgressFunc", 10, "SuccessFunc");
     // Set other members
-    InitVars(fW, fH, uiDW, uiDH, fO);
+    InitVars(fWidth, fHeight, uiDpiWidth, uiDpiHeight, fNOutline);
     // Prepare asynchronous loading from array
-    AsyncInitArray(lS, strName, "ftfarray", StdMove(aData));
+    AsyncInitArray(lS, IdentGet(), "ftfarray", StdMove(aData));
   }
   /* -- Load pcm from file asynchronously ---------------------------------- */
   void InitAsyncFile(lua_State*const lS)
   { // We need nine parameters
     LuaUtilCheckParams(lS, 10);
     // Get name and init parameters
-    const string strName{ LuaUtilGetCppFile(lS, 1, "File") };
-    const GLfloat fW = LuaUtilGetNumLG<GLfloat>(lS, 2, 1, 4096, "Width"),
-                  fH = LuaUtilGetNumLG<GLfloat>(lS, 3, 1, 4096, "Height");
+    IdentSet(LuaUtilGetCppFile(lS, 1, "File"));
+    const GLfloat fWidth = LuaUtilGetNumLG<GLfloat>(lS, 2, 1, 4096, "Width"),
+                  fHeight = LuaUtilGetNumLG<GLfloat>(lS, 3, 1, 4096, "Height");
     const unsigned int
-      uiDW = LuaUtilGetIntLG<unsigned int>(lS, 4, 1, 1024, "DPIWidth"),
-      uiDH = LuaUtilGetIntLG<unsigned int>(lS, 5, 1, 1024, "DPIHeight");
-    const GLfloat fO = LuaUtilGetNumLG<GLfloat>(lS, 6, 0, 1024, "OutLine");
+      uiDpiWidth = LuaUtilGetIntLG<unsigned int>(lS, 4, 1, 1024, "DPIWidth"),
+      uiDpiHeight = LuaUtilGetIntLG<unsigned int>(lS, 5, 1, 1024, "DPIHeight");
+    const GLfloat fNOutline =
+      LuaUtilGetNumLG<GLfloat>(lS, 6, 0, 1024, "OutLine");
     // Check callbacks
     LuaUtilCheckFuncs(lS, 7, "ErrorFunc", 8, "ProgressFunc", 9, "SuccessFunc");
     // Set other members
-    InitVars(fW, fH, uiDW, uiDH, fO);
+    InitVars(fWidth, fHeight, uiDpiWidth, uiDpiHeight, fNOutline);
     // Prepare asynchronous loading from array
-    AsyncInitFile(lS, strName, "ftffile");
+    AsyncInitFile(lS, IdentGet(), "ftffile");
   }
   /* -- Init from file ----------------------------------------------------- */
-  void InitFile(const string &strFilename, const GLfloat fW, const GLfloat fH,
-    const unsigned int uiDW, const unsigned int uiDH, const GLfloat fO)
+  void InitFile(const string &strFile, const GLfloat fWidth,
+    const GLfloat fHeight, const unsigned int uiDpiWidth,
+    const unsigned int uiDpiHeight, const GLfloat fNOutline)
   { // Set other members
-    InitVars(fW, fH, uiDW, uiDH, fO);
+    InitVars(fWidth, fHeight, uiDpiWidth, uiDpiHeight, fNOutline);
     // Load file normally
-    SyncInitFileSafe(strFilename);
+    SyncInitFileSafe(strFile);
   }
   /* -- Init from array ---------------------------------------------------- */
-  void InitArray(const string &strName, Memory &&mbD, const GLfloat fW,
-    const GLfloat fH, const unsigned int uiDW, const unsigned int uiDH,
-    const GLfloat fO)
+  void InitArray(const string &strName, Memory &&mData, const GLfloat fWidth,
+    const GLfloat fHeight, const unsigned int uiDpiWidth,
+    const unsigned int uiDpiHeight,
+    const GLfloat fNOutline)
   { // Set other members
-    InitVars(fW, fH, uiDW, uiDH, fO);
+    InitVars(fWidth, fHeight, uiDpiWidth, uiDpiHeight, fNOutline);
     // Load file as array
-    SyncInitArray(strName, StdMove(mbD));
+    SyncInitArray(strName, StdMove(mData));
   }
   /* -- De-init ftf font --------------------------------------------------- */
-  void DeInit(void) { DoDeInit(); ftStroker = nullptr; ftFace = nullptr; }
+  void DeInit(void) { DoDeInit(); ftsStroker = nullptr; ftfFace = nullptr; }
   /* ----------------------------------------------------------------------- */
-  void SwapFtf(Ftf &oCref)
+  void SwapFtf(Ftf &ftfOther)
   { // Copy variables over from source class
-    DimSwap(oCref);
-    dDPI.DimSwap(oCref.dDPI);
-    swap(fOutline, oCref.fOutline);
-    swap(ftFace, oCref.ftFace);
-    swap(ftStroker, oCref.ftStroker);
+    DimSwap(ftfOther);
+    diDPI.DimSwap(ftfOther.diDPI);
+    swap(fOutline, ftfOther.fOutline);
+    swap(ftfFace, ftfOther.ftfFace);
+    swap(ftsStroker, ftfOther.ftsStroker);
     // Swap file class
-    fFTData.FileMapSwap(oCref.fFTData);
+    FileMapSwap(ftfOther);
     // Swap async, lua lock data and registration
-    IdentSwap(oCref);
-    LockSwap(oCref);
-    CollectorSwapRegistration(oCref);
+    LockSwap(ftfOther);
+    CollectorSwapRegistration(ftfOther);
   }
   /* -- MOVE assignment (Ftf=Ftf) just do a swap --------------------------- */
-  Ftf& operator=(Ftf &&oCref) { SwapFtf(oCref); return *this; }
+  Ftf& operator=(Ftf &&ftfOther) { SwapFtf(ftfOther); return *this; }
   /* -- Default constructor ------------------------------------------------ */
   Ftf(void) :                          // No parameters
     /* -- Initialisers ----------------------------------------------------- */
@@ -298,22 +212,22 @@ BEGIN_ASYNCCOLLECTORDUO(Ftfs, Ftf, CLHelperUnsafe, ICHelperUnsafe),
     AsyncLoaderFtf{ *this, this,       // Initialise async loader with class
       EMC_MP_FONT },                   // " and the event id
     fOutline(0.0f),                    // No outline size yet
-    ftFace(nullptr),                   // No FreeType handle yet
-    ftStroker(nullptr)                 // No FreeType stroker handle yet
+    ftfFace(nullptr),                  // No FreeType handle yet
+    ftsStroker(nullptr)                // No FreeType stroker handle yet
     /* --------------------------------------------------------------------- */
     { }                                // Do nothing else
   /* -- MOVE constructor --------------------------------------------------- */
-  Ftf(Ftf &&oCref) :                   // The other Ftf class to swap with
+  Ftf(Ftf &&ftfOther) :                // The other Ftf class to swap with
     /* -- Initialisers ----------------------------------------------------- */
     Ftf()                              // Use default initialisers
     /* --------------------------------------------------------------------- */
-    { SwapFtf(oCref); }                // Do the swap
+    { SwapFtf(ftfOther); }             // Do the swap
   /* -- Destructor --------------------------------------------------------- */
   ~Ftf(void) { AsyncCancel(); DoDeInit(); }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Ftf)                 // Disable copy constructor and operator
 };/* -- End ---------------------------------------------------------------- */
-END_ASYNCCOLLECTOR(Ftfs, Ftf, FONT)    // End of ftf collector
+CTOR_END_ASYNC_NOFUNCS(Ftfs, FONT)     // Finish collector class
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */

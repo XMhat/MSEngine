@@ -275,7 +275,7 @@ class Pack :
     { }
 };/* ----------------------------------------------------------------------- */
 /* == Bin object collector and member class ================================ */
-BEGIN_COLLECTORDUO(Bins, Bin, CLHelperUnsafe, ICHelperUnsafe),
+CTOR_BEGIN_DUO(Bins, Bin, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
   public Lockable,                     // Lua garbage collector instruction
   public Pack<int>                     // Base Pack class with GLint's
@@ -287,7 +287,7 @@ BEGIN_COLLECTORDUO(Bins, Bin, CLHelperUnsafe, ICHelperUnsafe),
     /* --------------------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */
-END_COLLECTOR(Bins)                    // End of bin objects collector
+CTOR_END_NOINITS(Bins)            // End of bin objects collector
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */

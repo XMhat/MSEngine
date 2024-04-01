@@ -23,7 +23,7 @@ namespace LLImage {                    // Image namespace
 /* -- Dependencies --------------------------------------------------------- */
 using namespace IAsset::P;             using namespace IImage::P;
 using namespace IImageDef::P;          using namespace IStd::P;
-using namespace Lib::OS::GlFW;
+using namespace ITexDef::P;            using namespace Lib::OS::GlFW;
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Image:* member functions                                            ## **
@@ -46,6 +46,12 @@ LLFUNCEX(Height, 1, LCPUSHVAR(LCGETPTR(1, Image)->DimGetHeight()));
 // ? Returns the bit-depth of the image
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Depth, 1, LCPUSHVAR(LCGETPTR(1, Image)->GetBitsPerPixel()));
+/* ========================================================================= */
+// $ Image:Id
+// < Id:integer=The id number of the Image object.
+// ? Returns the unique id of the Image object.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(Id, 1, LCPUSHVAR(LCGETPTR(1, Image)->CtrGet()));
 /* ========================================================================= */
 // $ Image:Name
 // < Name:string=Name of the image.
@@ -73,12 +79,8 @@ LLFUNC(Save,
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Image:* member functions begin
-  LLRSFUNC(Depth),                     // Get image depth
-  LLRSFUNC(Destroy),                   // Destroy internal object
-  LLRSFUNC(Name),                      // Get image identifier
-  LLRSFUNC(Width),                     // Get image width
-  LLRSFUNC(Height),                    // Get image height
-  LLRSFUNC(Save),                      // Save image to disk
+  LLRSFUNC(Depth), LLRSFUNC(Destroy), LLRSFUNC(Id), LLRSFUNC(Name),
+  LLRSFUNC(Width), LLRSFUNC(Height),  LLRSFUNC(Save),
 LLRSEND                                // Image:* member functions end
 /* ========================================================================= */
 // $ Image.FileAsync
@@ -127,18 +129,18 @@ LLFUNCEX(Asset, 1, LCCLASSCREATE(Image)->InitArray(
   LCGETFLAGS(ImageFlagsConst, 3, IL_MASK, "Flags")));
 /* ========================================================================= */
 // $ Image.Raw
-// > Data:Asset=The data of the image to load
+// > Data:Asset=The data of the image to load which is consumed.
+// > Width:integer=The width of the image being sent (1-65535)
+// > Height:integer=The height of the image being sent (1-65535)
+// > Bits:integer=Bits per pixel of the image being sent (1,8,16,24 or 32)
 // < Handle:Image=The image object
 // ? Loads a image on the main thread from the specified array object.
-// ? Returns the image object.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Raw, 1, LCCLASSCREATE(Image)->
-  InitRaw(LCGETCPPSTRINGNE(1, "Identifier"),
-    StdMove(*LCGETPTR(2, Asset)),
+  InitRaw(LCGETCPPSTRINGNE(1, "Identifier"), StdMove(*LCGETPTR(2, Asset)),
     LCGETINTLG(unsigned int, 3, 1, 65535, "Width"),
     LCGETINTLG(unsigned int, 4, 1, 65535, "Height"),
-    LCGETINTLG(BitDepth, 5, BD_BINARY, BD_RGBA, "Depth"),
-    LCGETINTLG(GLenum, 6, 1, 65535, "PixelType")));
+    LCGETINTLG(BitDepth, 5, BD_BINARY, BD_RGBA, "Depth")));
 /* ========================================================================= */
 // $ Image.Colour
 // > Colour:integer=The colour of the pixel (Syntax: 0xAABBGGRR)
@@ -187,20 +189,30 @@ LLRSEND                                // Image.* namespace functions end
 // ? Returns the image plugins available. Returned as key/value pairs. The
 // ? value is a unique identifier to the flag.
 /* ------------------------------------------------------------------------- */
-LLRSKTBEGIN(Flags)                     // Beginning of cursor codes
+LLRSKTBEGIN(Flags)                     // Beginning of image flags codes
   LLRSKTITEM(IL_,NONE),    LLRSKTITEM(IL_,TOGPU),    LLRSKTITEM(IL_,TO24BPP),
   LLRSKTITEM(IL_,TO32BPP), LLRSKTITEM(IL_,TOBGR),    LLRSKTITEM(IL_,TORGB),
   LLRSKTITEM(IL_,REVERSE), LLRSKTITEM(IL_,TOBINARY), LLRSKTITEM(IL_,ATLAS),
   LLRSKTITEM(IL_,FCE_DDS), LLRSKTITEM(IL_,FCE_GIF),  LLRSKTITEM(IL_,FCE_JPG),
   LLRSKTITEM(IL_,FCE_PNG),
-LLRSKTEND                              // End of cursor codes
+LLRSKTEND                              // End of image flags codes
+/* ------------------------------------------------------------------------- */
+// @ Image.Formats
+// < Codes:table=The table of key/value pairs of available texture formats
+// ? Returns the texture formats supported.
+/* ------------------------------------------------------------------------- */
+LLRSKTBEGIN(Formats)                   // Beginning of image formats codes
+  LLRSKTITEM(TT_,BGR),       LLRSKTITEM(TT_,BGRA), LLRSKTITEM(TT_,DXT1),
+  LLRSKTITEM(TT_,DXT3),      LLRSKTITEM(TT_,DXT5), LLRSKTITEM(TT_,GRAY),
+  LLRSKTITEM(TT_,GRAYALPHA), LLRSKTITEM(TT_,RGB),  LLRSKTITEM(TT_,RGBA),
+LLRSKTEND                              // End of image formats codes
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Image.* namespace constants structure                               ## **
 ** ######################################################################### **
 ** ========================================================================= */
 LLRSCONSTBEGIN                         // Image.* namespace consts begin
-  LLRSCONST(Flags),
+  LLRSCONST(Flags), LLRSCONST(Formats),
 LLRSCONSTEND                           // Image.* namespace consts end
 /* ========================================================================= */
 }                                      // End of Image namespace

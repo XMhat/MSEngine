@@ -19,24 +19,24 @@ using namespace Lib::OpenAL;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* -- Sample collector and member class ------------------------------------ */
-BEGIN_COLLECTOR(Samples, Sample, CLHelperUnsafe)
+CTOR_BEGIN_NOBB(Samples, Sample, CLHelperUnsafe)
 /* -- Sample member class -------------------------------------------------- */
-BEGIN_MEMBERCLASSEX(Samples, Sample, ICHelperUnsafe, /* n/a */),
+CTOR_MEM_BEGIN(Samples, Sample, ICHelperUnsafe, /* n/a */),
   /* -- Base classes ------------------------------------------------------- */
   public Pcm                           // Loaded pcm data
 { /* -- Variables -------------------------------------------------- */ public:
   ALUIntVector uivNames;               // OpenAL buffer handle ids
   /* -- Get AL buffer index from the specified physical buffer index ------- */
-  template<typename IntType=ALint>IntType GetBufferInt(const ALenum eP,
+  template<typename IntType=ALint>IntType GetBufferInt(const ALenum aleId,
     const size_t stId=0) const
   { // Hold state
-    ALint iV;
+    ALint iValue;
     // Store state
-    AL(cOal->GetBufferInt(uivNames[stId], eP, &iV),
+    AL(cOal->GetBufferInt(uivNames[stId], aleId, &iValue),
       "Get buffer integer failed!",
-      "Identifier", IdentGet(), "Param", eP, "Index", stId);
+      "Identifier", IdentGet(), "Param", aleId, "Index", stId);
     // Return state
-    return static_cast<IntType>(iV);
+    return static_cast<IntType>(iValue);
   }
   /* -- Get buffer information --------------------------------------------- */
   ALsizei GetALFrequency(void) const
@@ -65,26 +65,26 @@ BEGIN_MEMBERCLASSEX(Samples, Sample, ICHelperUnsafe, /* n/a */),
     uivNames.clear();
   }
   /* ----------------------------------------------------------------------- */
-  ALuint PrepareSource(Source &sCref, const ALuint uiBufId,
+  ALuint PrepareSource(Source &scSource, const ALuint uiBufId,
     const ALfloat fGain, const ALfloat fPan, const ALfloat fPitch,
     const bool bLoop, const bool bLuaManaged)
   { // Set parameters
-    sCref.SetBuffer(static_cast<ALint>(uiBufId));
-    sCref.SetRelative(true);
-    sCref.SetPosition(fPan, 0.0f, -sqrtf(1.0f-fPan*fPan));
-    sCref.SetLooping(bLoop);
-    sCref.SetPitch(fPitch);
-    sCref.SetGain(fGain);
-    sCref.SetExternal(bLuaManaged);
+    scSource.SetBuffer(static_cast<ALint>(uiBufId));
+    scSource.SetRelative(true);
+    scSource.SetPosition(fPan, 0.0f, -sqrtf(1.0f - fPan * fPan));
+    scSource.SetLooping(bLoop);
+    scSource.SetPitch(fPitch);
+    scSource.SetGain(fGain);
+    scSource.SetExternal(bLuaManaged);
     // Return source id
-    return sCref.GetSource();
+    return scSource.GetSource();
   }
   /* ----------------------------------------------------------------------- */
   ALfloat GetAdjustedGain(const ALfloat fGain)
     { return fGain * cSources->fSVolume * cSources->fGVolume; }
   /* ----------------------------------------------------------------------- */
   void PlayStereoSource(ALfloat fGain, ALfloat fPan,  const ALfloat fPitch,
-    const bool bLoop, Source*const srLeft, Source*const srRight,
+    const bool bLoop, Source*const scLeft, Source*const scRight,
     const bool bLuaManaged)
   { // Adjust gain from global volumes
     fGain *= GetAdjustedGain(fGain);
@@ -92,47 +92,38 @@ BEGIN_MEMBERCLASSEX(Samples, Sample, ICHelperUnsafe, /* n/a */),
     fPan *= 0.5f;
     // Prepare sources
     const array<const ALuint,2> aSourceIds{
-      PrepareSource(*srLeft,           // Left channel
-        uivNames.front(), fGain, -0.5f+fPan, fPitch, bLoop, bLuaManaged),
-      PrepareSource(*srRight,          // Right chanel
-        uivNames[1], fGain, 0.5f+fPan, fPitch, bLoop, bLuaManaged)
+      PrepareSource(*scLeft,           // Left channel
+        uivNames.front(), fGain, -0.5f + fPan, fPitch, bLoop, bLuaManaged),
+      PrepareSource(*scRight,          // Right chanel
+        uivNames[1], fGain, 0.5f + fPan, fPitch, bLoop, bLuaManaged)
     }; // Play all the sources together
     ALL(cOal->PlaySources(aSourceIds),
       "Sample '$' failed to play stereo sources!", IdentGet());
   }
-  /* ----------------------------------------------------------------------- */
+  /* -- Play a mono source ------------------------------------------------- */
   void PlayMonoSource(const ALfloat fGain, ALfloat fPan,
-    const ALfloat fPitch, const bool bLoop, Source &sCref,
+    const ALfloat fPitch, const bool bLoop, Source &scSource,
     const bool bLuaManaged)
-  { // Play the source
-    ALL(cOal->PlaySource(PrepareSource(sCref, uivNames.front(),
-      GetAdjustedGain(fGain), fPan, fPitch, bLoop, bLuaManaged)),
-        "Sample '$' failed to play mono source!", IdentGet());
-  }
+      { ALL(cOal->PlaySource(PrepareSource(scSource, uivNames.front(),
+          GetAdjustedGain(fGain), fPan, fPitch, bLoop, bLuaManaged)),
+          "Sample '$' failed to play mono source!", IdentGet()); }
   /* -- Spawn new sources in Lua ------------------------------------------- */
   void Spawn(lua_State*const lS)
   { // How many sources do we need?
     switch(uivNames.size())
-    { // 1? (Mono source?) Create a new mono source and if we got it? Play it!
-      case 1: if(SourceGetFromLua(lS)) return;
-              // Log that we could not grab a mono channel source
-              cLog->LogWarningExSafe("Sample cannot get a free source "
-                "for spawning '$'!", IdentGet());
-              // Done
+    { // 1? (Mono source?) Create a new mono source and log failure if failed
+      case 1: if(!SourceGetFromLua(lS))
+                cLog->LogWarningExSafe("Sample cannot get a free source "
+                  "for spawning '$'!", IdentGet());
               break;
       // 2? (Stereo sources) Get the left channel and if we got it?
-      case 2: if(SourceGetFromLua(lS))
-              { // Get a right channel source and if we got it?
-                if(SourceGetFromLua(lS)) return;
-                // Log that we could not grab a right channel source
-                cLog->LogWarningExSafe("Sample cannot get a free source "
-                  "for spawning '$' right channel!", IdentGet());
-              } // Could not grab a left channel source?
-              else
-              { // Log that we could not grab a left channel source
+      case 2: if(!SourceGetFromLua(lS))
                 cLog->LogWarningExSafe("Sample cannot get a free source "
                   "for spawning '$' left channel!", IdentGet());
-              } // Done
+              // Get a right channel source and if failed? Log failure
+              else if(!SourceGetFromLua(lS))
+                cLog->LogWarningExSafe("Sample cannot get a free source "
+                  "for spawning '$' right channel!", IdentGet());
               break;
       // Unsupported amount of channels
       default: XC("Unsupported amount of channels!",
@@ -149,36 +140,25 @@ BEGIN_MEMBERCLASSEX(Samples, Sample, ICHelperUnsafe, /* n/a */),
     const bool bLoop = LuaUtilGetBool(lS, 5, "Loop");
     // How many sources do we need?
     switch(uivNames.size())
-    { // 1? (Mono source?) Create a new mono source and if we got it?
+    { // 1? (Mono source?) Create a new mono source and if we got it? Play it
       case 1: if(Source*const scMono = SourceGetFromLua(lS))
-              { // Play it!
                 PlayMonoSource(fGain, fPan, fPitch, bLoop, *scMono, true);
-              } // Could not grab a mono channel source?
-              else
-              { // Log that we could not grab a mono channel source
-                cLog->LogWarningExSafe("Sample cannot get a free source "
-                  "for playing '$'!", IdentGet());
-              } // Done
+              // Could not grab a mono channel source? Log failure
+              else cLog->LogWarningExSafe("Sample cannot get a free source "
+                "for playing '$'!", IdentGet());
               break;
       // 2? (Stereo sources) Get the left channel and if we got it?
-      case 2: if(Source*const sLeft = SourceGetFromLua(lS))
-              { // Get a right channel source and if we got it?
+      case 2: if(Source*const scLeft = SourceGetFromLua(lS))
+              { // Get a right channel source and if we got it? Play sources
                 if(Source*const sRight = SourceGetFromLua(lS))
-                { // Play the sources
                   PlayStereoSource(fGain, fPan, fPitch, bLoop,
-                    sLeft, sRight, true);
-                } // Could not grab a right channel source?
-                else
-                { // Log that we could not grab a right channel source
-                  cLog->LogWarningExSafe("Sample cannot get a free source "
-                    "for playing '$' left channel!", IdentGet());
-                }
-              } // Could not grab a left channel source?
-              else
-              { // Log that we could not grab a left channel source
-                cLog->LogWarningExSafe("Sample cannot get a free source "
-                  "for playing '$' right channel!", IdentGet());
-              } // Done
+                    scLeft, sRight, true);
+                // Could not grab a right channel source? Log failure
+                else cLog->LogWarningExSafe("Sample cannot get a free source "
+                  "for playing '$' left channel!", IdentGet());
+              } // Could not grab a left channel source? Log failure
+              else cLog->LogWarningExSafe("Sample cannot get a free source "
+                "for playing '$' right channel!", IdentGet());
               break;
       // Unsupported amount of channels
       default: XC("Unsupported amount of channels!",
@@ -194,27 +174,19 @@ BEGIN_MEMBERCLASSEX(Samples, Sample, ICHelperUnsafe, /* n/a */),
     { // 1? (Mono source?) Create a new mono source and if we got it? Play it!
       case 1: if(Source*const scMono = GetSource())
                 PlayMonoSource(fGain, fPan, fPitch, uiLoop, *scMono, false);
-              // Done
               break;
       // 2? (Stereo sources) Get the left channel and if we got it?
-      case 2: if(Source*const sLeft = GetSource())
-              { // Get a right channel source and if we got it?
+      case 2: if(Source*const scLeft = GetSource())
+              { // Get a right channel source and if we got it? Play it
                 if(Source*const sRight = GetSource())
-                { // Play the sources
                   PlayStereoSource(fGain, fPan, fPitch, uiLoop,
-                    sLeft, sRight, false);
-                } // Could not grab a right channel source?
-                else
-                { // Log that we could not grab a right channel source
-                  cLog->LogWarningExSafe("Sample cannot get a free source "
-                    "for playing '$' left channel!", IdentGet());
-                }
-              } // Could not grab a left channel source?
-              else
-              { // Log that we could not grab a left channel source
-                cLog->LogWarningExSafe("Sample cannot get a free source "
-                  "for playing '$' right channel!", IdentGet());
-              } // Done
+                    scLeft, sRight, false);
+                // Could not grab a right channel source? Log failure
+                else cLog->LogWarningExSafe("Sample cannot get a free source "
+                  "for playing '$' left channel!", IdentGet());
+              } // Could not grab a left channel source? Log failure
+              else cLog->LogWarningExSafe("Sample cannot get a free source "
+                "for playing '$' right channel!", IdentGet());
               break;
       // Unsupported amount of channels
       default: XC("Unsupported amount of channels!",
@@ -306,12 +278,12 @@ BEGIN_MEMBERCLASSEX(Samples, Sample, ICHelperUnsafe, /* n/a */),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Sample)              // Supress copy constructor for safety
 };/* -- End ---------------------------------------------------------------- */
-END_COLLECTOR(Samples)
+CTOR_END_NOINITS(Samples)              // Finish collector class
 /* ========================================================================= */
 static void SampleStop(void)
 { // Stop all samples from playing
   if(cSamples->empty()) return;
-  for(const Sample*const sCptr : *cSamples) sCptr->Stop();
+  for(const Sample*const scPtr : *cSamples) scPtr->Stop();
 }
 /* ========================================================================= */
 static void SampleDeInit(void)
@@ -320,7 +292,7 @@ static void SampleDeInit(void)
   // Re-create buffers for all the samples and log pre/post de-init
   cLog->LogDebugExSafe("Samples de-initialising $ objects...",
     cSamples->size());
-  for(Sample*const sCptr : *cSamples) sCptr->UnloadBuffer();
+  for(Sample*const scPtr : *cSamples) scPtr->UnloadBuffer();
   cLog->LogInfoExSafe("Samples de-initialised $ objects.",
     cSamples->size());
 }
@@ -331,22 +303,22 @@ static void SampleReInit(void)
   // Re-create buffers for all the samples and log pre/post re-init
   cLog->LogDebugExSafe("Samples re-initialising $ objects...",
     cSamples->size());
-  for(Sample*const sCptr : *cSamples) sCptr->ReloadSample();
+  for(Sample*const scPtr : *cSamples) scPtr->ReloadSample();
   cLog->LogInfoExSafe("Samples re-initialising $ sample objects.",
     cSamples->size());
 }
 /* == Update all streams base volume======================================== */
 static void SampleUpdateVolume(void)
 { // Lock source list so it cannot be modified
-  const LockGuard mLock{ cSources->CollectorGetMutex() };
+  const LockGuard lgCollectorLock{ cSources->CollectorGetMutex() };
   // Walk through sources
-  for(Source*const sCptr : *cSources)
+  for(const Source*const scPtr : *cSources)
   { // Get class
-    const Source &oCref = *sCptr;
+    const Source &scRef = *scPtr;
     // If it is locked then its a sample so ignore it
-    if(oCref.GetExternal()) continue;
+    if(scRef.GetExternal()) continue;
     // Set new sample volume
-    oCref.SetGain(cSources->fGVolume * cSources->fSVolume);
+    scRef.SetGain(cSources->fGVolume * cSources->fSVolume);
   }
 }
 /* == Set all streams base volume ========================================== */

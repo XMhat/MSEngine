@@ -16,33 +16,38 @@ using namespace IGlFW::P;              using namespace IError::P;
 using namespace ILog::P;               using namespace IMemory::P;
 using namespace IString::P;            using namespace ISystem::P;
 /* ------------------------------------------------------------------------- */
+static size_t stCreditId = 0;          // For setting 'stId' in CreditLib
+/* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* -- Credit library class ------------------------------------------------- */
 class CreditLib :                      // Members initially private
   /* -- Base classes ------------------------------------------------------- */
   public MemConst                      // License data memory
 { /* ----------------------------------------------------------------------- */
+  const size_t     stId;               // Unique identification umber
   const string     strName,            // Name of library
                    strVersion,         // String version
                    strAuthor;          // Author of library
   const bool       bCopyright;         // Is copyrighted library
   /* --------------------------------------------------------------- */ public:
+  const size_t &GetID(void) const { return stId; }
   const string &GetName(void) const { return strName; }
   const string &GetVersion(void) const { return strVersion; }
   const string &GetAuthor(void) const { return strAuthor; }
   bool IsCopyright(void) const { return bCopyright; }
   /* ----------------------------------------------------------------------- */
-  CreditLib(const string &strNName, const string &strNVersion,
-    const string &strNAuthor, const bool bNCopyright,
-    const void*const vpData, const size_t stSize) :
+  CreditLib(const string &strNName,
+    const string &strNVersion, const string &strNAuthor,
+    const bool bNCopyright, const void*const vpData, const size_t stSize) :
     /* -- Initialisers ----------------------------------------------------- */
     MemConst{ stSize, vpData },        // Init credit license data
+    stId{ stCreditId },                // Init credit unique id
     strName{ strNName },               // Init credit name
     strVersion{ strNVersion },         // Init credit version
     strAuthor{ strNAuthor },           // Init credit author
     bCopyright{ bNCopyright }          // Init credit copyright status
-    /* -- No code ---------------------------------------------------------- */
-    { }
+    /* -- Increment credit id counter -------------------------------------- */
+    { ++stCreditId; }
 };/* ----------------------------------------------------------------------- */
 /* -- Credits list lookup table -------------------------------------------- */
 enum CreditEnums : size_t              // Credit ids
@@ -72,10 +77,11 @@ enum CreditEnums : size_t              // Credit ids
   CL_MAX                               // Item count. Don't remove
 };/* ----------------------------------------------------------------------- */
 typedef array<const CreditLib,CL_MAX> CreditLibList; // Library list typedef
+typedef CreditLibList::const_iterator CreditLibListConstIt; // Iterator
 /* ------------------------------------------------------------------------- */
 static const class Credits final :     // Members initially private
   /* -- Base classes ------------------------------------------------------- */
-  private CreditLibList                // Credits list
+  public CreditLibList                 // Credits list
 { /* -- License data ------------------------------------------------------- */
 #define BEGINLICENSE(n,s) static constexpr const array<const uint8_t,s> l ## n{
 #define ENDLICENSE };                  // Helper functions for licenses header

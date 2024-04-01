@@ -27,7 +27,8 @@ local CoreLog<const>, UtilDuration<const>, InputClearStates<const>,
   InputKeyState<const>, InputSetCursorPos<const>, FboConEnabled<const>,
   AssetParseBlock<const>, UtilExplode<const>, UtilImplode<const>,
   VariableRegister<const>, TextureCreate<const>, CoreOnTick<const>,
-  InfoCatchup<const>, InfoTime<const>, InputGetNumJoyAxises<const>
+  InfoCatchup<const>, InfoTime<const>, InputGetNumJoyAxises<const>,
+  SShotFbo<const>
   = -- --------------------------------------------------------------------- --
   Core.Log, Util.Duration, Input.ClearStates, Util.Clamp, Input.GetJoyAxis,
   Input.aMouseState, Util.RoundInt, Input.GetJoyButton, Display.Reset,
@@ -35,7 +36,7 @@ local CoreLog<const>, UtilDuration<const>, InputClearStates<const>,
   Input.SetCursor, Input.KeyState, Input.SetCursorPos,
   Fbo.ConEnabled, Asset.ParseBlock, Util.Explode, Util.Implode,
   Variable.Register, Texture.Create, Core.OnTick, Info.Catchup, Info.Time,
-  Input.GetNumJoyAxises;
+  Input.GetNumJoyAxises, SShot.Fbo;
 -- Globals ----------------------------------------------------------------- --
 local fboMain<const> = Fbo.Main();     -- Main fbo class
 local fFont<const> = Font.Console();   -- Main console class
@@ -375,7 +376,7 @@ local function SetGlobalKeys(bState)
       -- F11 key pressed?
       elseif IsKeyPressed(iKeyF11) then DisplayReset();
       -- F12 key pressed?
-      elseif IsKeyPressed(iKeyF12) then fboMain:Dump() end;
+      elseif IsKeyPressed(iKeyF12) then SShotFbo(fboMain) end;
     end
     -- Set global keys if enabled
     if bState then CheckGlobalKeys = Callback;

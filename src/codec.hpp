@@ -560,7 +560,7 @@ template<class EncoderType>class Block final : public EncoderType
   /* -- Initialise by string ----------------------------------------------- */
   explicit Block(const string &strIn, const size_t stUser=StdMaxSizeT) :
     /* -- Initialisers ----------------------------------------------------- */
-    EncoderType{ StdMove(MemConst(strIn)), stUser }
+    EncoderType{ StdMove(MemConst{ strIn }), stUser }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */

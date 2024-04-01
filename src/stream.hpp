@@ -53,16 +53,16 @@ enum StreamStopReason : unsigned int   // Reason playback stopped
 };/* ----------------------------------------------------------------------- */
 typedef IdList<SR_MAX> SRList;         // Stop reason strings
 /* -- Stream collector class for collector data and custom variables ------- */
-BEGIN_ASYNCCOLLECTOREX(Streams, Stream, CLHelperSafe,
+CTOR_BEGIN_ASYNC(Streams, Stream, CLHelperSafe,
 /* -- Public variables ----------------------------------------------------- */
-const SRList       srStrings;          /* Stop reason strings               */\
-const PSList       psStrings;          /* Play state strings                */\
-size_t             stBufCount;         /* Buffer count                      */\
-size_t             stBufSize;,,        /* Size of each buffer               */\
+const SRList       srStrings;          // Stop reason strings
+const PSList       psStrings;          // Play state strings
+size_t             stBufCount;         // Buffer count
+size_t             stBufSize;,,        // Size of each buffer
 /* -- Derived classes ------------------------------------------------------ */
-private LuaEvtMaster<Stream,LuaEvtTypeParam<Stream>>); /* Lua event handler */\
+private LuaEvtMaster<Stream,LuaEvtTypeParam<Stream>>); // Lua event handler
 /* ========================================================================= */
-BEGIN_ASYNCMEMBERCLASS(Streams, Stream, ICHelperUnsafe),
+CTOR_MEM_BEGIN_ASYNC_CSLAVE(Streams, Stream, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
   public Ident,                        // Stream file name
   public AsyncLoaderStream,            // Asynchronous loading of Streams
@@ -268,7 +268,7 @@ BEGIN_ASYNCMEMBERCLASS(Streams, Stream, ICHelperUnsafe),
       static_cast<ALsizei>(stBSize), static_cast<ALsizei>(GetRate())),
       "Failed to buffer ogg stream data!",
       "Identifier", IdentGet(),  "BufferId",   uiBufferId,
-      "StrFormat",     GetFormat(), "BufferData", MemPtr<void>(),
+      "Format",     GetFormat(), "BufferData", MemPtr<void>(),
       "BufferSize", stBSize,     "Rate",       GetRate());
     // Return status
     return true;
@@ -671,12 +671,9 @@ BEGIN_ASYNCMEMBERCLASS(Streams, Stream, ICHelperUnsafe),
   ~Stream(void)
   { // Stop any pending async operations
     AsyncCancel();
-    // Guard mutex from sources management. Meaning that destruction cannot
-    // proceed until the audio thread has finished processing
-    const LockGuard lgProtectAudioMain{ cParent->CollectorGetMutex() };
-    // Wait for any previous operations on this stream (such as rebuffering)
-    // to complete and lock simultanius access to this streams buffers/memory
-    const LockGuard lgStreamSync{ mMutex };
+    // Synchronise from sources management and audio thread
+    const scoped_lock slCollectorAndStream{
+      cParent->CollectorGetMutex(), mMutex };
     // Unload source and buffers
     UnloadSourceAndBuffers();
     // If stream opened? Clear ogg state
@@ -687,7 +684,7 @@ BEGIN_ASYNCMEMBERCLASS(Streams, Stream, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Stream)              // Supress copy constructor for safety
 };/* -- End ---------------------------------------------------------------- */
-END_ASYNCCOLLECTOR(Streams, Stream, STREAM, // Finish Streams collector
+CTOR_END_ASYNC_NOFUNCS(Streams, STREAM, // Finish collector
   /* -- Initialisers ------------------------------------------------------- */
   LuaEvtMaster{ EMC_STR_EVENT },       // Initialise streaming event master
   srStrings{{                          // Initialise stop reason strings
@@ -712,42 +709,42 @@ static void StreamManage(void)
 { // Lock access to bitmap collector list
   const LockGuard lgStreamsSync{ cStreams->CollectorGetMutex() };
   // Manage each stream
-  for(Stream*const sCptr : *cStreams) sCptr->Main();
+  for(Stream*const sPtr : *cStreams) sPtr->Main();
 }
 /* == Unload all source and buffers ======================================== */
 static void StreamDeInit(void)
 { // Lock access to bitmap collector list
   const LockGuard lgStreamsSync{ cStreams->CollectorGetMutex() };
   // Unload each stream
-  for(Stream*const sCptr : *cStreams) sCptr->UnloadSourceAndBuffers();
+  for(Stream*const sPtr : *cStreams) sPtr->UnloadSourceAndBuffers();
 }
 /* == Clear event callbacks on all streams ================================= */
 static void StreamClearEvents(void)
 { // Lock access to bitmap collector list
   const LockGuard lgStreamsSync{ cStreams->CollectorGetMutex() };
   // Re-allocate a source and buffers for the stream
-  for(Stream*const sCptr : *cStreams) sCptr->LuaEvtDeInit();
+  for(Stream*const sPtr : *cStreams) sPtr->LuaEvtDeInit();
 }
 /* == Generate all source and buffers ====================================== */
 static void StreamReInit(void)
 { // Lock access to bitmap collector list
   const LockGuard lgStreamsSync{ cStreams->CollectorGetMutex() };
   // Re-allocate a source and buffers for the stream
-  for(Stream*const sCptr : *cStreams) sCptr->GenerateSourceAndBuffers();
+  for(Stream*const sPtr : *cStreams) sPtr->GenerateSourceAndBuffers();
 }
 /* == Stop all streams ===================================================== */
 static void StreamStop(void)
 { // Lock access to bitmap collector list
   const LockGuard lgStreamsSync{ cStreams->CollectorGetMutex() };
   // Re-allocate a source and buffers for the stream
-  for(Stream*const sCptr : *cStreams) sCptr->StopSafe(SR_STOPALL);
+  for(Stream*const sPtr : *cStreams) sPtr->StopSafe(SR_STOPALL);
 }
 /* == Update all streams base volume======================================== */
 static void StreamCommitVolume(void)
 { // Lock access to bitmap collector list
   const LockGuard lgStreamsSync{ cStreams->CollectorGetMutex() };
   // Walk through all the streams and update the volume
-  for(Stream*const sCptr : *cStreams) sCptr->UpdateVolume();
+  for(Stream*const sPtr : *cStreams) sPtr->UpdateVolume();
 }
 /* == Set number of buffers to allocate per stream ========================= */
 static CVarReturn StreamSetBufferCount(const size_t stNewCount)

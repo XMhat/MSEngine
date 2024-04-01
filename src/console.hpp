@@ -57,9 +57,7 @@ BUILD_FLAGS(Redraw,                    // Redraw terminal or graphical console
   /* ----------------------------------------------------------------------- */
   RD_BOTH{ RD_TEXT|RD_GRAPHICS }       // All flags
 );/* ----------------------------------------------------------------------- */
-typedef map<const string,const ConLib> CmdMap; // Map of commands type
-typedef CmdMap::iterator               CmdMapIt;
-typedef CmdMap::const_iterator         CmdMapItConst;
+MAPPACK_BUILD(Cmd, const string, const ConLib) // Map of commands type
 /* ========================================================================= */
 static class Console final :           // Members initially private
   /* -- Base classes ------------------------------------------------------- */
@@ -68,11 +66,7 @@ static class Console final :           // Members initially private
   private ConLinesConstRevIt,          // Text lines reverse iterator
   private IHelper,                     // Initialisation helper
   public ConsoleFlags                  // Console flags
-{ /* -- Private variables -------------------------------------------------- */
-  constexpr static const size_t
-    stConCmdMinLength = 1,             // Minimum length of a console command
-    stConCmdMaxLength = 255;           // Maximum length of a console command
-  /* -- Private typedefs --------------------------------------------------- */
+{ /* -- Private typedefs --------------------------------------------------- */
   typedef queue<ConLine> ConLineQueue; // Pending console lines
   /* -- Input -------------------------------------------------------------- */
   ConLineQueue     clqOutput;          // Console lines pending
@@ -104,22 +98,6 @@ static class Console final :           // Members initially private
   const EvtMain::RegVec reEvents;      // Events list to register
   /* -- Do clear console, clear history and reset position ----------------- */
   void DoFlush(void) { clear(); clriPosition = rbegin(); }
-  /* -- Check that the console variable name is valid ---------------------- */
-  bool IsValidConsoleCommandName(const string &strName)
-  { // Check minimum name length
-    if(strName.length() < stConCmdMinLength ||
-       strName.length() > stConCmdMaxLength) return false;
-    // Get address of string. The first character must be a letter
-    const unsigned char *ucpPtr =
-      reinterpret_cast<const unsigned char*>(strName.c_str());
-    if(!isalpha(*ucpPtr)) return false;
-    // For each character in cvar name until end of string...
-    for(const unsigned char*const ucpPtrEnd = ucpPtr + strName.length();
-                                   ++ucpPtr < ucpPtrEnd;)
-      if(!isalnum(*ucpPtr) && *ucpPtr != '_') return false;
-    // Success!
-    return true;
-  }
   /* -- Reserve history items ---------------------------------------------- */
   void ReserveHistoryLines(const size_t stLines)
   { // Calculate total lines when added
@@ -513,14 +491,14 @@ static class Console final :           // Members initially private
     const string &strVarOrCmd = aList.front();
     if(strVarOrCmd.empty()) return;
     // Dump whole input to log
-    AddLineExC(COLOUR_YELLOW, '>', strCmd);
+    AddLineAC(COLOUR_YELLOW, '>', strCmd);
     // Reset scrolling position if flag set and not at the bottom.
     if(FlagIsSet(CF_AUTOSCROLL)) MoveLogEnd();
     // Push entire text input to recall history
     AddHistory(strCmd);
     // Find console callback function and function not found?
-    const CmdMapIt cmiIt{ cmMap.find(strVarOrCmd) };
-    if(cmiIt == cmMap.cend())
+    const CmdMapConstIt cmciIt{ cmMap.find(strVarOrCmd) };
+    if(cmciIt == cmMap.cend())
     { // Output string
       ostringstream osS;
       // If the cvar exists?
@@ -538,8 +516,8 @@ static class Console final :           // Members initially private
               strVarOrCmd, cCVars->GetStr(cvmMapIt)));
         } // Else set item and get return value
         else switch(const CVarSetEnums cvseResult =
-          aList[1] == "~" ? cCVars->Reset(cvmMapIt) :
-            cCVars->Set(cvmMapIt, aList[1]))
+          aList[1] == "~" ? cCVars->Reset(cvmMapIt, PUSR, CCF_NOTHING) :
+            cCVars->Set(cvmMapIt, aList[1], PUSR, CCF_NOTHING))
         { // Success. Show result
           case CVS_OK:
             osS << "is now " << cCVars->Protect(cvmMapIt) << '!'; break;
@@ -604,7 +582,7 @@ static class Console final :           // Members initially private
     } // Command found?
     else
     { // Get data structure and check if enough parameters specified
-      const ConLib &clData = cmiIt->second;
+      const ConLib &clData = cmciIt->second;
       if(clData.uiMinimum && aList.size() < clData.uiMinimum)
         AddLine("Required parameter missing!");
       else if(clData.uiMaximum && aList.size() > clData.uiMaximum)
@@ -614,7 +592,7 @@ static class Console final :           // Members initially private
       // exception did occur
       catch(const exception &E)
       { // Print the output in the console
-        AddLineExA("Console CB failed! > ", E.what());
+        AddLineA("Console CB failed! > ", E.what());
         // Force the console to be shown because the callback might have
         // hidden the console
         DoSetVisible(true);
@@ -731,42 +709,21 @@ static class Console final :           // Members initially private
     for(const ConLine &clItem : *this) cLog->LogNLCDebugSafe(clItem.strLine);
     return size();
   }
+  /* -- Command exists? ---------------------------------------------------- */
+  bool CommandIsRegistered(const string &strName) const
+    { return cmMap.contains(strName); }
   /* -- Register console command ------------------------------------------- */
   const CmdMapIt RegisterCommand(const string &strName,
     const unsigned int uiMin, const unsigned int uiMax,
     const ConCbFunc ccbFunc)
-  { // Check that the console command is valid
-    if(!IsValidConsoleCommandName(strName))
-      XC("Console command name is invalid!",
-         "Command", strName, "Minimum", stConCmdMinLength,
-         "Maximum", stConCmdMaxLength);
-    // Check min/Max params and that they're valid
-    if(uiMin && uiMax && uiMax < uiMin)
-      XC("Minimum greater than maximum!",
-         "Identifier", strName, "Minimum",  uiMin,
-         "Maximum",    uiMax,   "Function", &ccbFunc);
-    // Check function callback
-    if(!ccbFunc)
-      XC("Invalid function callback!",
-         "Identifier", strName, "Minimum",  uiMin,
-         "Maximum",    uiMax,   "Function", &ccbFunc);
-    // Get existing callback and if command already exists?
-    const CmdMapIt cmiIt{ cmMap.find(strName) };
-    if(cmiIt != cmMap.cend())
-      XC("Command already registered!",
-         "Identifier", strName, "Minimum",  uiMin,
-         "Maximum",    uiMax,   "Function", &ccbFunc);
-    // Checks passed. Now add it
+  { // Insert trusted command into commands list
     return cmMap.insert({ strName,
       { strName, uiMin, uiMax, CFL_NONE, ccbFunc } }).first;
   }
-  /* -- Command exists? ---------------------------------------------------- */
-  bool CommandIsRegistered(const string &strName) const
-    { return cmMap.contains(strName); }
   /* -- Unregister console command ----------------------------------------- */
   void UnregisterCommand(const CmdMapIt cmiIt) { cmMap.erase(cmiIt); }
   /* -- Add line as string with specified text colour ---------------------- */
-  void AddLine(const string &strText, const Colour cColour)
+  void AddLine(const Colour cColour, const string &strText)
   { // Tokenise lines into a list limited by the maximum number of lines.
     if(const TokenList tlLines{ strText, cCommon->Lf(), GetOutputMaximum() })
     { // Add all the lines to the output queue
@@ -782,24 +739,27 @@ static class Console final :           // Members initially private
     }
   }
   /* -- Add line as string with default text colour ------------------- */
-  void AddLine(const string &strText) { AddLine(strText, cTextColour); }
+  void AddLine(const string &strText) { AddLine(cTextColour, strText); }
   /* -- Formatted console output ------------------------------------------- */
-  template<typename ...VarArgs>void AddLineEx(const char*const cpFormat,
-    const VarArgs &...vaArgs)
+  template<typename ...VarArgs>
+    void AddLineF(const char*const cpFormat, const VarArgs &...vaArgs)
       { AddLine(StrFormat(cpFormat, vaArgs...)); }
   /* -- Formatted console output with colour ------------------------------- */
-  template<typename ...VarArgs>void AddLineEx(const Colour cColour,
-    const char*const cpFormat, const VarArgs &...vaArgs)
-      { AddLine(StrFormat(cpFormat, vaArgs...), cColour); }
+  template<typename ...VarArgs>
+    void AddLineF(const Colour cColour, const char*const cpFormat,
+      const VarArgs &...vaArgs)
+        { AddLine(cColour, StrFormat(cpFormat, vaArgs...)); }
   /* -- Formatted console output using StrAppend() ------------------------- */
-  template<typename ...VarArgs>void AddLineExC(const Colour cColour,
-    const VarArgs &...vaArgs) { AddLine(StrAppend(vaArgs...), cColour); }
-  template<typename ...VarArgs>void AddLineExA(const VarArgs &...vaArgs)
-    { AddLineExC(cTextColour, vaArgs...); }
+  template<typename ...VarArgs>
+    void AddLineAC(const Colour cColour, const VarArgs &...vaArgs)
+      { AddLine(cColour, StrAppend(vaArgs...)); }
+  template<typename ...VarArgs>
+    void AddLineA(const VarArgs &...vaArgs)
+      { AddLineAC(cTextColour, vaArgs...); }
   /* -- Print version information ------------------------------------------ */
   void PrintVersion(void)
   { // Show engine version
-    AddLineEx(
+    AddLineF(
       "$ ($) version $.$.$ build $ for $.\n"
       "Compiled $ using $ version $.\n"
       "Copyright \xC2\xA9 $, 2006-$. All Rights Reserved.",
@@ -809,26 +769,26 @@ static class Console final :           // Members initially private
       cSystem->ENGCompVer(), cSystem->ENGAuthor(), cmSys.FormatTime("%Y"));
     // Add disclaimer that the author of the engine disclaims all liability for
     // guest software actions and user usage.
-    AddLine("Disclaimer: This scripting ENGINE is designed ONLY for "
-      "legitimate and lawful multimedia solutions and is provided AS IS with "
-      "ZERO warranty. It also contains very strong cryptographic technologies "
-      "which might not be allowed to be imported in your country. By using "
-      "this software, whether you are the GUEST author or the END user, you "
-      "accept that the ENGINE author and ALL the authors of ALL the "
-      "components listed in the 'credits' command output disclaim ALL "
+    AddLine(COLOUR_RED, "Disclaimer: This scripting ENGINE is designed ONLY "
+      "for legitimate and lawful multimedia solutions and is provided AS IS "
+      "with ZERO warranty. It also contains very strong cryptographic "
+      "technologies which might not be allowed to be imported in your "
+      "country. By using this software, whether you are the GUEST author or "
+      "the END user, you accept that the ENGINE author and ALL the authors of "
+      "ALL the components listed in the 'credits' command output disclaim ALL "
       "liability for how the GUEST author or the END user chooses to use this "
-      "software.", COLOUR_RED);
+      "software.");
     // Write guest info in a different colour
-    AddLineEx(COLOUR_GREEN, "Guest is $ ($) version $ by $.",
+    AddLineF(COLOUR_GREEN, "Guest is $ ($) version $ by $.",
       cSystem->GetGuestTitle(), cSystem->GetGuestShortTitle(),
       cSystem->GetGuestVersion(), cSystem->GetGuestAuthor());
     // Get optional variables
     if(!cSystem->GetGuestCopyright().empty())
-      AddLineExC(COLOUR_GREEN, cSystem->GetGuestCopyright(), '.');
+      AddLineAC(COLOUR_GREEN, cSystem->GetGuestCopyright(), '.');
     if(!cSystem->GetGuestDescription().empty())
-      AddLineExC(COLOUR_GREEN, cSystem->GetGuestDescription(), '.');
+      AddLineAC(COLOUR_GREEN, cSystem->GetGuestDescription(), '.');
     if(!cSystem->GetGuestWebsite().empty())
-      AddLineEx(COLOUR_GREEN, "Visit $ for more info, help and updates.",
+      AddLineF(COLOUR_GREEN, "Visit $ for more info, help and updates.",
         cSystem->GetGuestWebsite());
   }
   /* -- Print a string using textures -------------------------------------- */
@@ -887,6 +847,37 @@ static class Console final :           // Members initially private
     // Log progress
     cLog->LogInfoSafe("Console de-initialised successfully.");
   }
+  /* -- Constructor -------------------------------------------------------- */
+  explicit Console(const ConCmdStaticList &ccslDef) :
+    /* -- Initialisers ----------------------------------------------------- */
+    IHelper{ __FUNCTION__ },           // Init helper function name
+    Flags{ CF_NONE },                  // No initial flags
+    clriPosition{ rbegin() },          // Input position at beginning
+    slriInputPosition{                 // Init log position...
+      slHistory.crend() },             // ...at beginning
+    stInputMaximum(0),                 // No maximum input characters
+    stOutputMaximum(0),                // No maximum output lines
+    stMaxInputLine(0),                 // No maximum characters per line
+    stMaxOutputLine(0),                // No maximum output line
+    stMaxOutputLineE(0),               // No maximum output line with ellipsis
+    sstPageLines(0),                   // No page up/down lines setting
+    sstPageLinesNeg(0),                // No neg page up/down lines setting
+    rfDefault{ RD_NONE },              // Default redraw initially set by Init
+    rfFlags{ RD_NONE },                // Redraw type
+    cTextColour(COLOUR_WHITE),         // Default white text colour
+    acFlags{ AC_NONE },                // No autocomplete flags
+    ccslInt{ ccslDef },                // Set default commands list
+    /* --------------------------------------------------------------------- */
+    reEvents{                          // Default events
+      { EMC_CON_UPDATE, bind(&Console::OnForceRedraw, this, _1) },
+      { EMC_CON_RESIZE, bind(&Console::OnResize,      this, _1) },
+    }
+    /* --------------------------------------------------------------------- */
+    { }
+  /* -- Destructor --------------------------------------------------------- */
+  DTORHELPER(~Console, DeInit())
+  /* ----------------------------------------------------------------------- */
+  DELETECOPYCTORS(Console)             // Disable copy constructor and operator
   /* -- Set page move count ------------------------------------------------ */
   CVarReturn SetPageMoveCount(const ssize_t sstAmount)
   { // Deny if invalid value
@@ -995,37 +986,6 @@ static class Console final :           // Members initially private
   CVarReturn TextForegroundColourModified(const unsigned int uiNewColour)
     { return CVarSimpleSetIntNG(cTextColour, static_cast<Colour>(uiNewColour),
         COLOUR_MAX); }
-  /* -- Constructor -------------------------------------------------------- */
-  explicit Console(const ConCmdStaticList &ccslDef) :
-    /* -- Initialisers ----------------------------------------------------- */
-    IHelper{ __FUNCTION__ },           // Init helper function name
-    Flags{ CF_NONE },                  // No initial flags
-    clriPosition{ rbegin() },          // Input position at beginning
-    slriInputPosition{                 // Init log position...
-      slHistory.crend() },             // ...at beginning
-    stInputMaximum(0),                 // No maximum input characters
-    stOutputMaximum(0),                // No maximum output lines
-    stMaxInputLine(0),                 // No maximum characters per line
-    stMaxOutputLine(0),                // No maximum output line
-    stMaxOutputLineE(0),               // No maximum output line with ellipsis
-    sstPageLines(0),                   // No page up/down lines setting
-    sstPageLinesNeg(0),                // No neg page up/down lines setting
-    rfDefault{ RD_NONE },              // Default redraw initially set by Init
-    rfFlags{ RD_NONE },                // Redraw type
-    cTextColour(COLOUR_WHITE),         // Default white text colour
-    acFlags{ AC_NONE },                // No autocomplete flags
-    ccslInt{ ccslDef },                // Set default commands list
-    /* --------------------------------------------------------------------- */
-    reEvents{                          // Default events
-      { EMC_CON_UPDATE, bind(&Console::OnForceRedraw, this, _1) },
-      { EMC_CON_RESIZE, bind(&Console::OnResize,      this, _1) },
-    }
-    /* --------------------------------------------------------------------- */
-    { }
-  /* -- Destructor --------------------------------------------------------- */
-  DTORHELPER(~Console, DeInit())
-  /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(Console)             // Disable copy constructor and operator
   /* ----------------------------------------------------------------------- */
 } *cConsole = nullptr;                 // Pointer to static class
 /* ------------------------------------------------------------------------- */

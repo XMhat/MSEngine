@@ -13,8 +13,8 @@ using namespace ICollector::P;         using namespace IError::P;
 using namespace IFboDef::P;            using namespace IIdent::P;
 using namespace IImage::P;             using namespace IImageDef::P;
 using namespace IShaders::P;           using namespace IStd::P;
-using namespace ISysUtil::P;           using namespace IUtil::P;
-using namespace Lib::OS::GlFW;
+using namespace ISysUtil::P;           using namespace ITexDef::P;
+using namespace IUtil::P;              using namespace Lib::OS::GlFW;
 /* ------------------------------------------------------------------------- */
 typedef array<FboColour, 256> PalData; // Palette data
 /* ------------------------------------------------------------------------- */
@@ -134,9 +134,10 @@ struct Pal :                           // Members initially public
     /* -- Code ------------------------------------------------------------- */
     { }                                // Do nothing else
 };/* ----------------------------------------------------------------------- */
-BEGIN_COLLECTOREX(Palettes, Palette, CLHelperUnsafe, const Pal palDefault;)
-/* ------------------------------------------------------------------------- */
-BEGIN_MEMBERCLASS(Palettes, Palette, ICHelperUnsafe),
+CTOR_BEGIN(Palettes, Palette, CLHelperUnsafe,
+  const Pal palDefault;                // Default palette
+) /* ----------------------------------------------------------------------- */
+CTOR_MEM_BEGIN_CSLAVE(Palettes, Palette, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
   public Lockable,                     // Lua garbage collector instruction
   public Ident,                        // Identifier
@@ -191,7 +192,7 @@ BEGIN_MEMBERCLASS(Palettes, Palette, ICHelperUnsafe),
     /* -- Code  ------------------------------------------------------------ */
     { }                                // No code
 };/* ----------------------------------------------------------------------- */
-END_COLLECTOREX(Palettes,,,,palDefault{{{ // Init default palette to VGA colour
+CTOR_END(Palettes,,,,palDefault{{{ // Init default palette to VGA colour
 /* -- 0-15 ----------------------------------------------------------------- */
 {.0f,.0f,.0f,.0f}, {   0,   2, 170 }, {  20, 170,   0 }, {   0, 170, 170 },
 { 170,   0,   3 }, { 170,   0, 170 }, { 170,  85,   0 }, { 170, 170, 170 },

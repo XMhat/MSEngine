@@ -70,6 +70,12 @@ LLFUNCEX(Stop, 1, LCPUSHVAR(LCGETPTR(1, Sample)->Stop()));
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Duration, 1, LCPUSHVAR(LCGETPTR(1, Sample)->GetDuration()));
 /* ========================================================================= */
+// $ Sample:Id
+// < Id:integer=The id number of the Sample object.
+// ? Returns the unique id of the Sample object.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(Id, 1, LCPUSHVAR(LCGETPTR(1, Sample)->CtrGet()));
+/* ========================================================================= */
 // $ Sample:Name
 // < Name:string=Name of the sample.
 // ? If this sample was loaded by a filename or it was set with a custom id.
@@ -89,8 +95,8 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Sample));
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Sample:* member functions begin
-  LLRSFUNC(Destroy), LLRSFUNC(Duration), LLRSFUNC(Name), LLRSFUNC(Play),
-  LLRSFUNC(PlayEx),  LLRSFUNC(Spawn),   LLRSFUNC(Stop),
+  LLRSFUNC(Destroy), LLRSFUNC(Duration), LLRSFUNC(Id),    LLRSFUNC(Name),
+  LLRSFUNC(Play),    LLRSFUNC(PlayEx),   LLRSFUNC(Spawn), LLRSFUNC(Stop),
 LLRSEND                                // Sample:* member functions end
 /* ========================================================================= */
 // $ Sample.Create

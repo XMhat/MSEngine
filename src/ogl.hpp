@@ -17,8 +17,9 @@ using namespace IFlags;                using namespace IGlFW::P;
 using namespace IGlFWUtil::P;          using namespace IIdent::P;
 using namespace ILog::P;               using namespace IStd::P;
 using namespace IString::P;            using namespace ISystem::P;
-using namespace ISysUtil::P;           using namespace IUtf;
-using namespace IUtil::P;              using namespace Lib::OS::GlFW;
+using namespace ISysUtil::P;           using namespace ITexDef::P;
+using namespace IUtf;                  using namespace IUtil::P;
+using namespace Lib::OS::GlFW;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* -- GL error checking wrapper macros ------------------------------------- */
@@ -359,11 +360,36 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
     { sAPI.glGetTexImage(GL_TEXTURE_2D, 0, eFormat, GL_UNSIGNED_BYTE,
         vpBuffer); }
   /* ----------------------------------------------------------------------- */
+  void ReadTextureTT(const TextureType ttFormat, GLvoid*const vpBuffer) const
+    { ReadTexture(TexTypeToNative<GLenum>(ttFormat), vpBuffer); }
+  /* ----------------------------------------------------------------------- */
+  template<typename IntType=GLenum>
+    IntType TexTypeToNative(const TextureType ttType) const
+  { // Setup translation list. Make sure it's the same order as shown in
+    // ITexDef::P::TextureType in 'texdef.hpp'.
+    typedef array<const GLenum, TT_MAX> TexTypeToGLenum;
+    static const TexTypeToGLenum tttglLookup{
+      GL_NONE,      /* TT_NONE */ GL_BGR,       /* TT_BGR */
+      GL_BGRA,      /* TT_BGRA */ GL_RGBA_DXT1, /* TT_DXT1 */
+      GL_RGBA_DXT3, /* TT_DXT3 */ GL_RGBA_DXT5, /* TT_DXT5 */
+      GL_RED,       /* TT_GRAY */ GL_RG,        /* TT_GRAYALPHA */
+      GL_RGB,       /* TT_RGB  */ GL_RGBA,      /* TT_RGBA */
+    }; // Return casted value
+    return static_cast<IntType>(tttglLookup[ttType]);
+  }
+  /* ----------------------------------------------------------------------- */
   void UploadTexture(const GLint iLevel, const GLsizei siWidth,
     const GLsizei siHeight, const GLint iFormat, const GLenum eType,
     const GLvoid*const vpBuffer) const
       { sAPI.glTexImage2D(GL_TEXTURE_2D, iLevel, iFormat, siWidth, siHeight, 0,
           eType, GL_UNSIGNED_BYTE, vpBuffer); }
+  /* ----------------------------------------------------------------------- */
+  void UploadTextureTT(const GLint iLevel, const GLsizei siWidth,
+    const GLsizei siHeight, const TextureType ttFormat,
+    const TextureType ttType, const GLvoid*const vpBuffer) const
+      { UploadTexture(iLevel, siWidth, siHeight,
+          TexTypeToNative<GLint>(ttFormat), TexTypeToNative<GLenum>(ttType),
+          vpBuffer); }
   /* ----------------------------------------------------------------------- */
   void UploadCompressedTexture(const GLint iLevel, const GLenum eFormat,
     const GLsizei siWidth, const GLsizei siHeight, const GLsizei siSize,
@@ -371,11 +397,23 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
       { sAPI.glCompressedTexImage2D(GL_TEXTURE_2D, iLevel, eFormat, siWidth,
           siHeight, 0, siSize, vpBuffer); }
   /* ----------------------------------------------------------------------- */
+  void UploadCompressedTextureTT(const GLint iLevel,
+    const TextureType ttFormat, const GLsizei siWidth, const GLsizei siHeight,
+    const GLsizei siSize, const GLvoid*const vpBuffer) const
+      { UploadCompressedTexture(iLevel, TexTypeToNative<GLenum>(ttFormat),
+        siWidth, siHeight, siSize, vpBuffer); }
+  /* ----------------------------------------------------------------------- */
   void UploadTextureSub(const GLint iLeft, const GLint iTop,
     const GLsizei siWidth, const GLsizei siHeight, const GLenum ePixFormat,
     const GLvoid*const vpBuffer) const
       { sAPI.glTexSubImage2D(GL_TEXTURE_2D, 0, iLeft, iTop, siWidth, siHeight,
           ePixFormat, GL_UNSIGNED_BYTE, vpBuffer); }
+  /* ----------------------------------------------------------------------- */
+  void UploadTextureSubTT(const GLint iLeft, const GLint iTop,
+    const GLsizei siWidth, const GLsizei siHeight,
+    const TextureType ttPixFormat, const GLvoid*const vpBuffer) const
+      { UploadTextureSub(iLeft, iTop, siWidth, siHeight,
+          TexTypeToNative<GLenum>(ttPixFormat), vpBuffer); }
   /* ----------------------------------------------------------------------- */
   void UploadTextureSub(const GLsizei siWidth, const GLsizei siHeight,
     const GLenum ePixFormat, const GLvoid*const vpBuffer) const
@@ -931,83 +969,6 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
   const string &GetVendor(void) const { return strVendor; }
   const string &GetRenderer(void) const { return strRenderer; }
   const string &GetVersion(void) const { return strVersion; }
-  /* -- Setup VSync -------------------------------------------------------- */
-  CVarReturn SetVSyncMode(const int iValue)
-  { // Deny if the value is not valid
-    if(CVarSimpleSetIntNLGE(vsSetting, static_cast<VSyncMode>(iValue),
-      VSYNC_MIN, VSYNC_MAX) == DENY) return DENY;
-    // If opengl is already initalised then update the new value immediately
-    if(IsGLInitialised()) RestoreVSync();
-    // Done
-    return ACCEPT;
-  }
-  /* -- Update texture destroy list size ----------------------------------- */
-  CVarReturn SetTexDListReserve(const size_t stCount)
-    { return BoolToCVarReturn(UtilReserveList(vTextures, stCount)); }
-  /* -- Update fbo destroy list size --------------------------------------- */
-  CVarReturn SetFboDListReserve(const size_t stCount)
-    { return BoolToCVarReturn(UtilReserveList(vFbos, stCount)); }
-  /* -- Update minimum VRAM ------------------------------------------------ */
-  CVarReturn SetMinVRAM(const GLuint64 qwValue)
-    { return CVarSimpleSetInt(qwMinVRAM, qwValue); }
-  /* -- Update hints ------------------------------------------------------- */
-  CVarReturn SetQCompressHint(const size_t stMode)
-  { // Ignore if no context, but still succeeded
-    if(IsGLNotInitialised()) return ACCEPT;
-    // Get new value to set and return false if invalid
-    switch(const GLenum eNew = SHIndexToEnum(stMode))
-    { // Invalid parameter or zero
-      case GL_NONE: case GL_TRUE: return DENY;
-      // Anything else, set the hint
-      default: SetHint(GL_TEXTURE_COMPRESSION_HINT, eNew); break;
-    } // Succeeded
-    return ACCEPT;
-  }
-  /* -- Update hints ------------------------------------------------------- */
-  CVarReturn SetQPolygonHint(const size_t stMode)
-  { // Ignore if no context, but still succeeded
-    if(IsGLNotInitialised()) return ACCEPT;
-    // Get new value to set and return false if invalid
-    switch(const GLenum eNew = SHIndexToEnum(stMode))
-    { // Invalid parameter
-      case GL_NONE: return DENY;
-      // If feature is to be disabled? Disable it
-      case GL_TRUE: DisableExtension(GL_POLYGON_SMOOTH); break;
-      // Anything else, set the hint and enable it
-      default: SetHint(GL_POLYGON_SMOOTH_HINT, eNew);
-               EnableExtension(GL_POLYGON_SMOOTH); break;
-    } // Succeeded
-    return ACCEPT;
-  }
-  /* -- Update hints ------------------------------------------------------- */
-  CVarReturn SetQLineHint(const size_t stMode)
-  { // Ignore if no context, but still succeeded
-    if(IsGLNotInitialised()) return ACCEPT;
-    // Get new value to set and return false if invalid
-    switch(const GLenum eNew = SHIndexToEnum(stMode))
-    { // Invalid parameter
-      case GL_NONE: return DENY;
-      // If feature is to be disabled? Disable it
-      case GL_TRUE: DisableExtension(GL_LINE_SMOOTH); break;
-      // Anything else, set the hint and enable it
-      default: SetHint(GL_LINE_SMOOTH_HINT, eNew);
-               EnableExtension(GL_LINE_SMOOTH); break;
-    } // Succeeded
-    return ACCEPT;
-  }
-  /* -- Update hints ------------------------------------------------------- */
-  CVarReturn SetQShaderHint(const size_t stMode)
-  { // Ignore if no context, but still succeeded
-    if(IsGLNotInitialised()) return ACCEPT;
-    // Get new value to set and return false if invalid
-    switch(const GLenum eNew = SHIndexToEnum(stMode))
-    { // Invalid parameter or zero
-      case GL_NONE: case GL_TRUE: return DENY;
-      // Anything else, set the hint
-      default: SetHint(GL_FRAGMENT_SHADER_DERIVATIVE_HINT, eNew); break;
-    } // Succeeded
-    return ACCEPT;
-  }
   /* -- Reset all binds ---------------------------------------------------- */
   void ResetBinds(void)
   { // Unbind active texture
@@ -1328,6 +1289,83 @@ static class Ogl final :               // OGL class for OpenGL use simplicity
     { }
   /* -- Destructor --------------------------------------------------------- */
   DTORHELPER(~Ogl, DeInit(true))
+  /* -- Setup VSync -------------------------------------------------------- */
+  CVarReturn SetVSyncMode(const int iValue)
+  { // Deny if the value is not valid
+    if(CVarSimpleSetIntNLGE(vsSetting, static_cast<VSyncMode>(iValue),
+      VSYNC_MIN, VSYNC_MAX) == DENY) return DENY;
+    // If opengl is already initalised then update the new value immediately
+    if(IsGLInitialised()) RestoreVSync();
+    // Done
+    return ACCEPT;
+  }
+  /* -- Update texture destroy list size ----------------------------------- */
+  CVarReturn SetTexDListReserve(const size_t stCount)
+    { return BoolToCVarReturn(UtilReserveList(vTextures, stCount)); }
+  /* -- Update fbo destroy list size --------------------------------------- */
+  CVarReturn SetFboDListReserve(const size_t stCount)
+    { return BoolToCVarReturn(UtilReserveList(vFbos, stCount)); }
+  /* -- Update minimum VRAM ------------------------------------------------ */
+  CVarReturn SetMinVRAM(const GLuint64 qwValue)
+    { return CVarSimpleSetInt(qwMinVRAM, qwValue); }
+  /* -- Update hints ------------------------------------------------------- */
+  CVarReturn SetQCompressHint(const size_t stMode)
+  { // Ignore if no context, but still succeeded
+    if(IsGLNotInitialised()) return ACCEPT;
+    // Get new value to set and return false if invalid
+    switch(const GLenum eNew = SHIndexToEnum(stMode))
+    { // Invalid parameter or zero
+      case GL_NONE: case GL_TRUE: return DENY;
+      // Anything else, set the hint
+      default: SetHint(GL_TEXTURE_COMPRESSION_HINT, eNew); break;
+    } // Succeeded
+    return ACCEPT;
+  }
+  /* -- Update hints ------------------------------------------------------- */
+  CVarReturn SetQPolygonHint(const size_t stMode)
+  { // Ignore if no context, but still succeeded
+    if(IsGLNotInitialised()) return ACCEPT;
+    // Get new value to set and return false if invalid
+    switch(const GLenum eNew = SHIndexToEnum(stMode))
+    { // Invalid parameter
+      case GL_NONE: return DENY;
+      // If feature is to be disabled? Disable it
+      case GL_TRUE: DisableExtension(GL_POLYGON_SMOOTH); break;
+      // Anything else, set the hint and enable it
+      default: SetHint(GL_POLYGON_SMOOTH_HINT, eNew);
+               EnableExtension(GL_POLYGON_SMOOTH); break;
+    } // Succeeded
+    return ACCEPT;
+  }
+  /* -- Update hints ------------------------------------------------------- */
+  CVarReturn SetQLineHint(const size_t stMode)
+  { // Ignore if no context, but still succeeded
+    if(IsGLNotInitialised()) return ACCEPT;
+    // Get new value to set and return false if invalid
+    switch(const GLenum eNew = SHIndexToEnum(stMode))
+    { // Invalid parameter
+      case GL_NONE: return DENY;
+      // If feature is to be disabled? Disable it
+      case GL_TRUE: DisableExtension(GL_LINE_SMOOTH); break;
+      // Anything else, set the hint and enable it
+      default: SetHint(GL_LINE_SMOOTH_HINT, eNew);
+               EnableExtension(GL_LINE_SMOOTH); break;
+    } // Succeeded
+    return ACCEPT;
+  }
+  /* -- Update hints ------------------------------------------------------- */
+  CVarReturn SetQShaderHint(const size_t stMode)
+  { // Ignore if no context, but still succeeded
+    if(IsGLNotInitialised()) return ACCEPT;
+    // Get new value to set and return false if invalid
+    switch(const GLenum eNew = SHIndexToEnum(stMode))
+    { // Invalid parameter or zero
+      case GL_NONE: case GL_TRUE: return DENY;
+      // Anything else, set the hint
+      default: SetHint(GL_FRAGMENT_SHADER_DERIVATIVE_HINT, eNew); break;
+    } // Succeeded
+    return ACCEPT;
+  }
   /* -- Undefines ---------------------------------------------------------- */
 #undef IGLC                            // This macro was only for this class
 #undef IGL                             // This macro was only for this class

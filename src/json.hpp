@@ -22,7 +22,7 @@ using Lib::RapidJson::Value;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* == Json object collector and member class =============================== */
-BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
+CTOR_BEGIN_ASYNC_DUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
   public Ident,                        // Json code file name
   public AsyncLoaderJson,              // Asynchronous loading of Json object
@@ -270,7 +270,7 @@ BEGIN_ASYNCCOLLECTORDUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Json)                // Disable copy constructor and operator
 };/* -- End ---------------------------------------------------------------- */
-END_ASYNCCOLLECTOR(Jsons, Json, JSON)
+CTOR_END_ASYNC_NOFUNCS(Jsons, JSON)    // Finish collector class
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */

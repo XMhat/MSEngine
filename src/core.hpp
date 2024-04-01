@@ -18,15 +18,16 @@ using namespace ICVarLib::P;           using namespace IDir::P;
 using namespace IDisplay::P;           using namespace IError::P;
 using namespace IEvtMain::P;           using namespace IEvtWin::P;
 using namespace IFbo::P;               using namespace IFboCore::P;
-using namespace IFont::P;              using namespace IFtf::P;
-using namespace IGlFW::P;              using namespace IGlFWUtil::P;
-using namespace IImage::P;             using namespace IInput::P;
-using namespace IJson::P;              using namespace ILog::P;
-using namespace ILua::P;               using namespace ILuaCode::P;
-using namespace ILuaUtil::P;           using namespace ILuaVariable::P;
-using namespace IOgl::P;               using namespace IPalette::P;
-using namespace IPcm::P;               using namespace IPSplit::P;
-using namespace IShaders::P;           using namespace ISql::P;
+using namespace IFont::P;              using namespace IFreeType::P;
+using namespace IFtf::P;               using namespace IGlFW::P;
+using namespace IGlFWUtil::P;          using namespace IImage::P;
+using namespace IInput::P;             using namespace IJson::P;
+using namespace ILog::P;               using namespace ILua::P;
+using namespace ILuaCode::P;           using namespace ILuaUtil::P;
+using namespace ILuaVariable::P;       using namespace IOgl::P;
+using namespace IPalette::P;           using namespace IPcm::P;
+using namespace IPSplit::P;            using namespace IShaders::P;
+using namespace ISql::P;               using namespace ISource::P;
 using namespace IStd::P;               using namespace IStream::P;
 using namespace IString::P;            using namespace ISystem::P;
 using namespace ISysUtil::P;           using namespace ITexture::P;
@@ -53,118 +54,22 @@ class Core final :                     // Members initially private
   CoreErrorFlags   cefMode;            // Lua error mode behaviour
   unsigned int     uiErrorCount,       // Number of errors occured
                    uiErrorLimit;       // Number of errors allowed
-  /* -- Set lua error mode behaviour --------------------------------------- */
-  CVarReturn CoreErrorBehaviourModified(const CoreErrorFlags cefNMode)
-    { return CVarSimpleSetIntNGE(cefMode, cefNMode, CEF_MAX); }
-  /* -- Title modified ----------------------------------------------------- */
-  CVarReturn CoreTitleModified(const string &strN, string &strV)
-  { // Do not allow user to set this variable, only empty is allowed
-    if(!strN.empty()) return DENY;
-    // Set the title
-    strV = StrAppend(cSystem->GetGuestTitle(), ' ', cSystem->GetGuestVersion(),
-      " (", cSystem->ENGTarget(), ")");
-    // We changed the value
-    return ACCEPT_HANDLED;
-  }
-  /* -- Ask system to clear mutex ------------------ Core::SetOneInstance -- */
-  CVarReturn CoreClearMutex(const bool bEnabled)
-  { // Ignore check if not needed or global mutex creation succeeded
-    if(bEnabled) cSystem->DeleteGlobalMutex(cSystem->GetGuestTitle());
-    // Execution may continue
-    return ACCEPT;
-  }
-  /* -- Set once instance cvar changed ------------- Core::SetOneInstance -- */
-  CVarReturn CoreSetOneInstance(const bool bEnabled)
-  { // Ignore check if not needed or global mutex creation succeeded
-    if(!bEnabled || cSystem->InitGlobalMutex(cSystem->GetGuestTitle()))
-      return ACCEPT;
-    // Global mutex creation failed so exit program now, cleanly.
-    exit(5);
-  }
-  /* -- Set home directory where files are written if base dir dont work --- */
-  CVarReturn CoreSetHomeDir(const string &strP, string &strV)
-  { // Build user volatile directory name if user didn't specify one
-    if(strP.empty())
-      strV = StrFormat("$/$/$/", cSystem->GetRoamingDir(),
-        cSystem->GetGuestAuthor().empty() ?
-          cCommon->Unspec() : cSystem->GetGuestAuthor(),
-        cSystem->GetGuestShortTitle().empty() ?
-          cCommon->Unspec() : cSystem->GetGuestShortTitle());
-    // Specified so use what the user specified
-    else strV = StdMove(strP);
-    // Try to make the users home directory as an alternative save place.
-    if(!DirMkDirEx(PSplitBackToForwardSlashes(strV)))
-      XCL("Failed to setup persistance directory!", "Directory", strV);
-    // Set home directory and return that we set the value
-    cCmdLine->SetHome(strV);
-    return ACCEPT_HANDLED;
-  }
-  /* -- Set error limit ---------------------------------------------------- */
-  CVarReturn CoreSetResetLimit(const unsigned int uiLimit)
-    { return CVarSimpleSetInt(uiErrorLimit, uiLimit); }
-  /* -- Parses the command-line -------------------------------------------- */
-  CVarReturn CoreParseCmdLine(const string&, string &strV)
-  { // Get command line parameters and if we have parameters?
-    const StrVector &svArgs = cCmdLine->GetArgList();
-    if(!svArgs.empty())
-    { // Reserve some memory for building command line
-      strV.reserve(32767);
-      // Valid commands parsed
-      size_t stGood = 0, stArg = 1;
-      // Parse command line arguments and iterate through them
-      for(const string &strArg : svArgs)
-      { // If empty argument? Log the failure and continue
-        if(strArg.empty())
-          cLog->LogWarningExSafe(
-            "Core rejected empty command-line argument at $!", stArg);
-        // Not empty argument? Tokenise the argument into a key/value pair. We
-        // only want a maximum of two tokens, the seperator is allowed on the
-        // second token and if succeeded?
-        else if(const Token tKeyVal{ strArg, cCommon->Equals(), 2 })
-        { // Set the variable from command line with full permission because we
-          // should allow any variable to be overridden from the command line.
-          // Also show an error if the variable could not be set.
-          if(cCVars->SetVarOrInitial(tKeyVal.front(), tKeyVal.size() <= 1 ?
-            cCommon->Blank() : tKeyVal.back(), SCMDLINE|PBOOT, CCF_NOTHING))
-          { // Append argument to accepted command line and add a space
-            strV.append(strArg);
-            strV.append(cCommon->Space());
-            // Good variable
-            ++stGood;
-          } // Failure? Log the failure
-          else cLog->LogWarningExSafe(
-            "Core rejected command-line argument at $: '$'!", stArg, strArg);
-        } // Log the failure and continue to next argument
-        else cLog->LogWarningExSafe("Core rejected invalid command-line "
-          "argument at $: '$'!", stArg, strArg);
-        // Next argument
-        ++stArg;
-      } // Remove empty space if not empty
-      if(!strV.empty()) strV.pop_back();
-      // Free unused memory
-      strV.shrink_to_fit();
-      // Write command-line arguments parsed
-      cLog->LogDebugExSafe("Core parsed $ of $ command-line arguments.",
-        stGood, stArg);
-    } // No arguments processed
-    else cLog->LogDebugSafe("Core parsed no command-line arguments!");
-    // We handled setting the variable
-    return ACCEPT_HANDLED;
-  }
   /* -- Fired when lua needs to be paused (EMC_LUA_PAUSE) ------------------ */
-  void OnLuaPause(const EvtMain::Cell &)
-  { // Return if pause was not successful
+  void OnLuaPause(const EvtMain::Cell &emcArgs)
+  { // Pause execution and if paused for the first time?
     if(!cLua->PauseExecution())
-      return cConsole->AddLine(
+    { // The mainmanual* functions will consume 100% of the thread load
+      // when it doesn't request a request to redraw so make sure to
+      // throttle it.
+      if(cSystem->IsNotGraphicalMode()) cTimer->TimerSetDelayIfZero();
+      // Can't disable console while paused
+      cConGraphics->SetCantDisable(true);
+      // Write to console
+      cConsole->AddLine("Execution paused. Type 'lresume' to continue.");
+    } // Already paused? Remind console if it was manually requested
+    else if(emcArgs.vParams.front().b)
+      cConsole->AddLine(
         "Execution already paused. Type 'lresume' to continue.");
-    // The mainmanual* functions will consume 100% of the thread load
-    // when it doesn't request a request to redraw so make sure to
-    // throttle it.
-    if(cSystem->IsNotGraphicalMode()) cTimer->TimerSetDelayIfZero();
-    // Can't disable console while paused
-    cConGraphics->SetCantDisable(true);
-    // Write to console
-    cConsole->AddLine("Execution paused. Type 'lresume' to continue.");
   }
   /* -- Fired when lua needs to be resumed (EMC_LUA_RESUME) ---------------- */
   void OnLuaResume(const EvtMain::Cell &)
@@ -540,7 +445,7 @@ class Core final :                     // Members initially private
     } // ...and if exception occured?
     catch(const exception &E)
     { // Show error in console
-      cConsole->AddLine(E.what(), COLOUR_LGRAY);
+      cConsole->AddLine(COLOUR_LRED, E.what());
       // Disable garbage collector so no shenangians while we reset
       // environment.
       cLua->StopGC();
@@ -583,8 +488,8 @@ class Core final :                     // Members initially private
                 // Write ignore exception to log.
                 cLog->LogErrorExSafe("Core sandbox run-time exception: $",
                   E.what());
-                // Add event to pause.
-                cEvtMain->Add(EMC_LUA_PAUSE);
+                // Add event to pause
+                cLua->RequestPause(false);
                 // Redraw the console and show it.
                 CoreForceRedrawFrameBuffer(true);
                 // Break to pause
@@ -754,12 +659,14 @@ class Core final :                     // Members initially private
   }
   /* -- Wait async on all systems ---------------------------------- */ public:
   void CoreWaitAllAsync(void)
-  { // Wait for all asyncronous operations to complete. Bad stuff can happen
-    // after we've stopped LUA and 'onload' events are triggering after that!
-    cArchives->WaitAsync();            cAssets->WaitAsync();
-    cFtfs->WaitAsync();                cImages->WaitAsync();
-    cJsons->WaitAsync();               cPcms->WaitAsync();
-    cStreams->WaitAsync();             cVideos->WaitAsync();
+  { // Wait for all asyncronous operations to complete.
+    const scoped_lock slCollectorMutexes{
+      cArchives->CollectorGetMutex(), cAssets->CollectorGetMutex(),
+      cFtfs->CollectorGetMutex(),     cImages->CollectorGetMutex(),
+      cJsons->CollectorGetMutex(),    cPcms->CollectorGetMutex(),
+      cSources->CollectorGetMutex(),  cStreams->CollectorGetMutex(),
+      cVideos->CollectorGetMutex()
+    };
   }
   /* -- Main function ------------------------------------------------------ */
   int CoreMain(const int iArgs, ArgType**const lArgs, ArgType**const lEnv) try
@@ -792,11 +699,10 @@ class Core final :                     // Members initially private
       using namespace IOal::P;         using namespace IParser::P;
       using namespace IPcmFormat::P;   using namespace IPcmLib::P;
       using namespace ISample::P;      using namespace IShader::P;
-      using namespace ISocket::P;      using namespace ISource::P;
-      using namespace ISShot::P;       using namespace IStat::P;
-      using namespace IUtil::P;        using namespace IUtf;
-      using namespace Lib::OpenAL;     using namespace Lib::OS::GlFW;
-      using namespace Lib::Sqlite;
+      using namespace ISocket::P;      using namespace ISShot::P;
+      using namespace IStat::P;        using namespace IUtil::P;
+      using namespace IUtf;            using namespace Lib::OpenAL;
+      using namespace Lib::OS::GlFW;   using namespace Lib::Sqlite;
       // Initialise other systems. The order is important!
       INITSS(Stats);                   // cppcheck-suppress danglingLifetime
       INITSS(Threads);                 // cppcheck-suppress danglingLifetime
@@ -839,7 +745,7 @@ class Core final :                     // Members initially private
       INITSS(ShaderCore);              // cppcheck-suppress danglingLifetime
       INITSS(Fbos);                    // cppcheck-suppress danglingLifetime
       INITSS(FboCore);                 // cppcheck-suppress danglingLifetime
-      INITSS(SShot);                   // cppcheck-suppress danglingLifetime
+      INITSS(SShots);                  // cppcheck-suppress danglingLifetime
       INITSS(Textures);                // cppcheck-suppress danglingLifetime
       INITSS(Palettes);                // cppcheck-suppress danglingLifetime
       INITSS(Fonts);                   // cppcheck-suppress danglingLifetime
@@ -973,7 +879,107 @@ class Core final :                     // Members initially private
     /* -- Set pointer to this class ---------------------------------------- */
     { cCore = this; }
   /* -- Destructor that clears the core pointer ---------------------------- */
-  ~Core(void) { cCore = nullptr; }
+  DTORHELPER(~Core, cCore = nullptr)
+  /* ----------------------------------------------------------------------- */
+  DELETECOPYCTORS(Core)                // Disable copy constructor and operator
+  /* -- Set lua error mode behaviour --------------------------------------- */
+  CVarReturn CoreErrorBehaviourModified(const CoreErrorFlags cefNMode)
+    { return CVarSimpleSetIntNGE(cefMode, cefNMode, CEF_MAX); }
+  /* -- Title modified ----------------------------------------------------- */
+  CVarReturn CoreTitleModified(const string &strN, string &strV)
+  { // Do not allow user to set this variable, only empty is allowed
+    if(!strN.empty()) return DENY;
+    // Set the title
+    strV = StrAppend(cSystem->GetGuestTitle(), ' ', cSystem->GetGuestVersion(),
+      " (", cSystem->ENGTarget(), ")");
+    // We changed the value
+    return ACCEPT_HANDLED;
+  }
+  /* -- Ask system to clear mutex ------------------ Core::SetOneInstance -- */
+  CVarReturn CoreClearMutex(const bool bEnabled)
+  { // Ignore check if not needed or global mutex creation succeeded
+    if(bEnabled) cSystem->DeleteGlobalMutex(cSystem->GetGuestTitle());
+    // Execution may continue
+    return ACCEPT;
+  }
+  /* -- Set once instance cvar changed ------------- Core::SetOneInstance -- */
+  CVarReturn CoreSetOneInstance(const bool bEnabled)
+  { // Ignore check if not needed or global mutex creation succeeded
+    if(!bEnabled || cSystem->InitGlobalMutex(cSystem->GetGuestTitle()))
+      return ACCEPT;
+    // Global mutex creation failed so exit program now, cleanly.
+    exit(5);
+  }
+  /* -- Set home directory where files are written if base dir dont work --- */
+  CVarReturn CoreSetHomeDir(const string &strP, string &strV)
+  { // Build user volatile directory name if user didn't specify one
+    if(strP.empty())
+      strV = StrFormat("$/$/$/", cSystem->GetRoamingDir(),
+        cSystem->GetGuestAuthor().empty() ?
+          cCommon->Unspec() : cSystem->GetGuestAuthor(),
+        cSystem->GetGuestShortTitle().empty() ?
+          cCommon->Unspec() : cSystem->GetGuestShortTitle());
+    // Specified so use what the user specified
+    else strV = StdMove(strP);
+    // Try to make the users home directory as an alternative save place.
+    if(!DirMkDirEx(PSplitBackToForwardSlashes(strV)))
+      XCL("Failed to setup persistance directory!", "Directory", strV);
+    // Set home directory and return that we set the value
+    cCmdLine->SetHome(strV);
+    return ACCEPT_HANDLED;
+  }
+  /* -- Set error limit ---------------------------------------------------- */
+  CVarReturn CoreSetResetLimit(const unsigned int uiLimit)
+    { return CVarSimpleSetInt(uiErrorLimit, uiLimit); }
+  /* -- Parses the command-line -------------------------------------------- */
+  CVarReturn CoreParseCmdLine(const string&, string &strV)
+  { // Get command line parameters and if we have parameters?
+    const StrVector &svArgs = cCmdLine->GetArgList();
+    if(!svArgs.empty())
+    { // Reserve some memory for building command line
+      strV.reserve(32767);
+      // Valid commands parsed
+      size_t stGood = 0, stArg = 1;
+      // Parse command line arguments and iterate through them
+      for(const string &strArg : svArgs)
+      { // If empty argument? Log the failure and continue
+        if(strArg.empty())
+          cLog->LogWarningExSafe(
+            "Core rejected empty command-line argument at $!", stArg);
+        // Not empty argument? Tokenise the argument into a key/value pair. We
+        // only want a maximum of two tokens, the seperator is allowed on the
+        // second token and if succeeded?
+        else if(const Token tKeyVal{ strArg, cCommon->Equals(), 2 })
+        { // Set the variable from command line with full permission because we
+          // should allow any variable to be overridden from the command line.
+          // Also show an error if the variable could not be set.
+          if(cCVars->SetVarOrInitial(tKeyVal.front(), tKeyVal.size() > 1 ?
+            tKeyVal.back() : cCommon->Blank(), SCMDLINE|PBOOT, CCF_NOTHING))
+          { // Append argument to accepted command line and add a space
+            strV.append(strArg);
+            strV.append(cCommon->Space());
+            // Good variable
+            ++stGood;
+          } // Failure? Log the failure
+          else cLog->LogWarningExSafe(
+            "Core rejected command-line argument at $: '$'!", stArg, strArg);
+        } // Log the failure and continue to next argument
+        else cLog->LogWarningExSafe("Core rejected invalid command-line "
+          "argument at $: '$'!", stArg, strArg);
+        // Next argument
+        ++stArg;
+      } // Remove empty space if not empty
+      if(!strV.empty()) strV.pop_back();
+      // Free unused memory
+      strV.shrink_to_fit();
+      // Write command-line arguments parsed
+      cLog->LogDebugExSafe("Core parsed $ of $ command-line arguments.",
+        stGood, svArgs.size());
+    } // No arguments processed
+    else cLog->LogDebugSafe("Core parsed no command-line arguments!");
+    // We handled setting the variable
+    return ACCEPT_HANDLED;
+  }
 };/* ----------------------------------------------------------------------- */
 };                                     // End of public module namespace
 /* ------------------------------------------------------------------------- */

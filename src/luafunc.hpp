@@ -17,9 +17,9 @@ using namespace IStd::P;               using namespace ISysUtil::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* -- LuaFunc ollector class for collector data and custom variables ------- */
-BEGIN_COLLECTOREX(LuaFuncs, LuaFunc, CLHelperSafe, /**/,/**/, public LuaRef<1>)
+CTOR_BEGIN(LuaFuncs, LuaFunc, CLHelperSafe,,,public LuaRef<1>)
 /* -- LuaFunc class -------------------------------------------------------- */
-BEGIN_MEMBERCLASS(LuaFuncs, LuaFunc, ICHelperUnsafe),
+CTOR_MEM_BEGIN_CSLAVE(LuaFuncs, LuaFunc, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
   public Ident                         // Object name
 { /* -- Private variables -------------------------------------------------- */
@@ -331,7 +331,7 @@ static void LuaFuncEnableAllRefs(void)
   cLog->LogDebugExSafe("LuaFuncs enabled $ references...", cLuaFuncs->size());
 }
 /* ------------------------------------------------------------------------- */
-END_COLLECTOREX(LuaFuncs,,LuaFuncDeInitRef(),) // Finish collector
+CTOR_END(LuaFuncs,,LuaFuncDeInitRef(),) // Finish collector
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */

@@ -165,9 +165,9 @@ LLFUNCEX(Floating, 1, LCPUSHVAR(cGlFW->WinIsFloatingAttribEnabled()));
 LLFUNC(SetFullScreen, cDisplay->RequestFSToggle(LCGETBOOL(1, "State")));
 /* ========================================================================= */
 // $ Display.SetMatrix
-// > Width:number=Ortho width.
-// > Height:number=Ortho height.
-// ? Sets the aspect (ortho) size of the viewport. Recommended to use a 4:3
+// > Width:number=Matrix width.
+// > Height:number=Matrix height.
+// ? Sets the 2D aspect size of the matrix. Recommended to use a 4:3
 // ? aspect ratio to allow the automatic aspect ratio feature to work properly
 // ? for widescreen window sizes.
 /* ------------------------------------------------------------------------- */

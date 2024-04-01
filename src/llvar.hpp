@@ -32,8 +32,8 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Variable));
 LLFUNCEX(Empty, 1, LCPUSHVAR(LCGETPTR(1, Variable)->Empty()));
 /* ========================================================================= */
 // $ Variable:Id
-// < Id:integer=The id of the variable.
-// ? Returns the unique id of the variable.
+// < Id:integer=The id of the Variable object.
+// ? Returns the unique id of the Variable object.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Id, 1, LCPUSHVAR(LCGETPTR(1, Variable)->CtrGet()));
 /* ========================================================================= */

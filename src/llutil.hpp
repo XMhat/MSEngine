@@ -71,7 +71,7 @@ LLFUNCEX(AscNTimeUTC, 1, LCPUSHVAR(cmSys.FormatTimeUTC()));
 // ? will be in local time format.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(FormatTime, 1, LCPUSHVAR(StrFromTimeTT(
-  LCGETINT(StdTimeT, 1, "Timestamp"), LCGETSTRING(char, 2, "StrFormat"))));
+  LCGETINT(StdTimeT, 1, "Timestamp"), LCGETSTRING(char, 2, "Format"))));
 /* ========================================================================= */
 // $ Util.FormatTimeUTC
 // > Timestamp:integer=The timestamp to convert to string
@@ -82,7 +82,7 @@ LLFUNCEX(FormatTime, 1, LCPUSHVAR(StrFromTimeTT(
 // ? will be in UTC time format.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(FormatTimeUTC, 1, LCPUSHVAR(StrFromTimeTTUTC(
-  LCGETINT(StdTimeT, 1, "Timestamp"), LCGETSTRING(char, 2, "StrFormat"))));
+  LCGETINT(StdTimeT, 1, "Timestamp"), LCGETSTRING(char, 2, "Format"))));
 /* ========================================================================= */
 // $ Util.FormatNTime
 // > Format:stringr=The strftime format string.
@@ -92,7 +92,7 @@ LLFUNCEX(FormatTimeUTC, 1, LCPUSHVAR(StrFromTimeTTUTC(
 // ? Note that time will be in local time format.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(FormatNTime, 1,
-  LCPUSHVAR(cmSys.FormatTime(LCGETSTRING(char, 1, "StrFormat"))));
+  LCPUSHVAR(cmSys.FormatTime(LCGETSTRING(char, 1, "Format"))));
 /* ========================================================================= */
 // $ Util.FormatNTimeUTC
 // > Format:stringr=The strftime format string.
@@ -102,7 +102,7 @@ LLFUNCEX(FormatNTime, 1,
 // ? time will be in UTC time format.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(FormatNTimeUTC, 1,
-  LCPUSHVAR(cmSys.FormatTimeUTC(LCGETSTRING(char, 1, "StrFormat"))));
+  LCPUSHVAR(cmSys.FormatTimeUTC(LCGETSTRING(char, 1, "Format"))));
 /* ========================================================================= */
 // $ Util.ParseTime
 // > Format:string=The ISO 8601 formatted string.
@@ -122,7 +122,7 @@ LLFUNCEX(ParseTime, 1,
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(ParseTimeEx, 1,
   LCPUSHVAR(StrParseTime(LCGETCPPSTRINGNE(1, "Timestamp"),
-    LCGETSTRING(char, 2, "StrFormat"))));
+    LCGETSTRING(char, 2, "Format"))));
 /* ========================================================================= */
 // $ Util.ParseTime2
 // > Format:string=The specially formatted date string.
@@ -132,7 +132,7 @@ LLFUNCEX(ParseTimeEx, 1,
 // ? at the moment.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(ParseTime2, 1,
-  LCPUSHVAR(StrParseTime2(LCGETCPPSTRINGNE(1, "StrFormat"))));
+  LCPUSHVAR(StrParseTime2(LCGETCPPSTRINGNE(1, "Format"))));
 /* ========================================================================= */
 // $ Util.FormatNumber
 // > Value:number=A number value, it will be converted to a string.
@@ -320,7 +320,7 @@ LLFUNCEX(RelTimeEx, 1, LCPUSHVAR(cmSys.ToDurationRel(
 // ? Checks the number and suffixes the appropriate word depending on if the
 // ? supplied number is singular or plural.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Pluralise, 1, LCPUSHVAR(StrPluraliseNum(
+LLFUNCEX(Pluralise, 1, LCPUSHVAR(StrCPluraliseNum(
   LCGETINT   (uint64_t, 1, "Value"), LCGETSTRING(char, 2, "Singular"),
   LCGETSTRING(char,     3, "Plural"))));
 /* ========================================================================= */
@@ -333,7 +333,7 @@ LLFUNCEX(Pluralise, 1, LCPUSHVAR(StrPluraliseNum(
 // ? supplied number is singular or plural. Uses the systems local settings
 // ? to make sure the number is formatted properly.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(PluraliseEx, 1, LCPUSHVAR(StrPluraliseNumEx(
+LLFUNCEX(PluraliseEx, 1, LCPUSHVAR(StrCPluraliseNumEx(
   LCGETINT   (uint64_t, 1, "Value"), LCGETSTRING(char, 2, "Singular"),
   LCGETSTRING(char,     3, "Plural"))));
 /* ========================================================================= */

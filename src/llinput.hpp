@@ -75,7 +75,7 @@ LLFUNCEND
 // > X:integer=The X co-ordinate of the mouse cursor.
 // > Y:integer=The Y co-ordinate of the mouse cursor.
 // ? Sets the position of the mouse cursor relative to the top-left of the
-// ? main FBO ortho, meaning X could be negative.
+// ? main FBO matrix, meaning X could be negative.
 /* ------------------------------------------------------------------------- */
 LLFUNC(SetCursorPos,
   cInput->SetCursorPos(LCGETNUM(double, 1, "X"), LCGETNUM(double, 2, "Y")));
@@ -84,7 +84,7 @@ LLFUNC(SetCursorPos,
 // > X:integer=The X co-ordinate of the mouse cursor.
 // > Y:integer=The Y co-ordinate of the mouse cursor.
 // ? Sets the position of the mouse cursor relative to the top-left of the
-// ? main FBO ortho, meaning X could be negative.
+// ? main FBO matrix, meaning X could be negative.
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(GetCursorPos)
   double dX, dY; cInput->GetCursorPos(dX, dY);

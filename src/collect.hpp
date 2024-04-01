@@ -18,116 +18,114 @@ using namespace IString::P;            using namespace ISysUtil::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* -- Collector header ----------------------------------------------------- */
-#define COLLECTHDR2(PCR,               /* The collector class type          */\
-                    SCR,               /* The member class type             */\
-                    CLC,               /* Collector container type          */\
-                    CLH,               /* CLHelper or CLHelperAsync         */\
-                    PCI,               /* CLHelperSafe or CLHelperUnsafe    */\
-                    PCV,               /* Extra class body arguments (no ,) */\
-                    ...)               /* Extra derivced classes            */\
-  class SCR;                           /* Member class prototype            */\
-  typedef CLC<SCR*> PCR ## LT;         /* The container type                */\
-  typedef CLH<SCR,                     /* The collector helper type arg     */\
-              PCI<SCR,PCR ## LT>,      /* The collector sync type arg       */\
-              PCR ## LT> PCR ## CH;    /* The container type arg            */\
-  static struct PCR final :            /* Begin collector object class      */\
-    public PCR ## CH                   /* Derive by collector helper class  */\
+#define CTOR_HDR_BEGIN(p,              /* The parent (collector) class type */\
+                       m,              /* The member class type             */\
+                       l,              /* The parent container type typedef */\
+                       ln,             /* Alias of complete container type  */\
+                       in,             /* Alias of container iter type      */\
+                       cn,             /* Alias of cont const iter type     */\
+                       h,              /* CLHelper or CLHelperAsync         */\
+                       hn,             /* Alias of complete helper type     */\
+                       s,              /* CLHelperSafe or CLHelperUnsafe    */\
+                       x,              /* Extra class body arguments (no ,) */\
+                       ...)            /* Extra derivced classes            */\
+  class m;                             /* Member class prototype            */\
+  typedef l<m*> ln;                    /* Create container type alias       */\
+  typedef ln::iterator in;             /* Create iterator type alias        */\
+  typedef ln::const_iterator cn;       /* Create const iterator type alias  */\
+  typedef h<m,s<m,ln,in>,ln,in> hn;    /* Create alias for collector type   */\
+  static struct p final : public hn    /* Begin collector object class      */\
     __VA_ARGS__                        /* Any other custom class derives    */\
-  { DELETECOPYCTORS(PCR)               /* Remove default functions          */\
-    PCR(void);                         /* Constructor prototype             */\
-    ~PCR(void) noexcept(false);        /* Destructor prototype              */\
-    PCV                                /* Any extra variables? (no comma!)  */
-/* -- Collector header ----------------------------------------------------- */
-#define COLLECTHDR(PCR,SCR,CLH,PCI,PCV,...) \
-  COLLECTHDR2(PCR,SCR,list,CLH,PCI,PCV,__VA_ARGS__)
-/* -- Collector footer ----------------------------------------------------- */
-#define COLLECTFTR(PCR) } *c ## PCR = nullptr; /* Pointer to static class    */
-/* -- Build a collector class body (no comma) with custom derived classes -- */
-#define BEGIN_COLLECTOREX(PCR,SCR,PCI,PCV,...) \
-  COLLECTHDR(PCR,SCR,CLHelper,         /* Insert standard header            */\
-    PCI,PCV,## __VA_ARGS__)            /*   with body and custom derives    */\
-  COLLECTFTR(PCR)                      /* Insert standard footer             */
+  { DELETECOPYCTORS(p)                 /* Remove default functions          */\
+    p(void);                           /* Constructor prototype             */\
+    ~p(void) noexcept(false);          /* Destructor prototype              */\
+    x                                  /* Any extra variables? (no comma!)   */
+/* -- Collector header that lets you use a custom container ---------------- */
+#define CTOR_HDR_CUSTCTR(p,m,l,h,s,x,...) \
+  CTOR_HDR_BEGIN(p,m,l,p ## Ctr,p ## It,p ## ItConst,h,p ## Helper,\
+    s,x,## __VA_ARGS__)
+/* -- Collector header that assumes std::list for the container type ------- */
+#define CTOR_HDR_DEFCTR(p,m,h,s,x,...) \
+  CTOR_HDR_CUSTCTR(p,m,list,h,s,x,## __VA_ARGS__)
+/* -- Collector footer that creates the global class pointer init in core -- */
+#define CTOR_HDR_END(p) } *c ## p = nullptr;
+/* -- Build a collector class with base classes and body ------------------- */
+#define CTOR_BEGIN(p,m,s,x,...) \
+  CTOR_HDR_DEFCTR(p,m,CLHelper,        /* Insert standard header            */\
+    s,x,## __VA_ARGS__)                /*   with body and custom derives    */\
+  CTOR_HDR_END(p)                      /* Insert standard footer             */
 /* -- Build a collector class body with a fully custom body ---------------- */
-#define BEGIN_COLLECTOREX2(PCR,SCR,PCI,...) \
-  COLLECTHDR(PCR,SCR,CLHelper,PCI,)    /* Begin standard header             */\
+#define CTOR_BEGIN_NOBASE(p,m,s,...) \
+  CTOR_HDR_DEFCTR(p,m,CLHelper,s,)     /* Begin standard header             */\
   __VA_ARGS__                          /* Insert user collector body        */\
-  COLLECTFTR(PCR)                      /* Insert standard footer             */
+  CTOR_HDR_END(p)                      /* Insert standard footer             */
 /* -- Build a collector class body with no special parameters -------------- */
-#define BEGIN_COLLECTOR(PCR,SCR,PCI) BEGIN_COLLECTOREX(PCR,SCR,PCI,,)
+#define CTOR_BEGIN_NOBB(p,m,s) CTOR_BEGIN(p,m,s,,)
 /* -- Build a collector class body with no special parameters only type ---- */
-#define BEGIN_CUSTCTR_COLLECTOR(PCR,SCR,CLC,PCI,...) \
-  COLLECTHDR2(PCR,SCR,CLC,CLHelper,PCI,) /* Begin std hdr with custom ctr   */\
+#define CTOR_BEGIN_CUSTCTR(p,m,l,s,...) \
+  CTOR_HDR_CUSTCTR(p,m,l,CLHelper,s,)  /* Begin std hdr with custom ctr     */\
   __VA_ARGS__                          /* Insert user collector body        */\
-  COLLECTFTR(PCR)                      /* Insert standard footer             */
+  CTOR_HDR_END(p)                      /* Insert standard footer             */
 /* -- Thread safe collector with user-defined variables or classes --------- */
-#define BEGIN_ASYNCCOLLECTOREX(PCR,SCR,CLH,PCV,...) \
-  COLLECTHDR(PCR,SCR,CLHelperAsync,CLH,PCV,## __VA_ARGS__) \
-  COLLECTFTR(PCR)
-/* -- Thread safe collector with no user-defined variables or classes ------ */
-#define BEGIN_ASYNCCOLLECTOR(PCR,SCR,CLH) BEGIN_ASYNCCOLLECTOREX(PCR,SCR,CLH,,)
+#define CTOR_BEGIN_ASYNC(p,m,h,x,...) \
+  CTOR_HDR_DEFCTR(p,m,CLHelperAsync,h,x,## __VA_ARGS__) \
+  CTOR_HDR_END(p)
 /* -- Tailing collector class macro with init and deinit calls ------------- */
-#define END_COLLECTOREX2(PCR,CFI,CFD,...) \
-  PCR::PCR(void) : __VA_ARGS__ { IHInitialise(); CFI; } \
-  DTORHELPER(PCR::~PCR, if(IHNotDeInitialise()) return; CFD)
-#define END_COLLECTOREX(PCR,CFI,CFD,...) \
-  END_COLLECTOREX2(PCR,CFI,CFD,CLHelper{ STR(PCR) } __VA_ARGS__)
-/* -- Tailing collector class macro with init and deinit calls ------------- */
-#define END_ASYNCCOLLECTOREX2(PCR,PCE,CFI,CFD,...) \
-  END_COLLECTOREX2(PCR,CFI,CFD,\
-    CLHelperAsync{ STR(PCR), EMC_MP_ ## PCE } __VA_ARGS__);
-#define END_ASYNCCOLLECTOREX(PCR,SCR,PCE,CFI,CFD,...) \
-  END_ASYNCCOLLECTOREX2(PCR,PCE,CFI,CFD,,## __VA_ARGS__)
-#define END_ASYNCCOLLECTOR(PCR,SCR,PCE,...) \
-  END_ASYNCCOLLECTOREX(PCR,SCR,PCE,,,## __VA_ARGS__)
+#define CTOR_END_EX(p,                 /* The parent (collector) class type */\
+                    i,                 /* Constructor initialisation code   */\
+                    d,                 /* Destructor de-initialisation code */\
+                    ...)               /* Constructor initialisers code     */\
+  p::p(void) : __VA_ARGS__ { IHInitialise(); i; } \
+  DTORHELPER(p::~p, if(IHNotDeInitialise()) return; d)
+/* -- Tailing collector class macro that inits a collector helper ---------- */
+#define CTOR_END(p,i,d,...) \
+  CTOR_END_EX(p,i,d,CLHelper{STR(p)} __VA_ARGS__)
 /* -- Tailing collector class macro with no init and deinit calls ---------- */
-#define END_COLLECTOR(PCR) END_COLLECTOREX(PCR,,,)
+#define CTOR_END_NOINITS(p) CTOR_END(p,,,)
+/* -- Tailing async collector class macro with init and deinit calls ------- */
+#define CTOR_END_ASYNC(p,e,i,d,...)    /* 'e' is the EvtMain event id       */\
+  CTOR_END_EX(p,i,d,CLHelperAsync{STR(p), EMC_MP_ ## e} __VA_ARGS__);
+/* -- Tailing async collector class macro with no init nor deinit calls ---- */
+#define CTOR_END_ASYNC_NOFUNCS(p,e,...) \
+  CTOR_END_ASYNC(p,e,,,,## __VA_ARGS__)
 /* -- Start building a member class for a collector ------------------------ */
-#define BEGIN_MEMBERCLASSEX(SCR,       /* The collector type                */\
-                            PCR,       /* The member type                   */\
-                            ICH,       /* ICHelperSafe or ICHelperUnsafe    */\
-                            ...)       /* Extra arguments                   */\
-  typedef ICHelper<SCR,PCR,            /* Make an alias for the locktype    */\
-    ICH<SCR,PCR>> ICHelper ## PCR;     /*   which will be derived           */\
-  class PCR : public ICHelper ## PCR   /* Begin the member class            */\
+#define CTOR_MEM_BEGIN_EX(p,           /* The collector type                */\
+                          m,           /* The member type                   */\
+                          i,           /* The iterator type                 */\
+                          s,           /* ICHelperSafe or ICHelperUnsafe    */\
+                          n,           /* The completed helper type alias   */\
+                          ...)         /* Extra arguments                   */\
+  typedef ICHelper<p,m,s<p,m,i>,i> n;  /* Make an alias for the locktype    */\
+  class m : public n                   /* Begin the member class            */\
     __VA_ARGS__                        /* Add extra arguments if needed     */
 /* -- Start building a member class for a collector ------------------------ */
-#define BEGIN_MEMBERCLASS(SCR,         /* The collector type                */\
-                          PCR,         /* The member type                   */\
-                          ICH)         /* ICHelperSafe or ICHelperUnsafe    */\
-  BEGIN_MEMBERCLASSEX(SCR,PCR,ICH,,    /* Use expanded macro                */\
-    public IdentCSlave<>)              /* Counter id slave class            */
+#define CTOR_MEM_BEGIN(p,m,s,...) \
+  CTOR_MEM_BEGIN_EX(p,m,p ## It,s,ICHelper ## m,## __VA_ARGS__)
+/* -- Start building a member class for a collector ------------------------ */
+#define CTOR_MEM_BEGIN_CSLAVE(p,m,s) \
+  CTOR_MEM_BEGIN(p,m,s,,public IdentCSlave<>)
 /* -- All in one collector and member builder ------------------------------ */
-#define BEGIN_COLLECTORDUO(SCR,        /* The collector type                */\
-                           PCR,        /* The member type                   */\
-                           CLH,        /* CLHelperSafe or CLHelperUnsafe    */\
-                           ICH)        /* ICHelperSafe or ICHelperUnsafe    */\
-  BEGIN_COLLECTOR(SCR,PCR,CLH)         /* Start building collector class    */\
-  BEGIN_MEMBERCLASS(SCR,PCR,ICH)       /* Start building member class        */
+#define CTOR_BEGIN_DUO(p,m,h,s) \
+  CTOR_BEGIN_NOBB(p,m,h)               /* Start building collector class    */\
+  CTOR_MEM_BEGIN_CSLAVE(p,m,s)         /* Start building member class        */
 /* -- Start building a member class for a collector ------------------------ */
-#define BEGIN_ASYNCMEMBERCLASSEX(SCR,  /* The collector type                */\
-                                 PCR,  /* The member type                   */\
-                                 ICH,  /* ICHelperSafe or ICHelperUnsafe    */\
-                                 ...)  /* Extra arguments                   */\
-  typedef ICHelper<SCR,PCR,            /* Make an alias for the locktype    */\
-    ICH<SCR,PCR>> ICHelper ## PCR;     /*   which will be derived           */\
-  typedef AsyncLoader<PCR,             /* Async loader helper typedef       */\
-    ICHelper ## PCR>                   /*   Used with async classes         */\
-      AsyncLoader ## PCR;              /*   AsyncLoader{MemberType}         */\
-  class PCR : public ICHelper ## PCR   /* Begin the member class            */\
-    __VA_ARGS__                        /* Add extra arguments if needed     */
+#define CTOR_MEM_BEGIN_ASYNC_EX(p,m,i,s,n,a,...) \
+  typedef ICHelper<p,m,s<p,m,i>,i> n;  /* Create alias for locktype class   */\
+  typedef AsyncLoader<m,n> a;          /* Create alias for loader class     */\
+  class m : public n                   /* Begin the member class            */\
+    __VA_ARGS__                        /* Add extra arguments if needed      */
 /* -- Start building a member class for a collector ------------------------ */
-#define BEGIN_ASYNCMEMBERCLASS(SCR,    /* The collector type                */\
-                               PCR,    /* The member type                   */\
-                               ICH)    /* ICHelperSafe or ICHelperUnsafe    */\
-  BEGIN_ASYNCMEMBERCLASSEX(SCR,PCR,    /* Use expanded macro                */\
-    ICH,,public IdentCSlave<>)         /* Counter id slave class            */
+#define CTOR_MEM_BEGIN_ASYNC(p,m,s,...) \
+  CTOR_MEM_BEGIN_ASYNC_EX(p,m,p ## It,s,ICHelper ## m, \
+    AsyncLoader ## m,## __VA_ARGS__)
+/* -- Start building a member class for a collector ------------------------ */
+#define CTOR_MEM_BEGIN_ASYNC_CSLAVE(p,m,s) \
+  CTOR_MEM_BEGIN_ASYNC(p,m,s,,         /* Use expanded macro                */\
+    public IdentCSlave<>)              /* Counter id slave class             */
 /* -- All in one async collector and async member builder ------------------ */
-#define BEGIN_ASYNCCOLLECTORDUO(SCR,   /* The collector type                */\
-                                PCR,   /* The member type                   */\
-                                CLH,   /* CLHelperSafe or CLHelperUnsafe    */\
-                                ICH)   /* ICHelperSafe or ICHelperUnsafe    */\
-  BEGIN_ASYNCCOLLECTOR(SCR,PCR,CLH)    /* Start building collector class    */\
-  BEGIN_ASYNCMEMBERCLASS(SCR,PCR,ICH)  /* Start building member class   */
+#define CTOR_BEGIN_ASYNC_DUO(p,m,h,s) \
+  CTOR_BEGIN_ASYNC(p,m,h,,)            /* Start building collector class    */\
+  CTOR_MEM_BEGIN_ASYNC_CSLAVE(p,m,s)   /* Start building member class        */
 /* == Init Helper Class ==================================================== **
 ** ######################################################################### **
 ** ## This class holds the name of a class and if it has been             ## **
@@ -186,9 +184,7 @@ class IHelper :                        // The Init Helper class
 ** ## classes.                                                            ## **
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
-template<class MemberType,             // Member type (Archive, Asset, etc.)
-         class ListType,               // List type (std::list)
-         class IteratorType>           // Iterator type (std::list::iterator)
+template<class MemberType, class ListType, class IteratorType>
 class CLHelperBase :
   /* -- Base classes ------------------------------------------------------- */
   public IdentCMaster<>,               // Counter master class
@@ -215,9 +211,6 @@ class CLHelperBase :
          "Type", IdentGet(), "Current", CLBaseCountUnsafe(),
          "Maximum", stMaximum);
   }
-  /* -- Set limit ---------------------------------------------------------- */
-  CVarReturn CLBaseSetLimitUnsafe(const size_t stLimit)
-    { return CVarSimpleSetInt(stMaximum, stLimit); }
   /* -- Add/remove object to the list -------------------------------------- */
   IteratorType CLBaseAddUnsafe(MemberType*const mtObj)
     { return this->emplace(CLBaseGetLastItemUnsafe(), mtObj); }
@@ -243,10 +236,11 @@ class CLHelperBase :
     { }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(CLHelperBase)        // Don't need the default constructor
+  /* -- Set limit ---------------------------------------------------------- */
+  CVarReturn CLBaseSetLimitUnsafe(const size_t stLimit)
+    { return CVarSimpleSetInt(stMaximum, stLimit); }
 };/* ----------------------------------------------------- Collector::End -- */
-template<class MemberType,
-         class ListType,
-         class IteratorType = typename ListType::iterator,
+template<class MemberType, class ListType, class IteratorType,
          class BaseType = CLHelperBase<MemberType, ListType, IteratorType>>
 class CLHelperSafe :
   /* -- Base classes ------------------------------------------------------- */
@@ -275,10 +269,6 @@ class CLHelperSafe :
   IteratorType CLErase(IteratorType &itObj)
     { const LockGuard lgGuardErase{ CollectorGetMutex() };
       return this->CLBaseEraseUnsafe(itObj); }
-  /* -- Lock the mutex and return the removed iterator --------------------- */
-  CVarReturn CLSetLimit(const size_t stLimit)
-    { const LockGuard lgGuardSetLimit{ CollectorGetMutex() };
-      return this->CLBaseSetLimitUnsafe(stLimit); }
   /* -- Constructor -------------------------------------------------------- */
   explicit CLHelperSafe(const char*const cpT) :
     /* -- Initialisers ----------------------------------------------------- */
@@ -291,10 +281,12 @@ class CLHelperSafe :
   DELETECOPYCTORS(CLHelperSafe)        // Don't need the default constructor
   /* -- Return the mutex ------------------------------------------- */ public:
   mutex &CollectorGetMutex(void) { return *this; }
+  /* -- Lock the mutex and return the removed iterator --------------------- */
+  CVarReturn CLSetLimit(const size_t stLimit)
+    { const LockGuard lgGuardSetLimit{ CollectorGetMutex() };
+      return this->CLBaseSetLimitUnsafe(stLimit); }
 };/* ----------------------------------------------------------------------- */
-template<class MemberType,
-         class ListType,
-         class IteratorType = typename ListType::iterator,
+template<class MemberType, class ListType, class IteratorType,
          class BaseType = CLHelperBase<MemberType, ListType, IteratorType>>
 class CLHelperUnsafe :                 // Members initially private
   /* -- Base classes ------------------------------------------------------- */
@@ -313,9 +305,6 @@ class CLHelperUnsafe :                 // Members initially private
     { return this->CLBaseAddUnsafe(mtObj); }
   IteratorType CLErase(IteratorType &itObj)
     { return this->CLBaseEraseUnsafe(itObj); }
-  /* -- Set maximum objects ------------------------------------------------ */
-  CVarReturn CLSetLimit(const size_t stLimit)
-    { return this->CLBaseSetLimitUnsafe(stLimit); }
   /* -- Constructor -------------------------------------------------------- */
   explicit CLHelperUnsafe(const char*const cpT) :
     /* -- Initialisers ----------------------------------------------------- */
@@ -326,11 +315,11 @@ class CLHelperUnsafe :                 // Members initially private
   ~CLHelperUnsafe(void) { }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(CLHelperUnsafe)      // Don't need the default constructor
+  /* -- Set maximum objects ------------------------------------------------ */
+  CVarReturn CLSetLimit(const size_t stLimit)
+    { return this->CLBaseSetLimitUnsafe(stLimit); }
 };/* ----------------------------------------------------------------------- */
-template<class MemberType,
-         class LockType,
-         class ListType,
-         class IteratorType = typename ListType::iterator>
+template<class MemberType, class LockType, class ListType, class IteratorType>
 struct CLHelper :                      // Members initially public
   /* -- Base classes ------------------------------------------------------- */
   public LockType                      // CLHelperSafe or CLHelperUnsafe
@@ -360,10 +349,7 @@ struct CLHelper :                      // Members initially public
     { return this->CLAdd(mtObj); }
   IteratorType CollectorErase(IteratorType &itObj)
     { return this->CLErase(itObj); }
-  /* -- Set maximum objects ------------------------------------------------ */
-  CVarReturn CollectorSetLimit(const size_t stLimit)
-    { return this->CLSetLimit(stLimit); }
-   /* -- Constructor ------------------------------------------------------- */
+  /* -- Constructor -------------------------------------------------------- */
   explicit CLHelper(const char*const cpT) :
     /* -- Initialisers ----------------------------------------------------- */
     LockType{ cpT }                    // Initialise lock type with name
@@ -373,6 +359,9 @@ struct CLHelper :                      // Members initially public
   ~CLHelper(void) { this->CLBaseCheckAndDestroyUnsafe(); }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(CLHelper)            // Don't need the default constructor
+  /* -- Set maximum objects ------------------------------------------------ */
+  CVarReturn CollectorSetLimit(const size_t stLimit)
+    { return this->CLSetLimit(stLimit); }
 }; /* ---------------------------------------------------------------------- */
 /* == MEMBER HELPERS ======================================================= **
 ** ######################################################################### **
@@ -381,9 +370,7 @@ struct CLHelper :                      // Members initially public
 ** ## neat things.                                                        ## **
 ** ######################################################################### **
 ** == Parent class helper ================================================== */
-template<class CollectorType,
-         class MemberType,
-         class IteratorType = typename CollectorType::iterator>
+template<class CollectorType, class MemberType, class IteratorType>
 struct ICHelperBase                    // Members initially public
 { /* -- Swap registration with another class ------------------------------- */
   CollectorType*const cParent;         // Parent class of this object
@@ -470,10 +457,8 @@ struct ICHelperBase                    // Members initially public
 ** ## in the audio processing thread.                                     ## **
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
-template<class CollectorType,
-         class MemberType,
-         class IteratorType = typename CollectorType::iterator,
-         class BaseType = ICHelperBase<CollectorType, MemberType>>
+template<class CollectorType, class MemberType, class IteratorType,
+  class BaseType = ICHelperBase<CollectorType, MemberType, IteratorType>>
 class ICHelperSafe :                   // Members initially private
   /* -- Base classes ------------------------------------------------------- */
   public BaseType                      // ICHelper base class
@@ -512,10 +497,8 @@ class ICHelperSafe :                   // Members initially private
 ** ## thread other than the engine thread.                                ## **
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
-template<class CollectorType,
-         class MemberType,
-         class IteratorType = typename CollectorType::iterator,
-         class BaseType = ICHelperBase<CollectorType,MemberType>>
+template<class CollectorType, class MemberType, class IteratorType,
+  class BaseType = ICHelperBase<CollectorType, MemberType, IteratorType>>
 class ICHelperUnsafe :                 // Members initially private
   /* -- Base classes ------------------------------------------------------- */
   public BaseType                      // ICHelper base class
@@ -555,10 +538,8 @@ class ICHelperUnsafe :                 // Members initially private
 ** ## access the collector.                                               ## **
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
-template<class CollectorType,
-         class MemberType,
-         class LockType,
-         class IteratorType = typename CollectorType::iterator>
+template<class CollectorType, class MemberType, class LockType,
+  class IteratorType>
 struct ICHelper :                      // Members initially public
   /* -- Base classes ------------------------------------------------------- */
   public LockType                      // ICHelperSafe or ICHelperUnSafe

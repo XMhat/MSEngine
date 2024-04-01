@@ -89,20 +89,6 @@ class SysCon :                         // All members initially private
       case OK: break;
     }
   }
-  /* -- Set maximum console line length ---------------------------- */ public:
-  CVarReturn RowsModified(const size_t stRows)
-  { // Deny if out of range. The maximum value is a SHORT from Win32 API.
-    if(stRows < 25 || UtilIntWillOverflow<int>(stRows)) return DENY;
-    // Value allowed
-    return ACCEPT;
-  }
-  /* -- Set maximum console line length ------------------------------------ */
-  CVarReturn ColsModified(const size_t stCols)
-  { // Deny if out of range. The maximum value is a SHORT from Win32 API.
-    if(stCols < 80 || UtilIntWillOverflow<int>(stCols)) return DENY;
-    // Value allowed
-    return ACCEPT;
-  }
   /* -- Return console window handle --------------------------------------- */
   void *GetHandle(void) { return nullptr; }
   /* -- Check for and update size ------------------------------------------ */
@@ -112,8 +98,13 @@ class SysCon :                         // All members initially private
     // am just going to put this here just incase.
     if(isendwin()) return;
     // Get new size of terminal window and return if not changed
+#if defined(LINUX)
+    const int iNewW = getmaxx(stdscr)+1, // getmaxx(stdscr)
+              iNewH = getmaxy(stdscr)+1; // getmaxy(stdscr)
+#else
     const int iNewW = stdscr->_maxx+1, // getmaxx(stdscr)
               iNewH = stdscr->_maxy+1; // getmaxy(stdscr)
+#endif
     if(iNewW == DimGetWidth() && iNewH == DimGetHeight()) return;
     // Log the new size
     cLog->LogDebugExSafe("SysCon resized from $x$ to $x$.",
@@ -808,9 +799,9 @@ class SysCon :                         // All members initially private
     cLog->LogDebugSafe("SysCon initialised.");
   }
   /* -- Constructor -------------------------------------------------------- */
-  SysCon(SysModList &&svVersion, const size_t stI) : // No parameters
+  SysCon(SysModMap &&smmMap, const size_t stI) : // No parameters
     /* -- Initialisers ----------------------------------------------------- */
-    SysBase{ StdMove(svVersion), stI }, // Initialise base with module info
+    SysBase{ StdMove(smmMap), stI },   // Initialise base with module info
     IHelper{ __FUNCTION__ },           // Initialise init helper
     fpSignal(nullptr),                 // Signal handler on standby
     aColour(0),                        // Black colour
@@ -826,6 +817,20 @@ class SysCon :                         // All members initially private
   DTORHELPER(~SysCon, SysConDeInit())
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(SysCon)              // Do not need defaults
+  /* -- Set maximum console line length ---------------------------- */ public:
+  CVarReturn RowsModified(const size_t stRows)
+  { // Deny if out of range. The maximum value is a SHORT from Win32 API.
+    if(stRows < 25 || UtilIntWillOverflow<int>(stRows)) return DENY;
+    // Value allowed
+    return ACCEPT;
+  }
+  /* -- Set maximum console line length ------------------------------------ */
+  CVarReturn ColsModified(const size_t stCols)
+  { // Deny if out of range. The maximum value is a SHORT from Win32 API.
+    if(stCols < 80 || UtilIntWillOverflow<int>(stCols)) return DENY;
+    // Value allowed
+    return ACCEPT;
+  }
 };/* ----------------------------------------------------------------------- */
 #define MSENGINE_SYSCON_CALLBACKS()    // Not required
 /* == EoF =========================================================== EoF == */

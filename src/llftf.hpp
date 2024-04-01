@@ -24,6 +24,12 @@ using namespace IStd::P;               using namespace Lib::OS::GlFW;
 ** ## Ftf:* member functions                                              ## **
 ** ######################################################################### **
 ** ========================================================================= */
+// $ Ftf:Id
+// < Id:integer=The id number of the Ftf object.
+// ? Returns the unique id of the Ftf object.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(Id, 1, LCPUSHVAR(LCGETPTR(1, Ftf)->CtrGet()));
+/* ========================================================================= */
 // $ Ftf:Name
 // < Name:string=The name of the freetype font
 // ? Returns the name of the specified object when it was created.
@@ -60,8 +66,8 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Ftf));
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Ftf:* member functions begin
-  LLRSFUNC(Destroy), LLRSFUNC(Name),   LLRSFUNC(Family),
-  LLRSFUNC(Style),   LLRSFUNC(Glyphs),
+  LLRSFUNC(Destroy), LLRSFUNC(Family), LLRSFUNC(Glyphs),
+  LLRSFUNC(Id),      LLRSFUNC(Name),   LLRSFUNC(Style),
 LLRSEND                                // Ftf:* member functions end
 /* ========================================================================= */
 // $ Ftf.FileAsync

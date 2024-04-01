@@ -43,10 +43,10 @@ BUILD_FLAGS(Asset,                     // Asset loading flags
            CD_ENCODE_ZLIBAES|CD_ENCODE_LZMAAES|CD_LEVEL_FASTEST|CD_LEVEL_FAST|
            CD_LEVEL_MODERATE|CD_LEVEL_SLOW|CD_LEVEL_SLOWEST }
 );/* == Asset collector class for collector and custom variables =========== */
-BEGIN_ASYNCCOLLECTOREX(Assets, Asset, CLHelperUnsafe,
+CTOR_BEGIN_ASYNC(Assets, Asset, CLHelperUnsafe,
 /* -- Asset collector variables -------------------------------------------- */
-bool               bOverride;          /* Allow load of external files      */\
-SafeSizeT          stPipeBufSize;      /* Pipe buffer size for execute      */\
+bool               bOverride;          // Allow load of external files
+SafeSizeT          stPipeBufSize;      // Pipe buffer size for execute
 ); /* ---------------------------------------------------------------------- */
 /* -- Function to load a file locally -------------------------------------- */
 static FileMap AssetLoadFromDisk(const string &strFile)
@@ -81,7 +81,7 @@ static FileMap AssetExtract(const string &strFile)
     "Archives", ArchiveGetNames());
 }
 /* == Asset object class =================================================== */
-BEGIN_ASYNCMEMBERCLASS(Assets, Asset, ICHelperUnsafe),
+CTOR_MEM_BEGIN_ASYNC_CSLAVE(Assets, Asset, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
   public Ident,                        // Asset file name
   public AsyncLoaderAsset,             // For loading assets off main thread
@@ -97,33 +97,32 @@ BEGIN_ASYNCMEMBERCLASS(Assets, Asset, ICHelperUnsafe),
     CollectorSwapRegistration(aOther);
   }
   /* -- Perform decoding --------------------------------------------------- */
-  template<class Codec>void CodecExec(FileMap &fC, size_t stLevel=0)
-    { MemSwap(Block<Codec>{ fC, stLevel }); }
+  template<class Codec>void CodecExec(FileMap &fmRef, size_t stLevel=0)
+    { MemSwap(Block<Codec>{ fmRef, stLevel }); }
   /* -- Perform decoding converting flags to compression level ------------- */
-  template<class Codec>void CodecExecEx(FileMap &fC)
-    { CodecExec<Codec>(fC, FlagIsSet(CD_LEVEL_FASTEST)  ? 1 :
-                          (FlagIsSet(CD_LEVEL_FAST)     ? 3 :
-                          (FlagIsSet(CD_LEVEL_MODERATE) ? 5 :
-                          (FlagIsSet(CD_LEVEL_SLOW)     ? 7 :
-                          (FlagIsSet(CD_LEVEL_SLOWEST)  ? 9 : 1))))); }
+  template<class Codec>void CodecExecEx(FileMap &fmRef)
+    { CodecExec<Codec>(fmRef,
+        FlagIsSet(CD_LEVEL_FASTEST)  ? 1 : (FlagIsSet(CD_LEVEL_FAST) ? 3 :
+       (FlagIsSet(CD_LEVEL_MODERATE) ? 5 : (FlagIsSet(CD_LEVEL_SLOW) ? 7 :
+       (FlagIsSet(CD_LEVEL_SLOWEST)  ? 9 : 1))))); }
   /* -- Load asset from memory ------------------------------------- */ public:
-  void AsyncReady(FileMap &fC)
+  void AsyncReady(FileMap &fmRef)
   { // Guest wants data put into a raw magic block (no user flags)
-    if(FlagIsSet(CD_ENCODE_RAW)) CodecExec<RAWEncoder>(fC);
+    if(FlagIsSet(CD_ENCODE_RAW)) CodecExec<RAWEncoder>(fmRef);
     // Guest wants data encrypted into a magic block (no user flags)
-    else if(FlagIsSet(CD_ENCODE_AES)) CodecExec<AESEncoder>(fC);
+    else if(FlagIsSet(CD_ENCODE_AES)) CodecExec<AESEncoder>(fmRef);
     // Guest wants data deflated into a magic block
-    else if(FlagIsSet(CD_ENCODE_ZLIB)) CodecExecEx<ZLIBEncoder>(fC);
+    else if(FlagIsSet(CD_ENCODE_ZLIB)) CodecExecEx<ZLIBEncoder>(fmRef);
     // Guest wants data encrypted and deflated into a magic block
-    else if(FlagIsSet(CD_ENCODE_ZLIBAES)) CodecExecEx<AESZLIBEncoder>(fC);
+    else if(FlagIsSet(CD_ENCODE_ZLIBAES)) CodecExecEx<AESZLIBEncoder>(fmRef);
     // Guest wants data compressed into a magic block
-    else if(FlagIsSet(CD_ENCODE_LZMA)) CodecExecEx<LZMAEncoder>(fC);
+    else if(FlagIsSet(CD_ENCODE_LZMA)) CodecExecEx<LZMAEncoder>(fmRef);
     // Guest wants data encrypted and compressed into a magic block
-    else if(FlagIsSet(CD_ENCODE_LZMAAES)) CodecExecEx<AESLZMAEncoder>(fC);
+    else if(FlagIsSet(CD_ENCODE_LZMAAES)) CodecExecEx<AESLZMAEncoder>(fmRef);
     // Guest wants data decoded from a magic block (no user flags)
-    else if(FlagIsSet(CD_DECODE)) CodecExec<CoDecoder>(fC);
+    else if(FlagIsSet(CD_DECODE)) CodecExec<CoDecoder>(fmRef);
     // Guest wants data untouched but we need to copy it all from the map
-    else MemSwap(fC.FileMapDecouple());
+    else MemSwap(fmRef.FileMapDecouple());
   }
   /* -- Load data from string asynchronously ------------------------------- */
   void InitAsyncString(lua_State*const lS)
@@ -186,26 +185,27 @@ BEGIN_ASYNCMEMBERCLASS(Assets, Asset, ICHelperUnsafe),
       StrAppend("CLP", aInput.MemSize()), aInput);
   }
   /* -- Init from file ----------------------------------------------------- */
-  void InitFile(const string &strFilename, const AssetFlagsConst &lfS)
+  void InitFile(const string &strFile, const AssetFlagsConst &afcFlags)
   { // Set load flags
-    FlagReset(lfS);
+    FlagReset(afcFlags);
     // Load file normally
-    SyncInitFileSafe(strFilename);
+    SyncInitFileSafe(strFile);
   }
   /* -- Init from string --------------------------------------------------- */
   void InitString(const string &strName, const string &strStr,
-    const AssetFlagsConst &lfS)
+    const AssetFlagsConst &afcFlags)
   { // Set load flags
-    FlagReset(lfS);
+    FlagReset(afcFlags);
     // Load file as array converted from string
     SyncInitArray(strName, Memory{ strStr });
   }
   /* -- Init from string --------------------------------------------------- */
-  void InitArray(const string &strN, Asset &&aSrc, const AssetFlagsConst &lfS)
+  void InitArray(const string &strName, Asset &&aRef,
+    const AssetFlagsConst &afcFlags)
   { // Set load flags
-    FlagReset(lfS);
+    FlagReset(afcFlags);
     // Set filename and flags
-    SyncInitArray(strN, StdMove(aSrc));
+    SyncInitArray(strName, StdMove(aRef));
   }
   /* -- Move assignment ---------------------------------------------------- */
   Asset& operator=(Asset &&aOther) { SwapAsset(aOther); return *this; }
@@ -226,8 +226,7 @@ BEGIN_ASYNCMEMBERCLASS(Assets, Asset, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Asset)               // Disable copy constructor and operator
 };/* ======================================================================= */
-/* -- End-of-collector ---------------------------------------------- End -- */
-END_ASYNCCOLLECTOR(Assets, Asset, ASSET, bOverride(false));
+CTOR_END_ASYNC_NOFUNCS(Assets, ASSET, bOverride(false));
 /* -- Class to help enumerate files ---------------------------------------- */
 struct AssetList :
   /* -- Dependents --------------------------------------------------------- */

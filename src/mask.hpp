@@ -14,11 +14,12 @@ using namespace IDir::P;               using namespace IError::P;
 using namespace IIdent::P;             using namespace IImage::P;
 using namespace IImageDef::P;          using namespace ILog::P;
 using namespace IMemory::P;            using namespace IStd::P;
-using namespace ISysUtil::P;           using namespace IUtil::P;
+using namespace ISysUtil::P;           using namespace ITexDef::P;
+using namespace IUtil::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* == Mask collector and member class ====================================== */
-BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
+CTOR_BEGIN_DUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
   public MemoryVector,                 // Slots for each mask
   public Lockable,                     // Lua garbage collector instruction
@@ -177,24 +178,27 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
         UtilBitClear(cpD, (iY*DimGetWidth())+iX);
   }
   /* -- Init --------------------------------------------------------------- */
-  void Init(const unsigned int uiW, const unsigned int uiH)
+  void Init(const string &strName, const unsigned int uiWidth,
+    const unsigned int uiHeight)
   { // Check dimension parameters
-    if(!uiW || !uiH ||
-       UtilIntWillOverflow<int>(uiW) || UtilIntWillOverflow<int>(uiH))
-      XC("Mask dimensions are invalid!", "Width", uiW, "Height", uiH);
+    if(!uiWidth || !uiHeight ||
+       UtilIntWillOverflow<int>(uiWidth) || UtilIntWillOverflow<int>(uiHeight))
+      XC("Mask dimensions are invalid!",
+         "Identifier", strName, "Width", uiWidth, "Height", uiHeight);
     // Calculate space required, push it into mask list and increment size
-    const size_t stLen = (uiW * uiH) / 8;
+    const size_t stLen = (uiWidth * uiHeight) / 8;
     emplace_back(Memory{ stLen });
     stAlloc += stLen;
     // Set name of mask
-    IdentSetEx(":$*$", uiW, uiH);
+    IdentSet(StdMove(strName));
     // Set width and height
-    DimSet(static_cast<int>(uiW), static_cast<int>(uiH));
+    DimSet(static_cast<int>(uiWidth), static_cast<int>(uiHeight));
   }
   /* -- Init cleared mask -------------------------------------------------- */
-  void InitBlank(const unsigned int uiW, const unsigned int uiH)
+  void InitBlank(const string &strName, const unsigned int uiWidth,
+    const unsigned int uiHeight)
   { // Initialise new mask memory
-    Init(uiW, uiH);
+    Init(strName, uiWidth, uiHeight);
     // Now clear it
     back().MemFill();
   }
@@ -208,7 +212,7 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     mDst.MemByteSwap8();
     // Setup raw image
     const Image imOut{ strFile, StdMove(mDst), DimGetWidth<unsigned int>(),
-      DimGetHeight<unsigned int>(), BD_BINARY, GL_NONE };
+      DimGetHeight<unsigned int>(), BD_BINARY };
     // Capture exceptions
     try
     { // Save bitmap to PNG
@@ -346,7 +350,7 @@ BEGIN_COLLECTORDUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Mask)                // Omit copy constructor for safety
 };/* ----------------------------------------------------------------------- */
-END_COLLECTOR(Masks)
+CTOR_END_NOINITS(Masks)                // Finish collector class
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */

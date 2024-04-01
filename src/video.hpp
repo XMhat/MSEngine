@@ -28,15 +28,15 @@ using namespace Lib::OpenAL;           using namespace Lib::OS::GlFW;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* -- Video collector class for collector data and custom variables -------- */
-BEGIN_ASYNCCOLLECTOREX(Videos, Video, CLHelperSafe,
+CTOR_BEGIN_ASYNC(Videos, Video, CLHelperSafe,
 /* -- Public variables ----------------------------------------------------- */
 typedef IdList<TH_CS_NSPACES> CSStrings;
-const CSStrings    csStrings;          /* Colour space strings list         */\
+const CSStrings    csStrings;          // Colour space strings list
 typedef IdList<TH_PF_NFORMATS> PFStrings;
-const PFStrings    pfStrings;          /* Pixel format strings list         */\
-double             dAudioBufferSize;   /* Default audio buffer size         */\
-size_t             stIOBufferSize;     /* Default IO buffer size            */\
-double             dMaxDrift;,,        /* Maximum drift before drop frames  */\
+const PFStrings    pfStrings;          // Pixel format strings list
+double             dAudioBufferSize;   // Default audio buffer size
+size_t             stIOBufferSize;     // Default IO buffer size
+double             dMaxDrift;,,        // Maximum drift before drop frames
 /* -- Derived classes ------------------------------------------------------ */
 private LuaEvtMaster<Video, LuaEvtTypeParam<Video>>); // Lua event
 /* ------------------------------------------------------------------------- */
@@ -51,7 +51,7 @@ BUILD_FLAGS(Video,
   // Hard stopped?                     Video is playing?
   FL_STOP                   {Flag[6]}, FL_PLAY                   {Flag[7]}
 );/* ======================================================================= */
-BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
+CTOR_MEM_BEGIN_ASYNC(Videos, Video, ICHelperSafe, /* No CLHelper */),
   /* -- Base classes ------------------------------------------------------- */
   public Fbo,                          // Video file name
   public AsyncLoaderVideo,             // Asynchronous laoding of videos
@@ -59,35 +59,37 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
   public VideoFlags,                   // Video settings flags
   private ClockInterval<>              // Frame playback timing helper
 { /* -- Typedefs ----------------------------------------------------------- */
+  struct YCbCr                         // Y/Cb/Cr plane data
+  { /* ------------------------------------------------------------------- */
+    const size_t   stI;                // Unique index
+    th_img_plane   tipP;               // Plane data
+    /* ------------------------------------------------------------------- */
+    void Reset(void) {
+      tipP.width = tipP.height = tipP.stride = 0;
+      tipP.data = nullptr;
+    }
+    /* -- Constructor that initialises id -------------------------------- */
+    explicit YCbCr(const size_t stNIndex) :
+      /* -- Initialisers ------------------------------------------------- */
+      stI(stNIndex),                   // Set unique id
+      tipP{0, 0, 0, nullptr}           // Initialise frame data
+      /* -- No code ------------------------------------------------------ */
+      { }
+  };/* ------------------------------------------------------------------- */
   struct Frame                         // Frame data
   { /* --------------------------------------------------------------------- */
-    bool             bDraw;            // Draw this frame?
+    bool           bDraw;              // Draw this frame?
+    typedef array<YCbCr, 3> YCCArray;  // Room for three frames
+    YCCArray       yccaFrames;         // The planes (Y, Cb and Cr);
     /* --------------------------------------------------------------------- */
-    struct YCbCr                       // Y/Cb/Cr plane data
-    { /* ------------------------------------------------------------------- */
-      const size_t   stI;              // Unique index
-      th_img_plane   tipP;             // Plane data
-      /* ------------------------------------------------------------------- */
-      void Reset(void) {
-        tipP.width = tipP.height = tipP.stride = 0;
-        tipP.data = nullptr;
-      }
-      /* -- Constructor that initialises id -------------------------------- */
-      explicit YCbCr(const size_t stNIndex) :
-        /* -- Initialisers ------------------------------------------------- */
-        stI(stNIndex),                 // Set unique id
-        tipP{0, 0, 0, nullptr}         // Initialise frame data
-        /* -- No code ------------------------------------------------------ */
-        { }
-    };/* ------------------------------------------------------------------- */
-    array<YCbCr,3> aP;                 // The planes (Y, Cb and Cr);
-    /* --------------------------------------------------------------------- */
-    void Reset(void) { bDraw = false; for(auto &aI : aP) aI.Reset(); }
+    void Reset(void) { bDraw = false;
+                       for(YCbCr &yccFrame : yccaFrames) yccFrame.Reset(); }
     /* -- Constructor that initialises frame data -------------------------- */
     Frame(void) :
       /* -- Initialisers --------------------------------------------------- */
       bDraw(false),                    // Set frame not ready for drawing
-      aP{ YCbCr{0},YCbCr{1},YCbCr{2} } // Initialise Y/Cb/Cr frame data
+      yccaFrames{ YCbCr{0}, YCbCr{1},  // Initialise Y/Cb/Cr frame data
+                  YCbCr{2} }
       /* -- No code -------------------------------------------------------- */
       { }
   };/* --------------------------------------------------------------------- */
@@ -145,7 +147,7 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
   array<GLuint,3>  uiaYCbCr;           // Texture id's for YCbCr components
   Shader          *shProgram;          // Shader program to use
   /* -- OpenAL ------------------------------------------------------------- */
-  Source          *sCptr;              // Source class
+  Source          *sSource;            // Source class
   ALenum           eFormat;            // Internal format
   /* == Buffer more data for OGG decoder ========================== */ private:
   bool DoIOBuffer(void)
@@ -186,17 +188,19 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
     tThread.ThreadStop();
   }
   /* -- Get/Set theora decoder control ------------------------------------- */
-  template<typename AnyType>int SetParameter(const int iW, AnyType atV)
-    { return th_decode_ctl(tdcPtr, iW,
-        reinterpret_cast<void*>(&atV), sizeof(atV)); }
-  template<typename AnyType=int>AnyType GetParameter(const int iW) const
-    { return static_cast<AnyType>(th_decode_ctl(tdcPtr, iW, nullptr, 0)); }
+  template<typename AnyType>
+    int SetParameter(const int iVariable, AnyType atValue)
+      { return th_decode_ctl(tdcPtr, iVariable,
+          reinterpret_cast<void*>(&atValue), sizeof(atValue)); }
+  template<typename AnyType=int>AnyType GetParameter(const int iVariable) const
+    { return static_cast<AnyType>
+        (th_decode_ctl(tdcPtr, iVariable, nullptr, 0)); }
   /* -- Process exhausted audio buffers ------------------------------------ */
   void ProcessExhaustedAudioBuffers(void)
   { // Get number of buffers queued
-    for(ALsizei stP = sCptr->GetBuffersProcessed(); stP; --stP)
+    for(ALsizei stP = sSource->GetBuffersProcessed(); stP; --stP)
     { // Unqueue a buffer and break if failed
-      const ALuint uiBuffer = sCptr->UnQueueBuffer();
+      const ALuint uiBuffer = sSource->UnQueueBuffer();
       if(cOal->HaveError()) continue;
       // Remove buffer time
       dAudioBuffer = UtilMaximum(dAudioBuffer -
@@ -224,7 +228,7 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
         // Set that we got audio
         bParsed = true;
         // No need to do anymore if there is no source
-        if(!sCptr) break;
+        if(!sSource) break;
         // Convert vorbis frames to correct type dealing with memory
         const size_t stFrames = static_cast<size_t>(iFrames),
           // Get number of channels as size_t
@@ -252,20 +256,20 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
         ALenum alErr = cOal->GetError();
         if(alErr == AL_NO_ERROR) try
         { // Buffer the data and throw exception if failed
-          cOal->BufferData(uiBuffer, eFormat, MemPtr(),
+          cOal->BufferData(uiBuffer, eFormat, MemPtr<ALvoid>(),
             static_cast<ALsizei>(stFrameSize),
             static_cast<ALsizei>(viData.rate));
           alErr = cOal->GetError();
           if(alErr != AL_NO_ERROR) throw "buffering";
           // Requeue the buffers and throw exception if failed
-          sCptr->QueueBuffer(uiBuffer);
+          sSource->QueueBuffer(uiBuffer);
           alErr = cOal->GetError();
           if(alErr != AL_NO_ERROR) throw "queuing";
           // We ate everything so set audio time and add to buffer
           dAudioBuffer += static_cast<ALdouble>(stFrameSize) /
             viData.rate / viData.channels;
           // Play the source if the audio timer has started
-          sCptr->Play();
+          sSource->Play();
           // Try to parse more data
           break;
         } // Exception occured?
@@ -338,19 +342,19 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
               { // Wait until uploading is done
                 const LockGuard lgWaitForUpload{ mUpload };
                 // Get next frame to draw
-                Frame &frRef = faData[stFNext];
+                Frame &frFrame = faData[stFNext];
                 // If decoding the frame failed?
                 if(th_decode_ycbcr_out(tdcPtr, tybData))
                 { // Skip the frame
-                  frRef.bDraw = false;
+                  frFrame.bDraw = false;
                   // We lost this frame
                   ++uiVideoFramesLost;
                 } // Decoding succeeded?
                 else
                 { // Set pointers to planes and we will be drawing this frame
-                  for(auto &aPlane : frRef.aP)
-                    aPlane.tipP = tybData[aPlane.stI];
-                  frRef.bDraw = true;
+                  for(YCbCr &yccFrame : frFrame.yccaFrames)
+                    yccFrame.tipP = tybData[yccFrame.stI];
+                  frFrame.bDraw = true;
                   // We processed this frame
                   ++uiVideoFrames;
                 } // Buffer filled
@@ -438,7 +442,7 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
   /* -- Manage video decoding thread for ogg supporting only audio --------- */
   int VideoHandleAudioOnly(void)
   { // Process exhausted audio buffers if there is a source
-    if(sCptr) ProcessExhaustedAudioBuffers();
+    if(sSource) ProcessExhaustedAudioBuffers();
     // If enough audio buffered and time is moving? Thread can breathe a little
     if(dAudioBuffer >= dAudBufMax && dAudioTime >= 0.0)
       cTimer->TimerSuspend(10);
@@ -476,17 +480,17 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
   { // Stream status flags
     bool bVideoParsed = false, bAudioParsed = false;
     // If there is an audio source?
-    if(sCptr)
+    if(sSource)
     { // Process exhausted audio buffers
       ProcessExhaustedAudioBuffers();
       // Raise pitch if behind
-      if(dDrift > dMaxDrift) sCptr->SetPitch(1.1f);
+      if(dDrift > dMaxDrift) sSource->SetPitch(1.1f);
       // Lower pitch if ahead
-      else if(dDrift < dMaxDriftNeg) sCptr->SetPitch(0.9f);
+      else if(dDrift < dMaxDriftNeg) sSource->SetPitch(0.9f);
       // No pitch adjustment required
-      else sCptr->SetPitch(1.0f);
+      else sSource->SetPitch(1.0f);
     } // No source or buffer needs topping up? Repeat until we have audio
-    if((!sCptr || dAudioBuffer < dAudBufMax) && ParseAndRenderVorbisData())
+    if((!sSource || dAudioBuffer < dAudBufMax) && ParseAndRenderVorbisData())
       bAudioParsed = true;
     // Have theora stream and we've got enough audio buffered?
     if(dAudioBuffer >= dAudBufMax)
@@ -585,14 +589,14 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
   ogg_uint32_t GetOriginX(void) const { return tiData.pic_x; }
   ogg_uint32_t GetOriginY(void) const { return tiData.pic_y; }
   uint64_t GetLength(void) const { return fmFile.MemSize(); }
-  bool HaveAudio(void) const { return !!sCptr; }
+  bool HaveAudio(void) const { return !!sSource; }
   ALenum GetAudioFormat(void) const { return eFormat; }
   const string_view GetFormatAsIdentifier(void) const
     { return cOal->GetALFormat(eFormat); }
   /* -- When data has asynchronously loaded -------------------------------- */
-  void AsyncReady(FileMap &fClass)
+  void AsyncReady(FileMap &fmData)
   { // Move filemap into ours
-    fmFile.FileMapSwap(fClass);
+    fmFile.FileMapSwap(fmData);
     // Ok, Ogg parsing. The idea here is we have a bitstream that is made up of
     // Ogg pages. The libogg sync layer will find them for us. There may be
     // pages from several logical streams interleaved; we find the first theora
@@ -850,9 +854,9 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
   /* -- Update volume ------------------------------------------------------ */
   void CommitVolume(void)
   { // Ignore if no source
-    if(!sCptr) return;
+    if(!sSource) return;
     // Set volume
-    sCptr->SetGain(fAudioVolume * cSources->fVVolume * cSources->fGVolume);
+    sSource->SetGain(fAudioVolume * cSources->fVVolume * cSources->fGVolume);
   }
   /* -- Set volume --------------------------------------------------------- */
   void SetVolume(const ALfloat fVolume)
@@ -871,18 +875,18 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
     const UniqueLock ulWaitForProcessing{ mUpload, try_to_lock };
     if(!ulWaitForProcessing.owns_lock() || !stFWaiting) return;
     // Get frame
-    Frame &frRef = faData[stFActive];
+    Frame &frFrame = faData[stFActive];
     // Skip ahead frames if we need to catch up with audio
     // If we should draw?
-    if(frRef.bDraw)
+    if(frFrame.bDraw)
     { // Upload texture data. This is quite safe because this data isnt
       // written to until the decoding routine thread has finished setting
       // these values.
-      for(auto &aP : frRef.aP)
+      for(YCbCr &yccFrame : frFrame.yccaFrames)
       { // Bind the texture for this colour component
-        cOgl->BindTexture(uiaYCbCr[aP.stI]);
+        cOgl->BindTexture(uiaYCbCr[yccFrame.stI]);
         // Get data
-        th_img_plane &tipD = aP.tipP;
+        th_img_plane &tipD = yccFrame.tipP;
         // Set unpack row length because of how the image data is formatted by
         // the vorbis api
         cOgl->SetUnpackRowLength(tipD.stride);
@@ -901,7 +905,7 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
       // Commit the V texture and send everything to fbo list for rendering
       FboFinishAndRender();
       // No need to update again until decoder thread rendered another frame
-      frRef.bDraw = false;
+      frFrame.bDraw = false;
     } // One less buffer to wait
     --stFWaiting;
     ++stFFree;
@@ -930,13 +934,13 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
   /* -- Stop and unload audio buffers -------------------------------------- */
   void StopAudioAndUnloadBuffers(void)
   { // Ignore if no source or no vorbis stream
-    if(!sCptr) return;
+    if(!sSource) return;
     // Stop from playing so all buffers are unqueued and wait for stop
     // then unqueue and delete the buffer
-    sCptr->StopUnQueueAndDeleteAllBuffers();
+    sSource->StopUnQueueAndDeleteAllBuffers();
     // Unlock the source so the source manager can recycle it
-    sCptr->Unlock();
-    sCptr = nullptr;
+    sSource->Unlock();
+    sSource = nullptr;
   }
   /* -- Do pause video ----------------------------------------------------- */
   void Pause(const Unblock ubNewReason = UB_PAUSE)
@@ -988,7 +992,7 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
       // Init fbo
       FboInit(IdentGet(), static_cast<GLsizei>(GetWidth()),
                           static_cast<GLsizei>(GetHeight()));
-      FboSetOrtho(0, 0, 0, 0);
+      FboSetMatrix(0, 0, 0, 0);
       FboSetTransparency(true);
       FboItemSetTexCoord(0, 0, 1, 1);
       // Clear the fbo, initially transparent and blue
@@ -1007,7 +1011,7 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
       // Init texture
       InitTexture();
     } // If theres a audio segment and AL portion is initialised?
-    if(FlagIsSet(FL_VORBIS) && !sCptr)
+    if(FlagIsSet(FL_VORBIS) && !sSource)
     { // Compare number of channels in file to set appropriate format. This is
       // here and not at the files init stage as it handles re-inits too and
       // the FP supported audio format flag have changed.
@@ -1024,8 +1028,8 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
         default: cLog->LogWarningExSafe("Video '$' audio playback failed. "
           "Invalid channel count of $!", IdentGet(), viData.channels); return;
       } // Get a new sound source and if we got it update volume and return
-      sCptr = GetSource();
-      if(sCptr) CommitVolume();
+      sSource = GetSource();
+      if(sSource) CommitVolume();
       // Tell log
       else cLog->LogWarningExSafe(
         "Video '$' audio playback failed. Out of sources!", IdentGet());
@@ -1125,7 +1129,7 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
   }
   /* -- Looping functions -------------------------------------------------- */
   size_t GetLoop(void) const { return stLoop; }
-  void SetLoop(const size_t stL) { stLoop = stL; }
+  void SetLoop(const size_t stCount) { stLoop = stCount; }
   /* -- Colour key functions ----------------------------------------------- */
   bool GetKeyed(void) const
     { return FlagIsSet(FL_KEYED); }
@@ -1173,21 +1177,21 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
   { // Need 5 parameters (class pointer was already pushed onto the stack);
     LuaUtilCheckParams(lS, 6);
     // Get and check parameters
-    const string strF{ LuaUtilGetCppStrNE(lS, 1, "Identifier") };
+    const string strName{ LuaUtilGetCppStrNE(lS, 1, "Identifier") };
     Asset &aData = *LuaUtilGetPtr<Asset>(lS, 2, "Data");
     LuaUtilCheckFuncs(lS, 3, "ErrorFunc", 4, "ProgressFunc", 5, "SuccessFunc");
     // Set base parameters
-    AsyncInitArray(lS, strF, "videoarray", StdMove(aData));
+    AsyncInitArray(lS, strName, "videoarray", StdMove(aData));
   }
   /* -- Load stream from file asynchronously ------------------------------- */
   void InitAsyncFile(lua_State*const lS)
   { // Need 4 parameters (class pointer was already pushed onto the stack);
     LuaUtilCheckParams(lS, 5);
     // Get and check parameters
-    const string strF{ LuaUtilGetCppFile(lS, 1, "File") };
+    const string strFile{ LuaUtilGetCppFile(lS, 1, "File") };
     LuaUtilCheckFuncs(lS, 2, "ErrorFunc", 3, "ProgressFunc", 4, "SuccessFunc");
     // Load sample from file asynchronously
-    AsyncInitFile(lS, strF, "videofile");
+    AsyncInitFile(lS, strFile, "videofile");
   }
   /* -- Destructor --------------------------------------------------------- */
   ~Video(void)
@@ -1266,12 +1270,12 @@ BEGIN_ASYNCMEMBERCLASSEX(Videos, Video, ICHelperSafe, /* No CLHelper */),
     dAudioBuffer(0.0),                 // Initialise audio buffer length
     fAudioVolume(1.0f),                // Initialise audio volume
     shProgram(nullptr),                // Initialise pointer to Shader used
-    sCptr(nullptr),                    // Initialise pointer to Source used
+    sSource(nullptr),                  // Initialise pointer to Source used
     eFormat(AL_NONE)                   // Initialise audio format type
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* -- End ---------------------------------------------------------------- */
-END_ASYNCCOLLECTOR(Videos, Video, VIDEO, // Finish Videos collector class
+CTOR_END_ASYNC_NOFUNCS(Videos, VIDEO,  // Finish collector class
   /* -- Initialisers ------------------------------------------------------- */
   LuaEvtMaster{ EMC_VID_EVENT },       // Init lua event async helper
   csStrings{{                          // Init colour space strings list
@@ -1294,7 +1298,7 @@ static void VideoReInitTextures(void)
   if(cVideos->empty()) return;
   cLog->LogDebugExSafe("Videos re-initialising $ video surfaces...",
     cVideos->CollectorCountUnsafe());
-  for(Video*const vCptr : *cVideos) vCptr->ReInitDisplayOutput();
+  for(Video*const vVideo : *cVideos) vVideo->ReInitDisplayOutput();
   cLog->LogDebugExSafe("Videos re-initialised $ video surfaces!",
     cVideos->CollectorCountUnsafe());
 }
@@ -1304,7 +1308,7 @@ static void VideoDeInitTextures(void)
   if(cVideos->empty()) return;
   cLog->LogDebugExSafe("Videos de-initialising $ video surfaces...",
     cVideos->CollectorCountUnsafe());
-  for(Video*const vCptr : *cVideos) vCptr->DeInitDisplayOutput();
+  for(Video*const vVideo : *cVideos) vVideo->DeInitDisplayOutput();
   cLog->LogDebugExSafe("Videos de-initialised $ video surfaces!",
     cVideos->CollectorCountUnsafe());
 }
@@ -1315,7 +1319,7 @@ static void VideoClearEvents(void)
   if(cVideos->empty()) return;
   cLog->LogDebugExSafe("Videos clearing events from $ video objects...",
     cVideos->CollectorCountUnsafe());
-  for(Video*const vCptr : *cVideos) vCptr->LuaEvtDeInit();
+  for(Video*const vVideo : *cVideos) vVideo->LuaEvtDeInit();
   cLog->LogDebugExSafe("Videos cleared events from $ video objects!",
     cVideos->CollectorCountUnsafe());
 }
@@ -1323,7 +1327,7 @@ static void VideoClearEvents(void)
 static void VideoStop(void)
 { // Lock access to video collector list and stop all videos
   const LockGuard lgVideosSync{ cVideos->CollectorGetMutex() };
-  for(Video*const vCptr : *cVideos) vCptr->Stop();
+  for(Video*const vVideo : *cVideos) vVideo->Stop();
 }
 /* == DeInit all videos (after engine thread shutdown) ===================== */
 static void VideoDeInit(void)
@@ -1331,7 +1335,7 @@ static void VideoDeInit(void)
   if(cVideos->empty()) return;
   cLog->LogDebugExSafe("Videos de-initialising $ videos...",
     cVideos->CollectorCountUnsafe());
-  for(Video*const vCptr : *cVideos) vCptr->DeInitAudio();
+  for(Video*const vVideo : *cVideos) vVideo->DeInitAudio();
   cLog->LogDebugExSafe("Videos de-initialised $ videos!",
     cVideos->CollectorCountUnsafe());
 }
@@ -1341,16 +1345,16 @@ static void VideoReInit(void)
   if(cVideos->empty()) return;
   cLog->LogDebugExSafe("Videos re-initialising $ videos...",
     cVideos->CollectorCountUnsafe());
-  for(Video*const vCptr : *cVideos) vCptr->ReInitAudio();
+  for(Video*const vVideo : *cVideos) vVideo->ReInitAudio();
   cLog->LogDebugExSafe("Videos re-initialised $ videos!",
     cVideos->CollectorCountUnsafe());
 }
 /* == Render all videos ==================================================== */
 static void VideoRender(void)
-  { for(Video*const vCptr : *cVideos) vCptr->Render(); }
+  { for(Video*const vVideo : *cVideos) vVideo->Render(); }
 /* == Update all streams base volume ======================================= */
 static void VideoCommitVolume(void)
-  { for(Video*const vCptr : *cVideos) vCptr->CommitVolume(); }
+  { for(Video*const vVideo : *cVideos) vVideo->CommitVolume(); }
 /* == Set buffer size ====================================================== */
 static CVarReturn VideoSetIOBufferSize(const size_t stSize)
   { return CVarSimpleSetIntNLG(cVideos->stIOBufferSize,

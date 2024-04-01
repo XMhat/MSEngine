@@ -40,13 +40,13 @@ static string PSplitBackToForwardSlashes(const wstring &wstrName)
 /* -- FileParts class ------------------------------------------------------ */
 class FileParts                        // Contains parts of a filename
 { /* -- Variables -------------------------------------------------- */ public:
-  const string     strDrive;           // Drive part of path
-  const string     strDir;             // Directory part of path
-  const string     strFile;            // Filename part of path
-  const string     strExt;             // Extension part of path
-  const string     strFileExt;         // Filename plus extension
-  const string     strFull;            // Full path name
-  const string     strLoc;             // Drive+path name without file name
+  const string     strDrive,           // Drive part of path
+                   strDir,             // Directory part of path
+                   strFile,            // Filename part of path
+                   strExt,             // Extension part of path
+                   strFileExt,         // Filename plus extension
+                   strFull,            // Full path name
+                   strLoc;             // Drive+path name without file name
   /* -- Initialise constructor --------------------------------------------- */
   FileParts(string &&strDriveNew, string &&strDirNew, string &&strFileNew,
     string &&strExtNew, string &&strFullNew) :
@@ -165,7 +165,7 @@ class PathSplit :
     strFile.shrink_to_fit();
     strExt.shrink_to_fit();
     // Return parts. There is no drive on unix systems
-    return { {},           StdMove(strDir), StdMove(strFile),
+    return { {}, StdMove(strDir), StdMove(strFile),
              StdMove(strExt), StdMove(strFull) };
 #endif
   }

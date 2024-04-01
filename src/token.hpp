@@ -55,11 +55,12 @@ struct TokenListNC :
   /* -- Direct conditional access ------------------------------------------ */
   operator bool(void) const { return !empty(); }
   /* -- MOVE assignment operator ------------------------------------------- */
-  TokenListNC &operator=(TokenListNC &&tOther) { swap(tOther); return *this; }
+  TokenListNC &operator=(TokenListNC &&tlOther)
+    { swap(tlOther); return *this; }
   /* -- MOVE assignment constructor ---------------------------------------- */
-  TokenListNC(TokenListNC &&tOther) :
+  TokenListNC(TokenListNC &&tlOther) :
     /* -- Initialisers ----------------------------------------------------- */
-    CStrVector{ StdMove(tOther) }         // Move vector of C-Strings over
+    CStrVector{ StdMove(tlOther) }         // Move vector of C-Strings over
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
@@ -106,11 +107,11 @@ struct TokenList :
   /* -- Direct conditional access ------------------------------------------ */
   operator bool(void) const { return !empty(); }
   /* -- MOVE assignment operator ------------------------------------------- */
-  TokenList& operator=(TokenList &&tOther) { swap(tOther); return *this; }
+  TokenList& operator=(TokenList &&tlOther) { swap(tlOther); return *this; }
   /* -- MOVE assignment constructor ---------------------------------------- */
-  TokenList(TokenList &&tOther) :
+  TokenList(TokenList &&tlOther) :
     /* -- Initialisers ----------------------------------------------------- */
-    StrList{ StdMove(tOther) }            // Move list of strings over
+    StrList{ StdMove(tlOther) }            // Move list of strings over
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
@@ -169,11 +170,11 @@ struct Token :
   /* -- Direct conditional access ------------------------------------------ */
   operator bool(void) const { return !empty(); }
   /* -- MOVE assignment operator ------------------------------------------- */
-  Token& operator=(Token &&tOther) { swap(tOther); return *this; }
+  Token& operator=(Token &&tlOther) { swap(tlOther); return *this; }
   /* -- MOVE assignment constructor ---------------------------------------- */
-  Token(Token &&tOther) :
+  Token(Token &&tlOther) :
     /* -- Initialisers ----------------------------------------------------- */
-    StrVector{ StdMove(tOther) }       // Move vector string over
+    StrVector{ StdMove(tlOther) }       // Move vector string over
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */

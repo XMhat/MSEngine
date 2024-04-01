@@ -71,8 +71,8 @@ static class Display final :
   size_t           stMRequested,       // Monitor id request
                    stVRequested;       // Video mode requested
   GLfloat          fGamma,             // Monitor gamma setting
-                   fOrthoWidth,        // Saved ortho width
-                   fOrthoHeight;       // Saved ortho height
+                   fMatrixWidth,       // Saved matrix width
+                   fMatrixHeight;      // Saved matrix height
   int              iApi,               // Selected API from GLFW
                    iProfile,           // Selected profile for the context
                    iCtxMajor,          // Selected context major version
@@ -599,11 +599,13 @@ static class Display final :
       // Instruct glfw to set full-screen window
       cGlFW->WinSetMonitor(mUsing, iWinPosX, iWinPosY,
         iWidth, iHeight, rSelected->Refresh());
-      // Log that we switched to full-screen mode
+      // Log that we switched to full-screen mode. Casting requested monitor
+      // and video mode to int so it displays as -1 and not max uint64.
       cLog->LogInfoExSafe(
         "Display switch to $ full-screen $x$ (M:$>$;V:$>$;R:$).",
-        cpType, iWidth, iHeight, stMRequested, moSelected->Index(),
-        stVRequested, rSelected->Index(), rSelected->Refresh());
+        cpType, iWidth, iHeight, static_cast<ssize_t>(stMRequested),
+        moSelected->Index(), static_cast<ssize_t>(stVRequested),
+        rSelected->Index(), rSelected->Refresh());
     } // Window mode selected
     else
     { // Not in full-screen mode or native mode
@@ -717,193 +719,6 @@ static class Display final :
   }
   /* -- Return current video mode refresh rate ----------------------------- */
   int GetRefreshRate(void) { return rSelected->Refresh(); }
-  /* -- Set maximised at startup ------------------------------------------- */
-  CVarReturn SetMaximisedMode(const bool bState)
-    { FlagSetOrClear(DF_MAXIMISED, bState); return ACCEPT; }
-  /* -- Set opengl no errors mode ------------------------------------------ */
-  CVarReturn SetNoErrorsMode(const bool bState)
-    { FlagSetOrClear(DF_NOERRORS, bState); return ACCEPT; }
-  /* -- Set stereo mode ---------------------------------------------------- */
-  CVarReturn SetStereoMode(const bool bState)
-    { FlagSetOrClear(DF_STEREO, bState); return ACCEPT; }
-  /* -- Set OpenGL debug mode ---------------------------------------------- */
-  CVarReturn SetGLDebugMode(const bool bState)
-    { FlagSetOrClear(DF_DEBUG, bState); return ACCEPT; }
-  /* -- Set window transparency mode  -------------------------------------- */
-  CVarReturn SetWindowTransparency(const bool bState)
-    { FlagSetOrClear(DF_TRANSPARENT, bState); return ACCEPT; }
-  /* -- Set default orthagonal width  -------------------------------------- */
-  CVarReturn SetForcedBitDepthR(const int iRed)
-    { return CVarSimpleSetIntNLG(iFBDepthR, iRed, GLFW_DONT_CARE, 16); }
-  CVarReturn SetForcedBitDepthG(const int iGreen)
-    { return CVarSimpleSetIntNLG(iFBDepthG, iGreen, GLFW_DONT_CARE, 16); }
-  CVarReturn SetForcedBitDepthB(const int iBlue)
-    { return CVarSimpleSetIntNLG(iFBDepthB, iBlue, GLFW_DONT_CARE, 16); }
-  CVarReturn SetForcedBitDepthA(const int iAlpha)
-    { return CVarSimpleSetIntNLG(iFBDepthA, iAlpha, GLFW_DONT_CARE, 16); }
-  /* -- Set default orthagonal width  -------------------------------------- */
-  CVarReturn SetOrthoWidth(const GLfloat fWidth)
-    { return CVarSimpleSetIntNLG(fOrthoWidth, fWidth, 320.0f, 16384.0f); }
-  /* -- Set default orthagonal height -------------------------------------- */
-  CVarReturn SetOrthoHeight(const GLfloat fHeight)
-    { return CVarSimpleSetIntNLG(fOrthoHeight, fHeight, 200.0f, 16384.0f); }
-  /* -- Set fsaa value ----------------------------------------------------- */
-  CVarReturn FsaaChanged(const int iCount)
-    { return CVarSimpleSetIntNLG(iSamples, iCount, GLFW_DONT_CARE, 8); }
-  /* -- Set aux buffers count ---------------------------------------------- */
-  CVarReturn AuxBuffersChanged(const int iCount)
-    { return CVarSimpleSetIntNLG(iAuxBuffers, iCount, GLFW_DONT_CARE, 16); }
-  /* -- Set major context version required --------------------------------- */
-  CVarReturn CtxMajorChanged(const int iMajor)
-    { return CVarSimpleSetIntNLG(iCtxMajor, iMajor, GLFW_DONT_CARE, 4); }
-  /* -- Set minor context version required --------------------------------- */
-  CVarReturn CtxMinorChanged(const int iMinor)
-    { return CVarSimpleSetIntNLG(iCtxMinor, iMinor, GLFW_DONT_CARE, 6); }
-  /* -- Set window width --------------------------------------------------- */
-  CVarReturn WidthChanged(const int iWidth)
-    { DimSetWidth(iWidth); return ACCEPT; }
-  /* -- Set window height -------------------------------------------------- */
-  CVarReturn HeightChanged(const int iHeight)
-    { DimSetHeight(iHeight); return ACCEPT; }
-  /* -- Set full-screen cvar ----------------------------------------------- */
-  CVarReturn BorderChanged(const bool bState)
-    { FlagSetOrClear(DF_BORDER, bState); return ACCEPT; }
-  /* -- Set hidpi cvar ----------------------------------------------------- */
-  CVarReturn HiDPIChanged(const bool bState)
-    { FlagSetOrClear(DF_HIDPI, bState); return ACCEPT; }
-  /* -- Set SRGB colour space ---------------------------------------------- */
-  CVarReturn SRGBColourSpaceChanged(const bool bState)
-    { FlagSetOrClear(DF_SRGB, bState); return ACCEPT; }
-  /* -- Set graphics switching --------------------------------------------- */
-  CVarReturn GraphicsSwitchingChanged(const bool bState)
-    { FlagSetOrClear(DF_GASWITCH, bState); return ACCEPT; }
-  /* -- Set window resizable ----------------------------------------------- */
-  CVarReturn SizableChanged(const bool bState)
-    { FlagSetOrClear(DF_SIZABLE, bState); return ACCEPT; }
-  /* -- Set full-screen cvar ----------------------------------------------- */
-  CVarReturn FullScreenStateChanged(const bool bState)
-    { FlagSetOrClear(DF_FULLSCREEN, bState); return ACCEPT; }
-  /* -- Closeable state modified ------------------------------------------- */
-  CVarReturn CloseableChanged(const bool bState)
-    { FlagSetOrClear(DF_CLOSEABLE, bState); return ACCEPT; }
-  /* -- Autominimise state modified ---------------------------------------- */
-  CVarReturn MinFocusChanged(const bool bState)
-    { FlagSetOrClear(DF_MINFOCUS, bState); return ACCEPT; }
-  /* -- Autominimise state modified ---------------------------------------- */
-  CVarReturn FloatingChanged(const bool bState)
-    { FlagSetOrClear(DF_FLOATING, bState); return ACCEPT; }
-  /* -- Auto iconify modified------ ---------------------------------------- */
-  CVarReturn AutoIconifyChanged(const bool bState)
-    { FlagSetOrClear(DF_AUTOICONIFY, bState); return ACCEPT; }
-  /* -- Auto iconify modified ---------------------------------------------- */
-  CVarReturn AutoFocusChanged(const bool bState)
-    { FlagSetOrClear(DF_AUTOFOCUS, bState); return ACCEPT; }
-  /* -- Set robustness ----------------------------------------------------- */
-  CVarReturn RobustnessChanged(const size_t stIndex)
-  { // Possible values
-    static const array<const int,3> aValues{
-      GLFW_NO_RESET_NOTIFICATION, GLFW_LOSE_CONTEXT_ON_RESET,
-      GLFW_NO_ROBUSTNESS
-    }; // Fail if invalid
-    if(stIndex >= aValues.size()) return DENY;
-    // Set the api
-    iRobustness = aValues[stIndex];
-    // Success
-    return ACCEPT;
-  }
-  /* -- Set release behaviour ---------------------------------------------- */
-  CVarReturn ReleaseChanged(const size_t stIndex)
-  { // Possible values
-    static const array<const int,3> aValues{
-      GLFW_ANY_RELEASE_BEHAVIOR, GLFW_RELEASE_BEHAVIOR_FLUSH,
-      GLFW_RELEASE_BEHAVIOR_NONE
-    }; // Fail if invalid
-    if(stIndex >= aValues.size()) return DENY;
-    // Set the api
-    iRelease = aValues[stIndex];
-    // Success
-    return ACCEPT;
-  }
-  /* -- Set double buffering ----------------------------------------------- */
-  CVarReturn DoubleBufferChanged(const bool bState)
-    { FlagSetOrClear(DF_DOUBLEBUFFER, bState); return ACCEPT; }
-  /* -- Set forward compatible context ------------------------------------- */
-  CVarReturn ForwardChanged(const bool bState)
-    { FlagSetOrClear(DF_FORWARD, bState); return ACCEPT; }
-  /* -- Set api ------------------------------------------------------------ */
-  CVarReturn ApiChanged(const size_t stIndex)
-  { // Possible values
-    static const array<const int,3> aValues
-      { GLFW_OPENGL_API, GLFW_OPENGL_ES_API, GLFW_NO_API };
-    // Fail if invalid
-    if(stIndex >= aValues.size()) return DENY;
-    // Set the api
-    iApi = aValues[stIndex];
-    // Success
-    return ACCEPT;
-  }
-  /* -- Set profile -------------------------------------------------------- */
-  CVarReturn ProfileChanged(const size_t stIndex)
-  { // Possible values
-    static const array<const int,3> aValues{
-      GLFW_OPENGL_CORE_PROFILE, GLFW_OPENGL_COMPAT_PROFILE,
-      GLFW_OPENGL_ANY_PROFILE
-    }; // Fail if invalid
-    if(stIndex >= aValues.size()) return DENY;
-    // Set the api
-    iProfile = aValues[stIndex];
-    // Success
-    return ACCEPT;
-  }
-  /* -- Set full-screen video mode cvar ------------------------------------ */
-  CVarReturn FullScreenModeChanged(const int iVId)
-  { // Return if invalid full-screen mode
-    if(iVId < -2) return DENY;
-    // Set video mode requested
-    stVRequested = static_cast<size_t>(iVId);
-    // Accepted
-    return ACCEPT;
-  }
-  /* -- Set monitor number ------------------------------------------------- */
-  CVarReturn MonitorChanged(const int iMId)
-  { // Return if invalid full-screen mode
-    if(iMId < -1) return DENY;
-    // Set video mode requested
-    stMRequested = static_cast<size_t>(iMId);
-    // Accepted
-    return ACCEPT;
-  }
-  /* -- Set window X position ---------------------------------------------- */
-  CVarReturn SetXPosition(const int iNewX)
-  { // Deny change request if an invalid value was sent
-    CoordSetX(iNewX);
-    // Apply window position if window is available
-    if(cGlFW && cGlFW->WinIsAvailable()) RequestReposition();
-    // Success
-    return ACCEPT;
-  }
-  /* -- Set window Y position ---------------------------------------------- */
-  CVarReturn SetYPosition(const int iNewY)
-  { // Deny change request if an invalid value was sent
-    CoordSetY(iNewY);
-    // Apply window position if window is available
-    if(cGlFW && cGlFW->WinIsAvailable()) RequestReposition();
-    // Success
-    return ACCEPT;
-  }
-  /* -- Set gamma ---------------------------------------------------------- */
-  CVarReturn GammaChanged(const GLfloat fNewGamma)
-  { // Deny change request if an invalid gamma value was sent
-    if(!CVarToBoolReturn(CVarSimpleSetIntNLG(fGamma, fNewGamma, 0.25f, 4.00f)))
-      return DENY;
-    // Apply new gamma setting if window is available
-    if(cGlFW && cGlFW->WinIsAvailable() && moSelected->Context()) ApplyGamma();
-    // Success
-    return ACCEPT;
-  }
-  /* -- Icon filenames changed (allow blank strings) ------ Core::SetIcon -- */
-  CVarReturn SetIcon(const string &strF, string&)
-    { return BoolToCVarReturn(strF.empty() || SetIcon(strF)); }
   /* -- Get selected monitor id -------------------------------------------- */
   int GetMonitorId(void) const { return moSelected->Index(); }
   /* -- Get selected video mode id ----------------------------------------- */
@@ -914,7 +729,7 @@ static class Display final :
   void SetDefaultMatrix(const bool bForce) const
   { // Set the default matrix from the configuration and if it was changed
     // also update the consoles FBO too.
-    if(cFboCore->AutoMatrix(fOrthoWidth, fOrthoHeight, bForce))
+    if(cFboCore->AutoMatrix(fMatrixWidth, fMatrixHeight, bForce))
       cConGraphics->InitFBO();
     // Else redraw the console if enabled
     else cConsole->SetRedrawIfEnabled();
@@ -1172,8 +987,8 @@ static class Display final :
     stMRequested(StdMaxSizeT),         // No monitor requested
     stVRequested(StdMaxSizeT),         // No video mode id requested
     fGamma(0),                         // Gamma initialised by CVars
-    fOrthoWidth(0.0f),                 // Ortho width initialised by CVars
-    fOrthoHeight(0.0f),                // Ortho height initialised by CVars
+    fMatrixWidth(0.0f),                // Matrix width initialised by CVars
+    fMatrixHeight(0.0f),               // Matrix height initialised by CVars
     iApi(GLFW_DONT_CARE),              // Api type set by cvars
     iProfile(GLFW_DONT_CARE),          // Profile type set by cvars
     iCtxMajor(GLFW_DONT_CARE),         // Context major version set by cvars
@@ -1202,6 +1017,193 @@ static class Display final :
   DTORHELPER(~Display, DeInit())
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Display)             // Do not need copy defaults
+  /* -- Set maximised at startup ------------------------------------------- */
+  CVarReturn SetMaximisedMode(const bool bState)
+    { FlagSetOrClear(DF_MAXIMISED, bState); return ACCEPT; }
+  /* -- Set opengl no errors mode ------------------------------------------ */
+  CVarReturn SetNoErrorsMode(const bool bState)
+    { FlagSetOrClear(DF_NOERRORS, bState); return ACCEPT; }
+  /* -- Set stereo mode ---------------------------------------------------- */
+  CVarReturn SetStereoMode(const bool bState)
+    { FlagSetOrClear(DF_STEREO, bState); return ACCEPT; }
+  /* -- Set OpenGL debug mode ---------------------------------------------- */
+  CVarReturn SetGLDebugMode(const bool bState)
+    { FlagSetOrClear(DF_DEBUG, bState); return ACCEPT; }
+  /* -- Set window transparency mode  -------------------------------------- */
+  CVarReturn SetWindowTransparency(const bool bState)
+    { FlagSetOrClear(DF_TRANSPARENT, bState); return ACCEPT; }
+  /* -- Set default orthagonal width  -------------------------------------- */
+  CVarReturn SetForcedBitDepthR(const int iRed)
+    { return CVarSimpleSetIntNLG(iFBDepthR, iRed, GLFW_DONT_CARE, 16); }
+  CVarReturn SetForcedBitDepthG(const int iGreen)
+    { return CVarSimpleSetIntNLG(iFBDepthG, iGreen, GLFW_DONT_CARE, 16); }
+  CVarReturn SetForcedBitDepthB(const int iBlue)
+    { return CVarSimpleSetIntNLG(iFBDepthB, iBlue, GLFW_DONT_CARE, 16); }
+  CVarReturn SetForcedBitDepthA(const int iAlpha)
+    { return CVarSimpleSetIntNLG(iFBDepthA, iAlpha, GLFW_DONT_CARE, 16); }
+  /* -- Set default orthagonal width  -------------------------------------- */
+  CVarReturn SetMatrixWidth(const GLfloat fWidth)
+    { return CVarSimpleSetIntNLG(fMatrixWidth, fWidth, 320.0f, 16384.0f); }
+  /* -- Set default orthagonal height -------------------------------------- */
+  CVarReturn SetMatrixHeight(const GLfloat fHeight)
+    { return CVarSimpleSetIntNLG(fMatrixHeight, fHeight, 200.0f, 16384.0f); }
+  /* -- Set fsaa value ----------------------------------------------------- */
+  CVarReturn FsaaChanged(const int iCount)
+    { return CVarSimpleSetIntNLG(iSamples, iCount, GLFW_DONT_CARE, 8); }
+  /* -- Set aux buffers count ---------------------------------------------- */
+  CVarReturn AuxBuffersChanged(const int iCount)
+    { return CVarSimpleSetIntNLG(iAuxBuffers, iCount, GLFW_DONT_CARE, 16); }
+  /* -- Set major context version required --------------------------------- */
+  CVarReturn CtxMajorChanged(const int iMajor)
+    { return CVarSimpleSetIntNLG(iCtxMajor, iMajor, GLFW_DONT_CARE, 4); }
+  /* -- Set minor context version required --------------------------------- */
+  CVarReturn CtxMinorChanged(const int iMinor)
+    { return CVarSimpleSetIntNLG(iCtxMinor, iMinor, GLFW_DONT_CARE, 6); }
+  /* -- Set window width --------------------------------------------------- */
+  CVarReturn WidthChanged(const int iWidth)
+    { DimSetWidth(iWidth); return ACCEPT; }
+  /* -- Set window height -------------------------------------------------- */
+  CVarReturn HeightChanged(const int iHeight)
+    { DimSetHeight(iHeight); return ACCEPT; }
+  /* -- Set full-screen cvar ----------------------------------------------- */
+  CVarReturn BorderChanged(const bool bState)
+    { FlagSetOrClear(DF_BORDER, bState); return ACCEPT; }
+  /* -- Set hidpi cvar ----------------------------------------------------- */
+  CVarReturn HiDPIChanged(const bool bState)
+    { FlagSetOrClear(DF_HIDPI, bState); return ACCEPT; }
+  /* -- Set SRGB colour space ---------------------------------------------- */
+  CVarReturn SRGBColourSpaceChanged(const bool bState)
+    { FlagSetOrClear(DF_SRGB, bState); return ACCEPT; }
+  /* -- Set graphics switching --------------------------------------------- */
+  CVarReturn GraphicsSwitchingChanged(const bool bState)
+    { FlagSetOrClear(DF_GASWITCH, bState); return ACCEPT; }
+  /* -- Set window resizable ----------------------------------------------- */
+  CVarReturn SizableChanged(const bool bState)
+    { FlagSetOrClear(DF_SIZABLE, bState); return ACCEPT; }
+  /* -- Set full-screen cvar ----------------------------------------------- */
+  CVarReturn FullScreenStateChanged(const bool bState)
+    { FlagSetOrClear(DF_FULLSCREEN, bState); return ACCEPT; }
+  /* -- Closeable state modified ------------------------------------------- */
+  CVarReturn CloseableChanged(const bool bState)
+    { FlagSetOrClear(DF_CLOSEABLE, bState); return ACCEPT; }
+  /* -- Autominimise state modified ---------------------------------------- */
+  CVarReturn MinFocusChanged(const bool bState)
+    { FlagSetOrClear(DF_MINFOCUS, bState); return ACCEPT; }
+  /* -- Autominimise state modified ---------------------------------------- */
+  CVarReturn FloatingChanged(const bool bState)
+    { FlagSetOrClear(DF_FLOATING, bState); return ACCEPT; }
+  /* -- Auto iconify modified------ ---------------------------------------- */
+  CVarReturn AutoIconifyChanged(const bool bState)
+    { FlagSetOrClear(DF_AUTOICONIFY, bState); return ACCEPT; }
+  /* -- Auto iconify modified ---------------------------------------------- */
+  CVarReturn AutoFocusChanged(const bool bState)
+    { FlagSetOrClear(DF_AUTOFOCUS, bState); return ACCEPT; }
+  /* -- Set robustness ----------------------------------------------------- */
+  CVarReturn RobustnessChanged(const size_t stIndex)
+  { // Possible values
+    static const array<const int,3> aValues{
+      GLFW_NO_RESET_NOTIFICATION, GLFW_LOSE_CONTEXT_ON_RESET,
+      GLFW_NO_ROBUSTNESS
+    }; // Fail if invalid
+    if(stIndex >= aValues.size()) return DENY;
+    // Set the api
+    iRobustness = aValues[stIndex];
+    // Success
+    return ACCEPT;
+  }
+  /* -- Set release behaviour ---------------------------------------------- */
+  CVarReturn ReleaseChanged(const size_t stIndex)
+  { // Possible values
+    static const array<const int,3> aValues{
+      GLFW_ANY_RELEASE_BEHAVIOR, GLFW_RELEASE_BEHAVIOR_FLUSH,
+      GLFW_RELEASE_BEHAVIOR_NONE
+    }; // Fail if invalid
+    if(stIndex >= aValues.size()) return DENY;
+    // Set the api
+    iRelease = aValues[stIndex];
+    // Success
+    return ACCEPT;
+  }
+  /* -- Set double buffering ----------------------------------------------- */
+  CVarReturn DoubleBufferChanged(const bool bState)
+    { FlagSetOrClear(DF_DOUBLEBUFFER, bState); return ACCEPT; }
+  /* -- Set forward compatible context ------------------------------------- */
+  CVarReturn ForwardChanged(const bool bState)
+    { FlagSetOrClear(DF_FORWARD, bState); return ACCEPT; }
+  /* -- Set api ------------------------------------------------------------ */
+  CVarReturn ApiChanged(const size_t stIndex)
+  { // Possible values
+    static const array<const int,3> aValues
+      { GLFW_OPENGL_API, GLFW_OPENGL_ES_API, GLFW_NO_API };
+    // Fail if invalid
+    if(stIndex >= aValues.size()) return DENY;
+    // Set the api
+    iApi = aValues[stIndex];
+    // Success
+    return ACCEPT;
+  }
+  /* -- Set profile -------------------------------------------------------- */
+  CVarReturn ProfileChanged(const size_t stIndex)
+  { // Possible values
+    static const array<const int,3> aValues{
+      GLFW_OPENGL_CORE_PROFILE, GLFW_OPENGL_COMPAT_PROFILE,
+      GLFW_OPENGL_ANY_PROFILE
+    }; // Fail if invalid
+    if(stIndex >= aValues.size()) return DENY;
+    // Set the api
+    iProfile = aValues[stIndex];
+    // Success
+    return ACCEPT;
+  }
+  /* -- Set full-screen video mode cvar ------------------------------------ */
+  CVarReturn FullScreenModeChanged(const int iVId)
+  { // Return if invalid full-screen mode
+    if(iVId < -2) return DENY;
+    // Set video mode requested
+    stVRequested = static_cast<size_t>(iVId);
+    // Accepted
+    return ACCEPT;
+  }
+  /* -- Set monitor number ------------------------------------------------- */
+  CVarReturn MonitorChanged(const int iMId)
+  { // Return if invalid full-screen mode
+    if(iMId < -1) return DENY;
+    // Set video mode requested
+    stMRequested = static_cast<size_t>(iMId);
+    // Accepted
+    return ACCEPT;
+  }
+  /* -- Set window X position ---------------------------------------------- */
+  CVarReturn SetXPosition(const int iNewX)
+  { // Deny change request if an invalid value was sent
+    CoordSetX(iNewX);
+    // Apply window position if window is available
+    if(cGlFW && cGlFW->WinIsAvailable()) RequestReposition();
+    // Success
+    return ACCEPT;
+  }
+  /* -- Set window Y position ---------------------------------------------- */
+  CVarReturn SetYPosition(const int iNewY)
+  { // Deny change request if an invalid value was sent
+    CoordSetY(iNewY);
+    // Apply window position if window is available
+    if(cGlFW && cGlFW->WinIsAvailable()) RequestReposition();
+    // Success
+    return ACCEPT;
+  }
+  /* -- Set gamma ---------------------------------------------------------- */
+  CVarReturn GammaChanged(const GLfloat fNewGamma)
+  { // Deny change request if an invalid gamma value was sent
+    if(!CVarToBoolReturn(CVarSimpleSetIntNLG(fGamma, fNewGamma, 0.25f, 4.00f)))
+      return DENY;
+    // Apply new gamma setting if window is available
+    if(cGlFW && cGlFW->WinIsAvailable() && moSelected->Context()) ApplyGamma();
+    // Success
+    return ACCEPT;
+  }
+  /* -- Icon filenames changed (allow blank strings) ------ Core::SetIcon -- */
+  CVarReturn SetIcon(const string &strF, string&)
+    { return BoolToCVarReturn(strF.empty() || SetIcon(strF)); }
   /* ----------------------------------------------------------------------- */
 } *cDisplay = nullptr;                 // Pointer to static class
 /* -- Monitor changed static event ----------------------------------------- */

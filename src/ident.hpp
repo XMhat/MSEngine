@@ -133,33 +133,54 @@ struct IdList :                        // Members initially public
 /* == Id to string list helper class ======================================= */
 template<class KeyType = unsigned int, // The user specified type of the key
          class ValueType = string_view,// The user specified type of the value
+         class PairType =              // The pair type to hold key/value pairs
+           pair<const KeyType,         // The pair key type
+                const ValueType>,      // The pair value type
          class MapType =               // The map type to hold key/value pairs
            map<const KeyType,          // The key type
-               const ValueType>>       // The value type
+               const ValueType>,       // The value type
+         class IteratorType =          // The iter type to hold key/value pairs
+           MapType::const_iterator>    // The iterator type
 struct IdMap :                         // Members initially public
   /* -- Dependencies ------------------------------------------------------- */
   private IdentConst,                  // Alternative if id is unknown
   private MapType                      // Map of key->value pairs
 { /* -- Macros ------------------------------------------------------------- */
 #define IDMAPSTR(e) { e, #e }          // Helper macro
-  /* -- Constructor with alternative string ------------------------------- */
-  explicit IdMap(const MapType &mNI, const string_view &strNU) :
+  /* -- Constructor with alternative string -------------------------------- */
+  explicit IdMap(const MapType &mtList, const string_view &strvIdent) :
     /* -- Initialisers ----------------------------------------------------- */
-    IdentConst{ StdMove(strNU) },         // Unknown item string
-    MapType{ StdMove(mNI) }               // Items map
+    IdentConst{ StdMove(strvIdent) },  // Unknown item string
+    MapType{ StdMove(mtList) }         // Items map
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor with no alternative string ----------------------------- */
-  explicit IdMap(const MapType &mNI) :
+  explicit IdMap(const MapType &mtList) :
     /* -- Initialisers ----------------------------------------------------- */
-    IdMap(mNI, cCommon->Blank())
+    IdMap(mtList, cCommon->Blank())
     /* -- No code ---------------------------------------------------------- */
     { }
+  /* -- Test all items as flags and return a list of strings set ----------- */
+  const StrViewVector Test(const KeyType ktValue) const
+  { // The destination for the string views
+    StrViewVector svvOut;
+    // There will be at least this amount of strings in the list
+    svvOut.reserve(this->size());
+    // Enumerate through all the items and add the string if the bit is set
+    for(const PairType &ptItem : *this)
+      if(ktValue & ptItem.first) svvOut.push_back(ptItem.second);
+    // We didn't add anything? Add the alternative
+    if(svvOut.empty()) svvOut.push_back(IdentGet());
+    // Compact the list to the actual number of items added
+    svvOut.shrink_to_fit();
+    // Return the list
+    return svvOut;
+  }
   /* -- Get string --------------------------------------------------------- */
   const ValueType &Get(const KeyType ktId) const
   { // Find code and return custom error if not found else return string
-    const auto aName{ this->find(ktId) };
-    return aName != this->cend() ? aName->second : IdentGet();
+    const IteratorType ptName{ this->find(ktId) };
+    return ptName != this->cend() ? ptName->second : IdentGet();
   }
 };/* ----------------------------------------------------------------------- */
 template<typename IntType = const uint64_t>class IdentCSlave

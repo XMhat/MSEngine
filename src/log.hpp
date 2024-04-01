@@ -129,17 +129,19 @@ static class Log final :
   const string_view &LogLevelToString(const LHLevel lhId)
     { return llLevels.Get(lhId); }
   /* -- Safe access to members ------------------------------------- */ public:
-  CVarReturn SetLevel(const LHLevel lhNewLevel)
+  CVarReturn SetLevel(const LHLevel lhlNewLevel)
   { // Deny if invalid level
-    if(lhNewLevel >= LH_MAX) return DENY;
-    // Set new logging state
-    const LHLevel lhOldLevel = lhlLevel;
-    lhlLevel = lhNewLevel;
-    // Report state, we could disable logging so we should force report it
-    LogNLCDebugExSafe("Log change verbosity from $ ($) to $ ($).",
-      LogLevelToString(lhOldLevel), lhOldLevel,
-      LogLevelToString(lhNewLevel), lhNewLevel);
-    // Success
+    if(lhlNewLevel >= LH_MAX) return DENY;
+    // Not same level as current? (when cvar registered/init prevents echo)
+    if(lhlNewLevel != lhlLevel)
+    { // Set new logging state
+      const LHLevel lhOldLevel = lhlLevel;
+      lhlLevel = lhlNewLevel;
+      // Report state, we could disable logging so we should force report it
+      LogNLCDebugExSafe("Log change verbosity from $ ($) to $ ($).",
+        LogLevelToString(lhOldLevel), lhOldLevel,
+        LogLevelToString(lhlNewLevel), lhlNewLevel);
+    } // Success
     return ACCEPT;
   }
   /* ----------------------------------------------------------------------- */
@@ -265,6 +267,26 @@ static class Log final :
     WriteString(StrFormat("Log file is '$'.", IdentGet()));
     return true;
   }
+  /* -- Constructor -------------------------------------------------------- */
+  Log(void) :
+    /* -- Initialisers ----------------------------------------------------- */
+    llLevels{{                         // Initialise log level strings
+      "Critical",                      // Log line is critical
+      "Error",                         // Log line is an error
+      "Warning",                       // Log line is a warning
+      "Info",                          // Log line is information
+      "Debug"                          // Log line is for developers
+    }},                                // End of log level strings
+    strStdOut{ "/dev/stdout" },        // Initialise display label for stdout
+    strStdErr{ "/dev/stderr" },        // Initialise display label for stderr
+    lhlLevel{ LH_DEBUG },              // Initialise default level
+    stMaximum(1000)                    // Initialise maximum output lines
+    /* -- No code ---------------------------------------------------------- */
+    { }
+  /* -- Destructor --------------------------------------------------------- */
+  DTORHELPER(~Log, DeInitSafe())
+  /* -- Macros ------------------------------------------------------------- */
+  DELETECOPYCTORS(Log)                 // Do not need defaults
   /* -- Conlib callback function for APP_LOG variable ---------------------- */
   CVarReturn LogFileModified(const string &strFN, string &strCV)
   { // Lock mutex
@@ -302,26 +324,6 @@ static class Log final :
     stMaximum = stL;
     return ACCEPT;
   }
-  /* -- Constructor -------------------------------------------------------- */
-  Log(void) :
-    /* -- Initialisers ----------------------------------------------------- */
-    llLevels{{                         // Initialise log level strings
-      "Critical",                      // Log line is critical
-      "Error",                         // Log line is an error
-      "Warning",                       // Log line is a warning
-      "Info",                          // Log line is information
-      "Debug"                          // Log line is for developers
-    }},                                // End of log level strings
-    strStdOut{ "/dev/stdout" },        // Initialise display label for stdout
-    strStdErr{ "/dev/stderr" },        // Initialise display label for stderr
-    lhlLevel{ LH_DEBUG },              // Initialise default level
-    stMaximum(1000)                    // Initialise maximum output lines
-    /* -- No code ---------------------------------------------------------- */
-    { }
-  /* -- Destructor --------------------------------------------------------- */
-  DTORHELPER(~Log, DeInitSafe())
-  /* -- Macros ------------------------------------------------------------- */
-  DELETECOPYCTORS(Log)                 // Do not need defaults
   /* -- End ---------------------------------------------------------------- */
 } *cLog = nullptr;                     // Pointer to static class
 /* ------------------------------------------------------------------------- */

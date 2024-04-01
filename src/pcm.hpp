@@ -20,7 +20,7 @@ using namespace ISysUtil::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* == Pcm collector and member class ======================================= */
-BEGIN_ASYNCCOLLECTORDUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
+CTOR_BEGIN_ASYNC_DUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
   public Ident,                        // Pcm file name
   public AsyncLoaderPcm,               // For loading Pcm's off main-thread
@@ -181,7 +181,7 @@ BEGIN_ASYNCCOLLECTORDUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Pcm)                 // Disable copy constructor and operator
 };/* -- End-of-collector --------------------------------------------------- */
-END_ASYNCCOLLECTOR(Pcms, Pcm, PCM);
+CTOR_END_ASYNC_NOFUNCS(Pcms, PCM)      // Finish collector class
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */

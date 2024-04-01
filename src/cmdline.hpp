@@ -45,7 +45,8 @@ static struct CmdLine final            // Members initially public
   const string GetHome(const string &strSuf) const
     { return StrAppend(strHD, strSuf); }
   /* -- Get environment variable ------------------------------------------- */
-  const string &GetEnv(const string &strEnv, const string &strO={}) const
+  const string &GetEnv(const string &strEnv,
+    const string &strO=cCommon->Blank()) const
   { // Find item and return it else return the default item
     const StrStrMapConstIt eiEnv{ lEnv.find(strEnv) };
     return eiEnv == lEnv.cend() ? strO : eiEnv->second;

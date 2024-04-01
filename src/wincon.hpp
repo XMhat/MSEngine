@@ -66,24 +66,6 @@ class SysCon :                         // Members initially private
   /* -- Reset drawing bounds ----------------------------------------------- */
   void ResetDrawingBounds(void)
     { stX1 = stY1 = StdMaxSizeT; stX2 = stY2 = 0; }
-  /* -- Set maximum console line length ------------------------------------ */
-  CVarReturn RowsModified(const size_t stRows)
-  { // Deny if out of range. The maximum value is a SHORT from Win32 API.
-    if(stRows < 25 || UtilIntWillOverflow<SHORT>(stRows)) return DENY;
-    // Update the buffer size if console is opened
-    if(IsWindowHandleSet()) UpdateSize(stW, stRows);
-    // Value allowed
-    return ACCEPT;
-  }
-  /* -- Set maximum console line length ------------------------------------ */
-  CVarReturn ColsModified(const size_t stCols)
-  { // Deny if out of range. The maximum value is a SHORT from Win32 API.
-    if(stCols < 80 || UtilIntWillOverflow<SHORT>(stCols)) return DENY;
-    // Update the buffer size
-    if(IsWindowHandleSet()) UpdateSize(stCols, stH);
-    // Value allowed
-    return ACCEPT;
-  }
   /* -- Control and break handler (thiscall) ------------------------------- */
   static BOOL WINAPI CtrlHandlerStatic(DWORD);
   BOOL WINAPI CtrlHandler(DWORD dwCtrlType)
@@ -857,7 +839,25 @@ class SysCon :                         // Members initially private
   /* -- Destructor --------------------------------------------------------- */
   DTORHELPER(~SysCon, SysConDeInit());
   /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(SysCon);             // Do not need defaults
+  DELETECOPYCTORS(SysCon);             // Disable copy constructor and operator
+  /* -- Set maximum console line length ------------------------------------ */
+  CVarReturn RowsModified(const size_t stRows)
+  { // Deny if out of range. The maximum value is a SHORT from Win32 API.
+    if(stRows < 25 || UtilIntWillOverflow<SHORT>(stRows)) return DENY;
+    // Update the buffer size if console is opened
+    if(IsWindowHandleSet()) UpdateSize(stW, stRows);
+    // Value allowed
+    return ACCEPT;
+  }
+  /* -- Set maximum console line length ------------------------------------ */
+  CVarReturn ColsModified(const size_t stCols)
+  { // Deny if out of range. The maximum value is a SHORT from Win32 API.
+    if(stCols < 80 || UtilIntWillOverflow<SHORT>(stCols)) return DENY;
+    // Update the buffer size
+    if(IsWindowHandleSet()) UpdateSize(stCols, stH);
+    // Value allowed
+    return ACCEPT;
+  }
 };/* ----------------------------------------------------------------------- */
 #define MSENGINE_SYSCON_CALLBACKS() \
   BOOL WINAPI SysBase::SysCon::CtrlHandlerStatic(DWORD dwCtrlType) \

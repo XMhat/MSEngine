@@ -106,12 +106,24 @@ class SysModuleData :                  // Members initially private
 ** ## Storage for all the modules loaded to this executable.              ## **
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
-typedef map<const size_t,const SysModuleData> SysModList; // Map of mod datas
+MAPPACK_BUILD(SysMod, const size_t,const SysModuleData)
 /* ------------------------------------------------------------------------- */
 struct SysModules :
   /* -- Base classes ------------------------------------------------------- */
-  public SysModList                    // System module list
-{ /* ----------------------------------------------------------------------- */
+  public SysModMap                     // System module list
+{ /* -- Move constructor ---------------------------------------- */ protected:
+  SysModules(SysModules &&smOther) :
+    /* -- Initialisers ----------------------------------------------------- */
+    SysModMap{ StdMove(smOther) }
+    /* -- No code ---------------------------------------------------------- */
+    { }
+  /* -- Init from SysModMap ----------------------------------------------- */
+  explicit SysModules(SysModMap &&smlOther) :
+    /* -- Initialisers ----------------------------------------------------- */
+    SysModMap{ StdMove(smlOther) }
+    /* -- No code ---------------------------------------------------------- */
+    { }
+  /* --------------------------------------------------------------- */ public:
   DELETECOPYCTORS(SysModules)          // Disable copy constructor and operator
   /* -- Dump module list --------------------------------------------------- */
   CVarReturn DumpModuleList(const unsigned int uiShow)
@@ -120,9 +132,9 @@ struct SysModules :
     // Print how many modules we are enumerating
     cLog->LogNLCInfoExSafe("System enumerating $ modules...", size());
     // For each shared module, print the data for it to log
-    for(const auto &mD : *this)
+    for(const SysModMapPair &smmpPair : *this)
     { // Get mod data and pathsplit data
-      const SysModuleData &smdData = mD.second;
+      const SysModuleData &smdData = smmpPair.second;
       // Log the module data
       cLog->LogNLCInfoExSafe("- $ <$> '$' by '$' from '$'.",
         smdData.GetFileExt(), smdData.GetVersion(),
@@ -132,18 +144,6 @@ struct SysModules :
     } // Done
     return ACCEPT;
   }
-  /* -- Move constructor ---------------------------------------- */ protected:
-  SysModules(SysModules &&smOther) :
-    /* -- Initialisers ----------------------------------------------------- */
-    SysModList{ StdMove(smOther) }
-    /* -- No code ---------------------------------------------------------- */
-    { }
-  /* -- Init from SysModList ----------------------------------------------- */
-  explicit SysModules(SysModList &&smlOther) :
-    /* -- Initialisers ----------------------------------------------------- */
-    SysModList{ StdMove(smlOther) }
-    /* -- No code ---------------------------------------------------------- */
-    { }
 };/* ----------------------------------------------------------------------- */
 /* == System version ======================================================= **
 ** ######################################################################### **
@@ -182,23 +182,23 @@ class SysVersion :
   /* -- Find executable module info and return reference to it -- */ protected:
   const SysModuleData &FindBaseModuleInfo(const size_t stId) const
   { // Find the module, we stored it as a zero, if not found?
-    const SysModList &smlData = *this;
-    const auto smlitItem{ smlData.find(stId) };
-    if(smlitItem == smlData.cend())
+    const SysModMap &smmMap = *this;
+    const SysModMapConstIt smmciIt{ smmMap.find(stId) };
+    if(smmciIt == smmMap.cend())
       XC("Failed to locate executable information!",
-         "Length", smlData.size(), "Instance", stId);
+         "Length", smmMap.size(), "Instance", stId);
     // Return version data
-    return smlitItem->second;
+    return smmciIt->second;
   }
   /* -- Move constructor r ------------------------------------------------- */
   SysVersion(SysVersion &&svOther) :
     /* -- Initialisers ----------------------------------------------------- */
-    SysModules{ StdMove(svOther) },   // Move other version information
-    smdEng{ StdMove(svOther.smdEng) } // Move engine exetuable information
+    SysModules{ StdMove(svOther) },    // Move other version information
+    smdEng{ StdMove(svOther.smdEng) }  // Move engine exetuable information
     /* -- No code ---------------------------------------------------------- */
     { }
-  /* -- Init from SysModList ----------------------------------------------- */
-  SysVersion(SysModList &&smlOther, const size_t stI) :
+  /* -- Init from SysModMap ----------------------------------------------- */
+  SysVersion(SysModMap &&smlOther, const size_t stI) :
     /* -- Initialisers ----------------------------------------------------- */
     SysModules{ StdMove(smlOther) },           // Move system modules list
     smdEng{ StdMove(FindBaseModuleInfo(stI)) } // Move engine executable info
@@ -456,149 +456,12 @@ static class System final :            // The main system class
   const string_view &GetGuestCopyright(void) const { return strvCopyright; }
   const string_view &GetGuestDescription(void) const {return strvDescription; }
   const string_view &GetGuestWebsite(void) const { return strvWebsite; }
-  /* -- CVar callbacks to update guest descriptor strings ------------------ */
-  CVarReturn SetGuestTitle(const string&, const string &strV)
-    { strvTitle = strV; return ACCEPT; }
-  CVarReturn SetGuestShortTitle(const string&, const string &strV)
-    { strvShortTitle = strV; return ACCEPT; }
-  CVarReturn SetGuestVersion(const string&, const string &strV)
-    { strvVersion = strV; return ACCEPT; }
-  CVarReturn SetGuestAuthor(const string&, const string &strV)
-    { strvAuthor = strV; return ACCEPT; }
-  CVarReturn SetGuestCopyright(const string&, const string &strV)
-    { strvCopyright = strV; return ACCEPT; }
-  CVarReturn SetGuestDescription(const string&, const string &strV)
-    { strvDescription = strV; return ACCEPT; }
-  CVarReturn SetGuestWebsite(const string&, const string &strV)
-    { strvWebsite = strV; return ACCEPT; }
-  /* -- Update minimum RAM ------------------------------------------------- */
-  CVarReturn SetMinRAM(const uint64_t qwMinValue)
-  { // If we're to check for minimum memory free
-    if(const size_t stMemory = UtilIntOrMax<size_t>(qwMinValue))
-    { // Store duration of fill here later
-      double dDuration;
-      // Update memory usage data
-      UpdateMemoryUsageData();
-      // Take away current process memory usage. We'll do a underflow check
-      // because utilities like valgrind can mess with this.
-      const size_t stActualMemory =
-        RAMProcUse() > stMemory ? stMemory : stMemory - RAMProcUse();
-      { // Memory block for data
-        Memory mbData;
-        // Try to allocate the memory and if succeeded
-        try { mbData.MemInitBlank(stActualMemory); }
-        // Allocation failed?
-        catch(const exception &e)
-        { // Throw memory error
-          XC("There is not enough system memory available. Close any "
-            "running applications consuming it and try running again!",
-            "Error",   e,          "Available", RAMFree(),
-            "Total",   RAMTotal(), "Required",  stMemory,
-            "Percent", UtilMakePercentage(RAMFree(), RAMTotal()),
-            "Needed",  stMemory - RAMFree());
-        } // Initialise the memory and record time spent
-        const ClockChrono<CoreClock> tpStart;
-        mbData.MemFill();
-        dDuration = tpStart.CCDeltaToDouble();
-      } // Show result of test in log
-      cLog->LogInfoExSafe("System heap init of $ ($+$) in $ ($/s).",
-        StrToBytes(stMemory), StrToBytes(RAMProcUse()),
-        StrToBytes(stActualMemory), StrShortFromDuration(dDuration),
-          StrToBytes(static_cast<uint64_t>(1.0 / dDuration * stMemory)));
-    } // Success
-    return ACCEPT;
-  }
-  /* -- Restore old unexpected and termination handlers -------------------- */
-  ~System(void) { set_terminate(thHandler); }
-  /* -- Set/Get GUI mode status -------------------------------------------- */
-  CVarReturn SetCoreFlags(const CoreFlagsType cftFlags)
-  { // Failed if bad value
-    if(cftFlags != CFL_NONE && (cftFlags & ~CFL_MASK)) return DENY;
-    // Set new value
-    cfMode.FlagReset(cftFlags);
-    // Accepted
-    return ACCEPT;
-  }
-  /* -- Set throw error on executable checksum mismatch -------------------- */
-  CVarReturn CheckChecksumModified(const bool bEnabled)
-  { // Ignore if we don't care that executabe checksum was modified
-    if(!bEnabled || !EXEModified()) return ACCEPT;
-    // Throw error
-    XC("This software has been modified! Please re-acquire and/or "
-       "re-install a fresh version of this software and try again!",
-       "Path",     ENGFull(),
-       "Expected", EXECheckSum(),
-       "Actual",   EXEHeaderSum());
-  }
-  /* -- Set throw error if debugger is attached ---------------------------- */
-  CVarReturn CheckDebuggerDetected(const bool bEnabled)
-  { // Ignore if we don't care that a debugger is attached to the process
-    if(!bEnabled || !DebuggerRunning()) return ACCEPT;
-    // Throw error
-    XC("There is a debugger attached to this software. Please "
-       "close the offending debugger that is hooking onto this application "
-       "and try running the application again");
-  }
-  /* -- Set working directory ---------------------------------------------- */
-  CVarReturn SetWorkDir(const string &strP, string &strV)
-  { // Set current directory to the startup directory as we want to honour the
-    // users choice of relative directory.
-    cCmdLine->SetStartupCWD();
-    // If targeting Apple systems?
-#if defined(MACOS)
-    // Working directory
-    string strWorkDir;
-    // No directory specified?
-    if(strP.empty())
-    { // Build app bundle directory suffix and if we're calling from it from
-      // the application bundle? Use the MacOS/../Resources directory instead.
-      if(EXEBundled())
-        strWorkDir = StdMove(PathSplit{
-          StrAppend(ENGLoc(), "../Resources"), true }.strFull);
-      // Use executable working directory
-      else strWorkDir = ENGLoc();
-    } // Directory specified so use that and build full path for it
-    else strWorkDir = StdMove(PathSplit{ strP, true }.strFull);
-#else
-    // Build directory
-    string strWorkDir{ strP.empty() ? ENGLoc() :
-      StdMove(PathSplit{ strP, true }.strFull) };
-#endif
-    // Set the directory and if failed? Throw the error
-    if(!DirSetCWD(strWorkDir))
-      XCL("Failed to set working directory!", "Directory", strWorkDir);
-    // We are changing the value ourselves...
-    strV = StdMove(strWorkDir);
-    // ...so make sure the cvar system knows
-    return ACCEPT_HANDLED;
-  }
-  /* -- Set throw error on elevated priviliedges --------------------------- */
-  CVarReturn CheckAdminModified(const unsigned int uiMode)
-  { // Valid modes allowed
-    enum Mode { AM_OK,                 // [0] Running as admin is okay?
-                AM_NOTOK,              // [1] Running as admin is not okay?
-                AM_NOTOKIFMODERNOS };  // [2] As above but not if OS is modern?
-    // Check mode
-    switch(static_cast<Mode>(uiMode))
-    { // Return if OS uses admin as default for accounts else fall through
-      case AM_NOTOKIFMODERNOS: if(OSIsAdminDefault()) return ACCEPT;
-                               [[fallthrough]];
-      // Break to error if running as admin else fall through to accept
-      case AM_NOTOK: if(OSIsAdmin()) break;
-                     [[fallthrough]];
-      // Don't care if running as admin.
-      case AM_OK: return ACCEPT;
-      // Unknown parameter
-      default: return DENY;
-    }// Throw error
-    XC("You are running this software with elevated privileges which can be "
-       "dangerous and thus has been blocked on request by the guest. Please "
-       "restart this software with reduced privileges.");
-  }
   /* ----------------------------------------------------------------------- */
   const CoreFlagsConst GetCoreFlags(void) const { return cfMode; }
   bool IsCoreFlagsHave(const CoreFlagsConst cfFlags) const
     { return !cfFlags || GetCoreFlags().FlagIsSet(cfFlags); }
+  bool IsCoreFlagsNotHave(const CoreFlagsConst cfFlags) const
+    { return !IsCoreFlagsHave(cfFlags); }
   bool IsGraphicalMode(void) const
     { return GetCoreFlags().FlagIsSet(CFL_VIDEO); }
   bool IsNotGraphicalMode(void) const { return !IsGraphicalMode(); }
@@ -695,8 +558,147 @@ static class System final :            // The main system class
       cmSys.FormatTime(), cmSys.FormatTimeUTC(),
       StrFromBoolTF(OSIsAdmin()), StrFromBoolTF(EXEBundled()));
   }
+  /* -- Restore old unexpected and termination handlers -------------------- */
+  DTORHELPER(~System, set_terminate(thHandler))
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(System)              // Disable copy constructor and operator
+  /* -- CVar callbacks to update guest descriptor strings ------------------ */
+  CVarReturn SetGuestTitle(const string&, const string &strV)
+    { strvTitle = strV; return ACCEPT; }
+  CVarReturn SetGuestShortTitle(const string&, const string &strV)
+    { strvShortTitle = strV; return ACCEPT; }
+  CVarReturn SetGuestVersion(const string&, const string &strV)
+    { strvVersion = strV; return ACCEPT; }
+  CVarReturn SetGuestAuthor(const string&, const string &strV)
+    { strvAuthor = strV; return ACCEPT; }
+  CVarReturn SetGuestCopyright(const string&, const string &strV)
+    { strvCopyright = strV; return ACCEPT; }
+  CVarReturn SetGuestDescription(const string&, const string &strV)
+    { strvDescription = strV; return ACCEPT; }
+  CVarReturn SetGuestWebsite(const string&, const string &strV)
+    { strvWebsite = strV; return ACCEPT; }
+  /* -- Update minimum RAM ------------------------------------------------- */
+  CVarReturn SetMinRAM(const uint64_t qwMinValue)
+  { // If we're to check for minimum memory free
+    if(const size_t stMemory = UtilIntOrMax<size_t>(qwMinValue))
+    { // Store duration of fill here later
+      double dDuration;
+      // Update memory usage data
+      UpdateMemoryUsageData();
+      // Take away current process memory usage. We'll do a underflow check
+      // because utilities like valgrind can mess with this.
+      const size_t stActualMemory =
+        RAMProcUse() > stMemory ? stMemory : stMemory - RAMProcUse();
+      { // Memory block for data
+        Memory mbData;
+        // Try to allocate the memory and if succeeded
+        try { mbData.MemInitBlank(stActualMemory); }
+        // Allocation failed?
+        catch(const exception &e)
+        { // Throw memory error
+          XC("There is not enough system memory available. Close any "
+            "running applications consuming it and try running again!",
+            "Error",   e,          "Available", RAMFree(),
+            "Total",   RAMTotal(), "Required",  stMemory,
+            "Percent", UtilMakePercentage(RAMFree(), RAMTotal()),
+            "Needed",  stMemory - RAMFree());
+        } // Initialise the memory and record time spent
+        const ClockChrono<CoreClock> tpStart;
+        mbData.MemFill();
+        dDuration = tpStart.CCDeltaToDouble();
+      } // Show result of test in log
+      cLog->LogInfoExSafe("System heap init of $ ($+$) in $ ($/s).",
+        StrToBytes(stMemory), StrToBytes(RAMProcUse()),
+        StrToBytes(stActualMemory), StrShortFromDuration(dDuration),
+          StrToBytes(static_cast<uint64_t>(1.0 / dDuration * stMemory)));
+    } // Success
+    return ACCEPT;
+  }
+  /* -- Set/Get GUI mode status -------------------------------------------- */
+  CVarReturn SetCoreFlags(const CoreFlagsType cftFlags)
+  { // Failed if bad value
+    if(cftFlags != CFL_NONE && (cftFlags & ~CFL_MASK)) return DENY;
+    // Set new value
+    cfMode.FlagReset(cftFlags);
+    // Accepted
+    return ACCEPT;
+  }
+  /* -- Set throw error on executable checksum mismatch -------------------- */
+  CVarReturn CheckChecksumModified(const bool bEnabled)
+  { // Ignore if we don't care that executabe checksum was modified
+    if(!bEnabled || !EXEModified()) return ACCEPT;
+    // Throw error
+    XC("This software has been modified! Please re-acquire and/or "
+       "re-install a fresh version of this software and try again!",
+       "Path",     ENGFull(),
+       "Expected", EXECheckSum(),
+       "Actual",   EXEHeaderSum());
+  }
+  /* -- Set throw error if debugger is attached ---------------------------- */
+  CVarReturn CheckDebuggerDetected(const bool bEnabled)
+  { // Ignore if we don't care that a debugger is attached to the process
+    if(!bEnabled || !DebuggerRunning()) return ACCEPT;
+    // Throw error
+    XC("There is a debugger attached to this software. Please "
+       "close the offending debugger that is hooking onto this application "
+       "and try running the application again");
+  }
+  /* -- Set working directory ---------------------------------------------- */
+  CVarReturn SetWorkDir(const string &strP, string &strV)
+  { // Set current directory to the startup directory as we want to honour the
+    // users choice of relative directory.
+    cCmdLine->SetStartupCWD();
+    // If targeting Apple systems?
+#if defined(MACOS)
+    // Working directory
+    string strWorkDir;
+    // No directory specified?
+    if(strP.empty())
+    { // Build app bundle directory suffix and if we're calling from it from
+      // the application bundle? Use the MacOS/../Resources directory instead.
+      if(EXEBundled())
+        strWorkDir = StdMove(PathSplit{
+          StrAppend(ENGLoc(), "../Resources"), true }.strFull);
+      // Use executable working directory
+      else strWorkDir = ENGLoc();
+    } // Directory specified so use that and build full path for it
+    else strWorkDir = StdMove(PathSplit{ strP, true }.strFull);
+#else
+    // Build directory
+    string strWorkDir{ strP.empty() ? ENGLoc() :
+      StdMove(PathSplit{ strP, true }.strFull) };
+#endif
+    // Set the directory and if failed? Throw the error
+    if(!DirSetCWD(strWorkDir))
+      XCL("Failed to set working directory!", "Directory", strWorkDir);
+    // We are changing the value ourselves...
+    strV = StdMove(strWorkDir);
+    // ...so make sure the cvar system knows
+    return ACCEPT_HANDLED;
+  }
+  /* -- Set throw error on elevated priviliedges --------------------------- */
+  CVarReturn CheckAdminModified(const unsigned int uiMode)
+  { // Valid modes allowed
+    enum Mode { AM_OK,                 // [0] Running as admin is okay?
+                AM_NOTOK,              // [1] Running as admin is not okay?
+                AM_NOTOKIFMODERNOS };  // [2] As above but not if OS is modern?
+    // Check mode
+    switch(static_cast<Mode>(uiMode))
+    { // Return if OS uses admin as default for accounts else fall through
+      case AM_NOTOKIFMODERNOS: if(OSIsAdminDefault()) return ACCEPT;
+                               [[fallthrough]];
+      // Break to error if running as admin else fall through to accept
+      case AM_NOTOK: if(OSIsAdmin()) break;
+                     [[fallthrough]];
+      // Don't care if running as admin.
+      case AM_OK: return ACCEPT;
+      // Unknown parameter
+      default: return DENY;
+    }// Throw error
+    XC("You are running this software with elevated privileges which can be "
+       "dangerous and thus has been blocked on request by the guest. Please "
+       "restart this software with reduced privileges.");
+  }
   /* ----------------------------------------------------------------------- */
 } *cSystem = nullptr;                  // Pointer to static class
 /* -- Default handler for std::terminate ----------------------------------- */

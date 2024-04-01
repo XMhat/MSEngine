@@ -34,17 +34,23 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Clip));
 LLFUNCEX(Value, 1, LCGETPTR(1, Clip)->ClipGet());
 /* ========================================================================= */
 // $ Clip:Id
+// < Id:integer=The id number of the Clip object.
+// ? Returns the unique id of the Clip object.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(Id, 1, LCPUSHVAR(LCGETPTR(1, Clip)->CtrGet()));
+/* ========================================================================= */
+// $ Clip:Name
 // < Identifier:string = The identifier given at creation.
 // ? Returns the identifier of this request given at creation.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Id, 1, LCGETPTR(1, Clip)->IdentGet());
+LLFUNCEX(Name, 1, LCGETPTR(1, Clip)->IdentGet());
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Clip:* member functions structure                                   ## **
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Clip:* member functions begin
-  LLRSFUNC(Destroy), LLRSFUNC(Id), LLRSFUNC(Value),
+  LLRSFUNC(Destroy), LLRSFUNC(Id), LLRSFUNC(Name), LLRSFUNC(Value),
 LLRSEND                                // Clip:* member functions end
 /* ========================================================================= **
 ** ######################################################################### **

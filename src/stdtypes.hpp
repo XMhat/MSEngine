@@ -59,8 +59,9 @@ using ::std::execution::seq;
 /* -- Asynchronisation ----------------------------------------------------- */
 using ::std::atomic;                   using ::std::condition_variable;
 using ::std::lock_guard;               using ::std::mutex;
-using ::std::thread;                   using ::std::try_to_lock;
-using ::std::unique_lock;              using ::std::unique_ptr;
+using ::std::scoped_lock;              using ::std::thread;
+using ::std::try_to_lock;              using ::std::unique_lock;
+using ::std::unique_ptr;
 typedef atomic<bool>       SafeBool;   // Thread safe boolean
 typedef atomic<double>     SafeDouble; // Thread safe double
 typedef atomic<int>        SafeInt;    // Thread safe integer
@@ -88,6 +89,8 @@ typedef StrVector::const_iterator         StrVectorConstIt;
 typedef StrVector::const_reverse_iterator StrVectorConstRevIt;
 typedef vector<unsigned int>              UIntVector;
 typedef UIntVector::const_iterator        UIntVectorConstIt;
+typedef vector<string_view>               StrViewVector;
+typedef StrViewVector::const_iterator     StrViewVectorConstIt;
 /* -- Standard linked list types ------------------------------------------- */
 typedef list<string>                    StrList;
 typedef StrList::const_iterator         StrListConstIt;
@@ -99,23 +102,18 @@ typedef list<StrPair>                    StrPairList;
 /* -- Set of strings ------------------------------------------------------- */
 typedef set<string>            StrSet;
 typedef StrSet::const_iterator StrSetConstIt;
-/* -- map of strings and unsigned ints ------------------------------------- */
-typedef map<const string, const unsigned int> StrUIntMap;
-typedef StrUIntMap::const_iterator            StrUIntMapConstIt;
-typedef vector<StrUIntMapConstIt>             StrUIntMapConstItVector;
-/* -- map of strings and signed ints --------------------------------------- */
-typedef map<const string, const int> StrIntMap;
-typedef StrIntMap::const_iterator    StrIntMapConstIt;
-/* -- map of key and value strings ----------------------------------------- */
-typedef map<const string, const string> StrStrMap;
-typedef StrStrMap::iterator             StrStrMapIt;
-typedef StrStrMap::const_iterator       StrStrMapConstIt;
-/* -- map of key and value string_views ------------------------------------ */
-typedef map<const string_view, const string_view> StrVStrVMap;
-typedef StrVStrVMap::iterator                     StrVStrVMapIt;
-typedef StrVStrVMap::const_iterator               StrVStrVMapConstIt;
-/* -- map of key and modifyable value strings ------------------------------ */
-typedef map<const string, string>   StrNCStrMap;
-typedef StrNCStrMap::iterator       StrNCStrMapIt;
-typedef StrNCStrMap::const_iterator StrNCStrMapConstIt;
+/* -- Helper macro to build typedefs for a new map type -------------------- */
+#define MAPPACK_BUILD(n,t1,t2) \
+  typedef pair<t1,t2> n ## MapPair; \
+  typedef map<n ## MapPair::first_type, n ## MapPair::second_type> n ## Map; \
+  typedef n ## Map::iterator n ## MapIt; \
+  typedef n ## Map::const_iterator n ## MapConstIt;
+/* -- Map of strings and unsigned ints ------------------------------------- */
+MAPPACK_BUILD(StrUInt, const string, const unsigned int)
+typedef vector<StrUIntMapConstIt> StrUIntMapConstItVector;
+/* -- Other map types ------------------------------------------------------ */
+MAPPACK_BUILD(StrInt, const string, const int)
+MAPPACK_BUILD(StrStr, const string, const string)
+MAPPACK_BUILD(StrVStrV, const string_view, const string_view)
+MAPPACK_BUILD(StrNCStr, const string, string)
 /* == EoF =========================================================== EoF == */

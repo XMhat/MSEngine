@@ -183,6 +183,12 @@ LLFUNCBEGIN(GetRGBA)
             fbocData.GetColourBlue(), fbocData.GetColourAlpha());
 LLFUNCENDEX(4)
 /* ========================================================================= */
+// $ Palette:GetId
+// < Id:integer=The id number of the Palette object.
+// ? Returns the unique id of the Palette object.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(GetId, 1, LCPUSHVAR(LCGETPTR(1, Palette)->CtrGet()));
+/* ========================================================================= */
 // $ Palette:GetName
 // < Name:string=The identifier of the palette.
 // ? Returns the palette identifier
@@ -341,13 +347,14 @@ LLFUNCEND
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Palette:* member functions begin
-  LLRSFUNC(Commit),  LLRSFUNC(Copy),     LLRSFUNC(Destroy), LLRSFUNC(Fill),
-  LLRSFUNC(GetA),    LLRSFUNC(GetAI),    LLRSFUNC(GetB),    LLRSFUNC(GetBI),
-  LLRSFUNC(GetG),    LLRSFUNC(GetGI),    LLRSFUNC(GetName), LLRSFUNC(GetR),
-  LLRSFUNC(GetRGBA), LLRSFUNC(GetRGBAI), LLRSFUNC(GetRI),   LLRSFUNC(SetA),
-  LLRSFUNC(SetAI),   LLRSFUNC(SetB),     LLRSFUNC(SetBI),   LLRSFUNC(SetG),
-  LLRSFUNC(SetGI),   LLRSFUNC(SetR),     LLRSFUNC(SetRGBA), LLRSFUNC(SetRGBAI),
-  LLRSFUNC(SetRI),   LLRSFUNC(Shift),    LLRSFUNC(ShiftB),  LLRSFUNC(ShiftF),
+  LLRSFUNC(Commit),   LLRSFUNC(Copy),    LLRSFUNC(Destroy),  LLRSFUNC(Fill),
+  LLRSFUNC(GetA),     LLRSFUNC(GetAI),   LLRSFUNC(GetB),     LLRSFUNC(GetBI),
+  LLRSFUNC(GetG),     LLRSFUNC(GetGI),   LLRSFUNC(GetId),    LLRSFUNC(GetName),
+  LLRSFUNC(GetR),     LLRSFUNC(GetRGBA), LLRSFUNC(GetRGBAI), LLRSFUNC(GetRI),
+  LLRSFUNC(SetA),     LLRSFUNC(SetAI),   LLRSFUNC(SetB),     LLRSFUNC(SetBI),
+  LLRSFUNC(SetG),     LLRSFUNC(SetGI),   LLRSFUNC(SetR),     LLRSFUNC(SetRGBA),
+  LLRSFUNC(SetRGBAI), LLRSFUNC(SetRI),   LLRSFUNC(Shift),    LLRSFUNC(ShiftB),
+  LLRSFUNC(ShiftF),
 LLRSEND                                // Palette:* member functions end
 /* ========================================================================= */
 // $ Palette.Create

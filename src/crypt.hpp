@@ -206,9 +206,9 @@ static const string CryptBin2HexL(const MemConst &mcSrc)
 /* ------------------------------------------------------------------------- */
 static void CryptAddEntropy(void)
 { // Grab some data from the timer subsystem
-  const uint64_t qMicro = cLog->CCDeltaUS();
+  const uint64_t uqMicro = cLog->CCDeltaUS();
   // Add it as entropy to openssl
-  RAND_seed(&qMicro, sizeof(qMicro));
+  RAND_seed(&uqMicro, sizeof(uqMicro));
 }
 /* ------------------------------------------------------------------------- */
 static void CryptRandomPtr(void*const vpDst, const size_t stSize)
@@ -257,17 +257,20 @@ static const string CryptURLEncode(const char*const cpURL)
 static const string CryptURLEncode(const string &strS)
   { return CryptURLEncode(strS.c_str()); }
 /* ------------------------------------------------------------------------- */
-template<class T>static const string CryptImplodeMapAndEncode(const T &ssData,
-  const string &strSep)
+template<class MapType>
+  static const string CryptImplodeMapAndEncode(const MapType &mtRef,
+    const string &strSep)
 { // The vector to return
   StrVector svRet;
+  // Make pair type from passed map type
+  typedef typename MapType::value_type PairType;
   // Iterate through each key pair and insert into vector whilst encoding
-  transform(ssData.cbegin(), ssData.cend(), back_inserter(svRet),
-    [](const auto &vI)
-      { return StdMove(StrAppend(CryptURLEncode(vI.first), '=',
-          CryptURLEncode(vI.second))); });
+  transform(mtRef.cbegin(), mtRef.cend(), back_inserter(svRet),
+    [](const PairType &ptRef)
+      { return StdMove(StrAppend(CryptURLEncode(ptRef.first), '=',
+          CryptURLEncode(ptRef.second))); });
   // Return vector
-  return StrImplode(svRet, strSep);
+  return StrImplode(svRet, 0, strSep);
 }
 /* -- Get error reason ----------------------------------------------------- */
 static string CryptGetErrorReason(const unsigned long ulErr)
@@ -295,7 +298,7 @@ static int CryptGetError(string &strError)
     // Some statics
     static constexpr const unsigned int
       // Replacement for ERR_SYSTEM_MASK which causes warnings
-      uiSystemMask = static_cast<unsigned int>(INT_MAX),
+      uiSystemMask = numeric_limits<int>::max(),
       // Replacement for ERR_SYSTEM_FLAG which causes warnings
       uiSystemFlag = uiSystemMask + 1;
     // Is a system error?

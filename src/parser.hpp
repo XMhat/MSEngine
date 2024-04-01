@@ -16,24 +16,26 @@ using namespace IString::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* -- Parser class --------------------------------------------------------- */
-template<class ParserMapType,
-         class ParserMapTypeIterator = typename ParserMapType::const_iterator>
-  class ParserBase :
+template<class ParserMapType>class ParserBase :
   /* -- Base classes ------------------------------------------------------- */
-  public ParserMapType                   // Derive by specified map type
-{ /* -- Initialise entries from a string ----------------------------------- */
-  void ParserDoInit(const string &strS, const string &strLS,
+  public ParserMapType                 // Derive by specified map type
+{ /* -- Private variables -------------------------------------------------- */
+  typedef ParserMapType::const_iterator ParserMapTypeConstIt;
+  typedef ParserMapType::value_type     ParserMapTypePair;
+  /* -- Initialise entries from a string ----------------------------------- */
+  void ParserDoInit(const string &strSep, const string &strLineSep,
     const char cDelimiter)
   { // Ignore if any of the variables are empty
-    if(strS.empty() || strLS.empty()) return;
+    if(strSep.empty() || strLineSep.empty()) return;
     // Location of next separator
     size_t stStart = 0;
     // Until eof, push each item split into list
-    for(size_t stLoc; (stLoc = strS.find(strLS, stStart)) != string::npos;
-                     stStart = stLoc + strLS.length())
-      ParserPushLine(strS, stStart, stLoc, cDelimiter);
+    for(size_t stLoc;
+              (stLoc = strSep.find(strLineSep, stStart)) != string::npos;
+               stStart = stLoc + strLineSep.length())
+      ParserPushLine(strSep, stStart, stLoc, cDelimiter);
     // Push remainder of string if available
-    ParserPushLine(strS, stStart, strS.length(), cDelimiter);
+    ParserPushLine(strSep, stStart, strSep.length(), cDelimiter);
   }
   /* --------------------------------------------------------------- */ public:
   void ParserPushPair(const string &strKey, const string &strValue)
@@ -67,19 +69,19 @@ template<class ParserMapType,
   /* -- Value access by key name ------------------------------------------- */
   const string &ParserGet(const string &strKey) const
   { // Find key and return empty string or value
-    const ParserMapTypeIterator pmtiIt{ this->find(strKey) };
-    if(pmtiIt != this->end()) return pmtiIt->second;
+    const ParserMapTypeConstIt pmtciIt{ this->find(strKey) };
+    if(pmtciIt != this->end()) return pmtciIt->second;
     XC("No such key in table!", "Key", strKey, "Count", this->size());
   }
   /* -- Value access by key name ------------------------------------------- */
   const string ParserGetAndRemove(const string &strKey)
   { // Find key and throw error if not found
-    const ParserMapTypeIterator pmtiIt{ this->find(strKey) };
-    if(pmtiIt == this->end())
+    const ParserMapTypeConstIt pmtciIt{ this->find(strKey) };
+    if(pmtciIt == this->end())
       XC("No such key in table!", "Key", strKey, "Count", this->size());
     // Move the string into a temp var, erase it and return the string
-    const string strOut{ StdMove(pmtiIt->second) };
-    this->erase(pmtiIt->second);
+    const string strOut{ StdMove(pmtciIt->second) };
+    this->erase(pmtciIt->second);
     return strOut;
   }
   /* -- Converts the variables to a string --------------------------------- */
@@ -88,51 +90,52 @@ template<class ParserMapType,
   { // String to return
     ostringstream osS;
     // For each key/value pair, implode it into a string
-    for(const auto &aIt : *this)
-      osS << aIt.first << strSep << aIt.second << strSuf;
+    for(const ParserMapTypePair &pmtpPair : *this)
+      osS << pmtpPair.first << strSep << pmtpPair.second << strSuf;
     // Return what we created
     return osS.str();
   }
   /* ----------------------------------------------------------------------- */
-  void ParserPushLine(const string &strS, const size_t stSegStart,
+  void ParserPushLine(const string &strSep, const size_t stSegStart,
     const size_t stSegEnd, const char cDelimiter)
   { // Look for separator and if found?
     const size_t stSepLoc =
-      StrFindCharForwards(strS, stSegStart, stSegEnd, cDelimiter);
+      StrFindCharForwards(strSep, stSegStart, stSegEnd, cDelimiter);
     if(stSepLoc != string::npos)
     { // Find start of keyname and if found?
       const size_t stKeyStart =
-        StrFindCharNotForwards(strS, stSegStart, stSepLoc);
+        StrFindCharNotForwards(strSep, stSegStart, stSepLoc);
       if(stKeyStart != string::npos)
       { // Find end of keyname and if found?
         const size_t stKeyEnd =
-          StrFindCharNotBackwards(strS, stSepLoc-1, stSegStart);
+          StrFindCharNotBackwards(strSep, stSepLoc-1, stSegStart);
         if(stKeyEnd != string::npos)
         { // Find start of value name and if found?
           const size_t stValStart =
-            StrFindCharNotForwards(strS, stSepLoc+1, stSegEnd);
+            StrFindCharNotForwards(strSep, stSepLoc+1, stSegEnd);
           if(stValStart != string::npos)
           { // Find end of value name and if found? We can grab key/value
             const size_t stValEnd =
-              StrFindCharNotBackwards(strS, stSegEnd-1, stValStart);
+              StrFindCharNotBackwards(strSep, stSegEnd-1, stValStart);
             if(stValEnd != string::npos)
               return ParserPushPair(
-                StdMove(strS.substr(stKeyStart, stKeyEnd-stKeyStart+1)),
-                StdMove(strS.substr(stValStart, stValEnd-stValStart+1)));
+                StdMove(strSep.substr(stKeyStart, stKeyEnd-stKeyStart+1)),
+                StdMove(strSep.substr(stValStart, stValEnd-stValStart+1)));
           } // Could not prune suffixed whitespaces on value.
         }  // Could not prune prefixed whitespaces on value.
       }  // Could not prune suffixed whitespaces on key.
     } // Could not prune prefixed whitespaces on key. Add full value for debug
     return ParserPushPair(StrAppend('\255', this->size()),
-      StdMove(strS.substr(stSegStart, stSegEnd-stSegStart)));
+      StdMove(strSep.substr(stSegStart, stSegEnd-stSegStart)));
   }
   /* -- Initialise or add entries from a string ---------------------------- */
-  void ParserReInit(const string &strS, const string &strLS,
+  void ParserReInit(const string &strSep, const string &strLineSep,
     const char cDelimiter)
-      { this->clear(); ParserDoInit(strS, strLS, cDelimiter); }
+      { this->clear(); ParserDoInit(strSep, strLineSep, cDelimiter); }
   /* -- Initialise or add entries from a string ---------------------------- */
-  ParserBase(const string &strS, const string &strLS, const char cDelimiter)
-    { ParserDoInit(strS, strLS, cDelimiter); }
+  ParserBase(const string &strSep, const string &strLineSep,
+    const char cDelimiter)
+      { ParserDoInit(strSep, strLineSep, cDelimiter); }
   /* -- Move constructor --------------------------------------------------- */
   ParserBase(ParserBase &&pbOther) :   // Other Parser class to move from
     /* -- Initialisers ----------------------------------------------------- */
@@ -172,13 +175,11 @@ template<class ParserBaseType = ParserBase<StrNCStrMap>>struct Parser :
     if(sncsmiIt != this->end()) sncsmiIt->second = StdMove(strValue);
     else this->ParserPushPair(StdMove(strKey), StdMove(strValue));
   }
-  /* ----------------------------------------------------------------------- */
+  /* -- Add each value that was sent --------------------------------------- */
   void ParserPushOrUpdatePairs(const StrPairList &splValues)
-  { // Add each value that was sent
-    for(const StrPair &spKeyValue : splValues)
-      this->ParserPushOrUpdatePair(StdMove(spKeyValue.first),
-        StdMove(spKeyValue.second));
-  }
+    { for(const StrPair &spKeyValue : splValues)
+        this->ParserPushOrUpdatePair(StdMove(spKeyValue.first),
+          StdMove(spKeyValue.second)); }
   /* -- Extracts and deletes the specified key pair ------------------------ */
   const string Extract(const string &strKey)
   { // Find key and return empty string if not found
@@ -199,12 +200,12 @@ template<class ParserBaseType = ParserBase<StrNCStrMap>>struct Parser :
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor -------------------------------------------------------- */
-  Parser(const string &strS,           // String to explode
-       const string &strLS,            // ...Record (line) separator
-       const char cDelimiter) :        // ...Key/value separator
+  Parser(const string &strSep,         // String to explode
+         const string &strLineSep,     // ...Record (line) separator
+         const char cDelimiter) :      // ...Key/value separator
     /* -- Initialisers ----------------------------------------------------- */
-    ParserBaseType{ strS,              // Initialise string to explode
-                    strLS,             // Initialise record (line) separator
+    ParserBaseType{ strSep,            // Initialise string to explode
+                    strLineSep,        // Initialise record (line) separator
                     cDelimiter }       // Initialise key/value separator
     /* -- No code ---------------------------------------------------------- */
     { }
@@ -224,12 +225,12 @@ template<class ParserBaseType = const ParserBase<const StrStrMap>>
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Constructor -------------------------------------------------------- */
-  ParserConst(const string &strS,      // String to explode
-              const string &strLS,     // ...Record (line) separator
+  ParserConst(const string &strSep,    // String to explode
+              const string &strLineSep,// ...Record (line) separator
               const char cDelimiter) : // ...Key/value separator
     /* -- Initialisers ----------------------------------------------------- */
-    ParserBaseType{ strS,              // Initialise string to explode
-                    strLS,             // Initialise record (line) separator
+    ParserBaseType{ strSep,            // Initialise string to explode
+                    strLineSep,        // Initialise record (line) separator
                     cDelimiter }       // Initialise key/value separator
     /* -- No code ---------------------------------------------------------- */
     { }

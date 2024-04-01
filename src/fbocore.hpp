@@ -29,10 +29,10 @@ static class FboCore final :           // The main fbo operations manager
   public FboBlend,                     // Default blending mode
   public DimGLInt                      // Fbo dimensions
 { /* -- Private variables ----------------------------------------- */ private:
-  GLfloat          fOrthoMinimum,      // Minimum orthangal matrix ratio
-                   fOrthoMaximum,      // Maximum orthangal matrix ratio
-                   fOrthoWidth,        // Requested ortho width
-                   fOrthoHeight;       // Requested ortho height
+  GLfloat          fAspectMin,         // Minimum orthangal matrix ratio
+                   fAspectMax,         // Maximum orthangal matrix ratio
+                   fMatrixWidth,       // Requested matrix width
+                   fMatrixHeight;      // Requested matrix height
   bool             bDraw,              // Should we draw the main fbo flag
                    bSimpleMatrix,      // Use simple not automatic matrix
                    bLockViewport,      // Lock the viewport?
@@ -41,7 +41,7 @@ static class FboCore final :           // The main fbo operations manager
   Fbo              fboConsole,         // Console fbo class
                    fboMain;            // Primary fbo class
   /* -- Render timings ----------------------------------------------------- */
-  ClkTimePoint     ctStart, ctEnd;     // Rendering frame start/end time
+  ClkTimePoint     ctpStart, ctpEnd;   // Rendering frame start/end time
   double           dRTFPS;             // Rendered frames per second
   /* -- Draw flags --------------------------------------------------------- */
   bool CanDraw(void) const { return bDraw; }
@@ -49,8 +49,8 @@ static class FboCore final :           // The main fbo operations manager
   void SetDraw(void) { bDraw = true; }
   void ClearDraw(void) { bDraw = false; }
   /* -- Get members -------------------------------------------------------- */
-  GLfloat GetOrthoWidth(void) const { return fOrthoWidth; }
-  GLfloat GetOrthoHeight(void) const { return fOrthoHeight; }
+  GLfloat GetMatrixWidth(void) const { return fMatrixWidth; }
+  GLfloat GetMatrixHeight(void) const { return fMatrixHeight; }
   /* -- Reset backbuffer clear colour to colour stored in cvar ------------- */
   void ResetClearColour(void)
   { // Set main backbuffer colour
@@ -97,9 +97,9 @@ static class FboCore final :           // The main fbo operations manager
     // Clear any existing errors
     cOgl->GetError();
     // Grab end rendering time, calc fps and then reset starting render time
-    ctEnd = cmHiRes.GetTime();
-    dRTFPS = 1.0 / ClockTimePointRangeToDouble(ctEnd, ctStart);
-    ctStart = ctEnd;
+    ctpEnd = cmHiRes.GetTime();
+    dRTFPS = 1.0 / ClockTimePointRangeToDouble(ctpEnd, ctpStart);
+    ctpStart = ctpEnd;
   }
   /* -- Render the main fbo ------------------------------------------------ */
   void Render(void)
@@ -156,7 +156,7 @@ static class FboCore final :           // The main fbo operations manager
     // will not be automatically calculated based on window size.
     if(bSimpleMatrix)
     { // Set aspect based on window size and clamp it to allowable matrix
-      fAspect = UtilClamp(fWidth / fHeight, fOrthoMinimum, fOrthoMaximum);
+      fAspect = UtilClamp(fWidth / fHeight, fAspectMin, fAspectMax);
       // We're not adding any width, keep it classic style
       fAddWidth = 0.0f;
       // Set bounds
@@ -171,7 +171,7 @@ static class FboCore final :           // The main fbo operations manager
       // between tiles.
       fAspect = UtilClamp(static_cast<GLfloat>(DimGetWidth()) /
                           static_cast<GLfloat>(DimGetHeight()),
-                          fOrthoMinimum, fOrthoMaximum) / 1.333333f;
+                          fAspectMin, fAspectMax) / 1.333333f;
       // For some unknown reason we could be sent invalid values so we need to
       // make sure we ignore this value to prevent error handlers triggering.
       if(fAspect != fAspect) fAspect = 1.0f;
@@ -184,19 +184,19 @@ static class FboCore final :           // The main fbo operations manager
       fTop = 0.0f;
       fBottom = fHeight;
     } // If the viewport didn't change?
-    if(UtilIsFloatEqual(fLeft, fboMain.fcStage.GetCoLeft()) &&
-       UtilIsFloatEqual(fTop, fboMain.fcStage.GetCoTop()) &&
-       UtilIsFloatEqual(fRight, fboMain.fcStage.GetCoRight()) &&
-       UtilIsFloatEqual(fBottom, fboMain.fcStage.GetCoBottom()))
+    if(UtilIsFloatEqual(fLeft, fboMain.ffcStage.GetCoLeft()) &&
+       UtilIsFloatEqual(fTop, fboMain.ffcStage.GetCoTop()) &&
+       UtilIsFloatEqual(fRight, fboMain.ffcStage.GetCoRight()) &&
+       UtilIsFloatEqual(fBottom, fboMain.ffcStage.GetCoBottom()))
     { // Return if we're not forcing the change
       if(!bForce) return false;
     } // Viewport changed?
     else
-    { // Save requested ortho size incase viewport changes
-      fOrthoWidth = fWidth;
-      fOrthoHeight = fHeight;
+    { // Save requested matrix size incase viewport changes
+      fMatrixWidth = fWidth;
+      fMatrixHeight = fHeight;
       // Set stage bounds for drawing
-      fboMain.FboSetOrtho(fLeft, fTop, fRight, fBottom);
+      fboMain.FboSetMatrix(fLeft, fTop, fRight, fBottom);
     } // Calculate new fbo width and height
     const GLsizei siFBOWidth = static_cast<GLsizei>(fRight - fLeft),
                   siFBOHeight = static_cast<GLsizei>(fBottom - fTop);
@@ -213,14 +213,14 @@ static class FboCore final :           // The main fbo operations manager
         "(D=$x$,A=$<$-$>,AW=$,S=$:$:$:$).",
         fboMain.GetCoRight(), fboMain.GetCoBottom(),
         StrFromRatio(fboMain.GetCoRight(), fboMain.GetCoBottom()),
-          fWidth, fHeight, fAspect, fOrthoMinimum, fOrthoMaximum, fAddWidth,
+          fWidth, fHeight, fAspect, fAspectMin, fAspectMax, fAddWidth,
           fLeft, fTop, fRight, fBottom);
       // Everything changed
       return true;
     } // Re-initialisation required?
     cLog->LogDebugExSafe("Fbo main matrix recalculated! "
       "(D=$x$,A=$<$-$>,AW=$,S=$:$:$:$).",
-      fWidth, fHeight, fAspect, fOrthoMinimum, fOrthoMaximum, fAddWidth,
+      fWidth, fHeight, fAspect, fAspectMin, fAspectMax, fAddWidth,
       fLeft, fTop, fRight, fBottom);
     // Only bounds were changed
     return false;
@@ -232,11 +232,11 @@ static class FboCore final :           // The main fbo operations manager
     if(DimGetWidth() == siWidth && DimGetHeight() == siHeight) return false;
     // Chosen viewport to store
     GLsizei siUseWidth, siUseHeight;
-    // Lock viewport to ortho?
+    // Lock viewport to matrix?
     if(bLockViewport)
-    { // Lock viewport to ortho
-      siUseWidth = static_cast<GLsizei>(GetOrthoWidth());
-      siUseHeight = static_cast<GLsizei>(GetOrthoHeight());
+    { // Lock viewport to matrix
+      siUseWidth = static_cast<GLsizei>(GetMatrixWidth());
+      siUseHeight = static_cast<GLsizei>(GetMatrixHeight());
     } // Lock viewport to requested size?
     else
     { // Lock viewport to requested size clamped to a minimum of 1x1.
@@ -249,7 +249,8 @@ static class FboCore final :           // The main fbo operations manager
       "Fbo processing automatrix size of $x$ to backbuffer...",
       siUseWidth, siUseHeight);
     // Update matrix because the window's aspect ratio may have changed
-    const bool bResult = AutoMatrix(GetOrthoWidth(), GetOrthoHeight(), bForce);
+    const bool bResult =
+      AutoMatrix(GetMatrixWidth(), GetMatrixHeight(), bForce);
     // Inform lua scripts that they should redraw the framebuffer
     if(bResult) cEvtMain->Add(EMC_LUA_REDRAW);
     // Return result
@@ -261,6 +262,19 @@ static class FboCore final :           // The main fbo operations manager
     fboConsole.FboInit("console",
       fboMain.DimGetWidth(), fboMain.DimGetHeight());
   }
+  /* -- Initialise fbos using a different constructor ---------------------- */
+  FboCore(void) :
+    /* -- Initialisers ----------------------------------------------------- */
+    fAspectMin(1.0f),               fAspectMax(2.0f),
+    fMatrixWidth(0.0f),                 fMatrixHeight(0.0f),
+    bDraw(false),                      bSimpleMatrix(false),
+    bLockViewport(false),              bClearBuffer(false),
+    fboConsole{ GL_RGBA8, true },      fboMain{ GL_RGB8, true },
+    dRTFPS(0)
+    /* -- Set pointer to main fbo ------------------------------------------ */
+    { cFbos->fboMain = &fboMain; }
+  /* -- Destructor --------------------------------------------------------- */
+  DTORHELPER(~FboCore, DestroyAllObjectsAndBuiltIns())
   /* -- Set main fbo float reserve ----------------------------------------- */
   CVarReturn SetFloatReserve(const size_t stCount)
     { return BoolToCVarReturn(fboMain.FboReserveTriangles(stCount)); }
@@ -291,32 +305,19 @@ static class FboCore final :           // The main fbo operations manager
   CVarReturn SetBackBufferClearColour(const unsigned int uiColour)
     { SetColourInt(uiColour); return ACCEPT; }
   /* -- Set minimum orthagonal matrix ratio -------------------------------- */
-  CVarReturn SetMinOrtho(const GLfloat fMinimum)
-    { return CVarSimpleSetIntNLG(fOrthoMinimum,
-        fMinimum, 1.0f, fOrthoMaximum); }
+  CVarReturn SetMinAspect(const GLfloat fMinimum)
+    { return CVarSimpleSetIntNLG(fAspectMin,
+        fMinimum, 1.0f, fAspectMax); }
   /* -- Set maximum orthagonal matrix ratio -------------------------------- */
-  CVarReturn SetMaxOrtho(const GLfloat fMaximum)
-    { return CVarSimpleSetIntNLG(fOrthoMaximum,
-        fMaximum, fOrthoMinimum, 2.0f); }
+  CVarReturn SetMaxAspect(const GLfloat fMaximum)
+    { return CVarSimpleSetIntNLG(fAspectMax,
+        fMaximum, fAspectMin, 2.0f); }
   /* -- Set viewport lock -------------------------------------------------- */
   CVarReturn SetLockViewport(const bool bState)
     { return CVarSimpleSetInt(bLockViewport, bState); }
   /* -- Set simple matrix -------------------------------------------------- */
   CVarReturn SetSimpleMatrix(const bool bState)
     { return CVarSimpleSetInt(bSimpleMatrix, bState); }
-  /* -- Initialise fbos using a different constructor ---------------------- */
-  FboCore(void) :
-    /* -- Initialisers ----------------------------------------------------- */
-    fOrthoMinimum(1.0f),               fOrthoMaximum(2.0f),
-    fOrthoWidth(0.0f),                 fOrthoHeight(0.0f),
-    bDraw(false),                      bSimpleMatrix(false),
-    bLockViewport(false),              bClearBuffer(false),
-    fboConsole{ GL_RGBA8, true },      fboMain{ GL_RGB8, true },
-    dRTFPS(0)
-    /* -- Set pointer to main fbo ------------------------------------------ */
-    { cFbos->fboMain = &fboMain; }
-  /* -- Destructor --------------------------------------------------------- */
-  DTORHELPER(~FboCore, DestroyAllObjectsAndBuiltIns())
   /* -- FboCore::End ------------------------------------------------------- */
 } *cFboCore = nullptr;                 // Pointer to static class
 /* ------------------------------------------------------------------------- */

@@ -65,30 +65,32 @@ MS-Engine does not allow the use of `..` (*parent*), the use of a `/` (*root*) d
 See this [automatically generated document](https://xmhat.github.io/MSEngine) for a complete rundown of all configuration variables and scripting functions. LUA core reference manual is [here](https://www.lua.org/manual/5.4/).
 
 ## Examples…
-A remake of the classic Amiga and DOS game [Diggers](diggers) was made with this engine and available to play. You can open up the executable (Win32 or Linux) or `.adb` archive (MacOS) with `7-Zip`.
+A remake of the classic [Amiga](https://en.wikipedia.org/wiki/Amiga) and [DOS](https://en.wikipedia.org/wiki/DOS) game [Diggers](diggers) was made with this engine and available to play. You can open up the executable (Win32 or Linux) or `.adb` archive (MacOS) with `7-Zip`.
+
+[This YouTube video](https://www.youtube.com/watch?v=ueCBQibHZXk) is a preview of a private (quick and messy) script I made that dynamically builds a fifteen minute video carousel which takes advantage of framebuffer-objects, True-type fonts, triangle rotations, dynamic texture coordinate manipulations, Vorbis audio and Theora video streams, and Lua's incredibly versatile ability to build event and animation systems.
 
 ## Credits…
-This engine makes use of the following open-source and commercially distributable components that are always updated to the latest versions...
+This engine makes use of the following [open-source](https://en.wikipedia.org/wiki/Open_source) and commercially distributable components that are always updated to the latest versions...
 
 | Library | Version | Author | Purpose |
 | --- | --- | --- | --- |
-| [7-Zip](https://7-zip.org/sdk.html) | 23 | Igor Pavlov | Powerful general data codec. |
-| [FreeType](https://github.com/freetype/freetype) | 2.13 | © The FreeType Project | Load and render TTF fonts. |
-| [GLFW](https://github.com/glfw/glfw) | 3.3 | © Marcus Geelnard & Camilla Löwy | Interface to Window, OpenGL and input. |
-| [LibJPEGTurbo](https://github.com/libjpeg-turbo/libjpeg-turbo) | 3.0 | © IJG/Contributing authors | Codec/container for YUV pixel data. |
-| [LibNSGif](https://github.com/netsurf-browser/libnsgif) | 1.0 | © Richard Wilson & Sean Fox | Codec/container for motion paletted RGB pixel data. |
-| [LibPNG](https://github.com/glennrp/libpng) | 1.6 | © Contributing authors | Codec/container for RGB pixel data. |
-| [LUA](https://github.com/lua/lua) ([modded](https://github.com/XMhat/Lua)) | 5.4 | © Lua.org, PUC-Rio | User command interpreter. |
-| [MiniMP3](https://www.pschatzmann.ch/home/2022/05/14/the-minimp3-codec-on-an-esp32/) | 1.0 | Martin Fiedler | Codec/Container for PCM audio data. |
-| [NCurses](https://linux.die.net/man/3/ncurses) | 6.4 | © Free Software Foundation | Unix and MacOS text mode support. |
-| [Ogg](https://github.com/xiph/ogg) | 1.3 | Xiph.Org | Container for Vorbis and Theora data. |
-| [OpenALSoft](https://github.com/kcat/openal-soft) | 1.23 | Chris Robinson | 3-D audio API. |
-| [OpenSSL](https://github.com/openssl/openssl) | 3.2 | OpenSSL Software Foundation | Basic SSL networking and (de/en)cryption. |
-| [RapidJson](https://github.com/Tencent/rapidjson) | 1.1 | © THL A29 Ltd., Tencent co. & Milo Yip | Store and access JSON objects. |
-| [SQLite](https://github.com/sqlite/sqlite) | 3.45 | Contributing authors | Store and access user non-volatile data. |
-| [Theora](https://github.com/xiph/theora) | 3.2 | Xiph.Org | Codec for motion YUV and PCM audio data. |
-| [Vorbis](https://github.com/xiph/vorbis) | 1.3 | Xiph.Org | Codec for PCM audio data. |
-| [Z-Lib](https://github.com/madler/zlib) | 1.3 | © Jean-loup Gailly & Mark Adler | Common general data codec. |
+| [7-Zip](https://7-zip.org/sdk.html) | 23 | [Igor Pavlov](https://en.wikipedia.org/wiki/Igor_Pavlov_(programmer)) | Powerful general data [codec](https://en.wikipedia.org/wiki/Codec). |
+| [FreeType](https://github.com/freetype/freetype) | 2.13 | [© The FreeType Project](https://freetype.org/) | Load and render [TTF](https://en.wikipedia.org/wiki/TrueType) [fonts](https://en.wikipedia.org/wiki/Font). |
+| [GLFW](https://github.com/glfw/glfw) | 3.3 | [© Marcus Geelnard & Camilla Löwy](https://www.glfw.org/) | Interface to Window, [OpenGL](https://en.wikipedia.org/wiki/OpenGL) and [input](https://en.wikipedia.org/wiki/Input_device). |
+| [LibJPEGTurbo](https://github.com/libjpeg-turbo/libjpeg-turbo) | 3.0 | [© IJG](https://www.ijg.org/)/[Contributing authors](https://libjpeg-turbo.org/) | [Codec](https://en.wikipedia.org/wiki/Codec)/[container](https://en.wikipedia.org/wiki/JPEG) for [YCbCr](https://en.wikipedia.org/wiki/YCbCr) still [DV](https://en.wikipedia.org/wiki/Digital_video) data. |
+| [LibNSGif](https://github.com/netsurf-browser/libnsgif) | 1.0 | [© Richard Wilson & Sean Fox](https://www.netsurf-browser.org/projects/libnsgif/) | [Codec](https://en.wikipedia.org/wiki/Codec)/[container](https://en.wikipedia.org/wiki/GIF) for motion paletted [RGB](https://en.wikipedia.org/wiki/RGB_color_model) pixel data. |
+| [LibPNG](https://github.com/glennrp/libpng) | 1.6 | [© Contributing authors](https://www.libpng.org/pub/png/libpng.html) | [Codec](https://en.wikipedia.org/wiki/Codec)/[container](https://en.wikipedia.org/wiki/PNG) for [RGB](https://en.wikipedia.org/wiki/RGB_color_model) pixel data. |
+| [LUA](https://github.com/lua/lua) ([modded](https://github.com/XMhat/Lua)) | 5.4 | © [Lua.org](https://lua.org), [PUC-Rio](http://www.puc-rio.br/english/) | User command [interpreter](https://en.wikipedia.org/wiki/Interpreter_(computing)). |
+| [MiniMP3](https://keyj.emphy.de/minimp3/) | 1.0 | Martin Fiedler | [Codec](https://en.wikipedia.org/wiki/Codec)/[Container](https://en.wikipedia.org/wiki/MP3) for legacy [PCM](https://en.wikipedia.org/wiki/Pulse-code_modulation) audio data. |
+| [NCurses](https://linux.die.net/man/3/ncurses) | 6.4 | [© Free Software Foundation](https://en.wikipedia.org/wiki/Free_Software_Foundation) | [Linux](https://en.wikipedia.org/wiki/Linux) and [MacOS](https://en.wikipedia.org/wiki/MacOS) [text mode](https://en.wikipedia.org/wiki/Computer_terminal) support. |
+| [Ogg](https://github.com/xiph/ogg) | 1.3 | [Xiph.Org](https://xiph.org/ogg/) | [Container](https://en.wikipedia.org/wiki/Ogg) for [Vorbis](https://en.wikipedia.org/wiki/Vorbis) and [Theora](https://en.wikipedia.org/wiki/Theora) data. |
+| [OpenALSoft](https://github.com/kcat/openal-soft) | 1.23 | [Chris Robinson](https://www.openal-soft.org/) | [3-D audio API](https://en.wikipedia.org/wiki/OpenAL). |
+| [OpenSSL](https://github.com/openssl/openssl) | 3.3 | [OpenSSL Software Foundation](https://www.openssl.org/) | Basic [SSL](https://en.wikipedia.org/wiki/Transport_Layer_Security) networking and (de/en)cryption. |
+| [RapidJson](https://github.com/Tencent/rapidjson) | 1.1 | [© THL A29 Ltd., Tencent co. & Milo Yip](https://rapidjson.org/) | Store and access [JSON](https://en.wikipedia.org/wiki/JSON) objects. |
+| [SQLite](https://github.com/sqlite/sqlite) | 3.45 | [Contributing authors](https://sqlite.org/) | [Interpreter](https://en.wikipedia.org/wiki/SQLite) to store and access user non-volatile data. |
+| [Theora](https://github.com/xiph/theora) | 3.2 | [Xiph.Org](https://xiph.org/theora/) | [Codec](https://en.wikipedia.org/wiki/Codec) for [YCbCr](https://en.wikipedia.org/wiki/YCbCr) motion [DV](https://en.wikipedia.org/wiki/Digital_video) data. |
+| [Vorbis](https://github.com/xiph/vorbis) | 1.3 | [Xiph.Org](https://xiph.org/vorbis/) | [Codec](https://en.wikipedia.org/wiki/Codec) for [PCM](https://en.wikipedia.org/wiki/Pulse-code_modulation) audio data. |
+| [Z-Lib](https://github.com/madler/zlib) | 1.3 | [© Jean-loup Gailly & Mark Adler](https://www.zlib.net/) | Common general data [codec](https://en.wikipedia.org/wiki/Codec). |
 
 ## Contributing…
 Please read [this document](contributing.md) for information on how to contribute and the people who have helped contribute to the project.

@@ -197,12 +197,6 @@ class Certs                            // Certificates store
     }
   }
   /* --------------------------------------------------------------- */ public:
-  CVarReturn CertsSetBypassFlags1(const uint64_t uiFlags)
-    { return CVarSimpleSetInt(qCertBypass.front(), uiFlags); }
-  /* ----------------------------------------------------------------------- */
-  CVarReturn CertsSetBypassFlags2(const uint64_t uiFlags)
-  { return CVarSimpleSetInt(qCertBypass.back(), uiFlags); }
-  /* ----------------------------------------------------------------------- */
   X509_STORE *CertsGetStore(void) const { return xsCerts; }
   /* ----------------------------------------------------------------------- */
   const X509List &GetCertList(void) const { return lCAStore; }
@@ -221,26 +215,6 @@ class Certs                            // Certificates store
     { return qCertBypass[stBank] & qFlag; }
   bool CertsIsNotX509BypassFlagSet(const size_t stBank, uint64_t qFlag)
     { return !CertsIsX509BypassFlagSet(stBank, qFlag); }
-  /* ----------------------------------------------------------------------- */
-  CVarReturn CertsFileModified(const string &strD, string&)
-  { // Empty string is ok, treat as no CA store
-    if(strD.empty())
-    { // Log that we are not using a store and return success
-      cLog->LogWarningSafe("Certs using no root CA store!");
-      return ACCEPT;
-    } // Now initialising certificate store
-    cLog->LogDebugExSafe("Certs searching '$' for certificates...", strD);
-    // Get certificates in ca subdirectory and return if nothing found
-    if(const AssetList aList{ strD, strExtension, false })
-    { // Reload new certificates list
-      CertsLoadList(strD, aList);
-      // Clear error stack
-      ERR_clear_error();
-    } // No certificates to load so log it
-    else cLog->LogWarningSafe("Certs found no matching files!");
-    // Return success regardless
-    return ACCEPT;
-  }
   /* -- Constructor --------------------------------------------- */ protected:
   Certs(void) :
     /* -- Initialisers ----------------------------------------------------- */
@@ -330,6 +304,32 @@ class Certs                            // Certificates store
   ~Certs(void) { CertsEmpty(); }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Certs)               // Disable copy constructor and operator
+  /* --------------------------------------------------------------- */ public:
+  CVarReturn CertsSetBypassFlags1(const uint64_t uiFlags)
+    { return CVarSimpleSetInt(qCertBypass.front(), uiFlags); }
+  /* ----------------------------------------------------------------------- */
+  CVarReturn CertsSetBypassFlags2(const uint64_t uiFlags)
+    { return CVarSimpleSetInt(qCertBypass.back(), uiFlags); }
+  /* ----------------------------------------------------------------------- */
+  CVarReturn CertsFileModified(const string &strD, string&)
+  { // Empty string is ok, treat as no CA store
+    if(strD.empty())
+    { // Log that we are not using a store and return success
+      cLog->LogWarningSafe("Certs using no root CA store!");
+      return ACCEPT;
+    } // Now initialising certificate store
+    cLog->LogDebugExSafe("Certs searching '$' for certificates...", strD);
+    // Get certificates in ca subdirectory and return if nothing found
+    if(const AssetList aList{ strD, strExtension, false })
+    { // Reload new certificates list
+      CertsLoadList(strD, aList);
+      // Clear error stack
+      ERR_clear_error();
+    } // No certificates to load so log it
+    else cLog->LogWarningSafe("Certs found no matching files!");
+    // Return success regardless
+    return ACCEPT;
+  }
 }; /* ---------------------------------------------------------------------- */
 /* ========================================================================= */
 static StdTimeT CertGetTime(const ASN1_TIME &atD)

@@ -637,9 +637,9 @@ class SysCore :
       "File", strFile, "Directory", DirGetCWD());
   }
   /* -- Enum modules ------------------------------------------------------- */
-  SysModList EnumModules(void)
+  SysModMap EnumModules(void)
   { // Module list
-    SysModList mlOut;
+    SysModMap smmMap;
     // Number of modules
     DWORD dwNeeded = 0;
     // Get number of modules
@@ -669,10 +669,10 @@ class SysCore :
       // ...and if empty, ignore (doubtful)
       if(wstrP.empty()) continue;
       // Insert into module list
-      mlOut.emplace(make_pair(reinterpret_cast<size_t>(hH),
+      smmMap.emplace(make_pair(reinterpret_cast<size_t>(hH),
         SysModule(WS16toUTF(wstrP))));
     } // Return modules
-    return mlOut;
+    return smmMap;
   }
   /* ----------------------------------------------------------------------- */
   const wstring GetSystemFolder(const int iCSIDL) const

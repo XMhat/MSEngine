@@ -176,6 +176,12 @@ LLFUNCBEGIN(Clear)
     LCGETINTLG(int, 5, 0, mDst.DimGetHeight(), "Height"));
 LLFUNCEND
 /* ========================================================================= */
+// $ Mask:Id
+// < Id:integer=The id number of the Mask object.
+// ? Returns the unique id of the Mask object.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(Id, 1, LCPUSHVAR(LCGETPTR(1, Mask)->CtrGet()));
+/* ========================================================================= */
 // $ Mask:Name
 // < Name:string=Name of the mask.
 // ? If this mask was loaded by a filename or it was set with a custom id.
@@ -213,14 +219,15 @@ LLFUNCBEGIN(Destroy) LCCLASSDESTROY(1, Mask); LLFUNCEND
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Mask:* member functions begin
-  LLRSFUNC(Clear),   LLRSFUNC(Copy),      LLRSFUNC(Count),
-  LLRSFUNC(Destroy), LLRSFUNC(Erase),     LLRSFUNC(Fill),
-  LLRSFUNC(Height),  LLRSFUNC(IsCollide), LLRSFUNC(IsCollideEx),
-  LLRSFUNC(Merge),   LLRSFUNC(Name),      LLRSFUNC(Raycast),
-  LLRSFUNC(Save),    LLRSFUNC(Width),
+  LLRSFUNC(Clear),       LLRSFUNC(Copy),  LLRSFUNC(Count),
+  LLRSFUNC(Destroy),     LLRSFUNC(Erase), LLRSFUNC(Fill),
+  LLRSFUNC(Height),      LLRSFUNC(Id),    LLRSFUNC(IsCollide),
+  LLRSFUNC(IsCollideEx), LLRSFUNC(Merge), LLRSFUNC(Name),
+  LLRSFUNC(Raycast),     LLRSFUNC(Save),  LLRSFUNC(Width),
 LLRSEND                                // Mask:* member functions end
 /* ========================================================================= */
 // $ Mask.CreateNew
+// > Identifier:string=The identifier of the mask.
 // > Width:integer=The width of the new mask.
 // > Height:integer=The height of the new mask.
 // < Handle:Mask=The handle of the new mask created.
@@ -231,10 +238,12 @@ LLRSEND                                // Mask:* member functions end
 // ? yourself.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(CreateNew, 1, LCCLASSCREATE(Mask)->Init(
-  LCGETINTLG(unsigned int, 1, 0, UINT_MAX, "Width"),
-  LCGETINTLG(unsigned int, 2, 0, UINT_MAX, "Height")));
+  LCGETCPPSTRINGNE(1, "Identifier"),
+  LCGETINTLG(unsigned int, 2, 0, UINT_MAX, "Width"),
+  LCGETINTLG(unsigned int, 3, 0, UINT_MAX, "Height")));
 /* ========================================================================= */
 // $ Mask.CreateBlank
+// > Identifier:string=The identifier of the mask.
 // > Width:integer=The width of the new mask.
 // > Height:integer=The height of the new mask.
 // < Handle:Mask=The handle of the new mask created.
@@ -242,8 +251,9 @@ LLFUNCEX(CreateNew, 1, LCCLASSCREATE(Mask)->Init(
 // ? for storing and modifying the entire bitmask of a level.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(CreateBlank, 1, LCCLASSCREATE(Mask)->InitBlank(
-  LCGETINTLG(unsigned int, 1, 0, UINT_MAX, "Width"),
-  LCGETINTLG(unsigned int, 2, 0, UINT_MAX, "Height")));
+  LCGETCPPSTRINGNE(1, "Identifier"),
+  LCGETINTLG(unsigned int, 2, 0, UINT_MAX, "Width"),
+  LCGETINTLG(unsigned int, 3, 0, UINT_MAX, "Height")));
 /* ========================================================================= */
 // $ Mask.Create
 // > Image:image=The monochrome image to open.
@@ -253,8 +263,7 @@ LLFUNCEX(CreateBlank, 1, LCCLASSCREATE(Mask)->InitBlank(
 // < Handle:Mask=The handle of the new mask created.
 // ? Loads pre-defined masks from the specified raster image file.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Create, 1, LCCLASSCREATE(Mask)->InitFromImage(
- *LCGETPTR (              1,              Image),
+LLFUNCEX(Create, 1, LCCLASSCREATE(Mask)->InitFromImage(*LCGETPTR(1, Image),
   LCGETINTLG(unsigned int, 2, 0, UINT_MAX, "Width"),
   LCGETINTLG(unsigned int, 3, 0, UINT_MAX, "Height")));
 /* ========================================================================= **

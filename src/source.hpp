@@ -22,16 +22,16 @@ using namespace IUtil::P;              using namespace Lib::OpenAL;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* -- Source collector class for collector data and custom variables ------- */
-BEGIN_COLLECTOREX(Sources, Source, CLHelperSafe, /* Build collector/member   */
+CTOR_BEGIN(Sources, Source, CLHelperSafe,
 /* ------------------------------------------------------------------------- */
-typedef atomic<ALfloat> SafeALFloat;   /* Multi-threaded AL float           */\
+typedef atomic<ALfloat> SafeALFloat;   // Multi-threaded AL float
 /* ------------------------------------------------------------------------- */
-SafeALFloat        fGVolume;           /* Global volume multiplier          */\
-SafeALFloat        fMVolume;           /* Stream volume multiplier          */\
-SafeALFloat        fVVolume;           /* Video volume multiplier           */\
-SafeALFloat        fSVolume;           /* Sample volume multiplier          */\
+SafeALFloat        fGVolume;           // Global volume multiplier
+SafeALFloat        fMVolume;           // Stream volume multiplier
+SafeALFloat        fVVolume;           // Video volume multiplier
+SafeALFloat        fSVolume;           // Sample volume multiplier
 );/* ----------------------------------------------------------------------- */
-BEGIN_MEMBERCLASS(Sources, Source, ICHelperSafe),
+CTOR_MEM_BEGIN_CSLAVE(Sources, Source, ICHelperSafe),
   /* -- Base classes ------------------------------------------------------- */
   public Lockable                      // Lua garbage collector instruction
 { /* -- Private variables -------------------------------------------------- */
@@ -302,7 +302,7 @@ BEGIN_MEMBERCLASS(Sources, Source, ICHelperSafe),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Source)              // Supress copy constructor for safety
 };/* -- End ---------------------------------------------------------------- */
-END_COLLECTOREX(Sources,,,,fGVolume(0), fMVolume(0), fVVolume(0), fSVolume(0))
+CTOR_END(Sources,,,,fGVolume(0), fMVolume(0), fVVolume(0), fSVolume(0))
 /* -- Stop (multiple buffers) ---------------------------------------------- */
 static unsigned int SourceStop(const ALUIntVector &uiBuffers)
 { // Done if no buffers

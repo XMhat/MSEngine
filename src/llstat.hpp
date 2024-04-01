@@ -110,6 +110,18 @@ LLFUNCEND
 LLFUNCEX(Finish, 1, LCPUSHVAR(LCGETPTR(1, Stat)->
   Finish(LCGETBOOL(2, "OmitLF"), LCGETINT(size_t, 3, "Gap"))));
 /* ========================================================================= */
+// $ Stat:Id
+// < Id:integer=The id number of the Stat object.
+// ? Returns the unique id of the Stat object.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(Id, 1, LCPUSHVAR(LCGETPTR(1, Stat)->CtrGet()));
+/* ========================================================================= */
+// $ Stat:Name
+// < Id:string=The stat identifier
+// ? Returns the identifier of the Stat object.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(Name, 1, LCPUSHVAR(LCGETPTR(1, Stat)->IdentGet()));
+/* ========================================================================= */
 // $ Stat:Destroy
 // ? Destroys the stat object and frees all the memory associated with it. The
 // ? object will no longer be useable after this call and an error will be
@@ -124,8 +136,9 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Stat));
 LLRSMFBEGIN                            // stat:* member functions begin
   LLRSFUNC(Data),       LLRSFUNC(DataI),   LLRSFUNC(DataN),
   LLRSFUNC(Destroy),    LLRSFUNC(Finish),  LLRSFUNC(Header),
-  LLRSFUNC(HeaderDupe), LLRSFUNC(Headers), LLRSFUNC(Reserve),
-  LLRSFUNC(Sort),      LLRSFUNC(SortTwo),
+  LLRSFUNC(HeaderDupe), LLRSFUNC(Headers), LLRSFUNC(Id),
+  LLRSFUNC(Name),       LLRSFUNC(Reserve), LLRSFUNC(Sort),
+  LLRSFUNC(SortTwo),
 LLRSEND                                // Stat:* member functions end
 /* ========================================================================= */
 // $ Stat.Create

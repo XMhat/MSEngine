@@ -204,6 +204,10 @@
 #include <string>                      // String containers
 #include <thread>                      // Operating system threads
 #include <vector>                      // Dynamic arrays
+/* -- More checks ---------------------------------------------------------- */
+#if CHAR_BIT != 8                      // Sanity check bits-per-byte
+# error Target architecture byte size must be eight bits!
+#endif                                 // Sanity checks
 /* -- Useful macros -------------------------------------------------------- */
 #define STR_HELPER(...)  #__VA_ARGS__            // Convert macro integer
 #define STR(...)         STR_HELPER(__VA_ARGS__) // to string

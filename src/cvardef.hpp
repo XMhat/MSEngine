@@ -149,13 +149,14 @@ namespace P {                          // Start of public module namespace
 /* ------------------------------------------------------------------------- */
 enum CVarEnums : size_t
 { /* -- Critical cvars ----------------------------------------------------- */
-  LOG_LEVEL,        APP_CMDLINE,       AST_LZMABUFFER,      AST_PIPEBUFFER,
+  APP_CMDLINE,      LOG_LEVEL,         AST_LZMABUFFER,      AST_PIPEBUFFER,
   AST_FSOVERRIDE,   AST_EXEBUNDLE,     APP_BASEDIR,         AST_BUNDLES,
   APP_CONFIG,       APP_AUTHOR,        APP_SHORTNAME,       APP_HOMEDIR,
-  SQL_DB,           SQL_ERASEEMPTY,    SQL_TEMPSTORE,       SQL_SYNCHRONOUS,
-  SQL_JOURNALMODE,  SQL_AUTOVACUUM,    SQL_FOREIGNKEYS,     SQL_INCVACUUM,
-  SQL_DEFAULTS,     SQL_LOADCONFIG,    APP_CFLAGS,          LOG_LINES,
-  LOG_FILE,         APP_LONGNAME,      APP_CLEARMUTEX,      ERR_INSTANCE,
+  SQL_DB,           SQL_RETRYCOUNT,    SQL_RETRYSUSPEND,    SQL_ERASEEMPTY,
+  SQL_TEMPSTORE,    SQL_SYNCHRONOUS,   SQL_JOURNALMODE,     SQL_AUTOVACUUM,
+  SQL_FOREIGNKEYS,  SQL_INCVACUUM,     SQL_DEFAULTS,        SQL_LOADCONFIG,
+  APP_CFLAGS,       LOG_LINES,         LOG_FILE,            APP_LONGNAME,
+  APP_CLEARMUTEX,   ERR_INSTANCE,
   /* -- Object cvars ------------------------------------------------------- */
   OBJ_CLIPMAX,      OBJ_CMDMAX,        OBJ_CVARMAX,         OBJ_CVARIMAX,
   OBJ_ARCHIVEMAX,   OBJ_ASSETMAX,      OBJ_BINMAX,          OBJ_FBOMAX,

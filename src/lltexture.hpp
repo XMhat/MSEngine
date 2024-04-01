@@ -776,6 +776,12 @@ LLFUNCEX(GetSubCount, 1, LCPUSHVAR(LCGETPTR(1, Texture)->GetSubCount()));
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(GetHeight, 1, LCPUSHVAR(LCGETPTR(1, Texture)->DimGetHeight()));
 /* ========================================================================= */
+// $ Texture:GetId
+// < Id:integer=The id number of the Texture object.
+// ? Returns the unique id of the Texture object.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(GetId, 1, LCPUSHVAR(LCGETPTR(1, Texture)->CtrGet()));
+/* ========================================================================= */
 // $ Texture:GetName
 // < Name:string=Name of the texture.
 // ? If this texture was loaded by a filename or it was set with a custom id.
@@ -958,18 +964,18 @@ LLRSMFBEGIN                            // Texture:* member functions begin
   LLRSFUNC(BlitSLTA),    LLRSFUNC(BlitSLTRB),   LLRSFUNC(BlitSLTRBA),
   LLRSFUNC(BlitSLTWH),   LLRSFUNC(BlitSLTWHA),  LLRSFUNC(Destroy),
   LLRSFUNC(Download),    LLRSFUNC(Dump),        LLRSFUNC(GetHeight),
-  LLRSFUNC(GetName),     LLRSFUNC(GetSubCount), LLRSFUNC(GetWidth),
-  LLRSFUNC(PopColour),   LLRSFUNC(PushColour),  LLRSFUNC(SetCA),
-  LLRSFUNC(SetCB),       LLRSFUNC(SetCG),       LLRSFUNC(SetCR),
-  LLRSFUNC(SetCRGB),     LLRSFUNC(SetCRGBA),    LLRSFUNC(SetCRGBAI),
-  LLRSFUNC(SetCX),       LLRSFUNC(SetTCLTRB),   LLRSFUNC(SetTCLTWH),
-  LLRSFUNC(SetTCX),      LLRSFUNC(SetVLTRB),    LLRSFUNC(SetVLTRBA),
-  LLRSFUNC(SetVLTWH),    LLRSFUNC(SetVLTWHA),   LLRSFUNC(SetVX),
-  LLRSFUNC(TileA),       LLRSFUNC(TileAD),      LLRSFUNC(TileAS),
-  LLRSFUNC(TileASD),     LLRSFUNC(TileGSTC),    LLRSFUNC(TileGTC),
-  LLRSFUNC(TileS),       LLRSFUNC(TileSD),      LLRSFUNC(TileSS),
-  LLRSFUNC(TileSSD),     LLRSFUNC(TileSSTC),    LLRSFUNC(TileSTC),
-  LLRSFUNC(Upload),      LLRSFUNC(UploadEx),
+  LLRSFUNC(GetId),       LLRSFUNC(GetName),     LLRSFUNC(GetSubCount),
+  LLRSFUNC(GetWidth),    LLRSFUNC(PopColour),   LLRSFUNC(PushColour),
+  LLRSFUNC(SetCA),       LLRSFUNC(SetCB),       LLRSFUNC(SetCG),
+  LLRSFUNC(SetCR),       LLRSFUNC(SetCRGB),     LLRSFUNC(SetCRGBA),
+  LLRSFUNC(SetCRGBAI),   LLRSFUNC(SetCX),       LLRSFUNC(SetTCLTRB),
+  LLRSFUNC(SetTCLTWH),   LLRSFUNC(SetTCX),      LLRSFUNC(SetVLTRB),
+  LLRSFUNC(SetVLTRBA),   LLRSFUNC(SetVLTWH),    LLRSFUNC(SetVLTWHA),
+  LLRSFUNC(SetVX),       LLRSFUNC(TileA),       LLRSFUNC(TileAD),
+  LLRSFUNC(TileAS),      LLRSFUNC(TileASD),     LLRSFUNC(TileGSTC),
+  LLRSFUNC(TileGTC),     LLRSFUNC(TileS),       LLRSFUNC(TileSD),
+  LLRSFUNC(TileSS),      LLRSFUNC(TileSSD),     LLRSFUNC(TileSSTC),
+  LLRSFUNC(TileSTC),     LLRSFUNC(Upload),      LLRSFUNC(UploadEx),
 LLRSEND                                // Texture:* member functions end
 /* ========================================================================= */
 // $ Texture.Create

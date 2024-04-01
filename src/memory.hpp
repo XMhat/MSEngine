@@ -28,31 +28,31 @@ class MemConst                         // Start of const MemBase Block Class
   /* -- Clear parameters. Used by FileMap() -------------------------------- */
   void MemReset(void) { MemSetPtr(); MemSetSize(); }
   /* -- Swap members with another block ------------------------------------ */
-  void MemConstSwap(MemConst &&dcOther)
-    { swap(stSize, dcOther.stSize); swap(cpPtr, dcOther.cpPtr); }
+  void MemConstSwap(MemConst &&mcOther)
+    { swap(stSize, mcOther.stSize); swap(cpPtr, mcOther.cpPtr); }
   /* -- Bit test error handler --------------------------------------------- */
-  void MemCheckBit[[noreturn]](const char*const cpWhat,
+  void MemCheckBit[[noreturn]](const char*const cpAddr,
     const size_t stPos) const
   { // Get absolute position and maximum bit position
     const size_t stAbsPos = UtilBitToByte(stPos),
                  stMax = UtilBitFromByte(stSize);
     // Throw the error
-    XC(cpWhat, "BitPosition",  stPos,    "BitMaximum",  stMax,
+    XC(cpAddr, "BitPosition",  stPos,    "BitMaximum",  stMax,
                "BytePosition", stAbsPos, "ByteMaximum", stSize,
                "AddrPosition", MemDoRead<void*>(stAbsPos),
                "AddrStart",    MemPtr(),    "AddrMaximum", MemPtrEnd());
   }
   /* -- Read pointer error handler------------------------------------------ */
-  void MemCheckRead[[noreturn]](const char*const cpWhat, const size_t stPos,
+  void MemErrorRead[[noreturn]](const char*const cpAddr, const size_t stPos,
     const size_t stBytes) const
-      { XC(cpWhat, "Position",  stPos,  "Amount",  stBytes,
-                   "Maximum",   stSize, "AddrPos", MemDoRead<void*>(stPos),
+      { XC(cpAddr, "Position",  stPos,     "Amount",  stBytes,
+                   "Maximum",   stSize,    "AddrPos", MemDoRead<void*>(stPos),
                    "AddrStart", MemPtr(),  "AddrMax", MemPtrEnd()); }
   /* -- Set size ----------------------------------------------------------- */
   void MemSetPtr(char*const cpNPtr = nullptr) { cpPtr = cpNPtr; }
-  void MemSetSize(const size_t stNSize = 0) { stSize = stNSize; }
-  void MemSetPtrSize(char*const cpNPtr, const size_t stNSize)
-    { MemSetPtr(cpNPtr); MemSetSize(stNSize); }
+  void MemSetSize(const size_t stBytes = 0) { stSize = stBytes; }
+  void MemSetPtrSize(char*const cpNPtr, const size_t stBytes)
+    { MemSetPtr(cpNPtr); MemSetSize(stBytes); }
   /* -- Free the pointer --------------------------------------------------- */
   void MemFreePtr(void) { UtilMemFree(MemPtr()); }
   void MemFreePtrIfSet(void) { if(MemIsPtrSet()) MemFreePtr(); }
@@ -90,15 +90,15 @@ class MemConst                         // Start of const MemBase Block Class
   bool MemCheckPos(const size_t stPos) const
     { return UtilBitToByte(stPos) >= MemSize(); }
   /* -- Find specified string ---------------------------------------------- */
-  size_t MemFind(const string &strMatch, size_t stPos=0) const
+  size_t MemFind(const string &strWhat, size_t stPos=0) const
   { // Bail if parameters are invalid
-    if(strMatch.empty() || MemIsEmpty() || stPos > MemSize())
+    if(strWhat.empty() || MemIsEmpty() || stPos > MemSize())
       return StdMaxSizeT;
     // Position
     size_t stIndex;
     // Until end of string
     while(const char*const cpLoc = reinterpret_cast<char*>
-      (memchr(MemDoRead(stPos), strMatch.front(), MemSize()-stPos)))
+      (memchr(MemDoRead(stPos), strWhat.front(), MemSize()-stPos)))
     { // Calculate index
       stPos = static_cast<size_t>(MemPtr<char>()-cpPtr);
       // Walk data until one of three things happen
@@ -106,12 +106,12 @@ class MemConst                         // Start of const MemBase Block Class
       // - Character mismatch
       // - End of memory block
       for(stIndex = 0;
-          stIndex < strMatch.length() &&
-          strMatch[stIndex] == cpPtr[stPos+stIndex] &&
+          stIndex < strWhat.length() &&
+          strWhat[stIndex] == cpPtr[stPos+stIndex] &&
           stPos+stIndex < stSize;
         ++stIndex);
       // If we read all of the string match then we succeeded
-      if(stIndex >= strMatch.length()) return stPos;
+      if(stIndex >= strWhat.length()) return stPos;
       // Incrememnt position and try again
       stPos += stIndex;
     } // Failed
@@ -122,7 +122,7 @@ class MemConst                         // Start of const MemBase Block Class
     Type *MemRead(const size_t stPos, const size_t stBytes=0) const
   { // Bail if size bad
     if(!MemCheckParam(stPos, stBytes))
-      MemCheckRead("Read error!", stPos, stBytes);
+      MemErrorRead("Read error!", stPos, stBytes);
     // Return pointer
     return MemDoRead<Type>(stPos);
   }
@@ -160,19 +160,19 @@ class MemConst                         // Start of const MemBase Block Class
   template<typename Type=size_t>bool MemIsSizeOverflow(void) const
     { return UtilIntWillOverflow<Type>(MemSize()); }
   /* -- Init from string (does not copy) ----------------------------------- */
-  explicit MemConst(const string &strSrc) :
+  explicit MemConst(const string &strRef) :
     /* -- Initialisers ----------------------------------------------------- */
-    MemConst{ strSrc.length(),         // Copy string size and pointer over
-      strSrc.data() }                  // from specified string
+    MemConst{ strRef.length(),         // Copy string size and pointer over
+      strRef.data() }                  // from specified string
     /* -- Copy pointer and size over from string --------------------------- */
     { }
   /* -- Assignment constructor (rvalue) ------------------------------------ */
-  explicit MemConst(MemConst &&dSrc) :
+  explicit MemConst(MemConst &&mbOther) :
     /* -- Initialisers ----------------------------------------------------- */
-    cpPtr(dSrc.MemPtr<char>()),        // Copy pointer
-    stSize(dSrc.MemSize())             // Copy size
+    cpPtr(mbOther.MemPtr<char>()),        // Copy pointer
+    stSize(mbOther.MemSize())             // Copy size
     /* -- Code to clear other MemConst ------------------------------------ */
-    { dSrc.MemReset(); }
+    { mbOther.MemReset(); }
   /* -- Uninitialised constructor -- pointer ------------------------------- */
   MemConst(void) :
     /* -- Initialisers ----------------------------------------------------- */
@@ -181,23 +181,23 @@ class MemConst                         // Start of const MemBase Block Class
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Inherit an already allocated pointer ------------------------------- */
-  MemConst(const size_t stNSize, char*const cpSrc) :
+  MemConst(const size_t stBytes, char*const cpSrc) :
     /* -- Initialisers ----------------------------------------------------- */
     cpPtr(cpSrc),                      // Initialise memory
-    stSize(stNSize)                    // Set pointer size
+    stSize(stBytes)                    // Set pointer size
     /* -- No code ---------------------------------------------------------- */
     { if(MemIsPtrNotSet() && MemIsNotEmpty())
         XC("Null pointer with non-zero memory size requested!",
            "MemSize", MemSize()); }
   /* -- Cast void pointer to char pointer ---------------------------------- */
-  MemConst(const size_t stNSize, void*const vpSrc) :
-    MemConst(stNSize, reinterpret_cast<char*>(vpSrc)) { }
+  MemConst(const size_t stBytes, void*const vpSrc) :
+    MemConst(stBytes, reinterpret_cast<char*>(vpSrc)) { }
   /* -- Cast const char pointer to char pointer ---------------------------- */
-  MemConst(const size_t stNSize, const char*const cpSrc) :
-    MemConst(stNSize, const_cast<char*>(cpSrc)) { }
+  MemConst(const size_t stBytes, const char*const cpSrc) :
+    MemConst(stBytes, const_cast<char*>(cpSrc)) { }
   /* -- Cast const void pointer to const char ------------------------------ */
-  MemConst(const size_t stNSize, const void*const vpSrc) :
-    MemConst(stNSize, const_cast<void*>(vpSrc)) { }
+  MemConst(const size_t stBytes, const void*const vpSrc) :
+    MemConst(stBytes, const_cast<void*>(vpSrc)) { }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(MemConst)            // Do not need defaults
 };/* ----------------------------------------------------------------------- */
@@ -222,7 +222,7 @@ class MemBase :
     const Type tVal, const size_t stBytes)
   { // Get end position and make sure it wont overrun
     if(!MemCheckParam(stPos, stBytes))
-      MemCheckRead("Fill error!", stPos, stBytes);
+      MemErrorRead("Fill error!", stPos, stBytes);
     // Do the fill
     MemFill(stPos, tVal, stBytes);
   }
@@ -234,8 +234,8 @@ class MemBase :
     const size_t stBytes)
   { // Check parameters are valid
     if(!MemCheckPtr(stPos, stBytes, vpSrc))
-      XC("MemWrite error!", "Destination", MemPtr(),   "Source",   vpSrc,
-                         "Bytes",       stBytes, "Position", stPos,
+      XC("Write error!", "Destination", MemPtr(), "Source",   vpSrc,
+                         "Bytes",       stBytes,  "Position", stPos,
                          "Maximum",     MemSize());
     // Do copy
     MemDoWrite(stPos, vpSrc, stBytes);
@@ -287,10 +287,10 @@ class MemBase :
   void MemWriteDoubleBE(const size_t stPos, const double dVar)
     { MemWriteInt<double>(stPos, UtilToF64BE(dVar)); }
   /* -- Write memory block at specified position --------------------------- */
-  void MemWriteBlock(const size_t stPos, const MemConst &dData,
-    const size_t stBytes) { MemWrite(stPos, dData.MemPtr<char>(), stBytes); }
-  void MemWriteBlock(const size_t stPos, const MemConst &dData)
-    { MemWriteBlock(stPos, dData, dData.MemSize()); }
+  void MemWriteBlock(const size_t stPos, const MemConst &mcRef,
+    const size_t stBytes) { MemWrite(stPos, mcRef.MemPtr<char>(), stBytes); }
+  void MemWriteBlock(const size_t stPos, const MemConst &mcRef)
+    { MemWriteBlock(stPos, mcRef, mcRef.MemSize()); }
   /* -- Set a bit ---------------------------------------------------------- */
   void MemBitSet(const size_t stPos)
   { // Throw error if invalid position
@@ -317,31 +317,31 @@ class MemBase :
     const Type tFlags=numeric_limits<Type>::max())
   { // Bail if size bad
     if(!MemCheckParam(stPos, sizeof(Type)))
-      MemCheckRead("Invert error!", stPos, sizeof(Type));
+      MemErrorRead("Invert error!", stPos, sizeof(Type));
     // Do the invert
     *reinterpret_cast<Type*const>(MemDoRead(stPos)) ^= tFlags;
   }
   /* -- Assignment constructor (rvalue) ------------------------------------ */
-  MemBase(MemBase &&dSrc) :
+  MemBase(MemBase &&mbOther) :
     /* -- Initialisers ----------------------------------------------------- */
-    MemConst{ StdMove(dSrc) }          // Move other data object
+    MemConst{ StdMove(mbOther) }          // Move other data object
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Take ownership of pointer (rvalue) --------------------------------- */
-  explicit MemBase(MemConst &&mcSrc) :
+  explicit MemBase(MemConst &&mcRef) :
     /* -- Initialisers ----------------------------------------------------- */
-    MemConst{ StdMove(mcSrc) }         // Move other data const object
+    MemConst{ StdMove(mcRef) }         // Move other data const object
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Inherit an already allocated pointer ------------------------------- */
-  MemBase(const size_t stNSize, char*const cpSrc) :
-    MemConst{ stNSize, cpSrc } { }
-  MemBase(const size_t stNSize, void*const vpSrc) :
-    MemConst{ stNSize, vpSrc } { }
-  MemBase(const size_t stNSize, const char*const cpSrc) :
-    MemConst{ stNSize, cpSrc } { }
-  MemBase(const size_t stNSize, const void*const vpSrc) :
-    MemConst{ stNSize, vpSrc } { }
+  MemBase(const size_t stBytes, char*const cpSrc) :
+    MemConst{ stBytes, cpSrc } { }
+  MemBase(const size_t stBytes, void*const vpSrc) :
+    MemConst{ stBytes, vpSrc } { }
+  MemBase(const size_t stBytes, const char*const cpSrc) :
+    MemConst{ stBytes, cpSrc } { }
+  MemBase(const size_t stBytes, const void*const vpSrc) :
+    MemConst{ stBytes, vpSrc } { }
   /* -- Uninitialised constructor -- pointer ------------------------------- */
   MemBase(void) { }
   /* ----------------------------------------------------------------------- */
@@ -352,24 +352,24 @@ class Memory :
   /* -- Base classes ------------------------------------------------------- */
   public MemBase                       // Start of Memory Block Class
 { /* -- Resize and preserve allocated memory ---------------------- */ private:
-  void MemDoResize(const size_t stNSize)
+  void MemDoResize(const size_t stBytes)
   { // Realloc new amount of memory and if succeeded? Set new block and size
     if(char*const cpNew =
-      UtilMemReAlloc(MemPtr<char>(), UtilMaximum(stNSize, 1)))
-        MemSetPtrSize(cpNew, stNSize);
+      UtilMemReAlloc(MemPtr<char>(), UtilMaximum(stBytes, 1)))
+        MemSetPtrSize(cpNew, stBytes);
     // Failed so throw error
-    else XC("Re-alloc failed!", "OldSize", MemSize(), "NewSize", stNSize);
+    else XC("Re-alloc failed!", "OldSize", MemSize(), "NewSize", stBytes);
   }
   /* -- Swap memory with another memory block ---------------------- */ public:
   void MemSwap(Memory &&mOther) { MemConstSwap(StdMove(mOther)); }
   /* -- Resize and preserve allocated memory ------------------------------- */
-  void MemResize(const size_t stNSize)
-    { if(stNSize != MemSize()) MemDoResize(stNSize); }
+  void MemResize(const size_t stBytes)
+    { if(stBytes != MemSize()) MemDoResize(stBytes); }
   /* -- Add allocated memory ----------------------------------------------- */
-  void MemResizeAdd(const size_t stNSize) { MemDoResize(MemSize() + stNSize); }
+  void MemResizeAdd(const size_t stBytes) { MemDoResize(MemSize() + stBytes); }
   /* -- Resize memory upwards never downwards ------------------------------ */
-  void MemResizeUp(const size_t stNSize)
-    { if(stNSize > MemSize()) MemDoResize(stNSize); }
+  void MemResizeUp(const size_t stBytes)
+    { if(stBytes > MemSize()) MemDoResize(stBytes); }
   /* -- Append the specified amount of memory ------------------------------ */
   void MemAppend(const void*const vpSrc, const size_t stBytes)
   { // Bail out if the pointer is invalid
@@ -387,7 +387,7 @@ class Memory :
   void MemCrop(const size_t stPos, const size_t stBytes)
   { // Bail if position + bytes exceeds size
     if(!MemCheckParam(stPos, stBytes))
-      MemCheckRead("Crop error!", stPos, stBytes);
+      MemErrorRead("Crop error!", stPos, stBytes);
     // If position is from start? We just need to realloc
     if(!stPos) return MemDoResize(stBytes);
     // Init new class and transfer it to this one
@@ -397,13 +397,13 @@ class Memory :
   void MemByteSwap8(const size_t stPos, const size_t stBytes)
   { // Bail if position + bytes exceeds size
     if(!MemCheckParam(stPos, stBytes))
-      MemCheckRead("8-bit swap error!", stPos, stBytes);
+      MemErrorRead("8-bit swap error!", stPos, stBytes);
     // Reverse each byte
-    for(uint8_t *ubPtr = MemDoRead<uint8_t>(stPos),
-                *ubEnd = ubPtr + stBytes;
-                 ubPtr < ubEnd;
-               ++ubPtr)
-      *ubPtr = UtilReverseByte(*ubPtr);
+    for(uint8_t *ubpPtr = MemDoRead<uint8_t>(stPos),
+                *ubpEnd = ubpPtr + stBytes;
+                 ubpPtr < ubpEnd;
+               ++ubpPtr)
+      *ubpPtr = UtilReverseByte(*ubpPtr);
   }
   void MemByteSwap8(const size_t stBytes) { MemByteSwap8(0, stBytes); }
   void MemByteSwap8(void) { MemByteSwap8(MemSize()); }
@@ -411,13 +411,13 @@ class Memory :
   void MemByteSwap16(const size_t stPos, const size_t stBytes)
   { // Bail if position + bytes exceeds size
     if(!MemCheckParam(stPos, stBytes) || stBytes % sizeof(uint16_t) > 0)
-      MemCheckRead("16-bit swap error!", stPos, stBytes);
+      MemErrorRead("16-bit swap error!", stPos, stBytes);
     // Reverse each word
-    for(uint16_t *usPtr = MemDoRead<uint16_t>(stPos),
-                 *usEnd = MemDoRead<uint16_t>(stPos + stBytes);
-                  usPtr < usEnd;
-                ++usPtr)
-      *usPtr = SWAP_U16(*usPtr);
+    for(uint16_t *uspPtr = MemDoRead<uint16_t>(stPos),
+                 *uspEnd = MemDoRead<uint16_t>(stPos + stBytes);
+                  uspPtr < uspEnd;
+                ++uspPtr)
+      *uspPtr = SWAP_U16(*uspPtr);
   }
   void MemByteSwap16(const size_t stBytes) { MemByteSwap16(0, stBytes); }
   void MemByteSwap16(void) { MemByteSwap16(MemSize()); }
@@ -425,13 +425,13 @@ class Memory :
   void MemByteSwap32(const size_t stPos, const size_t stBytes)
   { // Bail if position + bytes exceeds size
     if(!MemCheckParam(stPos, stBytes) || stBytes % sizeof(uint32_t) > 0)
-      MemCheckRead("32-bit swap error!", stPos, stBytes);
+      MemErrorRead("32-bit swap error!", stPos, stBytes);
     // Reverse each dword
-    for(uint32_t *ulPtr = MemDoRead<uint32_t>(stPos),
-                 *ulEnd = MemDoRead<uint32_t>(stPos + stBytes);
-                  ulPtr < ulEnd;
-                ++ulPtr)
-      *ulPtr = SWAP_U32(*ulPtr);
+    for(uint32_t *ulpPtr = MemDoRead<uint32_t>(stPos),
+                 *ulpEnd = MemDoRead<uint32_t>(stPos + stBytes);
+                  ulpPtr < ulpEnd;
+                ++ulpPtr)
+      *ulpPtr = SWAP_U32(*ulpPtr);
   }
   void MemByteSwap32(const size_t stBytes) { MemByteSwap32(0, stBytes); }
   void MemByteSwap32(void) { MemByteSwap32(MemSize()); }
@@ -439,13 +439,13 @@ class Memory :
   void MemByteSwap64(const size_t stPos, const size_t stBytes)
   { // Bail if position + bytes exceeds size
     if(!MemCheckParam(stPos, stBytes) || stBytes % sizeof(uint64_t) > 0)
-      MemCheckRead("64-bit swap error!", stPos, stBytes);
+      MemErrorRead("64-bit swap error!", stPos, stBytes);
     // Reverse each quad
-    for(uint64_t *uqPtr = MemDoRead<uint64_t>(stPos),
-                 *uqEnd = MemDoRead<uint64_t>(stPos + stBytes);
-                  uqPtr < uqEnd;
-                ++uqPtr)
-      *uqPtr = SWAP_U64(*uqPtr);
+    for(uint64_t *uqpPtr = MemDoRead<uint64_t>(stPos),
+                 *uqpEnd = MemDoRead<uint64_t>(stPos + stBytes);
+                  uqpPtr < uqpEnd;
+                ++uqpPtr)
+      *uqpPtr = SWAP_U64(*uqpPtr);
   }
   void MemByteSwap64(const size_t stBytes) { MemByteSwap64(0, stBytes); }
   void MemByteSwap64(void) { MemByteSwap64(MemSize()); }
@@ -455,7 +455,7 @@ class Memory :
     if(!stBytes) return;
     // Bail if size bad
     if(!MemCheckParam(stPos, stBytes))
-      MemCheckRead("Reverse error!", stPos, stBytes);
+      MemErrorRead("Reverse error!", stPos, stBytes);
     // Create empty memory block
     Memory mDst{ stBytes };
     // Copy each byte from the start of source, to the end of destination
@@ -484,70 +484,72 @@ class Memory :
     XC("Alloc failed!", "MemSize", stBytesRequested);
   }
   /* -- Allocate and copy from existing memory ----------------------------- */
-  void MemInitData(const size_t stS, const void*const vpB)
-    { MemInitBlank(stS); if(stS && vpB) MemWrite(0, vpB, stS); }
+  void MemInitData(const size_t stBytes, const void*const vpPtr)
+    { MemInitBlank(stBytes);
+      if(stBytes && vpPtr) MemWrite(0, vpPtr, stBytes); }
   /* -- Allocate and copy from existing string ----------------------------- */
-  void MemInitString(const string &strS)
-    { MemInitData(strS.length(), reinterpret_cast<const void*>(strS.data())); }
+  void MemInitString(const string &strRef)
+    { MemInitData(strRef.length(),
+        reinterpret_cast<const void*>(strRef.data())); }
   /* -- Allocate and copy from existing memory block ----------------------- */
-  void MemInitCopy(const MemConst &mcSrc)
-    { MemInitData(mcSrc.MemSize(), mcSrc.MemPtr()); }
+  void MemInitCopy(const MemConst &mcRef)
+    { MemInitData(mcRef.MemSize(), mcRef.MemPtr()); }
   /* -- Allocate and zero memory ------------------------------------------- */
-  void MemInitSafe(const size_t stS) { MemInitBlank(stS); MemFill(); }
+  void MemInitSafe(const size_t stBytes) { MemInitBlank(stBytes); MemFill(); }
   /* -- Assignment operator (rvalue) ------------------------------------ -- */
-  Memory &operator=(Memory &&mbSrc)
-    { MemSwap(StdMove(mbSrc)); return *this; }
+  Memory &operator=(Memory &&mOther)
+    { MemSwap(StdMove(mOther)); return *this; }
   /* -- Assignment constructor (rvalue) ------------------------------------ */
-  Memory(Memory &&mbSrc) :
+  Memory(Memory &&mOther) :
     /* -- Initialisers ----------------------------------------------------- */
-    MemBase{ StdMove(mbSrc) }          // Move other memory object
+    MemBase{ StdMove(mOther) }          // Move other memory object
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Take ownership of pointer (must originally be malloc'd) ------------ */
-  explicit Memory(MemBase &&dSrc) :
+  explicit Memory(MemBase &&mbOther) :
     /* -- Initialisers ----------------------------------------------------- */
-    MemBase{ StdMove(dSrc) }           // Move other data object
+    MemBase{ StdMove(mbOther) }        // Move other data object
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Take ownership of pointer (must originally be malloc'd) ------------ */
-  explicit Memory(MemConst &&mcSrc) :
+  explicit Memory(MemConst &&mcOther) :
     /* -- Initialisers ----------------------------------------------------- */
-    MemBase{ StdMove(mcSrc) }          // Move other read only memory object
+    MemBase{ StdMove(mcOther) }        // Move other read only memory object
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Init from string --------------------------------------------------- */
-  explicit Memory(const string &strSrc) :
+  explicit Memory(const string &strRef) :
     /* -- Initialisers ----------------------------------------------------- */
-    Memory{ strSrc.length(),           // Allocate memory and copy the string
-      strSrc.data() }                  // over to our allocated memory
+    Memory{ strRef.length(),           // Allocate memory and copy the string
+      strRef.data() }                  // over to our allocated memory
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Inherit an already allocated pointer ------------------------------- */
-  Memory(const size_t stNSize, const void*const vpSrc, const bool) :
+  Memory(const size_t stBytes, const void*const vpSrc, const bool) :
     /* -- Initialisers ----------------------------------------------------- */
-    MemBase{ stNSize, vpSrc }          // Take ownership of pointer
+    MemBase{ stBytes, vpSrc }          // Take ownership of pointer
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Alloc uninitialised ------------------------------------------------ */
-  explicit Memory(const size_t stNSize) :
+  explicit Memory(const size_t stBytes) :
     /* -- Initialisers ----------------------------------------------------- */
-    MemBase{ stNSize,                  // Initialise data base class
+    MemBase{ stBytes,                  // Initialise data base class
       UtilMemAlloc<void>               // Allocate memory (checked by CTOR)
-        (UtilMaximum(stNSize, 1)) }    // Allocate requested size
+        (UtilMaximum(stBytes, 1)) }    // Allocate requested size
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Alloc with fill ---------------------------------------------------- */
-  Memory(const size_t stNSize, const bool) :
+  Memory(const size_t stBytes, const bool) :
     /* -- Initialisers ----------------------------------------------------- */
-    Memory{ stNSize }                  // Allocate memory
+    Memory{ stBytes }                  // Allocate memory
     /* -- Full memory with zeros ------------------------------------------- */
     { MemFill(); }
   /* -- Alloc with copy ---------------------------------------------------- */
-  Memory(const size_t stNSize, const void*const vpSrc) :
+  Memory(const size_t stBytes, const void*const vpSrc) :
     /* -- Initialisers ----------------------------------------------------- */
-    Memory{ stNSize }                  // Allocate size of pointer
+    Memory{ stBytes }                  // Allocate size of pointer
     /* -- Code to initialise pointer --------------------------------------- */
-    { if(vpSrc) MemDoWrite(0, vpSrc, stNSize); }
+    { if(vpSrc) MemDoWrite(0, vpSrc, stBytes); }
   /* -- Standby constructor ------------------------------------------------ */
   Memory(void) { }
   /* -- Destructor (just a free() needed) ---------------------------------- */

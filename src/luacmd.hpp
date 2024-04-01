@@ -18,18 +18,21 @@ using namespace IString::P;            using namespace ISysUtil::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* ------------------------------------------------------------------------- */
-typedef pair<LuaFunc, CmdMapIt>        LuaCmdPair;       // Lua id/cvar list
-typedef map<const string, LuaCmdPair>  LuaCmdMap;        // Map for lua vars
-typedef LuaCmdMap::iterator            LuaCmdMapIt;      // Map iterator
-typedef LuaCmdMap::const_iterator      LuaCmdMapItConst; // Map const it
+typedef pair<LuaFunc, CmdMapIt> LuaCmdPair;      // Lua id/cvar list
+MAPPACK_BUILD(LuaCmd, const string, LuaCmdPair); // Map for lua vars
 /* -- Variables ollector class for collector data and custom variables ----- */
-BEGIN_COLLECTOREX(Commands, Command, CLHelperSafe,
-  LuaCmdMap        lcmMap;             /* Lua console command list          */\
+CTOR_BEGIN(Commands, Command, CLHelperSafe,
+  /* ----------------------------------------------------------------------- */
+  LuaCmdMap        lcmMap;             // Lua console command list
 );/* -- Lua command collector and member class ----------------------------- */
-BEGIN_MEMBERCLASS(Commands, Command, ICHelperUnsafe),
+CTOR_MEM_BEGIN_CSLAVE(Commands, Command, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
   public Lockable                      // Lua garbage collector instruction
 { /* -- Private variables -------------------------------------------------- */
+  constexpr static const size_t
+    stConCmdMinLength = 1,             // Minimum length of a console command
+    stConCmdMaxLength = 255;           // Maximum length of a console command
+  /* -- Private variables -------------------------------------------------- */
   LuaCmdMapIt      lcmiIt;             // Iterator to command Console gives us
   /* -- Returns the lua command list --------------------------------------- */
   LuaCmdMap &GetLuaCmdsList(void) { return cParent->lcmMap; }
@@ -44,6 +47,22 @@ BEGIN_MEMBERCLASS(Commands, Command, ICHelperUnsafe),
         aArgs.front());
     // Call the function callback in Lua
     lcmiIt->second.first.LuaFuncProtectedDispatch(0, aArgs);
+  }
+  /* -- Check that the console variable name is valid ---------------------- */
+  bool IsValidConsoleCommandName(const string &strName)
+  { // Check minimum name length
+    if(strName.length() < stConCmdMinLength ||
+       strName.length() > stConCmdMaxLength) return false;
+    // Get address of string. The first character must be a letter
+    const unsigned char *ucpPtr =
+      reinterpret_cast<const unsigned char*>(strName.c_str());
+    if(!isalpha(*ucpPtr)) return false;
+    // For each character in cvar name until end of string...
+    for(const unsigned char*const ucpPtrEnd = ucpPtr + strName.length();
+                                   ++ucpPtr < ucpPtrEnd;)
+      if(!isalnum(*ucpPtr) && *ucpPtr != '_') return false;
+    // Success!
+    return true;
   }
   /* -- Unregister the console command from lua -------------------- */ public:
   const string &Name(void) const { return lcmiIt->first; }
@@ -61,13 +80,22 @@ BEGIN_MEMBERCLASS(Commands, Command, ICHelperUnsafe),
       uiMaximum = LuaUtilGetInt<unsigned int>(lS, 3, "Maximum");
     // Check that the fourth parameter is a function
     LuaUtilCheckFunc(lS, 4, "Callback");
+    // Check that the console command is valid
+    if(!IsValidConsoleCommandName(strName))
+      XC("Console command name is invalid!",
+         "Command", strName, "Minimum", stConCmdMinLength,
+         "Maximum", stConCmdMaxLength);
+    // Check min/Max params and that they're valid
+    if(uiMinimum && uiMaximum && uiMaximum < uiMinimum)
+      XC("Minimum greater than maximum!",
+         "Identifier", strName, "Minimum",  uiMinimum, "Maximum", uiMaximum);
+    // Find command and throw exception if already exists
+    if(GetLuaCmdsList().contains(strName))
+      XC("Virtual command already exists!", "Command", strName);
     // Since the userdata for this class object is at arg 5, we need to make
     // sure the callback function is ahead of it in arg 6 or the LuaFunc()
     // class which calls luaL_ref will fail as it ONLY reads position -1.
     lua_pushvalue(lS, 4);
-    // Find command and throw exception if already exists
-    if(GetLuaCmdsList().contains(strName))
-      XC("Virtual command already exists!", "Command", strName);
     // Register the variable and get the iterator to the new cvar. Don't
     // forget the lua reference needs to be in place for when the callback
     // is called. Create a function and reference the function on the lua
@@ -99,7 +127,35 @@ BEGIN_MEMBERCLASS(Commands, Command, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Command)             // Disable copy constructor and operator
 };/* ----------------------------------------------------------------------- */
-END_COLLECTOR(Commands)                // Finish global Files collector
+CTOR_END_NOINITS(Commands)             // Finish global Files collector
+/* -- Build a command list (for conlib) ------------------------------------ */
+template<class ListType>
+  static size_t CommandsBuildList(const ListType &ltList,
+    const string &strFilter, string &strDest)
+{ // Commands matched
+  size_t stMatched = 0;
+  // Set filter if specified and look for command and if we found one?
+  // The 'auto' here could either be 'CmdMapIt' or 'LuaCmdMapIt'.
+  auto ltIt{ ltList.lower_bound(strFilter) };
+  if(ltIt != ltList.cend())
+  { // Output string
+    ostringstream osS;
+    // Build output string
+    do
+    { // If no match found? return original string
+      const string &strKey = ltIt->first;
+      if(strKey.compare(0, strFilter.size(), strFilter)) continue;
+      // Increment matched counter
+      ++stMatched;
+      // Add command to command list
+      osS << ' ' << strKey;
+    } // Until no more commands
+    while(++ltIt != ltList.cend());
+    // Move into destination
+    strDest = osS.str();
+  } // Return matches
+  return stMatched;
+}
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */

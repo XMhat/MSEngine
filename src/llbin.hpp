@@ -89,6 +89,12 @@ LLFUNCEX(Height, 1, LCPUSHVAR(LCGETPTR(1, Bin)->DimGetHeight()));
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Occupancy, 1, LCPUSHVAR(LCGETPTR(1, Bin)->Occupancy()));
 /* ========================================================================= */
+// $ Bin:Id
+// < Id:integer=The id number of the Bin object.
+// ? Returns the unique id of the Bin object.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(Id, 1, LCPUSHVAR(LCGETPTR(1, Bin)->CtrGet()));
+/* ========================================================================= */
 // $ Bin:Destroy
 // ? Destroys the bin and frees all the memory associated with it. The object
 // ? will no longer be useable after this call and an error will be generated
@@ -101,8 +107,8 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Bin));
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Bin:* member functions begin
-  LLRSFUNC(Destroy),   LLRSFUNC(Insert), LLRSFUNC(Enlarge), LLRSFUNC(Height),
-  LLRSFUNC(Occupancy), LLRSFUNC(Test),   LLRSFUNC(Width),
+  LLRSFUNC(Destroy), LLRSFUNC(Id),        LLRSFUNC(Insert), LLRSFUNC(Enlarge),
+  LLRSFUNC(Height),  LLRSFUNC(Occupancy), LLRSFUNC(Test),   LLRSFUNC(Width),
 LLRSEND                                // Bin:* member functions end
 /* ========================================================================= */
 // $ Bin.Create

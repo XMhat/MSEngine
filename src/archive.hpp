@@ -24,16 +24,16 @@ using namespace IUtil::P;              using namespace Lib::OS::SevenZip;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* == Archive collector with extract buffer size =========================== */
-BEGIN_ASYNCCOLLECTOREX(Archives, Archive, CLHelperSafe,
+CTOR_BEGIN_ASYNC(Archives, Archive, CLHelperSafe,
   /* ----------------------------------------------------------------------- */
-  size_t           stExtractBufSize;   /* Extract buffer size               */\
-  ISzAlloc         isaData;            /* Allocator functions               */\
+  size_t           stExtractBufSize;   // Extract buffer size
+  ISzAlloc         isaData;            // Allocator functions
   /* -- Alloc function for lzma -------------------------------------------- */
-  static void *Alloc(ISzAllocPtr, size_t stBytes)\
-    { return UtilMemAlloc<void>(stBytes); }\
+  static void *Alloc(ISzAllocPtr, size_t stBytes)
+    { return UtilMemAlloc<void>(stBytes); }
   /* -- Free function for lzma --------------------------------------------- */
-  static void Free(ISzAllocPtr, void*const vpAddress)\
-    { UtilMemFree(vpAddress); }\
+  static void Free(ISzAllocPtr, void*const vpAddress)
+    { UtilMemFree(vpAddress); }
 );/* ----------------------------------------------------------------------- */
 BUILD_FLAGS(Archive,
   /* ----------------------------------------------------------------------- */
@@ -42,7 +42,7 @@ BUILD_FLAGS(Archive,
   // Allocated look2read structs?    Allocated archive structs?
   AE_SETUPL2R             {Flag[2]}, AE_ARCHIVEINIT          {Flag[3]}
 );/* == Archive object class =============================================== */
-BEGIN_ASYNCMEMBERCLASS(Archives, Archive, ICHelperUnsafe),
+CTOR_MEM_BEGIN_ASYNC_CSLAVE(Archives, Archive, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
   public Ident,                        // Archive file name
   public AsyncLoaderArchive,           // Async manager for off-thread loading
@@ -61,19 +61,19 @@ BEGIN_ASYNCMEMBERCLASS(Archives, Archive, ICHelperUnsafe),
   /* -- Private Variables -------------------------------------------------- */
   SafeSizeT        stInUse;            // API in use reference count
   /* ----------------------------------------------------------------------- */
-  StrUIntMap       lFiles,             // Files and directories as a map means
-                   lDirs;              // quick access to assets via filenames
+  StrUIntMap       suimFiles,          // Files and directories as a map means
+                   suimDirs;           // quick access to assets via filenames
   /* ----------------------------------------------------------------------- */
-  StrUIntMapConstItVector vFiles,      // Indexed list of referenced string...
-                          vDirs;       // ...ref to all data in lFiles/lDirs
+  StrUIntMapConstItVector auimcivFiles,// 0-indexed files in the archive
+                          auimcivDirs; // 0-indexed directories in the archive
   /* ----------------------------------------------------------------------- */
-  uint64_t         qwArchPos;          // Position of archive in file
+  uint64_t         uqArchPos;          // Position of archive in file
   CFileInStream    cfisData;           // LZMA file stream data
   CLookToRead2     cltrData;           // LZMA lookup data
   CSzArEx          csaeData;           // LZMA archive Data
   /* -- Process extracted data --------------------------------------------- */
   FileMap Extract(const string &strFile, const unsigned int uiSrcId,
-    CLookToRead2 &cltrD, CSzArEx &csaeD)
+    CLookToRead2 &cltrRef, CSzArEx &csaeRef)
   { // Storage for buffer
     unsigned char *ucpData = nullptr;
     // Capture exceptions so we can clean up
@@ -88,7 +88,7 @@ BEGIN_ASYNCMEMBERCLASS(Archives, Archive, ICHelperUnsafe),
       unsigned int uiBlockIndex = StdMaxUInt;
       // Decompress the buffer using our base handles and throw error if it
       // failed
-      if(const int iCode = SzArEx_Extract(&csaeD, &cltrD.vt,
+      if(const int iCode = SzArEx_Extract(&csaeRef, &cltrRef.vt,
         uiSrcId, &uiBlockIndex, &ucpData, &stUncompressed, &stOffset,
         &stCompressed, &cParent->isaData, &cParent->isaData))
           XC("Failed to extract file",
@@ -145,30 +145,30 @@ BEGIN_ASYNCMEMBERCLASS(Archives, Archive, ICHelperUnsafe),
     }
   }
   /* -- DeInitialise Look2Read structs ------------------------------------- */
-  void CleanupLookToRead(CLookToRead2 &cltrIn)
+  void CleanupLookToRead(CLookToRead2 &cltrRef)
   { // Free the decopmression buffer if it was created
-    if(cltrData.buf) ISzAlloc_Free(&cParent->isaData, cltrIn.buf);
+    if(cltrData.buf) ISzAlloc_Free(&cParent->isaData, cltrRef.buf);
   }
   /* -- Initialise Look2Read structs --------------------------------------- */
-  void SetupLookToRead(CFileInStream &cfisOut, CLookToRead2 &cltrOut)
+  void SetupLookToRead(CFileInStream &cfisRef, CLookToRead2 &cltrRef)
   { // Setup vtables and stream pointers
-    FileInStream_CreateVTable(&cfisOut);
-    LookToRead2_CreateVTable(&cltrOut, False);
-    cltrOut.realStream = &cfisOut.vt;
+    FileInStream_CreateVTable(&cfisRef);
+    LookToRead2_CreateVTable(&cltrRef, False);
+    cltrRef.realStream = &cfisRef.vt;
     // Need to allocate transfer buffer in later LZMA.
-    cltrOut.buf = reinterpret_cast<Byte*>
+    cltrRef.buf = reinterpret_cast<Byte*>
       (ISzAlloc_Alloc(&cParent->isaData, cParent->stExtractBufSize));
     if(!cltrData.buf)
       XC("Error allocating buffer for archive!",
          "Archive", IdentGet(), "Bytes", cParent->stExtractBufSize);
-    cltrOut.bufSize = cParent->stExtractBufSize;
+    cltrRef.bufSize = cParent->stExtractBufSize;
     // Initialise look2read structs. On p7zip, the buffer allocation is already
     // done for us.
-    LookToRead2_INIT(&cltrOut);
+    LookToRead2_INIT(&cltrRef);
   }
   /* -- Get archive file/dir as table ------------------------------ */ public:
-  const StrUIntMap &GetFileList(void) const { return lFiles; }
-  const StrUIntMap &GetDirList(void) const { return lDirs; }
+  const StrUIntMap &GetFileList(void) const { return suimFiles; }
+  const StrUIntMap &GetDirList(void) const { return suimDirs; }
   /* -- Returns modified time of specified file ---------------------------- */
   StdTimeT GetModifiedTime(const size_t stId) const
     { return static_cast<StdTimeT>(SzBitWithVals_Check(&csaeData.MTime, stId) ?
@@ -185,37 +185,37 @@ BEGIN_ASYNCMEMBERCLASS(Archives, Archive, ICHelperUnsafe),
   /* -- Total files and directories in archive ----------------------------- */
   size_t GetTotal(void) const { return csaeData.NumFiles; }
   /* -- Get a file/dir and uid by zero-index ------------------------------- */
-  const StrUIntMapConstIt &GetFile(const size_t stI) const
-    { return vFiles[stI]; }
-  const StrUIntMapConstIt &GetDir(const size_t stI) const
-    { return vDirs[stI]; }
+  const StrUIntMapConstIt &GetFile(const size_t stIndex) const
+    { return auimcivFiles[stIndex]; }
+  const StrUIntMapConstIt &GetDir(const size_t stIndex) const
+    { return auimcivDirs[stIndex]; }
   /* -- Return number of extra archives opened ----------------------------- */
   size_t GetInUse(void) const { return stInUse; }
   /* -- Return if iterator is valid ---------------------------------------- */
-  bool IsFileIteratorValid(const StrUIntMapConstIt &flItem) const
-    { return flItem != lFiles.cend(); }
+  bool IsFileIteratorValid(const StrUIntMapConstIt &suimciIt) const
+    { return suimciIt != suimFiles.cend(); }
   /* -- Gets the iterator of a filename ------------------------------------ */
   const StrUIntMapConstIt GetFileIterator(const string &strFile) const
-    { return lFiles.find(strFile); }
+    { return suimFiles.find(strFile); }
   /* -- Loads a file from archive by iterator ------------------------------ */
-  FileMap Extract(const StrUIntMapConstIt &flItem)
+  FileMap Extract(const StrUIntMapConstIt &suimciIt)
   { // Lock mutex. We don't care if we can't lock it though because we will
     // open another archive if we cannot lock it.
-    const UniqueLock uLock{ *this, try_to_lock };
+    const UniqueLock ulDecoder{ *this, try_to_lock };
     // Create class to notify destructor when leaving this scope
-    const class Notify { public: Archive &aCref;
-      explicit Notify(Archive &oCr) : aCref(oCr) { }
-      ~Notify(void) { aCref.notify_one(); } } cNotify(*this);
+    const class Notify { public: Archive &aRef;
+      explicit Notify(Archive &aNRef) : aRef(aNRef) { }
+      ~Notify(void) { aRef.notify_one(); } } cNotify(*this);
     // Get filename and filename id from iterator
-    const string &strFile = flItem->first;
-    const unsigned int &uiSrcId = flItem->second;
+    const string &strFile = suimciIt->first;
+    const unsigned int &uiSrcId = suimciIt->second;
     // If the base archive file is in use?
-    if(!uLock.owns_lock())
+    if(!ulDecoder.owns_lock())
     { // We need to adjust in-use counter when joining and leaving this scope
       // This tells the destructor to wait until it is zero.
-      const class Counter { public: Archive &aCref;
-        explicit Counter(Archive &oCr) : aCref(oCr) { ++aCref.stInUse; }
-        ~Counter(void) { --aCref.stInUse; } } cCounter(*this);
+      const class Counter { public: Archive &aRef;
+        explicit Counter(Archive &aNRef) : aRef(aNRef) { ++aRef.stInUse; }
+        ~Counter(void) { --aRef.stInUse; } } cCounter(*this);
       // Because the API doesn't support sharing file handles, we will need
       // to re-open the archive again with new data. We don't need to collect
       // any filename data again though thankfully so this should still be
@@ -228,15 +228,15 @@ BEGIN_ASYNCMEMBERCLASS(Archives, Archive, ICHelperUnsafe),
       { // Open new archive and throw error if it failed
         if(const int iCode = LZMAOpen(&cfisData2.file, IdentGetCStr()))
           XC("Failed to open archive!",
-            "Archive", IdentGet(),       "Index", flItem->second,
-            "File",    flItem->first, "Code",  iCode,
+            "Archive", IdentGet(),      "Index", suimciIt->second,
+            "File",    suimciIt->first, "Code",  iCode,
             "Reason",  CodecGetLzmaErrString(iCode));
         // Custom start position specified
-        if(qwArchPos > 0 &&
-          cSystem->SeekFile(LZMAGetHandle(cfisData), qwArchPos) != qwArchPos)
+        if(uqArchPos > 0 &&
+          cSystem->SeekFile(LZMAGetHandle(cfisData), uqArchPos) != uqArchPos)
             XC("Failed to seek in archive!",
-              "Archive", IdentGet(),       "Index",    flItem->second,
-              "File",    flItem->first, "Position", qwArchPos);
+              "Archive", IdentGet(),      "Index",    suimciIt->second,
+              "File",    suimciIt->first, "Position", uqArchPos);
         // Load archive
         SetupLookToRead(cfisData2, cltrData2);
         // Init lzma data
@@ -245,11 +245,11 @@ BEGIN_ASYNCMEMBERCLASS(Archives, Archive, ICHelperUnsafe),
         if(const int iCode = SzArEx_Open(&csaeData2,
           &cltrData2.vt, &cParent->isaData, &cParent->isaData))
             XC("Failed to load archive!",
-               "Archive", IdentGet(),       "Index", flItem->second,
-               "File",    flItem->first, "Code",  iCode,
+               "Archive", IdentGet(),      "Index", suimciIt->second,
+               "File",    suimciIt->first, "Code",  iCode,
                "Reason",  CodecGetLzmaErrString(iCode));
         // Decompress the buffer using our duplicated handles
-        FileMap fData{ Extract(strFile, uiSrcId, cltrData2, csaeData2) };
+        FileMap fmFile{ Extract(strFile, uiSrcId, cltrData2, csaeData2) };
         // Clean up look to read
         CleanupLookToRead(cltrData2);
         // Free memory
@@ -259,7 +259,7 @@ BEGIN_ASYNCMEMBERCLASS(Archives, Archive, ICHelperUnsafe),
           cLog->LogWarningExSafe("Archive failed to close archive '$': $!",
             IdentGet(), SysError());
         // Done
-        return fData;
+        return fmFile;
       } // exception occured
       catch(const exception &)
       { // Clean up look to read
@@ -279,14 +279,14 @@ BEGIN_ASYNCMEMBERCLASS(Archives, Archive, ICHelperUnsafe),
   /* -- Loads a file from archive by filename ------------------------------ */
   FileMap Extract(const string &strFile)
   { // Get iterator from filename and return empty file if not found
-    const StrUIntMapConstIt flItem{ GetFileIterator(strFile) };
-    if(flItem == lFiles.cend()) return {};
+    const StrUIntMapConstIt suimciIt{ GetFileIterator(strFile) };
+    if(suimciIt == suimFiles.cend()) return {};
     // Extract the file
-    return Extract(flItem);
+    return Extract(suimciIt);
   }
   /* -- Checks if file is in archive --------------------------------------- */
   bool FileExists(const string &strFile) const
-    { return GetFileIterator(strFile) != lFiles.cend(); }
+    { return GetFileIterator(strFile) != suimFiles.cend(); }
   /* -- Loads the specified archive ---------------------------------------- */
   void AsyncReady(FileMap &)
   { // Open archive and throw and show errno if it failed
@@ -294,12 +294,12 @@ BEGIN_ASYNCMEMBERCLASS(Archives, Archive, ICHelperUnsafe),
       XCS("Error opening archive!", "Archive", IdentGet(), "Code", iCode);
     FlagSet(AE_FILEOPENED);
     // Custom start position specified?
-    if(qwArchPos > 0)
+    if(uqArchPos > 0)
     { // Log position setting
       cLog->LogDebugExSafe("Archive loading '$' from position $...",
-        IdentGet(), qwArchPos);
+        IdentGet(), uqArchPos);
       // Seek to overlay in executable + 1 and if failed? Log the warning
-      if(cSystem->SeekFile(LZMAGetHandle(cfisData), qwArchPos) != qwArchPos)
+      if(cSystem->SeekFile(LZMAGetHandle(cfisData), uqArchPos) != uqArchPos)
         cLog->LogWarningExSafe("Archive '$' seek error! [$].",
           IdentGet(), SysError());
     } // Load from beginning? Log that we're loading from beginning
@@ -322,17 +322,17 @@ BEGIN_ASYNCMEMBERCLASS(Archives, Archive, ICHelperUnsafe),
     // how many files and directories there are individually so we'll reserve
     // memory for the maximum amount of entries in the 7-zip file. We'll shrink
     // this after to reclaim the memory
-    const size_t stFilesMaximum = vFiles.max_size();
+    const size_t stFilesMaximum = auimcivFiles.max_size();
     if(csaeData.NumFiles > stFilesMaximum)
       XC("Insufficient storage for file list!",
          "Current", csaeData.NumFiles, "Maximum", stFilesMaximum);
-    vFiles.reserve(csaeData.NumFiles);
+    auimcivFiles.reserve(csaeData.NumFiles);
     // ...and same for the directories too.
-    const size_t stDirsMaximum = vDirs.max_size();
-    if(vFiles.size() > stDirsMaximum)
+    const size_t stDirsMaximum = auimcivDirs.max_size();
+    if(auimcivFiles.size() > stDirsMaximum)
       XC("Insufficient storage for directory list!",
-         "Current", vFiles.size(), "Maximum", stDirsMaximum);
-    vDirs.reserve(vFiles.size());
+         "Current", auimcivFiles.size(), "Maximum", stDirsMaximum);
+    auimcivDirs.reserve(auimcivFiles.size());
     // Enumerate through each file
     for(unsigned int uiIndex = 0; uiIndex < csaeData.NumFiles; ++uiIndex)
     { // Get length of file name string. This includes the null terminator.
@@ -347,50 +347,50 @@ BEGIN_ASYNCMEMBERCLASS(Archives, Archive, ICHelperUnsafe),
       if(SzArEx_IsDir(&csaeData, uiIndex))
         // Convert wide-string to utf-8 and insert it in the dirs to integer
         // list and store the iterator in the vector
-        vDirs.push_back(lDirs.insert({
+        auimcivDirs.push_back(suimDirs.insert({
           UtfFromWide(wvFilesWide.data()), uiIndex }).first);
       // Is a file?
       else
         // Convert wide-string to utf-8 and insert it in the files to integer
         // list and store the iterator in the vector
-        vFiles.push_back(lFiles.insert({
+        auimcivFiles.push_back(suimFiles.insert({
           UtfFromWide(wvFilesWide.data()), uiIndex }).first);
     } // We did not know how many files and directories there were
     // specifically so lets free the extra memory allocated for the lists
-    vFiles.shrink_to_fit();
-    vDirs.shrink_to_fit();
+    auimcivFiles.shrink_to_fit();
+    auimcivDirs.shrink_to_fit();
     // Log progress
     cLog->LogInfoExSafe("Archive loaded '$' (F:$;D:$).",
-      IdentGet(), lFiles.size(), lDirs.size());
+      IdentGet(), suimFiles.size(), suimDirs.size());
   }
   /* -- Loads archive asynchronously --------------------------------------- */
   void InitAsyncFile(lua_State*const lS)
   { // Need 4 parameters (class pointer was already pushed onto the stack);
     LuaUtilCheckParams(lS, 5);
     // Get and check parameters
-    const string strFilename{ LuaUtilGetCppFile(lS, 1, "File") };
+    const string strFile{ LuaUtilGetCppFile(lS, 1, "File") };
     LuaUtilCheckFuncs(lS, 2, "ErrorFunc", 3, "ProgressFunc", 4, "SuccessFunc");
     // Throw error if invalid name
-    if(const ValidResult vrId = DirValidName(strFilename))
+    if(const ValidResult vrId = DirValidName(strFile))
       XC("Filename is invalid!",
-         "File",     strFilename, "Reason", cDirBase->VNRtoStr(vrId),
+         "File",     strFile, "Reason", cDirBase->VNRtoStr(vrId),
          "ReasonId", vrId);
     // Load asynchronously, except we load the file, not async class
-    AsyncInitNone(lS, strFilename, "archivefile");
+    AsyncInitNone(lS, strFile, "archivefile");
   }
   /* -- Loads archive synchronously ---------------------------------------- */
-  void InitFromFile(const string &strFilename, const uint64_t qwPosition)
+  void InitFromFile(const string &strFile, const uint64_t uqPosition)
   { // Store position
-    qwArchPos = qwPosition;
+    uqArchPos = uqPosition;
     // Set filename without filename checking
-    SyncInitFile(strFilename);
+    SyncInitFile(strFile);
   }
   /* -- Loads archive synchronously ---------------------------------------- */
-  void InitFromFileSafe(const string &strFilename, const uint64_t qwPosition=0)
+  void InitFromFileSafe(const string &strFile, const uint64_t uqPosition=0)
   { // Store position
-    qwArchPos = qwPosition;
+    uqArchPos = uqPosition;
     // Load the file with filename checking
-    SyncInitFileSafe(strFilename);
+    SyncInitFileSafe(strFile);
   }
   /* -- For loading via lua ------------------------------------------------ */
   Archive(void) :
@@ -401,7 +401,7 @@ BEGIN_ASYNCMEMBERCLASS(Archives, Archive, ICHelperUnsafe),
       EMC_MP_ARCHIVE },                // " our archive async event
     ArchiveFlags{ AE_STANDBY },        // Set default archive flags
     stInUse(0),                        // Set threads in use
-    qwArchPos(0),                      // Set archive initial position
+    uqArchPos(0),                      // Set archive initial position
     cfisData{},                        // Init file stream data
     cltrData{},                        // Init lookup stream data
     csaeData{}                         // Init archive stream data
@@ -423,8 +423,8 @@ BEGIN_ASYNCMEMBERCLASS(Archives, Archive, ICHelperUnsafe),
       cLog->LogInfoExSafe("Archive '$' waiting for $ async ops to complete...",
         IdentGet(), static_cast<size_t>(stInUse));
       // Wait for base and spawned file operations to finish
-      UniqueLock uLock{ *this };
-      wait(uLock, [this]{ return !stInUse; });
+      UniqueLock ulDecoder{ *this };
+      wait(ulDecoder, [this]{ return !stInUse; });
     } // Free archive structs if allocated
     if(FlagIsSet(AE_ARCHIVEINIT)) SzArEx_Free(&csaeData, &cParent->isaData);
     // Memory allocated? Free memory allocated for buffer
@@ -443,17 +443,19 @@ BEGIN_ASYNCMEMBERCLASS(Archives, Archive, ICHelperUnsafe),
 #undef LZMAOpen                        // Done with this macro
 #undef ISzAllocPtr                     // Done with this macro
 };/* ----------------------------------------------------------------------- */
-END_ASYNCCOLLECTOR(Archives, Archive, ARCHIVE,
-  stExtractBufSize(0),
-  isaData{ Alloc, Free });
+CTOR_END_ASYNC_NOFUNCS(Archives, ARCHIVE, // Finish collector
+  /* -- Collector initialisers --------------------------------------------- */
+  stExtractBufSize(0),                 // Init extract buffer size
+  isaData{ Alloc, Free }               // Init custom allocators
+);/* ----------------------------------------------------------------------- */
 /* == Look if a file exists in archives ==================================== */
 static bool ArchiveFileExists(const string &strFile)
 { // Lock archive list so it cannot be modified and iterate through the list
   const LockGuard lgArchivesSync{ cArchives->CollectorGetMutex() };
   // For each archive. Return if the specified file exists in it.
   return any_of(cArchives->cbegin(), cArchives->cend(),
-    [&strFile](const Archive*const aCptr)
-      { return aCptr->FileExists(strFile); });
+    [&strFile](const Archive*const aPtr)
+      { return aPtr->FileExists(strFile); });
 }
 /* -- Create and check a dynamic archive ----------------------------------- */
 static Archive *ArchiveInitNew(const string &strFile, const size_t stSize=0)
@@ -492,38 +494,38 @@ static CVarReturn ArchiveInitExe(const bool bCheck)
   return ACCEPT;
 }
 /* -- Loads the specified archive ------------------------------------------ */
-static CVarReturn ArchiveInit(const string &strFileMask, string&)
+static CVarReturn ArchiveInit(const string &strExt, string&)
 { // Ignore if file mask not specified
-  if(strFileMask.empty()) return ACCEPT;
-  // Build directory listing and log how many files we found
-  cLog->LogDebugExSafe("Archives scanning for '$' files...", strFileMask);
-  const Dir dList{ cCommon->Blank(), strFileMask };
-  // Return if no files found (rare but not impossible)
-  if(dList.dFiles.empty())
+  if(strExt.empty()) return ACCEPT;
+  // Build archive listing and if none found?
+  cLog->LogDebugExSafe("Archives scanning for '$' files...", strExt);
+  const Dir dArchives{ cCommon->Blank(), strExt };
+  if(dArchives.IsFilesEmpty())
   { // Log no files and return success
     cLog->LogWarningSafe("Archives matched no potential archive filenames!");
     return ACCEPT;
   } // Start processing filenames
   cLog->LogDebugExSafe("Archives loading $ files in working directory...",
-    dList.dFiles.size());
+    dArchives.GetFilesSize());
   // Counters
   size_t stFound = 0, stFiles = 0, stDirs = 0;
   // For each archive file
-  for(const auto &dI : dList.dFiles)
+  for(const DirEntMapPair &dempPair : dArchives.GetFiles())
   { // Log archive info
     cLog->LogDebugExSafe("- #$: '$' (S:$;A:0x$$;C:0x$;M:0x$).",
-      ++stFound, dI.first, StrToBytes(dI.second.qSize), hex,
-      dI.second.qFlags, dI.second.tCreate, dI.second.tWrite);
+      ++stFound, dempPair.first, StrToBytes(dempPair.second.Size()), hex,
+      dempPair.second.Attributes(), dempPair.second.Created(),
+      dempPair.second.Written());
     // Dynamically create the archive. The pointer is recorded in the parent
     // and is referenced from there when loading other files. If succeeded?
-    if(const Archive*const aCptr = ArchiveInitNew(dI.first))
+    if(const Archive*const aPtr = ArchiveInitNew(dempPair.first))
     { // Add counters to grand totals
-      stFiles += aCptr->GetFileList().size();
-      stDirs += aCptr->GetDirList().size();
+      stFiles += aPtr->GetFileList().size();
+      stDirs += aPtr->GetDirList().size();
     }
   } // Log init
   cLog->LogInfoExSafe("Archives loaded $ of $ archives (F:$;D:$).",
-    cArchives->CollectorCount(), dList.dFiles.size(), stFiles, stDirs);
+    cArchives->CollectorCount(), dArchives.GetFilesSize(), stFiles, stDirs);
   // Ok
   return ACCEPT;
 }
@@ -532,12 +534,12 @@ static void ArchiveEnumFiles(const string &strDir, const StrUIntMap &suimList,
   StrSet &ssFiles, mutex &mLock)
 { // For each directory in archive. Try to use multi-threading.
   StdForEach(par_unseq, suimList.cbegin(), suimList.cend(),
-    [&strDir, &ssFiles, &mLock](const auto &itItem)
+    [&strDir, &ssFiles, &mLock](const StrUIntMapPair &suimpRef)
   { // Ignore if folder name does not match or a forward-slash found after
-    if(strDir != itItem.first.substr(0, strDir.length()) ||
-      itItem.first.find('/', strDir.length()+1) != string::npos) return;
+    if(strDir != suimpRef.first.substr(0, strDir.length()) ||
+      suimpRef.first.find('/', strDir.length()+1) != string::npos) return;
     // Split file path
-    const PathSplit psParts{ itItem.first };
+    const PathSplit psParts{ suimpRef.first };
     // Lock access to archives list
     const LockGuard lgLock{ mLock };
     // Split path parts, lock mutex, and move into list
@@ -555,26 +557,26 @@ static const StrSet &ArchiveEnumerate(const string &strDir,
     // If only dirs requested? For each archive.
     if(bOnlyDirs)
       StdForEach(par, cArchives->cbegin(), cArchives->cend(),
-        [&strDir, &ssFiles, &mLock](const Archive*const aCptr)
-          { ArchiveEnumFiles(strDir, aCptr->GetDirList(), ssFiles, mLock); });
+        [&strDir, &ssFiles, &mLock](const Archive*const aPtr)
+          { ArchiveEnumFiles(strDir, aPtr->GetDirList(), ssFiles, mLock); });
     // No extension specified? Show all files
     else if(strExt.empty())
       StdForEach(par, cArchives->cbegin(), cArchives->cend(),
-        [&strDir, &ssFiles, &mLock](const Archive*const aCptr)
-          { ArchiveEnumFiles(strDir, aCptr->GetFileList(), ssFiles, mLock); });
+        [&strDir, &ssFiles, &mLock](const Archive*const aPtr)
+          { ArchiveEnumFiles(strDir, aPtr->GetFileList(), ssFiles, mLock); });
     // Files with extension requested. For each archive.
     else StdForEach(par, cArchives->cbegin(), cArchives->cend(),
-      [&strDir, &ssFiles, &mLock, &strExt](const Archive*const aCptr)
+      [&strDir, &ssFiles, &mLock, &strExt](const Archive*const aPtr)
     { // Get reference to file list
-      const StrUIntMap &suimList = aCptr->GetFileList();
+      const StrUIntMap &suimList = aPtr->GetFileList();
       // For each directory in archive...
       StdForEach(par_unseq, suimList.cbegin(), suimList.cend(),
-        [&strDir, &ssFiles, &mLock, &strExt](const auto &itItem)
+        [&strDir, &ssFiles, &mLock, &strExt](const StrUIntMapPair &suimpRef)
       { // Ignore if folder name does not match or a forward-slash found after
-        if(strDir != itItem.first.substr(0, strDir.length()) ||
-          itItem.first.find('/', strDir.length()+1) != string::npos) return;
+        if(strDir != suimpRef.first.substr(0, strDir.length()) ||
+          suimpRef.first.find('/', strDir.length()+1) != string::npos) return;
         // Split path parts, and ignore if extension does not match
-        const PathSplit psParts{ itItem.first };
+        const PathSplit psParts{ suimpRef.first };
         if(psParts.strExt != strExt) return;
         // Lock the mutex and insert into list
         const LockGuard lgLock{ mLock };
@@ -587,7 +589,7 @@ static const StrSet &ArchiveEnumerate(const string &strDir,
 /* -- Extract -------------------------------------------------------------- */
 static FileMap ArchiveExtract(const string &strFile)
 { // Lock archive list so it cannot be modified and iterate through the list
-  UniqueLock arLock{ cArchives->CollectorGetMutex() };
+  UniqueLock ulLock{ cArchives->CollectorGetMutex() };
   // Enumerate each archive from last to first because the latest-most loaded
   // archive should always have priority if multiple archives have the same
   // filename, just like game engines do.
@@ -595,17 +597,17 @@ static FileMap ArchiveExtract(const string &strFile)
                                        cArchIt != cArchives->crend();
                                      ++cArchIt)
   { // Get reference to archive and find file, try next file if file not found
-    Archive &aCref = **cArchIt;
-    const StrUIntMapConstIt flItem{ aCref.GetFileIterator(strFile) };
-    if(!aCref.IsFileIteratorValid(flItem)) continue;
+    Archive &aRef = **cArchIt;
+    const StrUIntMapConstIt suimciIt{ aRef.GetFileIterator(strFile) };
+    if(!aRef.IsFileIteratorValid(suimciIt)) continue;
     // Unlock the mutex because we don't need access to the list anymore
-    arLock.unlock();
+    ulLock.unlock();
     // Try to extract file and return it if succeeded!
-    FileMap fmFile{ aCref.Extract(flItem) };
+    FileMap fmFile{ aRef.Extract(suimciIt) };
     if(fmFile.FileMapOpened()) return fmFile;
     // Something bad happened so relock the mutex and keep trying other
     // archives anyway.
-    arLock.lock();
+    ulLock.lock();
   } // FileMap not found
   return {};
 }
@@ -614,13 +616,13 @@ static const string ArchiveGetNames(void)
 { // Set default archive name if no archives
   if(cArchives->empty()) return {};
   // Get first archive
-  Archives::const_iterator aCptrIt{ cArchives->cbegin() };
+  ArchivesItConst aicIt{ cArchives->cbegin() };
   // Lets build a list of archives
   ostringstream osS;
   // Add first archive name to list
-  osS << (*aCptrIt)->IdentGet();
+  osS << (*aicIt)->IdentGet();
   // Until end of archives add their names prefixed with a space
-  while(++aCptrIt != cArchives->cend()) osS << ' ' << (*aCptrIt)->IdentGet();
+  while(++aicIt != cArchives->cend()) osS << ' ' << (*aicIt)->IdentGet();
   // Return string
   return osS.str();
 }

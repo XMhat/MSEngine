@@ -25,7 +25,7 @@ class Statistic
   struct Head                          // Column data
   { /* --------------------------------------------------------------------- */
     const string   strName;            // Column name
-    JCCallback     jFunc;              // Justification callback function
+    JCCallback     jccFunc;            // Justification callback function
     int            iMaxLen;            // Maximum header length
   };/* --------------------------------------------------------------------- */
   typedef deque<Head> HeadDeque;       // Column header data list
@@ -34,29 +34,29 @@ class Statistic
   StrVector        svValues;           // Values list
   /* -- Format output iterator data without a suffix ----------------------- */
   void ProcValNoSuf(ostringstream &osS, const StrVectorConstIt &svciIt,
-    const Head &ttchD)
-  { osS << ttchD.jFunc << setw(ttchD.iMaxLen) << StdMove(*svciIt); }
+    const Head &hRef)
+  { osS << hRef.jccFunc << setw(hRef.iMaxLen) << StdMove(*svciIt); }
   /* -- Format output iterator data with a suffix -------------------------- */
   void ProcValSuf(ostringstream &osS, const StrVectorConstIt &svciIt,
-    const Head &ttchD, const string &strSuffix)
-  { osS << ttchD.jFunc << setw(ttchD.iMaxLen)
+    const Head &hRef, const string &strSuffix)
+  { osS << hRef.jccFunc << setw(hRef.iMaxLen)
         << StdMove(*svciIt) << strSuffix; }
   /* -- Format empty output data without a suffix -------------------------- */
-  void ProcHdrNoSuf(ostringstream &osS, const Head &ttchD)
-    { osS << ttchD.jFunc << setw(ttchD.iMaxLen) << StdMove(ttchD.strName); }
+  void ProcHdrNoSuf(ostringstream &osS, const Head &hRef)
+    { osS << hRef.jccFunc << setw(hRef.iMaxLen) << StdMove(hRef.strName); }
   /* -- Format empty output data with a suffix ----------------------------- */
-  void ProcHdrSuf(ostringstream &osS, const Head &ttchD,
+  void ProcHdrSuf(ostringstream &osS, const Head &hRef,
     const string &strSuffix)
-  { osS << ttchD.jFunc << setw(ttchD.iMaxLen)
-        << StdMove(ttchD.strName) << strSuffix; }
+  { osS << hRef.jccFunc << setw(hRef.iMaxLen)
+        << StdMove(hRef.strName) << strSuffix; }
   /* -- Used by Finish() which returns the last adjusted header item ------- */
   Head &GetLastHdr(const size_t stHM1)
   { // Get the last header item
-    Head &ttchD = hdHeaders[stHM1];
+    Head &hRef = hdHeaders[stHM1];
     // Set the length to zero if left align is selected
-    if(ttchD.jFunc == left) ttchD.iMaxLen = 0;
+    if(hRef.jccFunc == left) hRef.iMaxLen = 0;
     // Return the iterator
-    return ttchD;
+    return hRef;
   }
   /* -- Finish with existing string stream ------------------------- */ public:
   void Finish(ostringstream &osS, const bool bAddLF=true, const size_t stGap=1)
@@ -89,7 +89,7 @@ class Statistic
       // Get total row count and if we have more than zero rows to print?
       if(size_t stRows = svValues.size() / Headers())
       { // Get last iterator of the penultimate row
-        const StrVectorConstIt vLastRow{
+        const StrVectorConstIt svciLastRowIt{
           prev(svValues.cend(), static_cast<ssize_t>(Headers())) };
         // If we have more than 1 row? Repeat...
         if(stRows > 1) do
@@ -99,7 +99,7 @@ class Statistic
           // Add the last item in row
           ProcValSuf(osS, svciIt, hdHeaders[stHM1], strLF);
         } // ...Until we are at the last row and first header in the last
-        while(++svciIt != vLastRow);
+        while(++svciIt != svciLastRowIt);
         // Proc headers on the last row except the last header item
         for(size_t stHIndex = 0; stHIndex < stHM1; ++stHIndex, ++svciIt)
           ProcValSuf(osS, svciIt, hdHeaders[stHIndex], strGap);
@@ -140,11 +140,11 @@ class Statistic
   { // Return if there are no headers
     if(hdHeaders.empty()) return *this;
     // Get pointer to header data
-    Head &ttchD = hdHeaders[svValues.size() % Headers()];
+    Head &hRef = hdHeaders[svValues.size() % Headers()];
     // Copy the character into the last slot
     svValues.insert(svValues.cend(), { &cCharacter, 1 });
     // Initialise maximum length if not set
-    if(ttchD.iMaxLen <= 0) ttchD.iMaxLen = 1;
+    if(hRef.iMaxLen <= 0) hRef.iMaxLen = 1;
     // Return self so we can daisy chain
     return *this;
   }
@@ -153,14 +153,14 @@ class Statistic
   { // Return if there are no headers
     if(hdHeaders.empty()) return *this;
     // Get pointer to header data
-    Head &ttchD = hdHeaders[svValues.size() % Headers()];
+    Head &hRef = hdHeaders[svValues.size() % Headers()];
     // Copy the value into the last and put the string we inserted into a
     // decoder and get length of the utf8 string
     const int iLength = UtilIntOrMax<int>(
       UtfDecoder{ *svValues.insert(svValues.cend(), cpStr) }.Length());
     // If the length of this value is longer and is not the last header value
     // then set the header longer
-    if(iLength > ttchD.iMaxLen) ttchD.iMaxLen = iLength;
+    if(iLength > hRef.iMaxLen) hRef.iMaxLen = iLength;
     // Return self so we can daisy chain
     return *this;
   }
@@ -169,7 +169,7 @@ class Statistic
   { // Return if there are no headers
     if(hdHeaders.empty()) return *this;
     // Get pointer to header data
-    Head &ttchD = hdHeaders[svValues.size() % Headers()];
+    Head &hRef = hdHeaders[svValues.size() % Headers()];
     // Copy the value into the last and put the string we inserted into a
     // decoder and get length of the utf8 string
     const int iLength = UtilIntOrMax<int>(
@@ -177,23 +177,29 @@ class Statistic
         string{ strvVal }) }.Length());
     // If the length of this value is longer and is not the last header value
     // then set the header longer
-    if(iLength > ttchD.iMaxLen) ttchD.iMaxLen = iLength;
+    if(iLength > hRef.iMaxLen) hRef.iMaxLen = iLength;
     // Return self so we can daisy chain
     return *this;
   }
+  /* -- Appended data ------------------------------------------------------ */
+  template<typename ...VarArgs>Statistic &DataA(const VarArgs &...vaArgs)
+    { return Data(StrAppend(vaArgs...)); }
+  /* -- Formatted data ----------------------------------------------------- */
+  template<typename ...VarArgs>Statistic &DataF(const char*const cpFormat,
+    const VarArgs &...vaArgs) { return Data(StrFormat(cpFormat, vaArgs...)); }
   /* -- Data by read-only lvalue string copy ------------------------------- */
-  Statistic &Data(const string &strVal={})
+  Statistic &Data(const string &strVal=cCommon->Blank())
   { // Return if there are no headers
     if(hdHeaders.empty()) return *this;
     // Get pointer to header data
-    Head &ttchD = hdHeaders[svValues.size() % Headers()];
+    Head &hRef = hdHeaders[svValues.size() % Headers()];
     // Copy the value into the last and put the string we inserted into a
     // decoder and get length of the utf8 string
     const int iLength = UtilIntOrMax<int>(
       UtfDecoder{ *svValues.insert(svValues.cend(), strVal) }.Length());
     // If the length of this value is longer and is not the last header value
     // then set the header longer
-    if(iLength > ttchD.iMaxLen) ttchD.iMaxLen = iLength;
+    if(iLength > hRef.iMaxLen) hRef.iMaxLen = iLength;
     // Return self so we can daisy chain
     return *this;
   }
@@ -205,14 +211,14 @@ class Statistic
   { // Return if there are no headers
     if(hdHeaders.empty()) return *this;
     // Get pointer to header data
-    Head &ttchD = hdHeaders[svValues.size() % Headers()];
+    Head &hRef = hdHeaders[svValues.size() % Headers()];
     // Move the value into the list and put the tring we inserted into
     // a decoder and get length of the utf8 string
     const int iLength = UtilIntOrMax<int>(
       UtfDecoder(*svValues.insert(svValues.cend(), StdMove(strVal))).Length());
     // If the length of this value is longer and is not the last header value
     // then set the header longer
-    if(iLength > ttchD.iMaxLen) ttchD.iMaxLen = iLength;
+    if(iLength > hRef.iMaxLen) hRef.iMaxLen = iLength;
     // Return self so we can daisy chain
     return *this;
   }
@@ -237,26 +243,26 @@ class Statistic
   { // Ignore if no headers, values or both columns the same
     if(hdHeaders.empty() || svValues.empty() || sstColPri == sstColSec) return;
     // Sorting list
-    struct StrRef { StrVectorIt sliRow, sliColPri, sliColSec; };
+    struct StrRef { StrVectorIt sviRowIt, sviColPri, sviColSec; };
     typedef vector<StrRef> StrRefVec;
     StrRefVec srvList;
     srvList.reserve(svValues.size() / Headers());
     // Get headers as ssize_t (prevents signed casting warning).
     const ssize_t sstHeaders = UtilIntOrMax<ssize_t>(Headers());
     // For each value. Add row start iterator and column iterator to list
-    for(StrVectorIt sliRow{ svValues.begin() };
-                    sliRow != svValues.end();
-                    sliRow = next(sliRow, sstHeaders))
-      srvList.push_back({ sliRow, next(sliRow, sstColPri),
-                                  next(sliRow, sstColSec) });
+    for(StrVectorIt sviRowIt{ svValues.begin() };
+                    sviRowIt != svValues.end();
+                    sviRowIt = next(sviRowIt, sstHeaders))
+      srvList.push_back({ sviRowIt, next(sviRowIt, sstColPri),
+                                  next(sviRowIt, sstColSec) });
     // Now enumerate all the primary and secondary columns and sort them
     StdSort(par_unseq, srvList.begin(), srvList.end(), bDescending ?
       [](const StrRef &srRow1, const StrRef &srRow2)
       { // Cache primary and secondary string refs of each column
-        const string &strRow1Pri = *srRow1.sliColPri,
-                     &strRow1Sec = *srRow1.sliColSec,
-                     &strRow2Pri = *srRow2.sliColPri,
-                     &strRow2Sec = *srRow2.sliColSec;
+        const string &strRow1Pri = *srRow1.sviColPri,
+                     &strRow1Sec = *srRow1.sviColSec,
+                     &strRow2Pri = *srRow2.sviColPri,
+                     &strRow2Sec = *srRow2.sviColSec;
         // Return if primary greater, or equal and secondary is greater
         return strRow1Pri > strRow2Pri ||
               (strRow1Pri == strRow2Pri &&
@@ -264,10 +270,10 @@ class Statistic
       } :
       [](const StrRef &srRow1, const StrRef &srRow2)
       {  // Cache primary and secondary string refs of each column
-        const string &strRow1Pri = *srRow1.sliColPri,
-                     &strRow1Sec = *srRow1.sliColSec,
-                     &strRow2Pri = *srRow2.sliColPri,
-                     &strRow2Sec = *srRow2.sliColSec;
+        const string &strRow1Pri = *srRow1.sviColPri,
+                     &strRow1Sec = *srRow1.sviColSec,
+                     &strRow2Pri = *srRow2.sviColPri,
+                     &strRow2Sec = *srRow2.sviColSec;
         // Return if primary lesser, or equal and secondary is lesser
         return strRow1Pri < strRow2Pri ||
               (strRow1Pri == strRow2Pri &&
@@ -277,11 +283,11 @@ class Statistic
     StrVector svValuesNew;
     svValuesNew.reserve(svValues.size());
     for(const StrRef &srRow : srvList)
-      for(StrVectorIt sliCol{ srRow.sliRow },
-                      sliColEnd{ next(sliCol, sstHeaders) };
-                      sliCol != sliColEnd;
-                    ++sliCol)
-        svValuesNew.emplace_back(StdMove(*sliCol));
+      for(StrVectorIt sviColIt{ srRow.sviRowIt },
+                      sviColEnd{ next(sviColIt, sstHeaders) };
+                      sviColIt != sviColEnd;
+                    ++sviColIt)
+        svValuesNew.emplace_back(StdMove(*sviColIt));
     // Swap new list with old one
     svValues.swap(svValuesNew);
   }
@@ -290,32 +296,32 @@ class Statistic
   { // Ignore if no headers or values
     if(hdHeaders.empty() || svValues.empty()) return;
     // Sorting list
-    struct StrRef { StrVectorIt sliRow, sliCol; };
+    struct StrRef { StrVectorIt sviRowIt, sviColIt; };
     typedef vector<StrRef> StrRefVec;
     StrRefVec srvList;
     srvList.reserve(svValues.size() / Headers());
     // Get headers as ssize_t (prevents signed casting warning).
     const ssize_t sstHeaders = UtilIntOrMax<ssize_t>(Headers());
     // For each value. Add row start iterator and column iterator to list
-    for(StrVectorIt sliRow{ svValues.begin() };
-                   sliRow != svValues.end();
-                   sliRow = next(sliRow, sstHeaders))
-      srvList.push_back({ sliRow, next(sliRow, sstColumn) });
+    for(StrVectorIt sviRowIt{ svValues.begin() };
+                    sviRowIt != svValues.end();
+                    sviRowIt = next(sviRowIt, sstHeaders))
+      srvList.push_back({ sviRowIt, next(sviRowIt, sstColumn) });
     // Now enumerate all the primary columns and sort them
     StdSort(par_unseq, srvList.begin(), srvList.end(), bDescending ?
       [](const StrRef &srRow1, const StrRef &srRow2)
-        { return *srRow1.sliCol > *srRow2.sliCol; } :
+        { return *srRow1.sviColIt > *srRow2.sviColIt; } :
       [](const StrRef &srRow1, const StrRef &srRow2)
-        { return *srRow1.sliCol < *srRow2.sliCol; });
+        { return *srRow1.sviColIt < *srRow2.sviColIt; });
     // Now we have the sorted list we can rebuilding the new list
     StrVector svValuesNew;
     svValuesNew.reserve(svValues.size());
     for(const StrRef &srRow : srvList)
-      for(StrVectorIt sliCol{ srRow.sliRow },
-                      sliColEnd{ next(sliCol, sstHeaders) };
-                      sliCol != sliColEnd;
-                    ++sliCol)
-        svValuesNew.emplace_back(StdMove(*sliCol));
+      for(StrVectorIt sviColIt{ srRow.sviRowIt },
+                      sviColEnd{ next(sviColIt, sstHeaders) };
+                      sviColIt != sviColEnd;
+                    ++sviColIt)
+        svValuesNew.emplace_back(StdMove(*sviColIt));
     // Swap new list with old one
     svValues.swap(svValuesNew);
   }
@@ -330,7 +336,7 @@ class Statistic
     return *this;
   }
   /* -- Add an empty header ------------------------------------------------ */
-  Statistic &Header(const string &strH={}, const size_t stL=0)
+  Statistic &Header(const string &strH=cCommon->Blank(), const size_t stL=0)
     { return Header(strH, !hdHeaders.empty(), stL); }
   /* -- Add data by pointer ------------------------------------------------ */
   Statistic &DataV(const void*const vpAddr) { return Data(StrAppend(vpAddr)); }
@@ -338,7 +344,7 @@ class Statistic
   Statistic(void) { }
 };/* ----------------------------------------------------------------------- */
 /* == Stat object collector and object class =============================== */
-BEGIN_COLLECTORDUO(Stats, Stat, CLHelperUnsafe, ICHelperUnsafe),
+CTOR_BEGIN_DUO(Stats, Stat, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
   public Lockable,                     // Lua garbage collect instruction
   public Ident,                        // Identifier
@@ -353,7 +359,7 @@ BEGIN_COLLECTORDUO(Stats, Stat, CLHelperUnsafe, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Stat)                // No copy constructors
 };/* ----------------------------------------------------------------------- */
-END_COLLECTOR(Stats)                   // End of stat objects collector
+CTOR_END_NOINITS(Stats)                // End of stat objects collector
 /* ------------------------------------------------------------------------- */
 };                                     // End of private module namespace
 /* ------------------------------------------------------------------------- */

@@ -18,9 +18,9 @@ using namespace ISysUtil::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* -- Pcm formats collector class as a vector for direct access ------------ */
-BEGIN_CUSTCTR_COLLECTOR(PcmLibs, PcmLib, vector, CLHelperUnsafe)
+CTOR_BEGIN_CUSTCTR(PcmLibs, PcmLib, vector, CLHelperUnsafe)
 /* -- Pcm format object class ---------------------------------------------- */
-BEGIN_MEMBERCLASS(PcmLibs, PcmLib, ICHelperUnsafe)
+CTOR_MEM_BEGIN_CSLAVE(PcmLibs, PcmLib, ICHelperUnsafe)
 { /* -- Typedefs -------------------------------------------------- */ private:
   typedef bool (&CBLFunc)(FileMap&, PcmData&);
   typedef bool (&CBSFunc)(const FStream&, const PcmData&);
@@ -71,14 +71,10 @@ BEGIN_MEMBERCLASS(PcmLibs, PcmLib, ICHelperUnsafe)
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(PcmLib)              // Omit copy constructor for safety
 };/* -- End of objects collector (reserve and set limit for formats) ------- */
-END_COLLECTOREX(PcmLibs, reserve(PFMT_MAX); CollectorSetLimit(PFMT_MAX),)
+CTOR_END(PcmLibs, reserve(PFMT_MAX); CollectorSetLimit(PFMT_MAX),)
 /* -- Load audio using a specific type ------------------------------------- */
 static void PcmLoadFile(const PcmFormat pfId, FileMap &fmData, PcmData &pdData)
-{ // Ignore if plugin is invalid
-  if(pfId >= cPcmLibs->size())
-    XC("Invalid format!", "Identifier", fmData.IdentGet(), "FormatId", pfId,
-                          "Maximum",    cPcmLibs->size());
-  // Get plugin class. We already checked if the index was valid
+{ // Get plugin class. We already checked if the index was valid
   const PcmLib &plRef = *cPcmLibs->at(pfId);
   // Capture exceptions
   try

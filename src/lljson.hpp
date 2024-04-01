@@ -58,6 +58,12 @@ LLFUNCEX(ToHRFile, 1, LCPUSHVAR(LCGETPTR(1, Json)->
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(ToTable, 1, LCGETPTR(1, Json)->ToLuaTable(lS));
 /* ========================================================================= */
+// $ Json:Id
+// < Id:integer=The id number of the Json object.
+// ? Returns the unique id of the Json object.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(Id, 1, LCPUSHVAR(LCGETPTR(1, Json)->CtrGet()));
+/* ========================================================================= */
 // $ Json:Name
 // < Name:string=Name of the json.
 // ? If this json was loaded by a filename or it was set with a custom id.
@@ -77,9 +83,9 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Json));
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Json:* member functions begin
-  LLRSFUNC(Destroy),  LLRSFUNC(Name),       LLRSFUNC(ToTable),
-  LLRSFUNC(ToString), LLRSFUNC(ToHRString), LLRSFUNC(ToFile),
-  LLRSFUNC(ToHRFile),
+  LLRSFUNC(Destroy), LLRSFUNC(Id),       LLRSFUNC(Name),
+  LLRSFUNC(ToTable), LLRSFUNC(ToString), LLRSFUNC(ToHRString),
+  LLRSFUNC(ToFile),  LLRSFUNC(ToHRFile),
 LLRSEND                                // Json:* member functions end
 /* ========================================================================= */
 // $ Json.File

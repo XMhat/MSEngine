@@ -195,8 +195,8 @@ LLFUNCEX(GetIPAddressEx, 1,
   LCPUSHVAR(LCGETPTR(1, Socket)->GetIPAddressAndPortSafe()));
 /* ========================================================================= */
 // $ Socket:GetId
-// < Id:integer=The id of the socket.
-// ? Returns the unique id of the socket.
+// < Id:integer=The id of the Socket object.
+// ? Returns the unique id of the Socket object.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(GetId, 1, LCPUSHVAR(LCGETPTR(1, Socket)->CtrGet()));
 /* ========================================================================= */

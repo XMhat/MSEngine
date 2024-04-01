@@ -48,8 +48,8 @@ struct FboCmd                          // Render command structure
   const GLvoid*const vpCOffset;        // - Colour buffer offset
   const GLsizei      uiVertices;       // Total vertices to draw
 };/* -- Commands ----------------------------------------------------------- */
-typedef vector<FboCmd>             FboCmdList;   // Render command list
-typedef FboCmdList::const_iterator FboCmdListIt; // " iterator
+typedef vector<FboCmd>            FboCmdVec;         // Render command list
+typedef FboCmdVec::const_iterator FboCmdVecConstInt; // " const iterator
 /* -- Single point data ---------------------------------------------------- */
 typedef array<GLfloat,stCompsPerCoord>  TriCoord;  // Coord data in triangle
 typedef array<GLfloat,stCompsPerPos>    TriVertex; // Position in triangle
@@ -73,8 +73,8 @@ struct FboVert                         // Formatted data for OpenGL
 ** +-- Single interlaced triangle --+- T(Vec2)=Texcoord(XY) -+-----+-----+-- **
 ** + TTVVCCCC | TTVVCCCC | TTVVCCCC |  V(Vec2)=Vertex(XY)    | ... | ... |   **
 ** +----------+----------+----------+- C(Vec4)=Colour(RGBA) -+-----+-----+-- */
-typedef array<FboVert,stVertexPerTriangle> FboTri;     // All triangles data
-typedef vector<FboTri>                   FboTriList; // Render triangles list
+typedef array<FboVert,stVertexPerTriangle> FboTri; // All triangles data
+typedef vector<FboTri>                 FboTriVec;  // Render triangles list
 /* == Fbo colour class ===================================================== */
 class FboColour                        // Members initially private
 { /* -- Private typedefs --------------------------------------------------- */
@@ -372,7 +372,7 @@ struct FboRenderItem :                 // Rendering item data class
   /* -- Base classes ------------------------------------------------------- */
   public FboColour,                    // Clear colour of the fbo
   public FboBlend,                     // Blend mode of the fbo
-  public FboFloatCoords,               // Ortho co-ordinates of the fbo
+  public FboFloatCoords,               // Matrix co-ordinates of the fbo
   public DimGLInt                      // Fbo dimensions
 { /* ----------------------------------------------------------------------- */
   GLuint           uiFBO;              // Fbo name

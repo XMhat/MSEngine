@@ -42,14 +42,14 @@ enum ValidType : unsigned int          // Types for ValidName()
 static const class DirBase final       // Members initially private
 { /* ----------------------------------------------------------------------- */
   typedef IdList<VR_MAX> VRList;       // List of ValidName strings typedef
-  const VRList     vrStrings;          // " container
+  const VRList     vrlStrings;         // " container
   /* -- Convert a valid result from ValidName to string ------------ */ public:
   const string_view &VNRtoStr(const ValidResult vrId) const
-    { return vrStrings.Get(vrId); }
+    { return vrlStrings.Get(vrId); }
   /* -- Default constructor ------------------------------------------------ */
   DirBase(void) :                      // No parameters
     /* -- Initialisers ----------------------------------------------------- */
-    vrStrings{{                        // Init ValidNameResult strings
+    vrlStrings{{                       // Init ValidNameResult strings
       "Pathname is valid",         /*0001*/ "Empty pathname",
       "Pathname too long",         /*0203*/ "Root directory not allowed",
       "Drive letter not allowed",  /*0405*/ "Invalid drive letter",
@@ -117,7 +117,7 @@ static ValidResult DirValidName(const string &strName,
         // If we have a length of 2 or more?
         if(strFirst.length() > 1)
         { // No parent directory or drive letter allowed
-          if(strFirst == "..") return VR_PARENT;
+          if(strFirst == cCommon->TwoPeriod()) return VR_PARENT;
           if(strFirst[1] == ':') return VR_NODRIVE;
         } // Test all the characters in the first string
         if(!DirIsValidPathPartCharacters(strFirst)) return VR_INVCHAR;
@@ -130,7 +130,7 @@ static ValidResult DirValidName(const string &strName,
           const string &strPart = *svciPart;
           // Not allowed to be empty or parent directory
           if(strPart.empty()) return VR_DPRS;
-          if(strPart == "..") return VR_PARENT;
+          if(strPart == cCommon->TwoPeriod()) return VR_PARENT;
           // Failed first character is an invalid character.
           if(!DirIsValidPathPartCharacters(strPart)) return VR_INVCHAR;
         } // Success
@@ -173,60 +173,126 @@ static ValidResult DirValidName(const string &strName,
     default: return VR_INVALID;
   }
 }
-/* -- DirFile class -------------------------------------------------------- */
-class DirFile                          // Files container class
-{ /* -- Public typedefs -------------------------------------------- */ public:
-  struct Item                          // File information structure
-  { /* --------------------------------------------------------------------- */
-    StdTimeT       tCreate,            // File creation time
+/* -- Public typedefs ------------------------------------------------------ */
+class DirItem                          // File information structure
+{ /* ----------------------------------------------------------------------- */
+  StdTimeT         tCreate,            // File creation time
                    tAccess,            // File access time
                    tWrite;             // File modification time
-    uint64_t       qSize,              // File size
-                   qFlags;             // Attributes (OS specific)
-  };/* --------------------------------------------------------------------- */
-  typedef map<const string, const Item> EntMap;   // map of file entries
-  typedef EntMap::const_iterator        EntMapIt; // " iterator
-  /* -- Public variables --------------------------------------------------- */
-  EntMap           dDirs, dFiles;      // Directories and files list
+  uint64_t         uqSize,             // File size
+                   uqFlags;            // Attributes (OS specific)
+  /* -- Set members --------------------------------------------- */ protected:
+  void Set(const StdTimeT tNCreate, const StdTimeT tNAccess,
+    const StdTimeT tNWrite, const uint64_t uqNSize, const uint64_t uqNFlags)
+      { tCreate = tNCreate; tAccess = tNAccess; tWrite = tNWrite;
+          uqSize = uqNSize; uqFlags = uqNFlags; }
+  /* -- Clear members ------------------------------------------------------ */
+  void Clear(void) { tCreate = tAccess = tWrite = 0; uqSize = uqFlags = 0; }
+  /* -- Get members ------------------------------------------------ */ public:
+  StdTimeT Created(void) const { return tCreate; }
+  StdTimeT Accessed(void) const { return tAccess; }
+  StdTimeT Written(void) const { return tWrite; }
+  uint64_t Size(void) const { return uqSize; }
+  uint64_t Attributes(void) const { return uqFlags; }
+  /* -- Default constructor ------------------------------------------------ */
+  DirItem(void) :
+    /* -- Initialisers ----------------------------------------------------- */
+    tCreate(0),                        // Clear file creation time
+    tAccess(0),                        // Clear file access time
+    tWrite(0),                         // Clear file modification time
+    uqSize(0),                         // Clear file size
+    uqFlags(0)                         // Clear file attributes
+    /* -- No code ---------------------------------------------------------- */
+    { }
+  /* -- Copy constructor --------------------------------------------------- */
+  DirItem(const DirItem &diOther) :
+    /* -- Initialisers ----------------------------------------------------- */
+    DirItem{ diOther.Created(), diOther.Accessed(), diOther.Written(),
+             diOther.Size(), diOther.Attributes() }
+    /* -- No code ---------------------------------------------------------- */
+    { }
+  /* -- Assignment operator ------------------------------------------------ */
+  DirItem operator=                    // cppcheck-suppress operatorEqVarError
+    (const DirItem &diRHS) const       // False positive as copy ctor used
+      { return diRHS; }                // Thinks 'uqSize' is not initialised
+  /* ----------------------------------------------------------------------- */
+  DirItem(const StdTimeT tNCreate, const StdTimeT tNAccess,
+    const StdTimeT tNWrite, const uint64_t uqNSize, const uint64_t uqNFlags) :
+    /* -- Initialisers ----------------------------------------------------- */
+    tCreate(tNCreate),                 // Initialise file creation time
+    tAccess(tNAccess),                 // Initialise file access time
+    tWrite(tNWrite),                   // Initialise file modification time
+    uqSize(uqNSize),                   // Initialise file size
+    uqFlags(uqNFlags)                  // Initialise file attributes
+    /* -- No code ---------------------------------------------------------- */
+    { }
+};/* ----------------------------------------------------------------------- */
+MAPPACK_BUILD(DirEnt, const string, const DirItem) // Build DirItem map types
+/* -- DirFile class -------------------------------------------------------- */
+class DirFile                          // Files container class
+{ /* -- Public variables --------------------------------------------------- */
+  DirEntMap        demDirs, demFiles;  // Directories and files list
   /* -- Export ------------------------------------------------------------- */
-  const StrSet Export(const EntMap &dSrc) const
+  const StrSet Export(const DirEntMap &dSrc) const
   { // Write entries into a single set list and return it
     StrSet ssFiles;
-    for(const auto &dFile : dSrc) ssFiles.emplace(StdMove(dFile.first));
+    for(const DirEntMapPair &dempFile : dSrc)
+      ssFiles.emplace(StdMove(dempFile.first));
     return ssFiles;
   }
-  /* -- Convert to set ----------------------------------------------------- */
-  const StrSet DirsToSet(void) const { return Export(dDirs); }
-  const StrSet FilesToSet(void) const { return Export(dFiles); }
-  /* -- Empty constructor -------------------------------------------------- */
+  /* -- Convert to set --------------------------------------------- */ public:
+  const StrSet DirsToSet(void) const { return Export(demDirs); }
+  const StrSet FilesToSet(void) const { return Export(demFiles); }
+  /* -- Get lists ---------------------------------------------------------- */
+  const DirEntMap &GetDirs(void) const { return demDirs; }
+  const DirEntMap &GetFiles(void) const { return demFiles; }
+  /* -- Get lists iterators ------------------------------------------------ */
+  const DirEntMapConstIt GetDirsBegin(void) const
+    { return GetDirs().cbegin(); }
+  const DirEntMapConstIt GetFilesBegin(void) const
+    { return GetFiles().cbegin(); }
+  const DirEntMapConstIt GetDirsEnd(void) const
+    { return GetDirs().cend(); }
+  const DirEntMapConstIt GetFilesEnd(void) const
+    { return GetFiles().cend(); }
+  /* -- Get elements in lists ---------------------------------------------- */
+  size_t GetDirsSize(void) const { return GetDirs().size(); }
+  size_t GetFilesSize(void) const { return GetFiles().size(); }
+  /* -- Get if lists are empty or not -------------------------------------- */
+  bool IsDirsEmpty(void) const { return GetDirs().empty(); }
+  bool IsDirsNotEmpty(void) const { return !IsDirsEmpty(); }
+  bool IsFilesEmpty(void) const { return GetFiles().empty(); }
+  bool IsFilesNotEmpty(void) const { return !IsFilesEmpty(); }
+  /* -- Default constructor ------------------------------------------------ */
   DirFile(void) { }
   /* -- Move constructor --------------------------------------------------- */
-  DirFile(EntMap &&dD, EntMap &&dF) :
+  DirFile(DirEntMap &&demNDirs, DirEntMap &&demNFiles) :
     /* -- Initialisers ----------------------------------------------------- */
-    dDirs{ StdMove(dD) },
-    dFiles{ StdMove(dF) }
+    demDirs{ StdMove(demNDirs) },
+    demFiles{ StdMove(demNFiles) }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Move constructor --------------------------------------------------- */
-  DirFile(DirFile &&dflOther) :
+  DirFile(DirFile &&dfOther) :
     /* -- Initialisers ----------------------------------------------------- */
-    dDirs{ StdMove(dflOther.dDirs) },
-    dFiles{ StdMove(dflOther.dFiles) }
+    demDirs{ StdMove(dfOther.demDirs) },
+    demFiles{ StdMove(dfOther.demFiles) }
     /* -- No code ---------------------------------------------------------- */
     { }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(DirFile)             // Disable copy constructor and operator
 };/* -- DirCore class ------------------------------------------------------ */
-class DirCore                          // System specific implementation
+class DirCore :                        // System specific implementation
+  /* -- Base classes ------------------------------------------------------- */
+  public DirItem                       // Current item information
 { /* -- Variables -------------------------------------------------- */ public:
   string           strFile;            // Name of next file
-  DirFile::Item    dItem;              // Current item information
   bool             bIsDir;             // Current item is a directory
   /* -- Setup implementation for WIN32 ------------------------------------- */
 #if defined(WINDOWS)                   // WIN32 implementation
   /* -- Variables for WIN32 system -------------------------------- */ private:
   _wfinddata64_t   wfData;             // Data returned
-  const intptr_t   iH;                 // Context handle
+  const intptr_t   iHandle;            // Context handle
   bool             bMore;              // If we have more files
   /* -- Process current match ---------------------------------------------- */
   void ProcessItem(void)
@@ -235,14 +301,13 @@ class DirCore                          // System specific implementation
     // Set filename
     strFile = S16toUTF(wfData.name);
     // Set file information
-    dItem = { wfData.time_create, wfData.time_access,
-              wfData.time_write, static_cast<uint64_t>(wfData.size),
-              wfData.attrib };
+    Set(wfData.time_create, wfData.time_access, wfData.time_write,
+      static_cast<uint64_t>(wfData.size), wfData.attrib);
     // Get next item
-    bMore = _wfindnext64(iH, &wfData) != -1;
+    bMore = _wfindnext64(iHandle, &wfData) != -1;
   }
   /* -- Return if directory was opened on WIN32 system ------------- */ public:
-  bool IsOpened(void) const { return iH != -1; }
+  bool IsOpened(void) const { return iHandle != -1; }
   /* -- Prepare next file for WIN32 system --------------------------------- */
   bool GetNextFile(void)
   { // If there are no more files then we are done
@@ -255,32 +320,33 @@ class DirCore                          // System specific implementation
   /* -- Constructor for WIN32 system --------------------------------------- */
   explicit DirCore(const string &strDir) :
     /* -- Initialisers ----------------------------------------------------- */
-    iH(_wfindfirst64(UTFtoS16(strDir.empty() ? "*" :
+    iHandle(_wfindfirst64(UTFtoS16(strDir.empty() ? "*" :
       StrAppend(StrTrim(strDir, '/'), "/*")).c_str(), &wfData)),
-    bMore(iH != -1)
+    bMore(iHandle != -1)
     /* -- Process file if there are more ----------------------------------- */
     { if(bMore) ProcessItem(); }
   /* -- Destructor for WIN32 system ---------------------------------------- */
-  ~DirCore(void) { if(iH != -1) _findclose(iH); }
+  ~DirCore(void) { if(iHandle != -1) _findclose(iHandle); }
   /* ----------------------------------------------------------------------- */
 #elif defined(MACOS)                   // Must use readdir_r on OSX
   /* -- Private typedefs ------------------------------------------ */ private:
   // This handle will be cleaned up by closedir() when it goes out of scope!
   typedef unique_ptr<DIR, function<decltype(closedir)>> DirUPtr;
   /* -- Private variables -------------------------------------------------- */
-  DirUPtr         dData;               // Context for opendir()
-  string          strPrefix;           // Prefix for filenames with stat()
-  struct dirent   dPtr, *dPtrNext;     // Directory entry struct + next ptr
+  const string    strPrefix;           // Prefix for filenames with stat()
+  DirUPtr         dupHandle;           // Context for opendir()
+  struct dirent   dePtr, *dePtrNext;   // Directory entry struct + next ptr
   /* -- Return if directory was opened on POSIX system ------------- */ public:
-  bool IsOpened(void) const { return !!dData; }
+  bool IsOpened(void) const { return !!dupHandle; }
   /* -- Prepare next file for POSIX system --------------------------------- */
   bool GetNextFile(void)
   { // Read the filename and if failed
-    if(readdir_r(dData.get(), &dPtr, &dPtrNext) || !dPtrNext) return false;
+    if(readdir_r(dupHandle.get(), &dePtr, &dePtrNext) || !dePtrNext)
+      return false;
     // Set filename
-    strFile = dPtr.d_name;
+    strFile = dePtr.d_name;
     // Set next handle
-    dPtrNext = &dPtr;
+    dePtrNext = &dePtr;
     // Data for stat
     struct stat sfssData;
     // Get information about the filename
@@ -288,59 +354,67 @@ class DirCore                          // System specific implementation
     { // Not a directory (unknown)
       bIsDir = false;
       // Set the file data as blank
-      dItem = { 0, 0, 0, 0, 0 };
+      Clear();
     } // Stat was successful?
     else
     { // Set if is directory
       bIsDir = S_ISDIR(sfssData.st_mode);
       // Set data
-      dItem = { sfssData.st_ctime, sfssData.st_atime, sfssData.st_mtime,
-        static_cast<uint64_t>(sfssData.st_size), sfssData.st_mode };
+      Set(sfssData.st_ctime, sfssData.st_atime, sfssData.st_mtime,
+        static_cast<uint64_t>(sfssData.st_size), sfssData.st_mode);
     } // Success
     return true;
   }
   /* -- Constructor for POSIX system --------------------------------------- */
   explicit DirCore(const string &strDir) :
     /* -- Initialisers ----------------------------------------------------- */
-    dData{ opendir(StrTrim(strDir.empty() ? "." : strDir, '/').c_str()),
-      closedir },
-    dPtrNext{ &dPtr }
+    strPrefix{ StrAppend(              // Initialise string prefix
+      strDir.empty() ?                 // If requested directory is empty?
+        cCommon->Period() :            // Set to scan current directory
+        StrTrim(strDir, '/'),          // Use specified but trim slashes
+      cCommon->FSlash()) },            // Add our own slash at the end
+    dupHandle{                         // Initialise directory handle
+      opendir(strPrefix.c_str()),      // Open the directory
+      closedir },                      // Close on class destruction
+    dePtr{},                           // Clear last directory entry
+    dePtrNext{ &dePtr }                // Set last directory entry
     /* -- Initialise directory handle -------------------------------------- */
     { // Return if we could not open the directory
-      if(!dData) return;
-      // Prepare prefix for filenames to state
-      strPrefix = StrAppend(strDir, '/');
-      // Prepare the first filename and reset handle if failed
-      if(!GetNextFile()) dData.reset();
+      if(!dupHandle) return;
+      // Unload and clear the directory handle if no first file
+      if(!GetNextFile()) dupHandle.reset();
     }
   /* ----------------------------------------------------------------------- */
 #else                                  // POSIX implementation?
-  /* -- Private variables ----------------------------------------- */ private:
-  DIR            *dData;               // Context for opendir()
-  string          strPrefix;           // Prefix for filenames with stat()
+  /* -- Private typedefs ------------------------------------------ */ private:
+  // This handle will be cleaned up by closedir() when it goes out of scope!
+  typedef unique_ptr<DIR, function<decltype(closedir)>> DirUPtr;
+  /* -- Private variables -------------------------------------------------- */
+  const string    strPrefix;           // Prefix for filenames with stat()
+  DirUPtr         dupHandle;           // Context for opendir()
   /* -- Return if directory was opened on POSIX system ------------- */ public:
-  bool IsOpened(void) const { return !!dData; }
+  bool IsOpened(void) const { return !!dupHandle; }
   /* -- Prepare next file for POSIX system --------------------------------- */
   bool GetNextFile(void)
   { // Read the filename and if failed
-    if(struct dirent*const dPtr = readdir(dData))
+    if(dirent*const dePtr = readdir(dupHandle.get()))
     { // Data for stat
       struct stat sfssData;
       // Set filename
-      strFile = dPtr->d_name;
+      strFile = dePtr->d_name;
       // Get information about the filename
       if(stat(StrAppend(strPrefix, strFile).c_str(), &sfssData) == -1)
       { // Not a directory (unknown)
         bIsDir = false;
         // Set the file data as blank
-        dItem = { 0, 0, 0, 0, 0 };
+        Clear();
       } // Stat was successful?
       else
       { // Set if is directory
         bIsDir = S_ISDIR(sfssData.st_mode);
         // Set data
-        dItem = { sfssData.st_ctime, sfssData.st_atime, sfssData.st_mtime,
-          static_cast<uint64_t>(sfssData.st_size), sfssData.st_mode };
+        Set(sfssData.st_ctime, sfssData.st_atime, sfssData.st_mtime,
+          static_cast<uint64_t>(sfssData.st_size), sfssData.st_mode);
       } // Success
       return true;
     } // Failed
@@ -349,21 +423,18 @@ class DirCore                          // System specific implementation
   /* -- Constructor for POSIX system --------------------------------------- */
   explicit DirCore(const string &strDir) :
     /* -- Initialisers ----------------------------------------------------- */
-    dData{ opendir(StrTrim(strDir.empty() ? "." : strDir, '/').c_str()) }
+    strPrefix{ StrAppend(              // Initialise string prefix
+      strDir.empty() ?                 // If requested directory is empty?
+        cCommon->Period() :            // Set to scan current directory
+        StrTrim(strDir, '/'),          // Use specified but trim slashes
+      cCommon->FSlash()) },            // Add our own slash at the end
+    dupHandle{                         // Initialise directory handle
+      opendir(strPrefix.c_str()),      // Open the directory
+      closedir }                       // Close on class destruction
     /* -- Initialise directory handle -------------------------------------- */
-    { // Return if we could not open the directory
-      if(!dData) return;
-      // Prepare prefix for filenames to state
-      strPrefix = StrAppend(strDir, '/');
-      // Prepare the first filename and return if succeeded
-      if(GetNextFile()) return;
-      // Close the directory
-      closedir(dData);
-      // Failed for IsOpened
-      dData = nullptr;
+    { // Unload and clear the directory handle if no first file
+      if(dupHandle.get() && !GetNextFile()) dupHandle.reset();
     }
-  /* -- Destructor for POSIX system ---------------------------------------- */
-  ~DirCore(void) { if(dData) closedir(dData); }
   /* ----------------------------------------------------------------------- */
 #endif                                 // End of system implementation check
   /* ----------------------------------------------------------------------- */
@@ -373,21 +444,21 @@ class Dir :                            // Directory information class
   /* -- Base classes ------------------------------------------------------- */
   public DirFile                       // Files container class
 { /* -- Do scan --------------------------------------------------- */ private:
-  static void RemoveEntry(DirFile::EntMap &dfemMap, const char*const cpEntry)
+  static void RemoveEntry(DirEntMap &dfemMap, const string &strEntry)
   { // Remove specified entry
-    const DirFile::EntMapIt dfemiIt{ dfemMap.find(cpEntry) };
-    if(dfemiIt != dfemMap.cend()) dfemMap.erase(dfemiIt);
+    const DirEntMapIt demiIt{ dfemMap.find(strEntry) };
+    if(demiIt != dfemMap.cend()) dfemMap.erase(demiIt);
   }
   /* -- Remove current and parent directory entries ------------------------ */
-  static void RemoveParentAndCurrentDirectory(DirFile::EntMap &dfemMap)
+  static void RemoveParentAndCurrentDirectory(DirEntMap &dfemMap)
   { // Remove "." and ".." current directory entries
-    RemoveEntry(dfemMap, ".");
-    RemoveEntry(dfemMap, "..");
+    RemoveEntry(dfemMap, cCommon->Period());
+    RemoveEntry(dfemMap, cCommon->TwoPeriod());
   }
   /* -- Scan with no match checking ---------------------------------------- */
-  static DirFile ScanDir(const string &strDir={})
+  static DirFile ScanDir(const string &strDir=cCommon->Blank())
   { // Directory and file list
-    DirFile::EntMap dfemDirs, dfemFiles;
+    DirEntMap demNDirs, demNFiles;
     // Load up the specification and return if failed
     DirCore dcInterface{ strDir };
     if(dcInterface.IsOpened())
@@ -395,22 +466,20 @@ class Dir :                            // Directory information class
       do
       { // Add directory if is a directory
         if(dcInterface.bIsDir)
-          dfemDirs.insert({ StdMove(dcInterface.strFile),
-                            StdMove(dcInterface.dItem) });
+          demNDirs.insert({ StdMove(dcInterface.strFile), dcInterface });
         // Insert into files list
-        else dfemFiles.insert({ StdMove(dcInterface.strFile),
-                                StdMove(dcInterface.dItem) });
+        else demNFiles.insert({ StdMove(dcInterface.strFile), dcInterface });
         // ...until no more entries
       } while(dcInterface.GetNextFile());
       // Remove '.' and '..' entries
-      RemoveParentAndCurrentDirectory(dfemDirs);
+      RemoveParentAndCurrentDirectory(demNDirs);
     } // Return list of files and directories
-    return { StdMove(dfemDirs), StdMove(dfemFiles) };
+    return { StdMove(demNDirs), StdMove(demNFiles) };
   }
   /* -- Scan with match checking ------------------------------------------- */
   static DirFile ScanDirExt(const string &strDir, const string &strExt)
   { // Directory and file list
-    DirFile::EntMap dfemDirs, dfemFiles;
+    DirEntMap demNDirs, demNFiles;
     // Load up the specification and return if failed
     DirCore dcInterface{ strDir };
     if(dcInterface.IsOpened())
@@ -418,44 +487,27 @@ class Dir :                            // Directory information class
       do
       { // Add directory if is a directory
         if(dcInterface.bIsDir)
-          dfemDirs.insert({ StdMove(dcInterface.strFile),
-                            StdMove(dcInterface.dItem) });
+          demNDirs.insert({ StdMove(dcInterface.strFile), dcInterface });
         // Is a file and extension doesn't match? Ignore it
         else if(PathSplit{ dcInterface.strFile }.strExt != strExt) continue;
         // Insert into files list
-        else dfemFiles.insert({ StdMove(dcInterface.strFile),
-                                StdMove(dcInterface.dItem) });
+        else demNFiles.insert({ StdMove(dcInterface.strFile), dcInterface });
         // ...until no more entries
       } while(dcInterface.GetNextFile());
       // Remove '.' and '..' entries
-      RemoveParentAndCurrentDirectory(dfemDirs);
+      RemoveParentAndCurrentDirectory(demNDirs);
     } // Return list of files and directories
-    return { StdMove(dfemDirs), StdMove(dfemFiles) };
+    return { StdMove(demNDirs), StdMove(demNFiles) };
   }
-  /* -- Constructor of current directory without safety --------- */ protected:
-  explicit Dir(DirFile &&dfList) :
-    /* -- Initialisers ----------------------------------------------------- */
-    DirFile{ StdMove(dfList) }
-    /* -- No code ---------------------------------------------------------- */
-    { }
-  /* -- Constructor of current directory without safety ------------ */ public:
-  Dir(void) :
-    /* -- Initialisers ----------------------------------------------------- */
-    DirFile{ ScanDir() }
-    /* -- No code ---------------------------------------------------------- */
-    { }
-  /* -- Constructor of specified directory without safety ------------------ */
-  explicit Dir(const string &strDir) :
-    /* -- Initialisers ----------------------------------------------------- */
-    DirFile{ ScanDir(strDir) }
-    /* -- No code ---------------------------------------------------------- */
-    { }
-  /* -- Constructor of specified dir without safety and file matching ------ */
+  /* -- Constructor of current directory ------------------------ */ protected:
+  explicit Dir(DirFile &&dfOther) : DirFile{ StdMove(dfOther) } { }
+  /* -- Constructor of current directory --------------------------- */ public:
+  Dir(void) : DirFile{ ScanDir() } { }
+  /* -- Constructor of specified directory --------------------------------- */
+  explicit Dir(const string &strDir) : DirFile{ ScanDir(strDir) } { }
+  /* -- Scan specified directory for files with specified extension -------- */
   Dir(const string &strDir, const string &strExt) :
-    /* -- Initialisers ----------------------------------------------------- */
-    DirFile{ ScanDirExt(strDir, strExt) }
-    /* -- No code ---------------------------------------------------------- */
-    { }
+    DirFile{ ScanDirExt(strDir, strExt) } { }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Dir)                 // Disable copy constructor and operator
 };/* ----------------------------------------------------------------------- */
@@ -469,7 +521,7 @@ static const string DirGetCWD(void)
   if(!_wgetcwd(const_cast<wchar_t*>(wstrDir.data()),
     static_cast<int>(wstrDir.capacity())))
       throw runtime_error{ "getcwd() failed!" };
-  // Resize
+  // Resize and recover memory
   wstrDir.resize(wcslen(wstrDir.c_str()));
   // Return directory replacing backslashes for forward slashes
   return PSplitBackToForwardSlashes(WS16toUTF(wstrDir));
@@ -479,8 +531,9 @@ static const string DirGetCWD(void)
   // Get current directory and store it in string, throw exception if error
   if(!getcwd(const_cast<char*>(strDir.data()), strDir.capacity()))
     throw runtime_error{ "getcwd() failed!" };
-  // Resize
+  // Resize and recover memory
   strDir.resize(strlen(strDir.c_str()));
+  strDir.shrink_to_fit();
   // Return directory
   return strDir;
 #endif
@@ -502,9 +555,9 @@ static bool DirSetCWD(const string &strDirectory)
   return !StdChDir(strDirectory);
 }
 /* -- Make a directory ----------------------------------------------------- */
-static bool DirMkDir(const string &strD) { return !StdMkDir(strD); }
+static bool DirMkDir(const string &strDir) { return !StdMkDir(strDir); }
 /* -- Remove a directory --------------------------------------------------- */
-static bool DirRmDir(const string &strD) { return !StdRmDir(strD); }
+static bool DirRmDir(const string &strDir) { return !StdRmDir(strDir); }
 /* -- Make a directory and all it's interim components --------------------- */
 static bool DirMkDirEx(const string &strDir)
 { // Break apart directory parts
@@ -569,16 +622,17 @@ static bool DirRmDirEx(const string &strDir)
   return true;
 }
 /* -- Delete a file -------------------------------------------------------- */
-static bool DirFileUnlink(const string &strF) { return !StdUnlink(strF); }
+static bool DirFileUnlink(const string &strFile)
+  { return !StdUnlink(strFile); }
 /* -- Get file size - ------------------------------------------------------ */
-static int DirFileSize(const string &strF, StdFStatStruct &sfssData)
-  { return StdFStat(strF, &sfssData) ? StdGetError() : 0; }
+static int DirFileSize(const string &strFile, StdFStatStruct &sfssData)
+  { return StdFStat(strFile, &sfssData) ? StdGetError() : 0; }
 /* -- True if specified file has the specified mode ------------------------ */
-static bool DirFileHasMode(const string &strF, const int iMode,
+static bool DirFileHasMode(const string &strFile, const int iMode,
   const int iNegate)
 { // Get file information and and if succeeded?
   StdFStatStruct sfssData;
-  if(!DirFileSize(strF, sfssData))
+  if(!DirFileSize(strFile, sfssData))
   { // If file attributes have specified mode then success
     if((sfssData.st_mode ^ iNegate) & iMode) return true;
     // Set error number
@@ -587,38 +641,38 @@ static bool DirFileHasMode(const string &strF, const int iMode,
   return false;
 }
 /* -- True if specified file is actually a directory ----------------------- */
-static bool DirLocalDirExists(const string &strF)
-  { return DirFileHasMode(strF, _S_IFDIR, 0); }
+static bool DirLocalDirExists(const string &strFile)
+  { return DirFileHasMode(strFile, _S_IFDIR, 0); }
 /* -- True if specified file is actually a file ---------------------------- */
-static bool DirLocalFileExists(const string &strF)
-  { return DirFileHasMode(strF, _S_IFDIR, -1); }
+static bool DirLocalFileExists(const string &strFile)
+  { return DirFileHasMode(strFile, _S_IFDIR, -1); }
 /* -- Readable or writable? ------- Check if file is readable or writable -- */
-static bool DirCheckFileAccess(const string &strF, const int iFlag)
-  { return !StdAccess(strF, iFlag); }
+static bool DirCheckFileAccess(const string &strFile, const int iFlag)
+  { return !StdAccess(strFile, iFlag); }
 /* -- True if specified file exists and is readable ------------------------ */
-static bool DirIsFileReadable(const string &strF)
-  { return DirCheckFileAccess(strF, R_OK); }
+static bool DirIsFileReadable(const string &strFile)
+  { return DirCheckFileAccess(strFile, R_OK); }
 /* -- True if specified file exists and is readable and writable ----------- */
-static bool DirIsFileReadWriteable(const string &strF)
-  { return DirCheckFileAccess(strF, R_OK|W_OK); }
+static bool DirIsFileReadWriteable(const string &strFile)
+  { return DirCheckFileAccess(strFile, R_OK|W_OK); }
 /* -- True if specified file exists and is writable ------------------------ */
-static bool DirIsFileWritable(const string &strF)
-  { return DirCheckFileAccess(strF, W_OK); }
+static bool DirIsFileWritable(const string &strFile)
+  { return DirCheckFileAccess(strFile, W_OK); }
 /* -- True if specified file exists and is executable ---------------------- */
-static bool DirIsFileExecutable(const string &strF)
-  { return DirCheckFileAccess(strF, X_OK); }
+static bool DirIsFileExecutable(const string &strFile)
+  { return DirCheckFileAccess(strFile, X_OK); }
 /* -- True if specified file or directory exists --------------------------- */
-static bool DirLocalResourceExists(const string &strF)
-   { return DirCheckFileAccess(strF, F_OK); }
+static bool DirLocalResourceExists(const string &strFile)
+   { return DirCheckFileAccess(strFile, F_OK); }
 /* -- Rename file ---------------------------------------------------------- */
-static bool DirFileRename(const string &strS, const string &strD)
-  { return !StdRename(strS, strD); }
+static bool DirFileRename(const string &strFrom, const string &strTo)
+  { return !StdRename(strFrom, strTo); }
 /* -- Check that filename is valid and throw on error ---------------------- */
-static void DirVerifyFileNameIsValid(const string &strFilename)
+static void DirVerifyFileNameIsValid(const string &strFile)
 { // Throw error if invalid name
-  if(const ValidResult vrId = DirValidName(strFilename))
+  if(const ValidResult vrId = DirValidName(strFile))
     XC("Filename is invalid!",
-       "File",     strFilename,
+       "File",     strFile,
        "Reason",   cDirBase->VNRtoStr(vrId),
        "ReasonId", vrId);
 }

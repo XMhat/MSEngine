@@ -17,7 +17,7 @@ using namespace ISysUtil::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* -- File collector and member class -------------------------------------- */
-BEGIN_COLLECTORDUO(Files, File, CLHelperUnsafe, ICHelperUnsafe),
+CTOR_BEGIN_DUO(Files, File, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
   public FStream,                      // File stream class
   public Lockable                      // Lua garbage collector instruction
@@ -31,7 +31,7 @@ BEGIN_COLLECTORDUO(Files, File, CLHelperUnsafe, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(File)                // Disable copy constructor and operator
 };/* ----------------------------------------------------------------------- */
-END_COLLECTOR(Files)                   // Finish global Files collector
+CTOR_END_NOINITS(Files)                // Finish global Files collector
 /* -- Read string to file in one go ---------------------------------------- */
 static void FileReadString(lua_State*const lS)
 { // Open file in text mode with the specified mode and if successful?

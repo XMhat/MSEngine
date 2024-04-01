@@ -42,7 +42,7 @@ struct LuaLibStatic                    // Name of struct
   /* --------------------------------------------------------------------- */
 };                                     // Library list in lualib.hpp
 /* ------------------------------------------------------------------------- */
-typedef array<const LuaLibStatic, 31> LuaLibStaticArray;
+typedef array<const LuaLibStatic, 32> LuaLibStaticArray;
 extern const LuaLibStaticArray luaLibList;
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace

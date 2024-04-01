@@ -390,7 +390,7 @@ class SysBase :                        // Members initially private
           tData.DataN(0)
                .Data("N/A")
                .Data("OpenProcess() failed!")
-               .Data(StrAppend("Error ", SysErrorCode()))
+               .DataF("Error ", SysErrorCode())
                .Data(SysError());
           // Next process
           continue;
@@ -406,15 +406,15 @@ class SysBase :                        // Members initially private
           { // Get version information
             const SysModuleData vD{ StdMove(SysModule(WS16toUTF(wstrFN))) };
             // Push version, description vendor and filename (use .c_str())
-            tData.Data(StrFormat("$.$.$.$",
-              vD.GetMajor(), vD.GetMinor(), vD.GetRevision(), vD.GetBuild()))
+            tData.DataF("$.$.$.$", vD.GetMajor(), vD.GetMinor(),
+                    vD.GetRevision(), vD.GetBuild())
                  .Data(StdMove(vD.GetDesc()))
                  .Data(StdMove(vD.GetVendor()))
                  .DataW(wstrFN);
           } // Push blank field, error as description, number and reason
           else tData.Data()
                     .Data("GetModuleFileNameEx() failed!")
-                    .Data(StrAppend("Error ", SysErrorCode()))
+                    .DataA("Error ", SysErrorCode())
                     .Data(SysError());
           // Done with process handle
           CloseHandle(hProcess);

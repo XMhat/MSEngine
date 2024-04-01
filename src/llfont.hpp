@@ -137,7 +137,7 @@ LLFUNC(SetCORGB, LCGETPTR(1, Font)->fiOutline.FboItemSetQuadRGB(
 // ? affects all subsequent calls to all blitting functions.
 /* ------------------------------------------------------------------------- */
 LLFUNC(SetCORGBA, LCGETPTR(1, Font)->fiOutline.FboItemSetQuadRGBA(
-  LCGETNUM(GLfloat, 2, "Red"),  LCGETNUM(GLfloat, 3, "Green"),
+  LCGETNUM(GLfloat, 2, "Red"), LCGETNUM(GLfloat, 3, "Green"),
   LCGETNUM(GLfloat, 4, "Blue"), LCGETNUM(GLfloat, 5, "Alpha")));
 /* ========================================================================= */
 // $ Font:SetCORGBAI
@@ -200,7 +200,7 @@ LLFUNC(Print, LCGETPTR(1, Font)->Print(LCGETNUM(GLfloat, 2, "Left"),
 // ? id of the texture. You must zero pad the number as shown.
 /* ------------------------------------------------------------------------- */
 LLFUNC(PrintT, LCGETPTR(1, Font)->PrintT(
-  LCGETNUM   (GLfloat, 2, "X"),    LCGETNUM(GLfloat, 3, "Y"),
+  LCGETNUM   (GLfloat, 2, "X"), LCGETNUM(GLfloat, 3, "Y"),
   LCGETSTRING(GLubyte, 4, "String"), LCGETPTR(5, Texture)));
 /* ========================================================================= */
 // $ Font:PrintRT
@@ -214,7 +214,7 @@ LLFUNC(PrintT, LCGETPTR(1, Font)->PrintT(
 // ? id of the texture. You must zero pad the number as shown.
 /* ------------------------------------------------------------------------- */
 LLFUNC(PrintRT, LCGETPTR(1, Font)->PrintRT(
-  LCGETNUM   (GLfloat, 2, "X"),    LCGETNUM(GLfloat, 3, "Y"),
+  LCGETNUM   (GLfloat, 2, "X"), LCGETNUM(GLfloat, 3, "Y"),
   LCGETSTRING(GLubyte, 4, "String"), LCGETPTR(5, Texture)));
 /* ========================================================================= */
 // $ Font:PrintM
@@ -226,7 +226,7 @@ LLFUNC(PrintRT, LCGETPTR(1, Font)->PrintRT(
 // ? Prints part of a string which helps one create a marquee effect.
 /* ------------------------------------------------------------------------- */
 LLFUNC(PrintM, LCGETPTR(1, Font)->PrintM(
-  LCGETNUM   (GLfloat, 2, "X"),      LCGETNUM(GLfloat, 3, "Y"),
+  LCGETNUM   (GLfloat, 2, "X"), LCGETNUM(GLfloat, 3, "Y"),
   LCGETNUM   (GLfloat, 4, "Scroll"), LCGETNUM(GLfloat, 5, "Width"),
   LCGETSTRING(GLubyte, 6, "String")));
 /* ========================================================================= */
@@ -241,9 +241,9 @@ LLFUNC(PrintM, LCGETPTR(1, Font)->PrintM(
 // ? glyphs support.
 /* ------------------------------------------------------------------------- */
 LLFUNC(PrintMT, LCGETPTR(1, Font)->PrintMT(
-  LCGETNUM   (GLfloat, 2, "X"),      LCGETNUM(GLfloat, 3, "Y"),
+  LCGETNUM   (GLfloat, 2, "X"), LCGETNUM(GLfloat, 3, "Y"),
   LCGETNUM   (GLfloat, 4, "Scroll"), LCGETNUM(GLfloat, 5, "Width"),
-  LCGETSTRING(GLubyte, 6, "String"),   LCGETPTR(7, Texture)));
+  LCGETSTRING(GLubyte, 6, "String"), LCGETPTR(7, Texture)));
 /* ========================================================================= */
 // $ Font:PrintS
 // > Text:string=The string to simulate printing.
@@ -276,7 +276,7 @@ LLFUNCEX(PrintTS, 1, LCPUSHVAR(LCGETPTR(1, Font)->PrintTS(
 // ? 'Right' position and position the cursor at the specified 'Indent'.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(PrintW, 1, LCPUSHVAR(LCGETPTR(1, Font)->PrintW(
-  LCGETNUM(GLfloat, 2, "X"),      LCGETNUM(GLfloat, 3, "Y"),
+  LCGETNUM(GLfloat, 2, "X"), LCGETNUM(GLfloat, 3, "Y"),
   LCGETNUMLGE(GLfloat, 4, 0, FLT_MAX, "Width"),
   LCGETNUM(GLfloat, 5, "Indent"), LCGETSTRING(GLubyte, 6,"String"))));
 /* ========================================================================= */
@@ -293,9 +293,9 @@ LLFUNCEX(PrintW, 1, LCPUSHVAR(LCGETPTR(1, Font)->PrintW(
 // ? id of the texture. You must zero pad the number as shown.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(PrintWUT, 1, LCPUSHVAR(LCGETPTR(1, Font)->PrintWUT(
-  LCGETNUM   (GLfloat, 2, "X"),                 LCGETNUM(GLfloat, 3, "Y"),
+  LCGETNUM   (GLfloat, 2, "X"), LCGETNUM(GLfloat, 3, "Y"),
   LCGETNUMLGE(GLfloat, 4, 0, FLT_MAX, "Width"), LCGETNUM(GLfloat, 5, "Indent"),
-  LCGETSTRING(GLubyte, 6, "String"),              LCGETPTR(7, Texture))));
+  LCGETSTRING(GLubyte, 6, "String"), LCGETPTR(7, Texture))));
 /* ========================================================================= */
 // $ Font:PrintWT
 // > X:number=The X position of where to start printing the string
@@ -312,7 +312,7 @@ LLFUNCEX(PrintWUT, 1, LCPUSHVAR(LCGETPTR(1, Font)->PrintWUT(
 LLFUNCEX(PrintWT, 1, LCPUSHVAR(LCGETPTR(1, Font)->PrintWT(
   LCGETNUM   (GLfloat, 2, "X"),                 LCGETNUM(GLfloat, 3, "Y"),
   LCGETNUMLGE(GLfloat, 4, 0, FLT_MAX, "Width"), LCGETNUM(GLfloat, 5, "Indent"),
-  LCGETSTRING(GLubyte, 6, "String"),              LCGETPTR(7, Texture))));
+  LCGETSTRING(GLubyte, 6, "String"), LCGETPTR(7, Texture))));
 /* ========================================================================= */
 // $ Font:PrintWTS
 // > Right:number=The right position of where to wrap text to the next line.
@@ -326,7 +326,7 @@ LLFUNCEX(PrintWT, 1, LCPUSHVAR(LCGETPTR(1, Font)->PrintWT(
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(PrintWTS, 1, LCPUSHVAR(LCGETPTR(1, Font)->PrintWTS(
   LCGETNUMLGE(GLfloat, 2, 0, FLT_MAX, "Width"), LCGETNUM(GLfloat, 3, "Indent"),
-  LCGETSTRING(GLubyte, 4, "String"),              LCGETPTR(5, Texture))));
+  LCGETSTRING(GLubyte, 4, "String"), LCGETPTR(5, Texture))));
 /* ========================================================================= */
 // $ Font:PrintWU
 // > X:number=The X screen position of the string.
@@ -340,7 +340,7 @@ LLFUNCEX(PrintWTS, 1, LCPUSHVAR(LCGETPTR(1, Font)->PrintWTS(
 // ? indent size on the following line.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(PrintWU, 1, LCPUSHVAR(LCGETPTR(1, Font)->PrintWU(
-  LCGETNUM   (GLfloat, 2, "X"),                 LCGETNUM(GLfloat, 3, "Y"),
+  LCGETNUM   (GLfloat, 2, "X"), LCGETNUM(GLfloat, 3, "Y"),
   LCGETNUMLGE(GLfloat, 4, 0, FLT_MAX, "Width"), LCGETNUM(GLfloat, 5, "Indent"),
   LCGETSTRING(GLubyte, 6, "String"))));
 /* ========================================================================= */
@@ -402,7 +402,7 @@ LLFUNC(PrintC, LCGETPTR(1, Font)->PrintC(
 // ? Prints the specified string on screen with centre alignment and glyphs.
 /* ------------------------------------------------------------------------- */
 LLFUNC(PrintCT, LCGETPTR(1, Font)->PrintCT(
-  LCGETNUM   (GLfloat, 2, "X"),    LCGETNUM(GLfloat, 3, "Y"),
+  LCGETNUM   (GLfloat, 2, "X"), LCGETNUM(GLfloat, 3, "Y"),
   LCGETSTRING(GLubyte, 4, "String"), LCGETPTR(        5, Texture)));
 /* ========================================================================= */
 // $ Font:Dump
@@ -419,7 +419,13 @@ LLFUNCEND
 // ? Returns height of the font tile. If this font is a free-type font, this
 // ? will just be the height of the white-space character only.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetHeight, 1, LCPUSHVAR(LCGETPTR(1, Font)->duTile.DimGetHeight()));
+LLFUNCEX(GetHeight, 1, LCPUSHVAR(LCGETPTR(1, Font)->duiTile.DimGetHeight()));
+/* ========================================================================= */
+// $ Font:GetId
+// < Id:integer=The id number of the Font object.
+// ? Returns the unique id of the Font object.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(GetId, 1, LCPUSHVAR(LCGETPTR(1, Font)->CtrGet()));
 /* ========================================================================= */
 // $ Font:GetName
 // < Name:string=Name of the font.
@@ -433,7 +439,7 @@ LLFUNCEX(GetName, 1, LCPUSHVAR(LCGETPTR(1, Font)->IdentGet()));
 // ? Returns width of the font tile. If this font is a free-type font, this
 // ? will just be the width of the white-space character only.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetWidth, 1, LCPUSHVAR(LCGETPTR(1, Font)->duTile.DimGetWidth()));
+LLFUNCEX(GetWidth, 1, LCPUSHVAR(LCGETPTR(1, Font)->duiTile.DimGetWidth()));
 /* ========================================================================= */
 // $ Font:SetGlyphPadding
 // > Padding:number=The top side Y padding to add to glyphs
@@ -476,21 +482,21 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Font));
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Font:* member functions begin
-  LLRSFUNC(Destroy),   LLRSFUNC(Dump),       LLRSFUNC(GetHeight),
-  LLRSFUNC(GetName),   LLRSFUNC(GetWidth),   LLRSFUNC(LoadChars),
-  LLRSFUNC(LoadRange), LLRSFUNC(Print),      LLRSFUNC(PrintC),
-  LLRSFUNC(PrintCT),   LLRSFUNC(PrintM),     LLRSFUNC(PrintMT),
-  LLRSFUNC(PrintR),    LLRSFUNC(PrintRT),    LLRSFUNC(PrintS),
-  LLRSFUNC(PrintT),    LLRSFUNC(PrintTS),    LLRSFUNC(PrintU),
-  LLRSFUNC(PrintUS),   LLRSFUNC(PrintW),     LLRSFUNC(PrintWS),
-  LLRSFUNC(PrintWT),   LLRSFUNC(PrintWTS),   LLRSFUNC(PrintWU),
-  LLRSFUNC(PrintWUT),  LLRSFUNC(SetCA),      LLRSFUNC(SetCB),
-  LLRSFUNC(SetCG),     LLRSFUNC(SetCOA),     LLRSFUNC(SetCOB),
-  LLRSFUNC(SetCOG),    LLRSFUNC(SetCOR),     LLRSFUNC(SetCORGB),
-  LLRSFUNC(SetCORGBA), LLRSFUNC(SetCORGBAI), LLRSFUNC(SetCR),
-  LLRSFUNC(SetCRGBAI), LLRSFUNC(SetCRGB),    LLRSFUNC(SetCRGBA),
-  LLRSFUNC(SetGPad),   LLRSFUNC(SetGSize),   LLRSFUNC(SetLSpacing),
-  LLRSFUNC(SetSize),   LLRSFUNC(SetSpacing),
+  LLRSFUNC(Destroy),     LLRSFUNC(Dump),      LLRSFUNC(GetHeight),
+  LLRSFUNC(GetId),       LLRSFUNC(GetName),   LLRSFUNC(GetWidth),
+  LLRSFUNC(LoadChars),   LLRSFUNC(LoadRange), LLRSFUNC(Print),
+  LLRSFUNC(PrintC),      LLRSFUNC(PrintCT),   LLRSFUNC(PrintM),
+  LLRSFUNC(PrintMT),     LLRSFUNC(PrintR),    LLRSFUNC(PrintRT),
+  LLRSFUNC(PrintS),      LLRSFUNC(PrintT),    LLRSFUNC(PrintTS),
+  LLRSFUNC(PrintU),      LLRSFUNC(PrintUS),   LLRSFUNC(PrintW),
+  LLRSFUNC(PrintWS),     LLRSFUNC(PrintWT),   LLRSFUNC(PrintWTS),
+  LLRSFUNC(PrintWU),     LLRSFUNC(PrintWUT),  LLRSFUNC(SetCA),
+  LLRSFUNC(SetCB),       LLRSFUNC(SetCG),     LLRSFUNC(SetCOA),
+  LLRSFUNC(SetCOB),      LLRSFUNC(SetCOG),    LLRSFUNC(SetCOR),
+  LLRSFUNC(SetCORGB),    LLRSFUNC(SetCORGBA), LLRSFUNC(SetCORGBAI),
+  LLRSFUNC(SetCR),       LLRSFUNC(SetCRGBAI), LLRSFUNC(SetCRGB),
+  LLRSFUNC(SetCRGBA),    LLRSFUNC(SetGPad),   LLRSFUNC(SetGSize),
+  LLRSFUNC(SetLSpacing), LLRSFUNC(SetSize),   LLRSFUNC(SetSpacing),
 LLRSEND                                // Font:* member functions end
 /* ========================================================================= */
 // $ Font.Image

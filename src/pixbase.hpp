@@ -104,11 +104,11 @@ class SysBase :                        // Safe exception handler namespace
       case  4: staData.Data(tokData[1]).Data(tokData[3]);
                break;
       case  5: staData.Data(tokData[1])
-                      .Data(StrAppend(tokData[3], ' ', tokData[4]));
+                      .DataA(tokData[3], ' ', tokData[4]);
                break;
       // Expected amount for a C/C++ call. Just show the + amount
       default: staData.Data(tokData[1])
-                      .Data(StrAppend(tokData[2], '+', tokData.back()));
+                      .DataA(tokData[2], '+', tokData.back());
                break;
     } // Get information about the item and if failed?
     if(!dladdr(vpStack, &diData))
@@ -136,13 +136,13 @@ class SysBase :                        // Safe exception handler namespace
     // What is the return code for this call?
     else switch(iStatus)
     { // Memory error?
-      case -1: staData.Data(StrFormat("<MAE:$>", tokData[1])); break;
+      case -1: staData.DataF("<MAE:$>", tokData[1]); break;
       // Not a valid name?
       case -2: staData.Data(diData.dli_sname); break;
       // Invalid argument?
-      case -3: staData.Data(StrFormat("<IA:$>", tokData[1])); break;
+      case -3: staData.DataF("<IA:$>", tokData[1]); break;
       // Success (impossible) or unknown?
-      default: staData.Data(StrFormat("<$:$>", iStatus, tokData[1])); break;
+      default: staData.DataF("<$:$>", iStatus, tokData[1]); break;
     }
   }
   /* ----------------------------------------------------------------------- */
@@ -413,10 +413,10 @@ class SysBase :                        // Safe exception handler namespace
               reinterpret_cast<void*>(&tWT), sizeof(tWT)) < 0 ? 2 : 0);
   }
   /* ----------------------------------------------------------------------- */
-  SysBase(SysModList &&svVersion, const size_t stI) :
+  SysBase(SysModMap &&smmMap, const size_t stI) :
     /* -- Initialisers ----------------------------------------------------- */
     SysVersion{                        // Initialise version info class
-      StdMove(svVersion), stI },       // Move sent mod list into ours
+      StdMove(smmMap), stI },          // Move sent mod list into ours
     rLimits{{                          // Limits data
 #if !defined(MACOS)                    // Not all resources supported
       { RLIMIT_LOCKS,  { 0, 0 } },     { RLIMIT_MSGQUEUE,   { 0, 0 } },

@@ -457,12 +457,12 @@ class SysCore :
     return strExe;
   }
   /* -- Enum modules ------------------------------------------------------- */
-  SysModList EnumModules(void)
+  SysModMap EnumModules(void)
   { // Make verison string
     const string strVersion{ StrAppend(sizeof(void*)*8, "-bit version") };
     // Mod list
-    SysModList mlData;
-    mlData.emplace(make_pair(0UL, SysModule{ GetExeName(), VER_MAJOR,
+    SysModMap smmMap;
+    smmMap.emplace(make_pair(0UL, SysModule{ GetExeName(), VER_MAJOR,
       VER_MINOR, VER_BUILD, VER_REV, VER_AUTHOR, VER_NAME, string(strVersion),
       VER_STR }));
     // Now walk through all the dylibs loaded. Skip the first entry which is
@@ -510,13 +510,13 @@ class SysCore :
       } // No version information
       else uiMajor = uiMinor = uiBuild = 0;
       // Add it to mods list
-      mlData.emplace(make_pair(static_cast<size_t>(ulIndex),
+      smmMap.emplace(make_pair(static_cast<size_t>(ulIndex),
         SysModule{ StdMove(strFullPath), uiMajor, uiMinor, uiBuild,
           0, strPathName.c_str(), strPathName.c_str(),
           string(strVersion), string(StrFormat("$.$.$.0",
             uiMajor, uiMinor, uiBuild)) }));
     } // Module list which includes the executable module
-    return mlData;
+    return smmMap;
   }
   /* ----------------------------------------------------------------------- */
   OSData GetOperatingSystemData(void)
@@ -536,18 +536,18 @@ class SysCore :
       const unsigned int uiHi, uiLo;
     };
     // List of MacOS versions and when they expire
-    static const array<const OSListItem,21>osList{ {
-      { cCommon->CBlank(), 15,  0 },   { "Sonoma",          14,  0 },
-      { "Ventura",         13,  0 },   { "Monterey",        12,  0 },
-      { "Big Sur",         11,  0 },   { "Catalina",        10, 15 },
-      { "Mojave",          10, 14 },   { "High Sierra",     10, 13 },
-      { "Sierra",          10, 12 },   { "El Capitan",      10, 11 },
-      { "Yosemite",        10, 10 },   { "Mavericks",       10,  9 },
-      { "Mountain Lion",   10,  8 },   { "Lion",            10,  7 },
-      { "Snow Leopard",    10,  6 },   { "Leopard",         10,  5 },
-      { "Tiger",           10,  4 },   { "Panther",         10,  3 },
-      { "Jaguar",          10,  2 },   { "Puma",            10,  1 },
-      { "Cheetah",         10,  0 },
+    static const array<const OSListItem,22>osList{ {
+      { cCommon->CBlank(), 16,  0 },   { "Sequoia",         15,  0 },
+      { "Sonoma",          14,  0 },   { "Ventura",         13,  0 },
+      { "Monterey",        12,  0 },   { "Big Sur",         11,  0 },
+      { "Catalina",        10, 15 },   { "Mojave",          10, 14 },
+      { "High Sierra",     10, 13 },   { "Sierra",          10, 12 },
+      { "El Capitan",      10, 11 },   { "Yosemite",        10, 10 },
+      { "Mavericks",       10,  9 },   { "Mountain Lion",   10,  8 },
+      { "Lion",            10,  7 },   { "Snow Leopard",    10,  6 },
+      { "Leopard",         10,  5 },   { "Tiger",           10,  4 },
+      { "Panther",         10,  3 },   { "Jaguar",          10,  2 },
+      { "Puma",            10,  1 },   { "Cheetah",         10,  0 },
     } };
     // Iterate through the versions and try to find a match for the
     // versions above. 'Unknown' is caught if none are found.
@@ -622,7 +622,8 @@ class SysCore :
     typedef array<const unsigned int, 2> UIntDouble;
     const UIntDouble uidM1{ { 2064, 3228 } }, // Apple M1
                      uidM2{ { 2420, 3480 } }, // Apple M2
-                     uidM3{ { 2748, 4056 } }; // Apple M3
+                     uidM3{ { 2748, 4056 } }, // Apple M3
+                     uidM4{ { 2890, 4400 } }; // Apple M4 (Inexact)
     // Processor table with speeds. This is because there is no API to get
     // the speed of Apple branded processors.
     const map<const string, const UIntDouble&> smList{
@@ -631,7 +632,9 @@ class SysCore :
       { "Apple M2",       uidM2 }, { "Apple M2 Pro",   uidM2 },
       { "Apple M2 Max",   uidM2 }, { "Apple M2 Ultra", uidM2 },
       { "Apple M3",       uidM3 }, { "Apple M3 Pro",   uidM3 },
-      { "Apple M3 Max",   uidM3 }, { "Apple M3 Ultra", uidM3 }
+      { "Apple M3 Max",   uidM3 }, { "Apple M3 Ultra", uidM3 },
+      { "Apple M4",       uidM4 }, { "Apple M4 Pro",   uidM4 },
+      { "Apple M4 Max",   uidM4 }, { "Apple M4 Ultra", uidM4 }
     };
     // Find processor name to speed table and if we found it? Then copy the
     // value from the table as the actual speed.

@@ -27,6 +27,12 @@ using namespace IStd::P;               using namespace IPcmLib::P;
 ** ## Pcm:* member functions                                              ## **
 ** ######################################################################### **
 ** ========================================================================= */
+// $ Pcm:Id
+// < Id:integer=The id number of the PCM object.
+// ? Returns the unique id of the PCM object.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(Id, 1, LCPUSHVAR(LCGETPTR(1, Pcm)->CtrGet()));
+/* ========================================================================= */
 // $ Pcm:Name
 // < Name:string=The name of the object
 // ? Returns the name of the specified object when it was created, or if used
@@ -47,8 +53,7 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Pcm));
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Pcm:* member functions begin
-  LLRSFUNC(Destroy),                   // Destroy the internal pcm object
-  LLRSFUNC(Name),                      // Name or filename of the pcm object
+  LLRSFUNC(Destroy), LLRSFUNC(Id), LLRSFUNC(Name),
 LLRSEND                                // Pcm:* member functions end
 /* ========================================================================= */
 // $ Pcm.FileAsync

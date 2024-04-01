@@ -86,17 +86,17 @@ template<class MemberType, class ColType>class AsyncLoader :
   EvtMainCmd       evtAsyncEvent;      // Event command to fire on load
   /* -- Private variables -------------------------------------------------- */
   Ident           &idName;             // Reference to name of object
-  LuaEvtCallback   lesAsync;           // Async state and references
+  LuaEvtCallback   lecAsync;           // Async state and references
   Thread           tAsyncThread;       // Asynchronous loading
   string           strAsyncError;      // The last error exception
-  ASyncCmdType     aiAsyncType;        // Async load init type
+  ASyncCmdType     asctAsyncType;      // Async load init type
   SafeUInt         uiAsyncPid;         // Pid of executing process
   /* -- Dispatch event without parameter ----------------------------------- */
   void AsyncCompletionDispatch(const AsyncResult arResult)
   { // Signal events handler to execute event callback on the next frame.
     // Add the event to the event store so we can remove the event when the
     // destructor is called before the event is called.
-    lesAsync.LuaEvtsDispatch(evtAsyncEvent,
+    lecAsync.LuaEvtsDispatch(evtAsyncEvent,
       reinterpret_cast<void*>(&cAsyncOwner), arResult);
   }
   /* -- Send completion ---------------------------------------------------- */
@@ -115,14 +115,14 @@ template<class MemberType, class ColType>class AsyncLoader :
     // cast any value we get into int64 because we read as int64 at the event
     // handling routine, unless we send a type as well which probably isn't
     // worth the effort!
-    lesAsync.LuaEvtsDispatch(evtAsyncEvent,
+    lecAsync.LuaEvtsDispatch(evtAsyncEvent,
       reinterpret_cast<void*>(&cAsyncOwner), AR_SUCCESS_PARAM, qwParam);
   }
   /* -- Send progress event ------------------------------------------------ */
   template<typename ...VarArgs>
     void AsyncProgress(const ASyncProgressCommand apcCmd,
       const VarArgs &...vaVars)
-  { lesAsync.LuaEvtsDispatch(evtAsyncEvent,
+  { lecAsync.LuaEvtsDispatch(evtAsyncEvent,
       reinterpret_cast<void*>(&cAsyncOwner), AR_LOADING,
       static_cast<uint64_t>(apcCmd), vaVars...); }
   /* -- Write to pipe assistant -------------------------------------------- */
@@ -140,8 +140,7 @@ template<class MemberType, class ColType>class AsyncLoader :
     stPosition += stBuffer;
     // Send progress update
     AsyncProgress(APC_EXECDATAWRITE,
-      static_cast<uint64_t>(stPosition),
-      static_cast<uint64_t>(MemSize()));
+      static_cast<uint64_t>(stPosition), static_cast<uint64_t>(MemSize()));
   }
   /* ----------------------------------------------------------------------- */
   void AsyncTidyUpVars(void)
@@ -150,7 +149,7 @@ template<class MemberType, class ColType>class AsyncLoader :
     strAsyncError.clear();
     strAsyncError.shrink_to_fit();
     // Clear other members
-    aiAsyncType = BA_NONE;
+    asctAsyncType = BA_NONE;
     uiAsyncPid = 0;
     // The 'Memory' used from the loading would have already been transferred
     // to the 'FileMap' class on the callback so it will already be empty now.
@@ -269,7 +268,7 @@ template<class MemberType, class ColType>class AsyncLoader :
     // mAsyncLoadData should be de-initialised. So don't use it again.
     try
     { // How are we loading?
-      switch(aiAsyncType)
+      switch(asctAsyncType)
       {  // Do nothing?
         case BA_NONE:
         { // Just send a blank file and signal completion
@@ -319,7 +318,7 @@ template<class MemberType, class ColType>class AsyncLoader :
     // Set the filename
     idName.IdentSet(strName);
     // Parse the class, error and success functions.
-    lesAsync.LuaEvtInitEx(lsS);
+    lecAsync.LuaEvtInitEx(lsS);
     // Save the current stack because if an error occurs asynchronously, the
     // event subsystem executes the callback and will be empty.
     strAsyncError = StdMove(LuaUtilStack(lsS));
@@ -338,18 +337,18 @@ template<class MemberType, class ColType>class AsyncLoader :
   /* -- Async do protected dispatch (assumes params already on lua stack) -- */
   void AsyncDoLuaThrowErrorHandler(const EvtMain::Cell &epData)
   { // Get error function callback
-    if(lesAsync.LuaRefGetFunc(LR_ERROR))
+    if(lecAsync.LuaRefGetFunc(LR_ERROR))
     { // Push the error message
-      LuaUtilPushStr(lesAsync.LuaRefGetState(), strAsyncError);
+      LuaUtilPushStr(lecAsync.LuaRefGetState(), strAsyncError);
       // Wait for thread and register the class
       AsyncStopAndRegister();
       // Now do the callback. An exception could occur here.
-      LuaUtilCallFuncEx(lesAsync.LuaRefGetState(), 1);
+      LuaUtilCallFuncEx(lecAsync.LuaRefGetState(), 1);
     } // Invalid userdata?
     else cLog->LogErrorExSafe("AsyncLoader got invalid params in failure "
       "event $ for '$' with luastate($) and fref($) from $ params!",
-      epData.evtCommand, idName.IdentGet(), lesAsync.LuaRefStateIsSet(),
-      lesAsync.LuaRefGetFunc(LR_ERROR), epData.vParams.size());
+      epData.evtCommand, idName.IdentGet(), lecAsync.LuaRefStateIsSet(),
+      lecAsync.LuaRefGetFunc(LR_ERROR), epData.vParams.size());
     // The memory for the error is no longer needed
     AsyncTidyUpVars();
   }
@@ -357,13 +356,13 @@ template<class MemberType, class ColType>class AsyncLoader :
   void AsyncDoLuaProtectedDispatch(const EvtMain::Cell &epData,
     const int iParams, const int iHandler)
   { // Compare error code
-    switch(LuaUtilPCallExSafe(lesAsync.LuaRefGetState(), iParams, 0, iHandler))
+    switch(LuaUtilPCallExSafe(lecAsync.LuaRefGetState(), iParams, 0, iHandler))
     { // No error so remove error handler value and return
       case 0: return;
       // Run-time error
       case LUA_ERRRUN:
         strAsyncError.insert(0, StrAppend("Async runtime error! > ",
-          LuaUtilGetAndPopStr(lesAsync.LuaRefGetState()))); break;
+          LuaUtilGetAndPopStr(lecAsync.LuaRefGetState()))); break;
       // Memory allocation error
       case LUA_ERRMEM:
         strAsyncError.insert(0, "Async memory allocation error!"); break;
@@ -399,13 +398,13 @@ template<class MemberType, class ColType>class AsyncLoader :
   { // Wait for the thread to stop
     AsyncStop();
     // Unreference the class
-    lesAsync.LuaEvtDeInit();
+    lecAsync.LuaEvtDeInit();
   }
   /* -- The thread only calls LoadData() and thats it ---------------------- */
   void AsyncInitNone(lua_State*const lsS, const string &strName,
     const string &strLabel)
   { // Loading from memory
-    aiAsyncType = BA_NONE;
+    asctAsyncType = BA_NONE;
     // Init rest of members
     AsyncInit(lsS, strName, strLabel);
   }
@@ -413,7 +412,7 @@ template<class MemberType, class ColType>class AsyncLoader :
   void AsyncInitFile(lua_State*const lsS, const string &strFilename,
     const string &strLabel)
   { // Loading from file
-    aiAsyncType = BA_FILE;
+    asctAsyncType = BA_FILE;
     // Init rest of members
     AsyncInit(lsS, strFilename, strLabel);
   }
@@ -421,7 +420,7 @@ template<class MemberType, class ColType>class AsyncLoader :
   void AsyncInitCmdLine(lua_State*const lsS, const string &strCmdLine,
     const string &strLabel, Memory &mbInput)
   { // Loading from command-line
-    aiAsyncType = BA_EXECUTE;
+    asctAsyncType = BA_EXECUTE;
     // Set memory sent to stdin
     static_cast<Memory&>(*this) = StdMove(mbInput);
     // Init rest of members
@@ -433,7 +432,7 @@ template<class MemberType, class ColType>class AsyncLoader :
   { // Set data to load from
     static_cast<Memory&>(*this) = StdMove(mData);
     // Loading from memory
-    aiAsyncType = BA_MEMORY;
+    asctAsyncType = BA_MEMORY;
     // Init rest of members
     AsyncInit(lsS, strName, strLabel);
   }
@@ -469,10 +468,10 @@ template<class MemberType, class ColType>class AsyncLoader :
     const EvtMain::Params &eParams = epData.vParams;
     // Event result
     const AsyncResult uiAsyncResult =
-      lesAsync.template LuaEvtsCheckParams<3>(eParams) ?
+      lecAsync.template LuaEvtsCheckParams<3>(eParams) ?
         static_cast<AsyncResult>(eParams[2].lui) : AR_UNKNOWN;
     // If lua is not paused?
-    if(!bLuaPaused)
+    if(!uiLuaPaused)
     { // Whats the code sent in the event?
       switch(uiAsyncResult)
       { // Unknown operation?
@@ -487,13 +486,13 @@ template<class MemberType, class ColType>class AsyncLoader :
         case AR_LOADING:
         { // Push and get error callback function id
           const int iErrorHandler =
-            LuaUtilPushAndGetGenericErrId(lesAsync.LuaRefGetState());
+            LuaUtilPushAndGetGenericErrId(lecAsync.LuaRefGetState());
           // Push the progress callback and if succeeded?
-          if(lesAsync.LuaRefGetFunc(LR_PROGRESS))
+          if(lecAsync.LuaRefGetFunc(LR_PROGRESS))
           { // Push the sent parameters onto the stack
             const size_t stMax = eParams.size();
             for(size_t stIndex = 3; stIndex < stMax; ++stIndex)
-              LuaUtilPushInt(lesAsync.LuaRefGetState(),
+              LuaUtilPushInt(lecAsync.LuaRefGetState(),
                 eParams[stIndex].ll);
             // Execute the progress callback
             AsyncDoLuaProtectedDispatch(epData, static_cast<int>(stMax - 3),
@@ -504,8 +503,8 @@ template<class MemberType, class ColType>class AsyncLoader :
           else cLog->LogErrorExSafe("AsyncLoader got invalid params in "
             "progress event $ for '$' with luastate($) and fref($) from $ "
             "params!",
-            epData.evtCommand, idName.IdentGet(), lesAsync.LuaRefStateIsSet(),
-            lesAsync.LuaRefGetFunc(LR_PROGRESS), eParams.size());
+            epData.evtCommand, idName.IdentGet(), lecAsync.LuaRefStateIsSet(),
+            lecAsync.LuaRefGetFunc(LR_PROGRESS), eParams.size());
           // Done
           break;
         } // The operation succeeded with a parameter attached?
@@ -514,13 +513,13 @@ template<class MemberType, class ColType>class AsyncLoader :
           if(eParams.size() >= 4)
           { // Push and get error callback function id
             const int iErrorHandler =
-              LuaUtilPushAndGetGenericErrId(lesAsync.LuaRefGetState());
+              LuaUtilPushAndGetGenericErrId(lecAsync.LuaRefGetState());
             // Push the success callback and if succeeded?
-            if(lesAsync.LuaRefGetFunc(LR_SUCCESS))
+            if(lecAsync.LuaRefGetFunc(LR_SUCCESS))
             { // Push the class ref and if both succeeded?
-              if(lesAsync.LuaRefGetUData())
+              if(lecAsync.LuaRefGetUData())
               { // Push the specified parameter
-                LuaUtilPushInt(lesAsync.LuaRefGetState(), eParams[3].ll);
+                LuaUtilPushInt(lecAsync.LuaRefGetState(), eParams[3].ll);
                 // Dispatch the event with two parameters
                 AsyncDoFinishLuaProtectedDispatch(epData, 2, iErrorHandler);
               } // Failed? Write error to log
@@ -532,7 +531,7 @@ template<class MemberType, class ColType>class AsyncLoader :
               "success param event $ for '$' with luastate($) and fref($) "
               "from $ params!",
               epData.evtCommand, idName.IdentGet(),
-              lesAsync.LuaRefStateIsSet(), lesAsync.LuaRefGetFunc(LR_SUCCESS),
+              lecAsync.LuaRefStateIsSet(), lecAsync.LuaRefGetFunc(LR_SUCCESS),
               eParams.size());
           } // Log error
           else cLog->LogErrorExSafe("AsyncLoader got invalid value in "
@@ -544,11 +543,11 @@ template<class MemberType, class ColType>class AsyncLoader :
         case AR_SUCCESS:
         { // Push and get error callback function id
           const int iErrorHandler =
-            LuaUtilPushAndGetGenericErrId(lesAsync.LuaRefGetState());
+            LuaUtilPushAndGetGenericErrId(lecAsync.LuaRefGetState());
           // Push the success callback and if succeeded?
-          if(lesAsync.LuaRefGetFunc(LR_SUCCESS))
+          if(lecAsync.LuaRefGetFunc(LR_SUCCESS))
           { // Push the class ref and if both succeeded?
-            if(lesAsync.LuaRefGetUData())
+            if(lecAsync.LuaRefGetUData())
               AsyncDoFinishLuaProtectedDispatch(epData, 1, iErrorHandler);
             // Failed? Write error to log
             else cLog->LogErrorExSafe("AsyncLoader got invalid userdata param "
@@ -558,8 +557,8 @@ template<class MemberType, class ColType>class AsyncLoader :
           else cLog->LogErrorExSafe("AsyncLoader got invalid params in "
             "success event $ for '$' with luastate($) and fref($) from $ "
             "params!",
-            epData.evtCommand, idName.IdentGet(), lesAsync.LuaRefStateIsSet(),
-            lesAsync.LuaRefGetFunc(LR_SUCCESS), eParams.size());
+            epData.evtCommand, idName.IdentGet(), lecAsync.LuaRefStateIsSet(),
+            lecAsync.LuaRefGetFunc(LR_SUCCESS), eParams.size());
           // Done
           break;
         } // If there was an error?
@@ -580,9 +579,9 @@ template<class MemberType, class ColType>class AsyncLoader :
     } // Tidy up the variables
     AsyncTidyUpVars();
     // Clear references and state or Lua's GC won't ever delete the class
-    lesAsync.LuaRefDeInit();
+    lecAsync.LuaRefDeInit();
   } // Exception occured? Disable lua callback/refs and rethrow
-  catch(const exception&) { lesAsync.LuaRefDeInit(); throw; }
+  catch(const exception&) { lecAsync.LuaRefDeInit(); throw; }
   /* -- Main constructor --------------------------------------------------- */
   AsyncLoader(                         // Initialise with derived class
     Ident &idRef,                      // Reference to identified
@@ -592,9 +591,9 @@ template<class MemberType, class ColType>class AsyncLoader :
     cAsyncOwner{ *cO },                // Initialise owner of this class
     evtAsyncEvent(eC),                 // Initialise event id
     idName(idRef),                     // Initialise reference to identifier
-    lesAsync{ cO, eC },                // Initialise Lua event class
+    lecAsync{ cO, eC },                // Initialise Lua event class
     tAsyncThread{ STP_LOW },           // Initialise low priority thread
-    aiAsyncType(BA_NONE),              // Initialise load source type
+    asctAsyncType(BA_NONE),              // Initialise load source type
     uiAsyncPid(0)                      // Initialise pid for BA_EXECUTE
     /* --------------------------------------------------------------------- */
     { }                                // Do nothing else
@@ -619,8 +618,10 @@ template<class MemberType, class ColType>class AsyncLoader :
 template<class MemberType,
          class LockType,
          class ListType,
-         class CLHelperType = CLHelperSafe<MemberType, ListType>,
-         class BaseType = CLHelper<MemberType, CLHelperType, ListType>,
+         class IteratorType,
+         class CLHelperType = CLHelperSafe<MemberType, ListType, IteratorType>,
+         class BaseType =
+           CLHelper<MemberType, CLHelperType, ListType, IteratorType>,
          class LuaEvtSlaveType = LuaEvtTypeAsync<MemberType>,
          class LuaEvtMasterType = LuaEvtMaster<MemberType, LuaEvtSlaveType>>
 class CLHelperAsync :

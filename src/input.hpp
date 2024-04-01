@@ -375,11 +375,11 @@ static class Input final :             // Handles keyboard, mouse & controllers
     // position. Glfw says that SetCursorPos should only be used in the Window
     // thread, so this is why it can't be an on-demand call.
     // More information:- https://www.glfw.org/docs/3.1/group__input.html
-    // Calculate new position based on main fbo ortho matrix.
+    // Calculate new position based on main fbo matrix.
     const float
-      fAdjX = (epData.vParams[0].f - cFboCore->fboMain.fcStage.GetCoLeft()) /
+      fAdjX = (epData.vParams[0].f - cFboCore->fboMain.ffcStage.GetCoLeft()) /
         cFboCore->fboMain.GetCoRight() * GetWindowWidth(),
-      fAdjY = (epData.vParams[1].f - cFboCore->fboMain.fcStage.GetCoTop()) /
+      fAdjY = (epData.vParams[1].f - cFboCore->fboMain.ffcStage.GetCoTop()) /
         cFboCore->fboMain.GetCoBottom() * GetWindowHeight(),
       // Clamp the new position to the window bounds.
       fNewX = UtilClamp(fAdjX, 0.0f, cFboCore->fboMain.GetCoRight() - 1.0f),
@@ -437,10 +437,10 @@ static class Input final :             // Handles keyboard, mouse & controllers
   { // Recalculate cursor position based on framebuffer size and send the
     // new co-ordinates to the lua callback handler
     lfOnMouseMove.LuaFuncDispatch(
-      static_cast<double>(cFboCore->fboMain.fcStage.GetCoLeft()) +
+      static_cast<double>(cFboCore->fboMain.ffcStage.GetCoLeft()) +
         ((epData.vParams[1].d/GetWindowWidth()) *
         static_cast<double>(cFboCore->fboMain.GetCoRight())),
-      static_cast<double>(cFboCore->fboMain.fcStage.GetCoTop()) +
+      static_cast<double>(cFboCore->fboMain.ffcStage.GetCoTop()) +
         ((epData.vParams[2].d/GetWindowHeight()) *
         static_cast<double>(cFboCore->fboMain.GetCoBottom())));
   }
@@ -533,41 +533,13 @@ static class Input final :             // Handles keyboard, mouse & controllers
     while(const unsigned int uiChar = utfString.Next())
       if(uiChar >= 32) cConsole->OnCharPress(uiChar);
   }
-  /* -- Handle a deadzone change ------------------------------------------- */
-  CVarReturn SetDefaultJoyDZ(const float fDZ,
-    const function<void(JoyInfo&)> &fcbCallBack)
-  { // Bail if invalid deadzone
-    if(fDZ > 1) return DENY;
-    // Set it
-    StdForEach(par_unseq, GetJoyList().begin(),
-      GetJoyList().end(), fcbCallBack);
-    // Success
-    return ACCEPT;
-  }
   /* -- Update half window ------------------------------------------------- */
   void UpdateWindowSizeD2(void) { iWinWidthD2 = GetWindowWidth()/2;
                                   iWinHeightD2 = GetWindowHeight()/2; }
   /* -- Event handler for 'glfwSetJoystickCallback' ------------------------ */
   static void OnGamePad(int iJId, int iEvent)
     { cEvtMain->Add(EMC_INP_JOY_STATE, iJId, iEvent); }
-  /* -- Set default negative deadzone ------------------------------ */ public:
-  CVarReturn SetDefaultJoyRevDZ(const float fNewDeadZone)
-    { return SetDefaultJoyDZ(fNewDeadZone, [fNewDeadZone](JoyInfo &jiItem)
-        { jiItem.SetReverseDeadZone(fNewDeadZone); }); }
-  /* -- Set default positive deadzone -------------------------------------- */
-  CVarReturn SetDefaultJoyFwdDZ(const float fNewDeadZone)
-    { return SetDefaultJoyDZ(fNewDeadZone, [fNewDeadZone](JoyInfo &jiItem)
-        { jiItem.SetForwardDeadZone(fNewDeadZone); }); }
-  /* -- Set first console key ---------------------------------------------- */
-  CVarReturn SetConsoleKey1(const int iK)
-    { return CVarSimpleSetIntNG(iConsoleKey1, iK, GLFW_KEY_LAST); }
-  /* -- Set second console key --------------------------------------------- */
-  CVarReturn SetConsoleKey2(const int iK)
-    { return CVarSimpleSetIntNG(iConsoleKey2, iK, GLFW_KEY_LAST); }
-  /* -- Set full screen toggler -------------------------------------------- */
-  CVarReturn SetFSTogglerEnabled(const bool bState)
-    { FlagSetOrClear(IF_FSTOGGLER, bState); return ACCEPT; }
-  /* -- Commit cursor visibility now --------------------------------------- */
+  /* -- Commit cursor visibility now ------------------------------- */ public:
   void CommitCursorNow(void) { cGlFW->WinSetCursor(FlagIsSet(IF_CURSOR)); }
   /* -- Commit cursor visibility ------------------------------------------- */
   void CommitCursor(void)
@@ -608,10 +580,10 @@ static class Input final :             // Handles keyboard, mouse & controllers
   { // Get the cursor position
     cGlFW->WinGetCursorPos(dX, dY);
     // Translate cursor position to framebuffer aspect
-    dX = static_cast<double>(cFboCore->fboMain.fcStage.GetCoLeft()) +
+    dX = static_cast<double>(cFboCore->fboMain.ffcStage.GetCoLeft()) +
       ((dX/GetWindowWidth()) *
         static_cast<double>(cFboCore->fboMain.GetCoRight()));
-    dY = static_cast<double>(cFboCore->fboMain.fcStage.GetCoTop()) +
+    dY = static_cast<double>(cFboCore->fboMain.ffcStage.GetCoTop()) +
       ((dY/GetWindowHeight()) *
         static_cast<double>(cFboCore->fboMain.GetCoBottom()));
   }
@@ -825,6 +797,34 @@ static class Input final :             // Handles keyboard, mouse & controllers
   DTORHELPER(~Input, DeInit())
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Input)               // Do not need defaults
+  /* -- Handle a deadzone change ------------------------------------------- */
+  CVarReturn SetDefaultJoyDZ(const float fDZ,
+    const function<void(JoyInfo&)> &fcbCallBack)
+  { // Bail if invalid deadzone
+    if(fDZ > 1) return DENY;
+    // Set it
+    StdForEach(par_unseq, GetJoyList().begin(),
+      GetJoyList().end(), fcbCallBack);
+    // Success
+    return ACCEPT;
+  }
+  /* -- Set default negative deadzone -------------------------------------- */
+  CVarReturn SetDefaultJoyRevDZ(const float fNewDeadZone)
+    { return SetDefaultJoyDZ(fNewDeadZone, [fNewDeadZone](JoyInfo &jiItem)
+        { jiItem.SetReverseDeadZone(fNewDeadZone); }); }
+  /* -- Set default positive deadzone -------------------------------------- */
+  CVarReturn SetDefaultJoyFwdDZ(const float fNewDeadZone)
+    { return SetDefaultJoyDZ(fNewDeadZone, [fNewDeadZone](JoyInfo &jiItem)
+        { jiItem.SetForwardDeadZone(fNewDeadZone); }); }
+  /* -- Set first console key ---------------------------------------------- */
+  CVarReturn SetConsoleKey1(const int iK)
+    { return CVarSimpleSetIntNG(iConsoleKey1, iK, GLFW_KEY_LAST); }
+  /* -- Set second console key --------------------------------------------- */
+  CVarReturn SetConsoleKey2(const int iK)
+    { return CVarSimpleSetIntNG(iConsoleKey2, iK, GLFW_KEY_LAST); }
+  /* -- Set full screen toggler -------------------------------------------- */
+  CVarReturn SetFSTogglerEnabled(const bool bState)
+    { FlagSetOrClear(IF_FSTOGGLER, bState); return ACCEPT; }
   /* ----------------------------------------------------------------------- */
 } *cInput = nullptr;                   // Global input class
 /* ------------------------------------------------------------------------- */

@@ -97,24 +97,24 @@ static class Oal final :
   }
   /* -- Upload data to audio device ---------------------------------------- */
   void BufferData(const ALuint uiBuffer, const ALenum eFormat,
-    const ALvoid*const vpData, const ALsizei stSize, const ALsizei stFrequency)
-      { alBufferData(uiBuffer, eFormat, vpData, stSize, stFrequency); }
+    const ALvoid*const vpData, const ALsizei siSize, const ALsizei siFrequency)
+      { alBufferData(uiBuffer, eFormat, vpData, siSize, siFrequency); }
   /* -- Upload data to audio device ---------------------------------------- */
   void BufferData(const ALuint uiBuffer, const ALenum eFormat,
-    const MemConst &mcSrc, const ALsizei stFrequency)
+    const MemConst &mcSrc, const ALsizei siFrequency)
       { BufferData(uiBuffer, eFormat, mcSrc.MemPtr<ALvoid>(),
-          mcSrc.MemSize<ALsizei>(), stFrequency); }
+          mcSrc.MemSize<ALsizei>(), siFrequency); }
   /* -- Queue specified buffer count into source --------------------------- */
   void QueueBuffers(const ALuint uiSource,
-    const ALsizei stCount, ALuint*const uipBuffer) const
-      { alSourceQueueBuffers(uiSource, stCount, uipBuffer); }
+    const ALsizei siCount, ALuint*const uipBuffer) const
+      { alSourceQueueBuffers(uiSource, siCount, uipBuffer); }
   /* -- Queue one buffer count into source --------------------------------- */
   void QueueBuffer(const ALuint uiSource, ALuint uiBuffer) const
     { QueueBuffers(uiSource, 1, &uiBuffer); }
   /* -- Unqueue specified buffer count from source and place into buffers -- */
   void UnQueueBuffers(const ALuint uiSource,
-    const ALsizei stCount, ALuint*const uipBuffer) const
-      { alSourceUnqueueBuffers(uiSource, stCount, uipBuffer); }
+    const ALsizei siCount, ALuint*const uipBuffer) const
+      { alSourceUnqueueBuffers(uiSource, siCount, uipBuffer); }
   /* -- Unqueue one buffer from source and place into buffers -------------- */
   void UnQueueBuffer(const ALuint uiSource, ALuint &uiBuffer) const
     { UnQueueBuffers(uiSource, 1, &uiBuffer); }
@@ -161,8 +161,8 @@ static class Oal final :
   template<class ArrayType>void PlaySources(const ArrayType &atArray)
     { alSourcePlayv(static_cast<ALsizei>(atArray.size()), atArray.data()); }
   /* -- Create multiple sources -------------------------------------------- */
-  void CreateSources(const ALsizei stCount, ALuint*const uipSource) const
-    { alGenSources(stCount, uipSource); }
+  void CreateSources(const ALsizei siCount, ALuint*const uipSource) const
+    { alGenSources(siCount, uipSource); }
   /* -- Create one source and place it in the specified buffer ------------- */
   void CreateSource(ALuint &uiSourceRef) const
     { CreateSources(1, &uiSourceRef); }
@@ -170,8 +170,8 @@ static class Oal final :
   ALuint CreateSource(void) const
     { ALuint uiSource; CreateSource(uiSource); return uiSource; }
   /* -- Delete multiple sources -------------------------------------------- */
-  void DeleteSources(const ALsizei stCount, const ALuint*const uipSource) const
-    { alDeleteSources(stCount, uipSource); }
+  void DeleteSources(const ALsizei siCount, const ALuint*const uipSource) const
+    { alDeleteSources(siCount, uipSource); }
   /* -- Delete multiple sources -------------------------------------------- */
   template<class List>void DeleteSources(const List &tList) const
     { DeleteSources(static_cast<ALsizei>(tList.size()), tList.data()); }
@@ -179,8 +179,8 @@ static class Oal final :
   void DeleteSource(const ALuint &uiSourceRef) const
     { DeleteSources(1, &uiSourceRef); }
   /* -- Create multiple buffers -------------------------------------------- */
-  void CreateBuffers(const ALsizei stCount, ALuint*const uipBuffer) const
-    { alGenBuffers(stCount, uipBuffer); }
+  void CreateBuffers(const ALsizei siCount, ALuint*const uipBuffer) const
+    { alGenBuffers(siCount, uipBuffer); }
   /* -- Create multiple buffers -------------------------------------------- */
   template<class List>void CreateBuffers(List &tList) const
     { CreateBuffers(static_cast<ALsizei>(tList.size()), tList.data()); }
@@ -191,8 +191,8 @@ static class Oal final :
   ALuint CreateBuffer(void) const
     { ALuint uiBuffer; CreateBuffer(uiBuffer); return uiBuffer; }
   /* -- Delete multiple buffers -------------------------------------------- */
-  void DeleteBuffers(const ALsizei stCount, const ALuint*const uipBuffer) const
-    { alDeleteBuffers(stCount, uipBuffer); }
+  void DeleteBuffers(const ALsizei siCount, const ALuint*const uipBuffer) const
+    { alDeleteBuffers(siCount, uipBuffer); }
   /* -- Delete multiple sources -------------------------------------------- */
   template<class List>void DeleteBuffers(const List &tList) const
     { DeleteBuffers(static_cast<ALsizei>(tList.size()), tList.data()); }
@@ -292,7 +292,8 @@ static class Oal final :
   /* -- Report floating point playback to other classes -------------------- */
   bool Have32FPPB(void) const { return FlagIsSet(AFL_HAVE32FPPB); }
   /* -- Get openAL string -------------------------------------------------- */
-  template<typename T=ALchar>const T*LuaUtilGetStr(const ALenum eId) const
+  template<typename CStrType=ALchar>
+    const CStrType *LuaUtilGetStr(const ALenum eId) const
   { // Get the variable and throw error if occured
     const ALchar*const ucpStr = alGetString(eId);
     IALC("Get string failed!", "Index", eId);
@@ -300,7 +301,7 @@ static class Oal final :
     if(!ucpStr || !*ucpStr)
       XC("Invalid string returned!", "Index", eId, "String", ucpStr);
     // Return result
-    return reinterpret_cast<const T*>(ucpStr);
+    return reinterpret_cast<const CStrType*>(ucpStr);
   }
   /* -- Get context openAL string ------------------------------------------ */
   template<typename T=ALchar>const T*GetCString(ALCdevice*const alcDev,
@@ -469,9 +470,11 @@ static class Oal final :
     // Build extensions list
     const Token tlExtensions{ LuaUtilGetStr(AL_EXTENSIONS), cCommon->Space() };
     // Build sorted list of extensions and log them all
-    map<const string, const size_t> mExts;
-    for(size_t stI = 0; stI < tlExtensions.size(); ++stI)
-      mExts.insert({ StdMove(tlExtensions[stI]), stI });
+    typedef pair<const string, const size_t> Pair;
+    typedef map<Pair::first_type, Pair::second_type> Map;
+    Map mExts;
+    for(size_t stIndex = 0; stIndex < tlExtensions.size(); ++stIndex)
+      mExts.insert({ StdMove(tlExtensions[stIndex]), stIndex });
     // Log device info and basic capabilities
     cLog->LogNLCDebugExSafe(
       "- Head related transfer function: $.\n"
@@ -484,9 +487,9 @@ static class Oal final :
       uiMaxMonoSources, uiMaxStereoSources,
       StrFromBoolTF(FlagIsSet(AFL_HAVEENUMEXT)), tlExtensions.size());
     // Log extensions if debug is enabled
-    for(const auto &mI : mExts)
+    for(const Pair &pExt : mExts)
       cLog->LogNLCDebugExSafe("- Have extension '$' (#$).",
-        mI.first, mI.second);
+        pExt.first, pExt.second);
   }
   /* -- DeInitialise ------------------------------------------------------- */
   void DeInit(void)

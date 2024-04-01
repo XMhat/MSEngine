@@ -14,21 +14,27 @@ using namespace ICVar::P;              using namespace ICVarLib::P;
 using namespace IError::P;             using namespace IIdent::P;
 using namespace ILuaUtil::P;           using namespace ILuaFunc::P;
 using namespace ILua::P;               using namespace IString::P;
-using namespace IStd::P;               using namespace ISysUtil::P;
+using namespace IStat::P;              using namespace IStd::P;
+using namespace ISysUtil::P;
+/* ------------------------------------------------------------------------- */
+typedef IdMap<CVarFlagsType> IdMapCVarEnums;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* -- Lua cvar list types -------------------------------------------------- */
-typedef pair<LuaFunc, CVarMapIt>         LuaCVarPair;
-typedef pair<const string, LuaCVarPair>  LuaCVarMapPair;
-typedef map<LuaCVarMapPair::first_type,
-            LuaCVarMapPair::second_type> LuaCVarMap;
-typedef LuaCVarMap::iterator             LuaCVarMapIt;
-typedef LuaCVarMap::const_iterator       LuaCVarMapItConst;
+typedef pair<LuaFunc, CVarMapIt> LuaCVarPair;
+MAPPACK_BUILD(LuaCVar, const string, LuaCVarPair)
 /* -- Variables ollector class for collector data and custom variables ----- */
-BEGIN_COLLECTOREX(Variables, Variable, CLHelperSafe,
-  LuaCVarMap       lcvmMap;            /* Lua cvar list                     */\
+CTOR_BEGIN(Variables, Variable, CLHelperSafe,
+  /* ----------------------------------------------------------------------- */
+  LuaCVarMap       lcvmMap;            // Lua cvar list
+  /* -- Cvar flag type strings --------------------------------------------- */
+  const IdMapCVarEnums imcveTypes;     // Types
+  const IdMapCVarEnums imcveConditions;  // Conditional flags
+  const IdMapCVarEnums imcvePermissions; // Permission flags
+  const IdMapCVarEnums imcveSources;   // Load reason flags
+  const IdMapCVarEnums imcveOther;,    // Misc flags
 );/* -- Lua variables collector and member class --------------------------- */
-BEGIN_MEMBERCLASS(Variables, Variable, ICHelperUnsafe),
+CTOR_MEM_BEGIN_CSLAVE(Variables, Variable, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
   public Lockable                      // Lua garbage collector instruction
 { /* -- Private variables -------------------------------------------------- */
@@ -141,7 +147,144 @@ BEGIN_MEMBERCLASS(Variables, Variable, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Variable)            // Disable copy constructor and operator
 };/* ----------------------------------------------------------------------- */
-END_COLLECTOR(Variables)               // Finish global Files collector
+CTOR_END(Variables,,,,                 // Finish off collector class with inits
+/* ------------------------------------------------------------------------- */
+imcveTypes{{                           // Cvar types
+  IDMAPSTR(TSTRING),                   IDMAPSTR(TINTEGER),
+  IDMAPSTR(TFLOAT),                    IDMAPSTR(TBOOLEAN),
+  IDMAPSTR(TLUA),
+}, "NONE" },
+/* ------------------------------------------------------------------------- */
+imcveConditions{{                      // Conditional flags
+  IDMAPSTR(CALPHA),                    IDMAPSTR(CNUMERIC),
+  IDMAPSTR(CSAVEABLE),                 IDMAPSTR(CPROTECTED),
+  IDMAPSTR(CDEFLATE),                  IDMAPSTR(CNOTEMPTY),
+  IDMAPSTR(CUNSIGNED),                 IDMAPSTR(CPOW2),
+  IDMAPSTR(CFILENAME),                 IDMAPSTR(CTRUSTEDFN),
+}, "NONE" },
+/* ------------------------------------------------------------------------- */
+imcvePermissions{{                     // Permission flags
+  IDMAPSTR(PBOOT),                     IDMAPSTR(PSYSTEM),
+  IDMAPSTR(PUSR),
+}, "NONE" },
+/* ------------------------------------------------------------------------- */
+imcveSources{{                         // Load sources
+  IDMAPSTR(SENGINE),                   IDMAPSTR(SCMDLINE),
+  IDMAPSTR(SAPPCFG),                   IDMAPSTR(SUDB),
+}, "NONE" },
+/* ------------------------------------------------------------------------- */
+imcveOther{{                           // Misc flags
+  IDMAPSTR(MTRIM),                     IDMAPSTR(OSAVEFORCE),
+  IDMAPSTR(LOCKED),                    IDMAPSTR(COMMIT),
+  IDMAPSTR(PURGE),                     IDMAPSTR(CONFIDENTIAL),
+  IDMAPSTR(LOADED),
+}, "NONE" }
+);/* -- Return human readable string about CVar ---------------------------- */
+static const string VariablesMakeInformation(const CVarItem &cviVar)
+{ // Print data about the cvar
+  return StrFormat("Status for '$'...\n"
+    "- Callback: $.\n"               "- Flags: 0x$$$.\n"
+    "- Types: $.\n"                  "- Conditions: $.\n"
+    "- Permissions: $.\n"            "- Source: $.\n"
+    "- Other: $.\n"                  "- Default: [$/$] \"$\".\n"
+    "- Modified: $.\n"               "- Current: [$/$] \"$\".",
+      cviVar.GetVar(),
+      StrFromBoolTF(cviVar.IsTriggerSet()),
+      hex, cviVar, dec,
+      StrImplode(cVariables->imcveTypes.Test(cviVar), 0, ", "),
+      StrImplode(cVariables->imcveConditions.Test(cviVar), 0, ", "),
+      StrImplode(cVariables->imcvePermissions.Test(cviVar), 0, ", "),
+      StrImplode(cVariables->imcveSources.Test(cviVar), 0, ", "),
+      StrImplode(cVariables->imcveOther.Test(cviVar), 0, ", "),
+      cviVar.GetDefLength(), cviVar.GetDefCapacity(), cviVar.GetDefValue(),
+      StrFromBoolTF(cviVar.IsValueChanged()),
+      cviVar.GetValueLength(), cviVar.GetValueCapacity(), cviVar.GetValue());
+}
+/* -- Return human readable tokenised string about CVar -------------==----- */
+static void VariablesMakeInformationTokens(Statistic &sTable,
+  const CVarItem &cviVar)
+{ // Compare flags and return a character for each flag
+  sTable.Data(StrFromEvalTokens({
+    // Types
+    { true, cviVar.FlagIsSet(CFILENAME)  ? 'F' :
+           (cviVar.FlagIsSet(CTRUSTEDFN) ? 'T' :
+           (cviVar.FlagIsSet(TSTRING)    ? 'S' :
+           (cviVar.FlagIsSet(TINTEGER)   ? 'I' :
+           (cviVar.FlagIsSet(TFLOAT)     ? 'N' :
+           (cviVar.FlagIsSet(TBOOLEAN)   ? 'B' :
+                                           '?'))))) },
+    // Permissions
+    { cviVar.FlagIsSet(PBOOT),        '1' },
+    { cviVar.FlagIsSet(PSYSTEM),      '2' },
+    { cviVar.FlagIsSet(PUSR),         '3' },
+    // Sources
+    { cviVar.FlagIsSet(SENGINE),      '6' },
+    { cviVar.FlagIsSet(SCMDLINE),     '7' },
+    { cviVar.FlagIsSet(SAPPCFG),      '8' },
+    { cviVar.FlagIsSet(SUDB) ,        '9' },
+    // Conditions and operations
+    { cviVar.FlagIsSet(CUNSIGNED),    'U' },
+    { cviVar.FlagIsSet(TLUA),         'L' },
+    { cviVar.FlagIsSet(CONFIDENTIAL), 'C' },
+    { cviVar.FlagIsSet(CPROTECTED),   'P' },
+    { cviVar.FlagIsSet(CDEFLATE),     'D' },
+    { cviVar.FlagIsSet(COMMIT),       'M' },
+    { cviVar.FlagIsSet(LOADED),       'O' },
+    { cviVar.FlagIsSet(CSAVEABLE),    'V' },
+    { cviVar.FlagIsSet(OSAVEFORCE),   'Z' },
+    { cviVar.FlagIsSet(CPOW2),        'W' },
+    { cviVar.FlagIsSet(CNOTEMPTY),    'Y' },
+    { cviVar.FlagIsSet(MTRIM),        'R' },
+    { cviVar.IsTriggerSet(),          'K' }
+  // Name and value
+  })).Data(cviVar.GetVar()).Data(cviVar.Protect());
+}
+/* -- Enumerate a list ----------------------------------------------------- */
+template<class MapType>
+  static const string VariablesMakeList(const MapType &mtMap,
+    const string &strFilter)
+{ // Get pending cvars list and ignore if empty
+  if(mtMap.empty()) return "No cvars exist in this category!";
+  // Try to find the cvar outright first (only make work when not in release)
+  const auto aItExact{ mtMap.find(strFilter) };
+  if(aItExact != mtMap.cend())
+  {  // Type could either be CVarMap?
+    if constexpr(is_same_v<MapType, CVarMap>)
+      return VariablesMakeInformation(aItExact->second);
+    // ..or the type could either be LuaCVarMap
+    else if constexpr(is_same_v<MapType, LuaCVarMap>)
+      return VariablesMakeInformation(aItExact->second.second->second);
+  } // Try as a lower bound (partial) check?
+  auto aIt{ mtMap.lower_bound(strFilter) };
+  if(aIt != mtMap.cend())
+  { // Formatted output. Can assume all variables will be printed
+    Statistic sTable;
+    sTable.Header("FLAGS").Header("NAME", false).Header("VALUE", false)
+          .Reserve(mtMap.size());
+    // Number of variables matched and tokens mask
+    size_t stMatched = 0;
+    // Build output string
+    do
+    { // If no match found? return original string
+      const string &strKey = aIt->first;
+      if(strKey.compare(0, strFilter.size(), strFilter)) continue;
+      // Increment matched counter
+      ++stMatched;
+      // Type could either be CVarMap?
+      if constexpr(is_same_v<MapType, CVarMap>)
+        VariablesMakeInformationTokens(sTable, aIt->second);
+      // ..or the type could either be LuaCVarMap
+      else if constexpr(is_same_v<MapType, LuaCVarMap>)
+        VariablesMakeInformationTokens(sTable, aIt->second.second->second);
+    } // Until no more commands
+    while(++aIt != mtMap.cend());
+    // Print output if we matched commands
+    if(stMatched) return StrFormat("$$ of $ matched.", sTable.Finish(),
+        stMatched, StrCPluraliseNum(mtMap.size(), "cvar", "cvars"));
+  } // No matches
+  return StrFormat("No match from $.",
+    StrCPluraliseNum(mtMap.size(), "cvar", "cvars"));
+}
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */

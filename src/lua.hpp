@@ -58,15 +58,6 @@ static class Lua final :
   LuaFunc          lrMainRedraw;       // Redraw function callback
   /* -- Return lua state --------------------------------------------------- */
   lua_State *GetState(void) const { return lsState.get(); }
-  /* -- Set GC step -------------------------------------------------------- */
-  CVarReturn SetFlags(const LuaFlagsType lftFlags)
-  { // Convert flags and fail if flags are invalid
-    if(lftFlags != LF_MASK && (lftFlags & ~LF_MASK)) return DENY;
-    // Flags validated so set and return success
-    FlagReset(lftFlags);
-    // Accepted
-    return ACCEPT;
-  }
   /* -- Set a lua reference (LuaFunc can't have this check) ---------------- */
   void SetLuaRef(lua_State*const lS, LuaFunc &lrEvent, const int iParam)
   { // Need only one parameter which is the function
@@ -83,7 +74,7 @@ static class Lua final :
   { // Lua not initialised? This may be executed before Init() via an
     // exception. For example... The CONSOLE.Init() may have raised an
     // exception. Also do not fire if paused
-    if(!lsState || bLuaPaused) return;
+    if(!lsState || uiLuaPaused) return;
     // Get ending function and ignore if not a function
     lrMainRedraw.LuaFuncDispatch();
     // Say that we've finished calling the function
@@ -103,25 +94,24 @@ static class Lua final :
     // Now it's up to the guest to end execution with Core.Done();
     bExiting = true;
   }
+  /* -- Request pause ----------------------------------------------------- */
+  void RequestPause(const bool bFromException)
+    { cEvtMain->Add(EMC_LUA_PAUSE, bFromException); }
   /* -- Pause execution ---------------------------------------------------- */
-  bool PauseExecution(void)
-  { // Bail if not initialised or already paused or exiting
-    if(!lsState || bLuaPaused || bExiting) return false;
-    // Set empty function callbacks
-    LuaFuncDisableAllRefs();
-    // Paused
-    bLuaPaused = true;
-    // Success
-    return true;
+  unsigned int PauseExecution(void)
+  { // If not paused and not exiting? Disable events
+    if(!uiLuaPaused && !bExiting) LuaFuncDisableAllRefs();
+    // Return current level and increment it after
+    return uiLuaPaused++;
   }
   /* -- Resume execution --------------------------------------------------- */
   bool ResumeExecution(void)
   { // Bail if not initialised or already paused or exiting
-    if(!lsState || !bLuaPaused || bExiting) return false;
+    if(!uiLuaPaused || bExiting) return false;
     // Restore original functions
     LuaFuncEnableAllRefs();
     // Resumed
-    bLuaPaused = false;
+    uiLuaPaused = 0;
     // Done
     return true;
   }
@@ -183,29 +173,14 @@ static class Lua final :
         StrShortFromDuration(ccExecute.CCDeltaToDouble())) :
       StrFormat("Request took $ returning $: $.",
         StrShortFromDuration(ccExecute.CCDeltaToDouble()),
-        StrPluraliseNum(slResults.size(), "result", "results"),
-        StrImplode(slResults, ", "));
+        StrCPluraliseNum(slResults.size(), "result", "results"),
+        StrImplode(slResults, 0, ", "));
   }
   /* -- Execute main function ---------------------------------------------- */
   void ExecuteMain(void) const { lrMainTick.LuaFuncPushAndCall(); }
   /* -- When lua enters the specified function ----------------------------- */
   static void OnInstructionCount(lua_State*const lS, lua_Debug*const)
     { if(cTimer->TimerIsTimedOut()) LuaUtilPushErr(lS, "Frame timeout!"); }
-  /* -- When operations count have changed --------------------------------- */
-  CVarReturn SetOpsInterval(const int iCount)
-    { return CVarSimpleSetIntNL(iOperations, iCount, 1); }
-  /* -- Set default size of stack ------------------------------------------ */
-  CVarReturn SetStack(const int iValue)
-    { return CVarSimpleSetInt(iStack, iValue); }
-  /* -- Set GC pause time -------------------------------------------------- */
-  CVarReturn SetGCPause(const int iValue)
-    { return CVarSimpleSetInt(iGCPause, iValue); }
-  /* -- Set GC step -------------------------------------------------------- */
-  CVarReturn SetGCStep(const int iValue)
-    { return CVarSimpleSetInt(iGCStep, iValue); }
-  /* -- Set GC step -------------------------------------------------------- */
-  CVarReturn SetSeed(const lua_Integer liV)
-    { return CVarSimpleSetInt(liSeed, liV); }
   /* -- Return operations count -------------------------------------------- */
   int GetOpsInterval(void) { return iOperations; }
   /* -- Init lua library and configuration --------------------------------- */
@@ -415,7 +390,8 @@ static class Lua final :
     // Close state and reset var
     lsState.reset();
     // No longer paused or exited
-    bLuaPaused = bExiting = false;
+    uiLuaPaused = 0;
+    bExiting = false;
     // Report progress
     cLog->LogDebugSafe("Lua sandbox successfully deinitialised.");
   }
@@ -509,6 +485,30 @@ static class Lua final :
   DTORHELPER(~Lua, DeInit())
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Lua)                 // Do not need defaults
+  /* -- Set GC step -------------------------------------------------------- */
+  CVarReturn SetFlags(const LuaFlagsType lftFlags)
+  { // Convert flags and fail if flags are invalid
+    if(lftFlags != LF_MASK && (lftFlags & ~LF_MASK)) return DENY;
+    // Flags validated so set and return success
+    FlagReset(lftFlags);
+    // Accepted
+    return ACCEPT;
+  }
+  /* -- When operations count have changed --------------------------------- */
+  CVarReturn SetOpsInterval(const int iCount)
+    { return CVarSimpleSetIntNL(iOperations, iCount, 1); }
+  /* -- Set default size of stack ------------------------------------------ */
+  CVarReturn SetStack(const int iValue)
+    { return CVarSimpleSetInt(iStack, iValue); }
+  /* -- Set GC pause time -------------------------------------------------- */
+  CVarReturn SetGCPause(const int iValue)
+    { return CVarSimpleSetInt(iGCPause, iValue); }
+  /* -- Set GC step -------------------------------------------------------- */
+  CVarReturn SetGCStep(const int iValue)
+    { return CVarSimpleSetInt(iGCStep, iValue); }
+  /* -- Set GC step -------------------------------------------------------- */
+  CVarReturn SetSeed(const lua_Integer liV)
+    { return CVarSimpleSetInt(liSeed, liV); }
   /* -- End ---------------------------------------------------------------- */
 } *cLua = nullptr;                     // Pointer to static class
 /* ------------------------------------------------------------------------- */

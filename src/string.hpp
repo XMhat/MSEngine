@@ -31,7 +31,9 @@ static const class Common final        // Members initially private
                    strLfCr,            // LF and CR c++ string
                    strFSlash,          // C++ string as forward-slash '/'
                    strUnspec,          // C++ string as "<Unspecified>"
-                   strNull;            // C++ string as "<NullPtr>"
+                   strNull,            // C++ string as "<NullPtr>"
+                   strPeriod,          // C++ string as "."
+                   strTwoPeriod;       // C++ string as ".."
   const char*const cpBlank;            // Blank C-String
   const locale     lLocaleCurrent;     // Current locale
   /* --------------------------------------------------------------- */ public:
@@ -71,6 +73,10 @@ static const class Common final        // Members initially private
   const string &Unspec(void) const { return strUnspec; }
   /* ----------------------------------------------------------------------- */
   const string &Null(void) const { return strNull; }
+  /* ----------------------------------------------------------------------- */
+  const string &Period(void) const { return strPeriod; }
+  /* ----------------------------------------------------------------------- */
+  const string &TwoPeriod(void) const { return strTwoPeriod; }
   /* -- Default Constructor ------------------------------------------------ */
   Common(void) :                       // No parameters
     /* -- Initialisers ----------------------------------------------------- */
@@ -82,6 +88,7 @@ static const class Common final        // Members initially private
     strCrLf{ strCr + strLf },          strCrLf2{ strCrLf + strCrLf },
     strLfCr{ strLf + strCr },          strFSlash{ "/" },
     strUnspec{ "<Unspecified>" },      strNull{ "<NullPtr>" },
+    strPeriod{ "." },                  strTwoPeriod{ ".." },
     cpBlank(strBlank.c_str()),         lLocaleCurrent{ strBlank }
     /* -- No code ---------------------------------------------------------- */
     { }
@@ -425,19 +432,22 @@ static const string &StrIsBlank(const string &strIn, const string &strAlt)
 static const string &StrIsBlank(const string &strIn)
   { return StrIsBlank(strIn, cCommon->Blank()); }
 /* ------------------------------------------------------------------------- */
-template<typename T>static const char *StrCPluralise(const T tCount,
-  const char*const cpSingular, const char*const cpPlural)
-    { return tCount == 1 ? cpSingular : cpPlural; }
+template<typename IntType>
+  static const char *StrCPluralise(const IntType itCount,
+    const char*const cpSingular, const char*const cpPlural)
+      { return itCount == 1 ? cpSingular : cpPlural; }
 /* ------------------------------------------------------------------------- */
-template<typename T>static const string StrPluraliseNum(const T tCount,
-  const char*const cpSingular, const char*const cpPlural)
-   { return StdMove(StrAppend(tCount, ' ',
-       StdMove(StrCPluralise(tCount, cpSingular, cpPlural)))); }
+template<typename IntType>
+  static const string StrCPluraliseNum(const IntType itCount,
+    const char *cpSingular, const char *cpPlural)
+      { return StrAppend(itCount, ' ',
+          StrCPluralise<IntType>(itCount, cpSingular, cpPlural)); }
 /* ------------------------------------------------------------------------- */
-template<typename T>static const string StrPluraliseNumEx(const T tCount,
-  const char*const cpSingular, const char*const cpPlural)
-   { return StdMove(StrAppend(StrReadableFromNum(tCount), ' ',
-       StdMove(StrCPluralise(tCount, cpSingular, cpPlural)))); }
+template<typename IntType>
+  static const string StrCPluraliseNumEx(const IntType itCount,
+    const char *cpSingular, const char *cpPlural)
+      { return StrAppend(StrReadableFromNum(itCount), ' ',
+          StrCPluralise<IntType>(itCount, cpSingular, cpPlural)); }
 /* -- Convert time to long duration ---------------------------------------- */
 static const string StrLongFromDuration(const StdTimeT tDuration,
   unsigned int uiCompMax = StdMaxUInt)
@@ -462,36 +472,36 @@ static const string StrLongFromDuration(const StdTimeT tDuration,
   // Add years?
   if(tD.tm_year && uiCompMax > 0)
   { // Do add years
-    osS << StrPluraliseNum(tD.tm_year, "year", "years");
+    osS << StrCPluraliseNum(tD.tm_year, "year", "years");
     --uiCompMax;
   } // Add months?
   if(tD.tm_mon && uiCompMax > 0)
   { // Do add months
     osS << (osS.tellp() ? cCommon->Space() : cCommon->Blank())
-        << StrPluraliseNum(tD.tm_mon, "month", "months");
+        << StrCPluraliseNum(tD.tm_mon, "month", "months");
     --uiCompMax;
   } // Add days? (removing the added 1)
   if(--tD.tm_mday && uiCompMax > 0)
   { // Do add days
     osS << (osS.tellp() ? cCommon->Space() : cCommon->Blank())
-        << StrPluraliseNum(tD.tm_mday, "day", "days");
+        << StrCPluraliseNum(tD.tm_mday, "day", "days");
     --uiCompMax;
   } // Add hours?
   if(tD.tm_hour && uiCompMax > 0)
   { // Do add hours
     osS << (osS.tellp() ? cCommon->Space() : cCommon->Blank())
-        << StrPluraliseNum(tD.tm_hour, "hour", "hours");
+        << StrCPluraliseNum(tD.tm_hour, "hour", "hours");
     --uiCompMax;
   } // Add Minutes?
   if(tD.tm_min && uiCompMax > 0)
   { // Do add minutes
     osS << (osS.tellp() ? cCommon->Space() : cCommon->Blank())
-        << StrPluraliseNum(tD.tm_min, "min", "mins");
+        << StrCPluraliseNum(tD.tm_min, "min", "mins");
     --uiCompMax;
   } // Check seconds
   if((tD.tm_sec || !tDuration) && uiCompMax > 0)
     osS << (osS.tellp() ? cCommon->Space() : cCommon->Blank())
-        << StrPluraliseNum(tD.tm_sec, "sec", "secs");
+        << StrCPluraliseNum(tD.tm_sec, "sec", "secs");
   // Return string
   return osS.str();
 }
@@ -608,19 +618,24 @@ static const string StrGetReturnFormat(const string &strIn)
   return {};
 }
 /* -- Implode a stringdeque to a single string ----------------------------- */
-template<typename DequeType>
-  static const string StrImplode(const DequeType &dtL,
-    const string &strSep=cCommon->Space())
-{ // Done if empty or begin position is invalid
-  if(dtL.empty()) return {};
+template<class AnyArray, class CtrType = typename AnyArray::value_type>
+  static const string StrImplode(const AnyArray &aArray,
+    const ssize_t &sstBegin=0, const string &strSep=cCommon->Space())
+{ // Cast array size to ssize_t
+  const ssize_t sstSize = static_cast<ssize_t>(aArray.size());
+  // Done if empty or begin position is invalid
+  if(aArray.empty() || sstBegin >= sstSize) return {};
   // Create output only string stream which stays cached (safe in c++11)
   ostringstream osS;
-  // Build command string from vector (this and next line don't seem optimal)
-  const typename DequeType::const_iterator
-    dtitLastButOne{ prev(dtL.cend(), 1) };
-  copy(dtL.cbegin(), dtitLastButOne,
-    ostream_iterator<string>{ osS, strSep.c_str() });
-  osS << *dtitLastButOne;
+  // How many items do we have? Have more than 1?
+  if(sstSize - sstBegin != 1)
+  { // Build command string from vector
+    copy(next(aArray.cbegin(), sstBegin), prev(aArray.cend(), 1),
+      ostream_iterator<CtrType>(osS, strSep.c_str()));
+    // Add final item
+    osS << *aArray.crbegin();
+  } // Just access the one directly
+  else osS << *next(aArray.cbegin(), sstBegin);
   // Done
   return osS.str();
 }
@@ -639,24 +654,7 @@ static const string ImplodeMap(const StrNCStrMap &ssmSrc,
       { return StdMove(StrAppend(vIter.first, strKeyValSep,
           strValEncaps, vIter.second, strValEncaps)); });
   // Return vector imploded into a string
-  return StrImplode(svRet, strLineSep);
-} /* -- Implode a stringdeque to a single string --------------------------- */
-template<typename AnyArray>
-  static const string StrImplode(const AnyArray aArray,
-    const size_t &stBegin=0, const string &strSep=cCommon->Space())
-{ // Done if empty or begin position is invalid
-  if(aArray.empty() || stBegin >= aArray.size()) return {};
-  // If we have only one item, just return its string
-  if(aArray.size()-stBegin == 1) return aArray[stBegin];
-  // Create output only string stream which stays cached (safe in c++11)
-  ostringstream osS;
-  // Build command string from vector
-  copy(next(aArray.cbegin(), static_cast<ssize_t>(stBegin)),
-    prev(aArray.cend(), 1), ostream_iterator<string>(osS, strSep.c_str()));
-  // Add last item without a separator
-  osS << aArray.back();
-  // Done
-  return osS.str();
+  return StrImplode(svRet, 0, strLineSep);
 }
 /* ------------------------------------------------------------------------- */
 template<typename AnyType>

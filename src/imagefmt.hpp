@@ -17,9 +17,9 @@ using namespace IFStream::P;           using namespace IImageDef::P;
 using namespace IImageLib::P;          using namespace ILog::P;
 using namespace IMemory::P;            using namespace IStd::P;
 using namespace ISystem::P;            using namespace IString::P;
-using namespace IUtf;                  using namespace IUtil::P;
-using namespace Lib::NSGif;            using namespace Lib::OS::JpegTurbo;
-using namespace Lib::Png;
+using namespace ITexDef::P;            using namespace IUtf;
+using namespace IUtil::P;              using namespace Lib::NSGif;
+using namespace Lib::OS::JpegTurbo;    using namespace Lib::Png;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* ========================================================================= **
@@ -102,20 +102,20 @@ struct CodecDDS final :                // Members initially public
                                  DDSCAPS2_CUBEMAP_NEGATIVEZ|DDSCAPS2_VOLUME
   };
   /* ----------------------------------------------------------------------- */
-  static bool Load(FileMap &fC, ImageData &ifD)
+  static bool Load(FileMap &fmData, ImageData &idData)
   { // Get file size
-    const size_t stSize = fC.MemSize();
+    const size_t stSize = fmData.MemSize();
     // Quick check header which should be at least 128 bytes
-    if(stSize < 128 || fC.FileMapReadVar32LE() != 0x20534444) return false;
+    if(stSize < 128 || fmData.FileMapReadVar32LE() != 0x20534444) return false;
     // Read the image size and flags and if we got them
-    if(const unsigned int uiSize = fC.FileMapReadVar32LE())
+    if(const unsigned int uiSize = fmData.FileMapReadVar32LE())
     { // Must be 124 bytes long
       if(uiSize != 124)
         XC("Header size must be 124 bytes!", "Required", stSize);
     } // No header bytes so throw error
     else XC("Header bytes not specified!");
     // Read header flags and if specified?
-    if(const unsigned int uiFlags = fC.FileMapReadVar32LE())
+    if(const unsigned int uiFlags = fmData.FileMapReadVar32LE())
     { // Check that they're in the correct range
       if(uiFlags & ~DDSD_MASK)
         XC("Header flags invalid!", "Flags", uiFlags);
@@ -123,50 +123,52 @@ struct CodecDDS final :                // Members initially public
       if(uiFlags & ~DDSD_REQUIRED)
         XC("Header flags required!", "Flags", uiFlags, "Mask", DDSD_REQUIRED);
     } // Get and check dimensions
-    if(!ifD.SetDimSafe(fC.FileMapReadVar32LE(), fC.FileMapReadVar32LE()))
+    if(!idData.SetDimSafe(fmData.FileMapReadVar32LE(),
+          fmData.FileMapReadVar32LE()))
       XC("Dimensions invalid!",
-         "Width",  ifD.DimGetWidth(), "Height", ifD.DimGetHeight());
+         "Width",  idData.DimGetWidth(), "Height", idData.DimGetHeight());
     // Check that scanline length is equal to the width
-    const unsigned int uiPitchOrLinearSize = fC.FileMapReadVar32LEFrom(20);
+    const unsigned int uiPitchOrLinearSize = fmData.FileMapReadVar32LEFrom(20);
     // Get bit-depth and we'll verify it later
-    const unsigned int uiBPP = static_cast<ByteDepth>(fC.FileMapReadVar32LE());
+    const unsigned int uiBPP =
+      static_cast<ByteDepth>(fmData.FileMapReadVar32LE());
     // Get and check mipmap count. Theres still 1 image if this is zero.
-    const unsigned int uiMipMapCount = fC.FileMapReadVar32LE() + 1;
-    if(uiMipMapCount > 1) ifD.SetMipmaps();
+    const unsigned int uiMipMapCount = fmData.FileMapReadVar32LE() + 1;
+    if(uiMipMapCount > 1) idData.SetMipmaps();
     // Ignore the next 44 bytes. Apps like GIMP can use this space to write
     // whatever they want here, such as 'GIMP-DDS\'.
-    fC.FileMapSeek(sizeof(uint32_t)*11, SEEK_CUR);
+    fmData.FileMapSeek(sizeof(uint32_t)*11, SEEK_CUR);
     // Get pixel format size
-    const unsigned int uiPFSize = fC.FileMapReadVar32LE();
+    const unsigned int uiPFSize = fmData.FileMapReadVar32LE();
     if(uiPFSize != 32)
       XC("Unexpected pixel format size!", "PixelFormatSize", uiPFSize);
     // Check flags and show error if incorrect flags
-    const unsigned int uiPFFlags = fC.FileMapReadVar32LE();
+    const unsigned int uiPFFlags = fmData.FileMapReadVar32LE();
     if(uiPFFlags & ~DDPF_MASK)
       XC("Unsupported pixel format flags!",
          "Flags", uiPFFlags, "Mask", DDPF_MASK);
     // Carry on reading flags
-    const unsigned int uiPFFourCC = fC.FileMapReadVar32LE();
+    const unsigned int uiPFFourCC = fmData.FileMapReadVar32LE();
     // Read FOURCC data
-    const unsigned int uiPFRGBBitCount = fC.FileMapReadVar32LE(),
-                       uiPFRBitMask = fC.FileMapReadVar32LE(),
-                       uiPFGBitMask = fC.FileMapReadVar32LE(),
-                       uiPFBBitMask = fC.FileMapReadVar32LE(),
-                       uiPFABitMask = fC.FileMapReadVar32LE();
+    const unsigned int uiPFRGBBitCount = fmData.FileMapReadVar32LE(),
+                       uiPFRBitMask = fmData.FileMapReadVar32LE(),
+                       uiPFGBitMask = fmData.FileMapReadVar32LE(),
+                       uiPFBBitMask = fmData.FileMapReadVar32LE(),
+                       uiPFABitMask = fmData.FileMapReadVar32LE();
     // If there is compression?
     if(uiPFFlags & DDPF_FOURCC)
     { // Compare pixel format...
       switch(uiPFFourCC)
       { // Only compressed texture formats supported right now
-        case FOURCC_DXT1: ifD.SetPixelType(0x83F1); break;
-        case FOURCC_DXT3: ifD.SetPixelType(0x83F2); break;
-        case FOURCC_DXT5: ifD.SetPixelType(0x83F3); break;
+        case FOURCC_DXT1: idData.SetPixelType(TT_DXT1); break;
+        case FOURCC_DXT3: idData.SetPixelType(TT_DXT3); break;
+        case FOURCC_DXT5: idData.SetPixelType(TT_DXT5); break;
         // Unknown compression
         default: XC("Only DXT1, DXT3 or DXT5 FourCC format supported!",
                     "Type", uiPFFourCC);
       } // All formats are 32-bpp and compressed
-      ifD.SetBitsAndBytesPerPixel(BD_RGBA);
-      ifD.SetCompressed();
+      idData.SetBitsAndBytesPerPixel(BD_RGBA);
+      idData.SetCompressed();
     } // Is RGB format?
     else if(uiPFFlags & DDPF_RGB)
     { // Has alpha? Then it is RGBA else then it is RGB
@@ -176,15 +178,15 @@ struct CodecDDS final :                // Members initially public
         { // RGBA pixels?
           case BD_RGBA:
             // Set 32-bits per pixel
-            ifD.SetBitsAndBytesPerPixel(BD_RGBA);
+            idData.SetBitsAndBytesPerPixel(BD_RGBA);
             // Pixels are in RGBA order?
             if(uiPFRBitMask == 0x000000ff && uiPFGBitMask == 0x0000ff00 &&
                uiPFBBitMask == 0x00ff0000 && uiPFABitMask == 0xff000000)
-              ifD.SetPixelType(GL_RGBA);
+              idData.SetPixelType(TT_RGBA);
             // Pixels are in BGRA order?
             else if(uiPFRBitMask == 0x00ff0000 && uiPFGBitMask == 0x0000ff00 &&
                     uiPFBBitMask == 0x000000ff && uiPFABitMask == 0xff000000)
-              ifD.SetPixelType(GL_BGRA);
+              idData.SetPixelType(TT_BGRA);
             // Unsupported RGBA order
             else XC("Unsupported RGBA pixel assignments!",
                    "RedBitMask",   uiPFRBitMask, "GreenBitMask", uiPFGBitMask,
@@ -200,8 +202,8 @@ struct CodecDDS final :                // Members initially public
                  "RedBitMask",   uiPFRBitMask, "GreenBitMask", uiPFGBitMask,
                  "BlueBitMask",  uiPFBBitMask, "AlphaBitMask", uiPFABitMask);
             // Set 32-bits per pixel and LUMINANCE ALPHA pixel type
-            ifD.SetBitsAndBytesPerPixel(BD_GRAYALPHA);
-            ifD.SetPixelType(GL_RG);
+            idData.SetBitsAndBytesPerPixel(BD_GRAYALPHA);
+            idData.SetPixelType(TT_GRAYALPHA);
             // DONE
             break;
           // Unsupported?
@@ -215,15 +217,15 @@ struct CodecDDS final :                // Members initially public
           XC("Detected RGB but bit-depth not supported!",
              "PixelFormatBitCount", uiPFRGBBitCount);
         // Set RGBA bit-depth and byte depth
-        ifD.SetBitsAndBytesPerPixel(BD_RGB);
+        idData.SetBitsAndBytesPerPixel(BD_RGB);
         // Pixels are in RGB order?
         if(uiPFRBitMask == 0x000000ff && uiPFGBitMask == 0x0000ff00 &&
            uiPFBBitMask == 0x00ff0000 && uiPFABitMask == 0x00000000)
-          ifD.SetPixelType(GL_RGB);
+          idData.SetPixelType(TT_RGB);
         // Pixels are in BGR order?
         else if(uiPFRBitMask == 0x00ff0000 && uiPFGBitMask == 0x0000ff00 &&
                 uiPFBBitMask == 0x000000ff && uiPFABitMask == 0x00000000)
-          ifD.SetPixelType(GL_BGR);
+          idData.SetPixelType(TT_BGR);
         // Unsupported RGB order
         else XC("Unsupported RGB pixel assignments!",
                 "RedBitMask",  uiPFRBitMask, "GreenBitMask", uiPFGBitMask,
@@ -242,16 +244,16 @@ struct CodecDDS final :                // Members initially public
            "RedBitMask",   uiPFRBitMask, "GreenBitMask", uiPFGBitMask,
            "BlueBitMask",  uiPFBBitMask, "AlphaBitMask", uiPFABitMask);
       // Set gray pixels
-      ifD.SetBitsAndBytesPerPixel(BD_GRAY);
-      ifD.SetPixelType(GL_RED);
+      idData.SetBitsAndBytesPerPixel(BD_GRAY);
+      idData.SetPixelType(TT_GRAY);
     } // We do not recognise this pixel format
     else XC("Unsupported pixel format!", "PixelFormatFlags", uiPFFlags);
     // Check that bit-depth matches
-    if(uiBPP && ifD.GetBitsPerPixel() != uiBPP)
+    if(uiBPP && idData.GetBitsPerPixel() != uiBPP)
       XC("Detected bit-depth doesn't match the bit-depth in the header!"
-         "in the image.", "Detected", ifD.GetBitsPerPixel(), "File", uiBPP);
+         "in the image.", "Detected", idData.GetBitsPerPixel(), "File", uiBPP);
     // Get primary capabilities and if set?
-    if(const unsigned int uiCaps1 = fC.FileMapReadVar32LE())
+    if(const unsigned int uiCaps1 = fmData.FileMapReadVar32LE())
     { // Throw if not in range
       if(uiCaps1 & ~DDSCAPS_MASK)
         XC("Unsupported primary flags!",
@@ -259,7 +261,7 @@ struct CodecDDS final :                // Members initially public
     } // We should have some flags
     else XC("Primary flags not specified!");
     // Were secondary capabilities set?
-    if(const unsigned int uiCaps2 = fC.FileMapReadVar32LE())
+    if(const unsigned int uiCaps2 = fmData.FileMapReadVar32LE())
     { // Show error if not in range
       if(uiCaps2 & ~DDSCAPS2_MASK)
         XC("Invalid secondary flags!",
@@ -267,32 +269,34 @@ struct CodecDDS final :                // Members initially public
       // None of them implemented regardless
       XC("Unimplemented secondary flags!", "Flags", uiCaps2);
     } // Read rest of values
-    if(const unsigned int uiCaps3 = fC.FileMapReadVar32LE())
+    if(const unsigned int uiCaps3 = fmData.FileMapReadVar32LE())
       XC("Unimplemented tertiary flags!", "Flags", uiCaps3);
-    if(const unsigned int uiCaps4 = fC.FileMapReadVar32LE())
+    if(const unsigned int uiCaps4 = fmData.FileMapReadVar32LE())
       XC("Unimplemented quaternary flags!", "Flags", uiCaps4);
-    if(const unsigned int uiReserved2 = fC.FileMapReadVar32LE())
+    if(const unsigned int uiReserved2 = fmData.FileMapReadVar32LE())
       XC("Reserved flags must not be set!", "Data", uiReserved2);
     // Scan-line length is specified?
     if(uiPitchOrLinearSize)
     { // Calculate actual memory for each scanline and check that it is same
-      const unsigned int uiScanSize = ifD.DimGetWidth()*ifD.GetBytesPerPixel();
+      const unsigned int uiScanSize =
+        idData.DimGetWidth()*idData.GetBytesPerPixel();
       if(uiScanSize != uiPitchOrLinearSize)
         XC("Scan line size mismatch versus calculated!",
-           "Width",      ifD.DimGetWidth(), "ByDepth",  ifD.GetBytesPerPixel(),
-           "Calculated", uiScanSize,        "Expected", uiPitchOrLinearSize);
+           "Width",      idData.DimGetWidth(),
+           "ByDepth",    idData.GetBytesPerPixel(),
+           "Calculated", uiScanSize, "Expected", uiPitchOrLinearSize);
     } // Alocate slots as mipmaps
-    ifD.ReserveSlots(uiMipMapCount);
+    idData.ReserveSlots(uiMipMapCount);
     // DDS's are reversed
-    ifD.SetReversed();
+    idData.SetReversed();
     // DXT[n]? Compressed bitmaps need a special calculation
-    if(ifD.IsCompressed()) for(unsigned int
+    if(idData.IsCompressed()) for(unsigned int
       // Pre-initialised variables
-      uiBitDiv    = (ifD.GetPixelType() == 0x83F1 ? 8 : 16),
+      uiBitDiv    = (idData.GetPixelType() == TT_DXT1 ? 8 : 16),
       uiMipIndex  = 0,
-      uiMipWidth  = ifD.DimGetWidth(),
-      uiMipHeight = ifD.DimGetHeight(),
-      uiMipBPP    = ifD.GetBytesPerPixel(),
+      uiMipWidth  = idData.DimGetWidth(),
+      uiMipHeight = idData.DimGetHeight(),
+      uiMipBPP    = idData.GetBytesPerPixel(),
       uiMipSize   = ((uiMipWidth+3)/4)*((uiMipHeight+3)/4)*uiBitDiv;
       // Conditions
       uiMipIndex < uiMipMapCount &&
@@ -304,18 +308,18 @@ struct CodecDDS final :                // Members initially public
       uiMipBPP      = UtilMaximum(uiMipBPP >> 1, 1),
       uiMipSize     = ((uiMipWidth+3)/4)*((uiMipHeight+3)/4)*uiBitDiv)
     { // Read compressed data from file and show error if not enough data
-      Memory mPixels{ fC.FileMapReadBlock(uiMipSize) };
+      Memory mPixels{ fmData.FileMapReadBlock(uiMipSize) };
       if(mPixels.MemSize() != uiMipSize)
         XC("Read error!", "Expected", uiMipSize, "Actual", mPixels.MemSize());
       // Push back a new slot for every new mipmap
-      ifD.AddSlot(mPixels, uiMipWidth, uiMipHeight);
+      idData.AddSlot(mPixels, uiMipWidth, uiMipHeight);
     } // Uncompressed image?
     else for(unsigned int
       // Pre-initialised variables
       uiMipIndex  = 0,                               // Mipmap index
-      uiMipWidth  = ifD.DimGetWidth(),               // Mipmap width
-      uiMipHeight = ifD.DimGetHeight(),              // Mipmap height
-      uiMipBPP    = ifD.GetBytesPerPixel(),          // Mipmap bytes-per-pixel
+      uiMipWidth  = idData.DimGetWidth(),            // Mipmap width
+      uiMipHeight = idData.DimGetHeight(),           // Mipmap height
+      uiMipBPP    = idData.GetBytesPerPixel(),       // Mipmap bytes-per-pixel
       uiMipSize   = uiMipWidth*uiMipHeight*uiMipBPP; // Mipmap size in memory
       // Conditions
       uiMipIndex < uiMipMapCount &&    // Mipmap count not reached and...
@@ -326,11 +330,11 @@ struct CodecDDS final :                // Members initially public
       uiMipHeight >>= 1,               // Divide mipmap height by 2
       uiMipSize = uiMipWidth*uiMipHeight*uiMipBPP) // New mipmap size
     { // Read uncompressed data from file and show error if not enough data
-      Memory mData{ fC.FileMapReadBlock(uiMipSize) };
+      Memory mData{ fmData.FileMapReadBlock(uiMipSize) };
       if(mData.MemSize() != uiMipSize)
         XC("Read error!", "Expected", uiMipSize, "Actual", mData.MemSize());
       // Push back a new slot for every new mipmap
-      ifD.AddSlot(mData, uiMipWidth, uiMipHeight);
+      idData.AddSlot(mData, uiMipWidth, uiMipHeight);
     } // Succeeded
     return true;
   }
@@ -364,25 +368,29 @@ class CodecGIF final :                 // Members initially private
     { if(!vpBuffer) throw runtime_error{ "Get buffer null pointer" };
       return reinterpret_cast<unsigned char*>(vpBuffer); }
   /* -- Sets whether a image should opaque --------------------------------- */
-  static void GIFOpaque(void*const vpBuffer, bool)
-    { if(!vpBuffer) throw runtime_error{ "Set opaque null pointer" }; }
+  static void GIFOpaque(            // False positive / Upstream issue
+    void*const vpBuffer, bool)      // cppcheck-suppress constParameterCallback
+      { if(!vpBuffer) throw runtime_error{ "Set opaque null pointer" }; }
   /* -- If image has an opaque alpha channel ------------------------------- */
-  static bool GIFIsOpaque(void*const vpBuffer)
-    { if(!vpBuffer) throw runtime_error{ "Test opaque null pointer" };
-      return true; }
+  static bool GIFIsOpaque(          // False positive / Upstream issue
+    void*const vpBuffer)            // cppcheck-suppress constParameterCallback
+      { if(!vpBuffer) throw runtime_error{ "Test opaque null pointer" };
+        return true; }
   /* -- Image changed, flush cache ----------------------------------------- */
-  static void GIFFlush(void*const vpBuffer)
-    { if(!vpBuffer) throw runtime_error{ "Modified data null pointer" }; }
+  static void GIFFlush(             // False positive / Upstream issue
+    void*const vpBuffer)            // cppcheck-suppress constParameterCallback
+      { if(!vpBuffer) throw runtime_error{ "Modified data null pointer" }; }
   /* --------------------------------------------------------------- */ public:
-  static bool Load(FileMap &fC, ImageData &ifD)
+  static bool Load(FileMap &fmData, ImageData &idData)
   { // Must have at least 10 bytes for header 'GIF9' and ending footer.
-    if(fC.MemSize() < 10 || fC.FileMapReadVar32LE() != 0x38464947)
+    if(fmData.MemSize() < 10 || fmData.FileMapReadVar32LE() != 0x38464947)
       return false;
     // Next word must be 7a or 9a. Else not a gif file.
-    const unsigned int uiMagic2 = fC.FileMapReadVar16LE();
+    const unsigned int uiMagic2 = fmData.FileMapReadVar16LE();
     if(uiMagic2 != 0x6137 && uiMagic2 != 0x6139) return false;
     // Read and check last 2 footer bytes of file
-    if(fC.FileMapReadVar16LEFrom(fC.MemSize() - sizeof(uint16_t)) != 0x3b00)
+    if(fmData.FileMapReadVar16LEFrom(fmData.MemSize() -
+         sizeof(uint16_t)) != 0x3b00)
       return false;
     // Set gif callbacks
     nsgif_bitmap_cb_vt sBMPCB{ GIFCreate, GIFDestroy, GIFRead, GIFOpaque,
@@ -401,7 +409,8 @@ class CodecGIF final :                 // Members initially private
     try
     { // Decode the gif and report error if failed
       switch(const nsgif_error nsgErr =
-        nsgif_data_scan(nsgCtx, fC.MemSize(), fC.MemPtr<unsigned char>()))
+        nsgif_data_scan(nsgCtx, fmData.MemSize(),
+          fmData.MemPtr<unsigned char>()))
       { // Succeeded?
         case NSGIF_OK: break;
         // Anything else?
@@ -412,12 +421,12 @@ class CodecGIF final :                 // Members initially private
       // Get information about gif and if we got it?
      	if(const nsgif_info_t*const nsgInfo = nsgif_get_info(nsgCtx))
       { // Reserve memory for frames
-        ifD.ReserveSlots(nsgInfo->frame_count);
+        idData.ReserveSlots(nsgInfo->frame_count);
         // Set members
-        ifD.SetBitsAndBytesPerPixel(BD_RGBA);
-        ifD.SetPixelType(GL_RGBA);
-        ifD.SetReversed();
-        ifD.DimSet(nsgInfo->width, nsgInfo->height);
+        idData.SetBitsAndBytesPerPixel(BD_RGBA);
+        idData.SetPixelType(TT_RGBA);
+        idData.SetReversed();
+        idData.DimSet(nsgInfo->width, nsgInfo->height);
         // Decode the frames
         for(unsigned int uiIndex = 0;
                          uiIndex < nsgInfo->frame_count;
@@ -447,10 +456,10 @@ class CodecGIF final :                 // Members initially private
                 "Reason", nsgif_strerror(nsgErr), "Code", nsgErr);
             } // Calculate image size
             const size_t stSize =
-              nsgInfo->width * nsgInfo->height * ifD.GetBytesPerPixel();
+              nsgInfo->width * nsgInfo->height * idData.GetBytesPerPixel();
             // Now we can just copy the memory over
             Memory mData{ stSize, nsgBitmap };
-            ifD.AddSlot(mData, nsgInfo->width, nsgInfo->height);
+            idData.AddSlot(mData, nsgInfo->width, nsgInfo->height);
           } // Failed to get frame data
           else XC("Failed to get frame data!");
         }
@@ -503,7 +512,7 @@ class CodecPNG final :                 // Members initially private
       stRead, stC).c_str());
   }
   /* -- Save png file ---------------------------------------------- */ public:
-  static bool Save(const FStream &fC, const ImageData &ifD,
+  static bool Save(const FStream &fmData, const ImageData &idData,
     const ImageSlot &isData)
   { // Check that dimensions are set
     if(isData.DimIsNotSet())
@@ -573,7 +582,7 @@ class CodecPNG final :                 // Members initially private
       } // Destructor that cleans up the libpng context
       ~PngWriter(void) { png_destroy_write_struct(&psData, &piData); }
     } // Send file stream to constructor
-    pwC{ fC };
+    pwC{ fmData };
     // Set metadata
     pwC.Meta("Title", cSystem->GetGuestTitle());
     pwC.Meta("Version", cSystem->GetGuestVersion());
@@ -592,7 +601,7 @@ class CodecPNG final :                 // Members initially private
     // Bit depth and colour type of data
     int iColourType;
     // Compare bitrate
-    switch(ifD.GetBitsPerPixel())
+    switch(idData.GetBitsPerPixel())
     { // Monochrome (1-bpp)?
       case BD_BINARY:
         // Set binary header type
@@ -621,7 +630,7 @@ class CodecPNG final :                 // Members initially private
         // Set location of each scanline
         for(size_t stScanIndex = 0,
                    stScanLinesM1 = ppvList.size() - 1,
-                   stStride = isData.DimGetWidth() * ifD.GetBytesPerPixel();
+                   stStride = isData.DimGetWidth() * idData.GetBytesPerPixel();
                    stScanIndex < ppvList.size();
                  ++stScanIndex)
           ppvList[stScanIndex] =
@@ -630,16 +639,17 @@ class CodecPNG final :                 // Members initially private
         break;
       // Un-supported format
       default: XC("Image is not binary or 24-bit!",
-                  "BitsPerPixel", ifD.GetBitsPerPixel());
+                  "BitsPerPixel", idData.GetBitsPerPixel());
     } // Finish write image
     pwC.Finish(ppvList.data());
     // Success
     return true;
   }
   /* ----------------------------------------------------------------------- */
-  static bool Load(FileMap &fC, ImageData &ifD)
+  static bool Load(FileMap &fmData, ImageData &idData)
   { // Not a PNG file if not at least 8 bytes or header is incorrect
-    if(fC.MemSize() < 8 || !png_check_sig(fC.FileMapReadPtr<png_byte>(8), 8))
+    if(fmData.MemSize() < 8 ||
+       !png_check_sig(fmData.FileMapReadPtr<png_byte>(8), 8))
       return false;
     // Crete safe reader struct and info
     struct PngReader
@@ -668,7 +678,7 @@ class CodecPNG final :                 // Members initially private
       } // Destructor that cleans up the libpng context
       ~PngReader(void) { png_destroy_read_struct(&psData, &piData, nullptr); }
     } // Send file map class to constructor
-    prC{ fC };
+    prC{ fmData };
     // Get pointers to created addresses
     png_structp psData = prC.psData;
     png_infop   piData = prC.piData;
@@ -682,29 +692,29 @@ class CodecPNG final :                 // Members initially private
     { // 1 bits-per-CHANNEL? (binary image)
       case 1:
         // Expand if requested or there is an alpha channel
-        if(ifD.IsNotConvertRGBA() && ifD.IsNotConvertRGB() &&
-           ifD.IsNotConvertGPUCompat())
+        if(idData.IsNotConvertRGBA() && idData.IsNotConvertRGB() &&
+           idData.IsNotConvertGPUCompat())
         { // Strip alpha if it is there
           if(bAlpha) png_set_strip_alpha(psData);
           // Transfomrations complete so update
           png_read_update_info(psData, piData);
           // Update the pixel type to zero. This means that this format only
           // works with our BitMask system.
-          ifD.SetBitsPerPixel(BD_BINARY);
-          ifD.SetBytesPerPixel(BY_GRAY);
-          ifD.SetPixelType(GL_NONE);
+          idData.SetBitsPerPixel(BD_BINARY);
+          idData.SetBytesPerPixel(BY_GRAY);
+          idData.SetPixelType(TT_NONE);
           // Set image dimensions
-          ifD.DimSet(png_get_image_width(psData, piData),
+          idData.DimSet(png_get_image_width(psData, piData),
                      png_get_image_height(psData, piData));
           // Initialise memory
-          Memory mPixels{ UtilMaximum(1UL, ifD.TotalPixels() / 8) };
+          Memory mPixels{ UtilMaximum(1UL, idData.TotalPixels() / 8) };
           // Create vector array to hold scanline pointers and size it
-          PngPtrVec ppvList{ ifD.DimGetHeight<size_t>() };
+          PngPtrVec ppvList{ idData.DimGetHeight<size_t>() };
           // For each scanline
-          for(size_t stHeight = ifD.DimGetHeight<size_t>(),
+          for(size_t stHeight = idData.DimGetHeight<size_t>(),
                      stHeightM1 = stHeight - 1,
                      stStride = UtilMaximum(1UL,
-                       ifD.DimGetWidth<size_t>() / 8),
+                       idData.DimGetWidth<size_t>() / 8),
                      stRow = 0;
                      stRow < stHeight;
                    ++stRow)
@@ -715,7 +725,7 @@ class CodecPNG final :                 // Members initially private
           png_read_image(psData, ppvList.data());
           png_read_end(psData, piData);
           // Success, add the image data to list
-          ifD.AddSlot(mPixels);
+          idData.AddSlot(mPixels);
           // OK!
           return true;
         } // Fall through to expand packed bits
@@ -735,23 +745,23 @@ class CodecPNG final :                 // Members initially private
     { // 8-bits per channel (Palleted texture)
       case PNG_COLOR_TYPE_PALETTE:
         // If conversion to RGBA or RGB is required?
-        if(ifD.IsConvertRGBA() || ifD.IsConvertRGB())
+        if(idData.IsConvertRGBA() || idData.IsConvertRGB())
         { // Convert entire bitmap to 24-bits per pixel RGB
           png_set_palette_to_rgb(psData);
           // Jump to PNG_COLOR_TYPE_RGB case label
           goto RGB;
         } // If we're making sure this texture loads in OpenGL?
-        else if(ifD.IsConvertGPUCompat())
+        else if(idData.IsConvertGPUCompat())
         { // Convert entire bitmap to 24-bits per pixel RGB
           png_set_palette_to_rgb(psData);
           // Image should be loadable in OpenGL now
-          ifD.SetActiveGPUCompat();
+          idData.SetActiveGPUCompat();
           // Jump to PNG_COLOR_TYPE_RGB case label
           goto RGB;
         } // We need this else so 'goto' works with constructing 'saHist' var.
         else
         { // Set that we're uploading a palette
-          ifD.SetPalette();
+          idData.SetPalette();
           // Read palette and show error if failed
           if(!png_get_PLTE(psData, piData, &palData, &iPalette))
             XC("Failed to read palette!");
@@ -769,7 +779,7 @@ class CodecPNG final :                 // Members initially private
       // 16-bits per channel (Luminance / Gray + Alpha)?
       case PNG_COLOR_TYPE_GRAY_ALPHA:
         // If conversion to RGBA or RGB is required?
-        if(ifD.IsConvertRGBA() || ifD.IsConvertRGB())
+        if(idData.IsConvertRGBA() || idData.IsConvertRGB())
         { // Convert entire bitmap to 24-bits per pixel RGB
           png_set_palette_to_rgb(psData);
           // Jump to PNG_COLOR_TYPE_RGB case label
@@ -781,11 +791,11 @@ class CodecPNG final :                 // Members initially private
       // 24-bits per channel (RGB)?
       case PNG_COLOR_TYPE_RGB: RGB:;
         // If convert to RGBA requested and no alpha set?
-        if(ifD.IsConvertRGBA() && !bAlpha)
+        if(idData.IsConvertRGBA() && !bAlpha)
         { // Add an alpha channel if no alpha
           png_set_add_alpha(psData, 0, PNG_FILLER_AFTER);
           // We converted to RGBA here
-          ifD.SetActiveRGBA();
+          idData.SetActiveRGBA();
         } // If alpha is set in image? expand tRNS to alpha
         else if(bAlpha) png_set_tRNS_to_alpha(psData);
         // Done
@@ -795,11 +805,11 @@ class CodecPNG final :                 // Members initially private
         // If alpha set in image?
         if(bAlpha)
         { // If convert to RGB requested?
-          if(ifD.IsConvertRGB())
+          if(idData.IsConvertRGB())
           { // Strip the alpha channel
             png_set_strip_alpha(psData);
             // We converted to RGBA here
-            ifD.SetActiveRGB();
+            idData.SetActiveRGB();
           } // Expand tRNS to alpha
           else png_set_tRNS_to_alpha(psData);
         } // Done
@@ -809,36 +819,37 @@ class CodecPNG final :                 // Members initially private
     } // Transfomrations complete so update
     png_read_update_info(psData, piData);
     // All pixels should be 8bpc so set bytes and bits per pixel
-    ifD.SetBytesAndBitsPerPixelCast(png_get_channels(psData, piData));
-    switch(ifD.GetBitsPerPixel())
+    idData.SetBytesAndBitsPerPixelCast(png_get_channels(psData, piData));
+    switch(idData.GetBitsPerPixel())
     { // 32-bpp
-      case BD_RGBA: ifD.SetPixelType(GL_RGBA); break;
+      case BD_RGBA: idData.SetPixelType(TT_RGBA); break;
       // 24-bpp
-      case BD_RGB: ifD.SetPixelType(GL_RGB); break;
+      case BD_RGB: idData.SetPixelType(TT_RGB); break;
       // 16-bpp (Gray + Alpha)
-      case BD_GRAYALPHA: ifD.SetPixelType(GL_RG); break;
+      case BD_GRAYALPHA: idData.SetPixelType(TT_GRAYALPHA); break;
       // 8-bits-per-pixel (Gray)
       case BD_GRAY: [[fallthrough]];
       // 1-bits-per-pixel (Monochrome
-      case BD_BINARY: ifD.SetPixelType(GL_RED); break;
+      case BD_BINARY: idData.SetPixelType(TT_GRAY); break;
       // Unsupported bit-depth
       default: XC("Unsupported bit-depth!",
-                  "BitsPerPixel", ifD.GetBitsPerPixel());
+                  "BitsPerPixel", idData.GetBitsPerPixel());
     } // Get image dimensions
-    ifD.DimSet(png_get_image_width(psData, piData),
+    idData.DimSet(png_get_image_width(psData, piData),
                png_get_image_height(psData, piData));
     // Initialise memory
-    Memory mPixels{ ifD.TotalPixels() * ifD.GetBytesPerPixel() };
+    Memory mPixels{ idData.TotalPixels() * idData.GetBytesPerPixel() };
     // Create vector array to hold scanline pointers and size it
-    PngPtrVec ppvList{ ifD.DimGetHeight<size_t>() };
+    PngPtrVec ppvList{ idData.DimGetHeight<size_t>() };
     // For each scanline
     // Set the pointer to the data pointer + i times the uiRow stride.
     // Notice that the uiRow order is reversed with q.
     // This is how at least OpenGL expects it,
     // and how many other image loaders present the data.
-    for(size_t stHeight = ifD.DimGetHeight<size_t>(),
+    for(size_t stHeight = idData.DimGetHeight<size_t>(),
                stHeightM1 = stHeight - 1,
-               stStride = ifD.DimGetWidth<size_t>() * ifD.GetBytesPerPixel(),
+               stStride = idData.DimGetWidth<size_t>() *
+                            idData.GetBytesPerPixel(),
                stRow = 0;
                stRow < stHeight;
              ++stRow)
@@ -848,10 +859,10 @@ class CodecPNG final :                 // Members initially private
     png_read_image(psData, ppvList.data());
     png_read_end(psData, piData);
     // Success, add the image data to list
-    ifD.AddSlot(mPixels);
+    idData.AddSlot(mPixels);
     // Add palette data if it is there
     if(iPalette)
-      ifD.AddSlot(mPalette, static_cast<unsigned int>(iPalette), BY_RGB);
+      idData.AddSlot(mPalette, static_cast<unsigned int>(iPalette), BY_RGB);
     // We are done!
     return true;
   }
@@ -896,11 +907,11 @@ class CodecJPG final :                 // Members initially private
     throw runtime_error{ strMsg.c_str() };
   }
   /* --------------------------------------------------------------- */ public:
-  static bool Save(const FStream &fC, const ImageData &ifD,
+  static bool Save(const FStream &fmData, const ImageData &idData,
                    const ImageSlot &isData)
   { // Only support 24-bit per pixel images
-    if(ifD.GetBitsPerPixel() != BD_RGB)
-      XC("Only RGB supported!", "BitsPerPixel", ifD.GetBitsPerPixel());
+    if(idData.GetBitsPerPixel() != BD_RGB)
+      XC("Only RGB supported!", "BitsPerPixel", idData.GetBitsPerPixel());
     // Check for valid dimensions
     if(isData.DimIsNotSet())
       XC("Dimensions are invalid!",
@@ -925,13 +936,13 @@ class CodecJPG final :                 // Members initially private
       } // Destructor that cleans up libjpeg
       ~JpegWriter(void) { jpeg_destroy_compress(&ciData); }
     } // Send file map to class
-    jwC{ fC };
+    jwC{ fmData };
     // Get compress struct data
     struct jpeg_compress_struct &ciData = jwC.ciData;
     // Set image information
     ciData.image_width = isData.DimGetWidth();
     ciData.image_height = isData.DimGetHeight();
-    ciData.input_components = ifD.GetBitsPerPixel() / 8;
+    ciData.input_components = idData.GetBitsPerPixel() / 8;
     ciData.in_color_space = JCS_RGB;
     // Call the setup defualts helper function to give us a starting point.
     // Note, don't call any of the helper functions before you call this, they
@@ -957,9 +968,10 @@ class CodecJPG final :                 // Members initially private
     return true;
   }
   /* ----------------------------------------------------------------------- */
-  static bool Load(FileMap &fC, ImageData &ifD)
+  static bool Load(FileMap &fmData, ImageData &idData)
   { // Make sure we have at least 12 bytes and the correct first 2 bytes
-    if(fC.MemSize() < 12 || fC.FileMapReadVar16LE() != 0xD8FF) return false;
+    if(fmData.MemSize() < 12 ||
+       fmData.FileMapReadVar16LE() != 0xD8FF) return false;
     // We need access to this from the exception block
     struct JpegReader
     { // Private variables
@@ -991,8 +1003,8 @@ class CodecJPG final :                 // Members initially private
     jsmData.skip_input_data = JPegSkipInputData;
     jsmData.resync_to_restart = jpeg_resync_to_restart;
     jsmData.term_source = JPegTermSource;
-    jsmData.next_input_byte = fC.MemPtr<JOCTET>();
-    jsmData.bytes_in_buffer = fC.MemSize();
+    jsmData.next_input_byte = fmData.MemPtr<JOCTET>();
+    jsmData.bytes_in_buffer = fmData.MemSize();
     // Read the header
     switch(jpeg_read_header(&ciData, static_cast<boolean>(true)))
     { // if SOS marker is reached?
@@ -1005,27 +1017,21 @@ class CodecJPG final :                 // Members initially private
     if(!jpeg_start_decompress(&ciData))
       XC("Jpeg start decompression failed!");
     // Make sure component count is valid
-    switch(ciData.output_components)
-    { // (1 byte)   8-bpp grayscale
-      case BY_GRAY: ifD.SetPixelType(GL_RED); break;
-      // (2 bytes) 16-bpp luminance alpha
-      case BY_GRAYALPHA: ifD.SetPixelType(GL_RG); break;
-      // (3 bytes) 24-bpp r+g+b
-      case BY_RGB: ifD.SetPixelType(GL_RGB); break;
-      // (4 bytes) 32-bpp r+g+b+a
-      case BY_RGBA: ifD.SetPixelType(GL_RGBA); break;
-      // Anything else, throw back to proper exception handler
-      default: XC("Component count unsupported!",
-                  "OutputComponents", ciData.output_components);
-    } // Set dimensions and pixel bit depth
-    ifD.DimSet(ciData.output_width, ciData.output_height);
-    ifD.SetBytesAndBitsPerPixelCast(ciData.output_components);
+    idData.SetPixelType(ImageBYtoTexType(
+      static_cast<ByteDepth>(ciData.output_components)));
+    if(idData.GetPixelType() == TT_NONE)
+      XC("Component count unsupported!",
+         "OutputComponents", ciData.output_components);
+    // Set dimensions and pixel bit depth
+    idData.DimSet(ciData.output_width, ciData.output_height);
+    idData.SetBytesAndBitsPerPixelCast(ciData.output_components);
     // Jpegs are reversed
-    ifD.SetReversed();
+    idData.SetReversed();
     // Create space for decompressed image
-    Memory mPixels{ ifD.TotalPixels() * ifD.GetBytesPerPixel() };
+    Memory mPixels{ idData.TotalPixels() * idData.GetBytesPerPixel() };
     // Get row stride (or number of bytes in a scanline of image data)
-    const size_t stRowStride = ifD.DimGetWidth() * ifD.GetBytesPerPixel();
+    const size_t stRowStride =
+      idData.DimGetWidth() * idData.GetBytesPerPixel();
     // Decompress scanlines
     while(ciData.output_scanline < ciData.output_height)
     { // For storing info
@@ -1035,7 +1041,7 @@ class CodecJPG final :                 // Members initially private
       jpeg_read_scanlines(&ciData, reinterpret_cast<JSAMPARRAY>(caPtr.data()),
         static_cast<JDIMENSION>(caPtr.size()));
     } // Add data to image list
-    ifD.AddSlot(mPixels);
+    idData.AddSlot(mPixels);
     // Success
     return true;
   }

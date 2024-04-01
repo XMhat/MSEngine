@@ -107,11 +107,15 @@ class CVarItem :                       // Members initially private
   /* ----------------------------------------------------------------------- */
   size_t GetDefLength(void) const { return GetDefValue().length(); }
   /* ----------------------------------------------------------------------- */
+  size_t GetDefCapacity(void) const { return GetDefValue().capacity(); }
+  /* ----------------------------------------------------------------------- */
   string &GetModifyableValue(void) { return strValue; }
   /* ----------------------------------------------------------------------- */
   const string &GetValue(void) const { return strValue; }
   /* ----------------------------------------------------------------------- */
   size_t GetValueLength(void) const { return GetValue().length(); }
+  /* ----------------------------------------------------------------------- */
+  size_t GetValueCapacity(void) const { return GetValue().capacity(); }
   /* ----------------------------------------------------------------------- */
   void PruneValue(void) { GetModifyableValue().shrink_to_fit(); }
   /* ----------------------------------------------------------------------- */

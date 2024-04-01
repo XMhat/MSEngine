@@ -135,6 +135,12 @@ LLFUNCEX(Size, 1, LCPUSHVAR(LCGETPTR(1, File)->FStreamSizeSafe()));
 /* ========================================================================= */
 LLFUNCEX(Close, 1, LCPUSHVAR(LCGETPTR(1, File)->FStreamCloseSafe()));
 /* ========================================================================= */
+// $ File:Id
+// < Id:integer=The id number of the File object.
+// ? Returns the unique id of the File object.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(Id, 1, LCPUSHVAR(LCGETPTR(1, File)->CtrGet()));
+/* ========================================================================= */
 // $ File:Name
 // < Name:string=Name of the file.
 // ? Returns the name of the loaded file.
@@ -165,25 +171,11 @@ LLFUNCEX(ErrorStr, 1, LCPUSHVAR(LCGETPTR(1, File)->FStreamGetErrStr()));
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // File:* member functions begin
-  LLRSFUNC(Close),                     // Close the file
-  LLRSFUNC(Destroy),                   // Destroys the internal file object
-  LLRSFUNC(End),                       // File stream is at eof
-  LLRSFUNC(Error),                     // The last errno
-  LLRSFUNC(ErrorStr),                  // The last errno string
-  LLRSFUNC(FError),                    // Last error code from file
-  LLRSFUNC(Flush),                     // Flush current stream output
-  LLRSFUNC(Name),                      // Name of the opened file
-  LLRSFUNC(Opened),                    // File opened?
-  LLRSFUNC(Read),                      // Read array from stream
-  LLRSFUNC(ReadStr),                   // Read string from stream
-  LLRSFUNC(Rewind),                    // Rewind to start of stream
-  LLRSFUNC(Seek),                      // Seek from stream beginning
-  LLRSFUNC(SeekCur),                   // Seek plus stream
-  LLRSFUNC(SeekEnd),                   // Seek from stream end
-  LLRSFUNC(Size),                      // Size of file
-  LLRSFUNC(Tell),                      // Tell current position
-  LLRSFUNC(Write),                     // Write array to stream
-  LLRSFUNC(WriteStr),                  // Write string to stream
+  LLRSFUNC(Close),    LLRSFUNC(Destroy), LLRSFUNC(End),     LLRSFUNC(Error),
+  LLRSFUNC(ErrorStr), LLRSFUNC(FError),  LLRSFUNC(Flush),   LLRSFUNC(Id),
+  LLRSFUNC(Name),     LLRSFUNC(Opened),  LLRSFUNC(Read),    LLRSFUNC(ReadStr),
+  LLRSFUNC(Rewind),   LLRSFUNC(Seek),    LLRSFUNC(SeekCur), LLRSFUNC(SeekEnd),
+  LLRSFUNC(Size),     LLRSFUNC(Tell),    LLRSFUNC(Write),   LLRSFUNC(WriteStr),
 LLRSEND                                // File:* member functions end
 /* ========================================================================= **
 ** ######################################################################### **
@@ -361,8 +353,8 @@ LLFUNCENDEX(5)
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(Enumerate)
   const Dir dData{ LCGETCPPFILE(1, "Directory") };
-  LCTOTABLE(dData.dFiles);
-  LCTOTABLE(dData.dDirs);
+  LCTOTABLE(dData.GetFiles());
+  LCTOTABLE(dData.GetDirs());
 LLFUNCENDEX(2)
 /* ========================================================================= */
 // $ File.EnumerateEx
@@ -376,8 +368,8 @@ LLFUNCENDEX(2)
 LLFUNCBEGIN(EnumerateEx)
   const Dir dData{ LCGETCPPFILE(1, "Directory"),
                    LCGETCPPFILE(2, "Extension") };
-  LCTOTABLE(dData.dFiles);
-  LCTOTABLE(dData.dDirs);
+  LCTOTABLE(dData.GetFiles());
+  LCTOTABLE(dData.GetDirs());
 LLFUNCENDEX(2)
 /* ========================================================================= */
 // $ File.AppendOneStr

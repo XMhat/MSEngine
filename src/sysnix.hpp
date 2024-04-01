@@ -329,16 +329,16 @@ class SysCore :
     return strName;
   }
   /* -- Enum modules ------------------------------------------------------- */
-  SysModList EnumModules(void)
+  SysModMap EnumModules(void)
   { // Make verison string
     string strVersion{ StrAppend(sizeof(void*)*8, "-bit version") };
     // Mod list
-    SysModList mlData;
-    mlData.emplace(make_pair(0UL, SysModule{ GetExeName(), VER_MAJOR,
+    SysModMap smmMap;
+    smmMap.emplace(make_pair(0UL, SysModule{ GetExeName(), VER_MAJOR,
       VER_MINOR, VER_BUILD, VER_REV, VER_AUTHOR, VER_NAME, StdMove(strVersion),
       VER_STR }));
     // Module list which includes the executable module
-    return mlData;
+    return smmMap;
   }
   /* ----------------------------------------------------------------------- */
   OSData GetOperatingSystememData(void)
@@ -346,7 +346,7 @@ class SysCore :
     struct utsname utsnData;
     if(uname(&utsnData)) XCS("Failed to read operating system information!");
     // Tokenize version numbers
-    const Token tVersion{ utsnData.release, "." };
+    const Token tVersion{ utsnData.release, cCommon->Period() };
     // Get LANGUAGE code and set default if not found
     string strCode{ cCmdLine->GetEnv("LANGUAGE") };
     if(strCode.size() != 5)

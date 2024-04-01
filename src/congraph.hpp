@@ -143,7 +143,7 @@ static class ConGraphics final :       // Members initially private
   bool DoSetVisible(const bool bState)
   { // Set the visibility state and draw the fbo if enabled and visible
     const bool bResult = cConsole->DoSetVisible(bState);
-    if(bResult && cConsole->IsVisible()) cFboCore->SetDraw();
+    if(bResult) cFboCore->SetDraw();
     return bResult;
   }
   /* -- Reset defaults (for lreset) ---------------------------------------- */
@@ -216,24 +216,27 @@ static class ConGraphics final :       // Members initially private
   void Render(void)
   { // Shift queued console lines
     cConsole->MoveQueuedLines();
+    // Return if theres nothing to redraw else clear redraw flag
+    if(cConsole->GetRedrawFlags().FlagIsClear(RD_GRAPHICS)) return;
+    cConsole->GetRedrawFlags().FlagClear(RD_GRAPHICS);
     // Get reference to console fbo
     Fbo &fboC = cFboCore->fboConsole;
     // Set main fbo to draw to
     fboC.FboSetActive();
     // Get reference to main fbo
     Fbo &fboM = cFboCore->fboMain;
-    // Update ortho same as the main fbo
-    fboC.FboSetOrtho(0, 0, fboM.GetCoRight(), fboM.GetCoBottom());
+    // Update matrix same as the main fbo
+    fboC.FboSetMatrix(0, 0, fboM.GetCoRight(), fboM.GetCoBottom());
     // Set drawing position
-    const GLfloat fYAdj = fboM.fcStage.GetCoBottom() * (1 - fConsoleHeight);
-    fboC.FboItemSetVertex(fboM.fcStage.GetCoLeft(),
-      fboM.fcStage.GetCoTop() - fYAdj, fboM.fcStage.GetCoRight(),
-      fboM.fcStage.GetCoBottom() - fYAdj);
+    const GLfloat fYAdj = fboM.ffcStage.GetCoBottom() * (1 - fConsoleHeight);
+    fboC.FboItemSetVertex(fboM.ffcStage.GetCoLeft(),
+      fboM.ffcStage.GetCoTop() - fYAdj, fboM.ffcStage.GetCoRight(),
+      fboM.ffcStage.GetCoBottom() - fYAdj);
     // Set console texture colour and blit the console background
     GetTextureRef().FboItemSetQuadRGBAInt(ulBgColour);
-    GetTextureRef().BlitLTRB(0, 0, fboC.fcStage.GetCoLeft(),
-      fboC.fcStage.GetCoTop(), fboC.fcStage.GetCoRight(),
-      fboC.fcStage.GetCoBottom());
+    GetTextureRef().BlitLTRB(0, 0, fboC.ffcStage.GetCoLeft(),
+      fboC.ffcStage.GetCoTop(), fboC.ffcStage.GetCoRight(),
+      fboC.ffcStage.GetCoBottom());
     // Set console input text colour
     GetFontRef().FboItemSetQuadRGBAInt(ulFgColour);
     // Restore spacing and scale as well
@@ -241,11 +244,11 @@ static class ConGraphics final :       // Members initially private
     CommitLineSpacing();
     CommitScale();
     // Get below baseline height
-    const GLfloat fBL = (fboC.fcStage.GetCoBottom() -
+    const GLfloat fBL = (fboC.ffcStage.GetCoBottom() -
       GetFontRef().GetBaselineBelow('g')) + GetFontRef().fLineSpacing;
     // Draw input text and subtract the height drawn from Y position
-    GLfloat fY = fBL - GetFontRef().PrintWU(fboC.fcStage.GetCoLeft(), fBL,
-      fboC.fcStage.GetCoRight(), GetFontRef().dfScale.DimGetWidth(),
+    GLfloat fY = fBL - GetFontRef().PrintWU(fboC.ffcStage.GetCoLeft(), fBL,
+      fboC.ffcStage.GetCoRight(), GetFontRef().dfScale.DimGetWidth(),
         reinterpret_cast<const GLubyte*>(StrFormat(">$\rc000000ff$\rr$",
         cConsole->GetConsoleBegin(), cCursor,
         cConsole->GetConsoleEnd()).c_str()));
@@ -258,14 +261,12 @@ static class ConGraphics final :       // Members initially private
       // Set text foreground colour with opaqueness already set above
       GetFontRef().FboItemSetQuadRGBInt(uiNDXtoRGB[clD.cColour]);
       // Draw the text and move upwards of the height that was used
-      fY -= GetFontRef().PrintWU(fboC.fcStage.GetCoLeft(), fY,
-        fboC.fcStage.GetCoRight(),
+      fY -= GetFontRef().PrintWU(fboC.ffcStage.GetCoLeft(), fY,
+        fboC.ffcStage.GetCoRight(),
           GetFontRef().dfScale.DimGetWidth(), reinterpret_cast<const GLubyte*>
             (clD.strLine.c_str()));
     } // Finish and render
     fboC.FboFinishAndRender();
-    // Redrawn as requested
-    cConsole->GetRedrawFlags().FlagClear(RD_GRAPHICS);
     // Make sure the main fbo is updated
     cFboCore->SetDraw();
   }
@@ -329,6 +330,29 @@ static class ConGraphics final :       // Members initially private
     // Log progress
     cLog->LogInfoSafe("ConGraph de-initialised.");
   }
+  /* -- Constructor -------------------------------------------------------- */
+  explicit ConGraphics(void) :
+    /* -- Initialisers ----------------------------------------------------- */
+    IHelper{ __FUNCTION__ },           // Init helper function name
+    ulFgColour(                        // Set input text colour
+      uiNDXtoRGB[COLOUR_YELLOW] |      // - Lookup RGB value for yellow
+      0xFF000000),                     // - Force opaqueness
+    ulBgColour(0),                     // No background colour
+    fTextScale(0.0f),                  // No font scale
+    fConsoleHeight(0.0f),              // No console height
+    fTextLetterSpacing(0.0f),          // No text letter spacing
+    fTextLineSpacing(0.0f),            // No text line spacing
+    fTextWidth(0.0f),                  // No text width
+    fTextHeight(0.0f),                 // No text height
+    ctConsole{ true },                 // Console texture on stand-by
+    cfConsole{ true },                 // Console font on stand-by
+    cCursor('|')                       // Cursor shape
+    /* --------------------------------------------------------------------- */
+    { }
+  /* -- Destructor --------------------------------------------------------- */
+  DTORHELPER(~ConGraphics, DeInit())
+  /* ----------------------------------------------------------------------- */
+  DELETECOPYCTORS(ConGraphics)         // Disable copy constructor and operator
   /* -- Set console background colour -------------------------------------- */
   CVarReturn TextBackgroundColourModified(const uint32_t ulNewColour)
     { return CVarSimpleSetInt(ulBgColour, ulNewColour); }
@@ -388,29 +412,6 @@ static class ConGraphics final :       // Members initially private
   /* -- Set console height ------------------------------------------------- */
   CVarReturn SetHeight(const GLfloat fHeight)
     { return CVarSimpleSetIntNLG(fConsoleHeight, fHeight, 0.1f, 1.0f); }
-  /* -- Constructor -------------------------------------------------------- */
-  explicit ConGraphics(void) :
-    /* -- Initialisers ----------------------------------------------------- */
-    IHelper{ __FUNCTION__ },           // Init helper function name
-    ulFgColour(                        // Set input text colour
-      uiNDXtoRGB[COLOUR_YELLOW] |      // - Lookup RGB value for yellow
-      0xFF000000),                     // - Force opaqueness
-    ulBgColour(0),                     // No background colour
-    fTextScale(0.0f),                  // No font scale
-    fConsoleHeight(0.0f),              // No console height
-    fTextLetterSpacing(0.0f),          // No text letter spacing
-    fTextLineSpacing(0.0f),            // No text line spacing
-    fTextWidth(0.0f),                  // No text width
-    fTextHeight(0.0f),                 // No text height
-    ctConsole{ true },                 // Console texture on stand-by
-    cfConsole{ true },                 // Console font on stand-by
-    cCursor('|')                       // Cursor shape
-    /* --------------------------------------------------------------------- */
-    { }
-  /* -- Destructor --------------------------------------------------------- */
-  DTORHELPER(~ConGraphics, DeInit())
-  /* ----------------------------------------------------------------------- */
-  DELETECOPYCTORS(ConGraphics)         // Disable copy constructor and operator
   /* ----------------------------------------------------------------------- */
 } *cConGraphics = nullptr;             // Pointer to static class
 /* ------------------------------------------------------------------------- */

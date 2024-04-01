@@ -38,7 +38,7 @@ LLFUNC(OnEvent, LCGETPTR(1, Video)->LuaEvtInit(lS));
 // ? Blits the specified video texture frame to the currently ACTIVE fbo. This
 // ? just adds to the active FBO drawing arrays and doesn't actually render
 // ? until the active fbo is finished and rendered. The currently stored
-// ? vertex, texcoord, colour and ortho values are used.
+// ? vertex, texcoord, colour and matrix values are used.
 /* ------------------------------------------------------------------------- */
 LLFUNC(Blit, LCGETPTR(1, Video)->Blit());
 /* ========================================================================= */
@@ -47,7 +47,7 @@ LLFUNC(Blit, LCGETPTR(1, Video)->Blit());
 // ? Blits the specified video texture frame to the currently ACTIVE fbo. This
 // ? just adds to the active FBO drawing arrays and doesn't actually render
 // ? until the active fbo is finished and rendered. The currently stored
-// ? vertex, texcoord, colour and ortho values are used.
+// ? vertex, texcoord, colour and matrix values are used.
 /* ------------------------------------------------------------------------- */
 LLFUNC(BlitT, LCGETPTR(1, Video)->
   BlitTri(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex")))
@@ -311,6 +311,12 @@ LLFUNC(SetFilter, LCGETPTR(1, Video)->SetFilter(LCGETBOOL(2, "Filter")));
 /* ------------------------------------------------------------------------- */
 LLFUNC(SetKeyed, LCGETPTR(1, Video)->SetKeyed(LCGETBOOL(2, "Keyed")));
 /* ========================================================================= */
+// $ Video:GetId
+// < Id:integer=The id number of the Video object.
+// ? Returns the unique id of the Video object.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(GetId, 1, LCPUSHVAR(LCGETPTR(1, Video)->CtrGet()));
+/* ========================================================================= */
 // $ Video:GetName
 // < Id:string=The video identifier
 // ? Returns the identifier of the video, usually the filename.
@@ -366,15 +372,16 @@ LLRSMFBEGIN                            // Video:* member functions begin
   LLRSFUNC(Awaken),        LLRSFUNC(Blit),         LLRSFUNC(BlitT),
   LLRSFUNC(Destroy),       LLRSFUNC(GetATime),     LLRSFUNC(GetDrift),
   LLRSFUNC(GetFPS),        LLRSFUNC(GetFrame),     LLRSFUNC(GetFrames),
-  LLRSFUNC(GetFramesLost), LLRSFUNC(GetHeight),    LLRSFUNC(GetLoop),
-  LLRSFUNC(GetName),       LLRSFUNC(GetPlaying),   LLRSFUNC(GetTime),
-  LLRSFUNC(GetWidth),      LLRSFUNC(OnEvent),      LLRSFUNC(Pause),
-  LLRSFUNC(Play),          LLRSFUNC(Rewind),       LLRSFUNC(SetCRGBA),
-  LLRSFUNC(SetCX),         LLRSFUNC(SetFilter),    LLRSFUNC(SetKeyColour),
-  LLRSFUNC(SetKeyed),      LLRSFUNC(SetLoop),      LLRSFUNC(SetTCLTRB),
-  LLRSFUNC(SetTCLTWH),     LLRSFUNC(SetTCX),       LLRSFUNC(SetVLTRB),
-  LLRSFUNC(SetVLTRBA),     LLRSFUNC(SetVLTWH),     LLRSFUNC(SetVLTWHA),
-  LLRSFUNC(SetVX),         LLRSFUNC(SetVolume),    LLRSFUNC(Stop),
+  LLRSFUNC(GetFramesLost), LLRSFUNC(GetHeight),    LLRSFUNC(GetId),
+  LLRSFUNC(GetLoop),       LLRSFUNC(GetName),      LLRSFUNC(GetPlaying),
+  LLRSFUNC(GetTime),       LLRSFUNC(GetWidth),     LLRSFUNC(OnEvent),
+  LLRSFUNC(Pause),         LLRSFUNC(Play),         LLRSFUNC(Rewind),
+  LLRSFUNC(SetCRGBA),      LLRSFUNC(SetCX),        LLRSFUNC(SetFilter),
+  LLRSFUNC(SetKeyColour),  LLRSFUNC(SetKeyed),     LLRSFUNC(SetLoop),
+  LLRSFUNC(SetTCLTRB),     LLRSFUNC(SetTCLTWH),    LLRSFUNC(SetTCX),
+  LLRSFUNC(SetVLTRB),      LLRSFUNC(SetVLTRBA),    LLRSFUNC(SetVLTWH),
+  LLRSFUNC(SetVLTWHA),     LLRSFUNC(SetVX),        LLRSFUNC(SetVolume),
+  LLRSFUNC(Stop),
 LLRSEND                                // Video:* member functions end
 /* ========================================================================= */
 // $ Video.FileAsync
@@ -416,7 +423,7 @@ LLFUNC(ArrayAsync, LCCLASSCREATE(Video)->InitAsyncArray(lS));
 // ? array object.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Asset, 1, LCCLASSCREATE(Video)->SyncInitArray(
-  LCGETCPPSTRING(1, "Identifier"), StdMove(*LCGETPTR(2, Asset))));
+  LCGETCPPSTRINGNE(1, "Identifier"), StdMove(*LCGETPTR(2, Asset))));
 /* ========================================================================= */
 // $ Video.WaitAsync
 // ? Halts main-thread execution until all async video stream events have

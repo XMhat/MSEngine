@@ -79,6 +79,7 @@ namespace E {                          // Start of engine namespace
 #include "pcm.hpp"                     // Pcm loader class header
 #include "fbodef.hpp"                  // Frambuffer object definitions header
 #include "evtwin.hpp"                  // Window thread events system header
+#include "texdef.hpp"                  // Texture data definitions header
 #include "ogl.hpp"                     // OpenGL graphics management header
 #include "imagedef.hpp"                // Image data definitions header
 #include "imagelib.hpp"                // Image codecs handling header
@@ -93,6 +94,7 @@ namespace E {                          // Start of engine namespace
 #include "sshot.hpp"                   // Screenshot handling class header
 #include "texture.hpp"                 // Texture handling class header
 #include "palette.hpp"                 // Palette handling class header
+#include "ft.hpp"                      // Freetype base class
 #include "ftf.hpp"                     // Freetype font handling class header
 #include "font.hpp"                    // Font loading and printing header
 #include "file.hpp"                    // FStream+FileMap class header

@@ -44,7 +44,7 @@ static struct ShaderCore final
       "in vec4 colour;"                // [3][4]=({rgba},{rgba},{rgba})
       "out vec4 texcoordout;"          // Texcoords sent to frag shader
       "out vec4 colourout;"            // Colour multiplier sent to frag shader
-      "uniform vec4 ortho;"            // Current ortho
+      "uniform vec4 matrix;"           // Current 2D matrix
       "void main(void){"               // Entry point
         "vec4 v = vec4(vertex.xy,0,1);"    // Store vertex
         "vec4 tc = vec4(texcoord.xy,0,0);" // Store texcoord
@@ -90,8 +90,8 @@ static struct ShaderCore final
     const char*const cpCode)
   { // Add vertex shader program
     AddVertexShaderWith3DTemplate(shS, strName, StrFormat("$"
-      "v[0] = -1.0+(((ortho[0]+$(v[0]))/ortho[2])*2.0);"  // X-coord
-      "v[1] = -1.0+(((ortho[1]+$(v[1]))/ortho[3])*2.0);", // Y-coord
+      "v[0] = -1.0+(((matrix[0]+$(v[0]))/matrix[2])*2.0);"  // X-coord
+      "v[1] = -1.0+(((matrix[1]+$(v[1]))/matrix[3])*2.0);", // Y-coord
         cpCode, strSPRMethod, strSPRMethod).c_str());
   }
   /* -- Add vertex shader with template ------------------------------------ */
@@ -205,15 +205,7 @@ static struct ShaderCore final
       "abs(colourout.g-rgb.g)<=colourout.a&&"
       "abs(colourout.b-rgb.b)<=colourout.a?0:1");
   }
-  /* -- Set rounding method for the shader ------------------------- */ public:
-  CVarReturn SetSPRoundingMethod(const size_t stMethod)
-  { // Return if specified value is outrageous!
-    if(stMethod >= rList.size()) return DENY;
-    strSPRMethod = rList[stMethod];
-    // Success
-    return ACCEPT;
-  }
-  /* -- Initialise built-in shaders ---------------------------------------- */
+  /* -- Initialise built-in shaders -------------------------------- */ public:
   void InitShaders(void)
   { // Log initialisation
     cLog->LogDebugExSafe(
@@ -271,6 +263,14 @@ static struct ShaderCore final
     { }                                // No code
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(ShaderCore)          // No copy constructor
+  /* -- Set rounding method for the shader --------------------------------- */
+  CVarReturn SetSPRoundingMethod(const size_t stMethod)
+  { // Return if specified value is outrageous!
+    if(stMethod >= rList.size()) return DENY;
+    strSPRMethod = rList[stMethod];
+    // Success
+    return ACCEPT;
+  }
   /* ----------------------------------------------------------------------- */
 } *cShaderCore = nullptr;              // Global access
 /* ------------------------------------------------------------------------- */

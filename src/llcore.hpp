@@ -183,8 +183,7 @@ LLFUNC(OnEnd, LCSETEVENTCB(cLua->lrMainEnd));
 // ? Writes the specified line of text directly to the console with no regard
 // ? to colour of text.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Write,
-  cConsole->AddLine(LCGETCPPSTRING(1, "String"), COLOUR_CYAN));
+LLFUNC(Write, cConsole->AddLine(COLOUR_CYAN, LCGETCPPSTRING(1, "String")));
 /* ========================================================================= */
 // $ Core.WriteEx
 // > Text:string=Text to write to console.
@@ -192,8 +191,9 @@ LLFUNC(Write,
 // ? Writes the specified line of text directly to the console with the
 // ? specified text colour.
 /* ------------------------------------------------------------------------- */
-LLFUNC(WriteEx, cConsole->AddLine(LCGETCPPSTRINGNE(1, "String"),
-  LCGETINTLGE(Colour, 2, COLOUR_BLACK, COLOUR_MAX, "Colour")));
+LLFUNC(WriteEx,
+  cConsole->AddLine(LCGETINTLGE(Colour, 2, COLOUR_BLACK, COLOUR_MAX, "Colour"),
+  LCGETCPPSTRINGNE(1, "String")));
 /* ========================================================================= */
 // $ Core.StatusLeft
 // > Text:string=Console status text

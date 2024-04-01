@@ -102,6 +102,7 @@ template<typename IntType=int, typename AnyType, IntType itSize>
 #include "llsample.hpp"                // Sample namespace and methods
 #include "llsocket.hpp"                // Socket namespace and methods
 #include "llsql.hpp"                   // Sql namespace and methods
+#include "llsshot.hpp"                 // SShot namespace and methods
 #include "llstat.hpp"                  // Stat namespace and methods
 #include "llstream.hpp"                // Stream namespace and methods
 #include "lltexture.hpp"               // Texture namespace and methods
@@ -198,22 +199,22 @@ const LuaLibStaticArray luaLibList{
   ** WARNING: Make sure to update 'LuaLibStaticArray' count in luadef.hpp if **
   ** the total number of elements in this list changes.                      **
   ** ----------------------------------------------------------------------- */
-  LLSMX(Archive,  CFL_NONE),           LLSMC(Asset,    CFL_NONE),
-  LLSXX(Audio,    CFL_AUDIO),          LLSMX(Bin,      CFL_NONE),
-  LLSMX(Clip,     CFL_VIDEO),          LLSXC(Core,     CFL_NONE),
-  LLSXX(Credit,   CFL_NONE),           LLSMX(Command,  CFL_NONE),
-  LLSXX(Crypt,    CFL_NONE),           LLSXC(Display,  CFL_VIDEO),
-  LLSMC(Fbo,      CFL_VIDEO),          LLSMC(File,     CFL_NONE),
-  LLSMC(Font,     CFL_VIDEO),          LLSMX(Ftf,      CFL_NONE),
-  LLSMC(Image,    CFL_NONE),           LLSXX(Info,     CFL_NONE),
-  LLSXC(Input,    CFL_VIDEO),          LLSMX(Json,     CFL_NONE),
-  LLSMX(Mask,     CFL_NONE),           LLSMX(Palette,  CFL_VIDEO),
-  LLSMC(Pcm,      CFL_NONE),           LLSMX(Sample,   CFL_AUDIO),
-  LLSMX(Stat,     CFL_NONE),           LLSMC(Socket,   CFL_NONE),
-  LLSMX(Source,   CFL_AUDIO),          LLSXC(Sql,      CFL_NONE),
-  LLSMC(Stream,   CFL_AUDIO),          LLSMX(Texture,  CFL_VIDEO),
-  LLSXX(Util,     CFL_NONE),           LLSMC(Variable, CFL_NONE),
-  LLSMC(Video,    CFL_AUDIOVIDEO),
+  LLSMX(Archive,  CFL_NONE),           LLSMC(Asset,   CFL_NONE),
+  LLSXX(Audio,    CFL_AUDIO),          LLSMX(Bin,     CFL_NONE),
+  LLSMX(Clip,     CFL_VIDEO),          LLSXC(Core,    CFL_NONE),
+  LLSXX(Credit,   CFL_NONE),           LLSMX(Command, CFL_NONE),
+  LLSXX(Crypt,    CFL_NONE),           LLSXC(Display, CFL_VIDEO),
+  LLSMC(Fbo,      CFL_VIDEO),          LLSMC(File,    CFL_NONE),
+  LLSMC(Font,     CFL_VIDEO),          LLSMX(Ftf,     CFL_NONE),
+  LLSMC(Image,    CFL_NONE),           LLSXX(Info,    CFL_NONE),
+  LLSXC(Input,    CFL_VIDEO),          LLSMX(Json,    CFL_NONE),
+  LLSMX(Mask,     CFL_NONE),           LLSMX(Palette, CFL_VIDEO),
+  LLSMC(Pcm,      CFL_NONE),           LLSMX(Sample,  CFL_AUDIO),
+  LLSMX(SShot,    CFL_VIDEO),          LLSMX(Stat,    CFL_NONE),
+  LLSMC(Socket,   CFL_NONE),           LLSMX(Source,  CFL_AUDIO),
+  LLSXC(Sql,      CFL_NONE),           LLSMC(Stream,  CFL_AUDIO),
+  LLSMX(Texture,  CFL_VIDEO),          LLSXX(Util,    CFL_NONE),
+  LLSMC(Variable, CFL_NONE),           LLSMC(Video,   CFL_AUDIOVIDEO),
 }};/* -- Done with these macros -------------------------------------------- */
 #undef LLSXC
 #undef LLSMC

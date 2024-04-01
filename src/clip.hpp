@@ -20,10 +20,12 @@ using namespace IStd::P;               using namespace ISysUtil::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* -- Clipboard collector and lua interface class -------------------------- */
-BEGIN_COLLECTOREX(Clips, Clip, CLHelperUnsafe,
+CTOR_BEGIN(Clips, Clip, CLHelperUnsafe,
+  /* ----------------------------------------------------------------------- */
   const EvtWin::RegVec rvEvents;,,     // Events list to register
-  private LuaEvtMaster<Clip, LuaEvtTypeAsync<Clip>>);
-BEGIN_MEMBERCLASS(Clips, Clip, ICHelperUnsafe),
+  private LuaEvtMaster<Clip, LuaEvtTypeAsync<Clip>>
+);/* ----------------------------------------------------------------------- */
+CTOR_MEM_BEGIN_CSLAVE(Clips, Clip, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
   public LuaEvtSlave<Clip, 2>,         // Need to store callback and class
   public Lockable,                     // Lua garbage collector instruction
@@ -69,7 +71,7 @@ BEGIN_MEMBERCLASS(Clips, Clip, ICHelperUnsafe),
       XC("Clipboard did not receive two parameters!",
          "Identifier", IdentGet(), "Count", eParams.size());
     // If lua is not paused?
-    if(!bLuaPaused)
+    if(!uiLuaPaused)
     { // Get and push function
       if(!LuaRefGetFunc(1))
         XC("Clipboard first argument not a function!",
@@ -118,7 +120,8 @@ BEGIN_MEMBERCLASS(Clips, Clip, ICHelperUnsafe),
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */
-END_COLLECTOREX(Clips,                 // Finish 'Clips' class body
+CTOR_END(Clips,                        // Finish 'Clips' class body
+  /* -- Collector initialisers --------------------------------------------- */
   cEvtWin->RegisterEx(rvEvents),       // Register all events in 'rvEvents'
   cEvtWin->UnregisterEx(rvEvents),,    // Unregister all events in 'rvEvents'
   LuaEvtMaster{ EMC_CB_EVENT },        // Setup Lua event master
@@ -128,7 +131,6 @@ END_COLLECTOREX(Clips,                 // Finish 'Clips' class body
     { EWC_CB_SETNR, &Clip::ClipOnSetNRCb },
   }
 );/* ----------------------------------------------------------------------- */
-/* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */
 }                                      // End of private module namespace

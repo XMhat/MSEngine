@@ -22,6 +22,12 @@ const CVarItemStaticList cvislList{ {  // Default cvars (from cvars.hpp)
 /* -- Use this when cvar is a string (NoOp for no callback needed) --------- */
 #define CBSTR(f) [](CVarItem &cviItem, const string &strV)->CVarReturn \
   { return f(strV, cviItem.GetModifyableValue()); }
+/* ------------------------------------------------------------------------- */
+// ! APP_CMDLINE
+// ? Shows the commandline sent to the application it cannot be changed at all.
+/* ------------------------------------------------------------------------- */
+{ CFL_NONE, "app_cmdline", cCommon->Blank(),
+  CBSTR(cCore->CoreParseCmdLine), CONFIDENTIAL|TSTRING|MTRIM|PBOOT },
 /* == Core cvars (don't modify order) ====================================== */
 // ! LOG_LEVEL
 // ? Specifies the logging level...
@@ -33,21 +39,13 @@ const CVarItemStaticList cvislList{ {  // Default cvars (from cvars.hpp)
 /* ------------------------------------------------------------------------- */
 { CFL_NONE, "log_level",
 /* ------------------------------------------------------------------------- */
-#if defined(ALPHA)                     // Alpha (Debug) version?
+#if !defined(RELEASE)                  // Not release version?
   "4",                                 // Default of DEBUG for log level
-#elif defined(BETA)                    // Beta (Developer) version?
-  "3",                                 // Default of INFO for log level
-#else                                  // Release (Public) version?
+#else                                  // Release version?
   "2",                                 // Default of WARNING for log level
 #endif                                 // Release type check
   /* ----------------------------------------------------------------------- */
   CB(cLog->SetLevel, LHLevel), TUINTEGER|PANY },
-/* ------------------------------------------------------------------------- */
-// ! APP_CMDLINE
-// ? Shows the commandline sent to the application it cannot be changed at all.
-/* ------------------------------------------------------------------------- */
-{ CFL_NONE, "app_cmdline", cCommon->Blank(),
-  CBSTR(cCore->CoreParseCmdLine), CONFIDENTIAL|TSTRING|MTRIM|PBOOT },
 /* ------------------------------------------------------------------------- */
 // ! AST_LZMABUFFER
 // ? Specifies the decompression buffer size (in bytes) for the lzma api. The
@@ -145,6 +143,21 @@ const CVarItemStaticList cvislList{ {  // Default cvars (from cvars.hpp)
 /* ------------------------------------------------------------------------- */
 { CFL_NONE, "sql_db", cCommon->Blank(),
   CBSTR(cSql->UdbFileModified), CONFIDENTIAL|TSTRING|CTRUSTEDFN|MTRIM|PBOOT },
+/* ------------------------------------------------------------------------- */
+// ! SQL_RETRYCOUNT
+// ? Specifies the number of times a Sql query can be retried before giving
+// ? up. Set to -1 for infinite. The default value is 1000.
+/* ------------------------------------------------------------------------- */
+{ CFL_NONE, "sql_retrycount", "1000",
+  CB(cSql->RetryCountModified, unsigned int), TINTEGER|PSYSTEM },
+/* ------------------------------------------------------------------------- */
+// ! SQL_RETRYSUSPEND
+// ? Specifies the number of milliseconds to suspend before retrying the
+// ? operation. The default value is 1 and the the maximum value is 1000 for
+// ? safety reasons. Setting to zero disables but yields the calling thread.
+/* ------------------------------------------------------------------------- */
+{ CFL_NONE, "sql_retrysuspend", cCommon->One(),
+  CB(cSql->RetrySuspendModified, uint64_t), TUINTEGER|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! SQL_ERASEEMPTY
 // ? Specifies to automatically erase the database at exit if no cvars or
@@ -1383,7 +1396,7 @@ const CVarItemStaticList cvislList{ {  // Default cvars (from cvars.hpp)
 // ? 'vid_simplematrix' cvar is set to 0.
 /* ------------------------------------------------------------------------- */
 { CFL_VIDEO, "vid_oraspmax", "1.777778",
-  CB(cFboCore->SetMaxOrtho, GLfloat), TUFLOAT|PSYSTEM },
+  CB(cFboCore->SetMaxAspect, GLfloat), TUFLOAT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_ORASPMIN
 // ? Specifies the minmum aspect ratio allowed in the main frame buffer. For
@@ -1391,19 +1404,19 @@ const CVarItemStaticList cvislList{ {  // Default cvars (from cvars.hpp)
 // ? 'vid_simplematrix' cvar is set to 0.
 /* ------------------------------------------------------------------------- */
 { CFL_VIDEO, "vid_oraspmin", "1.25",
-  CB(cFboCore->SetMinOrtho, GLfloat), TUFLOAT|PSYSTEM },
+  CB(cFboCore->SetMinAspect, GLfloat), TUFLOAT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_ORHEIGHT
 // ? Specifies the height of the main frame buffer.
 /* ------------------------------------------------------------------------- */
 { CFL_VIDEO, "vid_orheight", "480",
-  CB(cDisplay->SetOrthoHeight, GLfloat), TUFLOAT|PSYSTEM },
+  CB(cDisplay->SetMatrixHeight, GLfloat), TUFLOAT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_ORWIDTH
 // ? Specifies the width of the main frame buffer.
 /* ------------------------------------------------------------------------- */
 { CFL_VIDEO, "vid_orwidth", "640",
-  CB(cDisplay->SetOrthoWidth, GLfloat), TUFLOAT|PSYSTEM },
+  CB(cDisplay->SetMatrixWidth, GLfloat), TUFLOAT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_PROFILE
 // ? Specifies the type of profile to create the context for. This is only used
@@ -1520,7 +1533,7 @@ const CVarItemStaticList cvislList{ {  // Default cvars (from cvars.hpp)
 // ? the 'S' (saveable) token can be used.
 /* ------------------------------------------------------------------------- */
 { CFL_VIDEO, "vid_sstype", cCommon->Zero(),
-  CB(cSShot->SetScreenShotType, ImageFormat), TUINTEGERSAVE|PANY },
+  CB(SShotsSetType, ImageFormat), TUINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_STEREO
 // ? Enables 3D glasses support.

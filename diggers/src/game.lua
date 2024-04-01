@@ -21,7 +21,7 @@ local UtilClampInt<const>, UtilClamp<const>, UtilBlank<const>, CoreLog<const>,
   CoreWrite<const>, InfoTicks<const>, UtilFormatNTime<const>,
   InfoTime<const>, MaskCreateNew<const>, CoreQuit<const>
   = -- --------------------------------------------------------------------- --
-  Util.ClampInt, Util.Clamp, Util.Blank, Core.Log, CoreWriteEx, Info.Ticks,
+  Util.ClampInt, Util.Clamp, Util.Blank, Core.Log, Core.WriteEx, Info.Ticks,
   Util.FormatNTime, Info.Time, Mask.CreateNew, Core.Quit;
 -- Game module namespace (because of MAXVARS limit) ------------------------ --
 local function GameLuaModule()
@@ -3661,15 +3661,11 @@ local function LoadLevel(Id, Music, P1R, P1AI, P2R, P2AI, TP, TR, TI)
   -- Set FBU callback
   RegisterFBUCallback("game", FrameBufferUpdated);
   -- Set level number and get data for it.
-  local aLevelInfo;
-  if type(Id) == "table" then iLevelId, aLevelInfo = 0, Id;
-  elseif type(Id) == "number" then
-    if Id < 0 then iLevelId = #aLevelData;
-    elseif Id > #aLevelData then iLevelId = 0;
-    else iLevelId = Id end;
-    aLevelInfo = aLevelData[iLevelId];
-    assert(type(aLevelInfo)=="table", "No level info for level "..iLevelId);
-  else error("Invalid id!") end;
+  local sIdType<const>, aLevelInfo = type(Id);
+  if sIdType == "table" then iLevelId, aLevelInfo = 1, Id;
+  elseif sIdType == "number" then iLevelId, aLevelInfo = Id, aLevelData[Id];
+  else error("Invalid id '"..tostring(Id).."' of type '"..sIdType.."'!") end;
+  assert(type(aLevelInfo) == "table", "Invalid level data!");
   -- Get level type data and level type
   local aLevelTypeData<const> = aLevelInfo.t;
   local iLevelType<const> = aLevelTypeData.i;
@@ -3715,7 +3711,8 @@ local function LoadLevel(Id, Music, P1R, P1AI, P2R, P2AI, TP, TR, TI)
       { 199, 202, P2R, P2AI }    -- Player 2 start data
     };
     -- Create a blank mask
-    maskZone = MaskCreateNew(TotalLevelWidthPixel, TotalLevelHeightPixel);
+    maskZone = MaskCreateNew(sLevelFile, TotalLevelWidthPixel,
+      TotalLevelHeightPixel);
     -- Get minimum and maximum object id
     local iMinObjId<const>, iMaxObjId<const> = TYP.JENNITE, TYP.MAX;
     -- Player starting point data found

@@ -69,8 +69,20 @@ static unsigned int SysMessage(void*const vpHandle, const string &strTitle,
         MessageBoxExW(reinterpret_cast<HWND>(vpHandle),
           UTFtoS16(strMessage).c_str(), UTFtoS16(strTitle).c_str(),
           static_cast<DWORD>(uiFlags), 0)); }
+/* -- Set thread priority -------------------------------------------------- */
+static bool SysSetThreadPriority(const SysThread stLevel)
+{ // STP_* id to priority lookup table
+  static const array<const int, STP_MAX> aValues{
+    THREAD_PRIORITY_ABOVE_NORMAL,      // STP_MAIN
+    THREAD_PRIORITY_HIGHEST,           // STP_ENGINE
+    THREAD_PRIORITY_BELOW_NORMAL,      // STP_AUDIO
+    THREAD_PRIORITY_NORMAL,            // STP_HIGH
+    THREAD_PRIORITY_LOWEST,            // STP_LOW
+  }; // Set thread priorty and return result
+  return !!SetThreadPriority(GetCurrentThread(), aValues[stLevel]);
+}
 /* ------------------------------------------------------------------------- */
-static bool SysInitThread(const char*const cpName, const SysThread stLevel)
+static void SysSetThreadName(const char*const cpName)
 { // Keep structure aligned
 #pragma pack(push, 8)
   struct WinDBGThreadData {
@@ -85,15 +97,6 @@ static bool SysInitThread(const char*const cpName, const SysThread stLevel)
   __try { RaiseException(0x406D1388, 0,
             sizeof(tInfo)/sizeof(ULONG_PTR), (ULONG_PTR*)&tInfo); }
   __except(EXCEPTION_CONTINUE_EXECUTION) { }
-  // STP_* id to priority lookup table
-  static const array<const int, STP_MAX> aValues{
-    THREAD_PRIORITY_ABOVE_NORMAL,      // STP_MAIN
-    THREAD_PRIORITY_HIGHEST,           // STP_ENGINE
-    THREAD_PRIORITY_BELOW_NORMAL,      // STP_AUDIO
-    THREAD_PRIORITY_NORMAL,            // STP_HIGH
-    THREAD_PRIORITY_LOWEST,            // STP_LOW
-  }; // Set thread priorty and return result
-  return !!SetThreadPriority(GetCurrentThread(), aValues[stLevel]);
 }
 /* ------------------------------------------------------------------------- */
 #elif defined(MACOS)                   // Using mac?
@@ -158,47 +161,10 @@ static void SysUnSetEnv(void) { }
 template<typename ...VarArgs>
   static void SysUnSetEnv(const char*const cpEnv, const VarArgs &...vaVars)
     { unsetenv(cpEnv); SysUnSetEnv(vaVars...); }
-/* ------------------------------------------------------------------------- */
-#else                                  // Using linux?
-/* -- Compatibility with X11 ----------------------------------------------- */
-# if defined(Bool)                     // Undefine 'Bool' set by X11
-#  undef Bool                          // To prevent problems with other apis
-# endif                                // Done checking for 'Bool'
-/* -- Actual interface to show a message box ------------------------------- */
-static unsigned int SysMessage(void*const, const string &strTitle,
-  const string &strMessage, const unsigned int uiFlags)
-{ // Print the error first
-  fwprintf(stderr, L"%ls: %ls\n", UtfDecoder{ strTitle }.Wide().c_str(),
-                                  UtfDecoder{ strMessage }.Wide().c_str());
-  // Return status code
-  return 0;
-}
-/* ------------------------------------------------------------------------- */
-#endif                                 // Done checking OS
-/* ------------------------------------------------------------------------- */
-#if defined(WINDOWS)                   // Windows is defined?
-/* -- System message without a handle -------------------------------------- */
-static unsigned int SysMessage(const string &strTitle,
-  const string &strMessage, const unsigned int uiFlags)
-    { return SysMessage(nullptr, strTitle, strMessage,
-        MB_SYSTEMMODAL|uiFlags); }
-/* ------------------------------------------------------------------------- */
-#else                                  // Not using Windows target? (POSIX)
-/* -- System error code ---------------------------------------------------- */
-template<typename IntType=int>static IntType SysErrorCode(void)
-  { return static_cast<IntType>(StdGetError()); }
-/* -- System error formatter with specified error code --------------------- */
-static const string SysError(const int iError) { return StrFromErrNo(iError); }
-/* -- System error formatter with current error code ----------------------- */
-static const string SysError(void) { return StrFromErrNo(SysErrorCode()); }
-/* ------------------------------------------------------------------------- */
-static bool SysInitThread(const char*const cpName, const SysThread stLevel)
+/* -- Set thread priority -------------------------------------------------- */
+static bool SysSetThreadPriority(const SysThread stLevel)
 { // Get this thread handle
   pthread_t ptHandle = pthread_self();
-  // Using MacOS?
-#if defined(MACOS)
-  // Set thread name
-  pthread_setname_np(cpName);
   // Set qos
   pthread_set_qos_class_self_np(stLevel <= STP_ENGINE ?
     QOS_CLASS_USER_INTERACTIVE : QOS_CLASS_BACKGROUND, 0);
@@ -220,13 +186,53 @@ static bool SysInitThread(const char*const cpName, const SysThread stLevel)
   };
   // Set the new parameters and return true if succeeded
   return !pthread_setschedparam(ptHandle, iPolicy, &spParam);
-  // Using Linux?
-#else
-  // Set thread name
-  pthread_setname_np(ptHandle, cpName);
-  // Done pthread_setschedparam() is pointless on Linux.
+}
+/* ------------------------------------------------------------------------- */
+#else                                  // Using linux?
+/* -- Compatibility with X11 ----------------------------------------------- */
+# if defined(Bool)                     // Undefine 'Bool' set by X11
+#  undef Bool                          // To prevent problems with other apis
+# endif                                // Done checking for 'Bool'
+/* -- Actual interface to show a message box ------------------------------- */
+static unsigned int SysMessage(void*const, const string &strTitle,
+  const string &strMessage, const unsigned int uiFlags)
+{ // Print the error first
+  fwprintf(stderr, L"%ls: %ls\n", UtfDecoder{ strTitle }.Wide().c_str(),
+                                  UtfDecoder{ strMessage }.Wide().c_str());
+  // Return status code
+  return 0;
+}
+/* -- Set thread priority -------------------------------------------------- */
+static bool SysSetThreadPriority(const SysThread stLevel)
+{ // pthread_setschedparam() is pointless on Linux as root is required.
   return true;
+}
+/* ------------------------------------------------------------------------- */
+#endif                                 // Done checking OS
+/* ------------------------------------------------------------------------- */
+#if defined(WINDOWS)                   // Windows is defined?
+/* -- System message without a handle -------------------------------------- */
+static unsigned int SysMessage(const string &strTitle,
+  const string &strMessage, const unsigned int uiFlags)
+    { return SysMessage(nullptr, strTitle, strMessage,
+        MB_SYSTEMMODAL|uiFlags); }
+/* ------------------------------------------------------------------------- */
+#else                                  // Not using Windows target? (POSIX)
+/* -- System error code ---------------------------------------------------- */
+template<typename IntType=int>static IntType SysErrorCode(void)
+  { return static_cast<IntType>(StdGetError()); }
+/* -- System error formatter with specified error code --------------------- */
+static const string SysError(const int iError) { return StrFromErrNo(iError); }
+/* -- System error formatter with current error code ----------------------- */
+static const string SysError(void) { return StrFromErrNo(SysErrorCode()); }
+/* ------------------------------------------------------------------------- */
+static void SysSetThreadName(const char*const cpName)
+{ // Set thread name which helps a little with debugging
+  pthread_setname_np(
+#if defined(LINUX)                     // Linux?
+    pthread_self(),                    // Requires handle
 #endif
+    cpName);
 }
 /* -- System message without a handle -------------------------------------- */
 static unsigned int SysMessage(const string &strTitle,
@@ -249,6 +255,13 @@ static bool SysIsErrorCode(const int iCode=0)
   { return SysErrorCode() == iCode; }
 static bool SysIsNotErrorCode[[maybe_unused]](const int iCode=0)
   { return !SysIsErrorCode(iCode); }
+/* ------------------------------------------------------------------------- */
+static bool SysInitThread(const char*const cpName, const SysThread stLevel)
+{ // Set the thread name
+  SysSetThreadName(cpName);
+  // Set the new parameters and return true if succeeded
+  return SysSetThreadPriority(stLevel);
+}
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */

@@ -43,38 +43,38 @@ BUILD_SECURE_FLAGS(Socket,
   // Set if error with event callback? Socket read a packet (not ever set)
   SS_EVENTERROR          {0x40000000}, SS_READPACKET          {0x80000000}
 );/* == Socket collector class for collector data and custom variables ===== */
-BEGIN_COLLECTOREX(Sockets, Socket, CLHelperUnsafe,
+CTOR_BEGIN(Sockets, Socket, CLHelperUnsafe,
 /* -- Internal registry values for http data ------------------------------- **
-** We use these key names internally for passing http data around without   **\
-** creating unneccesary new variables. Let us keep these key names in       **\
-** binary text because it is impossible for the http server to return       **\
-** header key names in binary! C++ and LUA can still store keys in binary   **\
+** We use these key names internally for passing http data around without    **
+** creating unneccesary new variables. Let us keep these key names in        **
+** binary text because it is impossible for the http server to return        **
+** header key names in binary! C++ and LUA can still store keys in binary    **
 ** as well so this should be safe! ----------------------------------------- */
-const string       strRegVarREQ;       /* Registry key name for req data    */\
-const string       strRegVarBODY;      /* " for http body data              */\
-const string       strRegVarPROTO;     /* " for http protocol data          */\
-const string       strRegVarCODE;      /* " for http status code data       */\
-const string       strRegVarMETHOD;    /* " for http method string          */\
-const string       strRegVarRESPONSE;  /* HTTP response string              */\
-const string       strCipherDefault;   /* Default cipher to use             */\
+const string       strRegVarREQ;       // Registry key name for req data
+const string       strRegVarBODY;      // " for http body data
+const string       strRegVarPROTO;     // " for http protocol data
+const string       strRegVarCODE;      // " for http status code data
+const string       strRegVarMETHOD;    // " for http method string
+const string       strRegVarRESPONSE;  // HTTP response string
+const string       strCipherDefault;   // Default cipher to use
 /* -- Variables ------------------------------------------------------------ */
-string_view        strvCipher12;       /* Ciphers for TLSv1.2 from CVar     */\
-string_view        strvCipher13;       /* Ciphers for TLSv1.3+ from CVar    */\
-string_view        strvUserAgent;      /* User agent string from CVar       */\
-SafeInt            iOCSP;              /* Use OCSP (0=Off;1=On;2=Strict)    */\
-SafeSizeT          stBufferSize;       /* Default recv/send buffer size     */\
-SafeDouble         dRecvTimeout;       /* Receive packet timeout            */\
-SafeDouble         dSendTimeout;       /* Send packet timeout               */\
-SafeUInt64         qRX;                /* Total bytes received              */\
-SafeUInt64         qTX;                /* Total bytes sent                  */\
-SafeUInt64         qRXp;               /* Total packets received            */\
-SafeUInt64         qTXp;               /* Total packets sent                */\
-SafeSizeT          stConnected;,,      /* Total connected sockets           */\
-/* -- Derived classes ----------------------------------------------------- */\
-public  Certs,                         /* Certificate store                 */\
+string_view        strvCipher12;       // Ciphers for TLSv1.2 from CVar
+string_view        strvCipher13;       // Ciphers for TLSv1.3+ from CVar
+string_view        strvUserAgent;      // User agent string from CVar
+SafeInt            iOCSP;              // Use OCSP (0=Off;1=On;2=Strict)
+SafeSizeT          stBufferSize;       // Default recv/send buffer size
+SafeDouble         dRecvTimeout;       // Receive packet timeout
+SafeDouble         dSendTimeout;       // Send packet timeout
+SafeUInt64         qRX;                // Total bytes received
+SafeUInt64         qTX;                // Total bytes sent
+SafeUInt64         qRXp;               // Total packets received
+SafeUInt64         qTXp;               // Total packets sent
+SafeSizeT          stConnected;,,      // Total connected sockets
+/* -- Derived classes ------------------------------------------------------ */
+public Certs,                          // Certificate store
 private LuaEvtMaster<Socket,LuaEvtTypeAsync<Socket>>);
 /* == Socket object class ================================================== */
-BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
+CTOR_MEM_BEGIN_CSLAVE(Sockets, Socket, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
   public LuaEvtSlave<Socket,2>,        // Need to store two references
   public Lockable,                     // Lua garbage collector instruction
@@ -1136,7 +1136,7 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     { // Get the status and warn if we have incorrect number of parameters
       const unsigned int uiStatus = eParams[2].ui;
       // Lua is not paused?
-      if(!bLuaPaused)
+      if(!uiLuaPaused)
       { // Push function callback onto stack
         if(LuaRefGetFunc(1))
         { // Push class reference onto stack
@@ -1211,8 +1211,10 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
     if(stCount > 0 && stCount % 2 == 0)
     { // Create the table, we're creating non-indexed key/value pairs
       LuaUtilPushTable(lS, 0, stCount / 2);
-      // Until queue is empty
-      for(string strVar; GetTXQCount() > 0;)
+      // Generated string
+      string strVar;
+      // Repeat...
+      do
       { // Get packet data in send qeue
         Memory mbPacket;
         GetPacket(mbPacket, plTX, stTX);
@@ -1224,7 +1226,8 @@ BEGIN_MEMBERCLASS(Sockets, Socket, ICHelperUnsafe),
         lua_setfield(lS, -2, strVar.c_str());
         // Clear string
         strVar.clear();
-      }
+      } // ...until there are no more packets to process
+      while(GetTXQCount() > 0);
     } // Create the empty table
     else LuaUtilPushTable(lS);
   }
@@ -1449,7 +1452,7 @@ static void InitSockets(void)
   BIO_sock_init();
 }
 /* ------------------------------------------------------------------------- */
-END_COLLECTOREX(Sockets, InitSockets(), DeInitSockets(),,
+CTOR_END(Sockets, InitSockets(), DeInitSockets(),,
   /* -- Initialisers ------------------------------------------------------- */
   LuaEvtMaster{ EMC_MP_SOCKET },       // Setup async socket event
   strRegVarREQ{ "\001" },              // Init reg key name for request data

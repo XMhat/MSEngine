@@ -158,16 +158,16 @@ LLFUNC(SetVLTWHA, LCGETULPTR(1, Fbo)->FboItemSetVertexWH(
   LCGETNUM(GLfloat, 4, "Width"), LCGETNUM(GLfloat, 5, "Height"),
   LCGETNORM(GLfloat, 6, "Angle")));
 /* ========================================================================= */
-// $ Fbo:SetOrtho
+// $ Fbo:SetMatrix
 // > Left:number=The left co-ordinate.
 // > Top:number=The top co-ordinate.
 // > Right:number=The right co-ordinate.
 // > Bottom:number=The bottom co-ordinate.
-// ? Sets the ortho of the specified fbo, meaning, these are the bounds of
+// ? Sets the matrix of the specified fbo, meaning, these are the bounds of
 // ? where you can draw. Same as glOrtho().
 // ? See: https://www.opengl.org/sdk/docs/man2/xhtml/glOrtho.xml
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetOrtho, LCGETULPTR(1, Fbo)->FboSetOrtho(
+LLFUNC(SetMatrix, LCGETULPTR(1, Fbo)->FboSetMatrix(
   LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
   LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom")));
 /* ========================================================================= */
@@ -260,7 +260,7 @@ LLFUNC(Finish, LCGETPTR(1, Fbo)->FboFinishAndRender());
 // ? Blits the SPECIFIED fbo to the currently ACTIVE fbo. This just adds
 // ? to the active FBO drawing arrays and doesn't actually render until the
 // ? active fbo is finished and rendered. The currently stored vertex,
-// ? texcoord, colour and ortho values are used.
+// ? texcoord, colour and matrix values are used.
 /* ------------------------------------------------------------------------- */
 LLFUNC(Blit, FboActive()->FboBlit(*LCGETPTR(1, Fbo)));
 /* ========================================================================= */
@@ -269,7 +269,7 @@ LLFUNC(Blit, FboActive()->FboBlit(*LCGETPTR(1, Fbo)));
 // ? Blits the SPECIFIED triangle of the SPECIFIED fbo to the currently
 // ? ACTIVE fbo. This just adds to the active FBO drawing arrays and doesn't
 // ? actually render until the active fbo is finished and rendered. The
-// ? currently stored vertex, texcoord, colour and ortho values are used.
+// ? currently stored vertex, texcoord, colour and matrix values are used.
 /* ------------------------------------------------------------------------- */
 LLFUNC(BlitT, FboActive()->FboBlitTri(*LCGETPTR(1, Fbo),
   LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex")));
@@ -301,25 +301,16 @@ LLFUNCEX(IsFinished, 1, LCPUSHVAR(!!LCGETPTR(1, Fbo)->FboGetFinishCount()));
 // < Top:number=Minimum viewable matrix Y position.
 // < Right:number=Maximum viewable matrix X position.
 // < Bottom:number=Maximum viewable matrix Y position.
-// < OrthoWidth:number=Current requested ortho width.
-// < OrthoHeight:number=Current requested ortho height.
+// < MatrixWidth:number=Current requested matrix width.
+// < MatrixHeight:number=Current requested matrix height.
 // ? Returns the current matrix information for the specified fbo.
 /* ------------------------------------------------------------------------- */
 LLFUNCBEGIN(GetMatrix)
   const Fbo &fboCref = *LCGETPTR(1, Fbo);
   LCPUSHVAR(fboCref.GetCoRight(),         fboCref.GetCoBottom(),
-            fboCref.fcStage.GetCoLeft(),  fboCref.fcStage.GetCoTop(),
-            fboCref.fcStage.GetCoRight(), fboCref.fcStage.GetCoBottom());
+            fboCref.ffcStage.GetCoLeft(),  fboCref.ffcStage.GetCoTop(),
+            fboCref.ffcStage.GetCoRight(), fboCref.ffcStage.GetCoBottom());
 LLFUNCENDEX(6)
-/* ========================================================================= */
-// $ Fbo:Dump
-// < Dest:Fbo=The frame buffer to dump.
-// < File:string=(Optional) File to save to.
-// ? Takes a screenshot of the specified FBO. You must completely omit the
-// ? 'file' parameter to use an engine generated file.
-/* ------------------------------------------------------------------------- */
-LLFUNC(Dump, cSShot->DumpFBO(*LCGETPTR(1, Fbo),
-  LuaUtilStackSize(lS) < 2 ? cCommon->Blank() : LCGETCPPFILE(2, "File")));
 /* ========================================================================= */
 // $ Fbo:Reserve
 // > Vertexes:integer=How many 64-bit floats to reserve in GPU float list
@@ -331,6 +322,18 @@ LLFUNC(Dump, cSShot->DumpFBO(*LCGETPTR(1, Fbo),
 LLFUNC(Reserve, LCGETPTR(1, Fbo)->FboReserve(
   LCGETINTLG(size_t, 2, 1, 1000000, "Vertexes"),
   LCGETINTLG(size_t, 3, 1, 1000000, "Commands")));
+/* ========================================================================= */
+// $ Fbo:GetId
+// < Id:integer=The id number of the Fbo object.
+// ? Returns the unique id of the Fbo object.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(GetId, 1, LCPUSHVAR(LCGETPTR(1, Fbo)->CtrGet()));
+/* ========================================================================= */
+// $ Fbo:GetName
+// < Id:string=The video identifier
+// ? Returns the identifier of the Fbo object.
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(GetName, 1, LCPUSHVAR(LCGETPTR(1, Fbo)->IdentGet()));
 /* ========================================================================= */
 // $ Fbo:Destroy
 // ? Destroys the FBO and frees all the memory associated with it. The OpenGL
@@ -345,15 +348,16 @@ LLFUNC(Destroy, LCCLASSDESTROY(1, Fbo));
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // Fbo:* member functions begin
-  LLRSFUNC(Activate),      LLRSFUNC(Blit),           LLRSFUNC(BlitT),
-  LLRSFUNC(Destroy),       LLRSFUNC(Dump),           LLRSFUNC(Finish),
-  LLRSFUNC(GetFloatCount), LLRSFUNC(GetLFloatCount), LLRSFUNC(GetMatrix),
-  LLRSFUNC(IsFinished),    LLRSFUNC(Reserve),        LLRSFUNC(SetBlend),
-  LLRSFUNC(SetClear),      LLRSFUNC(SetClearColour), LLRSFUNC(SetCRGBA),
-  LLRSFUNC(SetCX),         LLRSFUNC(SetFilter),      LLRSFUNC(SetOrtho),
-  LLRSFUNC(SetTCLTRB),     LLRSFUNC(SetTCLTWH),      LLRSFUNC(SetTCX),
-  LLRSFUNC(SetVLTRB),      LLRSFUNC(SetVLTWH),       LLRSFUNC(SetVLTRBA),
-  LLRSFUNC(SetVLTWHA),     LLRSFUNC(SetVX),          LLRSFUNC(SetWireframe),
+  LLRSFUNC(Activate),     LLRSFUNC(Blit),           LLRSFUNC(BlitT),
+  LLRSFUNC(Destroy),      LLRSFUNC(Finish),         LLRSFUNC(GetFloatCount),
+  LLRSFUNC(GetId),        LLRSFUNC(GetLFloatCount), LLRSFUNC(GetMatrix),
+  LLRSFUNC(GetName),      LLRSFUNC(IsFinished),     LLRSFUNC(Reserve),
+  LLRSFUNC(SetBlend),     LLRSFUNC(SetClear),       LLRSFUNC(SetClearColour),
+  LLRSFUNC(SetCRGBA),     LLRSFUNC(SetCX),          LLRSFUNC(SetFilter),
+  LLRSFUNC(SetMatrix),    LLRSFUNC(SetTCLTRB),      LLRSFUNC(SetTCLTWH),
+  LLRSFUNC(SetTCX),       LLRSFUNC(SetVLTRB),       LLRSFUNC(SetVLTWH),
+  LLRSFUNC(SetVLTRBA),    LLRSFUNC(SetVLTWHA),      LLRSFUNC(SetVX),
+  LLRSFUNC(SetWireframe),
 LLRSEND                                // Fbo:* member functions end
 /* ========================================================================= */
 // $ Fbo.Main
@@ -386,7 +390,7 @@ LLFUNCEX(Create, 1, LCCLASSCREATE(Fbo)->FboInit(
 LLFUNC(Draw, cFboCore->SetDraw());
 /* ========================================================================= */
 // $ Fbo.IsDrawing
-// ? < State:boolean=Is the main fbo set to redraw?
+// < State:boolean=Is the main fbo set to redraw?
 // ? Returns if the main fbo is set to redraw.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(IsDrawing, 1, LCPUSHVAR(cFboCore->CanDraw()));

@@ -20,7 +20,7 @@ namespace P {                          // Start of public module namespace
 /* -- Public typedefs ------------------------------------------------------ */
 enum ShaderUniformId : size_t          // Mandatory uniforms
 { /* ----------------------------------------------------------------------- */
-  U_ORTHO,                             // Ortho uniform vec4
+  U_MATRIX,                            // Matrix uniform vec4
   U_PALETTE,                           // Palette uniform vec4
   /* ----------------------------------------------------------------------- */
   U_MAX                                // Max no of mandatory uniforms
@@ -65,7 +65,7 @@ class ShaderCell :                     // Members initially private
 };/* ----------------------------------------------------------------------- */
 typedef list<ShaderCell> ShaderList;   // Shader cell list
 /* ------------------------------------------------------------------------- */
-BEGIN_COLLECTORDUO(Shaders, Shader, CLHelperUnsafe, ICHelperUnsafe),
+CTOR_BEGIN_DUO(Shaders, Shader, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Base classes ------------------------------------------------------- */
   public Lockable,                     // Lua garbage collector instruction
   public ShaderList                    // List of shader data in this program
@@ -113,13 +113,13 @@ BEGIN_COLLECTORDUO(Shaders, Shader, CLHelperUnsafe, ICHelperUnsafe),
     // Commit palette
     cOgl->Uniform(GetUID(U_PALETTE), static_cast<GLsizei>(stSize), fpData);
   }
-  /* -- Update shader ortho ------------------------------------------------ */
-  void UpdateOrtho(const FboRenderItem &foiRef) const
+  /* -- Update shader matrix ----------------------------------------------- */
+  void UpdateMatrix(const FboRenderItem &friRef) const
   { // Activate shader (no error checking)
     cOgl->UseProgram(GetProgram());
-    // Commit ortho bounds (no error checking)
-    cOgl->Uniform(GetUID(U_ORTHO), foiRef.GetCoLeft(),
-      foiRef.GetCoTop(), foiRef.GetCoRight(), foiRef.GetCoBottom());
+    // Commit matrix bounds (no error checking)
+    cOgl->Uniform(GetUID(U_MATRIX), friRef.GetCoLeft(),
+      friRef.GetCoTop(), friRef.GetCoRight(), friRef.GetCoBottom());
   }
   /* -- Linkage ------------------------------------------------------------ */
   void Link(void)
@@ -141,7 +141,7 @@ BEGIN_COLLECTORDUO(Shaders, Shader, CLHelperUnsafe, ICHelperUnsafe),
     // Activate
     Activate();
     // Verify uniforms are in the correct position
-    VerifyUniformLocation("ortho", U_ORTHO);
+    VerifyUniformLocation("matrix", U_MATRIX);
   }
   /* -- Activate program --------------------------------------------------- */
   void Activate(void)
@@ -259,7 +259,7 @@ BEGIN_COLLECTORDUO(Shaders, Shader, CLHelperUnsafe, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Shader)              // Disable copy constructor and operator
 };/* ----------------------------------------------------------------------- */
-END_COLLECTOR(Shaders)                 // Finish shaders collector
+CTOR_END_NOINITS(Shaders)              // Finish shaders collector
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */
