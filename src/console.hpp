@@ -800,9 +800,13 @@ static class Console final :           // Members initially private
       ccslInt.size());
     // Reset cursor position
     clriPosition = rbegin();
-    // Using text mode add flag for it
-    if(cSystem->IsTextMode()) GetDefaultRedrawFlags().FlagReset(RD_TEXT);
-    // Redraw the console
+    // Using text mode?
+    if(cSystem->IsTextMode())
+    { // Add flag for it
+      GetDefaultRedrawFlags().FlagReset(RD_TEXT);
+      // Register console events
+      cEvtMain->RegisterEx(reEvents);
+    } // Redraw the console
     SetRedraw();
     // Initially shown and not closable
     FlagSet(CF_CANTDISABLE|CF_ENABLED|CF_INSERT);
@@ -828,6 +832,8 @@ static class Console final :           // Members initially private
     cLog->LogDebugSafe("Console de-initialising...");
     // Initially shown and not closable. All other flags removed.
     FlagReset(CF_CANTDISABLE|CF_ENABLED|CF_INSERT);
+    // Unregister console events if using text mode
+    if(cSystem->IsTextMode()) cEvtMain->UnregisterEx(reEvents);
     // If commands registered?
     switch(const size_t stCount = cmMap.size())
     { // Impossible?

@@ -259,7 +259,7 @@ CTOR_MEM_BEGIN(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
           fRight - fLeft, fBottom - fTop); }
   /* -- Set the texture co-ordinates of a tile that has reversed scanlines - */
   void SetTileR(const size_t stSubTexId, const size_t stTileId,
-    const GLfloat fLeft,const GLfloat fTop, const GLfloat fRight,
+    const GLfloat fLeft, const GLfloat fTop, const GLfloat fRight,
     const GLfloat fBottom)
       { const GLfloat fNTop = GetFHeight() - fTop,
                       fNBottom = GetFHeight() - fBottom;
@@ -278,8 +278,8 @@ CTOR_MEM_BEGIN(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
     const GLfloat fLeft, const GLfloat fTop, const GLfloat fWidth,
     const GLfloat fHeight)
       { const GLfloat fNTop = GetFHeight()-fTop,
-                      fNBottom = fNTop+fHeight,
-                      fNRight = fLeft+fWidth;
+                      fNBottom = fNTop + fHeight,
+                      fNRight = fLeft + fWidth;
         SetTile(stSubTexId, stTileId, fLeft, fTop, fNRight, fNBottom,
           fNRight - fLeft, fNTop - fNBottom); }
   /* -- Do add a tile with custom width and height setting ----------------- */
@@ -521,13 +521,13 @@ CTOR_MEM_BEGIN(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
       { const CoordData &cdTex = clTiles[stSubTexId][stTileId];
         BlitQuad(GetSubName(stSubTexId), cdTex,
           FboItemSetAndGetVertex(fLeft, fTop, fLeft + cdTex.DimGetWidth(),
-            fTop+cdTex.DimGetHeight()), FboItemGetCData()); }
+            fTop + cdTex.DimGetHeight()), FboItemGetCData()); }
   /* -- Blit quad with custom colour (used by font) ------------------------ */
   void BlitLTRBC(const size_t stSubTexId, const size_t stTileId,
     const GLfloat fLeft, const GLfloat fTop, const GLfloat fRight,
     const GLfloat fBottom, const QuadColData &qcdClr)
       { BlitQuad(GetSubName(stSubTexId), clTiles[stSubTexId][stTileId],
-        FboItemSetAndGetVertex(fLeft, fTop, fRight, fBottom), qcdClr); }
+          FboItemSetAndGetVertex(fLeft, fTop, fRight, fBottom), qcdClr); }
   /* -- Blit quad with bounds ---------------------------------------------- */
   void BlitLTRB(const size_t stSubTexId, const size_t stTileId,
     const GLfloat fLeft, const GLfloat fTop, const GLfloat fRight,
@@ -569,8 +569,8 @@ CTOR_MEM_BEGIN(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
     const GLfloat fLeft, const GLfloat fTop, const GLfloat fRight,
     const GLfloat fBottom, const GLfloat fAngle)
       { BlitQuad(GetSubName(stSubTexId), clTiles[stSubTexId][stTileId],
-        FboItemSetAndGetVertex(fLeft, fTop, fRight, fBottom, fAngle),
-        FboItemGetCData()); }
+          FboItemSetAndGetVertex(fLeft, fTop, fRight, fBottom, fAngle),
+          FboItemGetCData()); }
   /* -- Blit quad with coords, dimensions and angle ------------------------ */
   void BlitLTWHA(const size_t stSubTexId, const size_t stTileId,
     const GLfloat fLeft, const GLfloat fTop, const GLfloat fWidth,
@@ -663,7 +663,7 @@ CTOR_MEM_BEGIN(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
     const TextureType ttPixType = ImageBYtoTexType(byDDepth);
     GL(cOgl->ReadTextureTT(ttPixType, mOut.MemPtr<GLvoid>()),
       "Download texture failed!",
-      "Identifier", IdentGet(), "Index", stSubTexId,
+      "Identifier", IdentGet(), "Index", stSubTexId, "Buffer", mOut.MemSize(),
       "Format",     ImageGetPixelFormat(ttPixType));
     // Return a newly created image class containing this data
     return Image{ IdentGet(), StdMove(mOut), DimGetWidth(), DimGetHeight(),
@@ -710,7 +710,7 @@ CTOR_MEM_BEGIN(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
       // Image now being used in a Texture class
       ClearPurposeImage();
       SetPurposeTexture();
-    } // We'll set flaot versions for faster calculations later on
+    } // We'll set float versions for faster calculations later on
     dfPad.DimSet(static_cast<GLfloat>(uiPadX), static_cast<GLfloat>(uiPadY));
     // Set filter
     ofeTexFilter = ofeFilter;
@@ -748,19 +748,19 @@ CTOR_MEM_BEGIN(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
         clTiles[stSubTexId].reserve(stTiles);
         // Image is reversed?
         if(IsReversed())
-          for(GLfloat fTop = 0;
+          for(GLfloat fTop = 0.0f;
                       fTop < fBTSizeY && GetTileCount(stSubTexId) < stTiles;
                       fTop += fTPSizeY)
-            for(GLfloat fLeft = 0;
+            for(GLfloat fLeft = 0.0f;
                         fLeft < fBTSizeX && GetTileCount(stSubTexId) < stTiles;
                         fLeft += fTPSizeX)
               AddTileR(stSubTexId, fLeft, fTop,
                 fLeft + dfTile.DimGetWidth(), fTop + dfTile.DimGetHeight());
         // Not reversed
-        else for(GLfloat fTop = 0;
+        else for(GLfloat fTop = 0.0f;
                          fTop < fBTSizeY && GetTileCount(stSubTexId) < stTiles;
                          fTop += fTPSizeY)
-          for(GLfloat fLeft = 0;
+          for(GLfloat fLeft = 0.0f;
                       fLeft < fBTSizeX && GetTileCount(stSubTexId) < stTiles;
                       fLeft += fTPSizeX)
             AddTile(stSubTexId, fLeft, fTop,
@@ -775,13 +775,13 @@ CTOR_MEM_BEGIN(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
         clTiles[stSubTexId].reserve(stTilesMax);
         // Image is reversed?
         if(IsReversed())
-          for(GLfloat fTop = 0; fTop < fBTSizeY; fTop += fTPSizeY)
-            for(GLfloat fLeft = 0; fLeft < fBTSizeX; fLeft += fTPSizeX)
+          for(GLfloat fTop = 0.0f; fTop < fBTSizeY; fTop += fTPSizeY)
+            for(GLfloat fLeft = 0.0f; fLeft < fBTSizeX; fLeft += fTPSizeX)
               AddTileR(stSubTexId, fLeft, fTop,
                 fLeft + dfTile.DimGetWidth(), fTop + dfTile.DimGetHeight());
         // Not reversed
-        else for(GLfloat fTop = 0; fTop < fBTSizeY; fTop += fTPSizeY)
-          for(GLfloat fLeft = 0; fLeft < fBTSizeX; fLeft += fTPSizeX)
+        else for(GLfloat fTop = 0.0f; fTop < fBTSizeY; fTop += fTPSizeY)
+          for(GLfloat fLeft = 0.0f; fLeft < fBTSizeX; fLeft += fTPSizeX)
             AddTile(stSubTexId, fLeft, fTop,
               fLeft + dfTile.DimGetWidth(), fTop + dfTile.DimGetHeight());
         // Recover memory

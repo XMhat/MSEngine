@@ -328,17 +328,24 @@ class DirCore :                        // System specific implementation
   /* -- Destructor for WIN32 system ---------------------------------------- */
   ~DirCore(void) { if(iHandle != -1) _findclose(iHandle); }
   /* ----------------------------------------------------------------------- */
-#elif defined(MACOS)                   // Must use readdir_r on OSX
+#else                                  // Using anything but Windows?
   /* -- Private typedefs ------------------------------------------ */ private:
-  // This handle will be cleaned up by closedir() when it goes out of scope!
-  typedef unique_ptr<DIR, function<decltype(closedir)>> DirUPtr;
+  // This handle will be cleaned up by closedir() when it goes out of scope! We
+  // could just use decltype(closedir) but GCC fires a warning because the
+  // closedir() function has attributes so this is the workaround.
+  struct CloseDirFtor
+    { void operator()(DIR*const dPtr) const { closedir(dPtr); } };
+  typedef unique_ptr<DIR, CloseDirFtor> DirUPtr;
   /* -- Private variables -------------------------------------------------- */
   const string    strPrefix;           // Prefix for filenames with stat()
   DirUPtr         dupHandle;           // Context for opendir()
-  struct dirent   dePtr, *dePtrNext;   // Directory entry struct + next ptr
   /* -- Return if directory was opened on POSIX system ------------- */ public:
   bool IsOpened(void) const { return !!dupHandle; }
-  /* -- Prepare next file for POSIX system --------------------------------- */
+  /* ----------------------------------------------------------------------- */
+# if defined(MACOS)                    // Must use readdir_r on MacOS
+  /* -- Private variables ----------------------------------------- */ private:
+  struct dirent   dePtr, *dePtrNext;   // Directory entry struct + next ptr
+  /* -- Prepare next file for POSIX system ------------------------- */ public:
   bool GetNextFile(void)
   { // Read the filename and if failed
     if(readdir_r(dupHandle.get(), &dePtr, &dePtrNext) || !dePtrNext)
@@ -365,35 +372,8 @@ class DirCore :                        // System specific implementation
     } // Success
     return true;
   }
-  /* -- Constructor for POSIX system --------------------------------------- */
-  explicit DirCore(const string &strDir) :
-    /* -- Initialisers ----------------------------------------------------- */
-    strPrefix{ StrAppend(              // Initialise string prefix
-      strDir.empty() ?                 // If requested directory is empty?
-        cCommon->Period() :            // Set to scan current directory
-        StrTrim(strDir, '/'),          // Use specified but trim slashes
-      cCommon->FSlash()) },            // Add our own slash at the end
-    dupHandle{                         // Initialise directory handle
-      opendir(strPrefix.c_str()),      // Open the directory
-      closedir },                      // Close on class destruction
-    dePtr{},                           // Clear last directory entry
-    dePtrNext{ &dePtr }                // Set last directory entry
-    /* -- Initialise directory handle -------------------------------------- */
-    { // Return if we could not open the directory
-      if(!dupHandle) return;
-      // Unload and clear the directory handle if no first file
-      if(!GetNextFile()) dupHandle.reset();
-    }
   /* ----------------------------------------------------------------------- */
-#else                                  // POSIX implementation?
-  /* -- Private typedefs ------------------------------------------ */ private:
-  // This handle will be cleaned up by closedir() when it goes out of scope!
-  typedef unique_ptr<DIR, function<decltype(closedir)>> DirUPtr;
-  /* -- Private variables -------------------------------------------------- */
-  const string    strPrefix;           // Prefix for filenames with stat()
-  DirUPtr         dupHandle;           // Context for opendir()
-  /* -- Return if directory was opened on POSIX system ------------- */ public:
-  bool IsOpened(void) const { return !!dupHandle; }
+# else                                 // POSIX implementation?
   /* -- Prepare next file for POSIX system --------------------------------- */
   bool GetNextFile(void)
   { // Read the filename and if failed
@@ -420,6 +400,8 @@ class DirCore :                        // System specific implementation
     } // Failed
     return false;
   }
+  /* ----------------------------------------------------------------------- */
+# endif                                // End of POSIX implementation check
   /* -- Constructor for POSIX system --------------------------------------- */
   explicit DirCore(const string &strDir) :
     /* -- Initialisers ----------------------------------------------------- */
@@ -429,12 +411,16 @@ class DirCore :                        // System specific implementation
         StrTrim(strDir, '/'),          // Use specified but trim slashes
       cCommon->FSlash()) },            // Add our own slash at the end
     dupHandle{                         // Initialise directory handle
-      opendir(strPrefix.c_str()),      // Open the directory
-      closedir }                       // Close on class destruction
-    /* -- Initialise directory handle -------------------------------------- */
-    { // Unload and clear the directory handle if no first file
-      if(dupHandle.get() && !GetNextFile()) dupHandle.reset();
-    }
+      opendir(strPrefix.c_str()) }     // Open the directory and store handle
+    /* -- MacOS initialisers ----------------------------------------------- */
+# if defined(MACOS)                    // Initialise other vars on MacOS
+    /* --------------------------------------------------------------------- */
+    ,dePtr{},                          // Clear last directory entry
+    dePtrNext{ &dePtr }                // Set last directory entry
+    /* --------------------------------------------------------------------- */
+# endif                                // Initialised dirent vars on MacOS
+    /* -- Unload and clear the dir handle if init and no first file -------- */
+    { if(dupHandle && !GetNextFile()) dupHandle.reset(); }
   /* ----------------------------------------------------------------------- */
 #endif                                 // End of system implementation check
   /* ----------------------------------------------------------------------- */

@@ -210,8 +210,8 @@ LLFUNCEND
 // > Volume:number=New stream volume (0 to 1).
 // ? Sets the volume of the stream class even if it is playing.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetVolume,
-  LCGETPTR(1, Stream)->SetVolume(LCGETNUMLG(ALfloat, 2, 0, 1, "Volume")));
+LLFUNC(SetVolume, LCGETPTR(1, Stream)->
+  SetVolume(LCGETNUMLG(ALfloat, 2, 0.0f, 1.0f, "Volume")));
 /* ========================================================================= */
 // $ Stream:GetVolume
 // < Volume:number=Current stream volume (0 to 1).

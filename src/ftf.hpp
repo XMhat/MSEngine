@@ -48,12 +48,12 @@ CTOR_BEGIN_ASYNC_DUO(Ftfs, Ftf, CLHelperUnsafe, ICHelperUnsafe),
   /* -------------------------------------------------------------- */ private:
   void DoDeInit(void)
   { // Clear freetype handles if created
-    if(LoadedStroker()) FT_Stroker_Done(ftsStroker);
-    if(Loaded()) cFreeType->DestroyFont(ftfFace);
+    if(IsStrokerLoaded()) FT_Stroker_Done(ftsStroker);
+    if(IsLoaded()) cFreeType->DestroyFont(ftfFace);
   }
   /* -- Returns if face is loaded----------------------------------- */ public:
-  bool Loaded(void) const { return !!ftfFace; }
-  bool LoadedStroker(void) const { return !!ftsStroker; }
+  bool IsLoaded(void) const { return !!ftfFace; }
+  bool IsStrokerLoaded(void) const { return !!ftsStroker; }
   FT_Stroker GetStroker(void) const { return ftsStroker; }
   unsigned int GetDPIWidth(void) const { return diDPI.DimGetWidth(); }
   unsigned int GetDPIHeight(void) const { return diDPI.DimGetHeight(); }
@@ -69,10 +69,9 @@ CTOR_BEGIN_ASYNC_DUO(Ftfs, Ftf, CLHelperUnsafe, ICHelperUnsafe),
     // of pixels. Thus, to make a char 'h' pixels high, we need to request a
     // size of 'h*64'.
     cFreeType->CheckError(FT_Set_Char_Size(ftfFace,
-      static_cast<FT_F26Dot6>(DimGetWidth() * 64),
-      static_cast<FT_F26Dot6>(DimGetHeight() * 64),
-      static_cast<FT_UInt>(diDPI.DimGetWidth()),
-      static_cast<FT_UInt>(diDPI.DimGetHeight())),
+      static_cast<FT_F26Dot6>(DimGetWidth() * 64.0f),
+      static_cast<FT_F26Dot6>(DimGetHeight() * 64.0f),
+      diDPI.DimGetWidth<FT_UInt>(), diDPI.DimGetHeight<FT_UInt>()),
       "Failed to set character size!",
       "Identifier", IdentGet(),     "Width",    DimGetWidth(),
       "Height",     DimGetHeight(), "DPIWidth", diDPI.DimGetWidth(),
@@ -106,7 +105,7 @@ CTOR_BEGIN_ASYNC_DUO(Ftfs, Ftf, CLHelperUnsafe, ICHelperUnsafe),
         "Failed to create stroker!",
         "Identifier", IdentGet(), "Context", cFreeType->IsLibraryAvailable());
       // Set properties of stroker handle
-      FT_Stroker_Set(ftsStroker, static_cast<FT_Fixed>(GetOutline() * 64),
+      FT_Stroker_Set(ftsStroker, static_cast<FT_Fixed>(GetOutline() * 64.0f),
        FT_STROKER_LINECAP_ROUND, FT_STROKER_LINEJOIN_ROUND, 0);
     } // Report loaded font
     cLog->LogInfoExSafe("Ftf loaded '$' (FF:$;FS:$;S:$$$x$;D:$x$;B:$).",
@@ -132,13 +131,14 @@ CTOR_BEGIN_ASYNC_DUO(Ftfs, Ftf, CLHelperUnsafe, ICHelperUnsafe),
     // Get name and init parameters
     IdentSet(LuaUtilGetCppStrNE(lS, 1, "Identifier"));
     Asset &aData = *LuaUtilGetPtr<Asset>(lS, 2, "Asset");
-    const GLfloat fWidth = LuaUtilGetNumLG<GLfloat>(lS, 3, 1, 4096, "Width"),
-                  fHeight = LuaUtilGetNumLG<GLfloat>(lS, 4, 1, 4096, "Height");
+    const GLfloat
+      fWidth = LuaUtilGetNumLG<GLfloat>(lS, 3, 1.0f, 4096.0f, "Width"),
+      fHeight = LuaUtilGetNumLG<GLfloat>(lS, 4, 1.0f, 4096.0f, "Height");
     const unsigned int
       uiDpiWidth = LuaUtilGetIntLG<unsigned int>(lS, 5, 1, 1024, "DPIWidth"),
       uiDpiHeight = LuaUtilGetIntLG<unsigned int>(lS, 6, 1, 1024, "DPIHeight");
     const GLfloat fNOutline =
-      LuaUtilGetNumLG<GLfloat>(lS, 7, 0, 1024, "OutLine");
+      LuaUtilGetNumLG<GLfloat>(lS, 7, 0.0f, 1024.0f, "Outline");
     // Check callbacks
     LuaUtilCheckFuncs(lS,
       8, "ErrorFunc", 9, "ProgressFunc", 10, "SuccessFunc");
@@ -153,13 +153,14 @@ CTOR_BEGIN_ASYNC_DUO(Ftfs, Ftf, CLHelperUnsafe, ICHelperUnsafe),
     LuaUtilCheckParams(lS, 10);
     // Get name and init parameters
     IdentSet(LuaUtilGetCppFile(lS, 1, "File"));
-    const GLfloat fWidth = LuaUtilGetNumLG<GLfloat>(lS, 2, 1, 4096, "Width"),
-                  fHeight = LuaUtilGetNumLG<GLfloat>(lS, 3, 1, 4096, "Height");
+    const GLfloat
+      fWidth = LuaUtilGetNumLG<GLfloat>(lS, 2, 1.0f, 4096.0f, "Width"),
+      fHeight = LuaUtilGetNumLG<GLfloat>(lS, 3, 1.0f, 4096.0f, "Height");
     const unsigned int
       uiDpiWidth = LuaUtilGetIntLG<unsigned int>(lS, 4, 1, 1024, "DPIWidth"),
       uiDpiHeight = LuaUtilGetIntLG<unsigned int>(lS, 5, 1, 1024, "DPIHeight");
     const GLfloat fNOutline =
-      LuaUtilGetNumLG<GLfloat>(lS, 6, 0, 1024, "OutLine");
+      LuaUtilGetNumLG<GLfloat>(lS, 6, 0.0f, 1024.0f, "Outline");
     // Check callbacks
     LuaUtilCheckFuncs(lS, 7, "ErrorFunc", 8, "ProgressFunc", 9, "SuccessFunc");
     // Set other members
@@ -179,8 +180,7 @@ CTOR_BEGIN_ASYNC_DUO(Ftfs, Ftf, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Init from array ---------------------------------------------------- */
   void InitArray(const string &strName, Memory &&mData, const GLfloat fWidth,
     const GLfloat fHeight, const unsigned int uiDpiWidth,
-    const unsigned int uiDpiHeight,
-    const GLfloat fNOutline)
+    const unsigned int uiDpiHeight, const GLfloat fNOutline)
   { // Set other members
     InitVars(fWidth, fHeight, uiDpiWidth, uiDpiHeight, fNOutline);
     // Load file as array

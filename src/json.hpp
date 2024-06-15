@@ -214,11 +214,12 @@ CTOR_BEGIN_ASYNC_DUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
     { return FStream{ strFile, FM_W_T }.
         FStreamWriteStringSafe(StrFromNum<T>()) ? 0 : StdGetError(); }
   /* ----------------------------------------------------------------------- */
-  void AsyncReady(FileMap &fC)
+  void AsyncReady(FileMap &fmData)
   { // Parse the string and return if succeeded
-    const ParseResult prData{ Parse<0>(fC.MemPtr<char>(), fC.MemSize()) };
+    const ParseResult prData{
+      Parse<0>(fmData.MemPtr<char>(), fmData.MemSize()) };
     if(!prData) XC(GetParseError_En(prData.Code()),
-      "Identifier", fC.IdentGet(), "Size", fC.MemSize(),
+      "Identifier", fmData.IdentGet(), "Size", fmData.MemSize(),
       "JsonSize",   prData.Offset());
   }
   /* -- Load json from file asynchronously --------------------------------- */

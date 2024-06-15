@@ -205,7 +205,7 @@ CTOR_MEM_BEGIN_ASYNC(Videos, Video, ICHelperSafe, /* No CLHelper */),
       // Remove buffer time
       dAudioBuffer = UtilMaximum(dAudioBuffer -
         (cOal->GetBufferInt<ALdouble>(uiBuffer, AL_SIZE) /
-          viData.rate / viData.channels), 0.0);
+          GetSampleRate() / GetChannels()), 0.0);
       // Delete the buffer that was returned continue if successful
       ALL(cOal->DeleteBuffer(uiBuffer),
         "Video failed to delete unqueued buffer $ in '$'!",
@@ -228,11 +228,11 @@ CTOR_MEM_BEGIN_ASYNC(Videos, Video, ICHelperSafe, /* No CLHelper */),
         // Set that we got audio
         bParsed = true;
         // No need to do anymore if there is no source
-        if(!sSource) break;
+        if(IsSourceUnavailable()) break;
         // Convert vorbis frames to correct type dealing with memory
         const size_t stFrames = static_cast<size_t>(iFrames),
           // Get number of channels as size_t
-          stChannels = static_cast<size_t>(viData.channels);
+          stChannels = static_cast<size_t>(GetChannels());
         // Length of data (may need to be modified if 16-bit required)
         size_t stFrameSize = sizeof(float) * stFrames * stChannels;
         // If the hardware supports 32-bit (4b) floating point playback?
@@ -256,9 +256,9 @@ CTOR_MEM_BEGIN_ASYNC(Videos, Video, ICHelperSafe, /* No CLHelper */),
         ALenum alErr = cOal->GetError();
         if(alErr == AL_NO_ERROR) try
         { // Buffer the data and throw exception if failed
-          cOal->BufferData(uiBuffer, eFormat, MemPtr<ALvoid>(),
+          cOal->BufferData(uiBuffer, GetAudioFormat(), MemPtr<ALvoid>(),
             static_cast<ALsizei>(stFrameSize),
-            static_cast<ALsizei>(viData.rate));
+            static_cast<ALsizei>(GetSampleRate()));
           alErr = cOal->GetError();
           if(alErr != AL_NO_ERROR) throw "buffering";
           // Requeue the buffers and throw exception if failed
@@ -267,7 +267,7 @@ CTOR_MEM_BEGIN_ASYNC(Videos, Video, ICHelperSafe, /* No CLHelper */),
           if(alErr != AL_NO_ERROR) throw "queuing";
           // We ate everything so set audio time and add to buffer
           dAudioBuffer += static_cast<ALdouble>(stFrameSize) /
-            viData.rate / viData.channels;
+            GetSampleRate() / GetChannels();
           // Play the source if the audio timer has started
           sSource->Play();
           // Try to parse more data
@@ -280,14 +280,16 @@ CTOR_MEM_BEGIN_ASYNC(Videos, Video, ICHelperSafe, /* No CLHelper */),
             "after failed data upload attempt!", uiBuffer, IdentGet());
           // Log the warning
           cLog->LogWarningExSafe("Video '$' $ audio failed "
-            "(B:$;F:$;A:$;S:$;R:$;AL:$<$$>)!",
-            IdentGet(), cpReason, uiBuffer, eFormat, MemPtr(), stFrameSize,
-            viData.rate, cOal->GetALErr(alErr), hex, alErr);
+            "(B:$;F:$<$$$>;A:$;S:$;R:$;AL:$<$$>)!",
+            IdentGet(), cpReason, uiBuffer, GetFormatAsIdentifier(), hex,
+            GetAudioFormat(), dec, MemPtr(), stFrameSize, GetSampleRate(),
+            cOal->GetALErr(alErr), hex, alErr);
         } // Create buffers failed?
         else cLog->LogWarningExSafe("Video create buffers failed on '$' "
-          "(F:$;A:$;S:$;R:$;AL:$<$$>)!",
-          IdentGet(), uiBuffer, eFormat, MemPtr(), stFrameSize, viData.rate,
-          cOal->GetALErr(alErr), hex, alErr);
+          "(F:$<$$$>;A:$;S:$;R:$;AL:$<$$>)!",
+          IdentGet(), uiBuffer, GetFormatAsIdentifier(), hex, GetAudioFormat(),
+          dec, MemPtr(), stFrameSize, GetSampleRate(), cOal->GetALErr(alErr),
+          hex, alErr);
       } // No audio left so try to feed another packet and break if failed
       else switch(const int iR1 = ogg_stream_packetout(&ostsVorbis, &opkData))
       { // If a packet was assembled normally?
@@ -442,9 +444,9 @@ CTOR_MEM_BEGIN_ASYNC(Videos, Video, ICHelperSafe, /* No CLHelper */),
   /* -- Manage video decoding thread for ogg supporting only audio --------- */
   int VideoHandleAudioOnly(void)
   { // Process exhausted audio buffers if there is a source
-    if(sSource) ProcessExhaustedAudioBuffers();
+    if(IsSourceAvailable()) ProcessExhaustedAudioBuffers();
     // If enough audio buffered and time is moving? Thread can breathe a little
-    if(dAudioBuffer >= dAudBufMax && dAudioTime >= 0.0)
+    if(dAudioBuffer >= dAudBufMax && GetAudioTime() >= 0.0)
       cTimer->TimerSuspend(10);
     // Parse and render more vorbis data and if we didn't?
     else if(!ParseAndRenderVorbisData())
@@ -480,25 +482,27 @@ CTOR_MEM_BEGIN_ASYNC(Videos, Video, ICHelperSafe, /* No CLHelper */),
   { // Stream status flags
     bool bVideoParsed = false, bAudioParsed = false;
     // If there is an audio source?
-    if(sSource)
+    if(IsSourceAvailable())
     { // Process exhausted audio buffers
       ProcessExhaustedAudioBuffers();
       // Raise pitch if behind
-      if(dDrift > dMaxDrift) sSource->SetPitch(1.1f);
+      if(GetDrift() > dMaxDrift) sSource->SetPitch(1.1f);
       // Lower pitch if ahead
-      else if(dDrift < dMaxDriftNeg) sSource->SetPitch(0.9f);
+      else if(GetDrift() < dMaxDriftNeg) sSource->SetPitch(0.9f);
       // No pitch adjustment required
       else sSource->SetPitch(1.0f);
     } // No source or buffer needs topping up? Repeat until we have audio
-    if((!sSource || dAudioBuffer < dAudBufMax) && ParseAndRenderVorbisData())
-      bAudioParsed = true;
+    if((IsSourceUnavailable() || dAudioBuffer < dAudBufMax) &&
+      ParseAndRenderVorbisData())
+        bAudioParsed = true;
     // Have theora stream and we've got enough audio buffered?
     if(dAudioBuffer >= dAudBufMax)
     { // If it is not time to process a frame yet?
       if(CIIsNotTriggered())
       { // We got audio? Update drift
         if(bAudioParsed)
-          dDrift = dAudioTime > 0.0 ? dVideoTime - dAudioTime : 0.0;
+          dDrift = GetAudioTime() > 0.0 ?
+            GetVideoTime() - GetAudioTime() : 0.0;
         // Wait a little bit if we can
         else if(CIIsNotTriggered(milliseconds{1})) cTimer->TimerSuspend(1);
         // Done
@@ -509,7 +513,7 @@ CTOR_MEM_BEGIN_ASYNC(Videos, Video, ICHelperSafe, /* No CLHelper */),
         bVideoParsed = true;
         // Update video position and drift
         dVideoTime = th_granule_time(tdcPtr, iVideoGranulePos);
-        dDrift = dAudioTime > 0.0 ? dVideoTime - dAudioTime : 0.0;
+        dDrift = GetAudioTime() > 0.0 ? GetVideoTime() - GetAudioTime() : 0.0;
       }
     } // Didn't process anything this time?
     if(!bAudioParsed && !bVideoParsed)
@@ -588,11 +592,14 @@ CTOR_MEM_BEGIN_ASYNC(Videos, Video, ICHelperSafe, /* No CLHelper */),
   ogg_uint32_t GetWidth(void) const { return tiData.pic_width; }
   ogg_uint32_t GetOriginX(void) const { return tiData.pic_x; }
   ogg_uint32_t GetOriginY(void) const { return tiData.pic_y; }
+  long GetSampleRate(void) const { return viData.rate; }
+  int GetChannels(void) const { return viData.channels; }
   uint64_t GetLength(void) const { return fmFile.MemSize(); }
-  bool HaveAudio(void) const { return !!sSource; }
+  bool IsSourceAvailable(void) const { return !!sSource; }
+  bool IsSourceUnavailable(void) const { return !IsSourceAvailable(); }
   ALenum GetAudioFormat(void) const { return eFormat; }
-  const string_view GetFormatAsIdentifier(void) const
-    { return cOal->GetALFormat(eFormat); }
+  const string_view &GetFormatAsIdentifier(void) const
+    { return cOal->GetALFormat(GetAudioFormat()); }
   /* -- When data has asynchronously loaded -------------------------------- */
   void AsyncReady(FileMap &fmData)
   { // Move filemap into ours
@@ -723,11 +730,11 @@ CTOR_MEM_BEGIN_ASYNC(Videos, Video, ICHelperSafe, /* No CLHelper */),
            "Identifier", IdentGet());
       // Calculate FPS of video
       dFPS = static_cast<double>(tiData.fps_numerator) /
-              static_cast<double>(tiData.fps_denominator);
+             static_cast<double>(tiData.fps_denominator);
       // Sanity check FPS
-      if(dFPS<1 || dFPS>200)
+      if(GetFPS()<1 || GetFPS()>200)
         XC("Ambiguous frame rate in video!",
-          "Identifier", IdentGet(), "FPS", dFPS);
+          "Identifier", IdentGet(), "FPS", GetFPS());
       // Get maximum texture size to match stored types
       const ogg_uint32_t uiMaxTexSize = cOgl->MaxTexSize<ogg_uint32_t>();
       // Make sure GPU can support texture size
@@ -755,7 +762,7 @@ CTOR_MEM_BEGIN_ASYNC(Videos, Video, ICHelperSafe, /* No CLHelper */),
         default: XC("Only 420, 422 or 444 pixel format is supported!",
                     "Identifier", IdentGet(), "PixelFormat", GetPixelFormat());
       } // Update frame immediately
-      CISetLimit(1.0 / dFPS);
+      CISetLimit(1.0 / GetFPS());
     } // No Theora stream?
     else
     { // Force dummy 1x1 surfaces
@@ -770,13 +777,13 @@ CTOR_MEM_BEGIN_ASYNC(Videos, Video, ICHelperSafe, /* No CLHelper */),
         StdMove(Stream::ParseComments(vcData.user_comments, vcData.comments));
       vorbis_comment_clear(&vcData);
       // Make sure rate is sane
-      if(viData.rate < 1 || viData.rate > 192000)
+      if(GetSampleRate() < 1 || GetSampleRate() > 192000)
         XC("Video playback rate not valid at this time!",
-           "Identifier", IdentGet(), "Rate", viData.rate);
+           "Identifier", IdentGet(), "Rate", GetSampleRate());
       // Make sure channels are correct
-      if(viData.channels < 1 || viData.channels > 2)
+      if(GetChannels() < 1 || GetChannels() > 2)
         XC("Video playback channel count of not supported!",
-           "Identifier", IdentGet(), "Channels", viData.channels);
+           "Identifier", IdentGet(), "Channels", GetChannels());
       // Initialise vorbis synthesis
       if(vorbis_synthesis_init(&vdsData, &viData))
         XC("Failed to initialise vorbis synthesis!", "Identifier", IdentGet());
@@ -825,10 +832,10 @@ CTOR_MEM_BEGIN_ASYNC(Videos, Video, ICHelperSafe, /* No CLHelper */),
       tiData.aspect_numerator, tiData.aspect_denominator,
       GetOriginX(), GetOriginY(),
       PixelFormatToString(GetPixelFormat()), GetPixelFormat(),
-      ColourSpaceToString(GetColourSpace()), GetColourSpace(), dFPS,
+      ColourSpaceToString(GetColourSpace()), GetColourSpace(), GetFPS(),
       viData.version,
-      viData.channels,
-      viData.rate, StrToGrouped(viData.rate),
+      GetChannels(),
+      GetSampleRate(), StrToGrouped(GetSampleRate()),
       tiData.target_bitrate, StrToBits(tiData.target_bitrate),
       viData.bitrate_upper, StrToBits(viData.bitrate_upper),
       viData.bitrate_nominal, StrToBits(viData.bitrate_nominal),
@@ -854,7 +861,7 @@ CTOR_MEM_BEGIN_ASYNC(Videos, Video, ICHelperSafe, /* No CLHelper */),
   /* -- Update volume ------------------------------------------------------ */
   void CommitVolume(void)
   { // Ignore if no source
-    if(!sSource) return;
+    if(IsSourceUnavailable()) return;
     // Set volume
     sSource->SetGain(fAudioVolume * cSources->fVVolume * cSources->fGVolume);
   }
@@ -934,7 +941,7 @@ CTOR_MEM_BEGIN_ASYNC(Videos, Video, ICHelperSafe, /* No CLHelper */),
   /* -- Stop and unload audio buffers -------------------------------------- */
   void StopAudioAndUnloadBuffers(void)
   { // Ignore if no source or no vorbis stream
-    if(!sSource) return;
+    if(IsSourceUnavailable()) return;
     // Stop from playing so all buffers are unqueued and wait for stop
     // then unqueue and delete the buffer
     sSource->StopUnQueueAndDeleteAllBuffers();
@@ -992,11 +999,11 @@ CTOR_MEM_BEGIN_ASYNC(Videos, Video, ICHelperSafe, /* No CLHelper */),
       // Init fbo
       FboInit(IdentGet(), static_cast<GLsizei>(GetWidth()),
                           static_cast<GLsizei>(GetHeight()));
-      FboSetMatrix(0, 0, 0, 0);
+      FboSetMatrix(0.0f, 0.0f, 0.0f, 0.0f);
       FboSetTransparency(true);
-      FboItemSetTexCoord(0, 0, 1, 1);
+      FboItemSetTexCoord(0.0f, 0.0f, 1.0f, 1.0f);
       // Clear the fbo, initially transparent and blue
-      FboSetClearColour(0, 0, 1, 0);
+      FboSetClearColour(0.0f, 0.0f, 1.0f, 0.0f);
       FboSetClear(false);
       // Only 2 triangles and 3 commands are needed so reserve the memory
       if(!FboReserve(2, 3))
@@ -1011,11 +1018,11 @@ CTOR_MEM_BEGIN_ASYNC(Videos, Video, ICHelperSafe, /* No CLHelper */),
       // Init texture
       InitTexture();
     } // If theres a audio segment and AL portion is initialised?
-    if(FlagIsSet(FL_VORBIS) && !sSource)
+    if(FlagIsSet(FL_VORBIS) && IsSourceUnavailable())
     { // Compare number of channels in file to set appropriate format. This is
       // here and not at the files init stage as it handles re-inits too and
       // the FP supported audio format flag have changed.
-      switch(viData.channels)
+      switch(GetChannels())
       { // 1 channel mono?
         case 1: eFormat = cOal->Have32FPPB() ?
                   AL_FORMAT_MONO_FLOAT32 : AL_FORMAT_MONO16;
@@ -1026,10 +1033,10 @@ CTOR_MEM_BEGIN_ASYNC(Videos, Video, ICHelperSafe, /* No CLHelper */),
                 break;
         // Unknown channel count. Problem should already be handled at init.
         default: cLog->LogWarningExSafe("Video '$' audio playback failed. "
-          "Invalid channel count of $!", IdentGet(), viData.channels); return;
+          "Invalid channel count of $!", IdentGet(), GetChannels()); return;
       } // Get a new sound source and if we got it update volume and return
       sSource = GetSource();
-      if(sSource) CommitVolume();
+      if(IsSourceAvailable()) CommitVolume();
       // Tell log
       else cLog->LogWarningExSafe(
         "Video '$' audio playback failed. Out of sources!", IdentGet());
@@ -1361,11 +1368,11 @@ static CVarReturn VideoSetIOBufferSize(const size_t stSize)
       stSize, 4096UL, 16777216UL); }
 /* == Set drift length maximum ============================================= */
 static CVarReturn VideoSetMaximumDrift(const double dMax)
-  { return CVarSimpleSetIntNLG(cVideos->dMaxDrift, dMax, 0.01, 1.00); }
+  { return CVarSimpleSetIntNLG(cVideos->dMaxDrift, dMax, 0.01, 1.0); }
 /* == Set audio buffer length maximum ====================================== */
 static CVarReturn VideoSetAudioBufferSize(const double dMax)
   { return CVarSimpleSetIntNLG(cVideos->dAudioBufferSize,
-      dMax, 0.01, 1.00); }
+      dMax, 0.01, 1.0); }
 /* == Set all streams base volume ========================================== */
 static CVarReturn VideoSetVolume(const ALfloat fVolume)
 { // Ignore if invalid value

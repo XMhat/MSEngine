@@ -134,8 +134,8 @@ CTOR_MEM_BEGIN(Samples, Sample, ICHelperUnsafe, /* n/a */),
   /* -- Play with a pre-allocated sources by Lua --------------------------- */
   void Play(lua_State*const lS)
   { // Grab parameters
-    const ALfloat fGain = LuaUtilGetNumLG<ALfloat>(lS, 2,  0, 1, "Gain"),
-                  fPan = LuaUtilGetNumLG<ALfloat>(lS, 3, -1, 1, "Pan"),
+    const ALfloat fGain = LuaUtilGetNumLG<ALfloat>(lS, 2,  0.0f, 1.0f, "Gain"),
+                  fPan = LuaUtilGetNumLG<ALfloat>(lS, 3, -1.0f, 1.0f, "Pan"),
                   fPitch = LuaUtilGetNum<ALfloat>(lS, 4, "Pitch");
     const bool bLoop = LuaUtilGetBool(lS, 5, "Loop");
     // How many sources do we need?

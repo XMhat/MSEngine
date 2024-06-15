@@ -375,7 +375,7 @@ template<class StrokerFuncNormalType, class StrokerFuncOutlineType>
 void DoSelectOutlineType(FT_GlyphSlot &ftgsRef, const size_t stPos,
     const size_t stChar, const GLfloat fAdvance)
 { // Stroker loaded?
-  if(ftfData.LoadedStroker())
+  if(ftfData.IsStrokerLoaded())
   { // Stroke inside and outside border?
     if(FlagIsSet(FF_STROKETYPE2))
       InitCharFunc::Outline2{ this, ftgsRef, stPos, stChar, fAdvance };
@@ -443,7 +443,7 @@ size_t DoHandleStaticGlyph(const size_t stChar, const size_t stPos)
 template<class StrokerCheckFuncType, class RoundCheckFuncType>
   size_t DoSelectFontType(const size_t stChar, const size_t stPos)
 { // Stroker loaded?
-  return ftfData.Loaded() ?
+  return ftfData.IsLoaded() ?
     DoHandleFTGlyph<StrokerCheckFuncType, RoundCheckFuncType>(stChar,stPos) :
     DoHandleStaticGlyph(stChar, stPos);
 }
@@ -488,7 +488,7 @@ template<class HandleGlyphFuncType>
   void DoInitFTCharRangeApplyStroker(const size_t stStart,
     const size_t stEnd)
 { // Stroker requested
-  if(ftfData.LoadedStroker())
+  if(ftfData.IsStrokerLoaded())
   { // Load entire stroker?
     if(FlagIsSet(FF_STROKETYPE2))
       DoInitFTCharRangeApplyRound<HandleGlyphFuncType,
@@ -539,7 +539,7 @@ template<class HandleGlyphFuncType, class InitCharFuncType>
 template<class HandleGlyphFuncType>
   void DoInitFTCharStringApplyStroker(const GLubyte*const ucpPtr)
 { // If stroker is loaded?
-  if(ftfData.LoadedStroker())
+  if(ftfData.IsStrokerLoaded())
   { // Load entire stroker outline?
     if(FlagIsSet(FF_STROKETYPE2))
       DoInitFTCharStringApplyRound<HandleGlyphFuncType,

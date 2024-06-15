@@ -172,8 +172,8 @@ LLFUNC(SetFullScreen, cDisplay->RequestFSToggle(LCGETBOOL(1, "State")));
 // ? for widescreen window sizes.
 /* ------------------------------------------------------------------------- */
 LLFUNC(SetMatrix, cFboCore->AutoMatrix(
-  LCGETNUMLG(GLfloat, 1, 1, 16384, "Width"),
-  LCGETNUMLG(GLfloat, 2, 1, 16384, "Height"), false));
+  LCGETNUMLG(GLfloat, 1, 1.0f, 16384.0f, "Width"),
+  LCGETNUMLG(GLfloat, 2, 1.0f, 16384.0f, "Height"), false));
 /* ========================================================================= */
 // $ Display.VReset
 // ? Resets the video subsystem.

@@ -448,7 +448,11 @@ CTOR_MEM_BEGIN_CSLAVE(Sockets, Socket, ICHelperUnsafe),
         // Get item of interest and if successful, move the result into the
         // specified destination
         if(const AddrPtr apAddr{ baData, adCmd.iId })
-          UtilMoveVarSafe(mMutex, adCmd.strDest, apAddr.cpPtr);
+        { // Lock mutex
+          const LockGuard lgSocketSync{ mMutex };
+          // Load C-String into STL string
+          adCmd.strDest = apAddr.cpPtr;
+        }
       }
     } // No IP address detected for some reason
     else return SetErrorSafe("No address found");
@@ -650,31 +654,32 @@ CTOR_MEM_BEGIN_CSLAVE(Sockets, Socket, ICHelperUnsafe),
           } // Done
           break;
         }
-      } // Get cipher and if we got it?
-      string strD; strD.resize(128);
-      if(SSL_CIPHER_description(SSL_get_current_cipher(sslPtr),
-        const_cast<char*>(strD.data()), static_cast<int>(strD.length())))
-      { // Remove carriage return
-        strD.resize(strlen(strD.c_str()) - 1);
-        // Set cipher used
-        UtilMoveVarSafe(mMutex, strCipher, strD);
-        // Print encryption info
+      } // This is the size of the temporary string buffer (ssl needs int)
+      const int iLen = 128;
+      // Make a buffer of that size. Shouldn't really statically allocate it.
+      const Memory mStr{ static_cast<size_t>(iLen) };
+      // Get address of memory
+      char*const cpStr = mStr.MemPtr<char>();
+      // Is the cipher available?
+      if(SSL_CIPHER_description(SSL_get_current_cipher(sslPtr), cpStr, iLen))
+      { // Synchronise access to cpStr
+        const LockGuard lgSetCipher{ mMutex };
+        // Set cipher
+        strCipher = cpStr;
+        // Print encryption info. Don't need to lock twice
         SocketLogUnsafe(LH_DEBUG, "Cipher is $", strCipher);
       } // Get cipher failed? Log failure
-      else SocketLogSafe(LH_WARNING, "Failed $", strD.length());
+      else return SetErrorSafe("Server using no cipher!");
       // Get server certificate
-      if(X509*const xCert = SSL_get0_peer_certificate(sslPtr))
-      { // Get certificate subject and if successful?
-        if(X509_NAME_oneline(X509_get_subject_name(xCert),
-          const_cast<char *>(strD.data()), static_cast<int>(strD.length())))
-        { // Log the subject line of the certificate
-          SocketLogSafe(LH_DEBUG, "Subject is $", strD);
-        } // Get certificate issuer and if successful?
-        if(X509_NAME_oneline(X509_get_issuer_name(xCert),
-          const_cast<char *>(strD.data()), static_cast<int>(strD.length())))
-        { // Log the issuer line of the certificate
-          SocketLogSafe(LH_DEBUG, "Issuer is $", strD);
-        } // Don't free certificate (using get0)
+      if(const X509*const xCert = SSL_get0_peer_certificate(sslPtr))
+      { // Get certificate subject and if successful? Log subject line. OpenSSL
+        // doesn't give us the length so feed into logger as c-string
+        if(X509_NAME_oneline(X509_get_subject_name(xCert), cpStr, iLen))
+          SocketLogSafe(LH_DEBUG, "Subject is $", cpStr);
+        // Get certificate issuer and if successful? Log issuer line
+        if(X509_NAME_oneline(X509_get_issuer_name(xCert), cpStr, iLen))
+          SocketLogSafe(LH_DEBUG, "Issuer is $", cpStr);
+        // Don't free certificate since we're using SSL_get0_*
       } // Error occured
       else return SetErrorSafe("Server returned no certificate");
     } // No security

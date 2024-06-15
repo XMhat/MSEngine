@@ -169,9 +169,8 @@ static class FboCore final :           // The main fbo operations manager
       // specified minimum and maximum aspect ratio and to also keep the size
       // within the specified multiple value to prevent cracks appearing in
       // between tiles.
-      fAspect = UtilClamp(static_cast<GLfloat>(DimGetWidth()) /
-                          static_cast<GLfloat>(DimGetHeight()),
-                          fAspectMin, fAspectMax) / 1.333333f;
+      fAspect = UtilClamp(DimGetWidth<GLfloat>() / DimGetHeight<GLfloat>(),
+        fAspectMin, fAspectMax) / 1.333333f;
       // For some unknown reason we could be sent invalid values so we need to
       // make sure we ignore this value to prevent error handlers triggering.
       if(fAspect != fAspect) fAspect = 1.0f;
@@ -265,8 +264,8 @@ static class FboCore final :           // The main fbo operations manager
   /* -- Initialise fbos using a different constructor ---------------------- */
   FboCore(void) :
     /* -- Initialisers ----------------------------------------------------- */
-    fAspectMin(1.0f),               fAspectMax(2.0f),
-    fMatrixWidth(0.0f),                 fMatrixHeight(0.0f),
+    fAspectMin(1.0f),                  fAspectMax(2.0f),
+    fMatrixWidth(0.0f),                fMatrixHeight(0.0f),
     bDraw(false),                      bSimpleMatrix(false),
     bLockViewport(false),              bClearBuffer(false),
     fboConsole{ GL_RGBA8, true },      fboMain{ GL_RGB8, true },

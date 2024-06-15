@@ -54,27 +54,20 @@ local function InitMap()
       end
     end
     -- Set texture handles
-    local texZone1 = aRes[1].H;
-    texZone1:TileS(0, 0, 0, 512, 350);
-    local iTileFlagTexId<const> = texZone1:TileA(512, 0, 544, 32);
-    local texZone2 = aRes[2].H;
-    texZone2:TileS(0, 0, 0, 128, 350);
+    local texZone = aRes[1].H;
+    texZone:TileS(0, 0, 0, 672, 350);
+    local iTileFlagTexId<const> = texZone:TileA(640, 0, 672, 32);
     -- Render the map
     local function RenderMap()
       -- Draw main chunk of map
-      texZone1:BlitLT(-iZonePosX+iStageL, -iZonePosY+iStageT);
-      -- Right chunk of map would be visible to player?
-      if iZonePosX >= 128+iStageL then
-        -- Draw right chunk of map
-        texZone2:BlitLT(512+-iZonePosX+iStageL, -iZonePosY+iStageT);
-      end
+      texZone:BlitLT(-iZonePosX+iStageL, -iZonePosY+iStageT);
       -- For each flag data in flag cache
       for iFlagId = 1, #aFlagCache do
         -- Get flag data
         local aFlagData<const> = aFlagCache[iFlagId];
         -- Draw the flag to say the level was completed
-        texZone1:BlitSLT(iTileFlagTexId, aFlagData[1]-(iZonePosX+(-iStageL)),
-                                         aFlagData[2]-(iZonePosY+(-iStageT)));
+        texZone:BlitSLT(iTileFlagTexId, aFlagData[1]-(iZonePosX+(-iStageL)),
+                                        aFlagData[2]-(iZonePosY+(-iStageT)));
       end
       -- Draw tip
       if sTip then SetBottomRightTipAndShadow(sTip) end;
@@ -140,7 +133,7 @@ local function InitMap()
                 -- Remove FBO update callback
                 RegisterFBUCallback("map");
                 -- Unreference assets to garbage collector
-                texZone1, texZone2 = nil, nil;
+                texZone = nil;
                 -- Init controller screen
                 InitCon();
               end
@@ -172,8 +165,7 @@ local function InitMap()
     Fade(1, 0, 0.04, RenderMap, OnFadeIn);
   end
   -- Load texture resource
-  LoadResources("Map Select", {{T=2,F="mapa",P={0}},
-                               {T=2,F="mapb",P={0}}}, OnLoaded);
+  LoadResources("Map Select", {{T=2,F="map",P={0}}}, OnLoaded);
 end
 -- Exports and imports ----------------------------------------------------- --
 return { A = { InitMap = InitMap }, F = function(GetAPI)

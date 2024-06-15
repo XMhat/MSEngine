@@ -270,7 +270,7 @@ const CVarItemStaticList cvislList{ {  // Default cvars (from cvars.hpp)
 // ! ERR_INSTANCE
 // ? Tries to activate an existing window of the same name if another instance
 // ? is running. On Windows, mutexes are always cleaned up properly even in a
-// ? crash but not on Linux and OSX. So just simply remove the app name from
+// ? crash but not on Linux and MacOS. So just simply remove the app name from
 // ? /dev/shm and the engine should run again.
 /* ------------------------------------------------------------------------- */
 { CFL_NONE, "err_instance", cCommon->One(),

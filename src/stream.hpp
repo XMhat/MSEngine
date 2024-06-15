@@ -564,14 +564,15 @@ CTOR_MEM_BEGIN_ASYNC_CSLAVE(Streams, Stream, ICHelperUnsafe),
     return ssMetaData;
   }
   /* -- Load from memory --------------------------------------------------- */
-  void AsyncReady(FileMap &fClass)
+  void AsyncReady(FileMap &fmData)
   { // Set file class
-    fmFile.FileMapSwap(fClass);
+    fmFile.FileMapSwap(fmData);
     // Initialise context and test for error
-    if(const int iResult = ov_open_callbacks(this, &ovfContext, nullptr, 0,
-      ovcFuncs)) XC("Init OGG decoder context failed!",
-        "Identifier", IdentGet(), "Code", iResult,
-        "Reason",     cOal->GetOggErr(iResult));
+    if(const int iResult =
+       ov_open_callbacks(this, &ovfContext, nullptr, 0, ovcFuncs))
+      XC("Init OGG decoder context failed!",
+         "Identifier", IdentGet(), "Code", iResult,
+         "Reason",     cOal->GetOggErr(iResult));
     // We don't need to create more buffers than we need. If we don't do this
     // then Rebuffer() will not fill all the buffers and subsequent OpenAL
     // calls will fail. We'll add a minimum value of 1 too just incase we get

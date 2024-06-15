@@ -233,6 +233,10 @@ template<typename IntType=int64_t>
 template<typename IntType>
   static const string StrHexFromInt(const IntType itVal, const int iPrec=0)
     { return StdMove(StrAppend(setfill('0'), hex, setw(iPrec), itVal)); }
+template<typename IntType>
+  static const string StrHexUFromInt(const IntType itVal, const int iPrec=0)
+    { return StdMove(StrAppend(setfill('0'), hex, setw(iPrec), uppercase,
+        itVal)); }
 /* -- Return if specified string has numbers ------------------------------- */
 static bool StrIsAlpha(const string &strValue)
   { return StdAllOf(par_unseq, strValue.cbegin(), strValue.cend(),
@@ -267,7 +271,7 @@ static const string StrFromErrNo(const int iErrNo=errno)
   // "Your string message can be, at most, 94 characters long."
   if(strerror_s(const_cast<char*>(strErr.c_str()), strErr.capacity(), iErrNo))
     strErr.assign(StrAppend("Error ", iErrNo));
-  // OSX?
+  // Targeting MacOS?
 #elif defined(MACOS)
   // Grab the error result and if failed? Just put in the error number continue
   if(strerror_r(iErrNo, const_cast<char*>(strErr.c_str()), strErr.capacity()))

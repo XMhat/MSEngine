@@ -62,7 +62,7 @@ LLFUNC(Rewind, LCGETPTR(1, File)->FStreamRewindSafe());
 // ? from the start of the stream.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Seek, 1, LCPUSHVAR(LCGETPTR(1, File)->
-  FStreamSetPositionSafe(LCGETINT(int64_t, 1, "Position"), SEEK_SET)));
+  FStreamSeekSafeSet(LCGETINT(int64_t, 1, "Position"))));
 /* ========================================================================= */
 // $ File:SeekEnd
 // < State:boolean=Succeeded?
@@ -71,7 +71,7 @@ LLFUNCEX(Seek, 1, LCPUSHVAR(LCGETPTR(1, File)->
 // ? from the end of the stream.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(SeekEnd, 1, LCPUSHVAR(LCGETPTR(1, File)->
-  FStreamSetPositionSafe(LCGETINT(int64_t, 1, "Position"), SEEK_END)));
+  FStreamSeekSafeEnd(LCGETINT(int64_t, 1, "Position"))));
 /* ========================================================================= */
 // $ File:SeekCur
 // < State:boolean=Succeeded?
@@ -80,7 +80,7 @@ LLFUNCEX(SeekEnd, 1, LCPUSHVAR(LCGETPTR(1, File)->
 // ? of the stream.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(SeekCur, 1, LCPUSHVAR(LCGETPTR(1, File)->
-  FStreamSetPositionSafe(LCGETINT(int64_t, 1, "Position"), SEEK_CUR)));
+  FStreamSeekSafeCur(LCGETINT(int64_t, 1, "Position"))));
 /* ========================================================================= */
 // $ File:Read
 // < Data:array=The data read.
@@ -121,7 +121,7 @@ LLFUNCEX(WriteStr, 1, LCPUSHVAR(LCGETPTR(1, File)->
 // < Position:integer=Position
 // ? Returns the current position in file
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Tell, 1, LCPUSHVAR(LCGETPTR(1, File)->FStreamGetPositionSafe()));
+LLFUNCEX(Tell, 1, LCPUSHVAR(LCGETPTR(1, File)->FStreamTellSafe()));
 /* ========================================================================= */
 // $ File:Size
 // < Size:integer=Size in bytes

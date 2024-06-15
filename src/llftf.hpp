@@ -87,11 +87,11 @@ LLFUNC(FileAsync, LCCLASSCREATE(Ftf)->InitAsyncFile(lS));
 // ? Returns the Ftf object.
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(File, 1, LCCLASSCREATE(Ftf)->InitFile(LCGETCPPFILE(1, "File"),
-  LCGETNUMLG(GLfloat,      2, 1, 4096, "Width"),
-  LCGETNUMLG(GLfloat,      3, 1, 4096, "Height"),
+  LCGETNUMLG(GLfloat, 2, 1.0f, 4096.0f, "Width"),
+  LCGETNUMLG(GLfloat, 3, 1.0f, 4096.0f, "Height"),
   LCGETINTLG(unsigned int, 4, 1, 1024, "DPIWidth"),
   LCGETINTLG(unsigned int, 5, 1, 1024, "DPIHeight"),
-  LCGETNUMLG(GLfloat,      6, 0, 1024, "Outline")));
+  LCGETNUMLG(GLfloat, 6, 0.0f, 1024.0f, "Outline")));
 /* ========================================================================= */
 // $ Ftf.ArrayAsync
 // > Id:String=The identifier of the string
@@ -113,11 +113,11 @@ LLFUNC(ArrayAsync, LCCLASSCREATE(Ftf)->InitAsyncArray(lS));
 /* ------------------------------------------------------------------------- */
 LLFUNCEX(Asset, 1, LCCLASSCREATE(Ftf)->InitArray(
   LCGETCPPSTRINGNE(1, "Identifier"), StdMove(*LCGETPTR(2, Asset)),
-  LCGETNUMLG(GLfloat, 3, 1, 4096, "Width"),
-  LCGETNUMLG(GLfloat, 4, 1, 4096, "Height"),
+  LCGETNUMLG(GLfloat, 3, 1.0f, 4096.0f, "Width"),
+  LCGETNUMLG(GLfloat, 4, 1.0f, 4096.0f, "Height"),
   LCGETINTLG(unsigned int, 5, 1, 1024, "DPIWidth"),
   LCGETINTLG(unsigned int, 6, 1, 1024, "DPIHeight"),
-  LCGETNUMLG(GLfloat, 7, 0, 1024, "Outline")));
+  LCGETNUMLG(GLfloat, 7, 0.0f, 1024.0f, "Outline")));
 /* ========================================================================= */
 // $ Ftf.WaitAsync
 // ? Halts main-thread execution until all async Ftf events have completed

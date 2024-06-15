@@ -59,16 +59,16 @@ CTOR_BEGIN_ASYNC_DUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
     SetAlloc(aPcmL.MemSize() + aPcmR.MemSize());
   }
   /* -- Load sample from memory -------------------------------------------- */
-  void AsyncReady(FileMap &fsImage)
+  void AsyncReady(FileMap &fmData)
   { // Force load a certain type of audio (for speed?) but in Async mode,
     // force detection doesn't really matter as much, but overall, still
     // needed if speed is absolutely neccesary.
-    if     (FlagIsSet(PL_FCE_WAV)) PcmLoadFile(PFMT_WAV, fsImage, *this);
-    else if(FlagIsSet(PL_FCE_CAF)) PcmLoadFile(PFMT_CAF, fsImage, *this);
-    else if(FlagIsSet(PL_FCE_OGG)) PcmLoadFile(PFMT_OGG, fsImage, *this);
-    else if(FlagIsSet(PL_FCE_MP3)) PcmLoadFile(PFMT_MP3, fsImage, *this);
+    if     (FlagIsSet(PL_FCE_WAV)) PcmLoadFile(PFMT_WAV, fmData, *this);
+    else if(FlagIsSet(PL_FCE_CAF)) PcmLoadFile(PFMT_CAF, fmData, *this);
+    else if(FlagIsSet(PL_FCE_OGG)) PcmLoadFile(PFMT_OGG, fmData, *this);
+    else if(FlagIsSet(PL_FCE_MP3)) PcmLoadFile(PFMT_MP3, fmData, *this);
     // Auto detection of pcm audio
-    else PcmLoadFile(fsImage, *this);
+    else PcmLoadFile(fmData, *this);
     // Split into two channels if audio in stereo
     SplitAndSetAlloc();
   }

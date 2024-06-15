@@ -89,9 +89,10 @@ class FStreamBase :                    // File stream base class
   /* -- Return file stream handle ---------------------------------- */ public:
   FILE *FStreamGetCtx(void) const { return fStream; }
   /* -- Returns true if handle is internal --------------------------------- */
-  bool FStreamIsHandleStd(void) { return FStreamGetCtx() == stdin ||
-                                         FStreamGetCtx() == stdout ||
-                                         FStreamGetCtx() == stderr; }
+  bool FStreamIsHandleStd(void) const { return FStreamGetCtx() == stdin ||
+                                               FStreamGetCtx() == stdout ||
+                                               FStreamGetCtx() == stderr; }
+  bool FStreamIsHandleNotStd(void) const { return !FStreamIsHandleStd(); }
   /* -- Get file stream descriptor ----------------------------------------- */
   int FStreamGetFd(void) const { return StdFileNo(FStreamGetCtx()); }
   int FStreamGetFdSafe(void) const
@@ -109,16 +110,29 @@ class FStreamBase :                    // File stream base class
   int FStreamGetID(void) const { return StdFileNo(FStreamGetCtx()); }
   int FStreamGetIDSafe(void) const
     { return FStreamOpened() ? FStreamGetID() : 0; }
-  /* -- Set current file position ------------------------------------------ */
-  bool FStreamSetPosition(const int64_t lPos, const int iMode)
-    { return !FStreamErrNoWrapper(StdFSeek(FStreamGetCtx(), lPos, iMode)); }
-  bool FStreamSetPositionSafe(const int64_t lPos, const int iMode)
-    { return FStreamOpened() ? FStreamSetPosition(lPos, iMode) : EOF; }
+  /* -- Set current file position without check ---------------------------- */
+  bool FStreamSeek(const int64_t qwPos, const int iMode)
+    { return !FStreamErrNoWrapper(StdFSeek(FStreamGetCtx(), qwPos, iMode)); }
+  bool FStreamSeekCur(const int64_t qwPos)
+    { return FStreamSeek(qwPos, SEEK_CUR); }
+  bool FStreamSeekSet(const int64_t qwPos)
+    { return FStreamSeek(qwPos, SEEK_SET); }
+  bool FStreamSeekEnd(const int64_t qwPos)
+    { return FStreamSeek(qwPos, SEEK_END); }
+  /* -- Set current file position with check ------------------------------- */
+  bool FStreamSeekSafe(const int64_t qwPos, const int iMode)
+    { return FStreamOpened() ? FStreamSeek(qwPos, iMode) : false; }
+  bool FStreamSeekSafeCur(const int64_t qwPos)
+    { return FStreamSeekSafe(qwPos, SEEK_CUR); }
+  bool FStreamSeekSafeSet(const int64_t qwPos)
+    { return FStreamSeekSafe(qwPos, SEEK_SET); }
+  bool FStreamSeekSafeEnd(const int64_t qwPos)
+    { return FStreamSeekSafe(qwPos, SEEK_END); }
   /* -- Return current file position --------------------------------------- */
-  int64_t FStreamGetPosition(void)
+  int64_t FStreamTell(void)
     { return FStreamErrNoWrapper(StdFTell(FStreamGetCtx())); }
-  int64_t FStreamGetPositionSafe(void)
-    { return FStreamOpened() ? FStreamGetPosition() : EOF; }
+  int64_t FStreamTellSafe(void)
+    { return FStreamOpened() ? FStreamTell() : EOF; }
   /* -- Flush buffered file data to disk ----------------------------------- */
   bool FStreamFlush(void) const { return !fflush(FStreamGetCtx()); }
   bool FStreamFlushSafe(void) const
@@ -141,8 +155,8 @@ class FStreamBase :                    // File stream base class
   bool FStreamIsNotEOFSafe(void) const { return !FStreamIsEOFSafe(); }
   /* -- Read file information ---------------------------------------------- */
   bool FStreamStat(StdFStatStruct &sData)
-    { return !FStreamErrNoWrapper(StdHStat(StdFileNo(FStreamGetCtx()),
-        &sData)); }
+    { return !FStreamErrNoWrapper(
+        StdHStat(StdFileNo(FStreamGetCtx()), &sData)); }
   bool FStreamStatSafe(StdFStatStruct &sData)
     { return FStreamOpened() ? FStreamStat(sData) : false; }
   /* -- Read data from file ------------------------------------------------ */
@@ -151,12 +165,13 @@ class FStreamBase :                    // File stream base class
         1, stBytes, FStreamGetCtx())); }
   size_t FStreamReadSafe(void*const vpBuffer, const size_t stBytes)
     { return FStreamIsReadyRead() ? FStreamRead(vpBuffer, stBytes) : 0; }
-  /* -- Read line string from file ----------------------------------------- */
+  /* -- Read specified number of bytes into a string object ---------------- */
   const string FStreamReadString(const size_t stBytes)
   { // Setup string for buffer and read into it
-    string strRead; strRead.resize(stBytes);
-    strRead.resize(FStreamRead(const_cast<char*>(strRead.data()),
-      strRead.length()));
+    string strRead;
+    strRead.resize(stBytes);
+    strRead.resize(
+      FStreamRead(const_cast<char*>(strRead.data()), strRead.length()));
     // Return string
     return strRead;
   }
@@ -164,13 +179,12 @@ class FStreamBase :                    // File stream base class
     { return FStreamIsReadyRead() && stBytes ?
         FStreamReadString(stBytes) : cCommon->Blank(); }
   const string FStreamReadStringSafe(void)
-  { // Return empty string if closed or end-of file
-    if(!FStreamIsReadyRead()) return {};
-    // Get string and return default if zero
-    const size_t stBytes = FStreamSizeT();
-    if(!stBytes) return {};
-    // Return read string
-    return FStreamReadString(stBytes);
+  { // Read if ready to read and there are remaining characters
+    if(FStreamIsReadyRead())
+      if(const size_t stBytesRemaining = FStreamRemain())
+        return FStreamReadString(stBytesRemaining);
+    // Nothing to read
+    return {};
   }
   /* -- Write data to file ------------------------------------------------- */
   size_t FStreamWrite(const void*const vpPtr, const size_t stBytes)
@@ -230,13 +244,12 @@ class FStreamBase :                    // File stream base class
     { return FStreamIsReadyRead() && stBytes ?
         FStreamReadBlock(stBytes) : Memory{}; }
   Memory FStreamReadBlockSafe(void)
-  { // bail if no stream or size is zero
-    if(FStreamIsNotReadyRead()) return {};
-    // Get string and return default if zero
-    const size_t stBytes = FStreamSizeT();
-    if(!stBytes) return {};
-    // Read block of file size
-    return FStreamReadBlock(stBytes);
+  { // Read into memory block if stream is ready and there are bytes to read
+    if(FStreamIsReadyRead())
+      if(const size_t stBytesRemain = FStreamRemain())
+        return FStreamReadBlock(stBytesRemain);
+    // Nothing to read
+    return {};
   }
   /* -- Write an static value to file -------------------------------------- */
   template<typename T>size_t FSWriteInt(const T tVar)
@@ -244,23 +257,24 @@ class FStreamBase :                    // File stream base class
   template<typename T>size_t FSWriteIntSafe(const T tVar)
     { return FStreamOpened() ? FStreamWrite<T>(tVar) : 0; }
   /* -- Return file position to the beginning ------------------------------ */
-  bool FStreamRewind(void) { return FStreamSetPosition(0, SEEK_SET); }
+  bool FStreamRewind(void) { return FStreamSeekSet(0); }
   bool FStreamRewindSafe(void)
     { return FStreamOpened() ? FStreamRewind() : false; }
   /* -- Return size of file ------------------------------------------------ */
   int64_t FStreamSize(void)
   { // Store current position, return if failed and reset to start
-    const int64_t qCurrent = FStreamGetPosition();
+    const int64_t qCurrent = FStreamTell();
     if(qCurrent == EOF) return EOF;
-    if(!FStreamSetPosition(0, SEEK_END)) return 0;
+    if(!FStreamSeekEnd(0)) return 0;
     // Store current position (size) and restore old position
-    const int64_t qSize = FStreamGetPosition();
-    FStreamSetPosition(qCurrent, SEEK_SET);
+    const int64_t qSize = FStreamTell();
+    FStreamSeek(qCurrent, SEEK_SET);
     // Return size
     return qSize;
   }
-  /* -- Return size as size_t so it will be clamped ------------------------ */
-  size_t FStreamSizeT(void) { return UtilIntOrMax<size_t>(FStreamSize()); }
+  /* -- Return remaining bytes left to read in stream ---------------------- */
+  size_t FStreamRemain(void)
+    { return UtilIntOrMax<size_t>(FStreamSize() - FStreamTell()); }
   /* -- Return size of file ------------------------------------------------ */
   int64_t FStreamSizeSafe(void) { return FStreamClosed() ? 0 : FStreamSize(); }
   /* -- Open a file without filename validation ---------------------------- */
@@ -277,15 +291,11 @@ class FStreamBase :                    // File stream base class
   }
   /* -- Close file --------------------------------------------------------- */
   bool FStreamClose(void)
-  { // Return result
-    bool bResult;
-    // Success if is a std handle
-    if(FStreamIsHandleStd()) bResult = true;
-    // Not a std handle so now actually close and grab result
-    else bResult = FStreamDoClose();
+  { // Return success if is a std handle else close stream handle
+    const bool bResult = FStreamIsHandleStd() ? true : FStreamDoClose();
     // Stream is now invalid so clear handle
     FStreamClearHandle();
-    // Returm result
+    // Returm original close result
     return bResult;
   }
   bool FStreamCloseSafe(void)
@@ -330,7 +340,7 @@ class FStreamBase :                    // File stream base class
     { fsOther.FStreamClearHandle(); }
   /* -- Destructor (Close the file if opened) ------------------------------ */
   ~FStreamBase(void)
-    { if(FStreamOpened() && !FStreamIsHandleStd()) FStreamDoClose(); }
+    { if(FStreamOpened() && FStreamIsHandleNotStd()) FStreamDoClose(); }
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(FStreamBase)         // Disable copy constructor and operator
 };/* ----------------------------------------------------------------------- */

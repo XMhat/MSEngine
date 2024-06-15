@@ -336,6 +336,8 @@ You can change cvars by opening up the console with the `GRAVE` key (key under `
   - You can start the game with the `log_file=...` (filename) parameter to give a pretty detailed log of what the app is doing so you can send me that along with as much info as possible such as the `.log` `.crt` `.dbg` and `.udb` files that the app generates. Neither of these files will contain any personal information, only technical information to help me squash the problem.
 * **Q. I've picked the wrong game-engine settings and the game crashed/won't start.**
   - Try specifying the parameter `sql_defaults=1` command-line option to reset all the engine settings to default. If this doesn't work you'll have to delete the `.udb` file or set `sql_defaults=2` and start again from scratch thus losing all your Diggers saved game data. All that said though, the game shouldn't really crash though so please send me any logs/crash dumps you may have.
+* **Q. Why does the game run faster than the Amiga version?**
+  - A fixed polling frequency of 60hz is used for the game logic and I originally enjoyed playing this game on a 486 DX2/66 with the original MS-DOS version that ran at refresh frequency of 70hz (in 320x200 mode X) which is quite speedy compared to the slow gameplay of the Amiga version and I always preferred the fast logic of the MS-DOS version.
 
 ## [Credits](#credits)…
 ### Diggers for Amiga, CD32 and DOS…

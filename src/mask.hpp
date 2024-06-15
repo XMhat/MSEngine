@@ -226,29 +226,30 @@ CTOR_BEGIN_DUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     }
   }
   /* -- InitFromFile ------------------------------------------------------- */
-  void InitFromImage(Image &iC, const unsigned int _uiTWidth,
-    const unsigned int _uiTHeight)
+  void InitFromImage(Image &imC, const unsigned int uiTileWidth,
+    const unsigned int uiTileHeight)
   { // Set texture name
-    IdentSet(iC);
+    IdentSet(imC);
     // Must have slots
-    if(iC.IsNoSlots())
+    if(imC.IsNoSlots())
       XC("No data in image object!", "Identifier", IdentGet());
     // Check dimensions. We're also working with ints for sizes so we have
     // to limit the size to signed int range so check for that too.
-    if(!_uiTWidth || !_uiTHeight ||
-      UtilIntWillOverflow<int>(_uiTWidth) ||
-      UtilIntWillOverflow<int>(_uiTHeight))
+    if(!uiTileWidth || !uiTileHeight ||
+      UtilIntWillOverflow<int>(uiTileWidth) ||
+      UtilIntWillOverflow<int>(uiTileHeight))
         XC("Invalid tile dimensions!",
-           "Identifier", IdentGet(), "Width", _uiTWidth, "Height", _uiTHeight);
+           "Identifier", IdentGet(), "Width", uiTileWidth,
+           "Height",     uiTileHeight);
     // Get first image slot and show error as we are not reversing this.
-    ImageSlot &bData = iC.GetSlots().front();
+    ImageSlot &bData = imC.GetSlots().front();
     // Check bit depth
-    if(iC.GetBitsPerPixel() != 1)
+    if(imC.GetBitsPerPixel() != 1)
       XC("Image is not monochrome!",
          "Identifier",   IdentGet(),
          "Width",        bData.DimGetWidth(),
          "Height",       bData.DimGetHeight(),
-         "BitsPerPixel", iC.GetBitsPerPixel());
+         "BitsPerPixel", imC.GetBitsPerPixel());
     // Check image dimensions too. Again we're dealing with ints!
     if(!bData.DimIsSet() ||
       UtilIntWillOverflow<int>(bData.DimGetWidth()) ||
@@ -262,15 +263,17 @@ CTOR_BEGIN_DUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
       XC("Image dimensions are not divisible by eight!",
          "Identifier", IdentGet(), "Width", bData.DimGetWidth(),
          "Height",     bData.DimGetHeight());
-    // Get reference to the image memory and if no tiling needed? We can just
-    // add the full size texture.
-    if(bData.DimGetWidth() == _uiTWidth && bData.DimGetHeight() == _uiTHeight)
-      { emplace_back(StdMove(bData)); return; }
-    // We're dealing with memory now so we need everything as size_t
+    // Get reference to the image memory and if no tiling needed?
+    if(bData.DimGetWidth() == uiTileWidth &&
+       bData.DimGetHeight() == uiTileHeight)
+    { // We can just add the full size texture.
+      emplace_back(StdMove(bData));
+      return;
+    } // We're dealing with memory now so we need everything as size_t
     const size_t
       // Tile dimensions
-      stTWidth = static_cast<size_t>(_uiTWidth),
-      stTHeight = static_cast<size_t>(_uiTHeight),
+      stTWidth = static_cast<size_t>(uiTileWidth),
+      stTHeight = static_cast<size_t>(uiTileHeight),
       // Bitmap dimensions
       stWidth = bData.DimGetWidth<size_t>(),
       stHeight = bData.DimGetHeight<size_t>(),
@@ -288,7 +291,7 @@ CTOR_BEGIN_DUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     // Get source buffer
     const unsigned char*const ucpS = bData.MemPtr<unsigned char>();
     // If bitmap is reversed?
-    if(iC.IsReversed())
+    if(imC.IsReversed())
     { // Get height and width minus one.
       const size_t stTHeightM1 = stTHeight - 1;
       // Start iterating rows from the bottom
@@ -329,11 +332,11 @@ CTOR_BEGIN_DUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     // The mask passed in the arguments is usually still allocated by LUA and
     // will still be registered, sp lets put a note in the mask to show that
     // this function has nicked the mask.
-    iC.IdentSetEx("!MAS!$!", iC.IdentGet());
+    imC.IdentSetEx("!MAS!$!", imC.IdentGet());
     // Tell log what we did
     cLog->LogInfoExSafe("Mask created $ ($x$) tiles from a $x$ $ bitmask.",
       size(), stTWidth, stTHeight, stWidth, stHeight,
-      iC.IsReversed() ? "reversed" : "non-reversed");
+      imC.IsReversed() ? "reversed" : "non-reversed");
     // Set new size and tile size
     DimSet(static_cast<int>(stTWidth), static_cast<int>(stTHeight));
   }

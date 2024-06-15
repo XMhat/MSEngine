@@ -34,7 +34,8 @@ using namespace Lib::OpenAL;
 // ? managed internally. See PlayEx() if you need to manage the source.
 /* ------------------------------------------------------------------------- */
 LLFUNC(Play, LCGETPTR(1, Sample)->Play(
-  LCGETNUMLG(ALfloat, 2,  0, 1, "Gain"), LCGETNUMLG(ALfloat, 3, -1, 1, "Pan"),
+  LCGETNUMLG(ALfloat, 2,  0.0f, 1.0f, "Gain"),
+  LCGETNUMLG(ALfloat, 3, -1.0f, 1.0f, "Pan"),
   LCGETNUM(ALfloat, 4, "Pitch"), LCGETBOOL(5,"Loop") ? AL_TRUE : AL_FALSE));
 /* ========================================================================= */
 // $ Sample:Spawn

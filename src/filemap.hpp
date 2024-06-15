@@ -25,14 +25,14 @@ class FileMap :
 { /* -- Private variables ----------------------------------------- */ private:
   size_t           stPosition;         // Current position
   /* -- Read from a certain position without checking ---------------------- */
-  template<typename T=char>T *FileMapDoReadPtrFrom(const size_t stFrom,
-    const size_t stBytes=0)
+  template<typename PtrType=char>
+    PtrType *FileMapDoReadPtrFrom(const size_t stPos, const size_t stBytes=0)
   { // Read address. Memory() will handle all the error checking for us
-    T*const tAddr = MemDoRead<T>(stFrom);
+    PtrType*const ptAddr = MemDoRead<PtrType>(stPos);
     // Set new position clamping to size of file
-    stPosition = UtilMinimum(MemSize(), stFrom + stBytes);
+    stPosition = UtilMinimum(MemSize(), stPos + stBytes);
     // Return address
-    return tAddr;
+    return ptAddr;
   }
   /* -- Return current position ------------------------------------ */ public:
   size_t FileMapTell(void) const { return stPosition; }
@@ -48,26 +48,28 @@ class FileMap :
   bool FileMapOpened(void) const { return !!MemPtr(); }
   bool FileMapClosed(void) const { return !FileMapOpened(); }
   /* -- Read with byte bound check ----------------------------------------- */
-  template<typename T=char>T *FileMapReadPtrFrom(const size_t stFrom,
-    const size_t stBytes=0)
+  template<typename PtrType=char>
+    PtrType *FileMapReadPtrFrom(const size_t stPos, const size_t stBytes=0)
   { // Check parameters.
-    if(!MemCheckParam(stFrom, stBytes))
+    if(!MemCheckParam(stPos, stBytes))
       XC("Read error!",
          "Identifier", IdentGet(), "Destination", MemPtr<void>(),
-         "Bytes",      stBytes, "Position",    stFrom,
+         "Bytes",      stBytes,    "Position",    stPos,
          "Maximum",    SysMapGetSize());
     // Return address. This also sets the new position
-    return FileMapDoReadPtrFrom<T>(stFrom, stBytes);
+    return FileMapDoReadPtrFrom<PtrType>(stPos, stBytes);
   }
   /* -- Read from current position ----------------------------------------- */
-  template<typename T=char>T *FileMapReadPtr(const size_t stBytes=0)
-    { return FileMapReadPtrFrom<T>(FileMapTell(), stBytes); }
+  template<typename PtrType=char>
+    PtrType *FileMapReadPtr(const size_t stBytes=0)
+      { return FileMapReadPtrFrom<PtrType>(FileMapTell(), stBytes); }
   /* -- Read variable from specified position ------------------------------ */
-  template<typename T=char>const T FileMapReadVarFrom(const size_t stFrom)
-    { return *FileMapReadPtrFrom<const T>(stFrom, sizeof(T)); }
+  template<typename IntType=char>
+    const IntType FileMapReadVarFrom(const size_t stPos)
+      { return *FileMapReadPtrFrom<const IntType>(stPos, sizeof(IntType)); }
   /* -- Read specified variable from current pos --------------------------- */
-  template<typename T=char>const T FileMapReadVar(void)
-    { return FileMapReadVarFrom<T>(FileMapTell()); }
+  template<typename IntType=char>const IntType FileMapReadVar(void)
+    { return FileMapReadVarFrom<IntType>(FileMapTell()); }
   /* -- Read specified variable from specified position -------------------- */
   uint16_t FileMapReadVar16LEFrom(const size_t stFrom)
     { return UtilToI16LE(FileMapReadVarFrom<uint16_t>(stFrom)); }
@@ -103,18 +105,49 @@ class FileMap :
     // Return bytes read
     return mOut;
   }
+  /* --Seek from start ----------------------------------------------------- */
+  bool FileMapSeekSet(const size_t stPos)
+  { // Not at position already?
+    if(stPos != FileMapTell())
+    { // Failed if out of range
+      if(stPos > MemSize()) return false;
+      // Update position
+      stPosition = stPos;
+    } // Success
+    return true;
+  }
+  /* -- Seek from current position ----------------------------------------- */
+  bool FileMapSeekCur(const size_t stPos)
+    { return FileMapSeekSet(FileMapTell() + stPos); }
+  /* -- Seek from end position --------------------------------------------- */
+  bool FileMapSeekEnd(const size_t stPos)
+    { return FileMapSeekSet(MemSize() + stPos); }
   /* -- Read data from specified position in file to array ----------------- */
-  const Memory FileMapReadBlockFrom(const size_t stFrom, const size_t stBytes)
+  const Memory FileMapReadBlockFrom(const size_t stPos, const size_t stBytes)
   { // Do the seek and return a blank array if failed
-    if(!FileMapSeek(stFrom, SEEK_SET)) return { };
+    if(!FileMapSeekSet(stPos)) return { };
     // Do the read and return the array
     return FileMapReadBlock(stBytes);
   }
+  /* -- FileMap::Seek position---------------------------------------------- */
+  bool FileMapSeek(const size_t stPos, const int iMode)
+  { // Which was set
+    switch(iMode)
+    { // Seek from start?
+      case SEEK_SET: return FileMapSeekSet(stPos);
+      // Seek from current position?
+      case SEEK_CUR: return FileMapSeekCur(stPos);
+      // Seek from eof
+      case SEEK_END: return FileMapSeekEnd(stPos);
+      // Anything else is a failure
+      default: return false;
+    } // Doesn't reach here
+  }
   /* -- FileMap::Read data from specified position in file into memory ----- */
-  size_t FileMapReadFrom(const size_t stFrom, void *vpDst,
+  size_t FileMapReadFrom(const size_t stPos, void*const vpDst,
     const size_t stBytes)
   { // Do the seek and return a blank array if failed
-    if(!FileMapSeek(stFrom, SEEK_SET)) return 0;
+    if(!FileMapSeekSet(stPos)) return 0;
     // Do the read and return the array
     return FileMapReadToAddr(vpDst, stBytes);
   }
@@ -150,38 +183,6 @@ class FileMap :
     // Return bytes
     return stToRead;
   }
-  /* -- FileMap::Seek position---------------------------------------------- */
-  bool FileMapSeek(const size_t stPos, const int iMode=SEEK_SET)
-  { // Which was set
-    switch(iMode)
-    { // Seek from start?
-      case SEEK_SET:
-      { // Return failed if invalid position
-        if(stPos == FileMapTell()) return true;
-        if(stPos > MemSize()) return false;
-        stPosition = stPos;
-        break;
-      } // Seek from current position?
-      case SEEK_CUR:
-      { // Get new position and return failed if it goes past end of file
-        const size_t stNewPos = FileMapTell() + stPos;
-        if(stNewPos == stPos) return true;
-        if(stNewPos > MemSize()) return false;
-        stPosition = stNewPos;
-        break;
-      } // Seek from eof
-      case SEEK_END:
-      { // Get new position and return failed if it goes past end of file
-        const size_t stNewPos = MemSize() + stPos;
-        if(stNewPos == stPos) return true;
-        if(stNewPos > MemSize()) return false;
-        stPosition = stNewPos;
-        break;
-      } // Anything else is a failure
-      default: return false;
-    } // Return success
-    return true;
-  }
   /* -- Rewind to start ---------------------------------------------------- */
   void FileMapRewind(void) { stPosition = 0; }
   /* -- Assignment operator ------------------------------------------------ */
@@ -203,18 +204,18 @@ class FileMap :
     /* -- No code ---------------------------------------------------------- */
     { }
   /* -- Take ownership of another memory block ----------------------------- */
-  FileMap(const string &strF, MemConst &&mcSrc, const StdTimeT tC,
-    const StdTimeT tM) :
+  FileMap(const string &strF, MemConst &&mcSrc, const StdTimeT ttC,
+    const StdTimeT ttM) :
     /* -- Initialisers ----------------------------------------------------- */
-    SysMap{ strF, tC, tM },            // Reuse system map variables
+    SysMap{ strF, ttC, ttM },          // Reuse system map variables
     MemConst{ StdMove(mcSrc) },        // Init read-only memory block
     stPosition(0)                      // Initialise position
     /* --------------------------------------------------------------------- */
     { }                                // Don't do anything else
   /* -- Take ownership of another memory block ----------------------------- */
-  FileMap(const string &strF, MemConst &&mcSrc, const StdTimeT tC) :
+  FileMap(const string &strF, MemConst &&mcSrc, const StdTimeT ttC) :
     /* -- Initialisers ----------------------------------------------------- */
-    FileMap{ strF, StdMove(mcSrc), tC, tC }
+    FileMap{ strF, StdMove(mcSrc), ttC, ttC }
     /* --------------------------------------------------------------------- */
     { }                                // Don't do anything else
   /* -- Move filemap constructor ------------------------------------------- */

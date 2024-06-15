@@ -38,6 +38,7 @@ using ::std::ostream_iterator;         using ::std::ostringstream;
 using ::std::put_time;                 using ::std::right;
 using ::std::setfill;                  using ::std::setprecision;
 using ::std::setw;                     using ::std::showpos;
+using ::std::uppercase;
 /* -- Constexpr functions -------------------------------------------------- */
 using ::std::is_floating_point_v;      using ::std::is_integral_v;
 using ::std::is_pointer_v;             using ::std::is_signed_v;

@@ -137,7 +137,7 @@ struct CodecDDS final :                // Members initially public
     if(uiMipMapCount > 1) idData.SetMipmaps();
     // Ignore the next 44 bytes. Apps like GIMP can use this space to write
     // whatever they want here, such as 'GIMP-DDS\'.
-    fmData.FileMapSeek(sizeof(uint32_t)*11, SEEK_CUR);
+    fmData.FileMapSeekCur(sizeof(uint32_t) * 11);
     // Get pixel format size
     const unsigned int uiPFSize = fmData.FileMapReadVar32LE();
     if(uiPFSize != 32)
@@ -657,7 +657,7 @@ class CodecPNG final :                 // Members initially private
       png_structp psData;
       png_infop   piData;
       // Constructor
-      explicit  PngReader(FileMap &fmC) :
+      explicit PngReader(FileMap &fmC) :
         // Initialisers
         psData(png_create_read_struct(   // Create a read struct
           PNG_LIBPNG_VER_STRING,         // Set version string

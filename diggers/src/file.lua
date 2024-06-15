@@ -21,7 +21,9 @@ local UtilFormatTime<const>, InfoOSTime<const>, VariableSave<const>
 local aSaveSlot, LoadResources, Fade, SetCallbacks, IsMouseInBounds,
   IsMouseNotInBounds, aCursorIdData, SetCursor, PlayStaticSound, aSfxData,
   InitCon, aObjectTypes, aLevelData, aObjectData, IsButtonReleased, texSpr,
-  fontSpeech, SetBottomRightTipAndShadow, RenderShadow = { };
+  fontSpeech, SetBottomRightTipAndShadow, RenderShadow =
+    { }, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+    nil, nil, nil, nil;
 -- Match text -------------------------------------------------------------- --
 local sFileMatchText<const> =
   "^(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),"..

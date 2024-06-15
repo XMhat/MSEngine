@@ -52,11 +52,10 @@ local ACT<const> = {    -- Object actions array
   PREV    = 0x10, -- Object should cycle to the previous held item
   NEXT    = 0x11, -- Object should cycle to the next held item
   REST    = 0x12, -- Object should rest at the trade-centre
-  REC     = 0x13, -- Object should recruit a new digger
-  DEPLOY  = 0x14, -- Object should be deployed
-  OPEN    = 0x15, -- Object should open (flood gate)
-  CLOSE   = 0x16, -- Object should close (flood gate)
-  MAP     = 0x17, -- Object should show TNT map
+  DEPLOY  = 0x13, -- Object should be deployed
+  OPEN    = 0x14, -- Object should open (flood gate)
+  CLOSE   = 0x15, -- Object should close (flood gate)
+  MAP     = 0x16, -- Object should show TNT map
 };
 -- Jobs -------------------------------------------------------------------- --
 local JOB<const> = {     -- Job data array
@@ -87,20 +86,20 @@ local TYP<const> = {
   GOLD      = 0x06, -- The un-common treasure
   EMERALD   = 0x07, -- The not so un-common treasure
   RUBY      = 0x08, -- The most common treasure
-  RZRGHOST  = 0x09, -- A fast moving random directional spinning monster
-  SLOWSKEL  = 0x0A, -- A slow moving skeleton that homes in on any digger
-  FASTSKEL  = 0x0B, -- A fast moving skeleton that homes in on any digger
-  SLOWGHOST = 0x0C, -- A slow moving ghost that homes in on any digger
-  SLOWPHASE = 0x0D, -- A slow moving wormhole that transports diggers anywhere
-  FASTPHASE = 0x0E, -- A fast moving wormhole that transports diggers anywhere
+  PHANTOM   = 0x09, -- A fast moving random directional spinning monster
+  SKELETON  = 0x0A, -- A slow moving skeleton that homes in on any digger
+  ZOMBIE    = 0x0B, -- A fast moving skeleton that homes in on any digger
+  GHOST     = 0x0C, -- A slow moving ghost that homes in on any digger
+  ZIPPER    = 0x0D, -- A slow moving wormhole that transports diggers anywhere
+  SWRLYPRT  = 0x0E, -- A fast moving wormhole that transports diggers anywhere
   PIRANA    = 0x0F, -- A plant that attacks diggers if they get near enough
-  BADROOTS  = 0x10, -- A root plant that attacks diggers
+  FUNGUS    = 0x10, -- A root plant that attacks diggers
   ALIEN     = 0x11, -- A mutated alien from a digger
-  ALIENEGG  = 0x12, -- If digger touches this then   ALIEN is born
+  EGG       = 0x12, -- If digger touches this then   ALIEN is born
   BIRD      = 0x13, -- Critter. Just flies left and right
   FISH      = 0x14, -- Critter. Just swims left and right
-  DINOFAST  = 0x15, -- A fast moving dinosour
-  DINOSLOW  = 0x16, -- A slow moving dinosour
+  RAPTOR    = 0x15, -- A fast moving dinosour
+  ROTARY    = 0x16, -- A slow moving dinosour
   STEGO     = 0x17, -- Main part of a slow moving stegosaurus
   STEGOB    = 0x18, -- Attachment part of TYP.STEGMAIN
   TURTLE    = 0x19, -- Turtle. Just swims left and right (Unused)
@@ -205,6 +204,7 @@ local OFL<const> = {          -- Max 64-bits
   HEALNEARBY   = 0x200000000, -- Object heals nearby Diggers
   IMPATIENT    = 0x400000000, -- Object is a digger and becoming impatient
 };
+OFL.JUMPMASK = OFL.JUMPRISE|OFL.JUMPFALL;
 -- Jumping ----------------------------------------------------------------- --
 local aJumpRiseData<const> =
   { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0 };
@@ -316,7 +316,7 @@ local aLevelTypesData<const> = {
   aLevelTypeDesert,   aLevelTypeGrass, aLevelTypeIslands, aLevelTypeJungle,
   aLevelTypeMountain, aLevelTypeRock,  aLevelTypeWinter,
 };
--- Skill levels ------------------------------------------------------------ --
+-- Skill levels and zogs required for each zone --------------------------- --
 local iSkillEasiest<const>, iSkillEasy<const>, iSkillMedium<const>,
   iSkillHard<const>, iSkillHardest<const> = 600, 1000, 1300, 1500, 2100;
 -- Level data types array -------------------------------------------------- --
@@ -360,7 +360,12 @@ local aLevelData<const> =
 };
 -- Map data lookup table -------------------------------------------------- --
 local aZoneData<const> = {
-  -- L -- T -- R -- B - FPX  FPY - DEPENDENCY -------------------------- (1-10)
+  -- Legend --------------------------------------------------------------- --
+  -- L = Left bound on zone map.       T = Top bound on zone map.
+  -- R = Right bound on zone map.      B = Bottom bound on zone map.
+  -- FPX = Completed flag X pos.       FPY = Completed flag Y pos.
+  -- DEPENDENCY = Table of zone ids that unlock when any are completed.
+  -- L -- T -- R -- B - FPX  FPY - DEPENDENCY --------------- ZONE ----- (1-10)
   { 188,  50, 245,  78, 221,  56, {                   } }, -- Azerg        [01]
   { 106,  63, 172,  90, 127,  54, {                   } }, -- Dhobbs       [02]
   {  48, 137,  92, 167,  48, 140, {  2, 4, 5          } }, -- Eleevate     [03]
@@ -371,7 +376,7 @@ local aZoneData<const> = {
   { 148, 167, 208, 189, 182, 167, {  5, 6, 9,10,11,   } }, -- Sairruhr     [08]
   { 110, 194, 155, 238, 121, 214, {  4, 5, 8          } }, -- Traaghe      [09]
   { 200, 206, 251, 236, 214, 204, {  8, 9,11,16,17,18 } }, -- Kurvelynn    [10]
-  -- L -- T -- R -- B - FPX  FPY - DEPENDENCY ------------------------- (11-20)
+  -- L -- T -- R -- B - FPX  FPY - DEPENDENCY --------------- ZONE ---- (11-20)
   { 225, 137, 264, 171, 225, 137, {  6, 8,10,12,16    } }, -- Squeek       [11]
   { 247, 110, 315, 132, 266, 102, {  7,11,13,15,16    } }, -- Mykeborl     [12]
   { 286,  75, 336, 104, 298,  68, { 12,14,15          } }, -- Zorlyack     [13]
@@ -382,7 +387,7 @@ local aZoneData<const> = {
   { 197, 250, 248, 283, 197, 250, { 10,19             } }, -- Chysshir     [18]
   { 255, 251, 320, 279, 255, 251, { 17,18,20          } }, -- Djennee      [19]
   { 337, 236, 391, 290, 355, 236, { 19,21,22,28       } }, -- Dwindera     [20]
-  -- L -- T -- R -- B - FPX  FPY - DEPENDENCY ------------------------- (21-30)
+  -- L -- T -- R -- B - FPX  FPY - DEPENDENCY --------------- ZONE ---- (21-30)
   { 317, 165, 355, 200, 317, 165, { 15,16,17,20,22    } }, -- Twang        [21]
   { 362, 168, 396, 216, 362, 168, { 15,21,20,23,27    } }, -- Habbard      [22]
   { 381, 105, 419, 153, 381, 105, { 14,15,22,24,26    } }, -- Benjarr      [23]
@@ -393,645 +398,1063 @@ local aZoneData<const> = {
   { 406, 218, 453, 259, 406, 218, { 20,27,29,31       } }, -- Purth        [28]
   { 440, 266, 509, 286, 480, 256, { 28,30,31          } }, -- Ankh         [29]
   { 518, 256, 578, 297, 544, 266, { 29,31             } }, -- Zelios       [30]
-  -- L -- T -- R -- B - FPX  FPY - DEPENDENCY --------------------------(31-40)
+  -- L -- T -- R -- B - FPX  FPY - DEPENDENCY --------------- ZONE -----(31-40)
   { 465, 214, 550, 243, 465, 214, { 27,28,29,30,32    } }, -- Fruer        [31]
-  { 491, 176, 549, 200, 491, 176, { 26,27,31,33       } }, -- Klarsh       [32]
+  { 491, 176, 549, 200, 491, 176, { 27,31,33          } }, -- Klarsh       [32]
   { 516, 109, 569, 163, 516, 109, { 25,26,32          } }, -- Suhmner      [33]
   { 564,  43, 589,  65, 559,  28, { 25                } }, -- Simtob       [34]
-};-- L -- T -- R -- B - FPX  FPY - DEPENDENCY ------------------------------ --
--- Objects data ------------------------------------------------------------ --
-local aObjectData<const> = {
+};-- L -- T -- R -- B - FPX  FPY - DEPENDENCY --------------- ZONE --------- --
+local aObjectData<const> = {           -- Objects data
+-- ------------------------------------------------------------------------- --
+-- [TYP.*] = {                         Object ID (see above)
+--   [ACT.*] = {                       Action ID (see above)
+--     [DIR.*] = {                     Direction ID (see above)
+--       SF,  = <integer>              Starting frame from sprite tileset.
+--       EF,  = <integer>              Ending frame from sprite tileset.
+--       OFX, = <integer> (optional)   Drawing offset X position.
+--       OFY  = <integer> (optional)   Drawing offset Y position.
+--     },                              End of specific direction data.
+--     FLAGS   = OFL.*[|OFL.*],        Set obj flags on direction (see above).
+--     SOUND   = aSfxData.*,           Play specified sound on first frame.
+--     SOUNDRP = aSfxData.*            Repeat specified sound on first frame.
+--   },                                End of specific action data.
+--   ACTION       = ACT.*,             Initial action ID (see above).
+--   AITYPE       = AI.*,              AI routine ID (see above).
+--   ANIMTIMER    = aTimerData.*,      Animation delay in frames.
+--   ATTACHMENT   = TYP.*,             Dummy object to attach to this one.
+--   DESC         = "<string>",        Description of object for shop.
+--   DIGDELAY     = <integer>,         Frame delay before completing dig.
+--   DIRECTION    = DIR.*,             Initial direction ID (see above).
+--   FLAGS        = OFL.*[|OFL.*],     XOR'd object flags always active.
+--   INTELLIGENCE = <0.0-1.0>,         Chance to not ignore dangerous drops.
+--   JOB          = JOB.*,             Initial job ID (see above).
+--   LONGNAME     = "<string>",        Name of object for shop/post mortem.
+--   LUNGS        = <integer>,         Frame delay before reducing HP in water.
+--   MENU         = MNU.*,             Right click menu to use (see above).
+--   NAME         = "<string>",        Short name of object.
+--   PATIENCE     = <integer>,         Frames before object is impatient.
+--   STAMINA      = <integer>,         Frame delay before adding HP.
+--   STRENGTH     = <integer>,         Strength when fighting and max carry.
+--   TELEDELAY    = <integer>,         Delay before completing teleport.
+--   VALUE        = <integer>,         Cost of item to purchase (sell 1/2).
+--   WEIGHT       = <integer>          Required weight in order to carry.
+-- };                                  End of specific type data.
 -- ------------------------------------------------------------------------- --
 [TYP.FTARG] = {
  [ACT.HIDE] = {
-  [DIR.UL  ]={ 95, 95},[DIR.U ]={ 95, 95},[DIR.UR]={ 95, 95},[DIR.L ]={ 95, 95},
-  [DIR.NONE]={ 95, 95},[DIR.R ]={ 95, 95},[DIR.DL]={ 95, 95},[DIR.D ]={ 95, 95},
-  [DIR.DR  ]={ 95, 95},FLAGS=OFL.BUSY
+  [DIR.UL] = {  95,  95 }, [DIR.U]    = {  95,  95 }, [DIR.UR] = {  95,  95 },
+  [DIR.L]  = {  95,  95 }, [DIR.NONE] = {  95,  95 }, [DIR.R]  = {  95,  95 },
+  [DIR.DL] = {  95,  95 }, [DIR.D]    = {  95,  95 }, [DIR.DR] = {  95,  95 },
+  FLAGS    = OFL.BUSY
  }, [ACT.STOP] = {
-  [DIR.UL  ]={138,140},[DIR.U ]={138,140},[DIR.UR]={138,140},[DIR.L ]={138,140},
-  [DIR.NONE]={138,140},[DIR.R ]={138,140},[DIR.DL]={138,140},[DIR.D ]={138,140},
-  [DIR.DR  ]={138,140},FLAGS=OFL.FALL|OFL.REGENERATE
- }, [ACT.CREEP] = {
-  [DIR.UL  ]={ 12, 15},[DIR.U ]={ 12, 15},[DIR.UR]={  8, 11},[DIR.L ]={ 12, 15},
-  [DIR.NONE]={ 12, 15},[DIR.R ]={  8, 11},[DIR.DL]={ 12, 15},[DIR.D ]={ 12, 15},
-  [DIR.DR  ]={  8, 11},FLAGS=OFL.FALL
+  [DIR.UL] = { 138, 140 }, [DIR.U]    = { 138, 140 }, [DIR.UR] = { 138, 140 },
+  [DIR.L]  = { 138, 140 }, [DIR.NONE] = { 138, 140 }, [DIR.R]  = { 138, 140 },
+  [DIR.DL] = { 138, 140 }, [DIR.D]    = { 138, 140 }, [DIR.DR] = { 138, 140 },
+  FLAGS    = OFL.FALL|OFL.REGENERATE|OFL.PHASETARGET
  }, [ACT.WALK] = {
-  [DIR.UL  ]={ 12, 15},[DIR.U ]={ 12, 15},[DIR.UR]={  8, 11},[DIR.L ]={ 12, 15},
-  [DIR.NONE]={ 12, 15},[DIR.R ]={  8, 11},[DIR.DL]={ 12, 15},[DIR.D ]={ 12, 15},
-  [DIR.DR  ]={  8, 11},FLAGS=OFL.FALL
+  [DIR.UL] = {  12,  15 }, [DIR.U]    = {  12,  15 }, [DIR.UR] = {   8,  11 },
+  [DIR.L]  = {  12,  15 }, [DIR.NONE] = {  12,  15 }, [DIR.R]  = {   8,  11 },
+  [DIR.DL] = {  12,  15 }, [DIR.D]    = {  12,  15 }, [DIR.DR] = {   8,  11 },
+  FLAGS    = OFL.FALL|OFL.PHASETARGET
  }, [ACT.RUN] = {
-  [DIR.UL  ]={ 20, 23},[DIR.U ]={ 20, 23},[DIR.UR]={ 16, 19},[DIR.L ]={ 20, 23},
-  [DIR.NONE]={ 20, 23},[DIR.R ]={ 16, 19},[DIR.DL]={ 20, 23},[DIR.D ]={ 20, 23},
-  [DIR.DR  ]={ 16, 19},FLAGS=OFL.FALL
+  [DIR.UL] = {  20,  23 }, [DIR.U]    = {  20,  23 }, [DIR.UR] = {  16,  19 },
+  [DIR.L]  = {  20,  23 }, [DIR.NONE] = {  20,  23 }, [DIR.R]  = {  16,  19 },
+  [DIR.DL] = {  20,  23 }, [DIR.D]    = {  20,  23 }, [DIR.DR] = {  16,  19 },
+  FLAGS    = OFL.FALL|OFL.PHASETARGET
  }, [ACT.DIG] = {
-  [DIR.UL  ]={ 63, 65},[DIR.U ]={ 63, 65},[DIR.UR]={ 60, 62},[DIR.L ]={ 63, 65},
-  [DIR.NONE]={ 63, 65},[DIR.R ]={ 60, 62},[DIR.DL]={ 63, 65},[DIR.D ]={ 86, 88},
-  [DIR.DR  ]={ 60, 62},SOUNDRP=aSfxData.DIG,FLAGS=OFL.FALL|OFL.SOUNDLOOP
+  [DIR.UL] = {  63,  65 }, [DIR.U]    = {  63,  65 }, [DIR.UR] = {  60,  62 },
+  [DIR.L]  = {  63,  65 }, [DIR.NONE] = {  63,  65 }, [DIR.R]  = {  60,  62 },
+  [DIR.DL] = {  63,  65 }, [DIR.D]    = {  86,  88 }, [DIR.DR] = {  60,  62 },
+  FLAGS    = OFL.FALL|OFL.SOUNDLOOP|OFL.PHASETARGET,
+  SOUNDRP  = aSfxData.DIG
  }, [ACT.PHASE] = {
-  [DIR.UL  ]={106,109},[DIR.U ]={106,109},[DIR.UR]={106,109},[DIR.L ]={106,109},
-  [DIR.NONE]={106,109},[DIR.R ]={106,109},[DIR.DL]={106,109},[DIR.D ]={106,109},
-  [DIR.DR  ]={106,109},SOUND=aSfxData.PHASE,FLAGS=OFL.BUSY
+  [DIR.UL] = { 106, 109 }, [DIR.U]    = { 106, 109 }, [DIR.UR] = { 106, 109 },
+  [DIR.L]  = { 106, 109 }, [DIR.NONE] = { 106, 109 }, [DIR.R]  = { 106, 109 },
+  [DIR.DL] = { 106, 109 }, [DIR.D]    = { 106, 109 }, [DIR.DR] = { 106, 109 },
+  FLAGS    = OFL.BUSY,
+  SOUND    = aSfxData.PHASE
  }, [ACT.FIGHT] = {
-  [DIR.UL  ]={245,249},[DIR.U ]={240,244},[DIR.UR]={240,244},[DIR.L ]={245,249},
-  [DIR.NONE]={240,244},[DIR.R ]={240,244},[DIR.DL]={245,249},[DIR.D ]={240,244},
-  [DIR.DR  ]={240,244},FLAGS=OFL.FALL|OFL.RNGSPRITE
+  [DIR.UL] = { 245, 249 }, [DIR.U]    = { 240, 244 }, [DIR.UR] = { 240, 244 },
+  [DIR.L]  = { 245, 249 }, [DIR.NONE] = { 240, 244 }, [DIR.R]  = { 240, 244 },
+  [DIR.DL] = { 245, 249 }, [DIR.D]    = { 240, 244 }, [DIR.DR] = { 240, 244 },
+  FLAGS    = OFL.FALL|OFL.RNGSPRITE|OFL.PHASETARGET
  }, [ACT.EATEN] = {
-  [DIR.UL  ]={ 77, 79},[DIR.U ]={ 74, 76},[DIR.UR]={ 74, 76},[DIR.L ]={ 77, 79},
-  [DIR.NONE]={ 74, 76},[DIR.R ]={ 74, 76},[DIR.DL]={ 77, 79},[DIR.D ]={ 74, 76},
-  [DIR.DR  ]={ 74, 76},FLAGS=OFL.FALL|OFL.NOANIMLOOP|OFL.BUSY
- }, [ACT.DEATH] = { [DIR.NONE]={451,454},SOUND=aSfxData.DIEFTAR,FLAGS=OFL.BUSY },
- NAME="FTARG", LONGNAME="F'TARG", DIGDELAY=60, TELEDELAY=120, STRENGTH=3,
- STAMINA=60, VALUE=1000, WEIGHT=0, LUNGS=4,
- FLAGS=OFL.DIGGER|OFL.PHASETARGET|OFL.DELICATE,
- MENU=MNU.MAIN, ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
- ANIMTIMER=aTimerData.ANIMNORMAL, AITYPE=AI.DIGGER, PATIENCE=9600
+  [DIR.UL] = {  77,  79 }, [DIR.U]    = {  74,  76 }, [DIR.UR] = {  74,  76 },
+  [DIR.L]  = {  77,  79 }, [DIR.NONE] = {  74,  76 }, [DIR.R]  = {  74,  76 },
+  [DIR.DL] = {  77,  79 }, [DIR.D]    = {  74,  76 }, [DIR.DR] = {  74,  76 },
+  FLAGS    = OFL.FALL|OFL.NOANIMLOOP|OFL.BUSY|OFL.PHASETARGET
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY,
+  SOUND      = aSfxData.DIEFTAR
+ },
+ ACTION       = ACT.STOP,              AITYPE       = AI.DIGGER,
+ ANIMTIMER    = aTimerData.ANIMNORMAL, DIGDELAY     = 60,
+ DIRECTION    = DIR.NONE,              FLAGS        = OFL.DIGGER|OFL.DELICATE,
+ INTELLIGENCE = 0.7,                   JOB          = JOB.NONE,
+ LONGNAME     = "F'TARG",              LUNGS        = 4,
+ MENU         = MNU.MAIN,              NAME         = "FTARG",
+ PATIENCE     = 9600,                  STAMINA      = 60,
+ STRENGTH     = 3,                     TELEDELAY    = 120,
+ VALUE        = 1000,                  WEIGHT       = 0
 -- ------------------------------------------------------------------------- --
 }, [TYP.HABBISH] = {
  [ACT.HIDE] = {
-  [DIR.UL  ]={ 95, 95},[DIR.U ]={ 95, 95},[DIR.UR]={ 95, 95},[DIR.L ]={ 95, 95},
-  [DIR.NONE]={ 95, 95},[DIR.R ]={ 95, 95},[DIR.DL]={ 95, 95},[DIR.D ]={ 95, 95},
-  [DIR.DR  ]={ 95, 95},FLAGS=OFL.BUSY
- }, [ACT.REST] = {
-  [DIR.NONE]={132,132},FLAGS=OFL.BUSY|OFL.IMPATIENT
+  [DIR.UL] = {  95,  95 }, [DIR.U]    = {  95,  95 }, [DIR.UR] = {  95,  95 },
+  [DIR.L]  = {  95,  95 }, [DIR.NONE] = {  95,  95 }, [DIR.R]  = {  95,  95 },
+  [DIR.DL] = {  95,  95 }, [DIR.D]    = {  95,  95 }, [DIR.DR] = {  95,  95 },
+  FLAGS    = OFL.BUSY
  }, [ACT.STOP] = {
-  [DIR.UL  ]={135,137},[DIR.U ]={135,137},[DIR.UR]={135,137},[DIR.L ]={135,137},
-  [DIR.NONE]={135,137},[DIR.R ]={135,137},[DIR.DL]={135,137},[DIR.D ]={135,137},
-  [DIR.DR  ]={135,137},FLAGS=OFL.FALL|OFL.REGENERATE
- }, [ACT.CREEP] = {
-  [DIR.UL  ]={120,123},[DIR.U ]={120,123},[DIR.UR]={116,119},[DIR.L ]={120,123},
-  [DIR.NONE]={120,123},[DIR.R ]={116,119},[DIR.DL]={120,123},[DIR.D ]={120,123},
-  [DIR.DR  ]={116,119},FLAGS=OFL.FALL
+  [DIR.UL] = { 135, 137 }, [DIR.U]    = { 135, 137 }, [DIR.UR] = { 135, 137 },
+  [DIR.L]  = { 135, 137 }, [DIR.NONE] = { 135, 137 }, [DIR.R]  = { 135, 137 },
+  [DIR.DL] = { 135, 137 }, [DIR.D]    = { 135, 137 }, [DIR.DR] = { 135, 137 },
+  FLAGS    = OFL.FALL|OFL.REGENERATE|OFL.PHASETARGET
  }, [ACT.WALK] = {
-  [DIR.UL  ]={120,123},[DIR.U ]={120,123},[DIR.UR]={116,119},[DIR.L ]={120,123},
-  [DIR.NONE]={120,123},[DIR.R ]={116,119},[DIR.DL]={120,123},[DIR.D ]={120,123},
-  [DIR.DR  ]={116,119},FLAGS=OFL.FALL
+  [DIR.UL] = { 120, 123 }, [DIR.U]    = { 120, 123 }, [DIR.UR] = { 116, 119 },
+  [DIR.L]  = { 120, 123 }, [DIR.NONE] = { 120, 123 }, [DIR.R]  = { 116, 119 },
+  [DIR.DL] = { 120, 123 }, [DIR.D]    = { 120, 123 }, [DIR.DR] = { 116, 119 },
+  FLAGS    = OFL.FALL|OFL.PHASETARGET
  }, [ACT.RUN] = {
-  [DIR.UL  ]={128,131},[DIR.U ]={128,131},[DIR.UR]={124,127},[DIR.L ]={128,131},
-  [DIR.NONE]={128,131},[DIR.R ]={124,127},[DIR.DL]={128,131},[DIR.D ]={128,131},
-  [DIR.DR  ]={124,127},FLAGS=OFL.FALL
+  [DIR.UL] = { 128, 131 }, [DIR.U]    = { 128, 131 }, [DIR.UR] = { 124, 127 },
+  [DIR.L]  = { 128, 131 }, [DIR.NONE] = { 128, 131 }, [DIR.R]  = { 124, 127 },
+  [DIR.DL] = { 128, 131 }, [DIR.D]    = { 128, 131 }, [DIR.DR] = { 124, 127 },
+  FLAGS    = OFL.FALL|OFL.PHASETARGET
  }, [ACT.DIG] = {
-  [DIR.UL  ]={228,230},[DIR.U ]={228,230},[DIR.UR]={225,227},[DIR.L ]={228,230},
-  [DIR.NONE]={228,230},[DIR.R ]={225,227},[DIR.DL]={228,230},[DIR.D ]={237,239},
-  [DIR.DR  ]={225,227},SOUNDRP=aSfxData.DIG,FLAGS=OFL.FALL|OFL.SOUNDLOOP
+  [DIR.UL] = { 228, 230 }, [DIR.U]    = { 228, 230 }, [DIR.UR] = { 225, 227 },
+  [DIR.L]  = { 228, 230 }, [DIR.NONE] = { 228, 230 }, [DIR.R]  = { 225, 227 },
+  [DIR.DL] = { 228, 230 }, [DIR.D]    = { 237, 239 }, [DIR.DR] = { 225, 227 },
+  FLAGS    = OFL.FALL|OFL.SOUNDLOOP|OFL.PHASETARGET,
+  SOUNDRP  = aSfxData.DIG
  }, [ACT.PHASE] = {
-  [DIR.UL  ]={106,109},[DIR.U ]={106,109},[DIR.UR]={106,109},[DIR.L ]={106,109},
-  [DIR.NONE]={106,109},[DIR.R ]={106,109},[DIR.DL]={106,109},[DIR.D ]={106,109},
-  [DIR.DR  ]={106,109},SOUND=aSfxData.PHASE,FLAGS=OFL.BUSY
+  [DIR.UL] = { 106, 109 }, [DIR.U]    = { 106, 109 }, [DIR.UR] = { 106, 109 },
+  [DIR.L]  = { 106, 109 }, [DIR.NONE] = { 106, 109 }, [DIR.R]  = { 106, 109 },
+  [DIR.DL] = { 106, 109 }, [DIR.D]    = { 106, 109 }, [DIR.DR] = { 106, 109 },
+  FLAGS=OFL.BUSY,
+  SOUND=aSfxData.PHASE
  }, [ACT.FIGHT] = {
-  [DIR.UL  ]={255,259},[DIR.U ]={250,254},[DIR.UR]={250,254},[DIR.L ]={255,259},
-  [DIR.NONE]={250,254},[DIR.R ]={250,254},[DIR.DL]={255,259},[DIR.D ]={250,254},
-  [DIR.DR  ]={250,254},FLAGS=OFL.FALL|OFL.RNGSPRITE
+  [DIR.UL] = { 255, 259 }, [DIR.U]    = { 250, 254 }, [DIR.UR] = { 250, 254 },
+  [DIR.L]  = { 255, 259 }, [DIR.NONE] = { 250, 254 }, [DIR.R]  = { 250, 254 },
+  [DIR.DL] = { 255, 259 }, [DIR.D]    = { 250, 254 }, [DIR.DR] = { 250, 254 },
+  FLAGS    = OFL.FALL|OFL.RNGSPRITE|OFL.PHASETARGET,
  }, [ACT.EATEN] = {
-  [DIR.UL  ]={151,153},[DIR.U ]={141,143},[DIR.UR]={141,143},[DIR.L ]={151,153},
-  [DIR.NONE]={141,143},[DIR.R ]={141,143},[DIR.DL]={151,153},[DIR.D ]={141,143},
-  [DIR.DR  ]={141,143},FLAGS=OFL.FALL|OFL.NOANIMLOOP|OFL.BUSY
- }, [ACT.DEATH] = { [DIR.NONE]={451,454},SOUND=aSfxData.DIEHABB,FLAGS=OFL.BUSY },
- NAME="HABBISH", LONGNAME="HABBISH", DIGDELAY=70, TELEDELAY=60, STRENGTH=5,
- STAMINA=120, VALUE=1000, WEIGHT=0, LUNGS=12,
- FLAGS=OFL.DIGGER|OFL.PHASETARGET|OFL.DELICATE|OFL.TPMASTER,
- MENU=MNU.MAIN, ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
- ANIMTIMER=aTimerData.ANIMNORMAL, AITYPE=AI.DIGGER, PATIENCE=7500
+  [DIR.UL] = { 151, 153 }, [DIR.U]    = { 141, 143 }, [DIR.UR] = { 141, 143 },
+  [DIR.L]  = { 151, 153 }, [DIR.NONE] = { 141, 143 }, [DIR.R]  = { 141, 143 },
+  [DIR.DL] = { 151, 153 }, [DIR.D]    = { 141, 143 }, [DIR.DR] = { 141, 143 },
+  FLAGS    = OFL.FALL|OFL.NOANIMLOOP|OFL.BUSY|OFL.PHASETARGET,
+ }, [ACT.REST] = {
+  [DIR.NONE] = { 132, 132 },
+  FLAGS      = OFL.BUSY|OFL.IMPATIENT|OFL.PHASETARGET
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY,
+  SOUND      = aSfxData.DIEHABB
+ },
+ ACTION       = ACT.STOP,              AITYPE       = AI.DIGGER,
+ ANIMTIMER    = aTimerData.ANIMNORMAL, DIGDELAY     = 70,
+ DIRECTION    = DIR.NONE,
+ FLAGS        = OFL.DIGGER|OFL.DELICATE|OFL.TPMASTER,
+ INTELLIGENCE = 0.9,                   JOB          = JOB.NONE,
+ LONGNAME     = "HABBISH",             LUNGS        = 12,
+ MENU         = MNU.MAIN,              NAME         = "HABBISH",
+ PATIENCE     = 7500,                  STAMINA      = 120,
+ STRENGTH     = 5,                     TELEDELAY    = 60,
+ VALUE        = 1000,                  WEIGHT       = 0
 -- ------------------------------------------------------------------------- --
 }, [TYP.GRABLIN] = {
  [ACT.HIDE] = {
-  [DIR.UL  ]={ 95, 95},[DIR.U ]={ 95, 95},[DIR.UR]={ 95, 95},[DIR.L ]={ 95, 95},
-  [DIR.NONE]={ 95, 95},[DIR.R ]={ 95, 95},[DIR.DL]={ 95, 95},[DIR.D ]={ 95, 95},
-  [DIR.DR  ]={ 95, 95},FLAGS=OFL.BUSY
+  [DIR.UL] = {  95,  95 }, [DIR.U]    = {  95,  95 }, [DIR.UR] = {  95,  95 },
+  [DIR.L]  = {  95,  95 }, [DIR.NONE] = {  95,  95 }, [DIR.R]  = {  95,  95 },
+  [DIR.DL] = {  95,  95 }, [DIR.D]    = {  95,  95 }, [DIR.DR] = {  95,  95 },
+  FLAGS    = OFL.BUSY
  }, [ACT.STOP] = {
-  [DIR.UL  ]={222,224},[DIR.U ]={222,224},[DIR.UR]={222,224},[DIR.L ]={222,224},
-  [DIR.NONE]={222,224},[DIR.R ]={222,224},[DIR.DL]={222,224},[DIR.D ]={222,224},
-  [DIR.DR  ]={222,224},FLAGS=OFL.FALL|OFL.REGENERATE
- }, [ACT.CREEP] = {
-  [DIR.UL  ]={204,207},[DIR.U ]={204,207},[DIR.UR]={200,203},[DIR.L ]={204,207},
-  [DIR.NONE]={204,207},[DIR.R ]={200,203},[DIR.DL]={204,207},[DIR.D ]={204,207},
-  [DIR.DR  ]={200,203},FLAGS=OFL.FALL
+  [DIR.UL] = { 222, 224 }, [DIR.U]    = { 222, 224 }, [DIR.UR] = { 222, 224 },
+  [DIR.L]  = { 222, 224 }, [DIR.NONE] = { 222, 224 }, [DIR.R]  = { 222, 224 },
+  [DIR.DL] = { 222, 224 }, [DIR.D]    = { 222, 224 }, [DIR.DR] = { 222, 224 },
+  FLAGS    = OFL.FALL|OFL.REGENERATE|OFL.PHASETARGET
  }, [ACT.WALK] = {
-  [DIR.UL  ]={204,207},[DIR.U ]={204,207},[DIR.UR]={200,203},[DIR.L ]={204,207},
-  [DIR.NONE]={204,207},[DIR.R ]={200,203},[DIR.DL]={204,207},[DIR.D ]={204,207},
-  [DIR.DR  ]={200,203},FLAGS=OFL.FALL
+  [DIR.UL] = { 204, 207 }, [DIR.U]    = { 204, 207 }, [DIR.UR] = { 200, 203 },
+  [DIR.L]  = { 204, 207 }, [DIR.NONE] = { 204, 207 }, [DIR.R]  = { 200, 203 },
+  [DIR.DL] = { 204, 207 }, [DIR.D]    = { 204, 207 }, [DIR.DR] = { 200, 203 },
+  FLAGS    = OFL.FALL|OFL.PHASETARGET
  }, [ACT.RUN] = {
-  [DIR.UL  ]={212,215},[DIR.U ]={212,215},[DIR.UR]={208,211},[DIR.L ]={212,215},
-  [DIR.NONE]={212,215},[DIR.R ]={208,211},[DIR.DL]={212,215},[DIR.D ]={212,215},
-  [DIR.DR  ]={208,211},FLAGS=OFL.FALL
+  [DIR.UL] = { 212, 215 }, [DIR.U]    = { 212, 215 }, [DIR.UR] = { 208, 211 },
+  [DIR.L]  = { 212, 215 }, [DIR.NONE] = { 212, 215 }, [DIR.R]  = { 208, 211 },
+  [DIR.DL] = { 212, 215 }, [DIR.D]    = { 212, 215 }, [DIR.DR] = { 208, 211 },
+  FLAGS    = OFL.FALL|OFL.PHASETARGET
  }, [ACT.DIG] = {
-  [DIR.UL  ]={ 83, 85},[DIR.U ]={ 83, 85},[DIR.UR]={ 80, 82},[DIR.L ]={ 83, 85},
-  [DIR.NONE]={ 83, 85},[DIR.R ]={ 80, 82},[DIR.DL]={ 83, 85},[DIR.D ]={ 89, 91},
-  [DIR.DR  ]={ 80, 82},SOUNDRP=aSfxData.DIG,FLAGS=OFL.FALL|OFL.SOUNDLOOP
+  [DIR.UL] = {  83,  85 }, [DIR.U]    = {  83,  85 }, [DIR.UR] = {  80,  82 },
+  [DIR.L]  = {  83,  85 }, [DIR.NONE] = {  83,  85 }, [DIR.R]  = {  80,  82 },
+  [DIR.DL] = {  83,  85 }, [DIR.D]    = {  89,  91 }, [DIR.DR] = {  80,  82 },
+  FLAGS    = OFL.FALL|OFL.SOUNDLOOP|OFL.PHASETARGET,
+  SOUNDRP  = aSfxData.DIG
  }, [ACT.PHASE] = {
-  [DIR.UL  ]={106,109},[DIR.U ]={106,109},[DIR.UR]={106,109},[DIR.L ]={106,109},
-  [DIR.NONE]={106,109},[DIR.R ]={106,109},[DIR.DL]={106,109},[DIR.D ]={106,109},
-  [DIR.DR  ]={106,109},SOUND=aSfxData.PHASE,FLAGS=OFL.BUSY
+  [DIR.UL] = { 106, 109 }, [DIR.U]    = { 106, 109 }, [DIR.UR] = { 106, 109 },
+  [DIR.L]  = { 106, 109 }, [DIR.NONE] = { 106, 109 }, [DIR.R]  = { 106, 109 },
+  [DIR.DL] = { 106, 109 }, [DIR.D]    = { 106, 109 }, [DIR.DR] = { 106, 109 },
+  FLAGS    = OFL.BUSY,
+  SOUND    = aSfxData.PHASE
  }, [ACT.FIGHT] = {
-  [DIR.UL  ]={275,279},[DIR.U ]={270,274},[DIR.UR]={270,274},[DIR.L ]={275,279},
-  [DIR.NONE]={270,274},[DIR.R ]={270,274},[DIR.DL]={275,279},[DIR.D ]={270,274},
-  [DIR.DR  ]={270,274},FLAGS=OFL.FALL|OFL.RNGSPRITE
+  [DIR.UL] = { 275, 279 }, [DIR.U]    = { 270, 274 }, [DIR.UR] = { 270, 274 },
+  [DIR.L]  = { 275, 279 }, [DIR.NONE] = { 270, 274 }, [DIR.R]  = { 270, 274 },
+  [DIR.DL] = { 275, 279 }, [DIR.D]    = { 270, 274 }, [DIR.DR] = { 270, 274 },
+  FLAGS    = OFL.FALL|OFL.RNGSPRITE|OFL.PHASETARGET
  }, [ACT.EATEN] = {
-  [DIR.UL  ]={219,221},[DIR.U ]={216,218},[DIR.UR]={216,218},[DIR.L ]={219,221},
-  [DIR.NONE]={216,218},[DIR.R ]={216,218},[DIR.DL]={219,221},[DIR.D ]={216,218},
-  [DIR.DR  ]={216,218},FLAGS=OFL.FALL|OFL.NOANIMLOOP|OFL.BUSY
- }, [ACT.DEATH] = { [DIR.NONE]={451,454},SOUND=aSfxData.DIEGRAB,FLAGS=OFL.BUSY },
- NAME="GRABLIN", LONGNAME="GRABLIN", DIGDELAY=50, TELEDELAY=120, STRENGTH=4,
- STAMINA=120, VALUE=1000, WEIGHT=0, LUNGS=8,
- FLAGS=OFL.DIGGER|OFL.PHASETARGET|OFL.DELICATE, MENU=MNU.MAIN, ACTION=ACT.STOP,
- JOB=JOB.NONE, DIRECTION=DIR.NONE, ANIMTIMER=aTimerData.ANIMNORMAL,
- AITYPE=AI.DIGGER, PATIENCE=10500
+  [DIR.UL] = { 219, 221 }, [DIR.U]    = { 216, 218 }, [DIR.UR] = { 216, 218 },
+  [DIR.L]  = { 219, 221 }, [DIR.NONE] = { 216, 218 }, [DIR.R]  = { 216, 218 },
+  [DIR.DL] = { 219, 221 }, [DIR.D]    = { 216, 218 }, [DIR.DR] = { 216, 218 },
+  FLAGS    = OFL.FALL|OFL.NOANIMLOOP|OFL.BUSY|OFL.PHASETARGET
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  SOUND      = aSfxData.DIEGRAB,
+  FLAGS      = OFL.BUSY
+ },
+ ACTION       = ACT.STOP,              AITYPE       = AI.DIGGER,
+ ANIMTIMER    = aTimerData.ANIMNORMAL, DIGDELAY     = 50,
+ DIRECTION    = DIR.NONE,              FLAGS        = OFL.DIGGER|OFL.DELICATE,
+ INTELLIGENCE = 0.8,                   JOB          = JOB.NONE,
+ LONGNAME     = "GRABLIN",             LUNGS        = 8,
+ MENU         = MNU.MAIN,              NAME         = "GRABLIN",
+ PATIENCE     = 10500,                 STAMINA      = 120,
+ STRENGTH     = 4,                     TELEDELAY    = 120,
+ VALUE        = 1000,                  WEIGHT       = 0,
 -- ------------------------------------------------------------------------- --
 }, [TYP.QUARRIOR] = {
  [ACT.HIDE] = {
-   [DIR.UL]={ 95, 95},[DIR.U   ]={ 95, 95},[DIR.UR]={ 95, 95},
-   [DIR.L ]={ 95, 95},[DIR.NONE]={ 95, 95},[DIR.R ]={ 95, 95},
-   [DIR.DL]={ 95, 95},[DIR.D   ]={ 95, 95},[DIR.DR]={ 95, 95}, FLAGS=OFL.BUSY
+  [DIR.UL] = {  95,  95 }, [DIR.U]    = {  95,  95 }, [DIR.UR] = {  95,  95 },
+  [DIR.L]  = {  95,  95 }, [DIR.NONE] = {  95,  95 }, [DIR.R]  = {  95,  95 },
+  [DIR.DL] = {  95,  95 }, [DIR.D]    = {  95,  95 }, [DIR.DR] = {  95,  95 },
+  FLAGS    = OFL.BUSY
  }, [ACT.STOP] = {
-   [DIR.UL]={178,180},[DIR.U   ]={178,180},[DIR.UR]={178,180},
-   [DIR.L ]={178,180},[DIR.NONE]={178,180},[DIR.R ]={178,180},
-   [DIR.DL]={178,180},[DIR.D   ]={178,180},[DIR.DR]={178,180},
-   FLAGS=OFL.FALL|OFL.REGENERATE
- }, [ACT.CREEP] = {
-   [DIR.UL]={160,163},[DIR.U   ]={160,163},[DIR.UR]={156,159},
-   [DIR.L ]={160,163},[DIR.NONE]={160,163},[DIR.R ]={156,159},
-   [DIR.DL]={160,163},[DIR.D   ]={160,163},[DIR.DR]={156,159}, FLAGS=OFL.FALL
+  [DIR.UL] = { 178, 180 }, [DIR.U]    = { 178, 180 }, [DIR.UR] = { 178, 180 },
+  [DIR.L]  = { 178, 180 }, [DIR.NONE] = { 178, 180 }, [DIR.R]  = { 178, 180 },
+  [DIR.DL] = { 178, 180 }, [DIR.D]    = { 178, 180 }, [DIR.DR] = { 178, 180 },
+  FLAGS    = OFL.FALL|OFL.REGENERATE|OFL.PHASETARGET
  }, [ACT.WALK] = {
-   [DIR.UL]={160,163},[DIR.U   ]={160,163},[DIR.UR]={156,159},
-   [DIR.L ]={160,163},[DIR.NONE]={160,163},[DIR.R ]={156,159},
-   [DIR.DL]={160,163},[DIR.D   ]={160,163},[DIR.DR]={156,159}, FLAGS=OFL.FALL
+  [DIR.UL] = { 160, 163 }, [DIR.U]    = { 160, 163 }, [DIR.UR] = { 156, 159 },
+  [DIR.L]  = { 160, 163 }, [DIR.NONE] = { 160, 163 }, [DIR.R]  = { 156, 159 },
+  [DIR.DL] = { 160, 163 }, [DIR.D]    = { 160, 163 }, [DIR.DR] = { 156, 159 },
+  FLAGS    = OFL.FALL|OFL.PHASETARGET
  }, [ACT.RUN] = {
-   [DIR.UL]={168,171},[DIR.U   ]={168,171},[DIR.UR]={164,167},
-   [DIR.L ]={168,171},[DIR.NONE]={168,171},[DIR.R ]={164,167},
-   [DIR.DL]={168,171},[DIR.D   ]={168,171},[DIR.DR]={164,167}, FLAGS=OFL.FALL
+  [DIR.UL] = { 168, 171 }, [DIR.U]    = { 168, 171 }, [DIR.UR] = { 164, 167 },
+  [DIR.L]  = { 168, 171 }, [DIR.NONE] = { 168, 171 }, [DIR.R]  = { 164, 167 },
+  [DIR.DL] = { 168, 171 }, [DIR.D]    = { 168, 171 }, [DIR.DR] = { 164, 167 },
+  FLAGS    = OFL.FALL|OFL.PHASETARGET
  }, [ACT.DIG] = {
-   [DIR.UL]={234,236},[DIR.U   ]={234,236},[DIR.UR]={231,233},
-   [DIR.L ]={234,236},[DIR.NONE]={234,236},[DIR.R ]={231,233},
-   [DIR.DL]={234,236},[DIR.D   ]={ 92, 94},[DIR.DR]={231,233},
-   SOUNDRP=aSfxData.DIG, FLAGS=OFL.FALL|OFL.SOUNDLOOP
+  [DIR.UL] = { 234, 236 }, [DIR.U]    = { 234, 236 }, [DIR.UR] = { 231, 233 },
+  [DIR.L]  = { 234, 236 }, [DIR.NONE] = { 234, 236 }, [DIR.R]  = { 231, 233 },
+  [DIR.DL] = { 234, 236 }, [DIR.D]    = {  92,  94 }, [DIR.DR] = { 231, 233 },
+  FLAGS    = OFL.FALL|OFL.SOUNDLOOP|OFL.PHASETARGET,
+  SOUNDRP  = aSfxData.DIG
  }, [ACT.PHASE] = {
-   [DIR.UL]={106,109},[DIR.U   ]={106,109},[DIR.UR]={106,109},
-   [DIR.L ]={106,109},[DIR.NONE]={106,109},[DIR.R ]={106,109},
-   [DIR.DL]={106,109},[DIR.D   ]={106,109},[DIR.DR]={106,109},
-   SOUND=aSfxData.PHASE, FLAGS=OFL.BUSY
+  [DIR.UL] = { 106, 109 }, [DIR.U]    = { 106, 109 }, [DIR.UR] = { 106, 109 },
+  [DIR.L]  = { 106, 109 }, [DIR.NONE] = { 106, 109 }, [DIR.R]  = { 106, 109 },
+  [DIR.DL] = { 106, 109 }, [DIR.D]    = { 106, 109 }, [DIR.DR] = { 106, 109 },
+  FLAGS    = OFL.BUSY,
+  SOUND    = aSfxData.PHASE
  }, [ACT.FIGHT] = {
-   [DIR.UL  ]={265,269},[DIR.U   ]={260,264},[DIR.UR]={260,264},
-   [DIR.L   ]={265,269},[DIR.NONE]={260,264},[DIR.R ]={260,264},
-   [DIR.DL  ]={265,269},[DIR.D   ]={260,264},[DIR.DR]={260,264},
-   FLAGS=OFL.FALL|OFL.RNGSPRITE
+  [DIR.UL] = { 265, 269 }, [DIR.U]    = { 260, 264 }, [DIR.UR] = { 260, 264 },
+  [DIR.L]  = { 265, 269 }, [DIR.NONE] = { 260, 264 }, [DIR.R]  = { 260, 264 },
+  [DIR.DL] = { 265, 269 }, [DIR.D]    = { 260, 264 }, [DIR.DR] = { 260, 264 },
+  FLAGS    = OFL.FALL|OFL.RNGSPRITE|OFL.PHASETARGET
  }, [ACT.EATEN] = {
-   [DIR.UL]={175,177},[DIR.U   ]={172,174},[DIR.UR]={172,174},
-   [DIR.L ]={175,177},[DIR.NONE]={172,174},[DIR.R ]={172,174},
-   [DIR.DL]={175,177},[DIR.D   ]={172,174},[DIR.DR]={172,174},
-   FLAGS=OFL.FALL|OFL.NOANIMLOOP|OFL.BUSY
- }, [ACT.DEATH] = { [DIR.NONE]={451,454},SOUND=aSfxData.DIEQUAR,
-   FLAGS=OFL.BUSY },
- NAME="QUARRIOR", LONGNAME="QUARRIOR", DIGDELAY=80, TELEDELAY=180, STRENGTH=6,
- STAMINA=120, VALUE=1000, WEIGHT=0, LUNGS=16, FLAGS=OFL.DIGGER|OFL.PHASETARGET,
- MENU=MNU.MAIN, ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
- ANIMTIMER=aTimerData.ANIMNORMAL, AITYPE=AI.DIGGER, PATIENCE=15000
+  [DIR.UL] = { 175, 177 }, [DIR.U]    = { 172, 174 }, [DIR.UR] = { 172, 174 },
+  [DIR.L]  = { 175, 177 }, [DIR.NONE] = { 172, 174 }, [DIR.R]  = { 172, 174 },
+  [DIR.DL] = { 175, 177 }, [DIR.D]    = { 172, 174 }, [DIR.DR] = { 172, 174 },
+  FLAGS    = OFL.FALL|OFL.NOANIMLOOP|OFL.BUSY|OFL.PHASETARGET
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY,
+  SOUND      = aSfxData.DIEQUAR
+ },
+ ACTION       = ACT.STOP,              AITYPE       = AI.DIGGER,
+ ANIMTIMER    = aTimerData.ANIMNORMAL, DIGDELAY     = 80,
+ DIRECTION    = DIR.NONE,              FLAGS        = OFL.DIGGER,
+ INTELLIGENCE = 0.6,                   JOB          = JOB.NONE,
+ LONGNAME     = "QUARRIOR",            LUNGS        = 16,
+ MENU         = MNU.MAIN,              NAME         = "QUARRIOR",
+ PATIENCE     = 15000,                 STAMINA      = 120,
+ STRENGTH     = 6,                     TELEDELAY    = 180,
+ VALUE        = 1000,                  WEIGHT       = 0
 -- ------------------------------------------------------------------------- --
 }, [TYP.JENNITE] = {
-  [ACT.STOP]  = { [DIR.NONE]={315,318},FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.PHASE] = { [DIR.NONE]={106,109,0,7},SOUND=aSfxData.FIND,
-    FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="JENNITE", LONGNAME="JENNITE", DIGDELAY=0, TELEDELAY=200, STRENGTH=0,
-  STAMINA=-1, VALUE=280, WEIGHT=1,
-  FLAGS=OFL.SELLABLE|OFL.TREASURE|OFL.PHASETARGET|OFL.AQUALUNG,
-  AITYPE=AI.NONE, ACTION=ACT.PHASE, JOB=JOB.SPAWN, DIRECTION=DIR.NONE,
-  ANIMTIMER=aTimerData.ANIMNORMAL
+ [ACT.STOP] = {
+  [DIR.NONE] = { 315, 318 },
+  FLAGS      = OFL.FALL|OFL.PICKUP|OFL.PHASETARGET
+ }, [ACT.PHASE] = {
+  [DIR.NONE] = { 106, 109, 0, 7 },
+  FLAGS      = OFL.FALL|OFL.PICKUP,
+  SOUND      = aSfxData.FIND
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.PHASE,                AITYPE    = AI.NONE,
+ ANIMTIMER = aTimerData.ANIMNORMAL,    DIRECTION = DIR.NONE,
+ FLAGS     = OFL.SELLABLE|OFL.TREASURE|OFL.AQUALUNG,
+ JOB       = JOB.SPAWN,                LONGNAME  = "JENNITE",
+ NAME      = "JENNITE",                STAMINA   = -1,
+ STRENGTH  = 0,                        TELEDELAY = 200,
+ VALUE     = 280,                      WEIGHT    = 1,
 -- ------------------------------------------------------------------------- --
 }, [TYP.DIAMOND] = {
-  [ACT.STOP]  = { [DIR.NONE]={428,431},FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.PHASE] = { [DIR.NONE]={106,109,0,7},SOUND=aSfxData.FIND,
-    FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="DIAMOND", LONGNAME="DIAMOND", DIGDELAY=1, TELEDELAY=200, STRENGTH=0,
-  STAMINA=-1, VALUE=100, WEIGHT=1,
-  FLAGS=OFL.SELLABLE|OFL.TREASURE|OFL.PHASETARGET|OFL.AQUALUNG,
-  AITYPE=AI.NONE, ACTION=ACT.PHASE, JOB=JOB.SPAWN, DIRECTION=DIR.NONE,
-  ANIMTIMER=aTimerData.ANIMNORMAL
+ [ACT.STOP] = {
+  [DIR.NONE] = { 428, 431 },
+  FLAGS      = OFL.FALL|OFL.PICKUP|OFL.PHASETARGET
+ }, [ACT.PHASE] = {
+  [DIR.NONE] = { 106, 109, 0, 7 },
+  FLAGS      = OFL.FALL|OFL.PICKUP,
+  SOUND      = aSfxData.FIND
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.PHASE,                AITYPE    = AI.NONE,
+ ANIMTIMER = aTimerData.ANIMNORMAL,    DIRECTION = DIR.NONE,
+ FLAGS     = OFL.SELLABLE|OFL.TREASURE|OFL.AQUALUNG,
+ JOB       = JOB.SPAWN,                LONGNAME  = "DIAMOND",
+ NAME      = "DIAMOND",                STAMINA   = -1,
+ STRENGTH  = 0,                        TELEDELAY = 200,
+ VALUE     = 100,                      WEIGHT    = 1
 -- ------------------------------------------------------------------------- --
 }, [TYP.GOLD] = {
-  [ACT.STOP]  = { [DIR.NONE]={ 96, 99},FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.PHASE] = { [DIR.NONE]={106,109,0,7},SOUND=aSfxData.FIND,
-    FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="GOLD", LONGNAME="GOLD", DIGDELAY=2, TELEDELAY=200, STRENGTH=0,
-  STAMINA=-1, VALUE=80, WEIGHT=1,
-  FLAGS=OFL.SELLABLE|OFL.TREASURE|OFL.PHASETARGET|OFL.AQUALUNG,
-  AITYPE=AI.NONE, ACTION=ACT.PHASE, JOB=JOB.SPAWN, DIRECTION=DIR.NONE,
-  ANIMTIMER=aTimerData.ANIMNORMAL
+ [ACT.STOP] = {
+  [DIR.NONE] = {  96,  99 },
+  FLAGS      = OFL.FALL|OFL.PICKUP|OFL.PHASETARGET
+ }, [ACT.PHASE] = {
+  [DIR.NONE] = { 106, 109, 0, 7 },
+  FLAGS      = OFL.FALL|OFL.PICKUP,
+  SOUND      = aSfxData.FIND
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.PHASE,                AITYPE    = AI.NONE,
+ ANIMTIMER = aTimerData.ANIMNORMAL,    DIRECTION = DIR.NONE,
+ FLAGS     = OFL.SELLABLE|OFL.TREASURE|OFL.AQUALUNG,
+ JOB       = JOB.SPAWN,                LONGNAME  = "GOLD",
+ NAME      = "GOLD",                   STAMINA   = -1,
+ STRENGTH  = 0,                        TELEDELAY = 200,
+ VALUE     = 80,                       WEIGHT    = 1
 -- ------------------------------------------------------------------------- --
 }, [TYP.EMERALD] = {
-  [ACT.STOP]  = { [DIR.NONE]={432,435},FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.PHASE] = { [DIR.NONE]={106,109,0,7},SOUND=aSfxData.FIND,
-    FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="EMERALD", LONGNAME="EMERALD", DIGDELAY=3, TELEDELAY=200, STRENGTH=0,
-  STAMINA=-1, VALUE=60, WEIGHT=1,
-  FLAGS=OFL.SELLABLE|OFL.TREASURE|OFL.PHASETARGET|OFL.AQUALUNG,
-  AITYPE=AI.NONE, ACTION=ACT.PHASE, JOB=JOB.SPAWN, DIRECTION=DIR.NONE,
-  ANIMTIMER=aTimerData.ANIMNORMAL
+ [ACT.STOP] = {
+  [DIR.NONE] = { 432, 435 },
+  FLAGS      = OFL.FALL|OFL.PICKUP|OFL.PHASETARGET
+ }, [ACT.PHASE] = {
+  [DIR.NONE] = { 106, 109, 0, 7 },
+  FLAGS      = OFL.FALL|OFL.PICKUP,
+  SOUND      = aSfxData.FIND
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.PHASE,                AITYPE    = AI.NONE,
+ ANIMTIMER = aTimerData.ANIMNORMAL,    DIRECTION = DIR.NONE,
+ FLAGS     = OFL.SELLABLE|OFL.TREASURE|OFL.AQUALUNG,
+ JOB       = JOB.SPAWN,                LONGNAME  = "EMERALD",
+ NAME      = "EMERALD",                STAMINA   = -1,
+ STRENGTH  = 0,                        TELEDELAY = 200,
+ VALUE     = 60,                       WEIGHT    = 1
 -- ------------------------------------------------------------------------- --
 }, [TYP.RUBY] = {
-  [ACT.STOP] = { [DIR.NONE]={436,439},FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.PHASE] = { [DIR.NONE]={106,109,0,7},SOUND=aSfxData.FIND,
-    FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="RUBY", LONGNAME="RUBY", DIGDELAY=4, TELEDELAY=200, STRENGTH=0,
-  STAMINA=-1, VALUE=40, WEIGHT=1,
-  FLAGS=OFL.SELLABLE|OFL.TREASURE|OFL.PHASETARGET|OFL.AQUALUNG,
-  AITYPE=AI.NONE, ACTION=ACT.PHASE, JOB=JOB.SPAWN, DIRECTION=DIR.NONE,
-  ANIMTIMER=aTimerData.ANIMNORMAL
+ [ACT.STOP] = {
+  [DIR.NONE] = { 436, 439 },
+  FLAGS      = OFL.FALL|OFL.PICKUP|OFL.PHASETARGET
+ }, [ACT.PHASE] = {
+  [DIR.NONE] = { 106, 109, 0, 7 },
+  FLAGS      = OFL.FALL|OFL.PICKUP,
+  SOUND      = aSfxData.FIND
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.PHASE,                AITYPE    = AI.NONE,
+ ANIMTIMER = aTimerData.ANIMNORMAL,    DIRECTION = DIR.NONE,
+ FLAGS     = OFL.SELLABLE|OFL.TREASURE|OFL.AQUALUNG,
+ JOB       = JOB.SPAWN,                LONGNAME  = "RUBY",
+ NAME      = "RUBY",                   STAMINA   = -1,
+ STRENGTH  = 0,                        TELEDELAY = 200,
+ VALUE     = 40,                       WEIGHT    = 1,
 -- ------------------------------------------------------------------------- --
-}, [TYP.RZRGHOST] = {
-  [ACT.STOP] = {
-    [DIR.U]={442,445},[DIR.L]={442,445},[DIR.NONE]={446,449},[DIR.R]={446,449},
-    [DIR.D]={446,449},FLAGS=OFL.HURTDIGGER },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="PHANTOM", LONGNAME="PHANTOM", DIGDELAY=0, TELEDELAY=200, STRENGTH=0,
-  STAMINA=-1, VALUE=0, WEIGHT=0, ACTION=ACT.STOP, JOB=JOB.NONE,
-  DIRECTION=DIR.NONE, AITYPE=AI.RANDOM, ANIMTIMER=aTimerData.ANIMFAST,
-  FLAGS=OFL.AQUALUNG
+}, [TYP.PHANTOM] = {
+ [ACT.STOP] = {
+                          [DIR.U]    = { 442, 445 },
+  [DIR.L] = { 442, 445 }, [DIR.NONE] = { 446, 449 }, [DIR.R] = { 446, 449 },
+                          [DIR.D]    = { 446, 449 },
+  FLAGS   = OFL.HURTDIGGER
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.STOP,                 AITYPE    = AI.RANDOM,
+ ANIMTIMER = aTimerData.ANIMFAST,      DIRECTION = DIR.NONE,
+ FLAGS     = OFL.AQUALUNG,             JOB       = JOB.NONE,
+ LONGNAME  = "PHANTOM",                NAME      = "PHANTOM",
+ STAMINA   = -1,                       STRENGTH  = 0,
+ TELEDELAY = 200,                      VALUE     = 0,
+ WEIGHT    = 0
 -- ------------------------------------------------------------------------- --
-}, [TYP.SLOWSKEL] = {
-  [ACT.STOP] = {
-    [DIR.UL  ]={409,412},[DIR.U   ]={413,416},[DIR.UR]={413,416},
-    [DIR.L   ]={409,412},[DIR.NONE]={413,416},[DIR.R ]={413,416},
-    [DIR.DL  ]={409,412},[DIR.D   ]={413,416},[DIR.DR]={413,416},
-    FLAGS=OFL.HURTDIGGER },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="SKELETON", LONGNAME="SKELETON", DIGDELAY=0, TELEDELAY=200, STRENGTH=0,
-  STAMINA=-1, VALUE=0, WEIGHT=0, ACTION=ACT.STOP, JOB=JOB.NONE,
-  DIRECTION=DIR.NONE, AITYPE=AI.FINDSLOW, ANIMTIMER=aTimerData.ANIMNORMAL,
-  FLAGS=OFL.AQUALUNG
+}, [TYP.SKELETON] = {
+ [ACT.STOP] = {
+  [DIR.UL] = { 409, 412 }, [DIR.U]    = { 413, 416 }, [DIR.UR] = { 413, 416 },
+  [DIR.L]  = { 409, 412 }, [DIR.NONE] = { 413, 416 }, [DIR.R]  = { 413, 416 },
+  [DIR.DL] = { 409, 412 }, [DIR.D]    = { 413, 416 }, [DIR.DR] = { 413, 416 },
+  FLAGS    = OFL.HURTDIGGER
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.STOP,                 AITYPE    = AI.FINDSLOW,
+ ANIMTIMER = aTimerData.ANIMNORMAL,    DIRECTION = DIR.NONE,
+ FLAGS     = OFL.AQUALUNG,             JOB       = JOB.NONE,
+ LONGNAME  = "SKELETON",               NAME      = "SKELETON",
+ STAMINA   = -1,                       STRENGTH  = 0,
+ TELEDELAY = 200,                      VALUE     = 0,
+ WEIGHT    = 0
 -- ------------------------------------------------------------------------- --
-}, [TYP.FASTSKEL] = {
-  [ACT.STOP] = {
-    [DIR.UL]={147,148},[DIR.U   ]={149,150},[DIR.UR]={149,150},
-    [DIR.L ]={147,148},[DIR.NONE]={149,150},[DIR.R ]={149,150},
-    [DIR.DL]={147,148},[DIR.D   ]={149,150},[DIR.DR]={149,150},
-    FLAGS=OFL.HURTDIGGER },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="ZOMBIE", LONGNAME="ZOMBIE", DIGDELAY=0, TELEDELAY=200, STRENGTH=0,
-  STAMINA=-1, VALUE=0, WEIGHT=0, LUNGCAPACITY=64, ACTION=ACT.STOP,
-  JOB=JOB.NONE, DIRECTION=DIR.NONE, AITYPE=AI.FIND,
-  ANIMTIMER=aTimerData.ANIMNORMAL, FLAGS=OFL.AQUALUNG
+}, [TYP.ZOMBIE] = {
+ [ACT.STOP] = {
+  [DIR.UL] = { 147, 148 }, [DIR.U]    = { 149, 150 }, [DIR.UR] = { 149, 150 },
+  [DIR.L]  = { 147, 148 }, [DIR.NONE] = { 149, 150 }, [DIR.R]  = { 149, 150 },
+  [DIR.DL] = { 147, 148 }, [DIR.D]    = { 149, 150 }, [DIR.DR] = { 149, 150 },
+  FLAGS    = OFL.HURTDIGGER
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.STOP,                 AITYPE    = AI.FIND,
+ ANIMTIMER = aTimerData.ANIMNORMAL,    DIRECTION = DIR.NONE,
+ FLAGS     = OFL.AQUALUNG,             JOB       = JOB.NONE,
+ LONGNAME  = "ZOMBIE",                 NAME      = "ZOMBIE",
+ STAMINA   = -1,                       STRENGTH  = 0,
+ TELEDELAY = 200,                      VALUE     = 0,
+ WEIGHT    = 0,
 -- ------------------------------------------------------------------------- --
-}, [TYP.SLOWGHOST] = {
-  NAME      = "GHOST",     LONGNAME  = "GHOST",     FLAGS     = OFL.AQUALUNG,
-  DIGDELAY  = 0,           TELEDELAY = 200,         STRENGTH  = 0,
-  STAMINA   = -1,          VALUE     = 0,           WEIGHT    = 0,
-  ACTION    = ACT.STOP,    JOB       = JOB.NONE,    DIRECTION = DIR.NONE,
-  AITYPE    = AI.FINDSLOW, ANIMTIMER = aTimerData.ANIMNORMAL,
-  [ACT.STOP] = {
-    [DIR.UL] = { 360,360 }, [DIR.U   ] = { 361,361 }, [DIR.UR] = { 361,361 },
-    [DIR.L ] = { 360,360 }, [DIR.NONE] = { 361,361 }, [DIR.R ] = { 361,361 },
-    [DIR.DL] = { 360,360 }, [DIR.D   ] = { 361,361 }, [DIR.DR] = { 361,361 },
-    FLAGS = OFL.HURTDIGGER
-  }, [ACT.DEATH] = {
-    [DIR.NONE] = { 451,454 },
-    FLAGS = OFL.BUSY
-  },
+}, [TYP.GHOST] = {
+ [ACT.STOP] = {
+  [DIR.UL] = { 360, 360 }, [DIR.U]    = { 361, 361 }, [DIR.UR] = { 361, 361 },
+  [DIR.L]  = { 360, 360 }, [DIR.NONE] = { 361, 361 }, [DIR.R]  = { 361, 361 },
+  [DIR.DL] = { 360, 360 }, [DIR.D]    = { 361, 361 }, [DIR.DR] = { 361, 361 },
+  FLAGS    = OFL.HURTDIGGER
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451,454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.STOP,                 AITYPE    = AI.FINDSLOW,
+ ANIMTIMER = aTimerData.ANIMNORMAL,    DIRECTION = DIR.NONE,
+ FLAGS     = OFL.AQUALUNG,             JOB       = JOB.NONE,
+ LONGNAME  = "GHOST",                  NAME      = "GHOST",
+ STAMINA   = -1,                       STRENGTH  = 0,
+ TELEDELAY = 200,                      VALUE     = 0,
+ WEIGHT    = 0
 -- ------------------------------------------------------------------------- --
-}, [TYP.SLOWPHASE] = {
-  NAME      = "ZIPPER",    LONGNAME  = "ZIPPER",    FLAGS     = OFL.AQUALUNG,
-  DIGDELAY  = 0,           TELEDELAY = 200,         STRENGTH  = 0,
-  STAMINA   = -1,          VALUE     = 0,           WEIGHT    = 0,
-  ACTION    = ACT.STOP,    JOB       = JOB.NONE,    DIRECTION = DIR.NONE,
-  AITYPE    = AI.FINDSLOW, ANIMTIMER = aTimerData.ANIMNORMAL,
-  [ACT.STOP] = {
-    [DIR.UL] = { 371,374 }, [DIR.U   ] = { 371,374 }, [DIR.UR] = { 371,374 },
-    [DIR.L ] = { 371,374 }, [DIR.NONE] = { 371,374 }, [DIR.R ] = { 371,374 },
-    [DIR.DL] = { 371,374 }, [DIR.D   ] = { 371,374 }, [DIR.DR] = { 371,374 },
-    FLAGS=OFL.PHASEDIGGER
-  }, [ACT.DEATH] = {
-    [DIR.NONE] = { 451,454 },
-    FLAGS = OFL.BUSY
-  },
+}, [TYP.ZIPPER] = {
+ [ACT.STOP] = {
+  [DIR.UL] = { 371, 374 }, [DIR.U]    = { 371, 374 }, [DIR.UR] = { 371, 374 },
+  [DIR.L]  = { 371, 374 }, [DIR.NONE] = { 371, 374 }, [DIR.R]  = { 371, 374 },
+  [DIR.DL] = { 371, 374 }, [DIR.D]    = { 371, 374 }, [DIR.DR] = { 371, 374 },
+  FLAGS    = OFL.PHASEDIGGER
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.STOP,                 AITYPE    = AI.FINDSLOW,
+ ANIMTIMER = aTimerData.ANIMNORMAL,    DIRECTION = DIR.NONE,
+ FLAGS     = OFL.AQUALUNG,             JOB       = JOB.NONE,
+ LONGNAME  = "ZIPPER",                 NAME      = "ZIPPER",
+ STAMINA   = -1,                       STRENGTH  = 0,
+ TELEDELAY = 200,                      VALUE     = 0,
+ WEIGHT    = 0,
 -- ------------------------------------------------------------------------- --
-}, [TYP.FASTPHASE] = {
-  [ACT.STOP] = {
-    [DIR.UL]={417,427},[DIR.U   ]={417,427},[DIR.UR]={417,427},
-    [DIR.L ]={417,427},[DIR.NONE]={417,427},[DIR.R ]={417,427},
-    [DIR.DL]={417,427},[DIR.D   ]={417,427},[DIR.DR]={417,427},
-    FLAGS=OFL.PHASEDIGGER },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="SWRLYPRT", LONGNAME="SWIRLYPORT", DIGDELAY=0, TELEDELAY=200,
-  STRENGTH=0, STAMINA=-1, VALUE=0, WEIGHT=0, ACTION=ACT.STOP, JOB=JOB.NONE,
-  DIRECTION=DIR.NONE, AITYPE=AI.FIND, ANIMTIMER=aTimerData.ANIMFAST,
-  FLAGS=OFL.AQUALUNG
+}, [TYP.SWRLYPRT] = {
+ [ACT.STOP] = {
+  [DIR.UL] = { 417, 427 }, [DIR.U]    = { 417, 427 }, [DIR.UR] = { 417, 427 },
+  [DIR.L]  = { 417, 427 }, [DIR.NONE] = { 417, 427 }, [DIR.R]  = { 417, 427 },
+  [DIR.DL] = { 417, 427 }, [DIR.D]    = { 417, 427 }, [DIR.DR] = { 417, 427 },
+  FLAGS    = OFL.PHASEDIGGER
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.STOP,                 AITYPE    = AI.FIND,
+ ANIMTIMER = aTimerData.ANIMFAST,      DIRECTION = DIR.NONE,
+ FLAGS     = OFL.AQUALUNG,             JOB       = JOB.NONE,
+ LONGNAME  = "SWIRLYPORT",             NAME      = "SWRLYPRT",
+ STAMINA   = -1,                       STRENGTH  = 0,
+ TELEDELAY = 200,                      VALUE     = 0,
+ WEIGHT    = 0
 -- ------------------------------------------------------------------------- --
 }, [TYP.PIRANA] = {
-  [ACT.STOP]  = { [DIR.L]={388,388},[DIR.NONE]={393,393},[DIR.R]={393,393},
-    FLAGS=OFL.FALL|OFL.HURTDIGGER },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  [ACT.FIGHT] = { [DIR.L]={389,392},[DIR.R]={394,397},
-    FLAGS=OFL.FALL|OFL.HURTDIGGER },
-  NAME="PIRANA", LONGNAME="PIRANA PLANT", DIGDELAY=0, TELEDELAY=200,
-  STRENGTH=0, STAMINA=-1, VALUE=0, WEIGHT=0, LUNGS=128,
-  FLAGS=OFL.STATIONARY|OFL.PHASETARGET, ACTION=ACT.STOP, AITYPE=AI.NONE,
-  JOB=JOB.NONE, DIRECTION=DIR.NONE, ANIMTIMER=aTimerData.ANIMNORMAL
+ [ACT.STOP] = {
+  [DIR.L] = { 388, 388 }, [DIR.NONE] = { 393, 393 }, [DIR.R] = { 393, 393 },
+  FLAGS   = OFL.FALL|OFL.HURTDIGGER|OFL.PHASETARGET
+ }, [ACT.FIGHT] = {
+  [DIR.L] = { 389, 392 }, [DIR.R] = { 394, 397 },
+  FLAGS   = OFL.FALL|OFL.HURTDIGGER|OFL.PHASETARGET
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.STOP,                 AITYPE    = AI.NONE,
+ ANIMTIMER = aTimerData.ANIMNORMAL,    DIRECTION = DIR.NONE,
+ FLAGS     = OFL.STATIONARY,           JOB       = JOB.NONE,
+ LONGNAME  = "PIRANA PLANT",           LUNGS     = 128,
+ NAME      = "PIRANA",                 STAMINA   = -1,
+ STRENGTH  = 0,                        TELEDELAY = 200,
+ VALUE     = 0,                        WEIGHT    = 0
 -- ------------------------------------------------------------------------- --
-}, [TYP.BADROOTS] = {
-  [ACT.STOP]  = { [DIR.L]={398,401},[DIR.NONE]={398,401},[DIR.R]={398,401},
-    FLAGS=OFL.FALL|OFL.HURTDIGGER },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  [ACT.FIGHT] = { [DIR.L]={402,408},[DIR.NONE]={402,408},[DIR.R]={402,408},
-    FLAGS=OFL.FALL|OFL.HURTDIGGER },
-  NAME="FUNGUS", LONGNAME="FUNGUS", DIGDELAY=0, TELEDELAY=200, STRENGTH=0,
-  STAMINA=-1, VALUE=0, WEIGHT=0,
-  FLAGS=OFL.STATIONARY|OFL.PHASETARGET|OFL.AQUALUNG, ACTION=ACT.STOP,
-  JOB=JOB.NONE, AITYPE=AI.NONE, DIRECTION=DIR.NONE,
-  ANIMTIMER=aTimerData.ANIMNORMAL,
+}, [TYP.FUNGUS] = {
+ [ACT.STOP] = {
+  [DIR.L] = { 398, 401 }, [DIR.NONE] = { 398, 401 }, [DIR.R] = { 398, 401 },
+  FLAGS   = OFL.FALL|OFL.HURTDIGGER|OFL.PHASETARGET
+ }, [ACT.FIGHT] = {
+  [DIR.L] = { 402, 408 }, [DIR.NONE] = { 402, 408 }, [DIR.R] = { 402, 408 },
+  FLAGS   = OFL.FALL|OFL.HURTDIGGER|OFL.PHASETARGET
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.STOP,                 AITYPE    = AI.NONE,
+ ANIMTIMER = aTimerData.ANIMNORMAL,    DIRECTION = DIR.NONE,
+ FLAGS     = OFL.STATIONARY|OFL.AQUALUNG,
+ JOB       = JOB.NONE,                 LONGNAME  = "FUNGUS",
+ NAME      = "FUNGUS",                 STAMINA   = -1,
+ STRENGTH  = 0,                        TELEDELAY = 200,
+ VALUE     = 0,                        WEIGHT    = 0
 -- ------------------------------------------------------------------------- --
 }, [TYP.ALIEN] = {
-  [ACT.RUN] = { [DIR.L]={102,105},[DIR.NONE]={112,115},[DIR.R ]={112,115},
-    FLAGS=OFL.FALL|OFL.HURTDIGGER },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="ALIEN", LONGNAME="ALIEN", DIGDELAY=0, TELEDELAY=20, STRENGTH=0,
-  STAMINA=-1, VALUE=0, WEIGHT=0, LUNGS=32, FLAGS=OFL.PHASETARGET,
-  ACTION=ACT.RUN, JOB=JOB.BOUNCE, AITYPE=AI.NONE, DIRECTION=DIR.LR,
-  ANIMTIMER=aTimerData.ANIMNORMAL
+ [ACT.RUN] = {
+  [DIR.L] = { 102, 105 }, [DIR.NONE] = { 112, 115 }, [DIR.R] = { 112, 115 },
+  FLAGS   = OFL.FALL|OFL.HURTDIGGER|OFL.PHASETARGET
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.RUN,                  AITYPE    = AI.NONE,
+ ANIMTIMER = aTimerData.ANIMNORMAL,    DIRECTION = DIR.LR,
+ JOB       = JOB.BOUNCE,               LONGNAME  = "ALIEN",
+ LUNGS     = 32,                       NAME      = "ALIEN",
+ STAMINA   = -1,                       STRENGTH  = 0,
+ TELEDELAY = 20,                       VALUE     = 0,
+ WEIGHT    = 0
 -- ------------------------------------------------------------------------- --
-}, [TYP.ALIENEGG] = {
-  [ACT.STOP]  = { [DIR.NONE]={ 71, 71}, FLAGS=OFL.FALL|OFL.CONSUME },
-  [ACT.PHASE] = { [DIR.NONE]={ 68, 68}, FLAGS=OFL.FALL },
-  [ACT.DEATH] = { [DIR.NONE]={375,378},
-    FLAGS=OFL.FALL|OFL.NOANIMLOOP|OFL.BUSY },
-  NAME="EGG", LONGNAME="MYSTERIOUS EGG", DIGDELAY=0, TELEDELAY=3600,
-  STRENGTH=0, STAMINA=-1, VALUE=0, WEIGHT=0, LUNGS=128, FLAGS=OFL.PHASETARGET,
-  ACTION=ACT.PHASE, JOB=JOB.SPAWN, AITYPE=AI.NONE, DIRECTION=DIR.NONE,
-  ANIMTIMER=aTimerData.ANIMNORMAL
+}, [TYP.EGG] = {
+ [ACT.STOP]  = {
+  [DIR.NONE] = { 71, 71 },
+  FLAGS      = OFL.FALL|OFL.CONSUME|OFL.PHASETARGET
+ }, [ACT.PHASE] = {
+  [DIR.NONE] = { 68, 68 },
+  FLAGS      = OFL.FALL|OFL.PHASETARGET
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 375, 378 },
+  FLAGS      = OFL.FALL|OFL.NOANIMLOOP|OFL.BUSY
+ },
+ ACTION    = ACT.PHASE,                AITYPE    = AI.NONE,
+ ANIMTIMER = aTimerData.ANIMNORMAL,    DIRECTION = DIR.NONE,
+ JOB       = JOB.SPAWN,                LONGNAME  = "MYSTERIOUS EGG",
+ LUNGS     = 128,                      NAME      = "EGG",
+ STAMINA   = -1,                       STRENGTH  = 0,
+ TELEDELAY = 3600,                     VALUE     = 0,
+ WEIGHT    = 0
 -- ------------------------------------------------------------------------- --
 }, [TYP.BIRD] = {
-  [ACT.STOP]  = { [DIR.L]={297,301},[DIR.R]={302,306} },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="BIRD", LONGNAME="BIRD", DIGDELAY=0, TELEDELAY=200, STRENGTH=0,
-  STAMINA=-1, VALUE=0, WEIGHT=0, LUNGS=2, ACTION=ACT.STOP, JOB=JOB.BOUNCE,
-  DIRECTION=DIR.LR, AITYPE=AI.CRITTER, ANIMTIMER=aTimerData.ANIMNORMAL
+ [ACT.STOP] = {
+  [DIR.L] = { 297, 301 }, [DIR.R] = { 302, 306 }
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 }, FLAGS = OFL.BUSY
+ },
+ ACTION    = ACT.STOP,                 AITYPE    = AI.CRITTER,
+ ANIMTIMER = aTimerData.ANIMNORMAL ,   DIRECTION = DIR.LR,
+ JOB       = JOB.BOUNCE,               LONGNAME  = "BIRD",
+ LUNGS     = 2,                        NAME      = "BIRD",
+ STAMINA   = -1,                       STRENGTH  = 0,
+ TELEDELAY = 200,                      VALUE     = 0,
+ WEIGHT    = 0
 -- ------------------------------------------------------------------------- --
 }, [TYP.FISH] = {
-  [ACT.STOP]  = { [DIR.L]={58,59},[DIR.R]={56,57} },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="FISH", LONGNAME="GOLDFISH", DIGDELAY=0, TELEDELAY=200, STRENGTH=0,
-  STAMINA=-1, VALUE=0, WEIGHT=0, ACTION=ACT.STOP, JOB=JOB.BOUNCE,
-  DIRECTION=DIR.LR, AITYPE=AI.CRITTERSLOW, ANIMTIMER=aTimerData.ANIMNORMAL,
-  FLAGS=OFL.AQUALUNG|OFL.WATERBASED
+ [ACT.STOP] = {
+  [DIR.L] = { 58, 59 }, [DIR.R] = { 56, 57 }
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.STOP,                 AITYPE    = AI.CRITTERSLOW,
+ ANIMTIMER = aTimerData.ANIMNORMAL,    DIRECTION = DIR.LR,
+ FLAGS     = OFL.AQUALUNG|OFL.WATERBASED,
+ JOB       = JOB.BOUNCE,               LONGNAME  = "GOLDFISH",
+ NAME      = "FISH",                   STAMINA   = -1,
+ STRENGTH  = 0,                        TELEDELAY = 200,
+ VALUE     = 0,                        WEIGHT    = 0
 -- ------------------------------------------------------------------------- --
-}, [TYP.DINOFAST] = {
-  [ACT.RUN]   = { [DIR.L ]={362,365},[DIR.R ]={366,369},
-    FLAGS=OFL.FALL|OFL.HURTDIGGER|OFL.PURSUEDIGGER },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="VRAPTOR", LONGNAME="VELOCIRAPTOR", DIGDELAY=0, TELEDELAY=200,
-  STRENGTH=0, STAMINA=-1, VALUE=0, WEIGHT=0, LUNGS=16, FLAGS=OFL.PHASETARGET,
-  AITYPE=AI.NONE, ACTION=ACT.RUN, JOB=JOB.BOUNCE, DIRECTION=DIR.LR,
-  ANIMTIMER=aTimerData.ANIMNORMAL
+}, [TYP.RAPTOR] = {
+ [ACT.RUN] = {
+  [DIR.L] = { 362, 365 }, [DIR.R] = { 366, 369 },
+  FLAGS   = OFL.FALL|OFL.HURTDIGGER|OFL.PURSUEDIGGER|OFL.PHASETARGET
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 }, FLAGS = OFL.BUSY
+ },
+ ACTION    = ACT.RUN,                  AITYPE    = AI.NONE,
+ ANIMTIMER = aTimerData.ANIMNORMAL,    DIRECTION = DIR.LR,
+ JOB       = JOB.BOUNCE,               LONGNAME  = "VELOCIRAPTOR",
+ LUNGS     = 16,                       NAME      = "VRAPTOR",
+ STAMINA   = -1,                       STRENGTH  = 0,
+ TELEDELAY = 200,                      VALUE     = 0,
+ WEIGHT    = 0,
 -- ------------------------------------------------------------------------- --
-}, [TYP.DINOSLOW] = {
-  [ACT.WALK]  = { [DIR.L ]={380,383},[DIR.R ]={384,387},
-    FLAGS=OFL.FALL|OFL.HURTDIGGER|OFL.PURSUEDIGGER },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="RTRYSRUS", LONGNAME="ROTARYSAURUS", DIGDELAY=0, TELEDELAY=200,
-  STRENGTH=0, STAMINA=-1, VALUE=0, AITYPE=AI.NONE, WEIGHT=0, LUNGS=16,
-  FLAGS=OFL.PHASETARGET, ACTION=ACT.WALK, JOB=JOB.BOUNCE, DIRECTION=DIR.LR,
-  ANIMTIMER=aTimerData.ANIMNORMAL
+}, [TYP.ROTARY] = {
+ [ACT.WALK] = {
+  [DIR.L] = { 380, 383 }, [DIR.R] = { 384, 387 },
+  FLAGS   = OFL.FALL|OFL.HURTDIGGER|OFL.PURSUEDIGGER|OFL.PHASETARGET
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.WALK,                 AITYPE    = AI.NONE,
+ ANIMTIMER = aTimerData.ANIMNORMAL,    DIRECTION = DIR.LR,
+ JOB       = JOB.BOUNCE,               LONGNAME  = "ROTARYSAURUS",
+ LUNGS     = 16,                       NAME      = "RTRYSRUS",
+ STAMINA   = -1,                       STRENGTH  = 0,
+ TELEDELAY = 200,                      VALUE     = 0,
+ WEIGHT    = 0
 -- ------------------------------------------------------------------------- --
 }, [TYP.STEGO] = {
-  [ACT.CREEP] = { [DIR.L]={29,32,3,0},[DIR.R]={39,42,-3,0},
-    FLAGS=OFL.FALL|OFL.HURTDIGGER|OFL.PURSUEDIGGER },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="STEGSAUR", LONGNAME="STEGOSAURUS", DIGDELAY=0, TELEDELAY=200,
-  STRENGTH=0, STAMINA=-1, VALUE=0, WEIGHT=0, LUNGS=16, FLAGS=OFL.PHASETARGET,
-  AITYPE=AI.NONE, ACTION=ACT.CREEP, JOB=JOB.BOUNCE, DIRECTION=DIR.LR,
-  ANIMTIMER=aTimerData.ANIMNORMAL, ATTACHMENT=TYP.STEGOB
+ [ACT.CREEP] = {
+  [DIR.L] = { 29, 32, 3, 0 }, [DIR.R] = { 39, 42, -3, 0 },
+  FLAGS   = OFL.FALL|OFL.HURTDIGGER|OFL.PURSUEDIGGER|OFL.PHASETARGET
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION     = ACT.CREEP,               AITYPE     = AI.NONE,
+ ANIMTIMER  = aTimerData.ANIMNORMAL,   ATTACHMENT = TYP.STEGOB,
+ DIRECTION  = DIR.LR,                  JOB        = JOB.BOUNCE,
+ LONGNAME   = "STEGOSAURUS",           LUNGS      = 16,
+ NAME       = "STEGSAUR",              STAMINA    = -1,
+ STRENGTH   = 0,                       TELEDELAY  = 200,
+ VALUE      = 0,                       WEIGHT     = 0,
 -- ------------------------------------------------------------------------- --
 }, [TYP.STEGOB] = {
-  [ACT.CREEP] = { [DIR.L]={25,28,-16,0},[DIR.R]={43,46,16,0} },
-  [ACT.DEATH] = { [DIR.NONE]={451,454,-16,0},FLAGS=OFL.BUSY },
+ [ACT.CREEP] = {
+  [DIR.L] = { 25, 28, -16, 0 }, [DIR.R] = { 43, 46, 16, 0 }
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454, -16, 0 },
+  FLAGS      = OFL.BUSY
+ }
 -- ------------------------------------------------------------------------- --
 }, [TYP.TURTLE] = {
-  [ACT.STOP]  = { [DIR.L ]={307,310},[DIR.R ]={311,314} },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="TURTLE", LONGNAME="TURTLE", DIGDELAY=0, TELEDELAY=200, STRENGTH=0,
-  STAMINA=-1, VALUE=0, WEIGHT=0, FLAGS=OFL.AQUALUNG|OFL.WATERBASED,
-  ACTION=ACT.STOP, JOB=JOB.BOUNCE, DIRECTION=DIR.LR, AITYPE=AI.CRITTER,
-  ANIMTIMER=aTimerData.ANIMNORMAL
+ [ACT.STOP] = {
+  [DIR.L] = { 307, 310 }, [DIR.R] = { 311, 314 }
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.STOP,                 AITYPE    = AI.CRITTER,
+ ANIMTIMER = aTimerData.ANIMNORMAL,    DIRECTION = DIR.LR,
+ FLAGS     = OFL.AQUALUNG|OFL.WATERBASED,
+ JOB       = JOB.BOUNCE,               LONGNAME  = "TURTLE",
+ NAME      = "TURTLE",                 STAMINA   = -1,
+ STRENGTH  = 0,                        TELEDELAY = 200,
+ VALUE     = 0,                        WEIGHT    = 0
 -- ------------------------------------------------------------------------- --
 }, [TYP.BIGFOOT] = {
-  [ACT.HIDE]  = { [DIR.NONE]={95,95},FLAGS=OFL.BUSY },
-  [ACT.STOP]  = { [DIR.UL]={329,331},[DIR.U]   ={329,331},[DIR.UR]={329,331},
-                  [DIR.L] ={329,331},[DIR.NONE]={329,331},[DIR.R] ={329,331},
-                  [DIR.DL]={329,331},[DIR.D]   ={329,331},[DIR.DR]={329,331},
-    FLAGS=OFL.FALL|OFL.REGENERATE },
-  [ACT.WALK]  = { [DIR.UL]={321,324},[DIR.U]   ={321,324},[DIR.UR]={325,328},
-                  [DIR.L] ={321,324},[DIR.NONE]={321,324},[DIR.R] ={325,328},
-                  [DIR.DL]={321,324},[DIR.D]   ={321,324},[DIR.DR]={325,328},
-    FLAGS=OFL.FALL|OFL.REGENERATE },
-  [ACT.PHASE] = { [DIR.NONE]={106,109},[DIR.D ]={106,109},SOUND=aSfxData.PHASE,
-    FLAGS=OFL.BUSY },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="BIGFOOT", LONGNAME="SKINWALKER", DIGDELAY=0, TELEDELAY=100,
-  STRENGTH=100, STAMINA=-1, VALUE=0,
-  WEIGHT=100, FLAGS=OFL.PHASETARGET|OFL.AQUALUNG, ACTION=ACT.STOP,
-  JOB=JOB.BOUNCE, DIRECTION=DIR.LR, AITYPE=AI.BIGFOOT,
-  ANIMTIMER=aTimerData.ANIMNORMAL
+ [ACT.HIDE] = {
+  [DIR.NONE] = { 95, 95 },
+  FLAGS      = OFL.BUSY
+ }, [ACT.STOP] = {
+  [DIR.UL] = { 329, 331 }, [DIR.U]    = { 329, 331 }, [DIR.UR] = { 329, 331 },
+  [DIR.L]  = { 329, 331 }, [DIR.NONE] = { 329, 331 }, [DIR.R]  = { 329, 331 },
+  [DIR.DL] = { 329, 331 }, [DIR.D]    = { 329, 331 }, [DIR.DR] = { 329, 331 },
+  FLAGS    = OFL.FALL|OFL.REGENERATE|OFL.PHASETARGET
+ }, [ACT.WALK] = {
+  [DIR.UL] = { 321, 324 }, [DIR.U]    = { 321, 324 }, [DIR.UR] = { 325, 328 },
+  [DIR.L]  = { 321, 324 }, [DIR.NONE] = { 321, 324 }, [DIR.R]  = { 325, 328 },
+  [DIR.DL] = { 321, 324 }, [DIR.D]    = { 321, 324 }, [DIR.DR] = { 325, 328 },
+  FLAGS    = OFL.FALL|OFL.REGENERATE|OFL.PHASETARGET
+ }, [ACT.PHASE] = {
+  [DIR.NONE] = { 106, 109 }, [DIR.D] = { 106, 109 },
+  FLAGS      = OFL.BUSY,
+  SOUND      = aSfxData.PHASE
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.STOP,                 AITYPE    = AI.BIGFOOT,
+ ANIMTIMER = aTimerData.ANIMNORMAL,    DIRECTION = DIR.LR,
+ FLAGS     = OFL.AQUALUNG,             JOB       = JOB.BOUNCE,
+ LONGNAME  = "SKINWALKER",             NAME      = "BIGFOOT",
+ STAMINA   = -1,                       STRENGTH  = 100,
+ TELEDELAY = 100,                      VALUE     = 0,
+ WEIGHT    = 100
 -- ------------------------------------------------------------------------- --
 }, [TYP.STUNNEL] = {
-  [ACT.STOP]  = { [DIR.L]={284,284},[DIR.NONE]={280,280},[DIR.R]={280,280},
-    FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.WALK]  = { [DIR.L]={284,287},[DIR.NONE]={280,283},[DIR.R]={280,283},
-    FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.DIG]   = { [DIR.L]={284,287},[DIR.NONE]={280,283},[DIR.R]={280,283},
-    SOUNDRP=aSfxData.DIG,FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="SMALLTUN", DIGDELAY=30, TELEDELAY=200, STRENGTH=0, STAMINA=-1,
-  VALUE=150, WEIGHT=2, LUNGS=1,
-  FLAGS=OFL.SELLABLE|OFL.DEVICE|OFL.PHASETARGET|OFL.EXPLODE, MENU=MNU.TUNNEL,
-  ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
-  ANIMTIMER=aTimerData.ANIMNORMAL, AITYPE=AI.NONE, LONGNAME="SMALL TUNNELER",
-  DESC="A MECHANICAL DIGGER\nTHAT DIGS HORIZONTALLY",
+ [ACT.STOP] = {
+  [DIR.L] = { 284, 284 }, [DIR.NONE] = { 280, 280 }, [DIR.R] = { 280, 280 },
+  FLAGS   = OFL.FALL|OFL.PICKUP|OFL.PHASETARGET
+ }, [ACT.WALK] = {
+  [DIR.L] = { 284, 287 }, [DIR.NONE] = { 280, 283 }, [DIR.R] = { 280, 283 },
+  FLAGS   = OFL.FALL|OFL.PICKUP|OFL.PHASETARGET
+ }, [ACT.DIG] = {
+  [DIR.L] = { 284, 287 }, [DIR.NONE] = { 280, 283 }, [DIR.R] = { 280, 283 },
+  FLAGS   = OFL.FALL|OFL.PICKUP|OFL.PHASETARGET,
+  SOUNDRP = aSfxData.DIG
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.STOP,                 AITYPE    = AI.NONE,
+ ANIMTIMER = aTimerData.ANIMNORMAL,
+ DESC      = "A MECHANICAL DIGGER\nTHAT DIGS HORIZONTALLY",
+ DIGDELAY  = 30,                       DIRECTION = DIR.NONE,
+ FLAGS     = OFL.SELLABLE|OFL.DEVICE|OFL.EXPLODE,
+ JOB       = JOB.NONE,                 LONGNAME  = "SMALL TUNNELER",
+ LUNGS     = 1,                        MENU      = MNU.TUNNEL,
+ NAME      = "SMALLTUN",               STAMINA   = -1,
+ STRENGTH  = 0,                        TELEDELAY = 200,
+ VALUE     = 150,                      WEIGHT    = 2,
 -- ------------------------------------------------------------------------- --
 }, [TYP.LTUNNEL] = {
-  [ACT.STOP]  = { [DIR.L]={185,185},[DIR.NONE]={189,189},[DIR.R]={189,189},
-    FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.WALK]  = { [DIR.L]={185,188},[DIR.R]={189,192},
-    FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.DIG]   = { [DIR.L]={185,188},[DIR.R]={189,192},
-    FLAGS=OFL.FALL|OFL.PICKUP, SOUNDRP=aSfxData.DIG },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="LARGETUN", DIGDELAY=10, TELEDELAY=200, STRENGTH=0, STAMINA=-1,
-  VALUE=230, WEIGHT=3, LUNGS=1,
-  FLAGS=OFL.SELLABLE|OFL.DEVICE|OFL.PHASETARGET|OFL.EXPLODE, MENU=MNU.TUNNEL,
-  ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
-  ANIMTIMER=aTimerData.ANIMNORMAL, ATTACHMENT=TYP.LTUNNELB, AITYPE=AI.NONE,
-  LONGNAME="LARGE TUNNELER",
-  DESC="A FAST MECHANICAL DIGGER\nTHAT DIGS HORIZONTALLY",
+ [ACT.STOP] = {
+  [DIR.L] = { 185, 185 }, [DIR.NONE] = { 189, 189 }, [DIR.R] = { 189, 189 },
+  FLAGS   = OFL.FALL|OFL.PICKUP|OFL.PHASETARGET
+ }, [ACT.WALK] = {
+  [DIR.L] = { 185, 188 }, [DIR.R] = { 189, 192 },
+  FLAGS   = OFL.FALL|OFL.PICKUP|OFL.PHASETARGET
+ }, [ACT.DIG] = {
+  [DIR.L] = { 185, 188 }, [DIR.R] = { 189, 192 },
+  FLAGS   = OFL.FALL|OFL.PICKUP|OFL.PHASETARGET,
+  SOUNDRP = aSfxData.DIG
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION     = ACT.STOP,                AITYPE     = AI.NONE,
+ ANIMTIMER  = aTimerData.ANIMNORMAL,   ATTACHMENT = TYP.LTUNNELB,
+ DESC       = "A FAST MECHANICAL DIGGER\nTHAT DIGS HORIZONTALLY",
+ DIGDELAY   = 10,                      DIRECTION  = DIR.NONE,
+ FLAGS      = OFL.SELLABLE|OFL.DEVICE|OFL.EXPLODE,
+ JOB        = JOB.NONE,                LONGNAME   = "LARGE TUNNELER",
+ LUNGS      = 1,                       MENU       = MNU.TUNNEL,
+ NAME       = "LARGETUN",              STAMINA    = -1,
+ STRENGTH   = 0,                       TELEDELAY  = 200,
+ VALUE      = 230,                     WEIGHT     = 3
 -- ------------------------------------------------------------------------- --
 }, [TYP.LTUNNELB] = {
- [ACT.STOP ] = { [DIR.L]={181,181,-16,0},[DIR.NONE]={193,193,16,0},
-   [DIR.R]={193,193,16,0} },
- [ACT.WALK]  = { [DIR.L]={181,184,-16,0},[DIR.NONE]={193,196,16,0},
-   [DIR.R]={193,196,16,0} },
- [ACT.DIG]   = { [DIR.L]={181,184,-16,0},[DIR.NONE]={193,196,16,0},
-   [DIR.R]={193,196,16,0} },
- [ACT.DEATH] = { [DIR.NONE]={451,454,16,0},FLAGS=OFL.BUSY },
+ [ACT.STOP] = {
+  [DIR.L] = { 181, 181, -16, 0 }, [DIR.NONE] = { 193, 193, 16, 0 },
+  [DIR.R] = { 193, 193,  16, 0 }
+ }, [ACT.WALK] = {
+  [DIR.L] = { 181, 184, -16, 0 }, [DIR.NONE] = { 193, 196, 16, 0 },
+  [DIR.R] = { 193, 196,  16, 0 }
+ }, [ACT.DIG] = {
+  [DIR.L] = { 181, 184, -16, 0 }, [DIR.NONE] = { 193, 196, 16, 0 },
+  [DIR.R] = { 193, 196,  16, 0 }
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454, 16, 0 },
+  FLAGS      = OFL.BUSY
+ },
 -- ------------------------------------------------------------------------- --
 }, [TYP.CORK] = {
-  [ACT.STOP]  = { [DIR.L]={288,288},[DIR.NONE]={288,288},[DIR.R]={288,288},
-    [DIR.D]={288,288},FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.WALK]  = { [DIR.D]={288,290},
-    FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.CREEP] = { [DIR.L]={288,290},[DIR.R]={288,290},
-    FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.DIG]   = { [DIR.D]={288,290},SOUNDRP=aSfxData.DIG,
-    FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="CORKSCRW", DIGDELAY=20, TELEDELAY=200, STRENGTH=0, STAMINA=-1,
-  VALUE=170, WEIGHT=3, LUNGS=1,
-  FLAGS=OFL.SELLABLE|OFL.DEVICE|OFL.PHASETARGET|OFL.EXPLODE, MENU=MNU.CORK,
-  ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE, AITYPE=AI.NONE,
-  ANIMTIMER=aTimerData.ANIMNORMAL, LONGNAME="CORKSCREW",
-  DESC="A MECHANICAL DIGGER\nTHAT DIGS VERTICALLY DOWN",
+ [ACT.STOP] = {
+  [DIR.L] = { 288, 288 }, [DIR.NONE] = { 288, 288 }, [DIR.R] = { 288, 288 },
+  [DIR.D] = { 288, 288 },
+  FLAGS   = OFL.FALL|OFL.PICKUP|OFL.PHASETARGET
+ }, [ACT.WALK] = {
+  [DIR.D] = { 288, 290 },
+  FLAGS   = OFL.FALL|OFL.PICKUP|OFL.PHASETARGET
+ }, [ACT.CREEP] = {
+  [DIR.L] = { 288, 290 }, [DIR.R] = { 288, 290 },
+  FLAGS   = OFL.FALL|OFL.PICKUP|OFL.PHASETARGET
+ }, [ACT.DIG] = {
+  [DIR.D] = { 288, 290 },
+  FLAGS   = OFL.FALL|OFL.PICKUP|OFL.PHASETARGET,
+  SOUNDRP = aSfxData.DIG
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.STOP,                 AITYPE    = AI.NONE,
+ ANIMTIMER = aTimerData.ANIMNORMAL,
+ DESC      = "A MECHANICAL DIGGER\nTHAT DIGS VERTICALLY DOWN",
+ DIGDELAY  = 20,                       DIRECTION = DIR.NONE,
+ FLAGS     = OFL.SELLABLE|OFL.DEVICE|OFL.EXPLODE,
+ JOB       = JOB.NONE,                 LONGNAME  = "CORKSCREW",
+ LUNGS     = 1,                        MENU      = MNU.CORK,
+ NAME      = "CORKSCRW",               STAMINA   = -1,
+ STRENGTH  = 0,                        TELEDELAY = 200,
+ VALUE     = 170,                      WEIGHT    = 3
 -- ------------------------------------------------------------------------- --
 }, [TYP.TELEPOLE] = {
-  [ACT.STOP]  = { [DIR.NONE]={ 66, 67}, FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="TELEPOLE", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1,
-  VALUE=260, WEIGHT=2, LUNGS=1, FLAGS=OFL.SELLABLE|OFL.DEVICE|OFL.EXPLODE,
-  ACTION=ACT.STOP, AITYPE=AI.NONE, JOB=JOB.NONE, DIRECTION=DIR.NONE,
-  ANIMTIMER=aTimerData.ANIMNORMAL, LONGNAME="TELEPOLE",
-  DESC="SERVES AS A TELEPORT\nPOINT FOR YOUR DIGGERS",
+ [ACT.STOP] = {
+  [DIR.NONE] = { 66, 67 },
+  FLAGS      = OFL.FALL|OFL.PICKUP|OFL.PHASETARGET
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454},
+  FLAGS = OFL.BUSY
+ },
+ ACTION    = ACT.STOP,                 AITYPE    = AI.NONE,
+ ANIMTIMER = aTimerData.ANIMNORMAL,
+ DESC      = "SERVES AS A TELEPORT\nPOINT FOR YOUR DIGGERS",
+ DIRECTION = DIR.NONE,
+ FLAGS     = OFL.SELLABLE|OFL.DEVICE|OFL.EXPLODE,
+ JOB       = JOB.NONE,                 LONGNAME  = "TELEPOLE",
+ LUNGS     = 1,                        NAME      = "TELEPOLE",
+ STAMINA   = -1,                       STRENGTH  = 0,
+ TELEDELAY = 200,                      VALUE     = 260,
+ WEIGHT    = 2
 -- ------------------------------------------------------------------------- --
 }, [TYP.TNT] = {
-  [ACT.STOP]  = { [DIR.NONE]={24,24},FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.DYING] = { [DIR.NONE]={53,55},
-    FLAGS=OFL.FALL|OFL.PICKUP|OFL.VOLATILE|OFL.DANGEROUS|OFL.BUSY },
-  [ACT.DEATH] = { [DIR.NONE]={291,296},SOUND=aSfxData.EXPLODE,FLAGS=OFL.BUSY },
-  NAME="TNT", DIGDELAY=0, TELEDELAY=600, STRENGTH=0, STAMINA=-1, VALUE=20,
-  AITYPE=AI.NONE, WEIGHT=1,
-  FLAGS=OFL.SELLABLE|OFL.DEVICE|OFL.AQUALUNG|OFL.PHASETARGET|OFL.EXPLODE,
-  MENU=MNU.TNT, ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
-  ANIMTIMER=aTimerData.ANIMNORMAL, LONGNAME="EXPLOSIVES",
-  DESC="QUICK DESTRUCTION\nOF TERRAIN",
+ [ACT.STOP] = {
+  [DIR.NONE] = { 24, 24 },
+  FLAGS      = OFL.FALL|OFL.PICKUP|OFL.PHASETARGET
+ }, [ACT.DYING] = {
+  [DIR.NONE] = { 53, 55 },
+  FLAGS      = OFL.FALL|OFL.PICKUP|OFL.VOLATILE|OFL.DANGEROUS|OFL.BUSY|
+               OFL.PHASETARGET
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 291, 296 },
+  FLAGS      = OFL.BUSY,
+  SOUND      = aSfxData.EXPLODE,
+ },
+ ACTION    = ACT.STOP,                 AITYPE    = AI.NONE,
+ ANIMTIMER = aTimerData.ANIMNORMAL,
+ DESC      = "QUICK DESTRUCTION\nOF TERRAIN",
+ DIRECTION = DIR.NONE,
+ FLAGS     = OFL.SELLABLE|OFL.DEVICE|OFL.AQUALUNG|OFL.EXPLODE,
+ JOB       = JOB.NONE,                 LONGNAME  = "EXPLOSIVES",
+ MENU      = MNU.TNT,                  NAME      = "TNT",
+ STAMINA   = -1,                       STRENGTH  = 0,
+ TELEDELAY = 600,                      VALUE     = 20,
+ WEIGHT    = 1
 -- ------------------------------------------------------------------------- --
 }, [TYP.FIRSTAID] = {
-  [ACT.STOP]  = { [DIR.NONE]={450,450},FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="FIRSTAID", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=60,
-  WEIGHT=2, LUNGS=2, FLAGS=OFL.SELLABLE|OFL.DEVICE|OFL.PHASETARGET,
-  ACTION=ACT.STOP, AITYPE=AI.NONE, JOB=JOB.NONE, DIRECTION=DIR.NONE,
-  ANIMTIMER=aTimerData.ANIMNORMAL, LONGNAME="FIRST AID KIT",
-  DESC="COMPULSORY ACCESSORY\nFOR ALL DIGGERS",
+ [ACT.STOP] = {
+  [DIR.NONE] = { 450, 450 },
+  FLAGS      = OFL.FALL|OFL.PICKUP|OFL.PHASETARGET
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.STOP,                 AITYPE    = AI.NONE,
+ ANIMTIMER = aTimerData.ANIMNORMAL,
+ DESC      = "COMPULSORY ACCESSORY\nFOR ALL DIGGERS",
+ DIRECTION = DIR.NONE,                 FLAGS     = OFL.SELLABLE|OFL.DEVICE,
+ JOB       = JOB.NONE,                 LONGNAME  = "FIRST AID KIT",
+ LUNGS     = 2,                        NAME      = "FIRSTAID",
+ STAMINA   = -1,                       STRENGTH  = 0,
+ TELEDELAY = 200,                      VALUE     = 60,
+ WEIGHT    = 2,
 -- ------------------------------------------------------------------------- --
 }, [TYP.MAP] = {
-  [ACT.STOP]  = { [DIR.NONE]={370,370},FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="MAP", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=300,
-  WEIGHT=3, LUNGS=32, FLAGS=OFL.SELLABLE|OFL.DEVICE|OFL.PHASETARGET,
-  MENU=MNU.MAP, AITYPE=AI.NONE, ACTION=ACT.STOP, JOB=JOB.NONE,
-  DIRECTION=DIR.NONE, ANIMTIMER=aTimerData.ANIMNORMAL, LONGNAME="TNT MAP",
-  DESC="VIEW THE ENTIRE ZONE\nLAYOUT WITH THIS MAP",
+ [ACT.STOP] = {
+  [DIR.NONE] = { 370, 370 },
+  FLAGS      = OFL.FALL|OFL.PICKUP|OFL.PHASETARGET
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.STOP,                 AITYPE    = AI.NONE,
+ ANIMTIMER = aTimerData.ANIMNORMAL,
+ DESC      = "VIEW THE ENTIRE ZONE\nLAYOUT WITH THIS MAP",
+ DIRECTION = DIR.NONE,                 FLAGS     = OFL.SELLABLE|OFL.DEVICE,
+ JOB       = JOB.NONE,                 LONGNAME  = "TNT MAP",
+ LUNGS     = 32,                       MENU      = MNU.MAP,
+ NAME      = "MAP",                    STAMINA   = -1,
+ STRENGTH  = 0,                        TELEDELAY = 200,
+ VALUE     = 300,                      WEIGHT    = 3,
 -- ------------------------------------------------------------------------- --
 }, [TYP.TRACK] = {
-  [ACT.STOP]  = { [DIR.NONE]={441,441},FLAGS=OFL.FALL|OFL.PICKUP },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="TRACK", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=10,
-  WEIGHT=1, FLAGS=OFL.SELLABLE|OFL.DEVICE|OFL.PHASETARGET|OFL.AQUALUNG,
-  MENU=MNU.DEPLOY, AITYPE=AI.NONE, ACTION=ACT.STOP, JOB=JOB.NONE,
-  DIRECTION=DIR.NONE, ANIMTIMER=aTimerData.ANIMNORMAL,
-  LONGNAME="TRACK FOR TRAIN", DESC="CARRYS A TRAIN\nWITH VALUABLE CARGO",
+ [ACT.STOP] = {
+  [DIR.NONE] = { 441, 441 },
+  FLAGS      = OFL.FALL|OFL.PICKUP|OFL.PHASETARGET
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.STOP,                 AITYPE    = AI.NONE,
+ ANIMTIMER = aTimerData.ANIMNORMAL,
+ DESC      = "CARRYS A TRAIN\nWITH VALUABLE CARGO",
+ DIRECTION = DIR.NONE,
+ FLAGS     = OFL.SELLABLE|OFL.DEVICE|OFL.AQUALUNG,
+ JOB       = JOB.NONE,                 LONGNAME  = "TRACK FOR TRAIN",
+ MENU      = MNU.DEPLOY,               NAME      = "TRACK",
+ STAMINA   = -1,                       STRENGTH  = 0,
+ TELEDELAY = 200,                      VALUE     = 10,
+ WEIGHT    = 1,
 -- ------------------------------------------------------------------------- --
 }, [TYP.TRAIN] = {
-  [ACT.STOP]  = { [DIR.L]={4,4},[DIR.NONE]={4,4},[DIR.R]={4,4},
-    FLAGS=OFL.PICKUP|OFL.FALL },
-  [ACT.WALK]  = { [DIR.L]={4,7},[DIR.NONE]={4,7},[DIR.R]={4,7},
-    FLAGS=OFL.PICKUP|OFL.FALL },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="TRAIN", DIGDELAY=0, TELEDELAY=200, STRENGTH=255, STAMINA=-1, VALUE=100,
-  WEIGHT=3, LUNGS=1,
-  FLAGS=OFL.SELLABLE|OFL.TRACK|OFL.DEVICE|OFL.PHASETARGET|OFL.EXPLODE,
-  MENU=MNU.TRAIN, ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
-  AITYPE=AI.NONE, ANIMTIMER=aTimerData.ANIMNORMAL, LONGNAME="TRAIN FOR RAILS",
-  DESC="CARRY OBJECTS ALONG A MINE\nNEEDS TRAIN TRACKS",
+ [ACT.STOP] = {
+  [DIR.L] = { 4, 4 }, [DIR.NONE] = { 4, 4 }, [DIR.R] = { 4, 4 },
+  FLAGS   = OFL.PICKUP|OFL.FALL|OFL.PHASETARGET
+ }, [ACT.WALK] = {
+  [DIR.L] = { 4, 7 }, [DIR.NONE] = { 4, 7 }, [DIR.R] = { 4, 7 },
+  FLAGS   = OFL.PICKUP|OFL.FALL|OFL.PHASETARGET
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.STOP,                 AITYPE    = AI.NONE,
+ ANIMTIMER = aTimerData.ANIMNORMAL,
+ DESC      = "CARRY OBJECTS ALONG A MINE\nNEEDS TRAIN TRACKS",
+ DIRECTION = DIR.NONE,
+ FLAGS     = OFL.SELLABLE|OFL.TRACK|OFL.DEVICE|OFL.EXPLODE,
+ JOB       = JOB.NONE,                 LONGNAME  = "TRAIN FOR RAILS",
+ LUNGS     = 1,                        MENU      = MNU.TRAIN,
+ NAME      = "TRAIN",                  STAMINA   = -1,
+ STRENGTH  = 255,                      TELEDELAY = 200,
+ VALUE     = 100,                      WEIGHT    = 3
 -- ------------------------------------------------------------------------- --
 }, [TYP.BRIDGE] = {
-  [ACT.STOP]  = { [DIR.NONE]={146,146},
-    FLAGS=OFL.PICKUP|OFL.FALL|OFL.FLOAT|OFL.BLOCK },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="BRIDGE", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=25,
-  WEIGHT=1, FLAGS=OFL.SELLABLE|OFL.DEVICE|OFL.PHASETARGET|OFL.AQUALUNG,
-  AITYPE=AI.NONE, ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
-  ANIMTIMER=aTimerData.ANIMNORMAL, LONGNAME="BRIDGE PIECE",
-  DESC="A PLATFORM FOR GAPS\nFOR HARD TO REACH PLACES",
+ [ACT.STOP] = {
+  [DIR.NONE] = { 146, 146 },
+  FLAGS      = OFL.PICKUP|OFL.FALL|OFL.FLOAT|OFL.BLOCK|OFL.PHASETARGET
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.STOP,                 AITYPE    = AI.NONE,
+ ANIMTIMER = aTimerData.ANIMNORMAL,
+ DESC      = "A PLATFORM FOR GAPS\nFOR HARD TO REACH PLACES",
+ DIRECTION = DIR.NONE,
+ FLAGS     = OFL.SELLABLE|OFL.DEVICE|OFL.AQUALUNG,
+ JOB       = JOB.NONE,                 LONGNAME  = "BRIDGE PIECE",
+ NAME      = "BRIDGE",                 STAMINA   = -1,
+ STRENGTH  = 0,                        TELEDELAY = 200,
+ VALUE     = 25,                       WEIGHT    = 1
 -- ------------------------------------------------------------------------- --
 }, [TYP.BOAT] = {
-  [ACT.STOP]  = { [DIR.L]={154,155},[DIR.NONE]={154,155},[DIR.R]={154,155},
-    FLAGS=OFL.PICKUP|OFL.FALL|OFL.FLOAT|OFL.BLOCK },
-  [ACT.CREEP] = { [DIR.L]={154,155},[DIR.NONE]={154,155},[DIR.R]={154,155},
-    FLAGS=OFL.PICKUP|OFL.FALL|OFL.FLOAT|OFL.BLOCK },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="BOAT", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=60,
-  WEIGHT=2, FLAGS=OFL.SELLABLE|OFL.DEVICE|OFL.PHASETARGET|OFL.AQUALUNG,
-  MENU=MNU.FLOAT, ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
-  AITYPE=AI.NONE, ANIMTIMER=aTimerData.ANIMNORMAL, LONGNAME="INFLATABLE BOAT",
-  DESC="TRAVEL OVER WATERS\nTO DISTANT LOCATIONS",
+ [ACT.STOP] = {
+  [DIR.L] = { 154, 155 }, [DIR.NONE] = { 154, 155 }, [DIR.R] = { 154, 155 },
+  FLAGS   = OFL.PICKUP|OFL.FALL|OFL.FLOAT|OFL.BLOCK|OFL.PHASETARGET
+ }, [ACT.CREEP] = {
+  [DIR.L] = { 154, 155 }, [DIR.NONE] = { 154, 155 }, [DIR.R] = { 154, 155 },
+  FLAGS   = OFL.PICKUP|OFL.FALL|OFL.FLOAT|OFL.BLOCK|OFL.PHASETARGET
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454},
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.STOP,                 AITYPE    = AI.NONE,
+ ANIMTIMER = aTimerData.ANIMNORMAL,
+ DESC      = "TRAVEL OVER WATERS\nTO DISTANT LOCATIONS",
+ DIRECTION = DIR.NONE,
+ FLAGS     = OFL.SELLABLE|OFL.DEVICE|OFL.AQUALUNG,
+ JOB       = JOB.NONE,                 LONGNAME  = "INFLATABLE BOAT",
+ MENU      = MNU.FLOAT,                NAME      = "BOAT",
+ STAMINA   = -1,                       STRENGTH  = 0,
+ TELEDELAY = 200,                      VALUE     = 60,
+ WEIGHT    = 2
 -- ------------------------------------------------------------------------- --
 }, [TYP.GATE] = {
-  [ACT.STOP]  = { [DIR.NONE]={440,440}, FLAGS=OFL.PICKUP|OFL.FALL },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="FLOODGAT", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=80,
-  WEIGHT=2, FLAGS=OFL.SELLABLE|OFL.DEVICE|OFL.AQUALUNG|OFL.PHASETARGET,
-  MENU=MNU.DEPLOY, ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
-  AITYPE=AI.NONE, ANIMTIMER=aTimerData.ANIMNORMAL, LONGNAME="FLOOD GATE",
-  DESC="PROTECT FROM DANGERS\nAND FLOODING",
+ [ACT.STOP] = {
+  [DIR.NONE] = { 440, 440 },
+  FLAGS      = OFL.PICKUP|OFL.FALL|OFL.PHASETARGET
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.STOP,                 AITYPE    = AI.NONE,
+ ANIMTIMER = aTimerData.ANIMNORMAL,
+ DESC      = "PROTECT FROM DANGERS\nAND FLOODING",
+ DIRECTION = DIR.NONE,
+ FLAGS     = OFL.SELLABLE|OFL.DEVICE|OFL.AQUALUNG,
+ JOB       = JOB.NONE,                 LONGNAME  = "FLOOD GATE",
+ MENU      = MNU.DEPLOY,               NAME      = "GATE",
+ STAMINA   = -1,                       STRENGTH  = 0,
+ TELEDELAY = 200,                      VALUE     = 80,
+ WEIGHT    = 2
 -- ------------------------------------------------------------------------- --
 }, [TYP.GATEB] = {
-  [ACT.STOP]  = { [DIR.NONE]={475,475} },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="GATE", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=0,
-  WEIGHT=0, FLAGS=OFL.DEVICE|OFL.AQUALUNG, MENU=MNU.GATE, ACTION=ACT.STOP,
-  AITYPE=AI.NONE, JOB=JOB.NONE, DIRECTION=DIR.NONE,
-  ANIMTIMER=aTimerData.ANIMNORMAL
+ [ACT.STOP] = {
+  [DIR.NONE] = { 475, 475 }
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.STOP,                 AITYPE    = AI.NONE,
+ ANIMTIMER = aTimerData.ANIMNORMAL,    DIRECTION = DIR.NONE,
+ FLAGS     = OFL.DEVICE|OFL.AQUALUNG,  JOB       = JOB.NONE,
+ MENU      = MNU.GATE,                 NAME      = "GATE",
+ STAMINA   = -1,                       STRENGTH  = 0,
+ TELEDELAY = 200,                      VALUE     = 0,
+ WEIGHT    = 0
 -- ------------------------------------------------------------------------- --
 }, [TYP.LIFT] = {
-  [ACT.STOP] = { [DIR.NONE]={320,320},FLAGS=OFL.PICKUP|OFL.FALL },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="LIFT", DIGDELAY=0, TELEDELAY=200, STRENGTH=0, STAMINA=-1, VALUE=220,
-  WEIGHT=3, FLAGS=OFL.SELLABLE|OFL.DEVICE|OFL.EXPLODE|OFL.AQUALUNG,
-  MENU=MNU.DEPLOY, ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
-  AITYPE=AI.NONE, ANIMTIMER=aTimerData.ANIMNORMAL, LONGNAME="LIFT",
-  DESC="A VERTICAL MOVING PLATFORM\nCARRIES YOUR DIGGERS",
+ [ACT.STOP] = {
+  [DIR.NONE] = { 320, 320 },
+  FLAGS      = OFL.PICKUP|OFL.FALL
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.STOP,                 AITYPE    = AI.NONE,
+ ANIMTIMER = aTimerData.ANIMNORMAL,
+ DESC      = "A VERTICAL MOVING PLATFORM\nCARRIES YOUR DIGGERS",
+ DIRECTION = DIR.NONE,
+ FLAGS     = OFL.SELLABLE|OFL.DEVICE|OFL.EXPLODE|OFL.AQUALUNG,
+ JOB       = JOB.NONE,                 LONGNAME  = "LIFT",
+ MENU      = MNU.DEPLOY,               NAME      = "LIFT",
+ STAMINA   = -1,                       STRENGTH  = 0,
+ TELEDELAY = 200,                      VALUE     = 220,
+ WEIGHT    = 3
 -- ------------------------------------------------------------------------- --
 }, [TYP.LIFTB] = {
-  [ACT.STOP]  = { [DIR.U]={0,0},[DIR.NONE]={0,0},[DIR.D]={0,0},
-    FLAGS=OFL.BLOCK },
-  [ACT.CREEP] = { [DIR.U]={0,0},[DIR.NONE]={0,0},[DIR.D]={0,0},
-    FLAGS=OFL.BLOCK },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.NONE|OFL.BUSY },
-  NAME="ELEVATOR", LONGNAME="ELEVATOR", DIGDELAY=0, TELEDELAY=0, STRENGTH=0,
-  STAMINA=-1, VALUE=0, WEIGHT=0,
-  FLAGS=OFL.DEVICE|OFL.PHASETARGET|OFL.EXPLODE|OFL.AQUALUNG,
-  MENU=MNU.LIFT, ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.D,
-  AITYPE=AI.NONE, ANIMTIMER=aTimerData.ANIMNORMAL, ATTACHMENT=TYP.LIFTC
+ [ACT.STOP] = {
+  [DIR.U] = { 0, 0 }, [DIR.NONE] = { 0, 0 }, [DIR.D] = { 0, 0 },
+  FLAGS   = OFL.BLOCK|OFL.PHASETARGET
+ }, [ACT.CREEP] = {
+  [DIR.U] = { 0, 0 }, [DIR.NONE] = { 0, 0 }, [DIR.D] = { 0, 0 },
+  FLAGS   = OFL.BLOCK|OFL.PHASETARGET
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION     = ACT.STOP,                AITYPE     = AI.NONE,
+ ANIMTIMER  = aTimerData.ANIMNORMAL,   ATTACHMENT = TYP.LIFTC,
+ DIRECTION  = DIR.D,
+ FLAGS      = OFL.DEVICE|OFL.EXPLODE|OFL.AQUALUNG,
+ JOB        = JOB.NONE,                LONGNAME   = "ELEVATOR",
+ MENU       = MNU.LIFT,                NAME       = "ELEVATOR",
+ STAMINA    = -1,                      STRENGTH   = 0,
+ TELEDELAY  = 0,                       VALUE      = 0,
+ WEIGHT     = 0
 -- ------------------------------------------------------------------------- --
 }, [TYP.LIFTC] = {
-  [ACT.STOP]  = { [DIR.U]={1,1,0,-16}, [DIR.NONE]={1,1,0,-16},[DIR.D]={1,1,0,-16},
-    FLAGS=OFL.NONE },
-  [ACT.CREEP] = { [DIR.U]={1,1,0,-16},[DIR.NONE]={1,1,0,-16},[DIR.D]={1,1,0,-16},
-    FLAGS=OFL.NONE },
-  [ACT.DEATH] = { [DIR.NONE]={451,454},FLAGS=OFL.BUSY },
-  NAME="LIFTC", LONGNAME="ELEVATOR", DIGDELAY=0, TELEDELAY=0, STRENGTH=0,
-  STAMINA=-1, VALUE=0, WEIGHT=0, FLAGS=OFL.DEVICE|OFL.EXPLODE|OFL.AQUALUNG,
-  MENU=MNU.LIFT, ACTION=ACT.STOP, JOB=JOB.NONE, DIRECTION=DIR.NONE,
-  ANIMTIMER=aTimerData.ANIMNORMAL, ATTACHMENT=TYP.LIFT
+ [ACT.STOP] = {
+  [DIR.U] = { 1, 1, 0, -16 }, [DIR.NONE] = { 1, 1, 0, -16 },
+  [DIR.D] = { 1, 1, 0, -16 }
+ }, [ACT.CREEP] = {
+  [DIR.U] = { 1, 1, 0, -16}, [DIR.NONE] = { 1, 1, 0, -16 },
+  [DIR.D] = { 1, 1, 0, -16}
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 451, 454 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION     = ACT.STOP,                ANIMTIMER  = aTimerData.ANIMNORMAL,
+ ATTACHMENT = TYP.LIFT,                DIRECTION  = DIR.NONE,
+ FLAGS      = OFL.DEVICE|OFL.EXPLODE|OFL.AQUALUNG,
+ JOB        = JOB.NONE,                LONGNAME   = "ELEVATOR",
+ MENU       = MNU.LIFT,                NAME       = "LIFTC",
+ STAMINA    = -1,                      STRENGTH   = 0,
+ TELEDELAY  = 0,                       VALUE      = 0,
+ WEIGHT     = 0
 -- ------------------------------------------------------------------------- --
 }, [TYP.CAMPFIRE] = {
-  [ACT.STOP]  = { [DIR.NONE]={133,134}, FLAGS=OFL.BUSY|OFL.HEALNEARBY },
-  [ACT.DEATH] = { [DIR.NONE]={133,134}, FLAGS=OFL.BUSY },
-  NAME="CAMPFIRE", DIGDELAY=0, TELEDELAY=0, STRENGTH=0, STAMINA=-1, VALUE=110,
-  WEIGHT=0, FLAGS=OFL.DEVICE|OFL.EXPLODE, ACTION=ACT.STOP, JOB=JOB.NONE,
-  AITYPE=AI.NONE, DIRECTION=DIR.NONE, ANIMTIMER=aTimerData.ANIMNORMAL,
-  LONGNAME="CAMPFIRE", DESC="HEALS YOUR DIGGERS FASTER WHEN NEARBY",
-}
+ [ACT.STOP] = {
+  [DIR.NONE] = { 133, 134 },
+  FLAGS      = OFL.BUSY|OFL.HEALNEARBY|OFL.PHASETARGET
+ }, [ACT.DEATH] = {
+  [DIR.NONE] = { 133, 134 },
+  FLAGS      = OFL.BUSY
+ },
+ ACTION    = ACT.STOP,                 AITYPE    = AI.NONE,
+ ANIMTIMER = aTimerData.ANIMNORMAL,
+ DESC      = "HEALS YOUR DIGGERS FASTER WHEN NEARBY",
+ DIRECTION = DIR.NONE,                 FLAGS     = OFL.DEVICE|OFL.EXPLODE,
+ JOB       = JOB.NONE,                 LONGNAME  = "CAMPFIRE",
+ NAME      = "CAMPFIRE",               STAMINA   = -1,
+ STRENGTH  = 0,                        TELEDELAY = 0,
+ VALUE     = 110,                      WEIGHT    = 0
 -- ------------------------------------------------------------------------- --
-};
+} };
 -- Digging tile flags ------------------------------------------------------ --
 local DF<const> = {
   -- Match tile flags ------------------------------------------------------ --
@@ -1083,6 +1506,8 @@ local aDigData<const> = {
 {208,207,  0,  0, 11,209,  0,DF.MO|DF.MA      |DF.SO|DF.SA|DF.OB},
 {208,  0,  0,  0, 11,  0,  0,DF.MO            |DF.SO      |DF.OI|DF.OG},
 { 11,  0,  0, 11,  0,  9,  0,DF.MO|DF.MC      |DF.SA      |DF.OI|DF.OG},
+{ 52,  0,  0,  0,236,  0,  0,DF.MO            |DF.SO      |DF.OI|DF.OX},
+{ 53,  0,  0,  0,236,  0,  0,DF.MO            |DF.SO      |DF.OI|DF.OX},
 -- FO FA  FB  FC  TO  TA  TB FLAGS ----------------------------------------- --
 },[DIR.UR]={                          -- Digging upper-right tile data
 -- FO FA  FB  FC  TO  TA  TB FLAGS ----------------------------------------- --
@@ -1105,6 +1530,8 @@ local aDigData<const> = {
 { 33, 32,  0,  0,  8, 34,  0,DF.MO|DF.MA      |DF.SO|DF.SA|DF.OB},
 { 33,  0,  0,  0,  8,  0,  0,DF.MO            |DF.SO      |DF.OI|DF.OG},
 {  8,  0,  0,  8,  0,  5,  0,DF.MO|DF.MC      |DF.SA      |DF.OI|DF.OG},
+{ 52,  0,  0,  0,235,  0,  0,DF.MO            |DF.SO      |DF.OI|DF.OX},
+{ 53,  0,  0,  0,235,  0,  0,DF.MO            |DF.SO      |DF.OI|DF.OX},
 -- FO FA  FB  FC  TO  TA  TB FLAGS ----------------------------------------- --
 },[DIR.L]={                           -- Digging left tile data
 -- FO FA  FB  FC  TO  TA  TB FLAGS ----------------------------------------- --
@@ -1137,6 +1564,7 @@ local aDigData<const> = {
 { 51,  0,  0,  0, 12,  0,  0,DF.MO            |DF.SO      |DF.OI|DF.OG|DF.OX},
 { 54,  0,  0,  0,  9,  0,  0,DF.MO            |DF.SO      |DF.OI|DF.OG|DF.OX},
 { 57,  0,  0,  0,  6,  0,  0,DF.MO            |DF.SO      |DF.OI|DF.OG|DF.OX},
+{235,  0,  0,  0,  7,  0,  0,DF.MO            |DF.SO      |DF.OI|DF.OG|DF.OX},
 -- FO FA  FB  FC  TO  TA  TB FLAGS ----------------------------------------- --
 }, [DIR.R]={                           -- Digging right tile data
 -- FO FA  FB  FC  TO  TA  TB FLAGS ----------------------------------------- --
@@ -1169,6 +1597,7 @@ local aDigData<const> = {
 { 51,  0,  0,  0, 12,  0,  0,DF.MO            |DF.SO      |DF.OI|DF.OG|DF.OX},
 { 54,  0,  0,  0,  9,  0,  0,DF.MO            |DF.SO      |DF.OI|DF.OG|DF.OX},
 { 57,  0,  0,  0,  6,  0,  0,DF.MO            |DF.SO      |DF.OI|DF.OG|DF.OX},
+{236,  0,  0,  0,  7,  0,  0,DF.MO            |DF.SO      |DF.OI|DF.OG|DF.OX},
 -- FO FA  FB  FC  TO  TA  TB FLAGS ----------------------------------------- --
 },[DIR.DL]={                           -- Digging down-left tile data
 -- FO FA  FB  FC  TO  TA  TB FLAGS ----------------------------------------- --
@@ -1218,6 +1647,8 @@ local aDigData<const> = {
 { 51,  0,  0,  0, 12,  0,  0,DF.MO            |DF.SO      |DF.OI|DF.OG|DF.OX},
 { 54,  0,  0,  0,  9,  0,  0,DF.MO            |DF.SO      |DF.OI|DF.OG|DF.OX},
 { 57,  0,  0,  0,  6,  0,  0,DF.MO            |DF.SO      |DF.OI|DF.OG|DF.OX},
+{235,  0,  0,  0,  7,  0,  0,DF.MO            |DF.SO      |DF.OI|DF.OG|DF.OX},
+{236,  0,  0,  0,  7,  0,  0,DF.MO            |DF.SO      |DF.OI|DF.OG|DF.OX},
 -- FO FA  FB  FC  TO  TA  TB FLAGS ----------------------------------------- --
 },[DIR.DR]={                           -- Digging down right?
 -- FO FA  FB  FC  TO  TA  TB FLAGS ----------------------------------------- --
@@ -1287,19 +1718,19 @@ local aTileData<const> = {             -- TID TXxTY NOTE (total 480 tiles)
   TF.NONE,                             -- 002 02x01 Grass (Passive)
   TF.NONE,                             -- 003 03x01 Solid undiggable stone
   TF.F|TF.D,                           -- 004 04x01 Solid diggable dirt
-  TF.F|TF.D|TF.ERB,                    -- 005 05x01
-  TF.F|TF.D|TF.ELRB,                   -- 006 06x01
-  TF.F|TF.D|TF.ELTR,                   -- 007 07x01
+  TF.F|TF.D|TF.ERB,                    -- 005 05x01 75%dirt+25%dug 22deg UR>DL
+  TF.F|TF.D|TF.ELRB,                   -- 006 06x01 25%dirt+75%dug 22deg UR>DL
+  TF.F|TF.D|TF.ELTR,                   -- 007 07x01 75%dug+25%dirt 22deg UR>DL
   TF.AD|TF.EA,                         -- 008 08x01 Clear dug tile
-  TF.D|TF.ELT,                         -- 009 09x01
-  TF.F|TF.D|TF.ELRB,                   -- 010 10x01
-  TF.F|TF.D|TF.ELB,                    -- 011 11x01
-  TF.D|TF.ETR,                         -- 012 12x01
-  TF.D|TF.ELTR,                        -- 013 13x01
-  TF.F|TF.D|TF.ERB,                    -- 014 14x01
-  TF.D|TF.ELT,                         -- 015 15x01
-  TF.D|TF.ETR,                         -- 016 16x01
-  TF.F|TF.D|TF.ELB,                    -- 017 17x01
+  TF.D|TF.ELT,                         -- 009 09x01 25%dug+75%dirt 22deg UR>DL
+  TF.F|TF.D|TF.ELRB,                   -- 010 10x01 25%dirt+75%dug 22deg UL>DR
+  TF.F|TF.D|TF.ELB,                    -- 011 11x01 75%dirt+25%dug 22deg UL>DR
+  TF.D|TF.ETR,                         -- 012 12x01 25%dug+75%dirt 22deg UL>DR
+  TF.D|TF.ELTR,                        -- 013 13x01 75%dug+25%dirt 22deg UL>DR
+  TF.F|TF.D|TF.ERB,                    -- 014 14x01 50%dirt+50%dug 45deg UR>DL
+  TF.D|TF.ELT,                         -- 015 15x01 50%dug+50%dirt 45deg UR>DL
+  TF.D|TF.ETR,                         -- 016 16x01 50%dug+50%dirt 45deg UL>DR
+  TF.F|TF.D|TF.ELB,                    -- 017 17x01 50%dirt+50%dug 45deg UL>DR
   TF.F|TF.D|TF.ER,                     -- 018 18x01
   TF.F|TF.D|TF.ERB,                    -- 019 19x01
   TF.D|TF.ET,                          -- 020 20x01
@@ -1335,8 +1766,8 @@ local aTileData<const> = {             -- TID TXxTY NOTE (total 480 tiles)
   TF.F|TF.D|TF.ETRB,                   -- 050 18x02
   TF.D|TF.ETRB,                        -- 051 19x02
   TF.D|TF.ETR,                         -- 052 20x02
-  TF.D|TF.ELTR,                        -- 053 21x02
-  TF.D|TF.ELTR,                        -- 054 22x02
+  TF.D|TF.ELTR,                        -- 053 21x02 Cave floor 1
+  TF.D|TF.ELTR,                        -- 054 22x02 Cave floor 2
   TF.D|TF.ELB,                         -- 055 23x02
   TF.F|TF.D|TF.ELTB,                   -- 056 24x02
   TF.F|TF.D|TF.ELTB,                   -- 057 25x02
@@ -1478,14 +1909,14 @@ local aTileData<const> = {             -- TID TXxTY NOTE (total 480 tiles)
   TF.NONE,                             -- 193 01x07 Trade centre top right
   TF.NONE,                             -- 194 02x07 Trade centre bottom left
   TF.NONE,                             -- 195 03x07 Trade centre bottom right
-  TF.AB|TF.PO,                         -- 196 04x07 Player 1 home (1/4)
-  TF.AB|TF.PO,                         -- 197 05x07 Player 1 home (2/4)
-  TF.AB|TF.PO,                         -- 198 06x07 Player 1 home (3/4)
-  TF.AE|TF.PO,                         -- 199 07x07 Player 1 home (4/4)
-  TF.AB|TF.PT,                         -- 200 08x07 Player 2 home (1/4)
-  TF.AB|TF.PT,                         -- 201 09x07 Player 2 home (2/4)
-  TF.AB|TF.PT,                         -- 202 10x07 Player 2 home (3/4)
-  TF.AE|TF.PT,                         -- 203 11x07 Player 2 home (4/4)
+  TF.AB|TF.PO,                         -- 196 04x07 Player 1 home flag (1/4)
+  TF.AB|TF.PO,                         -- 197 05x07 Player 1 home flag (2/4)
+  TF.AB|TF.PO,                         -- 198 06x07 Player 1 home flag (3/4)
+  TF.AE|TF.PO,                         -- 199 07x07 Player 1 home flag (4/4)
+  TF.AB|TF.PT,                         -- 200 08x07 Player 2 home flag (1/4)
+  TF.AB|TF.PT,                         -- 201 09x07 Player 2 home flag (2/4)
+  TF.AB|TF.PT,                         -- 202 10x07 Player 2 home flag (3/4)
+  TF.AE|TF.PT,                         -- 203 11x07 Player 2 home flag (4/4)
   TF.D|TF.ELR,                         -- 204 12x07
   TF.F|TF.D|TF.EB,                     -- 205 13x07
   TF.F|TF.D|TF.ER,                     -- 206 14x07
@@ -1518,11 +1949,11 @@ local aTileData<const> = {             -- TID TXxTY NOTE (total 480 tiles)
   TF.D|TF.ETRB,                        -- 233 09x08
   TF.NONE,                             -- 234 10x08
   TF.NONE,                             -- 235 11x08
-  TF.D|TF.EA,                          -- 236 12x08
-  TF.D|TF.EA,                          -- 237 13x08
-  TF.D|TF.ELTR,                        -- 238 14x08
-  TF.D|TF.ELTR,                        -- 239 15x08
-  TF.D|TF.ELTR,                        -- 240 16x08
+  TF.D|TF.EA,                          -- 236 12x08 90%dug+10%dirt 11deg UR>DL
+  TF.D|TF.EA,                          -- 237 13x08 90%dug+10%dirt 11deg UL>DR
+  TF.D|TF.ELTR,                        -- 238 14x08 25%dug+75%dirt vertical
+  TF.D|TF.ELTR,                        -- 239 15x08 50%dug+50%dirt vertical
+  TF.D|TF.ELTR,                        -- 240 16x08 75%dug+25%dirt vertical
   TF.F,                                -- 241 17x08 Double horizontal rock 1/2
   TF.F,                                -- 242 18x08 Double horizontal rock 2/2
   TF.F,                                -- 243 19x08 Double vertical rock 1/2
@@ -1767,11 +2198,12 @@ local aTileData<const> = {             -- TID TXxTY NOTE (total 480 tiles)
 assert(#aTileData == 480, "aTileData must only have 480 tiles!");
 -- Explode directions data ------------------------------------------------- --
 local aExplodeDirData<const> = {
-  { 0,-1, TF.W|TF.EB },
-  { 0, 0, TF.W       },
-  {-1, 0, TF.W|TF.ER },
-  { 1, 0, TF.W|TF.EL },
-  { 0, 1, TF.W|TF.ET },
+  -- X -- Y -- Flags -----
+  {   0,  -1, TF.W|TF.EB },            -- [Up] Flood if above tile exposed
+  {   0,   0, TF.W       },            -- [Centre] No flooding check needed
+  {  -1,   0, TF.W|TF.ER },            -- [Left] Flood if left tile exposed
+  {   1,   0, TF.W|TF.EL },            -- [Right] Flood if right tile exposed
+  {   0,   1, TF.W|TF.ET },            -- [Down] Flood if below tile exposed
 };
 -- Explode directions data ------------------------------------------------- --
 local aExplodeAboveData<const> = {

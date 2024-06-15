@@ -61,7 +61,7 @@ bool PrintGetWord(UtfDecoder &utfRef, size_t &stPos, float fX, float &fY,
 /* -- Handle actual printing of characters --------------------------------- */
 void PrintDraw(GLfloat &fX, const GLfloat fY, const size_t stPos)
 { // Blit outline character?
-  if(ftfData.LoadedStroker())
+  if(ftfData.IsStrokerLoaded())
   { // Get outline character info and print the outline glyph
     const Glyph &gOData = gvData[stPos+1];
     BlitLTRBC(0, stPos+1,
@@ -90,7 +90,7 @@ void PushQuadColourAndGlyphs(Texture*const tNGlyphs)
 /* -- Handle print control character --------------------------------------- */
 void HandlePrintControl(GLfloat &fX, GLfloat &fY, UtfDecoder &utfRef,
   const bool bSimulation, const bool bReverse=false, const bool bClip=false,
-  const GLfloat fXO=0, const GLfloat fL=0, const GLfloat fR=0)
+  const GLfloat fXO=0.0f, const GLfloat fL=0.0f, const GLfloat fR=0.0f)
 { // Get next character
   switch(utfRef.Next())
   { // Colour selection
@@ -216,7 +216,7 @@ GLfloat DoPrintW(GLfloat fX, GLfloat fY, const GLfloat fW, const GLfloat fI,
 /* -- Simluate printing a wrapped utfstring and return height -------------- */
 GLfloat DoPrintWS(const GLfloat fW, const GLfloat fI, UtfDecoder &utfRef)
 { // Record original X and Y position and maximum X position
-  GLfloat fX = 0, fY = fLineSpacingHeight;
+  GLfloat fX = 0.0f, fY = fLineSpacingHeight;
   // Until null character, which character?
   while(const unsigned int uiChar = utfRef.Next()) switch(uiChar)
   { // Carriage return?
@@ -343,7 +343,7 @@ void DoPrintC(GLfloat fX, GLfloat fY, UtfDecoder &utfRef)
     } // Other control character?
     case '\r':
     { // To store with of drawing if needed
-      GLfloat fXW = 0;
+      GLfloat fXW = 0.0f;
       // Handle print control characters
       HandlePrintControl(fXW, fY, utfRef, true);
       // Go back if needed
@@ -367,11 +367,11 @@ void DoPrintC(GLfloat fX, GLfloat fY, UtfDecoder &utfRef)
 /* -- Simulate printing a utfstring ---------------------------------------- */
 GLfloat DoPrintS(UtfDecoder &utfRef)
 { // Width and highest width
-  GLfloat fW = 0, fWH = 0;
+  GLfloat fW = 0.0f, fWH = 0.0f;
   // Increase width until end of string
   while(const unsigned int uiChar = utfRef.Next()) switch(uiChar)
   { // Carriage return? Set highest width and reset width
-    case '\n': if(fW > fWH) fWH = fW; fW = 0; break;
+    case '\n': if(fW > fWH) fWH = fW; fW = 0.0f; break;
     // Other control character? Handle the character
     case '\r': HandlePrintControl(fW, fW, utfRef, true); break;
     // Normal character? Go forth!
@@ -382,13 +382,13 @@ GLfloat DoPrintS(UtfDecoder &utfRef)
 /* -- Simulate printing a utfstring and returning the height --------------- */
 GLfloat DoPrintSU(UtfDecoder &utfRef)
 { // Width and highest width
-  GLfloat fX = 0, fY;
+  GLfloat fX = 0.0f, fY;
   // We're going to print something
   fY = fLineSpacingHeight;
   // Increase width until end of string
   while(const unsigned int uiChar = utfRef.Next()) switch(uiChar)
   { // Carriage return? Handle it
-    case '\n': HandleReturn(utfRef, fX, fY, 0); break;
+    case '\n': HandleReturn(utfRef, fX, fY, 0.0f); break;
     // Other control character? Handle it
     case '\r': HandlePrintControl(fX, fY, utfRef, true); break;
     // Normal character? Go forward
@@ -457,7 +457,7 @@ void DoPrintM(GLfloat fX, GLfloat fY, const GLfloat fL, const GLfloat fR,
     { // Get character
       const size_t stPos = CheckGlyph(uiChar);
       // Draw outline glyph first, don't care about return status
-      if(ftfData.LoadedStroker())
+      if(ftfData.IsStrokerLoaded())
         DrawPartialGlyph(false, stPos+1, fXO, fX, fY, fL, fR,
           fiOutline.FboItemGetCData());
       // Draw main glyph, and if we don't need to draw anymore? Do not

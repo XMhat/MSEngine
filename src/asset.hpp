@@ -97,32 +97,32 @@ CTOR_MEM_BEGIN_ASYNC_CSLAVE(Assets, Asset, ICHelperUnsafe),
     CollectorSwapRegistration(aOther);
   }
   /* -- Perform decoding --------------------------------------------------- */
-  template<class Codec>void CodecExec(FileMap &fmRef, size_t stLevel=0)
-    { MemSwap(Block<Codec>{ fmRef, stLevel }); }
+  template<class Codec>void CodecExec(FileMap &fmData, size_t stLevel=0)
+    { MemSwap(Block<Codec>{ fmData, stLevel }); }
   /* -- Perform decoding converting flags to compression level ------------- */
-  template<class Codec>void CodecExecEx(FileMap &fmRef)
-    { CodecExec<Codec>(fmRef,
+  template<class Codec>void CodecExecEx(FileMap &fmData)
+    { CodecExec<Codec>(fmData,
         FlagIsSet(CD_LEVEL_FASTEST)  ? 1 : (FlagIsSet(CD_LEVEL_FAST) ? 3 :
        (FlagIsSet(CD_LEVEL_MODERATE) ? 5 : (FlagIsSet(CD_LEVEL_SLOW) ? 7 :
        (FlagIsSet(CD_LEVEL_SLOWEST)  ? 9 : 1))))); }
   /* -- Load asset from memory ------------------------------------- */ public:
-  void AsyncReady(FileMap &fmRef)
+  void AsyncReady(FileMap &fmData)
   { // Guest wants data put into a raw magic block (no user flags)
-    if(FlagIsSet(CD_ENCODE_RAW)) CodecExec<RAWEncoder>(fmRef);
+    if(FlagIsSet(CD_ENCODE_RAW)) CodecExec<RAWEncoder>(fmData);
     // Guest wants data encrypted into a magic block (no user flags)
-    else if(FlagIsSet(CD_ENCODE_AES)) CodecExec<AESEncoder>(fmRef);
+    else if(FlagIsSet(CD_ENCODE_AES)) CodecExec<AESEncoder>(fmData);
     // Guest wants data deflated into a magic block
-    else if(FlagIsSet(CD_ENCODE_ZLIB)) CodecExecEx<ZLIBEncoder>(fmRef);
+    else if(FlagIsSet(CD_ENCODE_ZLIB)) CodecExecEx<ZLIBEncoder>(fmData);
     // Guest wants data encrypted and deflated into a magic block
-    else if(FlagIsSet(CD_ENCODE_ZLIBAES)) CodecExecEx<AESZLIBEncoder>(fmRef);
+    else if(FlagIsSet(CD_ENCODE_ZLIBAES)) CodecExecEx<AESZLIBEncoder>(fmData);
     // Guest wants data compressed into a magic block
-    else if(FlagIsSet(CD_ENCODE_LZMA)) CodecExecEx<LZMAEncoder>(fmRef);
+    else if(FlagIsSet(CD_ENCODE_LZMA)) CodecExecEx<LZMAEncoder>(fmData);
     // Guest wants data encrypted and compressed into a magic block
-    else if(FlagIsSet(CD_ENCODE_LZMAAES)) CodecExecEx<AESLZMAEncoder>(fmRef);
+    else if(FlagIsSet(CD_ENCODE_LZMAAES)) CodecExecEx<AESLZMAEncoder>(fmData);
     // Guest wants data decoded from a magic block (no user flags)
-    else if(FlagIsSet(CD_DECODE)) CodecExec<CoDecoder>(fmRef);
+    else if(FlagIsSet(CD_DECODE)) CodecExec<CoDecoder>(fmData);
     // Guest wants data untouched but we need to copy it all from the map
-    else MemSwap(fmRef.FileMapDecouple());
+    else MemSwap(fmData.FileMapDecouple());
   }
   /* -- Load data from string asynchronously ------------------------------- */
   void InitAsyncString(lua_State*const lS)

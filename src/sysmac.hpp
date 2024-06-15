@@ -239,7 +239,7 @@ class SysCore :
                          uiIndex < mhData.ncmds && fExe.FStreamIsNotEOF();
                        ++uiIndex)
         { // Save file position
-          const int64_t qwCmdPos = fExe.FStreamGetPosition();
+          const int64_t qwCmdPos = fExe.FStreamTell();
           // Create memory to store segment data
           load_command lcData;
           if(const size_t stReadCmd =
@@ -254,7 +254,7 @@ class SysCore :
               { // 64-bit segment?
                 case LC_SEGMENT_64:
                 { // Move back to original offset
-                  fExe.FStreamSetPosition(qwCmdPos, SEEK_SET);
+                  fExe.FStreamSeekSet(qwCmdPos);
                   // Read segment data
                   segment_command_64 scItem;
                   if(const size_t stReadSeg = fExe.FStreamReadSafe(&scItem,
@@ -283,7 +283,7 @@ class SysCore :
                 } // 32-bit segment?
                 case LC_SEGMENT:
                 { // Move back to original offset
-                  fExe.FStreamSetPosition(qwCmdPos, SEEK_SET);
+                  fExe.FStreamSeekSet(qwCmdPos);
                   // Read segment data
                   segment_command scItem;
                   if(const size_t stReadSeg = fExe.FStreamReadSafe(&scItem,
@@ -312,7 +312,7 @@ class SysCore :
                 } // We're not supporting this command
                 default: break;
               } // Move forward to next command position
-              fExe.FStreamSetPosition(qwCmdPos + lcData.cmdsize, SEEK_SET);
+              fExe.FStreamSeekSet(qwCmdPos + lcData.cmdsize);
             } // Failed to read enough bytes
             else XC("Failed to read enough bytes for MACH-O command!",
                     "Requested", sizeof(lcData), "Actual", stReadCmd,
@@ -380,7 +380,7 @@ class SysCore :
              "Requested", sizeof(fhData), "Type", cpType,
              "File",      fExe.IdentGet());
   }
-  /* -- Get executable size from header (N/A on OSX) ----------------------- */
+  /* -- Get executable size from header (N/A on MacOS) --------------------- */
   static size_t GetExeSize(const string &strFile)
   { // Open exe file and return on error
     if(FStream fExe{ strFile, FM_R_B })
@@ -679,7 +679,7 @@ class SysCore :
     // Return status
     return (kipInfo.kp_proc.p_flag & P_TRACED) != 0;
   }
-  /* -- Get process affinity masks (N/A on OSX) ---------------------------- */
+  /* -- Get process affinity masks ----------------------------------------- */
   uint64_t GetAffinity(const bool) const
     { return UtilBitsToMask<uint64_t>(thread::hardware_concurrency()); }
   /* ----------------------------------------------------------------------- */

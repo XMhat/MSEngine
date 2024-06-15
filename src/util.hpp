@@ -138,14 +138,6 @@ static uint8_t UtilReverseByte(const uint8_t ucByte)
   return static_cast<uint8_t>((ucaLookup[ucByte & 0b1111] << 4) |
     ucaLookup[ucByte >> 4]);
 }
-/* -- Lock a mutex and copy/move a variable -------------------------------- */
-// template<typename ValDst,typename ValSrc=ValDst>
-//   static void UtilCopyVarSafe(mutex &mMutex, ValDst &vdDst,
-//     const ValSrc &vsSrc)
-//       { const LockGuard lgSync{ mMutex }; vdDst = vsSrc; }
-template<typename ValDst,typename ValSrc=ValDst>
-  static void UtilMoveVarSafe(mutex &mMutex, ValDst &vdDst, ValSrc &vsSrc)
-    { const LockGuard lgSync{ mMutex }; vdDst = StdMove(vsSrc); }
 /* -- Helper functions to force integer byte ordering ---------------------- */
 template<typename IntType>static IntType UtilToI16LE(const IntType itV)
   { static_assert(sizeof(IntType) == sizeof(uint16_t) &&

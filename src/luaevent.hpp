@@ -54,7 +54,7 @@ class LuaEvts :
     return empArgs.size() >= stMinimum;
   }
   /* -- Add a new event and stab iterator ---------------------------------- */
-  template<typename ...VarArgs>void LuaEvtsDispatch(const EvtMainCmd &emcCmd,
+  template<typename ...VarArgs>void LuaEvtsDispatch(const EvtMainCmd emcCmd,
     const void*const vpClass, const VarArgs &...vaArgs)
   { // Iterator to return
     EvtMain::QueueConstIt qciItem;

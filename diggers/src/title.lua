@@ -27,7 +27,8 @@ local LoadResources, SetCallbacks, SetCursor, aLevelData,
   IsButtonReleased, PlayStaticSound, Fade, aCreditsData, IsKeyReleased,
   InitLobby, DeInitLevel, InitNewGame, fontTiny, fontLittle, fontLarge,
   GetGameTicks, RenderTerrain, RenderObjects, SelectObject, GameProc,
-  RegisterFBUCallback, aObjects, GetActivePlayer, GetOpponentPlayer;
+  RegisterFBUCallback, aObjects, GetActivePlayer, GetOpponentPlayer,
+  LoadSaveData;
 -- Initialise the title screen function ------------------------------------ --
 local function InitTitle()
   -- When title resources have loaded?

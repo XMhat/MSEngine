@@ -560,9 +560,16 @@ LLFUNCEX(CountOf, 1, LCPUSHVAR(StrCountOccurences(
 // $ Util.Hex
 // > Value:integer=Integer to be converted to hex
 // < Value:string=Same number but in hexadecimal
-// ? Convert integer to hexadecimal
+// ? Convert integer to hexadecimal in uppercase
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Hex, 1, LCPUSHVAR(StrHexFromInt(LCGETINT(lua_Integer, 1, "Value"))));
+LLFUNCEX(Hex, 1, LCPUSHVAR(StrHexUFromInt(LCGETINT(lua_Integer, 1, "Value"))));
+/* ========================================================================= */
+// $ Util.HexL
+// > Value:integer=Integer to be converted to hex
+// < Value:string=Same number but in hexadecimal
+// ? Convert integer to hexadecimal in lowercase
+/* ------------------------------------------------------------------------- */
+LLFUNCEX(HexL, 1, LCPUSHVAR(StrHexFromInt(LCGETINT(lua_Integer, 1, "Value"))));
 /* ========================================================================= */
 // $ Util.TableSize
 // > Table:table=A key/value pairs table
@@ -716,21 +723,21 @@ LLRSBEGIN                              // Util.* namespace functions begin
   LLRSFUNC(Explode),       LLRSFUNC(ExplodeEx),     LLRSFUNC(FormatNTime),
   LLRSFUNC(FormatNTimeUTC),LLRSFUNC(FormatNumber),  LLRSFUNC(FormatNumberI),
   LLRSFUNC(FormatTime),    LLRSFUNC(FormatTimeUTC), LLRSFUNC(GetRatio),
-  LLRSFUNC(Grouped),       LLRSFUNC(Hex),           LLRSFUNC(HighByte),
-  LLRSFUNC(HighDWord),     LLRSFUNC(HighWord),      LLRSFUNC(IfBlank),
-  LLRSFUNC(Implode),       LLRSFUNC(ImplodeEx),     LLRSFUNC(IsASCII),
-  LLRSFUNC(IsExtASCII),    LLRSFUNC(LDuration),     LLRSFUNC(LDurationEx),
-  LLRSFUNC(LowByte),       LLRSFUNC(LowDWord),      LLRSFUNC(LowWord),
-  LLRSFUNC(MakeDWord),     LLRSFUNC(MakeQWord),     LLRSFUNC(MakeWord),
-  LLRSFUNC(ParseArgs),     LLRSFUNC(ParseTime),     LLRSFUNC(ParseTime2),
-  LLRSFUNC(ParseTimeEx),   LLRSFUNC(ParseUrl),      LLRSFUNC(Pluralise),
-  LLRSFUNC(PluraliseEx),   LLRSFUNC(PlusOrMinus),   LLRSFUNC(PlusOrMinusEx),
-  LLRSFUNC(Position),      LLRSFUNC(RandUUID),      LLRSFUNC(RelTime),
-  LLRSFUNC(RelTimeEx),     LLRSFUNC(Replace),       LLRSFUNC(ReplaceEx),
-  LLRSFUNC(Round),         LLRSFUNC(RoundInt),      LLRSFUNC(RoundMul),
-  LLRSFUNC(RoundPow2),     LLRSFUNC(StretchInner),  LLRSFUNC(StretchOuter),
-  LLRSFUNC(TableSize),     LLRSFUNC(Trim),          LLRSFUNC(UTF8Char),
-  LLRSFUNC(WordWrap),
+  LLRSFUNC(Grouped),       LLRSFUNC(Hex),           LLRSFUNC(HexL),
+  LLRSFUNC(HighByte),      LLRSFUNC(HighDWord),     LLRSFUNC(HighWord),
+  LLRSFUNC(IfBlank),       LLRSFUNC(Implode),       LLRSFUNC(ImplodeEx),
+  LLRSFUNC(IsASCII),       LLRSFUNC(IsExtASCII),    LLRSFUNC(LDuration),
+  LLRSFUNC(LDurationEx),   LLRSFUNC(LowByte),       LLRSFUNC(LowDWord),
+  LLRSFUNC(LowWord),       LLRSFUNC(MakeDWord),     LLRSFUNC(MakeQWord),
+  LLRSFUNC(MakeWord),      LLRSFUNC(ParseArgs),     LLRSFUNC(ParseTime),
+  LLRSFUNC(ParseTime2),    LLRSFUNC(ParseTimeEx),   LLRSFUNC(ParseUrl),
+  LLRSFUNC(Pluralise),     LLRSFUNC(PluraliseEx),   LLRSFUNC(PlusOrMinus),
+  LLRSFUNC(PlusOrMinusEx), LLRSFUNC(Position),      LLRSFUNC(RandUUID),
+  LLRSFUNC(RelTime),       LLRSFUNC(RelTimeEx),     LLRSFUNC(Replace),
+  LLRSFUNC(ReplaceEx),     LLRSFUNC(Round),         LLRSFUNC(RoundInt),
+  LLRSFUNC(RoundMul),      LLRSFUNC(RoundPow2),     LLRSFUNC(StretchInner),
+  LLRSFUNC(StretchOuter),  LLRSFUNC(TableSize),     LLRSFUNC(Trim),
+  LLRSFUNC(UTF8Char),      LLRSFUNC(WordWrap),
 LLRSEND                                // Util.* namespace functions end
 /* ========================================================================= */
 }                                      // End of Util namespace

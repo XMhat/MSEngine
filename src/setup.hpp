@@ -259,7 +259,7 @@
 #  error Unknown endianness!
 # endif                                // Endianess setup
 /* -- Using anything but Windows? ------------------------------------------ */
-#else                                  // Could be OSX or Linux
+#else                                  // Could be MacOS or Linux
 /* ------------------------------------------------------------------------- */
 # include <cxxabi.h>                   // Debug name demangling stuff
 # include <dirent.h>                   // Directory functions (*dir)

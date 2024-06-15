@@ -10,17 +10,17 @@
 -- Copyr. (c) MS-Design, 2024   Copyr. (c) Millennium Interactive Ltd., 1994 --
 -- ========================================================================= --
 -- Core function aliases --------------------------------------------------- --
-local floor<const>, format<const>, unpack<const>, insert<const> =
-  math.floor, string.format, table.unpack, table.insert;
+local floor<const>, format<const>, unpack<const> =
+  math.floor, string.format, table.unpack;
 -- M-Engine function aliases ----------------------------------------------- --
 local InfoTicks<const>, UtilBlank<const> = Info.Ticks, Util.Blank;
 -- Diggers function and data aliases --------------------------------------- --
-local LoadResources, Fade, SetCallbacks, IsMouseInBounds, IsMouseNotInBounds,
-  aCursorIdData, SetCursor, PlayStaticSound, aSfxData, InitCon, PlayMusic,
-  IsButtonPressed, IsScrollingDown, IsScrollingUp, aObjectData,
-  aGemsAvailable, aObjectActions, aObjectJobs, aObjectDirections, aObjectTypes,
-  InitLobby, texSpr, fontSpeech, GetGameTicks, SetBottomRightTip,
-  RenderInterface, HaveZogsToWin, GameProc, SellSpecifiedItems, RenderShadow;
+local Fade, GameProc, GetGameTicks, HaveZogsToWin, InitCon, InitLobby,
+  IsButtonPressed, IsMouseInBounds, IsMouseNotInBounds, IsScrollingDown,
+  IsScrollingUp, LoadResources, PlayMusic, PlayStaticSound, RenderInterface,
+  RenderShadow, SellSpecifiedItems, SetBottomRightTip, SetCallbacks, SetCursor,
+  aCursorIdData, aGemsAvailable, aObjectActions, aObjectData, aObjectDirections,
+  aObjectJobs, aObjectTypes, aSfxData, fontSpeech, texSpr;
 -- Mouse over events ------------------------------------------------------- --
 local function MsOvFTarg()   return IsMouseInBounds(25,113,87,183) end;
 local function MsOvHabbish() return IsMouseInBounds(129,95,191,184) end;
@@ -161,7 +161,7 @@ local function InitBank(aActiveObject)
       -- Speech bubble should show?
       if iSpeechTimer > 0 then
         -- Show banker talking graphic, speech bubble and text
-        texBank:BlitSLT(iBankerTexId+floor(InfoTicks()/10)%4,
+        texBank:BlitSLT(iBankerTexId + floor(InfoTicks() / 10) % 4,
           iBankerX, iBankerY);
         texBank:BlitSLT(tileSpeech, iSpeechBubbleX, iSpeechBubbleY);
         fontSpeech:PrintC(iSpeechTextX, iSpeechTextY, strBankerSpeech);

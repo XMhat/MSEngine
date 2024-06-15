@@ -668,7 +668,7 @@ for(File*const fPtr : *cFiles)
     { fRef.FStreamOpened(),    'O' }, { fRef.FStreamFErrorSafe(), 'E' },
     { fRef.FStreamIsEOFSafe(), 'X' }
   })).DataN(fRef.FStreamGetIDSafe()).DataN(fRef.FStreamGetErrNo())
-     .DataN(fRef.FStreamGetPositionSafe()).DataN(fRef.FStreamSizeSafe())
+     .DataN(fRef.FStreamTellSafe()).DataN(fRef.FStreamSizeSafe())
      .Data(fRef.IdentGet());
 } // Log counts
 cConsole->AddLineA(sTable.Finish(),
@@ -2048,7 +2048,7 @@ for(const Video*const vPtr : *cVideos)
   const Video &vRef = *vPtr;
   sTable.DataN(vRef.CtrGet())
     .Data(StrFromEvalTokens({
-      { vRef.LuaRefIsSet(),       'L' }, { vRef.HaveAudio(),         'A' },
+      { vRef.LuaRefIsSet(),       'L' }, { vRef.IsSourceAvailable(), 'A' },
       { vRef.FlagIsSet(FL_FILTER),'F' }, { vRef.GetKeyed(),          'K' },
       { vRef.FlagIsSet(FL_PLAY),  'P' }, { vRef.FlagIsSet(FL_STOP),  'S' },
       { vRef.FlagIsSet(FL_THEORA),'T' }, { vRef.FlagIsSet(FL_VORBIS),'V' },

@@ -2790,7 +2790,7 @@ void MakeIncludeFromBin(const string &strIn, const string &strPrefix,
       fOut.FStreamWriteStringEx("$,", static_cast<int>(*ucPtr));
   fOut.FStreamWriteString(" };\n");
   // Finsihed
-  cout << fOut.FStreamGetPosition() << " bytes written!\n";
+  cout << fOut.FStreamTell() << " bytes written!\n";
 }
 /* -- Build a file list ---------------------------------------------------- */
 string BuildFileList(const string &strBase, const string &strDir,

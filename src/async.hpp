@@ -6,7 +6,7 @@
 ** ## Do not use class directly. It must be derived with another class.   ## **
 ** ######################################################################### **
 ** ## This class requires the parent class to have these functions...     ## **
-** ##   void AsyncReady(FileMap &fileClass)                               ## **
+** ##   void AsyncReady(FileMap &fmData)                                  ## **
 ** ##     - Fired when file is loading from memory (data block)           ## **
 ** ######################################################################### **
 ** ## It also requires the parent class' collector class to also register ## **
@@ -245,23 +245,23 @@ template<class MemberType, class ColType>class AsyncLoader :
     return spProcess.SysPipeBaseGetStatus();
   }
   /* -- Process a file map and dispatch events ----------------------------- */
-  void AsyncParseFileMap(FileMap &fmFile)
+  void AsyncParseFileMap(FileMap &fmData)
   { // Send progress event with the file size
     AsyncProgress(APC_FILESTART,
-      static_cast<uint64_t>(fmFile.MemSize()),
-      static_cast<uint64_t>(fmFile.FileMapModifiedTime()),
-      static_cast<uint64_t>(fmFile.FileMapCreationTime()));
+      static_cast<uint64_t>(fmData.MemSize()),
+      static_cast<uint64_t>(fmData.FileMapModifiedTime()),
+      static_cast<uint64_t>(fmData.FileMapCreationTime()));
     // Move our memory block into a file map and send it to loader
-    cAsyncOwner.AsyncReady(fmFile);
+    cAsyncOwner.AsyncReady(fmData);
   }
   /* -- Move the stored memory block into a new filemap and parse it ------- */
   void AsyncParseMemory(void)
-    { FileMap fmFile{ idName.IdentGet(), StdMove(*this), cmSys.GetTimeS() };
-      AsyncParseFileMap(fmFile); }
+    { FileMap fmData{ idName.IdentGet(), StdMove(*this), cmSys.GetTimeS() };
+      AsyncParseFileMap(fmData); }
   /* -- Load the specified file and parse it ------------------------------- */
   void AsyncParseFile(void)
-    { FileMap fmFile{ AssetExtract(idName.IdentGet()) };
-      AsyncParseFileMap(fmFile); }
+    { FileMap fmData{ AssetExtract(idName.IdentGet()) };
+      AsyncParseFileMap(fmData); }
   /* -- Async off-main thread function ------------------------------------- */
   int AsyncThreadMain(Thread&)
   { // Capture exceptions. Remember that after these operations the memory at
@@ -269,7 +269,7 @@ template<class MemberType, class ColType>class AsyncLoader :
     try
     { // How are we loading?
       switch(asctAsyncType)
-      {  // Do nothing?
+      { // Do nothing?
         case BA_NONE:
         { // Just send a blank file and signal completion
           FileMap fmData;

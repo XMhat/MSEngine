@@ -170,8 +170,8 @@ CTOR_MEM_BEGIN(Fonts, Font, ICHelperUnsafe, /* n/a */),
         // Update partial texture
         UpdateEx(GetSubName(),
           rRedraw.RectGetX1<GLint>(), rRedraw.RectGetY1<GLint>(),
-          static_cast<GLsizei>(rRedraw.RectGetX2()-rRedraw.RectGetX1()),
-          static_cast<GLsizei>(rRedraw.RectGetY2()-rRedraw.RectGetY1()),
+          static_cast<GLsizei>(rRedraw.RectGetX2() - rRedraw.RectGetX1()),
+          static_cast<GLsizei>(rRedraw.RectGetY2() - rRedraw.RectGetY1()),
           GetPixelType(), ucpSrc, DimGetWidth<GLsizei>());
         // Log that we partially reuploaded the texture
         cLog->LogDebugExSafe("Font '$' partial re-upload (B:$,$,$,$;P:$).",
@@ -224,7 +224,7 @@ CTOR_MEM_BEGIN(Fonts, Font, ICHelperUnsafe, /* n/a */),
   /* -- Set size of the font ----------------------------------------------- */
   void SetSize(const GLfloat fNScale)
   { // Set scale
-    fScale = UtilClamp(fNScale, 0, 1024);
+    fScale = UtilClamp(fNScale, 0.0f, 1024.0f);
     // Update scaled dimensions
     dfScale.DimSet(dfTile.DimGetWidth() * fScale,
                    dfTile.DimGetHeight() * fScale);
@@ -237,7 +237,7 @@ CTOR_MEM_BEGIN(Fonts, Font, ICHelperUnsafe, /* n/a */),
   /* -- Do initialise specified freetype character range ------------------- */
   void InitFTCharRange(const size_t stStart, const size_t stEnd)
   { // Ignore if not a freetype font.
-    if(!ftfData.Loaded()) return;
+    if(!ftfData.IsLoaded()) return;
     // Log pre-cache progress
     cLog->LogDebugExSafe("Font '$' pre-caching character range $ to $...",
       IdentGet(), stStart, stEnd);
@@ -253,7 +253,7 @@ CTOR_MEM_BEGIN(Fonts, Font, ICHelperUnsafe, /* n/a */),
   /* -- Do initialise all freetype characters in specified string ---------- */
   void InitFTCharString(const GLubyte*const ucpPtr)
   { // Ignore if string not valid or font not loaded
-    if(UtfIsCStringNotValid(ucpPtr) || !ftfData.Loaded()) return;
+    if(UtfIsCStringNotValid(ucpPtr) || !ftfData.IsLoaded()) return;
     // Do load string characters
     DoInitFTCharStringApplyStroker<HandleGlyphFunc::FreeType>(ucpPtr);
     // Check if any textures need reloading
@@ -427,14 +427,14 @@ CTOR_MEM_BEGIN(Fonts, Font, ICHelperUnsafe, /* n/a */),
     // Add the characters the manifest file cares about
     transform(svList.cbegin(), svList.cend(), back_inserter(gvData),
       [fW, fH](const string &strWidth)->const Glyph{
-        return { fW,fH, true, StrToNum<GLfloat>(strWidth), 0.0f,0.0f, fW,fH };
+        return { fW,fH, true, StrToNum<GLfloat>(strWidth), 0.0f, 0.0f, fW,fH };
       });
     // Now we have the default character we can fill all the unused slots with
     // the default characters data.
     const unsigned int uiCharOffsetM1 = uiCharOffset-1;
     const Glyph &gRef = gvData[ulDefaultChar];
-    StdFill(par_unseq, gvData.begin(), gvData.begin()+uiCharOffsetM1, gRef);
-    StdFill(par_unseq, gvData.begin()+uiCharEnd, gvData.end(), gRef);
+    StdFill(par_unseq, gvData.begin(), gvData.begin() + uiCharOffsetM1, gRef);
+    StdFill(par_unseq, gvData.begin() + uiCharEnd, gvData.end(), gRef);
     // Initialise memory for texture tile co-ordinates
     clTiles.resize(1);
     CoordList &clFirst = clTiles.front();
@@ -449,8 +449,9 @@ CTOR_MEM_BEGIN(Fonts, Font, ICHelperUnsafe, /* n/a */),
     // Initialise the uninitialised texcoords with the default character that
     // was initialised using InitImage
     const CoordData &cdRef = clFirst[ulDefaultChar];
-    StdFill(par_unseq, clFirst.begin(),clFirst.begin()+uiCharOffsetM1, cdRef);
-    StdFill(par_unseq, clFirst.begin()+uiCharEnd, clFirst.end(), cdRef);
+    StdFill(par_unseq, clFirst.begin(),
+                       clFirst.begin() + uiCharOffsetM1, cdRef);
+    StdFill(par_unseq, clFirst.begin() + uiCharEnd, clFirst.end(), cdRef);
     // Initialise font scale
     SetSize(StrToNum<GLfloat>(pManifest.ParserGet("scale")));
     // Show that we've loaded the file

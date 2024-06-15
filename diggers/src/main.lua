@@ -459,10 +459,14 @@ local function LoadResources(sProcedure, aResources, fComplete)
     local aDstParams<const> = { sDst, unpack(aSrcParams) };
     insert(aDstParams, SetErrorMessage);
     insert(aDstParams, ProgressUpdate);
+    -- Get no-cache setting
+    local bNoCache<const> = aResource.NC;
     -- When final handle has been acquired
     local function OnHandle(vHandle, bCached)
-      -- Cache the handle
-      hHandle, aResource.H, aNCache[sDst] = vHandle, vHandle, vHandle;
+      -- Set handles
+      hHandle, aResource.H = vHandle, vHandle;
+      -- Cache the handle unless requested not to
+      if not bNoCache then aNCache[sDst] = vHandle end;
       -- Set stage 2 duration and total duration
       aResource.ST2 = InfoTime() - aResource.ST2;
       aResource.ST3 = aResource.ST1 + aResource.ST2;
@@ -471,10 +475,17 @@ local function LoadResources(sProcedure, aResources, fComplete)
       -- Execute the resource callback if available
       local fcbCallback<const> = aResource.A;
       if type(fcbCallback) == "function" then fcbCallback() end;
-      -- Set cached message
-      if bCached then bCached = "." else
+      -- No need to show intermediate load times if cached
+      if bCached then bCached = ".";
+      -- Wasn't cached?
+      else
+        -- Calculate times for log
         bCached = " ("..UtilDuration(aResource.ST1, 3).."+"..
-                        UtilDuration(aResource.ST2, 3)..")." end;
+                        UtilDuration(aResource.ST2, 3);
+        -- Add no cache flag and finish string
+        if bNoCache then bCached = bCached.."/NC).";
+                    else bCached = bCached..")." end;
+      end
       -- Say in log that we loaded
       CoreLog("Loaded resource "..iLoaded.."/"..iTotal..": '"..
         sDst.."' in "..UtilDuration(aResource.ST3, 3).." sec"..bCached);
@@ -493,9 +504,11 @@ local function LoadResources(sProcedure, aResources, fComplete)
     end
     -- Setup handle
     local function SetupSecondStage()
+      -- Get current time
+      local nTime<const> = InfoTime();
       -- Set stage 1 duration and stage 2 start time
-      aResource.ST1 = InfoTime() - aResource.ST1;
-      aResource.ST2 = InfoTime();
+      aResource.ST1 = nTime - aResource.ST1;
+      aResource.ST2 = nTime;
       -- Function wants file info?
       if aTypeData[6] then
         for iI = 1, #aInfo do insert(aResource.P, aInfo[iI]) end;

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<!-- Reference for the MS-Engine API version 24.6.14.8 -->
-<!-- Automatically built at Fri Jun 14 16:50:20 2024 +0100 -->
-<!-- With MS-Engine Project Management Utility version 24.6.14.8 -->
+<!-- Reference for the MS-Engine API version 24.6.27.2 -->
+<!-- Automatically built at Thu Jun 27 22:11:10 2024 +0100 -->
+<!-- With MS-Engine Project Management Utility version 24.6.27.2 -->
 <!-- Copyright (c) 2006-2024 MS-Design, All Rights Reserved Worldwide -->
 <HTML lang="en-GB">
 <HEAD>
@@ -11,18 +11,18 @@
 	<META name="apple-mobile-web-app-title" content="MS-Engine API">
 	<META name="author" content="MS-Design">
 	<META name="copyright" content="Copyright © 2006-2024 MS-Design, All Rights Reserved">
-	<META name="description" content="Reference for the MS-Engine API version 24.6.14.8">
+	<META name="description" content="Reference for the MS-Engine API version 24.6.27.2">
 	<META name="format-detection" content="telephone=no">
-	<META name="generator" content="MS-Engine Project Management Utility version 24.6.14.8">
+	<META name="generator" content="MS-Engine Project Management Utility version 24.6.27.2">
 	<META name="google-site-verification" content="BvWxrqmgaIxqe_W8AW3OGK0fdCI_JfB_-gcOOxCF9_4">
 	<META name="googlebot" content="index,follow">
-	<META name="og:description" content="Reference for the MS-Engine API version 24.6.14.8">
+	<META name="og:description" content="Reference for the MS-Engine API version 24.6.27.2">
 	<META name="og:image" content="https://repository-images.githubusercontent.com/611875607/ee7aa468-9797-4763-9a2d-ea3d782ef413">
-	<META name="og:title" content="MS-Engine 24.6.14.8 API reference">
+	<META name="og:title" content="MS-Engine 24.6.27.2 API reference">
 	<META name="og:url" content="https://xmhat.github.io/MSEngine/">
 	<META name="robots" content="index,follow">
 	<META name="viewport" content="width=device-width, initial-scale=1">
-	<TITLE>MS-Engine 24.6.14.8 API reference</TITLE>
+	<TITLE>MS-Engine 24.6.27.2 API reference</TITLE>
 	<STYLE media="screen">
 	* { margin:0; padding:0 }
 	BODY { background-color:#111; border:0; font-family:sans-serif; overflow-x:hidden; text-shadow: 1px 1px #111 }
@@ -60,7 +60,7 @@
 	</STYLE>
 </HEAD>
 <BODY id="idx.top">
-	<H1>MS-Engine 24.6.14.8 API reference</H1>
+	<H1>MS-Engine 24.6.27.2 API reference</H1>
 	<NOSCRIPT>
 		<H2>JavaScript is required to show and hide elements.</H2>
 	</NOSCRIPT>
@@ -99,7 +99,7 @@
 	</SCRIPT>
 	<DIV id="idx" style="display:none">
 		<H2>Table of contents:-</H2>
-		<P>This build of the MS-Engine API consists of 816 functions (375 members, 441 methods) and 26 consts in 32 namespaces with 83 commands and 209 cvars.</P>
+		<P>This build of the MS-Engine API consists of 817 functions (376 members, 441 methods) and 26 consts in 32 namespaces with 83 commands and 209 cvars.</P>
 		<OL id="toc">
 			<LI id="idx.ns">
 				<DIV>
@@ -1498,7 +1498,7 @@
 						<OL>
 							<LI><P>This contains miscellenious utility functions such as string, number and time manipulation functions.</P></LI>
 							<LI>
-								<B>Members</B> <I>(67 members)</I>
+								<B>Members</B> <I>(68 members)</I>
 								<OL>
 									<LI><A href="#Util.AscNTime">AscNTime</A></LI>
 									<LI><A href="#Util.AscNTimeUTC">AscNTimeUTC</A></LI>
@@ -1526,6 +1526,7 @@
 									<LI><A href="#Util.GetRatio">GetRatio</A></LI>
 									<LI><A href="#Util.Grouped">Grouped</A></LI>
 									<LI><A href="#Util.Hex">Hex</A></LI>
+									<LI><A href="#Util.HexL">HexL</A></LI>
 									<LI><A href="#Util.HighByte">HighByte</A></LI>
 									<LI><A href="#Util.HighDWord">HighDWord</A></LI>
 									<LI><A href="#Util.HighWord">HighWord</A></LI>
@@ -9632,7 +9633,19 @@
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Value</U> <I>(string)</I> = Same number but in hexadecimal<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Convert integer to hexadecimal </PRE>
+		<PRE>Convert integer to hexadecimal in uppercase </PRE>
+		<H4><A href="#idx:Util">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Util.HexL" style="display:none">
+		<H3>Util.HexL</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Value</U> = Util.HexL(<I><U>Value</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Value</U> <I>(integer)</I> = Integer to be converted to hex<BR></PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Value</U> <I>(string)</I> = Same number but in hexadecimal<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Convert integer to hexadecimal in lowercase </PRE>
 		<H4><A href="#idx:Util">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Util.HighByte" style="display:none">
@@ -11486,7 +11499,7 @@
 	</DIV>
 	<DIV id="cv.err_instance" style="display:none">
 		<H3>err_instance</H3>
-		<PRE>Tries to activate an existing window of the same name if another instance is running&#x2e; On Windows&#x2c; mutexes are always cleaned up properly even in a crash but not on Linux and OSX&#x2e; So just simply remove the app name from &#x2f;dev&#x2f;shm and the engine should run again&#x2e;<BR></PRE>
+		<PRE>Tries to activate an existing window of the same name if another instance is running&#x2e; On Windows&#x2c; mutexes are always cleaned up properly even in a crash but not on Linux and MacOS&#x2e; So just simply remove the app name from &#x2f;dev&#x2f;shm and the engine should run again&#x2e;<BR></PRE>
 		<H4><A href="#idx.cv">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="cv.err_lmresetlimit" style="display:none">
@@ -12180,6 +12193,6 @@
 		<H4><A href="#idx.cv">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<ADDRESS>Copyright &copy; 2024 MS-Design, All Rights Reserved.<BR>
-	This document was generated at Fri Jun 14 16:50:20 2024 +0100</ADDRESS>
+	This document was generated at Thu Jun 27 22:11:10 2024 +0100</ADDRESS>
 </BODY>
 </HTML>

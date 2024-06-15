@@ -592,10 +592,10 @@ LLFUNCBEGIN(TileAS)
   Texture &tCref = *LCGETPTR(1, Texture);
   const size_t stId = LCGETINTLGE(size_t, 2, 0, tCref.GetSubCount(), "TexId");
   tCref.AddTileDOR(stId,
-    LCGETNUMLG(GLfloat, 3, 0, tCref.GetFWidth(),  "Left"),
-    LCGETNUMLG(GLfloat, 4, 0, tCref.GetFHeight(), "Top"),
-    LCGETNUMLG(GLfloat, 5, 0, tCref.GetFWidth(),  "Right"),
-    LCGETNUMLG(GLfloat, 6, 0, tCref.GetFHeight(), "Bottom"));
+    LCGETNUMLG(GLfloat, 3, 0.0f, tCref.GetFWidth(),  "Left"),
+    LCGETNUMLG(GLfloat, 4, 0.0f, tCref.GetFHeight(), "Top"),
+    LCGETNUMLG(GLfloat, 5, 0.0f, tCref.GetFWidth(),  "Right"),
+    LCGETNUMLG(GLfloat, 6, 0.0f, tCref.GetFHeight(), "Bottom"));
   LCPUSHVAR(tCref.GetTileCount(stId)-1);
 LLFUNCENDEX(1)
 /* ========================================================================= */
@@ -613,11 +613,11 @@ LLFUNCBEGIN(TileASD)
   Texture &tCref = *LCGETPTR(1, Texture);
   const size_t stId = LCGETINTLGE(size_t, 2, 0, tCref.GetSubCount(), "TexId");
   const GLfloat
-    fX = LCGETNUMLG(GLfloat, 3, 0, tCref.GetFWidth(), "Left"),
-    fY = LCGETNUMLG(GLfloat, 4, 0, tCref.GetFHeight(), "Top");
+    fX = LCGETNUMLG(GLfloat, 3, 0.0f, tCref.GetFWidth(), "Left"),
+    fY = LCGETNUMLG(GLfloat, 4, 0.0f, tCref.GetFHeight(), "Top");
   tCref.AddTileDORWH(stId, fX, fY,
-    LCGETNUMLG(GLfloat, 5, 0, tCref.GetFWidth()-fX, "Width"),
-    LCGETNUMLG(GLfloat, 6, 0, tCref.GetFHeight()-fY, "Height"));
+    LCGETNUMLG(GLfloat, 5, 0.0f, tCref.GetFWidth()-fX, "Width"),
+    LCGETNUMLG(GLfloat, 6, 0.0f, tCref.GetFHeight()-fY, "Height"));
   LCPUSHVAR(tCref.GetTileCount(stId)-1);
 LLFUNCENDEX(1)
 /* ========================================================================= */
@@ -633,10 +633,10 @@ LLFUNCENDEX(1)
 LLFUNCBEGIN(TileA)
   Texture &tCref = *LCGETPTR(1, Texture);
   tCref.AddTileDOR(0,
-    LCGETNUMLG(GLfloat, 2, 0, tCref.GetFWidth(), "Left"),
-    LCGETNUMLG(GLfloat, 3, 0, tCref.GetFHeight(), "Top"),
-    LCGETNUMLG(GLfloat, 4, 0, tCref.GetFWidth(), "Right"),
-    LCGETNUMLG(GLfloat, 5, 0, tCref.GetFHeight(), "Bottom"));
+    LCGETNUMLG(GLfloat, 2, 0.0f, tCref.GetFWidth(), "Left"),
+    LCGETNUMLG(GLfloat, 3, 0.0f, tCref.GetFHeight(), "Top"),
+    LCGETNUMLG(GLfloat, 4, 0.0f, tCref.GetFWidth(), "Right"),
+    LCGETNUMLG(GLfloat, 5, 0.0f, tCref.GetFHeight(), "Bottom"));
   LCPUSHVAR(tCref.GetTileCount()-1);
 LLFUNCENDEX(1)
 /* ========================================================================= */
@@ -652,11 +652,11 @@ LLFUNCENDEX(1)
 LLFUNCBEGIN(TileAD)
   Texture &tCref = *LCGETPTR(1, Texture);
   const GLfloat
-    fX = LCGETNUMLG(GLfloat, 2, 0, tCref.GetFWidth(), "Left"),
-    fY = LCGETNUMLG(GLfloat, 3, 0, tCref.GetFHeight(), "Top");
+    fX = LCGETNUMLG(GLfloat, 2, 0.0f, tCref.GetFWidth(), "Left"),
+    fY = LCGETNUMLG(GLfloat, 3, 0.0f, tCref.GetFHeight(), "Top");
   tCref.AddTileDORWH(0, fX, fY,
-    LCGETNUMLG(GLfloat, 4, 0, tCref.GetFWidth()-fX, "Width"),
-    LCGETNUMLG(GLfloat, 5, 0, tCref.GetFHeight()-fY, "Height"));
+    LCGETNUMLG(GLfloat, 4, 0.0f, tCref.GetFWidth()-fX, "Width"),
+    LCGETNUMLG(GLfloat, 5, 0.0f, tCref.GetFHeight()-fY, "Height"));
   LCPUSHVAR(tCref.GetTileCount()-1);
 LLFUNCENDEX(1)
 /* ========================================================================= */
@@ -673,13 +673,13 @@ LLFUNCENDEX(1)
 LLFUNCBEGIN(TileSS)
   Texture &tCref = *LCGETPTR(1, Texture);
   const size_t stTexId =
-    LCGETINTLGE(size_t,  2, 0, tCref.GetSubCount(),         "TexId");
+    LCGETINTLGE(size_t,  2, 0,    tCref.GetSubCount(),         "TexId");
   tCref.SetTileDOR(stTexId,
-    LCGETINTLGE(size_t,  3, 0, tCref.GetTileCount(stTexId), "TileId"),
-    LCGETNUMLG (GLfloat, 4, 0, tCref.GetFWidth(),           "Left"),
-    LCGETNUMLG (GLfloat, 5, 0, tCref.GetFHeight(),          "Top"),
-    LCGETNUMLG (GLfloat, 6, 0, tCref.GetFWidth(),           "Right"),
-    LCGETNUMLG (GLfloat, 7, 0, tCref.GetFHeight(),          "Bottom"));
+    LCGETINTLGE(size_t,  3, 0,    tCref.GetTileCount(stTexId), "TileId"),
+    LCGETNUMLG (GLfloat, 4, 0.0f, tCref.GetFWidth(),           "Left"),
+    LCGETNUMLG (GLfloat, 5, 0.0f, tCref.GetFHeight(),          "Top"),
+    LCGETNUMLG (GLfloat, 6, 0.0f, tCref.GetFWidth(),           "Right"),
+    LCGETNUMLG (GLfloat, 7, 0.0f, tCref.GetFHeight(),          "Bottom"));
 LLFUNCEND
 /* ========================================================================= */
 // $ Texture:TileSSD
@@ -699,11 +699,11 @@ LLFUNCBEGIN(TileSSD)
     stTileId = LCGETINTLGE(size_t, 3, 0, tCref.GetTileCount(stTexId),
       "TileId");
   const GLfloat
-    fX = LCGETNUMLG(GLfloat, 4, 0, tCref.GetFWidth(), "Left"),
-    fY = LCGETNUMLG(GLfloat, 5, 0, tCref.GetFHeight(), "Top");
+    fX = LCGETNUMLG(GLfloat, 4, 0.0f, tCref.GetFWidth(), "Left"),
+    fY = LCGETNUMLG(GLfloat, 5, 0.0f, tCref.GetFHeight(), "Top");
   tCref.SetTileDORWH(stTexId, stTileId, fX, fY,
-    LCGETNUMLG(GLfloat, 6, 0, tCref.GetFWidth()-fX, "Width"),
-    LCGETNUMLG(GLfloat, 7, 0, tCref.GetFHeight()-fY, "Height"));
+    LCGETNUMLG(GLfloat, 6, 0.0f, tCref.GetFWidth()-fX, "Width"),
+    LCGETNUMLG(GLfloat, 7, 0.0f, tCref.GetFHeight()-fY, "Height"));
 LLFUNCEND
 /* ========================================================================= */
 // $ Texture:TileS
@@ -719,10 +719,10 @@ LLFUNCBEGIN(TileS)
   Texture &tCref = *LCGETPTR(1, Texture);
   tCref.SetTileDOR(0,
     LCGETINTLGE(size_t, 2, 0, tCref.GetTileCount(0), "Index"),
-    LCGETNUMLG(GLfloat, 3, 0, tCref.GetFWidth(), "Left"),
-    LCGETNUMLG(GLfloat, 4, 0, tCref.GetFHeight(), "Top"),
-    LCGETNUMLG(GLfloat, 5, 0, tCref.GetFWidth(), "Right"),
-    LCGETNUMLG(GLfloat, 6, 0, tCref.GetFHeight(), "Bottom"));
+    LCGETNUMLG(GLfloat, 3, 0.0f, tCref.GetFWidth(), "Left"),
+    LCGETNUMLG(GLfloat, 4, 0.0f, tCref.GetFHeight(), "Top"),
+    LCGETNUMLG(GLfloat, 5, 0.0f, tCref.GetFWidth(), "Right"),
+    LCGETNUMLG(GLfloat, 6, 0.0f, tCref.GetFHeight(), "Bottom"));
 LLFUNCEND
 /* ========================================================================= */
 // $ Texture:TileSD
@@ -739,11 +739,11 @@ LLFUNCBEGIN(TileSD)
   const size_t stId =
     LCGETINTLGE(size_t, 2, 0, tCref.GetTileCount(0), "Index");
   const GLfloat
-    fX = LCGETNUMLG(GLfloat, 3, 0, tCref.GetFWidth(), "Left"),
-    fY = LCGETNUMLG(GLfloat, 4, 0, tCref.GetFHeight(), "Top");
+    fX = LCGETNUMLG(GLfloat, 3, 0.0f, tCref.GetFWidth(), "Left"),
+    fY = LCGETNUMLG(GLfloat, 4, 0.0f, tCref.GetFHeight(), "Top");
   tCref.SetTileDORWH(0, stId, fX, fY,
-    LCGETNUMLG(GLfloat, 5, 0, tCref.GetFWidth()-fX, "Width"),
-    LCGETNUMLG(GLfloat, 6, 0, tCref.GetFHeight()-fY, "Height"));
+    LCGETNUMLG(GLfloat, 5, 0.0f, tCref.GetFWidth()-fX, "Width"),
+    LCGETNUMLG(GLfloat, 6, 0.0f, tCref.GetFHeight()-fY, "Height"));
 LLFUNCEND
 /* ========================================================================= */
 // $ Texture:TileGTC

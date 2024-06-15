@@ -53,6 +53,8 @@ local function InitTNTMap()
       -- Set page
       iTerrainPage = iPage;
     end
+    -- Dynamic terrain texture
+    local texTerrain;
     -- Input callback
     local function InputProc()
       -- Check where mouse is and show appropriate tip
@@ -85,8 +87,6 @@ local function InitTNTMap()
       -- Mouse over something else?
       else SetTipAndCursor("TNT MAP", aCursorIdData.ARROW) end;
     end
-    -- Dynamic terrain texture
-    local texTerrain;
     -- Render callback
     local function RenderProc()
       -- Render everything

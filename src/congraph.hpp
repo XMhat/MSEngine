@@ -73,11 +73,11 @@ static class ConGraphics final :       // Members initially private
     CommitScale();
     // Estimate amount of triangles that would fit in the console and if
     // we have a non-zero value?
-    if(const size_t stTriangles = static_cast<size_t>(
+    if(const size_t stTriangles = static_cast<size_t>(2.0f +
       (ceilf(fboC.DimGetWidth<GLfloat>() /
        ceilf(GetFontRef().dfScale.DimGetWidth())) *
        ceilf(fboC.DimGetHeight<GLfloat>() /
-       ceilf(GetFontRef().dfScale.DimGetHeight()))) + 2))
+       ceilf(GetFontRef().dfScale.DimGetHeight())))))
       // Try to reserve the triangles and 2 commands and log if failed!
       if(!fboC.FboReserve(stTriangles, 2))
         cLog->LogWarningExSafe("Console fbo failed to reserve $ triangles!",
@@ -90,7 +90,7 @@ static class ConGraphics final :       // Members initially private
     // the cvars havn't been initialised
     Ftf fFTFont;
     fFTFont.InitFile(cCVars->GetStrInternal(CON_FONT), fTextWidth,
-      fTextHeight, 96, 96, 0.0);
+      fTextHeight, 96, 96, 0.0f);
     GetFontRef().InitFTFont(fFTFont,
       cCVars->GetInternal<GLuint>(CON_FONTTEXSIZE),
       cCVars->GetInternal<GLuint>(CON_FONTPADDING), OF_L_L_MM_L,
@@ -176,7 +176,7 @@ static class ConGraphics final :       // Members initially private
       cLog->LogDebugSafe("Console visibility control has been disabled.");
       // Make sure console is showing and set full height and return
       DoSetVisible(true);
-      SetHeight(1);
+      SetHeight(1.0f);
       // Done
       return;
     } // Disabling so log that the console can now be disabled
@@ -226,9 +226,10 @@ static class ConGraphics final :       // Members initially private
     // Get reference to main fbo
     Fbo &fboM = cFboCore->fboMain;
     // Update matrix same as the main fbo
-    fboC.FboSetMatrix(0, 0, fboM.GetCoRight(), fboM.GetCoBottom());
+    fboC.FboSetMatrix(0.0f, 0.0f, fboM.GetCoRight(), fboM.GetCoBottom());
     // Set drawing position
-    const GLfloat fYAdj = fboM.ffcStage.GetCoBottom() * (1 - fConsoleHeight);
+    const GLfloat fYAdj =
+      fboM.ffcStage.GetCoBottom() * (1.0f - fConsoleHeight);
     fboC.FboItemSetVertex(fboM.ffcStage.GetCoLeft(),
       fboM.ffcStage.GetCoTop() - fYAdj, fboM.ffcStage.GetCoRight(),
       fboM.ffcStage.GetCoBottom() - fYAdj);
@@ -254,7 +255,7 @@ static class ConGraphics final :       // Members initially private
         cConsole->GetConsoleEnd()).c_str()));
     // For each line or until we clip the top of the screen, print the text
     for(ConLinesConstRevIt clI{ cConsole->GetConBufPos() };
-                           clI != cConsole->GetConBufPosEnd() && fY>0;
+                           clI != cConsole->GetConBufPosEnd() && fY > 0.0f;
                          ++clI)
     { // Get reference to console line data structure
       const ConLine &clD = *clI;
@@ -360,7 +361,7 @@ static class ConGraphics final :       // Members initially private
   CVarReturn TextScaleModified(const GLfloat fNewScale)
   { // Failed if supplied scale is not in range
     if(!CVarToBoolReturn(CVarSimpleSetIntNLG(fTextScale,
-      fNewScale, 0.01f, 1.00f)))
+      fNewScale, 0.01f, 1.0f)))
         return DENY;
     // Set new font scale
     CommitScale();

@@ -54,7 +54,7 @@ LLFUNCEX(GetVideoVolume, 1, LCPUSHVAR(cSources->fVVolume.load()));
 // ? does not modify the cvar which controls the default sample volume.
 /* ------------------------------------------------------------------------- */
 LLFUNC(SetGlobalVolume,
-  cAudio->SetGlobalVolume(LCGETNUMLG(ALfloat, 1, 0, 1, "Volume")));
+  cAudio->SetGlobalVolume(LCGETNUMLG(ALfloat, 1, 0.0f, 1.0f, "Volume")));
 /* ========================================================================= */
 // $ Audio.SetStreamVolume
 // > Volume:number=New streams volume (0 to 1).
@@ -62,7 +62,7 @@ LLFUNC(SetGlobalVolume,
 // ? cvar which controls the default sample volume.
 /* ------------------------------------------------------------------------- */
 LLFUNC(SetStreamVolume,
-  StreamSetVolume(LCGETNUMLG(ALfloat, 1, 0, 1, "Volume")));
+  StreamSetVolume(LCGETNUMLG(ALfloat, 1, 0.0f, 1.0f, "Volume")));
 /* ========================================================================= */
 // $ Audio.SetSampleVolume
 // > Volume:number=New samples volume (0 to 1).
@@ -70,14 +70,15 @@ LLFUNC(SetStreamVolume,
 // ? cvar which controls the default sample volume.
 /* ------------------------------------------------------------------------- */
 LLFUNC(SetSampleVolume,
-  SampleSetVolume(LCGETNUMLG(ALfloat, 1, 0, 1,"Volume")));
+  SampleSetVolume(LCGETNUMLG(ALfloat, 1, 0.0f, 1.0f,"Volume")));
 /* ========================================================================= */
 // $ Audio.SetVideoVolume
 // > Volume:number=New samples volume (0 to 1).
 // ? Sets new volume of all current and new videos. This does not modify the
 // ? cvar which controls the default video volume.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetVideoVolume, VideoSetVolume(LCGETNUMLG(ALfloat, 1, 0, 1, "Volume")));
+LLFUNC(SetVideoVolume,
+  VideoSetVolume(LCGETNUMLG(ALfloat, 1, 0.0f, 1.0f, "Volume")));
 /* ========================================================================= */
 // $ Audio.SetPosition
 // > X:number=New X listener position.

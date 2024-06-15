@@ -422,7 +422,7 @@ class SysCore :
   }
   /* ----------------------------------------------------------------------- */
   bool DebuggerRunning(void) const { return false; }
-  /* -- Get process affinity masks (N/A on OSX) ---------------------------- */
+  /* -- Get process affinity masks ----------------------------------------- */
   uint64_t GetAffinity(const bool bS)
   { // Get the process affinity mask
     cpu_set_t cstMask;

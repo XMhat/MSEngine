@@ -395,7 +395,7 @@ CTOR_MEM_BEGIN_CSLAVE(Fbos, Fbo, ICHelperUnsafe),
   void FboResetClearColour(void) { ResetColour(); }
   /* -- Set matrix for drawing --------------------------------------------- */
   void FboSetMatrix(const GLfloat fLeft, const GLfloat fTop,
-                const GLfloat fRight, const GLfloat fBottom)
+    const GLfloat fRight, const GLfloat fBottom)
   { // Set new stage bounds
     ffcStage.SetCoLeft(fLeft);
     ffcStage.SetCoTop(fTop);

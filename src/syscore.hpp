@@ -158,27 +158,27 @@ class SysVersion :
   /* --------------------------------------------------------------- */ public:
   DELETECOPYCTORS(SysVersion)          // Disable copy constructor and operator
   /* -- Access to engine version data -------------------------------------- */
-  const char      *ENGBuildType(void) const { return BUILD_TYPE_LABEL; }
-  const char      *ENGCompiled(void)  const { return VER_DATE; }
-  const char      *ENGCompiler(void)  const { return COMPILER_NAME; }
-  const char      *ENGCompVer(void)   const { return COMPILER_VERSION; }
-  const char      *ENGTarget(void)    const { return BUILD_TARGET; }
-  const string    &ENGAuthor(void)    const { return smdEng.GetVendor(); }
-  const string    &ENGComments(void)  const { return smdEng.GetComments(); }
-  const string    &ENGDir(void)       const { return smdEng.GetDir(); }
-  const string    &ENGDrive(void)     const { return smdEng.GetDrive(); }
-  const string    &ENGExt(void)       const { return smdEng.GetExt(); }
-  const string    &ENGFile(void)      const { return smdEng.GetFile(); }
-  const string    &ENGFileExt(void)   const { return smdEng.GetFileExt(); }
-  const string    &ENGFull(void)      const { return smdEng.GetFull(); }
-  const string    &ENGLoc(void)       const { return smdEng.GetLoc(); }
-  const string    &ENGName(void)      const { return smdEng.GetDesc(); }
-  const string    &ENGVersion(void)   const { return smdEng.GetVersion(); }
-  unsigned int     ENGBits(void)      const { return (sizeof(void*)*8); }
-  unsigned int     ENGBuild(void)     const { return smdEng.GetBuild(); }
-  unsigned int     ENGMajor(void)     const { return smdEng.GetMajor(); }
-  unsigned int     ENGMinor(void)     const { return smdEng.GetMinor(); }
-  unsigned int     ENGRevision(void)  const { return smdEng.GetRevision(); }
+  const char *ENGBuildType(void) const { return BUILD_TYPE_LABEL; }
+  const char *ENGCompVer(void) const { return COMPILER_VERSION; }
+  const char *ENGCompiled(void) const { return VER_DATE; }
+  const char *ENGCompiler(void) const { return COMPILER_NAME; }
+  const char *ENGTarget(void) const { return BUILD_TARGET; }
+  const string &ENGAuthor(void) const { return smdEng.GetVendor(); }
+  const string &ENGComments(void) const { return smdEng.GetComments(); }
+  const string &ENGDir(void) const { return smdEng.GetDir(); }
+  const string &ENGDrive(void) const { return smdEng.GetDrive(); }
+  const string &ENGExt(void) const { return smdEng.GetExt(); }
+  const string &ENGFile(void) const { return smdEng.GetFile(); }
+  const string &ENGFileExt(void) const { return smdEng.GetFileExt(); }
+  const string &ENGFull(void) const { return smdEng.GetFull(); }
+  const string &ENGLoc(void) const { return smdEng.GetLoc(); }
+  const string &ENGName(void) const { return smdEng.GetDesc(); }
+  const string &ENGVersion(void) const { return smdEng.GetVersion(); }
+  unsigned int ENGBits(void) const { return (sizeof(void*)*8); }
+  unsigned int ENGBuild(void) const { return smdEng.GetBuild(); }
+  unsigned int ENGMajor(void) const { return smdEng.GetMajor(); }
+  unsigned int ENGMinor(void) const { return smdEng.GetMinor(); }
+  unsigned int ENGRevision(void) const { return smdEng.GetRevision(); }
   /* -- Find executable module info and return reference to it -- */ protected:
   const SysModuleData &FindBaseModuleInfo(const size_t stId) const
   { // Find the module, we stored it as a zero, if not found?

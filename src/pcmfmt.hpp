@@ -162,7 +162,7 @@ class CodecWAV final :
       }
       // Set position of next header. This skips any extra padding we did
       // not read and also protects from overruning.
-      fmData.FileMapSeek(stHeaderPos + stTwoDWords + uiSize, SEEK_SET);
+      fmData.FileMapSeekSet(stHeaderPos + stTwoDWords + uiSize);
     } // Throw error if we did not get a 'fmt' chunk?
     if(chunkFlags.FlagIsClear(WL_GOTFORMAT)) XC("WAV has no 'fmt' chunk!");
     // Throw error if we did not get a 'data' chunk?
@@ -288,7 +288,7 @@ class CodecCAF final :
           pdData.aPcmL.MemInitData(stSize, fmData.FileMapReadPtr(stSize));
           break;
         } // Unknown header so ignore unknown channel and break
-        default: fmData.FileMapSeek(stSize, SEEK_CUR); break;
+        default: fmData.FileMapSeekCur(stSize); break;
       }
     } // Got \desc\ chunk?
     if(!pdData.GetRate()) XC("CAF has no 'desc' chunk!");

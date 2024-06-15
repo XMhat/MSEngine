@@ -353,7 +353,7 @@ LLFUNC(SetLoop, LCGETPTR(1, Video)->SetLoop(LCGETINT(size_t, 2, "Count")));
 // ? Sets the volume of the video class even if it is playing.
 /* ------------------------------------------------------------------------- */
 LLFUNC(SetVolume,
-  LCGETPTR(1, Video)->SetVolume(LCGETNUMLG(ALfloat, 2, 0, 1, "Volume")));
+  LCGETPTR(1, Video)->SetVolume(LCGETNUMLG(ALfloat, 2, 0.0f, 1.0f, "Volume")));
 /* ========================================================================= */
 // $ Video:Destroy
 // ? Stops and destroys the stream object and frees all the memory associated

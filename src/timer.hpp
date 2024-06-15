@@ -35,8 +35,8 @@ static class Timer final               // Members initially private
   void TimerSetInterval(const uint64_t uqInterval)
     { cdLimit = nanoseconds{ uqInterval }; }
   /* -- Get minimum maximum interval value --------------------------------- */
-  uint64_t TimerGetMinInterval(void) { return uqIntvMin; }
-  uint64_t TimerGetMaxInterval(void) { return uqIntvMax; }
+  uint64_t TimerGetMinInterval(void) const { return uqIntvMin; }
+  uint64_t TimerGetMaxInterval(void) const { return uqIntvMax; }
   /* -- Update delay as double --------------------------------------------- */
   void TimerUpdateDelay(const unsigned int uiNewDelay)
     { cdDelay = milliseconds{ uiNewDelay }; }
@@ -59,15 +59,15 @@ static class Timer final               // Members initially private
     ctpTimeOut = ctpEnd + cdTimeOut;
   }
   /* -- Thread suspense by duration ---------------------------------------- */
-  void TimerSuspend(const ClkDuration cdAmount)
+  void TimerSuspend(const ClkDuration cdAmount) const
     { ::std::this_thread::sleep_for(cdAmount); }
   /* -- Thread suspense by integer ----------------------------------------- */
-  void TimerSuspend(const unsigned int uiMilliseconds)
+  void TimerSuspend(const unsigned int uiMilliseconds) const
     { TimerSuspend(milliseconds(uiMilliseconds)); }
   /* -- Thread suspense by one millisecond --------------------------------- */
-  void TimerSuspend(void) { TimerSuspend(1); }
+  void TimerSuspend(void) const { TimerSuspend(1); }
   /* -- Thread suspense by requested duration ------------------------------ */
-  void TimerSuspendRequested(void) { TimerSuspend(cdDelay); }
+  void TimerSuspendRequested(void) const { TimerSuspend(cdDelay); }
   /* -- Force wait if delay is disabled (cFboCore->Render()) --------------- */
   void TimerForceWait(void)
     { if(cdDelay == seconds(0)) bWait = true; }
