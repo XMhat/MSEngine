@@ -279,15 +279,17 @@ class FStreamBase :                    // File stream base class
   int64_t FStreamSizeSafe(void) { return FStreamClosed() ? 0 : FStreamSize(); }
   /* -- Open a file without filename validation ---------------------------- */
   int FStreamOpen(const string &strFile, const FStreamMode fsmMode)
-  { // Try to open the file on disk and if succeeded?
-    if(FStreamDoOpen(strFile, fsmMode)) return 0;
-    // Using cmdline namespace
-    using namespace ICmdLine::P;
-    if(cCmdLine->IsNoHome()) return StdGetError();
-    // Save error number
-    const int iError = StdGetError();
-    // Return original error code if persist storage fails or success
-    return FStreamDoOpen(cCmdLine->GetHome(strFile), fsmMode) ? iError : 0;
+  { // Try to open the file on disk and if failed??
+    if(!FStreamDoOpen(strFile, fsmMode))
+    { // Get error
+      const int iError = StdGetError();
+      // If theres no persist directory or opening there fails, return error
+      using namespace ICmdLine::P;
+      if(cCmdLine->IsNoHome() ||
+         !FStreamDoOpen(cCmdLine->GetHome(strFile), fsmMode))
+        return iError;
+    } // Succeeded
+    return 0;
   }
   /* -- Close file --------------------------------------------------------- */
   bool FStreamClose(void)

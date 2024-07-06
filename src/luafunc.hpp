@@ -176,7 +176,7 @@ CTOR_MEM_BEGIN_CSLAVE(LuaFuncs, LuaFunc, ICHelperUnsafe),
   /* -- Set a new function ------------------------------------------------- */
   void LuaFuncSet(void)
   { // If last item on stack is a C function?
-    if(lua_iscfunction(cParent->LuaRefGetState(), -1))
+    if(LuaUtilIsCFunction(cParent->LuaRefGetState(), -1))
     { // De-init old reference if it not empty function
       if(iRef != cParent->LuaRefGetId() && iRef != LUA_REFNIL &&
         !LuaUtilRmRefSafe(cParent->LuaRefGetState(), iRef,
@@ -192,7 +192,7 @@ CTOR_MEM_BEGIN_CSLAVE(LuaFuncs, LuaFunc, ICHelperUnsafe),
       cLog->LogDebugExSafe("LuaFunc allocated refid #$ for C function '$'.",
         iRef, IdentGet());
     } // If last item on stack is a regular function?
-    else if(lua_isfunction(cParent->LuaRefGetState(), -1))
+    else if(LuaUtilIsFunction(cParent->LuaRefGetState(), -1))
     { // Set reference to c function. Do NOT de-initialise empty function
       if(iRef != cParent->LuaRefGetId() && iRef != LUA_REFNIL &&
         !LuaUtilRmRefSafe(cParent->LuaRefGetState(),
@@ -331,7 +331,7 @@ static void LuaFuncEnableAllRefs(void)
   cLog->LogDebugExSafe("LuaFuncs enabled $ references...", cLuaFuncs->size());
 }
 /* ------------------------------------------------------------------------- */
-CTOR_END(LuaFuncs,,LuaFuncDeInitRef(),) // Finish collector
+CTOR_END(LuaFuncs, LuaFunc,, LuaFuncDeInitRef(),) // Finish collector
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */

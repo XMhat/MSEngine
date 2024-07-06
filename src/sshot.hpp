@@ -10,9 +10,8 @@
 namespace ISShot {                     // Start of private module namespace
 /* -- Dependencies --------------------------------------------------------- */
 using namespace IClock::P;             using namespace ICollector::P;
-using namespace ICVarDef::P;
-using namespace IFbo::P;               using namespace IFboCore::P;
-using namespace IIdent::P;
+using namespace ICVarDef::P;           using namespace IFbo::P;
+using namespace IFboCore::P;           using namespace IIdent::P;
 using namespace IImage::P;             using namespace IImageDef::P;
 using namespace IImageFormat::P;       using namespace IImageLib::P;
 using namespace ILog::P;               using namespace IMemory::P;
@@ -91,7 +90,7 @@ CTOR_MEM_BEGIN(SShots, SShot, ICHelperUnsafe, /* n/a */),
       fboRef.IdentGet(), IdentGet(), fboRef.DimGetWidth(),
       fboRef.DimGetHeight(), bdBPP, ImageGetPixelFormat(ttMode));
     // Setup raw image
-    InitRaw(IdentGet(), StdMove(mBuffer), fboRef.DimGetWidth<unsigned int>(),
+    InitRaw(IdentGet(), mBuffer, fboRef.DimGetWidth<unsigned int>(),
       fboRef.DimGetHeight<unsigned int>(), bdBPP);
     // Launch thread to write the screenshot to disk in the background
     tThread.ThreadStart();
@@ -113,7 +112,7 @@ CTOR_MEM_BEGIN(SShots, SShot, ICHelperUnsafe, /* n/a */),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(SShot)               // Supress copy constructor for safety
 };/* ----------------------------------------------------------------------- */
-CTOR_END(SShots,,,,ifFormatId(IFMT_MAX)) // Initialised by cvars
+CTOR_END(SShots, SShot,,,, ifFormatId(IFMT_MAX)) // Initialised by cvars
 /* -- Set screenshot format flags ------------------------------------------ */
 static CVarReturn SShotsSetType(const ImageFormat ifNFormatId)
   { return CVarSimpleSetIntNGE(cSShots->ifFormatId, ifNFormatId, IFMT_MAX); }

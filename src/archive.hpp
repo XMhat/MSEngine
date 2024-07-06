@@ -16,11 +16,11 @@ using namespace ICVarDef::P;           using namespace IDir::P;
 using namespace IError::P;             using namespace IEvtMain::P;
 using namespace IFileMap::P;           using namespace IFlags;
 using namespace IIdent::P;             using namespace ILog::P;
-using namespace ILuaUtil::P;           using namespace IPSplit::P;
-using namespace IMemory::P;            using namespace IStd::P;
-using namespace IString::P;            using namespace ISystem::P;
-using namespace ISysUtil::P;           using namespace IUtf;
-using namespace IUtil::P;              using namespace Lib::OS::SevenZip;
+using namespace IPSplit::P;            using namespace IMemory::P;
+using namespace IStd::P;               using namespace IString::P;
+using namespace ISystem::P;            using namespace ISysUtil::P;
+using namespace IUtf;                  using namespace IUtil::P;
+using namespace Lib::OS::SevenZip;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* == Archive collector with extract buffer size =========================== */
@@ -363,34 +363,12 @@ CTOR_MEM_BEGIN_ASYNC_CSLAVE(Archives, Archive, ICHelperUnsafe),
     cLog->LogInfoExSafe("Archive loaded '$' (F:$;D:$).",
       IdentGet(), suimFiles.size(), suimDirs.size());
   }
-  /* -- Loads archive asynchronously --------------------------------------- */
-  void InitAsyncFile(lua_State*const lS)
-  { // Need 4 parameters (class pointer was already pushed onto the stack);
-    LuaUtilCheckParams(lS, 5);
-    // Get and check parameters
-    const string strFile{ LuaUtilGetCppFile(lS, 1, "File") };
-    LuaUtilCheckFuncs(lS, 2, "ErrorFunc", 3, "ProgressFunc", 4, "SuccessFunc");
-    // Throw error if invalid name
-    if(const ValidResult vrId = DirValidName(strFile))
-      XC("Filename is invalid!",
-         "File",     strFile, "Reason", cDirBase->VNRtoStr(vrId),
-         "ReasonId", vrId);
-    // Load asynchronously, except we load the file, not async class
-    AsyncInitNone(lS, strFile, "archivefile");
-  }
-  /* -- Loads archive synchronously ---------------------------------------- */
+  /* -- Loads archive synchronously at specified position ------------------ */
   void InitFromFile(const string &strFile, const uint64_t uqPosition)
   { // Store position
     uqArchPos = uqPosition;
     // Set filename without filename checking
     SyncInitFile(strFile);
-  }
-  /* -- Loads archive synchronously ---------------------------------------- */
-  void InitFromFileSafe(const string &strFile, const uint64_t uqPosition=0)
-  { // Store position
-    uqArchPos = uqPosition;
-    // Load the file with filename checking
-    SyncInitFileSafe(strFile);
   }
   /* -- For loading via lua ------------------------------------------------ */
   Archive(void) :
@@ -443,12 +421,11 @@ CTOR_MEM_BEGIN_ASYNC_CSLAVE(Archives, Archive, ICHelperUnsafe),
 #undef LZMAOpen                        // Done with this macro
 #undef ISzAllocPtr                     // Done with this macro
 };/* ----------------------------------------------------------------------- */
-CTOR_END_ASYNC_NOFUNCS(Archives, ARCHIVE, // Finish collector
+CTOR_END_ASYNC_NOFUNCS(Archives, Archive, ARCHIVE, // Finish collector
   /* -- Collector initialisers --------------------------------------------- */
   stExtractBufSize(0),                 // Init extract buffer size
   isaData{ Alloc, Free }               // Init custom allocators
-);/* ----------------------------------------------------------------------- */
-/* == Look if a file exists in archives ==================================== */
+);/* == Look if a file exists in archives ================================== */
 static bool ArchiveFileExists(const string &strFile)
 { // Lock archive list so it cannot be modified and iterate through the list
   const LockGuard lgArchivesSync{ cArchives->CollectorGetMutex() };

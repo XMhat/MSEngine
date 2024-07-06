@@ -731,7 +731,7 @@ class CodecPNG final :                 // Members initially private
         } // Fall through to expand packed bits
         [[fallthrough]];
       // 2 and 4 bits-per-CHANNEL need expanding
-      case 2:case 4: png_set_expand_gray_1_2_4_to_8(psData); [[fallthrough]];
+      case 2: case 4: png_set_expand_gray_1_2_4_to_8(psData); [[fallthrough]];
       // Make sure bits are expanded
       case 8: png_set_packing(psData); break;
       // 16bpc needs compressing to 8bpc
@@ -836,7 +836,7 @@ class CodecPNG final :                 // Members initially private
                   "BitsPerPixel", idData.GetBitsPerPixel());
     } // Get image dimensions
     idData.DimSet(png_get_image_width(psData, piData),
-               png_get_image_height(psData, piData));
+                  png_get_image_height(psData, piData));
     // Initialise memory
     Memory mPixels{ idData.TotalPixels() * idData.GetBytesPerPixel() };
     // Create vector array to hold scanline pointers and size it
@@ -849,7 +849,7 @@ class CodecPNG final :                 // Members initially private
     for(size_t stHeight = idData.DimGetHeight<size_t>(),
                stHeightM1 = stHeight - 1,
                stStride = idData.DimGetWidth<size_t>() *
-                            idData.GetBytesPerPixel(),
+                          idData.GetBytesPerPixel(),
                stRow = 0;
                stRow < stHeight;
              ++stRow)

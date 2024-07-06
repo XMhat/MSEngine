@@ -528,7 +528,7 @@ CTOR_MEM_BEGIN_CSLAVE(Fbos, Fbo, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Fbo)                 // Disable copy constructor and operator
 };/* ----------------------------------------------------------------------- */
-CTOR_END(Fbos,,,,fboActive(nullptr),fboMain(nullptr))
+CTOR_END(Fbos, Fbo,,,, fboActive(nullptr), fboMain(nullptr))
 /* ========================================================================= */
 static void FboRender(void)
 { // If there are fbo's in the queue?

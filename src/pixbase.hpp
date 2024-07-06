@@ -391,7 +391,7 @@ class SysBase :                        // Safe exception handler namespace
   { // Handle signal and get result
     switch(HandleSignalSafe(iSignal))
     { // Exit safely? Send shutdown to engine and do nothing else
-      case ES_SAFE: cEvtMain->Add(EMC_QUIT); return;
+      case ES_SAFE: cEvtMain->RequestQuit(); return;
       // Exit unsafely? Delete mutex and send safe shutdown
       case ES_UNSAFE: DoDeleteGlobalMutex(); exit(-1);
       // Exit unsafely and immediately? Delete mutex and shutdown now!

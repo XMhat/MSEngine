@@ -125,48 +125,23 @@ CTOR_BEGIN_ASYNC_DUO(Ftfs, Ftf, CLHelperUnsafe, ICHelperUnsafe),
     fOutline = fNOutline;
   }
   /* -- Load pcm from memory asynchronously -------------------------------- */
-  void InitAsyncArray(lua_State*const lS)
-  { // We need eleven parameters
-    LuaUtilCheckParams(lS, 11);
-    // Get name and init parameters
-    IdentSet(LuaUtilGetCppStrNE(lS, 1, "Identifier"));
-    Asset &aData = *LuaUtilGetPtr<Asset>(lS, 2, "Asset");
-    const GLfloat
-      fWidth = LuaUtilGetNumLG<GLfloat>(lS, 3, 1.0f, 4096.0f, "Width"),
-      fHeight = LuaUtilGetNumLG<GLfloat>(lS, 4, 1.0f, 4096.0f, "Height");
-    const unsigned int
-      uiDpiWidth = LuaUtilGetIntLG<unsigned int>(lS, 5, 1, 1024, "DPIWidth"),
-      uiDpiHeight = LuaUtilGetIntLG<unsigned int>(lS, 6, 1, 1024, "DPIHeight");
-    const GLfloat fNOutline =
-      LuaUtilGetNumLG<GLfloat>(lS, 7, 0.0f, 1024.0f, "Outline");
-    // Check callbacks
-    LuaUtilCheckFuncs(lS,
-      8, "ErrorFunc", 9, "ProgressFunc", 10, "SuccessFunc");
-    // Set other members
+  void InitAsyncArray(lua_State*const lS, const string &strFile,
+    Asset &aRef, const float fWidth, const float fHeight,
+    const unsigned int uiDpiWidth, const unsigned int uiDpiHeight,
+    const GLfloat fNOutline)
+  { // Set other members
     InitVars(fWidth, fHeight, uiDpiWidth, uiDpiHeight, fNOutline);
     // Prepare asynchronous loading from array
-    AsyncInitArray(lS, IdentGet(), "ftfarray", StdMove(aData));
+    AsyncInitArray(lS, strFile, "ftfarray", aRef);
   }
   /* -- Load pcm from file asynchronously ---------------------------------- */
-  void InitAsyncFile(lua_State*const lS)
-  { // We need nine parameters
-    LuaUtilCheckParams(lS, 10);
-    // Get name and init parameters
-    IdentSet(LuaUtilGetCppFile(lS, 1, "File"));
-    const GLfloat
-      fWidth = LuaUtilGetNumLG<GLfloat>(lS, 2, 1.0f, 4096.0f, "Width"),
-      fHeight = LuaUtilGetNumLG<GLfloat>(lS, 3, 1.0f, 4096.0f, "Height");
-    const unsigned int
-      uiDpiWidth = LuaUtilGetIntLG<unsigned int>(lS, 4, 1, 1024, "DPIWidth"),
-      uiDpiHeight = LuaUtilGetIntLG<unsigned int>(lS, 5, 1, 1024, "DPIHeight");
-    const GLfloat fNOutline =
-      LuaUtilGetNumLG<GLfloat>(lS, 6, 0.0f, 1024.0f, "Outline");
-    // Check callbacks
-    LuaUtilCheckFuncs(lS, 7, "ErrorFunc", 8, "ProgressFunc", 9, "SuccessFunc");
-    // Set other members
+  void InitAsyncFile(lua_State*const lS, const string &strFile,
+    const float fWidth, const float fHeight, const unsigned int uiDpiWidth,
+    const unsigned int uiDpiHeight, const GLfloat fNOutline)
+  { // Set other members
     InitVars(fWidth, fHeight, uiDpiWidth, uiDpiHeight, fNOutline);
     // Prepare asynchronous loading from array
-    AsyncInitFile(lS, IdentGet(), "ftffile");
+    AsyncInitFile(lS, strFile, "ftffile");
   }
   /* -- Init from file ----------------------------------------------------- */
   void InitFile(const string &strFile, const GLfloat fWidth,
@@ -178,13 +153,13 @@ CTOR_BEGIN_ASYNC_DUO(Ftfs, Ftf, CLHelperUnsafe, ICHelperUnsafe),
     SyncInitFileSafe(strFile);
   }
   /* -- Init from array ---------------------------------------------------- */
-  void InitArray(const string &strName, Memory &&mData, const GLfloat fWidth,
+  void InitArray(const string &strName, Memory &mData, const GLfloat fWidth,
     const GLfloat fHeight, const unsigned int uiDpiWidth,
     const unsigned int uiDpiHeight, const GLfloat fNOutline)
   { // Set other members
     InitVars(fWidth, fHeight, uiDpiWidth, uiDpiHeight, fNOutline);
     // Load file as array
-    SyncInitArray(strName, StdMove(mData));
+    SyncInitArray(strName, mData);
   }
   /* -- De-init ftf font --------------------------------------------------- */
   void DeInit(void) { DoDeInit(); ftsStroker = nullptr; ftfFace = nullptr; }
@@ -227,7 +202,7 @@ CTOR_BEGIN_ASYNC_DUO(Ftfs, Ftf, CLHelperUnsafe, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Ftf)                 // Disable copy constructor and operator
 };/* -- End ---------------------------------------------------------------- */
-CTOR_END_ASYNC_NOFUNCS(Ftfs, FONT)     // Finish collector class
+CTOR_END_ASYNC_NOFUNCS(Ftfs, Ftf, FONT) // Finish collector class
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */

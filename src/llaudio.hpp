@@ -18,7 +18,7 @@ namespace LLAudio {                    // Audio namespace
 /* -- Dependencies --------------------------------------------------------- */
 using namespace IAudio::P;             using namespace ISample::P;
 using namespace ISource::P;            using namespace IStream::P;
-using namespace IVideo::P;             using namespace Lib::OpenAL;
+using namespace IVideo::P;             using namespace Common;
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Audio.* namespace functions                                         ## **
@@ -28,57 +28,53 @@ using namespace IVideo::P;             using namespace Lib::OpenAL;
 // < Volume:number=Current master volume (0 to 1).
 // ? Returns global/master volume.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetGlobalVolume, 1, LCPUSHVAR(cSources->fGVolume.load()));
+LLFUNC(GetGlobalVolume, 1, LuaUtilPushVar(lS, cSources->fGVolume.load()))
 /* ========================================================================= */
 // $ Audio.GetStreamVolume
 // < Volume:number=Current streams volume (0 to 1).
 // ? Returns master volume of all stream classes.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetStreamVolume, 1, LCPUSHVAR(cSources->fMVolume.load()));
+LLFUNC(GetStreamVolume, 1, LuaUtilPushVar(lS, cSources->fMVolume.load()))
 /* ========================================================================= */
 // $ Audio.GetSampleVolume
 // < Volume:number=Current samples volume (0 to 1).
 // ? Returns master volume of all sample classes.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetSampleVolume, 1, LCPUSHVAR(cSources->fSVolume.load()));
+LLFUNC(GetSampleVolume, 1, LuaUtilPushVar(lS, cSources->fSVolume.load()))
 /* ========================================================================= */
 // $ Audio.GetVideoVolume
 // < Volume:number=Current samples volume (0 to 1).
 // ? Returns master volume of all video classes.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetVideoVolume, 1, LCPUSHVAR(cSources->fVVolume.load()));
+LLFUNC(GetVideoVolume, 1, LuaUtilPushVar(lS, cSources->fVVolume.load()))
 /* ========================================================================= */
 // $ Audio.SetGlobalVolume
 // > Volume:number=New master volume (0 to 1).
 // ? Sets new master/global volume of all current and new streams/samples. This
 // ? does not modify the cvar which controls the default sample volume.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetGlobalVolume,
-  cAudio->SetGlobalVolume(LCGETNUMLG(ALfloat, 1, 0.0f, 1.0f, "Volume")));
+LLFUNC(SetGlobalVolume, 0, cAudio->SetGlobalVolume(AgVolume{lS, 1}))
 /* ========================================================================= */
 // $ Audio.SetStreamVolume
 // > Volume:number=New streams volume (0 to 1).
 // ? Sets new volume of all current and new streams. This does not modify the
 // ? cvar which controls the default sample volume.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetStreamVolume,
-  StreamSetVolume(LCGETNUMLG(ALfloat, 1, 0.0f, 1.0f, "Volume")));
+LLFUNC(SetStreamVolume, 0, StreamSetVolume(AgVolume{lS, 1}))
 /* ========================================================================= */
 // $ Audio.SetSampleVolume
 // > Volume:number=New samples volume (0 to 1).
 // ? Sets new volume of all current and new samples. This does not modify the
 // ? cvar which controls the default sample volume.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetSampleVolume,
-  SampleSetVolume(LCGETNUMLG(ALfloat, 1, 0.0f, 1.0f,"Volume")));
+LLFUNC(SetSampleVolume, 0, SampleSetVolume(AgVolume{lS, 1}))
 /* ========================================================================= */
 // $ Audio.SetVideoVolume
 // > Volume:number=New samples volume (0 to 1).
 // ? Sets new volume of all current and new videos. This does not modify the
 // ? cvar which controls the default video volume.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetVideoVolume,
-  VideoSetVolume(LCGETNUMLG(ALfloat, 1, 0.0f, 1.0f, "Volume")));
+LLFUNC(SetVideoVolume, 0, VideoSetVolume(AgVolume{lS, 1}))
 /* ========================================================================= */
 // $ Audio.SetPosition
 // > X:number=New X listener position.
@@ -87,8 +83,9 @@ LLFUNC(SetVideoVolume,
 // ? Sets the new audio listener position. This would normally be equal to the
 // ? position of the game's protagonist character (if applicable).
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetPosition, cAudio->SetPosition(LCGETNUM(ALfloat, 1, "X"),
-  LCGETNUM(ALfloat, 2, "Y"), LCGETNUM(ALfloat, 3, "Z")));
+LLFUNC(SetPosition, 0,
+  const AgALfloat aX{lS, 1}, aY{lS, 2}, aZ{lS, 3};
+  cAudio->SetPosition(aX, aY, aZ))
 /* ========================================================================= */
 // $ Audio.SetOrientation
 // > XLook:number=New X listener look orientation.
@@ -100,11 +97,10 @@ LLFUNC(SetPosition, cAudio->SetPosition(LCGETNUM(ALfloat, 1, "X"),
 // ? Sets the new audio listener orientation. This would normally be equal to
 // ? orientation of the game's protagonist character (if applicable).
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetOrientation, cAudio->SetOrientation(
-  LCGETNUM(ALfloat, 1, "XLook"), LCGETNUM(ALfloat, 2, "YLook"),
-  LCGETNUM(ALfloat, 3, "ZLook"), LCGETNUM(ALfloat, 4, "XUp"),
-  LCGETNUM(ALfloat, 5, "YUp"),   LCGETNUM(ALfloat, 6, "ZUp")
-));
+LLFUNC(SetOrientation, 0,
+  const AgALfloat aXLook{lS, 1}, aYLook{lS, 2}, aZLook{lS, 3},
+                  aXUp{lS, 4}, aYUp{lS, 5}, aZUp{lS, 6};
+  cAudio->SetOrientation(aXLook, aYLook, aZLook, aXUp, aYUp, aZUp))
 /* ========================================================================= */
 // $ Audio.SetVelocity
 // > X:number=New X listener velocity.
@@ -113,22 +109,24 @@ LLFUNC(SetOrientation, cAudio->SetOrientation(
 // ? Sets the new audio listener velocity. This would normally be equal to
 // ? velocity of the game's protagonist character (if applicable).
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetVelocity, cAudio->SetVelocity(LCGETNUM(ALfloat, 1, "X"),
-  LCGETNUM(ALfloat, 2, "Y"), LCGETNUM(ALfloat, 3, "Z")));
+LLFUNC(SetVelocity, 0,
+  const AgALfloat aX{lS, 1}, aY{lS, 2}, aZ{lS, 3};
+  cAudio->SetVelocity(aX, aY, aZ))
 /* ========================================================================= */
 // $ Audio.GetPBDeviceName
 // > Id:integer=The playback audio device id.
 // < Name:string=The name of the audio playback device.
 // ? Returns the name of the playback audio device at id.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetPBDeviceName, 1, LCPUSHVAR(cAudio->GetPlaybackDeviceById(
-  LCGETINTLG(size_t, 1, 0, cAudio->GetNumPlaybackDevices(), "Index"))));
+LLFUNC(GetPBDeviceName, 1, LuaUtilPushVar(lS, cAudio->GetPlaybackDeviceById(
+  AgSizeTLG{lS, 1, 0, cAudio->GetNumPlaybackDevices()})))
 /* ========================================================================= */
 // $ Audio.GetNumPBDevices
 // < Count:integer=The number of playback devices detected.
 // ? Returns the number of audio playback devices detected by OpenAL.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetNumPBDevices, 1, LCPUSHVAR(cAudio->GetNumPlaybackDevices()));
+LLFUNC(GetNumPBDevices, 1,
+  LuaUtilPushVar(lS, cAudio->GetNumPlaybackDevices()))
 /* ========================================================================= */
 // $ Audio.Reset
 // < Result:boolean = Was the event sent successfully?
@@ -136,7 +134,7 @@ LLFUNCEX(GetNumPBDevices, 1, LCPUSHVAR(cAudio->GetNumPlaybackDevices()));
 // ? samples should resume playing after the reset. The function will return
 // ? 'false' if the request was already sent.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Reset, 1, LCPUSHVAR(cAudio->ReInit()));
+LLFUNC(Reset, 1, LuaUtilPushVar(lS, cAudio->ReInit()))
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Audio.* namespace functions structure                               ## **

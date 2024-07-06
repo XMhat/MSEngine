@@ -10,36 +10,44 @@
 -- Copyr. (c) MS-Design, 2024   Copyr. (c) Millennium Interactive Ltd., 1994 --
 -- ========================================================================= --
 -- Core function aliases --------------------------------------------------- --
-local floor<const>, insert<const>, abs<const> =
-  math.floor, table.insert, math.abs;
+local abs<const>, error<const>, floor<const>, tostring<const> =
+  math.abs, error, math.floor, tostring;
 -- M-Engine function aliases ----------------------------------------------- --
-local UtilTableSize<const> = Util.TableSize;
+local UtilIsBoolean<const>, UtilIsInteger<const>, UtilIsString<const>,
+  UtilIsTable<const> = Util.IsBoolean, Util.IsInteger, Util.IsString,
+  Util.IsTable;
 -- Diggers function and data aliases --------------------------------------- --
-local LoadResources, Fade, SetCallbacks, IsMouseInBounds, IsMouseNotInBounds,
-  aCursorIdData, SetCursor, PlayStaticSound, aSfxData, InitCon, PlayMusic,
-  IsButtonPressed, IsButtonReleased, IsScrollingDown, IsScrollingUp,
-  RenderFade, aObjectFlags, IsMouseXGreaterEqualThan, IsMouseYGreaterEqualThan,
-  IsMouseXLessThan, IsMouseYLessThan, IsButtonHeld, aLevelData, InitLobby,
-  InitScore, InitEnding, InitFail, fontLarge, aGemsAvailable, GetGameTicks,
-  fontSpeech, GetAbsMousePos, RenderTerrain, RenderObjects, GetCapitalValue,
-  IsSpriteCollide, AdjustViewPortX, AdjustViewPortY, aObjects, IsKeyHeld,
-  aGlobalData;
+local Fade, GetCapitalValue, GetGameTicks, InitPost, InitScore,
+  IsButtonReleased, LoadResources, PlayMusic, PlayStaticSound, RenderFade,
+  RenderObjects, RenderTerrain, SetCallbacks, SetCursor, aCursorIdData,
+  aGemsAvailable, aGlobalData, aSfxData, fontLarge;
+-- Resources --------------------------------------------------------------- --
+local aEndAssets<const>  = { T = 2, F = "end", P = { 0 } };
+local aWinAssets<const>  = { true,  -- Select win routines
+             { aEndAssets, { T = 7, F = "select", P = { } } } };
+local aLoseAssets<const> = { false, -- Select lose routines
+             { aEndAssets, { T = 7, F = "lose",   P = { } } } };
 -- Need some key codes ----------------------------------------------------- --
 local aKeys<const> = Input.KeyCodes;
 local iKeyUp<const>, iKeyDown<const>, iKeyLeft<const>, iKeyRight<const> =
   aKeys.UP, aKeys.DOWN, aKeys.LEFT, aKeys.RIGHT;
 -- Initialise the lose screen ---------------------------------------------- --
-local function Init(iLId, aActivePlayer, aOpponentPlayer, sMusic, iEndTexId,
-  sMsg, bIsComplete)
+local function InitEnd(iLId, aActivePlayer, aOpponentPlayer, aInfoResources,
+  iEndTexId, sMsg)
   -- Check parameters
-  assert(type(iLId)=="number", "Invalid level id specified!");
-  assert(iLId>0, "Positive level id mus be specified!");
-  assert(type(aActivePlayer)=="table", "Active player must be specified!");
-  assert(type(aOpponentPlayer)=="table", "Opponent player must be specified!");
-  assert(type(sMusic)=="string", "Music track not specified!");
-  assert(type(iEndTexId)=="number", "Texture id not specified!");
-  assert(type(sMsg)=="string", "Message not specified!");
-  assert(type(bIsComplete)=="boolean", "Completion flag not specified!");
+  if not UtilIsInteger(iLId) then
+    error("Invalid level id specified! "..tostring(iLId)) end;
+  if iLId <= 0 then error("Specify positive level id, not "..iLId.."!") end;
+  if not UtilIsTable(aActivePlayer) then
+    error("Invalid active player table! "..tostring(iLId)) end;
+  if not UtilIsTable(aOpponentPlayer) then
+    error("Invalid opponent player table! "..tostring(aOpponentPlayer)) end;
+  if not UtilIsTable(aInfoResources) then
+    error("Invalid resources table! "..tostring(aInfoResources)) end;
+  if not UtilIsInteger(iEndTexId) then
+    error("Invalid texture id integer! "..tostring(iEndTexId)) end;
+  if not UtilIsString(sMsg) then
+    error("Invalid message string! "..tostring(sMsg)) end;
   -- On loaded event function
   local function OnLoaded(aResources)
     -- Keep waiting cursor for animation
@@ -49,7 +57,10 @@ local function Init(iLId, aActivePlayer, aOpponentPlayer, sMusic, iEndTexId,
     -- Load texture
     local texEnd = aResources[1].H;
     texEnd:TileSTC(4);
-    local tileBar<const> = texEnd:TileA(0, 488, 304, 512);
+    texEnd:TileSD(0,   0,  0, 159, 95);
+    texEnd:TileSD(1, 159,  0, 159, 95);
+    texEnd:TileSD(2, 318,  0, 159, 95);
+    texEnd:TileSD(3,   0, 95, 159, 95);
     -- Get cost of capital
     aGlobalData.gCapitalCarried = GetCapitalValue();
     -- Get cost of digger deaths
@@ -66,7 +77,7 @@ local function Init(iLId, aActivePlayer, aOpponentPlayer, sMusic, iEndTexId,
     end
     -- Get game ticks and time
     local iGameTicks<const> = GetGameTicks();
-    local iGameTime<const> = floor(iGameTicks/3600);
+    local iGameTime<const> = iGameTicks // 3600;
     -- Add data
     aGlobalData.gTotalGemsFound =
       aGlobalData.gTotalGemsFound + aActivePlayer.GEM;
@@ -79,7 +90,7 @@ local function Init(iLId, aActivePlayer, aOpponentPlayer, sMusic, iEndTexId,
     aGlobalData.gTotalPurchExp =
       aGlobalData.gTotalPurchExp + aActivePlayer.BP;
     aGlobalData.gTotalTimeTaken =
-      aGlobalData.gTotalTimeTaken + floor(iGameTicks/60);
+      aGlobalData.gTotalTimeTaken + iGameTicks // 60;
     aGlobalData.gTotalIncome =
       aGlobalData.gTotalIncome + aActivePlayer.GI;
     aGlobalData.gTotalDug =
@@ -110,7 +121,7 @@ local function Init(iLId, aActivePlayer, aOpponentPlayer, sMusic, iEndTexId,
       local iX, fCb;
       -- Id would be even?
       if #aDest % 2 == 0 then
-        -- Function to gradually scroll the messsage in from the left
+        -- Function to gradually scroll the message in from the left
         local function Increase(iX)
           -- Clamp (don't include 160 or we'll get a FP error)
           if iX >= 159 then return 160;
@@ -121,7 +132,7 @@ local function Init(iLId, aActivePlayer, aOpponentPlayer, sMusic, iEndTexId,
         iX, fCb = -160, Increase;
       -- Id would be odd?
       else
-        -- Function to gradually scroll the messsage in from the right
+        -- Function to gradually scroll the message in from the right
         local function Decrease(iX)
           -- Clamp (don't include 160 or we'll get a FP error)
           if iX < 161 then return 160;
@@ -132,7 +143,7 @@ local function Init(iLId, aActivePlayer, aOpponentPlayer, sMusic, iEndTexId,
         iX, fCb = 480, Decrease;
       end
       -- Insert into chosen lines
-      insert(aDest, { iX, aDest.Y + (#aDest * 16), fCb, sMsg });
+      aDest[1 + #aDest] = { iX, aDest.Y + (#aDest * 16), fCb, sMsg };
     end
     -- Build data for top three lines
     MakeLine(aLinesTop, sMsg);
@@ -168,9 +179,10 @@ local function Init(iLId, aActivePlayer, aOpponentPlayer, sMusic, iEndTexId,
       -- Render animated fade
       RenderFade(nFade);
       -- Draw ending graphic
-      texEnd:SetCA(nFade*2);
       local nScale<const> = nFade * 2;
-      texEnd:BlitSLTWHA(iEndTexId, 160, 120, 159*nScale, 95*nScale, nFade*2);
+      texEnd:SetCA(nScale);
+      texEnd:BlitSLTWHA(iEndTexId, 160, 120,
+        159 * nScale, 95 * nScale, nScale);
       -- Set font colour and draw lines
       for iCollectionId = 1, #aTopaLinesBottom do
         DrawCollection(aTopaLinesBottom[iCollectionId]);
@@ -190,7 +202,7 @@ local function Init(iLId, aActivePlayer, aOpponentPlayer, sMusic, iEndTexId,
       MakeLine(aLinesCentre,
         Colourise(aGlobalData.gPercentCompleted).."% COMPLETED");
       MakeLine(aLinesCentre, "RAISE "..
-        Colourise(aGlobalData.gZogsToWinGame-aGlobalData.gBankBalance)..
+        Colourise(aGlobalData.gZogsToWinGame - aGlobalData.gBankBalance)..
         " MORE");
       MakeLine(aLinesCentre, "ZOGS TO WIN THE GAME");
       MakeLine(aLinesCentre,
@@ -201,159 +213,8 @@ local function Init(iLId, aActivePlayer, aOpponentPlayer, sMusic, iEndTexId,
         if IsButtonReleased(0) then return end;
         -- Play sound
         PlayStaticSound(aSfxData.SELECT);
-        -- When post mortem assets are loaded?
-        local function OnWinLoaded(aResources)
-          -- Loop End music
-          PlayMusic(aResources[1].H, nil, nil, nil, 371767);
-          -- Object hovered over by mouse
-          local sObjectDefault<const> = "MAP POST MORTEM";
-          local sObject = sObjectDefault
-          -- Post mortem logic
-          local function LogicPostMortem()
-            -- Get absolute mouse position on level
-            local AMX<const>, AMY<const> = GetAbsMousePos();
-            -- Walk through objects
-            for iIndex = 1, #aObjects do
-              -- Get object data and if cursor overlapping it ?
-              local aObject<const> = aObjects[iIndex];
-              if IsSpriteCollide(479, AMX, AMY, aObject.S,
-                aObject.X, aObject.Y) then
-                -- Set tip with name and health of object
-                sObject = (aObject.OD.LONGNAME or aObject.OD.NAME)..
-                  " ("..aObject.H.."%)";
-                -- Done
-                return;
-              end
-            end
-            -- Set generic message
-            sObject = sObjectDefault;
-          end
-          -- Post mortem render
-          local function RenderPostMortem()
-            -- Render terrain and objects
-            RenderTerrain();
-            RenderObjects();
-            -- Render post mortem banner and text
-            texEnd:BlitSLT(tileBar, 8, 208);
-            fontSpeech:SetCRGB(0, 0, 0.25);
-            fontSpeech:PrintC(160, 215, sObject);
-          end
-          -- Process horizontal move?
-          local function ProcHorizontalPress(iXA)
-            -- Move view in specified direction
-            AdjustViewPortX(iXA);
-            -- Check for other keys too
-            if IsKeyHeld(iKeyUp) then AdjustViewPortY(-16);
-            elseif IsKeyHeld(iKeyDown) then AdjustViewPortY(16) end;
-          end
-          -- Process vertical move?
-          local function ProcVerticalPress(iYA)
-            -- Move view in specified direction
-            AdjustViewPortY(iYA);
-            -- Check for other keys too
-            if IsKeyHeld(iKeyLeft)  then AdjustViewPortX(-16);
-            elseif IsKeyHeld(iKeyRight) then AdjustViewPortX(16) end;
-          end
-          -- Post mortem input
-          local function InputPostMortem()
-            -- Is up key pressed?
-            if IsKeyHeld(iKeyUp) then ProcVerticalPress(-16);
-            -- Is down key pressed?
-            elseif IsKeyHeld(iKeyDown) then ProcVerticalPress(16);
-            -- Is left key pressed?
-            elseif IsKeyHeld(iKeyLeft) then ProcHorizontalPress(-16);
-            -- Is right key pressed?
-            elseif IsKeyHeld(iKeyRight) then ProcHorizontalPress(16);
-            -- Mouse at top edge of screen?
-            elseif IsMouseXLessThan(16) then
-              SetCursor(aCursorIdData.LEFT);
-              if IsButtonHeld(0) then AdjustViewPortX(-16) end;
-            -- Mouse at right edge of screen?
-            elseif IsMouseXGreaterEqualThan(304) then
-              SetCursor(aCursorIdData.RIGHT);
-              if IsButtonHeld(0) then AdjustViewPortX(16) end;
-            -- Mouse at left edge of screen?
-            elseif IsMouseYLessThan(16) then
-              SetCursor(aCursorIdData.TOP);
-              if IsButtonHeld(0) then AdjustViewPortY(-16) end;
-            -- Mouse over exit point?
-            elseif IsMouseYGreaterEqualThan(224) then
-              -- Set exit cursor
-              SetCursor(aCursorIdData.EXIT);
-              -- Left mouse button pressed?
-              if IsButtonPressed(0) then
-                -- Play button select sound
-                PlayStaticSound(aSfxData.SELECT);
-                -- When faded out?
-                local function OnFadeOut()
-                  -- Unreference assets for garbage collection
-                  texEnd = nil;
-                  -- Select new level and no longer new game
-                  aGlobalData.gSelectedLevel, aGlobalData.gNewGame =
-                    nil, nil;
-                  -- Current level completed
-                  aGlobalData.gLevelsCompleted[iLId] = true;
-                  -- Bank balance reached? Show good ending if bank balance
-                  -- reached
-                  if aGlobalData.gBankBalance >=
-                     aGlobalData.gZogsToWinGame then
-                    return InitEnding(aGlobalData.gSelectedRace) end;
-                  -- Count number of levels completed and if all levels
-                  -- completed? Show bad ending :( else back to the lobby.
-                  local iNumCompleted<const> =
-                    UtilTableSize(aGlobalData.gLevelsCompleted);
-                  if iNumCompleted >= #aLevelData then InitFail();
-                  else
-                    aGlobalData.gGameSaved = false;
-                    InitLobby();
-                  end
-                end
-                -- Fade out...
-                Fade(0, 1, 0.04, RenderPostMortem, OnFadeOut, true);
-              end
-            -- Mouse over edge of bottom?
-            elseif IsMouseYGreaterEqualThan(192) then
-              SetCursor(aCursorIdData.BOTTOM);
-              if IsButtonHeld(0) then AdjustViewPortY(16) end;
-            -- Mouse not anywhere interesting?
-            else SetCursor(aCursorIdData.ARROW) end;
-          end
-          -- Fade in counter
-          nFade = 0.5;
-          -- Proc fade in
-          local function LogicAnimatedPostMortem()
-            -- Fade in elements
-            if nFade > 0 then nFade = nFade - 0.01;
-            -- Fade complete?
-            elseif nFade <= 0 then
-              -- Clamp fade to fully transparent
-              nFade = 0;
-              -- Set OK (continue) cursor
-              SetCursor(aCursorIdData.OK);
-              -- Set post mortem procedure
-              SetCallbacks(LogicPostMortem, RenderPostMortem, InputPostMortem);
-            end
-          end
-          -- Render fade in
-          local function RenderAnimatedPostMortem()
-            -- Render terrain and objects
-            RenderTerrain();
-            RenderObjects();
-            -- Render fade in
-            RenderFade(nFade);
-            -- Render post mortem banner and text
-            local nAdj<const> = nFade * 128;
-            texEnd:BlitSLT(tileBar, 8, 208+nAdj);
-            fontSpeech:SetCRGB(0, 0, 0.25);
-            fontSpeech:PrintC(160, 215+nAdj, sObject);
-          end
-          -- Set WAIT cursor for animation
-          SetCursor(aCursorIdData.WAIT);
-          -- Set post mortem procedure
-          SetCallbacks(LogicAnimatedPostMortem, RenderAnimatedPostMortem);
-        end
         -- Load music and when finished execute the win assets handler
-        LoadResources("PostMortem", {{T=7,F="win",P={}}}, OnWinLoaded);
+        InitPost(iLId);
       end
       -- We're going to reuse this value just as an input blocking timer
       nFade = 0;
@@ -407,7 +268,7 @@ local function Init(iLId, aActivePlayer, aOpponentPlayer, sMusic, iEndTexId,
         -- Clamp fade
         nFade = 0.5;
         -- The zone was won? Clear animation proc and set input win
-        if bIsComplete then
+        if aInfoResources[1] then
           -- Set OK (continue) cursor
           SetCursor(aCursorIdData.OK);
           -- Clear animation procedure and set wait to click
@@ -425,22 +286,21 @@ local function Init(iLId, aActivePlayer, aOpponentPlayer, sMusic, iEndTexId,
         ProcCollection(aTopaLinesBottom[iCollectionId]);
       end
     end
-    -- Change render procs
+    -- Change render procedures
     SetCallbacks(ProcAnimateEnd, RenderEnd, nil);
   end
   -- Load level ending resources
-  LoadResources("ZoneEnd", {{T=1,F="end", P={159,95,1,1,0}},
-                            {T=7,F=sMusic,P={ }}}, OnLoaded);
+  LoadResources("ZoneEnd", aInfoResources[2], OnLoaded);
 end
 -- ------------------------------------------------------------------------- --
 local function InitLoseDead(iLId, aP, aOP)
-  Init(iLId, aP, aOP, "lose",   0, "ALL YOUR DIGGERS DIED", false) end;
+  InitEnd(iLId, aP, aOP, aLoseAssets, 0, "ALL YOUR DIGGERS DIED") end;
 local function InitWinDead(iLId, aP, aOP)
-  Init(iLId, aP, aOP, "select", 1, "YOUR OPPONENT IS DEAD",  true) end;
+  InitEnd(iLId, aP, aOP, aWinAssets,  1, "YOUR OPPONENT IS DEAD") end;
 local function InitWin(iLId, aP, aOP)
-  Init(iLId, aP, aOP, "select", 2, "YOU RAISED THE CASH",    true) end;
+  InitEnd(iLId, aP, aOP, aWinAssets,  2, "YOU RAISED THE CASH") end;
 local function InitLose(iLId, aP, aOP)
-  Init(iLId, aP, aOP, "lose",   3, "YOUR OPPONENT WON",     false) end;
+  InitEnd(iLId, aP, aOP, aLoseAssets, 3, "YOUR OPPONENT WON") end;
 -- Exports and imports ----------------------------------------------------- --
 return { A = {                         -- Exports
   -- Exports ------------------------------------------------------------- --
@@ -449,26 +309,16 @@ return { A = {                         -- Exports
   -- --------------------------------------------------------------------- --
   }, F = function(GetAPI)              -- Imports
   -- Imports ------------------------------------------------------------- --
-  LoadResources, SetCallbacks, SetCursor, IsMouseInBounds, PlayStaticSound,
-  Fade, IsMouseNotInBounds, aCursorIdData, aSfxData, InitCon, PlayMusic,
-  IsButtonPressed, IsButtonReleased, IsScrollingDown, IsScrollingUp,
-  RenderFade, aGemsAvailable, aObjectFlags, IsMouseXGreaterEqualThan,
-  IsMouseYGreaterEqualThan, IsMouseXLessThan, IsMouseYLessThan, IsButtonHeld,
-  aLevelData, InitLobby, InitScore, InitEnding, InitFail, fontLarge,
-  GetGameTicks, fontSpeech, GetAbsMousePos, RenderTerrain, RenderObjects,
-  GetCapitalValue, IsSpriteCollide, AdjustViewPortX, AdjustViewPortY, aObjects,
-  IsKeyHeld, aGlobalData
+  Fade, GetCapitalValue, GetGameTicks, InitPost, InitScore, IsButtonReleased,
+  LoadResources, PlayMusic, PlayStaticSound, RenderFade, RenderObjects,
+  RenderTerrain, SetCallbacks, SetCursor, aCursorIdData, aGemsAvailable,
+  aGlobalData, aSfxData, fontLarge
   = -- ------------------------------------------------------------------- --
-  GetAPI("LoadResources", "SetCallbacks", "SetCursor", "IsMouseInBounds",
-    "PlayStaticSound", "Fade", "IsMouseNotInBounds", "aCursorIdData",
-    "aSfxData", "InitCon", "PlayMusic", "IsButtonPressed", "IsButtonReleased",
-    "IsScrollingDown", "IsScrollingUp", "RenderFade", "GemsAvailable",
-    "aObjectFlags", "IsMouseXGreaterEqualThan", "IsMouseYGreaterEqualThan",
-    "IsMouseXLessThan", "IsMouseYLessThan", "IsButtonHeld", "aLevelData",
-    "InitLobby", "InitScore", "InitEnding", "InitFail", "fontLarge",
-    "GetGameTicks", "fontSpeech", "GetAbsMousePos", "RenderTerrain",
-    "RenderObjects", "GetCapitalValue", "IsSpriteCollide", "AdjustViewPortX",
-    "AdjustViewPortY", "aObjects", "IsKeyHeld", "aGlobalData");
+  GetAPI("Fade", "GetCapitalValue", "GetGameTicks", "InitPost", "InitScore",
+    "IsButtonReleased", "LoadResources", "PlayMusic", "PlayStaticSound",
+    "RenderFade", "RenderObjects", "RenderTerrain", "SetCallbacks",
+    "SetCursor", "aCursorIdData", "aGemsAvailable", "aGlobalData", "aSfxData",
+    "fontLarge");
   -- --------------------------------------------------------------------- --
 end };
 -- End-of-File ============================================================= --

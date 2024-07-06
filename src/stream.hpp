@@ -620,27 +620,6 @@ CTOR_MEM_BEGIN_ASYNC_CSLAVE(Streams, Stream, ICHelperUnsafe),
       viData.bitrate_nominal, viData.bitrate_lower, viData.bitrate_window,
       fixed, GetDuration(), vBuffers.size(), MemSize(), hex, GetVersion());
   }
-  /* -- Load stream from memory asynchronously ----------------------------- */
-  void InitAsyncArray(lua_State*const lS)
-  { // Need 5 parameters (class pointer was already pushed onto the stack);
-    LuaUtilCheckParams(lS, 6);
-    // Get and check parameters
-    const string strF{ LuaUtilGetCppStrNE(lS, 1, "Identifier") };
-    Asset &aData = *LuaUtilGetPtr<Asset>(lS, 2, "Asset");
-    LuaUtilCheckFuncs(lS, 3, "ErrorFunc", 4, "ProgressFunc", 5, "SuccessFunc");
-    // Load stream from memory
-    AsyncInitArray(lS, strF, "streamarray", StdMove(aData));
-  }
-  /* -- Load stream from file asynchronously ------------------------------- */
-  void InitAsyncFile(lua_State*const lS)
-  { // Need 4 parameters (class pointer was already pushed onto the stack);
-    LuaUtilCheckParams(lS, 5);
-    // Get and check parameters
-    const string strF{ LuaUtilGetCppFile(lS, 1, "File") };
-    LuaUtilCheckFuncs(lS, 2, "ErrorFunc", 3, "ProgressFunc", 4, "SuccessFunc");
-    // Load stream from file
-    AsyncInitFile(lS, strF, "streamfile");
-  }
   /* -- Return metadata as table ------------------------------------------- */
   const StrNCStrMap &GetMetaData(void) const { return ssMetaData; }
   /* -- Constructor -------------------------------------------------------- */
@@ -685,7 +664,7 @@ CTOR_MEM_BEGIN_ASYNC_CSLAVE(Streams, Stream, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Stream)              // Supress copy constructor for safety
 };/* -- End ---------------------------------------------------------------- */
-CTOR_END_ASYNC_NOFUNCS(Streams, STREAM, // Finish collector
+CTOR_END_ASYNC_NOFUNCS(Streams, Stream, STREAM, // Finish collector
   /* -- Initialisers ------------------------------------------------------- */
   LuaEvtMaster{ EMC_STR_EVENT },       // Initialise streaming event master
   srStrings{{                          // Initialise stop reason strings

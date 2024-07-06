@@ -12,7 +12,7 @@ namespace ILuaCommand {                // Start of private module namespace
 using namespace IArgs;                 using namespace ICollector::P;
 using namespace IConsole::P;           using namespace IError::P;
 using namespace IIdent::P;             using namespace ILog::P;
-using namespace ILuaUtil::P;           using namespace ILuaFunc::P;
+using namespace ILuaFunc::P;           using namespace ILuaUtil::P;
 using namespace ILua::P;               using namespace IStd::P;
 using namespace IString::P;            using namespace ISysUtil::P;
 /* ------------------------------------------------------------------------- */
@@ -67,19 +67,10 @@ CTOR_MEM_BEGIN_CSLAVE(Commands, Command, ICHelperUnsafe),
   /* -- Unregister the console command from lua -------------------- */ public:
   const string &Name(void) const { return lcmiIt->first; }
   /* -- Register user console command from lua ----------------------------- */
-  void Init(lua_State*const lS)
+  void Init(lua_State*const lS, const string &strName,
+    const unsigned int uiMinimum, const unsigned int uiMaximum)
   { // Must be running on the main thread
     cLua->StateAssert(lS);
-    // Must have 5 parameters (including the class from llconcmd.hpp)
-    LuaUtilCheckParams(lS, 5);
-    // Get command name, min and max parameter count. It's not const because
-    // RegisterLuaCommand will do a StdMove() on it.
-    string strName{ LuaUtilGetCppStrNE(lS, 1, "Name") };
-    const unsigned int
-      uiMinimum = LuaUtilGetInt<unsigned int>(lS, 2, "Minimum"),
-      uiMaximum = LuaUtilGetInt<unsigned int>(lS, 3, "Maximum");
-    // Check that the fourth parameter is a function
-    LuaUtilCheckFunc(lS, 4, "Callback");
     // Check that the console command is valid
     if(!IsValidConsoleCommandName(strName))
       XC("Console command name is invalid!",
@@ -127,7 +118,7 @@ CTOR_MEM_BEGIN_CSLAVE(Commands, Command, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Command)             // Disable copy constructor and operator
 };/* ----------------------------------------------------------------------- */
-CTOR_END_NOINITS(Commands)             // Finish global Files collector
+CTOR_END_NOINITS(Commands, Command)    // Finish global Files collector
 /* -- Build a command list (for conlib) ------------------------------------ */
 template<class ListType>
   static size_t CommandsBuildList(const ListType &ltList,

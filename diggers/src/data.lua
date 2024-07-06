@@ -126,7 +126,8 @@ local TYP<const> = {
   DIGRANDOM = 0xFF  -- For LoadLevel(). Select a random race
 };
 -- Races available list ---------------------------------------------------- --
-local aRaceData<const> = { TYP.FTARG, TYP.GRABLIN, TYP.HABBISH, TYP.QUARRIOR };
+local aRacesData<const> =
+  { TYP.FTARG, TYP.GRABLIN, TYP.HABBISH, TYP.QUARRIOR };
 -- Race data --------------------------------------------------------------- --
 local aRaceStatData<const> = {
   -- Object id -- STR STA DSP PAT ATP TEL SPC ------------------------------ --
@@ -167,42 +168,41 @@ local aCursorData<const> = {
 };
 -- Object flags ------------------------------------------------------------ --
 local OFL<const> = {          -- Max 64-bits
+  -- Generic object flags -------------------------------------------------- --
   NONE         = 0x000000000, -- Object has no flags
-  BUSY         = 0x000000001, -- Object is busy and commands disabled
-  FALL         = 0x000000002, -- Object should fall
-  PICKUP       = 0x000000004, -- Object can be picked up
-  TREASURE     = 0x000000008, -- Object is treasure
-  SELLABLE     = 0x000000010, -- Object is sellable to shop
-  DIGGER       = 0x000000020, -- Object is a digger
-  HURTDIGGER   = 0x000000040, -- Object hurts diggers
-  PHASEDIGGER  = 0x000000080, -- Object teleports diggers anywhere
-  IGNOREFIGHT  = 0x000000100, -- Object should ignore fighting until next action
-  DONTFLEE     = 0x000000200, -- Object should not run away when fighting
-  NOANIMLOOP   = 0x000000400, -- Object is not allowed to loop its animation
-  CONSUME      = 0x000000800, -- Object consumes another object
-  AQUALUNG     = 0x000001000, -- Object can breathe in water
-  STATIONARY   = 0x000002000, -- Object does not move and is stationary
-  DANGEROUS    = 0x000004000, -- Object is dangerous and diggers run away
-  SOUNDLOOP    = 0x000008000, -- Object sound looped when sprite anim is reset
-  TRACK        = 0x000010000, -- Object can only move on tracks
-  FLOAT        = 0x000020000, -- Object floats in water
-  BLOCK        = 0x000040000, -- Object is a platform for diggers
-  DEVICE       = 0x000080000, -- Object is a device
-  PHASETARGET  = 0x000100000, -- Object is a valid random phase target
-  EXPLODE      = 0x000200000, -- Object explodes on death
-  FLOATING     = 0x000400000, -- Object is floating right now
-  DELICATE     = 0x000800000, -- Object is delicate (takes more damage)
-  VOLATILE     = 0x001000000, -- Object is volatile
-  JUMPRISE     = 0x002000000, -- Object is jumping
-  JUMPFALL     = 0x004000000, -- Object is falling (while jumping)
+  RESPAWN      = 0x000000001, -- Object respawns where it was created
+  BUSY         = 0x000000002, -- Object is busy and commands disabled
+  FALL         = 0x000000004, -- Object should fall
+  DELICATE     = 0x000000008, -- Object is delicate (takes more damage)
+  INWATER      = 0x000000010, -- Object is in water
+  PHASETARGET  = 0x000000020, -- Object is a valid random phase target
+  SOUNDLOOP    = 0x000000040, -- Object sound looped when sprite anim is reset
+  NOANIMLOOP   = 0x000000080, -- Object is not allowed to loop its animation
+  DIGGER       = 0x000000100, -- Object is a digger
+  REGENERATE   = 0x000000200, -- Object can regenerate health?
+  TPMASTER     = 0x000000400, -- Object is master at teleporting
+  IMPATIENT    = 0x000000800, -- Object is a digger and becoming impatient
+  JUMPFALL     = 0x000001000, -- Object is falling (while jumping)
+  JUMPRISE     = 0x000002000, -- Object is jumping
+  EXPLODE      = 0x000004000, -- Object explodes on death
+  FLOAT        = 0x000008000, -- Object floats in water
+  FLOATING     = 0x000010000, -- Object is floating right now
+  HURTDIGGER   = 0x000020000, -- Object hurts diggers
+  PHASEDIGGER  = 0x000040000, -- Object teleports diggers anywhere
+  PICKUP       = 0x000080000, -- Object can be picked up
+  PURSUEDIGGER = 0x000100000, -- Object follows a digger when colliding
+  RNGSPRITE    = 0x000200000, -- Object selects a random sprite in animation.
+  SELLABLE     = 0x000400000, -- Object is sellable to shop
+  STATIONARY   = 0x000800000, -- Object does not move and is stationary
+  TRACK        = 0x001000000, -- Object can only move on tracks
+  TREASURE     = 0x002000000, -- Object is treasure
+  DANGEROUS    = 0x004000000, -- Object is dangerous and diggers run away
   WATERBASED   = 0x008000000, -- Object is water based
-  TPMASTER     = 0x010000000, -- Object is master at teleporting
-  REGENERATE   = 0x020000000, -- Object can regenerate health?
-  RNGSPRITE    = 0x040000000, -- Object selects a random sprite in animation.
-  PURSUEDIGGER = 0x080000000, -- Object follows a digger when colliding
-  RESPAWN      = 0x100000000, -- Object respawns where it was created
-  HEALNEARBY   = 0x200000000, -- Object heals nearby Diggers
-  IMPATIENT    = 0x400000000, -- Object is a digger and becoming impatient
+  AQUALUNG     = 0x010000000, -- Object can breathe in water
+  BLOCK        = 0x020000000, -- Object is a platform for diggers
+  DEVICE       = 0x040000000, -- Object is a device
+  HEALNEARBY   = 0x080000000, -- Object heals nearby Diggers
+  CONSUME      = 0x100000000, -- Object consumes another object
 };
 OFL.JUMPMASK = OFL.JUMPRISE|OFL.JUMPFALL;
 -- Jumping ----------------------------------------------------------------- --
@@ -212,21 +212,22 @@ local aJumpFallData<const> =
   { 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
 -- Directions -------------------------------------------------------------- --
 local DIR<const> = {
-  UL       = 0x1,  -- Move left and dig up-left diagonally
-  U        = 0x2,  -- Up direction but not used
-  UR       = 0x3,  -- Move right and dig up-right diagonally
-  L        = 0x4,  -- Move left and dig left
-  NONE     = 0x5,  -- No direction
-  R        = 0x6,  -- Move right and dig right
-  DL       = 0x7,  -- Move left and dig down-left diagnoally
-  D        = 0x8,  -- Dig down
-  DR       = 0x9,  -- Move right and dig down-right diagonally
-  LR       = 0xA,  -- Go left or right
-  OPPOSITE = 0xB,  -- Move in the opposite direction (SETACTION() Command)
-  KEEP     = 0xC,  -- Preserve the current direction (SETACTION() Command)
-  KEEPMOVE = 0xD,  -- Keep direction if moving or move in random direction
-  HOME     = 0xE,  -- Direction to the player's home point (SETACTION() Cmd)
-  TCTR     = 0xF,  -- Move into the centre of the tile (SETACTION() Command)
+  UL       = 0x01, -- Move left and dig up-left diagonally
+  U        = 0x02, -- Up direction but not used
+  UR       = 0x03, -- Move right and dig up-right diagonally
+  L        = 0x04, -- Move left and dig left
+  NONE     = 0x05, -- No direction
+  R        = 0x06, -- Move right and dig right
+  DL       = 0x07, -- Move left and dig down-left diagnoally
+  D        = 0x08, -- Dig down
+  DR       = 0x09, -- Move right and dig down-right diagonally
+  LR       = 0x0A, -- Go left or right
+  UD       = 0x0B, -- Go up or down
+  OPPOSITE = 0x0C, -- Move in the opposite direction (SETACTION() Command)
+  KEEP     = 0x0D, -- Preserve the current direction (SETACTION() Command)
+  KEEPMOVE = 0x0E, -- Keep direction if moving or move in random direction
+  HOME     = 0x0F, -- Direction to the player's home point (SETACTION() Cmd)
+  TCTR     = 0x10, -- Move into the centre of the tile (SETACTION() Command)
   RNG      = 0x100 -- Randomise the sprite tile (FLAG!)
 };
 -- Actions when blocked ---------------------------------------------------- --
@@ -254,15 +255,46 @@ local aObjToUIData<const> = {
 };
 -- AI Types ---------------------------------------------------------------- --
 local AI<const> = {
-  NONE        = 0x0, -- Object has no AI
-  DIGGER      = 0x1, -- Object is a digger and does many things
-  PATIENCE    = 0x2, -- Object is a digger controlled by the player
-  CRITTER     = 0x3, -- Object does nothing but go left and right
-  CRITTERSLOW = 0x4, -- Object does nothing but go left and right slowly
-  FIND        = 0x5, -- Object speedily homes in on a digger
-  FINDSLOW    = 0x6, -- Object slowly homes in on a digger
-  RANDOM      = 0x7, -- Object moves in 4 directions finding a digger
-  BIGFOOT     = 0x8, -- Object moves around like a digger and steals items
+  NONE        = 0x00, -- Object has no AI
+  DIGGER      = 0x01, -- Object is a digger and does many things
+  PATIENCE    = 0x02, -- Object is a digger controlled by the player
+  CRITTER     = 0x03, -- Object does nothing but go left and right
+  CRITTERSLOW = 0x04, -- Object does nothing but go left and right slowly
+  FIND        = 0x05, -- Object speedily homes in on a digger
+  FINDSLOW    = 0x06, -- Object slowly homes in on a digger
+  RANDOM      = 0x07, -- Object moves in 4 directions finding a digger
+  BIGFOOT     = 0x08, -- Object moves around like a digger and steals items
+  TUNNELER    = 0x09, -- Object moves around and tunnels.
+  CORKSCREW   = 0x0A, -- Object moves left and right and digs down.
+  EXPLODER    = 0x0B, -- Object explodes when the enemy comes near.
+  TRAIN       = 0x0C, -- Object moves left/right and picks up treasure.
+  LIFT        = 0x0D, -- Object moves up/down
+  BOAT        = 0x0E, -- Object moves left and right slowly on water.
+  DEPLOY      = 0x0F, -- Object should deploy at a random time
+  GATE        = 0x10, -- Object should automatically open and close
+};
+-- AI decisions data for SetRandomJob() ------------------------------------ --
+local aAIChoicesData<const> = {
+  -- Performs the specified action, job and direction with SetAction() if the
+  -- AI Diggers' digging was blocked in the following directions...
+  { DIR.L,  { ACT.WALK, JOB.DIGDOWN, DIR.TCTR },   -- [1] = Failed direction?
+            { ACT.WALK, JOB.DIG,     DIR.L    } }, -- [2] = Blocked action
+  { DIR.R,  { ACT.WALK, JOB.DIGDOWN, DIR.TCTR },   -- [3] = Unblocked action
+            { ACT.WALK, JOB.DIG,     DIR.R    } },
+  { DIR.UL, { ACT.WALK, JOB.DIG,     DIR.L    },
+            { ACT.WALK, JOB.DIG,     DIR.UL   } },
+  { DIR.UR, { ACT.WALK, JOB.DIG,     DIR.R    },
+            { ACT.WALK, JOB.DIG,     DIR.UR   } },
+  { DIR.DL, { ACT.WALK, JOB.DIG,     DIR.L    },
+            { ACT.WALK, JOB.DIG,     DIR.DL   } },
+  { DIR.DR, { ACT.WALK, JOB.DIG,     DIR.R    },
+            { ACT.WALK, JOB.DIG,     DIR.DR   } },
+  { DIR.L,  { ACT.WALK, JOB.DIGDOWN, DIR.TCTR },
+            { ACT.WALK, JOB.SEARCH,  DIR.L    } },
+  { DIR.R,  { ACT.WALK, JOB.DIGDOWN, DIR.TCTR },
+            { ACT.WALK, JOB.SEARCH,  DIR.R    } },
+  { DIR.D,  { ACT.WALK, JOB.DIG,     DIR.LR   },
+            { ACT.WALK, JOB.DIGDOWN, DIR.TCTR } },
 };
 -- Timers and animation consts --------------------------------------------- --
 local aTimerData<const> = {
@@ -303,24 +335,88 @@ local aSfxData<const> = {
   -- Maximum number of sound effects
   MAX = 0x15
 };
+-- Shroud data ------------------------------------------------------------- --
+local iSH<const>, iCL<const> = 1022, 953;
+-- Top row tiles (Left, Middle1, Middle2, Right)
+local iTL<const>, iTA<const>, iTB<const>, iTR<const> = 892, 893, 894, 895;
+-- Middle row tiles (Left1, Left2, Right1, Right2)
+local iLA<const>, iLB<const>, iRA<const>, iRB<const> = 924, 925, 926, 927;
+-- Bottom row tiles (Left, Middle1, Middle2, Right)
+local iBL<const>, iBA<const>, iBB<const>, iBR<const> = 956, 957, 958, 959;
+-- Edges (Top-left, top-right, bottom-left, bottom-right)
+local iETL<const>, iETR<const>, iEBL<const>, iEBR<const> = 922, 923, 891, 890;
+-- Diagonal fillers
+local iDLR<const>,iULR<const> = 954, 955;
+-- Transparency exposed edges flags
+local ixTL<const>, ixTR<const> = 0x1,       0x2;
+local ixBL<const>, ixBR<const> = 0x4,       0x8;
+local ixL<const>,  ixT<const>  = ixTL|ixBL, ixTL|ixTR;
+local ixR<const>,  ixB<const>  = ixTR|ixBR, ixBL|ixBR;
+local isTL<const>, isTR<const> = ixTR|ixB,  ixTL|ixB;
+local isBL<const>, isBR<const> = ixT|ixBR,  ixT|ixBL;
+local ixA<const> = ixTL|ixTR|ixBL|ixBR;
+-- Lookup table for tile values -------------------------------------------- --
+local aShroudTileLookup<const> = {
+  {iSH},     --[[ 00-0-01 Shrouded  --]] {iBR},     -- 01-1-02 ixTL
+  {iBL},     --[[ 02-2-03 ixTR      --]] {iBA,iBB}, -- 03-3-04 ixT
+  {iTR},     --[[ 04-4-05 ixBL      --]] {iRA,iRB}, -- 05-5-06 ixL
+  {iULR},    --[[ 06-6-07 ixTR|ixBL --]] {iEBR},    -- 07-7-08 isBR
+  {iTL},     --[[ 08-8-09 ixBR      --]] {iDLR},    -- 09-9-10 ixTL|ixBR
+  {iLA,iLB}, --[[ 10-A-11 ixR       --]] {iEBL},    -- 11-B-12 isBL
+  {iTA,iTB}, --[[ 12-C-13 ixB       --]] {iETL},    -- 13-D-14 isTL
+  {iETR},    --[[ 14-E-15 isTR      --]] {iCL}      -- 15-F-16 ixA
+};
+-- Shroud circle template for removal around selected Digger --------------- --
+local aShroudCircle<const> = {
+  -- { XAdjust, YAdjust, ShroudFlags }
+  {-2,-5,ixBR},{-1,-5,ixB },{ 0,-5,ixB },{ 1,-5,ixB },{ 2,-5,ixBL},
+  {-4,-4,ixBR},{-3,-4,ixB },{-2,-4,isTL},{-1,-4,ixA },{ 0,-4,ixA },
+  { 1,-4,ixA },{ 2,-4,isTR},{ 3,-4,ixB },{ 4,-4,ixBL},{-5,-3,ixBR},
+  {-4,-3,isTL},{-3,-3,ixA },{-2,-3,ixA },{-1,-3,ixA },{ 0,-3,ixA },
+  { 1,-3,ixA },{ 2,-3,ixA },{ 3,-3,ixA },{ 4,-3,isTR},{ 5,-3,ixBL},
+  {-5,-2,ixR },{-4,-2,ixA },{-3,-2,ixA },{-2,-2,ixA },{-1,-2,ixA },
+  { 0,-2,ixA },{ 1,-2,ixA },{ 2,-2,ixA },{ 3,-2,ixA },{ 4,-2,ixA },
+  { 5,-2,ixL },{-5,-1,ixR },{-4,-1,ixA },{-3,-1,ixA },{-2,-1,ixA },
+  {-1,-1,ixA },{ 0,-1,ixA },{ 1,-1,ixA },{ 2,-1,ixA },{ 3,-1,ixA },
+  { 4,-1,ixA },{ 5,-1,ixL },{-5, 0,ixR },{-4, 0,ixA },{-3, 0,ixA },
+  {-2, 0,ixA },{-1, 0,ixA },{ 0, 0,ixA },{ 1, 0,ixA },{ 2,-0,ixA },
+  { 3, 0,ixA },{ 4, 0,ixA },{ 5, 0,ixL },{-5, 1,ixR },{-4, 1,ixA },
+  {-3, 1,ixA },{-2, 1,ixA },{-1, 1,ixA },{ 0, 1,ixA },{ 1, 1,ixA },
+  { 2, 1,ixA },{ 3, 1,ixA },{ 4, 1,ixA },{ 5, 1,ixL },{-5, 2,ixR },
+  {-4, 2,ixA },{-3, 2,ixA },{-2, 2,ixA },{-1, 2,ixA },{ 0, 2,ixA },
+  { 1, 2,ixA },{ 2, 2,ixA },{ 3, 2,ixA },{ 4, 2,ixA },{ 5, 2,ixL },
+  {-5, 3,ixTR},{-4, 3,isBL},{-3, 3,ixA },{-2, 3,ixA },{-1, 3,ixA },
+  { 0, 3,ixA },{ 1, 3,ixA },{ 2, 3,ixA },{ 3, 3,ixA },{ 4, 3,isBR},
+  { 5, 3,ixTL},{-4, 4,ixTR},{-3, 4,ixT },{-2, 4,isBL},{-1, 4,ixA },
+  { 0, 4,ixA },{ 1, 4,ixA },{ 2, 4,isBR},{ 3, 4,ixT },{ 4, 4,ixTL},
+  {-2, 5,ixTR},{-1, 5,ixT },{ 0, 5,ixT },{ 1, 5,ixT },{ 2, 5,ixTL}
+};
 -- Level data types -------------------------------------------------------- --
-local aLevelTypeDesert<const>   = { i=0, f="desert",   n="DESERTOUS"   };
-local aLevelTypeGrass<const>    = { i=1, f="grass",    n="TEMPERATE"   };
-local aLevelTypeIslands<const>  = { i=2, f="islands",  n="COASTAL"     };
-local aLevelTypeJungle<const>   = { i=3, f="jungle",   n="TROPICAL"    };
-local aLevelTypeMountain<const> = { i=4, f="mountain", n="MOUNTAINOUS" };
-local aLevelTypeRock<const>     = { i=5, f="rock",     n="BARRENOUS"   };
-local aLevelTypeWinter<const>   = { i=6, f="snow",     n="WINTEROUS"   };
+local aLevelTypeDesert<const>   =
+  -- Type  Filename    Name             Shroud colour (r[1],g[2],b[3])
+  { i=0, f="desert",   n="DESERTOUS",   s={ 170/0xFF, 102/0xFF,  81/0xFF } };
+local aLevelTypeGrass<const>    =
+  { i=1, f="grass",    n="TEMPERATE",   s={ 128/0xFF,  67/0xFF,  49/0xFF } };
+local aLevelTypeIslands<const>  =
+  { i=2, f="islands",  n="COASTAL",     s={ 188/0xFF,  87/0xFF,   0/0xFF } };
+local aLevelTypeJungle<const>   =
+  { i=3, f="jungle",   n="TROPICAL",    s={  41/0xFF,   6/0xFF,   0/0xFF } };
+local aLevelTypeMountain<const> =
+  { i=4, f="mountain", n="MOUNTAINOUS", s={ 204/0xFF, 102/0xFF, 102/0xFF } };
+local aLevelTypeRock<const>     =
+  { i=5, f="rock",     n="BARRENOUS",   s={ 116/0xFF,  52/0xFF,  35/0xFF } };
+local aLevelTypeWinter<const>   =
+  { i=6, f="snow",     n="WINTEROUS",   s={ 102/0xFF, 102/0xFF, 153/0xFF } };
 -- Level data types array -------------------------------------------------- --
 local aLevelTypesData<const> = {
   aLevelTypeDesert,   aLevelTypeGrass, aLevelTypeIslands, aLevelTypeJungle,
   aLevelTypeMountain, aLevelTypeRock,  aLevelTypeWinter,
 };
--- Skill levels and zogs required for each zone --------------------------- --
+-- Skill levels and Zogs required for each zone --------------------------- --
 local iSkillEasiest<const>, iSkillEasy<const>, iSkillMedium<const>,
   iSkillHard<const>, iSkillHardest<const> = 600, 1000, 1300, 1500, 2100;
 -- Level data types array -------------------------------------------------- --
-local aLevelData<const> =
+local aLevelsData<const> =
 { -- Name --------- WinReq - Filename ----- Terrain type ------------------- --
   { n="AZERG",     w=iSkillEasiest,  f="azerg",     t=aLevelTypeRock     },
   { n="DHOBBS",    w=iSkillEasiest,  f="dhobbs",    t=aLevelTypeGrass    },
@@ -529,8 +625,8 @@ local aObjectData<const> = {           -- Objects data
   [DIR.UL] = { 106, 109 }, [DIR.U]    = { 106, 109 }, [DIR.UR] = { 106, 109 },
   [DIR.L]  = { 106, 109 }, [DIR.NONE] = { 106, 109 }, [DIR.R]  = { 106, 109 },
   [DIR.DL] = { 106, 109 }, [DIR.D]    = { 106, 109 }, [DIR.DR] = { 106, 109 },
-  FLAGS=OFL.BUSY,
-  SOUND=aSfxData.PHASE
+  FLAGS    = OFL.BUSY,
+  SOUND    = aSfxData.PHASE
  }, [ACT.FIGHT] = {
   [DIR.UL] = { 255, 259 }, [DIR.U]    = { 250, 254 }, [DIR.UR] = { 250, 254 },
   [DIR.L]  = { 255, 259 }, [DIR.NONE] = { 250, 254 }, [DIR.R]  = { 250, 254 },
@@ -1101,7 +1197,7 @@ local aObjectData<const> = {           -- Objects data
   [DIR.NONE] = { 451, 454 },
   FLAGS      = OFL.BUSY
  },
- ACTION    = ACT.STOP,                 AITYPE    = AI.NONE,
+ ACTION    = ACT.STOP,                 AITYPE    = AI.TUNNELER,
  ANIMTIMER = aTimerData.ANIMNORMAL,
  DESC      = "A MECHANICAL DIGGER\nTHAT DIGS HORIZONTALLY",
  DIGDELAY  = 30,                       DIRECTION = DIR.NONE,
@@ -1127,7 +1223,7 @@ local aObjectData<const> = {           -- Objects data
   [DIR.NONE] = { 451, 454 },
   FLAGS      = OFL.BUSY
  },
- ACTION     = ACT.STOP,                AITYPE     = AI.NONE,
+ ACTION     = ACT.STOP,                AITYPE     = AI.TUNNELER,
  ANIMTIMER  = aTimerData.ANIMNORMAL,   ATTACHMENT = TYP.LTUNNELB,
  DESC       = "A FAST MECHANICAL DIGGER\nTHAT DIGS HORIZONTALLY",
  DIGDELAY   = 10,                      DIRECTION  = DIR.NONE,
@@ -1172,7 +1268,7 @@ local aObjectData<const> = {           -- Objects data
   [DIR.NONE] = { 451, 454 },
   FLAGS      = OFL.BUSY
  },
- ACTION    = ACT.STOP,                 AITYPE    = AI.NONE,
+ ACTION    = ACT.STOP,                 AITYPE    = AI.CORKSCREW,
  ANIMTIMER = aTimerData.ANIMNORMAL,
  DESC      = "A MECHANICAL DIGGER\nTHAT DIGS VERTICALLY DOWN",
  DIGDELAY  = 20,                       DIRECTION = DIR.NONE,
@@ -1208,14 +1304,13 @@ local aObjectData<const> = {           -- Objects data
   FLAGS      = OFL.FALL|OFL.PICKUP|OFL.PHASETARGET
  }, [ACT.DYING] = {
   [DIR.NONE] = { 53, 55 },
-  FLAGS      = OFL.FALL|OFL.PICKUP|OFL.VOLATILE|OFL.DANGEROUS|OFL.BUSY|
-               OFL.PHASETARGET
+  FLAGS      = OFL.FALL|OFL.PICKUP|OFL.DANGEROUS|OFL.BUSY|OFL.PHASETARGET
  }, [ACT.DEATH] = {
   [DIR.NONE] = { 291, 296 },
   FLAGS      = OFL.BUSY,
   SOUND      = aSfxData.EXPLODE,
  },
- ACTION    = ACT.STOP,                 AITYPE    = AI.NONE,
+ ACTION    = ACT.STOP,                 AITYPE    = AI.EXPLODER,
  ANIMTIMER = aTimerData.ANIMNORMAL,
  DESC      = "QUICK DESTRUCTION\nOF TERRAIN",
  DIRECTION = DIR.NONE,
@@ -1270,7 +1365,7 @@ local aObjectData<const> = {           -- Objects data
   [DIR.NONE] = { 451, 454 },
   FLAGS      = OFL.BUSY
  },
- ACTION    = ACT.STOP,                 AITYPE    = AI.NONE,
+ ACTION    = ACT.STOP,                 AITYPE    = AI.DEPLOY,
  ANIMTIMER = aTimerData.ANIMNORMAL,
  DESC      = "CARRYS A TRAIN\nWITH VALUABLE CARGO",
  DIRECTION = DIR.NONE,
@@ -1292,7 +1387,7 @@ local aObjectData<const> = {           -- Objects data
   [DIR.NONE] = { 451, 454 },
   FLAGS      = OFL.BUSY
  },
- ACTION    = ACT.STOP,                 AITYPE    = AI.NONE,
+ ACTION    = ACT.STOP,                 AITYPE    = AI.TRAIN,
  ANIMTIMER = aTimerData.ANIMNORMAL,
  DESC      = "CARRY OBJECTS ALONG A MINE\nNEEDS TRAIN TRACKS",
  DIRECTION = DIR.NONE,
@@ -1332,7 +1427,7 @@ local aObjectData<const> = {           -- Objects data
   [DIR.NONE] = { 451, 454},
   FLAGS      = OFL.BUSY
  },
- ACTION    = ACT.STOP,                 AITYPE    = AI.NONE,
+ ACTION    = ACT.STOP,                 AITYPE    = AI.BOAT,
  ANIMTIMER = aTimerData.ANIMNORMAL,
  DESC      = "TRAVEL OVER WATERS\nTO DISTANT LOCATIONS",
  DIRECTION = DIR.NONE,
@@ -1351,7 +1446,7 @@ local aObjectData<const> = {           -- Objects data
   [DIR.NONE] = { 451, 454 },
   FLAGS      = OFL.BUSY
  },
- ACTION    = ACT.STOP,                 AITYPE    = AI.NONE,
+ ACTION    = ACT.STOP,                 AITYPE    = AI.DEPLOY,
  ANIMTIMER = aTimerData.ANIMNORMAL,
  DESC      = "PROTECT FROM DANGERS\nAND FLOODING",
  DIRECTION = DIR.NONE,
@@ -1369,7 +1464,7 @@ local aObjectData<const> = {           -- Objects data
   [DIR.NONE] = { 451, 454 },
   FLAGS      = OFL.BUSY
  },
- ACTION    = ACT.STOP,                 AITYPE    = AI.NONE,
+ ACTION    = ACT.STOP,                 AITYPE    = AI.GATE,
  ANIMTIMER = aTimerData.ANIMNORMAL,    DIRECTION = DIR.NONE,
  FLAGS     = OFL.DEVICE|OFL.AQUALUNG,  JOB       = JOB.NONE,
  MENU      = MNU.GATE,                 NAME      = "GATE",
@@ -1385,7 +1480,7 @@ local aObjectData<const> = {           -- Objects data
   [DIR.NONE] = { 451, 454 },
   FLAGS      = OFL.BUSY
  },
- ACTION    = ACT.STOP,                 AITYPE    = AI.NONE,
+ ACTION    = ACT.STOP,                 AITYPE    = AI.DEPLOY,
  ANIMTIMER = aTimerData.ANIMNORMAL,
  DESC      = "A VERTICAL MOVING PLATFORM\nCARRIES YOUR DIGGERS",
  DIRECTION = DIR.NONE,
@@ -1407,7 +1502,7 @@ local aObjectData<const> = {           -- Objects data
   [DIR.NONE] = { 451, 454 },
   FLAGS      = OFL.BUSY
  },
- ACTION     = ACT.STOP,                AITYPE     = AI.NONE,
+ ACTION     = ACT.STOP,                AITYPE     = AI.LIFT,
  ANIMTIMER  = aTimerData.ANIMNORMAL,   ATTACHMENT = TYP.LIFTC,
  DIRECTION  = DIR.D,
  FLAGS      = OFL.DEVICE|OFL.EXPLODE|OFL.AQUALUNG,
@@ -1681,12 +1776,12 @@ local aDugRandShaftData<const> = {
 -- Tile flag defines ------------------------------------------------------- --
 local TF<const> = {
   -- ----------------------------------------------------------------------- --
-  NONE = 0x00000, -- Tile is non-destructable and insignificant
+  NONE = 0x00000, -- Tile is non-destructible and insignificant
   F    = 0x00001, -- Tile is firm ground
   W    = 0x00002, -- Tile is water
   AB   = 0x00004, -- Increment terrain tile animation?
   AE   = 0x00008, -- Reset terrain tile animation?
-  D    = 0x00010, -- Tile is destructable
+  D    = 0x00010, -- Tile is destructible
   AD   = 0x00020, -- Tile has been artificially dug
   PO   = 0x00040, -- Player one start position?
   PT   = 0x00080, -- Player two start position?
@@ -1869,11 +1964,11 @@ local aTileData<const> = {             -- TID TXxTY NOTE (total 480 tiles)
   TF.F,                                -- 153 25x05 Quad rock bottom right
   TF.F,                                -- 154 26x05 Quad rock top left
   TF.F,                                -- 155 27x05 Quad rock top right
-  TF.F,                                -- 156 28x05 Inpenetrable rock
-  TF.F,                                -- 157 29x05 Inpenetrable rock
+  TF.F,                                -- 156 28x05 Impenetrable rock
+  TF.F,                                -- 157 29x05 Impenetrable rock
   TF.F,                                -- 158 30x05 Horizontal rock left
   TF.F,                                -- 159 31x05 Horizontal rock right
-  TF.F,                                -- 160 32x05 Inpenetrable rock
+  TF.F,                                -- 160 32x05 Impenetrable rock
   TF.F,                                -- 161 01x06
   TF.NONE,                             -- 162 02x06
   TF.NONE,                             -- 163 03x06
@@ -2549,26 +2644,25 @@ local aIntroSubTitles<const> = {
 -- Imports and exports ----------------------------------------------------- --
 return { F = Util.Blank, A = {         -- Sending API to main loader
 -- Exports ----------------------------------------------------------------- --
-aMenuIds          = MNU,               aMenuFlags        = MFL,
-aObjectActions    = ACT,               aObjectJobs       = JOB,
-aObjectTypes      = TYP,               aCursorIdData     = CID,
-aObjectDirections = DIR,               aObjectFlags      = OFL,
-aAITypesData      = AI,                aDigTileFlags     = DF,
-aTileFlags        = TF,                aCursorData       = aCursorData,
-aJumpRiseData     = aJumpRiseData,     aJumpFallData     = aJumpFallData,
-aDigTileData      = aDigTileData,      aObjToUIData      = aObjToUIData,
-aSfxData          = aSfxData,          aLevelTypesData   = aLevelTypesData,
-aLevelData        = aLevelData,        aObjectData       = aObjectData,
-aDigData          = aDigData,          aTileData         = aTileData,
-aFloodGateData    = aFloodGateData,    aMenuData         = aMenuData,
-aCreditsData      = aCreditsData,      aCreditsXData     = aCreditsXData,
-aEndingData       = aEndingData,       aTimerData        = aTimerData,
-aZoneData         = aZoneData,         aDigBlockData     = aDigBlockData,
-aExplodeDirData   = aExplodeDirData,   aRaceStatData     = aRaceStatData,
-aShopData         = aShopData,         aRaceData         = aRaceData,
-aDugRandShaftData = aDugRandShaftData, aTrainTrackData   = aTrainTrackData,
-aExplodeAboveData = aExplodeAboveData, aSetupButtonData  = aSetupButtonData,
-aSetupOptionData  = aSetupOptionData,  aIntroSubTitles   = aIntroSubTitles
+  aAIChoicesData = aAIChoicesData, aAITypesData = AI,
+  aCreditsData = aCreditsData, aCreditsXData = aCreditsXData,
+  aCursorData = aCursorData, aCursorIdData = CID,
+  aDigBlockData = aDigBlockData, aDigData = aDigData,
+  aDigTileData = aDigTileData, aDigTileFlags = DF,
+  aDugRandShaftData = aDugRandShaftData, aEndingData = aEndingData,
+  aExplodeAboveData = aExplodeAboveData, aExplodeDirData = aExplodeDirData,
+  aFloodGateData = aFloodGateData, aIntroSubTitles = aIntroSubTitles,
+  aJumpFallData = aJumpFallData, aJumpRiseData = aJumpRiseData,
+  aLevelTypesData = aLevelTypesData, aLevelsData = aLevelsData,
+  aMenuData = aMenuData, aMenuFlags = MFL, aMenuIds = MNU,
+  aObjToUIData = aObjToUIData, aObjectActions = ACT, aObjectData = aObjectData,
+  aObjectDirections = DIR, aObjectFlags = OFL, aObjectJobs = JOB,
+  aObjectTypes = TYP, aRaceStatData = aRaceStatData, aRacesData = aRacesData,
+  aSetupButtonData = aSetupButtonData, aSetupOptionData = aSetupOptionData,
+  aSfxData = aSfxData, aShopData = aShopData, aShroudCircle = aShroudCircle,
+  aShroudTileLookup = aShroudTileLookup, aTileData = aTileData,
+  aTileFlags = TF, aTimerData = aTimerData, aTrainTrackData = aTrainTrackData,
+  aZoneData = aZoneData
 -- ------------------------------------------------------------------------- --
 } };                                   -- End of definitions to send to loader
 -- End-of-File ============================================================= --

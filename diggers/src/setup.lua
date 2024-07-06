@@ -10,13 +10,11 @@
 -- Copyr. (c) MS-Design, 2024   Copyr. (c) Millennium Interactive Ltd., 1994 --
 -- ========================================================================= --
 -- Core function aliases --------------------------------------------------- --
-local tonumber<const>, tostring<const>, pairs<const>, insert<const>,
-  remove<const>, format<const>, floor<const>, cos<const>, sin<const>,
-  min<const>, max<const>, rep<const>, len<const>, ipairs<const>
-  = -- --------------------------------------------------------------------- --
-  tonumber, tostring, pairs, table.insert, table.remove, string.format,
-  math.floor, math.cos, math.sin, math.min, math.max, string.rep, utf8.len,
-  ipairs;
+local tonumber<const>, tostring<const>, pairs<const>, remove<const>,
+  format<const>, floor<const>, cos<const>, sin<const>, min<const>, max<const>,
+  rep<const>, len<const>, ipairs<const> =
+    tonumber, tostring, pairs, table.remove, string.format, math.floor,
+    math.cos, math.sin, math.min, math.max, string.rep, utf8.len, ipairs;
 -- M-Engine function aliases ----------------------------------------------- --
 local InfoMonitor<const>, InfoMonitorData<const>, InfoMonitors<const>,
   InfoVidModeData<const>, InfoVidModes<const>, InfoTime<const>,
@@ -25,16 +23,17 @@ local InfoMonitor<const>, InfoMonitorData<const>, InfoMonitors<const>,
   UtilExplode<const>, AudioGetNumPBDs<const>, AudioGetPBDName<const>,
   AudioReset<const>, VariableGetInt<const>, VariableSetInt<const>,
   DisplayVReset<const>, DisplayReset<const>, CreditItem<const>,
-  CreditLicense<const>, CreditTotal<const>, VariableResetInt<const>,
-  UtilWordWrap<const>, DisplayFSType<const>
-  = -- --------------------------------------------------------------------- --
-  Display.Monitor, Display.MonitorData, Display.Monitors, Display.VidModeData,
-  Display.VidModes, Info.Time, Info.CPUUsage, Info.RAM, Display.GPUFPS,
-  Info.Engine, Util.GetRatio, Util.ClampInt, Util.Clamp, Util.Explode,
-  Audio.GetNumPBDevices, Audio.GetPBDeviceName, Audio.Reset, Variable.GetInt,
-  Variable.SetInt, Display.VReset, Display.Reset, Credit.Item, Credit.License,
-  Credit.Total, Variable.ResetInt, Util.WordWrap, Display.FSType;
+  CreditLicense<const>, VariableResetInt<const>,
+  UtilWordWrap<const>, DisplayFSType<const> =
+    Display.Monitor, Display.MonitorData, Display.Monitors,
+    Display.VidModeData, Display.VidModes, Info.Time, Info.CPUUsage, Info.RAM,
+    Display.GPUFPS, Info.Engine, Util.GetRatio, Util.ClampInt, Util.Clamp,
+    Util.Explode, Audio.GetNumPBDevices, Audio.GetPBDeviceName, Audio.Reset,
+    Variable.GetInt, Variable.SetInt, Display.VReset, Display.Reset,
+    Credit.Item, Credit.License, Variable.ResetInt, Util.WordWrap,
+    Display.FSType;
 -- Constants --------------------------------------------------------------- --
+local iCredits<const> = Credit.Libs.MAX;
 local aCVars<const> = Variable.Internal;
 local aKeys<const> = Input.KeyCodes;
 local iKeyEscape<const>, iKeyPageUp<const>, iKeyPageDown<const>,
@@ -69,13 +68,15 @@ local iCVvidvsync<const>, iCVappdelay<const>, iCVtexfilter<const>,
       aCVars.vid_monitor, aCVars.win_width, aCVars.win_height, aCVars.vid_fs,
       aCVars.vid_fsmode, aCVars.aud_interface;
 -- Diggers function and data aliases --------------------------------------- --
-local InitSetup, aButtonData, aCursorIdData, aSfxData, GetCallbacks,
-  SetCallbacks, LoadResources, PlayMusic, StopMusic, GetMusic, GetCursor,
-  SetCursor, IsMouseYGreaterEqualThan, IsMouseYLessThan, RenderFade,
-  IsKeyPressed, IsKeyRepeating, IsScrollingUp, IsScrollingDown,
-  IsButtonPressed, IsButtonHeld, IsMouseInBounds, GetMouseY, PlayStaticSound,
-  texSpr, fontLarge, fontLittle, fontTiny, RegisterFBUCallback,
-  RenderShadow, IsScrollingLeft, IsScrollingRight, IsFading;
+local GetCallbacks, GetCursor, GetMouseY, GetMusic, InitSetup, IsButtonHeld,
+  IsButtonPressed, IsFading, IsKeyPressed, IsKeyRepeating, IsMouseInBounds,
+  IsMouseYGreaterEqualThan, IsMouseYLessThan, IsScrollingDown, IsScrollingLeft,
+  IsScrollingRight, IsScrollingUp, LoadResources, PlayMusic, PlayStaticSound,
+  RegisterFBUCallback, RenderFade, RenderShadow, SetCallbacks, SetCursor,
+  StopMusic, aButtonData, aCursorIdData, aSfxData, fontLarge, fontLittle,
+  fontTiny, texSpr;
+-- Assets required --------------------------------------------------------- --
+local aAssets<const> = { { T = 7, F = "setup", P = { } } };
 -- Frame-limiter types ----------------------------------------------------- --
 local aFrameLimiterLabels<const> = {
   "Adaptive VSync",                    -- VSync = -1; Delay = 0
@@ -235,7 +236,7 @@ local function GetVarVidVsync() return tonumber(VariableGetInt(iCVvidvsync)) end
 local function GetVarAppDelay() return tonumber(VariableGetInt(iCVappdelay)) end;
 -- ------------------------------------------------------------------------- --
 local function LimiterGet()
-  -- Get vsync value, thread delay and kernel tick rate
+  -- Get VSync value, thread delay and kernel tick rate
   local iFrameLimiter = 1 + GetVarVidVsync();
   -- Check for delay and if set? Set software category too
   if GetVarAppDelay() > 0 then iFrameLimiter = iFrameLimiter + 4 end;
@@ -244,7 +245,7 @@ local function LimiterGet()
 end
 -- ------------------------------------------------------------------------- --
 local function LimiterUpdate()
-  -- Get vsync value, thread delay and kernel tick rate
+  -- Get VSync value, thread delay and kernel tick rate
   local iFrameLimiter = 1 + GetVarVidVsync();
   -- Check for delay and if set? Set software category too
   if GetVarAppDelay() > 0 then iFrameLimiter = iFrameLimiter + 4 end;
@@ -309,7 +310,7 @@ local function AudioUp()
   iAudioDeviceId = iAudioDeviceId + 1;
 end
 -- ------------------------------------------------------------------------- --
-local function VPrepare(sCV) return floor(VariableGetInt(sCV)*100).."%" end;
+local function VPrepare(sCV) return floor(VariableGetInt(sCV) * 100).."%" end;
 -- ------------------------------------------------------------------------- --
 local function VSet(sCV, iAdj)
   VariableSetInt(sCV,
@@ -408,7 +409,7 @@ local function RenderBackgroundStart(nId)
   RenderShadow(4, 4, 316, 236);
   -- Print title
   texSpr:SetCRGBA(1, 1, 1, 1);
-  -- Set alternatig colour for title
+  -- Set alternating colour for title
   FlickerColours(FlickerColour1, FlickerColour2);
   fontLarge:PrintC(160, 8, ColouriseText(sTitle));
   -- Print tip
@@ -421,7 +422,7 @@ local function RenderBackgroundStart(nId)
   else
     fontTiny:PrintC(160, 226, sStatusLine2);
   end
-  -- Pritn system information
+  -- Print system information
   FlickerColours(FlickerColour2, FlickerColour1);
   fontTiny:PrintC(160, 217, sStatusLine1);
   fontTiny:Print (  8,  9, format("RAM %.1f%%", nRAMUsePercentage));
@@ -469,7 +470,7 @@ local function Refresh()
       elseif iFullScreenMode == -2 then iFullScreenState = 1 end;
     -- Windowed mode
     else iFullScreenMode = -2 end;
-    -- If the full-screen mode cvar is invalid then reset to 'automatic' mode
+    -- If the full-screen mode CVar is invalid then reset to 'automatic' mode
     -- where the engine will set the full-screen mode to the desktop mode.
     if iFullScreenMode < -2 or
       iFullScreenMode >= InfoVidModes(GetMonitorIdOrPrimary()) then
@@ -595,7 +596,7 @@ local function RenderReadme()
   for iIndex = 1, #aReadmeVisibleLines do
     -- Get data
     local aData<const> = aReadmeVisibleLines[iIndex];
-    -- Calculate graident colour
+    -- Calculate gradient colour
     local iCol<const> = aReadmeColourData[iIndex];
     -- Calculate intensity
     local nIntensity<const> =
@@ -620,9 +621,9 @@ local function UpdateReadmeLines()
     local sLine = aReadmeData[iIndex];
     if #sLine > iReadmeColsM1 then  sLine = sLine:sub(1, iReadmeColsM1) end;
     -- Insert visible line
-    insert(aReadmeVisibleLines,
+    aReadmeVisibleLines[1 + #aReadmeVisibleLines] =
       { iReadmePaddingX, iReadmePaddingY + ((#aReadmeVisibleLines + 1) *
-        iReadmeSpacing), sLine });
+        iReadmeSpacing), sLine };
   end
   -- Update statuses
   sStatusLine1 = "DISPLAYING LINE "..iReadmeIndexBegin.." TO "..
@@ -676,13 +677,13 @@ end
 local function InitReadme()
   -- Waiting cursor
   SetCursor(aCursorIdData.WAIT);
-  -- Change render procs but no input so load doesn't finish after the user
-  -- has left the screen.
+  -- Change render procedures but no input so load doesn't finish after the
+  -- user has left the screen.
   SetCallbacks(ProcReadme, RenderReadme, nil);
   -- Init text colours
   aReadmeColourData = { };
   for I = 1, iReadmeRows do
-    insert(aReadmeColourData, (I/iReadmeRows)*0.25) end;
+    aReadmeColourData[1 + #aReadmeColourData] = (I / iReadmeRows) * 0.25 end;
   -- Set title
   sTitle = "ABOUT";
   -- Set readme lines
@@ -837,10 +838,10 @@ local function ProcSetupInput()
       return;
     end
   end
-  -- Test if mouse is in the configuraiton options area
+  -- Test if mouse is in the configuration options area
   if IsMouseInBounds(4, 28, 316, iCatBottom) then
     -- Set selected option
-    iSelectedOption = floor((GetMouseY()-28) / iCatSize) + 1;
+    iSelectedOption = (GetMouseY() - 28) // iCatSize + 1;
     -- Show select cursor
     SetCursor(aCursorIdData.SELECT);
     -- Left clicked or mouse scrolled down?
@@ -898,26 +899,26 @@ local function InitThirdPartyCredits()
   aCreditLines = { };
   -- Box function
   local function Header(sString)
-    -- Add elipsis
+    -- Add ellipsis
     sString = sString.."...";
     -- Add titlebar for credit
-    insert(aCreditLines, sString);
-    insert(aCreditLines, rep('=', len(sString)));
-    insert(aCreditLines, "");
+    aCreditLines[1 + #aCreditLines] = sString;
+    aCreditLines[1 + #aCreditLines] = rep('=', len(sString));
+    aCreditLines[1 + #aCreditLines] = "";
   end
   -- Add game name header
   Header(sGameName.." "..sGameVersion);
   -- Write  game information
-  insert(aCreditLines, sGameDescription..".");
-  insert(aCreditLines, "COPYRIGHT (C) "..sGameCopyr:sub(14):upper()..".");
-  insert(aCreditLines, "RUNNING ON "..sAppTitle.." "..
-    iAppMajor.."."..iAppMinor.."."..iAppBuild.."."..iAppRevision.." FOR "..
-    sAppExeType..".");
-  insert(aCreditLines, "SEE HTTPS://"..sGameWebsite..
-    " FOR MORE INFORMATION AND UPDATES.");
-  insert(aCreditLines, "");
+  aCreditLines[1 + #aCreditLines] = sGameDescription..".";
+  aCreditLines[1 + #aCreditLines] =
+    "COPYRIGHT (C) "..sGameCopyr:sub(14):upper()..".";
+  aCreditLines[1 + #aCreditLines] = "RUNNING ON "..sAppTitle.." "..iAppMajor..
+    "."..iAppMinor.."."..iAppBuild.."."..iAppRevision.." FOR "..sAppExeType..
+    ".";
+  aCreditLines[1 + #aCreditLines] = "SEE HTTPS://"..sGameWebsite..
+    " FOR MORE INFORMATION AND UPDATES.";
+  aCreditLines[1 + #aCreditLines] = "";
   -- Add third party credits header
-  local iCredits<const> = CreditTotal();
   Header("ACKNOWLEDGEMENT OF "..iCredits.." THIRD-PARTY CREDITS");
   -- Enumerate credits so we can build a quick credits list
   local iCreditsM1<const> = iCredits - 1;
@@ -930,15 +931,16 @@ local function InitThirdPartyCredits()
       -- Get second credit information
       local sName2<const>, sVersion2<const> = CreditItem(iIndex);
       -- Insert both credits
-      insert(aCreditLines, format("%2d: %-15s %17s  %2d: %-17s %15s",
+      aCreditLines[1 + #aCreditLines] =
+        format("%2d: %-15s %17s  %2d: %-17s %15s",
         iIndex, sName:upper(), "(v"..sVersion:upper()..")",
-        iIndex+1, sName2:upper(), "(v"..sVersion2:upper()..")"));
+        iIndex+1, sName2:upper(), "(v"..sVersion2:upper()..")");
     -- Only one left so write last
-    else insert(aCreditLines, format("%2d: %-17s %15s", iIndex,
-      sName:upper(), "(v"..sVersion:upper()..")")) end;
+    else aCreditLines[1 + #aCreditLines] = format("%2d: %-17s %15s", iIndex,
+      sName:upper(), "(v"..sVersion:upper()..")") end;
   end
   -- Add space
-  insert(aCreditLines, "");
+  aCreditLines[1 + #aCreditLines] = "";
   -- Add licenses header
   Header("LICENSES");
   -- Now for all the other credits in detail
@@ -959,13 +961,13 @@ local function InitThirdPartyCredits()
       if #sLine > 78 then
         local aWrappedLines<const> = UtilWordWrap(sLine, iReadmeCols, 0);
         for iWI = 1, #aWrappedLines do
-          insert(aCreditLines, aWrappedLines[iWI]:upper());
+          aCreditLines[1 + #aCreditLines] = aWrappedLines[iWI]:upper();
         end
-      else insert(aCreditLines, sLine:upper()) end;
+      else aCreditLines[1 + #aCreditLines] = sLine:upper() end;
     end
   end
   -- Add third party credits header
-  insert(aCreditLines, "*** END-OF-FILE ***");
+  aCreditLines[1 + #aCreditLines] = "*** END-OF-FILE ***";
   -- Truncate bottom empty lines
   while #aCreditLines > 0 and #aCreditLines[#aCreditLines] == 0 do
     remove(aCreditLines, #aCreditLines) end;
@@ -1010,57 +1012,59 @@ local function DoInitSetup(bDoReadMe)
     if bDoReadMe then InitReadme() else InitConfig() end;
   end
   -- Load bank texture
-  LoadResources("Setup", {{T=7,F="setup",P={}}}, OnLoaded);
-  -- On fbo refresh callback
+  LoadResources("Setup", aAssets, OnLoaded);
+  -- On frame buffer refresh callback
   local function OnRedraw(...)
     -- Update stage bounds
     iStageW, iStageH, iStageL, iStageT, iStageR, iStageB = ...;
     -- Refresh settings
     Refresh();
   end
-  -- Register framebuffer update
+  -- Register frame buffer update
   RegisterFBUCallback("setup", OnRedraw);
 end
 InitSetup = DoInitSetup;
 -- Return imports and exports ---------------------------------------------- --
 return { A = { InitSetup = InitSetup }, F = function(GetAPI)
   -- Imports --------------------------------------------------------------- --
-  aSfxData, GetCallbacks, SetCallbacks, LoadResources, PlayMusic,
-  StopMusic, GetMusic, GetCursor, SetCursor, IsMouseYGreaterEqualThan,
-  IsMouseYLessThan, RenderFade, IsKeyPressed, IsKeyRepeating, IsScrollingUp,
-  IsScrollingDown, IsButtonPressed, IsButtonHeld, IsMouseInBounds, GetMouseY,
-  PlayStaticSound, texSpr, fontLarge, fontLittle, fontTiny,
-  RegisterFBUCallback, RenderShadow, aCursorIdData, IsScrollingLeft,
-  IsScrollingRight, IsFading, aButtonData, aOptionData
+  GetCallbacks, GetCursor, GetMouseY, GetMusic, IsButtonHeld, IsButtonPressed,
+  IsFading, IsKeyPressed, IsKeyRepeating, IsMouseInBounds,
+  IsMouseYGreaterEqualThan, IsMouseYLessThan, IsScrollingDown, IsScrollingLeft,
+  IsScrollingRight, IsScrollingUp, LoadResources, PlayMusic, PlayStaticSound,
+  RegisterFBUCallback, RenderFade, RenderShadow, SetCallbacks, SetCursor,
+  StopMusic, aButtonData, aCursorIdData, aOptionData, aSfxData, fontLarge,
+  fontLittle, fontTiny, texSpr
   = -- --------------------------------------------------------------------- --
-  GetAPI("aSfxData", "GetCallbacks", "SetCallbacks",
-    "LoadResources", "PlayMusic", "StopMusic", "GetMusic", "GetCursor",
-    "SetCursor", "IsMouseYGreaterEqualThan", "IsMouseYLessThan", "RenderFade",
-    "IsKeyPressed", "IsKeyRepeating", "IsScrollingUp","IsScrollingDown",
-    "IsButtonPressed", "IsButtonHeld", "IsMouseInBounds", "GetMouseY",
-    "PlayStaticSound", "texSpr", "fontLarge", "fontLittle", "fontTiny",
-    "RegisterFBUCallback", "RenderShadow", "aCursorIdData", "IsScrollingLeft",
-    "IsScrollingRight", "IsFading", "aSetupButtonData", "aSetupOptionData");
+  GetAPI("GetCallbacks", "GetCursor", "GetMouseY", "GetMusic",  "IsButtonHeld",
+    "IsButtonPressed", "IsFading", "IsKeyPressed", "IsKeyRepeating",
+    "IsMouseInBounds", "IsMouseYGreaterEqualThan", "IsMouseYLessThan",
+    "IsScrollingDown", "IsScrollingLeft", "IsScrollingRight",
+    "IsScrollingUp", "LoadResources", "PlayMusic", "PlayStaticSound",
+    "RegisterFBUCallback", "RenderFade", "RenderShadow", "SetCallbacks",
+    "SetCursor", "StopMusic", "aSetupButtonData", "aCursorIdData",
+    "aSetupOptionData", "aSfxData", "fontLarge", "fontLittle", "fontTiny",
+    "texSpr");
   -- Apply functions to static button table -------------------------------- --
   for sK, fCb in pairs({ APPLY = ApplySettings, DONE = Finish,
     RESET = SetDefaults, ABOUT = InitReadme }) do aButtonData[sK][6] = fCb end;
   -- Apply functions to static option table -------------------------------- --
   for iI, aF in ipairs({
-    { MonitorUpdate, MonitorDown, MonitorUp  }, -- 1
-    { FSStateUpdate, FSStateDown, FSStateUp  }, -- 2
-    { FSResUpdate,   FSResDown,   FSResUp    }, -- 3
-    { WSizeUpdate,   WSizeDown,   WSizeUp    }, -- 4
-    { LimiterUpdate, LimiterDown, LimiterUp  }, -- 5
-    { FilterUpdate,  FilterSwap,  FilterSwap }, -- 6
-    { AudioUpdate,   AudioDown,   AudioUp    }, -- 7
-    { VMasterUpdate, VMasterDown, VMasterUp  }, -- 8
-    { VStreamUpdate, VStreamDown, VStreamUp  }, -- 9
-    { VSampleUpdate, VSampleDown, VSampleUp  }, -- 10
-    { VFMVUpdate,    VFMVDown,    VFMVUp     }, -- 11
+    { MonitorUpdate, MonitorDown, MonitorUp  }, -- [01]
+    { FSStateUpdate, FSStateDown, FSStateUp  }, -- [02]
+    { FSResUpdate,   FSResDown,   FSResUp    }, -- [03]
+    { WSizeUpdate,   WSizeDown,   WSizeUp    }, -- [04]
+    { LimiterUpdate, LimiterDown, LimiterUp  }, -- [05]
+    { FilterUpdate,  FilterSwap,  FilterSwap }, -- [06]
+    { AudioUpdate,   AudioDown,   AudioUp    }, -- [07]
+    { VMasterUpdate, VMasterDown, VMasterUp  }, -- [08]
+    { VStreamUpdate, VStreamDown, VStreamUp  }, -- [09]
+    { VSampleUpdate, VSampleDown, VSampleUp  }, -- [10]
+    { VFMVUpdate,    VFMVDown,    VFMVUp     }, -- [11]
   }) do
-    aOptionData[iI][3] = aF[1];
-    aOptionData[iI][4] = aF[2];
-    aOptionData[iI][5] = aF[3];
+    local aOptionItem<const> = aOptionData[iI];
+    aOptionItem[3] = aF[1];
+    aOptionItem[4] = aF[2];
+    aOptionItem[5] = aF[3];
   end
   -- ----------------------------------------------------------------------- --
 end };

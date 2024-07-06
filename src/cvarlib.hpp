@@ -1209,13 +1209,13 @@ const CVarItemStaticList cvislList{ {  // Default cvars (from cvars.hpp)
 // ? the configuration database if changed.
 /* ------------------------------------------------------------------------- */
 { CFL_VIDEO, "vid_fbalpha",
-/* ------------------------------------------------------------------------- */
+  /* ----------------------------------------------------------------------- */
 #if defined(MACOS)
   "10",                                // Force RGBA10101010
 #else
   cCommon->NOne(),                     // Win32/Wayland doesn't need
 #endif
-/* ------------------------------------------------------------------------- */
+  /* ----------------------------------------------------------------------- */
   CB(cDisplay->SetForcedBitDepthA, int), TINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_FBBLUE
@@ -1225,13 +1225,13 @@ const CVarItemStaticList cvislList{ {  // Default cvars (from cvars.hpp)
 // ? if changed.
 /* ------------------------------------------------------------------------- */
 { CFL_VIDEO, "vid_fbblue",
-/* ------------------------------------------------------------------------- */
+  /* ----------------------------------------------------------------------- */
 #if defined(MACOS)
   "10",                                // Force RGBA10101010
 #else
   cCommon->NOne(),                     // Win32/Wayland doesn't need
 #endif
-/* ------------------------------------------------------------------------- */
+  /* ----------------------------------------------------------------------- */
   CB(cDisplay->SetForcedBitDepthB, int), TINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_FBGREEN
@@ -1241,13 +1241,13 @@ const CVarItemStaticList cvislList{ {  // Default cvars (from cvars.hpp)
 // ? changed.
 /* ------------------------------------------------------------------------- */
 { CFL_VIDEO, "vid_fbgreen",
-/* ------------------------------------------------------------------------- */
+  /* ----------------------------------------------------------------------- */
 #if defined(MACOS)
   "10",                                // Force RGBA10101010
 #else
   cCommon->NOne(),                     // Win32/Wayland doesn't need
 #endif
-/* ------------------------------------------------------------------------- */
+  /* ----------------------------------------------------------------------- */
   CB(cDisplay->SetForcedBitDepthG, int), TINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_FBRED
@@ -1257,13 +1257,13 @@ const CVarItemStaticList cvislList{ {  // Default cvars (from cvars.hpp)
 // ? changed.
 /* ------------------------------------------------------------------------- */
 { CFL_VIDEO, "vid_fbred",
-/* ------------------------------------------------------------------------- */
+  /* ----------------------------------------------------------------------- */
 #if defined(MACOS)
   "10",                                // Force RGBA10101010
 #else
   cCommon->NOne(),                     // Win32/Wayland doesn't need
 #endif
-/* ------------------------------------------------------------------------- */
+  /* ----------------------------------------------------------------------- */
   CB(cDisplay->SetForcedBitDepthR, int), TINTEGERSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_CTXMAJOR
@@ -1342,9 +1342,9 @@ const CVarItemStaticList cvislList{ {  // Default cvars (from cvars.hpp)
 { CFL_VIDEO, "vid_fsmode",
   /* ----------------------------------------------------------------------- */
 #if defined(MACOS)
-  cCommon->NOne(),
+  cCommon->NOne(),                     // Exclusive full-screen mode
 #else
-  "-2",
+  "-2",                                // Force borderless full-screen
 #endif
   /* ----------------------------------------------------------------------- */
   CB(cDisplay->FullScreenModeChanged, int), TINTEGERSAVE|PANY },
@@ -1360,13 +1360,27 @@ const CVarItemStaticList cvislList{ {  // Default cvars (from cvars.hpp)
 // ? Set to 0 (default) to disable MacOS graphics switching, or 1 to allow
 // ? MacOS to switch between integral and dedicated graphics.
 /* ------------------------------------------------------------------------- */
-{ CFL_VIDEO, "vid_gaswitch", cCommon->Zero(),
+{ CFL_VIDEO, "vid_gaswitch",
+  /* ----------------------------------------------------------------------- */
+#if defined(MACOS)
+    cCommon->One(),                    // Enable graphics switching
+#else
+    cCommon->Zero(),                   // No support for graphics switching
+#endif
+  /* ----------------------------------------------------------------------- */
   CB(cDisplay->GraphicsSwitchingChanged, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_HIDPI
 // ? Enables or disables HiDPI support.
 /* ------------------------------------------------------------------------- */
-{ CFL_VIDEO, "vid_hidpi", cCommon->One(),
+{ CFL_VIDEO, "vid_hidpi",
+  /* ----------------------------------------------------------------------- */
+#if defined(MACOS)
+  cCommon->One(),                      // Default enabled
+#else
+  cCommon->Zero(),                     // Forced disabled as unsupported
+#endif
+  /* ----------------------------------------------------------------------- */
   CB(cDisplay->HiDPIChanged, bool), TBOOLEANSAVE|PANY },
 /* ------------------------------------------------------------------------- */
 // ! VID_LOCK
@@ -1482,7 +1496,7 @@ const CVarItemStaticList cvislList{ {  // Default cvars (from cvars.hpp)
 // ? (default) for GLFW_ANY_RELEASE_BEHAVIOR, 1 for GLFW_RELEASE_BEHAVIOR_FLUSH
 // ? or 2 for GLFW_RELEASE_BEHAVIOR_NONE.
 /* ------------------------------------------------------------------------- */
-{ CFL_VIDEO, "vid_release", cCommon->Zero(),
+{ CFL_VIDEO, "vid_release", "2",
   CB(cDisplay->ReleaseChanged, size_t), TUINTEGER|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_RFBO
@@ -1510,7 +1524,7 @@ const CVarItemStaticList cvislList{ {  // Default cvars (from cvars.hpp)
 // ? for GLFW_NO_RESET_NOTIFICATION, 1 (default) for
 // ? GLFW_LOSE_CONTEXT_ON_RESET or 2 for GLFW_NO_ROBUSTNESS.
 /* ------------------------------------------------------------------------- */
-{ CFL_VIDEO, "vid_robustness", cCommon->One(),
+{ CFL_VIDEO, "vid_robustness", "2",
   CB(cDisplay->RobustnessChanged, size_t), TUINTEGER|PBOOT|PSYSTEM },
 /* ------------------------------------------------------------------------- */
 // ! VID_SIMPLEMATRIX

@@ -196,6 +196,12 @@ static class EvtMain final :           // Event list for render thread
     // Thread should break
     return false;
   }
+  /* -- Confirm to the engine that Lua is aborting execution --------------- */
+  void ConfirmExit(void) { Add(EMC_LUA_CONFIRM_EXIT); }
+  /* -- Add event to quit the engine --------------------------------------- */
+  void RequestQuit(void) { Add(EMC_QUIT); }
+  /* -- Add event to quit thread and restart window manager ---------------- */
+  void RequestQuitThread(void) { Add(EMC_QUIT_THREAD); }
   /* -- Initialise base events (called from Main) -------------------------- */
   void Init(void)
   { // Class initialised
@@ -234,6 +240,10 @@ static class EvtMain final :           // Event list for render thread
   DELETECOPYCTORS(EvtMain)             // Delete copy constructor and operator
   /* -- End ---------------------------------------------------------------- */
 } *cEvtMain = nullptr;                 // Pointer to static class
+/* ------------------------------------------------------------------------- */
+typedef EvtMain::Args   EvtMainArgs;   // Shortcut to EvtMain::Args class
+typedef EvtMain::Event  EvtMainEvent;  // Shortcut to EvtMain::Cell class
+typedef EvtMain::RegVec EvtMainRegVec; // Shortcut to EvtMain::RegVec class
 /* ------------------------------------------------------------------------- */
 };                                     // End of public module namespace
 /* ------------------------------------------------------------------------- */

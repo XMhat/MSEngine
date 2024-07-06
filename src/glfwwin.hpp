@@ -215,6 +215,13 @@ class GlFWWindow :                     // GLFW window class
   /* -- Set window size ---------------------------------------------------- */
   void WinSetSize(const int iW, const int iH) const
     { glfwSetWindowSize(WinGetHandle(), iW, iH); }
+  /* -- Send dummy mouse position ------------------------------------------ */
+  void WinSendMousePosition(void) const
+  { // Get current cursor position
+    double dX; double dY; WinGetCursorPos(dX, dY);
+    // Dispatch it to the engine thread
+    WinOnMouseMove(WinGetHandle(), dX, dY);
+  }
   /* -- Get window size ---------------------------------------------------- */
   void WinGetSize(int &iW, int &iH) const
     { glfwGetWindowSize(WinGetHandle(), &iW, &iH); }

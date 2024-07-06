@@ -224,6 +224,8 @@ class ImageData :                      // Members initially private
   /* -- Add a new slot using our image size -------------------------------- */
   void AddSlot(Memory &mData)
     { AddSlot(mData, DimGetWidth(), DimGetHeight()); }
+  /* -- Helps with one-liners (temporary variables) ------------------------ */
+  void AddSlot(Memory &&mData) { AddSlot(mData); }
   /* -- Get read-only slots ------------------------------------------------ */
   const SlotList &GetSlotsConst(void) const { return slSlots; }
   /* -- Is no slots? ------------------------------------------------------- */

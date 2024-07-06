@@ -76,7 +76,7 @@ CTOR_MEM_BEGIN_CSLAVE(ImageLibs, ImageLib, ICHelperUnsafe)
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(ImageLib)            // Omit copy constructor for safety
 };/* -- End of objects collector (reserve and set limit for formats) ------- */
-CTOR_END(ImageLibs, reserve(IFMT_MAX); CollectorSetLimit(IFMT_MAX),)
+CTOR_END(ImageLibs, ImageLib, reserve(IFMT_MAX); CollectorSetLimit(IFMT_MAX),)
 /* -- Save a image using a specific type ----------------------------------- */
 static void ImageSave(const ImageFormat ifId, const string &strFile,
   const ImageData &idData, const ImageSlot &isData)

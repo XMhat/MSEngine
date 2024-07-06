@@ -125,54 +125,75 @@ static class Display final :
     iWinPosY = iNewY;
   }
   /* -- Window moved request ----------------------------------------------- */
-  void OnMoved(const EvtMain::Cell &ewcArgs)
-    { CheckWindowMoved(ewcArgs.vParams[1].i, ewcArgs.vParams[2].i); }
+  void OnMoved(const EvtMainEvent &emeEvent)
+  { // Get reference to actual arguments vector
+    const EvtMainArgs &emaArgs = emeEvent.aArgs;
+    // Check to see if the window moved
+    CheckWindowMoved(emaArgs[1].i, emaArgs[2].i);
+  }
   /* -- Window set icon request -------------------------------------------- */
-  void OnSetIcon(const EvtWin::Cell&) { UpdateIcons(); }
+  void OnReqSetIcons(const EvtWinEvent&) { UpdateIcons(); }
   /* -- Window set set cursor visibility ----------------------------------- */
-  void OnSetCursorVis(const EvtWin::Cell &ewcArgs)
-  { // Set the new input if we can and log status
-    cGlFW->WinSetCursor(ewcArgs.vParams.front().b);
+  void OnReqSetCurVisib(const EvtWinEvent &eweEvent)
+  { // Get requested state
+    const bool bState = eweEvent.aArgs.front().b;
+    // Set the new input if we can and log status
+    cGlFW->WinSetCursor(bState);
     cLog->LogDebugExSafe("Input updated cursor visibility status to $.",
-      StrFromBoolTF(ewcArgs.vParams.front().b));
+      StrFromBoolTF(bState));
   }
   /* -- Window set raw mouse request --------------------------------------- */
-  void OnSetRawMouse(const EvtWin::Cell &ewcArgs)
+  void OnReqSetRawMouse(const EvtWinEvent &eweEvent)
   { // If raw mouse support is supported?
     if(cGlFW->IsNotRawMouseMotionSupported()) return;
     // Set the new input if we can and log status
-    cGlFW->WinSetRawMouseMotion(ewcArgs.vParams.front().b);
+    cGlFW->WinSetRawMouseMotion(eweEvent.aArgs.front().b);
     cLog->LogDebugExSafe("Input updated raw mouse status to $.",
       StrFromBoolTF(cGlFW->WinGetRawMouseMotion()));
   }
+  /* -- On request window attenti on event --------------------------------- */
+  void OnReqAttention(const EvtWinEvent&) { cGlFW->WinRequestAttention(); }
+  /* -- On request window focus event -------------------------------------- */
+  void OnReqFocus(const EvtWinEvent&) { cGlFW->WinFocus(); }
+  /* -- On request window maximise event ----------------------------------- */
+  void OnReqMaximise(const EvtWinEvent&) { cGlFW->WinMaximise(); }
+  /* -- On request window minimise event ----------------------------------- */
+  void OnReqMinimise(const EvtWinEvent&) { cGlFW->WinMinimise(); }
+  /* -- On request window restore event ------------------------------------ */
+  void OnReqRestore(const EvtWinEvent&) { cGlFW->WinRestore(); }
   /* -- Window set sticky keys request ------------------------------------- */
-  void OnSetStickyKeys(const EvtWin::Cell &ewcArgs)
+  void OnReqStickyKeys(const EvtWinEvent &eweEvent)
   { // Set the new input if we can and log status
-    cGlFW->WinSetStickyKeys(ewcArgs.vParams.front().b);
+    cGlFW->WinSetStickyKeys(eweEvent.aArgs.front().b);
     cLog->LogDebugExSafe("Input updated sticky keys status to $.",
       StrFromBoolTF(cGlFW->WinGetStickyKeys()));
   }
   /* -- Window set sticky mouse request ------------------------------------ */
-  void OnSetStickyMouse(const EvtWin::Cell &ewcArgs)
+  void OnReqStickyMouse(const EvtWinEvent &eweEvent)
   { // Set the new input if we can and log status
-    cGlFW->WinSetStickyMouseButtons(ewcArgs.vParams.front().b);
+    cGlFW->WinSetStickyMouseButtons(eweEvent.aArgs.front().b);
     cLog->LogDebugExSafe("Input updated sticky mouse status to $.",
       StrFromBoolTF(cGlFW->WinGetStickyMouseButtons()));
   }
   /* -- Window was asked to be hidden -------------------------------------- */
-  void OnHide(const EvtWin::Cell&) { cGlFW->WinHide(); }
+  void OnReqHide(const EvtWinEvent&) { cGlFW->WinHide(); }
+  /* -- Resend mouse position ---------------------------------------------- */
+  void OnReqCursorPos(const EvtWinEvent&)
+    { cGlFW->WinSendMousePosition(); }
   /* -- Window cursor request ---------------------------------------------- */
-  void OnSetCursor(const EvtWin::Cell &ewcArgs)
+  void OnReqSetCursor(const EvtWinEvent &eweEvent)
     { cGlFW->SetCursor(static_cast<GlFWCursorType>
-        (ewcArgs.vParams.front().z)); }
+        (eweEvent.aArgs.front().z)); }
   /* -- Window reset cursor request ---------------------------------------- */
-  void OnResetCursor(const EvtWin::Cell&)
+  void OnReqResetCursor(const EvtWinEvent&)
     { cGlFW->WinSetCursorGraphic(); }
   /* -- Window scale change request ---------------------------------------- */
-  void OnScale(const EvtMain::Cell &ewcArgs)
-  { // Get new values
-    const float fNewWidth = ewcArgs.vParams[1].f,
-                fNewHeight = ewcArgs.vParams[2].f;
+  void OnScale(const EvtMainEvent &emeEvent)
+  { // Get reference to actual arguments vector
+    const EvtMainArgs &emaArgs = emeEvent.aArgs;
+    // Get new values
+    const float fNewWidth = emaArgs[1].f,
+                fNewHeight = emaArgs[2].f;
     // If scale not changed? Report event and return
     if(UtilIsFloatEqual(fNewWidth, fWinScaleWidth) &&
        UtilIsFloatEqual(fNewHeight, fWinScaleHeight))
@@ -186,17 +207,19 @@ static class Display final :
     fWinScaleHeight = fNewHeight;
   }
   /* -- Window limits change request --------------------------------------- */
-  void OnLimits(const EvtWin::Cell &ewcArgs)
-  { // Get the new limits
-    const int iMinW = ewcArgs.vParams[0].i, iMinH = ewcArgs.vParams[1].i,
-              iMaxW = ewcArgs.vParams[2].i, iMaxH = ewcArgs.vParams[3].i;
+  void OnReqSetLimits(const EvtWinEvent &eweEvent)
+  { // Get reference to actual arguments vector
+    const EvtWinArgs &ewaArgs = eweEvent.aArgs;
+    // Get the new limits
+    const int iMinW = ewaArgs[0].i, iMinH = ewaArgs[1].i,
+              iMaxW = ewaArgs[2].i, iMaxH = ewaArgs[3].i;
     // Set the new limits
     cGlFW->WinSetLimits(iMinW, iMinH, iMaxW, iMaxH);
   }
   /* -- Window focused ----------------------------------------------------- */
-  void OnFocus(const EvtMain::Cell &ewcArgs)
+  void OnFocus(const EvtMainEvent &emeEvent)
   { // Get state and check it
-    const int iState = ewcArgs.vParams[1].i;
+    const int iState = emeEvent.aArgs[1].i;
     switch(iState)
     { // Focus restored?
       case GLFW_TRUE:
@@ -229,7 +252,7 @@ static class Display final :
     lrFocused.LuaFuncDispatch(iState);
   }
   /* -- Window contents damaged and needs refreshing ----------------------- */
-  void OnRefresh(const EvtMain::Cell&)
+  void OnRefresh(const EvtMainEvent&)
   { // Report that the window was resized
     cLog->LogDebugSafe("Display redrawing window contents.");
     // Set to force redraw the next frame
@@ -249,19 +272,23 @@ static class Display final :
     cInput->SetWindowSize(iWidth, iHeight);
   }
   /* -- On window resized callback ----------------------------------------- */
-  void OnResized(const EvtMain::Cell &ewcArgs)
-    { CheckWindowResized(ewcArgs.vParams[1].i, ewcArgs.vParams[2].i); }
+  void OnResized(const EvtMainEvent &emeEvent)
+  { // Get reference to actual arguments vector
+    const EvtMainArgs &emaArgs = emeEvent.aArgs;
+    // Check if the window resized
+    CheckWindowResized(emaArgs[1].i, emaArgs[2].i);
+  }
   /* -- On window closed callback ------------------------------------------ */
-  void OnClose(const EvtMain::Cell&)
+  void OnClose(const EvtMainEvent&)
   { // If window is not closable then ignore the event
     if(FlagIsClear(DF_CLOSEABLE)) return;
     // Send quit event
-    cEvtMain->Add(EMC_QUIT);
+    cEvtMain->RequestQuit();
   }
   /* -- Window iconified --------------------------------------------------- */
-  void OnIconify(const EvtMain::Cell &ewcArgs)
+  void OnIconify(const EvtMainEvent &emeEvent)
   { // Get state and check it
-    switch(const int iState = ewcArgs.vParams[1].i)
+    switch(const int iState = emeEvent.aArgs[1].i)
     { // Minimized? Log that we minimised and return
       case GLFW_TRUE:
         return cLog->LogDebugSafe("Display window state minimised.");
@@ -383,7 +410,7 @@ static class Display final :
             // whole engine with an exception.
             moSelected = nullptr;
             // We need to re-initialise the opengl context
-            cEvtMain->Add(EMC_QUIT_THREAD);
+            cEvtMain->RequestQuitThread();
           } // This is not our monitor?
           else
           { // We don't need to do anything but refresh the list
@@ -419,16 +446,18 @@ static class Display final :
     }
   }
   /* == Matrix reset requested ============================================= */
-  void OnMatrixReset(const EvtMain::Cell&) { ReInitMatrix(); }
+  void OnMatrixReset(const EvtMainEvent&) { ReInitMatrix(); }
   /* == Framebuffer reset requested ======================================== */
-  void OnFBReset(const EvtMain::Cell &emcArgs)
-  { // Get new frame buffer size
-    const int iWidth = emcArgs.vParams[1].i, iHeight = emcArgs.vParams[2].i;
+  void OnFBReset(const EvtMainEvent &emeEvent)
+  { // Get reference to actual arguments vector
+    const EvtMainArgs &emaArgs = emeEvent.aArgs;
+    // Get new frame buffer size
+    const int iWidth = emaArgs[1].i, iHeight = emaArgs[2].i;
     // On Mac?
 #if defined(MACOS)
     // Get addition position and window size data
-    const int iWinX = emcArgs.vParams[3].i, iWinY = emcArgs.vParams[4].i,
-      iWinWidth = emcArgs.vParams[5].i, iWinHeight = emcArgs.vParams[6].i;
+    const int iWinX     = emaArgs[3].i, iWinY      = emaArgs[4].i,
+              iWinWidth = emaArgs[5].i, iWinHeight = emaArgs[6].i;
     // Log new viewport
     cLog->LogDebugExSafe(
       "Display received new frame buffer size of $x$ (P:$x$;W:$x$).",
@@ -474,14 +503,22 @@ static class Display final :
     // Redraw the console if enabled
     else cConsole->SetRedrawIfEnabled();
   }
-  /* == Window size requested ============================================== */
-  void OnResize(const EvtWin::Cell &ewcArgs)
-    { cGlFW->WinSetSize(ewcArgs.vParams[0].i, ewcArgs.vParams[1].i); }
-  /* == Window move requested ============================================== */
-  void OnMove(const EvtWin::Cell &ewcArgs)
-    { cGlFW->WinMove(ewcArgs.vParams[0].i, ewcArgs.vParams[1].i); }
+  /* -- Window size requested ---------------------------------------------- */
+  void OnReqResize(const EvtWinEvent &eweEvent)
+  { // Get reference to actual arguments vector
+    const EvtWinArgs &ewaArgs = eweEvent.aArgs;
+    // Send the new size to GLFW
+    cGlFW->WinSetSize(ewaArgs[0].i, ewaArgs[1].i);
+  }
+  /* -- Window move requested ---------------------------------------------- */
+  void OnReqMove(const EvtWinEvent &eweEvent)
+  { // Get reference to actual arguments vector
+    const EvtWinArgs &ewaArgs = eweEvent.aArgs;
+    // Send the new position to GLFW
+    cGlFW->WinMove(ewaArgs[0].i, ewaArgs[1].i);
+  }
   /* -- Window centre request ---------------------------------------------- */
-  void OnCentre(const EvtWin::Cell&)
+  void OnReqCentre(const EvtWinEvent&)
   { // If in full screen mode, don't resize or move anything
     if(FlagIsSet(DF_INFULLSCREEN)) return;
     // Get centre co-ordinates
@@ -490,8 +527,8 @@ static class Display final :
     // Move the window
     cGlFW->WinMove(iX, iY);
   }
-  /* == Window reset requested ============================================= */
-  void OnReset(const EvtWin::Cell&)
+  /* -- Window reset requested --------------------------------------------- */
+  void OnReqReset(const EvtWinEvent&)
   { // If in full screen mode, don't resize or move anything
     if(FlagIsSet(DF_INFULLSCREEN)) return;
     // Restore window state
@@ -506,13 +543,13 @@ static class Display final :
     cGlFW->WinMove(iX, iY);
   }
   /* -- Toggle full-screen event (Engine thread) --------------------------- */
-  void OnToggleFS(const EvtWin::Cell &ewcArgs)
+  void OnReqToggleFS(const EvtWinEvent &eweEvent)
   { // Ignore further requests if already restarting or using native fullscreen
     if(FlagIsSet(DF_NATIVEFS)) return;
     // Disable input events to prevent the full-screen toggler being repeated
     cInput->DisableInputEvents();
     // Use requested setting instead
-    SetFullScreen(ewcArgs.vParams.front().b);
+    SetFullScreen(eweEvent.aArgs.front().b);
     // Re-enable input events
     cInput->EnableInputEvents();
   }
@@ -696,6 +733,16 @@ static class Display final :
   void RequestReposition(void) { cEvtWin->AddUnblock(EWC_WIN_RESET); }
   /* -- Request to close window -------------------------------------------- */
   void RequestClose(void) { cEvtWin->Add(EWC_WIN_HIDE); }
+  /* -- Request to minimise window ----------------------------------------- */
+  void RequestMinimise(void) { cEvtWin->Add(EWC_WIN_MINIMISE); }
+  /* -- Request to maximise window ----------------------------------------- */
+  void RequestMaximise(void) { cEvtWin->Add(EWC_WIN_MAXIMISE); }
+  /* -- Request to restore window ------------------------------------------ */
+  void RequestRestore(void) { cEvtWin->Add(EWC_WIN_RESTORE); }
+  /* -- Request to focus window -------------------------------------------- */
+  void RequestFocus(void) { cEvtWin->Add(EWC_WIN_FOCUS); }
+  /* -- Request for window attention --------------------------------------- */
+  void RequestAttention(void) { cEvtWin->Add(EWC_WIN_ATTENTION); }
   /* -- Request from alternative thread to fullscreen toggle without save -- */
   void RequestFSToggle(const bool bState)
     { cEvtWin->AddUnblock(EWC_WIN_TOGGLE_FS, bState); }
@@ -710,7 +757,7 @@ static class Display final :
     // just going to work around that by just quitting the thread and doing a
     // full re-initialisation until I can (ever?) figure out why this is
     // happening on Linux and not on MacOS or Windows.
-    if(!bState) return cEvtMain->Add(EMC_QUIT_THREAD);
+    if(!bState) return cEvtMain->RequestQuitThread();
 #endif
     // Update new fullscreen setting and re-initialise if successful
     ReInitWindow(bState);
@@ -855,34 +902,32 @@ static class Display final :
     // Inform main fbo class of our transparency setting
     cFboCore->fboMain.FboSetTransparency(FlagIsSet(DF_TRANSPARENT));
     // Set context settings
+    cGlFW->GlFWSetAlphaBits(iFBDepthA);
+    cGlFW->GlFWSetAuxBuffers(iAuxBuffers);
+    cGlFW->GlFWSetBlueBits(iFBDepthB);
     cGlFW->GlFWSetClientAPI(iApi);
+    cGlFW->GlFWSetCoreProfile(iProfile);
     cGlFW->GlFWSetCtxMajor(iCtxMajor);
     cGlFW->GlFWSetCtxMinor(iCtxMinor);
-    cGlFW->GlFWSetCoreProfile(iProfile);
-    cGlFW->GlFWSetForwardCompat(FlagIsSet(DF_FORWARD));
-    cGlFW->GlFWSetRobustness(iRobustness);
-    cGlFW->GlFWSetRelease(iRelease);
     cGlFW->GlFWSetDebug(FlagIsSet(DF_DEBUG));
-    cGlFW->GlFWSetNoErrors(FlagIsSet(DF_NOERRORS));
+    cGlFW->GlFWSetDepthBits(0);   // 2D framebuffer
     cGlFW->GlFWSetDoubleBuffer(FlagIsSet(DF_DOUBLEBUFFER));
-    cGlFW->GlFWSetSRGBCapable(FlagIsSet(DF_SRGB));
-    cGlFW->GlFWSetRefreshRate(GetRefreshRate());
-    cGlFW->GlFWSetAuxBuffers(iAuxBuffers);
-    cGlFW->GlFWSetMultisamples(iSamples);
+    cGlFW->GlFWSetForwardCompat(FlagIsSet(DF_FORWARD));
+    cGlFW->GlFWSetGPUSwitching(FlagIsSet(DF_GASWITCH));
+    cGlFW->GlFWSetGreenBits(iFBDepthG);
     cGlFW->GlFWSetMaximised(FlagIsSet(DF_MAXIMISED));
+    cGlFW->GlFWSetMultisamples(iSamples);
+    cGlFW->GlFWSetNoErrors(FlagIsSet(DF_NOERRORS));
+    cGlFW->GlFWSetRedBits(iFBDepthR);
+    cGlFW->GlFWSetRefreshRate(GetRefreshRate());
+    cGlFW->GlFWSetRelease(iRelease);
+    cGlFW->GlFWSetRetinaMode(FlagIsSet(DF_HIDPI));
+    cGlFW->GlFWSetRobustness(iRobustness);
+    cGlFW->GlFWSetSRGBCapable(FlagIsSet(DF_SRGB));
+    cGlFW->GlFWSetStencilBits(0); // No use (yet)
     cGlFW->GlFWSetStereo(FlagIsSet(DF_STEREO));
     cGlFW->GlFWSetTransparency(cFboCore->fboMain.FboIsTransparencyEnabled());
-    cGlFW->GlFWSetDepthBits(0);   // 2D framebuffer
-    cGlFW->GlFWSetStencilBits(0); // No use (yet)
-    cGlFW->GlFWSetRedBits(iFBDepthR);
-    cGlFW->GlFWSetGreenBits(iFBDepthG);
-    cGlFW->GlFWSetBlueBits(iFBDepthB);
-    cGlFW->GlFWSetAlphaBits(iFBDepthA);
     // Set Apple operating system only settings
-#if defined(MACOS)
-    cGlFW->GlFWSetRetinaMode(FlagIsSet(DF_HIDPI));
-    cGlFW->GlFWSetGPUSwitching(FlagIsSet(DF_GASWITCH));
-#endif
     // Get window name and use it for frame and instance name. It's assumed
     // that 'cpTitle' won't be freed while using it these two times.
     const char*const cpTitle = cCVars->GetCStrInternal(APP_TITLE);
@@ -966,20 +1011,26 @@ static class Display final :
       { EMC_WIN_SCALE,         bind(&Display::OnScale,       this, _1) },
     },
     EvtWin::RegVec{                    // Register window events
-      { EWC_WIN_CENTRE,      bind(&Display::OnCentre,         this, _1) },
-      { EWC_WIN_CURRESET,    bind(&Display::OnResetCursor,    this, _1) },
-      { EWC_WIN_CURSET,      bind(&Display::OnSetCursor,      this, _1) },
-      { EWC_WIN_CURSETVIS,   bind(&Display::OnSetCursorVis,   this, _1) },
-      { EWC_WIN_HIDE,        bind(&Display::OnHide,           this, _1) },
-      { EWC_WIN_LIMITS,      bind(&Display::OnLimits,         this, _1) },
-      { EWC_WIN_MOVE,        bind(&Display::OnMove,           this, _1) },
-      { EWC_WIN_RESET,       bind(&Display::OnReset,          this, _1) },
-      { EWC_WIN_RESIZE,      bind(&Display::OnResize,         this, _1) },
-      { EWC_WIN_SETICON,     bind(&Display::OnSetIcon,        this, _1) },
-      { EWC_WIN_SETRAWMOUSE, bind(&Display::OnSetRawMouse,    this, _1) },
-      { EWC_WIN_SETSTKKEYS,  bind(&Display::OnSetStickyKeys,  this, _1) },
-      { EWC_WIN_SETSTKMOUSE, bind(&Display::OnSetStickyMouse, this, _1) },
-      { EWC_WIN_TOGGLE_FS,   bind(&Display::OnToggleFS,       this, _1) },
+      { EWC_WIN_ATTENTION,   bind(&Display::OnReqAttention,   this, _1) },
+      { EWC_WIN_CENTRE,      bind(&Display::OnReqCentre,      this, _1) },
+      { EWC_WIN_CURPOSGET,   bind(&Display::OnReqCursorPos,   this, _1) },
+      { EWC_WIN_CURRESET,    bind(&Display::OnReqResetCursor, this, _1) },
+      { EWC_WIN_CURSET,      bind(&Display::OnReqSetCursor,   this, _1) },
+      { EWC_WIN_CURSETVIS,   bind(&Display::OnReqSetCurVisib, this, _1) },
+      { EWC_WIN_FOCUS,       bind(&Display::OnReqFocus,       this, _1) },
+      { EWC_WIN_HIDE,        bind(&Display::OnReqHide,        this, _1) },
+      { EWC_WIN_LIMITS,      bind(&Display::OnReqSetLimits,   this, _1) },
+      { EWC_WIN_MAXIMISE,    bind(&Display::OnReqMaximise,    this, _1) },
+      { EWC_WIN_MINIMISE,    bind(&Display::OnReqMinimise,    this, _1) },
+      { EWC_WIN_MOVE,        bind(&Display::OnReqMove,        this, _1) },
+      { EWC_WIN_RESET,       bind(&Display::OnReqReset,       this, _1) },
+      { EWC_WIN_RESIZE,      bind(&Display::OnReqResize,      this, _1) },
+      { EWC_WIN_RESTORE,     bind(&Display::OnReqRestore,     this, _1) },
+      { EWC_WIN_SETICON,     bind(&Display::OnReqSetIcons,    this, _1) },
+      { EWC_WIN_SETRAWMOUSE, bind(&Display::OnReqSetRawMouse, this, _1) },
+      { EWC_WIN_SETSTKKEYS,  bind(&Display::OnReqStickyKeys,  this, _1) },
+      { EWC_WIN_SETSTKMOUSE, bind(&Display::OnReqStickyMouse, this, _1) },
+      { EWC_WIN_TOGGLE_FS,   bind(&Display::OnReqToggleFS,    this, _1) },
     },
     DimCoInt{ -1, -1, 0, 0 },          // Requested position and size
     moSelected(nullptr),               // No monitor selected
@@ -1017,90 +1068,72 @@ static class Display final :
   DTORHELPER(~Display, DeInit())
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Display)             // Do not need copy defaults
-  /* -- Set maximised at startup ------------------------------------------- */
-  CVarReturn SetMaximisedMode(const bool bState)
-    { FlagSetOrClear(DF_MAXIMISED, bState); return ACCEPT; }
-  /* -- Set opengl no errors mode ------------------------------------------ */
-  CVarReturn SetNoErrorsMode(const bool bState)
-    { FlagSetOrClear(DF_NOERRORS, bState); return ACCEPT; }
-  /* -- Set stereo mode ---------------------------------------------------- */
-  CVarReturn SetStereoMode(const bool bState)
-    { FlagSetOrClear(DF_STEREO, bState); return ACCEPT; }
-  /* -- Set OpenGL debug mode ---------------------------------------------- */
-  CVarReturn SetGLDebugMode(const bool bState)
-    { FlagSetOrClear(DF_DEBUG, bState); return ACCEPT; }
-  /* -- Set window transparency mode  -------------------------------------- */
-  CVarReturn SetWindowTransparency(const bool bState)
-    { FlagSetOrClear(DF_TRANSPARENT, bState); return ACCEPT; }
-  /* -- Set default orthagonal width  -------------------------------------- */
-  CVarReturn SetForcedBitDepthR(const int iRed)
-    { return CVarSimpleSetIntNLG(iFBDepthR, iRed, GLFW_DONT_CARE, 16); }
-  CVarReturn SetForcedBitDepthG(const int iGreen)
-    { return CVarSimpleSetIntNLG(iFBDepthG, iGreen, GLFW_DONT_CARE, 16); }
-  CVarReturn SetForcedBitDepthB(const int iBlue)
-    { return CVarSimpleSetIntNLG(iFBDepthB, iBlue, GLFW_DONT_CARE, 16); }
-  CVarReturn SetForcedBitDepthA(const int iAlpha)
-    { return CVarSimpleSetIntNLG(iFBDepthA, iAlpha, GLFW_DONT_CARE, 16); }
-  /* -- Set default orthagonal width  -------------------------------------- */
-  CVarReturn SetMatrixWidth(const GLfloat fWidth)
-    { return CVarSimpleSetIntNLG(fMatrixWidth, fWidth, 320.0f, 16384.0f); }
-  /* -- Set default orthagonal height -------------------------------------- */
-  CVarReturn SetMatrixHeight(const GLfloat fHeight)
-    { return CVarSimpleSetIntNLG(fMatrixHeight, fHeight, 200.0f, 16384.0f); }
-  /* -- Set fsaa value ----------------------------------------------------- */
-  CVarReturn FsaaChanged(const int iCount)
-    { return CVarSimpleSetIntNLG(iSamples, iCount, GLFW_DONT_CARE, 8); }
-  /* -- Set aux buffers count ---------------------------------------------- */
-  CVarReturn AuxBuffersChanged(const int iCount)
-    { return CVarSimpleSetIntNLG(iAuxBuffers, iCount, GLFW_DONT_CARE, 16); }
-  /* -- Set major context version required --------------------------------- */
-  CVarReturn CtxMajorChanged(const int iMajor)
-    { return CVarSimpleSetIntNLG(iCtxMajor, iMajor, GLFW_DONT_CARE, 4); }
-  /* -- Set minor context version required --------------------------------- */
-  CVarReturn CtxMinorChanged(const int iMinor)
-    { return CVarSimpleSetIntNLG(iCtxMinor, iMinor, GLFW_DONT_CARE, 6); }
-  /* -- Set window width --------------------------------------------------- */
-  CVarReturn WidthChanged(const int iWidth)
-    { DimSetWidth(iWidth); return ACCEPT; }
-  /* -- Set window height -------------------------------------------------- */
+  /* -- Helper macro for boolean based CVars based on OS ------------------- */
+#define CBCVARFLAG(n, f) CVarReturn n(const bool bState) \
+    { FlagSetOrClear(f, bState); return ACCEPT; }
+#define CBCVARFORCEFLAG(n, f, v) CVarReturn n(const bool) \
+    { FlagSetOrClear(f, v); return ACCEPT; }
+#define CBCVARRANGE(t,n,d,l,g) CVarReturn n(const t tParam) \
+    { return CVarSimpleSetIntNLG(d, tParam, l, g); }
+  /* -- Create boolean based cvar callbacks -------------------------------- */
+  CBCVARFLAG(AutoFocusChanged, DF_AUTOFOCUS)
+  CBCVARFLAG(AutoIconifyChanged, DF_AUTOICONIFY)
+  CBCVARFLAG(BorderChanged, DF_BORDER)
+  CBCVARFLAG(CloseableChanged, DF_CLOSEABLE)
+  CBCVARFLAG(DoubleBufferChanged, DF_DOUBLEBUFFER)
+  CBCVARFLAG(FloatingChanged, DF_FLOATING)
+  CBCVARFLAG(FullScreenStateChanged, DF_FULLSCREEN)
+  CBCVARFLAG(MinFocusChanged, DF_MINFOCUS)
+  CBCVARFLAG(SRGBColourSpaceChanged, DF_SRGB)
+  CBCVARFLAG(SetMaximisedMode, DF_MAXIMISED)
+  CBCVARFLAG(SetWindowTransparency, DF_TRANSPARENT)
+  CBCVARFLAG(SizableChanged, DF_SIZABLE)
+  CBCVARRANGE(int, AuxBuffersChanged, iAuxBuffers, GLFW_DONT_CARE, 16)
+  CBCVARRANGE(int, CtxMajorChanged, iCtxMajor, GLFW_DONT_CARE, 4)
+  CBCVARRANGE(int, CtxMinorChanged, iCtxMinor, GLFW_DONT_CARE, 6)
+  CBCVARRANGE(int, FsaaChanged, iSamples, GLFW_DONT_CARE, 8)
+  CBCVARRANGE(int, SetForcedBitDepthA, iFBDepthA, GLFW_DONT_CARE, 16)
+  CBCVARRANGE(int, SetForcedBitDepthB, iFBDepthB, GLFW_DONT_CARE, 16)
+  CBCVARRANGE(int, SetForcedBitDepthG, iFBDepthG, GLFW_DONT_CARE, 16)
+  CBCVARRANGE(int, SetForcedBitDepthR, iFBDepthR, GLFW_DONT_CARE, 16)
+  CBCVARRANGE(GLfloat, SetMatrixHeight, fMatrixHeight, 200.0f, 16384.0f)
+  CBCVARRANGE(GLfloat, SetMatrixWidth, fMatrixWidth, 320.0f, 16384.0f)
+  /* ----------------------------------------------------------------------- */
+#if defined(MACOS)                     // Compiling on MacOS?
+  /* ----------------------------------------------------------------------- */
+  CBCVARFLAG(GraphicsSwitchingChanged, DF_GASWITCH)
+  CBCVARFLAG(HiDPIChanged, DF_HIDPI)
+  CBCVARFORCEFLAG(ForwardChanged, DF_FORWARD, true)
+  CBCVARFORCEFLAG(SetGLDebugMode, DF_DEBUG, false)
+  CBCVARFORCEFLAG(SetNoErrorsMode, DF_NOERRORS, false)
+  CBCVARFORCEFLAG(SetStereoMode, DF_STEREO, false)
+  /* ----------------------------------------------------------------------- */
+#else                                  // Windows or Linux?
+  /* ----------------------------------------------------------------------- */
+  CBCVARFLAG(ForwardChanged, DF_FORWARD)
+  CBCVARFLAG(SetGLDebugMode, DF_DEBUG)
+  CBCVARFLAG(SetNoErrorsMode, DF_NOERRORS)
+  CBCVARFLAG(SetStereoMode, DF_STEREO)
+  CBCVARFORCEFLAG(GraphicsSwitchingChanged, DF_GASWITCH, false)
+  CBCVARFORCEFLAG(HiDPIChanged, DF_HIDPI, false)
+  /* ----------------------------------------------------------------------- */
+#endif                                 // End of OS conditions check
+  /* -- Done with these macros --------------------------------------------- */
+#undef CBCVARRANGE
+#undef CBCVARFORCEFLAG
+#undef CBCVARFLAG
+  /* -- Set window width and height ---------------------------------------- */
   CVarReturn HeightChanged(const int iHeight)
     { DimSetHeight(iHeight); return ACCEPT; }
-  /* -- Set full-screen cvar ----------------------------------------------- */
-  CVarReturn BorderChanged(const bool bState)
-    { FlagSetOrClear(DF_BORDER, bState); return ACCEPT; }
-  /* -- Set hidpi cvar ----------------------------------------------------- */
-  CVarReturn HiDPIChanged(const bool bState)
-    { FlagSetOrClear(DF_HIDPI, bState); return ACCEPT; }
-  /* -- Set SRGB colour space ---------------------------------------------- */
-  CVarReturn SRGBColourSpaceChanged(const bool bState)
-    { FlagSetOrClear(DF_SRGB, bState); return ACCEPT; }
-  /* -- Set graphics switching --------------------------------------------- */
-  CVarReturn GraphicsSwitchingChanged(const bool bState)
-    { FlagSetOrClear(DF_GASWITCH, bState); return ACCEPT; }
-  /* -- Set window resizable ----------------------------------------------- */
-  CVarReturn SizableChanged(const bool bState)
-    { FlagSetOrClear(DF_SIZABLE, bState); return ACCEPT; }
-  /* -- Set full-screen cvar ----------------------------------------------- */
-  CVarReturn FullScreenStateChanged(const bool bState)
-    { FlagSetOrClear(DF_FULLSCREEN, bState); return ACCEPT; }
-  /* -- Closeable state modified ------------------------------------------- */
-  CVarReturn CloseableChanged(const bool bState)
-    { FlagSetOrClear(DF_CLOSEABLE, bState); return ACCEPT; }
-  /* -- Autominimise state modified ---------------------------------------- */
-  CVarReturn MinFocusChanged(const bool bState)
-    { FlagSetOrClear(DF_MINFOCUS, bState); return ACCEPT; }
-  /* -- Autominimise state modified ---------------------------------------- */
-  CVarReturn FloatingChanged(const bool bState)
-    { FlagSetOrClear(DF_FLOATING, bState); return ACCEPT; }
-  /* -- Auto iconify modified------ ---------------------------------------- */
-  CVarReturn AutoIconifyChanged(const bool bState)
-    { FlagSetOrClear(DF_AUTOICONIFY, bState); return ACCEPT; }
-  /* -- Auto iconify modified ---------------------------------------------- */
-  CVarReturn AutoFocusChanged(const bool bState)
-    { FlagSetOrClear(DF_AUTOFOCUS, bState); return ACCEPT; }
+  CVarReturn WidthChanged(const int iWidth)
+    { DimSetWidth(iWidth); return ACCEPT; }
   /* -- Set robustness ----------------------------------------------------- */
   CVarReturn RobustnessChanged(const size_t stIndex)
-  { // Possible values
+  { // Not supported on MacOS
+#if defined(MACOS)
+    (void)(stIndex); iRobustness = GLFW_NO_ROBUSTNESS;
+#else
+    // Possible values
     static const array<const int,3> aValues{
       GLFW_NO_RESET_NOTIFICATION, GLFW_LOSE_CONTEXT_ON_RESET,
       GLFW_NO_ROBUSTNESS
@@ -1108,12 +1141,17 @@ static class Display final :
     if(stIndex >= aValues.size()) return DENY;
     // Set the api
     iRobustness = aValues[stIndex];
+#endif
     // Success
     return ACCEPT;
   }
   /* -- Set release behaviour ---------------------------------------------- */
   CVarReturn ReleaseChanged(const size_t stIndex)
-  { // Possible values
+  { // Not supported on MacOS
+#if defined(MACOS)
+    (void)(stIndex); iRelease = GLFW_RELEASE_BEHAVIOR_NONE;
+#else
+    // Possible values
     static const array<const int,3> aValues{
       GLFW_ANY_RELEASE_BEHAVIOR, GLFW_RELEASE_BEHAVIOR_FLUSH,
       GLFW_RELEASE_BEHAVIOR_NONE
@@ -1121,15 +1159,10 @@ static class Display final :
     if(stIndex >= aValues.size()) return DENY;
     // Set the api
     iRelease = aValues[stIndex];
+#endif
     // Success
     return ACCEPT;
   }
-  /* -- Set double buffering ----------------------------------------------- */
-  CVarReturn DoubleBufferChanged(const bool bState)
-    { FlagSetOrClear(DF_DOUBLEBUFFER, bState); return ACCEPT; }
-  /* -- Set forward compatible context ------------------------------------- */
-  CVarReturn ForwardChanged(const bool bState)
-    { FlagSetOrClear(DF_FORWARD, bState); return ACCEPT; }
   /* -- Set api ------------------------------------------------------------ */
   CVarReturn ApiChanged(const size_t stIndex)
   { // Possible values
@@ -1144,7 +1177,11 @@ static class Display final :
   }
   /* -- Set profile -------------------------------------------------------- */
   CVarReturn ProfileChanged(const size_t stIndex)
-  { // Possible values
+  { // Only core profile supported on MacOS
+#if defined(MACOS)
+    (void)(stIndex); iProfile = GLFW_OPENGL_CORE_PROFILE;
+#else
+    // Possible values
     static const array<const int,3> aValues{
       GLFW_OPENGL_CORE_PROFILE, GLFW_OPENGL_COMPAT_PROFILE,
       GLFW_OPENGL_ANY_PROFILE
@@ -1152,6 +1189,7 @@ static class Display final :
     if(stIndex >= aValues.size()) return DENY;
     // Set the api
     iProfile = aValues[stIndex];
+#endif
     // Success
     return ACCEPT;
   }

@@ -12,15 +12,21 @@
 -- Core function aliases --------------------------------------------------- --
 local assert<const>, max<const> = assert, math.max;
 -- M-Engine function aliases ----------------------------------------------- --
+local UtilIsInteger<const>, UtilIsTable<const> = Util.IsInteger, Util.IsTable;
 -- Diggers function and data aliases --------------------------------------- --
-local LoadResources, Fade, SetCallbacks, InitCredits, aEndingData, PlayMusic,
+local Fade, InitCredits, LoadResources, PlayMusic,SetCallbacks, aEndingData,
   fontLittle;
+-- Assets required --------------------------------------------------------- --
+local aAssets1<const> = { { T = 2, F = "lobbyc", P = { 0 } },
+                          { T = 7, F = "select", P = { 0 } } };
+local aAssets2<const> = { { T = 1, F = false,    P = { 428, 240, 0, 0, 0 } } };
+local aAssets3<const> = { { T = 2, F = "ending3",P = { 0 } } };
 -- Init ending screen functions -------------------------------------------- --
 local function InitEnding(iRaceId)
   -- Check race id and check ending data
-  assert(type(iRaceId)=="number", "No race id specified!");
+  assert(UtilIsInteger(iRaceId), "No race id specified!");
   local aEndingItem<const> = aEndingData[iRaceId];
-  assert(type(aEndingData)=="table", "Invalid race id!");
+  assert(UtilIsTable(aEndingData), "Invalid race id!");
   -- When assets have loaded?
   local function OnEnding1Loaded(aResources)
     -- Play win music
@@ -32,9 +38,9 @@ local function InitEnding(iRaceId)
           texLobby:TileA(305,   0, 512, 184);
     -- Render callback
     local function Ending1Render()
-      -- Blit background
+      -- Draw background
       texLobby:BlitSLT(1, -54, 0);
-      -- Blit text
+      -- Draw text
       fontLittle:SetCRGBA(1,1,1,1);
       fontLittle:PrintC(160, 200, "MINING OPERATIONS COMPLETED!");
     end
@@ -49,7 +55,7 @@ local function InitEnding(iRaceId)
         if iActionTimer < 120 then return end;
         -- When ending 1 has faded out
         local function OnEnding1FadeOut()
-          -- Unreference lobby asset to garbage collector
+          -- Dereference lobby asset to garbage collector
           texLobby = nil;
           -- Reset action timer
           iActionTimer = 0;
@@ -63,9 +69,9 @@ local function InitEnding(iRaceId)
             local sText1, sText2 = aEndingItem[3], aEndingItem[4];
             -- Render ending part 2
             local function Ending2Render()
-              -- Blit background
+              -- Draw background
               texEnding:BlitSLT(iTileEnding, -54, 0);
-              -- Blit text
+              -- Draw text
               fontLittle:SetCRGBA(1, 1, 1, 1);
               fontLittle:PrintC(160, 200, sText1);
               fontLittle:PrintC(160, 220, sText2);
@@ -79,7 +85,7 @@ local function InitEnding(iRaceId)
                 if iActionTimer < 240 then return end
                 -- When ending screen 2 has faded out
                 local function OnEnding2FadeOut()
-                  -- Unreference ending asset to garbage collector
+                  -- Dereference ending asset to garbage collector
                   texEnding = nil;
                   -- Reset action timer
                   iActionTimer = 0;
@@ -93,13 +99,13 @@ local function InitEnding(iRaceId)
                     local iTileStr<const> = texStr:TileA(0, 330, 113, 512);
                     -- Credits render callback
                     local function Ending3Render()
-                      -- Blit background
+                      -- Draw background
                       texStr:BlitSLT(iTileStrBg, -54, 0);
-                      -- Blit stranger
+                      -- Draw stranger
                       texStr:SetCA(iAlphaValue);
                       texStr:BlitSLT(iTileStr, 0, 68);
                       texStr:SetCA(1);
-                      -- Blit text
+                      -- Draw text
                       fontLittle:SetCRGBA(1,1,1,1);
                       fontLittle:PrintC(160, 200,
                         "...WHILST THE MYSTERIOUS FIGURE OF THE");
@@ -115,7 +121,7 @@ local function InitEnding(iRaceId)
                         if iAlphaValue > 0 then return end;
                         -- When ending screen 3 has faded out
                         local function OnEnding3FadeOut()
-                          -- Unreference stranger asset to garbage collector
+                          -- Dereference stranger asset to garbage collector
                           texStr = nil;
                           -- Initialise final credits
                           InitCredits();
@@ -131,8 +137,7 @@ local function InitEnding(iRaceId)
                     Fade(1, 0, 0.025, Ending3Render, OnEnding3FadeIn);
                   end
                   -- Load ending 3 resources
-                  LoadResources("Ending3", {{T=2,F="ending3",P={0}}},
-                    OnEnding3Loaded);
+                  LoadResources("Ending3", aAssets3, OnEnding3Loaded);
                 end
                 -- Fade out on ending screen 2
                 Fade(0, 1, 0.025, Ending2Render, OnEnding2FadeOut);
@@ -143,10 +148,10 @@ local function InitEnding(iRaceId)
             -- Fade in ending screen 2
             Fade(1, 0, 0.025, Ending2Render, OnEnding2FadeIn);
           end
+          -- Set race scene filename
+          aAssets2[1].F = "ending"..aEndingItem[1];
           -- Load ending screen 2 resource
-          LoadResources("Ending2",
-            {{T=1,F="ending"..aEndingItem[1],P={428,240,0,0,0}}},
-            OnEnding2Loaded);
+          LoadResources("Ending2", aAssets2, OnEnding2Loaded);
         end
         -- Fade out ending screen 1
         Fade(0, 1, 0.025, Ending1Render, OnEnding1FadeOut);
@@ -158,17 +163,16 @@ local function InitEnding(iRaceId)
     Fade(1, 0, 0.025, Ending1Render, OnEnding1FadeIn);
   end
   -- Load bank texture
-  LoadResources("Ending1", {{T=2,F="lobbyc",P={0}},
-                            {T=7,F="select",P={0}}}, OnEnding1Loaded);
+  LoadResources("Ending1", aAssets1, OnEnding1Loaded);
 end
 -- Exports and imports ----------------------------------------------------- --
 return { A={ InitEnding = InitEnding }, F=function(GetAPI)
   -- Imports --------------------------------------------------------------- --
-  LoadResources, SetCallbacks, Fade, aEndingData, InitCredits, PlayMusic,
+  Fade, InitCredits, LoadResources, PlayMusic, SetCallbacks, aEndingData,
   fontLittle
   = -- --------------------------------------------------------------------- --
-  GetAPI("LoadResources", "SetCallbacks", "Fade", "aEndingData", "InitCredits",
-    "PlayMusic", "fontLittle");
+  GetAPI("Fade", "InitCredits","LoadResources", "PlayMusic", "SetCallbacks",
+    "aEndingData", "fontLittle");
   -- ----------------------------------------------------------------------- --
 end };
 -- End-of-File ============================================================= --

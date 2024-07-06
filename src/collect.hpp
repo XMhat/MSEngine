@@ -17,6 +17,11 @@ using namespace ILog::P;               using namespace IStd::P;
 using namespace IString::P;            using namespace ISysUtil::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
+/* -- Class for collector class name in Lua -------------------------------- */
+class LuaIdent { const string_view svName; public:
+  const char* CStr(void) const { return svName.data(); }
+  const string_view &Str(void) const { return svName; }
+  explicit LuaIdent(const string_view svNName) : svName{svNName}{} };
 /* -- Collector header ----------------------------------------------------- */
 #define CTOR_HDR_BEGIN(p,              /* The parent (collector) class type */\
                        m,              /* The member class type             */\
@@ -34,12 +39,14 @@ namespace P {                          // Start of public module namespace
   typedef ln::iterator in;             /* Create iterator type alias        */\
   typedef ln::const_iterator cn;       /* Create const iterator type alias  */\
   typedef h<m,s<m,ln,in>,ln,in> hn;    /* Create alias for collector type   */\
-  static struct p final : public hn    /* Begin collector object class      */\
+  static struct p final :              /* Begin collector object class      */\
+    public LuaIdent,                   /* Name of object for Lua            */\
+    public hn                          /* Derived by our collector class    */\
     __VA_ARGS__                        /* Any other custom class derives    */\
   { DELETECOPYCTORS(p)                 /* Remove default functions          */\
     p(void);                           /* Constructor prototype             */\
     ~p(void) noexcept(false);          /* Destructor prototype              */\
-    x                                  /* Any extra variables? (no comma!)   */
+    x                                  /* Any extra variables? (no comma!)  */
 /* -- Collector header that lets you use a custom container ---------------- */
 #define CTOR_HDR_CUSTCTR(p,m,l,h,s,x,...) \
   CTOR_HDR_BEGIN(p,m,l,p ## Ctr,p ## It,p ## ItConst,h,p ## Helper,\
@@ -72,22 +79,23 @@ namespace P {                          // Start of public module namespace
   CTOR_HDR_END(p)
 /* -- Tailing collector class macro with init and deinit calls ------------- */
 #define CTOR_END_EX(p,                 /* The parent (collector) class type */\
+                    m,                 /* The child (member) class type     */\
                     i,                 /* Constructor initialisation code   */\
                     d,                 /* Destructor de-initialisation code */\
                     ...)               /* Constructor initialisers code     */\
-  p::p(void) : __VA_ARGS__ { IHInitialise(); i; } \
+  p::p(void) : LuaIdent{#m}, __VA_ARGS__ { IHInitialise(); i; } \
   DTORHELPER(p::~p, if(IHNotDeInitialise()) return; d)
 /* -- Tailing collector class macro that inits a collector helper ---------- */
-#define CTOR_END(p,i,d,...) \
-  CTOR_END_EX(p,i,d,CLHelper{STR(p)} __VA_ARGS__)
+#define CTOR_END(p,m,i,d,...) \
+  CTOR_END_EX(p,m,i,d,CLHelper{STR(p)} __VA_ARGS__)
 /* -- Tailing collector class macro with no init and deinit calls ---------- */
-#define CTOR_END_NOINITS(p) CTOR_END(p,,,)
+#define CTOR_END_NOINITS(p,m) CTOR_END(p,m,,,)
 /* -- Tailing async collector class macro with init and deinit calls ------- */
-#define CTOR_END_ASYNC(p,e,i,d,...)    /* 'e' is the EvtMain event id       */\
-  CTOR_END_EX(p,i,d,CLHelperAsync{STR(p), EMC_MP_ ## e} __VA_ARGS__);
+#define CTOR_END_ASYNC(p,m,e,i,d,...)  /* 'e' is the EvtMain event id       */\
+  CTOR_END_EX(p,m,i,d,CLHelperAsync{STR(p), EMC_MP_ ## e} __VA_ARGS__);
 /* -- Tailing async collector class macro with no init nor deinit calls ---- */
-#define CTOR_END_ASYNC_NOFUNCS(p,e,...) \
-  CTOR_END_ASYNC(p,e,,,,## __VA_ARGS__)
+#define CTOR_END_ASYNC_NOFUNCS(p,m,e,...) \
+  CTOR_END_ASYNC(p,m,e,,,,## __VA_ARGS__)
 /* -- Start building a member class for a collector ------------------------ */
 #define CTOR_MEM_BEGIN_EX(p,           /* The collector type                */\
                           m,           /* The member type                   */\

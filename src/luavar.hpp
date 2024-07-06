@@ -58,8 +58,8 @@ CTOR_MEM_BEGIN_CSLAVE(Variables, Variable, ICHelperUnsafe),
     // Get result of the callback which means a boolean HAS to be returned or
     // we will deny the cvar change by default.
     const CVarReturn cvResult = BoolToCVarReturn(
-      lua_isboolean(cLuaFuncs->LuaRefGetState(), -1) &&
-      lua_toboolean(cLuaFuncs->LuaRefGetState(), -1));
+      LuaUtilIsBoolean(cLuaFuncs->LuaRefGetState(), -1) &&
+      LuaUtilIsBoolean(cLuaFuncs->LuaRefGetState(), -1));
     // Remove whatever it was that was returned by the callback
     LuaUtilRmStack(cLuaFuncs->LuaRefGetState());
     // Return result to cvar set function
@@ -87,7 +87,7 @@ CTOR_MEM_BEGIN_CSLAVE(Variables, Variable, ICHelperUnsafe),
     // Must have 5 parameters (including this class ptr that was just created)
     LuaUtilCheckParams(lS, 5);
     // Get and check the variable name
-    const string strName{ LuaUtilGetCppStr(lS, 1, "Variable") };
+    const string strName{ LuaUtilGetCppStr(lS, 1) };
     // Check that the variable name is valid
     if(!cCVars->IsValidVariableName(strName))
       XC("CVar name is not valid!",
@@ -98,9 +98,9 @@ CTOR_MEM_BEGIN_CSLAVE(Variables, Variable, ICHelperUnsafe),
     if(cCVars->VarExists(strName))
       XC("CVar already registered!", "Variable", strName);
     // Get the value name
-    const string strD{ LuaUtilGetCppStr(lS, 2, "Default") };
+    const string strD{ LuaUtilGetCppStr(lS, 2) };
     // Get the flags and check that the flags are in range
-    const CVarFlagsConst cvfcFlags{ LuaUtilGetFlags(lS, 3, CVMASK, "Flags") };
+    const CVarFlagsConst cvfcFlags{ LuaUtilGetFlags(lS, 3, CVMASK) };
     // Check that the var has at least one type
     if(!(cvfcFlags.FlagIsAnyOfSet(TSTRING|TINTEGER|TFLOAT|TBOOLEAN) &&
       // Check that types are not mixed
@@ -112,7 +112,7 @@ CTOR_MEM_BEGIN_CSLAVE(Variables, Variable, ICHelperUnsafe),
       XC("CVar flags have none or mixed types!",
          "Variable", strName, "Flags", cvfcFlags.FlagGet());
     // Check that the fourth parameter is a function
-    LuaUtilCheckFunc(lS, 4, "Callback");
+    LuaUtilCheckFunc(lS, 4);
     // Since the userdata for this class object is at arg 5, we need to make
     // sure the callback function is ahead of it in arg 6 or the LuaFunc()
     // class which calls luaL_ref will fail as it ONLY reads position -1.
@@ -147,7 +147,7 @@ CTOR_MEM_BEGIN_CSLAVE(Variables, Variable, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Variable)            // Disable copy constructor and operator
 };/* ----------------------------------------------------------------------- */
-CTOR_END(Variables,,,,                 // Finish off collector class with inits
+CTOR_END(Variables, Variable,,,,       // Finish off collector class with inits
 /* ------------------------------------------------------------------------- */
 imcveTypes{{                           // Cvar types
   IDMAPSTR(TSTRING),                   IDMAPSTR(TINTEGER),

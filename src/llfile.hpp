@@ -20,67 +20,87 @@ namespace LLFile {                     // File namespace
 using namespace IAsset::P;             using namespace IDir::P;
 using namespace IFile::P;              using namespace IFStream::P;
 using namespace IPSplit::P;            using namespace IStd::P;
+using namespace IMemory::P;            using namespace Common;
+/* ========================================================================= **
+** ######################################################################### **
+** ## File common helper classes                                          ## **
+** ######################################################################### **
+** -- Read File class argument --------------------------------------------- */
+struct AgFile : public ArClass<File> {
+  explicit AgFile(lua_State*const lS, const int iArg) :
+    ArClass{*LuaUtilGetPtr<File>(lS, iArg, *cFiles)}{} };
+/* -- Create File class argument ------------------------------------------- */
+struct AcFile : public ArClass<File> {
+  explicit AcFile(lua_State*const lS) :
+    ArClass{*LuaUtilClassCreate<File>(lS, *cFiles)}{} };
+/* -- Other types ---------------------------------------------------------- */
+typedef AgInteger<int64_t> AgInt64;
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## File:* member functions                                             ## **
 ** ######################################################################### **
 ** ========================================================================= */
-// $ File:FError
-// < State:boolean=Error in stream?
-// ? Returns the file stream encounted an error.
+// $ File:Close
+// < Result:boolean=If file was closed
+// ? Closes the file
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(FError, 1, LCPUSHVAR(LCGETPTR(1, File)->FStreamFErrorSafe()));
+LLFUNC(Close, 1, LuaUtilPushVar(lS, AgFile{lS, 1}().FStreamCloseSafe()))
 /* ========================================================================= */
-// $ File:Opened
-// < State:boolean=Error in stream?
-// ? Returns if the file was successfully opened.
+// $ File:Destroy
+// ? Closes and destroys the file stream and frees all the memory associated
+// ? with it. The object will no longer be useable after this call and an
+// ? error will be generated if accessed.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Opened, 1, LCPUSHVAR(LCGETPTR(1, File)->FStreamOpened()));
+LLFUNC(Destroy, 0, LuaUtilClassDestroy<File>(lS, 1, *cFiles))
 /* ========================================================================= */
 // $ File:End
 // < State:boolean=File is at EOF?
 // ? Calls feof() and returns if the file pointer is at EOF.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(End, 1, LCPUSHVAR(LCGETPTR(1, File)->FStreamIsEOFSafe()));
+LLFUNC(End, 1, LuaUtilPushVar(lS, AgFile{lS, 1}().FStreamIsEOFSafe()))
+/* ========================================================================= */
+// $ File:Error
+// < ErrNo:integer=Error code returned
+// ? Returns the last recorded errno.
+/* ------------------------------------------------------------------------- */
+LLFUNC(Error, 1, LuaUtilPushVar(lS, AgFile{lS, 1}().FStreamGetErrNo()))
+/* ========================================================================= */
+// $ File:ErrorStr
+// < Error:string=Error string returned
+// ? Returns the last recorded errno as a human readable string.
+/* ------------------------------------------------------------------------- */
+LLFUNC(ErrorStr, 1, LuaUtilPushVar(lS, AgFile{lS, 1}().FStreamGetErrStr()))
+/* ========================================================================= */
+// $ File:FError
+// < State:boolean=Error in stream?
+// ? Returns the file stream encounted an error.
+/* ------------------------------------------------------------------------- */
+LLFUNC(FError, 1, LuaUtilPushVar(lS, AgFile{lS, 1}().FStreamFErrorSafe()))
 /* ========================================================================= */
 // $ File:Flush
 // < State:boolean=Succeeded?
 // ? By default writing to a file stream is buffered. This calls fflush() and
 // ? makes sure that any unwritten data to disk is written straight away.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Flush, 1, LCPUSHVAR(LCGETPTR(1, File)->FStreamFlushSafe()));
+LLFUNC(Flush, 1, LuaUtilPushVar(lS, AgFile{lS, 1}().FStreamFlushSafe()))
 /* ========================================================================= */
-// $ File:Rewind
-// ? Calls frewind() to sets the file stream pointer to position 0.
+// $ File:Id
+// < Id:integer=The id number of the File object.
+// ? Returns the unique id of the File object.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Rewind, LCGETPTR(1, File)->FStreamRewindSafe());
+LLFUNC(Id, 1, LuaUtilPushVar(lS, AgFile{lS, 1}().CtrGet()))
 /* ========================================================================= */
-// $ File:Seek
-// < State:boolean=Succeeded?
-// > Offset:integer=Offset.
-// ? Calls fseek() to set the file stream pointer to the specified position.
-// ? from the start of the stream.
+// $ File:Name
+// < Name:string=Name of the file.
+// ? Returns the name of the loaded file.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Seek, 1, LCPUSHVAR(LCGETPTR(1, File)->
-  FStreamSeekSafeSet(LCGETINT(int64_t, 1, "Position"))));
+LLFUNC(Name, 1, LuaUtilPushVar(lS, AgFile{lS, 1}().IdentGet()))
 /* ========================================================================= */
-// $ File:SeekEnd
-// < State:boolean=Succeeded?
-// > Offset:integer=Offset.
-// ? Calls fseek() to set the file stream pointer to the specified position.
-// ? from the end of the stream.
+// $ File:Opened
+// < State:boolean=Error in stream?
+// ? Returns if the file was successfully opened.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(SeekEnd, 1, LCPUSHVAR(LCGETPTR(1, File)->
-  FStreamSeekSafeEnd(LCGETINT(int64_t, 1, "Position"))));
-/* ========================================================================= */
-// $ File:SeekCur
-// < State:boolean=Succeeded?
-// > Offset:integer=Offset.
-// ? Calls fseek() to adjust the file stream pointer from the current position
-// ? of the stream.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(SeekCur, 1, LCPUSHVAR(LCGETPTR(1, File)->
-  FStreamSeekSafeCur(LCGETINT(int64_t, 1, "Position"))));
+LLFUNC(Opened, 1, LuaUtilPushVar(lS, AgFile{lS, 1}().FStreamOpened()))
 /* ========================================================================= */
 // $ File:Read
 // < Data:array=The data read.
@@ -88,83 +108,92 @@ LLFUNCEX(SeekCur, 1, LCPUSHVAR(LCGETPTR(1, File)->
 // ? Uses fread() to read the specified number of bytes from the stream. The
 // ? data is returned as an array class.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Read, 1, LCCLASSCREATE(Asset)->MemSwap(LCGETPTR(1, File)->
-  FStreamReadBlockSafe(LCGETINT(size_t, 2, "Bytes"))));
-/* ========================================================================= */
-// $ File:Write
-// < Count:integer=Number of bytes written.
-// > Data:Asset=The data to write.
-// ? Uses fwrite() to write the specified data array to the specified file.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(Write, 1,
-  LCPUSHVAR(LCGETPTR(1, File)->FStreamWriteBlockSafe(*LCGETPTR(2, Asset))));
+LLFUNC(Read, 1,
+  const AgFile aFile{lS, 1};
+  const AgSizeT aBytes{lS, 2};
+  AcAsset{lS}().MemSwap({ aFile().FStreamReadBlockSafe(aBytes) }))
 /* ========================================================================= */
 // $ File:ReadStr
 // < Bytes:integer=Maximum number of bytes to read.
 // > String:string=The string read
-// ? Uses fgets() to reads the specified line from the stream. The line ends
+// ? Uses fgets() to read the specified line from the stream. The line ends
 // ? at the specified maximum number of bytes to read or until it reaches an
 // ? end-of-line character.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ReadStr, 1, LCPUSHVAR(LCGETPTR(1, File)->FStreamReadStringSafe(
-  LCGETINTLGE(size_t, 2, 0, UINT_MAX, "Bytes"))));
+LLFUNC(ReadStr, 1,
+  const AgFile aFile{lS, 1};
+  const AgSizeT aBytes{lS, 2};
+  LuaUtilPushVar(lS, aFile().FStreamReadStringSafe(aBytes)))
 /* ========================================================================= */
-// $ File:WriteStr
-// < Count:integer=Number of bytes written
-// > Text:string=Text to write.
-// ? Writes the specified string to the file.
+// $ File:Rewind
+// ? Calls frewind() to sets the file stream pointer to position 0.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(WriteStr, 1, LCPUSHVAR(LCGETPTR(1, File)->
-  FStreamWriteStringSafe(LCGETCPPSTRING(2, "String"))));
+LLFUNC(Rewind, 0, AgFile{lS, 1}().FStreamRewindSafe())
 /* ========================================================================= */
-// $ File:Tell
-// < Position:integer=Position
-// ? Returns the current position in file
+// $ File:Seek
+// > Offset:integer=Offset.
+// < State:boolean=Succeeded?
+// ? Calls fseek() to set the file stream pointer to the specified position.
+// ? from the start of the stream.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Tell, 1, LCPUSHVAR(LCGETPTR(1, File)->FStreamTellSafe()));
+LLFUNC(Seek, 1,
+  const AgFile aFile{lS, 1};
+  const AgInt64 aOffset{lS, 2};
+  LuaUtilPushVar(lS, aFile().FStreamSeekSafeSet(aOffset)))
+/* ========================================================================= */
+// $ File:SeekCur
+// > Offset:integer=Offset.
+// < State:boolean=Succeeded?
+// ? Calls fseek() to adjust the file stream pointer from the current position
+// ? of the stream.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SeekCur, 1,
+  const AgFile aFile{lS, 1};
+  const AgInt64 aOffset{lS, 2};
+  LuaUtilPushVar(lS, aFile().FStreamSeekSafeCur(aOffset)))
+/* ========================================================================= */
+// $ File:SeekEnd
+// > Offset:integer=Offset.
+// < State:boolean=Succeeded?
+// ? Calls fseek() to set the file stream pointer to the specified position.
+// ? from the end of the stream.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SeekEnd, 1,
+  const AgFile aFile{lS, 1};
+  const AgInt64 aOffset{lS, 2};
+  LuaUtilPushVar(lS, aFile().FStreamSeekSafeEnd(aOffset)))
 /* ========================================================================= */
 // $ File:Size
 // < Size:integer=Size in bytes
 // ? Returns the current sie of the file
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Size, 1, LCPUSHVAR(LCGETPTR(1, File)->FStreamSizeSafe()));
+LLFUNC(Size, 1, LuaUtilPushVar(lS, AgFile{lS, 1}().FStreamSizeSafe()))
 /* ========================================================================= */
-// $ File:Close
-// < Result:boolean=If file was closed
-// ? Closes the file
-/* ========================================================================= */
-LLFUNCEX(Close, 1, LCPUSHVAR(LCGETPTR(1, File)->FStreamCloseSafe()));
-/* ========================================================================= */
-// $ File:Id
-// < Id:integer=The id number of the File object.
-// ? Returns the unique id of the File object.
+// $ File:Tell
+// < Position:integer=Position
+// ? Returns the current position in file
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Id, 1, LCPUSHVAR(LCGETPTR(1, File)->CtrGet()));
+LLFUNC(Tell, 1, LuaUtilPushVar(lS, AgFile{lS, 1}().FStreamTellSafe()))
 /* ========================================================================= */
-// $ File:Name
-// < Name:string=Name of the file.
-// ? Returns the name of the loaded file.
+// $ File:Write
+// > Data:Asset=The data to write.
+// < Count:integer=Number of bytes written.
+// ? Uses fwrite() to write the specified data array to the specified file.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Name, 1, LCPUSHVAR(LCGETPTR(1, File)->IdentGet()));
+LLFUNC(Write, 1,
+  const AgFile aFile{lS, 1};
+  const AgAsset aAsset{lS,2};
+  LuaUtilPushVar(lS, aFile().FStreamWriteBlockSafe(aAsset)))
 /* ========================================================================= */
-// $ File:Destroy
-// ? Closes and destroys the file stream and frees all the memory associated
-// ? with it. The object will no longer be useable after this call and an
-// ? error will be generated if accessed.
+// $ File:WriteStr
+// > String:string=Text to write.
+// < Count:integer=Number of bytes written
+// ? Writes the specified string to the file.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Destroy, LCCLASSDESTROY(1, File));
-/* ========================================================================= */
-// $ File:Error
-// < ErrNo:integer=Error code returned
-// ? Returns the last recorded errno.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(Error, 1, LCPUSHVAR(LCGETPTR(1, File)->FStreamGetErrNo()));
-/* ========================================================================= */
-// $ File:ErrorStr
-// < Error:string=Error string returned
-// ? Returns the last recorded errno as a human readable string.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(ErrorStr, 1, LCPUSHVAR(LCGETPTR(1, File)->FStreamGetErrStr()));
+LLFUNC(WriteStr, 1,
+  const AgFile aFile{lS, 1};
+  const AgLCString aString{lS, 2};
+  LuaUtilPushVar(lS, aFile().FStreamWrite(aString.cpD, aString.stB)))
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## File:* member functions structure                                   ## **
@@ -183,15 +212,17 @@ LLRSEND                                // File:* member functions end
 ** ######################################################################### **
 ** ========================================================================= */
 // $ File.Open
-// < Handle:File=The handle to the file stream created.
 // > Filename:string=File to open or create.
 // > Mode:integer=The mode id to use.
+// < Handle:File=The handle to the file stream created.
 // ? Uses fopen() to open or create a file stream for reading or writing. Note
 // ? that this function will only allow access to files from the executable
 // ? directory and it's children for security reasons.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Open, 1, LCCLASSCREATE(File)->FStreamOpen(LCGETCPPFILE(1, "File"),
-  LCGETINTLGE(FStreamMode, 2, FStreamMode(0), FM_MAX, "Mode")));
+LLFUNC(Open, 1,
+  const AgFilename aFilename{lS, 1};
+  const AgIntegerLGE<FStreamMode> aMode{lS, 2, FStreamMode(0), FM_MAX};
+  AcFile{lS}().FStreamOpen(aFilename, aMode))
 /* ========================================================================= */
 // $ File.MkDir
 // > Directory:string=Directory to create
@@ -199,7 +230,7 @@ LLFUNCEX(Open, 1, LCCLASSCREATE(File)->FStreamOpen(LCGETCPPFILE(1, "File"),
 // ? Creates the specified directory. Only allowed as a child of the working
 // ? executable directory.
 // * ----------------------------------------------------------------------- */
-LLFUNCEX(MkDir, 1, LCPUSHVAR(DirMkDir(LCGETCPPFILE(1, "Directory"))?0:errno));
+LLFUNC(MkDir, 1, LuaUtilPushVar(lS, DirMkDir(AgFilename{lS, 1}) ? 0 : errno))
 /* ========================================================================= */
 // $ File.MkDirEx
 // > Directory:string=Directory to create
@@ -208,8 +239,8 @@ LLFUNCEX(MkDir, 1, LCPUSHVAR(DirMkDir(LCGETCPPFILE(1, "Directory"))?0:errno));
 // ? executable directory. This creates interim directories that do not already
 // ? exist. If the directory already exists than the function returns success.
 // * ----------------------------------------------------------------------- */
-LLFUNCEX(MkDirEx, 1,
-  LCPUSHVAR(DirMkDirEx(LCGETCPPFILE(1, "Directory"))?0:errno));
+LLFUNC(MkDirEx, 1,
+  LuaUtilPushVar(lS, DirMkDirEx(AgFilename{lS, 1}) ? 0 : errno))
 /* ========================================================================= */
 // $ File.RmDir
 // > Directory:string=Directory to create
@@ -217,7 +248,7 @@ LLFUNCEX(MkDirEx, 1,
 // ? Creates the specified directory. Only allowed as a child of the working
 // ? executable directory.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(RmDir, 1, LCPUSHVAR(DirRmDir(LCGETCPPFILE(1, "Directory"))?0:errno));
+LLFUNC(RmDir, 1, LuaUtilPushVar(lS, DirRmDir(AgFilename{lS, 1}) ? 0 : errno))
 /* ========================================================================= */
 // $ File.RmDirEx
 // > Directory:string=Directories to remove
@@ -226,8 +257,8 @@ LLFUNCEX(RmDir, 1, LCPUSHVAR(DirRmDir(LCGETCPPFILE(1, "Directory"))?0:errno));
 // ? child of the working executable directory. This removes interim
 // ? directories that are empty.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(RmDirEx, 1,
-  LCPUSHVAR(DirRmDirEx(LCGETCPPFILE(1, "Directory"))?0:errno));
+LLFUNC(RmDirEx, 1,
+  LuaUtilPushVar(lS, DirRmDirEx(AgFilename{lS, 1}) ? 0 : errno))
 /* ========================================================================= */
 // $ File.Unlink
 // > File:string=File to delete
@@ -235,8 +266,8 @@ LLFUNCEX(RmDirEx, 1,
 // ? Deletes the specified file. Only allowed as a child of the working
 // ? executable directory.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Unlink, 1,
-  LCPUSHVAR(DirFileUnlink(LCGETCPPFILE(1, "File"))?0:errno));
+LLFUNC(Unlink, 1,
+  LuaUtilPushVar(lS, DirFileUnlink(AgFilename{lS, 1}) ? 0 : errno))
 /* ========================================================================= */
 // $ File.Rename
 // > Source:string=Source filename
@@ -245,23 +276,26 @@ LLFUNCEX(Unlink, 1,
 // ? Renames the specified file or directory. Only allowed as a child of the
 // ? working executable directory for both parameters.
 // * ----------------------------------------------------------------------- */
-LLFUNCEX(Rename, 1, LCPUSHVAR(DirFileRename(
-  LCGETCPPFILE(1, "Source"), LCGETCPPFILE(2, "Destination"))));
+LLFUNC(Rename, 1,
+  const AgFilename aSource{lS, 1};
+  const AgFilename aDestination{lS,2};
+  LuaUtilPushVar(lS, DirFileRename(aSource, aDestination)))
 /* ========================================================================= */
 // $ File.DirExists
 // > Source:string=Directory
 // < Result:Boolean=Directory exists?
 // ? Returns if the specified directory exists and is actually a directory.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(DirExists, 1, LCPUSHVAR(DirLocalDirExists(LCGETCPPFILE(1,"Dir"))));
+LLFUNC(DirExists, 1,
+  LuaUtilPushVar(lS, DirLocalDirExists(AgFilename{lS, 1})))
 /* ========================================================================= */
 // $ File.FileExists
 // > Source:string=Filename
 // < Result:Boolean=File exists?
 // ? Returns if the specified directory exists and is actually a directory.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(FileExists, 1,
-  LCPUSHVAR(DirLocalFileExists(LCGETCPPFILE(1,"File"))));
+LLFUNC(FileExists, 1,
+  LuaUtilPushVar(lS, DirLocalFileExists(AgFilename{lS, 1})))
 /* ========================================================================= */
 // $ File.Executable
 // > Source:string=Filename
@@ -269,16 +303,16 @@ LLFUNCEX(FileExists, 1,
 // ? Returns if the file on disk is executable. Only allowed as a child of the
 // ? working executable directory. Should always return 'false' on Windows.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Executable, 1,
-  LCPUSHVAR(DirIsFileExecutable(LCGETCPPFILE(1, "File"))));
+LLFUNC(Executable, 1,
+  LuaUtilPushVar(lS, DirIsFileExecutable(AgFilename{lS, 1})))
 /* ========================================================================= */
 // $ File.Exists
 // > Source:string=File name or directory name
 // < Result:Boolean=File or directory exists?
 // ? Returns if the specified file or directory exists on disk.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Exists, 1,
-  LCPUSHVAR(DirLocalResourceExists(LCGETCPPFILE(1,"Resource"))));
+LLFUNC(Exists, 1,
+  LuaUtilPushVar(lS, DirLocalResourceExists(AgFilename{lS, 1})))
 /* ========================================================================= */
 // $ File.Readable
 // > Source:string=Filename
@@ -286,7 +320,7 @@ LLFUNCEX(Exists, 1,
 // ? Returns if the file on disk is readable. Only allowed as a child of the
 // ? working executable directory.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Readable, 1, LCPUSHVAR(DirIsFileReadable(LCGETCPPFILE(1, "File"))));
+LLFUNC(Readable, 1, LuaUtilPushVar(lS, DirIsFileReadable(AgFilename{lS, 1})))
 /* ========================================================================= */
 // $ File.Writable
 // > Source:string=Filename
@@ -294,8 +328,7 @@ LLFUNCEX(Readable, 1, LCPUSHVAR(DirIsFileReadable(LCGETCPPFILE(1, "File"))));
 // ? Returns if the file on disk is writable. Only allowed as a child of the
 // ? working executable directory.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Writable, 1,
-  LCPUSHVAR(DirIsFileWritable(LCGETCPPFILE(1, "File"))));
+LLFUNC(Writable, 1, LuaUtilPushVar(lS, DirIsFileWritable(AgFilename{lS, 1})))
 /* ========================================================================= */
 // $ File.ReadWritable
 // > Source:string=Filename
@@ -303,8 +336,8 @@ LLFUNCEX(Writable, 1,
 // ? Returns if the file on disk is readable and writable. Only allowed as a
 // ? child of the working executable directory.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ReadWritable, 1,
-  LCPUSHVAR(DirIsFileReadWriteable(LCGETCPPFILE(1, "File"))));
+LLFUNC(ReadWritable, 1,
+  LuaUtilPushVar(lS, DirIsFileReadWriteable(AgFilename{lS, 1})))
 /* ========================================================================= */
 // $ File.Info
 // > Source:string=Filename
@@ -322,14 +355,12 @@ LLFUNCEX(ReadWritable, 1,
 // < INode:integer=Inode id
 // ? Returns information about a file without opening it.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(Info)
+LLFUNC(Info, 12,
   StdFStatStruct stData;
-  LCPUSHVAR(DirFileSize(LCGETCPPFILE(1, "File"), stData),
-            stData.st_size,  stData.st_mode,  stData.st_ctime,
-            stData.st_mtime, stData.st_atime, stData.st_nlink,
-            stData.st_uid,   stData.st_gid,   stData.st_dev,
-            stData.st_rdev,  stData.st_ino);
-LLFUNCENDEX(12)
+  LuaUtilPushVar(lS, DirFileSize(AgFilename{lS, 1}, stData), stData.st_size,
+    stData.st_mode, stData.st_ctime, stData.st_mtime, stData.st_atime,
+    stData.st_nlink, stData.st_uid, stData.st_gid, stData.st_dev,
+    stData.st_rdev, stData.st_ino))
 /* ========================================================================= */
 // $ File.Parts
 // > Source:string=Filename to break apart
@@ -339,11 +370,10 @@ LLFUNCENDEX(12)
 // < Full:string=The fully qualified filename to the file
 // ? Splits apart a filename and return its parts.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(Parts)
-  const PathSplit psData{ LCGETCPPFILE(1, "File") };
-  LCPUSHVAR(psData.strDir,     psData.strFile, psData.strExt,
-            psData.strFileExt, psData.strFull);
-LLFUNCENDEX(5)
+LLFUNC(Parts, 5,
+  const PathSplit psData{ AgFilename{lS, 1} };
+  LuaUtilPushVar(lS, psData.strDir, psData.strFile, psData.strExt,
+    psData.strFileExt, psData.strFull))
 /* ========================================================================= */
 // $ File.Enumerate
 // > Source:string=Directory to enumerate
@@ -351,11 +381,10 @@ LLFUNCENDEX(5)
 // < Directories:table=Directory list in a indexed table
 // ? Dumps all the files in the specified directory to two tables
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(Enumerate)
-  const Dir dData{ LCGETCPPFILE(1, "Directory") };
-  LCTOTABLE(dData.GetFiles());
-  LCTOTABLE(dData.GetDirs());
-LLFUNCENDEX(2)
+LLFUNC(Enumerate, 2,
+  const Dir dData{ AgFilename{lS, 1} };
+  LuaUtilToTable(lS, dData.GetFiles());
+  LuaUtilToTable(lS, dData.GetDirs()))
 /* ========================================================================= */
 // $ File.EnumerateEx
 // > Source:string=Directory to enumerate
@@ -365,12 +394,12 @@ LLFUNCENDEX(2)
 // ? Dumps all the files ending in the specified extension in the specified
 // ? directory to two tables.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(EnumerateEx)
-  const Dir dData{ LCGETCPPFILE(1, "Directory"),
-                   LCGETCPPFILE(2, "Extension") };
-  LCTOTABLE(dData.GetFiles());
-  LCTOTABLE(dData.GetDirs());
-LLFUNCENDEX(2)
+LLFUNC(EnumerateEx, 2,
+  const AgFilename aDirectory{lS, 1};
+  const AgFilename aExtension{lS,2};
+  const Dir dData{ aDirectory, aExtension };
+  LuaUtilToTable(lS, dData.GetFiles());
+  LuaUtilToTable(lS, dData.GetDirs()))
 /* ========================================================================= */
 // $ File.AppendOneStr
 // > Source:string=Filename to append string to
@@ -381,7 +410,7 @@ LLFUNCENDEX(2)
 // ? failed or bytes written if succeeded. If 'Result' is false then the second
 // ? argument 'Reason' returned is the error reason string.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(AppendOneStr, 2, FileAppendString(lS));
+LLFUNC(AppendOneStr, 2, FileAppendString(lS))
 /* ========================================================================= */
 // $ File.AppendOne
 // > Source:string=Filename to append asset to
@@ -392,7 +421,7 @@ LLFUNCEX(AppendOneStr, 2, FileAppendString(lS));
 // ? failed or bytes written if succeeded. If 'Result' is false then the second
 // ? argument 'Reason' returned is the error reason string.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(AppendOne, 2, FileAppendBlock(lS));
+LLFUNC(AppendOne, 2, FileAppendBlock(lS))
 /* ========================================================================= */
 // $ File.ReadOneStr
 // > Source:string=Filename to read string from
@@ -403,7 +432,7 @@ LLFUNCEX(AppendOne, 2, FileAppendBlock(lS));
 // ? failed or the string that was read if succeeded. If 'Result' is false then
 // ? the second argument 'Reason' returned is the error reason string.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ReadOneStr, 2, FileReadString(lS));
+LLFUNC(ReadOneStr, 2, FileReadString(lS))
 /* ========================================================================= */
 // $ File.WriteOne
 // > Source:string=Filename to append asset to
@@ -414,7 +443,7 @@ LLFUNCEX(ReadOneStr, 2, FileReadString(lS));
 // ? the file. Returns the number of bytes written (integer) if succeeded or
 // ? 'false' (boolean) if fails, and sets 'Reason' as the error reason.
 // ------------------------------------------------------------------------- */
-LLFUNCEX(WriteOne, 2, FileWriteBlock(lS));
+LLFUNC(WriteOne, 2, FileWriteBlock(lS))
 /* ========================================================================= */
 // $ File.WriteOneStr
 // > Source:string=Filename to write string to
@@ -425,14 +454,14 @@ LLFUNCEX(WriteOne, 2, FileWriteBlock(lS));
 // ? the file. Returns the number of bytes written (integer) if succeeded or
 // ? 'false' (boolean) if fails, and sets 'Reason' as the error reason.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(WriteOneStr, 2, FileWriteString(lS));
+LLFUNC(WriteOneStr, 2, FileWriteString(lS))
 /* ========================================================================= */
 // $ File.ValidName
 // > Source:string=Filename to check
 // < Result:integer=The result of the check
 // ? Returns 0 if the filename is valid, non-zero if not.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ValidName, 1, LCPUSHVAR(DirValidName(LCGETCPPSTRING(1, "File"))));
+LLFUNC(ValidName, 1, LuaUtilPushVar(lS, DirValidName(AgString{lS, 1})))
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## File.* namespace functions structure                                ## **

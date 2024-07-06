@@ -36,8 +36,8 @@ BUILD_FLAGS(Console,                   // Console flags classes
   CF_AUTOCOPYCVAR           {Flag[4]}, CF_INSERT                 {Flag[5]},
   // Console displayed?                Ignore escape key?
   CF_ENABLED                {Flag[6]}, CF_IGNOREESC              {Flag[7]},
-  // Can't disable console? (guest setting)
-  CF_CANTDISABLEGLOBAL      {Flag[8]}
+  // Can't disable console?            Block output position update?
+  CF_CANTDISABLEGLOBAL      {Flag[8]}, CF_BLOCKOUTPUTUPDATE      {Flag[9]}
 );/* ======================================================================= */
 BUILD_FLAGS(AutoComplete,              // Autocomplete flags classes
   /* ----------------------------------------------------------------------- */
@@ -97,7 +97,15 @@ static class Console final :           // Members initially private
   CmdMap          cmMap;               // Console commands list
   const EvtMain::RegVec reEvents;      // Events list to register
   /* -- Do clear console, clear history and reset position ----------------- */
-  void DoFlush(void) { clear(); clriPosition = rbegin(); }
+  void DoFlush(void)
+  { // Do clear the console output lines
+    clear();
+    // Reset position
+    clriPosition = rbegin();
+    // Clear queued messages
+    ConLineQueue clqOutputNew;
+    clqOutput.swap(clqOutputNew);
+  }
   /* -- Reserve history items ---------------------------------------------- */
   void ReserveHistoryLines(const size_t stLines)
   { // Calculate total lines when added
@@ -202,7 +210,7 @@ static class Console final :           // Members initially private
   /* -- AutoComplete ------------ Auto complete the word under the cursor -- */
   bool AutoComplete(void)
   { // Do not attempt to autocomplete if disabled
-    if(acFlags.FlagIsSet(AC_NONE)) return false;
+    if(acFlags == AC_NONE) return false;
     // Find last whitespace or use the whole text on the beginning text
     // and also find first whitespace or use the whole text on the end text
     const size_t stBPos = strConsoleBegin.find_last_of(' '),
@@ -214,14 +222,12 @@ static class Console final :           // Members initially private
       ? strConsoleEnd : strConsoleEnd.substr(0, stEPos)) };
     // Return failure if word is empty... or
     if(strWhat.empty()) return false;
-    // Walk through all the cvars and check if the partial command matches
-    if(acFlags.FlagIsSet(AC_COMMANDS) &&
-      TestAutoComplete(cmMap, stBPos, stEPos, strWhat))
-        return true;
-    // Return if cvars not being checked
-    if(acFlags.FlagIsClear(AC_CVARS)) return false;
-    // Walk through all the cvars and check if the partial cvar matches
-    return TestAutoComplete(cCVars->GetVarList(), stBPos, stEPos, strWhat);
+    // Walk through all the commands and check if the partial command matches
+    // and then try the cvars if failed.
+    return (acFlags.FlagIsSet(AC_COMMANDS) &&
+            TestAutoComplete(cmMap, stBPos, stEPos, strWhat)) ||
+           (acFlags.FlagIsSet(AC_CVARS) &&
+            TestAutoComplete(cCVars->GetVarList(), stBPos, stEPos, strWhat));
   }
   /* -- Return text input -------------------------------------------------- */
   bool InputEmpty(void)
@@ -250,14 +256,14 @@ static class Console final :           // Members initially private
     else ReplaceInputChar(uiKey);
   }
   /* -- OnForceRedraw ---------------- Force a bot console display update -- */
-  void OnForceRedraw(const EvtMain::Cell &)
+  void OnForceRedraw(const EvtMainEvent&)
     { SetRedraw(); ciOutputRefresh.CISync(); }
   /* -- Size updated event (unused on win32) ------------------------------- */
-  void OnResize(const EvtMain::Cell &ecParams)
+  void OnResize(const EvtMainEvent &emeEvent)
   { // Send the event to SysCon
     cSystem->OnResize();
     // Force a redraw
-    OnForceRedraw(ecParams);
+    OnForceRedraw(emeEvent);
   }
   /* -- OnKeyPress ---------------------------------- Console key pressed -- */
   void OnKeyPress(const int iKey, const int iAction, const int iMods)
@@ -327,27 +333,22 @@ static class Console final :           // Members initially private
   }
   /* -- Scroll to the specified text in console backlog -------------------- */
   bool FindText(const string &strWhat)
-  { // Ignore if no lines to search or we're at the end already
-    if(empty() || clriPosition == rend()) return false;
-    // Start from the current line, and iterate until we get to the end. We
-    // Should skip the current line so recursive executions of this command
-    // work properly.
-    for(ConLinesConstRevIt clriLine{ next(clriPosition, 1) };
-                           clriLine != rend();
-                         ++clriLine)
-    { // Get reference to console line data structure
-      const ConLine &clD = *clriLine;
-      // Find text and goto next line if not found
-      if(clD.strLine.find(strWhat) == string::npos) continue;
-      // This will be the new position of the console history buffer
-      clriPosition = clriLine;
-      // Redraw required obviously
-      SetRedraw();
-      // No need to search anymore. The user should enter the same command
-      // again to continue searching from this position.
-      return true;
-    } // Not found
-    return false;
+  { // Return if we find the specified text where the viewer is viewing
+    if(empty() || clriPosition == crend()) return false;
+    // Find string in list and return if not found
+    const ConLinesConstRevIt clcriIt{
+      StdFindIf(seq, next(clriPosition, 1), crend(),
+        [&strWhat](const ConLine &clLine)->bool
+          { return clLine.strLine.find(strWhat) != string::npos; }) };
+    if(clcriIt == crend()) return false;
+    // Set position where we found it
+    clriPosition = clcriIt;
+    // Redraw the console
+    SetRedraw();
+    // Block the execute function from updating the output position
+    FlagSet(CF_BLOCKOUTPUTUPDATE);
+    // We're done
+    return true;
   }
   /* -- Move log by a certain amount --------------------------------------- */
   void MoveLogPage(const ConLinesConstRevIt &clriBegin,
@@ -490,11 +491,18 @@ static class Console final :           // Members initially private
   { // Get var or command name
     const string &strVarOrCmd = aList.front();
     if(strVarOrCmd.empty()) return;
-    // Dump whole input to log
-    AddLineAC(COLOUR_YELLOW, '>', strCmd);
-    // Reset scrolling position if flag set and not at the bottom.
-    if(FlagIsSet(CF_AUTOSCROLL)) MoveLogEnd();
-    // Push entire text input to recall history
+    // Get if we're already at the bottom of the log
+    const bool bAtBottom = clriPosition == rbegin();
+    // Make sure that all lines are processed immediately
+    while(!clqOutput.empty())
+    { // Move item into main console render buffer
+      emplace_back(StdMove(clqOutput.front()));
+      // remove the old item
+      clqOutput.pop();
+    } // Dump whole input to log
+    push_back({ cLog->CCDeltaToDouble(),
+      COLOUR_YELLOW, StrAppend('>', strCmd) });
+    // Add command to input history
     AddHistory(strCmd);
     // Find console callback function and function not found?
     const CmdMapConstIt cmciIt{ cmMap.find(strVarOrCmd) };
@@ -596,7 +604,17 @@ static class Console final :           // Members initially private
         // Force the console to be shown because the callback might have
         // hidden the console
         DoSetVisible(true);
+        // Force scroll to bottom
+        clriPosition = rbegin();
       } // Carry on executing as normal
+    } // Remove update block flag if set
+    if(FlagIsSet(CF_BLOCKOUTPUTUPDATE)) FlagClear(CF_BLOCKOUTPUTUPDATE);
+    // Were we already at the bottom or should we auto-scroll?
+    else if(bAtBottom || FlagIsSet(CF_AUTOSCROLL))
+    { // Autoscroll to bottom enabled? Scroll to bottom
+      clriPosition = rbegin();
+      // Set console to redraw for input text at least
+      SetRedraw();
     }
   }
   /* -- Process queued console lines --------------------------------------- */

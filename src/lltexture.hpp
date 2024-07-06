@@ -17,194 +17,66 @@
 /* ========================================================================= */
 namespace LLTexture {                  // Texture namespace
 /* -- Dependencies --------------------------------------------------------- */
-using namespace IConsole::P;           using namespace IFboDef::P;
+using namespace IConsole::P;           using namespace IFbo::P;
 using namespace IImage::P;             using namespace IOgl::P;
-using namespace ITexture::P;           using namespace Lib::OS::GlFW;
+using namespace ITexture::P;           using namespace Common;
+/* ========================================================================= **
+** ######################################################################### **
+** ## Texture common helper classes                                       ## **
+** ######################################################################### **
+** -- Create Texture class argument ---------------------------------------- */
+struct AcTexture : public ArClass<Texture> {
+  explicit AcTexture(lua_State*const lS) :
+    ArClass{*LuaUtilClassCreate<Texture>(lS, *cTextures)}{} };
+/* -- Read a Tile id ------------------------------------------------------- */
+struct AgTileId : public AgIntegerLGE<size_t> {
+  explicit AgTileId(lua_State*const lS, const int iArg, const Texture &tCref) :
+    AgIntegerLGE{lS, iArg, 0, tCref.GetTileCount()}{} };
+/* -- Other types ---------------------------------------------------------- */
+using Lib::OS::GlFW::GLint;
+typedef AgInteger<GLint> AgGLint;
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Texture:* member functions                                          ## **
 ** ######################################################################### **
 ** ========================================================================= */
-// $ Texture:BlitLTRB
-// > Left:number=The starting column to draw from.
-// > Top:number=The starting row to draw from.
-// > Right:number=The ending column pixel to draw to.
-// > Bottom:number=The ending row pixel to draw to.
-// ? Blits tile 0 of texture 0 at the specified bounds.
-/* ------------------------------------------------------------------------- */
-LLFUNC(BlitLTRB, LCGETPTR(1, Texture)->BlitLTRB(0, 0,
-  LCGETNUM(GLfloat, 2, "Left"), LCGETNUM(GLfloat, 3, "Top"),
-  LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom")));
-/* ========================================================================= */
-// $ Texture:BlitLTWH
-// > Left:number=The starting column to draw from.
-// > Top:number=The starting row to draw from.
-// > Width:number=The width of the quad to draw.
-// > Height:number=The height of the quad to draw
-// ? Blits tile 0 of texture 0 at the specified screen co-ordinates and with
-// ? the specified dimensions.
-/* ------------------------------------------------------------------------- */
-LLFUNC(BlitLTWH, LCGETPTR(1, Texture)->BlitLTWH(0, 0,
-  LCGETNUM(GLfloat, 2, "Left"), LCGETNUM(GLfloat, 3, "Top"),
-  LCGETNUM(GLfloat, 4, "Width"), LCGETNUM(GLfloat, 5, "Height")));
-/* ========================================================================= */
-// $ Texture:BlitLTRBA
-// > Left:number=The starting column to draw from.
-// > Top:number=The starting row to draw from.
-// > Right:number=The ending column pixel to draw to.
-// > Bottom:number=The ending row pixel to draw to.
-// > Angle:number=The angle in which to rotate from the centre point (-1 to 1).
-// ? Blits tile 0 of texture 0 at the specified screen bounds and angle from
-// ? the centre of the quad.
-/* ------------------------------------------------------------------------- */
-LLFUNC(BlitLTRBA, LCGETPTR(1, Texture)->BlitLTRBA(0, 0,
-  LCGETNUM(GLfloat, 2, "Left"), LCGETNUM(GLfloat, 3, "Top"),
-  LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom"),
-  LCGETNORM(GLfloat, 6, "Angle")));
-/* ========================================================================= */
-// $ Texture:BlitLTWHA
-// > Left:number=The starting column to draw from.
-// > Top:number=The starting row to draw from.
-// > Width:number=The width of the quad to draw.
-// > Height:number=The height of the quad to draw
-// > Angle:number=The angle in which to rotate from the centre point (-1 to 1).
-// ? Blits tile 0 of texture 0 at the specified screen co-ordinates and with
-// ? the specified dimensions at the specified angle from the centre of the
-// ? quad.
-/* ------------------------------------------------------------------------- */
-LLFUNC(BlitLTWHA, LCGETPTR(1, Texture)->BlitLTWHA(0, 0,
-  LCGETNUM(GLfloat, 2, "Left"), LCGETNUM(GLfloat, 3, "Top"),
-  LCGETNUM(GLfloat, 4, "Width"), LCGETNUM(GLfloat, 5, "Height"),
-  LCGETNORM(GLfloat, 6, "Angle")));
-/* ========================================================================= */
-// $ Texture:SetVLTRB
-// > Left:number=The starting column to draw from.
-// > Top:number=The starting row to draw from.
-// > Right:number=The ending column pixel to draw to.
-// > Bottom:number=The ending row pixel to draw to.
-// ? Presets these screen bounds for the next use of Texture:BlitP*.
-/* ------------------------------------------------------------------------- */
-LLFUNC(SetVLTRB, LCGETPTR(1, Texture)->FboItemSetVertex(
-  LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
-  LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom")));
-/* ========================================================================= */
-// $ Texture:SetVLTWH
-// > Left:number=The starting column to draw from.
-// > Top:number=The starting row to draw from.
-// > Width:number=The width of the quad to draw.
-// > Height:number=The height of the quad to draw
-// ? Presets the specified screen co-ordinates and dimensions for the next use
-// ? of Texture:BlitP*.
-/* ------------------------------------------------------------------------- */
-LLFUNC(SetVLTWH, LCGETPTR(1, Texture)->FboItemSetVertexWH(
-  LCGETNUM(GLfloat, 2, "Left"),  LCGETNUM(GLfloat, 3, "Top"),
-  LCGETNUM(GLfloat, 4, "Width"), LCGETNUM(GLfloat, 5, "Height")));
-/* ========================================================================= */
-// $ Texture:SetVLTRBA
-// > Left:number=The starting column to draw from.
-// > Top:number=The starting row to draw from.
-// > Right:number=The ending column pixel to draw to.
-// > Bottom:number=The ending row pixel to draw to.
-// > Angle:number=The angle in which to rotate from the centre point (-1 to 1).
-// ? Presets the specified screen bounds and angle for the next use of
-// ? Texture:BlitP*.
-/* ------------------------------------------------------------------------- */
-LLFUNC(SetVLTRBA, LCGETPTR(1, Texture)->FboItemSetVertex(
-  LCGETNUM(GLfloat, 2, "Left"), LCGETNUM(GLfloat, 3, "Top"),
-  LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom"),
-  LCGETNORM(GLfloat, 6, "Angle")));
-/* ========================================================================= */
-// $ Texture:SetVLTWHA
-// > Left:number=The starting column to draw from.
-// > Top:number=The starting row to draw from.
-// > Width:number=The width of the quad to draw.
-// > Height:number=The height of the quad to draw
-// > Angle:number=The angle in which to rotate from the centre point (-1 to 1).
-// ? Presets the specified screen co-ordinates and dimensions with angle for
-// ? the next use of Texture:BlitP*.
-/* ------------------------------------------------------------------------- */
-LLFUNC(SetVLTWHA, LCGETPTR(1, Texture)->FboItemSetVertexWH(
-  LCGETNUM(GLfloat, 2, "Left"), LCGETNUM(GLfloat, 3, "Top"),
-  LCGETNUM(GLfloat, 4, "Width"), LCGETNUM(GLfloat, 5, "Height"),
-  LCGETNORM(GLfloat, 6, "Angle")));
-/* ========================================================================= */
-// $ Texture:BlitSLTRB
-// > TileIndex:integer=The tile index of the texture to blit.
-// > Left:number=The starting column to draw from.
-// > Top:number=The starting row to draw from.
-// > Right:number=The ending column pixel to draw to.
-// > Bottom:number=The ending row pixel to draw to.
-// ? Blits tile 'TileIndex' of texture 0 at the specified bounds.
-/* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(BlitSLTRB)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.BlitLTRB(0,
-    LCGETINTLGE(size_t,  2, 0, tCref.GetTileCount(), "TileIndex"),
-    LCGETNUM(GLfloat, 3, "Left"), LCGETNUM(GLfloat, 4, "Top"),
-    LCGETNUM(GLfloat, 5, "Right"), LCGETNUM(GLfloat, 6, "Bottom"));
-LLFUNCEND
-/* ========================================================================= */
-// $ Texture:BlitSLTWH
-// > TileIndex:integer=The tile index of the texture to blit.
-// > Left:number=The starting column to draw from.
-// > Top:number=The starting row to draw from.
-// > Width:number=The width of the quad to draw.
-// > Height:number=The height of the quad to draw
-// ? Blits tile 'TileIndex' of texture 0 at the specified screen co-ordinates
-// ? and with the specified dimensions.
-/* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(BlitSLTWH)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.BlitLTWH(0,
-    LCGETINTLGE(size_t, 2, 0, tCref.GetTileCount(), "TileIndex"),
-    LCGETNUM(GLfloat, 3, "Left"), LCGETNUM(GLfloat, 4, "Top"),
-    LCGETNUM(GLfloat, 5, "Width"), LCGETNUM(GLfloat, 6, "Height"));
-LLFUNCEND
-/* ========================================================================= */
 // $ Texture:Blit
 // ? Blits texture 0 with the stored preset texcoord (SetTC*), vertex (SetV*)
 // ? and colour (SetC*). Using the Blit* functions will overwrite this stored
 // ? preset data.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Blit, LCGETPTR(1, Texture)->Blit(0));
+LLFUNC(Blit, 0, AgTexture{lS, 1}().Blit(0))
 /* ========================================================================= */
-// $ Texture:BlitSLTRBA
-// > TileIndex:integer=The tile index of the texture to blit.
+// $ Texture:BlitILT
+// > TexIndex:integer=The texture index to use.
 // > Left:number=The starting column to draw from.
 // > Top:number=The starting row to draw from.
-// > Right:number=The ending column pixel to draw to.
-// > Bottom:number=The ending row pixel to draw to.
-// > Angle:number=The angle in which to rotate from the centre point (-1 to 1).
-// ? Blits tile 'TileIndex' of texture 0 at the specified screenbounds and
-// ? angle.
+// ? Blits tile 'TileIndex' of texture 0 at the specified screen co-ordinates
+// ? with the internal tile width and height calculated when created.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(BlitSLTRBA)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.BlitLTRBA(0,
-    LCGETINTLGE(size_t, 2, 0, tCref.GetTileCount(), "TileIndex"),
-    LCGETNUM(GLfloat, 3, "Left"), LCGETNUM(GLfloat, 4, "Top"),
-    LCGETNUM(GLfloat, 5, "Right"), LCGETNUM(GLfloat, 6, "Bottom"),
-    LCGETNORM(GLfloat, 7, "Angle"));
-LLFUNCEND
+LLFUNC(BlitILT, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgTextureId aTextureId{lS, 2, aTexture};
+  const AgGLfloat aLeft{lS, 3},
+                  aTop{lS, 4};
+  aTexture().BlitLT(aTextureId, 0, aLeft, aTop))
 /* ========================================================================= */
-// $ Texture:BlitSLTWHA
-// > TileIndex:integer=The tile index of the texture to blit.
+// $ Texture:BlitILTA
+// > TexIndex:integer=The texture index to use.
 // > Left:number=The starting column to draw from.
 // > Top:number=The starting row to draw from.
-// > Width:number=The width of the quad to draw.
-// > Height:number=The height of the quad to draw
 // > Angle:number=The angle in which to rotate from the centre point (-1 to 1).
 // ? Blits tile 'TileIndex' of texture 0 at the specified screen co-ordinates
-// ? and with the specified dimensions and angle.
+// ? with the internal tile width and height calculated when created and with
+// ? the specified angle.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(BlitSLTWHA)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.BlitLTWHA(0,
-    LCGETINTLGE(size_t, 2, 0, tCref.GetTileCount(), "TileIndex"),
-    LCGETNUM(GLfloat, 3, "Left"), LCGETNUM(GLfloat, 4, "Top"),
-    LCGETNUM(GLfloat, 5, "Width"), LCGETNUM(GLfloat, 6, "Height"),
-    LCGETNORM(GLfloat, 7, "Angle"));
-LLFUNCEND
+LLFUNC(BlitILTA, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgTextureId aTextureId{lS, 2, aTexture};
+  const AgGLfloat aLeft{lS, 3},
+                  aTop{lS, 4};
+  const AgAngle aAngle{lS, 5};
+  aTexture().BlitLTA(aTextureId, 0, aLeft, aTop, aAngle))
 /* ========================================================================= */
 // $ Texture:BlitILTRB
 // > TexIndex:integer=The texture index to use.
@@ -214,30 +86,14 @@ LLFUNCEND
 // > Bottom:number=The ending row pixel to draw to.
 // ? Blits tile 0 of texture 'TexIndex' at the specified bounds.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(BlitILTRB)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.BlitLTRB(
-    LCGETINTLGE(size_t, 2, 0, tCref.GetSubCount(), "TexIndex"), 0,
-    LCGETNUM(GLfloat, 3, "Left"), LCGETNUM(GLfloat, 4, "Top"),
-    LCGETNUM(GLfloat, 5, "Right"), LCGETNUM(GLfloat, 6, "Bottom"));
-LLFUNCEND
-/* ========================================================================= */
-// $ Texture:BlitILTWH
-// > TexIndex:integer=The texture index to use.
-// > Left:number=The starting column to draw from.
-// > Top:number=The starting row to draw from.
-// > Width:number=The width of the quad to draw.
-// > Height:number=The height of the quad to draw
-// ? Blits tile 0 of texture 'TexIndex' at the specified screen co-ordinates
-// ? and with the specified dimensions.
-/* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(BlitILTWH)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.BlitLTWH(
-    LCGETINTLGE(size_t,  2, 0, tCref.GetSubCount(), "TexIndex"), 0,
-    LCGETNUM(GLfloat, 3, "Left"), LCGETNUM(GLfloat, 4, "Top"),
-    LCGETNUM(GLfloat, 5, "Width"), LCGETNUM(GLfloat, 6, "Height"));
-LLFUNCEND
+LLFUNC(BlitILTRB, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgTextureId aTextureId{lS, 2, aTexture};
+  const AgGLfloat aLeft{lS, 3},
+                  aTop{lS, 4},
+                  aRight{lS, 5},
+                  aBottom{lS, 6};
+  aTexture().BlitLTRB(aTextureId, 0, aLeft, aTop, aRight, aBottom))
 /* ========================================================================= */
 // $ Texture:BlitILTRBA
 // > TexIndex:integer=The texture index to use.
@@ -248,14 +104,33 @@ LLFUNCEND
 // > Angle:number=The angle in which to rotate from the centre point (-1 to 1).
 // ? Blits tile 0 of texture 'TexIndex' at the specified bounds.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(BlitILTRBA)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.BlitLTRBA(
-    LCGETINTLGE(size_t, 2, 0, tCref.GetSubCount(), "TexIndex"), 0,
-    LCGETNUM(GLfloat, 3, "Left"), LCGETNUM(GLfloat, 4, "Top"),
-    LCGETNUM(GLfloat, 5, "Right"), LCGETNUM(GLfloat, 6, "Bottom"),
-    LCGETNORM(GLfloat, 7, "Angle"));
-LLFUNCEND
+LLFUNC(BlitILTRBA, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgTextureId aTextureId{lS, 2, aTexture};
+  const AgGLfloat aLeft{lS, 3},
+                  aTop{lS, 4},
+                  aRight{lS, 5},
+                  aBottom{lS, 6};
+  const AgAngle aAngle{lS, 7};
+  aTexture().BlitLTRBA(aTextureId, 0, aLeft, aTop, aRight, aBottom, aAngle))
+/* ========================================================================= */
+// $ Texture:BlitILTWH
+// > TexIndex:integer=The texture index to use.
+// > Left:number=The starting column to draw from.
+// > Top:number=The starting row to draw from.
+// > Width:number=The width of the quad to draw.
+// > Height:number=The height of the quad to draw
+// ? Blits tile 0 of texture 'TexIndex' at the specified screen co-ordinates
+// ? and with the specified dimensions.
+/* ------------------------------------------------------------------------- */
+LLFUNC(BlitILTWH, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgTextureId aTextureId{lS, 2, aTexture};
+  const AgGLfloat aLeft{lS, 3},
+                  aTop{lS, 4},
+                  aWidth{lS, 5},
+                  aHeight{lS, 6};
+  aTexture().BlitLTWH(aTextureId, 0, aLeft, aTop, aWidth, aHeight))
 /* ========================================================================= */
 // $ Texture:BlitILTWHA
 // > TexIndex:integer=The texture index to use.
@@ -267,14 +142,51 @@ LLFUNCEND
 // ? Blits tile 0 of texture 'TexIndex' at the specified screen co-ordinates
 // ? and with the specified dimensions at the specified angle.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(BlitILTWHA)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.BlitLTWHA(
-    LCGETINTLGE(size_t, 2, 0, tCref.GetSubCount(), "TexIndex"), 0,
-    LCGETNUM(GLfloat, 3, "Left"), LCGETNUM(GLfloat, 4, "Top"),
-    LCGETNUM(GLfloat, 5, "Width"), LCGETNUM(GLfloat, 6, "Height"),
-    LCGETNORM(GLfloat, 7, "Angle"));
-LLFUNCEND
+LLFUNC(BlitILTWHA, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgTextureId aTextureId{lS, 2, aTexture};
+  const AgGLfloat aLeft{lS, 3},
+                  aTop{lS, 4},
+                  aWidth{lS, 5},
+                  aHeight{lS, 6};
+  const AgAngle aAngle{lS, 7};
+  aTexture().BlitLTWHA(aTextureId, 0, aLeft, aTop, aWidth, aHeight, aAngle))
+/* ========================================================================= */
+// $ Texture:BlitISLT
+// > TexIndex:integer=The texture index to use.
+// > TileIndex:integer=The tile index of the texture to blit.
+// > Left:number=The starting column to draw from.
+// > Top:number=The starting row to draw from.
+// ? Blits tile 'TileIndex' of texture 'TexIndex' at the specified screen
+// ? co-ordinates with the internal tile width and height calculated when
+// ? created.
+/* ------------------------------------------------------------------------- */
+LLFUNC(BlitISLT, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgTextureId aTextureId{lS, 2, aTexture};
+  const AgTileId aTileId{lS, 3, aTexture};
+  const AgGLfloat aLeft{lS, 4},
+                  aTop{lS, 5};
+  aTexture().BlitLT(aTextureId, aTileId, aLeft, aTop))
+/* ========================================================================= */
+// $ Texture:BlitISLTA
+// > TexIndex:integer=The texture index to use.
+// > TileIndex:integer=The tile index of the texture to blit.
+// > Left:number=The starting column to draw from.
+// > Top:number=The starting row to draw from.
+// > Angle:number=The angle in which to rotate from the centre point (-1 to 1).
+// ? Blits tile 'TileIndex' of texture 'TexIndex' at the specified screen
+// ? co-ordinates with the internal tile width and height calculated when
+// ? created, and with the specified angle.
+/* ------------------------------------------------------------------------- */
+LLFUNC(BlitISLTA, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgTextureId aTextureId{lS, 2, aTexture};
+  const AgTileId aTileId{lS, 3, aTexture};
+  const AgGLfloat aLeft{lS, 4},
+                  aTop{lS, 5};
+  const AgAngle aAngle{lS, 6};
+  aTexture().BlitLTA(aTextureId, aTileId, aLeft, aTop, aAngle))
 /* ========================================================================= */
 // $ Texture:BlitISLTRB
 // > TexIndex:integer=The texture index to use.
@@ -286,33 +198,15 @@ LLFUNCEND
 // ? Blits tile 'TileIndex' of texture 'TexIndex' at the specified screen
 // ? bounds.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(BlitISLTRB)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.BlitLTRB(
-    LCGETINTLGE(size_t,  2, 0, tCref.GetSubCount(),  "TexIndex"),
-    LCGETINTLGE(size_t,  3, 0, tCref.GetTileCount(), "TileIndex"),
-    LCGETNUM(GLfloat, 4, "Left"), LCGETNUM(GLfloat, 5, "Top"),
-    LCGETNUM(GLfloat, 6, "Right"), LCGETNUM(GLfloat, 7, "Bottom"));
-LLFUNCEND
-/* ========================================================================= */
-// $ Texture:BlitISLTWH
-// > TexIndex:integer=The texture index to use.
-// > TileIndex:integer=The tile index to blit.
-// > Left:number=The starting column to draw from.
-// > Top:number=The starting row to draw from.
-// > Width:number=The width of the quad to draw.
-// > Height:number=The height of the quad to draw
-// ? Blits tile 'TileIndex' of texture 'TexIndex' at the specified screen
-// ? co-ordinates and with the specified dimensions.
-/* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(BlitISLTWH)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.BlitLTWH(
-    LCGETINTLGE(size_t,  2, 0, tCref.GetSubCount(),  "TexIndex"),
-    LCGETINTLGE(size_t,  3, 0, tCref.GetTileCount(), "TileIndex"),
-    LCGETNUM(GLfloat, 4, "Left"), LCGETNUM(GLfloat, 5, "Top"),
-    LCGETNUM(GLfloat, 6, "Width"), LCGETNUM(GLfloat, 7, "Height"));
-LLFUNCEND
+LLFUNC(BlitISLTRB, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgTextureId aTextureId{lS, 2, aTexture};
+  const AgTileId aTileId{lS, 3, aTexture};
+  const AgGLfloat aLeft{lS, 4},
+                  aTop{lS, 5},
+                  aRight{lS, 6},
+                  aBottom{lS, 7};
+  aTexture().BlitLTRB(aTextureId, aTileId, aLeft, aTop, aRight, aBottom))
 /* ========================================================================= */
 // $ Texture:BlitISLTRBA
 // > TexIndex:integer=The texture index to use.
@@ -325,15 +219,37 @@ LLFUNCEND
 // ? Blits tile 'TileIndex' of texture 'TexIndex' at the specified screen
 // ? bounds.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(BlitISLTRBA)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.BlitLTRBA(
-    LCGETINTLGE(size_t, 2, 0, tCref.GetSubCount(),  "Texindex"),
-    LCGETINTLGE(size_t, 3, 0, tCref.GetTileCount(), "Tileindex"),
-    LCGETNUM(GLfloat, 4, "Left"), LCGETNUM(GLfloat, 5, "Top"),
-    LCGETNUM(GLfloat, 6, "Right"), LCGETNUM(GLfloat, 7, "Bottom"),
-    LCGETNORM(GLfloat, 8, "Angle"));
-LLFUNCEND
+LLFUNC(BlitISLTRBA, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgTextureId aTextureId{lS, 2, aTexture};
+  const AgTileId aTileId{lS, 3, aTexture};
+  const AgGLfloat aLeft{lS, 4},
+                  aTop{lS, 5},
+                  aRight{lS, 6},
+                  aBottom{lS, 7};
+  const AgAngle aAngle{lS, 8};
+  aTexture().BlitLTRBA(aTextureId, aTileId, aLeft, aTop, aRight, aBottom,
+    aAngle))
+/* ========================================================================= */
+// $ Texture:BlitISLTWH
+// > TexIndex:integer=The texture index to use.
+// > TileIndex:integer=The tile index to blit.
+// > Left:number=The starting column to draw from.
+// > Top:number=The starting row to draw from.
+// > Width:number=The width of the quad to draw.
+// > Height:number=The height of the quad to draw
+// ? Blits tile 'TileIndex' of texture 'TexIndex' at the specified screen
+// ? co-ordinates and with the specified dimensions.
+/* ------------------------------------------------------------------------- */
+LLFUNC(BlitISLTWH, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgTextureId aTextureId{lS, 2, aTexture};
+  const AgTileId aTileId{lS, 3, aTexture};
+  const AgGLfloat aLeft{lS, 4},
+                  aTop{lS, 5},
+                  aWidth{lS, 6},
+                  aHeight{lS, 7};
+  aTexture().BlitLTWH(aTextureId, aTileId, aLeft, aTop, aWidth, aHeight))
 /* ========================================================================= */
 // $ Texture:BlitISLTWHA
 // > TexIndex:integer=The texture index to use.
@@ -346,15 +262,17 @@ LLFUNCEND
 // ? Blits tile 'TileIndex' of texture 'TexIndex' at the specified screen
 // ? co-ordinates and with the specified dimensions.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(BlitISLTWHA)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.BlitLTWHA(
-    LCGETINTLGE(size_t, 2, 0, tCref.GetSubCount(),  "Texindex"),
-    LCGETINTLGE(size_t, 3, 0, tCref.GetTileCount(), "Tileindex"),
-    LCGETNUM(GLfloat, 4, "Left"), LCGETNUM(GLfloat, 5, "Top"),
-    LCGETNUM(GLfloat, 6, "Width"), LCGETNUM(GLfloat, 7, "Height"),
-    LCGETNORM(GLfloat, 8, "Angle"));
-LLFUNCEND
+LLFUNC(BlitISLTWHA, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgTextureId aTextureId{lS, 2, aTexture};
+  const AgTileId aTileId{lS, 3, aTexture};
+  const AgGLfloat aLeft{lS, 4},
+                  aTop{lS, 5},
+                  aWidth{lS, 6},
+                  aHeight{lS, 7};
+  const AgAngle aAngle{lS, 8};
+  aTexture().BlitLTWHA(aTextureId, aTileId, aLeft, aTop, aWidth, aHeight,
+    aAngle))
 /* ========================================================================= */
 // $ Texture:BlitLT
 // > Left:number=The starting column to draw from.
@@ -362,8 +280,11 @@ LLFUNCEND
 // ? Blits tile 0 of texture 0 at the specified screen co-ordinates with the
 // ? internal tile width and height calculated when created.
 /* ------------------------------------------------------------------------- */
-LLFUNC(BlitLT, LCGETPTR(1, Texture)->BlitLT(0, 0,
-  LCGETNUM(GLfloat, 2, "Left"), LCGETNUM(GLfloat, 3, "Top")));
+LLFUNC(BlitLT, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgGLfloat aLeft{lS, 2},
+                  aTop{lS, 3};
+  aTexture().BlitLT(0, 0, aLeft, aTop))
 /* ========================================================================= */
 // $ Texture:BlitLTA
 // > Left:number=The starting column to draw from.
@@ -373,170 +294,80 @@ LLFUNC(BlitLT, LCGETPTR(1, Texture)->BlitLT(0, 0,
 // ? internal tile width and height calculated when created and with the
 // ? specified angle.
 /* ------------------------------------------------------------------------- */
-LLFUNC(BlitLTA, LCGETPTR(1, Texture)->BlitLTA(0, 0,
-  LCGETNUM(GLfloat, 2, "Left"), LCGETNUM(GLfloat, 3, "Top"),
-  LCGETNORM(GLfloat, 4, "Angle")));
+LLFUNC(BlitLTA, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgGLfloat aLeft{lS, 2},
+                  aTop{lS, 3};
+  const AgAngle aAngle{lS, 4};
+  aTexture().BlitLTA(0, 0, aLeft, aTop, aAngle))
 /* ========================================================================= */
-// $ Texture:BlitSLT
-// > TileIndex:integer=The tile index of the texture to blit.
+// $ Texture:BlitLTRB
 // > Left:number=The starting column to draw from.
 // > Top:number=The starting row to draw from.
-// ? Blits tile 'TileIndex' of texture 0 at the specified screen co-ordinates
-// ? with the internal tile width and height calculated when created.
+// > Right:number=The ending column pixel to draw to.
+// > Bottom:number=The ending row pixel to draw to.
+// ? Blits tile 0 of texture 0 at the specified bounds.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(BlitSLT)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.BlitLT(0,
-    LCGETINTLGE(size_t, 2, 0, tCref.GetTileCount(), "Tileindex"),
-    LCGETNUM(GLfloat, 3, "Left"), LCGETNUM(GLfloat, 4, "Top"));
-LLFUNCEND
+LLFUNC(BlitLTRB, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgGLfloat aLeft{lS, 2},
+                  aTop{lS, 3},
+                  aRight{lS, 4},
+                  aBottom{lS, 5};
+  aTexture().BlitLTRB(0, 0, aLeft, aTop, aRight, aBottom))
 /* ========================================================================= */
-// $ Texture:BlitSLTA
-// > TileIndex:integer=The tile index of the texture to blit.
+// $ Texture:BlitLTRBA
 // > Left:number=The starting column to draw from.
 // > Top:number=The starting row to draw from.
+// > Right:number=The ending column pixel to draw to.
+// > Bottom:number=The ending row pixel to draw to.
 // > Angle:number=The angle in which to rotate from the centre point (-1 to 1).
-// ? Blits tile 'TileIndex' of texture 0 at the specified screen co-ordinates
-// ? with the internal tile width and height calculated when created and with
-// ? the specified angle.
+// ? Blits tile 0 of texture 0 at the specified screen bounds and angle from
+// ? the centre of the quad.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(BlitSLTA)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.BlitLTA(0,
-    LCGETINTLGE(size_t,  2, 0, tCref.GetTileCount(), "TileIndex"),
-    LCGETNUM(GLfloat, 3, "Left"), LCGETNUM(GLfloat, 4, "Top"),
-    LCGETNORM(GLfloat, 5, "Angle"));
-LLFUNCEND
+LLFUNC(BlitLTRBA, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgGLfloat aLeft{lS, 2},
+                  aTop{lS, 3},
+                  aRight{lS, 4},
+                  aBottom{lS, 5};
+  const AgAngle aAngle{lS, 6};
+  aTexture().BlitLTRBA(0, 0, aLeft, aTop, aRight, aBottom, aAngle))
 /* ========================================================================= */
-// $ Texture:BlitILT
-// > TexIndex:integer=The texture index to use.
+// $ Texture:BlitLTWH
 // > Left:number=The starting column to draw from.
 // > Top:number=The starting row to draw from.
-// ? Blits tile 'TileIndex' of texture 0 at the specified screen co-ordinates
-// ? with the internal tile width and height calculated when created.
+// > Width:number=The width of the quad to draw.
+// > Height:number=The height of the quad to draw
+// ? Blits tile 0 of texture 0 at the specified screen co-ordinates and with
+// ? the specified dimensions.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(BlitILT)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.BlitLT(
-    LCGETINTLGE(size_t, 2, 0, tCref.GetSubCount(), "Texindex"), 0,
-    LCGETNUM(GLfloat, 3, "Left"), LCGETNUM(GLfloat, 4, "Top"));
-LLFUNCEND
+LLFUNC(BlitLTWH, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgGLfloat aLeft{lS, 2},
+                  aTop{lS, 3},
+                  aWidth{lS, 4},
+                  aHeight{lS, 5};
+  aTexture().BlitLTWH(0, 0, aLeft, aTop, aWidth, aHeight))
 /* ========================================================================= */
-// $ Texture:BlitILTA
-// > TexIndex:integer=The texture index to use.
+// $ Texture:BlitLTWHA
 // > Left:number=The starting column to draw from.
 // > Top:number=The starting row to draw from.
+// > Width:number=The width of the quad to draw.
+// > Height:number=The height of the quad to draw
 // > Angle:number=The angle in which to rotate from the centre point (-1 to 1).
-// ? Blits tile 'TileIndex' of texture 0 at the specified screen co-ordinates
-// ? with the internal tile width and height calculated when created and with
-// ? the specified angle.
+// ? Blits tile 0 of texture 0 at the specified screen co-ordinates and with
+// ? the specified dimensions at the specified angle from the centre of the
+// ? quad.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(BlitILTA)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.BlitLTA(
-    LCGETINTLGE(size_t, 2, 0, tCref.GetSubCount(), "TexIndex"), 0,
-    LCGETNUM(GLfloat, 3, "Left"), LCGETNUM(GLfloat, 4, "Top"),
-    LCGETNORM(GLfloat, 5, "Angle"));
-LLFUNCEND
-/* ========================================================================= */
-// $ Texture:BlitISLT
-// > TexIndex:integer=The texture index to use.
-// > TileIndex:integer=The tile index of the texture to blit.
-// > Left:number=The starting column to draw from.
-// > Top:number=The starting row to draw from.
-// ? Blits tile 'TileIndex' of texture 'TexIndex' at the specified screen
-// ? co-ordinates with the internal tile width and height calculated when
-// ? created.
-/* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(BlitISLT)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.BlitLT(
-    LCGETINTLGE(size_t, 2, 0, tCref.GetSubCount(),  "TexIndex"),
-    LCGETINTLGE(size_t, 3, 0, tCref.GetTileCount(), "TileIndex"),
-    LCGETNUM(GLfloat, 4, "Left"), LCGETNUM(GLfloat, 5, "Top"));
-LLFUNCEND
-/* ========================================================================= */
-// $ Texture:BlitISLTA
-// > TexIndex:integer=The texture index to use.
-// > TileIndex:integer=The tile index of the texture to blit.
-// > Left:number=The starting column to draw from.
-// > Top:number=The starting row to draw from.
-// > Angle:number=The angle in which to rotate from the centre point (-1 to 1).
-// ? Blits tile 'TileIndex' of texture 'TexIndex' at the specified screen
-// ? co-ordinates with the internal tile width and height calculated when
-// ? created, and with the specified angle.
-/* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(BlitISLTA)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.BlitLTA(
-    LCGETINTLGE(size_t, 2, 0, tCref.GetSubCount(),  "TexIndex"),
-    LCGETINTLGE(size_t, 3, 0, tCref.GetTileCount(), "TileIndex"),
-    LCGETNUM(GLfloat, 4, "Left"), LCGETNUM(GLfloat, 5, "Top"),
-    LCGETNORM(GLfloat, 6, "Angle"));
-LLFUNCEND
-/* ========================================================================= */
-// $ Texture:SetCRGB
-// > Red:number=The colour intensity of the texture's red component (0-1).
-// > Green:number=The colour intensity of the texture's green component (0-1).
-// > Blue:number=The colour intensity of the texture's blue omponent (0-1).
-// ? Sets the colour intensity of the texture for each component. The change
-// ? affects all subsequent calls to all blitting functions.
-/* ------------------------------------------------------------------------- */
-LLFUNC(SetCRGB, LCGETPTR(1, Texture)->FboItemSetQuadRGB(
-  LCGETNUM(GLfloat, 2, "Red"), LCGETNUM(GLfloat, 3, "Green"),
-  LCGETNUM(GLfloat, 4, "Blue")));
-/* ========================================================================= */
-// $ Texture:SetCRGBA
-// > Red:number=The colour intensity of the texture's red component (0-1).
-// > Green:number=The colour intensity of the texture's green component (0-1).
-// > Blue:number=The colour intensity of the texture's blue omponent (0-1).
-// > Alpha:number=The transparency of the texture (0-1).
-// ? Sets the colour intensity of the texture for each component. The change
-// ? affects all subsequent calls to all blitting functions.
-/* ------------------------------------------------------------------------- */
-LLFUNC(SetCRGBA, LCGETPTR(1, Texture)->FboItemSetQuadRGBA(
-  LCGETNUM(GLfloat, 2, "Red"),  LCGETNUM(GLfloat, 3, "Green"),
-  LCGETNUM(GLfloat, 4, "Blue"), LCGETNUM(GLfloat, 5, "Alpha")));
-/* ========================================================================= */
-// $ Texture:SetCRGBAI
-// > Colour:integer=The entire colour to set as an integer (0xAARRGGBB)
-// ? Sets the colour intensity of the texture for each component using a 32
-// ? bit integer.
-/* ------------------------------------------------------------------------- */
-LLFUNC(SetCRGBAI, LCGETPTR(1, Texture)->
-  FboItemSetQuadRGBAInt(LCGETINT(uint32_t, 2, "Colour")));
-/* ========================================================================= */
-// $ Texture:SetCR
-// > Red:number=The colour intensity of the texture's red component (0-1).
-// ? Sets the colour intensity of the texture for the red component. The change
-// ? affects all subsequent calls to all blitting functions.
-/* ------------------------------------------------------------------------- */
-LLFUNC(SetCR, LCGETPTR(1, Texture)->
-  FboItemSetQuadRed(LCGETNUM(GLfloat, 2, "Red")));
-/* ========================================================================= */
-// $ Texture:SetCG
-// > Green:number=The colour intensity of the texture's green component (0-1).
-// ? Sets the colour intensity of the texture for the green component. The
-// ? change affects all subsequent calls to all blitting functions.
-/* ------------------------------------------------------------------------- */
-LLFUNC(SetCG, LCGETPTR(1, Texture)->
-  FboItemSetQuadGreen(LCGETNUM(GLfloat, 2, "Green")));
-/* ========================================================================= */
-// $ Texture:SetCB
-// > Blue:number=The colour intensity of the texture's blue component (0-1).
-// ? Sets the colour intensity of the texture for the blue component. The
-// ? change affects all subsequent calls to all blitting functions.
-/* ------------------------------------------------------------------------- */
-LLFUNC(SetCB, LCGETPTR(1, Texture)->
-  FboItemSetQuadBlue(LCGETNUM(GLfloat, 2, "Blue")));
-/* ========================================================================= */
-// $ Texture:SetCA
-// > Alpha:number=The transparency of the texture (0-1).
-// ? Sets the colour transparency of the texture. The change affects all
-// ? subsequent calls to all blitting functions.
-/* ------------------------------------------------------------------------- */
-LLFUNC(SetCA, LCGETPTR(1, Texture)->
-  FboItemSetQuadAlpha(LCGETNUM(GLfloat, 2, "Alpha")));
+LLFUNC(BlitLTWHA, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgGLfloat aLeft{lS, 2},
+                  aTop{lS, 3},
+                  aWidth{lS, 4},
+                  aHeight{lS, 5};
+  const AgAngle aAngle{lS, 6};
+  aTexture().BlitLTWHA(0, 0, aLeft, aTop, aWidth, aHeight, aAngle))
 /* ========================================================================= */
 // $ Texture:BlitM
 // > Columns:integer=The number of horizonal textures to blit.
@@ -547,262 +378,129 @@ LLFUNC(SetCA, LCGETPTR(1, Texture)->
 // ? Blits multiple textures as one giant texture which is a workaround for
 // ? texture size limits on OpenGL.
 /* ------------------------------------------------------------------------- */
-LLFUNC(BlitM, LCGETPTR(1, Texture)->BlitMulti(
-  LCGETINT(GLuint,  2, "Columns"), LCGETNUM(GLfloat, 3, "Left"),
-  LCGETNUM(GLfloat, 4, "Top"), LCGETNUM(GLfloat, 5, "Right"),
-  LCGETNUM(GLfloat, 6, "Bottom")));
+LLFUNC(BlitM, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgGLuint aColumns{lS, 2};
+  const AgGLfloat aLeft{lS, 3},
+                  aTop{lS, 4},
+                  aRight{lS, 5},
+                  aBottom{lS, 6};
+  aTexture().BlitMulti(aColumns, aLeft, aTop, aRight,
+    aBottom))
 /* ========================================================================= */
-// $ Texture:TileSTC
-// > Count:integer=The new size of the tile list.
-// ? Modifies the size of the tile list. Useful if you want to manage
-// ? your tile texcoord list dynamically. If the new size is below the current
-// ? size then existing entries will be deleted, otherwise if the new size
-// ? is larger, then new blank entries are created and are set to zero. You
-// ? will need to use SetTileData to change them.
+// $ Texture:BlitSLT
+// > TileIndex:integer=The tile index of the texture to blit.
+// > Left:number=The starting column to draw from.
+// > Top:number=The starting row to draw from.
+// ? Blits tile 'TileIndex' of texture 0 at the specified screen co-ordinates
+// ? with the internal tile width and height calculated when created.
 /* ------------------------------------------------------------------------- */
-LLFUNC(TileSTC, LCGETPTR(1, Texture)->
-  SetTileCount(LCGETINTLG(size_t, 2, 0, UINT_MAX, "Count")));
+LLFUNC(BlitSLT, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgTileId aTileId{lS, 2, aTexture};
+  const AgGLfloat aLeft{lS, 3},
+                  aTop{lS, 4};
+  aTexture().BlitLT(0, aTileId, aLeft, aTop))
 /* ========================================================================= */
-// $ Texture:TileSSTC
-// > Id:integer=The id of the sub-texture to set the size of.
-// > Count:integer=The new size of the tile list.
-// ? Modifies the size of the tile list. Useful if you want to manage
-// ? your tile texcoord list dynamically. If the new size is below the current
-// ? size then existing entries will be deleted, otherwise if the new size
-// ? is larger, then new blank entries are created and are set to zero. You
-// ? will need to use SetTileData to change them.
+// $ Texture:BlitSLTA
+// > TileIndex:integer=The tile index of the texture to blit.
+// > Left:number=The starting column to draw from.
+// > Top:number=The starting row to draw from.
+// > Angle:number=The angle in which to rotate from the centre point (-1 to 1).
+// ? Blits tile 'TileIndex' of texture 0 at the specified screen co-ordinates
+// ? with the internal tile width and height calculated when created and with
+// ? the specified angle.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(TileSSTC)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.SetTileCount(LCGETINTLG(size_t, 3, 0, UINT_MAX, "Count"),
-    LCGETINTLGE(size_t, 2, 0, tCref.GetSubCount(), "TexId"));
-LLFUNCEND
+LLFUNC(BlitSLTA, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgTileId aTileId{lS, 2, aTexture};
+  const AgGLfloat aLeft{lS, 3},
+                  aTop{lS, 4};
+  const AgAngle aAngle{lS, 5};
+  aTexture().BlitLTA(0, aTileId, aLeft, aTop, aAngle))
 /* ========================================================================= */
-// $ Texture:TileAS
-// > Id:integer=The id of the sub-texture to add to
-// > Left:integer=The left pixel position on the texture.
-// > Top:integer=The top pixel position on the texture.
-// > Right:integer=The right pixel position on the texture
-// > Bottom:integer=The bottom pixel position on the texture
-// < Id:integer=The id number for the cached texcoords.
-// ? Caches the specified texture coordinates which you can use as a parameter
-// ? to 'tileid' on blitting functions of the specified sub-texture.
+// $ Texture:BlitSLTRB
+// > TileIndex:integer=The tile index of the texture to blit.
+// > Left:number=The starting column to draw from.
+// > Top:number=The starting row to draw from.
+// > Right:number=The ending column pixel to draw to.
+// > Bottom:number=The ending row pixel to draw to.
+// ? Blits tile 'TileIndex' of texture 0 at the specified bounds.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(TileAS)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  const size_t stId = LCGETINTLGE(size_t, 2, 0, tCref.GetSubCount(), "TexId");
-  tCref.AddTileDOR(stId,
-    LCGETNUMLG(GLfloat, 3, 0.0f, tCref.GetFWidth(),  "Left"),
-    LCGETNUMLG(GLfloat, 4, 0.0f, tCref.GetFHeight(), "Top"),
-    LCGETNUMLG(GLfloat, 5, 0.0f, tCref.GetFWidth(),  "Right"),
-    LCGETNUMLG(GLfloat, 6, 0.0f, tCref.GetFHeight(), "Bottom"));
-  LCPUSHVAR(tCref.GetTileCount(stId)-1);
-LLFUNCENDEX(1)
+LLFUNC(BlitSLTRB, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgTileId aTileId{lS, 2, aTexture};
+  const AgGLfloat aLeft{lS, 3},
+                  aTop{lS, 4},
+                  aRight{lS, 5},
+                  aBottom{lS, 6};
+  aTexture().BlitLTRB(0, aTileId, aLeft, aTop, aRight, aBottom))
 /* ========================================================================= */
-// $ Texture:TileASD
-// > Id:integer=The id of the sub-texture to add to.
-// > Left:integer=The left pixel position on the texture..
-// > Top:integer=The top pixel position on the texture..
-// > Width:integer=The width of the texture..
-// > Height:integer=The height of the texture..
-// < Id:integer=The id number for the cached texcoords..
-// ? Caches the specified texture coordinates which you can use as a parameter
-// ? to 'tileid' on blitting functions of the specified sub-texture.
+// $ Texture:BlitSLTRBA
+// > TileIndex:integer=The tile index of the texture to blit.
+// > Left:number=The starting column to draw from.
+// > Top:number=The starting row to draw from.
+// > Right:number=The ending column pixel to draw to.
+// > Bottom:number=The ending row pixel to draw to.
+// > Angle:number=The angle in which to rotate from the centre point (-1 to 1).
+// ? Blits tile 'TileIndex' of texture 0 at the specified screenbounds and
+// ? angle.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(TileASD)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  const size_t stId = LCGETINTLGE(size_t, 2, 0, tCref.GetSubCount(), "TexId");
-  const GLfloat
-    fX = LCGETNUMLG(GLfloat, 3, 0.0f, tCref.GetFWidth(), "Left"),
-    fY = LCGETNUMLG(GLfloat, 4, 0.0f, tCref.GetFHeight(), "Top");
-  tCref.AddTileDORWH(stId, fX, fY,
-    LCGETNUMLG(GLfloat, 5, 0.0f, tCref.GetFWidth()-fX, "Width"),
-    LCGETNUMLG(GLfloat, 6, 0.0f, tCref.GetFHeight()-fY, "Height"));
-  LCPUSHVAR(tCref.GetTileCount(stId)-1);
-LLFUNCENDEX(1)
+LLFUNC(BlitSLTRBA, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgTileId aTileId{lS, 2, aTexture};
+  const AgGLfloat aLeft{lS, 3},
+                  aTop{lS, 4},
+                  aRight{lS, 5},
+                  aBottom{lS, 6};
+  const AgAngle aAngle{lS, 7};
+  aTexture().BlitLTRBA(0, aTileId, aLeft, aTop, aRight, aBottom, aAngle))
 /* ========================================================================= */
-// $ Texture:TileA
-// > Left:integer=The left pixel position on the texture..
-// > Top:integer=The top pixel position on the texture..
-// > Right:integer=The right pixel position on the texture.
-// > Bottom:integer=The bottom pixel position on the texture.
-// < Id:integer=The id number for the cached texcoords..
-// ? Caches the specified texture coordinates which you can use as a parameter
-// ? to 'tileid' on blitting functions.
+// $ Texture:BlitSLTWH
+// > TileIndex:integer=The tile index of the texture to blit.
+// > Left:number=The starting column to draw from.
+// > Top:number=The starting row to draw from.
+// > Width:number=The width of the quad to draw.
+// > Height:number=The height of the quad to draw
+// ? Blits tile 'TileIndex' of texture 0 at the specified screen co-ordinates
+// ? and with the specified dimensions.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(TileA)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.AddTileDOR(0,
-    LCGETNUMLG(GLfloat, 2, 0.0f, tCref.GetFWidth(), "Left"),
-    LCGETNUMLG(GLfloat, 3, 0.0f, tCref.GetFHeight(), "Top"),
-    LCGETNUMLG(GLfloat, 4, 0.0f, tCref.GetFWidth(), "Right"),
-    LCGETNUMLG(GLfloat, 5, 0.0f, tCref.GetFHeight(), "Bottom"));
-  LCPUSHVAR(tCref.GetTileCount()-1);
-LLFUNCENDEX(1)
+LLFUNC(BlitSLTWH, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgTileId aTileId{lS, 2, aTexture};
+  const AgGLfloat aLeft{lS, 3},
+                  aTop{lS, 4},
+                  aWidth{lS, 5},
+                  aHeight{lS, 6};
+  aTexture().BlitLTWH(0, aTileId, aLeft, aTop, aWidth, aHeight))
 /* ========================================================================= */
-// $ Texture:TileAD
-// > Left:integer=The left pixel position on the texture.
-// > Top:integer=The top pixel position on the texture.
-// > Width:integer=The width of the texture.
-// > Height:integer=The height of the texture.
-// < Id:integer=The id number for the cached texcoords.
-// ? Caches the specified texture coordinates which you can use as a parameter
-// ? to 'tileid' on blitting functions.
+// $ Texture:BlitSLTWHA
+// > TileIndex:integer=The tile index of the texture to blit.
+// > Left:number=The starting column to draw from.
+// > Top:number=The starting row to draw from.
+// > Width:number=The width of the quad to draw.
+// > Height:number=The height of the quad to draw
+// > Angle:number=The angle in which to rotate from the centre point (-1 to 1).
+// ? Blits tile 'TileIndex' of texture 0 at the specified screen co-ordinates
+// ? and with the specified dimensions and angle.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(TileAD)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  const GLfloat
-    fX = LCGETNUMLG(GLfloat, 2, 0.0f, tCref.GetFWidth(), "Left"),
-    fY = LCGETNUMLG(GLfloat, 3, 0.0f, tCref.GetFHeight(), "Top");
-  tCref.AddTileDORWH(0, fX, fY,
-    LCGETNUMLG(GLfloat, 4, 0.0f, tCref.GetFWidth()-fX, "Width"),
-    LCGETNUMLG(GLfloat, 5, 0.0f, tCref.GetFHeight()-fY, "Height"));
-  LCPUSHVAR(tCref.GetTileCount()-1);
-LLFUNCENDEX(1)
+LLFUNC(BlitSLTWHA, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgTileId aTileId{lS, 2, aTexture};
+  const AgGLfloat aLeft{lS, 3},
+                  aTop{lS, 4},
+                  aWidth{lS, 5},
+                  aHeight{lS, 6};
+  const AgAngle aAngle{lS, 7};
+  aTexture().BlitLTWHA(0, aTileId, aLeft, aTop, aWidth, aHeight, aAngle))
 /* ========================================================================= */
-// $ Texture:TileSS
-// > TexId:integer=The id of the sub texture to change.
-// > TileId:integer=The id of the tile id to change.
-// > Left:integer=The left pixel position on the texture.
-// > Top:integer=The top pixel position on the texture.
-// > Right:integer=The right pixel position on the texture
-// > Bottom:integer=The bottom pixel position on the texture
-// ? Changes the specified texture coordinates which you can use as a parameter
-// ? to 'tileid' on blitting functions.
+// $ Texture:Destroy
+// ? Destroys the texture and frees all the memory associated with it. The
+// ? OpenGL handles and VRAM allocated by it are freed after the main FBO has
+// ? has been rendered. The object will no longer be useable after this call
+// ? and an error will be generated if accessed.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(TileSS)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  const size_t stTexId =
-    LCGETINTLGE(size_t,  2, 0,    tCref.GetSubCount(),         "TexId");
-  tCref.SetTileDOR(stTexId,
-    LCGETINTLGE(size_t,  3, 0,    tCref.GetTileCount(stTexId), "TileId"),
-    LCGETNUMLG (GLfloat, 4, 0.0f, tCref.GetFWidth(),           "Left"),
-    LCGETNUMLG (GLfloat, 5, 0.0f, tCref.GetFHeight(),          "Top"),
-    LCGETNUMLG (GLfloat, 6, 0.0f, tCref.GetFWidth(),           "Right"),
-    LCGETNUMLG (GLfloat, 7, 0.0f, tCref.GetFHeight(),          "Bottom"));
-LLFUNCEND
-/* ========================================================================= */
-// $ Texture:TileSSD
-// > TexId:integer=The id of the sub texture to change.
-// > TileId:integer=The id of the tile id to change.
-// > Left:integer=The left pixel position on the texture.
-// > Top:integer=The top pixel position on the texture.
-// > Width:integer=The width of the texture.
-// > Height:integer=The height of the texture.
-// ? Changes the specified texture coordinates which you can use as a parameter
-// ? to 'tileid' on blitting functions.
-/* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(TileSSD)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  const size_t
-    stTexId = LCGETINTLGE(size_t, 2, 0, tCref.GetSubCount(), "TexId"),
-    stTileId = LCGETINTLGE(size_t, 3, 0, tCref.GetTileCount(stTexId),
-      "TileId");
-  const GLfloat
-    fX = LCGETNUMLG(GLfloat, 4, 0.0f, tCref.GetFWidth(), "Left"),
-    fY = LCGETNUMLG(GLfloat, 5, 0.0f, tCref.GetFHeight(), "Top");
-  tCref.SetTileDORWH(stTexId, stTileId, fX, fY,
-    LCGETNUMLG(GLfloat, 6, 0.0f, tCref.GetFWidth()-fX, "Width"),
-    LCGETNUMLG(GLfloat, 7, 0.0f, tCref.GetFHeight()-fY, "Height"));
-LLFUNCEND
-/* ========================================================================= */
-// $ Texture:TileS
-// > Id:integer=The id of the tile to change
-// > Left:integer=The left pixel position on the texture.
-// > Top:integer=The top pixel position on the texture.
-// > Right:integer=The right pixel position on the texture
-// > Bottom:integer=The bottom pixel position on the texture
-// ? Changes the specified texture coordinates which you can use as a parameter
-// ? to 'tileid' on blitting functions.
-/* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(TileS)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.SetTileDOR(0,
-    LCGETINTLGE(size_t, 2, 0, tCref.GetTileCount(0), "Index"),
-    LCGETNUMLG(GLfloat, 3, 0.0f, tCref.GetFWidth(), "Left"),
-    LCGETNUMLG(GLfloat, 4, 0.0f, tCref.GetFHeight(), "Top"),
-    LCGETNUMLG(GLfloat, 5, 0.0f, tCref.GetFWidth(), "Right"),
-    LCGETNUMLG(GLfloat, 6, 0.0f, tCref.GetFHeight(), "Bottom"));
-LLFUNCEND
-/* ========================================================================= */
-// $ Texture:TileSD
-// > Id:integer=The id of the tile to change
-// > Left:integer=The left pixel position on the texture.
-// > Top:integer=The top pixel position on the texture.
-// > Width:integer=The width of the texture.
-// > Height:integer=The height of the texture.
-// ? Changes the specified texture coordinates which you can use as a parameter
-// ? to 'tileid' on blitting functions.
-/* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(TileSD)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  const size_t stId =
-    LCGETINTLGE(size_t, 2, 0, tCref.GetTileCount(0), "Index");
-  const GLfloat
-    fX = LCGETNUMLG(GLfloat, 3, 0.0f, tCref.GetFWidth(), "Left"),
-    fY = LCGETNUMLG(GLfloat, 4, 0.0f, tCref.GetFHeight(), "Top");
-  tCref.SetTileDORWH(0, stId, fX, fY,
-    LCGETNUMLG(GLfloat, 5, 0.0f, tCref.GetFWidth()-fX, "Width"),
-    LCGETNUMLG(GLfloat, 6, 0.0f, tCref.GetFHeight()-fY, "Height"));
-LLFUNCEND
-/* ========================================================================= */
-// $ Texture:TileGTC
-// < Count:integer=The handle of the texture created.
-// ? Returns number of tiles found in the loaded texture file.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(TileGTC, 1, LCPUSHVAR(LCGETPTR(1, Texture)->GetTileCount()));
-/* ========================================================================= */
-// $ Texture:TileGSTC
-// > Id:integer=The id of the sub-texture to get the count for.
-// < Count:integer=The handle of the texture created.
-// ? Returns number of tiles found in the loaded texture file with the
-// ? specified sub-texture id.
-/* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(TileGSTC)
-  const Texture &tCref = *LCGETPTR(1, Texture);
-  LCPUSHVAR(tCref.GetTileCount(
-    LCGETINTLGE(size_t, 2, 0, tCref.GetSubCount(), "TexId")));
-LLFUNCENDEX(1)
-/* ========================================================================= */
-// $ Texture:GetSubCount
-// < Count:integer=The number of sub-textures in this texture
-// ? Returns number of sub-textures found in the loaded image file.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(GetSubCount, 1, LCPUSHVAR(LCGETPTR(1, Texture)->GetSubCount()));
-/* ========================================================================= */
-// $ Texture:GetHeight
-// < Height:integer=The handle of the new mask created.
-// ? Returns height of texture.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(GetHeight, 1, LCPUSHVAR(LCGETPTR(1, Texture)->DimGetHeight()));
-/* ========================================================================= */
-// $ Texture:GetId
-// < Id:integer=The id number of the Texture object.
-// ? Returns the unique id of the Texture object.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(GetId, 1, LCPUSHVAR(LCGETPTR(1, Texture)->CtrGet()));
-/* ========================================================================= */
-// $ Texture:GetName
-// < Name:string=Name of the texture.
-// ? If this texture was loaded by a filename or it was set with a custom id.
-// ? This function returns that name which was assigned to it.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(GetName, 1, LCPUSHVAR(LCGETPTR(1, Texture)->IdentGet()));
-/* ========================================================================= */
-// $ Texture:GetWidth
-// < Width:integer=The handle of the new mask created.
-// ? Returns width of texture.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(GetWidth, 1, LCPUSHVAR(LCGETPTR(1, Texture)->DimGetWidth()));
-/* ========================================================================= */
-// $ Texture:Dump
-// ? Dumps the texture to the specified file in the specified format.
-/* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(Dump)
-  const Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.Dump(LCGETINTLGE(size_t, 2, 0, tCref.GetSubCount(), "TexId"),
-    LCGETCPPFILE(3, "File"));
-LLFUNCEND
+LLFUNC(Destroy, 0, LuaUtilClassDestroy<Texture>(lS, 1, *cTextures))
 /* ========================================================================= */
 // $ Texture:Download
 // > TexId:Integer=The sub-id of the texture to download
@@ -810,59 +508,140 @@ LLFUNCEND
 // ? Dumps the texture from VRAM to the specified array. The format of which
 // ? is how the image was originally uploaded
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(Download)
-  const Texture &tCref = *LCGETPTR(1, Texture);
-  Image imNew{ tCref.Download(LCGETINTLGE(size_t, 2, 0, tCref.GetSubCount(),
-    "TexId")) };
-  LCCLASSCREATE(Image)->SwapImage(imNew);
-LLFUNCENDEX(1)
+LLFUNC(Download, 1,
+  const AgTexture aTexture{lS, 1};
+  const AgTextureId aTextureId{lS, 2, aTexture};
+  AcTexture{lS}().SwapImage({ aTexture().Download(aTextureId) }))
 /* ========================================================================= */
-// $ Texture:Upload
-// > Data:Image=The pixel data to update the texture with
-// ? Updates the whole texture in VRAM with the texture specified in the array.
-// ? The array data must be the same width, the same height and the same pixel
-// ? type of when the texture was first originally updated, thus the size of
-// ? the memory must match the actual texture memory. The source and
-// ? destination colour format must be the same, or use UploadEx
+// $ Texture:Dump
+// ? Dumps the texture to the specified file in the specified format.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Upload, LCGETPTR(1, Texture)->Update(*LCGETPTR(2, Image)));
+LLFUNC(Dump, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgTextureId aTextureId{lS, 2, aTexture};
+  const AgFilename aFilename{lS, 3};
+  aTexture().Dump(aTextureId, aFilename))
 /* ========================================================================= */
-// $ Texture:UploadEx
-// > TexId:Integer=The sub-id of the texture to download
-// > Data:Image=The image to upload to the texture
-// > OffsetX:Integer=The X position on the destination texture where to place
-// > OffsetY:Integer=The Y position on the destination texture where to place
-// > Width:Integer=The width of the image stored in the 'Data' array
-// > Height:Integer=The height of the image stored in the 'Data' array
-// > Alpha:boolean=The source image is RGBA 32bpp? Else it is RGB 24bpp.
-// ? Updates a partial area of the supplied texture in VRAM with the texture
-// ? data specified in the array. Only sources and destinations of 24 and 32
-// ? bits per pixel are supported.
+// $ Texture:GetHeight
+// < Height:integer=The handle of the new mask created.
+// ? Returns height of texture.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(UploadEx)
-  Texture &tCref = *LCGETPTR(1, Texture);
-  tCref.UpdateEx(LCGETINTLGE(size_t, 2, 0, tCref.GetSubCount(), "TexId"),
-    *LCGETPTR(3, Image), LCGETINT(GLint, 4, "OffsetX"),
-    LCGETINT(GLint, 5, "OffsetY"));
-LLFUNCEND
+LLFUNC(GetHeight, 1, LuaUtilPushVar(lS, AgTexture{lS, 1}().DimGetHeight()))
 /* ========================================================================= */
-// $ Texture:SetVX
-// > TriIndex:integer=Triangle index. Triangle #1 (zero) or triangle #2 (one).
-// > V1Left:number=GLfloat for X coord of vertex #1 of the specified triangle.
-// > V1Top:number=GLfloat for Y coord of vertex #1 of the specified triangle.
-// > V2Left:number=GLfloat for X coord of vertex #2 of the specified triangle.
-// > V2Top:number=GLfloat for Y coord of vertex #2 of the specified triangle.
-// > V3Left:number=GLfloat for X coord of vertex #3 of the specified triangle.
-// > V3Top:number=GLfloat for Y coord of vertex #3 of the specified triangle.
-// ? Presets the specified co-ordinates on each vertex for the specified
-// ? triangle for the Texture:BlitP* function.
+// $ Texture:GetId
+// < Id:integer=The id number of the Texture object.
+// ? Returns the unique id of the Texture object.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetVX, LCGETPTR(1, Texture)->
-  FboItemSetVertexEx(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex"), {
-    LCGETNUM(GLfloat, 3, "V1Left"), LCGETNUM(GLfloat, 4, "V1Top"),
-    LCGETNUM(GLfloat, 5, "V2Left"), LCGETNUM(GLfloat, 6, "V2Top"),
-    LCGETNUM(GLfloat, 7, "V3Left"), LCGETNUM(GLfloat, 8, "v3Top")
-  }));
+LLFUNC(GetId, 1, LuaUtilPushVar(lS, AgTexture{lS, 1}().CtrGet()))
+/* ========================================================================= */
+// $ Texture:GetName
+// < Name:string=Name of the texture.
+// ? If this texture was loaded by a filename or it was set with a custom id.
+// ? This function returns that name which was assigned to it.
+/* ------------------------------------------------------------------------- */
+LLFUNC(GetName, 1, LuaUtilPushVar(lS, AgTexture{lS, 1}().IdentGet()))
+/* ========================================================================= */
+// $ Texture:GetSubCount
+// < Count:integer=The number of sub-textures in this texture
+// ? Returns number of sub-textures found in the loaded image file.
+/* ------------------------------------------------------------------------- */
+LLFUNC(GetSubCount, 1, LuaUtilPushVar(lS, AgTexture{lS, 1}().GetSubCount()))
+/* ========================================================================= */
+// $ Texture:GetWidth
+// < Width:integer=The handle of the new mask created.
+// ? Returns width of texture.
+/* ------------------------------------------------------------------------- */
+LLFUNC(GetWidth, 1, LuaUtilPushVar(lS, AgTexture{lS, 1}().DimGetWidth()))
+/* ========================================================================= */
+// $ Texture:PopColour
+// ? Restores the currently saved colour by PushColour.
+/* ------------------------------------------------------------------------- */
+LLFUNC(PopColour, 0, AgTexture{lS, 1}().FboItemPopQuadColour())
+/* ========================================================================= */
+// $ Texture:PushColour
+// ? Saves the currently set colour by SetCRGBA. Use PopColour to restore it.
+/* ------------------------------------------------------------------------- */
+LLFUNC(PushColour, 0, AgTexture{lS, 1}().FboItemPushQuadColour())
+/* ========================================================================= */
+// $ Texture:SetCA
+// > Alpha:number=The transparency of the texture (0-1).
+// ? Sets the colour transparency of the texture. The change affects all
+// ? subsequent calls to all blitting functions.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetCA, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgGLfloat aColour{lS, 2};
+  aTexture().FboItemSetQuadAlpha(aColour))
+/* ========================================================================= */
+// $ Texture:SetCB
+// > Blue:number=The colour intensity of the texture's blue component (0-1).
+// ? Sets the colour intensity of the texture for the blue component. The
+// ? change affects all subsequent calls to all blitting functions.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetCB, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgGLfloat aColour{lS, 2};
+  aTexture().FboItemSetQuadBlue(aColour))
+/* ========================================================================= */
+// $ Texture:SetCG
+// > Green:number=The colour intensity of the texture's green component (0-1).
+// ? Sets the colour intensity of the texture for the green component. The
+// ? change affects all subsequent calls to all blitting functions.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetCG, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgGLfloat aColour{lS, 2};
+  aTexture().FboItemSetQuadGreen(aColour))
+/* ========================================================================= */
+// $ Texture:SetCR
+// > Red:number=The colour intensity of the texture's red component (0-1).
+// ? Sets the colour intensity of the texture for the red component. The change
+// ? affects all subsequent calls to all blitting functions.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetCR, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgGLfloat aColour{lS, 2};
+  aTexture().FboItemSetQuadRed(aColour))
+/* ========================================================================= */
+// $ Texture:SetCRGB
+// > Red:number=The colour intensity of the texture's red component (0-1).
+// > Green:number=The colour intensity of the texture's green component (0-1).
+// > Blue:number=The colour intensity of the texture's blue omponent (0-1).
+// ? Sets the colour intensity of the texture for each component. The change
+// ? affects all subsequent calls to all blitting functions.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetCRGB, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgGLfloat aRed{lS, 2},
+                  aGreen{lS, 3},
+                  aBlue{lS, 4};
+  aTexture().FboItemSetQuadRGB(aRed, aGreen, aBlue))
+/* ========================================================================= */
+// $ Texture:SetCRGBA
+// > Red:number=The colour intensity of the texture's red component (0-1).
+// > Green:number=The colour intensity of the texture's green component (0-1).
+// > Blue:number=The colour intensity of the texture's blue omponent (0-1).
+// > Alpha:number=The transparency of the texture (0-1).
+// ? Sets the colour intensity of the texture for each component. The change
+// ? affects all subsequent calls to all blitting functions.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetCRGBA, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgGLfloat aRed{lS, 2},
+                  aGreen{lS, 3},
+                  aBlue{lS, 4},
+                  aAlpha{lS, 5};
+  aTexture().FboItemSetQuadRGBA(aRed, aGreen, aBlue, aAlpha))
+/* ========================================================================= */
+// $ Texture:SetCRGBAI
+// > Colour:integer=The entire colour to set as an integer (0xAARRGGBB)
+// ? Sets the colour intensity of the texture for each component using a 32
+// ? bit integer.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetCRGBAI, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgUInt32 aColour{lS, 2};
+  aTexture().FboItemSetQuadRGBAInt(aColour))
 /* ========================================================================= */
 // $ Texture:SetCX
 // > TriIndex:integer=Triangle index. Triangle #1 (zero) or triangle #2 (one).
@@ -881,14 +660,15 @@ LLFUNC(SetVX, LCGETPTR(1, Texture)->
 // ? Presets the specified colour intensities on each vertex for the
 // ? Texture:BlitP* function.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetCX, LCGETPTR(1, Texture)->
-  FboItemSetColourEx(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex"), {
-    LCGETNUM(GLfloat, 3, "V1Red"), LCGETNUM(GLfloat, 4, "V1Green"),
-    LCGETNUM(GLfloat, 5, "V1Blue"), LCGETNUM(GLfloat, 6, "V1Alpha"),
-    LCGETNUM(GLfloat, 7, "V2Red"), LCGETNUM(GLfloat, 8, "V2Green"),
-    LCGETNUM(GLfloat, 9, "V2Blue"), LCGETNUM(GLfloat, 10, "V2Alpha"),
-    LCGETNUM(GLfloat, 11, "V3Red"), LCGETNUM(GLfloat, 12, "V3Green"),
-    LCGETNUM(GLfloat, 13, "V3Blue"), LCGETNUM(GLfloat, 14, "V3Alpha")}));
+LLFUNC(SetCX, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgTriangleId aTriangleId{lS, 2};
+  const FboBase::TriColData tcdNew{
+    AgGLfloat{lS,  3}, AgGLfloat{lS,  4}, AgGLfloat{lS,  5}, AgGLfloat{lS,  6},
+    AgGLfloat{lS,  7}, AgGLfloat{lS,  8}, AgGLfloat{lS,  9}, AgGLfloat{lS, 10},
+    AgGLfloat{lS, 11}, AgGLfloat{lS, 12}, AgGLfloat{lS, 13}, AgGLfloat{lS, 14}
+  };
+  aTexture().FboItemSetColourEx(aTriangleId, tcdNew))
 /* ========================================================================= */
 // $ Texture:SetTCLTRB
 // > Left:number=The left co-ordinate.
@@ -897,9 +677,13 @@ LLFUNC(SetCX, LCGETPTR(1, Texture)->
 // > Bottom:number=The bottom co-ordinate.
 // ? Preset the specified texture bounds for the Texture:BlitP* function.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetTCLTRB, LCGETPTR(1, Texture)->FboItemSetTexCoord(
-  LCGETNUM(GLfloat, 2, "Left"), LCGETNUM(GLfloat, 3, "Top"),
-  LCGETNUM(GLfloat, 4, "Right"), LCGETNUM(GLfloat, 5, "Bottom")));
+LLFUNC(SetTCLTRB, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgGLfloat aLeft{lS, 2},
+                  aTop{lS, 3},
+                  aRight{lS, 4},
+                  aBottom{lS, 5};
+  aTexture().FboItemSetTexCoord(aLeft, aTop, aRight, aBottom))
 /* ========================================================================= */
 // $ Texture:SetTCLTWH
 // > Left:number=The left co-ordinate.
@@ -909,9 +693,13 @@ LLFUNC(SetTCLTRB, LCGETPTR(1, Texture)->FboItemSetTexCoord(
 // ? Preset the specified texture co-ordinates and dimensions for the
 // ? Texture:BlitP* function.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetTCLTWH, LCGETPTR(1, Texture)->FboItemSetTexCoordWH(
-  LCGETNUM(GLfloat, 2, "Left"), LCGETNUM(GLfloat, 3, "Top"),
-  LCGETNUM(GLfloat, 4, "Width"), LCGETNUM(GLfloat, 5, "Height")));
+LLFUNC(SetTCLTWH, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgGLfloat aLeft{lS, 2},
+                  aTop{lS, 3},
+                  aWidth{lS, 4},
+                  aHeight{lS, 5};
+  aTexture().FboItemSetTexCoordWH(aLeft, aTop, aWidth, aHeight))
 /* ========================================================================= */
 // $ Texture:SetTCX
 // > TriIndex:integer=Triangle index. Triangle #1 (zero) or triangle #2 (one).
@@ -924,30 +712,327 @@ LLFUNC(SetTCLTWH, LCGETPTR(1, Texture)->FboItemSetTexCoordWH(
 // ? Presets the specified texture co-ordinates on the specified triangle for
 // ? the Texture:BlitP* function.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetTCX, LCGETPTR(1, Texture)->
-  FboItemSetTexCoordEx(LCGETINTLGE(size_t, 2, 0, stTrisPerQuad, "TriIndex"), {
-    LCGETNUM(GLfloat, 3, "TC1Left"), LCGETNUM(GLfloat, 4, "TC1Top"),
-    LCGETNUM(GLfloat, 5, "TC2Left"), LCGETNUM(GLfloat, 6, "TC2Top"),
-    LCGETNUM(GLfloat, 7, "TC3Left"), LCGETNUM(GLfloat, 8, "TC3Top")
-  }));
+LLFUNC(SetTCX, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgTriangleId aTriangleId{lS, 2};
+  const FboBase::TriCoordData tcdNew{
+    AgGLfloat{lS, 3}, AgGLfloat{lS, 4}, AgGLfloat{lS, 5},
+    AgGLfloat{lS, 6}, AgGLfloat{lS, 7}, AgGLfloat{lS, 8}
+  };
+  aTexture().FboItemSetTexCoordEx(aTriangleId, tcdNew))
 /* ========================================================================= */
-// $ Texture:PushColour
-// ? Saves the currently set colour by SetCRGBA. Use PopColour to restore it.
+// $ Texture:SetVLTRB
+// > Left:number=The starting column to draw from.
+// > Top:number=The starting row to draw from.
+// > Right:number=The ending column pixel to draw to.
+// > Bottom:number=The ending row pixel to draw to.
+// ? Presets these screen bounds for the next use of Texture:BlitP*.
 /* ------------------------------------------------------------------------- */
-LLFUNC(PushColour, LCGETPTR(1, Texture)->FboItemPushQuadColour());
+LLFUNC(SetVLTRB, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgGLfloat aLeft{lS, 2},
+                  aTop{lS, 3},
+                  aRight{lS, 4},
+                  aBottom{lS, 5};
+  aTexture().FboItemSetVertex(aLeft, aTop, aRight, aBottom))
 /* ========================================================================= */
-// $ Texture:PopColour
-// ? Restores the currently saved colour by PushColour.
+// $ Texture:SetVLTRBA
+// > Left:number=The starting column to draw from.
+// > Top:number=The starting row to draw from.
+// > Right:number=The ending column pixel to draw to.
+// > Bottom:number=The ending row pixel to draw to.
+// > Angle:number=The angle in which to rotate from the centre point (-1 to 1).
+// ? Presets the specified screen bounds and angle for the next use of
+// ? Texture:BlitP*.
 /* ------------------------------------------------------------------------- */
-LLFUNC(PopColour, LCGETPTR(1, Texture)->FboItemPopQuadColour());
+LLFUNC(SetVLTRBA, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgGLfloat aLeft{lS, 2},
+                  aTop{lS, 3},
+                  aRight{lS, 4},
+                  aBottom{lS, 5};
+  const AgAngle aAngle{lS, 6};
+  aTexture().FboItemSetVertex(aLeft, aTop, aRight, aBottom, aAngle))
 /* ========================================================================= */
-// $ Texture:Destroy
-// ? Destroys the texture and frees all the memory associated with it. The
-// ? OpenGL handles and VRAM allocated by it are freed after the main FBO has
-// ? has been rendered. The object will no longer be useable after this call
-// ? and an error will be generated if accessed.
+// $ Texture:SetVLTWH
+// > Left:number=The starting column to draw from.
+// > Top:number=The starting row to draw from.
+// > Width:number=The width of the quad to draw.
+// > Height:number=The height of the quad to draw
+// ? Presets the specified screen co-ordinates and dimensions for the next use
+// ? of Texture:BlitP*.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Destroy, LCCLASSDESTROY(1, Texture));
+LLFUNC(SetVLTWH, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgGLfloat aLeft{lS, 2},
+                  aTop{lS, 3},
+                  aWidth{lS, 4},
+                  aHeight{lS, 5};
+  aTexture().FboItemSetVertexWH(aLeft, aTop, aWidth, aHeight))
+/* ========================================================================= */
+// $ Texture:SetVLTWHA
+// > Left:number=The starting column to draw from.
+// > Top:number=The starting row to draw from.
+// > Width:number=The width of the quad to draw.
+// > Height:number=The height of the quad to draw
+// > Angle:number=The angle in which to rotate from the centre point (-1 to 1).
+// ? Presets the specified screen co-ordinates and dimensions with angle for
+// ? the next use of Texture:BlitP*.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetVLTWHA, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgGLfloat aLeft{lS, 2},
+                  aTop{lS, 3},
+                  aWidth{lS, 4},
+                  aHeight{lS, 5};
+  const AgAngle aAngle{lS, 6};
+  aTexture().FboItemSetVertexWH(aLeft, aTop, aWidth, aHeight, aAngle))
+/* ========================================================================= */
+// $ Texture:SetVX
+// > TriIndex:integer=Triangle index. Triangle #1 (zero) or triangle #2 (one).
+// > V1Left:number=GLfloat for X coord of vertex #1 of the specified triangle.
+// > V1Top:number=GLfloat for Y coord of vertex #1 of the specified triangle.
+// > V2Left:number=GLfloat for X coord of vertex #2 of the specified triangle.
+// > V2Top:number=GLfloat for Y coord of vertex #2 of the specified triangle.
+// > V3Left:number=GLfloat for X coord of vertex #3 of the specified triangle.
+// > V3Top:number=GLfloat for Y coord of vertex #3 of the specified triangle.
+// ? Presets the specified co-ordinates on each vertex for the specified
+// ? triangle for the Texture:BlitP* function.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetVX, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgTriangleId aTriangleId{lS, 2};
+  const FboBase::TriPosData tpdNew{
+    AgGLfloat{lS, 3}, AgGLfloat{lS, 4}, AgGLfloat{lS, 5},
+    AgGLfloat{lS, 6}, AgGLfloat{lS, 7}, AgGLfloat{lS, 8}
+  };
+  aTexture().FboItemSetVertexEx(aTriangleId, tpdNew))
+/* ========================================================================= */
+// $ Texture:TileA
+// > Left:integer=The left pixel position on the texture..
+// > Top:integer=The top pixel position on the texture..
+// > Right:integer=The right pixel position on the texture.
+// > Bottom:integer=The bottom pixel position on the texture.
+// < Id:integer=The id number for the cached texcoords..
+// ? Caches the specified texture coordinates which you can use as a parameter
+// ? to 'tileid' on blitting functions.
+/* ------------------------------------------------------------------------- */
+LLFUNC(TileA, 1,
+  const AgTexture aTexture{lS, 1};
+  const AgGLfloat aLeft{lS, 2},
+                  aTop{lS, 3},
+                  aRight{lS, 4},
+                  aBottom{lS, 5};
+  aTexture().AddTileDOR(0, aLeft, aTop, aRight, aBottom);
+  LuaUtilPushVar(lS, aTexture().GetTileCount() - 1))
+/* ========================================================================= */
+// $ Texture:TileAD
+// > Left:integer=The left pixel position on the texture.
+// > Top:integer=The top pixel position on the texture.
+// > Width:integer=The width of the texture.
+// > Height:integer=The height of the texture.
+// < Id:integer=The id number for the cached texcoords.
+// ? Caches the specified texture coordinates which you can use as a parameter
+// ? to 'tileid' on blitting functions.
+/* ------------------------------------------------------------------------- */
+LLFUNC(TileAD, 1,
+  const AgTexture aTexture{lS, 1};
+  const AgGLfloat aLeft{lS, 2},
+                  aTop{lS, 3},
+                  aWidth{lS, 4},
+                  aHeight{lS, 5};
+  aTexture().AddTileDORWH(0, aLeft, aTop, aWidth, aHeight);
+  LuaUtilPushVar(lS, aTexture().GetTileCount() - 1))
+/* ========================================================================= */
+// $ Texture:TileAS
+// > Id:integer=The id of the sub-texture to add to
+// > Left:integer=The left pixel position on the texture.
+// > Top:integer=The top pixel position on the texture.
+// > Right:integer=The right pixel position on the texture
+// > Bottom:integer=The bottom pixel position on the texture
+// < Id:integer=The id number for the cached texcoords.
+// ? Caches the specified texture coordinates which you can use as a parameter
+// ? to 'tileid' on blitting functions of the specified sub-texture.
+/* ------------------------------------------------------------------------- */
+LLFUNC(TileAS, 1,
+  const AgTexture aTexture{lS, 1};
+  const AgTextureId aTextureId{lS, 2, aTexture};
+  const AgGLfloat aLeft{lS, 3},
+                  aTop{lS, 4},
+                  aRight{lS, 5},
+                  aBottom{lS, 6};
+  aTexture().AddTileDOR(aTextureId, aLeft, aTop, aRight, aBottom);
+  LuaUtilPushVar(lS, aTexture().GetTileCount(aTextureId) - 1))
+/* ========================================================================= */
+// $ Texture:TileASD
+// > Id:integer=The id of the sub-texture to add to.
+// > Left:integer=The left pixel position on the texture..
+// > Top:integer=The top pixel position on the texture..
+// > Width:integer=The width of the texture..
+// > Height:integer=The height of the texture..
+// < Id:integer=The id number for the cached texcoords..
+// ? Caches the specified texture coordinates which you can use as a parameter
+// ? to 'tileid' on blitting functions of the specified sub-texture.
+/* ------------------------------------------------------------------------- */
+LLFUNC(TileASD, 1,
+  const AgTexture aTexture{lS, 1};
+  const AgTextureId aTextureId{lS, 2, aTexture};
+  const AgGLfloat aLeft{lS, 3},
+                  aTop{lS, 4},
+                  aWidth{lS, 5},
+                  aHeight{lS, 6};
+  aTexture().AddTileDORWH(aTextureId, aLeft, aTop, aWidth, aHeight);
+  LuaUtilPushVar(lS, aTexture().GetTileCount(aTextureId) - 1))
+/* ========================================================================= */
+// $ Texture:TileGSTC
+// > Id:integer=The id of the sub-texture to get the count for.
+// < Count:integer=The handle of the texture created.
+// ? Returns number of tiles found in the loaded texture file with the
+// ? specified sub-texture id.
+/* ------------------------------------------------------------------------- */
+LLFUNC(TileGSTC, 1,
+  const AgTexture aTexture{lS, 1};
+  const AgTileId aTileId{lS, 2, aTexture};
+  LuaUtilPushVar(lS, aTexture().GetTileCount(aTileId)))
+/* ========================================================================= */
+// $ Texture:TileGTC
+// < Count:integer=The handle of the texture created.
+// ? Returns number of tiles found in the loaded texture file.
+/* ------------------------------------------------------------------------- */
+LLFUNC(TileGTC, 1, LuaUtilPushVar(lS, AgTexture{lS, 1}().GetTileCount()))
+/* ========================================================================= */
+// $ Texture:TileS
+// > Id:integer=The id of the tile to change
+// > Left:integer=The left pixel position on the texture.
+// > Top:integer=The top pixel position on the texture.
+// > Right:integer=The right pixel position on the texture
+// > Bottom:integer=The bottom pixel position on the texture
+// ? Changes the specified texture coordinates which you can use as a parameter
+// ? to 'tileid' on blitting functions.
+/* ------------------------------------------------------------------------- */
+LLFUNC(TileS, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgTileId aTileId{lS, 2, aTexture};
+  const AgGLfloat aLeft{lS, 3},
+                  aTop{lS, 4},
+                  aRight{lS, 5},
+                  aBottom{lS, 6};
+  aTexture().SetTileDOR(0, aTileId, aLeft, aTop, aRight, aBottom))
+/* ========================================================================= */
+// $ Texture:TileSD
+// > Id:integer=The id of the tile to change
+// > Left:integer=The left pixel position on the texture.
+// > Top:integer=The top pixel position on the texture.
+// > Width:integer=The width of the texture.
+// > Height:integer=The height of the texture.
+// ? Changes the specified texture coordinates which you can use as a parameter
+// ? to 'tileid' on blitting functions.
+/* ------------------------------------------------------------------------- */
+LLFUNC(TileSD, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgTileId aTileId{lS, 2, aTexture};
+  const AgGLfloat aLeft{lS, 3},
+                  aTop{lS, 4},
+                  aWidth{lS, 5},
+                  aHeight{lS, 6};
+  aTexture().SetTileDORWH(0, aTileId, aLeft, aTop, aWidth, aHeight))
+/* ========================================================================= */
+// $ Texture:TileSS
+// > TexId:integer=The id of the sub texture to change.
+// > TileId:integer=The id of the tile id to change.
+// > Left:integer=The left pixel position on the texture.
+// > Top:integer=The top pixel position on the texture.
+// > Right:integer=The right pixel position on the texture
+// > Bottom:integer=The bottom pixel position on the texture
+// ? Changes the specified texture coordinates which you can use as a parameter
+// ? to 'tileid' on blitting functions.
+/* ------------------------------------------------------------------------- */
+LLFUNC(TileSS, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgTextureId aTextureId{lS, 2, aTexture};
+  const AgTileId aTileId{lS, 3, aTexture};
+  const AgGLfloat aLeft{lS, 4},
+                  aTop{lS, 5},
+                  aRight{lS, 6},
+                  aBottom{lS, 7};
+  aTexture().SetTileDOR(aTextureId, aTileId, aLeft, aTop, aRight, aBottom))
+/* ========================================================================= */
+// $ Texture:TileSSD
+// > TexId:integer=The id of the sub texture to change.
+// > TileId:integer=The id of the tile id to change.
+// > Left:integer=The left pixel position on the texture.
+// > Top:integer=The top pixel position on the texture.
+// > Width:integer=The width of the texture.
+// > Height:integer=The height of the texture.
+// ? Changes the specified texture coordinates which you can use as a parameter
+// ? to 'tileid' on blitting functions.
+/* ------------------------------------------------------------------------- */
+LLFUNC(TileSSD, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgTextureId aTextureId{lS, 2, aTexture};
+  const AgTileId aTileId{lS, 3, aTexture};
+  const AgGLfloat aLeft{lS, 4},
+                  aTop{lS, 5},
+                  aWidth{lS, 6},
+                  aHeight{lS, 7};
+  aTexture().SetTileDORWH(aTextureId, aTileId, aLeft, aTop, aWidth, aHeight))
+/* ========================================================================= */
+// $ Texture:TileSSTC
+// > Id:integer=The id of the sub-texture to set the size of.
+// > Count:integer=The new size of the tile list.
+// ? Modifies the size of the tile list. Useful if you want to manage
+// ? your tile texcoord list dynamically. If the new size is below the current
+// ? size then existing entries will be deleted, otherwise if the new size
+// ? is larger, then new blank entries are created and are set to zero. You
+// ? will need to use SetTileData to change them.
+/* ------------------------------------------------------------------------- */
+LLFUNC(TileSSTC, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgTextureId aTextureId{lS, 2, aTexture};
+  const AgSizeTLG aCount{lS, 3, 0, UINT_MAX};
+  aTexture().SetTileCount(aCount, aTextureId))
+/* ========================================================================= */
+// $ Texture:TileSTC
+// > Count:integer=The new size of the tile list.
+// ? Modifies the size of the tile list. Useful if you want to manage
+// ? your tile texcoord list dynamically. If the new size is below the current
+// ? size then existing entries will be deleted, otherwise if the new size
+// ? is larger, then new blank entries are created and are set to zero. You
+// ? will need to use SetTileData to change them.
+/* ------------------------------------------------------------------------- */
+LLFUNC(TileSTC, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgSizeTLG aCount{lS, 2, 0, UINT_MAX};
+  aTexture().SetTileCount(aCount))
+/* ========================================================================= */
+// $ Texture:Upload
+// > Data:Image=The pixel data to update the texture with
+// ? Updates the whole texture in VRAM with the texture specified in the array.
+// ? The array data must be the same width, the same height and the same pixel
+// ? type of when the texture was first originally updated, thus the size of
+// ? the memory must match the actual texture memory. The source and
+// ? destination colour format must be the same, or use UploadEx
+/* ------------------------------------------------------------------------- */
+LLFUNC(Upload, 0, AgTexture{lS, 1}().Update(AgImage{lS,2}()))
+/* ========================================================================= */
+// $ Texture:UploadEx
+// > TexId:Integer=The sub-id of the texture to download
+// > Data:Image=The image to upload to the texture
+// > OffsetX:Integer=The X position on the destination texture where to place
+// > OffsetY:Integer=The Y position on the destination texture where to place
+// > Width:Integer=The width of the image stored in the 'Data' array
+// > Height:Integer=The height of the image stored in the 'Data' array
+// > Alpha:boolean=The source image is RGBA 32bpp? Else it is RGB 24bpp.
+// ? Updates a partial area of the supplied texture in VRAM with the texture
+// ? data specified in the array. Only sources and destinations of 24 and 32
+// ? bits per pixel are supported.
+/* ------------------------------------------------------------------------- */
+LLFUNC(UploadEx, 0,
+  const AgTexture aTexture{lS, 1};
+  const AgTextureId aTextureId{lS, 2, aTexture};
+  const AgImage aImage{lS, 3};
+  const AgGLint aX{lS, 4}, aY{lS, 5};
+  aTexture().UpdateEx(aTextureId, aImage, aX, aY))
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Texture:* member functions structure                                ## **
@@ -978,14 +1063,25 @@ LLRSMFBEGIN                            // Texture:* member functions begin
   LLRSFUNC(TileSTC),     LLRSFUNC(Upload),      LLRSFUNC(UploadEx),
 LLRSEND                                // Texture:* member functions end
 /* ========================================================================= */
+// $ Texture.Console
+// < Handle:Texture=Texture handle to console texture
+// ? Returns the handle to the console texture. Useful if you want to reuse the
+// ? texture in your application. Careful not to mess around with it's
+// ? properties!
+/* ------------------------------------------------------------------------- */
+LLFUNC(Console, 1,
+  LuaUtilClassCreatePtr<Texture>(lS, *cTextures, cConGraphics->GetTexture()))
+/* ========================================================================= */
 // $ Texture.Create
 // > Source:image=The image class to load from.
 // > Filter:integer=The default filter to use
 // < Handle:Texture=A handle to the texture(s) created.
 // ? Creates the specified texture from the specified image class.
-/* ========================================================================= */
-LLFUNCEX(Create, 1, LCCLASSCREATE(Texture)->InitImage(*LCGETPTR(1, Image),
-  0, 0, 0, 0, LCGETINTLGE(OglFilterEnum, 2, OF_N_N, OF_MAX, "Filter")));
+/* ------------------------------------------------------------------------- */
+LLFUNC(Create, 1,
+  const AgImage aImage{lS, 1};
+  const AgFilterId aFilterId{lS, 2};
+  AcTexture{lS}().InitImage(aImage, 0, 0, 0, 0, aFilterId))
 /* ========================================================================= */
 // $ Texture.CreateTS
 // > Source:image=The image class to load from.
@@ -997,20 +1093,12 @@ LLFUNCEX(Create, 1, LCCLASSCREATE(Texture)->InitImage(*LCGETPTR(1, Image),
 // < Handle:Texture=A handle to the texture(s) created.
 // ? Loads a texture as a tileset from the specified image class.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(CreateTS, 1, LCCLASSCREATE(Texture)->InitImage(*LCGETPTR(1, Image),
-  LCGETINTLG(GLuint, 2, 0, UINT_MAX, "TWidth"),
-  LCGETINTLG(GLuint, 3, 0, UINT_MAX, "THeight"),
-  LCGETINTLG(GLuint, 4, 0, UINT_MAX, "PWidth"),
-  LCGETINTLG(GLuint, 5, 0, UINT_MAX, "PHeight"),
-  LCGETINTLGE(OglFilterEnum, 6, OF_N_N, OF_MAX, "Filter")));
-/* ========================================================================= */
-// $ Texture.Console
-// < Handle:Texture=Texture handle to console texture
-// ? Returns the handle to the console texture. Useful if you want to reuse the
-// ? texture in your application. Careful not to mess around with it's
-// ? properties!
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(Console, 1, LCCLASSCREATEPTR(Texture, cConGraphics->GetTexture()));
+LLFUNC(CreateTS, 1,
+  const AgImage aImage{lS, 1};
+  const AgUIntLG aTW{lS, 2, 0, UINT_MAX}, aTH{lS, 3, 0, UINT_MAX},
+                 aPW{lS, 4, 0, UINT_MAX}, aPH{lS, 5, 0, UINT_MAX};
+  const AgFilterId aFilterId{lS, 6};
+  AcTexture{lS}().InitImage(aImage, aTW, aTH, aPW, aPH, aFilterId))
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Texture.* namespace functions structure                             ## **

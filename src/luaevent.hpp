@@ -43,15 +43,15 @@ class LuaEvts :
   }
   /* -- Check if enough parameters ----------------------------------------- */
   template<size_t stMinimum>
-    bool LuaEvtsCheckParams(const EvtMain::Params &empArgs)
+    bool LuaEvtsCheckParams(const EvtMainArgs &emaArgs)
   { // Minimum arguments must be two or more
     static_assert(stMinimum >= 2, "Must specify two parameters or more!");
     // If we have at least two parameters remove the iterator
-    if(empArgs.size() >= 2) LuaEvtsRemoveIterator(empArgs[1].z);
+    if(emaArgs.size() >= 2) LuaEvtsRemoveIterator(emaArgs[1].z);
     // Return true if required args is 2 because we've already checked that
     if constexpr(stMinimum == 2) return true;
     // Return success if we have enough parameters
-    return empArgs.size() >= stMinimum;
+    return emaArgs.size() >= stMinimum;
   }
   /* -- Add a new event and stab iterator ---------------------------------- */
   template<typename ...VarArgs>void LuaEvtsDispatch(const EvtMainCmd emcCmd,
@@ -61,11 +61,11 @@ class LuaEvts :
     // Lock access to the list
     const LockGuard lgLuaEvtsSync{ LuaEvtsGetMutex() };
     // Current parameters list for event
-    EvtMain::Params empArgs;
+    EvtMainArgs emaArgs;
     // Reserve memory for parameters
-    empArgs.reserve(sizeof...(VarArgs));
+    emaArgs.reserve(sizeof...(VarArgs));
     // Create a new params list with the class and the events list size
-    cEvtMain->AddExParam(emcCmd, qciItem, empArgs, vpClass, size(), vaArgs...);
+    cEvtMain->AddExParam(emcCmd, qciItem, emaArgs, vpClass, size(), vaArgs...);
     // Insert the iterator the new event.
     emplace_back(StdMove(qciItem));
   }
@@ -97,22 +97,22 @@ class LuaEvts :
 /* == Class type for master class (send parameters on event trigger) ======= */
 template<class MemberType>struct LuaEvtTypeParam
 { /* -- Send event to thiscall with no parameters -------------------------- */
-  static void OnEvent(const EvtMain::Cell &emcArgs)
+  static void OnEvent(const EvtMainEvent &emeEvent)
   { // Get reference to parameters and if there are no parameters?
-    const EvtMain::Params &empArgs = emcArgs.vParams;
-    if(empArgs.empty())
+    const EvtMainArgs &emaArgs = emeEvent.aArgs;
+    if(emaArgs.empty())
     { // Not enough parameters so show error in log
       cLog->LogErrorExSafe("LuaEvt got generic event $ with zero params!",
-        emcArgs.evtCommand);
+        emeEvent.cCmd);
       // Done
       return;
     } // Get pointer to class and call if if it is valid
-    MemberType*const mtPtr = reinterpret_cast<MemberType*>(empArgs.front().vp);
-    if(mtPtr) return mtPtr->LuaEvtCallbackParam(emcArgs);
+    MemberType*const mtPtr = reinterpret_cast<MemberType*>(emaArgs.front().vp);
+    if(mtPtr) return mtPtr->LuaEvtCallbackParam(emeEvent);
     // Show error so show error in log
     cLog->LogErrorExSafe(
       "LuaEvt got generic event $ with null class ptr from $ params!",
-        emcArgs.evtCommand, empArgs.size());
+        emeEvent.cCmd, emaArgs.size());
   }
   /* -- Constructor (not interested) --------------------------------------- */
   LuaEvtTypeParam(void) { }
@@ -122,23 +122,23 @@ template<class MemberType>struct LuaEvtTypeParam
 /* == Class type for master class (send no parameters on event trigger) ==== */
 template<class MemberType>struct LuaEvtTypeAsync // Used in async class
 { /* -- Send event to thiscall with no parameters -------------------------- */
-  static void OnEvent(const EvtMain::Cell &emcArgs)
+  static void OnEvent(const EvtMainEvent &emeEvent)
   { // Get reference to parameters and if we don't have any?
-    const EvtMain::Params &empArgs = emcArgs.vParams;
-    if(empArgs.empty())
+    const EvtMainArgs &emaArgs = emeEvent.aArgs;
+    if(emaArgs.empty())
     { // Not enough parameters so show error in log
       cLog->LogErrorExSafe("LuaEvt got async event $ with zero params!",
-        emcArgs.evtCommand);
+        emeEvent.cCmd);
       // Done
       return;
     } // Get pointer to class and call if if it is valid
     if(MemberType*const mtPtr =
-      reinterpret_cast<MemberType*>(empArgs.front().vp))
-        return mtPtr->LuaEvtCallbackAsync(emcArgs);
+      reinterpret_cast<MemberType*>(emaArgs.front().vp))
+        return mtPtr->LuaEvtCallbackAsync(emeEvent);
     // Show error so show error in log
     cLog->LogErrorExSafe(
       "LuaEvt got async event $ with null class ptr from $ params!",
-        emcArgs.evtCommand, empArgs.size());
+        emeEvent.cCmd, emaArgs.size());
   }
   /* -- Constructor (not interested) --------------------------------------- */
   LuaEvtTypeAsync(void) { }
@@ -182,90 +182,91 @@ class LuaEvtSlave :
     LuaEvtsDispatch(emcCmd, reinterpret_cast<void*>(mtPtr), vaArgs...);
   }
   /* -- Event callback on main thread -------------------------------------- */
-  void LuaEvtCallbackParam(const EvtMain::Cell &emcArgs) try
-  { // Sanity check get number of mandatory parameters
+  void LuaEvtCallbackParam(const EvtMainEvent &emeEvent) try
+  { // Get reference to actual arguments vector
+    const EvtMainArgs &emaArgs = emeEvent.aArgs;
+    // Sanity check get number of mandatory parameters
     const size_t stMandatory = 2;
     // Get number of parameters and make sure we have enough parameters
-    size_t stMax = emcArgs.vParams.size();
-    if(stMax < stMandatory)
+    if(emaArgs.size() < stMandatory)
       XC("Not enough parameters to generic Lua event callback!",
-         "Identifier", mtPtr->IdentGet(), "Event",   emcArgs.evtCommand,
-         "Count",      stMax,             "Maximum", stMandatory);
+         "Identifier", mtPtr->IdentGet(), "Event",   emeEvent.cCmd,
+         "Count",      emaArgs.size(),    "Maximum", stMandatory);
     // Remove iterator from our events dispatched list
-    LuaEvtsRemoveIterator(static_cast<size_t>(emcArgs.vParams[1].ui));
+    LuaEvtsRemoveIterator(static_cast<size_t>(emaArgs[1].ui));
     // Lua is paused?
     if(uiLuaPaused)
     { // Show error in log
       cLog->LogWarningExSafe(
         "LuaEvt for generic event $ for '$' ignored because lua is paused!",
-        emcArgs.evtCommand,  mtPtr->IdentGet(), this->LuaRefStateIsSet(),
-        this->LuaRefGetId(), stMax);
+        emeEvent.cCmd,  mtPtr->IdentGet(), this->LuaRefStateIsSet(),
+        this->LuaRefGetId(), emaArgs.size());
       // Just return
       return;
     } // Check to see if we can write the function and it's parameters, if not?
-    if(!LuaUtilIsStackAvail(this->LuaRefGetState(), stMax - 1))
+    if(!LuaUtilIsStackAvail(this->LuaRefGetState(), emaArgs.size() - 1))
       XC("Not enough stack space or memory, or param count overflowed!",
-         "Identifier", mtPtr->IdentGet(),        "Event", emcArgs.evtCommand,
+         "Identifier", mtPtr->IdentGet(),        "Event", emeEvent.cCmd,
          "HaveState",  this->LuaRefStateIsSet(), "Ref",   this->LuaRefGetId(),
-         "Params",     stMax);
+         "Params",     emaArgs.size());
     // Not have function?
     if(!this->LuaRefGetFunc())
       XC("Could not get callback function!",
-         "Identifier", mtPtr->IdentGet(),        "Event", emcArgs.evtCommand,
+         "Identifier", mtPtr->IdentGet(),        "Event", emeEvent.cCmd,
          "HaveState",  this->LuaRefStateIsSet(), "Ref",   this->LuaRefGetId(),
-         "Params",     stMax);
+         "Params",     emaArgs.size());
     // Enumerate add the rest of the parameters
-    for(size_t stIndex = 2; stIndex < stMax; ++stIndex)
+    for(size_t stIndex = 2; stIndex < emaArgs.size(); ++stIndex)
     { // Using event core namespace
       using namespace IEvtCore;
-      const MVar &mvParam = emcArgs.vParams[stIndex];
+      const EvtArgVar &eavArg = emaArgs[stIndex];
       // Compare type
-      switch(mvParam.t)
+      switch(eavArg.t)
       { // Boolean?
-        case MVT_BOOL:
-          LuaUtilPushBool(this->LuaRefGetState(), mvParam.b);
+        case EAVT_BOOL:
+          LuaUtilPushBool(this->LuaRefGetState(), eavArg.b);
           break;
         // C-String?
-        case MVT_CSTR:
-          LuaUtilPushCStr(this->LuaRefGetState(), mvParam.cp);
+        case EAVT_CSTR:
+          LuaUtilPushCStr(this->LuaRefGetState(), eavArg.cp);
           break;
         // STL String?
-        case MVT_STR:
-          LuaUtilPushStr(this->LuaRefGetState(), *mvParam.str);
+        case EAVT_STR:
+          LuaUtilPushStr(this->LuaRefGetState(), *eavArg.str);
           break;
         // Float?
-        case MVT_FLOAT:
+        case EAVT_FLOAT:
           LuaUtilPushNum(this->LuaRefGetState(),
-            static_cast<lua_Number>(mvParam.f));
+            static_cast<lua_Number>(eavArg.f));
           break;
         // Double?
-        case MVT_DOUBLE:
+        case EAVT_DOUBLE:
           LuaUtilPushNum(this->LuaRefGetState(),
-            static_cast<lua_Number>(mvParam.d));
+            static_cast<lua_Number>(eavArg.d));
           break;
         // Signed or unsigned integer?
-        case MVT_UINT: [[fallthrough]]; case MVT_INT:
+        case EAVT_UINT: [[fallthrough]]; case EAVT_INT:
           LuaUtilPushInt(this->LuaRefGetState(),
-            static_cast<lua_Integer>(mvParam.i));
+            static_cast<lua_Integer>(eavArg.i));
           break;
         // Signed or unsigned long long?
-        case MVT_ULONGLONG: [[fallthrough]]; case MVT_LONGLONG:
+        case EAVT_ULONGLONG: [[fallthrough]]; case EAVT_LONGLONG:
           LuaUtilPushInt(this->LuaRefGetState(),
-            static_cast<lua_Integer>(mvParam.ll));
+            static_cast<lua_Integer>(eavArg.ll));
           break;
         // Signed or unsigned long int?
-        case MVT_LONGUINT: [[fallthrough]]; case MVT_LONGINT:
+        case EAVT_LONGUINT: [[fallthrough]]; case EAVT_LONGINT:
           LuaUtilPushInt(this->LuaRefGetState(),
-            static_cast<lua_Integer>(mvParam.li));
+            static_cast<lua_Integer>(eavArg.li));
           break;
         // Unsupported type? Push nil
-        default: [[fallthrough]]; case MVT_MAX:
+        default: [[fallthrough]]; case EAVT_MAX:
           LuaUtilPushNil(this->LuaRefGetState());
           break;
       }
     } // Call the callback function.
     LuaUtilCallFuncEx(this->LuaRefGetState(),
-      static_cast<int>(stMax - stMandatory));
+      static_cast<int>(emaArgs.size() - stMandatory));
   } // Exception occured? Disable lua callback and rethrow
   catch(const exception&) { this->LuaRefDeInit(); throw; }
   /* ----------------------------------------------------------------------- */
@@ -301,7 +302,7 @@ class LuaEvtSlave :
   void LuaEvtInit(lua_State*const lS)
   { // Need 2 parameters and a function
     LuaUtilCheckParams(lS, 2);
-    LuaUtilCheckFunc(lS, 2, "Callback");
+    LuaUtilCheckFunc(lS, 2);
     // Done
     LuaEvtInitEx(lS);
   }

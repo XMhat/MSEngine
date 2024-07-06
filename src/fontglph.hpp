@@ -211,8 +211,8 @@ template<class StrokerFuncType>
     function<decltype(FT_Done_Glyph)>> GlyphPtr;
   if(GlyphPtr gPtr{ gData, FT_Done_Glyph })
   { // Apply glyph border if requested
-    cFreeType->CheckError(StrokerFuncType(gData,
-      ftfData.GetStroker()).Result(),
+    cFreeType->CheckError(StrokerFuncType{ gData,
+      ftfData.GetStroker() }.Result(),
       "Failed to apply outline to glyph!",
       "Identifier", IdentGet(), "Glyph", stChar);
     // Convert The Glyph To A Image.
@@ -327,7 +327,7 @@ template<class StrokerFuncType>
             stBWidthx2);
         } // This is the new image and the old one will be destroyed
         const size_t stOldAlloc = isRef.MemSize();
-        isRef.MemSwap(StdMove(mDst));
+        isRef.MemSwap(mDst);
         mDst.MemDeInit();
         AdjustAlloc(stOldAlloc, isRef.MemSize());
         // Calculate how much the image increased. This should really be 2

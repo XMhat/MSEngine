@@ -45,7 +45,7 @@ class SqlData :                        // Query response data item class
   int              iType;              // Type of memory in block
   /* -- Move assignment operator ------------------------------------------- */
   SqlData &operator=(SqlData &&sdOther)
-    { MemSwap(StdMove(sdOther)); iType = sdOther.iType; return *this; }
+    { MemSwap(sdOther); iType = sdOther.iType; return *this; }
   /* -- Initialise with rvalue memory and type ----------------------------- */
   SqlData(Memory &&mRef,               // Memory to record data
           const int iNType) :          // Type of the contents in record data
@@ -572,7 +572,7 @@ static struct Sql final :              // Members initially public
       // Get maximum parameters allowed before we have to send them
       if(const int iMax = sqlite3_bind_parameter_count(stmtData))
       { // No parameters specified? Just execute the statement
-        if(lua_isnone(lS, iParam)) SetError(SQLITE_FORMAT);
+        if(LuaUtilIsNone(lS, iParam)) SetError(SQLITE_FORMAT);
         // Parameter is valid?
         else
         { // Column id
@@ -584,7 +584,7 @@ static struct Sql final :              // Members initially public
             { // Variable is a number?
               case LUA_TNUMBER:
               { // Variable is actually an integer?
-                if(lua_isinteger(lS, iParam))
+                if(LuaUtilIsInteger(lS, iParam))
                 { // Get integer, log it and add it as integer
                   const lua_Integer liInt = lua_tointeger(lS, iParam);
                   cLog->LogDebugExSafe("- Arg #$<Integer/Int> = $ <$0x$>.",
@@ -631,7 +631,7 @@ static struct Sql final :              // Members initially public
               case LUA_TUSERDATA:
               { // Get reference to memory block, log it and push data to list
                 const MemConst &mcRef =
-                  *LuaUtilGetPtr<Asset>(lS, iParam, "Asset");
+                  *LuaUtilGetPtr<Asset>(lS, iParam, *cAssets);
                 cLog->LogDebugExSafe("- Arg #$<Asset/Blob> = $ bytes.",
                   iCol, mcRef.MemSize());
                 SetError(sqlite3_bind_blob(stmtData, iCol,
@@ -645,7 +645,7 @@ static struct Sql final :              // Members initially public
             } // Do the step if needed break if not needed or error
             if(!DoExecuteParamCheckCommit(stmtData, iCol, iMax)) break;
           } // ...until no parameters left
-          while(!lua_isnone(lS, ++iParam));
+          while(!LuaUtilIsNone(lS, ++iParam));
         }
       } // We can't add parameters so just execute the statement
       else DoStep(stmtData);
@@ -690,7 +690,7 @@ static struct Sql final :              // Members initially public
           // Raw data? Save as array
           case SQLITE_BLOB:
           { // Create memory block array class
-            Asset &aRef = *LuaUtilClassCreate<Asset>(lS, "Asset");
+            Asset &aRef = *LuaUtilClassCreate<Asset>(lS, *cAssets);
             // Initialise the memory block depending on if we have data
             if(sdRef.MemIsNotEmpty())
               aRef.MemInitData(sdRef.MemSize(), sdRef.MemPtr<void*>());

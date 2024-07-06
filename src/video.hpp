@@ -1179,27 +1179,6 @@ CTOR_MEM_BEGIN_ASYNC(Videos, Video, ICHelperSafe, /* No CLHelper */),
     // Update choice of shader to use
     UpdateShader();
   }
-  /* -- Load video from memory asynchronously ------------------------------ */
-  void InitAsyncArray(lua_State*const lS)
-  { // Need 5 parameters (class pointer was already pushed onto the stack);
-    LuaUtilCheckParams(lS, 6);
-    // Get and check parameters
-    const string strName{ LuaUtilGetCppStrNE(lS, 1, "Identifier") };
-    Asset &aData = *LuaUtilGetPtr<Asset>(lS, 2, "Data");
-    LuaUtilCheckFuncs(lS, 3, "ErrorFunc", 4, "ProgressFunc", 5, "SuccessFunc");
-    // Set base parameters
-    AsyncInitArray(lS, strName, "videoarray", StdMove(aData));
-  }
-  /* -- Load stream from file asynchronously ------------------------------- */
-  void InitAsyncFile(lua_State*const lS)
-  { // Need 4 parameters (class pointer was already pushed onto the stack);
-    LuaUtilCheckParams(lS, 5);
-    // Get and check parameters
-    const string strFile{ LuaUtilGetCppFile(lS, 1, "File") };
-    LuaUtilCheckFuncs(lS, 2, "ErrorFunc", 3, "ProgressFunc", 4, "SuccessFunc");
-    // Load sample from file asynchronously
-    AsyncInitFile(lS, strFile, "videofile");
-  }
   /* -- Destructor --------------------------------------------------------- */
   ~Video(void)
   { // Stop any pending async operations
@@ -1282,7 +1261,7 @@ CTOR_MEM_BEGIN_ASYNC(Videos, Video, ICHelperSafe, /* No CLHelper */),
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* -- End ---------------------------------------------------------------- */
-CTOR_END_ASYNC_NOFUNCS(Videos, VIDEO,  // Finish collector class
+CTOR_END_ASYNC_NOFUNCS(Videos, Video, VIDEO, // Finish collector class
   /* -- Initialisers ------------------------------------------------------- */
   LuaEvtMaster{ EMC_VID_EVENT },       // Init lua event async helper
   csStrings{{                          // Init colour space strings list

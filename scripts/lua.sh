@@ -118,7 +118,7 @@ fi
 if [ ! -f src/lparser.c.patched ]; then
   mv -fv src/lparser.c src/lparser.c.patch 2>/dev/null
   cat src/lparser.c.patch | sed \
-    "s|MAXVARS\t\t200|MAXVARS\t\t255|g" > src/lparser.c
+    "s|MAXVARS\t\t200|MAXVARS\t\t253|g" > src/lparser.c
   if [ ! $? -eq 0 ]; then
     exit 13
   fi
@@ -128,31 +128,31 @@ if [ ! -f src/lparser.c.patched ]; then
   fi
 fi
 
-if [ ! -f src/lua.h.patched ]; then
-  mv -fv src/lua.h src/lua.h.patch 2>/dev/null
-  cat src/lua.h.patch | sed \
-    "s|MAXVARS\t\t200|MAXVARS\t\t255|g" > src/lua.h
-  if [ ! $? -eq 0 ]; then
-    exit 15
-  fi
-  mv -fv src/lua.h.patch src/lua.h.patched
-  if [ ! $? -eq 0 ]; then
-    exit 16
-  fi
-fi
+# if [ ! -f src/lua.h.patched ]; then
+#   mv -fv src/lua.h src/lua.h.patch 2>/dev/null
+#   cat src/lua.h.patch | sed \
+#     "s|LUA_MINSTACK\t20|LUA_MINSTACK\t20|g" > src/lua.h
+#   if [ ! $? -eq 0 ]; then
+#     exit 15
+#   fi
+#   mv -fv src/lua.h.patch src/lua.h.patched
+#   if [ ! $? -eq 0 ]; then
+#     exit 16
+#   fi
+# fi
 
-if [ ! -f src/luaconf.h.patched ]; then
-  mv -fv src/luaconf.h src/luaconf.h.patch 2>/dev/null
-  cat src/luaconf.h.patch | sed \
-    "s|MAXSTACK\t\t1000000|MAXSTACK\t\t16777215|g" > src/luaconf.h
-  if [ ! $? -eq 0 ]; then
-    exit 15
-  fi
-  mv -fv src/luaconf.h.patch src/luaconf.h.patched
-  if [ ! $? -eq 0 ]; then
-    exit 16
-  fi
-fi
+# if [ ! -f src/luaconf.h.patched ]; then
+#   mv -fv src/luaconf.h src/luaconf.h.patch 2>/dev/null
+#   cat src/luaconf.h.patch | sed \
+#     "s|MAXSTACK\t\t1000000|MAXSTACK\t\t1000000|g" > src/luaconf.h
+#   if [ ! $? -eq 0 ]; then
+#     exit 15
+#   fi
+#   mv -fv src/luaconf.h.patch src/luaconf.h.patched
+#   if [ ! $? -eq 0 ]; then
+#     exit 16
+#   fi
+# fi
 
 rm -rfv *.a 2>/dev/null
 

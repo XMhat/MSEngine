@@ -1026,9 +1026,9 @@ if(svciIt != aArgs.cend())
   // Push variable specified on command line and if it's not a table?
   // Tell user the table is invalid and return
   lua_getglobal(lS, strRoot.c_str());
-  if(!lua_istable(lS, -1))
+  if(!LuaUtilIsTable(lS, -1))
     return cConsole->AddLineF("Table '$' $!", strRoot,
-      lua_isnil(lS, -1) ? "does not exist" : "is not valid");
+      LuaUtilIsNil(lS, -1) ? "does not exist" : "is not valid");
   // Save index so we can keep recursing the same table and check if each
   // remaining argument is a table until we reach no more arguments.
   for(const int iIndex = LuaUtilStackSize(lS); ++svciIt != aArgs.cend();)
@@ -1039,15 +1039,15 @@ if(svciIt != aArgs.cend())
     if(StrIsInt(strParam))
     { // Get value by index and keep searching for more tables
       LuaUtilGetRefEx(lS, -1, StrToNum<lua_Integer>(strParam));
-      if(lua_istable(lS, -1)) continue;
+      if(LuaUtilIsTable(lS, -1)) continue;
       // Restore where we were in the stack
       LuaUtilPruneStack(lS, iIndex);
     } // Find subtable. It must be a table
     lua_getfield(lS, -1, strParam.c_str());
-    if(lua_istable(lS, -1)) continue;
+    if(LuaUtilIsTable(lS, -1)) continue;
     // Tell user the table is invalid and return
     return cConsole->AddLineF("Sub-table '$' $!", strParam,
-      lua_isnil(lS, -1) ? "does not exist" : "is not valid");
+      LuaUtilIsNil(lS, -1) ? "does not exist" : "is not valid");
   }
 } // Push global namspace and throw error if it is invalid
 else lua_pushglobaltable(lS);
@@ -1059,7 +1059,7 @@ StrStrPairMap ssmpmMap;
 // Make sure theres two elements
 for(LuaUtilPushNil(lS); lua_next(lS, -2); LuaUtilRmStack(lS))
 { // Index is an integer? Create item info struct and add to list
-  if(lua_isinteger(lS, -2))
+  if(LuaUtilIsInteger(lS, -2))
     ssmpmMap.insert({ StrFromNum(lua_tointeger(lS, -2)),
       { LuaUtilGetStackType(lS, -1), LuaUtilGetStackTokens(lS, -1) } });
   // For everything else. Create item info struct and add to list
@@ -1548,7 +1548,7 @@ cConsole->AddLineF("$$ and $.", sTable.Finish(),
 /* ========================================================================= */
 { "shot", 1, 1, CFL_VIDEO, [](const Args &){
 /* ------------------------------------------------------------------------- */
-LuaUtilClassCreate<SShot>(cLua->GetState(), "SShot")->DumpMain();
+LuaUtilClassCreate<SShot>(cLua->GetState(), *cSShots)->DumpMain();
 // Although SShot is asynchronous, theres no way to clean up the stack so
 // we'll just delete it straight away.
 LuaUtilRmStack(cLua->GetState(), 1);
@@ -2109,7 +2109,7 @@ cConsole->AddLineF("$$ supported on monitor #$ ($).", sTable.Finish(),
 /* ========================================================================= */
 { "vreset", 1, 1, CFL_VIDEO, [](const Args &){
 /* ------------------------------------------------------------------------- */
-cEvtMain->Add(EMC_QUIT_THREAD);
+cEvtMain->RequestQuitThread();
 /* ------------------------------------------------------------------------- */
 } },                                   // End of 'vreset' function
 /* ========================================================================= */

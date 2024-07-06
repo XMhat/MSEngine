@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<!-- Reference for the MS-Engine API version 24.6.27.2 -->
-<!-- Automatically built at Thu Jun 27 22:11:10 2024 +0100 -->
-<!-- With MS-Engine Project Management Utility version 24.6.27.2 -->
+<!-- Reference for the MS-Engine API version 24.8.1.18 -->
+<!-- Automatically built at Thu Aug 01 14:29:36 2024 +0100 -->
+<!-- With MS-Engine Project Management Utility version 24.8.1.18 -->
 <!-- Copyright (c) 2006-2024 MS-Design, All Rights Reserved Worldwide -->
 <HTML lang="en-GB">
 <HEAD>
@@ -11,18 +11,18 @@
 	<META name="apple-mobile-web-app-title" content="MS-Engine API">
 	<META name="author" content="MS-Design">
 	<META name="copyright" content="Copyright © 2006-2024 MS-Design, All Rights Reserved">
-	<META name="description" content="Reference for the MS-Engine API version 24.6.27.2">
+	<META name="description" content="Reference for the MS-Engine API version 24.8.1.18">
 	<META name="format-detection" content="telephone=no">
-	<META name="generator" content="MS-Engine Project Management Utility version 24.6.27.2">
+	<META name="generator" content="MS-Engine Project Management Utility version 24.8.1.18">
 	<META name="google-site-verification" content="BvWxrqmgaIxqe_W8AW3OGK0fdCI_JfB_-gcOOxCF9_4">
 	<META name="googlebot" content="index,follow">
-	<META name="og:description" content="Reference for the MS-Engine API version 24.6.27.2">
+	<META name="og:description" content="Reference for the MS-Engine API version 24.8.1.18">
 	<META name="og:image" content="https://repository-images.githubusercontent.com/611875607/ee7aa468-9797-4763-9a2d-ea3d782ef413">
-	<META name="og:title" content="MS-Engine 24.6.27.2 API reference">
+	<META name="og:title" content="MS-Engine 24.8.1.18 API reference">
 	<META name="og:url" content="https://xmhat.github.io/MSEngine/">
 	<META name="robots" content="index,follow">
 	<META name="viewport" content="width=device-width, initial-scale=1">
-	<TITLE>MS-Engine 24.6.27.2 API reference</TITLE>
+	<TITLE>MS-Engine 24.8.1.18 API reference</TITLE>
 	<STYLE media="screen">
 	* { margin:0; padding:0 }
 	BODY { background-color:#111; border:0; font-family:sans-serif; overflow-x:hidden; text-shadow: 1px 1px #111 }
@@ -60,7 +60,7 @@
 	</STYLE>
 </HEAD>
 <BODY id="idx.top">
-	<H1>MS-Engine 24.6.27.2 API reference</H1>
+	<H1>MS-Engine 24.8.1.18 API reference</H1>
 	<NOSCRIPT>
 		<H2>JavaScript is required to show and hide elements.</H2>
 	</NOSCRIPT>
@@ -99,7 +99,7 @@
 	</SCRIPT>
 	<DIV id="idx" style="display:none">
 		<H2>Table of contents:-</H2>
-		<P>This build of the MS-Engine API consists of 817 functions (376 members, 441 methods) and 26 consts in 32 namespaces with 83 commands and 209 cvars.</P>
+		<P>This build of the MS-Engine API consists of 827 functions (385 members, 442 methods) and 27 consts in 32 namespaces with 83 commands and 209 cvars.</P>
 		<OL id="toc">
 			<LI id="idx.ns">
 				<DIV>
@@ -197,10 +197,10 @@
 						<OL>
 							<LI><P>The Asset class allows the programmer to load files from disk for personal use and manipulation of that data with codecs or manually by the programmer.</P></LI>
 							<LI>
-								<B>Members</B> <I>(20 members)</I>
+								<B>Members</B> <I>(19 members)</I>
 								<OL>
-									<LI><A href="#Asset.ArrayAsync">ArrayAsync</A></LI>
 									<LI><A href="#Asset.Asset">Asset</A></LI>
+									<LI><A href="#Asset.AssetAsync">AssetAsync</A></LI>
 									<LI><A href="#Asset.Compile">Compile</A></LI>
 									<LI><A href="#Asset.CompileBlock">CompileBlock</A></LI>
 									<LI><A href="#Asset.CompileFunction">CompileFunction</A></LI>
@@ -217,12 +217,11 @@
 									<LI><A href="#Asset.ParseBlock">ParseBlock</A></LI>
 									<LI><A href="#Asset.ParseString">ParseString</A></LI>
 									<LI><A href="#Asset.String">String</A></LI>
-									<LI><A href="#Asset.StringAsync">StringAsync</A></LI>
 									<LI><A href="#Asset.WaitAsync">WaitAsync</A></LI>
 								</OL>
 							</LI>
 							<LI>
-								<B>Methods</B> <I>(25 methods)</I>
+								<B>Methods</B> <I>(23 methods)</I>
 								<OL>
 									<LI><A href="#Asset:BitClear">BitClear</A></LI>
 									<LI><A href="#Asset:BitFlip">BitFlip</A></LI>
@@ -238,17 +237,15 @@
 									<LI><A href="#Asset:Id">Id</A></LI>
 									<LI><A href="#Asset:Invert">Invert</A></LI>
 									<LI><A href="#Asset:Name">Name</A></LI>
-									<LI><A href="#Asset:ReadInt">ReadInt</A></LI>
-									<LI><A href="#Asset:ReadNum">ReadNum</A></LI>
+									<LI><A href="#Asset:Read">Read</A></LI>
 									<LI><A href="#Asset:Resize">Resize</A></LI>
 									<LI><A href="#Asset:ResizeUp">ResizeUp</A></LI>
 									<LI><A href="#Asset:Reverse">Reverse</A></LI>
-									<LI><A href="#Asset:Set">Set</A></LI>
 									<LI><A href="#Asset:Size">Size</A></LI>
+									<LI><A href="#Asset:Swap">Swap</A></LI>
 									<LI><A href="#Asset:ToFile">ToFile</A></LI>
 									<LI><A href="#Asset:ToString">ToString</A></LI>
-									<LI><A href="#Asset:WriteInt">WriteInt</A></LI>
-									<LI><A href="#Asset:WriteNum">WriteNum</A></LI>
+									<LI><A href="#Asset:Write">Write</A></LI>
 								</OL>
 							</LI>
 							<LI>
@@ -433,11 +430,16 @@
 						<OL>
 							<LI><P>Allows access to engine credits information.</P></LI>
 							<LI>
-								<B>Members</B> <I>(3 members)</I>
+								<B>Members</B> <I>(2 members)</I>
 								<OL>
 									<LI><A href="#Credit.Credit">Credit</A></LI>
 									<LI><A href="#Credit.License">License</A></LI>
-									<LI><A href="#Credit.Total">Total</A></LI>
+								</OL>
+							</LI>
+							<LI>
+								<B>Consts</B> <I>(1 const)</I>
+								<OL>
+									<LI><A href="#Credit.Libs">Libs</A></LI>
 								</OL>
 							</LI>
 							<LI><A href="#idx:Credit">&#x25B2; Return to summary</A> / <A href="#idx.top">top</A></LI>
@@ -703,7 +705,7 @@
 								</OL>
 							</LI>
 							<LI>
-								<B>Methods</B> <I>(45 methods)</I>
+								<B>Methods</B> <I>(49 methods)</I>
 								<OL>
 									<LI><A href="#Font:Destroy">Destroy</A></LI>
 									<LI><A href="#Font:Dump">Dump</A></LI>
@@ -724,6 +726,10 @@
 									<LI><A href="#Font:PrintT">PrintT</A></LI>
 									<LI><A href="#Font:PrintTS">PrintTS</A></LI>
 									<LI><A href="#Font:PrintU">PrintU</A></LI>
+									<LI><A href="#Font:PrintUC">PrintUC</A></LI>
+									<LI><A href="#Font:PrintUCT">PrintUCT</A></LI>
+									<LI><A href="#Font:PrintUR">PrintUR</A></LI>
+									<LI><A href="#Font:PrintURT">PrintURT</A></LI>
 									<LI><A href="#Font:PrintUS">PrintUS</A></LI>
 									<LI><A href="#Font:PrintW">PrintW</A></LI>
 									<LI><A href="#Font:PrintWS">PrintWS</A></LI>
@@ -772,8 +778,8 @@
 							<LI>
 								<B>Members</B> <I>(5 members)</I>
 								<OL>
-									<LI><A href="#Ftf.ArrayAsync">ArrayAsync</A></LI>
 									<LI><A href="#Ftf.Asset">Asset</A></LI>
+									<LI><A href="#Ftf.AssetAsync">AssetAsync</A></LI>
 									<LI><A href="#Ftf.File">File</A></LI>
 									<LI><A href="#Ftf.FileAsync">FileAsync</A></LI>
 									<LI><A href="#Ftf.WaitAsync">WaitAsync</A></LI>
@@ -804,8 +810,8 @@
 							<LI>
 								<B>Members</B> <I>(8 members)</I>
 								<OL>
-									<LI><A href="#Image.ArrayAsync">ArrayAsync</A></LI>
 									<LI><A href="#Image.Asset">Asset</A></LI>
+									<LI><A href="#Image.AssetAsync">AssetAsync</A></LI>
 									<LI><A href="#Image.Blank">Blank</A></LI>
 									<LI><A href="#Image.Colour">Colour</A></LI>
 									<LI><A href="#Image.File">File</A></LI>
@@ -845,7 +851,7 @@
 						<OL>
 							<LI><P>The info namespace allows the programmer to gain information about the engine. Check out the Display namespace for more system information functions when graphical mode is enabled.</P></LI>
 							<LI>
-								<B>Members</B> <I>(24 members)</I>
+								<B>Members</B> <I>(31 members)</I>
 								<OL>
 									<LI><A href="#Info.CPU">CPU</A></LI>
 									<LI><A href="#Info.CPUFPS">CPUFPS</A></LI>
@@ -859,6 +865,10 @@
 									<LI><A href="#Info.IsOSLinux">IsOSLinux</A></LI>
 									<LI><A href="#Info.IsOSMac">IsOSMac</A></LI>
 									<LI><A href="#Info.IsOSWindows">IsOSWindows</A></LI>
+									<LI><A href="#Info.LUAMicroTime">LUAMicroTime</A></LI>
+									<LI><A href="#Info.LUAMilliTime">LUAMilliTime</A></LI>
+									<LI><A href="#Info.LUANanoTime">LUANanoTime</A></LI>
+									<LI><A href="#Info.LUATime">LUATime</A></LI>
 									<LI><A href="#Info.LUAUsage">LUAUsage</A></LI>
 									<LI><A href="#Info.Locale">Locale</A></LI>
 									<LI><A href="#Info.OS">OS</A></LI>
@@ -870,6 +880,9 @@
 									<LI><A href="#Info.RAM">RAM</A></LI>
 									<LI><A href="#Info.Ticks">Ticks</A></LI>
 									<LI><A href="#Info.Time">Time</A></LI>
+									<LI><A href="#Info.UpMicroTime">UpMicroTime</A></LI>
+									<LI><A href="#Info.UpMilliTime">UpMilliTime</A></LI>
+									<LI><A href="#Info.UpNanoTime">UpNanoTime</A></LI>
 									<LI><A href="#Info.Uptime">Uptime</A></LI>
 								</OL>
 							</LI>
@@ -885,11 +898,10 @@
 						<OL>
 							<LI><P>The input class allows the programmer to query the state of the keyboard, mouse and game controllers.</P></LI>
 							<LI>
-								<B>Members</B> <I>(26 members)</I>
+								<B>Members</B> <I>(23 members)</I>
 								<OL>
 									<LI><A href="#Input.ClearStates">ClearStates</A></LI>
 									<LI><A href="#Input.CursorCentre">CursorCentre</A></LI>
-									<LI><A href="#Input.GetCursorPos">GetCursorPos</A></LI>
 									<LI><A href="#Input.GetJoyAxis">GetJoyAxis</A></LI>
 									<LI><A href="#Input.GetJoyAxisUB">GetJoyAxisUB</A></LI>
 									<LI><A href="#Input.GetJoyButton">GetJoyButton</A></LI>
@@ -898,8 +910,6 @@
 									<LI><A href="#Input.GetNumJoyAxises">GetNumJoyAxises</A></LI>
 									<LI><A href="#Input.GetNumJoyButtons">GetNumJoyButtons</A></LI>
 									<LI><A href="#Input.JoyExists">JoyExists</A></LI>
-									<LI><A href="#Input.KeyState">KeyState</A></LI>
-									<LI><A href="#Input.MouseState">MouseState</A></LI>
 									<LI><A href="#Input.OnChar">OnChar</A></LI>
 									<LI><A href="#Input.OnDragDrop">OnDragDrop</A></LI>
 									<LI><A href="#Input.OnJoyState">OnJoyState</A></LI>
@@ -974,12 +984,12 @@
 								<B>Members</B> <I>(3 members)</I>
 								<OL>
 									<LI><A href="#Mask.Create">Create</A></LI>
-									<LI><A href="#Mask.CreateBlank">CreateBlank</A></LI>
-									<LI><A href="#Mask.CreateNew">CreateNew</A></LI>
+									<LI><A href="#Mask.CreateOne">CreateOne</A></LI>
+									<LI><A href="#Mask.CreateZero">CreateZero</A></LI>
 								</OL>
 							</LI>
 							<LI>
-								<B>Methods</B> <I>(14 methods)</I>
+								<B>Methods</B> <I>(15 methods)</I>
 								<OL>
 									<LI><A href="#Mask:Clear">Clear</A></LI>
 									<LI><A href="#Mask:Copy">Copy</A></LI>
@@ -990,6 +1000,7 @@
 									<LI><A href="#Mask:Height">Height</A></LI>
 									<LI><A href="#Mask:Id">Id</A></LI>
 									<LI><A href="#Mask:IsCollide">IsCollide</A></LI>
+									<LI><A href="#Mask:IsCollideEx">IsCollideEx</A></LI>
 									<LI><A href="#Mask:Merge">Merge</A></LI>
 									<LI><A href="#Mask:Name">Name</A></LI>
 									<LI><A href="#Mask:RayCast">RayCast</A></LI>
@@ -1066,8 +1077,8 @@
 							<LI>
 								<B>Members</B> <I>(6 members)</I>
 								<OL>
-									<LI><A href="#Pcm.ArrayAsync">ArrayAsync</A></LI>
 									<LI><A href="#Pcm.Asset">Asset</A></LI>
+									<LI><A href="#Pcm.AssetAsync">AssetAsync</A></LI>
 									<LI><A href="#Pcm.File">File</A></LI>
 									<LI><A href="#Pcm.FileAsync">FileAsync</A></LI>
 									<LI><A href="#Pcm.Raw">Raw</A></LI>
@@ -1345,8 +1356,8 @@
 							<LI>
 								<B>Members</B> <I>(6 members)</I>
 								<OL>
-									<LI><A href="#Stream.ArrayAsync">ArrayAsync</A></LI>
 									<LI><A href="#Stream.Asset">Asset</A></LI>
+									<LI><A href="#Stream.AssetAsync">AssetAsync</A></LI>
 									<LI><A href="#Stream.ClearEvents">ClearEvents</A></LI>
 									<LI><A href="#Stream.File">File</A></LI>
 									<LI><A href="#Stream.FileAsync">FileAsync</A></LI>
@@ -1498,7 +1509,7 @@
 						<OL>
 							<LI><P>This contains miscellenious utility functions such as string, number and time manipulation functions.</P></LI>
 							<LI>
-								<B>Members</B> <I>(68 members)</I>
+								<B>Members</B> <I>(75 members)</I>
 								<OL>
 									<LI><A href="#Util.AscNTime">AscNTime</A></LI>
 									<LI><A href="#Util.AscNTimeUTC">AscNTimeUTC</A></LI>
@@ -1534,7 +1545,14 @@
 									<LI><A href="#Util.Implode">Implode</A></LI>
 									<LI><A href="#Util.ImplodeEx">ImplodeEx</A></LI>
 									<LI><A href="#Util.IsASCII">IsASCII</A></LI>
+									<LI><A href="#Util.IsBoolean">IsBoolean</A></LI>
 									<LI><A href="#Util.IsExtASCII">IsExtASCII</A></LI>
+									<LI><A href="#Util.IsFunction">IsFunction</A></LI>
+									<LI><A href="#Util.IsInteger">IsInteger</A></LI>
+									<LI><A href="#Util.IsNumber">IsNumber</A></LI>
+									<LI><A href="#Util.IsString">IsString</A></LI>
+									<LI><A href="#Util.IsTable">IsTable</A></LI>
+									<LI><A href="#Util.IsUserdata">IsUserdata</A></LI>
 									<LI><A href="#Util.LDuration">LDuration</A></LI>
 									<LI><A href="#Util.LDurationEx">LDurationEx</A></LI>
 									<LI><A href="#Util.LowByte">LowByte</A></LI>
@@ -1626,8 +1644,8 @@
 							<LI>
 								<B>Members</B> <I>(6 members)</I>
 								<OL>
-									<LI><A href="#Video.ArrayAsync">ArrayAsync</A></LI>
 									<LI><A href="#Video.Asset">Asset</A></LI>
+									<LI><A href="#Video.AssetAsync">AssetAsync</A></LI>
 									<LI><A href="#Video.ClearEvents">ClearEvents</A></LI>
 									<LI><A href="#Video.File">File</A></LI>
 									<LI><A href="#Video.FileAsync">FileAsync</A></LI>
@@ -2156,16 +2174,6 @@
 		<PRE>Returns the total number of files and directories in archive </PRE>
 		<H4><A href="#idx:Archive">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Asset.ArrayAsync" style="display:none">
-		<H3>Asset.ArrayAsync</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Asset.ArrayAsync(<I><U>Id</U>, <U>Data</U>, <U>Flags</U>, <U>ErrorFunc</U>, <U>ProgressFunc</U>, <U>SuccessFunc</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>Id</U> <I>(string)</I> = The filename of the file load<BR><U>Data</U> <I>(Asset)</I> = The data to process.<BR><U>Flags</U> <I>(integer)</I> = Special operations to perform during load<BR><U>ErrorFunc</U> <I>(function)</I> = The function to call when there is an error<BR><U>ProgressFunc</U> <I>(function)</I> = The function to call when there is progress<BR><U>SuccessFunc</U> <I>(function)</I> = The function to call when the file is laoded<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Loads an array off the main thread&#x2e; The callback functions send an argument to the asset object that was created&#x2e;<BR></PRE>
-		<H4><A href="#idx:Asset">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
 	<DIV id="Asset.Asset" style="display:none">
 		<H3>Asset.Asset</H3>
 		<H4>Syntax:-</H4>
@@ -2175,7 +2183,17 @@
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Object</U> <I>(Asset)</I> = The new duplicated data array<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Loads an array on the main thread&#x2e;<BR></PRE>
+		<PRE>Copies&#x2c; decompresses or decrypts the specified asset on the main thread&#x2e;<BR></PRE>
+		<H4><A href="#idx:Asset">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Asset.AssetAsync" style="display:none">
+		<H3>Asset.AssetAsync</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Asset.AssetAsync(<I><U>Id</U>, <U>Data</U>, <U>Flags</U>, <U>ErrorFunc</U>, <U>ProgressFunc</U>, <U>SuccessFunc</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Id</U> <I>(string)</I> = The user specified identifier of the asset.<BR><U>Data</U> <I>(Asset)</I> = The asset class to process.<BR><U>Flags</U> <I>(integer)</I> = Special operations to perform during load.<BR><U>ErrorFunc</U> <I>(function(Reason:string))</I> = Error callback.<BR><U>ProgressFunc</U> <I>(function(Cmd:integer,...))</I> = In-progress callback.<BR><U>SuccessFunc</U> <I>(function(Data:Asset))</I> = Succession callback.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Consumes&#x2c; copies&#x2c; decompresses or decrypts a the specified asset off the main thread&#x2e;<BR></PRE>
 		<H4><A href="#idx:Asset">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Asset.Compile" style="display:none">
@@ -2193,13 +2211,13 @@
 	<DIV id="Asset.CompileBlock" style="display:none">
 		<H3>Asset.CompileBlock</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Function</U> = Asset.CompileBlock(<I><U>Data</U>, <U>Name</U></I>)</PRE>
+		<PRE><U>Function</U> = Asset.CompileBlock(<I><U>Name</U>, <U>Data</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Data</U> <I>(Asset)</I> = The data to execute<BR><U>Name</U> <I>(string)</I> = The name of the block to help identify the the source.<BR></PRE>
+		<PRE><U>Name</U> <I>(string)</I> = The name of the block to help identify the the source.<BR><U>Data</U> <I>(Asset)</I> = The data to execute.<BR></PRE>
 		<H4>Return Parameters:-</H4>
-		<PRE><U>Function</U> <I>(function)</I> = The function<BR></PRE>
+		<PRE><U>Function</U> <I>(function)</I> = The function.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Compiles the specified asset and returns the function </PRE>
+		<PRE>Compiles the specified asset and returns the function&#x2e;<BR></PRE>
 		<H4><A href="#idx:Asset">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Asset.CompileFunction" style="display:none">
@@ -2207,19 +2225,19 @@
 		<H4>Syntax:-</H4>
 		<PRE><U>Binary</U> = Asset.CompileFunction(<I><U>Debug</U>, <U>Function</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Debug</U> <I>(boolean)</I> = Include debug data?<BR><U>Function</U> <I>(function)</I> = The function to compile<BR></PRE>
+		<PRE><U>Debug</U> <I>(boolean)</I> = Include debug data?<BR><U>Function</U> <I>(function)</I> = The function to compile.<BR></PRE>
 		<H4>Return Parameters:-</H4>
-		<PRE><U>Binary</U> <I>(Asset)</I> = The asset containing the compiled data<BR></PRE>
+		<PRE><U>Binary</U> <I>(Asset)</I> = The asset containing the compiled data.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Compiles the specified Lua function and returns the binary compiled data </PRE>
+		<PRE>Compiles the specified Lua function and returns the binary compiled data&#x2e;<BR></PRE>
 		<H4><A href="#idx:Asset">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Asset.CompileString" style="display:none">
 		<H3>Asset.CompileString</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Function</U> = Asset.CompileString(<I><U>Code</U>, <U>Name</U></I>)</PRE>
+		<PRE><U>Function</U> = Asset.CompileString(<I><U>Name</U>, <U>Code</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Code</U> <I>(string)</I> = The block of LUA code to compile.<BR><U>Name</U> <I>(string)</I> = The name of the string to help identify the the source.<BR></PRE>
+		<PRE><U>Name</U> <I>(string)</I> = The name of the string to help identify the the source.<BR><U>Code</U> <I>(string)</I> = The block of LUA code to compile.<BR></PRE>
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Function</U> <I>(function)</I> = The function<BR></PRE>
 		<H4>Synopsis:-</H4>
@@ -2229,9 +2247,9 @@
 	<DIV id="Asset.Create" style="display:none">
 		<H3>Asset.Create</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Handle</U> = Asset.Create(<I><U>Size</U></I>)</PRE>
+		<PRE><U>Handle</U> = Asset.Create(<I><U>Id</U>, <U>Size</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Size</U> <I>(integer)</I> = Number of bytes of memory to allocate.<BR></PRE>
+		<PRE><U>Id</U> <I>(string)</I> = The user specified identifier of the asset.<BR><U>Size</U> <I>(integer)</I> = Number of bytes of memory to allocate.<BR></PRE>
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Handle</U> <I>(Asset)</I> = Handle to the array cless.<BR></PRE>
 		<H4>Synopsis:-</H4>
@@ -2267,7 +2285,7 @@
 		<H4>Syntax:-</H4>
 		<PRE>Asset.Exec(<I><U>CmdLine</U>, <U>Flags</U>, <U>ErrorFunc</U>, <U>ProgressFunc</U>, <U>SuccessFunc</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>CmdLine</U> <I>(string)</I> = The command-line to execute<BR><U>Flags</U> <I>(integer)</I> = Special operations to perform during load<BR><U>ErrorFunc</U> <I>(function)</I> = The function to call when there is an error<BR><U>ProgressFunc</U> <I>(function)</I> = The function to call when there is progress<BR><U>SuccessFunc</U> <I>(function)</I> = The function to call when the file is laoded<BR></PRE>
+		<PRE><U>CmdLine</U> <I>(string)</I> = The command-line to execute<BR><U>Flags</U> <I>(integer)</I> = Special operations to perform during load<BR><U>ErrorFunc</U> <I>(function(Reason:string))</I> = Error callback.<BR><U>ProgressFunc</U> <I>(function(Cmd:integer,...))</I> = In-progress callback.<BR><U>SuccessFunc</U> <I>(function(Data:Asset))</I> = Succession callback.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Executes the specified command&#x2d;line&#x2c; stores all the output and sends it for optional processing with the specified flags&#x2e;<BR></PRE>
 		<H4><A href="#idx:Asset">&#x25B2; Return to table of contents</A></H4>
@@ -2277,7 +2295,7 @@
 		<H4>Syntax:-</H4>
 		<PRE>Asset.ExecEx(<I><U>CmdLine</U>, <U>Flags</U>, <U>Input</U>, <U>ErrorFunc</U>, <U>ProgressFunc</U>, <U>SuccessFunc</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>CmdLine</U> <I>(string)</I> = The command-line to execute<BR><U>Flags</U> <I>(integer)</I> = Special operations to perform during load<BR><U>Input</U> <I>(Asset)</I> = The data to send to the application before waiting for output<BR><U>ErrorFunc</U> <I>(function)</I> = The function to call when there is an error<BR><U>ProgressFunc</U> <I>(function)</I> = The function to call when there is progress<BR><U>SuccessFunc</U> <I>(function)</I> = The function to call when the file is laoded<BR></PRE>
+		<PRE><U>CmdLine</U> <I>(string)</I> = The command-line to execute<BR><U>Flags</U> <I>(integer)</I> = Special operations to perform during load<BR><U>Input</U> <I>(Asset)</I> = The data to send to the application before waiting for output<BR><U>ErrorFunc</U> <I>(function(Reason:string))</I> = Error callback.<BR><U>ProgressFunc</U> <I>(function(Cmd:integer,...))</I> = In-progress callback.<BR><U>SuccessFunc</U> <I>(function(Data:Asset))</I> = Succession callback.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Executes the specified command&#x2d;line&#x2c; stores all the output and sends it for optional processing with the specified flags&#x2e; The &#x27;Input&#x27; is consumed by the call and sent to the applications &#x27;stdin&#x27; on successful execution startup&#x2e;<BR></PRE>
 		<H4><A href="#idx:Asset">&#x25B2; Return to table of contents</A></H4>
@@ -2299,9 +2317,9 @@
 		<H4>Syntax:-</H4>
 		<PRE>Asset.FileAsync(<I><U>Filename</U>, <U>Flags</U>, <U>ErrorFunc</U>, <U>ProgressFunc</U>, <U>SuccessFunc</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Filename</U> <I>(string)</I> = The filename of the file load<BR><U>Flags</U> <I>(integer)</I> = Special operations to perform during load<BR><U>ErrorFunc</U> <I>(function)</I> = The function to call when there is an error<BR><U>ProgressFunc</U> <I>(function)</I> = The function to call when there is progress<BR><U>SuccessFunc</U> <I>(function)</I> = The function to call when the file is laoded<BR></PRE>
+		<PRE><U>Filename</U> <I>(string)</I> = The filename to load.<BR><U>Flags</U> <I>(integer)</I> = Special operations to perform during load.<BR><U>ErrorFunc</U> <I>(function(Reason:string))</I> = Error callback.<BR><U>ProgressFunc</U> <I>(function(Cmd:integer,...))</I> = In-progress callback.<BR><U>SuccessFunc</U> <I>(function(Data:Asset))</I> = Succession callback.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Loads a file off the main thread&#x2e; The callback functions send an argument to the asset object that was created&#x2e;<BR></PRE>
+		<PRE>Loads the specified file on disk or from archives off the main thread&#x2e;<BR></PRE>
 		<H4><A href="#idx:Asset">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Asset.FileExists" style="display:none">
@@ -2321,19 +2339,19 @@
 		<H4>Syntax:-</H4>
 		<PRE><U>Params...</U>, <U>...Last</U> = Asset.Parse(<I><U>Filename</U>, <U>Returns</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Filename</U> <I>(string)</I> = The name of the file to parse<BR><U>Returns</U> <I>(integer)</I> = The number of returns expected from the call.<BR></PRE>
+		<PRE><U>Filename</U> <I>(string)</I> = The name of the file to parse.<BR><U>Returns</U> <I>(integer)</I> = The number of returns expected from the call.<BR></PRE>
 		<H4>Return Parameters:-</H4>
-		<PRE><U>Params...</U> <I>(*)</I> = The parameters the function returned<BR><U>...Last</U> <I>(integer)</I> = The result code of the compilation<BR></PRE>
+		<PRE><U>Params...</U> <I>(*)</I> = The parameters the function returned.<BR><U>...Last</U> <I>(integer)</I> = The result code of the compilation.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Compiles and executes the specified string&#x2e;<BR></PRE>
+		<PRE>Compiles and executes the specified string and returns a function and how the code was &#x28;re&#x29;compiled and cached&#x2e;<BR></PRE>
 		<H4><A href="#idx:Asset">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Asset.ParseBlock" style="display:none">
 		<H3>Asset.ParseBlock</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Params...</U>, <U>...Last</U> = Asset.ParseBlock(<I><U>Data</U>, <U>Returns</U>, <U>Name</U></I>)</PRE>
+		<PRE><U>Params...</U>, <U>...Last</U> = Asset.ParseBlock(<I><U>Name</U>, <U>Returns</U>, <U>Data</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Data</U> <I>(Asset)</I> = The data to execute<BR><U>Returns</U> <I>(integer)</I> = The number of returns expected from the call.<BR><U>Name</U> <I>(string)</I> = The name of the block to help identify the the source.<BR></PRE>
+		<PRE><U>Name</U> <I>(string)</I> = The name of the block to help identify the the source.<BR><U>Returns</U> <I>(integer)</I> = The number of returns expected from the call.<BR><U>Data</U> <I>(Asset)</I> = The data to execute<BR></PRE>
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Params...</U> <I>(*)</I> = The parameters the function returned<BR><U>...Last</U> <I>(integer)</I> = The result code of the compilation<BR></PRE>
 		<H4>Synopsis:-</H4>
@@ -2343,9 +2361,9 @@
 	<DIV id="Asset.ParseString" style="display:none">
 		<H3>Asset.ParseString</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Params...</U>, <U>...Last</U> = Asset.ParseString(<I><U>Code</U>, <U>Returns</U>, <U>Name</U></I>)</PRE>
+		<PRE><U>Params...</U>, <U>...Last</U> = Asset.ParseString(<I><U>Name</U>, <U>Returns</U>, <U>Code</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Code</U> <I>(string)</I> = The block of LUA code to execute.<BR><U>Returns</U> <I>(integer)</I> = The number of returns expected from the call.<BR><U>Name</U> <I>(string)</I> = The name of the string to help identify the the source.<BR></PRE>
+		<PRE><U>Name</U> <I>(string)</I> = The name of the string to help identify the the source.<BR><U>Returns</U> <I>(integer)</I> = The number of returns expected from the call.<BR><U>Code</U> <I>(string)</I> = The block of LUA code to execute.<BR></PRE>
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Params...</U> <I>(*)</I> = The parameters the function returned<BR><U>...Last</U> <I>(integer)</I> = The result code of the compilation<BR></PRE>
 		<H4>Synopsis:-</H4>
@@ -2361,17 +2379,7 @@
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Handle</U> <I>(Asset)</I> = The asset object<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Loads a file from assets in the main thread&#x2e;<BR></PRE>
-		<H4><A href="#idx:Asset">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Asset.StringAsync" style="display:none">
-		<H3>Asset.StringAsync</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Asset.StringAsync(<I><U>Id</U>, <U>Text</U>, <U>Flags</U>, <U>ErrorFunc</U>, <U>ProgressFunc</U>, <U>SuccessFunc</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>Id</U> <I>(string)</I> = The filename of the file load<BR><U>Text</U> <I>(String)</I> = The string to process.<BR><U>Flags</U> <I>(integer)</I> = Special operations to perform during load<BR><U>ErrorFunc</U> <I>(function)</I> = The function to call when there is an error<BR><U>ProgressFunc</U> <I>(function)</I> = The function to call when there is progress<BR><U>SuccessFunc</U> <I>(function)</I> = The function to call when the file is laoded<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Loads an array off the main thread&#x2e; The callback functions send an argument to the asset object that was created&#x2e;<BR></PRE>
+		<PRE>Copies&#x2c; decompresses or decrypts a string into an asset class in the main thread&#x2e;<BR></PRE>
 		<H4><A href="#idx:Asset">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Asset.WaitAsync" style="display:none">
@@ -2429,7 +2437,7 @@
 		<H4>Syntax:-</H4>
 		<PRE>Asset:Clear()</PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Same as Asset&#x3a;Fill but automatically assumes zero fill&#x2e;<BR></PRE>
+		<PRE>Same as Asset&#x3a;F64 but automatically assumes zero fill&#x2e;<BR></PRE>
 		<H4><A href="#idx:Asset">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Asset:Crop" style="display:none">
@@ -2457,7 +2465,7 @@
 		<H4>Syntax:-</H4>
 		<PRE><U>Handle</U> = Asset:Duplicate()</PRE>
 		<H4>Return Parameters:-</H4>
-		<PRE><U>Handle</U> <I>(Asset)</I> = Handle to the duplicated asset<BR></PRE>
+		<PRE><U>Handle</U> <I>(Asset)</I> = Handle to the duplicated asset.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Duplicates the specified asset&#x2e; By default arrays will move their data across&#x2e; This allows you to create a duplicate of the specified asset to not destory the original&#x2e;<BR></PRE>
 		<H4><A href="#idx:Asset">&#x25B2; Return to table of contents</A></H4>
@@ -2465,11 +2473,11 @@
 	<DIV id="Asset:Fill" style="display:none">
 		<H3>Asset:Fill</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Asset:Fill(<I><U>Char</U></I>)</PRE>
+		<PRE>Asset:Fill(<I><U>Position</U>, <U>Bytes</U>, <U>Value</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Char</U> <I>(integer)</I> = ASCII character<BR></PRE>
+		<PRE><U>Position</U> <I>(integer)</I> = Starting position to start filling at.<BR><U>Bytes</U> <I>(integer)</I> = Number of bytes to fill.<BR><U>Value</U> <I>(integer|number)</I> = The value to fill with.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Fills the buffer with the specified character </PRE>
+		<PRE>Fills the buffer with the specified value&#x2e; If the value cannot fit in the specified size at the end of the allocated buffer then the remainder is still filled with as much data from the specified value as it can&#x2e;<BR><BR>Actual functions &#x28;Replace &#x27;Fill&#x27; with one of the following&#x29;&#x2e;&#x2e;&#x2e;<BR>&#x2d; FF32    &#x3d; Fills each float with the specified value&#x2e;<BR>&#x2d; FF32BE  &#x3d; Same as FF32 but forces the specified value to big&#x2d;endian&#x2e;<BR>&#x2d; FF32LE  &#x3d; Same as FF32 but forces the specified value to little&#x2d;endian&#x2e;<BR>&#x2d; FF64    &#x3d; Fills each double with the specified value&#x2e;<BR>&#x2d; FF64BE  &#x3d; Same as FF64 but forces the specified value to big&#x2d;endian&#x2e;<BR>&#x2d; FF64LE  &#x3d; Same as FF64 but forces the specified value to little&#x2d;endian&#x2e;<BR>&#x2d; FI16    &#x3d; Fills each signed word with the specified value&#x2e;<BR>&#x2d; FI16BE  &#x3d; Same as FI16 but forces the specified value to big&#x2d;endian&#x2e;<BR>&#x2d; FI16LE  &#x3d; Same as FI16 but forces the specified value to little&#x2d;endian&#x2e;<BR>&#x2d; FI32    &#x3d; Fills each signed dword with the specified value&#x2e;<BR>&#x2d; FI32BE  &#x3d; Same as FI32 but forces the specified value to big&#x2d;endian&#x2e;<BR>&#x2d; FI32LE  &#x3d; Same as FI32 but forces the specified value to little&#x2d;endian&#x2e;<BR>&#x2d; FI64    &#x3d; Fills each signed qword with the specified value&#x2e;<BR>&#x2d; FI64BE  &#x3d; Same as FI64 but forces the specified value to big&#x2d;endian&#x2e;<BR>&#x2d; FI64LE  &#x3d; Same as FI64 but forces the specified value to little&#x2d;endian&#x2e;<BR>&#x2d; FI8     &#x3d; Fills each signed character at the specified position&#x2e;<BR>&#x2d; FU16    &#x3d; Fills each unsigned word with the specified value&#x2e;<BR>&#x2d; FU16BE  &#x3d; Same as FU16 but forces the specified value to big&#x2d;endian&#x2e;<BR>&#x2d; FU16LE  &#x3d; Same as FU16 but forces the specified value to little&#x2d;endian&#x2e;<BR>&#x2d; FU32    &#x3d; Fills each unsigned dword with the specified value&#x2e;<BR>&#x2d; FU32BE  &#x3d; Same as FU32 but forces the specified value to big&#x2d;endian&#x2e;<BR>&#x2d; FU32LE  &#x3d; Same as FU32 but forces the specified value to little&#x2d;endian&#x2e;<BR>&#x2d; FU64    &#x3d; Fills each unsigned qword with the specified value&#x2e;<BR>&#x2d; FU64BE  &#x3d; Same as FU64 but forces the specified value to big&#x2d;endian&#x2e;<BR>&#x2d; FU64LE  &#x3d; Same as FU64 but forces the specified value to little&#x2d;endian&#x2e;<BR>&#x2d; FU8     &#x3d; Fills each unsigned character at the specified position&#x2e;<BR></PRE>
 		<H4><A href="#idx:Asset">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Asset:Find" style="display:none">
@@ -2479,7 +2487,7 @@
 		<H4>Function Parameters:-</H4>
 		<PRE><U>Text</U> <I>(string)</I> = String to find in array.<BR></PRE>
 		<H4>Return Parameters:-</H4>
-		<PRE><U>Position</U> <I>(integer)</I> = Position of occurence.<BR></PRE>
+		<PRE><U>Position</U> <I>(integer)</I> = Position of occurrence.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Finds the first occurence of &#x27;Text&#x27; in array from the beginning&#x2e;<BR></PRE>
 		<H4><A href="#idx:Asset">&#x25B2; Return to table of contents</A></H4>
@@ -2491,9 +2499,9 @@
 		<H4>Function Parameters:-</H4>
 		<PRE><U>Text</U> <I>(string)</I> = String to find in array.<BR><U>Position</U> <I>(integer)</I> = Position to start checking for occurences.<BR></PRE>
 		<H4>Return Parameters:-</H4>
-		<PRE><U>Position</U> <I>(integer)</I> = Position of occurence.<BR></PRE>
+		<PRE><U>Position</U> <I>(integer)</I> = Position of occurrence.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Finds the first occurence of &#x27;Text&#x27; in array from the specified position&#x2e;<BR></PRE>
+		<PRE>Finds the first occurrence of &#x27;Text&#x27; in array from the specified position&#x2e;<BR></PRE>
 		<H4><A href="#idx:Asset">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Asset:Id" style="display:none">
@@ -2526,28 +2534,16 @@
 		<PRE>If this asset was loaded by a filename or it was set with a custom id&#x2e;<BR>This function returns that name which was assigned to it&#x2e;<BR></PRE>
 		<H4><A href="#idx:Asset">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Asset:ReadInt" style="display:none">
-		<H3>Asset:ReadInt</H3>
+	<DIV id="Asset:Read" style="display:none">
+		<H3>Asset:Read</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Value</U> = Asset:ReadInt(<I><U>Position</U></I>)</PRE>
+		<PRE><U>Value</U> = Asset:Read(<I><U>Position</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
 		<PRE><U>Position</U> <I>(integer)</I> = Position to write in the array.<BR></PRE>
 		<H4>Return Parameters:-</H4>
-		<PRE><U>Value</U> <I>(integer)</I> = Integer value at the specified position.<BR></PRE>
+		<PRE><U>Value</U> <I>(integer|number)</I> = Value at the specified position.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Reads the specified integer at the specified position in the array&#x2e;<BR><BR>Actual functions &#x28;replace &#x27;ReadInt&#x27; with one of the following&#x29;&#x2e;&#x2e;&#x2e;<BR>&#x2d; RI16   &#x3d; Reads a 16&#x2d;bit signed integer from the specified position&#x2e;<BR>&#x2d; RI16BE &#x3d; Same as RI16 but forces the return value to big&#x2d;endian&#x2e;<BR>&#x2d; RI16LE &#x3d; Same as RI16 but forces the return value to little&#x2d;endian&#x2e;<BR>&#x2d; RI32   &#x3d; Reads a 32&#x2d;bit signed integer from the specified position&#x2e;<BR>&#x2d; RI32BE &#x3d; Same as RI32 but forces the return value to big&#x2d;endian&#x2e;<BR>&#x2d; RI32LE &#x3d; Same as RI32 but forces the return value to little&#x2d;endian&#x2e;<BR>&#x2d; RI64   &#x3d; Reads a 64&#x2d;bit signed integer from the specified position&#x2e;<BR>&#x2d; RI64BE &#x3d; Same as RI64 but forces the return value to big&#x2d;endian&#x2e;<BR>&#x2d; RI64LE &#x3d; Same as RI64 but forces the return value to little&#x2d;endian&#x2e;<BR>&#x2d; RI8    &#x3d; Reads a 8&#x2d;bit signed integer from the specified position&#x2e;<BR>&#x2d; RU16   &#x3d; Reads a 16&#x2d;bit unsigned integer from the specified position&#x2e;<BR>&#x2d; RU16BE &#x3d; Same as RU16 but forces the return value to big&#x2d;endian&#x2e;<BR>&#x2d; RU16LE &#x3d; Same as RU16 but forces the return value to little&#x2d;endian&#x2e;<BR>&#x2d; RU32   &#x3d; Reads a 32&#x2d;bit unsigned integer from the specified position&#x2e;<BR>&#x2d; RU32BE &#x3d; Same as RU32 but forces the return value to big&#x2d;endian&#x2e;<BR>&#x2d; RU32LE &#x3d; Same as RU32 but forces the return value to little&#x2d;endian&#x2e;<BR>&#x2d; RU64   &#x3d; Reads a 64&#x2d;bit unsigned integer from the specified position&#x2e;<BR>&#x2d; RU64BE &#x3d; Same as RU64 but forces the return value to big&#x2d;endian&#x2e;<BR>&#x2d; RU64LE &#x3d; Same as RU64 but forces the return value to little&#x2d;endian&#x2e;<BR>&#x2d; RU8    &#x3d; Reads a 8&#x2d;bit unsigned integer from the specified position&#x2e;<BR></PRE>
-		<H4><A href="#idx:Asset">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Asset:ReadNum" style="display:none">
-		<H3>Asset:ReadNum</H3>
-		<H4>Syntax:-</H4>
-		<PRE><U>Value</U> = Asset:ReadNum(<I><U>Position</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>Position</U> <I>(integer)</I> = Position to write the number to in the array.<BR></PRE>
-		<H4>Return Parameters:-</H4>
-		<PRE><U>Value</U> <I>(number)</I> = Number read at the specified position<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Reads the specified number at the specified position in the array&#x2e;<BR><BR>Actual functions &#x28;replace &#x27;ReadNum&#x27; with one of the following&#x29;&#x2e;&#x2e;&#x2e;<BR>&#x2d; RF32   &#x3d; Reads a 32&#x2d;bit IEEE754 number from the specified position&#x2e;<BR>&#x2d; RF32BE &#x3d; Same as RF32 but forces the return value to big&#x2d;endian&#x2e;<BR>&#x2d; RF32LE &#x3d; Same as RF32 but forces the return value to little&#x2d;endian&#x2e;<BR>&#x2d; RF64   &#x3d; Reads a 64&#x2d;bit IEEE754 number from the specified position&#x2e;<BR>&#x2d; RF64BE &#x3d; Same as RF64 but forces the return value to big&#x2d;endian&#x2e;<BR>&#x2d; RF64LE &#x3d; Same as RF64 but forces the return value to little&#x2d;endian&#x2e;<BR></PRE>
+		<PRE>Reads the specified integer at the specified position in the array&#x2e;<BR><BR>Actual functions &#x28;replace &#x27;Read&#x27; with one of the following&#x29;&#x2e;&#x2e;&#x2e;<BR>&#x2d; RF32   &#x3d; Reads a 32&#x2d;bit IEEE754 number from the specified position&#x2e;<BR>&#x2d; RF32BE &#x3d; Same as RF32 but forces the return value to big&#x2d;endian&#x2e;<BR>&#x2d; RF32LE &#x3d; Same as RF32 but forces the return value to little&#x2d;endian&#x2e;<BR>&#x2d; RF64   &#x3d; Reads a 64&#x2d;bit IEEE754 number from the specified position&#x2e;<BR>&#x2d; RF64BE &#x3d; Same as RF64 but forces the return value to big&#x2d;endian&#x2e;<BR>&#x2d; RF64LE &#x3d; Same as RF64 but forces the return value to little&#x2d;endian&#x2e;<BR>&#x2d; RI16   &#x3d; Reads a 16&#x2d;bit signed integer from the specified position&#x2e;<BR>&#x2d; RI16BE &#x3d; Same as RI16 but forces the return value to big&#x2d;endian&#x2e;<BR>&#x2d; RI16LE &#x3d; Same as RI16 but forces the return value to little&#x2d;endian&#x2e;<BR>&#x2d; RI32   &#x3d; Reads a 32&#x2d;bit signed integer from the specified position&#x2e;<BR>&#x2d; RI32BE &#x3d; Same as RI32 but forces the return value to big&#x2d;endian&#x2e;<BR>&#x2d; RI32LE &#x3d; Same as RI32 but forces the return value to little&#x2d;endian&#x2e;<BR>&#x2d; RI64   &#x3d; Reads a 64&#x2d;bit signed integer from the specified position&#x2e;<BR>&#x2d; RI64BE &#x3d; Same as RI64 but forces the return value to big&#x2d;endian&#x2e;<BR>&#x2d; RI64LE &#x3d; Same as RI64 but forces the return value to little&#x2d;endian&#x2e;<BR>&#x2d; RI8    &#x3d; Reads a 8&#x2d;bit signed integer from the specified position&#x2e;<BR>&#x2d; RU16   &#x3d; Reads a 16&#x2d;bit unsigned integer from the specified position&#x2e;<BR>&#x2d; RU16BE &#x3d; Same as RU16 but forces the return value to big&#x2d;endian&#x2e;<BR>&#x2d; RU16LE &#x3d; Same as RU16 but forces the return value to little&#x2d;endian&#x2e;<BR>&#x2d; RU32   &#x3d; Reads a 32&#x2d;bit unsigned integer from the specified position&#x2e;<BR>&#x2d; RU32BE &#x3d; Same as RU32 but forces the return value to big&#x2d;endian&#x2e;<BR>&#x2d; RU32LE &#x3d; Same as RU32 but forces the return value to little&#x2d;endian&#x2e;<BR>&#x2d; RU64   &#x3d; Reads a 64&#x2d;bit unsigned integer from the specified position&#x2e;<BR>&#x2d; RU64BE &#x3d; Same as RU64 but forces the return value to big&#x2d;endian&#x2e;<BR>&#x2d; RU64LE &#x3d; Same as RU64 but forces the return value to little&#x2d;endian&#x2e;<BR>&#x2d; RU8    &#x3d; Reads a 8&#x2d;bit unsigned integer from the specified position&#x2e;<BR></PRE>
 		<H4><A href="#idx:Asset">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Asset:Resize" style="display:none">
@@ -2567,7 +2563,7 @@
 		<H4>Function Parameters:-</H4>
 		<PRE><U>Size</U> <I>(integer)</I> = The new size of the array in bytes.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Resizes the specified array upwards&#x2c; but never downwards </PRE>
+		<PRE>Resizes the specified array upwards but never downwards&#x2e;<BR></PRE>
 		<H4><A href="#idx:Asset">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Asset:Reverse" style="display:none">
@@ -2578,16 +2574,6 @@
 		<PRE>Completely reverses all the bytes in the array&#x2e;<BR></PRE>
 		<H4><A href="#idx:Asset">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Asset:Set" style="display:none">
-		<H3>Asset:Set</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Asset:Set(<I><U>Position</U>, <U>Character</U>, <U>Bytes</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>Position</U> <I>(integer)</I> = Position to start at.<BR><U>Character</U> <I>(integer)</I> = Character to set.<BR><U>Bytes</U> <I>(integer)</I> = Number of bytes to set.<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Fills the array with &#x27;Character&#x27; at &#x27;Position&#x27; for &#x27;Bytes&#x27; bytes&#x2e;<BR></PRE>
-		<H4><A href="#idx:Asset">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
 	<DIV id="Asset:Size" style="display:none">
 		<H3>Asset:Size</H3>
 		<H4>Syntax:-</H4>
@@ -2596,6 +2582,16 @@
 		<PRE><U>Size</U> <I>(integer)</I> = Size of the array in bytes.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Returns the size of the array&#x2e;<BR></PRE>
+		<H4><A href="#idx:Asset">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Asset:Swap" style="display:none">
+		<H3>Asset:Swap</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Asset:Swap(<I><U>Position</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Position</U> <I>(integer)</I> = Position to swap the bytes at<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Swaps the high&#x2f;low order bits at the specified position&#x2e;<BR><BR>Actual functions &#x28;replace &#x27;Swap&#x27; with one of the following&#x29;&#x2e;&#x2e;&#x2e;<BR>&#x2d; S8     &#x3d; Swaps high&#x2f;low 4&#x2d;bits&#x2e;<BR>&#x2d; S16    &#x3d; Swaps high&#x2f;low 8&#x2d;bits&#x2e;<BR>&#x2d; S32    &#x3d; Swaps high&#x2f;low 16&#x2d;bits&#x2e;<BR>&#x2d; S64    &#x3d; Swaps high&#x2f;low 32&#x2d;bits&#x2e;<BR></PRE>
 		<H4><A href="#idx:Asset">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Asset:ToFile" style="display:none">
@@ -2620,24 +2616,14 @@
 		<PRE>Converts the array to a string&#x2e; This is binary safe but will obviously terminate at the first null character or at the end of array&#x2c; whichever comes first&#x2e;<BR></PRE>
 		<H4><A href="#idx:Asset">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Asset:WriteInt" style="display:none">
-		<H3>Asset:WriteInt</H3>
+	<DIV id="Asset:Write" style="display:none">
+		<H3>Asset:Write</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Asset:WriteInt(<I><U>Position</U>, <U>Value</U></I>)</PRE>
+		<PRE>Asset:Write(<I><U>Position</U>, <U>Value</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Position</U> <I>(integer)</I> = Position to write the integer to in the array.<BR><U>Value</U> <I>(integer)</I> = Integer to write to the array.<BR></PRE>
+		<PRE><U>Position</U> <I>(integer)</I> = Position to write the integer to in the array.<BR><U>Value</U> <I>(integer|number)</I> = Value to write to the array.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Writes the specified integer at the specified position in the array&#x2e;<BR><BR>Actual functions &#x28;replace &#x27;WriteInt&#x27; with one of the following&#x29;&#x2e;&#x2e;&#x2e;<BR>&#x2d; WI16   &#x3d; Writes a 16&#x2d;bit signed integer to the specified position&#x2e;<BR>&#x2d; WI16BE &#x3d; Same as WI16 but forces the return value to big&#x2d;endian&#x2e;<BR>&#x2d; WI16LE &#x3d; Same as WI16 but forces the return value to little&#x2d;endian&#x2e;<BR>&#x2d; WI32   &#x3d; Writes a 32&#x2d;bit signed integer to the specified position&#x2e;<BR>&#x2d; WI32BE &#x3d; Same as WI32 but forces the return value to big&#x2d;endian&#x2e;<BR>&#x2d; WI32LE &#x3d; Same as WI32 but forces the return value to little&#x2d;endian&#x2e;<BR>&#x2d; WI64   &#x3d; Writes a 64&#x2d;bit signed integer to the specified position&#x2e;<BR>&#x2d; WI64BE &#x3d; Same as WI64 but forces the return value to big&#x2d;endian&#x2e;<BR>&#x2d; WI64LE &#x3d; Same as WI64 but forces the return value to little&#x2d;endian&#x2e;<BR>&#x2d; WI8    &#x3d; Writes an 8&#x2d;bit signed integer to the specified position&#x2e;<BR>&#x2d; WU16   &#x3d; Writes a 16&#x2d;bit unsigned integer to the specified position&#x2e;<BR>&#x2d; WU16BE &#x3d; Same as WU16 but forces the return value to big&#x2d;endian&#x2e;<BR>&#x2d; WU16LE &#x3d; Same as WU16 but forces the return value to little&#x2d;endian&#x2e;<BR>&#x2d; WU32   &#x3d; Writes a 32&#x2d;bit unsigned integer to the specified position&#x2e;<BR>&#x2d; WU32BE &#x3d; Same as WU32 but forces the return value to big&#x2d;endian&#x2e;<BR>&#x2d; WU32LE &#x3d; Same as WU32 but forces the return value to little&#x2d;endian&#x2e;<BR>&#x2d; WU64   &#x3d; Writes a 64&#x2d;bit unsigned integer to the specified position&#x2e;<BR>&#x2d; WU64BE &#x3d; Same as WU64 but forces the return value to big&#x2d;endian&#x2e;<BR>&#x2d; WU64LE &#x3d; Same as WU64 but forces the return value to little&#x2d;endian&#x2e;<BR>&#x2d; WU8    &#x3d; Writes an 8&#x2d;bit unsigned integer to the specified position&#x2e;<BR></PRE>
-		<H4><A href="#idx:Asset">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Asset:WriteNum" style="display:none">
-		<H3>Asset:WriteNum</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Asset:WriteNum(<I><U>Position</U>, <U>Value</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>Position</U> <I>(integer)</I> = Position to write the number to in the array.<BR><U>Value</U> <I>(number)</I> = Number to write at the specified position<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Writes the specified number at the specified position in the array&#x2e;<BR><BR>Actual functions &#x28;replace &#x27;WriteNum&#x27; with one of the following&#x29;&#x2e;&#x2e;&#x2e;<BR>&#x2d; RF32   &#x3d; Writes a 32&#x2d;bit IEEE754 number to the specified position&#x2e;<BR>&#x2d; RF32BE &#x3d; Same as RF32 but forces the specified value to big&#x2d;endian&#x2e;<BR>&#x2d; RF32LE &#x3d; Same as RF32 but forces the specified value to little&#x2d;endian&#x2e;<BR>&#x2d; RF64   &#x3d; Writes a 64&#x2d;bit IEEE754 number to the specified position&#x2e;<BR>&#x2d; RF64BE &#x3d; Same as RF64 but forces the specified value to big&#x2d;endian&#x2e;<BR>&#x2d; RF64LE &#x3d; Same as RF64 but forces the specified value to little&#x2d;endian&#x2e;<BR></PRE>
+		<PRE>Writes the specified integer at the specified position in the array&#x2e;<BR><BR>Actual functions &#x28;replace &#x27;WriteInt&#x27; with one of the following&#x29;&#x2e;&#x2e;&#x2e;<BR>&#x2d; RF32   &#x3d; Writes a 32&#x2d;bit IEEE754 number to the specified position&#x2e;<BR>&#x2d; RF32BE &#x3d; Same as RF32 but forces the specified value to big&#x2d;endian&#x2e;<BR>&#x2d; RF32LE &#x3d; Same as RF32 but forces the specified value to little&#x2d;endian&#x2e;<BR>&#x2d; RF64   &#x3d; Writes a 64&#x2d;bit IEEE754 number to the specified position&#x2e;<BR>&#x2d; RF64BE &#x3d; Same as RF64 but forces the specified value to big&#x2d;endian&#x2e;<BR>&#x2d; RF64LE &#x3d; Same as RF64 but forces the specified value to little&#x2d;endian&#x2e;<BR>&#x2d; WI16   &#x3d; Writes a 16&#x2d;bit signed integer to the specified position&#x2e;<BR>&#x2d; WI16BE &#x3d; Same as WI16 but forces the return value to big&#x2d;endian&#x2e;<BR>&#x2d; WI16LE &#x3d; Same as WI16 but forces the return value to little&#x2d;endian&#x2e;<BR>&#x2d; WI32   &#x3d; Writes a 32&#x2d;bit signed integer to the specified position&#x2e;<BR>&#x2d; WI32BE &#x3d; Same as WI32 but forces the return value to big&#x2d;endian&#x2e;<BR>&#x2d; WI32LE &#x3d; Same as WI32 but forces the return value to little&#x2d;endian&#x2e;<BR>&#x2d; WI64   &#x3d; Writes a 64&#x2d;bit signed integer to the specified position&#x2e;<BR>&#x2d; WI64BE &#x3d; Same as WI64 but forces the return value to big&#x2d;endian&#x2e;<BR>&#x2d; WI64LE &#x3d; Same as WI64 but forces the return value to little&#x2d;endian&#x2e;<BR>&#x2d; WI8    &#x3d; Writes an 8&#x2d;bit signed integer to the specified position&#x2e;<BR>&#x2d; WU16   &#x3d; Writes a 16&#x2d;bit unsigned integer to the specified position&#x2e;<BR>&#x2d; WU16BE &#x3d; Same as WU16 but forces the return value to big&#x2d;endian&#x2e;<BR>&#x2d; WU16LE &#x3d; Same as WU16 but forces the return value to little&#x2d;endian&#x2e;<BR>&#x2d; WU32   &#x3d; Writes a 32&#x2d;bit unsigned integer to the specified position&#x2e;<BR>&#x2d; WU32BE &#x3d; Same as WU32 but forces the return value to big&#x2d;endian&#x2e;<BR>&#x2d; WU32LE &#x3d; Same as WU32 but forces the return value to little&#x2d;endian&#x2e;<BR>&#x2d; WU64   &#x3d; Writes a 64&#x2d;bit unsigned integer to the specified position&#x2e;<BR>&#x2d; WU64BE &#x3d; Same as WU64 but forces the return value to big&#x2d;endian&#x2e;<BR>&#x2d; WU64LE &#x3d; Same as WU64 but forces the return value to little&#x2d;endian&#x2e;<BR>&#x2d; WU8    &#x3d; Writes an 8&#x2d;bit unsigned integer to the specified position&#x2e;<BR></PRE>
 		<H4><A href="#idx:Asset">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Asset.Flags" style="display:none">
@@ -2969,9 +2955,9 @@
 	<DIV id="Command.Exists" style="display:none">
 		<H3>Command.Exists</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Registered</U> = Command.Exists(<I><U>Command</U></I>)</PRE>
+		<PRE><U>Registered</U> = Command.Exists(<I><U>Identifier</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Command</U> <I>(string)</I> = The console command name to lookup<BR></PRE>
+		<PRE><U>Identifier</U> <I>(string)</I> = The console command name to lookup<BR></PRE>
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Registered</U> <I>(boolean)</I> = True if the command is registered<BR></PRE>
 		<H4>Synopsis:-</H4>
@@ -2981,9 +2967,9 @@
 	<DIV id="Command.Register" style="display:none">
 		<H3>Command.Register</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Object</U> = Command.Register(<I><U>Name</U>, <U>Minimum</U>, <U>Maximum</U>, <U>Callback</U></I>)</PRE>
+		<PRE><U>Object</U> = Command.Register(<I><U>Identifier</U>, <U>Minimum</U>, <U>Maximum</U>, <U>Callback</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Name</U> <I>(string)</I> = The console command name.<BR><U>Minimum</U> <I>(integer)</I> = The minimum number of parameters allowed.<BR><U>Maximum</U> <I>(integer)</I> = The maximum number of parameters allowed.<BR><U>Callback</U> <I>(function)</I> = Pointer to the function to callback.<BR></PRE>
+		<PRE><U>Identifier</U> <I>(string)</I> = The console command name.<BR><U>Minimum</U> <I>(integer)</I> = The minimum number of parameters allowed.<BR><U>Maximum</U> <I>(integer)</I> = The maximum number of parameters allowed.<BR><U>Callback</U> <I>(function)</I> = Pointer to the function to callback.<BR></PRE>
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Object</U> <I>(Command)</I> = The class object created.<BR></PRE>
 		<H4>Synopsis:-</H4>
@@ -3021,9 +3007,9 @@
 	<DIV id="Core.Delay" style="display:none">
 		<H3>Core.Delay</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Core.Delay(<I><U>Miliseconds</U></I>)</PRE>
+		<PRE>Core.Delay(<I><U>Millisecs</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Miliseconds</U> <I>(integer)</I> = Time in seconds.<BR></PRE>
+		<PRE><U>Millisecs</U> <I>(integer)</I> = Time in seconds.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Delays the engine thread for this amount of time&#x2e;<BR></PRE>
 		<H4><A href="#idx:Core">&#x25B2; Return to table of contents</A></H4>
@@ -3059,7 +3045,7 @@
 		<H4>Syntax:-</H4>
 		<PRE><U>Result</U> = Core.KillPid(<I><U>Pid</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Pid</U> <I>(integer)</I> = The pid of the executable to kill<BR></PRE>
+		<PRE><U>Pid</U> <I>(integer)</I> = The pid of the executable to kill.<BR></PRE>
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Result</U> <I>(boolean)</I> = The process is killed?<BR></PRE>
 		<H4>Synopsis:-</H4>
@@ -3079,9 +3065,9 @@
 	<DIV id="Core.LogEx" style="display:none">
 		<H3>Core.LogEx</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Core.LogEx(<I><U>Level</U>, <U>Text</U></I>)</PRE>
+		<PRE>Core.LogEx(<I><U>Text</U>, <U>Level</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Level</U> <I>(integer)</I> = The log severity level.<BR><U>Text</U> <I>(string)</I> = The line of text to write to the log.<BR></PRE>
+		<PRE><U>Text</U> <I>(string)</I> = The line of text to write to the log.<BR><U>Level</U> <I>(integer)</I> = The log severity level.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Writes the specified line of text to the engine log&#x2e; Note that if the current log level cvar setting is below this then the function does not log anything&#x2e;<BR></PRE>
 		<H4><A href="#idx:Core">&#x25B2; Return to table of contents</A></H4>
@@ -3091,9 +3077,9 @@
 		<H4>Syntax:-</H4>
 		<PRE>Core.OnEnd(<I><U>Func</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Func</U> <I>(function)</I> = The main end function to change to<BR></PRE>
+		<PRE><U>Func</U> <I>(function)</I> = The main end function to change to.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>The function address to execute when the engine has been asked to terminate&#x2e; The function _MUST_ call Core&#x2e;Done&#x28;&#x29; when that function has finished tidying up or the engine will soft&#x2d;lock&#x2e; Calling this when the engine is already terminating will do nothing so use Core&#x2e;SetMain&#x28;&#x29; instead if you want to change to a new main tick function&#x2e;<BR></PRE>
+		<PRE>The function address to execute when the engine has been asked to&#x2e;<BR>terminate&#x2e; The function _MUST_ call Core&#x2e;Done&#x28;&#x29; when that function has finished tidying up or the engine will soft&#x2d;lock&#x2e; Calling this when the engine is already terminating will do nothing so use Core&#x2e;SetMain&#x28;&#x29; instead if you want to change to a new main tick function&#x2e;<BR></PRE>
 		<H4><A href="#idx:Core">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Core.OnTick" style="display:none">
@@ -3101,9 +3087,9 @@
 		<H4>Syntax:-</H4>
 		<PRE>Core.OnTick(<I><U>Func</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Func</U> <I>(function)</I> = The main tick function to change to<BR></PRE>
+		<PRE><U>Func</U> <I>(function)</I> = The main tick function to change to.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>On initialisation of IfLua&#x3a;&#x3a; The function address of &#x27;MainTick&#x27; is stored in the LUA registry for quick successive execution&#x2e; Thus to change this function&#x2c; you need to run this command with the function you want to change to&#x2e;<BR></PRE>
+		<PRE>On initialisation of IfLua&#x3a;&#x3a; The function address of &#x27;MainTick&#x27; is&#x2e;<BR>stored in the LUA registry for quick successive execution&#x2e; Thus to change this function&#x2c; you need to run this command with the function you want to change to&#x2e;<BR></PRE>
 		<H4><A href="#idx:Core">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Core.Pause" style="display:none">
@@ -3173,7 +3159,7 @@
 		<H4>Syntax:-</H4>
 		<PRE>Core.ScrollDown()</PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Scrolls the console up one line </PRE>
+		<PRE>Scrolls the console up one line&#x2e;<BR></PRE>
 		<H4><A href="#idx:Core">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Core.ScrollUp" style="display:none">
@@ -3181,15 +3167,15 @@
 		<H4>Syntax:-</H4>
 		<PRE>Core.ScrollUp()</PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Scrolls the console up one line </PRE>
+		<PRE>Scrolls the console up one line&#x2e;<BR></PRE>
 		<H4><A href="#idx:Core">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Core.SetDelay" style="display:none">
 		<H3>Core.SetDelay</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Core.SetDelay(<I><U>Time</U></I>)</PRE>
+		<PRE>Core.SetDelay(<I><U>Millisecs</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Time</U> <I>(integer)</I> = Milliseconds to delay by each tick<BR></PRE>
+		<PRE><U>Millisecs</U> <I>(integer)</I> = Milliseconds to delay by each tick<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>This is the same as updating the cvar &#x27;app_delay&#x27; apart from that the cvar is not updated and not saved&#x2e;<BR></PRE>
 		<H4><A href="#idx:Core">&#x25B2; Return to table of contents</A></H4>
@@ -3207,21 +3193,21 @@
 	<DIV id="Core.Stack" style="display:none">
 		<H3>Core.Stack</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Stack</U> = Core.Stack(<I><U>Message</U></I>)</PRE>
+		<PRE><U>Stack</U> = Core.Stack(<I><U>Text</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Message</U> <I>(string)</I> = The message to prefix<BR></PRE>
+		<PRE><U>Text</U> <I>(string)</I> = The message to prefix.<BR></PRE>
 		<H4>Return Parameters:-</H4>
-		<PRE><U>Stack</U> <I>(string)</I> = The current stack trace<BR></PRE>
+		<PRE><U>Stack</U> <I>(string)</I> = The current stack trace.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Returns the current stack as a string formatted by the engine and not Lua This is needed for example when you use xpcall&#x28;&#x29; with an error handler Note that pcall&#x28;&#x29; error messages do not include the stack&#x2e;<BR></PRE>
+		<PRE>Returns the current stack as a string formatted by the engine and not Lua&#x2e; This is needed for example when you use xpcall&#x28;&#x29; with an error handler&#x2e; Note that pcall&#x28;&#x29; error messages do not include the stack&#x2e;<BR></PRE>
 		<H4><A href="#idx:Core">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Core.StatusLeft" style="display:none">
 		<H3>Core.StatusLeft</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Core.StatusLeft(<I><U>Text</U></I>)</PRE>
+		<PRE>Core.StatusLeft(<I><U>String</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Text</U> <I>(string)</I> = Console status text<BR></PRE>
+		<PRE><U>String</U> <I>(string)</I> = Console status text.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>In bot mode&#x2c; this function will set the text to appear when no text is input into the input bar&#x2e; Useful for customised stats&#x2e; It will update every second&#x2e;<BR></PRE>
 		<H4><A href="#idx:Core">&#x25B2; Return to table of contents</A></H4>
@@ -3229,9 +3215,9 @@
 	<DIV id="Core.StatusRight" style="display:none">
 		<H3>Core.StatusRight</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Core.StatusRight(<I><U>Text</U></I>)</PRE>
+		<PRE>Core.StatusRight(<I><U>String</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Text</U> <I>(string)</I> = Console status text<BR></PRE>
+		<PRE><U>String</U> <I>(string)</I> = Console status text.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>In bot mode&#x2c; this function will set the text to appear when no text is input into the input bar&#x2e; Useful for customised stats&#x2e; It will update every second&#x2e;<BR></PRE>
 		<H4><A href="#idx:Core">&#x25B2; Return to table of contents</A></H4>
@@ -3247,9 +3233,9 @@
 	<DIV id="Core.Write" style="display:none">
 		<H3>Core.Write</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Core.Write(<I><U>Text</U></I>)</PRE>
+		<PRE>Core.Write(<I><U>String</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Text</U> <I>(string)</I> = Text to write to console.<BR></PRE>
+		<PRE><U>String</U> <I>(string)</I> = Text to write to console.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Writes the specified line of text directly to the console with no regard to colour of text&#x2e;<BR></PRE>
 		<H4><A href="#idx:Core">&#x25B2; Return to table of contents</A></H4>
@@ -3257,9 +3243,9 @@
 	<DIV id="Core.WriteEx" style="display:none">
 		<H3>Core.WriteEx</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Core.WriteEx(<I><U>Text</U>, <U>Colour</U></I>)</PRE>
+		<PRE>Core.WriteEx(<I><U>Message</U>, <U>Colour</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Text</U> <I>(string)</I> = Text to write to console.<BR><U>Colour</U> <I>(integer)</I> = The optional colour to use.<BR></PRE>
+		<PRE><U>Message</U> <I>(string)</I> = Text to write to console.<BR><U>Colour</U> <I>(integer)</I> = The optional colour to use.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Writes the specified line of text directly to the console with the specified text colour&#x2e;<BR></PRE>
 		<H4><A href="#idx:Core">&#x25B2; Return to table of contents</A></H4>
@@ -3308,14 +3294,14 @@
 		<PRE>Shows the full license information of the specified index&#x2e;<BR></PRE>
 		<H4><A href="#idx:Credit">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Credit.Total" style="display:none">
-		<H3>Credit.Total</H3>
+	<DIV id="Credit.Libs" style="display:none">
+		<H3>Credit.Libs</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Total</U> = Credit.Total()</PRE>
+		<PRE><U>Ids</U> = Credit.Libs</PRE>
 		<H4>Return Parameters:-</H4>
-		<PRE><U>Total</U> <I>(integer)</I> = Number of credits used in the executable.<BR></PRE>
+		<PRE><U>Ids</U> <I>(table)</I> = The table of all library ids<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Returns the number of API&#x27;s stored in the executable&#x2e;<BR></PRE>
+		<PRE>A table containing the ids of all the libraries supported&#x2e;<BR></PRE>
 		<H4><A href="#idx:Credit">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Crypt.B64D" style="display:none">
@@ -4165,7 +4151,7 @@
 		<H4>Function Parameters:-</H4>
 		<PRE><U>srcRGB</U> <I>(integer)</I> = How the source RGB blending factors are computed.<BR><U>dstRGB</U> <I>(integer)</I> = How the dest RGB blending factors are computed.<BR><U>srcAlpha</U> <I>(integer)</I> = How the alpha source blending factor is computed.<BR><U>dstAlpha</U> <I>(integer)</I> = How the alpha destination blending factor is computed.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Sets the alpha blending function formula of the back buffer using glBlendFuncSeparate&#x2e; The parameters are a zero index of the formula you want to use&#x2e; These values are available in Fbo&#x2e;Blends&#x28;&#x29;&#x2e;<BR></PRE>
+		<PRE>Sets the alpha blending function formula of the back buffer using glBlendFuncSeparate&#x2e; The parameters are a zero index of the formula you want to use&#x2e; These values are available in the &#x27;Fbo&#x2e;Blends&#x27; table&#x2e;<BR></PRE>
 		<H4><A href="#idx:Fbo">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Fbo:Activate" style="display:none">
@@ -4437,7 +4423,7 @@
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Codes</U> <I>(table)</I> = The table of key/value pairs of available flags<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Returns the texture filters available&#x2e; Returned as key&#x2f;value pairs&#x2e; The value is a unique identifier to the flag as below&#x2e;<BR>Indx  Keyname   Actual GL value              Default Parameter&#x3f; [00]  Z         GL_ZERO                      &#x2d; [01]  O         GL_ONE                       srcAlpha [02]  S_C       GL_SRC_COLOR                 &#x2d; [03]  O_M_S_C   GL_ONE_MINUS_SRC_COLOR       &#x2d; [04]  D_C       GL_DST_COLOR                 &#x2d; [05]  O_M_D_C   GL_ONE_MINUS_DST_COLOR       &#x2d; [06]  S_A       GL_SRC_ALPHA                 srcRGB [07]  O_M_S_A   GL_ONE_MINUS_SRC_ALPHA       dstRGB&#x2c; dstAlpha [08]  D_A       GL_DST_ALPHA                 &#x2d; [09]  O_M_D_A   GL_ONE_MINUS_DST_ALPHA       &#x2d; [10]  C_C       GL_CONSTANT_COLOR            &#x2d; [11]  O_M_C_C   GL_ONE_MINUS_CONSTANT_COLOR  &#x2d; [12]  C_A       GL_CONSTANT_ALPHA            &#x2d; [13]  O_M_C_A   GL_ONE_MINUS_CONSTANT_ALPHA  &#x2d; [14]  S_A_S     GL_SRC_ALPHA_SATURATE        &#x2d; [15]  S1_C      GL_SRC1_COLOR                &#x2d; [16]  O_M_S1_C  GL_ONE_MINUS_SRC1_COLOR      &#x2d; [17]  S1_A      GL_SRC1_ALPHA                &#x2d; [18]  O_M_S1_A  GL_ONE_MINUS_SRC1_ALPHA      &#x2d; See https&#x3a;&#x2f;&#x2f;www&#x2e;khronos&#x2e;org   &#x2f;registry&#x2f;OpenGL&#x2d;Refpages&#x2f;gl4&#x2f;html&#x2f;glBlendFuncSeparate&#x2e;xhtml for more information about the formulas&#x2e;<BR></PRE>
+		<PRE>Returns the texture filters available&#x2e; See https&#x3a;&#x2f;&#x2f;registry&#x2e;khronos&#x2e;org&#x2f;OpenGL&#x2d;Refpages&#x2f;es3&#x2f;html&#x2f;glBlendFuncSeparate&#x2e;xhtml for more information about the values&#x2e;<BR></PRE>
 		<H4><A href="#idx:Fbo">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Fbo.Filters" style="display:none">
@@ -4447,7 +4433,7 @@
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Codes</U> <I>(table)</I> = The table of key/value pairs of available flags<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Returns the texture filters available&#x2e; Returned as key&#x2f;value pairs&#x2e; The value is a unique identifier to the flag as below&#x2e;<BR>&#x23; ID  KEYNAME   MAGNIFICATION  MINIFICATION &#x23; &#x3d;&#x3d;  &#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;  &#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;  &#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d; &#x23; 00  N_N       GL_NEAREST     GL_NEAREST &#x23; 01  N_L       GL_NEAREST     GL_LINEAR &#x23; 02  L_N       GL_LINEAR      GL_NEAREST &#x23; 03  L_L       GL_LINEAR      GL_LINEAR &#x23; 04  N_N_MM_N  GL_NEAREST     GL_NEAREST_MIPMAP_NEAREST &#x23; 05  L_N_MM_N  GL_LINEAR      GL_NEAREST_MIPMAP_NEAREST &#x23; 06  N_N_MM_L  GL_NEAREST     GL_NEAREST_MIPMAP_LINEAR &#x23; 07  L_N_MM_L  GL_LINEAR      GL_NEAREST_MIPMAP_LINEAR &#x23; 08  N_L_MM_N  GL_NEAREST     GL_LINEAR_MIPMAP_NEAREST &#x23; 09  L_L_MM_N  GL_LINEAR      GL_LINEAR_MIPMAP_NEAREST &#x23; 10  N_L_MM_L  GL_NEAREST     GL_LINEAR_MIPMAP_LINEAR &#x23; 11  L_L_MM_L  GL_LINEAR      GL_LINEAR_MIPMAP_LINEAR &#x23; &#x3d;&#x3d;  &#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;  &#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;  &#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d;&#x3d; Explanations for magnification and minification&#x2e;&#x2e;&#x2e;<BR>&#x23; GL_NEAREST Returns the value of the texture element that is nearest &#x28;in Manhattan distance&#x29; to the center of the pixel being textured&#x2e;<BR>&#x23; GL_LINEAR Returns the weighted average of the four texture elements that are closest to the center of the pixel being textured&#x2e;<BR>&#x23; GL_NEAREST_MIPMAP_NEAREST Chooses the mipmap that most closely matches the size of the pixel being textured and uses the GL_NEAREST criterion &#x28;the texture element nearest to the center of the pixel&#x29; to produce a texture value&#x2e;<BR>&#x23; GL_LINEAR_MIPMAP_NEAREST Chooses the mipmap that most closely matches the size of the pixel being textured and uses the GL_LINEAR criterion &#x28;a weighted average of the four texture elements that are closest to the center of the pixel&#x29; to produce a texture value&#x2e;<BR>&#x23; GL_NEAREST_MIPMAP_LINEAR Chooses the two mipmaps that most closely match the size of the pixel being textured and uses the GL_NEAREST criterion &#x28;the texture element nearest to the center of the pixel&#x29; to produce a texture value from each mipmap&#x2e; The final texture value is a weighted average of those two values&#x2e;<BR>&#x23; GL_LINEAR_MIPMAP_LINEAR Chooses the two mipmaps that most closely match the size of the pixel being textured and uses the GL_LINEAR criterion &#x28;a weighted average of the four texture elements that are closest to the center of the pixel&#x29; to produce a texture value from each mipmap&#x2e; The final texture value is a weighted average of those two values&#x2e;<BR></PRE>
+		<PRE>Returns the texture filters available&#x2e; See https&#x3a;&#x2f;&#x2f;registry&#x2e;khronos&#x2e;org&#x2f;OpenGL&#x2d;Refpages&#x2f;es3&#x2f;html&#x2f;glTexParameter&#x2e;xhtml for more information about the values </PRE>
 		<H4><A href="#idx:Fbo">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="File.AppendOne" style="display:none">
@@ -4857,7 +4843,7 @@
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Bytes</U> <I>(integer)</I> = Maximum number of bytes to read.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Uses fgets&#x28;&#x29; to reads the specified line from the stream&#x2e; The line ends at the specified maximum number of bytes to read or until it reaches an end&#x2d;of&#x2d;line character&#x2e;<BR></PRE>
+		<PRE>Uses fgets&#x28;&#x29; to read the specified line from the stream&#x2e; The line ends at the specified maximum number of bytes to read or until it reaches an end&#x2d;of&#x2d;line character&#x2e;<BR></PRE>
 		<H4><A href="#idx:File">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="File:Rewind" style="display:none">
@@ -4939,9 +4925,9 @@
 	<DIV id="File:WriteStr" style="display:none">
 		<H3>File:WriteStr</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Count</U> = File:WriteStr(<I><U>Text</U></I>)</PRE>
+		<PRE><U>Count</U> = File:WriteStr(<I><U>String</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Text</U> <I>(string)</I> = Text to write.<BR></PRE>
+		<PRE><U>String</U> <I>(string)</I> = Text to write.<BR></PRE>
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Count</U> <I>(integer)</I> = Number of bytes written<BR></PRE>
 		<H4>Synopsis:-</H4>
@@ -5003,9 +4989,11 @@
 	<DIV id="Font:Dump" style="display:none">
 		<H3>Font:Dump</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Font:Dump()</PRE>
+		<PRE>Font:Dump(<I><U>TexId</U>, <U>File</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>TexId</U> <I>(integer)</I> = The texture id to dump.<BR><U>File</U> <I>(stream)</I> = The filename of the stream to write to.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Dumps the texture to the specified file in the specified format&#x2e;<BR></PRE>
+		<PRE>Dumps the font tileset to the specified file&#x2e;<BR></PRE>
 		<H4><A href="#idx:Font">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Font:GetHeight" style="display:none">
@@ -5181,7 +5169,55 @@
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Height</U> <I>(number)</I> = The height of the text printed on screen.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Prints the specified string on screen with bottom&#x2d;left alignment </PRE>
+		<PRE>Prints the specified string on screen with bottom&#x2d;left alignment&#x2e;<BR>Equivalent of calling Print&#x28;&#x29; with the result of PrintUS&#x28;&#x29; subtracted from the Y position&#x2e;<BR></PRE>
+		<H4><A href="#idx:Font">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Font:PrintUC" style="display:none">
+		<H3>Font:PrintUC</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Height</U> = Font:PrintUC(<I><U>X</U>, <U>Y</U>, <U>String</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>X</U> <I>(number)</I> = The X screen position of the string.<BR><U>Y</U> <I>(number)</I> = The Y screen position of the string.<BR><U>String</U> <I>(string)</I> = The string to print.<BR></PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Height</U> <I>(number)</I> = The height of the text printed on screen.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Prints the specified string on screen with vertical bottom&#x2d;left vertical and horizontal centre alignment&#x2e; Equivalent of calling PrintC&#x28;&#x29; with the result of PrintUS&#x28;&#x29; subtracted from Y position&#x2e;<BR></PRE>
+		<H4><A href="#idx:Font">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Font:PrintUCT" style="display:none">
+		<H3>Font:PrintUCT</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Height</U> = Font:PrintUCT(<I><U>X</U>, <U>Y</U>, <U>String</U>, <U>Glyphs</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>X</U> <I>(number)</I> = The X screen position of the string.<BR><U>Y</U> <I>(number)</I> = The Y screen position of the string.<BR><U>String</U> <I>(string)</I> = The string to print.<BR><U>Glyphs</U> <I>(Texture)</I> = The texture handle to use for printing glyphs.<BR></PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Height</U> <I>(number)</I> = The height of the text printed on screen.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Prints the specified string on screen with vertical bottom&#x2d;left vertical and horizontal centre alignment&#x2e; Equivalent of calling PrintCT&#x28;&#x29; with the result of PrintUS&#x28;&#x29; subtracted from Y position&#x2e;<BR></PRE>
+		<H4><A href="#idx:Font">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Font:PrintUR" style="display:none">
+		<H3>Font:PrintUR</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Height</U> = Font:PrintUR(<I><U>X</U>, <U>Y</U>, <U>String</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>X</U> <I>(number)</I> = The X screen position of the string.<BR><U>Y</U> <I>(number)</I> = The Y screen position of the string.<BR><U>String</U> <I>(string)</I> = The string to print.<BR></PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Height</U> <I>(number)</I> = The height of the text printed on screen.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Prints the specified string on screen with vertical bottom&#x2d;left vertical and horizontal right alignment&#x2e; Equivalent of calling PrintR&#x28;&#x29; with the result of PrintUS&#x28;&#x29; subtracted from Y position&#x2e;<BR></PRE>
+		<H4><A href="#idx:Font">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Font:PrintURT" style="display:none">
+		<H3>Font:PrintURT</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Height</U> = Font:PrintURT(<I><U>X</U>, <U>Y</U>, <U>String</U>, <U>Glyphs</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>X</U> <I>(number)</I> = The X screen position of the string.<BR><U>Y</U> <I>(number)</I> = The Y screen position of the string.<BR><U>String</U> <I>(string)</I> = The string to print.<BR><U>Glyphs</U> <I>(Texture)</I> = The texture handle to use for printing glyphs.<BR></PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Height</U> <I>(number)</I> = The height of the text printed on screen.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Prints the specified string on screen with vertical bottom&#x2d;left vertical and horizontal centre alignment&#x2e; Equivalent of calling PrintCT&#x28;&#x29; with the result of PrintUS&#x28;&#x29; subtracted from Y position&#x2e;<BR></PRE>
 		<H4><A href="#idx:Font">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Font:PrintUS" style="display:none">
@@ -5233,9 +5269,9 @@
 	<DIV id="Font:PrintWTS" style="display:none">
 		<H3>Font:PrintWTS</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Font:PrintWTS(<I><U>Right</U>, <U>Indent</U>, <U>Text</U>, <U>Glyphs</U></I>)</PRE>
+		<PRE>Font:PrintWTS(<I><U>Width</U>, <U>Indent</U>, <U>Text</U>, <U>Glyphs</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Right</U> <I>(number)</I> = The right position of where to wrap text to the next line.<BR><U>Indent</U> <I>(number)</I> = The width of the indentation on wrapping.<BR><U>Text</U> <I>(string)</I> = The string to print.<BR><U>Glyphs</U> <I>(texture)</I> = The texture handle to use for printing glyphs.<BR></PRE>
+		<PRE><U>Width</U> <I>(number)</I> = The maximum width of a line before wrapping to the next.<BR><U>Indent</U> <I>(number)</I> = The width of the indentation on wrapping.<BR><U>Text</U> <I>(string)</I> = The string to print.<BR><U>Glyphs</U> <I>(texture)</I> = The texture handle to use for printing glyphs.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Same functionality as PrintW but with the option to print glyphs&#x2e; You can do this by specifying \rthhhhhhhh anywhere in your text&#x2e; Where &#x27;h&#x27; is a hexadecimal number between 00000000 and ffffffff to match the tile id of the texture&#x2e; You must zero pad the number as shown&#x2e;<BR></PRE>
 		<H4><A href="#idx:Font">&#x25B2; Return to table of contents</A></H4>
@@ -5462,48 +5498,48 @@
 		<PRE>the InitFTFont function&#x2e;<BR></PRE>
 		<H4><A href="#idx:Font">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Ftf.ArrayAsync" style="display:none">
-		<H3>Ftf.ArrayAsync</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Ftf.ArrayAsync(<I><U>Id</U>, <U>Data</U>, <U>ErrorFunc</U>, <U>ProgressFunc</U>, <U>SuccessFunc</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>Id</U> <I>(String)</I> = The identifier of the string<BR><U>Data</U> <I>(array)</I> = The data of the audio file to load<BR><U>ErrorFunc</U> <I>(function)</I> = The function to call when there is an error<BR><U>ProgressFunc</U> <I>(function)</I> = The function to call when there is progress<BR><U>SuccessFunc</U> <I>(function)</I> = The function to call when the audio file is laoded<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Loads an audio file off the main thread from the specified array object&#x2e;<BR>The callback functions send an argument to the Ftf object that was created&#x2e;<BR></PRE>
-		<H4><A href="#idx:Ftf">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
 	<DIV id="Ftf.Asset" style="display:none">
 		<H3>Ftf.Asset</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Handle</U> = Ftf.Asset(<I><U>Id</U>, <U>Data</U></I>)</PRE>
+		<PRE><U>Handle</U> = Ftf.Asset(<I><U>Id</U>, <U>Data</U>, <U>Width</U>, <U>Height</U>, <U>DPIWidth</U>, <U>DPIHeight</U>, <U>Outline</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Id</U> <I>(String)</I> = The identifier of the string<BR><U>Data</U> <I>(Asset)</I> = The file data of the audio file to load<BR></PRE>
+		<PRE><U>Id</U> <I>(String)</I> = The identifier string for the Freetype object.<BR><U>Data</U> <I>(Asset)</I> = The raw font data supported by FreeType.<BR><U>Width</U> <I>(number)</I> = The width of the font in pixels.<BR><U>Height</U> <I>(number)</I> = The height of the font in pixels.<BR><U>DPIWidth</U> <I>(integer)</I> = The DPI width of the font.<BR><U>DPIHeight</U> <I>(integer)</I> = The DPI height of the font.<BR><U>Outline</U> <I>(number)</I> = The pixels to add for a border.<BR></PRE>
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Handle</U> <I>(Ftf)</I> = The Ftf object<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Loads an audio file on the main thread from the specified array object&#x2e;<BR></PRE>
+		<PRE>Loads a font into the freetype system and returns a handle you can use with the Font&#x2e;Create&#x28;&#x29; function&#x2e;<BR></PRE>
+		<H4><A href="#idx:Ftf">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Ftf.AssetAsync" style="display:none">
+		<H3>Ftf.AssetAsync</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Ftf.AssetAsync(<I><U>Id</U>, <U>Data</U>, <U>Width</U>, <U>Height</U>, <U>DPIWidth</U>, <U>DPIHeight</U>, <U>Outline</U>, <U>ErrorFunc</U>, <U>ProgressFunc</U>, <U>SuccessFunc</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Id</U> <I>(String)</I> = The identifier string for the Freetype object.<BR><U>Data</U> <I>(Asset)</I> = The raw font data supported by FreeType.<BR><U>Width</U> <I>(number)</I> = The width of the font in pixels.<BR><U>Height</U> <I>(number)</I> = The height of the font in pixels.<BR><U>DPIWidth</U> <I>(integer)</I> = The DPI width of the font.<BR><U>DPIHeight</U> <I>(integer)</I> = The DPI height of the font.<BR><U>Outline</U> <I>(number)</I> = The pixels to add for a border.<BR><U>ErrorFunc</U> <I>(function)</I> = The function to call when there is an error<BR><U>ProgressFunc</U> <I>(function)</I> = The function to call when there is progress<BR><U>SuccessFunc</U> <I>(function)</I> = The function to call when the audio file is laoded<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Asyncronously loads a freetype font into memory for use with the Font&#x2e;Create&#x28;&#x29; function&#x2e; The original Asset class is destroyed in the process&#x2e;<BR></PRE>
 		<H4><A href="#idx:Ftf">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Ftf.File" style="display:none">
 		<H3>Ftf.File</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Handle</U> = Ftf.File(<I><U>Filename</U></I>)</PRE>
+		<PRE><U>Handle</U> = Ftf.File(<I><U>Filename</U>, <U>Width</U>, <U>Height</U>, <U>DPIWidth</U>, <U>DPIHeight</U>, <U>Outline</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Filename</U> <I>(string)</I> = The filename of the audio file to load<BR></PRE>
+		<PRE><U>Filename</U> <I>(string)</I> = The filename of the ftf file to load<BR><U>Width</U> <I>(number)</I> = The width of the font in pixels.<BR><U>Height</U> <I>(number)</I> = The height of the font in pixels.<BR><U>DPIWidth</U> <I>(integer)</I> = The DPI width of the font.<BR><U>DPIHeight</U> <I>(integer)</I> = The DPI height of the font.<BR><U>Outline</U> <I>(number)</I> = The pixels to add for a border.<BR></PRE>
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Handle</U> <I>(Ftf)</I> = The Ftf object<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Loads a audio sample on the main thread from the specified file on disk&#x2e;<BR>Returns the Ftf object&#x2e;<BR></PRE>
+		<PRE>Loads a freetype compatible font from the specified file on disk for use with the Font&#x2e;Create&#x28;&#x29; function&#x2e;<BR></PRE>
 		<H4><A href="#idx:Ftf">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Ftf.FileAsync" style="display:none">
 		<H3>Ftf.FileAsync</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Ftf.FileAsync(<I><U>Filename</U>, <U>ErrorFunc</U>, <U>ProgressFunc</U>, <U>SuccessFunc</U></I>)</PRE>
+		<PRE>Ftf.FileAsync(<I><U>Filename</U>, <U>Width</U>, <U>Height</U>, <U>DPIWidth</U>, <U>DPIHeight</U>, <U>Outline</U>, <U>ErrorFunc</U>, <U>ProgressFunc</U>, <U>SuccessFunc</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Filename</U> <I>(string)</I> = The filename of the encoded waveform to load<BR><U>ErrorFunc</U> <I>(function)</I> = The function to call when there is an error<BR><U>ProgressFunc</U> <I>(function)</I> = The function to call when there is progress<BR><U>SuccessFunc</U> <I>(function)</I> = The function to call when the file is laoded<BR></PRE>
+		<PRE><U>Filename</U> <I>(string)</I> = The filename of the freetype font to load<BR><U>Width</U> <I>(number)</I> = The width of the font in pixels.<BR><U>Height</U> <I>(number)</I> = The height of the font in pixels.<BR><U>DPIWidth</U> <I>(integer)</I> = The DPI width of the font.<BR><U>DPIHeight</U> <I>(integer)</I> = The DPI height of the font.<BR><U>Outline</U> <I>(number)</I> = The pixels to add for a border.<BR><U>ErrorFunc</U> <I>(function)</I> = The function to call when there is an error<BR><U>ProgressFunc</U> <I>(function)</I> = The function to call when there is progress<BR><U>SuccessFunc</U> <I>(function)</I> = The function to call when the file is laoded<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Loads a audio file off the main thread&#x2e; The callback functions send an argument to the Ftf object that was created&#x2e;<BR></PRE>
+		<PRE>Loads a freetype compatible font from the specified file on disk asynchronously for use with the Font&#x2e;Create&#x28;&#x29; function&#x2e;<BR></PRE>
 		<H4><A href="#idx:Ftf">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Ftf.WaitAsync" style="display:none">
@@ -5572,16 +5608,6 @@
 		<PRE>Returns the internal name of the actual freetype font&#x2e; &#x28;e&#x2e;g&#x2e; Bold&#x29; </PRE>
 		<H4><A href="#idx:Ftf">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Image.ArrayAsync" style="display:none">
-		<H3>Image.ArrayAsync</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Image.ArrayAsync(<I><U>Name</U>, <U>Data</U>, <U>Flags</U>, <U>ErrorFunc</U>, <U>ProgressFunc</U>, <U>SuccessFunc</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>Name</U> <I>(string)</I> = A user-defined id of the image<BR><U>Data</U> <I>(array)</I> = The image data array<BR><U>Flags</U> <I>(Integer)</I> = Load flags<BR><U>ErrorFunc</U> <I>(function)</I> = The function to call when there is an error<BR><U>ProgressFunc</U> <I>(function)</I> = The function to call when there is progress<BR><U>SuccessFunc</U> <I>(function)</I> = The function to call when the image is laoded<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Loads a image off the main thread from the specified array object&#x2e; The callback functions send an argument to the image object that was created&#x2e;<BR></PRE>
-		<H4><A href="#idx:Image">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
 	<DIV id="Image.Asset" style="display:none">
 		<H3>Image.Asset</H3>
 		<H4>Syntax:-</H4>
@@ -5591,7 +5617,17 @@
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Handle</U> <I>(Image)</I> = The image object<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Loads a image on the main thread from the specified array object&#x2e;<BR>Returns the image object&#x2e;<BR></PRE>
+		<PRE>Loads a image on the main thread from the specified asset object&#x2e; The Asset object specified is consumed upon load&#x2e; Returns an image object&#x2e;<BR></PRE>
+		<H4><A href="#idx:Image">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Image.AssetAsync" style="display:none">
+		<H3>Image.AssetAsync</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Image.AssetAsync(<I><U>Name</U>, <U>Data</U>, <U>Flags</U>, <U>ErrorFunc</U>, <U>ProgressFunc</U>, <U>SuccessFunc</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Name</U> <I>(string)</I> = A user-defined id of the image<BR><U>Data</U> <I>(array)</I> = The image data array<BR><U>Flags</U> <I>(Integer)</I> = Load flags<BR><U>ErrorFunc</U> <I>(function)</I> = The function to call when there is an error<BR><U>ProgressFunc</U> <I>(function)</I> = The function to call when there is progress<BR><U>SuccessFunc</U> <I>(function)</I> = The function to call when the image is laoded<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Loads a image off the main thread from the specified array object&#x2e; The callback functions send an argument to the image object that was created&#x2e;<BR></PRE>
 		<H4><A href="#idx:Image">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Image.Blank" style="display:none">
@@ -5868,6 +5904,46 @@
 		<PRE>Returns true if executable was built for Windows&#x2c; false if not&#x2e;<BR></PRE>
 		<H4><A href="#idx:Info">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
+	<DIV id="Info.LUAMicroTime" style="display:none">
+		<H3>Info.LUAMicroTime</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Time</U> = Info.LUAMicroTime()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Time</U> <I>(integer)</I> = The time in microseconds.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the total time in the LUA sandbox in microseconds&#x2e;<BR></PRE>
+		<H4><A href="#idx:Info">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Info.LUAMilliTime" style="display:none">
+		<H3>Info.LUAMilliTime</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Time</U> = Info.LUAMilliTime()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Time</U> <I>(integer)</I> = The execution time in milliseconds.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the total time in the LUA sandbox in milliseconds&#x2e;<BR></PRE>
+		<H4><A href="#idx:Info">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Info.LUANanoTime" style="display:none">
+		<H3>Info.LUANanoTime</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Time</U> = Info.LUANanoTime()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Time</U> <I>(integer)</I> = The time in nanoseconds.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the total time in the LUA sandbox in nanoseconds&#x2e;<BR></PRE>
+		<H4><A href="#idx:Info">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Info.LUATime" style="display:none">
+		<H3>Info.LUATime</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Timestamp</U> = Info.LUATime()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Timestamp</U> <I>(number)</I> = The execution time as a number.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the total time in the LUA sandbox in seconds&#x2e;<BR></PRE>
+		<H4><A href="#idx:Info">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
 	<DIV id="Info.LUAUsage" style="display:none">
 		<H3>Info.LUAUsage</H3>
 		<H4>Syntax:-</H4>
@@ -5978,6 +6054,36 @@
 		<PRE>Returns the time elapsed in seconds since the engine started&#x2e; This is a very high resolution timer&#x2e; Use it for time&#x2d;criticial timings&#x2e; This counter can be reset with Core&#x2e;Update&#x28;&#x29; as it will lose precision over time&#x2e;<BR></PRE>
 		<H4><A href="#idx:Info">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
+	<DIV id="Info.UpMicroTime" style="display:none">
+		<H3>Info.UpMicroTime</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Time</U> = Info.UpMicroTime()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Time</U> <I>(integer)</I> = The engine uptime in microseconds.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the total time the engine has been running in microseconds&#x2e;<BR></PRE>
+		<H4><A href="#idx:Info">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Info.UpMilliTime" style="display:none">
+		<H3>Info.UpMilliTime</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Time</U> = Info.UpMilliTime()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Time</U> <I>(integer)</I> = The engine uptime in milliseconds.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the total time in the engine has been running in milliseconds&#x2e;<BR></PRE>
+		<H4><A href="#idx:Info">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Info.UpNanoTime" style="display:none">
+		<H3>Info.UpNanoTime</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Time</U> = Info.UpNanoTime()</PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Time</U> <I>(integer)</I> = The engine time in nanoseconds.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns the total time in the engine has been running in nanoseconds&#x2e;<BR></PRE>
+		<H4><A href="#idx:Info">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
 	<DIV id="Info.Uptime" style="display:none">
 		<H3>Info.Uptime</H3>
 		<H4>Syntax:-</H4>
@@ -6002,16 +6108,6 @@
 		<PRE>Input.CursorCentre()</PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Sets the mouse cursor in the centre of the window&#x2e;<BR></PRE>
-		<H4><A href="#idx:Input">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Input.GetCursorPos" style="display:none">
-		<H3>Input.GetCursorPos</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Input.GetCursorPos(<I><U>X</U>, <U>Y</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>X</U> <I>(integer)</I> = The X co-ordinate of the mouse cursor.<BR><U>Y</U> <I>(integer)</I> = The Y co-ordinate of the mouse cursor.<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Sets the position of the mouse cursor relative to the top&#x2d;left of the main FBO matrix&#x2c; meaning X could be negative&#x2e;<BR></PRE>
 		<H4><A href="#idx:Input">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Input.GetJoyAxis" style="display:none">
@@ -6106,30 +6202,6 @@
 		<PRE><U>State</U> <I>(boolean)</I> = True if it exists, false if it does not.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Tests if the specified joystick exists&#x2e;<BR></PRE>
-		<H4><A href="#idx:Input">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Input.KeyState" style="display:none">
-		<H3>Input.KeyState</H3>
-		<H4>Syntax:-</H4>
-		<PRE><U>Result</U> = Input.KeyState(<I><U>ButtonId</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>ButtonId</U> <I>(integer)</I> = The GLFW key id to test.<BR></PRE>
-		<H4>Return Parameters:-</H4>
-		<PRE><U>Result</U> <I>(integer)</I> = Button state (0=up,1=down).<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Returns the state of the specified keyboard button direct from cGlFW&#x2d;&#x3e; </PRE>
-		<H4><A href="#idx:Input">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Input.MouseState" style="display:none">
-		<H3>Input.MouseState</H3>
-		<H4>Syntax:-</H4>
-		<PRE><U>Result</U> = Input.MouseState(<I><U>ButtonId</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>ButtonId</U> <I>(integer)</I> = The button id to test.<BR></PRE>
-		<H4>Return Parameters:-</H4>
-		<PRE><U>Result</U> <I>(integer)</I> = Button state (0=up,1=down).<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Returns the state of the specified mouse button&#x2e;<BR></PRE>
 		<H4><A href="#idx:Input">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Input.OnChar" style="display:none">
@@ -6458,28 +6530,28 @@
 		<PRE>Loads pre&#x2d;defined masks from the specified raster image file&#x2e;<BR></PRE>
 		<H4><A href="#idx:Mask">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Mask.CreateBlank" style="display:none">
-		<H3>Mask.CreateBlank</H3>
+	<DIV id="Mask.CreateOne" style="display:none">
+		<H3>Mask.CreateOne</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Handle</U> = Mask.CreateBlank(<I><U>Identifier</U>, <U>Width</U>, <U>Height</U></I>)</PRE>
+		<PRE><U>Handle</U> = Mask.CreateOne(<I><U>Identifier</U>, <U>Width</U>, <U>Height</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
 		<PRE><U>Identifier</U> <I>(string)</I> = The identifier of the mask.<BR><U>Width</U> <I>(integer)</I> = The width of the new mask.<BR><U>Height</U> <I>(integer)</I> = The height of the new mask.<BR></PRE>
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Handle</U> <I>(Mask)</I> = The handle of the new mask created.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Creates a new blank collision mask of the specified dimensions&#x2e; Useful for storing and modifying the entire bitmask of a level&#x2e;<BR></PRE>
+		<PRE>Creates a new collision mask of the specified dimensions with all the bits set to ONE&#x2e;<BR></PRE>
 		<H4><A href="#idx:Mask">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Mask.CreateNew" style="display:none">
-		<H3>Mask.CreateNew</H3>
+	<DIV id="Mask.CreateZero" style="display:none">
+		<H3>Mask.CreateZero</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Handle</U> = Mask.CreateNew(<I><U>Identifier</U>, <U>Width</U>, <U>Height</U></I>)</PRE>
+		<PRE><U>Handle</U> = Mask.CreateZero(<I><U>Identifier</U>, <U>Width</U>, <U>Height</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
 		<PRE><U>Identifier</U> <I>(string)</I> = The identifier of the mask.<BR><U>Width</U> <I>(integer)</I> = The width of the new mask.<BR><U>Height</U> <I>(integer)</I> = The height of the new mask.<BR></PRE>
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Handle</U> <I>(Mask)</I> = The handle of the new mask created.<BR></PRE>
 		<H4>Synopsis:-</H4>
-		<PRE>Creates a new collision mask of the specified dimensions&#x2e; Useful for storing and modifying the entire bitmask of a level&#x2e; Use of this function does not clear the memory so the storage of the masks are unspecified&#x2e; Use this only if you&#x27;re garaunteed to initialise the storage yourself&#x2e;<BR></PRE>
+		<PRE>Creates a new collision mask of the specified dimensions with all the bits set to ZERO&#x2e;<BR></PRE>
 		<H4><A href="#idx:Mask">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Mask:Clear" style="display:none">
@@ -6495,9 +6567,9 @@
 	<DIV id="Mask:Copy" style="display:none">
 		<H3>Mask:Copy</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Mask:Copy(<I><U>SrcHandle</U>, <U>Id</U>, <U>DestMaskX</U>, <U>DestMaskY</U></I>)</PRE>
+		<PRE>Mask:Copy(<I><U>SrcHandle</U>, <U>SrcTileId</U>, <U>DestX</U>, <U>DestY</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>SrcHandle</U> <I>(Mask)</I> = Source mask to merge from.<BR><U>Id</U> <I>(integer)</I> = The id number of the source mask.<BR><U>DestMaskX</U> <I>(integer)</I> = Destination X position.<BR><U>DestMaskY</U> <I>(integer)</I> = Destination Y position.<BR></PRE>
+		<PRE><U>SrcHandle</U> <I>(Mask)</I> = Source mask to merge from.<BR><U>SrcTileId</U> <I>(integer)</I> = The id number of the source mask.<BR><U>DestX</U> <I>(integer)</I> = Destination X position.<BR><U>DestY</U> <I>(integer)</I> = Destination Y position.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Copies the source mask id into destination mask id zero at the specified position&#x2e;<BR></PRE>
 		<H4><A href="#idx:Mask">&#x25B2; Return to table of contents</A></H4>
@@ -6523,9 +6595,9 @@
 	<DIV id="Mask:Erase" style="display:none">
 		<H3>Mask:Erase</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Mask:Erase(<I><U>DestHandle</U>, <U>Id</U></I>)</PRE>
+		<PRE>Mask:Erase(<I><U>DestTileId</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>DestHandle</U> <I>(Mask)</I> = Destination mask to erase.<BR><U>Id</U> <I>(integer)</I> = The id number of the source mask.<BR></PRE>
+		<PRE><U>DestTileId</U> <I>(integer)</I> = The id number of the destination mask.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Fills the destination mask with zeros&#x2e;<BR></PRE>
 		<H4><A href="#idx:Mask">&#x25B2; Return to table of contents</A></H4>
@@ -6563,9 +6635,21 @@
 	<DIV id="Mask:IsCollide" style="display:none">
 		<H3>Mask:IsCollide</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Result</U> = Mask:IsCollide(<I><U>SourceId</U>, <U>SourceX</U>, <U>SourceY</U>, <U>Dest</U>, <U>DestId</U>, <U>DestX</U>, <U>DestY</U></I>)</PRE>
+		<PRE><U>Result</U> = Mask:IsCollide(<I><U>Dest</U>, <U>DestId</U>, <U>DestX</U>, <U>DestY</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>SourceId</U> <I>(integer)</I> = The sub-mask id to use<BR><U>SourceX</U> <I>(integer)</I> = The X position of the source mask<BR><U>SourceY</U> <I>(integer)</I> = The Y position of the source mask<BR><U>Dest</U> <I>(Mask)</I> = The destination mask to test upon<BR><U>DestId</U> <I>(integer)</I> = The destination sub-mask id<BR><U>DestX</U> <I>(integer)</I> = The X position to overlap the source mask<BR><U>DestY</U> <I>(integer)</I> = The Y position to overlap the source mask<BR></PRE>
+		<PRE><U>Dest</U> <I>(Mask)</I> = The destination mask to test upon<BR><U>DestId</U> <I>(integer)</I> = The destination sub-mask id<BR><U>DestX</U> <I>(integer)</I> = The X position to overlap the source mask<BR><U>DestY</U> <I>(integer)</I> = The Y position to overlap the source mask<BR></PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Result</U> <I>(boolean)</I> = True if the two bitmasks overlap. False if not<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns true if the second mask collides with the first mask at x0 y0&#x2e;<BR></PRE>
+		<H4><A href="#idx:Mask">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Mask:IsCollideEx" style="display:none">
+		<H3>Mask:IsCollideEx</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Result</U> = Mask:IsCollideEx(<I><U>SrcTileId</U>, <U>SrcX</U>, <U>SrcY</U>, <U>Dest</U>, <U>DestTileId</U>, <U>DestX</U>, <U>DestY</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>SrcTileId</U> <I>(integer)</I> = The sub-mask id to use<BR><U>SrcX</U> <I>(integer)</I> = The X position of the source mask<BR><U>SrcY</U> <I>(integer)</I> = The Y position of the source mask<BR><U>Dest</U> <I>(Mask)</I> = The destination mask to test upon<BR><U>DestTileId</U> <I>(integer)</I> = The destination sub-mask id<BR><U>DestX</U> <I>(integer)</I> = The X position to overlap the source mask<BR><U>DestY</U> <I>(integer)</I> = The Y position to overlap the source mask<BR></PRE>
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Result</U> <I>(boolean)</I> = True if the two bitmasks overlap. False if not<BR></PRE>
 		<H4>Synopsis:-</H4>
@@ -6575,9 +6659,9 @@
 	<DIV id="Mask:Merge" style="display:none">
 		<H3>Mask:Merge</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Mask:Merge(<I><U>SrcHandle</U>, <U>Id</U>, <U>DestMaskX</U>, <U>DestMaskY</U></I>)</PRE>
+		<PRE>Mask:Merge(<I><U>SrcHandle</U>, <U>SrcTileId</U>, <U>DestMaskX</U>, <U>DestMaskY</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>SrcHandle</U> <I>(Mask)</I> = Source mask to merge from.<BR><U>Id</U> <I>(integer)</I> = The id number of the source mask.<BR><U>DestMaskX</U> <I>(integer)</I> = Destination X position.<BR><U>DestMaskY</U> <I>(integer)</I> = Destination Y position.<BR></PRE>
+		<PRE><U>SrcHandle</U> <I>(Mask)</I> = Source mask to merge from.<BR><U>SrcTileId</U> <I>(integer)</I> = The id number of the source mask.<BR><U>DestMaskX</U> <I>(integer)</I> = Destination X position.<BR><U>DestMaskY</U> <I>(integer)</I> = Destination Y position.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Merges the source mask id into destination mask id zero at the specified position&#x2e;<BR></PRE>
 		<H4><A href="#idx:Mask">&#x25B2; Return to table of contents</A></H4>
@@ -6595,9 +6679,9 @@
 	<DIV id="Mask:RayCast" style="display:none">
 		<H3>Mask:RayCast</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>DoesCollide</U>, <U>CollideX</U>, <U>CollideY</U> = Mask:RayCast(<I><U>SrcId</U>, <U>SrcX</U>, <U>SrcY</U>, <U>Dest</U>, <U>DestId</U>, <U>DestFX</U>, <U>DestFY</U>, <U>DestTX</U>, <U>DestTY</U></I>)</PRE>
+		<PRE><U>DoesCollide</U>, <U>CollideX</U>, <U>CollideY</U> = Mask:RayCast(<I><U>SrcTileId</U>, <U>SrcX</U>, <U>SrcY</U>, <U>Dest</U>, <U>DestTileId</U>, <U>DestFX</U>, <U>DestFY</U>, <U>DestTX</U>, <U>DestTY</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>SrcId</U> <I>(integer)</I> = The source mask id to test<BR><U>SrcX</U> <I>(integer)</I> = The X position of the source mask<BR><U>SrcY</U> <I>(integer)</I> = The Y position of the source mask<BR><U>Dest</U> <I>(Mask)</I> = The destination mask handle to test upon<BR><U>DestId</U> <I>(integer)</I> = The destination mask id to test upon<BR><U>DestFX</U> <I>(integer)</I> = The starting X position of the destination mask<BR><U>DestFY</U> <I>(integer)</I> = The starting Y position of the destination mask<BR><U>DestTX</U> <I>(integer)</I> = The ending X position of the destination mask<BR><U>DestTY</U> <I>(integer)</I> = The ending Y position of the destination mask<BR></PRE>
+		<PRE><U>SrcTileId</U> <I>(integer)</I> = The source mask id to test<BR><U>SrcX</U> <I>(integer)</I> = The X position of the source mask<BR><U>SrcY</U> <I>(integer)</I> = The Y position of the source mask<BR><U>Dest</U> <I>(Mask)</I> = The destination mask handle to test upon<BR><U>DestTileId</U> <I>(integer)</I> = The destination mask id to test upon<BR><U>DestFX</U> <I>(integer)</I> = The starting X position of the destination mask<BR><U>DestFY</U> <I>(integer)</I> = The starting Y position of the destination mask<BR><U>DestTX</U> <I>(integer)</I> = The ending X position of the destination mask<BR><U>DestTY</U> <I>(integer)</I> = The ending Y position of the destination mask<BR></PRE>
 		<H4>Return Parameters:-</H4>
 		<PRE><U>DoesCollide</U> <I>(boolean)</I> = True if the raycast collided with the other mask<BR><U>CollideX</U> <I>(integer)</I> = If collision, the X co-ordinate of it<BR><U>CollideY</U> <I>(integer)</I> = If collision, the Y co-ordinate of it<BR></PRE>
 		<H4>Synopsis:-</H4>
@@ -6661,9 +6745,9 @@
 	<DIV id="Palette.Palette" style="display:none">
 		<H3>Palette.Palette</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Handle</U> = Palette.Palette(<I><U>Identifier</U></I>)</PRE>
+		<PRE><U>Handle</U> = Palette.Palette(<I><U>Identifier</U>, <U>Handle</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Identifier</U> <I>(string)</I> = Reference only user-defined identifier.<BR></PRE>
+		<PRE><U>Identifier</U> <I>(string)</I> = Reference only user-defined identifier.<BR><U>Handle</U> <I>(Palette)</I> = A handle to the palette object to copy.<BR></PRE>
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Handle</U> <I>(Palette)</I> = A handle to the newly created palette object.<BR></PRE>
 		<H4>Synopsis:-</H4>
@@ -6721,11 +6805,11 @@
 	<DIV id="Palette:GetA" style="display:none">
 		<H3>Palette:GetA</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Red</U> = Palette:GetA(<I><U>Id</U></I>)</PRE>
+		<PRE><U>Alpha</U> = Palette:GetA(<I><U>Id</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
 		<PRE><U>Id</U> <I>(integer)</I> = Palette entry to modify (0-255).<BR></PRE>
 		<H4>Return Parameters:-</H4>
-		<PRE><U>Red</U> <I>(number)</I> = The red intensity number (0.0-1.0).<BR></PRE>
+		<PRE><U>Alpha</U> <I>(number)</I> = The alpha intensity number (0.0-1.0).<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Use this function to get the alpha palette entry&#x2e;<BR></PRE>
 		<H4><A href="#idx:Palette">&#x25B2; Return to table of contents</A></H4>
@@ -6769,11 +6853,11 @@
 	<DIV id="Palette:GetG" style="display:none">
 		<H3>Palette:GetG</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Red</U> = Palette:GetG(<I><U>Id</U></I>)</PRE>
+		<PRE><U>Green</U> = Palette:GetG(<I><U>Id</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
 		<PRE><U>Id</U> <I>(integer)</I> = Palette entry to modify (0-255).<BR></PRE>
 		<H4>Return Parameters:-</H4>
-		<PRE><U>Red</U> <I>(number)</I> = The red intensity number (0.0-1.0).<BR></PRE>
+		<PRE><U>Green</U> <I>(number)</I> = The green intensity number (0.0-1.0).<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Use this function to get the green palette entry&#x2e;<BR></PRE>
 		<H4><A href="#idx:Palette">&#x25B2; Return to table of contents</A></H4>
@@ -6988,16 +7072,6 @@
 		<PRE>Shifts all palette entries forwards this amount from the specified palette index and limited to the specified number of indexes&#x2e;<BR></PRE>
 		<H4><A href="#idx:Palette">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Pcm.ArrayAsync" style="display:none">
-		<H3>Pcm.ArrayAsync</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Pcm.ArrayAsync(<I><U>Id</U>, <U>Data</U>, <U>Flags</U>, <U>ErrorFunc</U>, <U>ProgressFunc</U>, <U>SuccessFunc</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>Id</U> <I>(String)</I> = The identifier of the string<BR><U>Data</U> <I>(array)</I> = The data of the audio file to load<BR><U>Flags</U> <I>(Integer)</I> = Load flags<BR><U>ErrorFunc</U> <I>(function)</I> = The function to call when there is an error<BR><U>ProgressFunc</U> <I>(function)</I> = The function to call when there is progress<BR><U>SuccessFunc</U> <I>(function)</I> = The function to call when the audio file is laoded<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Loads an audio file off the main thread from the specified array object&#x2e;<BR>The callback functions send an argument to the Pcm object that was created&#x2e;<BR></PRE>
-		<H4><A href="#idx:Pcm">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
 	<DIV id="Pcm.Asset" style="display:none">
 		<H3>Pcm.Asset</H3>
 		<H4>Syntax:-</H4>
@@ -7008,6 +7082,16 @@
 		<PRE><U>Handle</U> <I>(Pcm)</I> = The pcm object<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Loads an audio file on the main thread from the specified array object&#x2e;<BR></PRE>
+		<H4><A href="#idx:Pcm">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Pcm.AssetAsync" style="display:none">
+		<H3>Pcm.AssetAsync</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Pcm.AssetAsync(<I><U>Id</U>, <U>Data</U>, <U>Flags</U>, <U>ErrorFunc</U>, <U>ProgressFunc</U>, <U>SuccessFunc</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Id</U> <I>(String)</I> = The identifier of the string<BR><U>Data</U> <I>(array)</I> = The data of the audio file to load<BR><U>Flags</U> <I>(Integer)</I> = Load flags<BR><U>ErrorFunc</U> <I>(function)</I> = The function to call when there is an error<BR><U>ProgressFunc</U> <I>(function)</I> = The function to call when there is progress<BR><U>SuccessFunc</U> <I>(function)</I> = The function to call when the audio file is laoded<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Loads an audio file off the main thread from the specified array object&#x2e;<BR>The callback functions send an argument to the Pcm object that was created&#x2e;<BR></PRE>
 		<H4><A href="#idx:Pcm">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Pcm.File" style="display:none">
@@ -7883,9 +7967,9 @@
 	<DIV id="Source:SetLooping" style="display:none">
 		<H3>Source:SetLooping</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Source:SetLooping(<I><U>State</U></I>)</PRE>
+		<PRE>Source:SetLooping(<I><U>Looping</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>State</U> <I>(boolean)</I> = The new looping state<BR></PRE>
+		<PRE><U>Looping</U> <I>(boolean)</I> = The new looping state<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Sets if the source should be looping&#x2e;<BR></PRE>
 		<H4><A href="#idx:Source">&#x25B2; Return to table of contents</A></H4>
@@ -7953,9 +8037,9 @@
 	<DIV id="Source:SetRelative" style="display:none">
 		<H3>Source:SetRelative</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Source:SetRelative(<I><U>State</U></I>)</PRE>
+		<PRE>Source:SetRelative(<I><U>Relative</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>State</U> <I>(boolean)</I> = Sets if the source is relative.<BR></PRE>
+		<PRE><U>Relative</U> <I>(boolean)</I> = Sets if the source is relative.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Sets the new relative state of the source&#x2e;<BR></PRE>
 		<H4><A href="#idx:Source">&#x25B2; Return to table of contents</A></H4>
@@ -8123,9 +8207,9 @@
 	<DIV id="Stat:Data" style="display:none">
 		<H3>Stat:Data</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Stat:Data(<I><U>Value</U></I>)</PRE>
+		<PRE>Stat:Data(<I><U>String</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Value</U> <I>(String)</I> = Data string to add to the cell.<BR></PRE>
+		<PRE><U>String</U> <I>(string)</I> = Data string to add to the cell.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Inserts the specified string into the next cell&#x2e;<BR></PRE>
 		<H4><A href="#idx:Stat">&#x25B2; Return to table of contents</A></H4>
@@ -8135,7 +8219,7 @@
 		<H4>Syntax:-</H4>
 		<PRE>Stat:DataI(<I><U>Value</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Value</U> <I>(Integer)</I> = Integer to add to the next cell.<BR></PRE>
+		<PRE><U>Value</U> <I>(integer)</I> = Integer to add to the next cell.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Inserts the specified integer into the next cell&#x2e;<BR></PRE>
 		<H4><A href="#idx:Stat">&#x25B2; Return to table of contents</A></H4>
@@ -8145,7 +8229,7 @@
 		<H4>Syntax:-</H4>
 		<PRE>Stat:DataN(<I><U>Value</U>, <U>Precision</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Value</U> <I>(Number)</I> = Number to add to the next cell.<BR><U>Precision</U> <I>(Integer)</I> = Amount of precision to use on the number.<BR></PRE>
+		<PRE><U>Value</U> <I>(number)</I> = Number to add to the next cell.<BR><U>Precision</U> <I>(integer)</I> = Amount of precision to use on the number.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Inserts the specified number into the next cell&#x2e;<BR></PRE>
 		<H4><A href="#idx:Stat">&#x25B2; Return to table of contents</A></H4>
@@ -8161,9 +8245,9 @@
 	<DIV id="Stat:Finish" style="display:none">
 		<H3>Stat:Finish</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Output</U> = Stat:Finish(<I><U>OmitLF</U></I>)</PRE>
+		<PRE><U>Output</U> = Stat:Finish(<I><U>OmitLF</U>, <U>Gap</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>OmitLF</U> <I>(Boolean)</I> = Omits the ending linefeed.<BR></PRE>
+		<PRE><U>OmitLF</U> <I>(boolean)</I> = Omits the ending linefeed.<BR><U>Gap</U> <I>(integer)</I> = Number of whitespaces between each header field.<BR></PRE>
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Output</U> <I>(String)</I> = The final formatted output.<BR></PRE>
 		<H4>Synopsis:-</H4>
@@ -8173,9 +8257,9 @@
 	<DIV id="Stat:Header" style="display:none">
 		<H3>Stat:Header</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Stat:Header(<I><U>Value</U>, <U>Right</U></I>)</PRE>
+		<PRE>Stat:Header(<I><U>Text</U>, <U>Right</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Value</U> <I>(String)</I> = Header string to add to the cell.<BR><U>Right</U> <I>(Boolean)</I> = Header is right justified?<BR></PRE>
+		<PRE><U>Text</U> <I>(string)</I> = Header string to add to the cell.<BR><U>Right</U> <I>(boolean)</I> = Header is right justified?<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Inserts the specified string into the next header&#x2e; This has no effect if data has been added&#x2e;<BR></PRE>
 		<H4><A href="#idx:Stat">&#x25B2; Return to table of contents</A></H4>
@@ -8185,7 +8269,7 @@
 		<H4>Syntax:-</H4>
 		<PRE>Stat:HeaderDupe(<I><U>Count</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Count</U> <I>(Integer)</I> = Number of times to duplicate the current headers.<BR></PRE>
+		<PRE><U>Count</U> <I>(integer)</I> = Number of times to duplicate the current headers.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Duplicates the currently stored headers&#x2e;<BR></PRE>
 		<H4><A href="#idx:Stat">&#x25B2; Return to table of contents</A></H4>
@@ -8195,7 +8279,7 @@
 		<H4>Syntax:-</H4>
 		<PRE><U>Count</U> = Stat:Headers()</PRE>
 		<H4>Return Parameters:-</H4>
-		<PRE><U>Count</U> <I>(Integer)</I> = Number of headers registered<BR></PRE>
+		<PRE><U>Count</U> <I>(integer)</I> = Number of headers registered<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Returns the number of headers in the table </PRE>
 		<H4><A href="#idx:Stat">&#x25B2; Return to table of contents</A></H4>
@@ -8225,7 +8309,7 @@
 		<H4>Syntax:-</H4>
 		<PRE>Stat:Reserve(<I><U>Rows</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Rows</U> <I>(Integer)</I> = Reserve memory for this many rows.<BR></PRE>
+		<PRE><U>Rows</U> <I>(integer)</I> = Reserve memory for this many rows.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Reserves memory for this many rows&#x2e;<BR></PRE>
 		<H4><A href="#idx:Stat">&#x25B2; Return to table of contents</A></H4>
@@ -8233,9 +8317,9 @@
 	<DIV id="Stat:Sort" style="display:none">
 		<H3>Stat:Sort</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Stat:Sort(<I><U>Column</U>, <U>Desc</U></I>)</PRE>
+		<PRE>Stat:Sort(<I><U>Column</U>, <U>Reverse</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Column</U> <I>(Integer)</I> = Sort from this column<BR><U>Desc</U> <I>(Boolean)</I> = Sort the list in descending order<BR></PRE>
+		<PRE><U>Column</U> <I>(integer)</I> = Sort from this column<BR><U>Reverse</U> <I>(boolean)</I> = Sort the list in descending order<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Sorts the data by the specified column&#x2e;<BR></PRE>
 		<H4><A href="#idx:Stat">&#x25B2; Return to table of contents</A></H4>
@@ -8243,22 +8327,12 @@
 	<DIV id="Stat:SortTwo" style="display:none">
 		<H3>Stat:SortTwo</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Stat:SortTwo(<I><U>Column1</U>, <U>Column2</U>, <U>Desc</U></I>)</PRE>
+		<PRE>Stat:SortTwo(<I><U>Column1</U>, <U>Column2</U>, <U>Reverse</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Column1</U> <I>(Integer)</I> = Sort from this primary column<BR><U>Column2</U> <I>(Integer)</I> = Sort from this secondary column if primary is the same<BR><U>Desc</U> <I>(Boolean)</I> = Sort the list in descending order<BR></PRE>
+		<PRE><U>Column1</U> <I>(Integer)</I> = Sort from this primary column<BR><U>Column2</U> <I>(Integer)</I> = Sort from this secondary column if primary is the same<BR><U>Reverse</U> <I>(Boolean)</I> = Sort the list in descending order<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Sorts the data by the specified columns&#x2e;<BR></PRE>
 		<H4><A href="#idx:Stat">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
-	<DIV id="Stream.ArrayAsync" style="display:none">
-		<H3>Stream.ArrayAsync</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Stream.ArrayAsync(<I><U>Id</U>, <U>Data</U>, <U>ErrorFunc</U>, <U>ProgressFunc</U>, <U>SuccessFunc</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>Id</U> <I>(String)</I> = The identifier of the string<BR><U>Data</U> <I>(array)</I> = The data of the ogg file to load<BR><U>ErrorFunc</U> <I>(function)</I> = The function to call when there is an error<BR><U>ProgressFunc</U> <I>(function)</I> = The function to call during initial IO loading.<BR><U>SuccessFunc</U> <I>(function)</I> = The function to call when the audio file is laoded<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Loads an ogg file off the main thread from the specified array object&#x2e;<BR>The callback functions send an argument to the Stream object that was created&#x2e;<BR></PRE>
-		<H4><A href="#idx:Stream">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Stream.Asset" style="display:none">
 		<H3>Stream.Asset</H3>
@@ -8270,6 +8344,16 @@
 		<PRE><U>Handle</U> <I>(Ogg)</I> = The ogg object<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Loads an ogg file to stream on the main thread from the specified array object&#x2e;<BR></PRE>
+		<H4><A href="#idx:Stream">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Stream.AssetAsync" style="display:none">
+		<H3>Stream.AssetAsync</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Stream.AssetAsync(<I><U>Id</U>, <U>Data</U>, <U>ErrorFunc</U>, <U>ProgressFunc</U>, <U>SuccessFunc</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Id</U> <I>(String)</I> = The identifier of the string<BR><U>Data</U> <I>(array)</I> = The data of the ogg file to load<BR><U>ErrorFunc</U> <I>(function)</I> = The function to call when there is an error<BR><U>ProgressFunc</U> <I>(function)</I> = The function to call during initial IO loading.<BR><U>SuccessFunc</U> <I>(function)</I> = The function to call when the audio file is laoded<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Loads an ogg file off the main thread from the specified array object&#x2e;<BR>The callback functions send an argument to the Stream object that was created&#x2e;<BR></PRE>
 		<H4><A href="#idx:Stream">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Stream.ClearEvents" style="display:none">
@@ -9379,9 +9463,9 @@
 	<DIV id="Util.Bits" style="display:none">
 		<H3>Util.Bits</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Result</U> = Util.Bits(<I><U>Count</U>, <U>Precision</U></I>)</PRE>
+		<PRE><U>Result</U> = Util.Bits(<I><U>Bits</U>, <U>Precision</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Count</U> <I>(integer)</I> = The number to convert.<BR><U>Precision</U> <I>(integer)</I> = The precision after the decimal point to use<BR></PRE>
+		<PRE><U>Bits</U> <I>(integer)</I> = The number to convert.<BR><U>Precision</U> <I>(integer)</I> = The precision after the decimal point to use<BR></PRE>
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Result</U> <I>(string)</I> = The resulting string.<BR></PRE>
 		<H4>Synopsis:-</H4>
@@ -9732,6 +9816,18 @@
 		<PRE>Returns if all characters in string are all less than 0x80&#x2e; This call is UTF8 compatible&#x2e;<BR></PRE>
 		<H4><A href="#idx:Util">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
+	<DIV id="Util.IsBoolean" style="display:none">
+		<H3>Util.IsBoolean</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Result</U> = Util.IsBoolean(<I><U>Var</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Var</U> <I>(*)</I> = Any parameter.<BR></PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Result</U> <I>(boolean)</I> = Is a valid boolean.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns if specified parameter is a boolean&#x2e;<BR></PRE>
+		<H4><A href="#idx:Util">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
 	<DIV id="Util.IsExtASCII" style="display:none">
 		<H3>Util.IsExtASCII</H3>
 		<H4>Syntax:-</H4>
@@ -9742,6 +9838,78 @@
 		<PRE><U>Result</U> <I>(boolean)</I> = String is all extended ASCII.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Returns if all characters in string are all less than 0xFF&#x2e; This call is UTF8 compatible&#x2e;<BR></PRE>
+		<H4><A href="#idx:Util">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Util.IsFunction" style="display:none">
+		<H3>Util.IsFunction</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Result</U> = Util.IsFunction(<I><U>Var</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Var</U> <I>(*)</I> = Any parameter.<BR></PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Result</U> <I>(boolean)</I> = Is a valid function.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns if specified parameter is a function&#x2e;<BR></PRE>
+		<H4><A href="#idx:Util">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Util.IsInteger" style="display:none">
+		<H3>Util.IsInteger</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Result</U> = Util.IsInteger(<I><U>Var</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Var</U> <I>(*)</I> = Any parameter.<BR></PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Result</U> <I>(boolean)</I> = Is a valid integer.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns if specified parameter is a integer&#x2e;<BR></PRE>
+		<H4><A href="#idx:Util">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Util.IsNumber" style="display:none">
+		<H3>Util.IsNumber</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Result</U> = Util.IsNumber(<I><U>Var</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Var</U> <I>(*)</I> = Any parameter.<BR></PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Result</U> <I>(boolean)</I> = Is a valid number.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns if specified parameter is a number&#x2e;<BR></PRE>
+		<H4><A href="#idx:Util">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Util.IsString" style="display:none">
+		<H3>Util.IsString</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Result</U> = Util.IsString(<I><U>Var</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Var</U> <I>(*)</I> = Any parameter.<BR></PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Result</U> <I>(boolean)</I> = Is a valid string.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns if specified parameter is a string&#x2e;<BR></PRE>
+		<H4><A href="#idx:Util">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Util.IsTable" style="display:none">
+		<H3>Util.IsTable</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Result</U> = Util.IsTable(<I><U>Var</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Var</U> <I>(*)</I> = Any parameter.<BR></PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Result</U> <I>(boolean)</I> = Is a valid table.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns if specified parameter is a table&#x2e;<BR></PRE>
+		<H4><A href="#idx:Util">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Util.IsUserdata" style="display:none">
+		<H3>Util.IsUserdata</H3>
+		<H4>Syntax:-</H4>
+		<PRE><U>Result</U> = Util.IsUserdata(<I><U>Var</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Var</U> <I>(*)</I> = Any parameter.<BR></PRE>
+		<H4>Return Parameters:-</H4>
+		<PRE><U>Result</U> <I>(boolean)</I> = Is a valid userdata object.<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Returns if specified parameter is a userdata object&#x2e;<BR></PRE>
 		<H4><A href="#idx:Util">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Util.LDuration" style="display:none">
@@ -9879,9 +10047,9 @@
 	<DIV id="Util.ParseTime2" style="display:none">
 		<H3>Util.ParseTime2</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Timestamp</U> = Util.ParseTime2(<I><U>Format</U></I>)</PRE>
+		<PRE><U>Timestamp</U> = Util.ParseTime2(<I><U>String</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Format</U> <I>(string)</I> = The specially formatted date string.<BR></PRE>
+		<PRE><U>String</U> <I>(string)</I> = The specially formatted date string.<BR></PRE>
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Timestamp</U> <I>(integer)</I> = The timestamp converted from the string.<BR></PRE>
 		<H4>Synopsis:-</H4>
@@ -9999,7 +10167,7 @@
 		<H4>Syntax:-</H4>
 		<PRE><U>Result</U> = Util.RelTimeEx(<I><U>Seconds</U>, <U>Count</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Seconds</U> <I>(integer)</I> = The unix timestamp.<BR><U>Count</U> <I>(integer)</I> = The maximum number of compomnents.<BR></PRE>
+		<PRE><U>Seconds</U> <I>(integer)</I> = The unix timestamp.<BR><U>Count</U> <I>(integer)</I> = The maximum number of components.<BR></PRE>
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Result</U> <I>(string)</I> = The resulting string<BR></PRE>
 		<H4>Synopsis:-</H4>
@@ -10141,9 +10309,9 @@
 	<DIV id="Variable.Exists" style="display:none">
 		<H3>Variable.Exists</H3>
 		<H4>Syntax:-</H4>
-		<PRE><U>Registered</U> = Variable.Exists(<I><U>Variable</U></I>)</PRE>
+		<PRE><U>Registered</U> = Variable.Exists(<I><U>String</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Variable</U> <I>(string)</I> = The console command name to lookup<BR></PRE>
+		<PRE><U>String</U> <I>(string)</I> = The console command name to lookup<BR></PRE>
 		<H4>Return Parameters:-</H4>
 		<PRE><U>Registered</U> <I>(boolean)</I> = True if the command is registered<BR></PRE>
 		<H4>Synopsis:-</H4>
@@ -10273,9 +10441,9 @@
 	<DIV id="Variable:Set" style="display:none">
 		<H3>Variable:Set</H3>
 		<H4>Syntax:-</H4>
-		<PRE>Variable:Set(<I><U>Value</U></I>)</PRE>
+		<PRE>Variable:Set(<I><U>String</U></I>)</PRE>
 		<H4>Function Parameters:-</H4>
-		<PRE><U>Value</U> <I>(string)</I> = The new cvar value.<BR></PRE>
+		<PRE><U>String</U> <I>(string)</I> = The new cvar value.<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Sets the new value of the specified cvar name&#x2e; An exception is raised if any error occurs&#x2e; See Variable&#x2e;Result to see the possible results&#x2e;<BR></PRE>
 		<H4><A href="#idx:Variable">&#x25B2; Return to table of contents</A></H4>
@@ -10300,16 +10468,6 @@
 		<PRE>Returns the possible values that can be returned with the Variable&#x2e;Set&#x28;&#x29; function&#x2e; Any other errors are thrown as an exception&#x2e;<BR></PRE>
 		<H4><A href="#idx:Variable">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
-	<DIV id="Video.ArrayAsync" style="display:none">
-		<H3>Video.ArrayAsync</H3>
-		<H4>Syntax:-</H4>
-		<PRE>Video.ArrayAsync(<I><U>Id</U>, <U>Data</U>, <U>ErrorFunc</U>, <U>ProgressFunc</U>, <U>SuccessFunc</U></I>)</PRE>
-		<H4>Function Parameters:-</H4>
-		<PRE><U>Id</U> <I>(String)</I> = The identifier of the string<BR><U>Data</U> <I>(array)</I> = The data of the ogg file to load<BR><U>ErrorFunc</U> <I>(function)</I> = The function to call when there is an error<BR><U>ProgressFunc</U> <I>(function)</I> = The function to call during initial IO loading.<BR><U>SuccessFunc</U> <I>(function)</I> = The function to call when the audio file is laoded<BR></PRE>
-		<H4>Synopsis:-</H4>
-		<PRE>Loads an ogv file off the main thread from the specified array object&#x2e;<BR>The callback functions send an argument to the video stream object that was created&#x2e;<BR></PRE>
-		<H4><A href="#idx:Video">&#x25B2; Return to table of contents</A></H4>
-	</DIV>
 	<DIV id="Video.Asset" style="display:none">
 		<H3>Video.Asset</H3>
 		<H4>Syntax:-</H4>
@@ -10320,6 +10478,16 @@
 		<PRE><U>Handle</U> <I>(Ogg)</I> = The ogg object<BR></PRE>
 		<H4>Synopsis:-</H4>
 		<PRE>Loads an ogv video file to stream on the main thread from the specified array object&#x2e;<BR></PRE>
+		<H4><A href="#idx:Video">&#x25B2; Return to table of contents</A></H4>
+	</DIV>
+	<DIV id="Video.AssetAsync" style="display:none">
+		<H3>Video.AssetAsync</H3>
+		<H4>Syntax:-</H4>
+		<PRE>Video.AssetAsync(<I><U>Id</U>, <U>Data</U>, <U>ErrorFunc</U>, <U>ProgressFunc</U>, <U>SuccessFunc</U></I>)</PRE>
+		<H4>Function Parameters:-</H4>
+		<PRE><U>Id</U> <I>(String)</I> = The identifier of the string<BR><U>Data</U> <I>(array)</I> = The data of the ogg file to load<BR><U>ErrorFunc</U> <I>(function)</I> = The function to call when there is an error<BR><U>ProgressFunc</U> <I>(function)</I> = The function to call during initial IO loading.<BR><U>SuccessFunc</U> <I>(function)</I> = The function to call when the audio file is laoded<BR></PRE>
+		<H4>Synopsis:-</H4>
+		<PRE>Loads an ogv file off the main thread from the specified array object&#x2e;<BR>The callback functions send an argument to the video stream object that was created&#x2e;<BR></PRE>
 		<H4><A href="#idx:Video">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<DIV id="Video.ClearEvents" style="display:none">
@@ -12193,6 +12361,6 @@
 		<H4><A href="#idx.cv">&#x25B2; Return to table of contents</A></H4>
 	</DIV>
 	<ADDRESS>Copyright &copy; 2024 MS-Design, All Rights Reserved.<BR>
-	This document was generated at Thu Jun 27 22:11:10 2024 +0100</ADDRESS>
+	This document was generated at Thu Aug 01 14:29:36 2024 +0100</ADDRESS>
 </BODY>
 </HTML>

@@ -19,8 +19,9 @@
 namespace LLInfo {                     // Info namespace
 /* -- Dependencies --------------------------------------------------------- */
 using namespace IClock::P;             using namespace ICmdLine::P;
-using namespace ILua::P;               using namespace ISystem::P;
-using namespace ITimer::P;             using namespace IUtil::P;
+using namespace ILog::P;               using namespace ILua::P;
+using namespace ISystem::P;            using namespace ITimer::P;
+using namespace IUtil::P;              using namespace Common;
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Lua.* namespace functions                                           ## **
@@ -41,12 +42,11 @@ using namespace ITimer::P;             using namespace IUtil::P;
 // < CompVersion:string=The version of the compiler that built the executable.
 // ? Returns version information about the engine.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Engine, 12, LCPUSHVAR(cSystem->ENGName(),     cSystem->ENGAuthor(),
-                               cSystem->ENGMajor(),    cSystem->ENGMinor(),
-                               cSystem->ENGBuild(),    cSystem->ENGRevision(),
-                               cSystem->ENGBits(),     cSystem->ENGBuildType(),
-                               cSystem->ENGTarget(),   cSystem->ENGCompiled(),
-                               cSystem->ENGCompiler(), cSystem->ENGCompVer()));
+LLFUNC(Engine, 12, LuaUtilPushVar(lS, cSystem->ENGName(),
+  cSystem->ENGAuthor(), cSystem->ENGMajor(), cSystem->ENGMinor(),
+  cSystem->ENGBuild(), cSystem->ENGRevision(), cSystem->ENGBits(),
+  cSystem->ENGBuildType(), cSystem->ENGTarget(), cSystem->ENGCompiled(),
+  cSystem->ENGCompiler(), cSystem->ENGCompVer()))
 /* ========================================================================= */
 // $ Info.OS
 // < Name:string=Operating system type (Windows,Linux,MacOS).
@@ -61,9 +61,9 @@ LLFUNCEX(Engine, 12, LCPUSHVAR(cSystem->ENGName(),     cSystem->ENGAuthor(),
 // < Extra:string=Extra operating system information (e.g. Wine/Kernel).
 // ? Returns version information about the operating system.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(OS, 6, LCPUSHVAR(cSystem->OSName(),  cSystem->OSMajor(),
-                          cSystem->OSMinor(), cSystem->OSBuild(),
-                          cSystem->OSBits(),  cSystem->OSNameEx()));
+LLFUNC(OS, 6, LuaUtilPushVar(lS, cSystem->OSName(), cSystem->OSMajor(),
+  cSystem->OSMinor(), cSystem->OSBuild(), cSystem->OSBits(),
+  cSystem->OSNameEx()))
 /* ========================================================================= */
 // $ Info.RAM
 // < Load:number=% load of total physical memory.
@@ -74,11 +74,10 @@ LLFUNCEX(OS, 6, LCPUSHVAR(cSystem->OSName(),  cSystem->OSMajor(),
 // < ProcPeak:integer=The peak memory usage of the engine.
 // ? Returns information about physical memory in the computer.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(RAM)
-  cSystem->UpdateMemoryUsageData();
-  LCPUSHVAR(cSystem->RAMLoad(), cSystem->RAMTotal(),   cSystem->RAMFree(),
-            cSystem->RAMUsed(), cSystem->RAMProcUse(), cSystem->RAMProcPeak());
-LLFUNCENDEX(6)
+LLFUNC(RAM, 6, cSystem->UpdateMemoryUsageData();
+  LuaUtilPushVar(lS, cSystem->RAMLoad(), cSystem->RAMTotal(),
+    cSystem->RAMFree(), cSystem->RAMUsed(), cSystem->RAMProcUse(),
+    cSystem->RAMProcPeak()))
 /* ========================================================================= */
 // $ Info.CPU
 // < CPUid:string=The CPUID string.
@@ -89,16 +88,15 @@ LLFUNCENDEX(6)
 // < Stepping:integer=Processor stepping.
 // ? Returns information about the installed Central Processing Unit.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(CPU, 6,
-  LCPUSHVAR(cSystem->CPUName(), cSystem->CPUCount(), cSystem->CPUSpeed(),
-            cSystem->CPUFamily(), cSystem->CPUModel(),
-            cSystem->CPUStepping()));
+LLFUNC(CPU, 6, LuaUtilPushVar(lS, cSystem->CPUName(), cSystem->CPUCount(),
+  cSystem->CPUSpeed(), cSystem->CPUFamily(), cSystem->CPUModel(),
+  cSystem->CPUStepping()))
 /* ========================================================================= */
 // $ Info.LUAUsage
 // < Bytes:integer=Bytes of memory.
 // ? Returns the amount of memory in use by Lua
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(LUAUsage, 1, LCPUSHVAR(LuaUtilGetUsage(lS)));
+LLFUNC(LUAUsage, 1, LuaUtilPushVar(lS, LuaUtilGetUsage(lS)))
 /* ========================================================================= */
 // $ Info.CPUUsage
 // < Percent:number=Percentage process.
@@ -109,62 +107,86 @@ LLFUNCEX(LUAUsage, 1, LCPUSHVAR(LuaUtilGetUsage(lS)));
 // ? both cpu usage functions which are hard-coded to only update once a
 // ? a second so constant calls won't stress the kernel.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(CPUUsage, 2,
-  LCPUSHVAR(cSystem->UpdateAndGetCPUUsage(), cSystem->CPUUsageSystem()));
+LLFUNC(CPUUsage, 2, LuaUtilPushVar(lS,
+  cSystem->UpdateAndGetCPUUsage(), cSystem->CPUUsageSystem()))
 /* ========================================================================= */
 // $ Info.CPUProcUsage
 // < Percent:number=Percentage process.
 // ? Returns the engine CPU load. It is hard-coded to only update once a
 // ? a second so constant calls won't stress the kernel.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(CPUProcUsage, 1, LCPUSHVAR(cSystem->UpdateAndGetCPUUsage()));
+LLFUNC(CPUProcUsage, 1, LuaUtilPushVar(lS, cSystem->UpdateAndGetCPUUsage()))
 /* ========================================================================= */
 // $ Info.CPUSysUsage
 // < Percent:number=Percentage system.
 // ? Returns the system CPU load. It is hard-coded to only update once a
 // ? a second so constant calls won't stress the kernel.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(CPUSysUsage, 1, LCPUSHVAR(cSystem->UpdateAndGetCPUUsageSystem()));
+LLFUNC(CPUSysUsage, 1,
+  LuaUtilPushVar(lS, cSystem->UpdateAndGetCPUUsageSystem()))
 /* ========================================================================= */
 // $ Info.Locale
 // < LocaleID:number=Locale id.
 // ? Returns the system locale id.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Locale, 1, LCPUSHVAR(cSystem->OSLocale()));
+LLFUNC(Locale, 1, LuaUtilPushVar(lS, cSystem->OSLocale()))
+/* ========================================================================= */
+// $ Info.LUATime
+// < Timestamp:number=The execution time as a number.
+// ? Returns the total time in the LUA sandbox in seconds.
+/* ------------------------------------------------------------------------- */
+LLFUNC(LUATime, 1, LuaUtilPushVar(lS, cLua->CCDeltaToDouble()))
+/* ========================================================================= */
+// $ Info.LUAMilliTime
+// < Time:integer=The execution time in milliseconds.
+// ? Returns the total time in the LUA sandbox in milliseconds.
+/* ------------------------------------------------------------------------- */
+LLFUNC(LUAMilliTime, 1, LuaUtilPushVar(lS, cLua->CCDeltaMS()))
+/* ========================================================================= */
+// $ Info.LUANanoTime
+// < Time:integer=The time in nanoseconds.
+// ? Returns the total time in the LUA sandbox in nanoseconds.
+/* ------------------------------------------------------------------------- */
+LLFUNC(LUANanoTime, 1, LuaUtilPushVar(lS, cLua->CCDeltaNS()))
+/* ========================================================================= */
+// $ Info.LUAMicroTime
+// < Time:integer=The time in microseconds.
+// ? Returns the total time in the LUA sandbox in microseconds.
+/* ------------------------------------------------------------------------- */
+LLFUNC(LUAMicroTime, 1, LuaUtilPushVar(lS, cLua->CCDeltaUS()))
 /* ========================================================================= */
 // $ Info.OSTime
 // < Timestamp:integer=The UNIX timestamp.
 // ? Returns a unix timestamp of the current time in seconds.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(OSTime, 1, LCPUSHVAR(cmSys.GetTimeS()));
+LLFUNC(OSTime, 1, LuaUtilPushVar(lS, cmSys.GetTimeS()))
 /* ========================================================================= */
 // $ Info.OSNumTime
 // < Timestamp:number=The UNIX timestamp as a number.
 // ? Returns a unix timestamp of the current time in seconds as a number.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(OSNumTime, 1,
-  LCPUSHVAR(static_cast<lua_Number>(cmSys.GetTimeS<lua_Number>())));
+LLFUNC(OSNumTime, 1, LuaUtilPushVar(lS, cmSys.GetTimeS<lua_Number>()))
 /* ========================================================================= */
 // $ Info.OSMilliTime
 // < Time:integer=The time in milliseconds.
 // ? Returns the time elapsed in milliseconds since the OS started. Precision
 // ? will be lost over time.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(OSMilliTime, 1, LCPUSHVAR(cmSys.GetTimeMS()));
+LLFUNC(OSMilliTime, 1, LuaUtilPushVar(lS, cmSys.GetTimeMS()))
 /* ========================================================================= */
 // $ Info.OSNanoTime
 // < Time:integer=The time in nanoseconds.
 // ? Returns the time elapsed in nanoseconds since the OS started. Precision
 // ? will be lost over time.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(OSNanoTime, 1, LCPUSHVAR(cmSys.GetTimeNS()));
+LLFUNC(OSNanoTime, 1, LuaUtilPushVar(lS, cmSys.GetTimeNS()))
 /* ========================================================================= */
 // $ Info.OSMicroTime
 // < Time:integer=The time in microseconds.
 // ? Returns the time elapsed in microseconds since the OS started. Precision
 // ? will be lost over time.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(OSMicroTime, 1, LCPUSHVAR(cmSys.GetTimeUS()));
+LLFUNC(OSMicroTime, 1, LuaUtilPushVar(lS, cmSys.GetTimeUS()))
 /* ========================================================================= */
 // $ Info.Time
 // < Time:number=The time in seconds.
@@ -173,7 +195,7 @@ LLFUNCEX(OSMicroTime, 1, LCPUSHVAR(cmSys.GetTimeUS()));
 // ? counter can be reset with Core.Update() as it will lose precision over
 // ? time.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Time, 1, LCPUSHVAR(cmHiRes.GetTimeDouble()));
+LLFUNC(Time, 1, LuaUtilPushVar(lS, cmHiRes.GetTimeDouble()))
 /* ========================================================================= */
 // $ Info.Uptime
 // < Ticks:number=Uptime in seconds
@@ -182,20 +204,38 @@ LLFUNCEX(Time, 1, LCPUSHVAR(cmHiRes.GetTimeDouble()));
 // ? choice to use this if you are using terminal mode. This uses std::chrono
 // ? to retrieve this value.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Uptime, 1, LCPUSHVAR(cLua->CCDeltaToDouble()));
+LLFUNC(Uptime, 1, LuaUtilPushVar(lS, cLog->CCDeltaToDouble()))
+/* ========================================================================= */
+// $ Info.UpMilliTime
+// < Time:integer=The engine uptime in milliseconds.
+// ? Returns the total time in the engine has been running in milliseconds.
+/* ------------------------------------------------------------------------- */
+LLFUNC(UpMilliTime, 1, LuaUtilPushVar(lS, cLog->CCDeltaMS()))
+/* ========================================================================= */
+// $ Info.UpNanoTime
+// < Time:integer=The engine time in nanoseconds.
+// ? Returns the total time in the engine has been running in nanoseconds.
+/* ------------------------------------------------------------------------- */
+LLFUNC(UpNanoTime, 1, LuaUtilPushVar(lS, cLog->CCDeltaNS()))
+/* ========================================================================= */
+// $ Info.UpMicroTime
+// < Time:integer=The engine uptime in microseconds.
+// ? Returns the total time the engine has been running in microseconds.
+/* ------------------------------------------------------------------------- */
+LLFUNC(UpMicroTime, 1, LuaUtilPushVar(lS, cLog->CCDeltaUS()))
 /* ========================================================================= */
 // $ Info.Ticks
 // < Ticks:integer=Number of ticks.
 // ? Returns the total number of frames rendered since the engine started.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Ticks, 1, LCPUSHVAR(cTimer->TimerGetTicks()));
+LLFUNC(Ticks, 1, LuaUtilPushVar(lS, cTimer->TimerGetTicks()))
 /* ========================================================================= */
 // $ Info.CPUFPS
 // < FPS:number=Frames per second.
 // ? Get CPU loops processed in the last second. Should be the same as GPU for
 // ? most people but at times may be different, sometimes much higher.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(CPUFPS, 1, LCPUSHVAR(cTimer->TimerGetFPS()));
+LLFUNC(CPUFPS, 1, LuaUtilPushVar(lS, cTimer->TimerGetFPS()))
 /* ========================================================================= */
 // $ Info.Delay
 // < Time:number=Delay time in seconds.
@@ -203,17 +243,17 @@ LLFUNCEX(CPUFPS, 1, LCPUSHVAR(cTimer->TimerGetFPS()));
 // ? the 'vid_delay' variable. This would be useful if you are actually using
 // ? the delay and you want to offset a time point by the thread delay.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Delay, 1,
-  LCPUSHVAR(static_cast<double>(cTimer->TimerGetDelay()) / 1000));
+LLFUNC(Delay, 1,
+  LuaUtilPushVar(lS, static_cast<lua_Number>(cTimer->TimerGetDelay()) / 1000))
 /* ========================================================================= */
 // $ Info.IsOSWindows
 // < Boolean:boolean=True if using Windows, false if not.
 // ? Returns true if executable was built for Windows, false if not.
 /* ------------------------------------------------------------------------- */
 #if defined(WINDOWS)
-LLFUNCEX(IsOSWindows, 1, LCPUSHVAR(true));
+LLFUNC(IsOSWindows, 1, LuaUtilPushVar(lS, true))
 #else
-LLFUNCEX(IsOSWindows, 1, LCPUSHVAR(false));
+LLFUNC(IsOSWindows, 1, LuaUtilPushVar(lS, false))
 #endif
 /* ========================================================================= */
 // $ Info.IsOSLinux
@@ -221,9 +261,9 @@ LLFUNCEX(IsOSWindows, 1, LCPUSHVAR(false));
 // ? Returns true if executable was built for Linux, false if not.
 /* ------------------------------------------------------------------------- */
 #if defined(LINUX)
-LLFUNCEX(IsOSLinux, 1, LCPUSHVAR(true));
+LLFUNC(IsOSLinux, 1, LuaUtilPushVar(lS, true))
 #else
-LLFUNCEX(IsOSLinux, 1, LCPUSHVAR(false));
+LLFUNC(IsOSLinux, 1, LuaUtilPushVar(lS, false))
 #endif
 /* ========================================================================= */
 // $ Info.IsOSMac
@@ -231,9 +271,9 @@ LLFUNCEX(IsOSLinux, 1, LCPUSHVAR(false));
 // ? Returns true if executable was built for MacOS, false if not.
 /* ------------------------------------------------------------------------- */
 #if defined(MACOS)
-LLFUNCEX(IsOSMac, 1, LCPUSHVAR(true));
+LLFUNC(IsOSMac, 1, LuaUtilPushVar(lS, true))
 #else
-LLFUNCEX(IsOSMac, 1, LCPUSHVAR(false));
+LLFUNC(IsOSMac, 1, LuaUtilPushVar(lS, false))
 #endif
 /* ========================================================================= */
 // $ Info.Catchup
@@ -242,7 +282,7 @@ LLFUNCEX(IsOSMac, 1, LCPUSHVAR(false));
 // ? play properly if this is constantly used. Only use when doing loading
 // ? screens.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Catchup, cTimer->TimerCatchup());
+LLFUNC(Catchup, 0, cTimer->TimerCatchup())
 /* ========================================================================= */
 // $ Info.Env
 // > Value:string=The name of the variable to query.
@@ -251,21 +291,24 @@ LLFUNC(Catchup, cTimer->TimerCatchup());
 // ? empty. All environment variables are converted to upper-case at startup.
 // ? Type 'env' in the console to see the current environment.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Env, 1, LCPUSHVAR(cCmdLine->GetEnv(LCGETCPPSTRING(1, "Variable"))));
+LLFUNC(Env, 1, LuaUtilPushVar(lS, cCmdLine->GetEnv(AgString{lS,1})))
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Info.* namespace functions structure                                ## **
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Info.* namespace functions begin
-  LLRSFUNC(Catchup),     LLRSFUNC(CPU),          LLRSFUNC(CPUFPS),
-  LLRSFUNC(CPUUsage),    LLRSFUNC(CPUProcUsage), LLRSFUNC(CPUSysUsage),
-  LLRSFUNC(Delay),       LLRSFUNC(Engine),       LLRSFUNC(Env),
-  LLRSFUNC(Locale),      LLRSFUNC(LUAUsage),     LLRSFUNC(OS),
-  LLRSFUNC(IsOSWindows), LLRSFUNC(IsOSLinux),    LLRSFUNC(IsOSMac),
-  LLRSFUNC(OSTime),      LLRSFUNC(OSNumTime),    LLRSFUNC(OSMilliTime),
-  LLRSFUNC(OSMicroTime), LLRSFUNC(OSNanoTime),   LLRSFUNC(RAM),
-  LLRSFUNC(Ticks),       LLRSFUNC(Time),         LLRSFUNC(Uptime),
+  LLRSFUNC(CPU),          LLRSFUNC(CPUFPS),       LLRSFUNC(CPUProcUsage),
+  LLRSFUNC(CPUSysUsage),  LLRSFUNC(CPUUsage),     LLRSFUNC(Catchup),
+  LLRSFUNC(Delay),        LLRSFUNC(Engine),       LLRSFUNC(Env),
+  LLRSFUNC(IsOSLinux),    LLRSFUNC(IsOSMac),      LLRSFUNC(IsOSWindows),
+  LLRSFUNC(LUAMicroTime), LLRSFUNC(LUAMilliTime), LLRSFUNC(LUANanoTime),
+  LLRSFUNC(LUATime),      LLRSFUNC(LUAUsage),     LLRSFUNC(Locale),
+  LLRSFUNC(OS),           LLRSFUNC(OSMicroTime),  LLRSFUNC(OSMilliTime),
+  LLRSFUNC(OSNanoTime),   LLRSFUNC(OSNumTime),    LLRSFUNC(OSTime),
+  LLRSFUNC(RAM),          LLRSFUNC(Ticks),        LLRSFUNC(Time),
+  LLRSFUNC(Uptime),       LLRSFUNC(UpMicroTime),  LLRSFUNC(UpMilliTime),
+  LLRSFUNC(UpNanoTime),
 LLRSEND                                // Info.* namespace functions end
 /* ========================================================================= */
 }                                      // End of Info namespace

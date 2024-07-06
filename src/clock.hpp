@@ -190,10 +190,7 @@ class ClockChrono :                    // Members intially private
   double CCDeltaToDouble(void) const
     { return this->TimePointToDouble(ctpStart); }
   /* -- Reset the start time ----------------------------------------------- */
-  void CCReset(void) { ctpStart = this->ClockGetTime(); }
-  /* -- Reset counter and return uptime as a double ------------------------ */
-  double CCResetDeltaToDouble(void)
-    { CCReset(); return CCDeltaToDouble(); }
+  void CCReset(void) { ctpStart = this->GetTime(); }
   /* -- Constructor. Just initialise current time -------------------------- */
   ClockChrono(void) :        // No parameters
     /* -- Initialisers ----------------------------------------------------- */

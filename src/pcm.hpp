@@ -81,28 +81,31 @@ CTOR_BEGIN_ASYNC_DUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
     // Run codecs and filters on it
     AsyncReady(fmData);
   }
-  /* -- Load pcm from memory asynchronously -------------------------------- */
-  void InitAsyncArray(lua_State*const lS)
-  { // Need 6 parameters (class pointer was already pushed onto the stack);
-    LuaUtilCheckParams(lS, 7);
-    // Get and check parameters
-    const string strFile{ LuaUtilGetCppStrNE(lS, 1, "Identifier") };
-    Asset &mbSrc = *LuaUtilGetPtr<Asset>(lS, 2, "Asset");
-    FlagReset(LuaUtilGetFlags(lS, 3, PL_MASK, "Flags"));
-    LuaUtilCheckFuncs(lS, 4, "ErrorFunc", 5, "ProgressFunc", 6, "SuccessFunc");
-    // Is dynamic because it was not loaded from disk
+  /* -- Init from array ---------------------------------------------------- */
+  void InitArray(const string &strName, Memory &mSrc,
+    const PcmFlagsConst &pfcFlags)
+  { // Is dynamic because it was not loaded from disk
     SetDynamic();
+    // Set the loading flags
+    FlagReset(pfcFlags);
+    // Load the array normally
+    SyncInitArray(strName, mSrc);
+  }
+  /* -- Load pcm from memory asynchronously -------------------------------- */
+  void InitAsyncArray(lua_State*const lS, const string &strFile, Asset &aCref,
+    const PcmFlagsConst &pfcFlags)
+  { // Is dynamic because it was not loaded from disk
+    SetDynamic();
+    // Set user loading flags
+    FlagReset(pfcFlags);
     // Load sample from memory asynchronously
-    AsyncInitArray(lS, strFile, "pcmarray", StdMove(mbSrc));
+    AsyncInitArray(lS, strFile, "pcmarray", aCref);
   }
   /* -- Load pcm from file asynchronously ---------------------------------- */
-  void InitAsyncFile(lua_State*const lS)
-  { // Need 5 parameters (class pointer was already pushed onto the stack);
-    LuaUtilCheckParams(lS, 6);
-    // Get and check parameters
-    const string strFile{ LuaUtilGetCppFile(lS, 1, "File") };
-    FlagReset(LuaUtilGetFlags(lS, 2, PL_MASK, "Flags"));
-    LuaUtilCheckFuncs(lS, 3, "ErrorFunc", 4, "ProgressFunc", 5, "SuccessFunc");
+  void InitAsyncFile(lua_State*const lS, const string &strFile,
+    const PcmFlagsConst &pfcFlags)
+  { // Set user loading flags
+    FlagReset(pfcFlags);
     // Load sample from file asynchronously
     AsyncInitFile(lS, strFile, "pcmfile");
   }
@@ -113,31 +116,21 @@ CTOR_BEGIN_ASYNC_DUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
     // Load the file normally
     SyncInitFileSafe(strFile);
   }
-  /* -- Init from array ---------------------------------------------------- */
-  void InitArray(const string &strName, Memory &&mbSrc,
-    const PcmFlagsConst &pfcFlags)
-  { // Is dynamic because it was not loaded from disk
-    SetDynamic();
-    // Set the loading flags
-    FlagReset(pfcFlags);
-    // Load the array normally
-    SyncInitArray(strName, StdMove(mbSrc));
-  }
   /* -- Load audio file from raw memory ------------------------------------ */
-  void InitRaw(const string &strName, Memory &&mbSrc,
+  void InitRaw(const string &strName, Memory &mSrc,
     const unsigned int uiNRate, const PcmChannelType pctNChannels,
     const PcmBitType pbtNBits)
   { // Calculate actual memory size required for raw data
     const size_t stExpected = uiNRate * pctNChannels * pbtNBits;
-    if(mbSrc.MemSize() != stExpected)
+    if(mSrc.MemSize() != stExpected)
       XC("Expected size versus actual size mismatch!",
          "Identifier", strName,      "Rate",   uiNRate,
          "Channels",   pctNChannels, "Bits",   pbtNBits,
-         "Expected",   stExpected,   "Actual", mbSrc.MemSize());
+         "Expected",   stExpected,   "Actual", mSrc.MemSize());
     // Set members
     IdentSet(strName);
     SetDynamic();
-    aPcmL.MemSwap(StdMove(mbSrc));
+    aPcmL.MemSwap(mSrc);
     SetRate(uiNRate);
     SetChannels(pctNChannels);
     SetBits(pbtNBits);
@@ -181,7 +174,7 @@ CTOR_BEGIN_ASYNC_DUO(Pcms, Pcm, CLHelperUnsafe, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Pcm)                 // Disable copy constructor and operator
 };/* -- End-of-collector --------------------------------------------------- */
-CTOR_END_ASYNC_NOFUNCS(Pcms, PCM)      // Finish collector class
+CTOR_END_ASYNC_NOFUNCS(Pcms, Pcm, PCM) // Finish collector class
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */

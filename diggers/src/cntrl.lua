@@ -10,16 +10,17 @@
 -- Copyr. (c) MS-Design, 2024   Copyr. (c) Millennium Interactive Ltd., 1994 --
 -- ========================================================================= --
 -- Core function aliases --------------------------------------------------- --
-local insert<const>, floor<const>, unpack<const> = table.insert, math.floor,
-  table.unpack;
+local unpack<const> = table.unpack;
 -- M-Engine function aliases ----------------------------------------------- --
 local InfoTicks<const> = Info.Ticks;
 -- Diggers function and data aliases --------------------------------------- --
-local LoadResources, Fade, SetCallbacks, IsButtonReleased, IsMouseInBounds,
-  IsMouseNotInBounds, aCursorIdData, SetCursor, PlayStaticSound,
-  IsMouseNotInBounds, aSfxData, InitMap, InitRace, InitFile, InitBook,
-  InitLobby, fontSpeech, SetBottomRightTipAndShadow, RenderShadow,
-  aGlobalData;
+local Fade, InitBook, InitFile, InitLobby, InitMap, InitRace, IsButtonReleased,
+  IsMouseInBounds, IsMouseNotInBounds, IsMouseNotInBounds, LoadResources,
+  PlayStaticSound, RenderShadow, SetBottomRightTipAndShadow, SetCallbacks,
+  SetCursor, aCursorIdData, aGlobalData, aSfxData, fontSpeech;
+-- Assets required --------------------------------------------------------- --
+local aAssets<const> = { { T = 2, F = "lobbyc", P = { 0 } },
+                         { T = 2, F = "cntrl",  P = { 0 } } };
 -- Init controller screen function ----------------------------------------- --
 local function InitCon()
   -- When controller resources have loaded?
@@ -105,19 +106,21 @@ local function InitCon()
     fontSpeech:SetCRGB(0, 0, 0.25);
     -- Render callback
     local function RenderCon()
+      -- Frame timer slowed down
+      local iAnimTime<const> = InfoTicks() // 10;
       -- Draw backdrop, controller screen and animated fish
       texLobby:BlitLT(-54, 0);
       texCon:BlitSLT(tileCon, 8, 8);
-      texCon:BlitSLT(tileFish+floor((InfoTicks()/10)%5), 9, 119);
+      texCon:BlitSLT(iAnimTime % 5 + tileFish, 9, 119);
       -- Render shadow
       RenderShadow(8, 8, 312, 208);
       -- Draw speech bubble
       if iSpeechTimer > 0 then
         -- Draw yap
-        texCon:BlitSLT(tileConAnim+(floor(InfoTicks()/10)%4), 88, 36);
+        texCon:BlitSLT(iAnimTime % 4 + tileConAnim, 88, 36);
         -- Draw flash
-        if aFlashData then texCon:BlitSLT(aFlashData[1] +
-          (floor(InfoTicks()/10)%2), aFlashData[2], aFlashData[3]) end;
+        if aFlashData then texCon:BlitSLT(iAnimTime % 2 + aFlashData[1],
+          aFlashData[2], aFlashData[3]) end;
         -- Draw speech bubble
         texCon:BlitSLT(tileSpeech, 0, 150);
         -- Draw text
@@ -198,7 +201,7 @@ local function InitCon()
               PlayStaticSound(aSfxData.SELECT);
               -- Transition helper
               local function OnFadeOut()
-                -- Unreference assets for garbage collection
+                -- Dereference assets for garbage collection
                 texLobby, texCon = nil, nil;
                 -- Do next procedure
                 fcbOnFadeOut(unpack(aMouseOverEvent[5]));
@@ -214,26 +217,25 @@ local function InitCon()
       -- Set controller callbacks
       SetCallbacks(ControllerLogic, RenderCon, ControllerInput);
     end
-    -- Change render procs
+    -- Change render procedures
     Fade(1, 0, 0.04, RenderCon, OnFadeIn);
   end
   -- Load resources
-  LoadResources("Controller", {{T=2,F="lobbyc",P={0}},
-                               {T=2,F="cntrl",P={0}}}, OnLoaded);
+  LoadResources("Controller", aAssets, OnLoaded);
 end
 -- Exports and imports ----------------------------------------------------- --
 return { A = { InitCon = InitCon }, F = function(GetAPI)
   -- Imports --------------------------------------------------------------- --
-  LoadResources, SetCallbacks, SetCursor, IsMouseInBounds, aSfxData,
-  IsButtonReleased, PlayStaticSound, Fade, IsMouseNotInBounds, aCursorIdData,
-  InitMap, InitRace, InitFile, InitBook, InitLobby, fontSpeech,
-  SetBottomRightTipAndShadow, RenderShadow, aGlobalData
+  Fade, InitBook, InitFile, InitLobby, InitMap, InitRace, IsButtonReleased,
+  IsMouseInBounds, IsMouseNotInBounds, LoadResources, PlayStaticSound,
+  RenderShadow, SetBottomRightTipAndShadow, SetCallbacks, SetCursor,
+  aCursorIdData, aGlobalData, aSfxData, fontSpeech
   = -- --------------------------------------------------------------------- --
-  GetAPI("LoadResources", "SetCallbacks", "SetCursor", "IsMouseInBounds",
-    "aSfxData", "IsButtonReleased", "PlayStaticSound", "Fade",
-    "IsMouseNotInBounds", "aCursorIdData", "InitMap", "InitRace", "InitFile",
-    "InitBook", "InitLobby", "fontSpeech", "SetBottomRightTipAndShadow",
-    "RenderShadow", "aGlobalData");
+  GetAPI("Fade", "InitBook", "InitFile", "InitLobby", "InitMap", "InitRace",
+    "IsButtonReleased", "IsMouseInBounds", "IsMouseNotInBounds",
+    "LoadResources", "PlayStaticSound", "RenderShadow",
+    "SetBottomRightTipAndShadow", "SetCallbacks", "SetCursor", "aCursorIdData",
+    "aGlobalData", "aSfxData", "fontSpeech");
   -- ----------------------------------------------------------------------- --
 end };
 -- End-of-File ============================================================= --

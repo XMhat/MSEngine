@@ -259,7 +259,7 @@ CTOR_BEGIN_DUO(Shaders, Shader, CLHelperUnsafe, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Shader)              // Disable copy constructor and operator
 };/* ----------------------------------------------------------------------- */
-CTOR_END_NOINITS(Shaders)              // Finish shaders collector
+CTOR_END_NOINITS(Shaders, Shader)      // Finish shaders collector
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */

@@ -16,67 +16,83 @@
 /* ========================================================================= */
 namespace LLJson {                     // Json namespace
 /* -- Dependencies --------------------------------------------------------- */
-using namespace IJson::P;
+using namespace IJson::P;              using namespace Common;
+/* ========================================================================= **
+** ######################################################################### **
+** ## Json common helper classes                                          ## **
+** ######################################################################### **
+** -- Read Json class argument --------------------------------------------- */
+struct AgJson : public ArClass<Json> {
+  explicit AgJson(lua_State*const lS, const int iArg) :
+    ArClass{*LuaUtilGetPtr<Json>(lS, iArg, *cJsons)}{} };
+/* -- Create Json class argument ------------------------------------------- */
+struct AcJson : public ArClass<Json> {
+  explicit AcJson(lua_State*const lS) :
+    ArClass{*LuaUtilClassCreate<Json>(lS, *cJsons)}{} };
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Json:* member functions                                             ## **
 ** ######################################################################### **
 ** ========================================================================= */
+// $ Json:Destroy
+// ? Destroys the json object and frees all the memory associated with it. The
+// ? object will no longer be useable after this call and an error will be
+// ? generated if accessed.
+/* ------------------------------------------------------------------------- */
+LLFUNC(Destroy, 0, LuaUtilClassDestroy<Json>(lS, 1, *cJsons))
+/* ========================================================================= */
 // $ Json:ToString
 // < Data:string=Encoded JSON data
 // ? Encodes the data inside the class to JSON string.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ToString, 1,
-  LCPUSHVAR(LCGETPTR(1, Json)->StrFromNum<Json::RJCompactWriter>()));
+LLFUNC(ToString, 1,
+  LuaUtilPushVar(lS, AgJson{lS, 1}().StrFromNum<Json::RJCompactWriter>()))
 /* ========================================================================= */
 // $ Json:ToHRString
 // < Data:string=Encoded JSON data
 // ? Encodes the data inside the class to JSON string in human readable format.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ToHRString, 1,
-  LCPUSHVAR(LCGETPTR(1, Json)->StrFromNum<Json::RJPrettyWriter>()));
+LLFUNC(ToHRString, 1,
+  LuaUtilPushVar(lS, AgJson{lS, 1}().StrFromNum<Json::RJPrettyWriter>()))
 /* ========================================================================= */
 // $ Json:ToFile
 // < Result:integer=Error number code returned (0 = success)
 // > Filename:string=The filename to write to
 // ? Dumps the entire json into the specified file.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ToFile, 1, LCPUSHVAR(LCGETPTR(1, Json)->
-  ToFile<Json::RJCompactWriter>(LCGETCPPFILE(2, "File"))));
+LLFUNC(ToFile, 1,
+  const AgJson aJson{lS, 1};
+  const AgFilename aFilename{lS, 2};
+  LuaUtilPushVar(lS, aJson().ToFile<Json::RJCompactWriter>(aFilename)))
 /* ========================================================================= */
 // $ Json:ToHRFile
 // < Result:integer=Error number code returned (0 = success)
 // > Filename:string=The filename to write to
 // ? Dumps the entire json into the specified file in readable format.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ToHRFile, 1, LCPUSHVAR(LCGETPTR(1, Json)->
-  ToFile<Json::RJPrettyWriter>(LCGETCPPFILE(2, "File"))));
+LLFUNC(ToHRFile, 1,
+  const AgJson aJson{lS, 1};
+  const AgFilename aFilename{lS, 2};
+  LuaUtilPushVar(lS, aJson().ToFile<Json::RJPrettyWriter>(aFilename)))
 /* ========================================================================= */
 // $ Json:ToTable
 // < Result:table=The entire json scope converted to a lua table
 // ? Dumps the entire contents of the JSON's current scope as a LUA table
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ToTable, 1, LCGETPTR(1, Json)->ToLuaTable(lS));
+LLFUNC(ToTable, 1, AgJson{lS, 1}().ToLuaTable(lS))
 /* ========================================================================= */
 // $ Json:Id
 // < Id:integer=The id number of the Json object.
 // ? Returns the unique id of the Json object.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Id, 1, LCPUSHVAR(LCGETPTR(1, Json)->CtrGet()));
+LLFUNC(Id, 1, LuaUtilPushVar(lS, AgJson{lS, 1}().CtrGet()))
 /* ========================================================================= */
 // $ Json:Name
 // < Name:string=Name of the json.
 // ? If this json was loaded by a filename or it was set with a custom id.
 // ? This function returns that name which was assigned to it.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Name, 1, LCPUSHVAR(LCGETPTR(1, Json)->IdentGet()));
-/* ========================================================================= */
-// $ Json:Destroy
-// ? Destroys the json object and frees all the memory associated with it. The
-// ? object will no longer be useable after this call and an error will be
-// ? generated if accessed.
-/* ------------------------------------------------------------------------- */
-LLFUNC(Destroy, LCCLASSDESTROY(1, Json));
+LLFUNC(Name, 1, LuaUtilPushVar(lS, AgJson{lS, 1}().IdentGet()))
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Json:* member functions structure                                   ## **
@@ -93,8 +109,8 @@ LLRSEND                                // Json:* member functions end
 // ? Decodes the specified string as JSON encoded. The level depth is limited
 // ? to 255 due to limitations with LUA's hardcoded stack level.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(File, 1,
-  LCCLASSCREATE(Json)->SyncInitFileSafe(LCGETCPPFILE(1, "File")));
+LLFUNC(File, 1, const AgFilename aFilename{lS,1};
+  AcJson{lS}().SyncInitFileSafe(aFilename))
 /* ========================================================================= */
 // $ Json.FileAsync
 // > Filename:string=The filename of the json to load
@@ -103,7 +119,7 @@ LLFUNCEX(File, 1,
 // > SuccessFunc:function=The function to call when the JSON string is laoded
 // ? Decodes the specified string as JSON encoded asynchronously.
 /* ------------------------------------------------------------------------- */
-LLFUNC(FileAsync, LCCLASSCREATE(Json)->InitAsyncFile(lS));
+LLFUNC(FileAsync, 0, AcJson{lS}().InitAsyncFile(lS))
 /* ========================================================================= */
 // $ Json.String
 // > Code:string=The string of JSON encoded data to decode
@@ -111,7 +127,7 @@ LLFUNC(FileAsync, LCCLASSCREATE(Json)->InitAsyncFile(lS));
 // ? Decodes the specified string as JSON encoded. The level depth is limited
 // ? to 255 due to limitations with LUA's hardcoded stack level.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(String, 1, LCCLASSCREATE(Json)->InitString(lS));
+LLFUNC(String, 1, AcJson{lS}().InitString(lS))
 /* ========================================================================= */
 // $ Json.StringAsync
 // > Code:string=The string of JSON encoded data to decode
@@ -120,7 +136,7 @@ LLFUNCEX(String, 1, LCCLASSCREATE(Json)->InitString(lS));
 // > SuccessFunc:function=The function to call when the JSON string is laoded
 // ? Decodes the specified string as JSON encoded asynchronously.
 /* ------------------------------------------------------------------------- */
-LLFUNC(StringAsync, LCCLASSCREATE(Json)->InitAsyncString(lS));
+LLFUNC(StringAsync, 0, AcJson{lS}().InitAsyncString(lS))
 /* ========================================================================= */
 // $ Json.Table
 // > Table:string=The string of JSON encoded data to decode
@@ -128,12 +144,12 @@ LLFUNC(StringAsync, LCCLASSCREATE(Json)->InitAsyncString(lS));
 // ? Encodes the specified string as JSON encoded. The level depth is limited
 // ? to 255 due to limitations with LUA's hardcoded stack level.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Table, 1, LCCLASSCREATE(Json)->InitFromTable(lS));
+LLFUNC(Table, 1, AcJson{lS}().InitFromTable(lS))
 /* ========================================================================= */
 // $ Json.WaitAsync
 // ? Halts main-thread execution until all json pcm events have completed
 /* ------------------------------------------------------------------------- */
-LLFUNC(WaitAsync, cJsons->WaitAsync());
+LLFUNC(WaitAsync, 0, cJsons->WaitAsync())
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Json.* namespace functions structure                                ## **

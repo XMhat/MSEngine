@@ -56,21 +56,24 @@ static class Lua final :
   LuaFunc          lrMainTick;         // Main tick function callback
   LuaFunc          lrMainEnd;          // End function callback
   LuaFunc          lrMainRedraw;       // Redraw function callback
+  /* -- Generic end tick to quit the engine  ------------------------------- */
+  static int OnGenericEndTick(lua_State*const)
+    { cEvtMain->ConfirmExit(); return 0; }
   /* -- Return lua state --------------------------------------------------- */
   lua_State *GetState(void) const { return lsState.get(); }
   /* -- Set a lua reference (LuaFunc can't have this check) ---------------- */
-  void SetLuaRef(lua_State*const lS, LuaFunc &lrEvent, const int iParam)
-  { // Need only one parameter which is the function
+  void SetLuaRef(lua_State*const lS, LuaFunc &lrEvent, const int iParam=1)
+  { // Check we have the correct number of requested parameters
     LuaUtilCheckParams(lS, iParam);
     // It must be a function
-    LuaUtilCheckFunc(lS, iParam, "Callback");
+    LuaUtilCheckFunc(lS, iParam);
     // And must be on the main thread
     StateAssert(lS);
     // Set the function
     lrEvent.LuaFuncSet();
   }
   /* -- Ask LUA to tell guest to redraw ------------------------------------ */
-  void SendRedraw(const EvtMain::Cell&)
+  void SendRedraw(const EvtMainEvent&)
   { // Lua not initialised? This may be executed before Init() via an
     // exception. For example... The CONSOLE.Init() may have raised an
     // exception. Also do not fire if paused
@@ -83,7 +86,7 @@ static class Lua final :
   /* -- Check if we're already exiting ------------------------------------- */
   bool Exiting(void) { return bExiting; }
   /* -- Events asking LUA to quit ------------------------------------------ */
-  void AskExit(const EvtMain::Cell &)
+  void AskExit(const EvtMainEvent&)
   { // Ignore if already exiting
     if(bExiting) return;
     // Resume if paused
@@ -165,7 +168,7 @@ static class Lua final :
     LuaUtilPCall(GetState(), 0, LUA_MULTRET);
     // Scan for results
     StrList slResults;
-    for(int iI = lssSaved.Value() + 1; !lua_isnone(GetState(), iI); ++iI)
+    for(int iI = lssSaved.Value() + 1; !LuaUtilIsNone(GetState(), iI); ++iI)
       slResults.emplace_back(LuaUtilGetStackType(GetState(), iI));
     // Print result
     return slResults.empty() ?
@@ -190,9 +193,7 @@ static class Lua final :
     // Init references
     LuaFuncInitRef(GetState());
     // Set default end function to automatically exit the engine
-    LuaUtilPushCFunc(GetState(), [](lua_State*)->int{
-      cEvtMain->Add(EMC_LUA_CONFIRM_EXIT); return 0;
-    });
+    LuaUtilPushCFunc(GetState(), OnGenericEndTick);
     lrMainEnd.LuaFuncSet();
     // Set initial size of stack
     cLog->LogDebugExSafe("Lua $ stack size to $.",
@@ -217,7 +218,7 @@ static class Lua final :
           iTotalMethods = 0,           // Number of class methods in total
           iTotalTables  = 0;           // Number of tables in total
       // Init core libraries
-      for(const LuaLibStatic &llRef : luaLibList)
+      for(const LuaLibStatic &llRef : llsaAPI)
       { // Increment total statistics
         iTotalMembers += llRef.iLLCount;
         iTotalMethods += llRef.iLLMFCount;
@@ -320,10 +321,18 @@ static class Lua final :
       { // Init pre-defined seed
         LuaUtilInitRNGSeed(GetState(), liSeed);
         // Warn developer/user that there is a pre-defined random seed
-        cLog->LogWarningExSafe("Lua using pre-defined random seed '$'!",
-          liSeed);
+        cLog->LogWarningExSafe("Lua using pre-defined random seed $ (0x$$)!",
+          liSeed, hex, liSeed);
       } // Use a random number instead
-      else LuaUtilInitRNGSeed(GetState(), CryptRandom<lua_Integer>());
+      else
+      { // Get the random number seed
+        const lua_Integer liRandSeed = CryptRandom<lua_Integer>();
+        // Set the random number seed
+        LuaUtilInitRNGSeed(GetState(), liRandSeed);
+        // Log it
+        cLog->LogDebugExSafe("Lua generated random seed $ (0x$$)!",
+          liRandSeed, hex, liRandSeed);
+      }
     } // Standard library not available so we can only set C-Lib seed
     else StdSRand(!!liSeed ? static_cast<unsigned int>(liSeed) :
                              CryptRandom<unsigned int>());
@@ -361,6 +370,8 @@ static class Lua final :
     StartGC();
     // Report completion
     cLog->LogDebugSafe("Lua environment initialised.");
+    // Set start of execution timer
+    CCReset();
   }
   /* -- Enter sandbox mode ------------------------------------------------- */
   void EnterSandbox(lua_CFunction cbFunc, void*const vpPtr)
@@ -377,8 +388,11 @@ static class Lua final :
   void DeInit(void)
   { // Return if class already initialised
     if(!lsState) return;
+    // Report execution time
+    cLog->LogInfoExSafe("Lua execution took $ seconds.",
+      StrShortFromDuration(CCDeltaToDouble()));
     // Report progress
-    cLog->LogDebugSafe("Lua sandbox deinitialising...");
+    cLog->LogDebugSafe("Lua sandbox de-initialising...");
     // De-init instruction count hook?
     LuaUtilSetHookCallback(GetState(), nullptr, 0);
     // Disable garbage collector
@@ -409,20 +423,20 @@ static class Lua final :
   static void WarningCallback(void*const, const char*const cpMsg, int)
     { cLog->LogWarningExSafe("(Lua) $", cpMsg); }
   /* -- Lua end execution helper ------------------------------------------- */
-  bool TryEventOrForce(const EvtMainCmd emcCode)
+  bool TryEventOrForce(const EvtMainCmd emcCmd)
   { // If exit event already processing?
     if(cEvtMain->ExitRequested())
     { // Log event
       cLog->LogWarningExSafe("Lua sending event $ with forced confirm exit!",
-        emcCode);
+        emcCmd);
       // Change or confirm exit reason
-      cEvtMain->Add(emcCode);
+      cEvtMain->Add(emcCmd);
       // Quit by force instead
-      cEvtMain->Add(EMC_LUA_CONFIRM_EXIT);
+      cEvtMain->ConfirmExit();
       // Quit forced
       return true;
     } // End lua execution
-    cEvtMain->Add(emcCode);
+    cEvtMain->Add(emcCmd);
     // Quit requested normally
     return false;
   }

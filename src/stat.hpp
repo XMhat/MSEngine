@@ -11,10 +11,10 @@
 /* ------------------------------------------------------------------------- */
 namespace IStat {                      // Start of private module namespace
 /* -- Dependencies --------------------------------------------------------- */
-using namespace ICollector::P;         using namespace IIdent::P;
-using namespace IStd::P;               using namespace IString::P;
-using namespace ISysUtil::P;           using namespace IUtf;
-using namespace IUtil::P;
+using namespace ICollector::P;         using namespace IError::P;
+using namespace IIdent::P;             using namespace IStd::P;
+using namespace IString::P;            using namespace ISysUtil::P;
+using namespace IUtf;                  using namespace IUtil::P;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* -- Statistic class ------------------------------------------------------ */
@@ -58,10 +58,19 @@ class Statistic
     // Return the iterator
     return hRef;
   }
+  /* -- Check that we have headers ----------------------------------------- */
+  void CheckHeaderCount(void) const
+    { if(hdHeaders.empty()) XC("No headers!"); }
+  /* -- Check row not finished --------------------------------------------- */
+  void CheckRowNotFinished(void) const
+    { if(const size_t stRow = svValues.size() % hdHeaders.size())
+        XC("Row not finished!",
+           "ExpectCols", hdHeaders.size(), "ActualCols", stRow,
+           "RowCount", svValues.size() / hdHeaders.size()); }
   /* -- Finish with existing string stream ------------------------- */ public:
   void Finish(ostringstream &osS, const bool bAddLF=true, const size_t stGap=1)
-  { // Return if there are no headers.
-    if(hdHeaders.empty()) return;
+  { // Check that there are headers
+    CheckHeaderCount();
     // Get headers size minus one
     const size_t stHM1 = Headers() - 1;
     // Create string for gap
@@ -240,8 +249,12 @@ class Statistic
   /* -- Sort a table by specified primary or secondary column -------------- */
   void SortTwo(const ssize_t sstColPri, const ssize_t sstColSec,
     const bool bDescending=false)
-  { // Ignore if no headers, values or both columns the same
-    if(hdHeaders.empty() || svValues.empty() || sstColPri == sstColSec) return;
+  { // Check that there are headers
+    CheckHeaderCount();
+    // Check that both sort columns aren't the same
+    if(sstColPri == sstColSec) XC("Both columns same!");
+    // Check that the row has been finished
+    CheckRowNotFinished();
     // Sorting list
     struct StrRef { StrVectorIt sviRowIt, sviColPri, sviColSec; };
     typedef vector<StrRef> StrRefVec;
@@ -293,8 +306,10 @@ class Statistic
   }
   /* -- Sort a table by specified primary column --------------------------- */
   void Sort(const ssize_t sstColumn, const bool bDescending=false)
-  { // Ignore if no headers or values
-    if(hdHeaders.empty() || svValues.empty()) return;
+  { // Check that there are headers
+    CheckHeaderCount();
+    // Check that the row has been finished
+    CheckRowNotFinished();
     // Sorting list
     struct StrRef { StrVectorIt sviRowIt, sviColIt; };
     typedef vector<StrRef> StrRefVec;
@@ -359,7 +374,7 @@ CTOR_BEGIN_DUO(Stats, Stat, CLHelperUnsafe, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Stat)                // No copy constructors
 };/* ----------------------------------------------------------------------- */
-CTOR_END_NOINITS(Stats)                // End of stat objects collector
+CTOR_END_NOINITS(Stats, Stat)          // End of stat objects collector
 /* ------------------------------------------------------------------------- */
 };                                     // End of private module namespace
 /* ------------------------------------------------------------------------- */

@@ -22,16 +22,36 @@ namespace LLPcm {                      // Pcm namespace
 /* -- Dependencies --------------------------------------------------------- */
 using namespace IAsset::P;             using namespace IPcm::P;
 using namespace IStd::P;               using namespace IPcmLib::P;
+using namespace Common;
+/* ========================================================================= **
+** ######################################################################### **
+** ## Pcm common helper classes                                           ## **
+** ######################################################################### **
+** -- Create Pcm class argument -------------------------------------------- */
+struct AcPcm : public ArClass<Pcm> {
+  explicit AcPcm(lua_State*const lS) :
+    ArClass{*LuaUtilClassCreate<Pcm>(lS, *cPcms)}{} };
+/* -- Read Pcm loading flags ----------------------------------------------- */
+struct AgPcmFlags : public AgFlags<PcmFlagsConst> {
+  explicit AgPcmFlags(lua_State*const lS, const int iArg) :
+    AgFlags{ lS, iArg, PL_MASK }{} };
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Pcm:* member functions                                              ## **
 ** ######################################################################### **
 ** ========================================================================= */
+// $ Pcm:Destroy
+// ? Destroys the pcm object and frees all the memory associated with it. The
+// ? object will no longer be useable after this call and an error will be
+// ? generated if accessed.
+/* ------------------------------------------------------------------------- */
+LLFUNC(Destroy, 0, LuaUtilClassDestroy<Pcm>(lS, 1, *cPcms))
+/* ========================================================================= */
 // $ Pcm:Id
 // < Id:integer=The id number of the PCM object.
 // ? Returns the unique id of the PCM object.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Id, 1, LCPUSHVAR(LCGETPTR(1, Pcm)->CtrGet()));
+LLFUNC(Id, 1, LuaUtilPushVar(lS, AgPcm{lS, 1}().CtrGet()))
 /* ========================================================================= */
 // $ Pcm:Name
 // < Name:string=The name of the object
@@ -39,14 +59,7 @@ LLFUNCEX(Id, 1, LCPUSHVAR(LCGETPTR(1, Pcm)->CtrGet()));
 // ? by another function, a small trace of who took ownership of it prefixed
 // ? with an exclamation mark (!).
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Name, 1, LCPUSHVAR(LCGETPTR(1, Pcm)->IdentGet()));
-/* ========================================================================= */
-// $ Pcm:Destroy
-// ? Destroys the pcm object and frees all the memory associated with it. The
-// ? object will no longer be useable after this call and an error will be
-// ? generated if accessed.
-/* ------------------------------------------------------------------------- */
-LLFUNC(Destroy, LCCLASSDESTROY(1, Pcm));
+LLFUNC(Name, 1, LuaUtilPushVar(lS, AgPcm{lS, 1}().IdentGet()))
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Pcm:* member functions structure                                    ## **
@@ -56,28 +69,19 @@ LLRSMFBEGIN                            // Pcm:* member functions begin
   LLRSFUNC(Destroy), LLRSFUNC(Id), LLRSFUNC(Name),
 LLRSEND                                // Pcm:* member functions end
 /* ========================================================================= */
-// $ Pcm.FileAsync
-// > Filename:string=The filename of the encoded waveform to load
-// > Flags:Integer=Load flags
-// > ErrorFunc:function=The function to call when there is an error
-// > ProgressFunc:function=The function to call when there is progress
-// > SuccessFunc:function=The function to call when the file is laoded
-// ? Loads a audio file off the main thread. The callback functions send an
-// ? argument to the pcm object that was created.
-/* ------------------------------------------------------------------------- */
-LLFUNC(FileAsync, LCCLASSCREATE(Pcm)->InitAsyncFile(lS));
-/* ========================================================================= */
-// $ Pcm.File
-// > Filename:string=The filename of the audio file to load
-// > Flags:Integer=Load flags
+// $ Pcm.Asset
+// > Id:String=The identifier of the string
+// > Data:Asset=The file data of the audio file to load
 // < Handle:Pcm=The pcm object
-// ? Loads a audio sample on the main thread from the specified file on disk.
-// ? Returns the pcm object.
+// ? Loads an audio file on the main thread from the specified array object.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(File, 1, LCCLASSCREATE(Pcm)->InitFile(LCGETCPPFILE(1, "File"),
-  LCGETFLAGS(PcmFlagsConst, 2, PL_MASK, "Flags")));
+LLFUNC(Asset, 1,
+  const AgNeString aIdentifier{lS, 1};
+  const AgAsset aAsset{lS, 2};
+  const AgPcmFlags aFlags{lS, 3};
+  AcPcm{lS}().InitArray(aIdentifier, aAsset, aFlags))
 /* ========================================================================= */
-// $ Pcm.ArrayAsync
+// $ Pcm.AssetAsync
 // > Id:String=The identifier of the string
 // > Data:array=The data of the audio file to load
 // > Flags:Integer=Load flags
@@ -88,17 +92,41 @@ LLFUNCEX(File, 1, LCCLASSCREATE(Pcm)->InitFile(LCGETCPPFILE(1, "File"),
 // ? The callback functions send an argument to the Pcm object that was
 // ? created.
 /* ------------------------------------------------------------------------- */
-LLFUNC(ArrayAsync, LCCLASSCREATE(Pcm)->InitAsyncArray(lS));
+LLFUNC(AssetAsync, 0,
+  LuaUtilCheckParams(lS, 6);
+  const AgNeString aIdentifier{lS, 1};
+  const AgAsset aAsset{lS, 2};
+  const AgPcmFlags aFlags{lS, 3};
+  LuaUtilCheckFunc(lS, 4, 5, 6);
+  AcPcm{lS}().InitAsyncArray(lS, aIdentifier, aAsset, aFlags))
 /* ========================================================================= */
-// $ Pcm.Asset
-// > Id:String=The identifier of the string
-// > Data:Asset=The file data of the audio file to load
+// $ Pcm.File
+// > Filename:string=The filename of the audio file to load
+// > Flags:Integer=Load flags
 // < Handle:Pcm=The pcm object
-// ? Loads an audio file on the main thread from the specified array object.
+// ? Loads a audio sample on the main thread from the specified file on disk.
+// ? Returns the pcm object.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Asset, 1, LCCLASSCREATE(Pcm)->InitArray(
-  LCGETCPPSTRINGNE(1, "Identifier"), StdMove(*LCGETPTR(2, Asset)),
-  LCGETFLAGS(PcmFlagsConst, 3, PL_MASK, "Flags")));
+LLFUNC(File, 1,
+  const AgFilename aFilename{lS, 1};
+  const AgPcmFlags aFlags{lS, 2};
+  AcPcm{lS}().InitFile(aFilename, aFlags))
+/* ========================================================================= */
+// $ Pcm.FileAsync
+// > Filename:string=The filename of the encoded waveform to load
+// > Flags:Integer=Load flags
+// > ErrorFunc:function=The function to call when there is an error
+// > ProgressFunc:function=The function to call when there is progress
+// > SuccessFunc:function=The function to call when the file is laoded
+// ? Loads a audio file off the main thread. The callback functions send an
+// ? argument to the pcm object that was created.
+/* ------------------------------------------------------------------------- */
+LLFUNC(FileAsync, 0,
+  LuaUtilCheckParams(lS, 5);
+  const AgFilename aFilename{lS, 1};
+  const AgPcmFlags aFlags{lS, 2};
+  LuaUtilCheckFunc(lS, 3, 4, 5);
+  AcPcm{lS}().InitAsyncFile(lS, aFilename, aFlags))
 /* ========================================================================= */
 // $ Pcm.Raw
 // > Identifier:string=Identifier of the sample.
@@ -109,23 +137,25 @@ LLFUNCEX(Asset, 1, LCCLASSCREATE(Pcm)->InitArray(
 // < Handle:Pcm=The pcm object
 // ? Loads an audio file on the main thread from the specified array object.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Raw, 1, LCCLASSCREATE(Pcm)->InitRaw(
-  LCGETCPPSTRINGNE(1, "Identifier"), StdMove(*LCGETPTR(2, Asset)),
-  LCGETINTLG(unsigned int, 3, 1, 5644800, "Rate"),
-  LCGETINTLG(PcmChannelType, 4, PCT_MONO, PCT_STEREO, "Channel"),
-  LCGETINTLGP2(PcmBitType, 5, PBI_BYTE, PBI_LONG, "Bits")));
+LLFUNC(Raw, 1,
+  const AgNeString aIdentifier{lS, 1};
+  const AgAsset aAsset{lS, 2};
+  const AgUIntLG aRate{lS, 3, 1, 5644800};
+  const AgIntegerLG<PcmChannelType> aChannels{lS, 4, PCT_MONO, PCT_STEREO};
+  const AgIntegerLGP2<PcmBitType> aBitsPerChannel{lS, 5, PBI_BYTE, PBI_LONG};
+  AcPcm{lS}().InitRaw(aIdentifier, aAsset, aRate, aChannels, aBitsPerChannel))
 /* ========================================================================= */
 // $ Pcm.WaitAsync
 // ? Halts main-thread execution until all async pcm events have completed
 /* ------------------------------------------------------------------------- */
-LLFUNC(WaitAsync, cPcms->WaitAsync());
+LLFUNC(WaitAsync, 0, cPcms->WaitAsync())
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Pcm.* namespace functions structure                                 ## **
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Pcm.* namespace functions begin
-  LLRSFUNC(ArrayAsync), LLRSFUNC(Asset), LLRSFUNC(File),
+  LLRSFUNC(AssetAsync), LLRSFUNC(Asset), LLRSFUNC(File),
   LLRSFUNC(FileAsync),  LLRSFUNC(Raw),   LLRSFUNC(WaitAsync),
 LLRSEND                                // Pcm.* namespace functions end
 /* ========================================================================= **

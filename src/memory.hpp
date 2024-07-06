@@ -28,7 +28,7 @@ class MemConst                         // Start of const MemBase Block Class
   /* -- Clear parameters. Used by FileMap() -------------------------------- */
   void MemReset(void) { MemSetPtr(); MemSetSize(); }
   /* -- Swap members with another block ------------------------------------ */
-  void MemConstSwap(MemConst &&mcOther)
+  void MemConstSwap(MemConst &mcOther)
     { swap(stSize, mcOther.stSize); swap(cpPtr, mcOther.cpPtr); }
   /* -- Bit test error handler --------------------------------------------- */
   void MemCheckBit[[noreturn]](const char*const cpAddr,
@@ -56,10 +56,7 @@ class MemConst                         // Start of const MemBase Block Class
   /* -- Free the pointer --------------------------------------------------- */
   void MemFreePtr(void) { UtilMemFree(MemPtr()); }
   void MemFreePtrIfSet(void) { if(MemIsPtrSet()) MemFreePtr(); }
-  /* -- Character access by position ------------------------------- */ public:
-  char &operator[](const size_t stPos) const
-    { MemCheckParam(stPos, 1); return cpPtr[stPos]; }
-  /* -- Return memory at the allocated address ----------------------------- */
+  /* -- Return memory at the allocated address --------------------- */ public:
   template<typename Type=void>
     Type *MemPtr(void) const { return reinterpret_cast<Type*>(cpPtr); }
   /* -- Return size of allocated memory ------------------------------------ */
@@ -76,12 +73,10 @@ class MemConst                         // Start of const MemBase Block Class
     Type *MemPtrEnd(void) const { return MemDoRead<Type>(stSize); }
   /* -- Return if we can read this amount of data -------------------------- */
   bool MemCheckParam(const size_t stPos, const size_t stBytes) const
-  { // Return if bounds are safe
-    return MemIsPtrSet()              && // Address is valid?
-           stPos         <  MemSize() && // Position is <= array size?
-           stBytes       <= MemSize() && // Bytes to copy is <= array size?
-           stPos+stBytes <= MemSize();   // End position <= array size?
-  }
+    { return stPos + stBytes <= MemSize(); }
+  /* -- Character access by position --------------------------------------- */
+  char &operator[](const size_t stPos) const
+    { MemCheckParam(stPos, 1); return cpPtr[stPos]; }
   /* -- Same as MemCheckParam() with ptr check ----------------------------- */
   bool MemCheckPtr(const size_t stPos, const size_t stBytes,
     const void*const vpOther) const
@@ -128,7 +123,15 @@ class MemConst                         // Start of const MemBase Block Class
   }
   /* -- Read static variable ----------------------------------------------- */
   template<typename Type>Type MemReadInt(const size_t stPos=0) const
-    { return *MemRead<Type>(stPos, sizeof(Type)); }
+  { // We could just read the data directly unaligned like thus...
+    // - return *MemRead<Type>(stPos, sizeof(Type));
+    // But this there are consequences as reads could be unaligned so we need
+    // to make sure we align it or ASAN debuggers will flag it as such. It
+    // seems the following code gets properly optimised anyway.
+    Type tDest;
+    memcpy(&tDest, MemRead<void>(stPos, sizeof(Type)), sizeof(Type));
+    return tDest;
+  }
   template<typename Type>Type ReadIntLE(const size_t stPos=0) const
     { static_assert(is_integral_v<Type>, "Wrong type!");
       static_assert(sizeof(Type) > 1, "Wrong size!");
@@ -211,11 +214,18 @@ class MemBase :
   /* -- Fill with specified character at specifed position ----------------- */
   template<typename Type=unsigned char>void MemFill(const size_t stPos,
     const Type tVal, const size_t stBytes)
-  { // Get address to start from
-    char*const cpStart = MemDoRead(stPos);
-    // Do the fill. This is supposedly faster than memset
+  { // Get address to start from and the address to end at
+    char*const cpStart = MemDoRead(stPos),
+        *const cpEnd = MemDoRead(stBytes);
+    // Do the fill. This is supposedly faster than memset().
     StdFill(par_unseq, reinterpret_cast<Type*const>(cpStart),
-      reinterpret_cast<Type*const>(cpStart + stBytes), tVal);
+      reinterpret_cast<Type*const>(cpEnd), tVal);
+    // If we used non-byte integrals? Get remaining bytes and if there is a
+    // remainder? Fill the remainder of the buffer.
+    if constexpr(sizeof(Type) > 1)
+      if(const size_t stRemainder = stBytes % sizeof(Type))
+        StdFill(seq, reinterpret_cast<uint8_t*const>(cpEnd - stRemainder),
+          reinterpret_cast<uint8_t*const>(cpEnd), static_cast<uint8_t>(tVal));
   }
   /* -- Fill with specified character at specifed position --------- */ public:
   template<typename Type=unsigned char>void MemFillEx(const size_t stPos,
@@ -224,12 +234,14 @@ class MemBase :
     if(!MemCheckParam(stPos, stBytes))
       MemErrorRead("Fill error!", stPos, stBytes);
     // Do the fill
-    MemFill(stPos, tVal, stBytes);
+    MemFill<Type>(stPos, tVal, stBytes);
   }
   /* -- Fill with specified value ------------------------------------------ */
   template<typename Type=unsigned char>void MemFill(const Type tVal=0)
-    { MemFillEx(0, tVal, MemSize()); }
-  /* -- Write memory with checks ---------------------------------------- */
+    { MemFill<Type>(0, tVal, MemSize()); }
+  /* -- Fast fill with 64-bit ints ----------------------------------------- */
+  void MemFill(void) { MemFill<uint64_t>(); }
+  /* -- Write memory with checks ------------------------------------------ */
   void MemWrite(const size_t stPos, const void*const vpSrc,
     const size_t stBytes)
   { // Check parameters are valid
@@ -361,7 +373,9 @@ class Memory :
     else XC("Re-alloc failed!", "OldSize", MemSize(), "NewSize", stBytes);
   }
   /* -- Swap memory with another memory block ---------------------- */ public:
-  void MemSwap(Memory &&mOther) { MemConstSwap(StdMove(mOther)); }
+  void MemSwap(Memory &mOther) { MemConstSwap(mOther); }
+  /* -- This one help with one liners (temporary variables) ---------------- */
+  void MemSwap(Memory &&mOther) { MemConstSwap(mOther); }
   /* -- Resize and preserve allocated memory ------------------------------- */
   void MemResize(const size_t stBytes)
     { if(stBytes != MemSize()) MemDoResize(stBytes); }
@@ -390,8 +404,8 @@ class Memory :
       MemErrorRead("Crop error!", stPos, stBytes);
     // If position is from start? We just need to realloc
     if(!stPos) return MemDoResize(stBytes);
-    // Init new class and transfer it to this one
-    MemSwap({ stBytes-stPos, MemDoRead(stPos) });
+    // Transfer it to this one
+    MemSwap({ stBytes - stPos, MemDoRead(stPos) });
   }
   /* -- Byte swap (Hi4<->Lo4 from 8-bit integer) --------------------------- */
   void MemByteSwap8(const size_t stPos, const size_t stBytes)
@@ -462,7 +476,7 @@ class Memory :
     for(size_t stIndex = 0; stIndex < stBytes; ++stIndex)
       mDst.MemDoWrite(MemSize() - stIndex - 1, MemDoRead(stIndex), 1);
     // Assign new memory block
-    MemSwap(StdMove(mDst));
+    MemSwap(mDst);
   }
   /* -- Reverse the specified number of bytes------------------------------- */
   void MemReverse(const size_t stBytes) { MemReverse(0, stBytes); }
@@ -497,8 +511,7 @@ class Memory :
   /* -- Allocate and zero memory ------------------------------------------- */
   void MemInitSafe(const size_t stBytes) { MemInitBlank(stBytes); MemFill(); }
   /* -- Assignment operator (rvalue) ------------------------------------ -- */
-  Memory &operator=(Memory &&mOther)
-    { MemSwap(StdMove(mOther)); return *this; }
+  Memory &operator=(Memory &&mOther) { MemSwap(mOther); return *this; }
   /* -- Assignment constructor (rvalue) ------------------------------------ */
   Memory(Memory &&mOther) :
     /* -- Initialisers ----------------------------------------------------- */
@@ -542,8 +555,8 @@ class Memory :
   Memory(const size_t stBytes, const bool) :
     /* -- Initialisers ----------------------------------------------------- */
     Memory{ stBytes }                  // Allocate memory
-    /* -- Full memory with zeros ------------------------------------------- */
-    { MemFill(); }
+    /* -- Full memory with zeros if there is data -------------------------- */
+    { if(MemIsNotEmpty()) MemFill(); }
   /* -- Alloc with copy ---------------------------------------------------- */
   Memory(const size_t stBytes, const void*const vpSrc) :
     /* -- Initialisers ----------------------------------------------------- */

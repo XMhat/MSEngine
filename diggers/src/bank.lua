@@ -10,17 +10,21 @@
 -- Copyr. (c) MS-Design, 2024   Copyr. (c) Millennium Interactive Ltd., 1994 --
 -- ========================================================================= --
 -- Core function aliases --------------------------------------------------- --
-local floor<const>, format<const>, unpack<const> =
-  math.floor, string.format, table.unpack;
+local format<const>, unpack<const>, error<const> =
+  string.format, table.unpack, error;
 -- M-Engine function aliases ----------------------------------------------- --
-local InfoTicks<const>, UtilBlank<const> = Info.Ticks, Util.Blank;
+local InfoTicks<const>, UtilBlank<const>, UtilIsTable<const> =
+  Info.Ticks, Util.Blank, Util.IsTable;
 -- Diggers function and data aliases --------------------------------------- --
-local Fade, GameProc, GetGameTicks, HaveZogsToWin, InitCon, InitLobby,
-  IsButtonPressed, IsMouseInBounds, IsMouseNotInBounds, IsScrollingDown,
-  IsScrollingUp, LoadResources, PlayMusic, PlayStaticSound, RenderInterface,
-  RenderShadow, SellSpecifiedItems, SetBottomRightTip, SetCallbacks, SetCursor,
-  aCursorIdData, aGemsAvailable, aObjectActions, aObjectData, aObjectDirections,
-  aObjectJobs, aObjectTypes, aSfxData, fontSpeech, texSpr;
+local Fade, GameProc, GetGameTicks, HaveZogsToWin, InitLobby, IsButtonPressed,
+  IsMouseInBounds, IsMouseNotInBounds, IsScrollingDown, IsScrollingUp,
+  LoadResources, PlayMusic, PlayStaticSound, RenderInterface, RenderShadow,
+  SellSpecifiedItems, SetBottomRightTip, SetCallbacks, SetCursor,
+  aCursorIdData, aGemsAvailable, aObjectActions, aObjectData,
+  aObjectDirections, aObjectJobs, aObjectTypes, aSfxData, fontSpeech, texSpr;
+-- Assets required --------------------------------------------------------- --
+local aAssets<const> = { { T = 1, F = "bank", P = { 80, 94, 0, 0, 0 } },
+                         { T = 7, F = "bank", P = { } } };
 -- Mouse over events ------------------------------------------------------- --
 local function MsOvFTarg()   return IsMouseInBounds(25,113,87,183) end;
 local function MsOvHabbish() return IsMouseInBounds(129,95,191,184) end;
@@ -40,11 +44,13 @@ local aBankerStaticData<const> = {
 -- Initialise the bank screen ---------------------------------------------- --
 local function InitBank(aActiveObject)
   -- Check parameter
-  assert(type(aActiveObject)=="table", "Object owner not specified!");
+  if not UtilIsTable(aActiveObject) then
+    error("Object owner not specified!") end;
   -- Sanity check gems available count
-  assert(#aGemsAvailable >= #aBankerStaticData,
-    "Gems available mismatch ("..#aGemsAvailable.."<"..
-      #aBankerStaticData..")!");
+  if #aGemsAvailable < #aBankerStaticData then
+    error("Gems available mismatch ("..#aGemsAvailable.."<"..
+      #aBankerStaticData..")!")
+  end
   -- Resources loaded event callback
   local function OnLoaded(aResources)
     -- Play bank music
@@ -57,7 +63,7 @@ local function InitBank(aActiveObject)
     local tileBG<const> = texBank:TileA(208, 312, 512, 512);
     local tileSpeech<const> = texBank:TileA(0, 488, 112, 512);
     -- Get treasure value modifier
-    local iTreasureValueModifier<const> = floor(GetGameTicks()/18000);
+    local iTreasureValueModifier<const> = GetGameTicks() // 18000;
     -- Banker data
     local aBankerData<const> = { };
     -- Function to refresh banker data
@@ -75,7 +81,7 @@ local function InitBank(aActiveObject)
         aBankerData[iGemId] = {
           iGemId,                                 -- [01] Gem (banker) id
           iGemTypeId,                             -- [02] Gem type id
-          floor(aGemObjData.VALUE / 2) +          -- [03] Gem value
+          aGemObjData.VALUE // 2 +                -- [03] Gem value
             iTreasureValueModifier,
           aGemObjData[aObjectActions.STOP]        -- [04] Gem sprite
                      [aObjectDirections.NONE][1],
@@ -115,7 +121,7 @@ local function InitBank(aActiveObject)
     end
     -- Get active object and objects owner
     local aPlayer<const> = aActiveObject.P;
-    -- Prevents duplicate win messsages
+    -- Prevents duplicate win messages
     local bGameWon = false;
     -- Function to check if player has won game
     local function HasBeatenGame()
@@ -136,7 +142,7 @@ local function InitBank(aActiveObject)
       -- No Jennite found so try what the banker is trading
       elseif SellSpecifiedItems(aActiveObject, iGemId) > 0 then
         strName = aObjectData[iGemId].LONGNAME end;
-      -- Money changed hands? Set succeded message and check for win
+      -- Money changed hands? Set succeeded message and check for win
       if strName then
         SetSpeech(iBankerId, 60, aSfxData.TRADE, strName.." SOLD FOR $"..
           format("%03u", aPlayer.M - iMoney), HasBeatenGame);
@@ -161,7 +167,7 @@ local function InitBank(aActiveObject)
       -- Speech bubble should show?
       if iSpeechTimer > 0 then
         -- Show banker talking graphic, speech bubble and text
-        texBank:BlitSLT(iBankerTexId + floor(InfoTicks() / 10) % 4,
+        texBank:BlitSLT(InfoTicks() // 10 % 4 + iBankerTexId,
           iBankerX, iBankerY);
         texBank:BlitSLT(tileSpeech, iSpeechBubbleX, iSpeechBubbleY);
         fontSpeech:PrintC(iSpeechTextX, iSpeechTextY, strBankerSpeech);
@@ -189,7 +195,7 @@ local function InitBank(aActiveObject)
         if IsButtonPressed(0) then
           -- Play sound and exit to game
           PlayStaticSound(aSfxData.SELECT);
-          -- Unreference assets to garbage collector
+          -- Dereference assets to garbage collector
           texBank = nil;
           -- Start the loading waiting procedure
           SetCallbacks(GameProc, RenderInterface, nil);
@@ -234,27 +240,25 @@ local function InitBank(aActiveObject)
     SetCallbacks(BankProc, BankRender, BankInput);
   end
   -- Load bank texture
-  LoadResources("Bank", {{T=1,F="bank",P={80,94,0,0,0}},
-                         {T=7,F="bank",P={ }}}, OnLoaded);
+  LoadResources("Bank", aAssets, OnLoaded);
 end
--- Exports and importants -------------------------------------------------- --
+-- Exports and imports ----------------------------------------------------- --
 return { A = { InitBank = InitBank }, F = function(GetAPI)
   -- Imports --------------------------------------------------------------- --
-  LoadResources, SetCallbacks, SetCursor, IsMouseInBounds, aCursorIdData,
-  PlayStaticSound, Fade, IsMouseNotInBounds, aSfxData, InitCon, PlayMusic,
-  IsButtonPressed, IsScrollingDown, IsScrollingUp, aObjectData,
-  aGemsAvailable, aObjectActions, aObjectJobs, aObjectDirections, aObjectTypes,
-  InitLobby, texSpr, fontSpeech, GetGameTicks, SetBottomRightTip,
-  RenderInterface, HaveZogsToWin, GameProc, SellSpecifiedItems, RenderShadow
+  Fade, GameProc, GetGameTicks, HaveZogsToWin, InitLobby, IsButtonPressed,
+  IsMouseInBounds, IsMouseNotInBounds, IsScrollingDown, IsScrollingUp,
+  LoadResources, PlayMusic, PlayStaticSound, RenderInterface, RenderShadow,
+  SellSpecifiedItems, SetBottomRightTip, SetCallbacks, SetCursor,
+  aCursorIdData, aGemsAvailable, aObjectActions, aObjectData,
+  aObjectDirections, aObjectJobs, aObjectTypes, aSfxData, fontSpeech, texSpr
   = -- --------------------------------------------------------------------- --
-  GetAPI("LoadResources", "SetCallbacks", "SetCursor", "IsMouseInBounds",
-    "aCursorIdData", "PlayStaticSound", "Fade", "IsMouseNotInBounds",
-    "aSfxData", "InitCon", "PlayMusic", "IsButtonPressed", "IsScrollingDown",
-    "IsScrollingUp", "aObjectData", "GemsAvailable",
-    "aObjectActions", "aObjectJobs", "aObjectDirections", "aObjectTypes",
-    "InitLobby", "texSpr", "fontSpeech", "GetGameTicks", "SetBottomRightTip",
-    "RenderInterface", "HaveZogsToWin", "GameProc", "SellSpecifiedItems",
-    "RenderShadow");
+  GetAPI("Fade", "GameProc", "GetGameTicks", "HaveZogsToWin", "InitLobby",
+    "IsButtonPressed", "IsMouseInBounds", "IsMouseNotInBounds",
+    "IsScrollingDown", "IsScrollingUp", "LoadResources", "PlayMusic",
+    "PlayStaticSound", "RenderInterface", "RenderShadow", "SellSpecifiedItems",
+    "SetBottomRightTip", "SetCallbacks", "SetCursor", "aCursorIdData",
+    "aGemsAvailable", "aObjectActions", "aObjectData", "aObjectDirections",
+    "aObjectJobs", "aObjectTypes", "aSfxData", "fontSpeech", "texSpr");
   -- ----------------------------------------------------------------------- --
 end };
 -- End-of-File ============================================================= --

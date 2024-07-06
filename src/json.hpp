@@ -77,7 +77,7 @@ CTOR_BEGIN_ASYNC_DUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
   /* -- Convert LUA table to rapidjson::Value ---------------------- */ public:
   Value ParseTable(lua_State*const lS, const int iId, const int iObjId)
   { // Check table
-    LuaUtilCheckTable(lS, iId, "Data");
+    LuaUtilCheckTable(lS, iId);
     // Test: lexec Console.Write(Json.Table({ }):StrFromNum());
     // Get size of table and if we have length then we need to create an array
     if(const lua_Integer liLen =
@@ -96,7 +96,7 @@ CTOR_BEGIN_ASYNC_DUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
         switch(lua_type(lS, -1))
         { // Variable is a number
           case LUA_TNUMBER:
-            if(lua_isinteger(lS, -1))
+            if(LuaUtilIsInteger(lS, -1))
               rjvRoot.PushBack(Value().SetInt64(lua_tointeger(lS, -1)),
                 GetAllocator());
             else rjvRoot.PushBack(lua_tonumber(lS, -1), GetAllocator());
@@ -129,7 +129,7 @@ CTOR_BEGIN_ASYNC_DUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
       switch(lua_type(lS, -1))
       { // Variable is a number
         case LUA_TNUMBER:
-          if(lua_isinteger(lS, -1))
+          if(LuaUtilIsInteger(lS, -1))
             rjvRoot.AddMember(vKey, Value().SetInt64(lua_tointeger(lS, -1)),
               GetAllocator());
           else
@@ -227,8 +227,8 @@ CTOR_BEGIN_ASYNC_DUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
   { // Must have 4 parameters (including the class pointer)
     LuaUtilCheckParams(lS, 5);
     // Check and get parameters
-    const string strName{ LuaUtilGetCppFile(lS, 1, "File") };
-    LuaUtilCheckFuncs(lS, 2, "ErrorFunc", 3, "ProgressFunc", 4, "SuccessFunc");
+    const string strName{ LuaUtilGetCppFile(lS, 1) };
+    LuaUtilCheckFunc(lS, 2, 3, 4);
     // Init the specified string as a file asynchronously
     AsyncInitFile(lS, strName, "jsonfile");
   }
@@ -237,11 +237,11 @@ CTOR_BEGIN_ASYNC_DUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
   { // Must have 5 parameters (including the class pointer)
     LuaUtilCheckParams(lS, 6);
     // Check and get parameters
-    const string strN{ LuaUtilGetCppStrNE(lS, 1, "Identifier") };
-    Memory mData{ LuaUtilGetMBfromLStr(lS, 2, "Code") };
-    LuaUtilCheckFuncs(lS, 3, "ErrorFunc", 4, "ProgressFunc", 5, "SuccessFunc");
+    const string strN{ LuaUtilGetCppStrNE(lS, 1) };
+    Memory mData{ LuaUtilGetMBfromLStr(lS, 2) };
+    LuaUtilCheckFunc(lS, 3, 4, 5);
     // Init the specified string as an array asynchronously
-    AsyncInitArray(lS, strN, "jsonstring", StdMove(mData));
+    AsyncInitArray(lS, strN, "jsonstring", mData);
   }
   /* -- Init from LUA string ----------------------------------------------- */
   void InitString(lua_State*const lS)
@@ -251,9 +251,10 @@ CTOR_BEGIN_ASYNC_DUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
     //   3: the userdata object that contains a pointer to this class
     LuaUtilCheckParams(lS, 3);
     // Get name and code to parse
-    IdentSet(LuaUtilGetCppStr(lS, 1, "Identifier"));
+    IdentSet(LuaUtilGetCppStr(lS, 1));
     // Init file as array
-    SyncInitArray(IdentGet(), LuaUtilGetMBfromLStr(lS, 2, "String"));
+    Memory mbData{ LuaUtilGetMBfromLStr(lS, 2) };
+    SyncInitArray(IdentGet(), mbData);
   }
   /* -- Parse the table into a value --------------------------------------- */
   void InitFromTable(lua_State*const lS) { ParseTable(lS, 1, 1).Swap(*this); }
@@ -271,7 +272,7 @@ CTOR_BEGIN_ASYNC_DUO(Jsons, Json, CLHelperUnsafe, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Json)                // Disable copy constructor and operator
 };/* -- End ---------------------------------------------------------------- */
-CTOR_END_ASYNC_NOFUNCS(Jsons, JSON)    // Finish collector class
+CTOR_END_ASYNC_NOFUNCS(Jsons, Json, JSON) // Finish collector class
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */

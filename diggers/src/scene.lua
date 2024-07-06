@@ -12,19 +12,22 @@
 -- Core function aliases --------------------------------------------------- --
 -- M-Engine function aliases ----------------------------------------------- --
 -- Diggers function and data aliases --------------------------------------- --
-local LoadResources, aLevelData, aLevelTypesData, SetCallbacks, PlayMusic,
-  Fade, LoadLevel, fontLarge, aGlobalData;
+local Fade, LoadLevel, LoadResources, PlayMusic, SetCallbacks, aGlobalData,
+  aLevelTypesData, aLevelsData, fontLarge;
+-- Assets required --------------------------------------------------------- --
+local aAssets<const> = { { T = 1, F = false,    P = { 320, 240, 0, 0, 0 } },
+                         { T = 7, F = "select", P = { } } };
 -- Init scene function ----------------------------------------------------- --
-local function InitScene(Id)
+local function InitScene(iZoneId)
   -- Set level number and get data for it.
-  local iLevelId<const> = 1 + ((Id-1) % #aLevelData);
-  local aLevelInfo<const> = aLevelData[iLevelId];
+  local iLevelId<const> = 1 + ((iZoneId - 1) % #aLevelsData);
+  local aLevelInfo<const> = aLevelsData[iLevelId];
    -- On loaded function
-  local function OnLoaded(aR)
+  local function OnLoaded(aResources)
     -- Play scene music
-    PlayMusic(aR[2].H);
+    PlayMusic(aResources[2].H);
     -- Set scene texture
-    local texScene = aR[1].H;
+    local texScene = aResources[1].H;
     texScene:TileSTC(1);
     texScene:TileA(192, 272, 512, 512);
     -- Set first tile number
@@ -34,7 +37,7 @@ local function InitScene(Id)
       "RAISE "..(aLevelInfo.w + aGlobalData.gCapitalCarried).." ZOGS TO WIN";
     -- Render the scene callback since we're using it multiple times
     local function RenderScene()
-      -- Blit appropriate background
+      -- Draw appropriate background
       texScene:BlitSLT(iTileId, 0, 0);
       -- Draw text if ready
       if iTileId == 1 then
@@ -48,18 +51,18 @@ local function InitScene(Id)
       local iWaitCounter = 0;
       -- Waiting on scene graphic
       local function SceneWaitProc()
-        -- Incrememnt timer and don't do anything until 2 seconds
+        -- Increment timer and don't do anything until 2 seconds
         iWaitCounter = iWaitCounter + 1;
         if iWaitCounter < 120 then return end;
         -- Scene fade out proc
         local function OnSceneFadeOut()
           -- Set next tile number
           iTileId = 1;
-          -- Required zogs fade in proc
+          -- Required Zogs fade in proc
           local function OnRequiredFadeIn()
-            -- Required zogs wait procedure
+            -- Required Zogs wait procedure
             local function RequiredWaitProc()
-              -- Incrememnt timer and don't do anything until 4 seconds
+              -- Increment timer and don't do anything until 4 seconds
               iWaitCounter = iWaitCounter + 1;
               if iWaitCounter < 240 then return end;
               -- On required fade out?
@@ -89,20 +92,19 @@ local function InitScene(Id)
   end
   -- Get level terrain information
   local aTerrain<const> = aLevelInfo.t;
+  -- Set scene setter texture to load
+  aAssets[1].F = aTerrain.f.."ss";
   -- Load resources
-  LoadResources("Scene "..aLevelInfo.n.."/"..aTerrain.n, {
-    { T = 1, F = aTerrain.f.."ss", P = { 320, 240, 0, 0, 0 } },
-    { T = 7, F = "select",         P = { } }
-  }, OnLoaded);
+  LoadResources("Scene "..aLevelInfo.n.."/"..aTerrain.n, aAssets, OnLoaded);
 end
 -- Exports and imports ----------------------------------------------------- --
 return { A = { InitScene = InitScene }, F = function(GetAPI)
   -- Imports --------------------------------------------------------------- --
-  LoadResources, aLevelData, aLevelTypesData, SetCallbacks, PlayMusic,
-  LoadLevel, Fade, fontLarge, aGlobalData
+  Fade, LoadLevel, LoadResources, PlayMusic, SetCallbacks, aGlobalData,
+  aLevelTypesData, aLevelsData, fontLarge
   = -- --------------------------------------------------------------------- --
-  GetAPI("LoadResources", "aLevelData", "aLevelTypesData", "SetCallbacks",
-    "PlayMusic", "LoadLevel", "Fade", "fontLarge", "aGlobalData");
+  GetAPI("Fade", "LoadLevel", "LoadResources", "PlayMusic", "SetCallbacks",
+    "aGlobalData", "aLevelTypesData", "aLevelsData", "fontLarge");
   -- ----------------------------------------------------------------------- --
 end };
 -- End-of-File ============================================================= --

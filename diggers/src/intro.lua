@@ -10,20 +10,25 @@
 -- Copyr. (c) MS-Design, 2024   Copyr. (c) Millennium Interactive Ltd., 1994 --
 -- ========================================================================= --
 -- Core function aliases --------------------------------------------------- --
+local error<const> = error;
 -- M-Engine function aliases ----------------------------------------------- --
-local insert, UtilBlank<const>, InfoTime<const> =
-  table.insert, Util.Blank, Info.Time;
+local UtilBlank<const>, InfoTime<const>, UtilIsInteger<const> =
+  Util.Blank, Info.Time, Util.IsInteger;
 -- Diggers function and data aliases --------------------------------------- --
-local LoadResources, GetCallbacks, SetCallbacks, VideoPlay, VideoStop, Fade,
-  IsButtonPressed, InitTitle, texSpr, InitSetup, RegisterFBUCallback,
-  fontLittle, RenderShadow, RenderFade, aSubTitles;
+local Fade, GetCallbacks, InitSetup, InitTitle, IsButtonPressed, LoadResources,
+  RegisterFBUCallback, RenderFade,  RenderShadow, SetCallbacks, VideoPlay,
+  VideoStop, aIntroSubTitles, fontLittle, texSpr;
+-- Resources --------------------------------------------------------------- --
+local aAssets<const> = { { T = 1, F = "grass", P= { 16, 16, 0, 0, 0 } },
+                         { T = 2, F = "title", P= { 0 } },
+                         { T = 8, F = "intro", P= { } } };
 -- Intro initialisation function ------------------------------------------- --
 local function InitIntro(bAndSetup)
   -- When intro resources have loaded?
   local function OnLoaded(aResources)
     -- Subtitle position
     local iStageST = 0;
-    -- Register framebuffer update
+    -- Register frame buffer update
     local iStageW, iStageH, iStageL, iStageT, iStageR, iStageB;
     local function OnFrameBufferUpdate(...)
       iStageW, iStageH, iStageL, iStageT, iStageR, iStageB = ...;
@@ -43,19 +48,19 @@ local function InitIntro(bAndSetup)
     local iFWidth<const>, iFHeight<const>, iPadding<const> =
       fontLittle:GetWidth(), fontLittle:GetHeight(), 5;
     -- For each credit
-    for iI = 1, #aSubTitles do
+    for iI = 1, #aIntroSubTitles do
       -- Get subtitle item and we must have at least 3 leans
-      local aSubTitle<const> = aSubTitles[iI];
+      local aSubTitle<const> = aIntroSubTitles[iI];
       -- Check parameter count
       if #aSubTitle < 3 then error("Not enough items on "..iI.."!") end;
       if #aSubTitle > 4 then error("Too many items on "..iI.."!") end;
       -- Verify frame start
       local iFrStart<const> = aSubTitle[1];
-      if type(iFrStart) ~= "number" or iFrStart < 0 then
+      if not UtilIsInteger(iFrStart) or iFrStart < 0 then
         error("Invalid start '"..tostring(iFrStart).."' on "..iI.."!") end;
       -- Verify frame end
       local iFrEnd<const> = aSubTitle[1];
-      if type(iFrEnd) ~= "number" or iFrEnd < 0 then
+      if not UtilIsInteger(iFrEnd) or iFrEnd < 0 then
         error("Invalid end '"..tostring(iFrEnd).."' on "..iI.."!") end;
       -- Get subtitles
       local aSubTitleTexts<const> = aSubTitle[3];
@@ -67,22 +72,22 @@ local function InitIntro(bAndSetup)
         -- Which subtitle is longest?
         iWidth = math.max(iWidth, #sSubTitle2 * iFWidth);
         -- Insert first and second subtitle Y position
-        insert(aSubTitle, 200); -- Index 4
-        insert(aSubTitle, 210); -- Index 5
+        aSubTitle[1 + #aSubTitle] = 200; -- [4]
+        aSubTitle[1 + #aSubTitle] = 210; -- [5]
       else
         -- Insert first and second (n/a) subtitle Y position
-        insert(aSubTitle, 206); -- Index 4
-        insert(aSubTitle, 206); -- Index 5
+        aSubTitle[1 + #aSubTitle] = 206; -- [4]
+        aSubTitle[1 + #aSubTitle] = 206; -- [5]
       end
       -- Insert half width of subtitle box plus padding
-      insert(aSubTitle, (iWidth / 2) + iPadding); -- Index 6
+      aSubTitle[1 + #aSubTitle] = (iWidth / 2) + iPadding; -- [6]
       -- Insert top position of subtitle box minus padding
-      insert(aSubTitle, aSubTitle[4] - iPadding); -- Index 7
+      aSubTitle[1 + #aSubTitle] = aSubTitle[4] - iPadding; -- [7]
       -- Insert bottom position of subtitle box plus font height plus padding
-      insert(aSubTitle, aSubTitle[5] + iFHeight + iPadding); -- Index 8
+      aSubTitle[1 + #aSubTitle] = aSubTitle[5] + iFHeight + iPadding; -- [8]
     end
     -- Set first active subtitle to wait for
-    local aSubTitle = aSubTitles[iSubTitle];
+    local aSubTitle = aIntroSubTitles[iSubTitle];
     -- Background fade bounds and current subtitles being displayed
     local iFadeX, iFadeY1, iFadeY2, sSubTitle1, sSubTitle2;;
     -- Sub-title Y positions
@@ -123,7 +128,7 @@ local function InitIntro(bAndSetup)
       local iFrame<const> = vVideo:GetFrame();
       -- Have subtitle?
       if sSubTitle1 then
-        -- Calculate X position of rectangle
+        -- Calculate iX position of rectangle
         local iFadeX1<const> = iStageST - iFadeX;
         local iFadeX2<const> = iStageST + iFadeX;
         -- Draw subtitle background and shadow
@@ -149,7 +154,7 @@ local function InitIntro(bAndSetup)
           aSubTitle[3][1], aSubTitle[3][2], aSubTitle[2];
         -- Set next sub-title to monitor
         iSubTitle = iSubTitle + 1;
-        aSubTitle = aSubTitles[iSubTitle] or { math.maxinteger };
+        aSubTitle = aIntroSubTitles[iSubTitle] or { math.maxinteger };
       end
     end
     -- Not playing procedure
@@ -158,42 +163,48 @@ local function InitIntro(bAndSetup)
       tTitle:SetCRGBA(1, 1, 1, 1);
       tTitle:BlitLT(-96, 0);
       if iStageL == 0 then return end;
-      local Width<const> = -iStageL-4;
-      local Aspect<const> = 208/58;
-      local Height<const> = Width*Aspect;
-      local LX = (InfoTime()*100)%240;
-      local LY = -LX;
-      local X<const> = iStageL+4;
+      local iWidth<const> = -iStageL - 4;
+      local nAspect<const> = 208 / 58;
+      local nHeight<const> = iWidth * nAspect;
+      local iLX = (InfoTime() * 100) % 240;
+      local iLY = -iLX;
+      local iX<const> = iStageL + 4;
+      local iXpWidth<const> = iX + iWidth;
+      local nHeightPiLX = nHeight + iLX;
+      local nHeightPiLY = nHeight + iLY;
+      local iXRight<const> = 320 + iWidth;
       tTitle:SetCA(0.25);
-      tTitle:BlitSLTRB(1,         X, -240+LX,    X+Width,-240+Height+LX);
-      tTitle:BlitSLTRB(1,         X,      LX,    X+Width,     Height+LX);
-      tTitle:BlitSLTRB(1,         X,  240+LX,    X+Width, 240+Height+LX);
-      tTitle:BlitSLTRB(1, 320+Width,      Height+LY, 320,     LY);
-      tTitle:BlitSLTRB(1, 320+Width,  240+Height+LY, 320, 240+LY);
-      tTitle:BlitSLTRB(1, 320+Width,  480+Height+LY, 320, 480+LY);
-      LX = -LX;
-      LY = -LY - 240;
-      tTitle:BlitSLTRB(1,         X, -240+LX,    X+Width,-240+Height+LX);
-      tTitle:BlitSLTRB(1,         X,      LX,    X+Width,     Height+LX);
-      tTitle:BlitSLTRB(1,         X,  240+LX,    X+Width, 240+Height+LX);
-      tTitle:BlitSLTRB(1, 320+Width,      Height+LY, 320,     LY);
-      tTitle:BlitSLTRB(1, 320+Width,  240+Height+LY, 320, 240+LY);
-      tTitle:BlitSLTRB(1, 320+Width,  480+Height+LY, 320, 480+LY);
+      tTitle:BlitSLTRB(1, iX, -240+iLX, iXpWidth, -240 + nHeightPiLX);
+      tTitle:BlitSLTRB(1, iX,      iLX, iXpWidth,        nHeightPiLX);
+      tTitle:BlitSLTRB(1, iX,  240+iLX, iXpWidth,  240 + nHeightPiLX);
+      tTitle:BlitSLTRB(1, iXRight,       nHeightPiLY, 320,       iLY);
+      tTitle:BlitSLTRB(1, iXRight, 240 + nHeightPiLY, 320, 240 + iLY);
+      tTitle:BlitSLTRB(1, iXRight, 480 + nHeightPiLY, 320, 480 + iLY);
+      iLX = -iLX;
+      iLY = -iLY - 240;
+      nHeightPiLX = nHeight + iLX;
+      nHeightPiLY = nHeight + iLY;
+      tTitle:BlitSLTRB(1, iX, -240 + iLX, iXpWidth, -240 + nHeightPiLX);
+      tTitle:BlitSLTRB(1, iX,        iLX, iXpWidth,        nHeightPiLX);
+      tTitle:BlitSLTRB(1, iX,  240 + iLX, iXpWidth,  240 + nHeightPiLX);
+      tTitle:BlitSLTRB(1, iXRight,       nHeightPiLY, 320,       iLY);
+      tTitle:BlitSLTRB(1, iXRight, 240 + nHeightPiLY, 320, 240 + iLY);
+      tTitle:BlitSLTRB(1, iXRight, 480 + nHeightPiLY, 320, 480 + iLY);
     end
     -- Render proc
     local fcbRender = NotPlayingProc;
     local function Render() fcbRender() end;
     -- Finish function
     local function Finish()
-      -- Remove evnet function
+      -- Remove event function
       vVideo:OnEvent(UtilBlank);
       -- When video has faded out?
       local function OnFadeOut()
         -- Destroy video and texture handles
         VideoStop();
-        -- Remove framebuffer update callback
+        -- Remove frame buffer update callback
         RegisterFBUCallback("intro");
-        -- Unreference loaded assets for garbage collector
+        -- Dereference loaded assets for garbage collector
         tTiles, tTitle, vVideo = nil, nil, nil;
         -- Load title screen
         InitTitle();
@@ -207,7 +218,7 @@ local function InitIntro(bAndSetup)
       local aEvents<const> = Video.Events;
       local iStop<const>, iPause<const>, iPlay<const>, iFinish<const> =
         aEvents.STOP, aEvents.PAUSE, aEvents.PLAY, aEvents.FINISH;
-      -- A video event occured?
+      -- A video event occurred?
       local function OnEvent(iEvent)
         -- Playing?
         if iEvent == iPlay then
@@ -245,21 +256,19 @@ local function InitIntro(bAndSetup)
     Fade(1, 0, 0.025, Render, OnFadeIn);
   end
   -- Load resources asynchronously
-  LoadResources("Intro", {{T=1,F="grass",P={16,16,0,0,0}},
-                          {T=2,F="title",P={0}},
-                          {T=8,F="intro",P={ }}}, OnLoaded);
+  LoadResources("Intro", aAssets, OnLoaded);
 end
 -- Exports and imports ----------------------------------------------------- --
 return { A = { InitIntro = InitIntro }, F = function(GetAPI)
   -- Imports --------------------------------------------------------------- --
-  LoadResources, GetCallbacks, SetCallbacks, VideoPlay, VideoStop, Fade,
-  IsButtonPressed, InitTitle, texSpr, InitSetup, RegisterFBUCallback,
-  fontLittle, RenderShadow, RenderFade, aSubTitles
+  Fade, GetCallbacks, InitSetup, InitTitle, IsButtonPressed, LoadResources,
+  RegisterFBUCallback, RenderFade, RenderShadow, SetCallbacks, VideoPlay,
+  VideoStop, aIntroSubTitles, fontLittle, texSpr
   = -- --------------------------------------------------------------------- --
-  GetAPI("LoadResources", "GetCallbacks", "SetCallbacks", "VideoPlay",
-    "VideoStop", "Fade", "IsButtonPressed", "InitTitle", "texSpr", "InitSetup",
-    "RegisterFBUCallback", "fontLittle", "RenderShadow", "RenderFade",
-    "aIntroSubTitles");
+  GetAPI("Fade", "GetCallbacks", "InitSetup", "InitTitle",  "IsButtonPressed",
+    "LoadResources", "RegisterFBUCallback", "RenderFade", "RenderShadow",
+    "SetCallbacks", "VideoPlay", "VideoStop", "aIntroSubTitles", "fontLittle",
+    "texSpr");
   -- ----------------------------------------------------------------------- --
 end };
 -- End-of-File ============================================================= --

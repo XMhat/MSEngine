@@ -16,7 +16,19 @@
 namespace LLSShot {                    // Screenshot namespace
 /* -- Dependencies --------------------------------------------------------- */
 using namespace IFbo::P;               using namespace ISShot::P;
-using namespace IString::P;
+using namespace IString::P;            using namespace Common;
+/* ========================================================================= **
+** ######################################################################### **
+** ## SShot common helper classes                                         ## **
+** ######################################################################### **
+** -- Read SShot class argument -------------------------------------------- */
+struct AgSShot : public ArClass<SShot> {
+  explicit AgSShot(lua_State*const lS, const int iArg) :
+    ArClass{*LuaUtilGetPtr<SShot>(lS, iArg, *cSShots)}{} };
+/* -- Create SShot class argument ------------------------------------------ */
+struct AcSShot : public ArClass<SShot> {
+  explicit AcSShot(lua_State*const lS) :
+    ArClass{*LuaUtilClassCreate<SShot>(lS, *cSShots)}{} };
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## SShot:* member functions                                            ## **
@@ -25,19 +37,19 @@ using namespace IString::P;
 // $ SShot:Destroy
 // ? Destroys the specified screenshot object.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Destroy, LCCLASSDESTROY(1, SShot));
+LLFUNC(Destroy, 0, LuaUtilClassDestroy<SShot>(lS, 1, *cSShots))
 /* ========================================================================= */
 // $ SShot:Id
 // < Id:integer=The id number of the SShot object.
 // ? Returns the unique id of the SShot object.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Id, 1, LCPUSHVAR(LCGETPTR(1, SShot)->CtrGet()));
+LLFUNC(Id, 1, LuaUtilPushVar(lS, AgSShot{lS, 1}().CtrGet()))
 /* ========================================================================= */
 // $ SShot:Name
 // < Name:string=The name of the SShot object.
 // ? Returns the filename generated on this screenshot object.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Name, 1, LCPUSHVAR(LCGETPTR(1, SShot)->IdentGet()));
+LLFUNC(Name, 1, LuaUtilPushVar(lS, AgSShot{lS, 1}().IdentGet()))
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## SShot:* member functions structure                                  ## **
@@ -55,7 +67,7 @@ LLRSEND                                // SShot:* member functions end
 // < Object:SShot=The screenshot object created.
 // ? Takes a screenshot of the screen.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Screen, 1, LCCLASSCREATE(SShot)->DumpMain());
+LLFUNC(Screen, 1, AcSShot{lS}().DumpMain())
 /* ========================================================================= */
 // $ SShot.Fbo
 // > Dest:Fbo=The frame buffer to dump.
@@ -64,8 +76,9 @@ LLFUNCEX(Screen, 1, LCCLASSCREATE(SShot)->DumpMain());
 // ? Takes a screenshot of the specified FBO. You must completely omit the
 // ? 'file' parameter to use an engine generated file.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Fbo, 1, LCCLASSCREATE(SShot)->DumpFBO(*LCGETPTR(1, Fbo),
-  LuaUtilStackSize(lS) < 3 ? cCommon->Blank() : LCGETCPPFILE(3, "File")));
+LLFUNC(Fbo, 1, const AgFbo aFbo{lS,1};
+  AcSShot{lS}().DumpFBO(aFbo,
+    LuaUtilStackSize(lS) < 3 ? cCommon->Blank() : AgFilename{lS,2}))
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## SShot.* namespace functions structure                               ## **

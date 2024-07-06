@@ -188,7 +188,7 @@ class FileMap :
   /* -- Assignment operator ------------------------------------------------ */
   void FileMapSwap(FileMap &fmOther)
   { // Swap memory block and map
-    MemConstSwap(StdMove(fmOther));
+    MemConstSwap(fmOther);
     SysMapSwap(fmOther);
     // Swap position
     swap(stPosition, fmOther.stPosition);

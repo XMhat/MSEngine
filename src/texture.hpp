@@ -825,7 +825,7 @@ CTOR_MEM_BEGIN(Textures, Texture, ICHelperUnsafe, /* No IdentCSlave<> */),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Texture)             // Supress copy constructor for safety
 };/* -- Finish the collector ----------------------------------------------- */
-CTOR_END_NOINITS(Textures)             // Finish collector class
+CTOR_END_NOINITS(Textures, Texture)    // Finish collector class
 /* -- DeInit Textures ------------------------------------------------------ */
 static void TextureDeInitTextures(void)
 { // Ignore if no textures

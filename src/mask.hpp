@@ -49,10 +49,15 @@ CTOR_BEGIN_DUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     // Walk through the pixels of the intersection and check the bits and
     // return if we found a match, else try next pixel
     for(int iY = iYMin; iY < iYMax; ++iY)
+    { // Pre-calculate source and destination Y
+      const int iSrcYPos = (iY - iSrcY) * DimGetWidth(),
+                iDestYPos = (iY - iDestY) * mCdest.DimGetWidth();
+      // Enumerate X-axis
       for(int iX = iXMin; iX < iXMax; ++iX)
-        if(UtilBitTest(cpS, ((iY-iSrcY)*DimGetWidth())+(iX-iSrcX)) &&
-           UtilBitTest(cpD, ((iY-iDestY)*mCdest.DimGetWidth())+(iX-iDestX)))
+        if(UtilBitTest(cpS, iSrcYPos + (iX - iSrcX)) &&
+           UtilBitTest(cpD, iDestYPos + (iX - iDestX)))
           return true;
+    }
     // No collision
     return false;
   }
@@ -100,13 +105,18 @@ CTOR_BEGIN_DUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
           unsigned char*const cpD = at(stDestId).MemPtr<unsigned char>();
     // Walk through the pixels of the intersection
     for(int iY = iYMin; iY < iYMax; ++iY)
+    { // Pre-calculate Y-axis positions
+      const int iDestYPos = iY * DimGetWidth(),
+                iSrcYPos = (iY - iDestY) * mCsrc.DimGetWidth();
+      // Enumerate X-axis
       for(int iX = iXMin; iX < iXMax; ++iX)
-      { // Clear the bits first
-        UtilBitClear(cpD, (iY*DimGetWidth())+iX);
-        // Copy the bits
-        UtilBitSet2(cpD, (iY*DimGetWidth())+iX,
-                  cpS, ((iY-iDestY)*mCsrc.DimGetWidth())+(iX-iDestX));
+      { // Calculate destination position
+        const int iDestPos = iDestYPos + iX;
+        // Clear the bits first and copy the bits
+        UtilBitClear(cpD, iDestPos);
+        UtilBitSet2(cpD, iDestPos, cpS, iSrcYPos + (iX - iDestX));
       }
+    }
   }
   /* -- Merge specified mask into this one --------------------------------- */
   void Merge(const Mask &mCsrc, const size_t stSourceId,
@@ -124,28 +134,34 @@ CTOR_BEGIN_DUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     // Get bitmask surfaces for both masks
           unsigned char*const cpD = at(0).MemPtr<unsigned char>();
     const unsigned char*const cpS = mCsrc[stSourceId].MemPtr<unsigned char>();
-    // Walk through the pixels of the intersection
-    // Check the bits and return if we found a match, else try next pixel
+    // Walk through the Y-axis of the intersection
     for(int iY = iYMin; iY < iYMax; ++iY)
+    { // Pre-calculate Y-axis positions
+      const int iDestYPos = iY * DimGetWidth(),
+                iSrcYPos = (iY - iDestY) * mCsrc.DimGetWidth();
+      // Enumerate X-axis and merge the specified bits
       for(int iX = iXMin; iX < iXMax; ++iX)
-        UtilBitSet2(cpD, (iY*DimGetWidth())+iX,
-                    cpS, ((iY-iDestY)*mCsrc.DimGetWidth())+(iX-iDestX));
+        UtilBitSet2(cpD, iDestYPos + iX, cpS, iSrcYPos + (iX - iDestX));
+    }
   }
   /* -- Erase specified mask into this one --------------------------------- */
   void Erase(const size_t stDestId)
   { // Bail if out of bounds
     if(DimGetWidth() <= 0 || DimGetHeight() <= 0) return;
-    // Get bitmask surfaces for both masks
+    // Get bit mask surfaces for both masks
     unsigned char*const cpD = at(stDestId).MemPtr<unsigned char>();
-    // Walk through the pixels of the intersection
-    // Check the bits and return if we found a match, else try next pixel
+    // Enumerate Y-axis positions
     for(int iY = 0; iY < DimGetHeight(); ++iY)
+    { // Calculate destination position
+      const int iDestYPos = iY * DimGetWidth();
+      // Enumerate X-axis positions and clear the bits
       for(int iX = 0; iX < DimGetWidth(); ++iX)
-        UtilBitClear(cpD, (iY*DimGetWidth())+iX);
+        UtilBitClear(cpD, iDestYPos + iX);
+    }
   }
   /* -- Fill specified mask ------------------------------------------------ */
   void Fill(const int iDX, const int iDY, const int iW, const int iH)
-  { // Caculate distances and lengths between both bounds
+  { // Calculate distances and lengths between both bounds
     const int
       iXMax2 = iDX + iW,                iYMax2 = iDY + iH,
       iXMin  = UtilMaximum(iDX, 0),     iYMin  = UtilMaximum(iDY, 0),
@@ -157,8 +173,12 @@ CTOR_BEGIN_DUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     unsigned char*const cpD = at(0).MemPtr<unsigned char>();
     // Walk through the pixels of the intersection and set each bit
     for(int iY = iYMin; iY < iYMax; ++iY)
+    { // Calculate destination position
+      const int iDestYPos = iY * DimGetWidth();
+      // Enumerate X-axis positions and fill the bits
       for(int iX = iXMin; iX < iXMax; ++iX)
-        UtilBitSet(cpD, (iY*DimGetWidth())+iX);
+        UtilBitSet(cpD, iDestYPos + iX);
+    }
   }
   /* -- Clear specified mask ----------------------------------------------- */
   void Clear(const int iDX, const int iDY, const int iW, const int iH)
@@ -174,11 +194,15 @@ CTOR_BEGIN_DUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     unsigned char*const cpD = at(0).MemPtr<unsigned char>();
     // Walk through the pixels of the intersection and set each bit
     for(int iY = iYMin; iY < iYMax; ++iY)
+    { // Calculate destination position
+      const int iDestYPos = iY * DimGetWidth();
+      // Enumerate X-axis positions and fill the bits
       for(int iX = iXMin; iX < iXMax; ++iX)
-        UtilBitClear(cpD, (iY*DimGetWidth())+iX);
+        UtilBitClear(cpD, iDestYPos + iX);
+    }
   }
   /* -- Init --------------------------------------------------------------- */
-  void Init(const string &strName, const unsigned int uiWidth,
+  void InitBlank(const string &strName, const unsigned int uiWidth,
     const unsigned int uiHeight)
   { // Check dimension parameters
     if(!uiWidth || !uiHeight ||
@@ -194,12 +218,20 @@ CTOR_BEGIN_DUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
     // Set width and height
     DimSet(static_cast<int>(uiWidth), static_cast<int>(uiHeight));
   }
-  /* -- Init cleared mask -------------------------------------------------- */
-  void InitBlank(const string &strName, const unsigned int uiWidth,
+  /* -- Init filled mask --------------------------------------------------- */
+  void InitOne(const string &strName, const unsigned int uiWidth,
     const unsigned int uiHeight)
   { // Initialise new mask memory
-    Init(strName, uiWidth, uiHeight);
-    // Now clear it
+    InitBlank(strName, uiWidth, uiHeight);
+    // Now fill it with 1's
+    back().MemFill<uint64_t>(0xFFFFFFFFFFFFFFFF);
+  }
+  /* -- Init cleared mask -------------------------------------------------- */
+  void InitZero(const string &strName, const unsigned int uiWidth,
+    const unsigned int uiHeight)
+  { // Initialise new mask memory
+    InitBlank(strName, uiWidth, uiHeight);
+    // Now fill it with zero's
     back().MemFill();
   }
   /* -- Dump a tile to disk ------------------------------------------------ */
@@ -306,10 +338,14 @@ CTOR_BEGIN_DUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
             Memory{ stBytes, true })->MemPtr<unsigned char>();
           // Copy source to buffer
           for(size_t stTY = stTHeightM1; stTY < stTHeight; --stTY)
+          { // Pre-calculate Y position
+            const size_t stDestYPos = (stTHeightM1 - stTY) * stTWidth,
+                         stSrcYPos = (stHeightM1 - (stY + stTY)) * stWidth;
+            // Enumerate X-axis. Note that bits are reversed too.
             for(size_t stTX = 0; stTX < stTWidth; ++stTX)
-              // Note that bits are reversed too.
-              UtilBitSet2R(ucpD, ((stTHeightM1 - stTY) * stTWidth) + stTX,
-                ucpS, ((stHeightM1 - (stY + stTY)) * stWidth) + (stX + stTX));
+              UtilBitSet2R(ucpD, stDestYPos + stTX,
+                ucpS, stSrcYPos + (stX + stTX));
+          }
         }
       }
     } // Iterate each row from the top
@@ -322,10 +358,14 @@ CTOR_BEGIN_DUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
           Memory{ stBytes, true })->MemPtr<unsigned char>();
         // Copy source to buffer
         for(size_t stTY = 0; stTY < stTHeight; ++stTY)
+        { // Pre-calculate Y position
+          const size_t stDestYPos = stTY * stTWidth,
+                       stSrcYPos = (stHeightM1 - (stY + stTY)) * stWidth;
+          // Enumerate X-axis. Note that bits are reversed too.
           for(size_t stTX = 0; stTX < stTWidth; ++stTX)
-            // Note that bits are reversed too.
-            UtilBitSet2R(ucpD, (stTY * stTWidth) + stTX, ucpS,
-              ((stHeightM1 - (stY + stTY)) * stWidth) + (stX + stTX));
+            UtilBitSet2R(ucpD, stDestYPos + stTX,
+              ucpS, stSrcYPos + (stX + stTX));
+        }
       }
     } // Set allocated size
     stAlloc = stWidth * stHeight / CHAR_BIT;
@@ -353,7 +393,7 @@ CTOR_BEGIN_DUO(Masks, Mask, CLHelperUnsafe, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Mask)                // Omit copy constructor for safety
 };/* ----------------------------------------------------------------------- */
-CTOR_END_NOINITS(Masks)                // Finish collector class
+CTOR_END_NOINITS(Masks, Mask)          // Finish collector class
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */

@@ -36,11 +36,12 @@ static class Audio final :             // Audio manager class
   ClkTimePoint     tpNextCheck;        // Next check for hardware changes
   SafeClkDuration  cdCheckRate,        // Check rate
                    cdThreadDelay;      // Thread sleep time
+  const ClkDuration cdDiscWait;        // Sleep time waiting for main thread
   /* -- Devices ------------------------------------------------------------ */
   StrVector        dlPBDevices,        // list of playback devices
                    dlCTDevices;        // list of capture devices
   /* -- ReInit requested --------------------------------------------------- */
-  void OnReInit(const EvtMain::Cell &)
+  void OnReInit(const EvtMainEvent&)
   { // Capture exceptions
     try
     { // Log status
@@ -61,9 +62,9 @@ static class Audio final :             // Audio manager class
       StreamSetVolume(cSources->fMVolume);
       VideoSetVolume(cSources->fVVolume);
       // Re-create all buffers for streams and samples
+      VideoReInit();
       SampleReInit();
       StreamReInit();
-      VideoReInit();
       // Init monitoring thread
       InitThread();
       // Log status
@@ -93,7 +94,7 @@ static class Audio final :             // Audio manager class
       if(Verify()) continue;
       // Put in infinite loop and wait for the reinit function to request
       // termination of this thread
-      while(ThreadShouldNotExit()) cTimer->TimerSuspend(milliseconds(100));
+      while(ThreadShouldNotExit()) cTimer->TimerSuspend(cdDiscWait);
       // Thread terminate request recieved, now break the loop.
       break;
     } // Terminate thread
@@ -109,16 +110,16 @@ static class Audio final :             // Audio manager class
   bool Verify(void)
   { // Ignore if next check time not met
     if(cmHiRes.GetTime() < tpNextCheck) return true;
-    // Number of discrepancies found
+    // Number of discrepancies found. If there is no such device in the current
+    // device list, or the current device item does not equal to the newly
+    // detected item, then that is a discrepancy.
     size_t stDiscrepancies = 0;
     // Grab list of playback devices and if we found them?
     if(const char *cpList = cOal->GetNCString(cOal->eQuery))
     { // Number of new items detected
-      size_t stIndex;
-      // For each playback device. If there is no such device in the current
-      // list, or the current device item does not equal to the newly detected
-      // item, then that is a discrepancy.
-      for(stIndex = 0; *cpList; ++stIndex, cpList += strlen(cpList) + 1)
+      size_t stIndex = 0;
+      // For each playback device, is the first character valid?
+      while(*cpList)
       { // Is index valid?
         if(stIndex >= dlPBDevices.size())
         { // Log warning and add to discrepancy list
@@ -133,7 +134,10 @@ static class Audio final :             // Audio manager class
           cLog->LogDebugExSafe("Audio thread discrepancy $: "
             "Expected device '$' at $, not '$'!",
               stDiscrepancies, dlPBDevices[stIndex], stIndex, cpList);
-        }
+        } // Jump to next item
+        cpList += strlen(cpList) + 1;
+        // increment device index
+        ++stIndex;
       }
       // If the number of items in the newly detected list doesn't match
       // the number of items in the current list then that is another
@@ -415,7 +419,8 @@ static class Audio final :             // Audio manager class
     Thread{ "audio", STP_AUDIO,        // Initialise high perf audio thread
       bind(&Audio::AudioThreadMain,    // " with reference to callback
         this, _1) },                   // " function
-    cdCheckRate{ seconds{ 0 } }        // Initialise thread check time
+    cdCheckRate{ seconds{ 0 } },       // Initialise thread check time
+    cdDiscWait{ milliseconds{ 100 } }  // Initialise discrepency sleep time
     /* --------------------------------------------------------------------- */
     { }                                // Do nothing else
   /* -- Destructor --------------------------------------------------------- */

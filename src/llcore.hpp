@@ -16,12 +16,20 @@
 /* ========================================================================= */
 namespace LLCore {                     // Core namespace
 /* -- Dependencies --------------------------------------------------------- */
-using namespace IConDef::P;
-using namespace IConsole::P;           using namespace ICore::P;
-using namespace IDisplay::P;           using namespace IEvtMain::P;
-using namespace ILog::P;               using namespace ILua::P;
-using namespace IStd::P;               using namespace ISystem::P;
-using namespace ITimer::P;
+using namespace IConDef::P;            using namespace IConsole::P;
+using namespace ICore::P;              using namespace IDisplay::P;
+using namespace IEvtMain::P;           using namespace ILog::P;
+using namespace ILua::P;               using namespace IStd::P;
+using namespace IString::P;            using namespace ISystem::P;
+using namespace ITimer::P;             using namespace Common;
+/* ========================================================================= **
+** ######################################################################### **
+** ## Core common helper classes                                          ## **
+** ######################################################################### **
+** -- Get process pid argument --------------------------------------------- */
+struct AgPid : public AgIntegerL<unsigned int> {
+  explicit AgPid(lua_State*const lS, const int iArg) :
+    AgIntegerL{lS, iArg, 1}{} };
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Core.* namespace functions                                          ## **
@@ -32,84 +40,85 @@ using namespace ITimer::P;
 // ? clean up actions in your own time by setting Core.SetEnd(), then calling
 // ? this function to confirm you're done.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Done, cEvtMain->Add(EMC_LUA_CONFIRM_EXIT));
+LLFUNC(Done, 0, cEvtMain->ConfirmExit())
 /* ========================================================================= */
 // $ Core.Quit
 // ? Terminates the engine process cleanly.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Quit, cEvtMain->Add(EMC_QUIT));
+LLFUNC(Quit, 0, cEvtMain->RequestQuit())
 /* ========================================================================= */
 // $ Core.Reset
 // < Result:boolean = Was the event sent successfully?
 // ? Ends LUA execution, clears the context, and restarts LUA execution. It
 // ? will return 'false' if Lua is already re-initialising.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Reset, 1, LCPUSHVAR(cLua->ReInit()));
+LLFUNC(Reset, 1, LuaUtilPushVar(lS, cLua->ReInit()))
 /* ========================================================================= */
 // $ Core.Pause
 // ? Pauses LUA execution. Obviously, you can't resume and must do it manually!
 /* ------------------------------------------------------------------------- */
-LLFUNC(Pause, cEvtMain->Add(EMC_LUA_PAUSE));
+LLFUNC(Pause, 0, cEvtMain->Add(EMC_LUA_PAUSE))
 /* ========================================================================= */
 // $ Core.Restart
 // ? Restarts the engine process cleanly.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Restart, cEvtMain->Add(EMC_QUIT_RESTART));
+LLFUNC(Restart, 0, cEvtMain->Add(EMC_QUIT_RESTART))
 /* ========================================================================= */
 // $ Core.RestartFresh
 // ? Restarts the engine process cleanly without command-line arguments.
 /* ------------------------------------------------------------------------- */
-LLFUNC(RestartNP, cEvtMain->Add(EMC_QUIT_RESTART_NP));
+LLFUNC(RestartNP, 0, cEvtMain->Add(EMC_QUIT_RESTART_NP))
 /* ========================================================================= */
 // $ Core.End
 // ? Ends LUA execution and enables the console.
 /* ------------------------------------------------------------------------- */
-LLFUNC(End, cEvtMain->Add(EMC_LUA_END));
+LLFUNC(End, 0, cEvtMain->Add(EMC_LUA_END))
 /* ========================================================================= */
 // $ Core.Log
 // > Text:string=The line of text to write to the log.
 // ? Writes the specified line of text to the engine log with highest level.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Log, cLog->LogExSafe(LH_CRITICAL, "(Lua) $",
-  LCGETSTRING(char, 1, "String")));
+LLFUNC(Log, 0,
+  cLog->LogExSafe(LH_CRITICAL, "(Lua) $", AgCStringChar{lS, 1}()))
 /* ========================================================================= */
 // $ Core.LogEx
-// > Level:integer=The log severity level.
 // > Text:string=The line of text to write to the log.
+// > Level:integer=The log severity level.
 // ? Writes the specified line of text to the engine log. Note that if the
 // ? current log level cvar setting is below this then the function does not
 // ? log anything.
 /* ------------------------------------------------------------------------- */
-LLFUNC(LogEx,
-  cLog->LogExSafe(LCGETINTLGE(LHLevel, 2, LH_CRITICAL, LH_MAX, "Level"),
-    "(Lua) $", LCGETSTRING(char, 1, "String")));
+LLFUNC(LogEx, 0,
+  const AgCStringChar aString{lS, 1};
+  const AgIntegerLGE<LHLevel> aLevel{lS, 2, LH_CRITICAL, LH_MAX};
+  cLog->LogExSafe(aLevel, "(Lua) $", aString()))
 /* ========================================================================= */
 // $ Core.Events
 // < Events:integer=Number of events in the engine events system.
 // ? Returns the number of events in the engine event system. Helps with
 // ? synchronising Video or Stream class events.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Events, 1, LCPUSHVAR(cEvtMain->SizeSafe()));
+LLFUNC(Events, 1, LuaUtilPushVar(lS, cEvtMain->SizeSafe()))
 /* ========================================================================= */
 // $ Core.Delay
-// > Miliseconds:integer=Time in seconds.
+// > Millisecs:integer=Time in seconds.
 // ? Delays the engine thread for this amount of time.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Delay, cTimer->TimerSuspend(LCGETINT(unsigned int, 1, "Milliseconds")));
+LLFUNC(Delay, 0, const AgUIntLG aMilliseconds{lS, 1, 0, 1000};
+  cTimer->TimerSuspend(aMilliseconds))
 /* ========================================================================= */
 // $ Core.RestoreDelay
 // ? Restores the frame thread suspend value set via cvars
 /* ------------------------------------------------------------------------- */
-LLFUNC(RestoreDelay, cTimer->TimerRestoreDelay());
+LLFUNC(RestoreDelay, 0, cTimer->TimerRestoreDelay())
 /* ========================================================================= */
 // $ Core.SetDelay
-// > Time:integer=Milliseconds to delay by each tick
+// > Millisecs:integer=Milliseconds to delay by each tick
 // ? This is the same as updating the cvar 'app_delay' apart from that the cvar
 // ? is not updated and not saved.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetDelay,
-  cTimer->TimerUpdateDelay(LCGETNUMLG(unsigned int, 1, 0, 1000,
-    "Milliseconds")));
+LLFUNC(SetDelay, 0, const AgUIntLG aMilliseconds{lS, 1, 0, 1000};
+  cTimer->TimerUpdateDelay(aMilliseconds))
 /* ========================================================================= */
 // $ Core.PidRunning
 // > Id:integer=The pid number to check
@@ -118,20 +127,18 @@ LLFUNC(SetDelay,
 // ? specified executable matches, true is returned, else false. Specifying
 // ? pid zero will cause an exception.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(PidRunning, 1,
-  LCPUSHVAR(cSystem->IsPidRunning(LCGETINTLG(unsigned int, 1,
-    1, StdMaxUInt, "Pid"))));
+LLFUNC(PidRunning, 1, const AgPid aPid{lS, 1};
+  LuaUtilPushVar(lS, cSystem->IsPidRunning(aPid)))
 /* ========================================================================= */
 // $ Core.KillPid
-// > Pid:integer=The pid of the executable to kill
+// > Pid:integer=The pid of the executable to kill.
 // < Result:boolean=The process is killed?
 // ? Kills the specified process id. This only works on pids that were
-// ? originally spawned by the engine. Specifying
-// ? pid zero will cause an exception.
+// ? originally spawned by the engine. Specifying pid zero will cause an
+// ? exception.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(KillPid, 1,
-  LCPUSHVAR(cSystem->TerminatePid(LCGETINTLG(unsigned int, 1,
-    1, StdMaxUInt, "Pid"))));
+LLFUNC(KillPid, 1, const AgPid aPid{lS, 1};
+  LuaUtilPushVar(lS, cSystem->TerminatePid(aPid)))
 /* ========================================================================= */
 // $ Core.SetIcon
 // > Filename:string=The filenames of the large icon to set.
@@ -140,7 +147,7 @@ LLFUNCEX(KillPid, 1,
 // ? but the first and the last icon are dropped so make sure you list the
 // ? first filename as the large icon and the last filename as the small icon.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetIcon, cDisplay->SetIconFromLua(LCGETCPPSTRING(1, "Filenames")));
+LLFUNC(SetIcon, 0, cDisplay->SetIconFromLua(AgString{lS, 1}))
 /* ========================================================================= */
 // $ Core.WaitAsync
 // ? Delays main thread execution until ALL asynchronous threads have completed
@@ -148,79 +155,80 @@ LLFUNC(SetIcon, cDisplay->SetIconFromLua(LCGETCPPSTRING(1, "Filenames")));
 // ? therefore this call should only really be used in emergencies. Sockets
 // ? are NOT synchronied. Use Sockets.CloseAll() to do that.
 /* ------------------------------------------------------------------------- */
-LLFUNC(WaitAsync, cCore->CoreWaitAllAsync());
+LLFUNC(WaitAsync, 0, cCore->CoreWaitAllAsync())
 /* ========================================================================= */
 // $ Core.Stack
-// < Stack:string=The current stack trace
-// > Message:string=The message to prefix
-// ? Returns the current stack as a string formatted by the engine and not Lua
-// ? This is needed for example when you use xpcall() with an error handler
-// ? Note that pcall() error messages do not include the stack.
+// < Stack:string=The current stack trace.
+// > Text:string=The message to prefix.
+// ? Returns the current stack as a string formatted by the engine and not
+// ? Lua. This is needed for example when you use xpcall() with an error
+// ? handler. Note that pcall() error messages do not include the stack.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Stack, 1, LCPUSHVAR(LCGETCPPSTRING(1, "Message") + LuaUtilStack(lS)));
+LLFUNC(Stack, 1, const AgCStringChar aString{lS, 1};
+  LuaUtilPushVar(lS, StrAppend(aString, LuaUtilStack(lS))))
 /* ========================================================================= */
 // $ Core.OnTick
-// > Func:function=The main tick function to change to
-// ? On initialisation of IfLua:: The function address of 'MainTick' is
+// > Func:function=The main tick function to change to.
+// ? On initialisation of IfLua:: The function address of 'MainTick' is.
 // ? stored in the LUA registry for quick successive execution. Thus to change
 // ? this function, you need to run this command with the function you want to
 // ? change to.
 /* ------------------------------------------------------------------------- */
-LLFUNC(OnTick, LCSETEVENTCB(cLua->lrMainTick));
+LLFUNC(OnTick, 0, cLua->SetLuaRef(lS, cLua->lrMainTick))
 /* ========================================================================= */
 // $ Core.OnEnd
-// > Func:function=The main end function to change to
-// ? The function address to execute when the engine has been asked to
+// > Func:function=The main end function to change to.
+// ? The function address to execute when the engine has been asked to.
 // ? terminate. The function _MUST_ call Core.Done() when that function has
 // ? finished tidying up or the engine will soft-lock. Calling this when the
 // ? engine is already terminating will do nothing so use Core.SetMain()
 // ? instead if you want to change to a new main tick function.
 /* ------------------------------------------------------------------------- */
-LLFUNC(OnEnd, LCSETEVENTCB(cLua->lrMainEnd));
+LLFUNC(OnEnd, 0, cLua->SetLuaRef(lS, cLua->lrMainEnd))
 /* ========================================================================= */
 // $ Core.Write
-// > Text:string=Text to write to console.
+// > String:string=Text to write to console.
 // ? Writes the specified line of text directly to the console with no regard
 // ? to colour of text.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Write, cConsole->AddLine(COLOUR_CYAN, LCGETCPPSTRING(1, "String")));
+LLFUNC(Write, 0, cConsole->AddLine(COLOUR_CYAN, AgString{lS, 1}))
 /* ========================================================================= */
 // $ Core.WriteEx
-// > Text:string=Text to write to console.
+// > Message:string=Text to write to console.
 // > Colour:integer=The optional colour to use.
 // ? Writes the specified line of text directly to the console with the
 // ? specified text colour.
 /* ------------------------------------------------------------------------- */
-LLFUNC(WriteEx,
-  cConsole->AddLine(LCGETINTLGE(Colour, 2, COLOUR_BLACK, COLOUR_MAX, "Colour"),
-  LCGETCPPSTRINGNE(1, "String")));
+LLFUNC(WriteEx, 0,
+  const AgString aMessage{lS, 1};
+  const AgIntegerLGE<Colour> aColour{lS, 2, COLOUR_BLACK, COLOUR_MAX};
+  cConsole->AddLine(aColour, aMessage))
 /* ========================================================================= */
 // $ Core.StatusLeft
-// > Text:string=Console status text
+// > String:string=Console status text.
 // ? In bot mode, this function will set the text to appear when no text is
 // ? input into the input bar. Useful for customised stats. It will update
 // ? every second.
 /* ------------------------------------------------------------------------- */
-LLFUNC(StatusLeft, cConsole->SetStatusLeft(LCGETCPPSTRING(1, "String")));
+LLFUNC(StatusLeft, 0, cConsole->SetStatusLeft(AgString{lS, 1}))
 /* ========================================================================= */
 // $ Core.StatusRight
-// > Text:string=Console status text
+// > String:string=Console status text.
 // ? In bot mode, this function will set the text to appear when no text is
 // ? input into the input bar. Useful for customised stats. It will update
 // ? every second.
 /* ------------------------------------------------------------------------- */
-LLFUNC(StatusRight,
-  cConsole->SetStatusRight(LCGETCPPSTRING(1, "String")));
+LLFUNC(StatusRight, 0, cConsole->SetStatusRight(AgString{lS, 1}))
 /* ========================================================================= */
 // $ Core.ScrollDown
-// ? Scrolls the console up one line
+// ? Scrolls the console up one line.
 /* ------------------------------------------------------------------------- */
-LLFUNC(ScrollDown, cConsole->MoveLogDown());
+LLFUNC(ScrollDown, 0, cConsole->MoveLogDown())
 /* ========================================================================= */
 // $ Core.ScrollUp
-// ? Scrolls the console up one line
+// ? Scrolls the console up one line.
 /* ------------------------------------------------------------------------- */
-LLFUNC(ScrollUp, cConsole->MoveLogUp());
+LLFUNC(ScrollUp, 0, cConsole->MoveLogUp())
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Core.* namespace functions structure                                ## **

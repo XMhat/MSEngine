@@ -281,7 +281,7 @@ CTOR_MEM_BEGIN_CSLAVE(Threads, Thread, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Thread)              // Disable copy constructor and operator
 };/* ======================================================================= */
-CTOR_END(Threads,,,,stRunning{0});
+CTOR_END(Threads, Thread,,,, stRunning{0});
 /* -- Thread sync helper --------------------------------------------------- */
 template<class Callbacks>class ThreadSyncHelper : private Callbacks
 { /* -------------------------------------------------------------- */ private:

@@ -94,8 +94,8 @@ typedef array<JoyAxisInfo, GLFW_GAMEPAD_AXIS_LAST+1> JoyAxisList;
 class JoyButtonInfo
 { /* -- Private variables ----------------------------------------- */ private:
   const int        iId;                // Button unique identifier
-  unsigned int     uiUnbuffered;       // Current unbuffered butn press state
-  unsigned int     uiBuffered;         // Current buffered butn press state
+  unsigned int     uiUnbuffered,       // Current unbuffered butn press state
+                   uiBuffered;         // Current buffered butn press state
   /* -- Get button id ---------------------------------------------- */ public:
   int ButtonGetId(void) const { return iId; }
   /* -- Get unbuffered state (GLFW_RELEASE or GLFW_PRESS) ------------------ */
@@ -369,17 +369,19 @@ static class Input final :             // Handles keyboard, mouse & controllers
                    iWinWidthD2,        // Actual half window width
                    iWinHeightD2;       // Actual half window height
   /* -- Set cursor position ------------------------------------------------ */
-  void OnSetCurPos(const EvtMain::Cell &epData)
-  { // This function is called on an event sent by cEvtMain->Add. It it assume
+  void OnSetCurPos(const EvtMainEvent &emeEvent)
+  { // Get reference to actual arguments vector
+    const EvtMainArgs &emaArgs = emeEvent.aArgs;
+    // This function is called on an event sent by cEvtMain->Add. It it assume
     // to send only two parameters which is the newly requested X and Y
     // position. Glfw says that SetCursorPos should only be used in the Window
     // thread, so this is why it can't be an on-demand call.
     // More information:- https://www.glfw.org/docs/3.1/group__input.html
     // Calculate new position based on main fbo matrix.
     const float
-      fAdjX = (epData.vParams[0].f - cFboCore->fboMain.ffcStage.GetCoLeft()) /
+      fAdjX = (emaArgs[0].f - cFboCore->fboMain.ffcStage.GetCoLeft()) /
         cFboCore->fboMain.GetCoRight() * GetWindowWidth(),
-      fAdjY = (epData.vParams[1].f - cFboCore->fboMain.ffcStage.GetCoTop()) /
+      fAdjY = (emaArgs[1].f - cFboCore->fboMain.ffcStage.GetCoTop()) /
         cFboCore->fboMain.GetCoBottom() * GetWindowHeight(),
       // Clamp the new position to the window bounds.
       fNewX = UtilClamp(fAdjX, 0.0f, cFboCore->fboMain.GetCoRight() - 1.0f),
@@ -389,18 +391,18 @@ static class Input final :             // Handles keyboard, mouse & controllers
                            static_cast<double>(fNewY));
   }
   /* -- Filtered key pressed ----------------------------------------------- */
-  void OnFilteredKey(const EvtMain::Cell &epData)
+  void OnFilteredKey(const EvtMainEvent &emeEvent)
   { // Get key pressed
-    const unsigned int uiKey = epData.vParams[1].ui;
+    const unsigned int uiKey = emeEvent.aArgs[1].ui;
     // If console is enabled, send it to console instead
     if(cConsole->IsVisible()) return cConsole->OnCharPress(uiKey);
     // Else send the key to lua callbacks
     lfOnChar.LuaFuncDispatch(uiKey);
   }
   /* -- Mouse went inside the window --------------------------------------- */
-  void OnMouseFocus(const EvtMain::Cell &epData)
+  void OnMouseFocus(const EvtMainEvent &emeEvent)
   { // Get and check state
-    const int iState = epData.vParams[1].i;
+    const int iState = emeEvent.aArgs[1].i;
     switch(iState)
     { // Mouse is in the window? Set mouse in window flag
       case GLFW_TRUE: FlagSet(IF_MOUSEFOCUS); break;
@@ -418,40 +420,47 @@ static class Input final :             // Handles keyboard, mouse & controllers
     return lfOnMouseFocus.LuaFuncDispatch(iState);
   }
   /* -- Mouse wheel scroll ------------------------------------------------- */
-  void OnMouseWheel(const EvtMain::Cell &epData)
-  { // Get movements
-    const double dX = epData.vParams[1].d, dY = epData.vParams[2].d;
+  void OnMouseWheel(const EvtMainEvent &emeEvent)
+  { // Get reference to actual arguments vector
+    const EvtMainArgs &emaArgs = emeEvent.aArgs;
+    // Get movements
+    const double dX = emaArgs[1].d, dY = emaArgs[2].d;
     // If console is enabled, send it to console instead
     if(cConsole->IsVisible()) return cConGraphics->OnMouseWheel(dX, dY);
     // Set event to lua callbacks
     lfOnMouseScroll.LuaFuncDispatch(dX, dY);
   }
   /* -- Mouse button clicked ----------------------------------------------- */
-  void OnMouseClick(const EvtMain::Cell &epData)
-  { // Set event to lua callbacks
-    lfOnMouseClick.LuaFuncDispatch(epData.vParams[1].i, epData.vParams[2].i,
-      epData.vParams[3].i);
+  void OnMouseClick(const EvtMainEvent &emeEvent)
+  { // Get reference to actual arguments vector
+    const EvtMainArgs &emaArgs = emeEvent.aArgs;
+    // Set event to lua callbacks
+    lfOnMouseClick.LuaFuncDispatch(emaArgs[1].i, emaArgs[2].i, emaArgs[3].i);
   }
   /* -- Mouse button clicked ----------------------------------------------- */
-  void OnMouseMove(const EvtMain::Cell &epData)
-  { // Recalculate cursor position based on framebuffer size and send the
+  void OnMouseMove(const EvtMainEvent &emeEvent)
+  { // Get reference to actual arguments vector
+    const EvtMainArgs &emaArgs = emeEvent.aArgs;
+    // Recalculate cursor position based on framebuffer size and send the
     // new co-ordinates to the lua callback handler
     lfOnMouseMove.LuaFuncDispatch(
       static_cast<double>(cFboCore->fboMain.ffcStage.GetCoLeft()) +
-        ((epData.vParams[1].d/GetWindowWidth()) *
+        ((emaArgs[1].d / GetWindowWidth()) *
         static_cast<double>(cFboCore->fboMain.GetCoRight())),
       static_cast<double>(cFboCore->fboMain.ffcStage.GetCoTop()) +
-        ((epData.vParams[2].d/GetWindowHeight()) *
+        ((emaArgs[2].d / GetWindowHeight()) *
         static_cast<double>(cFboCore->fboMain.GetCoBottom())));
   }
   /* -- Unfiltered key pressed --------------------------------------------- */
-  void OnKeyPress(const EvtMain::Cell &epData)
-  { // Get key code and ignore if unknown key
-    const int iKey = epData.vParams[1].i;
+  void OnKeyPress(const EvtMainEvent &emeEvent)
+  { // Get reference to actual arguments vector
+    const EvtMainArgs &emaArgs = emeEvent.aArgs;
+    // Get key code and ignore if unknown key
+    const int iKey = emaArgs[1].i;
     if(iKey == GLFW_KEY_UNKNOWN) return;
     // Get modifier and actions and if Alt+Enter was pressed or released and
     // full-screen toggler enabled?
-    const int iState = epData.vParams[3].i, iMod = epData.vParams[4].i;
+    const int iState = emaArgs[3].i, iMod = emaArgs[4].i;
     // Check for full-screen/window toggle press
     if(iKey == GLFW_KEY_ENTER &&       // If the ENTER key was pressed? and
        iMod == GLFW_MOD_ALT &&         // ...ALT key is held? and
@@ -491,10 +500,10 @@ static class Input final :             // Handles keyboard, mouse & controllers
       // We handled this key so do not dispatch it to scripts
       return;
     } // Send lua event for key
-    lfOnKey.LuaFuncDispatch(iKey, iState, iMod, epData.vParams[2].i);
+    lfOnKey.LuaFuncDispatch(iKey, iState, iMod, emaArgs[2].i);
   }
   /* -- Files dragged and dropped on window--------------------------------- */
-  void OnDragDrop(const EvtMain::Cell &)
+  void OnDragDrop(const EvtMainEvent&)
   { // Get files and return if empty
     StrVector &vFiles = cGlFW->WinGetFiles();
     if(vFiles.empty()) return;
@@ -505,11 +514,13 @@ static class Input final :             // Handles keyboard, mouse & controllers
     vFiles.shrink_to_fit();
   }
   /* -- Joystick state changed --------------------------------------------- */
-  void OnJoyState(const EvtMain::Cell &epData)
-  { // Get joystick id as int
-    const int iId = epData.vParams[0].i;
+  void OnJoyState(const EvtMainEvent &emeEvent)
+  { // Get reference to actual arguments vector
+    const EvtMainArgs &emaArgs = emeEvent.aArgs;
+    // Get joystick id as int
+    const int iId = emaArgs[0].i;
     // What happened to the joystick?
-    switch(const int iState = epData.vParams[1].i)
+    switch(const int iState = emaArgs[1].i)
     { // Connected? Setup joystick and return
       case GLFW_CONNECTED:
         return SetupJoystickAndDispatch(static_cast<size_t>(iId));
@@ -526,7 +537,7 @@ static class Input final :             // Handles keyboard, mouse & controllers
     }
   }
   /* -- Window past event--------------------------------------------------- */
-  void OnWindowPaste(const EvtMain::Cell&)
+  void OnWindowPaste(const EvtMainEvent&)
   { // Get text in clipboard
     UtfDecoder utfString{ cGlFW->WinGetClipboard() };
     // For each character, ddd the character to queue if valid
@@ -575,18 +586,9 @@ static class Input final :             // Handles keyboard, mouse & controllers
     // Update half size
     UpdateWindowSizeD2();
   }
-  /* -- Get cursor position ------------------------------------------------ */
-  void GetCursorPos(double &dX, double &dY) const
-  { // Get the cursor position
-    cGlFW->WinGetCursorPos(dX, dY);
-    // Translate cursor position to framebuffer aspect
-    dX = static_cast<double>(cFboCore->fboMain.ffcStage.GetCoLeft()) +
-      ((dX/GetWindowWidth()) *
-        static_cast<double>(cFboCore->fboMain.GetCoRight()));
-    dY = static_cast<double>(cFboCore->fboMain.ffcStage.GetCoTop()) +
-      ((dY/GetWindowHeight()) *
-        static_cast<double>(cFboCore->fboMain.GetCoBottom()));
-  }
+  /* -- Request input state ------------------------------------------------ */
+  void RequestMousePosition(void) const
+    { cEvtWin->AddUnblock(EWC_WIN_CURPOSGET); }
   /* -- Forcefully move the cursor ----------------------------------------- */
   void SetCursorPos(const double dX, const double dY)
     { cEvtMain->Add(EMC_INP_SET_CUR_POS, dX, dY); }

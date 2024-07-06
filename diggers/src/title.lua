@@ -10,25 +10,23 @@
 -- Copyr. (c) MS-Design, 2024   Copyr. (c) Millennium Interactive Ltd., 1994 --
 -- ========================================================================= --
 -- Core function aliases --------------------------------------------------- --
-local floor<const>, random<const>, insert<const>
-      = -- ----------------------------------------------------------------- --
-      math.floor, math.random, table.insert;
+local pairs<const>, random<const> = pairs, math.random;
 -- M-Engine function aliases ----------------------------------------------- --
 local InfoRAM<const>, DisplayVRAM<const>, UtilBytes<const>,
-      VariableGetInt<const>
-      = -- ----------------------------------------------------------------- --
-      Info.RAM, Display.VRAM, Util.Bytes, Variable.GetInt;
+  VariableGetInt<const> = Info.RAM, Display.VRAM, Util.Bytes, Variable.GetInt;
 -- Consts ------------------------------------------------------------------ --
 local iCVAppTitle<const> = Variable.Internal.app_version;
 local strVersion<const> = VariableGetInt(iCVAppTitle).." ";
 -- Diggers function and data aliases --------------------------------------- --
-local LoadResources, SetCallbacks, SetCursor, aLevelData,
-  aObjectTypes, LoadLevel, IsMouseInBounds, aCursorIdData, aSfxData,
-  IsButtonReleased, PlayStaticSound, Fade, aCreditsData, IsKeyReleased,
-  InitLobby, DeInitLevel, InitNewGame, fontTiny, fontLittle, fontLarge,
-  GetGameTicks, RenderTerrain, RenderObjects, SelectObject, GameProc,
-  RegisterFBUCallback, aObjects, GetActivePlayer, GetOpponentPlayer,
-  LoadSaveData;
+local DeInitLevel, Fade, GameProc, GetActivePlayer, GetGameTicks,
+  GetOpponentPlayer, InitLobby, InitNewGame, IsButtonReleased, IsKeyReleased,
+  IsMouseInBounds, LoadLevel, LoadResources, LoadSaveData, PlayStaticSound,
+  ProcessViewPort, RegisterFBUCallback, RenderObjects, RenderTerrain,
+  SelectObject, SetCallbacks, SetCursor, aCreditsData, aCursorIdData,
+  aLevelsData, aObjectTypes, aObjects, aSfxData, fontLarge, fontLittle,
+  fontTiny;
+-- Assets required --------------------------------------------------------- --
+local aAssets<const> = { { T = 2, F = "title", P = { 0 } } };
 -- Initialise the title screen function ------------------------------------ --
 local function InitTitle()
   -- When title resources have loaded?
@@ -47,13 +45,13 @@ local function InitTitle()
     local strSubTitle;
     -- Set credits
     local strCredits<const> =
-      "ORIGINAL VERSIONS BY TOBY SIMPSON AND MIKE FROGGATT\n"..
-      "(C) 1994 MILLENNIUM INTERACTIVE LTD. ALL RIGHTS RESERVED\n\rcffffff4f"..
-      "POWERED BY MS-ENGINE (C) 2024 MS-DESIGN. ALL RIGHTS RESERVED\n"..
-      "PRESS F1 TO SETUP MS-ENGINE OR F2 FOR ACKNOWLEDGEMENTS AT ANY TIME"
+      "ORIGINAL VERSIONS BY TOBY SIMPSON AND MIKE FROGGATT\n\z
+       (C) 1994 MILLENNIUM INTERACTIVE LTD. ALL RIGHTS RESERVED\n\rcffffff4f\z
+       POWERED BY MS-ENGINE (C) 2024 MS-DESIGN. ALL RIGHTS RESERVED\n\z
+       PRESS F1 TO SETUP MS-ENGINE OR F2 FOR ACKNOWLEDGEMENTS AT ANY TIME";
     -- Main demo level loader
     local function LoadDemoLevel(strMusic);
-      -- Setup framebuffer updated callback
+      -- Setup frame buffer updated callback
       local function OnFrameBufferUpdated(...)
         local _ _, _, iStageL, _, iStageR, _ = ...;
       end
@@ -68,13 +66,13 @@ local function InitTitle()
           RenderTerrain();
           RenderObjects();
           -- Render title objects
-          texTitle:BlitSLT(1, 79, 12-n1);
-          texTitle:BlitSLT(2, iStageL-n1, 72);
-          texTitle:BlitSLT(3, (iStageR-168)+n2, 72);
+          texTitle:BlitSLT(1, 79, 12 - n1);
+          texTitle:BlitSLT(2, iStageL - n1, 72);
+          texTitle:BlitSLT(3, (iStageR - 168) + n2, 72);
           -- Render status text
           fontTiny:SetCRGB(1, 0.9, 0);
-          fontTiny:PrintC(160, 58-n1, strSubTitle);
-          fontTiny:PrintC(160, 206+n1, strCredits);
+          fontTiny:PrintC(160, 58 - n1, strSubTitle);
+          fontTiny:PrintC(160, 206 + n1, strCredits);
           -- Move components in
           n1 = n1 - (n1 * 0.1);
           n2 = n2 - (n2 * 0.1);
@@ -87,7 +85,7 @@ local function InitTitle()
             -- Render title objects
             texTitle:BlitSLT(1, 79, 12);
             texTitle:BlitSLT(2, iStageL, 72);
-            texTitle:BlitSLT(3, iStageR-168, 72);
+            texTitle:BlitSLT(3, iStageR - 168, 72);
             -- Render status text
             fontTiny:SetCRGB(1, 0.9, 0);
             fontTiny:PrintC(160, 58, strSubTitle);
@@ -101,7 +99,7 @@ local function InitTitle()
         RenderEnterAnimProc = RenderAnimProcInitial;
         RenderEnterAnimProc();
       end
-      -- Render outprocedure
+      -- Render fade out procedure
       local function RenderLeaveAnimProc()
         -- Scroll in amount
         local n1, n2 = 160, 168;
@@ -111,13 +109,13 @@ local function InitTitle()
           RenderTerrain();
           RenderObjects();
           -- Render title objects
-          texTitle:BlitSLT(1, 79, -148+n1);
-          texTitle:BlitSLT(2, iStageL-168+n1, 72);
-          texTitle:BlitSLT(3, iStageR-n2, 72);
+          texTitle:BlitSLT(1, 79, -148 + n1);
+          texTitle:BlitSLT(2, iStageL - 168 + n1, 72);
+          texTitle:BlitSLT(3, iStageR - n2, 72);
           -- Render status text
           fontTiny:SetCRGB(1, 0.9, 0);
-          fontTiny:PrintC(160, 58-n1, strSubTitle);
-          fontTiny:PrintC(160, 370-n1, strCredits);
+          fontTiny:PrintC(160, 58 - n1, strSubTitle);
+          fontTiny:PrintC(160, 370 - n1, strCredits);
           -- Move components in
           n1 = n1 - (n1 * 0.05);
           n2 = n2 - (n2 * 0.05);
@@ -147,7 +145,7 @@ local function InitTitle()
         local function NoVRAM()
           -- Get and display only RAM
           local _, _, nFree<const> = InfoRAM();
-          strSubTitle = strVersion..UtilBytes(nFree,1).." RAM FREE";
+          strSubTitle = strVersion..UtilBytes(nFree, 1).." RAM FREE";
         end
         -- Set NO VRAM available callback
         fcbRC = NoVRAM;
@@ -157,37 +155,36 @@ local function InitTitle()
           -- Get VRAM available and if is shared memory?
           local _, _, nVFree<const>, _, bIsShared<const> = DisplayVRAM();
           if bIsShared then
-            strSubTitle = strVersion..UtilBytes(nVFree,1).. "(S+V) FREE";
+            strSubTitle = strVersion..UtilBytes(nVFree, 1).. "(S+V) FREE";
           -- Is dedicated memory?
           else
             -- Get free main memory
             local _, _, nFree<const> = InfoRAM();
             -- If both the same the memory is shared
-            strSubTitle = strVersion..UtilBytes(nFree,1).."(S)/"..
-                                      UtilBytes(nVFree,1).. "(V) FREE";
+            strSubTitle = strVersion..UtilBytes(nFree, 1).."(S)/"..
+                                      UtilBytes(nVFree, 1).. "(V) FREE";
           end
         end
         -- Set VRAM available callback
         fcbRC = VRAM;
       end
+      -- Set subtitle
+      fcbRC();
       -- When demo level as loaded?
       local function DemoLevelProc()
         -- Process game functions
         GameProc();
+        -- Process viewport scrolling
+        ProcessViewPort();
         -- Select a random digger on the first tick
-        if GetGameTicks() % 600 == 1 then
+        if GetGameTicks() % 600 == 599 then
           -- Set next RAM update time
           iNextUpdate = GetGameTicks() + 60;
-          -- Set subtitle
-          fcbRC();
           -- Find a digger from the opposing player
-          local aOpponentPlayer<const> = GetOpponentPlayer();
-          local aObject = aOpponentPlayer.D[random(aOpponentPlayer.DT)];
-          -- Not found? Try player 1
-          if not aObject then
-            local aActivePlayer<const> = GetActivePlayer();
-            aObject = aActivePlayer.D[random(aActivePlayer.DT)];
-          end
+          local aPlayer;
+          if random() >= 0.5 then aPlayer = GetOpponentPlayer();
+                             else aPlayer = GetActivePlayer() end;
+          local aObject = aPlayer.D[random(#aPlayer.D)];
           -- Still not found? Find a random object
           if not aObject then aObject = aObjects[random(#aObjects)] end;
           -- Select the object if we got something!
@@ -197,7 +194,7 @@ local function InitTitle()
         if GetGameTicks() % 1500 < 1499 then return end;
         -- When demo level faded out?
         local function OnDemoLevelFadeOut()
-          -- Remove framebuffer update callback
+          -- Remove frame buffer update callback
           RegisterFBUCallback("title");
           -- De-init level
           DeInitLevel();
@@ -232,7 +229,7 @@ local function InitTitle()
             -- Set text colour
             fontLittle:SetCRGB(1, 0.7, 1);
             fontLarge:SetCRGB(1, 1, 1);
-            -- Blit background
+            -- Draw background
             texTitle:BlitSLT(tileCredits, -96, 0);
             -- Display text compared to amount of time passed
             fontLittle:PrintC(160, iCredits1Y, strCredits1);
@@ -246,7 +243,7 @@ local function InitTitle()
               iCreditsCounter = iCreditsCounter + 1;
               if iCreditsCounter < iCreditsNext then return end;
               -- Set next credit and return if succeeded
-              if SetCredit(iCreditId+1) then return end;
+              if SetCredit(iCreditId + 1) then return end;
               -- Fade out to credits and load demo level
               Fade(0, 1, 0.04, RenderCredits, LoadDemoLevel);
             end
@@ -275,7 +272,7 @@ local function InitTitle()
       -- Input function
       local function DemoLevelInput()
         -- Mouse over quit button?
-        if IsMouseInBounds(iStageL+54, 152, iStageL+122, 181) then
+        if IsMouseInBounds(iStageL + 54, 152, iStageL + 122, 181) then
           -- Show exit button
           SetCursor(aCursorIdData.EXIT);
           -- Ignore if not clicked
@@ -288,7 +285,7 @@ local function InitTitle()
           return Fade(0, 1, 0.04, RenderLeaveProc, OnFadeOutQuit, true);
         end
         -- Mouse over start button?
-        if IsMouseInBounds(iStageR-123, 137, iStageR-37, 183) then
+        if IsMouseInBounds(iStageR - 123, 137, iStageR - 37, 183) then
           -- Show ok button
           SetCursor(aCursorIdData.OK);
           -- Return if not clicked
@@ -297,11 +294,11 @@ local function InitTitle()
           PlayStaticSound(aSfxData.SELECT);
           -- When faded out to start game
           local function OnFadeOutStart()
-            -- Remove framebuffer update callback
+            -- Remove frame buffer update callback
             RegisterFBUCallback("title");
             -- De-init level
             DeInitLevel();
-            -- Unreference loaded assets for garbage collector
+            -- Dereference loaded assets for garbage collector
             texTitle = nil;
             -- Reset game parameters
             InitNewGame();
@@ -318,10 +315,11 @@ local function InitTitle()
       local aZones = { };
       -- Build array of all the completed levels from every save slot
       for iSlotId, aSlotData in pairs(LoadSaveData()) do
-        for iZoneId in pairs(aSlotData[16]) do insert(aZones, iZoneId) end;
+        for iZoneId in pairs(aSlotData[16]) do
+          aZones[1 + #aZones] = iZoneId end;
       end
       -- If zero or one zone completed then allow showing the first two zones
-      if #aZones <= 1 then aZones = { 1, 2 } end;
+      if #aZones <= 1 then aZones[1], aZones[2] = 1, 2 end;
       -- Load AI vs AI and use random zone
       LoadLevel(aZones[random(#aZones)], strMusic, aObjectTypes.DIGRANDOM,
         true, aObjectTypes.DIGRANDOM, true, DemoLevelProc, DemoLevelRender,
@@ -331,25 +329,26 @@ local function InitTitle()
     LoadDemoLevel("title");
   end
   -- Load title screen resource
-  LoadResources("Title Screen", {{T=2,F="title",P={0}}}, OnTitleLoaded);
+  LoadResources("Title Screen", aAssets, OnTitleLoaded);
 end
 -- Return imports and exports ---------------------------------------------- --
 return { A = { InitTitle = InitTitle }, F = function(GetAPI)
   -- Imports --------------------------------------------------------------- --
-  LoadResources, SetCallbacks, SetCursor, aLevelData, aObjectTypes, LoadLevel,
+  LoadResources, SetCallbacks, SetCursor, aLevelsData, aObjectTypes, LoadLevel,
   IsMouseInBounds, aCursorIdData, aSfxData, IsButtonReleased, PlayStaticSound,
   Fade, aCreditsData, IsKeyReleased, InitLobby, DeInitLevel, InitNewGame,
   fontTiny, fontLittle, fontLarge, GetGameTicks, RenderTerrain, RenderObjects,
   SelectObject, GameProc, RegisterFBUCallback, aObjects, GetActivePlayer,
-  GetOpponentPlayer, LoadSaveData
+  GetOpponentPlayer, LoadSaveData, ProcessViewPort
   = -- --------------------------------------------------------------------- --
-  GetAPI("LoadResources", "SetCallbacks", "SetCursor", "aLevelData",
+  GetAPI("LoadResources", "SetCallbacks", "SetCursor", "aLevelsData",
     "aObjectTypes", "LoadLevel", "IsMouseInBounds", "aCursorIdData", "aSfxData",
     "IsButtonReleased", "PlayStaticSound", "Fade", "aCreditsData",
     "IsKeyReleased", "InitLobby", "DeInitLevel", "InitNewGame", "fontTiny",
     "fontLittle", "fontLarge", "GetGameTicks", "RenderTerrain",
     "RenderObjects", "SelectObject", "GameProc", "RegisterFBUCallback",
-    "aObjects", "GetActivePlayer", "GetOpponentPlayer", "LoadSaveData");
+    "aObjects", "GetActivePlayer", "GetOpponentPlayer", "LoadSaveData",
+    "ProcessViewPort");
   -- ----------------------------------------------------------------------- --
 end };
 -- End-of-File ============================================================= --

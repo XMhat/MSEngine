@@ -17,7 +17,7 @@
 /* ========================================================================= */
 namespace LLSql {                      // Sql namespace
 /* -- Dependencies --------------------------------------------------------- */
-using namespace ISql::P;
+using namespace ISql::P;               using namespace Common;
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Stat.* namespace functions                                          ## **
@@ -27,19 +27,19 @@ using namespace ISql::P;
 // < Code:integer=Last error code.
 // ? Returns the error code of the last SQLlite operation.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Error, 1, LCPUSHVAR(cSql->GetError()));
+LLFUNC(Error, 1, LuaUtilPushVar(lS, cSql->GetError()))
 /* ========================================================================= */
 // $ Sql.ErrorStr
 // < Error:string=Last error reason string.
 // ? Returns the string version of the error code.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ErrorStr, 1, LCPUSHVAR(cSql->GetErrorAsIdString()));
+LLFUNC(ErrorStr, 1, LuaUtilPushVar(lS, cSql->GetErrorAsIdString()))
 /* ========================================================================= */
 // $ Sql.Reason
 // < Error:string=Last error reason string.
 // ? Returns the error string of the last SQLlite operation.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Reason, 1, LCPUSHVAR(cSql->GetErrorStr()));
+LLFUNC(Reason, 1, LuaUtilPushVar(lS, cSql->GetErrorStr()))
 /* ========================================================================= */
 // $ Sql.Records
 // < Records:table=Resulting records.
@@ -51,7 +51,7 @@ LLFUNCEX(Reason, 1, LCPUSHVAR(cSql->GetErrorStr()));
 // ?   etc...
 // ? }
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Records, 1, cSql->RecordsToLuaTable(lS));
+LLFUNC(Records, 1, cSql->RecordsToLuaTable(lS))
 /* ========================================================================= */
 // $ Sql.Exec
 // > Code:string=The SQLlite code to execute.
@@ -60,46 +60,45 @@ LLFUNCEX(Records, 1, cSql->RecordsToLuaTable(lS));
 // ? Execute the specified SQLlite statement. See
 // ? https://www.sqlite.org/docs.html for more information on the SQLlite API.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Exec, 1,
-  LCPUSHVAR(cSql->ExecuteFromLua(lS, LCGETCPPSTRING(1, "Command"))));
+LLFUNC(Exec, 1, LuaUtilPushVar(lS, cSql->ExecuteFromLua(lS, AgString{lS,1})))
 /* ========================================================================= */
 // $ Sql.Reset
 // ? Cleans up the last result, error and response.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Reset, cSql->Reset());
+LLFUNC(Reset, 0, cSql->Reset())
 /* ========================================================================= */
 // $ Sql.Affected
 // ? Returns number of affected rows in the last result
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Affected, 1, LCPUSHVAR(cSql->Affected()));
+LLFUNC(Affected, 1, LuaUtilPushVar(lS, cSql->Affected()))
 /* ========================================================================= */
 // $ Sql.Time
 // ? Returns time taken with the last executed SQL statement
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Time, 1, LCPUSHVAR(cSql->Time()));
+LLFUNC(Time, 1, LuaUtilPushVar(lS, cSql->Time()))
 /* ========================================================================= */
 // $ Sql.Active
 // ? Returns wether a transaction is in progress or not.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Active, 1, LCPUSHVAR(cSql->Active()));
+LLFUNC(Active, 1, LuaUtilPushVar(lS, cSql->Active()))
 /* ========================================================================= */
 // $ Sql.Size
 // ? Returns size of database.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Size, 1, LCPUSHVAR(cSql->Size()));
+LLFUNC(Size, 1, LuaUtilPushVar(lS, cSql->Size()))
 /* ========================================================================= */
 // $ Sql.Begin
 // < Result:integer=The result of the operation
 // ? Begins a new transaction. Returns non-zero if the call fails.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Begin, 1, LCPUSHVAR(cSql->Begin()));
+LLFUNC(Begin, 1, LuaUtilPushVar(lS, cSql->Begin()))
 /* ========================================================================= */
 // $ Sql.Commit
 // < Result:integer=The result of the operation
 // ? Ends an existing transaction and commits it. Returns non-zero if the call
 // ? fails.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(End, 1, LCPUSHVAR(cSql->End()));
+LLFUNC(End, 1, LuaUtilPushVar(lS, cSql->End()))
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Sql.* namespace functions structure                                 ## **

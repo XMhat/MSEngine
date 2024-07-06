@@ -10,23 +10,28 @@
 -- Copyr. (c) MS-Design, 2024   Copyr. (c) Millennium Interactive Ltd., 1994 --
 -- ========================================================================= --
 -- Core function aliases --------------------------------------------------- --
-local floor<const>, random<const>, format<const>
-      = -- ----------------------------------------------------------------- --
-      math.floor, math.random, string.format;
+local random<const>, format<const>, error<const>, tostring<const> =
+  math.random, string.format, error, tostring;
 -- M-Engine function aliases ----------------------------------------------- --
-local InfoTicks<const> = Info.Ticks;
+local InfoTicks<const>, UtilIsInteger<const>, UtilIsTable<const> =
+  Info.Ticks, Util.IsInteger, Util.IsTable;
 -- Diggers function and data aliases --------------------------------------- --
-local LoadResources, Fade, SetCallbacks, IsMouseInBounds, IsMouseNotInBounds,
-  aCursorIdData, SetCursor, aSfxData, PlayStaticSound, aSfxData, InitCon,
-  PlayMusic, IsButtonPressed, IsButtonReleased, IsScrollingDown, IsScrollingUp,
-  aObjectActions, aObjectJobs, aObjectDirections, aObjectData,
-  StopSound, LoopStaticSound, InitLobby, fontSpeech, fontLittle, fontTiny,
-  SetBottomRightTip, RenderInterface, BuyItem, GameProc, RenderShadow,
-  aShopData, ApplyObjectInventoryPerks;
+local BuyItem, Fade, GameProc, InitCon, InitLobby, IsButtonPressed,
+  IsButtonReleased, IsMouseInBounds, IsMouseNotInBounds, IsScrollingDown,
+  IsScrollingUp, LoadResources, LoopStaticSound, PlayMusic, PlayStaticSound,
+  RenderInterface, RenderShadow, SetBottomRightTip, SetCallbacks, SetCursor,
+  StopSound, aCursorIdData, aObjectActions, aObjectData, aObjectDirections,
+  aObjectJobs, aSfxData, aShopData, fontLittle, fontSpeech, fontTiny;
+-- Assets required --------------------------------------------------------- --
+local aAssets<const> = { { T = 1, F = "shop", P = { 65, 65, 1, 1, 0 } },
+                         { T = 7, F = "shop", P = { } } };
 -- Initialise the shop screen ---------------------------------------------- --
 local function InitShop(aActiveObject)
   -- Check parameter
-  assert(type(aActiveObject)=="table", "Object owner not specified!");
+  if not UtilIsTable(aActiveObject) then
+    error("Invalid customer object specified! "..tostring(aActiveObject)) end;
+  -- Get object data
+  local aObjectInfo<const> = aActiveObject.OD;
   -- When shop assets have loaded?
   local function OnLoaded(aResources)
     -- Play shop music
@@ -36,7 +41,7 @@ local function InitShop(aActiveObject)
     local texShop = aResources[1].H;
     texShop:TileSTC(25);
     -- Cache tile co-ordinates
-    local iTileBG<const> =  texShop:TileA(208, 312, 512, 512);
+    local iTileBG<const> = texShop:TileA(208, 312, 512, 512);
     local iTileSpeech<const> = texShop:TileA(  0, 417, 112, 441);
     local iTileKeeper<const> =
       texShop:TileA(  0, 264,  48, 312);
@@ -86,22 +91,22 @@ local function InitShop(aActiveObject)
     local sMsg, sTip, iCarryable = "SELECT ME TO OPEN SHOP", nil, nil;
     -- Test if current object can carry the specified object
     local function UpdateCarryable()
-      iCarryable = floor((aActiveObject.OD.STRENGTH-aActiveObject.IW)/
-        aBuyObject.WEIGHT);
+      iCarryable = (aObjectInfo.STRENGTH - aActiveObject.IW) //
+        aBuyObject.WEIGHT;
     end
     -- Set actual new object
     local function SetObject(iId)
       -- Check id is valid
-      assert(type(iId)=="number", "No id specified to set!");
+      if not UtilIsInteger(iId) then error("No id specified to set!") end;
       -- Get object type from shelf and make sure it's valid
       local iObjType<const> = aShopData[iId];
-      assert(type(iObjType)=="number",
-        "No shop data for item '"..iId.."'!");
+      if not UtilIsInteger(iObjType) then
+        error("No shop data for item '"..iId.."'!") end;
       -- Set object information and make sure the object data is valid
       iBuyId, aBuyObjectId, aBuyObject, iBuyHoloId =
         iId, iObjType, aObjectData[iObjType], iId - 1;
-      assert(type(aBuyObject)=="table",
-        "No object data for object type '"..iObjType.."'!");
+      if not UtilIsTable(aBuyObject) then
+        error("No object data for object type '"..iObjType.."'!") end;
       -- Animate the holographic emitter
       iHoloAnimTileId, iHoloAnimTileIdMod = 13, 1;
       -- Update Digger carrying weight
@@ -119,15 +124,15 @@ local function InitShop(aActiveObject)
     local function ShopLogic()
       -- Perform game functions in the background
       GameProc();
-      -- Time elapsed to animate the holgraphic emitter?
+      -- Time elapsed to animate the holographic emitter?
       if InfoTicks() % 4 == 0 then
-        -- Animate the holoemitter
+        -- Animate the holographic emitter
         iHoloAnimTileId = iHoloAnimTileId + iHoloAnimTileIdMod;
         if iHoloAnimTileId == 19 then iHoloAnimTileIdMod = -1;
         elseif iHoloAnimTileId == 15 then iHoloAnimTileIdMod = 1 end;
       end
       -- Time elapsed to animate the door and forklift?
-      if InfoTicks()%8 == 0 then
+      if InfoTicks() % 8 == 0 then
         -- Animate the door
         iAnimDoor = iAnimDoor + iAnimDoorMod;
         if iAnimDoor == iAnimDoorMax then iAnimDoorMod = -1;
@@ -137,8 +142,6 @@ local function InitShop(aActiveObject)
         if iForkAnim == iForkAnimMax then
           iForkAnim, iForkAnimMod = iTileFork, 0 end;
       end
-      -- Update selected object inventory perks (first aid)
-      ApplyObjectInventoryPerks(aActiveObject);
     end
     -- Render function
     local function ShopRender()
@@ -151,7 +154,7 @@ local function InitShop(aActiveObject)
       -- Draw animations
       if iAnimDoor ~= 0 then texShop:BlitSLT(iAnimDoor, 272, 79) end;
       if random() < 0.001 and iAnimDoorMod == 0 then iAnimDoorMod = 1 end;
-      texShop:BlitSLT(iTileLights+floor((InfoTicks()/10)%3), 9, 174);
+      texShop:BlitSLT(InfoTicks() // 10 % 3 + iTileLights, 9, 174);
       if iForkAnim ~= 0 then texShop:BlitSLT(iForkAnim, 112, 95) end;
       if random() < 0.001 and iForkAnimMod == 0 then iForkAnimMod = 1 end;
       -- Shop is open
@@ -170,7 +173,7 @@ local function InitShop(aActiveObject)
       end
       -- Speech ticks set
       if iSpeechTicks > 0 then
-        texShop:BlitSLT(iTileKeeper+floor(InfoTicks()/10)%4, 112, 127);
+        texShop:BlitSLT(InfoTicks() // 10 % 4 + iTileKeeper, 112, 127);
         texShop:BlitSLT(iTileSpeech, 0, 160);
         fontSpeech:PrintC(57, 168, sMsg);
         iSpeechTicks = iSpeechTicks-1;
@@ -194,7 +197,7 @@ local function InitShop(aActiveObject)
         sTip = "WAIT";
         return SetCursor(aCursorIdData.WAIT);
       end
-      -- Player clicked the FTarg?
+      -- Player clicked the F'Targ?
       if not bShopOpen and IsMouseInBounds(94, 130, 153, 206) then
         SetTipAndCursor("OPEN SHOP", aCursorIdData.SELECT);
         -- Mouse button clicked?
@@ -204,18 +207,19 @@ local function InitShop(aActiveObject)
           LoopStaticSound(aSfxData.HOLOHUM);
           bShopOpen = true;
         end
-      -- Mouse over exit
+      -- Mouse over exit?
       elseif IsMouseNotInBounds(8, 8, 312, 208) then
+        -- Set help for player
         SetTipAndCursor("GO TO LOBBY", aCursorIdData.EXIT);
         -- Mouse button clicked?
         if IsButtonPressed(0) then
           -- Play sound
           PlayStaticSound(aSfxData.SELECT);
-          -- Stop holohum sound
+          -- Stop humming sound
           StopSound(aSfxData.HOLOHUM);
           -- Shop no longer opened
           bShopOpen = false;
-          -- Unreference assets for garbage collector
+          -- Dereference assets for garbage collector
           texShop = false;
           -- Start the loading waiting procedure
           SetCallbacks(GameProc, RenderInterface, nil);
@@ -240,8 +244,7 @@ local function InitShop(aActiveObject)
           -- Mouse button clicked?
           if IsButtonPressed(0) then
             -- Check weight and if can't carry this?
-            if aActiveObject.IW+aBuyObject.WEIGHT >
-               aActiveObject.OD.STRENGTH then
+            if aActiveObject.IW + aBuyObject.WEIGHT > aObjectInfo.STRENGTH then
               SetSpeech("TOO HEAVY FOR YOU", aSfxData.ERROR);
             -- Try to buy it and if failed?
             elseif BuyItem(aActiveObject, aBuyObjectId) then
@@ -267,28 +270,26 @@ local function InitShop(aActiveObject)
     SetCallbacks(ShopLogic, ShopRender, ShopInput);
   end
   -- Load shop resources
-  LoadResources("Shop", {{T=1,F="shop",P={65,65,1,1,0}},
-                         {T=7,F="shop",P={ } }}, OnLoaded);
+  LoadResources("Shop", aAssets, OnLoaded);
 end
 -- Exports and imports ----------------------------------------------------- --
 return { A = { InitShop = InitShop }, F = function(GetAPI)
   -- Imports --------------------------------------------------------------- --
-  LoadResources, SetCallbacks, SetCursor, IsMouseInBounds, aSfxData,
-  PlayStaticSound, Fade, IsMouseNotInBounds, aCursorIdData, InitCon, PlayMusic,
-  IsButtonPressed, IsButtonReleased, IsScrollingDown, IsScrollingUp,
-  aObjectActions, aObjectJobs, aObjectDirections, aObjectData,
-  StopSound, LoopStaticSound, InitLobby, fontSpeech, fontLittle, fontTiny,
-  SetBottomRightTip, RenderInterface, BuyItem, GameProc, RenderShadow,
-  aShopData, ApplyObjectInventoryPerks
+  BuyItem, Fade, GameProc, InitCon, InitLobby, IsButtonPressed,
+  IsButtonReleased, IsMouseInBounds, IsMouseNotInBounds, IsScrollingDown,
+  IsScrollingUp, LoadResources, LoopStaticSound, PlayMusic, PlayStaticSound,
+  RenderInterface, RenderShadow, SetBottomRightTip, SetCallbacks, SetCursor,
+  StopSound, aCursorIdData, aObjectActions, aObjectData, aObjectDirections,
+  aObjectJobs, aSfxData, aShopData, fontLittle, fontSpeech, fontTiny
   = -- --------------------------------------------------------------------- --
-  GetAPI("LoadResources", "SetCallbacks", "SetCursor", "IsMouseInBounds",
-    "aSfxData", "PlayStaticSound", "Fade", "IsMouseNotInBounds",
-    "aCursorIdData", "InitCon", "PlayMusic", "IsButtonPressed",
-    "IsButtonReleased", "IsScrollingDown", "IsScrollingUp",
-    "aObjectActions", "aObjectJobs", "aObjectDirections", "aObjectData",
-    "StopSound", "LoopStaticSound", "InitLobby", "fontSpeech", "fontLittle",
-    "fontTiny", "SetBottomRightTip", "RenderInterface", "BuyItem", "GameProc",
-    "RenderShadow", "aShopData", "ApplyObjectInventoryPerks");
+  GetAPI("BuyItem", "Fade", "GameProc","InitCon", "InitLobby",
+    "IsButtonPressed", "IsButtonReleased", "IsMouseInBounds",
+    "IsMouseNotInBounds", "IsScrollingDown", "IsScrollingUp", "LoadResources",
+    "LoopStaticSound", "PlayMusic", "PlayStaticSound", "RenderInterface",
+    "RenderShadow", "SetBottomRightTip", "SetCallbacks", "SetCursor",
+    "StopSound", "aCursorIdData", "aObjectActions", "aObjectData",
+    "aObjectDirections", "aObjectJobs", "aSfxData", "aShopData", "fontLittle",
+    "fontSpeech", "fontTiny");
   -- ----------------------------------------------------------------------- --
 end };
 -- End-of-File ============================================================= --

@@ -10,28 +10,31 @@
 -- Copyr. (c) MS-Design, 2024   Copyr. (c) Millennium Interactive Ltd., 1994 --
 -- ========================================================================= --
 -- Core function aliases --------------------------------------------------- --
-local unpack<const>, insert<const>, assert<const>, pairs<const>, ipairs<const>,
-  max<const>, min<const>, floor<const>, sin<const>, cos<const>, type<const>,
-  tostring<const>, mininteger<const>
-  = -- --------------------------------------------------------------------- --
-  table.unpack, table.insert, assert, pairs, ipairs, math.max, math.min,
-  math.floor, math.sin, math.cos, type, tostring, math.mininteger;
+local unpack<const>, error<const>, pairs<const>, ipairs<const>, max<const>,
+  min<const>, floor<const>, sin<const>, cos<const>, tostring<const>,
+  mininteger<const> =
+    table.unpack, error, pairs, ipairs, math.max, math.min, math.floor,
+    math.sin, math.cos, tostring, math.mininteger;
 -- M-Engine function aliases ----------------------------------------------- --
-local InfoTime<const> = Info.Time;
+local InfoTime<const>, UtilIsInteger<const>, UtilIsString<const> =
+  Info.Time, Util.IsInteger, Util.IsString;
 -- Diggers function and data aliases --------------------------------------- --
-local LoadResources, Fade, SetCallbacks, aCursorIdData, SetCursor, aSfxData,
-  PlayStaticSound, InitTitle, PlayMusic, IsButtonReleased, RenderFade, texSpr,
-  fontLittle, fontTiny, RegisterFBUCallback, aGlobalData;
--- Init score screen function --------------------------------------------- --
+local Fade, InitTitle, IsButtonReleased, LoadResources, PlayMusic,
+  PlayStaticSound, RegisterFBUCallback, aGlobalData, RenderFade, SetCallbacks,
+  SetCursor, aCursorIdData, aSfxData, fontLittle, fontTiny, texSpr;
+-- Assets required --------------------------------------------------------- --
+local aAssets<const> = { { T = 2, F = "title", P = { 0 } },
+                         { T = 7, F = "score", P = { } } };
+-- Init score screen function ---------------------------------------------- --
 local function InitScore()
   -- When score assets have loaded?
   local function OnLoaded(aResources)
-    -- Register framebuffer update
+    -- Register frame buffer update
     local iStageL;
     RegisterFBUCallback("score", function(...)
       local _ _, _, iStageL, _, _, _ = ...;
     end);
-    -- Play score muisc
+    -- Play score music
     PlayMusic(aResources[2].H);
     -- Setup lobby texture
     local texTitle = aResources[1].H;
@@ -44,16 +47,19 @@ local function InitScore()
     -- Function to add a new total
     local function AddTotal(sLabel, iValue, iScorePerTick)
       -- Check parameters
-      assert(type(sLabel)=="string" and #sLabel > 0);
-      assert(type(iValue)=="number" and floor(iValue) == iValue);
-      assert(type(iScorePerTick)=="number" and
-        floor(iScorePerTick) == iScorePerTick);
+      if not UtilIsString(sLabel) then
+        error("Label string is invalid! "..tostring(sLabel)) end;
+      if #sLabel == 0 then error("Label is empty!") end;
+      if not UtilIsInteger(iValue) then
+        error("Value integer is invalid! "..tostring(iValue)) end;
+      if not UtilIsInteger(iScorePerTick) then
+        error("Score/tick integer is invalid! "..tostring(iScorePerTick)) end;
       -- Starting X and movement callback are conditional
       local nStartX, fcbMove;
       -- If next id is odd?
       if #aTotals % 2 == 0 then
         -- Start from left
-        nStartX = -480-(#aTotals*16);
+        nStartX = -480 - (#aTotals * 16);
         -- Set call back to move in from left
         fcbMove = function(aData)
           -- Ignore if in centre of screen
@@ -72,7 +78,7 @@ local function InitScore()
         end
       end
       -- Prepare the category in the categories list
-      insert(aTotals, {
+      aTotals[1 + #aTotals] = {
         1,                             -- [01] Operational function
         0,                             -- [02] Current 'value' animated tally
         iValue,                        -- [03] Total 'value' remaining to tally
@@ -83,7 +89,7 @@ local function InitScore()
         32 + (#aTotals * 14),          -- [08] Starting Y position
         0,                             -- [09] Actual final score for item
         fcbMove                        -- [10] Move animation callback
-      });
+      };
     end
     -- Count levels completed
     local iZonesComplete = 0;
@@ -130,7 +136,7 @@ local function InitScore()
       texTitle:BlitSLTRB(1, 320+Width,      Height+LY, 320,     LY);
       texTitle:BlitSLTRB(1, 320+Width,  240+Height+LY, 320, 240+LY);
       texTitle:BlitSLTRB(1, 320+Width,  480+Height+LY, 320, 480+LY);
-      -- Reset texlobby colour
+      -- Reset lobby texture colour
       texTitle:SetCRGBA(1, 1, 1, 1);
     end
     -- Bars position
@@ -328,7 +334,7 @@ local function InitScore()
           -- Update rank
           strScoreC = GetRank();
         elseif aData[1] == 2 then
-          -- Incrememt total categories procedded and if we did all of them?
+          -- Increment total categories proceeded and if we did all of them?
           iTotalId = iTotalId + 1;
           if iTotalId > #aTotals then
             -- Set exit cursor
@@ -343,7 +349,7 @@ local function InitScore()
               local function OnFadeOut()
                 -- Remove callback
                 RegisterFBUCallback("score");
-                -- Unreference assets for garbage collection
+                -- Dereference assets for garbage collection
                 texTitle = true;
                 --- ...and return to title screen!
                 InitTitle(true);
@@ -363,8 +369,7 @@ local function InitScore()
     Fade(1, 0, 0.025, RenderSimple, OnFadeIn);
   end
   -- Load score assets
-  LoadResources("Game Over", {{T=2,F="title",P={0}},
-                              {T=7,F="score",P={ }}}, OnLoaded);
+  LoadResources("Game Over", aAssets, OnLoaded);
 end
 -- Exports and imports ----------------------------------------------------- --
 return { A = { InitScore = InitScore }, F = function(GetAPI)

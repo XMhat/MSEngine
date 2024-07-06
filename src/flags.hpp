@@ -18,12 +18,12 @@ template<typename IntType>class FlagsStorageUnsafe
 { /* -- Values storage ------------------------------------------ */ protected:
   IntType          itV;                // The simple value
   /* -- Reset with specified value ----------------------------------------- */
-  template<typename AnyType>void FlagSetInt(const AnyType atO)
-    { itV = static_cast<IntType>(atO); }
+  template<typename AnyType>void FlagSetInt(const AnyType atValue)
+    { itV = static_cast<IntType>(atValue); }
   /* -- Swap values -------------------------------------------------------- */
-  void FlagSwapStorage(FlagsStorageUnsafe &fO) { swap(itV, fO.itV); }
+  void FlagSwapStorage(FlagsStorageUnsafe &fcValue) { swap(itV, fcValue.itV); }
   /* -- Implicit init constructor (todo, make explicit but many errors!) --- */
-  explicit FlagsStorageUnsafe(const IntType iV) : itV{ iV } {}
+  explicit FlagsStorageUnsafe(const IntType itValue) : itV{ itValue } {}
   /* -- Get values ------------------------------------------------- */ public:
   template<typename AnyType=IntType>AnyType FlagGet(void) const
     { return static_cast<AnyType>(itV); }
@@ -38,12 +38,12 @@ class FlagsStorageSafe :
   /* -- Base classes ------------------------------------------------------- */
   private SafeType
 { /* -- Set values ---------------------------------------------- */ protected:
-  template<typename AnyType>void FlagSetInt(const AnyType atO)
-    { this->store(static_cast<IntType>(atO)); }
+  template<typename AnyType>void FlagSetInt(const AnyType atValue)
+    { this->store(static_cast<IntType>(atValue)); }
   /* -- Swap values -------------------------------------------------------- */
-  void FlagSwapStorage(FlagsStorageSafe &fO) { swap(fO); }
+  void FlagSwapStorage(FlagsStorageSafe &fcValue) { swap(fcValue); }
   /* -- Implicit init constructor (todo, make explicit but many errors!) --- */
-  explicit FlagsStorageSafe(const IntType iV) : SafeType{ iV } {}
+  explicit FlagsStorageSafe(const IntType itValue) : SafeType{ itValue } {}
   /* -- Get values ------------------------------------------------- */ public:
   template<typename AnyType=IntType>AnyType FlagGet(void) const
     { return static_cast<AnyType>(this->load()); }
@@ -58,76 +58,77 @@ class FlagsConst :
   /* -- Base classes ------------------------------------------------------- */
   public StorageType
 { /* -- Is bits lesser than specified value? ----------------------- */ public:
-  bool FlagIsLesser(const FlagsConst &fO) const
-    { return this->FlagGet() < fO.FlagGet(); }
+  bool FlagIsLesser(const FlagsConst &fcValue) const
+    { return this->FlagGet() < fcValue.FlagGet(); }
   /* -- Is bits lesser or equal to specified value? ------------------------ */
-  bool FlagIsLesserEqual(const FlagsConst &fO) const
-    { return this->FlagGet() <= fO.FlagGet(); }
+  bool FlagIsLesserEqual(const FlagsConst &fcValue) const
+    { return this->FlagGet() <= fcValue.FlagGet(); }
   /* -- Is bits greater to specified value? -------------------------------- */
-  bool FlagIsGreater(const FlagsConst &fO) const
-    { return this->FlagGet() > fO.FlagGet(); }
+  bool FlagIsGreater(const FlagsConst &fcValue) const
+    { return this->FlagGet() > fcValue.FlagGet(); }
   /* -- Is bits greater or equal to specified value? ----------------------- */
-  bool FlagIsGreaterEqual(const FlagsConst &fO) const
-    { return this->FlagGet() >= fO.FlagGet(); }
+  bool FlagIsGreaterEqual(const FlagsConst &fcValue) const
+    { return this->FlagGet() >= fcValue.FlagGet(); }
   /* -- Are there not any flags set? --------------------------------------- */
   bool FlagIsZero(void) const
     { return this->FlagGet() == static_cast<IntType>(0); }
   /* -- Are any flags actually set? ---------------------------------------- */
   bool FlagIsNonZero(void) const { return !FlagIsZero(); }
   /* -- Is flag set with specified value? ---------------------------------- */
-  bool FlagIsSet(const FlagsConst &fO) const
-    { return (this->FlagGet() & fO.FlagGet()) == fO.FlagGet(); }
+  bool FlagIsSet(const FlagsConst &fcValue) const
+    { return (this->FlagGet() & fcValue.FlagGet()) == fcValue.FlagGet(); }
   /* -- Is any flag set with specified value? ------------------------------ */
-  bool FlagIsAnyOfSet(const FlagsConst &fO) const
-    { return (this->FlagGet() & fO.FlagGet()) != 0; }
+  bool FlagIsAnyOfSet(const FlagsConst &fcValue) const
+    { return (this->FlagGet() & fcValue.FlagGet()) != 0; }
   /* -- Is bit clear of specified value? ----------------------------------- */
-  bool FlagIsClear(const FlagsConst &fO) const
-    { return (~this->FlagGet() & fO.FlagGet()) == fO.FlagGet(); }
+  bool FlagIsClear(const FlagsConst &fcValue) const
+    { return (~this->FlagGet() & fcValue.FlagGet()) == fcValue.FlagGet(); }
   /* -- Is bit clear of specified value? ----------------------------------- */
-  bool FlagIsAnyOfClear(const FlagsConst &fO) const
-    { return (~this->FlagGet() & fO.FlagGet()) != 0; }
+  bool FlagIsAnyOfClear(const FlagsConst &fcValue) const
+    { return (~this->FlagGet() & fcValue.FlagGet()) != 0; }
   /* -- Is flag set with specified value and clear with another? ----------- */
-  bool FlagIsSetAndClear(const FlagsConst &fO1, const FlagsConst &fO2) const
-    { return FlagIsSet(fO1) && FlagIsClear(fO2); }
+  bool FlagIsSetAndClear(const FlagsConst &fcSet,
+    const FlagsConst &fcClear) const
+      { return FlagIsSet(fcSet) && FlagIsClear(fcClear); }
   /* -- Flags are not masked in specified other flags? --------------------- */
-  bool FlagIsNotInMask(const FlagsConst &fO) const
-    { return this->FlagGet() & ~fO.FlagGet(); }
+  bool FlagIsNotInMask(const FlagsConst &fcValue) const
+    { return this->FlagGet() & ~fcValue.FlagGet(); }
   /* -- Flags are masked in specified other flags? ------------------------- */
-  bool FlagIsInMask(const FlagsConst &fO) const
-    { return !FlagIsNotInMask(fO); }
+  bool FlagIsInMask(const FlagsConst &fcValue) const
+    { return !FlagIsNotInMask(fcValue); }
   /* -- Is any of these flags set and cleared? ----------------------------- */
   bool FlagIsAnyOfSetAndClear(void) const { return false; }
   template<typename ...VarArgs>
-    bool FlagIsAnyOfSetAndClear(const FlagsConst &fO1, const FlagsConst &fO2,
-      const VarArgs &...vaVars) const
-  { return FlagIsSetAndClear(fO1, fO2) ?
+    bool FlagIsAnyOfSetAndClear(const FlagsConst &fcSet,
+      const FlagsConst &fcClear, const VarArgs &...vaVars) const
+  { return FlagIsSetAndClear(fcSet, fcClear) ?
       true : FlagIsAnyOfSetAndClear(vaVars...); }
   /* -- Is bits set? ------------------------------------------------------- */
-  bool FlagIsEqualToBool(const FlagsConst &fO, const bool bS) const
-    { return FlagIsSet(fO) == bS; }
+  bool FlagIsEqualToBool(const FlagsConst &fcValue, const bool bState) const
+    { return FlagIsSet(fcValue) == bState; }
   /* -- Is bits not set? --------------------------------------------------- */
-  bool FlagIsNotEqualToBool(const FlagsConst &fO, const bool bS)
-    const { return FlagIsSet(fO) != bS; }
+  bool FlagIsNotEqualToBool(const FlagsConst &fcValue, const bool bState)
+    const { return FlagIsSet(fcValue) != bState; }
   /* -- Return one variable or another if set ------------------------------ */
   template<typename AnyType>
-    const AnyType FlagIsSetTwo(const FlagsConst &fO,
-      const AnyType tSet, const AnyType tClear) const
-  { return FlagIsSet(fO) ? tSet : tClear; }
+    const AnyType FlagIsSetTwo(const FlagsConst &fcValue,
+      const AnyType atSet, const AnyType atClear) const
+  { return FlagIsSet(fcValue) ? atSet : atClear; }
   /* -- Init constructors -------------------------------------------------- */
-  template<typename AnyType>explicit FlagsConst(const AnyType atV) :
-    StorageType{ static_cast<IntType>(atV) } { }
+  template<typename AnyType>explicit FlagsConst(const AnyType atValue) :
+    StorageType{ static_cast<IntType>(atValue) } { }
   /* -- Operators ---------------------------------------------------------- */
   const FlagsConst operator~(void) const
     { return FlagsConst{ ~this->template FlagGet<IntType>() }; }
-  const FlagsConst operator|(const FlagsConst &a) const
+  const FlagsConst operator|(const FlagsConst &fcRHS) const
     { return FlagsConst{ this->template FlagGet<IntType>() |
-                             a.template FlagGet<IntType>() }; }
-  const FlagsConst operator&(const FlagsConst &a) const
+                         fcRHS.template FlagGet<IntType>() }; }
+  const FlagsConst operator&(const FlagsConst &fcRHS) const
     { return FlagsConst{ this->template FlagGet<IntType>() &
-                             a.template FlagGet<IntType>() }; }
-  const FlagsConst operator^(const FlagsConst &a) const
+                         fcRHS.template FlagGet<IntType>() }; }
+  const FlagsConst operator^(const FlagsConst &fcRHS) const
     { return FlagsConst{ this->template FlagGet<IntType>() ^
-                             a.template FlagGet<IntType>() }; }
+                         fcRHS.template FlagGet<IntType>() }; }
   /* -- Direct access using class variable name which returns value -------- */
   operator IntType(void) const
     { return this->template FlagGet<IntType>(); }
@@ -143,36 +144,38 @@ struct Flags :
   /* -- Base classes ------------------------------------------------------- */
   public ConstType
 { /* -- Swap function ------------------------------------------------------ */
-  void FlagSwap(Flags &fO) { this->FlagSwapStorage(fO); }
+  void FlagSwap(Flags &fValue) { this->FlagSwapStorage(fValue); }
   /* -- Set bits ----------------------------------------------------------- */
-  void FlagSet(const IntType &itO) { this->FlagSetInt(this->FlagGet() | itO); }
-  void FlagSet(const ConstType &fO)
-    { this->FlagSetInt(this->FlagGet() | fO.FlagGet()); }
+  void FlagSet(const IntType &itOther)
+    { this->FlagSetInt(this->FlagGet() | itOther); }
+  void FlagSet(const ConstType &ctValue)
+    { this->FlagSetInt(this->FlagGet() | ctValue.FlagGet()); }
   /* -- Set all bits ------------------------------------------------------- */
-  void FlagReset(const IntType itO) { this->FlagSetInt(itO); }
-  void FlagReset(const ConstType &fO) { this->FlagSetInt(fO.FlagGet()); }
+  void FlagReset(const IntType itOther) { this->FlagSetInt(itOther); }
+  void FlagReset(const ConstType &ctValue)
+    { this->FlagSetInt(ctValue.FlagGet()); }
   void FlagReset(void) { this->FlagSetInt(0); }
   /* -- Not specified bits ------------------------------------------------- */
-  void FlagNot(const ConstType &fO)
-    { this->FlagSetInt(this->FlagGet() & ~fO.FlagGet()); }
+  void FlagNot(const ConstType &ctValue)
+    { this->FlagSetInt(this->FlagGet() & ~ctValue.FlagGet()); }
   /* -- Mask bits ---------------------------------------------------------- */
-  void FlagMask(const ConstType &fO)
-    { this->FlagSetInt(this->FlagGet() & fO.FlagGet()); }
+  void FlagMask(const ConstType &ctValue)
+    { this->FlagSetInt(this->FlagGet() & ctValue.FlagGet()); }
   /* -- Toggle specified bits ---------------------------------------------- */
-  void FlagToggle(const ConstType &fO)
-    { this->FlagSetInt(this->FlagGet() ^ fO.FlagGet()); }
+  void FlagToggle(const ConstType &ctValue)
+    { this->FlagSetInt(this->FlagGet() ^ ctValue.FlagGet()); }
   /* -- Clear specified bits ----------------------------------------------- */
-  void FlagClear(const ConstType &fO)
-    { FlagMask(ConstType{ ~fO.template FlagGet<IntType>() }); }
+  void FlagClear(const ConstType &ctValue)
+    { FlagMask(ConstType{ ~ctValue.template FlagGet<IntType>() }); }
   /* -- Add or clear bits -------------------------------------------------- */
-  void FlagSetOrClear(const ConstType &fO, const bool bX)
-    { if(bX) FlagSet(fO); else FlagClear(fO); }
+  void FlagSetOrClear(const ConstType &ctValue, const bool bCondition)
+    { if(bCondition) FlagSet(ctValue); else FlagClear(ctValue); }
   /* -- Add and clear bits from specified enum ----------------------------- */
-  void FlagSetAndClear(const ConstType &fS, const ConstType &fC)
-    { FlagSet(fS); FlagClear(fC); }
+  void FlagSetAndClear(const ConstType &ctSet, const ConstType &ctClear)
+    { FlagSet(ctSet); FlagClear(ctClear); }
   /* -- Init constructors -------------------------------------------------- */
-  explicit Flags(const IntType &itO) : ConstType{ itO } {}
-  explicit Flags(const ConstType &ctO) : ConstType{ ctO } {}
+  explicit Flags(const IntType &itOther) : ConstType{ itOther } {}
+  explicit Flags(const ConstType &ctOther) : ConstType{ ctOther } {}
   /* -- Default constructor ------------------------------------------------ */
   Flags(void) : ConstType{ 0 } {}
 };/* ----------------------------------------------------------------------- */
@@ -190,8 +193,8 @@ class SafeFlags :
   /* -- Base classes ------------------------------------------------------- */
   public FlagsType
 { /* -- Implicit init constructor (todo, make explicit!) ----------- */ public:
-  explicit SafeFlags(const ConstType &fO) : FlagsType{ fO } {}
-  explicit SafeFlags(const UConstType &fO) : FlagsType{ fO } {}
+  explicit SafeFlags(const ConstType &fcValue) : FlagsType{ fcValue } {}
+  explicit SafeFlags(const UConstType &fcValue) : FlagsType{ fcValue } {}
 };/* ----------------------------------------------------------------------- */
 /* == Flags helper macro =================================================== */
 #define BUILD_FLAGS_EX(n, s, ...) \

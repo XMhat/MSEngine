@@ -33,37 +33,54 @@
 /* ========================================================================= */
 namespace LLArchive {                  // Archive namespace
 /* -- Dependencies --------------------------------------------------------- */
-using namespace IArchive::P;
+using namespace IArchive::P;           using namespace Common;
+/* ========================================================================= **
+** ######################################################################### **
+** ## Archive common helper classes                                       ## **
+** ######################################################################### **
+** -- Read Archive class argument ------------------------------------------ */
+struct AgArchive : public ArClass<Archive> {
+  explicit AgArchive(lua_State*const lS, const int iArg) :
+    ArClass{*LuaUtilGetPtr<Archive>(lS, iArg, *cArchives)}{} };
+/* -- Create Archive class argument ---------------------------------------- */
+struct AcArchive : public ArClass<Archive> {
+  explicit AcArchive(lua_State*const lS) :
+    ArClass{*LuaUtilClassCreate<Archive>(lS, *cArchives)}{} };
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Archive:* member functions                                          ## **
 ** ######################################################################### **
 ** ========================================================================= */
+// $ Archive:Destroy
+// ? Destroys the archive and frees all the memory associated with it. The
+// ? object will no longer be useable after this call and an error will be
+// ? generated if accessed.
+/* ------------------------------------------------------------------------- */
+LLFUNC(Destroy, 0, LuaUtilClassDestroy<Archive>(lS, 1, *cArchives))
+/* ========================================================================= */
 // $ Archive:Dir
 // > Id:integer=Zero-index id of the directory
 // < Name:string=The filename of the directory inside the archive
 // < UId:integer=The unique id of the directory inside the archive
 // ? Returns the name and unique id of the directory in the archive
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(Dir)
-  const Archive &aCref = *LCGETPTR(1, Archive);
-  const StrUIntMapConstIt &itDir = aCref.GetDir(LCGETINTLGE(size_t,
-    2, 0, aCref.GetDirList().size(), "Index"));
-  LCPUSHVAR(itDir->first, itDir->second);
-LLFUNCENDEX(2)
+LLFUNC(Dir, 2,
+  const AgArchive aArchive{lS, 1};
+  const AgSizeTLGE aIndex{lS, 2, 0, aArchive().GetDirList().size()};
+  const StrUIntMapConstIt &suimciDir = aArchive().GetDir(aIndex);
+  LuaUtilPushVar(lS, suimciDir->first, suimciDir->second))
 /* ========================================================================= */
 // $ Archive:Dirs
 // < Directories:integer=Total number of directories inside the archive
 // ? Returns total number of the directories inside the archive.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Dirs, 1,
-  LCPUSHVAR(LCGETPTR(1, Archive)->GetDirList().size()));
+LLFUNC(Dirs, 1, LuaUtilPushVar(lS, AgArchive{lS, 1}().GetDirList().size()))
 /* ========================================================================= */
 // $ Archive:DirList
 // < Directories:Table=A list of directories inside the archive
 // ? Returns all the directories inside the archive.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(DirList, 1, LCTOTABLE(LCGETPTR(1, Archive)->GetDirList()));
+LLFUNC(DirList, 1, LuaUtilToTable(lS, AgArchive{lS, 1}().GetDirList()))
 /* ========================================================================= */
 // $ Archive:File
 // < Total:integer=Zero-index id of the file
@@ -71,61 +88,51 @@ LLFUNCEX(DirList, 1, LCTOTABLE(LCGETPTR(1, Archive)->GetDirList()));
 // > Id:integer=The unique id of the file inside the archive
 // ? Returns the name and unique id of the file in the archive
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(File)
-  const Archive &aCref = *LCGETPTR(1, Archive);
-  const StrUIntMapConstIt &itFile = aCref.GetFile(LCGETINTLGE(size_t, 2, 0,
-    aCref.GetFileList().size(), "Index"));
-  LCPUSHVAR(itFile->first, itFile->second);
-LLFUNCENDEX(2)
+LLFUNC(File, 2,
+  const AgArchive aArchive{lS, 1};
+  const AgSizeTLGE aIndex{lS, 2, 0, aArchive().GetFileList().size()};
+  const StrUIntMapConstIt &suimciFile = aArchive().GetFile(aIndex);
+  LuaUtilPushVar(lS, suimciFile->first, suimciFile->second))
 /* ========================================================================= */
 // $ Archive:Files
 // < Files:integer=Total number of files inside the archive
 // ? Returns total number of the files inside the archive.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Files, 1,
-  LCPUSHVAR(LCGETPTR(1, Archive)->GetFileList().size()));
+LLFUNC(Files, 1, LuaUtilPushVar(lS, AgArchive{lS, 1}().GetFileList().size()))
 /* ========================================================================= */
 // $ Archive:FileList
 // < Directories:Table=A list of files inside the archive
 // ? Returns all the files inside the archive.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(FileList, 1, LCTOTABLE(LCGETPTR(1, Archive)->GetFileList()));
+LLFUNC(FileList, 1, LuaUtilToTable(lS, AgArchive{lS, 1}().GetFileList()))
+/* ========================================================================= */
+// $ Archive:Id
+// < Id:integer=The id number of the Archive object.
+// ? Returns the unique id of the Archive object.
+/* ------------------------------------------------------------------------- */
+LLFUNC(Id, 1, LuaUtilPushVar(lS, AgArchive{lS, 1}().CtrGet()))
+/* ========================================================================= */
+// $ Archive:Name
+// < Name:string=Name of the archive.
+// ? Returns the name of the archive which was loaded.
+/* ------------------------------------------------------------------------- */
+LLFUNC(Name, 1, LuaUtilPushVar(lS, AgArchive{lS, 1}().IdentGet()))
 /* ========================================================================= */
 // $ Archive:Size
 // > Id:integer=The zero-index unique-id of the file/dir in archive
 // < Size:integer=The uncompressed size of the file/dir in the archive
 // ? Returns the uncompressed size of the file
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(Size)
-  const Archive &aCref = *LCGETPTR(1, Archive);
-  LCPUSHVAR(aCref.GetSize(LCGETINTLGE(size_t,
-    2, 0, aCref.GetTotal(), "Index")));
-LLFUNCENDEX(1)
+LLFUNC(Size, 1,
+  const AgArchive aArchive{lS, 1};
+  const AgSizeTLGE aIndex{lS, 2, 0, aArchive().GetTotal()};
+  LuaUtilPushVar(lS, aArchive().GetSize(aIndex)))
 /* ========================================================================= */
 // $ Archive:Total
 // < Total:integer=Total number of files and directories in archive
 // ? Returns the total number of files and directories in archive
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Total, 1, LCPUSHVAR(LCGETPTR(1, Archive)->GetTotal()));
-/* ========================================================================= */
-// $ Archive:Id
-// < Id:integer=The id number of the Archive object.
-// ? Returns the unique id of the Archive object.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(Id, 1, LCPUSHVAR(LCGETPTR(1, Archive)->CtrGet()));
-/* ========================================================================= */
-// $ Archive:Name
-// < Name:string=Name of the archive.
-// ? Returns the name of the archive which was loaded.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(Name, 1, LCPUSHVAR(LCGETPTR(1, Archive)->IdentGet()));
-/* ========================================================================= */
-// $ Archive:Destroy
-// ? Destroys the archive and frees all the memory associated with it. The
-// ? object will no longer be useable after this call and an error will be
-// ? generated if accessed.
-/* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(Destroy) LCCLASSDESTROY(1, Archive); LLFUNCEND
+LLFUNC(Total, 1, LuaUtilPushVar(lS, AgArchive{lS, 1}().GetTotal()))
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Archive:* member functions structure                                ## **
@@ -146,9 +153,9 @@ LLRSEND                                // Archive:* member functions end
 // ? Files on disk will always override any archived files. Please note that
 // ? you should NOT use solid archives or there could be extreme performance
 // ? issues while extracting files from it, this is by LZMA design.
-/* ========================================================================= */
-LLFUNCEX(Load, 1,
-  LCCLASSCREATE(Archive)->InitFromFileSafe(LCGETCPPFILE(1, "File")));
+/* ------------------------------------------------------------------------- */
+LLFUNC(Load, 1, const AgFilename aFilename{lS, 1};
+  AcArchive{lS}().SyncInitFileSafe(aFilename))
 /* ========================================================================= */
 // $ Archive.LoadAsync
 // > Filename:string=The filename of the archive to load
@@ -159,12 +166,16 @@ LLFUNCEX(Load, 1,
 // ? send an argument to the archive object that was created. See
 // ? Asset.Archive' for more notes about loading 7-zip files.
 /* ------------------------------------------------------------------------- */
-LLFUNC(LoadAsync, LCCLASSCREATE(Archive)->InitAsyncFile(lS));
+LLFUNC(LoadAsync, 0,
+  LuaUtilCheckParams(lS, 4);
+  const AgFilename aFilename{lS,1};
+  LuaUtilCheckFunc(lS, 2, 3, 4);
+  AcArchive{lS}().AsyncInitNone(lS, aFilename, "archivefile"))
 /* ========================================================================= */
 // $ Archive.WaitAsync
 // ? Halts main-thread execution until all async archive events have completed
 /* ------------------------------------------------------------------------- */
-LLFUNC(WaitAsync, cArchives->WaitAsync());
+LLFUNC(WaitAsync, 0, cArchives->WaitAsync())
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Archive.* namespace functions structure                             ## **

@@ -146,7 +146,7 @@ class PcmData :                        // Audio data structure
     swap(stAlloc, pcmRef.stAlloc);
     // Swap all channeld ata
     for(size_t stIndex = 0; stIndex < aPcm.size(); ++stIndex)
-      aPcm[stIndex].MemSwap(StdMove(pcmRef.aPcm[stIndex]));
+      aPcm[stIndex].MemSwap(pcmRef.aPcm[stIndex]);
   }
   /* -- Default constructor ------------------------------------------------ */
   PcmData(void) :

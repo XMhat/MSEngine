@@ -302,7 +302,8 @@ CTOR_MEM_BEGIN_CSLAVE(Sources, Source, ICHelperSafe),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Source)              // Supress copy constructor for safety
 };/* -- End ---------------------------------------------------------------- */
-CTOR_END(Sources,,,,fGVolume(0), fMVolume(0), fVVolume(0), fSVolume(0))
+CTOR_END(Sources, Source,,,, fGVolume(0.0f), fMVolume(0.0f), fVVolume(0.0f),
+  fSVolume(0.0f))
 /* -- Stop (multiple buffers) ---------------------------------------------- */
 static unsigned int SourceStop(const ALUIntVector &uiBuffers)
 { // Done if no buffers
@@ -347,10 +348,10 @@ static bool SourceCanMakeNew(void)
 static Source *SourceGetFromLua(lua_State*const lS)
 { // Try to get an idle source and pass it to Lua if found
   if(Source*const soNew = SourceGetFree())
-    return LuaUtilClassReuse<Source>(lS, "Source", soNew);
+    return LuaUtilClassReuse<Source>(lS, *cSources, soNew);
   // Else try to make a new one if we can
   return SourceCanMakeNew() ?
-    LuaUtilClassCreate<Source>(lS, "Source") : nullptr;
+    LuaUtilClassCreate<Source>(lS, *cSources) : nullptr;
 }
 /* == Return a free source ================================================= */
 static Source *GetSource(void)

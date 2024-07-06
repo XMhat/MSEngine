@@ -10,38 +10,54 @@
 -- Copyr. (c) MS-Design, 2024   Copyr. (c) Millennium Interactive Ltd., 1994 --
 -- ========================================================================= --
 -- Core function aliases --------------------------------------------------- --
-local insert<const>, unpack<const> = table.insert, table.unpack;
+local error<const>, tostring<const>, unpack<const> =
+  error, tostring, table.unpack;
 -- M-Engine aliases (optimisation) ----------------------------------------- --
-local InfoTicks<const> = Info.Ticks;
+local InfoTicks<const>, UtilIsTable<const>, UtilIsBoolean<const>,
+  UtilIsInteger<const> =
+    Info.Ticks, Util.IsTable, Util.IsBoolean, Util.IsInteger;
 -- Diggers function and data aliases --------------------------------------- --
-local LoadResources, PlayMusic, Fade, SetCallbacks, IsButtonReleased,
-  IsMouseInBounds, IsMouseNotInBounds, aCursorIdData, SetCursor, aSfxData,
-  PlayStaticSound, InitTitle, InitCon, InitScene, InitContinueGame, InitShop,
-  InitBank, EndConditionsCheck, SetBottomRightTipAndShadow, SetBottomRightTip,
-  RenderInterface, GameProc, RegisterFBUCallback, RenderShadow, aGlobalData,
-  fontSpeech;
+local EndConditionsCheck, Fade, GameProc, InitBank, InitCon, InitContinueGame,
+  InitScene, InitShop, InitTitle, IsButtonReleased, IsMouseInBounds,
+  IsMouseNotInBounds, LoadResources, PlayMusic, PlayStaticSound,
+  RegisterFBUCallback, RenderInterface, RenderShadow, SetBottomRightTip,
+  SetBottomRightTipAndShadow, SetCallbacks, SetCursor, aCursorIdData,
+  aGlobalData, aSfxData, fontSpeech;
+-- Assets required --------------------------------------------------------- --
+local aMusicAsset<const>          = { T = 7, F = "lobby",  P = { } };
+local aClosedTexture<const>       = { T = 2, F = "lobbyc", P = { 0 } };
+local aClosedAssetsNoMusic<const> = { aClosedTexture };
+local aClosedAssetsMusic<const>   = { aClosedTexture, aMusicAsset };
+local aOpenTexture<const>         = { T = 2, F = "lobbyo", P = { 0 } };
+local aOpenAssetsNoMusic<const>   = { aOpenTexture };
+local aOpenAssetsMusic<const>     = { aOpenTexture, aMusicAsset };
 -- Init lobby function ----------------------------------------------------- --
 local function InitLobby(aActiveObject, bNoSetMusic, iSaveMusicPos)
-  -- Active object must be specified or ommitted
-  assert(aActiveObject == nil or
-    type(aActiveObject)=="table", "Object owner not specified!");
-  -- No set music flag can be nil or a boolean
+  -- Active object must be specified or omitted
+  if aActiveObject ~= nil and not UtilIsTable(aActiveObject) then
+    error("Invalid object owner table! "..tostring(aActiveObject)) end;
+  -- No set music flag can be nil set to false as a result
   if bNoSetMusic == nil then bNoSetMusic = false;
-  else assert(type(bNoSetMusic)=="boolean", "No set music flag!") end;
-  -- Save music flag can be nil or a number (passed to PlayMusic)
-  assert(not aActiveObject or
-         not bNoSetMusic or
-         type(iSaveMusicPos)=="number", "No save pos id!");
+  -- Else if it's specified and it's not a boolean then show error
+  elseif not UtilIsBoolean(bNoSetMusic) then
+    error("Invalid set music flag! "..tostring(bNoSetMusic));
+  -- Must specify position if bNoSetMusic is false
+  elseif aActiveObject and not bNoSetMusic and
+    not UtilIsInteger(iSaveMusicPos) then
+      error("Invalid save pos id! "..tostring(iSaveMusicPos)); end;
   -- Resources to load
-  local aToLoad<const> = { };
-  -- Select texture to load
-  if aActiveObject then insert(aToLoad, {T=2,F="lobbyo",P={0}});
-                   else insert(aToLoad, {T=2,F="lobbyc",P={0}}) end;
-  -- Add music to play too if needed
-  if not bNoSetMusic then insert(aToLoad, {T=7,F="lobby",P={}}) end;
+  local aAssets;
+  -- In a game?
+  if aActiveObject then
+    -- Set resources depending on music requested
+    if bNoSetMusic then aAssets = aOpenAssetsNoMusic;
+                   else aAssets = aOpenAssetsMusic end;
+  -- Not in a game? Set resources depending on music requested
+  elseif bNoSetMusic then aAssets = aClosedAssetsNoMusic;
+                     else aAssets = aClosedAssetsMusic end;
   -- When assets have loaded?
   local function OnLoaded(aResources)
-    -- Register framebuffer update
+    -- Register frame buffer update
     local iStageL, iStageR;
     local function OnFrameBufferUpdate(...)
       local _; _, _, iStageL, _, iStageR, _ = ...;
@@ -101,7 +117,7 @@ local function InitLobby(aActiveObject, bNoSetMusic, iSaveMusicPos)
           if aInputClickCheckItem[1]() then
             -- Play sound and init the bank screen
             PlayStaticSound(aSfxData.SELECT);
-            -- Unreference assets for the garbage collector
+            -- Dereference assets for the garbage collector
             texLobby = nil;
             -- Start the loading waiting procedure
             SetCallbacks(GameProc, RenderInterface, nil);
@@ -137,14 +153,14 @@ local function InitLobby(aActiveObject, bNoSetMusic, iSaveMusicPos)
           end
         end
       end
-      -- Cache texure co-ordinates for background. We make sure we have one
+      -- Cache texture coordinates for background. We make sure we have one
       -- tile incase the texture was already cached and therefore the values
       -- will be overwritten
       texLobby:TileSTC(3);
       texLobby:TileS(0, 208, 312, 512, 512); -- Lobby open graphic
       texLobby:TileS(1, 305, 185, 398, 258); -- Fire animation graphic B
       texLobby:TileS(2, 400, 185, 493, 258); -- Fire animation graphic C
-      -- Change render procs
+      -- Change render procedures
       SetCallbacks(ProcLobbyOpen, RenderLobbyOpen, InputLobbyOpen);
     -- Lobby is closed?
     else
@@ -200,7 +216,7 @@ local function InitLobby(aActiveObject, bNoSetMusic, iSaveMusicPos)
             local function OnFadeOutEnterZone()
               -- Unregister callback
               RegisterFBUCallback("lobby");
-              -- Unreference assets for garbage collector
+              -- Dereference assets for garbage collector
               texLobby = nil;
               -- Begin game
               InitScene(aGlobalData.gSelectedLevel);
@@ -215,7 +231,7 @@ local function InitLobby(aActiveObject, bNoSetMusic, iSaveMusicPos)
             local function OnFadeOutTitle()
               -- Unregister callback
               RegisterFBUCallback("lobby");
-              -- Unreference assets for garbage collector
+              -- Dereference assets for garbage collector
               texLobby = nil;
               -- Load title screen
               InitTitle();
@@ -246,8 +262,8 @@ local function InitLobby(aActiveObject, bNoSetMusic, iSaveMusicPos)
       texLobby:TileSTC(6);
       texLobby:TileS(0,   0, 272, 512, 512); -- Background graphic
       texLobby:TileS(1,   0,   0, 304, 200); -- Lobby graphic
-      texLobby:TileS(2,   0, 214, 238, 271); -- Foilage graphic left
-      texLobby:TileS(3, 305,   0, 512, 184); -- Foilage graphic right
+      texLobby:TileS(2,   0, 214, 238, 271); -- Foliage graphic left
+      texLobby:TileS(3, 305,   0, 512, 184); -- Foliage graphic right
       texLobby:TileS(4, 305, 185, 398, 258); -- Fire animation graphic B
       texLobby:TileS(5, 400, 185, 493, 258); -- Fire animation graphic C
       -- When closed lobby has faded in? Set lobby callbacks
@@ -259,25 +275,25 @@ local function InitLobby(aActiveObject, bNoSetMusic, iSaveMusicPos)
     end
   end
   -- Load closed lobby texture
-  LoadResources("Lobby", aToLoad, OnLoaded);
+  LoadResources("Lobby", aAssets, OnLoaded);
 end
 -- Exports and imports------------------------------------------------------ --
 return { A = { InitLobby = InitLobby }, F = function(GetAPI)
   -- Imports --------------------------------------------------------------- --
-  LoadResources, PlayMusic, Fade, SetCallbacks, IsButtonReleased,
-  IsMouseInBounds, IsMouseNotInBounds, aCursorIdData, SetCursor, aSfxData,
-  PlayStaticSound, InitTitle, InitCon, InitScene, InitShop, InitBank,
-  InitContinueGame, EndConditionsCheck, SetBottomRightTipAndShadow,
-  SetBottomRightTip, RenderInterface, GameProc, RegisterFBUCallback,
-  RenderShadow, aGlobalData, fontSpeech
+  EndConditionsCheck, Fade, GameProc, InitBank, InitCon, InitContinueGame,
+  InitScene, InitShop, InitTitle, IsButtonReleased, IsMouseInBounds,
+  IsMouseNotInBounds, LoadResources, PlayMusic, PlayStaticSound,
+  RegisterFBUCallback, RenderInterface, RenderShadow, SetBottomRightTip,
+  SetBottomRightTipAndShadow, SetCallbacks, SetCursor, aCursorIdData,
+  aGlobalData, aSfxData, fontSpeech
   = -- --------------------------------------------------------------------- --
-  GetAPI("LoadResources", "PlayMusic", "Fade", "SetCallbacks",
+  GetAPI("EndConditionsCheck", "Fade", "GameProc", "InitBank", "InitCon",
+    "InitContinueGame", "InitScene", "InitShop", "InitTitle",
     "IsButtonReleased", "IsMouseInBounds", "IsMouseNotInBounds",
-    "aCursorIdData", "SetCursor", "aSfxData", "PlayStaticSound", "InitTitle",
-    "InitCon", "InitScene", "InitShop", "InitBank", "InitContinueGame",
-    "EndConditionsCheck", "SetBottomRightTipAndShadow", "SetBottomRightTip",
-    "RenderInterface", "GameProc", "RegisterFBUCallback", "RenderShadow",
-   "aGlobalData", "fontSpeech");
+    "LoadResources", "PlayMusic", "PlayStaticSound", "RegisterFBUCallback",
+    "RenderInterface", "RenderShadow", "SetBottomRightTip",
+    "SetBottomRightTipAndShadow", "SetCallbacks", "SetCursor", "aCursorIdData",
+    "aGlobalData", "aSfxData", "fontSpeech");
   -- ----------------------------------------------------------------------- --
 end };
 -- End-of-File ============================================================= --

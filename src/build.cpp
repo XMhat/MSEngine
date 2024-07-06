@@ -921,11 +921,15 @@ int GenDoc(void)
             while(!strPart.empty() && strPart.back() == ' ')
               strPart.pop_back();
             if(strPart.empty()) strPart = "<BR>";
-            // Last letter is now a full-stop? Don't add a new line
-            else if(strLine.back() != '.') strPart += " ";
-            // Else add line with a new line
-            else strPart += "<BR>";
-            // Add line to description
+            // Whats the last letter?
+            else switch(strLine.back())
+            { // Forward slash? (used to join long URL's)
+              case '/' : break;
+              // Full-stop for line breaks?
+              case '.' : strPart += "<BR>"; break;
+              // Join lines with a space for anything else
+              default  : strPart += " "; break;
+            } // Add line to description
             afCurrent.lDescription.push_back(strPart);
           } // Not enough characters so treat as line break
           else afCurrent.lDescription.push_back("<BR>");
@@ -3764,9 +3768,7 @@ int ExtLibScript(const string &strOpt, const string &strOpt2)
       { "{\"_G\", nullptr},",                cCommon->CBlank() },
     });
     // Perform increase of limits ---------------------------------------------
-    ReplaceText("src/lparser.c", "MAXVARS\t\t200",     "MAXVARS\t\t255");
-    ReplaceText("src/lua.h",     "MINSTACK\t20",       "MINSTACK\t255");
-    ReplaceText("src/luaconf.h", "MAXSTACK\t\t1000000","MAXSTACK\t\t16777215");
+    ReplaceText("src/lparser.c", "MAXVARS\t\t200", "MAXVARS\t\t253");
     // Add lua specific flags to compiler command line ------------------------
     const string strLuaSpecific{ "-TP -EHsc" }, // DO NOT COMPILE AS C!!!
                  strLuaDebug{ "-DLUA_USE_APICHECK" },
@@ -4167,13 +4169,13 @@ int Compile(const bool bSelf)
 }
 /* ------------------------------------------------------------------------- */
 int DebugApp(void)
-{ // Execute the debugger
+{ // Goto assets directory
+  SetDirectory(strName);
+  // Execute the debugger
   if(uiFlags & PF_X86)
-    return SystemNF(StrFormat(envActive.cpDBG,
-      strName, strName, 32, envActive.cpEXE));
+    return SystemF(envActive.cpDBG, strName, strName, 32, envActive.cpEXE);
   else if(uiFlags & PF_X64)
-    return SystemNF(StrFormat(envActive.cpDBG,
-      strName, strName, "", envActive.cpEXE));
+    return SystemF(envActive.cpDBG, strName, strName, "", envActive.cpEXE);
   else throw runtime_error{ "unknown arch" };
 }
 /* ------------------------------------------------------------------------- */
@@ -4274,7 +4276,7 @@ bool CheckCommandLine(string &strX1, string &strX2)
     "Show stderr output on execute."} },
   { "v", { 0, PF_SYSOUT,          PF_NONE,
     "Verbose stdout on execute."} },
-  { "x", { 0, PF_EXEC,            PF_COMPILE,
+  { "x", { 0, PF_EXEC,            PF_OTHERS,
     "Run and debug the executable."} } };
   /* ----------------------------------------------------------------------- */
   // Arguments needed

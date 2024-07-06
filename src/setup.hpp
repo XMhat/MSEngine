@@ -10,10 +10,19 @@
 #pragma once                           // Only one incursion allowed
 /* == Build type setup ===================================================== */
 #if defined(RELEASE)                   // Final public release version?
+# if defined(BETA)||defined(ALPHA)     // Make sure none of the others defined
+#   error Do not mix BETA or ALPHA with RELEASE!
+# endif                                // Incompatible symbol check
 # define BUILD_TYPE_LABEL              "Release"
 #elif defined(BETA)                    // Beta private release version?
+# if defined(RELEASE)||defined(ALPHA)  // Make sure none of the others defined
+#   error Do not mix RELEASE or ALPHA with BETA!
+# endif                                // Incompatible symbol check
 # define BUILD_TYPE_LABEL              "Beta"
 #elif defined(ALPHA)                   // Alpha/Debug private release version?
+# if defined(RELEASE)||defined(BETA)   // Make sure none of the others defined
+#   error Do not mix RELEASE or BETA with ALPHA!
+# endif                                // Incompatible symbol check
 # define BUILD_TYPE_LABEL              "Alpha"
 #else                                  // Not specified? (error!)
 # error Release type of either RELEASE, BETA or ALPHA was not defined.
@@ -29,9 +38,6 @@
 #  endif                               // _DEBUG define check
 #  define _CRTDBG_MAP_ALLOC            // >> Required by MSDN
 # elif defined(BETA)||defined(RELEASE) // Beta mode defined?
-#  if defined(_DEBUG)                  // Debug compiler options not specified?
-#   error BETA or RELEASE specified but DEBUG was also defined!
-#  endif                               // Debug compiler options check
 #  define NDEBUG                       // No assertions
 #  define _NDEBUG                      // No assertions
 # endif                                // Debugging check
@@ -53,6 +59,7 @@
 #  error This compiler is not supported. Please use clang or msvc!
 # endif                                // Check actual compiler
 # if defined(_M_AMD64)                 // Target is AMD architecture?
+#  define WINVER                0x0502 // Target Windows XP 64-bit or higher
 #  define CISC                         // Using INTEL or AMD instruction set
 #  define X64                          // Using X64 architechture
 #  if defined(__AVX2__)                // Target has AVX2 instructions?
@@ -62,15 +69,8 @@
 #  else                                // Generic AMD64?
 #   define BUILD_TARGET                "Win-X64-SSE2"
 #  endif                               // Floating point checks
-# elif defined(_M_ARM64)               // Target is ARM architecture?
-#  define RISC                         // Using ARM instruction set
-#  define X64                          // Using X64 architechture
-#  define BUILD_TARGET                 "Win-ARM64"
-# elif defined(_M_ARM)                 // Target is ARM architechture?
-#  define RISC                         // Using ARM instruction set
-#  define X86                          // Using 32-bit architechture
-#  define BUILD_TARGET                 "Win-ARM"
 # elif defined(_M_IX86)                // Target is X86 architecture?
+#  define WINVER                0x0501 // Target Windows XP 32-bit or higher
 #  define CISC                         // Using INTEL or AMD instruction set
 #  define X86                          // Using X86 architechture
 #  if _M_IX86_FP == 1                  // Target FP is SSE?
@@ -86,10 +86,15 @@
 #  else                                // Target FP is generic IA32?
 #   define BUILD_TARGET                "Win-X86"
 #  endif                               // Floating point checks
+# elif defined(_M_ARM64)               // Target is ARM64 architecture?
+#  pragma message("This Windows target is not tested. Please give feedback!")
+#  define WINVER                0x0A00 // Target Windows 11 or higher
+#  define RISC                         // Using ARM instruction set
+#  define X64                          // Using 64-bit architechture
+#  define BUILD_TARGET                 "Win-ARM64"
 # else                                 // Target is unknown?
-#  error "This Windows target being compiled with is not supported!"
+#  error This Windows target being compiled with is not supported!
 # endif                                // Target architechture detection
-# define WINVER                 0x0501 // Target Windows XP or higher
 # define _WIN32_WINNT           WINVER // Target Windows XP or higher
 # define WIN32_LEAN_AND_MEAN           // Faster compilation of headers
 # define VC_EXTRALEAN                  // Extra lean Visual C headers
@@ -99,7 +104,7 @@
 #elif defined(__APPLE__)               // Apple target?
 # define MACOS                         // Using MacOS
 # include <TargetConditionals.h>       // Include target conditionals header
-# if defined(TARGET_OS_MAC)            // Targeting MacOS?
+# if TARGET_OS_MAC == 1                // Targeting MacOS?
 #  if defined(__x86_64__)              // 64-bit x86 architecture?
 #   define CISC                        // Using INTEL or AMD instruction set
 #   define X64                         // Using 64-bit architechture
@@ -109,10 +114,14 @@
 #   define X64                         // Using 64-bit architechture
 #   define BUILD_TARGET                "MacOS-ARM64"
 #  else                                // Unknown target?
-#   error "This MacOS architechture being compiled with is not supported!"
+#   error This MacOS architechture being compiled with is not supported!
 #  endif                               // Done checking architechture
+#  include <AvailabilityMacros.h>      // Get minimum operating system version
+#  if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_11
+#   error This project recommends at least MacOS 10.11 ElCapitan or later!
+#  endif                               // MacOS version check
 # else                                 // Not targeting MacOS?
-#  error "This MacOS target being compiled with is not supported!"
+#  error This Apple target being compiled with is not yet supported!
 # endif                                // Target check
 # define COMPILER_NAME                 "LLVM"
 # define COMPILER_VERSION              STR(__GNUC__) "." \
@@ -161,10 +170,10 @@
 #   define BUILD_TARGET                "Linux-X86"
 #  endif                               // FP extensions check
 # else                                 // Invalid architecture?
-#  error "This Linux target being compiled with is not supported!"
+#  error This Linux target being compiled with is not supported!
 # endif                                // Linux arch check
 #else                                  // Unsupported target environment
-# error "This platform being compiled with is not supported!"
+# error This platform being compiled with is not supported!
 #endif                                 // Using Microsoft compiler
 /* -- Base defines --------------------------------------------------------- */
 #define DEFAULT_CONFIGURATION    "app" // Default app configuration filename

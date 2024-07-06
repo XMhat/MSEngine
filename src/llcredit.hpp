@@ -16,7 +16,15 @@
 /* ========================================================================= */
 namespace LLCredit {                   // Credit namespace
 /* -- Dependencies --------------------------------------------------------- */
-using namespace ICredit::P;
+using namespace ICredit::P;            using namespace Common;
+/* ========================================================================= **
+** ######################################################################### **
+** ## Credit common helper classes                                        ## **
+** ######################################################################### **
+** -- Read a credit id ----------------------------------------------------- */
+struct AgCreditEnum : public AgIntegerLGE<CreditEnums> {
+  explicit AgCreditEnum(lua_State*const lS, const int iArg) :
+    AgIntegerLGE{lS, iArg, CL_FIRST, CL_MAX}{} };
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Credit.* namespace functions                                        ## **
@@ -32,12 +40,11 @@ using namespace ICredit::P;
 // < Author:string=Author of the api.
 // ? Shows the full credits information of the specified api index.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(Item)
-  const CreditLib &libItem = cCredits->CreditGetItem(
-    LCGETINTLGE(CreditEnums, 1, CL_FIRST, CL_MAX, "Id"));
-  LCPUSHVAR(libItem.GetName(),     libItem.GetVersion(),
-            libItem.IsCopyright(), libItem.GetAuthor());
-LLFUNCENDEX(4)
+LLFUNC(Item, 4,
+  const AgCreditEnum aCredit{lS, 1};
+  const CreditLib &clItem = cCredits->CreditGetItem(aCredit);
+  LuaUtilPushVar(lS, clItem.GetName(),     clItem.GetVersion(),
+            clItem.IsCopyright(), clItem.GetAuthor()))
 /* ========================================================================= */
 // $ Credit.License
 // > Id:integer=The index of the license.
@@ -45,22 +52,44 @@ LLFUNCENDEX(4)
 // < Text:string=Full text file of the license.
 // ? Shows the full license information of the specified index.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(License, 1, LCPUSHVAR(cCredits->CreditGetItemText(
-  LCGETINTLGE(CreditEnums, 1, CL_FIRST, CL_MAX, "Id"))));
-/* ========================================================================= */
-// $ Credit.Total
-// < Total:integer=Number of credits used in the executable.
-// ? Returns the number of API's stored in the executable.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(Total, 1, LCPUSHVAR(cCredits->CreditGetItemCount()));
+LLFUNC(License, 1,
+  LuaUtilPushVar(lS, cCredits->CreditGetItemText(AgCreditEnum{lS, 1})))
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Credit.* namespace functions structure                              ## **
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Credit.* namespace functions begin
-  LLRSFUNC(Item), LLRSFUNC(License), LLRSFUNC(Total),
+  LLRSFUNC(Item), LLRSFUNC(License),
 LLRSEND                                // Credit.* namespace functions end
+/* ========================================================================= **
+** ######################################################################### **
+** ## Credit.* namespace constants                                        ## **
+** ######################################################################### **
+** ========================================================================= */
+// @ Credit.Libs
+// < Ids:table=The table of all library ids
+// ? A table containing the ids of all the libraries supported.
+/* ------------------------------------------------------------------------- */
+LLRSKTBEGIN(Libs)                      // Beginning of supported library ids
+  LLRSKTITEM(CL_,MSE),  LLRSKTITEM(CL_,FT),   LLRSKTITEM(CL_,GLFW),
+  LLRSKTITEM(CL_,JPEG), LLRSKTITEM(CL_,GIF),  LLRSKTITEM(CL_,PNG),
+  LLRSKTITEM(CL_,LUA),  LLRSKTITEM(CL_,LZMA), LLRSKTITEM(CL_,MP3),
+#if !defined(WINDOWS)                  // Not using Windows?
+  LLRSKTITEM(CL_,NCURSES),             // Id for NCurses credit data
+#endif                                 // Not using windows
+  LLRSKTITEM(CL_,OGG),  LLRSKTITEM(CL_,AL),  LLRSKTITEM(CL_,SSL),
+  LLRSKTITEM(CL_,JSON), LLRSKTITEM(CL_,SQL), LLRSKTITEM(CL_,THEO),
+  LLRSKTITEM(CL_,ZLIB), LLRSKTITEM(CL_,MAX),
+LLRSKTEND                              // End of supported library ids
+/* ========================================================================= **
+** ######################################################################### **
+** ## Credit.* namespace constants structure                              ## **
+** ######################################################################### **
+** ========================================================================= */
+LLRSCONSTBEGIN                         // Credit.* namespace consts begin
+  LLRSCONST(Libs),
+LLRSCONSTEND                           // Credit.* namespace consts end
 /* ========================================================================= */
 }                                      // End of Credit namespace
 /* == EoF =========================================================== EoF == */

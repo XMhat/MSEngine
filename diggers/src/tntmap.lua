@@ -15,16 +15,18 @@ local TextureCreateTS<const>, ImageRaw<const>, AssetCreate<const>
       = -- ----------------------------------------------------------------- --
       Texture.CreateTS, Image.Raw, Asset.Create;
 -- Diggers function and data aliases --------------------------------------- --
-local LoadResources, Fade, SetCallbacks, IsMouseInBounds, IsMouseNotInBounds,
-  aCursorIdData, SetCursor, aSfxData, PlayStaticSound, aSfxData,
-  IsButtonPressed, IsButtonHeld, aTileData, aTileFlags, InitTitle, texSpr,
-  SetBottomRightTip, RenderInterface, GameProc, InitContinueGame, GetLevelData,
-  aObjects, RenderShadow, GetGameTicks;
+local Fade, GameProc, GetGameTicks, InitContinueGame, aLevelData,
+  IsButtonHeld, IsButtonPressed, IsMouseInBounds, IsMouseNotInBounds,
+  LoadResources, PlayStaticSound, RenderInterface, RenderShadow,
+  SetBottomRightTip, SetCallbacks, SetCursor, aCursorIdData, aObjects,
+  aSfxData, aSfxData, aTileData, aTileFlags, texSpr;
+-- Assets required --------------------------------------------------------- --
+local aAssets<const> = { { T = 2, F = "tntmap", P = { 0 } } };
 -- Init TNT map screen function -------------------------------------------- --
 local function InitTNTMap()
   -- On assets loaded event
   local function OnLoaded(aResources)
-    -- Set tntmap graphic
+    -- Set TNT map graphic
     local texTNTMap = aResources[1].H;
     -- POI testing
     local function MouseOverExit()
@@ -65,7 +67,7 @@ local function InitTNTMap()
         if IsButtonHeld(0) then
           -- Play sound
           PlayStaticSound(aSfxData.SELECT);
-          -- Unreference assets for garbage collector
+          -- Dereference assets for garbage collector
           texTNTMap, texTerrain = nil, nil;
           -- Start the loading waiting procedure
           SetCallbacks(GameProc, RenderInterface, nil);
@@ -91,11 +93,11 @@ local function InitTNTMap()
     local function RenderProc()
       -- Render everything
       RenderInterface();
-      -- Blit appropriate background
+      -- Draw appropriate background
       texTNTMap:BlitLT(8, 8);
       -- Render shadow
       RenderShadow(8, 8, 312, 208);
-      -- Blit terrain
+      -- Draw terrain
       texTerrain:BlitSLTRB(iTerrainPage, 32, 44, 288, 172);
       -- Dim appropriate button
       if iTerrainPage == 0 then
@@ -114,8 +116,6 @@ local function InitTNTMap()
     local iWFlags<const> = aTileFlags.W;
     -- Get solid tile flags
     local iSFlags<const> = aTileFlags.D + aTileFlags.AD;
-    -- Get level data
-    local binLevel<const> = GetLevelData();
     -- TNT map procedure
     local function MapProc()
       -- Perform game actions
@@ -132,11 +132,11 @@ local function InitTNTMap()
         -- Calculate Y position in destination bitmap
         local iBYPos<const> = (iBSize - ((iY + 1) * 384)) + 3;
         -- Calculate Y position from level data
-        local iLYPos<const> = iY * 256;
+        local iLYPos<const> = iY * 128;
         -- For each pixel column
         for iX = 0, 127 do
           -- Get tile at level position
-          local iTId<const> = binLevel:RU16LE(iLYPos + (iX * 2));
+          local iTId<const> = aLevelData[1 + iLYPos + iX];
           -- Get tile flags
           local iTFlags<const> = aTileData[1 + iTId];
           -- Get bitmap position and then the locations of the components
@@ -151,7 +151,7 @@ local function InitTNTMap()
           elseif iTId == 3 then iIGB, iIR = 0x1A7F, 0x00;
           -- Tile is water?
           elseif iTFlags & iWFlags ~= 0 then iIGB, iIR = 0xFF00, 0x00;
-          -- Tile is not destructable and not dug?
+          -- Tile is not destructible and not dug?
           elseif iTFlags & iSFlags == 0 then iIGB, iIR = 0x7F70, 0x7F;
           -- Other tiles
           else iIGB, iIR = 0x0000, 0x00 end;
@@ -178,24 +178,22 @@ local function InitTNTMap()
     -- Set callbacks
     SetCallbacks(MapProc, RenderProc, InputProc);
   end
-  -- Load tntmap resources
-  LoadResources("TNT Map", {{T=2,F="tntmap",P={0}}}, OnLoaded);
+  -- Load TNT map resources
+  LoadResources("TNT Map", aAssets, OnLoaded);
 end
 -- Exports and imports ----------------------------------------------------- --
 return { A = { InitTNTMap = InitTNTMap }, F = function(GetAPI)
   -- Imports --------------------------------------------------------------- --
-  LoadResources, SetCallbacks, SetCursor, aCursorIdData, aSfxData,
-  PlayStaticSound, Fade, InitTitle, IsButtonHeld, IsMouseInBounds,
-  IsMouseNotInBounds, aTileData, aTileFlags, texSpr, SetBottomRightTip,
-  RenderInterface, InitContinueGame, GameProc, GetLevelData, aObjects,
-  RenderShadow, GetGameTicks
+  Fade, GameProc, GetGameTicks, InitContinueGame, IsButtonHeld,
+  IsMouseInBounds, IsMouseNotInBounds, LoadResources, PlayStaticSound,
+  RenderInterface, RenderShadow, SetBottomRightTip, SetCallbacks, SetCursor,
+  aCursorIdData, aLevelData, aObjects, aSfxData, aTileData, aTileFlags, texSpr
   = -- --------------------------------------------------------------------- --
-  GetAPI("LoadResources", "SetCallbacks", "SetCursor", "aCursorIdData",
-   "aSfxData", "PlayStaticSound", "Fade", "InitTitle", "IsButtonHeld",
-   "IsMouseInBounds", "IsMouseNotInBounds", "aTileData", "aTileFlags",
-   "texSpr", "SetBottomRightTip", "RenderInterface",
-   "InitContinueGame", "GameProc", "GetLevelData", "aObjects", "RenderShadow",
-   "GetGameTicks");
+  GetAPI("Fade", "GameProc", "GetGameTicks","InitContinueGame", "IsButtonHeld",
+    "IsMouseInBounds", "IsMouseNotInBounds", "LoadResources",
+    "PlayStaticSound", "RenderInterface", "RenderShadow", "SetBottomRightTip",
+    "SetCallbacks", "SetCursor", "aCursorIdData", "aLevelData",  "aObjects",
+    "aSfxData", "aTileData", "aTileFlags", "texSpr");
   -- ----------------------------------------------------------------------- --
 end };
 -- End-of-File ============================================================= --

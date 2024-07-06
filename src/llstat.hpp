@@ -19,125 +19,146 @@
 namespace LLStat {                     // Stat namespace
 /* -- Dependencies --------------------------------------------------------- */
 using namespace IStat::P;              using namespace IStd::P;
+using namespace Common;
+/* ========================================================================= **
+** ######################################################################### **
+** ## Stat common helper classes                                          ## **
+** ######################################################################### **
+** -- Read Stat class argument --------------------------------------------- */
+struct AgStat : public ArClass<Stat> {
+  explicit AgStat(lua_State*const lS, const int iArg) :
+    ArClass{*LuaUtilGetPtr<Stat>(lS, iArg, *cStats)}{} };
+/* -- Create Stat class argument ------------------------------------------- */
+struct AcStat : public ArClass<Stat> {
+  explicit AcStat(lua_State*const lS) :
+    ArClass{*LuaUtilClassCreate<Stat>(lS, *cStats)}{} };
+/* -- Read column argument (with maximum check) ---------------------------- */
+struct AgColumn : public AgSSizeTLGE {
+  explicit AgColumn(lua_State*const lS, const int iArg, const Stat &stCref) :
+    AgSSizeTLGE{lS, iArg, 0, static_cast<ssize_t>(stCref.Headers())}{} };
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Stat:* member functions                                             ## **
 ** ######################################################################### **
 ** ========================================================================= */
 // $ Stat:Data
-// > Value:String=Data string to add to the cell.
+// > String:string=Data string to add to the cell.
 // ? Inserts the specified string into the next cell.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Data, LCGETPTR(1, Stat)->Data(LCGETCPPSTRING(2, "Value")));
-/* ========================================================================= */
-// $ Stat:Header
-// > Value:String=Header string to add to the cell.
-// > Right:Boolean=Header is right justified?
-// ? Inserts the specified string into the next header. This has no effect if
-// ? data has been added.
-/* ------------------------------------------------------------------------- */
-LLFUNC(Header, LCGETPTR(1, Stat)->Header(LCGETCPPSTRING(2, "Value"),
-                                         LCGETBOOL(3, "Right")));
-/* ========================================================================= */
-// $ Stat:HeaderDupe
-// > Count:Integer=Number of times to duplicate the current headers.
-// ? Duplicates the currently stored headers.
-/* ------------------------------------------------------------------------- */
-LLFUNC(HeaderDupe, LCGETPTR(1, Stat)->
-  DupeHeader(LCGETINT(size_t, 2, "Count")));
-/* ========================================================================= */
-// $ Stat:DataN
-// > Value:Number=Number to add to the next cell.
-// > Precision:Integer=Amount of precision to use on the number.
-// ? Inserts the specified number into the next cell.
-/* ------------------------------------------------------------------------- */
-LLFUNC(DataN, LCGETPTR(1, Stat)->DataN(LCGETNUM(lua_Number, 2, "Value"),
-                                       LCGETNUM(int,        3, "Precision")));
+LLFUNC(Data, 0, AgStat{lS, 1}().Data(AgString{lS, 2}))
 /* ========================================================================= */
 // $ Stat:DataI
-// > Value:Integer=Integer to add to the next cell.
+// > Value:integer=Integer to add to the next cell.
 // ? Inserts the specified integer into the next cell.
 /* ------------------------------------------------------------------------- */
-LLFUNC(DataI, LCGETPTR(1, Stat)->DataN(LCGETNUM(lua_Integer, 2, "Value")));
+LLFUNC(DataI, 0, AgStat{lS, 1}().DataN(AgLuaInteger{lS, 2}()))
 /* ========================================================================= */
-// $ Stat:Headers
-// < Count:Integer=Number of headers registered
-// ? Returns the number of headers in the table
+// $ Stat:DataN
+// > Value:number=Number to add to the next cell.
+// > Precision:integer=Amount of precision to use on the number.
+// ? Inserts the specified number into the next cell.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Headers, 1, LCGETPTR(1, Stat)->Headers());
-/* ========================================================================= */
-// $ Stat:Reserve
-// > Rows:Integer=Reserve memory for this many rows.
-// ? Reserves memory for this many rows.
-/* ------------------------------------------------------------------------- */
-LLFUNC(Reserve, LCGETPTR(1, Stat)->Reserve(LCGETINT(size_t, 2, "Rows")));
-/* ========================================================================= */
-// $ Stat:Sort
-// > Column:Integer=Sort from this column
-// > Desc:Boolean=Sort the list in descending order
-// ? Sorts the data by the specified column.
-/* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(Sort)
-  Statistic &sStat = *LCGETPTR(1, Stat);
-  sStat.Sort(
-    LCGETINTLGE(ssize_t, 2, 0, static_cast<ssize_t>(sStat.Headers()),
-      "Column"),
-    LCGETBOOL(3, "Descending"));
-LLFUNCEND
-/* ========================================================================= */
-// $ Stat:SortTwo
-// > Column1:Integer=Sort from this primary column
-// > Column2:Integer=Sort from this secondary column if primary is the same
-// > Desc:Boolean=Sort the list in descending order
-// ? Sorts the data by the specified columns.
-/* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(SortTwo)
-  Statistic &sStat = *LCGETPTR(1, Stat);
-  const ssize_t sstHeaders = static_cast<ssize_t>(sStat.Headers());
-  sStat.SortTwo(
-    LCGETINTLGE(ssize_t, 2, 0, sstHeaders, "Column1"),
-    LCGETINTLGE(ssize_t, 3, 0, sstHeaders, "Column2"),
-    LCGETBOOL(4, "Descending"));
-LLFUNCEND
-/* ========================================================================= */
-// $ Stat:Finish
-// > OmitLF:Boolean=Omits the ending linefeed.
-// < Output:String=The final formatted output.
-// ? Builds the whole formatted output and returns a string. All data and
-// ? headers are erased and the class can be reused. Sizes and thus memory
-// ? are preserved as per C++ STL rules when being reused.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(Finish, 1, LCPUSHVAR(LCGETPTR(1, Stat)->
-  Finish(LCGETBOOL(2, "OmitLF"), LCGETINT(size_t, 3, "Gap"))));
-/* ========================================================================= */
-// $ Stat:Id
-// < Id:integer=The id number of the Stat object.
-// ? Returns the unique id of the Stat object.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(Id, 1, LCPUSHVAR(LCGETPTR(1, Stat)->CtrGet()));
-/* ========================================================================= */
-// $ Stat:Name
-// < Id:string=The stat identifier
-// ? Returns the identifier of the Stat object.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(Name, 1, LCPUSHVAR(LCGETPTR(1, Stat)->IdentGet()));
+LLFUNC(DataN, 0,
+  const AgStat aStat{lS, 1};
+  const AgLuaNumber aValue{lS, 2};
+  const AgInt aPrecision{lS, 3};
+  aStat().DataN(aValue(), aPrecision))
 /* ========================================================================= */
 // $ Stat:Destroy
 // ? Destroys the stat object and frees all the memory associated with it. The
 // ? object will no longer be useable after this call and an error will be
 // ? generated if accessed.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Destroy, LCCLASSDESTROY(1, Stat));
+LLFUNC(Destroy, 0, LuaUtilClassDestroy<Stat>(lS, 1, *cStats))
+/* ========================================================================= */
+// $ Stat:Finish
+// > OmitLF:boolean=Omits the ending linefeed.
+// > Gap:integer=Number of whitespaces between each header field.
+// < Output:String=The final formatted output.
+// ? Builds the whole formatted output and returns a string. All data and
+// ? headers are erased and the class can be reused. Sizes and thus memory
+// ? are preserved as per C++ STL rules when being reused.
+/* ------------------------------------------------------------------------- */
+LLFUNC(Finish, 1,
+  const AgStat aStat{lS, 1};
+  const AgBoolean aOmitLF{lS, 2};
+  const AgSizeT aGap{lS, 3};
+  LuaUtilPushVar(lS, aStat().Finish(aOmitLF, aGap)))
+/* ========================================================================= */
+// $ Stat:Header
+// > Text:string=Header string to add to the cell.
+// > Right:boolean=Header is right justified?
+// ? Inserts the specified string into the next header. This has no effect if
+// ? data has been added.
+/* ------------------------------------------------------------------------- */
+LLFUNC(Header, 0,
+  const AgStat aStat{lS, 1};
+  const AgString aText{lS, 2};
+  const AgBoolean aRight{lS, 3};
+  aStat().Header(aText, aRight))
+/* ========================================================================= */
+// $ Stat:HeaderDupe
+// > Count:integer=Number of times to duplicate the current headers.
+// ? Duplicates the currently stored headers.
+/* ------------------------------------------------------------------------- */
+LLFUNC(HeaderDupe, 0, AgStat{lS, 1}().DupeHeader(AgSizeT{lS, 2}))
+/* ========================================================================= */
+// $ Stat:Headers
+// < Count:integer=Number of headers registered
+// ? Returns the number of headers in the table
+/* ------------------------------------------------------------------------- */
+LLFUNC(Headers, 1, AgStat{lS, 1}().Headers())
+/* ========================================================================= */
+// $ Stat:Id
+// < Id:integer=The id number of the Stat object.
+// ? Returns the unique id of the Stat object.
+/* ------------------------------------------------------------------------- */
+LLFUNC(Id, 1, LuaUtilPushVar(lS, AgStat{lS, 1}().CtrGet()))
+/* ========================================================================= */
+// $ Stat:Name
+// < Id:string=The stat identifier
+// ? Returns the identifier of the Stat object.
+/* ------------------------------------------------------------------------- */
+LLFUNC(Name, 1, LuaUtilPushVar(lS, AgStat{lS, 1}().IdentGet()))
+/* ========================================================================= */
+// $ Stat:Reserve
+// > Rows:integer=Reserve memory for this many rows.
+// ? Reserves memory for this many rows.
+/* ------------------------------------------------------------------------- */
+LLFUNC(Reserve, 0, AgStat{lS, 1}().Reserve(AgSizeT{lS, 2}))
+/* ========================================================================= */
+// $ Stat:Sort
+// > Column:integer=Sort from this column
+// > Reverse:boolean=Sort the list in descending order
+// ? Sorts the data by the specified column.
+/* ------------------------------------------------------------------------- */
+LLFUNC(Sort, 0,
+  const AgStat aStat{lS, 1};
+  const AgColumn aColumn{lS, 2, aStat};
+  const AgBoolean aReverse{lS, 3};
+  aStat().Sort(aColumn, aReverse))
+/* ========================================================================= */
+// $ Stat:SortTwo
+// > Column1:Integer=Sort from this primary column
+// > Column2:Integer=Sort from this secondary column if primary is the same
+// > Reverse:Boolean=Sort the list in descending order
+// ? Sorts the data by the specified columns.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SortTwo, 0,
+  const AgStat aStat{lS, 1};
+  const AgColumn aColumn1{lS, 2, aStat},
+                 aColumn2{lS, 3, aStat};
+  const AgBoolean aReverse{lS, 4};
+  aStat().SortTwo(aColumn1, aColumn2, aReverse))
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Stat:* member functions structure                                   ## **
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
 LLRSMFBEGIN                            // stat:* member functions begin
-  LLRSFUNC(Data),       LLRSFUNC(DataI),   LLRSFUNC(DataN),
-  LLRSFUNC(Destroy),    LLRSFUNC(Finish),  LLRSFUNC(Header),
-  LLRSFUNC(HeaderDupe), LLRSFUNC(Headers), LLRSFUNC(Id),
-  LLRSFUNC(Name),       LLRSFUNC(Reserve), LLRSFUNC(Sort),
+  LLRSFUNC(Data),   LLRSFUNC(DataI),  LLRSFUNC(DataN),      LLRSFUNC(Destroy),
+  LLRSFUNC(Finish), LLRSFUNC(Header), LLRSFUNC(HeaderDupe), LLRSFUNC(Headers),
+  LLRSFUNC(Id),     LLRSFUNC(Name),   LLRSFUNC(Reserve),    LLRSFUNC(Sort),
   LLRSFUNC(SortTwo),
 LLRSEND                                // Stat:* member functions end
 /* ========================================================================= */
@@ -145,8 +166,7 @@ LLRSEND                                // Stat:* member functions end
 // > Name:string=Name of the class
 // ? Creates an empty stat table.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Create, 1,
-  LCCLASSCREATE(Stat)->IdentSet(LCGETSTRING(char, 1, "Name")));
+LLFUNC(Create, 1, AcStat{lS}().IdentSet(AgNeString{lS, 1}))
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Stat:* namespace functions structure                                ## **

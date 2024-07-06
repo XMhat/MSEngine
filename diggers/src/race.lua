@@ -12,11 +12,13 @@
 -- Core function aliases --------------------------------------------------- --
 -- M-Engine function aliases ----------------------------------------------- --
 -- Diggers function and data aliases --------------------------------------- --
-local LoadResources, Fade, SetCallbacks, IsMouseInBounds, IsMouseNotInBounds,
-  aCursorIdData, SetCursor, aSfxData, PlayStaticSound, InitCon,
-  IsButtonPressed, IsScrollingUp, IsScrollingDown, texSpr,
-  SetBottomRightTipAndShadow, RenderShadow, aRaceStatData, TypeIdToId,
-  aGlobalData;
+local Fade, InitCon, IsButtonPressed, IsMouseInBounds, IsMouseNotInBounds,
+  IsScrollingDown, IsScrollingUp, LoadResources, PlayStaticSound, RenderShadow,
+  SetBottomRightTipAndShadow, SetCallbacks, SetCursor, TypeIdToId,
+  aCursorIdData, aGlobalData, aRaceStatData, aSfxData, texSpr;
+-- Assets required --------------------------------------------------------- --
+local aAssets<const> = { { T = 2, F = "lobbyc", P = { 0 } },
+                         { T = 1, F = "race",   P = { 64, 128, 1, 1, 0 } } };
 -- Init race screen function ----------------------------------------------- --
 local function InitRace()
   -- Data loaded function
@@ -25,7 +27,7 @@ local function InitRace()
     local texLobby = aResources[1].H;
     texLobby:TileSTC(1);
     texLobby:TileS(0, 0, 272, 428, 512);
-    -- Get texture resource and trim texcoords list to 5
+    -- Get texture resource and trim texture coordinates list to 5
     local texRace = aResources[2].H;
     texRace:TileSTC(5);
     -- Cache other tiles
@@ -87,7 +89,7 @@ local function InitRace()
       PlayStaticSound(aSfxData.SELECT);
       -- When faded out?
       local function OnFadeOut()
-        -- Unreference assets for garbage collector
+        -- Dereference assets for garbage collector
         texRace, texLobby = nil, nil;
         -- Load controller screen
         InitCon();
@@ -97,9 +99,9 @@ local function InitRace()
     end
     -- Proc race function
     local function InputRace()
-      -- Mousewheel scrolled down? Previous race
+      -- Mouse wheel scrolled down? Previous race
       if IsScrollingDown() then AdjustRace(-1);
-      -- Mousewheel scrolled up? Next race
+      -- Mouse wheel scrolled up? Next race
       elseif IsScrollingUp() then AdjustRace(1);
       -- Mouse over race pic
       elseif IsMouseInBounds(172, 54, 236, 182) then
@@ -140,22 +142,21 @@ local function InitRace()
     Fade(1, 0, 0.04, RenderRace, ProcRaceInitial);
   end
   -- Load resources
-  LoadResources("Race Select", {{T=2,F="lobbyc",P={0}},
-                                {T=1,F="race",  P={64,128,1,1,0}}}, OnLoaded);
+  LoadResources("Race Select", aAssets, OnLoaded);
 end
 -- Exports and imports ----------------------------------------------------- --
 return { A = { InitRace = InitRace }, F = function(GetAPI)
   -- Imports --------------------------------------------------------------- --
-  LoadResources, SetCallbacks, SetCursor, IsMouseInBounds, PlayStaticSound,
-  Fade, IsMouseNotInBounds, aCursorIdData, aSfxData, InitCon,
-  IsButtonPressed, IsScrollingUp, IsScrollingDown, texSpr,
-  SetBottomRightTipAndShadow, RenderShadow, aRaceStatData, aGlobalData
+  Fade, InitCon, IsButtonPressed, IsMouseInBounds, IsMouseNotInBounds,
+  IsScrollingDown, IsScrollingUp, LoadResources, PlayStaticSound, RenderShadow,
+  SetBottomRightTipAndShadow, SetCallbacks, SetCursor, aCursorIdData,
+  aGlobalData, aRaceStatData, aSfxData, texSpr
   = -- --------------------------------------------------------------------- --
-  GetAPI("LoadResources", "SetCallbacks", "SetCursor", "IsMouseInBounds",
-    "PlayStaticSound", "Fade", "IsMouseNotInBounds", "aCursorIdData",
-    "aSfxData", "InitCon", "IsButtonPressed", "IsScrollingUp",
-    "IsScrollingDown", "texSpr", "SetBottomRightTipAndShadow", "RenderShadow",
-    "aRaceStatData", "aGlobalData");
+  GetAPI("Fade", "InitCon", "IsButtonPressed", "IsMouseInBounds",
+    "IsMouseNotInBounds", "IsScrollingDown", "IsScrollingUp", "LoadResources",
+    "PlayStaticSound", "RenderShadow", "SetBottomRightTipAndShadow",
+    "SetCallbacks", "SetCursor", "aCursorIdData", "aGlobalData",
+    "aRaceStatData", "aSfxData", "texSpr");
   -- ----------------------------------------------------------------------- --
 end };
 -- End-of-File ============================================================= --

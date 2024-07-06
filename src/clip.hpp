@@ -53,23 +53,23 @@ CTOR_MEM_BEGIN_CSLAVE(Clips, Clip, ICHelperUnsafe),
     cEvtWin->Add(EWC_CB_SETNR, this);
   }
   /* -- Window set clipboard request --------------------------------------- */
-  static void ClipOnSetNRCb(const EvtWin::Cell &ewcArgs)
-    { reinterpret_cast<Clip*>(ewcArgs.vParams.front().vp)->ClipOnSetNRCbT(); }
+  static void ClipOnSetNRCb(const EvtWinEvent &eweEvent)
+    { reinterpret_cast<Clip*>(eweEvent.aArgs.front().vp)->ClipOnSetNRCbT(); }
   /* -- Window get clipboard request in window thread ---------------------- */
-  static void ClipOnGetCb(const EvtWin::Cell &ewcArgs)
-    { reinterpret_cast<Clip*>(ewcArgs.vParams.front().vp)->ClipOnGetCbT(); }
+  static void ClipOnGetCb(const EvtWinEvent &eweEvent)
+    { reinterpret_cast<Clip*>(eweEvent.aArgs.front().vp)->ClipOnGetCbT(); }
   /* -- Window set clipboard request --------------------------------------- */
-  static void ClipOnSetCb(const EvtWin::Cell &ewcArgs)
-    { reinterpret_cast<Clip*>(ewcArgs.vParams.front().vp)->ClipOnSetCbT(); }
+  static void ClipOnSetCb(const EvtWinEvent &eweEvent)
+    { reinterpret_cast<Clip*>(eweEvent.aArgs.front().vp)->ClipOnSetCbT(); }
   /* -- Async thread event callback (called by LuaEvtMaster) --------------- */
-  void LuaEvtCallbackAsync(const EvtMain::Cell &epData) try
+  void LuaEvtCallbackAsync(const EvtMainEvent &emeEvent) try
   { // Get reference to string vector and we need three parameters
     // [0]=Pointer to clipboard class
-    const EvtMain::Params &eParams = epData.vParams;
+    const EvtMainArgs &emaArgs = emeEvent.aArgs;
     // Must have 2 parameters
-    if(!LuaEvtsCheckParams<2>(eParams))
+    if(!LuaEvtsCheckParams<2>(emaArgs))
       XC("Clipboard did not receive two parameters!",
-         "Identifier", IdentGet(), "Count", eParams.size());
+         "Identifier", IdentGet(), "Count", emaArgs.size());
     // If lua is not paused?
     if(!uiLuaPaused)
     { // Get and push function
@@ -87,25 +87,20 @@ CTOR_MEM_BEGIN_CSLAVE(Clips, Clip, ICHelperUnsafe),
   } // Exception occured? Cleanup and rethrow exception
   catch(const exception&) { LuaEvtDeInit(); throw; }
   /* -- Initialise and set string ------------------------------------------ */
-  void ClipSetAsync(lua_State*const lS)
-  { // Need 4 parameters (Name[1], Value[2], function[3] and class[4])
-    LuaUtilCheckParams(lS, 4);
-    // Get and check parameters
-    IdentSet(LuaUtilGetCppStrNE(lS, 1, "Identifier"));
-    strClipboard = LuaUtilGetCppStr(lS, 2, "Value");
-    LuaUtilCheckFunc(lS, 3, "EventFunc");
+  void ClipSetAsync(lua_State*const lS, const string &strIdent,
+    const string &strContent)
+  { // Get and check parameters
+    IdentSet(StdMove(strIdent));
+    strClipboard = StdMove(strContent);
     // Init LUA references
     LuaEvtInitEx(lS);
     // We're ready, so dispatch to the window thread with this class
     cEvtWin->Add(EWC_CB_SET, this);
   }
   /* -- Initialise and get string ------------------------------------------ */
-  void ClipGetAsync(lua_State*const lS)
-  { // Need 3 parameters (Name[1], function[2] and class[3])
-    LuaUtilCheckParams(lS, 3);
-    // Get and check parameters
-    IdentSet(LuaUtilGetCppStrNE(lS, 1, "Identifier"));
-    LuaUtilCheckFunc(lS, 2, "EventFunc");
+  void ClipGetAsync(lua_State*const lS, const string &strIdent)
+  { // Get and check parameters
+    IdentSet(StdMove(strIdent));
     // Init LUA references
     LuaEvtInitEx(lS);
     // We're ready, so dispatch to the window thread with this class
@@ -120,7 +115,7 @@ CTOR_MEM_BEGIN_CSLAVE(Clips, Clip, ICHelperUnsafe),
     /* -- No code ---------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */
-CTOR_END(Clips,                        // Finish 'Clips' class body
+CTOR_END(Clips, Clip,                  // Finish 'Clips' class body
   /* -- Collector initialisers --------------------------------------------- */
   cEvtWin->RegisterEx(rvEvents),       // Register all events in 'rvEvents'
   cEvtWin->UnregisterEx(rvEvents),,    // Unregister all events in 'rvEvents'

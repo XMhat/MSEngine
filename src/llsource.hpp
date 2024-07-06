@@ -19,138 +19,26 @@
 namespace LLSource {                   // Stream namespace
 /* -- Dependencies --------------------------------------------------------- */
 using namespace ISource::P;            using namespace Lib::OpenAL;
+using namespace Common;
+/* ========================================================================= **
+** ######################################################################### **
+** ## Source common helper classes                                        ## **
+** ######################################################################### **
+** -- Read Source class argument ------------------------------------------- */
+struct AgSource : public ArClass<Source> {
+  explicit AgSource(lua_State*const lS, const int iArg) :
+    ArClass{*LuaUtilGetPtr<Source>(lS, iArg, *cSources)}{} };
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Source:* member functions                                           ## **
 ** ######################################################################### **
 ** ========================================================================= */
-// $ Source:GetElapsed
-// < Seconds:number=Number of seconds elapsed.
-// ? Returns the number of seconds elapsed in the source.
+// $ Source:Destroy
+// ? Stops and destroys the source object and frees all the memory associated
+// ? with it. The object will no longer be useable after this call and an
+// ? error will be generated if accessed.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetElapsed, 1, LCPUSHVAR(LCGETPTR(1, Source)->GetElapsed()));
-/* ========================================================================= */
-// $ Source:SetElapsed
-// > Seconds:number=Number of seconds elapsed.
-// ? Sets the number of seconds elapsed in the source.
-/* ------------------------------------------------------------------------- */
-LLFUNC(SetElapsed,
-  LCGETPTR(1, Source)->SetElapsed(LCGETNUM(ALfloat, 2, "Seconds")));
-/* ========================================================================= */
-// $ Source:GetGain
-// < Gain:number=The current gain value.
-// ? Returns the current gain of the source.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(GetGain, 1, LCPUSHVAR(LCGETPTR(1, Source)->GetGain()));
-/* ========================================================================= */
-// $ Source:SetGain
-// > Gain:number=The new gain value.
-// ? Sets the new gain of the source.
-/* ------------------------------------------------------------------------- */
-LLFUNC(SetGain, LCGETPTR(1, Source)->SetGain(LCGETNUM(ALfloat, 2, "Gain")));
-/* ========================================================================= */
-// $ Source:GetMinGain
-// < Gain:number=The current gain value.
-// ? Returns the current minimum gain of the source.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(GetMinGain, 1, LCPUSHVAR(LCGETPTR(1, Source)->GetMinGain()));
-/* ========================================================================= */
-// $ Source:SetMinGain
-// > Gain:number=The new minimum gain value.
-// ? Sets the new minimum gain gain of the source.
-/* ------------------------------------------------------------------------- */
-LLFUNC(SetMinGain,
-  LCGETPTR(1, Source)->SetMinGain(LCGETNUM(ALfloat, 2, "MinGain")));
-/* ========================================================================= */
-// $ Source:GetMaxGain
-// < Gain:number=The current gain value.
-// ? Returns the current maximum gain of the source.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(GetMaxGain, 1, LCPUSHVAR(LCGETPTR(1, Source)->GetMaxGain()));
-/* ========================================================================= */
-// $ Source:SetMaxGain
-// > Gain:number=The new maximum  gain value.
-// ? Sets a new maximum gain of the source.
-/* ------------------------------------------------------------------------- */
-LLFUNC(SetMaxGain,
-  LCGETPTR(1, Source)->SetMaxGain(LCGETNUM(ALfloat, 2, "MaxGain")));
-/* ========================================================================= */
-// $ Source:GetPitch
-// < Pitch:number=The current pitch value.
-// ? Returns the current pitch of the source.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(GetPitch, 1, LCPUSHVAR(LCGETPTR(1, Source)->GetPitch()));
-/* ========================================================================= */
-// $ Source:SetPitch
-// > Pitch:number=The new pitch value.
-// ? Sets a new pitch value of the source.
-/* ------------------------------------------------------------------------- */
-LLFUNC(SetPitch, LCGETPTR(1, Source)->
-  SetPitch(LCGETNUM(ALfloat, 2, "Pitch")));
-/* ========================================================================= */
-// $ Source:GetRefDist
-// < Distance:number=The current reference distance.
-// ? Returns the current reference distance of the source.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(GetRefDist, 1, LCPUSHVAR(LCGETPTR(1, Source)->GetRefDist()));
-/* ========================================================================= */
-// $ Source:SetRefDist
-// > Distance:number=The new reference distance.
-// ? Sets the new reference distance of the source.
-/* ------------------------------------------------------------------------- */
-LLFUNC(SetRefDist,
-  LCGETPTR(1, Source)->SetRefDist(LCGETNUM(ALfloat, 2, "RefDist")));
-/* ========================================================================= */
-// $ Source:GetRollOff
-// < RollOff:number=The current rolloff.
-// ? Returns the current rolloff of the source.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(GetRollOff, 1, LCPUSHVAR(LCGETPTR(1, Source)->GetRollOff()));
-/* ========================================================================= */
-// $ Source:SetRollOff
-// > RollOff:number=The new rolloff.
-// ? Sets the new rolloff of the source.
-/* ------------------------------------------------------------------------- */
-LLFUNC(SetRollOff,
-  LCGETPTR(1, Source)->SetRollOff(LCGETNUM(ALfloat, 2, "RefDist")));
-/* ========================================================================= */
-// $ Source:GetMaxDist
-// < Distance:number=The current maximum distance.
-// ? Returns the current maximum distance of the source.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(GetMaxDist, 1, LCPUSHVAR(LCGETPTR(1, Source)->GetMaxDist()));
-/* ========================================================================= */
-// $ Source:SetMaxDist
-// > Distance:number=The new maximum distance.
-// ? Sets the maximum distance of the source.
-/* ------------------------------------------------------------------------- */
-LLFUNC(SetMaxDist,
-  LCGETPTR(1, Source)->SetMaxDist(LCGETNUM(ALfloat, 2, "MaxDist")));
-/* ========================================================================= */
-// $ Source:GetLooping
-// < State:boolean=Is the source looping?
-// ? Returns if the source is looping.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(GetLooping, 1, LCPUSHVAR(LCGETPTR(1, Source)->GetLooping()));
-/* ========================================================================= */
-// $ Source:SetLooping
-// > State:boolean=The new looping state
-// ? Sets if the source should be looping.
-/* ------------------------------------------------------------------------- */
-LLFUNC(SetLooping, LCGETPTR(1, Source)->SetLooping(LCGETBOOL(2, "Looping")));
-/* ========================================================================= */
-// $ Source:GetRelative
-// < State:boolean=Is the source relative?
-// ? Returns if the source is relative.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(GetRelative, 1, LCPUSHVAR(LCGETPTR(1, Source)->GetRelative()));
-/* ========================================================================= */
-// $ Source:SetRelative
-// > State:boolean=Sets if the source is relative.
-// ? Sets the new relative state of the source.
-/* ------------------------------------------------------------------------- */
-LLFUNC(SetRelative,
-  LCGETPTR(1, Source)->SetRelative(LCGETBOOL(2, "Relative")));
+LLFUNC(Destroy, 0, LuaUtilClassDestroy<Source>(lS, 1, *cSources))
 /* ========================================================================= */
 // $ Source:GetDirection
 // < X:number=Current X direction.
@@ -158,22 +46,58 @@ LLFUNC(SetRelative,
 // < Z:number=Current Z direction.
 // ? Returns the current direction of the source.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(GetDirection)
+LLFUNC(GetDirection, 3,
   ALfloat fX, fY, fZ;
-  LCGETPTR(1, Source)->GetDirection(fX, fY, fZ);
-  LCPUSHVAR(fX); LCPUSHVAR(fY); LCPUSHVAR(fZ);
-LLFUNCENDEX(3);
+  AgSource{lS, 1}().GetDirection(fX, fY, fZ);
+  LuaUtilPushVar(lS, fX, fY, fZ))
 /* ========================================================================= */
-// $ Source:SetDirection
-// > X:number=The new X direction.
-// > Y:number=The new Y direction.
-// > Z:number=The new Z direction.
-// ? Sets the new direction of the source.
+// $ Source:GetElapsed
+// < Seconds:number=Number of seconds elapsed.
+// ? Returns the number of seconds elapsed in the source.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetDirection,
-  LCGETPTR(1, Source)->SetDirection(LCGETNUM(ALfloat, 2, "X"),
-                                    LCGETNUM(ALfloat, 3, "Y"),
-                                    LCGETNUM(ALfloat, 4, "Z")));
+LLFUNC(GetElapsed, 1, LuaUtilPushVar(lS, AgSource{lS, 1}().GetElapsed()))
+/* ========================================================================= */
+// $ Source:GetId
+// < Id:integer=The id number of the Source object.
+// ? Returns the unique id of the Source object.
+/* ------------------------------------------------------------------------- */
+LLFUNC(GetId, 1, LuaUtilPushVar(lS, AgSource{lS, 1}().CtrGet()))
+/* ========================================================================= */
+// $ Source:GetGain
+// < Gain:number=The current gain value.
+// ? Returns the current gain of the source.
+/* ------------------------------------------------------------------------- */
+LLFUNC(GetGain, 1, LuaUtilPushVar(lS, AgSource{lS, 1}().GetGain()))
+/* ========================================================================= */
+// $ Source:GetLooping
+// < State:boolean=Is the source looping?
+// ? Returns if the source is looping.
+/* ------------------------------------------------------------------------- */
+LLFUNC(GetLooping, 1, LuaUtilPushVar(lS, AgSource{lS, 1}().GetLooping()))
+/* ========================================================================= */
+// $ Source:GetMaxDist
+// < Distance:number=The current maximum distance.
+// ? Returns the current maximum distance of the source.
+/* ------------------------------------------------------------------------- */
+LLFUNC(GetMaxDist, 1, LuaUtilPushVar(lS, AgSource{lS, 1}().GetMaxDist()))
+/* ========================================================================= */
+// $ Source:GetMaxGain
+// < Gain:number=The current gain value.
+// ? Returns the current maximum gain of the source.
+/* ------------------------------------------------------------------------- */
+LLFUNC(GetMaxGain, 1, LuaUtilPushVar(lS, AgSource{lS, 1}().GetMaxGain()))
+/* ========================================================================= */
+// $ Source:GetMinGain
+// < Gain:number=The current gain value.
+// ? Returns the current minimum gain of the source.
+/* ------------------------------------------------------------------------- */
+LLFUNC(GetMinGain, 1, LuaUtilPushVar(lS, AgSource{lS, 1}().GetMinGain()))
+/* ========================================================================= */
+// $ Source:GetPitch
+// < Pitch:number=The current pitch value.
+// ? Returns the current pitch of the source.
+/* ------------------------------------------------------------------------- */
+LLFUNC(GetPitch, 1, LuaUtilPushVar(lS, AgSource{lS, 1}().GetPitch()))
 /* ========================================================================= */
 // $ Source:GetPosition
 // < X:number=Current X position.
@@ -181,22 +105,34 @@ LLFUNC(SetDirection,
 // < Z:number=Current Z position.
 // ? Returns the current position of the source.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(GetPosition)
+LLFUNC(GetPosition, 3,
   ALfloat fX, fY, fZ;
-  LCGETPTR(1, Source)->GetPosition(fX, fY, fZ);
-  LCPUSHVAR(fX); LCPUSHVAR(fY); LCPUSHVAR(fZ);
-LLFUNCENDEX(3);
+  AgSource{lS, 1}().GetPosition(fX, fY, fZ);
+  LuaUtilPushVar(lS, fX, fY, fZ))
 /* ========================================================================= */
-// $ Source:SetPosition
-// < X:number=The new X position.
-// < Y:number=The new Y position.
-// < Z:number=The new Z position.
-// ? Sets the new position of the source.
+// $ Source:GetRefDist
+// < Distance:number=The current reference distance.
+// ? Returns the current reference distance of the source.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetPosition,
-  LCGETPTR(1, Source)->SetPosition(LCGETNUM(ALfloat, 2, "X"),
-                                   LCGETNUM(ALfloat, 3, "Y"),
-                                   LCGETNUM(ALfloat, 4, "Z")));
+LLFUNC(GetRefDist, 1, LuaUtilPushVar(lS, AgSource{lS, 1}().GetRefDist()))
+/* ========================================================================= */
+// $ Source:GetRelative
+// < State:boolean=Is the source relative?
+// ? Returns if the source is relative.
+/* ------------------------------------------------------------------------- */
+LLFUNC(GetRelative, 1, LuaUtilPushVar(lS, AgSource{lS, 1}().GetRelative()))
+/* ========================================================================= */
+// $ Source:GetRollOff
+// < RollOff:number=The current rolloff.
+// ? Returns the current rolloff of the source.
+/* ------------------------------------------------------------------------- */
+LLFUNC(GetRollOff, 1, LuaUtilPushVar(lS, AgSource{lS, 1}().GetRollOff()))
+/* ========================================================================= */
+// $ Source:GetState
+// < State:integer=The current playback state.
+// ? Returns if current playback state.
+/* ------------------------------------------------------------------------- */
+LLFUNC(GetState, 1, LuaUtilPushVar(lS, AgSource{lS, 1}().GetState()))
 /* ========================================================================= */
 // $ Source:GetVelocity
 // < X:number=Current X velocity.
@@ -204,11 +140,127 @@ LLFUNC(SetPosition,
 // < Z:number=Current Z velocity.
 // ? Returns the current velocity of the source.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(GetVelocity)
+LLFUNC(GetVelocity, 3,
   ALfloat fX, fY, fZ;
-  LCGETPTR(1, Source)->GetVelocity(fX, fY, fZ);
-  LCPUSHVAR(fX, fY, fZ);
-LLFUNCENDEX(3);
+  AgSource{lS, 1}().GetVelocity(fX, fY, fZ);
+  LuaUtilPushVar(lS, fX, fY, fZ))
+/* ========================================================================= */
+// $ Source:Play
+// ? Plays the source.
+/* ------------------------------------------------------------------------- */
+LLFUNC(Play, 0, AgSource{lS, 1}().Play())
+/* ========================================================================= */
+// $ Source:SetDirection
+// > X:number=The new X direction.
+// > Y:number=The new Y direction.
+// > Z:number=The new Z direction.
+// ? Sets the new direction of the source.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetDirection, 0,
+  const AgSource aSource{lS, 1};
+  const AgALfloat aX{lS, 2}, aY{lS, 3}, aZ{lS, 4};
+  aSource().SetDirection(aX, aY, aZ))
+/* ========================================================================= */
+// $ Source:SetElapsed
+// > Seconds:number=Number of seconds elapsed.
+// ? Sets the number of seconds elapsed in the source.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetElapsed, 0,
+  const AgSource aSource{lS, 1};
+  const AgALfloat aSeconds{lS, 2};
+  aSource().SetElapsed(aSeconds))
+/* ========================================================================= */
+// $ Source:SetGain
+// > Gain:number=The new gain value.
+// ? Sets the new gain of the source.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetGain, 0,
+  const AgSource aSource{lS, 1};
+  const AgALfloat aGain{lS, 2};
+  aSource().SetGain(aGain))
+/* ========================================================================= */
+// $ Source:SetMaxGain
+// > Gain:number=The new maximum  gain value.
+// ? Sets a new maximum gain of the source.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetMaxGain, 0,
+  const AgSource aSource{lS, 1};
+  const AgALfloat aMaxGain{lS, 2};
+  aSource().SetMaxGain(aMaxGain))
+/* ========================================================================= */
+// $ Source:SetMinGain
+// > Gain:number=The new minimum gain value.
+// ? Sets the new minimum gain gain of the source.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetMinGain, 0,
+  const AgSource aSource{lS, 1};
+  const AgALfloat aMinGain{lS, 2};
+  aSource().SetMinGain(aMinGain))
+/* ========================================================================= */
+// $ Source:SetPitch
+// > Pitch:number=The new pitch value.
+// ? Sets a new pitch value of the source.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetPitch, 0,
+  const AgSource aSource{lS, 1};
+  const AgALfloat aPitch{lS, 2};
+  aSource().SetPitch(aPitch))
+/* ========================================================================= */
+// $ Source:SetRefDist
+// > Distance:number=The new reference distance.
+// ? Sets the new reference distance of the source.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetRefDist, 0,
+  const AgSource aSource{lS, 1};
+  const AgALfloat aRefDistance{lS, 2};
+  aSource().SetRefDist(aRefDistance))
+/* ========================================================================= */
+// $ Source:SetRollOff
+// > RollOff:number=The new rolloff.
+// ? Sets the new rolloff of the source.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetRollOff, 0,
+  const AgSource aSource{lS, 1};
+  const AgALfloat aRollOff{lS, 2};
+  aSource().SetRollOff(aRollOff))
+/* ========================================================================= */
+// $ Source:SetLooping
+// > Looping:boolean=The new looping state
+// ? Sets if the source should be looping.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetLooping, 0,
+  const AgSource aSource{lS, 1};
+  const AgBoolean aLooping{lS, 2};
+  aSource().SetLooping(aLooping))
+/* ========================================================================= */
+// $ Source:SetMaxDist
+// > Distance:number=The new maximum distance.
+// ? Sets the maximum distance of the source.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetMaxDist, 0,
+  const AgSource aSource{lS, 1};
+  const AgALfloat aMaxDistance{lS, 2};
+  aSource().SetMaxDist(aMaxDistance))
+/* ========================================================================= */
+// $ Source:SetPosition
+// < X:number=The new X position.
+// < Y:number=The new Y position.
+// < Z:number=The new Z position.
+// ? Sets the new position of the source.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetPosition, 0,
+  const AgSource aSource{lS, 1};
+  const AgALfloat aX{lS, 2}, aY{lS, 3}, aZ{lS, 4};
+  aSource().SetPosition(aX, aY, aZ))
+/* ========================================================================= */
+// $ Source:SetRelative
+// > Relative:boolean=Sets if the source is relative.
+// ? Sets the new relative state of the source.
+/* ------------------------------------------------------------------------- */
+LLFUNC(SetRelative, 0,
+  const AgSource aSource{lS, 1};
+  const AgBoolean aRelative{lS, 2};
+  aSource().SetRelative(aRelative))
 /* ========================================================================= */
 // $ Source:SetVelocity
 // < X:number=The new X velocity.
@@ -216,39 +268,15 @@ LLFUNCENDEX(3);
 // < Z:number=The new Z velocity.
 // ? Sets the new velocity of the source.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetVelocity,
-  LCGETPTR(1, Source)->SetVelocity(LCGETNUM(ALfloat, 2, "X"),
-                                   LCGETNUM(ALfloat, 3, "Y"),
-                                   LCGETNUM(ALfloat, 4, "Z")));
-/* ========================================================================= */
-// $ Source:Play
-// ? Plays the source.
-/* ------------------------------------------------------------------------- */
-LLFUNC(Play, LCGETPTR(1, Source)->Play());
+LLFUNC(SetVelocity, 0,
+  const AgSource aSource{lS, 1};
+  const AgALfloat aX{lS, 2}, aY{lS, 3}, aZ{lS, 4};
+  aSource().SetVelocity(aX, aY, aZ))
 /* ========================================================================= */
 // $ Source:Stop
 // ? Stops the source.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Stop, LCGETPTR(1, Source)->Stop());
-/* ========================================================================= */
-// $ Source:GetState
-// < State:integer=The current playback state.
-// ? Returns if current playback state.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(GetState, 1, LCPUSHVAR(LCGETPTR(1, Source)->GetState()));
-/* ========================================================================= */
-// $ Source:GetId
-// < Id:integer=The id number of the Source object.
-// ? Returns the unique id of the Source object.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(GetId, 1, LCPUSHVAR(LCGETPTR(1, Source)->CtrGet()));
-/* ========================================================================= */
-// $ Source:Destroy
-// ? Stops and destroys the source object and frees all the memory associated
-// ? with it. The object will no longer be useable after this call and an
-// ? error will be generated if accessed.
-/* ------------------------------------------------------------------------- */
-LLFUNC(Destroy, LCCLASSDESTROY(1, Source));
+LLFUNC(Stop, 0, AgSource{lS, 1}().Stop())
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Source:* member functions structure                                 ## **

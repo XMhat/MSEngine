@@ -55,7 +55,7 @@ class Core final :                     // Members initially private
   unsigned int     uiErrorCount,       // Number of errors occured
                    uiErrorLimit;       // Number of errors allowed
   /* -- Fired when lua needs to be paused (EMC_LUA_PAUSE) ------------------ */
-  void OnLuaPause(const EvtMain::Cell &emcArgs)
+  void OnLuaPause(const EvtMainEvent &emeEvent)
   { // Pause execution and if paused for the first time?
     if(!cLua->PauseExecution())
     { // The mainmanual* functions will consume 100% of the thread load
@@ -67,12 +67,12 @@ class Core final :                     // Members initially private
       // Write to console
       cConsole->AddLine("Execution paused. Type 'lresume' to continue.");
     } // Already paused? Remind console if it was manually requested
-    else if(emcArgs.vParams.front().b)
+    else if(emeEvent.aArgs.front().b)
       cConsole->AddLine(
         "Execution already paused. Type 'lresume' to continue.");
   }
   /* -- Fired when lua needs to be resumed (EMC_LUA_RESUME) ---------------- */
-  void OnLuaResume(const EvtMain::Cell &)
+  void OnLuaResume(const EvtMainEvent&)
   { // Return if pause was not successful
     if(!cLua->ResumeExecution())
       return cConsole->AddLine("Execution already in progress.");
@@ -229,9 +229,13 @@ class Core final :                     // Members initially private
           // to handle the error and try to recover. The actual loops will set
           // this to something different when they cleanly exit their loops.
           cEvtMain->SetExitReason(EMC_LUA_ERROR);
-          // Scan for game controllers and inform scripts if enabled
-          if(cSystem->IsGraphicalMode()) cInput->BeginDetection();
-          // Execute startup script
+          // Is graphical mode enabled?
+          if(cSystem->IsGraphicalMode())
+          { // Scan for game controllers and inform scripts if enabled
+            cInput->BeginDetection();
+            // Send current mouse position to scripts
+            cInput->RequestMousePosition();
+          } // Execute startup script
           LuaCodeExecuteFile(lS, cCVars->GetStrInternal(LUA_SCRIPT));
           // Done
           break;

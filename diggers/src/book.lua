@@ -10,7 +10,6 @@
 -- Copyr. (c) MS-Design, 2024   Copyr. (c) Millennium Interactive Ltd., 1994 --
 -- ========================================================================= --
 -- Core function aliases --------------------------------------------------- --
-local insert<const>, floor<const> = table.insert, math.floor;
 -- M-Engine function aliases ----------------------------------------------- --
 local ClampInt<const> = Util.ClampInt;
 -- Diggers function and data aliases --------------------------------------- --
@@ -22,13 +21,17 @@ local LoadResources, Fade, SetCallbacks, IsMouseInBounds, IsMouseNotInBounds,
 -- Locals ------------------------------------------------------------------ --
 local iBookPage = 0;                   -- Book current page (persisted)
 local bIntroPage = false;              -- Intro page was displayed?
+-- Assets ------------------------------------------------------------------ --
+local aBookTexture<const>        = { T = 2, F = "book",   P = { 0 } };
+local aLobbyOpenTexture<const>   = { T = 7, F = "lobby",  P = { 0 } };
+local aLobbyClosedTexture<const> = { T = 2, F = "lobbyc", P = { 0 } };
+local aAssets<const>             = { aBookTexture, false };
+local aPageAsset<const>  = { { T = 1, F = false, P = { 255, 200, 0, 0, 0 } } };
 -- Init book screen function ----------------------------------------------- --
 local function InitBook(bFromInGame)
   -- Pages each sized 510x200 stored inside texture sized 1024^2. OpenGL 3.2
-  -- garauntees us that 1024^2 textures are supported by every renderer.
+  -- guarantees us that 1024^2 textures are supported by every renderer.
   local iPagesPerTexture<const> = 20;
-  -- Resources to load
-  local aToLoad<const> = { { T = 2, F = "book", P = { 0 } } };
   -- Exit tip
   local strExitTip, strTip;
   -- Loading from in game?
@@ -36,13 +39,13 @@ local function InitBook(bFromInGame)
     -- Set text for exit tip
     strExitTip = "BACK TO GAME";
     -- Load just the book texture
-    insert(aToLoad, { T = 7, F = "lobby", P = { 0 } });
+    aAssets[2] = aLobbyOpenTexture;
   -- Loading from controller screen?
   else
     -- Set text for exit tip
     strExitTip = "CONTROLLER";
-    -- Load backdrop from closed lobby (lobby music already playing)
-    insert(aToLoad, { T = 2, F = "lobbyc", P = { 0 } });
+    -- Load backdrop from closed lobby
+    aAssets[2] = aLobbyClosedTexture;
   end
   -- When the resources have loaded
   local function OnLoadResources(aResources)
@@ -102,7 +105,7 @@ local function InitBook(bFromInGame)
       local strPage<const> = "PAGE "..iBookPageP1.."/"..iTotalPages;
       POIData[4][7] = strPage;
       -- Which texture page do we need and if we need to load it?
-      local iLoadPage<const> = floor(iBookPage/iPagesPerTexture);
+      local iLoadPage<const> = iBookPage // iPagesPerTexture;
       if iLoadPage == iFilePage and not fOnComplete then
         -- Set new page and actual page on texture
         iFilePage, iTilePage = iLoadPage, iBookPage % iPagesPerTexture;
@@ -130,19 +133,19 @@ local function InitBook(bFromInGame)
                        else SetCallbacks(nil, RenderBook, BookInput) end;
       end
       -- Load the specified texture with the page image
-      LoadResources("The Book "..iLoadPage,
-        {{T=1,F="e/"..iLoadPage,P={255,200,0,0,0}}}, OnPageLoaded);
+      aPageAsset[1].F = "e/"..iLoadPage;
+      LoadResources("The Book "..iLoadPage, aPageAsset, OnPageLoaded);
     end
     -- The render and input callbacks we have set
     local fRender, fInput;
     -- Set points of interest data
-    POIData = {                                -- Index
+    POIData = {                                   -- Index
       { 17, 37, 70, 92, aCursorIdData.SELECT, aSfxData.CLICK, "CONTENTS",
-        function() LoadPage(1) end },          -- Last
+        function() LoadPage(1) end },             -- Last
       { 17, 37, 96,118, aCursorIdData.SELECT, aSfxData.CLICK, "NEXT PAGE",
-        function() LoadPage(iBookPage+1) end }, -- Next
+        function() LoadPage(iBookPage + 1) end }, -- Next
       { 17, 37,122,144, aCursorIdData.SELECT, aSfxData.CLICK, "LAST PAGE",
-        function() LoadPage(iBookPage-1) end }, -- Nada
+        function() LoadPage(iBookPage - 1) end }, -- Nada
       {  8,312,  8,208, aCursorIdData.ARROW,  nil,           nil,
         function() end }
     };
@@ -177,7 +180,7 @@ local function InitBook(bFromInGame)
       PlayStaticSound(aSfxData.SELECT);
       -- If from in game then continue the game
       if bFromInGame then
-        -- Unreference assets for garbage collector
+        -- Dereference assets for garbage collector
         texPage, texBook = nil, nil;
         -- Start the loading waiting procedure
         SetCallbacks(GameProc, RenderInterface, nil);
@@ -186,7 +189,7 @@ local function InitBook(bFromInGame)
       end;
       -- On faded event
       local function OnFadeOut()
-        -- Unreference assets for garbage collector
+        -- Dereference assets for garbage collector
         texPage, texBook, texLobby = nil, nil, nil;
         -- Init controller screen
         InitCon();
@@ -202,7 +205,7 @@ local function InitBook(bFromInGame)
       if IsScrollingUp() then return ActivatePOI(POIData[2]) end;
       -- Iterate through the points of interest
       for iI = 1, #POIData do
-        -- Get poidata and return if mouse is in this POI
+        -- Get point of interest data and return if mouse is in this POI
         local aData = POIData[iI];
         if CursorInPOI(aData) then
           -- Show appropriate cursor
@@ -248,9 +251,9 @@ local function InitBook(bFromInGame)
               -- Play click sound
               PlayStaticSound(aSfxData.SELECT);
               -- If from controller?
-              if bFromInGame then
-                SetCallbacks(GameProc, RenderBook, BookInput);
-              else SetCallbacks(nil, RenderBook, BookInput) end;
+              local fcbGameProc;
+              if bFromInGame then fcbGameProc = GameProc end;
+              SetCallbacks(fcbGameProc, RenderBook, BookInput);
             end
             -- Done
             return;
@@ -275,7 +278,7 @@ local function InitBook(bFromInGame)
     LoadPage(iBookPage, OnPageLoaded);
   end
   -- Load the resources
-  LoadResources("The Book", aToLoad, OnLoadResources);
+  LoadResources("The Book", aAssets, OnLoadResources);
 end
 -- Exports and imports ----------------------------------------------------- --
 return { A = { InitBook = InitBook }, F = function(GetAPI)

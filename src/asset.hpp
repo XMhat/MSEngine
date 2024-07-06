@@ -15,7 +15,7 @@ using namespace ICodec::P;             using namespace ICollector::P;
 using namespace ICVarDef::P;           using namespace IDir::P;
 using namespace IError::P;             using namespace IEvtMain::P;
 using namespace IIdent::P;             using namespace IFlags;
-using namespace ILog::P;               using namespace ILuaUtil::P;
+using namespace ILog::P;
 using namespace IMemory::P;            using namespace IStd::P;
 using namespace IString::P;            using namespace ISysUtil::P;
 /* ------------------------------------------------------------------------- */
@@ -91,7 +91,7 @@ CTOR_MEM_BEGIN_ASYNC_CSLAVE(Assets, Asset, ICHelperUnsafe),
   void SwapAsset(Asset &aOther)
   { // Swap settings flags
     FlagSwap(aOther);
-    MemSwap(StdMove(aOther));
+    MemSwap(aOther);
     LockSwap(aOther);
     IdentSwap(aOther);
     CollectorSwapRegistration(aOther);
@@ -121,68 +121,43 @@ CTOR_MEM_BEGIN_ASYNC_CSLAVE(Assets, Asset, ICHelperUnsafe),
     else if(FlagIsSet(CD_ENCODE_LZMAAES)) CodecExecEx<AESLZMAEncoder>(fmData);
     // Guest wants data decoded from a magic block (no user flags)
     else if(FlagIsSet(CD_DECODE)) CodecExec<CoDecoder>(fmData);
-    // Guest wants data untouched but we need to copy it all from the map
+    // Guest wants data untouched? Load in all the data in the map
     else MemSwap(fmData.FileMapDecouple());
   }
-  /* -- Load data from string asynchronously ------------------------------- */
-  void InitAsyncString(lua_State*const lS)
-  { // Must have 5 parameters (including the class pointer)
-    LuaUtilCheckParams(lS, 7);
-    // Check and get parameters
-    const string strName{ LuaUtilGetCppStrNE(lS, 1, "Identifier") };
-    Memory mData{ LuaUtilGetMBfromLStr(lS, 2, "String") };
-    FlagReset(LuaUtilGetFlags(lS, 3, CD_MASK, "Flags"));
-    LuaUtilCheckFuncs(lS, 4, "ErrorFunc", 5, "ProgressFunc", 6, "SuccessFunc");
-    // Init the specified string as an array asynchronously
-    AsyncInitArray(lS, strName, "assetstring", StdMove(mData));
-  }
-  /* -- Load data from array asynchronously -------------------------------- */
-  void InitAsyncArray(lua_State*const lS)
-  { // Must have 5 parameters (including the class pointer)
-    LuaUtilCheckParams(lS, 7);
-    // Check and get parameters
-    const string strName{ LuaUtilGetCppStrNE(lS, 1, "Identifier") };
-    Asset &aData = *LuaUtilGetPtr<Asset>(lS, 2, "Asset");
-    FlagReset(LuaUtilGetFlags(lS, 3, CD_MASK, "Flags"));
-    LuaUtilCheckFuncs(lS, 4, "ErrorFunc", 5, "ProgressFunc", 6, "SuccessFunc");
-    // Init the specified string as an array asynchronously
-    AsyncInitArray(lS, strName, "assetdata", StdMove(aData));
+  /* -- Load asset from asset asynchronously ------------------------------- */
+  void InitAsyncAsset(lua_State*const lS, const string &strName,
+    const AssetFlagsConst &afcFlags, Asset &aCref)
+  { // Prepare user flags
+    FlagReset(afcFlags);
+    // Dispatch the event
+    AsyncInitArray(lS, strName, "assetdata", aCref);
   }
   /* -- Load asset from file asynchronously -------------------------------- */
-  void InitAsyncFile(lua_State*const lS)
-  { // Need 4 parameters (class pointer was already pushed onto the stack);
-    LuaUtilCheckParams(lS, 6);
-    // Get and check parameters
-    const string strName{ LuaUtilGetCppFile(lS, 1, "File") };
-    FlagReset(LuaUtilGetFlags(lS, 2, CD_MASK, "Flags"));
-    LuaUtilCheckFuncs(lS, 3, "ErrorFunc", 4, "ProgressFunc", 5, "SuccessFunc");
+  void InitAsyncFile(lua_State*const lS, const string &strFile,
+    const AssetFlagsConst &afcFlags)
+  { // Prepare user flags
+    FlagReset(afcFlags);
     // Load asset from file asynchronously
-    AsyncInitFile(lS, strName, "assetfile");
+    AsyncInitFile(lS, strFile, "assetfile");
   }
   /* -- Load asset from command-line --------------------------------------- */
-  void InitAsyncCmdLine(lua_State*const lS)
-  { // Need 4 parameters (class pointer was already pushed onto the stack);
-    LuaUtilCheckParams(lS, 6);
-    // Get and check parameters
-    const string strCmdLine{ LuaUtilGetCppStrNE(lS, 1, "CmdLine") };
-    FlagReset(LuaUtilGetFlags(lS, 2, CD_MASK, "Flags"));
-    LuaUtilCheckFuncs(lS, 3, "ErrorFunc", 4, "ProgressFunc", 5, "SuccessFunc");
-    // Load asset from file asynchronously
+  void InitAsyncCmdLine(lua_State*const lS, const string &strCmdLine,
+    const AssetFlagsConst &afcFlags)
+  { // Prepare user flags
+    FlagReset(afcFlags);
+    // Nothing to send to 'stdin'
     Memory mbBlank;
-    AsyncInitCmdLine(lS, strCmdLine, "CL", mbBlank);
+    // Dispatch the request asynchronously
+    AsyncInitCmdLine(lS, strCmdLine, "cmdline", mbBlank);
   }
   /* -- Load asset from command-line --------------------------------------- */
-  void InitAsyncCmdLineEx(lua_State*const lS)
-  { // Need 5 parameters (class pointer was already pushed onto the stack);
-    LuaUtilCheckParams(lS, 7);
-    // Get and check parameters
-    const string strCmdLine{ LuaUtilGetCppStrNE(lS, 1, "CmdLine") };
-    FlagReset(LuaUtilGetFlags(lS, 2, CD_MASK, "Flags"));
-    Asset &aInput = *LuaUtilGetPtr<Asset>(lS, 3, "Asset");
-    LuaUtilCheckFuncs(lS, 4, "ErrorFunc", 5, "ProgressFunc", 6, "SuccessFunc");
+  void InitAsyncCmdLineEx(lua_State*const lS, const string &strCmdLine,
+    const AssetFlagsConst &afcFlags, Asset &aStdIn)
+  { // Prepare user flags
+    FlagReset(afcFlags);
     // Load asset from file asynchronously
     AsyncInitCmdLine(lS, strCmdLine,
-      StrAppend("CLP", aInput.MemSize()), aInput);
+      StrAppend("cmdline<", aStdIn.MemSize()), aStdIn);
   }
   /* -- Init from file ----------------------------------------------------- */
   void InitFile(const string &strFile, const AssetFlagsConst &afcFlags)
@@ -191,21 +166,43 @@ CTOR_MEM_BEGIN_ASYNC_CSLAVE(Assets, Asset, ICHelperUnsafe),
     // Load file normally
     SyncInitFileSafe(strFile);
   }
-  /* -- Init from string --------------------------------------------------- */
-  void InitString(const string &strName, const string &strStr,
-    const AssetFlagsConst &afcFlags)
-  { // Set load flags
+  /* -- Init from file ----------------------------------------------------- */
+  void InitPtr(const string &strName, const AssetFlagsConst &afcFlags,
+    size_t stNSize, const char*const cpNPtr)
+  { // Prepare flags
     FlagReset(afcFlags);
-    // Load file as array converted from string
-    SyncInitArray(strName, Memory{ strStr });
+    // Copy the memory
+    Memory mData{ stNSize, cpNPtr };
+    // Do the initialisation
+    SyncInitArray(strName, mData);
+  }
+  /* -- Init from asset ---------------------------------------------------- */
+  void InitAsset(const string &strName, const AssetFlagsConst &afcFlags,
+    Asset &aData)
+      { InitPtr(strName, afcFlags, aData.MemSize(), aData.MemPtr<char>()); }
+  /* -- Init duplicate asset ----------------------------------------------- */
+  void InitDuplicate(const Asset &aCref)
+  { // Copy name of asset
+    IdentSet(aCref.IdentGet());
+    // Copy flags
+    FlagReset(aCref.FlagGet());
+    // Then copy the memory over
+    MemInitCopy(aCref);
+  }
+  /* -- Init blank asset --------------------------------------------------- */
+  void InitBlank(const string &strName, const size_t stBytes)
+  { // Set name of memory
+    IdentSet(StdMove(strName));
+    // Allocate the memory and fill it
+    MemInitSafe(stBytes);
   }
   /* -- Init from string --------------------------------------------------- */
-  void InitArray(const string &strName, Asset &&aRef,
+  void InitArray(const string &strName, Asset &aRef,
     const AssetFlagsConst &afcFlags)
   { // Set load flags
     FlagReset(afcFlags);
     // Set filename and flags
-    SyncInitArray(strName, StdMove(aRef));
+    SyncInitArray(strName, aRef);
   }
   /* -- Move assignment ---------------------------------------------------- */
   Asset& operator=(Asset &&aOther) { SwapAsset(aOther); return *this; }
@@ -226,7 +223,7 @@ CTOR_MEM_BEGIN_ASYNC_CSLAVE(Assets, Asset, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Asset)               // Disable copy constructor and operator
 };/* ======================================================================= */
-CTOR_END_ASYNC_NOFUNCS(Assets, ASSET, bOverride(false));
+CTOR_END_ASYNC_NOFUNCS(Assets, Asset, ASSET, bOverride(false));
 /* -- Class to help enumerate files ---------------------------------------- */
 struct AssetList :
   /* -- Dependents --------------------------------------------------------- */

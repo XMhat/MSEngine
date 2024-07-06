@@ -10,39 +10,37 @@
 -- Copyr. (c) MS-Design, 2024   Copyr. (c) Millennium Interactive Ltd., 1994 --
 -- ========================================================================= --
 -- Lua aliases (optimisation) ---------------------------------------------- --
-local assert<const>, type<const>, collectgarbage<const>, ceil<const>,
-  max<const>, min<const>, floor<const>, format<const>, insert<const>,
-  remove<const>, unpack<const>, sort<const>, tostring<const>, pairs<const>,
-  random<const>
-  = -- --------------------------------------------------------------------- --
-  assert, type, collectgarbage, math.ceil, math.max, math.min, math.floor,
-  string.format, table.insert, table.remove, table.unpack, table.sort,
-  tostring, pairs, math.random;
+local ceil<const>, collectgarbage<const>, error<const>, floor<const>,
+  format<const>, max<const>, min<const>, pairs<const>, random<const>,
+  remove<const>, sort<const>, tostring<const>, unpack<const> =
+    math.ceil, collectgarbage, error, math.floor, string.format, math.max,
+    math.min, pairs, math.random, table.remove, table.sort, tostring,
+    table.unpack;
 -- M-Engine aliases (optimisation) ----------------------------------------- --
-local CoreLog<const>, UtilDuration<const>, InputClearStates<const>,
-  UtilClamp<const>, InputGetJoyAxis<const>, InputMouseState<const>,
-  UtilRoundInt<const>, InputGetJoyButton<const>, DisplayReset<const>,
-  InfoTicks<const>, AssetParse<const>, FboDraw<const>, CoreWrite<const>,
-  UtilBlank<const>, CoreStack<const>, InputSetCursor<const>,
-  InputKeyState<const>, InputSetCursorPos<const>, FboConEnabled<const>,
-  AssetParseBlock<const>, UtilExplode<const>, UtilImplode<const>,
-  VariableRegister<const>, TextureCreate<const>, CoreOnTick<const>,
-  InfoCatchup<const>, InfoTime<const>, InputGetNumJoyAxises<const>,
-  SShotFbo<const>
-  = -- --------------------------------------------------------------------- --
-  Core.Log, Util.Duration, Input.ClearStates, Util.Clamp, Input.GetJoyAxis,
-  Input.aMouseState, Util.RoundInt, Input.GetJoyButton, Display.Reset,
-  Info.Ticks, Asset.Parse, Fbo.Draw, Core.Write, Util.Blank, Core.Stack,
-  Input.SetCursor, Input.KeyState, Input.SetCursorPos,
-  Fbo.ConEnabled, Asset.ParseBlock, Util.Explode, Util.Implode,
-  Variable.Register, Texture.Create, Core.OnTick, Info.Catchup, Info.Time,
-  Input.GetNumJoyAxises, SShot.Fbo;
+local AssetParseBlock<const>, CoreLog<const>, CoreOnTick<const>,
+  CoreStack<const>, CoreWrite<const>, DisplayReset<const>,
+  FboConEnabled<const>, FboDraw<const>, InfoCatchup<const>, InfoTicks<const>,
+  InfoTime<const>, InputClearStates<const>, InputGetJoyAxis<const>,
+  InputGetJoyButton<const>, InputGetNumJoyAxises<const>, InputSetCursor<const>,
+  InputSetCursorPos<const>, SShotFbo<const>, TextureCreate<const>,
+  UtilBlank<const>, UtilClamp<const>, UtilClampInt<const>, UtilDuration<const>,
+  UtilExplode<const>, UtilImplode<const>, UtilIsFunction<const>,
+  UtilIsInteger<const>, UtilIsNumber<const>, UtilIsString<const>,
+  UtilIsTable<const>, UtilRoundInt<const>, VariableRegister<const> =
+    Asset.ParseBlock, Core.Log, Core.OnTick, Core.Stack,
+    Core.Write, Display.Reset, Fbo.ConEnabled, Fbo.Draw, Info.Catchup,
+    Info.Ticks, Info.Time, Input.ClearStates, Input.GetJoyAxis,
+    Input.GetJoyButton, Input.GetNumJoyAxises, Input.SetCursor,
+    Input.SetCursorPos, SShot.Fbo, Texture.Create, Util.Blank, Util.Clamp,
+    Util.ClampInt, Util.Duration, Util.Explode, Util.Implode, Util.IsFunction,
+    Util.IsInteger, Util.IsNumber, Util.IsString, Util.IsTable, Util.RoundInt,
+    Variable.Register;
 -- Globals ----------------------------------------------------------------- --
-local fboMain<const> = Fbo.Main();     -- Main fbo class
+local fboMain<const> = Fbo.Main();     -- Main frame buffer object class
 local fFont<const> = Font.Console();   -- Main console class
 local aKeys<const> = Input.KeyCodes;   -- Keyboard codes
 local CId, CBProc, CBRender, CBInput;  -- Generic tick callbacks
-local aCursorIdData, aCursorData;         -- Cursor data
+local aCursorIdData, aCursorData;      -- Cursor data
 local CursorMin, CursorMax;            -- Cursor minimum and maximum
 local CursorOX, CursorOY;              -- Cursor origin co-ordinates
 local fcbFrameBufferCallbacks = { };   -- Frame buffer updated function
@@ -56,7 +54,7 @@ local aJoyState
 local aSounds             = { };       -- Sound effects
 local bTestMode           = false;     -- Test mode enabled
 local fcbFading           = false;     -- Fading callback
-local iCursorX, iCursorY  = Input.GetCursorPos(); -- Cursor position
+local iCursorX, iCursorY  = 0, 0;      -- Cursor position
 local nWheelX, nWheelY    = 0, 0;      -- Mouse wheel state
 local nJoyAX, nJoyAY      = 0, 0;      -- Joystick axis values
 local fcbMouse            = UtilBlank; -- Joystick to mouse conversion function
@@ -78,11 +76,11 @@ local iStageRight, iStageBottom;       -- Bottom right corner
 -- Library functions loaded later ------------------------------------------ --
 local InitSetup, InitScene, InitCredits, InitEnding, LoadLevel,
   InitIntro, InitFail, InitScore, InitTitle, InitNewGame, aObjectTypes,
-  aLevelData, aRaceData, CheckGlobalKeys, LoadInfinitePlay;
+  aLevelsData, aRacesData, CheckGlobalKeys, InitDebugPlay;
 -- Constants for loader ---------------------------------------------------- --
 local aBFlags<const> = Image.Flags;    -- Get bitmap loading flags
 local iPNG<const> = aBFlags.FCE_PNG;   -- Get forced PNG format flag
-local aPFlags<const> = Pcm.Flags;      -- Get pcm loading flags
+local aPFlags<const> = Pcm.Flags;      -- Get waveform loading flags
 local iOGG<const> = aPFlags.FCE_OGG;   -- Get forced wave format
 local aPrFlags<const> = Asset.Progress;-- Asset progress flags
 local iFStart<const> = aPrFlags.FILESTART; -- File opened with information
@@ -93,24 +91,30 @@ local function ParseScript(aA)
   -- Get name of asset
   local sName<const> = aA:Name();
   -- Compile the script and get the return value
-  local aModData<const> = AssetParseBlock(aA, 1, sName);
-  assert(type(aModData) == "table", sName..": bad return!");
+  local aModData<const> = AssetParseBlock(sName, 1, aA);
+  if not UtilIsTable(aModData) then error(sName..": bad return!") end;
   local fcbModCb<const> = aModData.F;
-  assert(type(fcbModCb) == "function", sName..": bad callback!");
+  if not UtilIsFunction(fcbModCb) then error(sName..": bad callback!") end;
   local aModAPI<const> = aModData.A;
-  assert(type(aModAPI) == "table", sName..": bad api!");
+  if not UtilIsTable(aModAPI) then error(sName..": bad api!") end;
   -- Set name of module
   aModData.N = sName;
   -- Add functions to the api
   for sKey, vVar in pairs(aModAPI) do
-    assert(type(sKey) == "string", sName.."["..tostring(sKey).."] bad key!");
-    assert(not aAPI[sKey], sName.."["..sKey.."] already registered!");
-    assert(type(vVar) ~= nil, sName.."["..sKey.."] bad variable!");
+    -- Check variable name
+    if not UtilIsString(sKey) then
+      error(sName.."["..tostring(sKey).."] bad key!") end;
+    -- Check not already registered
+    if aAPI[sKey] ~= nil then
+      error(sName.."["..sKey.."] already registered!") end;
+    -- Check that value is valid
+    if nil == vVar then error(sName.."["..sKey.."] bad variable!") end;
+    -- Assign variable in internal API
     aAPI[sKey] = vVar;
   end
   -- Put returned data in API for later when everything is loaded and we'll
   -- call the modules callback function with the fully loaded API.
-  insert(aModules, aModData);
+  aModules[1 + #aModules] = aModData;
   -- Return success
   return true;
 end
@@ -215,8 +219,8 @@ Input.OnKey(function(iKey, iState) aKeyState[iKey] = iState end);
 Input.OnMouseClick(function(iButton, iState) aMouseState[iButton] = iState end);
 -- Check joystick states --------------------------------------------------- --
 local function OnJoyState(iJ, bState)
-  -- Jostick is connected? Insert into joysticks list
-  if bState then insert(aJoy, iJ);
+  -- Joystick is connected? Insert into joysticks list
+  if bState then aJoy[1 + #aJoy] = iJ;
   -- Joystick was removed? Find joystick and remove it
   else
     for iI = 1, #aJoy do if aJoy[iI] == iJ then remove(aJoy, iI) break end end;
@@ -241,36 +245,37 @@ local function OnJoyState(iJ, bState)
           if nAxisX < 0 then
             -- Reset if positive
             if nJoyAX > 0 then nJoyAX = 0 end;
-            -- Update X axis accelleration
+            -- Update X axis acceleration
             nJoyAX = UtilClamp(nJoyAX - 0.5, -5, 0);
           -- Axis going right?
           elseif nAxisX > 0 then
             -- Reset if negative
             if nJoyAX < 0 then nJoyAX = 0 end;
-            -- Update X axis accelleration
+            -- Update X axis acceleration
             nJoyAX = UtilClamp(nJoyAX + 0.5, 0, 5);
-          -- X Axis not going left or right? Reset X axis accelleration
+          -- X Axis not going left or right? Reset X axis acceleration
           else nJoyAX = 0 end;
           -- Axis going up?
           local nAxisY<const> = InputGetJoyAxis(iJoyActive, 1);
           if nAxisY < 0 then
             -- Reset if positive
             if nJoyAY > 0 then nJoyAY = 0 end;
-            -- Update Y axis accelleration
+            -- Update Y axis acceleration
             nJoyAY = UtilClamp(nJoyAY - 0.5, -5, 0);
           -- Axis going down?
           elseif nAxisY > 0 then
             -- Reset if negative
             if nJoyAY < 0 then nJoyAY = 0 end;
-            -- Update Y axis accelleration
+            -- Update Y axis acceleration
             nJoyAY = UtilClamp(nJoyAY + 0.5, 0, 5);
-          -- Y Axis not going up or down? Reset Y axis accelleration
+          -- Y Axis not going up or down? Reset Y axis acceleration
           else nJoyAY = 0 end;
           -- Axis moving?
           if nJoyAX ~= 0 or nJoyAY ~= 0 then
             -- Adjust mouse position
-            iCursorX = UtilClamp(iCursorX + nJoyAX, iStageLeft, iStageRight-1);
-            iCursorY = UtilClamp(iCursorY + nJoyAY, iStageTop, iStageBottom-1);
+            iCursorX, iCursorY =
+              UtilClampInt(iCursorX + nJoyAX, iStageLeft, iStageRight - 1),
+              UtilClampInt(iCursorY + nJoyAY, iStageTop, iStageBottom - 1);
             -- Update mouse position
             InputSetCursorPos(iCursorX, iCursorY);
           -- No axis pressed
@@ -291,23 +296,23 @@ end
 -- When a joystick device is changed --------------------------------------- --
 Input.OnJoyState(OnJoyState);
 -- When the mouse wheel is moved ------------------------------------------- --
-local function OnMouseScroll(nX, nY) nWheelX,nWheelY = nX,nY end;
+local function OnMouseScroll(nX, nY) nWheelX, nWheelY = nX, nY end;
 Input.OnMouseScroll(OnMouseScroll);
 -- When the mouse is moved ------------------------------------------------- --
 local function OnMouseMove(nX, nY) iCursorX,iCursorY = floor(nX),floor(nY) end;
 Input.OnMouseMove(OnMouseMove);
 -- Error handler ----------------------------------------------------------- --
 local function SetErrorMessage(sReason)
-  -- Activate main fbo just incase it isn't
+  -- Activate main frame buffer object just incase it isn't
   fboMain:Activate();
   -- Show cursor
   InputSetCursor(true);
-  -- Make sure text doesnt go off the screen
+  -- Make sure text doesn't go off the screen
   local sFullReason<const> = sReason;
   local aLines<const> = UtilExplode(sReason, "\n");
   if #aLines > 15 then
     while #aLines > 15 do remove(aLines, #aLines) end;
-    insert(aLines, "...more");
+    aLines[1 + #aLines] = "...more";
     sReason = UtilImplode(aLines, "\n");
   end
   -- Log the message
@@ -348,10 +353,12 @@ end
 -- Set cursor -------------------------------------------------------------- --
 local function SetCursor(iId)
   -- Check parameter
-  assert(type(iId)=="number", "Cursor id not specified!");
+  if not UtilIsInteger(iId) then
+    error("Cursor id integer is invalid! "..tostring(iId)) end;
   -- Get cursor data for id and check it
   local aCursorItem<const> = aCursorData[iId];
-  assert(type(aCursorItem)=="table", "Cursor id not valid!");
+  if not UtilIsTable(aCursorItem) then
+    error("Cursor id not valid! "..tostring(aCursorItem)) end;
   -- Set new cursor dynamics
   CursorMin, CursorMax, CursorOX, CursorOY =
     aCursorItem[1], aCursorItem[2], aCursorItem[3], aCursorItem[4];
@@ -364,7 +371,7 @@ local function SetGlobalKeys(bState)
   -- Keys used it global keys
   local iKeyF1<const>, iKeyF2<const>, iKeyF11<const>, iKeyF12<const> =
     aKeys.F1, aKeys.F2, aKeys.F11, aKeys.F12;
-  -- Actual fucntion
+  -- Actual function
   local function Function(bState)
     -- Callback
     local function Callback()
@@ -398,8 +405,10 @@ local function SetCallbacks(CBP, CBR, CBI)
 -- ------------------------------------------------------------------------- --
 local function TimeIt(sName, fcbCallback, ...)
   -- Check parameters
-  assert(type(sName)=="string", "Name not specified!");
-  assert(type(fcbCallback)=="function", "Function not specified!");
+  if not UtilIsString(sName) then
+    error("Name string is invalid! "..tostring(sName)) end;
+  if not UtilIsFunction(fcbCallback) then
+    error("Function is invalid! "..tostring(fcbCallback)) end;
   -- Save time
   local nTime<const> = InfoTime();
   -- Execute function
@@ -425,13 +434,13 @@ local aTypes<const> = {
 -- Loader ------------------------------------------------------------------ --
 local function LoadResources(sProcedure, aResources, fComplete)
   -- Check parameters
-  assert(     sProcedure  ~= nil,        "Procedure name is nil");
-  assert(type(sProcedure) == "string",   "Procedure name is invalid");
-  assert(     aResources  ~= nil,        "Resources table is nil");
-  assert(type(aResources) == "table",    "Resources table is invalid");
-  assert(#aResources      >  0,          "No resources specified to load");
-  assert(     fComplete   ~= nil,        "Finished callback is nil");
-  assert(type(fComplete)  == "function", "Finished callback is invalid");
+  if not UtilIsString(sProcedure) then
+    error("Procedure name string is invalid! "..tostring(sProcedure)) end;
+  if not UtilIsTable(aResources) then
+    error("Resources table is invalid! "..tostring(aResources)) end;
+  if #aResources == 0 then error("No resources specified to load!") end;
+  if not UtilIsFunction(fComplete) then
+    error("Finished callback is invalid! "..tostring(fComplete)) end;
   -- Initialise queue
   local sDst, aInfo, aNCache, iTotal, iLoaded = "", { }, { }, nil, nil;
   -- Progress update on asynchronous loading
@@ -442,23 +451,24 @@ local function LoadResources(sProcedure, aResources, fComplete)
   local function LoadItem(iI)
     -- Get resource data
     local aResource<const> = aResources[iI];
-    assert(type(aResource)=="table",
-      "Supplied table at index "..iI.." is invalid!");
+    if not UtilIsTable(aResource) then
+      error("Supplied table at index "..iI.." is invalid!") end;
     -- Get type of resource and throw error if the type is invalid
     local aTypeData<const> = aTypes[aResource.T];
-    assert(type(aTypeData)=="table",
-      "Supplied load type of '"..tostring(aResource.T)..
-        "' is invalid at index "..iI.."!");
+    if not UtilIsTable(aTypeData) then
+      error("Supplied load type of '"..tostring(aResource.T)..
+        "' is invalid at index "..iI.."!") end;
     -- Get destination file to load and check it
     sDst = aTypeData[3]..aResource.F..aTypeData[4];
-    assert(#sDst>0, "Filename at index "..iI.." is empty!");
+    if #sDst == 0 then error("Filename at index "..iI.." is empty!") end;
     -- Handle to resource
     local hHandle;
     -- Build parameters table to send to function
     local aSrcParams<const> = aTypeData[2];
-    local aDstParams<const> = { sDst, unpack(aSrcParams) };
-    insert(aDstParams, SetErrorMessage);
-    insert(aDstParams, ProgressUpdate);
+    local aDstParams<const> = { sDst,                 -- [1]
+                                unpack(aSrcParams) }; -- [2]
+    aDstParams[1 + #aDstParams] = SetErrorMessage;    -- [3]
+    aDstParams[1 + #aDstParams] = ProgressUpdate;     -- [4]
     -- Get no-cache setting
     local bNoCache<const> = aResource.NC;
     -- When final handle has been acquired
@@ -474,7 +484,7 @@ local function LoadResources(sProcedure, aResources, fComplete)
       iLoaded = iLoaded + 1;
       -- Execute the resource callback if available
       local fcbCallback<const> = aResource.A;
-      if type(fcbCallback) == "function" then fcbCallback() end;
+      if UtilIsFunction(fcbCallback) then fcbCallback() end;
       -- No need to show intermediate load times if cached
       if bCached then bCached = ".";
       -- Wasn't cached?
@@ -510,8 +520,9 @@ local function LoadResources(sProcedure, aResources, fComplete)
       aResource.ST1 = nTime - aResource.ST1;
       aResource.ST2 = nTime;
       -- Function wants file info?
+      local aParams<const> = aResource.P;
       if aTypeData[6] then
-        for iI = 1, #aInfo do insert(aResource.P, aInfo[iI]) end;
+        for iI = 1, #aInfo do aParams[1 + #aParams] = aInfo[iI] end;
       end
     end
     -- When first handle has been loaded
@@ -521,7 +532,7 @@ local function LoadResources(sProcedure, aResources, fComplete)
       -- Load the file and set the handle
       OnHandle(aTypeData[5](vData, unpack(aResource.P)));
     end
-    insert(aDstParams, OnLoaded);
+    aDstParams[1 + #aDstParams] = OnLoaded;
     -- Set stage 1 time
     aResource.ST1 = InfoTime();
     -- Reset info for progress update
@@ -531,12 +542,12 @@ local function LoadResources(sProcedure, aResources, fComplete)
     if vCached then
       -- Setup second stage
       SetupSecondStage();
-      -- Send straighe to handle
+      -- Send straight to handle
       OnHandle(vCached, true);
     -- Dispatch the call
     else aTypeData[1](unpack(aDstParams)) end;
   end
-  -- Disable global keys until everything has laoded
+  -- Disable global keys until everything has loaded
   SetGlobalKeys(false);
   -- Clear callbacks but keep the last render callback
   SetCallbacks(nil, CBRender, nil);
@@ -595,10 +606,10 @@ end
 -- ------------------------------------------------------------------------- --
 local function PlayMusic(musicHandle, Volume, PosCmd, Loop, Start)
   -- Set default parameters that aren't specified
-  if type(Volume) ~= "number" then Volume =  1 end;
-  if type(PosCmd) ~= "number" then PosCmd =  0 end;
-  if type(Loop)   ~= "number" then Loop   = -1 end;
-  if type(Start)  ~= "number" then Start  =  0 end;
+  if not UtilIsNumber(Volume) then Volume = 1 end;
+  if not UtilIsInteger(PosCmd) then PosCmd = 0 end;
+  if not UtilIsInteger(Loop) then Loop = -1 end;
+  if not UtilIsInteger(Start) then Start = 0 end;
   -- Stop music
   StopMusic(PosCmd);
   -- Handle specified?
@@ -676,7 +687,7 @@ local function SetBottomRightTipAndShadow(strTip)
    -- Render tip shadow
   RenderShadow(232, 216, 312, 232);
 end
--- Bounds checking blitter ------------------------------------------------- --
+-- Bounds checking painter ------------------------------------------------- --
 local function BCBlit(texHandle, iTexIndex, iLeft, iTop, iRight, iBottom)
   -- If not out of bounds draw the texture
   if min(iRight, iStageRight)   <= max(iLeft, iStageLeft) or
@@ -697,12 +708,16 @@ local function IsFading() return not not fcbFading end;
 -- Fade -------------------------------------------------------------------- --
 local function Fade(S, E, C, D, A, M, L, T, R, B, Z)
   -- Check parameters
-  assert(type(S) == "number",   "No starting value");
-  assert(type(E) == "number",   "No ending value");
-  assert(type(C) == "number",   "No fade inc/decremember value");
-  assert(type(A) == "function", "No after function");
+  if not UtilIsNumber(S) then
+    error("Invalid starting value number! "..tostring(S)) end;
+  if not UtilIsNumber(E) then
+    error("Invalid ending value number! "..tostring(E)) end;
+  if not UtilIsNumber(C) then
+    error("Invalid fade inc/decremember value! "..tostring(C)) end
+  if not UtilIsFunction(A) then
+    error("Invalid after function! "..tostring(A)) end;
   -- If already fading, run the after function
-  if type(fcbFading) == "function" then fcbFading() end;
+  if UtilIsFunction(fcbFading) then fcbFading() end;
   -- Set loading cursor because player can't control anything
   SetCursor(aCursorIdData.WAIT);
   -- During function
@@ -801,25 +816,32 @@ local function RefreshViewportInfo()
   -- Refresh matrix parameters
   iStageWidth, iStageHeight,
     iStageLeft, iStageTop, iStageRight, iStageBottom = fboMain:GetMatrix();
+  -- Floor all the values as the main frame buffer object is always on the
+  -- pixel boundary
+  iStageWidth, iStageHeight, iStageLeft, iStageTop, iStageRight, iStageBottom =
+    floor(iStageWidth), floor(iStageHeight), floor(iStageLeft),
+    floor(iStageTop), floor(iStageRight), floor(iStageBottom);
   -- Clamp mouse cursor into stage
   if     iCursorX  < iStageLeft   then iCursorX = iStageLeft;
   elseif iCursorY  < iStageTop    then iCursorY = iStageTop end;
   if     iCursorX >= iStageRight  then iCursorX = iStageRight-1;
   elseif iCursorY >= iStageBottom then iCursorY = iStageBottom-1 end;
-  -- Call framebuffer callbacks
+  -- Call frame buffer callbacks
   for _, fcbC in pairs(fcbFrameBufferCallbacks) do
     fcbC(iStageWidth, iStageHeight,
       iStageLeft, iStageTop, iStageRight, iStageBottom) end;
 end
--- Register a callbackfo and automatically when window size changes -------- --
+-- Register a callback and automatically when window size changes ---------- --
 local function RegisterFrameBufferUpdateCallback(sName, fCB)
   -- Check parameters
-  assert(type(sName)=="string", "Callback name not specified!");
-  assert(type(fCB)=="function" or fCB==nil, "Callback func not specified!");
-  -- Register callback when framebuffer is updated
+  if not UtilIsString(sName) then
+    error("Invalid callback name string! "..tostring(sName)) end;
+  if nil ~= fCB and not UtilIsFunction(fCB) then
+    error("Invalid callback function! "..tostring(fCB)) end;
+  -- Register callback when frame buffer is updated
   fcbFrameBufferCallbacks[sName] = fCB;
   -- If a callback was set then call it
-  if fCB then fCB(iStageWidth, iStageHeight,
+  if nil ~= fCB then fCB(iStageWidth, iStageHeight,
     iStageLeft, iStageTop, iStageRight, iStageBottom) end;
 end
 -- Returns wether test mode is enabled ------------------------------------- --
@@ -837,13 +859,13 @@ InputSetCursor(false);
 SetCallbacks(nil, nil, nil);
 -- The first tick function
 local function fcbTick()
-  -- Empty callback function for cvar events
+  -- Empty callback function for CVar events
   local function fcbEmpty() return true end;
-  -- Register file data cvar
+  -- Register file data CVar
   local aCVF<const> = Variable.Flags;
-  -- Default cvar flags for string storage
+  -- Default CVar flags for string storage
   local iCFR<const> = aCVF.STRINGSAVE|aCVF.TRIM|aCVF.PROTECTED|aCVF.DEFLATE;
-  -- Default cvar flags for boolean storage
+  -- Default CVar flags for boolean storage
   local iCFB<const> = aCVF.BOOLEANSAVE;
   -- Initialise base API functions
   aAPI = {
@@ -887,11 +909,11 @@ local function fcbTick()
     aAPI["VarGameData"..iI] =
       VariableRegister("gam_data"..iI, "", iCFR, fcbEmpty);
   end
-  -- ...and a cvar that lets us show setup for the first time
+  -- ...and a CVar that lets us show setup for the first time
   aAPI.VarGameSetup = VariableRegister("gam_setup", 1, iCFB, fcbEmpty);
-  -- ...and a cvar that lets us skip the intro
+  -- ...and a CVar that lets us skip the intro
   aAPI.VarGameIntro = VariableRegister("gam_intro", 1, iCFB, fcbEmpty);
-  -- ...and a cvar that lets us start straight into a level
+  -- ...and a CVar that lets us start straight into a level
   aAPI.VarGameTest = VariableRegister("gam_test", "", aCVF.STRING, fcbEmpty);
   -- Data script loaded event
   local function DataLoaded()
@@ -899,14 +921,14 @@ local function fcbTick()
   end;
   -- Base code scripts that are to be loaded
   local aBaseScripts<const> = {
-    {T=9,F="data",   P={}, A=DataLoaded },
-    {T=9,F="credits",P={}}, {T=9,F="setup",  P={}},
-    {T=9,F="book",   P={}}, {T=9,F="game",   P={}}, {T=9,F="tntmap", P={}},
-    {T=9,F="cntrl",  P={}}, {T=9,F="lobby",  P={}}, {T=9,F="file",   P={}},
-    {T=9,F="race",   P={}}, {T=9,F="map",    P={}}, {T=9,F="bank",   P={}},
-    {T=9,F="shop",   P={}}, {T=9,F="scene",  P={}}, {T=9,F="title",  P={}},
-    {T=9,F="intro",  P={}}, {T=9,F="ending", P={}}, {T=9,F="end",    P={}},
-    {T=9,F="score",  P={}}, {T=9,F="fail",   P={}},
+    {T=9,F="bank",   P={}}, {T=9,F="book",  P={}}, {T=9,F="cntrl", P={}},
+    {T=9,F="credits",P={}}, {T=9,F="data",  P={},A=DataLoaded },
+    {T=9,F="debug",  P={}}, {T=9,F="end",   P={}}, {T=9,F="ending",P={}},
+    {T=9,F="fail",   P={}}, {T=9,F="file",  P={}}, {T=9,F="game",  P={}},
+    {T=9,F="intro",  P={}}, {T=9,F="lobby", P={}}, {T=9,F="map",   P={}},
+    {T=9,F="post",   P={}}, {T=9,F="race",  P={}}, {T=9,F="scene", P={}},
+    {T=9,F="score",  P={}}, {T=9,F="setup", P={}}, {T=9,F="shop",  P={}},
+    {T=9,F="title",  P={}}, {T=9,F="tntmap",P={}},
   };
   -- Base fonts that are to be loaded
   local aBaseFonts<const> = {
@@ -919,8 +941,8 @@ local function fcbTick()
   };
   -- Base masks that are to be loaded
   local aBaseMasks<const> = {
-    {T=6,F="lmask",   P={16,16}},
-    {T=6,F="smask",   P={16,16}}
+    {T=6,F="lmask", P={16,16}},
+    {T=6,F="smask", P={16,16}}
   };
   -- Base sound effects that are to be loaded
   local aBaseSounds<const> = {
@@ -932,13 +954,17 @@ local function fcbTick()
     {T=4,F="select",  P={}}, {T=4,F="sale",    P={}}, {T=4,F="switch",  P={}},
     {T=4,F="hololoop",P={}}, {T=4,F="holo",    P={}}
   }
+  -- Add all these to all the base assets to load
+  local aBaseAssetsCategories<const> =
+    { aBaseScripts, aBaseFonts, aBaseTextures, aBaseMasks, aBaseSounds };
   -- Build base assets to load
   local aBaseAssets<const> = { };
-  for iI = 1, #aBaseScripts do insert(aBaseAssets, aBaseScripts[iI]) end;
-  for iI = 1, #aBaseFonts do insert(aBaseAssets, aBaseFonts[iI]) end;
-  for iI = 1, #aBaseTextures do insert(aBaseAssets, aBaseTextures[iI]) end;
-  for iI = 1, #aBaseMasks do insert(aBaseAssets, aBaseMasks[iI]) end;
-  for iI = 1, #aBaseSounds do insert(aBaseAssets, aBaseSounds[iI]) end;
+  for iBaseIndex = 1, #aBaseAssetsCategories do
+    local aAssets<const> = aBaseAssetsCategories[iBaseIndex];
+    for iAssetIndex = 1, #aAssets do
+      aBaseAssets[1 + #aBaseAssets] = aAssets[iAssetIndex];
+    end
+  end
   -- Calculate starting indexes of each base asset
   local iBaseScripts<const> = 1;
   local iBaseFonts<const> = iBaseScripts + #aBaseScripts;
@@ -948,8 +974,9 @@ local function fcbTick()
   -- When base assets have loaded
   local function OnLoaded(aData)
     -- Set font handles
-    fontLarge, fontLittle, fontTiny, fontSpeech = aData[iBaseFonts].H,
-      aData[iBaseFonts+1].H, aData[iBaseFonts+2].H, aData[iBaseFonts+3].H;
+    fontLarge, fontLittle, fontTiny, fontSpeech =
+      aData[iBaseFonts].H, aData[iBaseFonts + 1].H,
+      aData[iBaseFonts + 2].H, aData[iBaseFonts + 3].H;
     aAPI.fontLarge, aAPI.fontLittle, aAPI.fontTiny, aAPI.fontSpeech =
       fontLarge, fontLittle, fontTiny, fontSpeech;
     -- Set sprites texture
@@ -957,13 +984,13 @@ local function fcbTick()
     aAPI.texSpr = texSpr;
     -- Set masks
     aAPI.maskLevel, aAPI.maskSprites = aData[iBaseMasks].H,
-      aData[iBaseMasks+1].H;
+      aData[iBaseMasks + 1].H;
     -- Function to grab an API function. This function will be sent to all
     -- the above loaded modules.
     local function GetAPI(...)
       -- Get functions and if there is only one then return it
       local tFuncs<const> = { ... }
-      assert(#tFuncs > 0, "No functions specified to check");
+      if #tFuncs == 0 then error("No functions specified to check") end;
       -- Functions already added
       local aAdded<const> = { };
       -- Find each function specified and return all of them
@@ -971,8 +998,8 @@ local function fcbTick()
       for iI = 1, #tFuncs do
         -- Check parameter
         local sMember<const> = tFuncs[iI];
-        assert(type(sMember)=="string",
-          "Function name at "..iI.." is invalid");
+        if not UtilIsString(sMember) then
+          error("Function name at "..iI.." is invalid") end;
         -- Check if we already cached this member and if already have it?
         local iCached<const> = aAdded[sMember];
         if iCached ~= nil then
@@ -983,17 +1010,16 @@ local function fcbTick()
         -- Get the function callback and if it's a function?
         local vMember<const> = aAPI[sMember];
         if vMember == nil then
-          -- So instead of just throwing an error here, we will just silenty
+          -- So instead of just throwing an error here, we will just silently
           -- accept the request, but the callback will be our own callback that
           -- will throw the error, this way, there is no error spam during
           -- initialisation.
-          error("Invalid member '"..sMember.."' with result '"..
-            type(vMember).."="..tostring(vMember).."'!");
+          error("Invalid member '"..sMember.."'! "..tostring(vMember));
         end
         -- Cache function so we can track duplicated
         aAdded[sMember] = iI;
         -- Add it to returns
-        insert(tRets, vMember);
+        tRets[1 + #tRets] = vMember;
       end
       -- Unpack returns table and return all the functions requested
       return unpack(tRets);
@@ -1005,7 +1031,7 @@ local function fcbTick()
     end
     -- Assign and check sound effects
     for iSHIndex = iBaseSounds, iBaseSounds + #aBaseSounds - 1 do
-      insert(aSounds, aData[iSHIndex].H) end
+      aSounds[1 + #aSounds] = aData[iSHIndex].H end
     if #aBaseSounds ~= #aSounds then
       error("Only "..#aBaseSounds.." of "..aSounds.." sound effects!") end;
     -- Main procedure callback
@@ -1019,21 +1045,21 @@ local function fcbTick()
       CBProc();
       CBRender();
       -- Draw mouse cursor
-      texSpr:BlitSLT(CursorMin + floor(InfoTicks() / 4 % CursorMax),
+      texSpr:BlitSLT(InfoTicks() // 4 % CursorMax + CursorMin,
         iCursorX + CursorOX, iCursorY + CursorOY);
-      -- Draw screen at end of lua tick
+      -- Draw screen at end of LUA tick
       FboDraw();
     end
     -- Set main callback
     fcbTick = MainCallback;
     -- Load functions
     InitSetup, InitScene, InitScore, InitCredits, InitEnding, LoadLevel,
-      InitIntro, InitTitle, InitFail, aLevelData, aRaceData, aObjectTypes,
-      InitNewGame, LoadInfinitePlay =
+      InitIntro, InitTitle, InitFail, aLevelsData, aRacesData, aObjectTypes,
+      InitNewGame, InitDebugPlay =
         GetAPI("InitSetup", "InitScene", "InitScore", "InitCredits",
           "InitEnding", "LoadLevel", "InitIntro", "InitTitle", "InitFail",
-          "aLevelData", "aRaceData", "aObjectTypes", "InitNewGame",
-          "LoadInfinitePlay");
+          "aLevelsData", "aRacesData", "aObjectTypes", "InitNewGame",
+          "InitDebugPlay");
     -- Init game counters so testing stuff quickly works properly
     InitNewGame();
     -- Tests
@@ -1044,22 +1070,24 @@ local function fcbTick()
       -- Get start level
       local iStartLevel<const> = tonumber(sTestValue) or 0;
       -- Test random level?
-      if iStartLevel == 0 then return LoadLevel(random(#aLevelData), "game");
+      if iStartLevel == 0 then return LoadLevel(random(#aLevelsData), "game");
       -- Testing infinite play mode?
-      elseif iStartLevel == -1 then return LoadInfinitePlay();
+      elseif iStartLevel == -1 then return InitDebugPlay();
       -- Testing the fail screen
       elseif iStartLevel == -2 then return InitFail();
       -- Testing the game over
       elseif iStartLevel == -3 then return InitScore();
       -- Testing the credits
-      elseif iStartLevel == -4 then return InitCredits();
+      elseif iStartLevel == -4 then return InitCredits(false);
+      -- Testing the rolling credits
+      elseif iStartLevel == -5 then return InitCredits(true);
       -- Testing a races ending
-      elseif iStartLevel > -9 and iStartLevel <= -5 then
-        return InitEnding(#aRaceData + (-9 - iStartLevel));
-      elseif iStartLevel <= #aLevelData then
+      elseif iStartLevel > -10 and iStartLevel <= -6 then
+        return InitEnding(#aRacesData + (-10 - iStartLevel));
+      elseif iStartLevel <= #aLevelsData then
         return LoadLevel(iStartLevel, "game");
-      elseif iStartLevel > #aLevelData and iStartLevel <= #aLevelData*2 then
-        return InitScene(iStartLevel-#aLevelData, "game");
+      elseif iStartLevel > #aLevelsData and iStartLevel <= #aLevelsData*2 then
+        return InitScene(iStartLevel-#aLevelsData, "game");
       end
     end
     -- If being run for first time
@@ -1112,7 +1140,7 @@ local function fcbTick()
     fFont:PrintR(iXText, iYText, format("%.f%% Completed", nPercent*100));
     -- Catchup accumulator (we don't care about it);
     InfoCatchup();
-    -- Draw screen at end of lua tick
+    -- Draw screen at end of LUA tick
     FboDraw();
   end
   -- Set new tick function

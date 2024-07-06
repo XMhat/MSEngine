@@ -209,15 +209,13 @@ class Pack :
     // Englarge complete
     return true;
   }
-  /* ----------------------------------------------------------------------- */
-  // Test insert a single rectangle into the bin, possibly rotated.
-  const Rect Test(const UInt iW, const UInt iH)
+  /* -- Test insert a single rectangle into the bin ------------------------ */
+  const Rect Test(const UInt iW, const UInt iH) const
   { Int iScore1 = numeric_limits<Int>::max(), iScore2 = iScore1;
     return FindPositionForNewNodeBestShortSideFit(static_cast<Int>(iW),
       static_cast<Int>(iH), iScore1, iScore2);
   }
-  /* ----------------------------------------------------------------------- */
-  // Inserts a single rectangle into the bin, possibly rotated.
+  /* -- Inserts a single rectangle into the bin ---------------------------- */
   const Rect Insert(const UInt uiW, const UInt uiH)
   { // Unused in this function. We don't need to know the score after finding
     // the position.
@@ -287,7 +285,7 @@ CTOR_BEGIN_DUO(Bins, Bin, CLHelperUnsafe, ICHelperUnsafe),
     /* --------------------------------------------------------------------- */
     { }
 };/* ----------------------------------------------------------------------- */
-CTOR_END_NOINITS(Bins)            // End of bin objects collector
+CTOR_END_NOINITS(Bins, Bin)            // End of bin objects collector
 /* ------------------------------------------------------------------------- */
 }                                      // End of public module namespace
 /* ------------------------------------------------------------------------- */

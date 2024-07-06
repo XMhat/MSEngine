@@ -104,10 +104,8 @@ class GlFWUtil                         // Members initially private
   /* ---------------------------------------------------------------------- */\
   void GlFWSet ## nc(const bool bState) \
     { GlFWSetHintBoolean(GLFW_ ## nu, bState); } \
-  void GlFWSet ## nc ## Enabled(void) \
-    { GlFWSetHintEnabled(GLFW_ ## nu); } \
-  void GlFWSet ## nc ## Disabled(void) \
-    { GlFWSetHintDisabled(GLFW_ ## nu); } \
+  void GlFWSet ## nc ## Enabled(void) { GlFWSetHintEnabled(GLFW_ ## nu); } \
+  void GlFWSet ## nc ## Disabled(void) { GlFWSetHintDisabled(GLFW_ ## nu); }
   /* ----------------------------------------------------------------------- */
   SET(AutoIconify, AUTO_ICONIFY)       // Set window auto-minimise state
   SET(CentreCursor, CENTER_CURSOR)     // Set window cursor centre state
@@ -118,22 +116,17 @@ class GlFWUtil                         // Members initially private
   SET(Focus, FOCUSED)                  // Set window focused state
   SET(FocusOnShow, FOCUS_ON_SHOW)      // Set focus on show window
   SET(ForwardCompat, OPENGL_FORWARD_COMPAT) // Set opengl fwd compatibility
+  SET(GPUSwitching, COCOA_GRAPHICS_SWITCHING) // Set graphics switching?
   SET(Iconify, ICONIFIED)              // Set window minimised state
   SET(Maximised, MAXIMIZED)            // Set window maximised state
   SET(MouseHovered, HOVERED)           // Set mouse hovered over state
   SET(NoErrors, CONTEXT_NO_ERROR)      // Set context no errors
   SET(Resizable, RESIZABLE)            // Set window resizable state
+  SET(RetinaMode, COCOA_RETINA_FRAMEBUFFER) // Set retina framebuffer?
   SET(SRGBCapable, SRGB_CAPABLE)       // Set SRGB colour space capable
   SET(Stereo, CENTER_CURSOR)           // Set window cursor centre state
   SET(Transparency, TRANSPARENT_FRAMEBUFFER) // Set transparent framebuffer
   SET(Visibility, VISIBLE)             // Set window visibility state
-  /* ----------------------------------------------------------------------- */
-#if defined(MACOS)                     // Using Apple compiler?
-  /* ----------------------------------------------------------------------- */
-  SET(GPUSwitching, COCOA_GRAPHICS_SWITCHING) // Set graphics switching?
-  SET(RetinaMode,   COCOA_RETINA_FRAMEBUFFER) // Set retina framebuffer?
-  /* ----------------------------------------------------------------------- */
-#endif                                 // End of Apple check
   /* ----------------------------------------------------------------------- */
 #undef SET                             // Done with this macro
   /* -- Default constructor ------------------------------------------------ */

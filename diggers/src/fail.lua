@@ -12,9 +12,11 @@
 -- Core function aliases --------------------------------------------------- --
 -- M-Engine function aliases ----------------------------------------------- --
 -- Diggers function and data aliases --------------------------------------- --
-local LoadResources, SetCallbacks, Fade, PlayMusic, aCursorIdData, aSfxData,
-  PlayStaticSound, IsButtonReleased, SetCursor, InitScore, IsButtonReleased,
+local Fade, InitScore, IsButtonReleased, IsButtonReleased, LoadResources,
+  PlayMusic, PlayStaticSound, SetCallbacks, SetCursor, aCursorIdData, aSfxData,
   fontLarge;
+-- Assets required --------------------------------------------------------- --
+local aAssets<const> = { { T = 7, F = "lose", P = { } } };
 -- Init ending screen functions -------------------------------------------- --
 local function InitFail()
   -- When fail assets have loaded?
@@ -41,24 +43,24 @@ local function InitFail()
         -- Fade out and load title with fade
         Fade(0,1, 0.04, GameOverRenderProc, InitScore, true);
       end
-      -- Change render procs
+      -- Change render procedures
       SetCallbacks(nil, GameOverRenderProc, FailInput);
     end
     -- Fade in
     Fade(1, 0, 0.04, GameOverRenderProc, OnFadeIn);
   end
   -- Load music and when finished
-  LoadResources("No More Zones", {{T=7,F="lose",P={}}}, OnLoaded);
+  LoadResources("No More Zones", aAssets, OnLoaded);
 end
 -- Exports and imports ----------------------------------------------------- --
 return { A = { InitFail = InitFail }, F = function(GetAPI)
   -- Imports --------------------------------------------------------------- --
-  LoadResources, SetCallbacks, Fade, PlayMusic, aCursorIdData, aSfxData,
-  PlayStaticSound, SetCursor, InitScore, IsButtonReleased, fontLarge
+  Fade, InitScore, IsButtonReleased, LoadResources, PlayMusic, PlayStaticSound,
+  SetCallbacks, SetCursor, aCursorIdData, aSfxData, fontLarge
   = -- --------------------------------------------------------------------- --
-  GetAPI("LoadResources", "SetCallbacks", "Fade", "PlayMusic", "aCursorIdData",
-    "aSfxData", "PlayStaticSound", "SetCursor", "InitScore",
-    "IsButtonReleased", "fontLarge");
+  GetAPI("Fade", "InitScore", "IsButtonReleased",  "LoadResources",
+    "PlayMusic", "PlayStaticSound", "SetCallbacks", "SetCursor",
+    "aCursorIdData", "aSfxData", "fontLarge");
   -- ----------------------------------------------------------------------- --
 end };
 -- End-of-File ============================================================= --

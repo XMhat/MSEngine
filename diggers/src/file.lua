@@ -18,52 +18,55 @@ local UtilFormatTime<const>, InfoOSTime<const>, VariableSave<const>
       = -- ----------------------------------------------------------------- --
       Util.FormatTime,       Info.OSTime,       Variable.Save;
 -- Diggers function and data aliases --------------------------------------- --
-local aSaveSlot, LoadResources, Fade, SetCallbacks, IsMouseInBounds,
-  IsMouseNotInBounds, aCursorIdData, SetCursor, PlayStaticSound, aSfxData,
-  InitCon, aObjectTypes, aLevelData, aObjectData, IsButtonReleased, texSpr,
-  fontSpeech, SetBottomRightTipAndShadow, RenderShadow =
-    { }, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
-    nil, nil, nil, nil;
+local Fade, InitCon, IsButtonReleased, IsMouseInBounds,IsMouseNotInBounds,
+  LoadResources, PlayStaticSound, RenderShadow, SetBottomRightTipAndShadow,
+  SetCallbacks, SetCursor, aCursorIdData, aLevelsData, aObjectData,
+  aObjectTypes, aSaveSlot, aSfxData, fontSpeech, texSpr =
+    nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+    { }, nil, nil, nil;
+-- Assets required --------------------------------------------------------- --
+local aAssets<const> = { { T = 2, F = "cntrl",  P = { 0 } },
+                         { T = 2, F = "lobbyc", P = { 0 } } };
 -- Match text -------------------------------------------------------------- --
 local sFileMatchText<const> =
-  "^(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),"..
-  "(%d+),(%d+),(%d+),(%d+),([%d%s]*)$"
+  "^(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),\z
+    (%d+),(%d+),(%d+),(%d+),([%d%s]*)$"
 -- Global data ------------------------------------------------------------- --
 local aGlobalData<const> = { };
 -- Initialise a new game --------------------------------------------------- --
 local function InitNewGame()
-  aGlobalData.gSelectedRace,     aGlobalData.gSelectedLevel,
-  aGlobalData.gZogsToWinGame,    aGlobalData.gBankBalance,
-  aGlobalData.gPercentCompleted, aGlobalData.gCapitalCarried,
-  aGlobalData.gNewGame,          aGlobalData.gGameSaved,
-  aGlobalData.gLevelsCompleted,  aGlobalData.gTotalSalaryPaid,
+  aGlobalData.gBankBalance,      aGlobalData.gCapitalCarried,
+  aGlobalData.gGameSaved,        aGlobalData.gLevelsCompleted,
+  aGlobalData.gNewGame,          aGlobalData.gPercentCompleted,
+  aGlobalData.gSelectedLevel,    aGlobalData.gSelectedRace,
   aGlobalData.gTotalCapital,     aGlobalData.gTotalDeathExp,
-  aGlobalData.gTotalIncome,      aGlobalData.gTotalDeaths,
-  aGlobalData.gTotalGemsSold,    aGlobalData.gTotalGemsFound,
-  aGlobalData.gTotalDug,         aGlobalData.gTotalPurchExp,
-  aGlobalData.gTotalPurchases,   aGlobalData.gTotalTimeTaken =
+  aGlobalData.gTotalDeaths,      aGlobalData.gTotalDug,
+  aGlobalData.gTotalGemsFound,   aGlobalData.gTotalGemsSold,
+  aGlobalData.gTotalIncome,      aGlobalData.gTotalPurchExp,
+  aGlobalData.gTotalPurchases,   aGlobalData.gTotalSalaryPaid,
+  aGlobalData.gTotalTimeTaken,   aGlobalData.gZogsToWinGame =
+    0,                             0,
+    true,                          { },
+    true,                          0,
     nil,                           nil,
-    17500,                         0,
-    0,                             0,
-    true,                          true,
-    { },                           0,
     0,                             0,
     0,                             0,
     0,                             0,
     0,                             0,
-    0,                             0;
+    0,                             0,
+    0,                             17500;
 end
 -- Read, verify and return save data --------------------------------------- --
 local function LoadSaveData()
   -- Data to return
   local aFileData<const>, aNameData<const> = { }, { };
-  -- Get game data cvars
+  -- Get game data CVars
   for iIndex = 1, 4 do
-    -- Get cvar and if not empty
+    -- Get CVar and if not empty
     local sData<const> = aSaveSlot[iIndex]:Get();
     if #sData > 0 then
       -- Get data for num
-      -- We need 5 comma seperated values (Last value optional)
+      -- We need 5 comma separated values (Last value optional)
       local T, TTT, R, B, C, TSP, TC, TDE, TD, TGS, TGF, TI,
         TDG, TPE, TP, LC, L = sData:match(sFileMatchText);
       -- Convert everything to integers
@@ -79,27 +82,27 @@ local function LoadSaveData()
          B <= aGlobalData.gZogsToWinGame and C >= 0 and C <= 9999 and
          TSP >= 0 and TC >= 0 and TDE >= 0 and TD >= 0 and TGS >= 0 and
          TGF >= 0 and TI >= 0 and TDG >= 0 and TPE >= 0 and TP >= 0 and
-         LC >= 0 and LC <= #aLevelData then
+         LC >= 0 and LC <= #aLevelsData then
         -- Parse levels completed
         local CL<const>, LA = { }, 0;
         for LI in L:gmatch("(%d+)") do
           -- Convert to number and if valid number?
           LI = tonumber(LI);
-          if LI and LI >= 1 and LI <= #aLevelData then
+          if LI and LI >= 1 and LI <= #aLevelsData then
             -- Push valid level
             CL[LI], LA = true, LA + 1;
           end
         end
         -- Levels added and valid number of levels?
-        if LA > 0 and LA <= #aLevelData and LA == LC then
+        if LA > 0 and LA <= #aLevelsData and LA == LC then
           -- Level data OK! file and name data
           aFileData[iIndex], aNameData[iIndex] =
             { T, TTT, R, B, C, TSP, TC, TDE, TD, TGS,
               TGF, TI, TDG, TPE, TP, CL },
             format("%s (%s) %u%% (%05u$)",
               UtilFormatTime(T, "%a %b %d %H:%M:%S %Y"):upper(),
-              aObjectData[aObjectTypes.FTARG+R].NAME,
-              floor(B/aGlobalData.gZogsToWinGame*100), B);
+              aObjectData[aObjectTypes.FTARG + R].NAME,
+              floor(B / aGlobalData.gZogsToWinGame * 100), B);
         else aNameData[iIndex] = "CORRUPTED SLOT "..iIndex.." (E#2)" end;
       else aNameData[iIndex] = "CORRUPTED SLOT "..iIndex.." (E#1)" end;
     else aNameData[iIndex] = "EMPTY SLOT "..iIndex end;
@@ -278,7 +281,7 @@ local function InitFile()
           sMsg = "FILE "..iSelected.." SAVED SUCCESSFULLY!";
           -- Can exit to title
           aGlobalData.gGameSaved = true;
-          -- Commit cvars on the game engine to persistant storage
+          -- Commit CVars on the game engine to persistent storage
           VariableSave();
           -- Refresh data
           aFileData, aNameData = LoadSaveData();
@@ -296,7 +299,7 @@ local function InitFile()
           PlayStaticSound(aSfxData.SELECT);
           -- When faded out?
           local function OnFadeOut()
-            -- Unreference assets for garbage collector
+            -- Dereference assets for garbage collector
             texFile = nil;
             -- Load controller screen
             InitCon();
@@ -308,35 +311,32 @@ local function InitFile()
       -- Set controller callbacks
       SetCallbacks(FileLogic, RenderFile, FileInput);
     end
-    -- Change render procs
+    -- Change render procedures
     Fade(1, 0, 0.04, RenderFile, OnFadeIn);
   end
   -- Load file screen texture
-  LoadResources("File", {{T=2,F="cntrl",  P={0}},
-                         {T=2,F="lobbyc",P={0}}}, OnLoaded);
+  LoadResources("File", aAssets, OnLoaded);
 end
 -- Exports and imports ----------------------------------------------------- --
 return {
   -- Exports --------------------------------------------------------------- --
-  A = { InitFile = InitFile,
-        InitNewGame = InitNewGame,
-        aGlobalData = aGlobalData,
-        LoadSaveData = LoadSaveData },
+  A = { aGlobalData = aGlobalData,     InitFile = InitFile,
+        InitNewGame = InitNewGame,     LoadSaveData = LoadSaveData },
   -- Imports --------------------------------------------------------------- --
   F = function(GetAPI)
     -- --------------------------------------------------------------------- --
-    LoadResources, SetCallbacks, SetCursor, IsMouseInBounds, PlayStaticSound,
-    Fade, IsMouseNotInBounds, aCursorIdData, aSfxData, InitCon, aObjectTypes,
-    aLevelData, aObjectData, IsButtonReleased, texSpr, fontSpeech,
-    SetBottomRightTipAndShadow, RenderShadow, aSaveSlot[1], aSaveSlot[2],
-    aSaveSlot[3], aSaveSlot[4]
+    Fade, InitCon, IsButtonReleased, IsMouseInBounds, IsMouseNotInBounds,
+    LoadResources, PlayStaticSound, RenderShadow, SetBottomRightTipAndShadow,
+    SetCallbacks, SetCursor, aCursorIdData, aLevelsData, aObjectData,
+    aObjectTypes, aSaveSlot[1],  aSaveSlot[2], aSaveSlot[3], aSaveSlot[4],
+    aSfxData, fontSpeech, texSpr
     = -- ------------------------------------------------------------------- --
-    GetAPI("LoadResources", "SetCallbacks", "SetCursor", "IsMouseInBounds",
-      "PlayStaticSound", "Fade", "IsMouseNotInBounds", "aCursorIdData",
-      "aSfxData", "InitCon", "aObjectTypes", "aLevelData", "aObjectData",
-      "IsButtonReleased", "texSpr", "fontSpeech", "SetBottomRightTipAndShadow",
-      "RenderShadow", "VarGameData1", "VarGameData2", "VarGameData3",
-      "VarGameData4");
+    GetAPI("Fade", "InitCon", "IsButtonReleased", "IsMouseInBounds",
+      "IsMouseNotInBounds", "LoadResources", "PlayStaticSound", "RenderShadow",
+      "SetBottomRightTipAndShadow", "SetCallbacks", "SetCursor",
+      "aCursorIdData", "aLevelsData", "aObjectData", "aObjectTypes",
+      "VarGameData1", "VarGameData2", "VarGameData3", "VarGameData4",
+      "aSfxData", "fontSpeech", "texSpr");
     -- --------------------------------------------------------------------- --
   end
 };

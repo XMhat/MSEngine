@@ -112,25 +112,25 @@ class FboColour                        // Members initially private
     SetColourAlpha(UtilNormaliseEx<GLfloat,24>(uiValue));
   }
   /* ----------------------------------------------------------------------- */
-  void SetColourRed(const FboColour &cO)
-    { SetColourRed(cO.GetColourRed()); }
-  void SetColourGreen(const FboColour &cO)
-    { SetColourGreen(cO.GetColourGreen()); }
-  void SetColourBlue(const FboColour &cO)
-    { SetColourBlue(cO.GetColourBlue()); }
-  void SetColourAlpha(const FboColour &cO)
-    { SetColourAlpha(cO.GetColourAlpha()); }
+  void SetColourRed(const FboColour &fbValue)
+    { SetColourRed(fbValue.GetColourRed()); }
+  void SetColourGreen(const FboColour &fbValue)
+    { SetColourGreen(fbValue.GetColourGreen()); }
+  void SetColourBlue(const FboColour &fbValue)
+    { SetColourBlue(fbValue.GetColourBlue()); }
+  void SetColourAlpha(const FboColour &fbValue)
+    { SetColourAlpha(fbValue.GetColourAlpha()); }
   /* ----------------------------------------------------------------------- */
   void ResetColour(void) { GetColour().fill(-1.0f); }
   /* ----------------------------------------------------------------------- */
-  bool RedColourNotEqual(const FboColour &cO) const
-    { return UtilIsFloatNotEqual(GetColourRed(), cO.GetColourRed()); }
-  bool GreenColourNotEqual(const FboColour &cO) const
-    { return UtilIsFloatNotEqual(GetColourGreen(), cO.GetColourGreen()); }
-  bool BlueColourNotEqual(const FboColour &cO) const
-    { return UtilIsFloatNotEqual(GetColourBlue(), cO.GetColourBlue()); }
-  bool AlphaColourNotEqual(const FboColour &cO) const
-    { return UtilIsFloatNotEqual(GetColourAlpha(), cO.GetColourAlpha()); }
+  bool RedColourNotEqual(const FboColour &fbValue) const
+    { return UtilIsFloatNotEqual(GetColourRed(), fbValue.GetColourRed()); }
+  bool GreenColourNotEqual(const FboColour &fbValue) const
+    { return UtilIsFloatNotEqual(GetColourGreen(), fbValue.GetColourGreen()); }
+  bool BlueColourNotEqual(const FboColour &fbValue) const
+    { return UtilIsFloatNotEqual(GetColourBlue(), fbValue.GetColourBlue()); }
+  bool AlphaColourNotEqual(const FboColour &fbValue) const
+    { return UtilIsFloatNotEqual(GetColourAlpha(), fbValue.GetColourAlpha()); }
   /* ----------------------------------------------------------------------- */
   template<typename IntType,
     class ArrayType=array<IntType,
@@ -141,27 +141,27 @@ class FboColour                        // Members initially private
              UtilDenormalise<IntType>(GetColourBlue()),
              UtilDenormalise<IntType>(GetColourAlpha()) }; }
   /* ----------------------------------------------------------------------- */
-  bool SetColour(const FboColour &fcData)
+  bool SetColour(const FboColour &fcValue)
   { // Red clear colour change?
-    if(RedColourNotEqual(fcData))
+    if(RedColourNotEqual(fcValue))
     { // Update saved red value and other values if changed
-      SetColourRed(fcData);
-      if(GreenColourNotEqual(fcData)) SetColourGreen(fcData);
-      if(BlueColourNotEqual(fcData)) SetColourBlue(fcData);
-      if(AlphaColourNotEqual(fcData)) SetColourAlpha(fcData);
+      SetColourRed(fcValue);
+      if(GreenColourNotEqual(fcValue)) SetColourGreen(fcValue);
+      if(BlueColourNotEqual(fcValue)) SetColourBlue(fcValue);
+      if(AlphaColourNotEqual(fcValue)) SetColourAlpha(fcValue);
     } // Green clear colour changed?
-    else if(GreenColourNotEqual(fcData))
+    else if(GreenColourNotEqual(fcValue))
     { // Update saved green value and other values if changed
-      SetColourGreen(fcData);
-      if(BlueColourNotEqual(fcData)) SetColourBlue(fcData);
-      if(AlphaColourNotEqual(fcData)) SetColourAlpha(fcData);
+      SetColourGreen(fcValue);
+      if(BlueColourNotEqual(fcValue)) SetColourBlue(fcValue);
+      if(AlphaColourNotEqual(fcValue)) SetColourAlpha(fcValue);
     } // Blue clear colour changed?
-    else if(BlueColourNotEqual(fcData))
+    else if(BlueColourNotEqual(fcValue))
     { // Update saved blue value and other values if changed
-      SetColourBlue(fcData);
-      if(AlphaColourNotEqual(fcData)) SetColourAlpha(fcData);
+      SetColourBlue(fcValue);
+      if(AlphaColourNotEqual(fcValue)) SetColourAlpha(fcValue);
     } // Update alpha if cahnged
-    else if(AlphaColourNotEqual(fcData)) SetColourAlpha(fcData);
+    else if(AlphaColourNotEqual(fcValue)) SetColourAlpha(fcValue);
     // No value was changed so return
     else return false;
     // Commit the new viewport
@@ -227,45 +227,45 @@ class FboBlend
   void SetSrcAlpha(const GLenum eSrcAlpha) { aBlend[2] = eSrcAlpha; }
   void SetDstAlpha(const GLenum eDstAlpha) { aBlend[3] = eDstAlpha; }
   /* ----------------------------------------------------------------------- */
-  void SetSrcRGB(const FboBlend &fbOther)
-    { SetSrcRGB(fbOther.GetSrcRGB()); }
-  void SetDstRGB(const FboBlend &fbOther)
-    { SetDstRGB(fbOther.GetDstRGB()); }
-  void SetSrcAlpha(const FboBlend &fbOther)
-    { SetSrcAlpha(fbOther.GetSrcAlpha()); }
-  void SetDstAlpha(const FboBlend &fbOther)
-    { SetDstAlpha(fbOther.GetDstAlpha()); }
+  void SetSrcRGB(const FboBlend &fbValue)
+    { SetSrcRGB(fbValue.GetSrcRGB()); }
+  void SetDstRGB(const FboBlend &fbValue)
+    { SetDstRGB(fbValue.GetDstRGB()); }
+  void SetSrcAlpha(const FboBlend &fbValue)
+    { SetSrcAlpha(fbValue.GetSrcAlpha()); }
+  void SetDstAlpha(const FboBlend &fbValue)
+    { SetDstAlpha(fbValue.GetDstAlpha()); }
   /* ----------------------------------------------------------------------- */
-  bool IsSrcRGBNotEqual(const FboBlend &cO) const
-    { return GetSrcRGB() != cO.GetSrcRGB(); }
-  bool IsDstRGBNotEqual(const FboBlend &cO) const
-    { return GetDstRGB() != cO.GetDstRGB(); }
-  bool IsSrcAlphaNotEqual(const FboBlend &cO) const
-    { return GetSrcAlpha() != cO.GetSrcAlpha(); }
-  bool IsDstAlphaNotEqual(const FboBlend &cO) const
-    { return GetDstAlpha() != cO.GetDstAlpha(); }
+  bool IsSrcRGBNotEqual(const FboBlend &fbValue) const
+    { return GetSrcRGB() != fbValue.GetSrcRGB(); }
+  bool IsDstRGBNotEqual(const FboBlend &fbValue) const
+    { return GetDstRGB() != fbValue.GetDstRGB(); }
+  bool IsSrcAlphaNotEqual(const FboBlend &fbValue) const
+    { return GetSrcAlpha() != fbValue.GetSrcAlpha(); }
+  bool IsDstAlphaNotEqual(const FboBlend &fbValue) const
+    { return GetDstAlpha() != fbValue.GetDstAlpha(); }
   /* -- Set blending algorithms -------------------------------------------- */
-  bool SetBlend(const FboBlend &fbOther)
+  bool SetBlend(const FboBlend &fbValue)
   {  // Source RGB changed change?
-    if(IsSrcRGBNotEqual(fbOther))
+    if(IsSrcRGBNotEqual(fbValue))
     { // Update source RGB blend value and other values if changed
-      SetSrcRGB(fbOther);
-      if(IsDstRGBNotEqual(fbOther)) SetDstRGB(fbOther);
-      if(IsSrcAlphaNotEqual(fbOther)) SetSrcAlpha(fbOther);
-      if(IsDstAlphaNotEqual(fbOther)) SetDstAlpha(fbOther);
+      SetSrcRGB(fbValue);
+      if(IsDstRGBNotEqual(fbValue)) SetDstRGB(fbValue);
+      if(IsSrcAlphaNotEqual(fbValue)) SetSrcAlpha(fbValue);
+      if(IsDstAlphaNotEqual(fbValue)) SetDstAlpha(fbValue);
     } // Destination RGB blend changed?
-    else if(IsDstRGBNotEqual(fbOther))
+    else if(IsDstRGBNotEqual(fbValue))
     { // Update destination RGB blend value and other values if changed
-      SetDstRGB(fbOther);
-      if(IsSrcAlphaNotEqual(fbOther)) SetSrcAlpha(fbOther);
-      if(IsDstAlphaNotEqual(fbOther)) SetDstAlpha(fbOther);
+      SetDstRGB(fbValue);
+      if(IsSrcAlphaNotEqual(fbValue)) SetSrcAlpha(fbValue);
+      if(IsDstAlphaNotEqual(fbValue)) SetDstAlpha(fbValue);
     } // Source alpha changed?
-    else if(IsSrcAlphaNotEqual(fbOther))
+    else if(IsSrcAlphaNotEqual(fbValue))
     { // Update source alpha blend value and other values if changed
-      SetSrcAlpha(fbOther);
-      if(IsDstAlphaNotEqual(fbOther)) SetDstAlpha(fbOther);
+      SetSrcAlpha(fbValue);
+      if(IsDstAlphaNotEqual(fbValue)) SetDstAlpha(fbValue);
     } // Destination alpha changed?
-    else if(IsDstAlphaNotEqual(fbOther)) SetDstAlpha(fbOther);
+    else if(IsDstAlphaNotEqual(fbValue)) SetDstAlpha(fbValue);
     // No value was changed so return
     else return false;
     // Commit the new viewport
@@ -297,29 +297,29 @@ template<typename Type1 = GLfloat, typename Type2 = Type1>class FboCoords
   typedef Coordinates<Type1> CoordType1; // Co-ordinate type one
   typedef Coordinates<Type2> CoordType2; // Co-ordinate type two
   /* ----------------------------------------------------------------------- */
-  CoordType1       tXY1;               // Top left co-ordinates
-  CoordType2       tXY2;               // Width and height
+  CoordType1       ctXY1;              // Top left co-ordinates
+  CoordType2       ctXY2;              // Width and height
   /* --------------------------------------------------------------- */ public:
-  Type1 GetCoLeft(void) const { return tXY1.CoordGetX(); }
-  Type1 GetCoTop(void) const { return tXY1.CoordGetY(); }
-  Type2 GetCoRight(void) const { return tXY2.CoordGetX(); }
-  Type2 GetCoBottom(void) const { return tXY2.CoordGetY(); }
+  Type1 GetCoLeft(void) const { return ctXY1.CoordGetX(); }
+  Type1 GetCoTop(void) const { return ctXY1.CoordGetY(); }
+  Type2 GetCoRight(void) const { return ctXY2.CoordGetX(); }
+  Type2 GetCoBottom(void) const { return ctXY2.CoordGetY(); }
   /* ----------------------------------------------------------------------- */
-  void SetCoLeft(const Type1 tNLeft) { tXY1.CoordSetX(tNLeft); }
-  void SetCoTop(const Type1 tNTop) { tXY1.CoordSetY(tNTop); }
-  void SetCoRight(const Type2 tNRight) { tXY2.CoordSetX(tNRight); }
-  void SetCoBottom(const Type2 tNBottom) { tXY2.CoordSetY(tNBottom); }
+  void SetCoLeft(const Type1 tNLeft) { ctXY1.CoordSetX(tNLeft); }
+  void SetCoTop(const Type1 tNTop) { ctXY1.CoordSetY(tNTop); }
+  void SetCoRight(const Type2 tNRight) { ctXY2.CoordSetX(tNRight); }
+  void SetCoBottom(const Type2 tNBottom) { ctXY2.CoordSetY(tNBottom); }
   /* ----------------------------------------------------------------------- */
-  void SetCoLeft(const FboCoords &fvOther)
-    { SetCoLeft(fvOther.GetCoLeft()); }
-  void SetCoTop(const FboCoords &fvOther)
-    { SetCoTop(fvOther.GetCoTop()); }
-  void SetCoRight(const FboCoords &fvOther)
-    { SetCoRight(fvOther.GetCoRight()); }
-  void SetCoBottom(const FboCoords &fvOther)
-    { SetCoBottom(fvOther.GetCoBottom()); }
+  void SetCoLeft(const FboCoords &fcValue)
+    { SetCoLeft(fcValue.GetCoLeft()); }
+  void SetCoTop(const FboCoords &fcValue)
+    { SetCoTop(fcValue.GetCoTop()); }
+  void SetCoRight(const FboCoords &fcValue)
+    { SetCoRight(fcValue.GetCoRight()); }
+  void SetCoBottom(const FboCoords &fcValue)
+    { SetCoBottom(fcValue.GetCoBottom()); }
   /* ----------------------------------------------------------------------- */
-  void ResetCoords(void) { tXY1.CoordSet(); tXY2.CoordSet(); }
+  void ResetCoords(void) { ctXY1.CoordSet(); ctXY2.CoordSet(); }
   /* ----------------------------------------------------------------------- */
   void SetCoords(const Type1 tNLeft, const Type1 tNTop,
                  const Type2 tNRight, const Type2 tNBottom)
@@ -345,17 +345,17 @@ template<typename Type1 = GLfloat, typename Type2 = Type1>class FboCoords
     else if(GetCoBottom() != tNBottom) SetCoBottom(tNBottom);
   }
   /* ----------------------------------------------------------------------- */
-  void SetCoords(const FboCoords &fcData)
-    { SetCoords(fcData.GetCoLeft(), fcData.GetCoTop(),
-                fcData.GetCoRight(), fcData.GetCoBottom()); }
+  void SetCoords(const FboCoords &fcValue)
+    { SetCoords(fcValue.GetCoLeft(), fcValue.GetCoTop(),
+                fcValue.GetCoRight(), fcValue.GetCoBottom()); }
   /* -- Init constructor --------------------------------------------------- */
   FboCoords(const Type1 tNLeft,        // Left (X1) co-ordinate
             const Type1 tNTop,         // Top (Y1) co-ordinate
             const Type2 tNRight,       // Right (X2) co-ordinate
             const Type2 tNBottom) :    // Bottom (Y2) co-ordinate
     /* -- Initialisers ----------------------------------------------------- */
-    tXY1{ tNLeft, tNTop },             // X1 & Y1 co-ordinate
-    tXY2{ tNRight, tNBottom }          // X2 & Y2 co-ordinate
+    ctXY1{ tNLeft, tNTop },            // X1 & Y1 co-ordinate
+    ctXY2{ tNRight, tNBottom }         // X2 & Y2 co-ordinate
     /* -- Code ------------------------------------------------------------- */
     { }                                // Do nothing else
   /* -- Default constructor ------------------------------------------------ */

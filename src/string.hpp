@@ -33,7 +33,8 @@ static const class Common final        // Members initially private
                    strUnspec,          // C++ string as "<Unspecified>"
                    strNull,            // C++ string as "<NullPtr>"
                    strPeriod,          // C++ string as "."
-                   strTwoPeriod;       // C++ string as ".."
+                   strTwoPeriod,       // C++ string as ".."
+                   strLuaDTor;         // C++ string as "__dtor"
   const char*const cpBlank;            // Blank C-String
   const locale     lLocaleCurrent;     // Current locale
   /* --------------------------------------------------------------- */ public:
@@ -77,6 +78,8 @@ static const class Common final        // Members initially private
   const string &Period(void) const { return strPeriod; }
   /* ----------------------------------------------------------------------- */
   const string &TwoPeriod(void) const { return strTwoPeriod; }
+  /* ----------------------------------------------------------------------- */
+  const string &LuaDTor(void) const { return strLuaDTor; }
   /* -- Default Constructor ------------------------------------------------ */
   Common(void) :                       // No parameters
     /* -- Initialisers ----------------------------------------------------- */
@@ -89,7 +92,8 @@ static const class Common final        // Members initially private
     strLfCr{ strLf + strCr },          strFSlash{ "/" },
     strUnspec{ "<Unspecified>" },      strNull{ "<NullPtr>" },
     strPeriod{ "." },                  strTwoPeriod{ ".." },
-    cpBlank(strBlank.c_str()),         lLocaleCurrent{ strBlank }
+    strLuaDTor{ "__dtor" },            cpBlank(strBlank.c_str()),
+    lLocaleCurrent{ strBlank }
     /* -- No code ---------------------------------------------------------- */
     { }
 } /* ----------------------------------------------------------------------- */

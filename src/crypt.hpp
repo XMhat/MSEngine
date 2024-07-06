@@ -10,12 +10,13 @@
 /* ------------------------------------------------------------------------- */
 namespace ICrypt {                     // Start of private module namespace
 /* -- Dependencies --------------------------------------------------------- */
-using namespace ICollector::P;         using namespace IError::P;
-using namespace ILog::P;               using namespace IMemory::P;
-using namespace IStd::P;               using namespace IString::P;
-using namespace ISystem::P;            using namespace ISysUtil::P;
-using namespace IUtf;                  using namespace IUtil::P;
-using namespace Lib::OS::OpenSSL;      using namespace Lib::OS::SevenZip;
+using namespace IClock::P;             using namespace ICollector::P;
+using namespace IError::P;             using namespace ILog::P;
+using namespace IMemory::P;            using namespace IStd::P;
+using namespace IString::P;            using namespace ISystem::P;
+using namespace ISysUtil::P;           using namespace IUtf;
+using namespace IUtil::P;              using namespace Lib::OS::OpenSSL;
+using namespace Lib::OS::SevenZip;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* -- Convert the specified character to hexadecimal ----------------------- */
@@ -204,11 +205,26 @@ static const string CryptBin2HexL(const uint8_t*const ucStr,
 static const string CryptBin2HexL(const MemConst &mcSrc)
   { return CryptBin2HexL(mcSrc.MemPtr<uint8_t>(), mcSrc.MemSize()); }
 /* ------------------------------------------------------------------------- */
+void CryptAddEntropyPtr(const void*const vpPtr, const size_t stSize)
+  { RAND_add(vpPtr, UtilIntOrMax<int>(stSize), static_cast<double>(stSize)); }
+/* ------------------------------------------------------------------------- */
+template<typename IntType>void CryptAddEntropyInt(const IntType itValue)
+  { CryptAddEntropyPtr(&itValue, sizeof(itValue)); }
+/* ------------------------------------------------------------------------- */
+template<typename StrType>void CryptAddEntropyStr(const StrType &strValue)
+  { CryptAddEntropyPtr(strValue.data(), strValue.capacity()); }
+/* ------------------------------------------------------------------------- */
 static void CryptAddEntropy(void)
-{ // Grab some data from the timer subsystem
-  const uint64_t uqMicro = cLog->CCDeltaUS();
-  // Add it as entropy to openssl
-  RAND_seed(&uqMicro, sizeof(uqMicro));
+{ // Grab some data from the system
+  CryptAddEntropyInt(cmSys.GetTimeNS());
+  CryptAddEntropyInt(cmHiRes.GetTimeNS());
+  CryptAddEntropyInt(cLog->CCDeltaUS());
+  cSystem->UpdateCPUUsage();
+  CryptAddEntropyInt(cSystem->CPUUsage());
+  CryptAddEntropyInt(cSystem->CPUUsageSystem());
+  cSystem->UpdateMemoryUsageData();
+  CryptAddEntropyInt(cSystem->RAMFree());
+  CryptAddEntropyStr(cSystem->ENGFull());
 }
 /* ------------------------------------------------------------------------- */
 static void CryptRandomPtr(void*const vpDst, const size_t stSize)

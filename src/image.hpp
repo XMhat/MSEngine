@@ -15,11 +15,11 @@ using namespace ICollector::P;         using namespace IError::P;
 using namespace IEvtMain::P;           using namespace IFileMap::P;
 using namespace IIdent::P;             using namespace IImageDef::P;
 using namespace IImageFormat::P;       using namespace IImageLib::P;
-using namespace ILog::P;               using namespace ILuaUtil::P;
-using namespace IMemory::P;            using namespace IOgl::P;
-using namespace IStd::P;               using namespace IString::P;
-using namespace ISysUtil::P;           using namespace ITexDef::P;
-using namespace IUtil::P;              using namespace Lib::OS::GlFW;
+using namespace ILog::P;               using namespace IMemory::P;
+using namespace IOgl::P;               using namespace IStd::P;
+using namespace IString::P;            using namespace ISysUtil::P;
+using namespace ITexDef::P;            using namespace IUtil::P;
+using namespace Lib::OS::GlFW;
 /* ------------------------------------------------------------------------- */
 namespace P {                          // Start of public module namespace
 /* == Image collector and member class ===================================== */
@@ -44,6 +44,8 @@ CTOR_MEM_BEGIN_ASYNC_CSLAVE(Images, Image, ICHelperUnsafe),
     CollectorSwapRegistration(imRef); // Collector registration
     ImageDataSwap(imRef);             // Image data and flags swap
   }
+  /* -- Swap image data (so you can use temporary variables) --------------- */
+  void SwapImage(Image &&imRef) { SwapImage(imRef); }
   /* -- Force the specified colour mode ------------------------------------ */
   bool ForcePixelOrder(const TextureType ttNType)
   { // Return failure if parameters are wrong
@@ -110,7 +112,7 @@ CTOR_MEM_BEGIN_ASYNC_CSLAVE(Images, Image, ICHelperUnsafe),
         // Write new bit value
         mDst.MemWriteInt<uint8_t>(stByteOut, ucBits);
       } // Update slot data
-      isRef.MemSwap(StdMove(mDst));
+      isRef.MemSwap(mDst);
     } // Update image data
     SetBitsPerPixel(BD_BINARY);
     SetBytesPerPixel(BY_GRAY);
@@ -143,7 +145,7 @@ CTOR_MEM_BEGIN_ASYNC_CSLAVE(Images, Image, ICHelperUnsafe),
               isRef.MemRead(isRef.MemSize() - stStep - stByte), stStep);
           // Set new mem block for this class automatically unloading the old
           // one
-          isRef.MemSwap(StdMove(mbOut));
+          isRef.MemSwap(mbOut);
         } // Done
         break;
       // Nothing done so return and log a warning
@@ -195,7 +197,7 @@ CTOR_MEM_BEGIN_ASYNC_CSLAVE(Images, Image, ICHelperUnsafe),
         // Call pixel function conversion
         PixelConversionFunction(ubpSrc, ubpDst);
       // Move memory on top of old memory
-      isRef.MemSwap(StdMove(mDst));
+      isRef.MemSwap(mDst);
       // Adjust alloc size
       stNewAlloc += isRef.MemSize();
     } // Update new size
@@ -738,32 +740,25 @@ CTOR_MEM_BEGIN_ASYNC_CSLAVE(Images, Image, ICHelperUnsafe),
     const ImageFormat ifPId)
       const { ImageSave(ifPId, strFile, *this, GetSlotsConst()[stSId]); }
   /* -- Load image from memory asynchronously ------------------------------ */
-  void InitAsyncArray(lua_State*const lS)
-  { // Need 6 parameters (class pointer was already pushed onto the stack);
-    LuaUtilCheckParams(lS, 7);
-    // Get and check parameters
-    const string strName{ LuaUtilGetCppStrNE(lS, 1, "Identifier") };
-    Asset &aData = *LuaUtilGetPtr<Asset>(lS, 2, "Asset");
-    FlagReset(LuaUtilGetFlags(lS, 3, IL_MASK, "Flags"));
-    LuaUtilCheckFuncs(lS, 4, "ErrorFunc", 5, "ProgressFunc", 6, "SuccessFunc");
+  void InitAsyncArray(lua_State*const lS, const string &strIdent, Asset &aData,
+    const ImageFlagsConst imcFlags)
+  { // Set user flags
+    FlagReset(imcFlags);
     // The decoded image will be kept in memory
     SetDynamic();
     // Load image from memory asynchronously
-    AsyncInitArray(lS, strName, "bmparray", StdMove(aData));
+    AsyncInitArray(lS, strIdent, "bmparray", aData);
   }
   /* -- Load image from file asynchronously -------------------------------- */
-  void InitAsyncFile(lua_State*const lS)
-  { // Need 5 parameters (class pointer was already pushed onto the stack);
-    LuaUtilCheckParams(lS, 6);
-    // Get and check parameters
-    const string strFile{ LuaUtilGetCppFile(lS, 1, "File") };
-    FlagReset(LuaUtilGetFlags(lS, 2, IL_MASK, "Flags"));
-    LuaUtilCheckFuncs(lS, 3, "ErrorFunc", 4, "ProgressFunc", 5, "SuccessFunc");
+  void InitAsyncFile(lua_State*const lS, const string &strFile,
+    const ImageFlagsConst imcFlags)
+  { // Set user flags
+    FlagReset(imcFlags);
     // Load image from file asynchronously
     AsyncInitFile(lS, strFile, "bmpfile");
   }
   /* -- Create a blank image for working on -------------------------------- */
-  void InitBlank(const string &strName, const unsigned int uiBWidth,
+  void InitBlank(const string &strIdent, const unsigned int uiBWidth,
     const unsigned int uiBHeight, const bool bAlpha, const bool bClear)
   { // Lookup table for alpha setting
     typedef pair<const BitDepth, const TextureType> BitDepthTexTypePair;
@@ -776,17 +771,16 @@ CTOR_MEM_BEGIN_ASYNC_CSLAVE(Images, Image, ICHelperUnsafe),
     SetBitsAndBytesPerPixel(bdttpLookupRef.first);
     SetPixelType(bdttpLookupRef.second);
     // Set other members
-    IdentSet(strName);
+    IdentSet(StdMove(strIdent));
     SetDynamic();
     DimSet(uiBWidth, uiBHeight);
     // Add the raw data into a slot
-    Memory mData{ TotalPixels() * GetBytesPerPixel(), bClear };
-    AddSlot(mData);
+    AddSlot({ TotalPixels() * GetBytesPerPixel(), bClear });
     // Load succeeded so register the block
     CollectorRegister();
   }
   /* -- Load image from a raw image ---------------------------------------- */
-  void InitRaw(const string &strName, Memory &&mSrc,
+  void InitRaw(const string &strName, Memory &mSrc,
     const unsigned int uiBWidth, const unsigned int uiBHeight,
     const BitDepth bdBitsPP)
   { // Check that the range is valid
@@ -850,8 +844,7 @@ CTOR_MEM_BEGIN_ASYNC_CSLAVE(Images, Image, ICHelperUnsafe),
       static_cast<uint8_t>(ulColour >> 24)  // 0x[AA]000000 24-32 [3] rgb[A]
     };                                      // ------------ ----- --- ------
     // Add the image
-    Memory mData{ GetBytesPerPixel(), ucaColour.data() };
-    AddSlot(mData);
+    AddSlot({ GetBytesPerPixel(), ucaColour.data() });
     // Load succeeded so register the block
     CollectorRegister();
   }
@@ -863,14 +856,14 @@ CTOR_MEM_BEGIN_ASYNC_CSLAVE(Images, Image, ICHelperUnsafe),
     SyncInitFileSafe(strFileName);
   }
   /* -- Init from array ---------------------------------------------------- */
-  void InitArray(const string &strName, Memory &&mRval,
+  void InitArray(const string &strName, Memory &mRval,
     const ImageFlagsConst &ifcFlags)
   { // Is dynamic because it was not loaded from disk
     SetDynamic();
     // Set the loading flags
     FlagReset(ifcFlags);
     // Load the array normally
-    SyncInitArray(strName, StdMove(mRval));
+    SyncInitArray(strName, mRval);
   }
   /* -- Default constructor ------------------------------------------------ */
   Image(void) :                        // No parameters
@@ -900,7 +893,7 @@ CTOR_MEM_BEGIN_ASYNC_CSLAVE(Images, Image, ICHelperUnsafe),
     ): /* -- Initialisation of members ------------------------------------- */
     Image{}                            // Default initialisation
     /* -- Initialise raw image --------------------------------------------- */
-    { InitRaw(strName, StdMove(mRval), uiWidth, uiHeight, bdBits); }
+    { InitRaw(strName, mRval, uiWidth, uiHeight, bdBits); }
   /* -- Constructor -------------------------------------------------------- */
   explicit Image(                      // Initialise from known file formats
     /* -- Parameters ------------------------------------------------------- */
@@ -910,7 +903,7 @@ CTOR_MEM_BEGIN_ASYNC_CSLAVE(Images, Image, ICHelperUnsafe),
     ): /* -- Initialisation of members ------------------------------------- */
     Image{}                            // Default initialisation
     /* -- Initialise from array -------------------------------------------- */
-    { InitArray(strName, StdMove(mRval), ifFlags); }
+    { InitArray(strName, mRval, ifFlags); }
   /* -- Constructor -------------------------------------------------------- */
   explicit Image(                      // Initialise image from file
     /* -- Parameters ------------------------------------------------------- */
@@ -933,7 +926,7 @@ CTOR_MEM_BEGIN_ASYNC_CSLAVE(Images, Image, ICHelperUnsafe),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Image)               // Disable copy constructor and operator
 };/* -- End ---------------------------------------------------------------- */
-CTOR_END_ASYNC(Images, IMAGE,,,,idFormatModes{{ // Pixel format modes
+CTOR_END_ASYNC(Images, Image, IMAGE,,,, idFormatModes{{ // Pixel format modes
   /* ----------------------------------------------------------------------- */
   IDMAPSTR(TT_NONE),                   IDMAPSTR(TT_BGR),
   IDMAPSTR(TT_BGRA),                   IDMAPSTR(TT_DXT1),

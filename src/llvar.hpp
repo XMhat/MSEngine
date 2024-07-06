@@ -18,57 +18,72 @@
 namespace LLVariable {                 // Console namespace
 /* -- Dependencies --------------------------------------------------------- */
 using namespace ICVar::P;              using namespace ICVarLib::P;
-using namespace ILuaVariable::P;
+using namespace ILuaVariable::P;       using namespace Common;
+/* ========================================================================= **
+** ######################################################################### **
+** ## Variable common helper classes                                      ## **
+** ######################################################################### **
+** -- Read Variable class argument ----------------------------------------- */
+struct AgVariable : public ArClass<Variable> {
+  explicit AgVariable(lua_State*const lS, const int iArg) :
+    ArClass{*LuaUtilGetPtr<Variable>(lS, iArg, *cVariables)}{} };
+/* -- Create Variable class argument --------------------------------------- */
+struct AcVariable : public ArClass<Variable> {
+  explicit AcVariable(lua_State*const lS) :
+    ArClass{*LuaUtilClassCreate<Variable>(lS, *cVariables)}{} };
+/* -- Get Variable flags --------------------------------------------------- */
+struct AgCVarId : public AgIntegerLGE<CVarEnums>
+  { explicit AgCVarId(lua_State*const lS, const int iArg) :
+      AgIntegerLGE{ lS, iArg, CVAR_FIRST, CVAR_MAX } {} };
 /* ========================================================================= */
 // $ Variable:Destroy
 // ? Unregisters the specified console command.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Destroy, LCCLASSDESTROY(1, Variable));
+LLFUNC(Destroy, 0, LuaUtilClassDestroy<Variable>(lS, 1, *cVariables))
 /* ========================================================================= */
 // $ Variable:Empty
 // < Empty:boolean=Is the value empty?
 // ? Returns if the value is empty.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Empty, 1, LCPUSHVAR(LCGETPTR(1, Variable)->Empty()));
+LLFUNC(Empty, 1, LuaUtilPushVar(lS, AgVariable{lS, 1}().Empty()))
 /* ========================================================================= */
 // $ Variable:Id
 // < Id:integer=The id of the Variable object.
 // ? Returns the unique id of the Variable object.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Id, 1, LCPUSHVAR(LCGETPTR(1, Variable)->CtrGet()));
+LLFUNC(Id, 1, LuaUtilPushVar(lS, AgVariable{lS, 1}().CtrGet()))
 /* ========================================================================= */
 // $ Variable:Name
 // < Name:string=The name of the console command.
 // ? Returns the name of the console command this object was registered with.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Name, 1, LCPUSHVAR(LCGETPTR(1, Variable)->Name()));
+LLFUNC(Name, 1, LuaUtilPushVar(lS, AgVariable{lS, 1}().Name()))
 /* ========================================================================= */
 // $ Variable:Default
 // < Value:string=The engine default cvar value.
 // ? Retrieves the value of the specified cvar name. An exception is raised if
 // ? the specified cvar does not exist.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Default, 1, LCPUSHVAR(LCGETPTR(1, Variable)->Default()));
+LLFUNC(Default, 1, LuaUtilPushVar(lS, AgVariable{lS, 1}().Default()))
 /* ========================================================================= */
 // $ Variable:Get
 // < Value:mixed=The engine cvar value.
 // ? Retrieves the value of the specified cvar name. An exception is raised if
 // ? the specified cvar does not exist.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Get, 1, LCPUSHVAR(LCGETPTR(1, Variable)->Get()));
+LLFUNC(Get, 1, LuaUtilPushVar(lS, AgVariable{lS, 1}().Get()))
 /* ========================================================================= */
 // $ Variable:Reset
 // ? Resets the cvar to the default value as registered.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Reset, LCGETPTR(1, Variable)->Reset());
+LLFUNC(Reset, 0, AgVariable{lS, 1}().Reset())
 /* ========================================================================= */
 // $ Variable:Set
-// > Value:string=The new cvar value.
+// > String:string=The new cvar value.
 // ? Sets the new value of the specified cvar name. An exception is raised if
 // ? any error occurs. See Variable.Result to see the possible results.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Set, 1,
-  LCPUSHVAR(LCGETPTR(1, Variable)->Set(LCGETCPPSTRING(2, "Value"))));
+LLFUNC(Set, 1, LuaUtilPushVar(lS, AgVariable{lS, 1}().Set(AgString{lS, 2})))
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Variable:* member functions structure                               ## **
@@ -98,16 +113,15 @@ LLRSEND                                // Variable:* member functions end
 // ? issue. You can register an unlimited amount of variables.
 // ? See Variable.Flags to see available flags.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Register, 1, LCCLASSCREATE(Variable)->Init(lS));
+LLFUNC(Register, 1, AcVariable{lS}().Init(lS))
 /* ========================================================================= */
 // $ Variable.Exists
-// > Variable:string=The console command name to lookup
+// > String:string=The console command name to lookup
 // < Registered:boolean=True if the command is registered
 // ? Returns if the specified console command is registered which includes
 // ? the built-in engine console commands too.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Exists, 1,
-  LCPUSHVAR(cCVars->VarExists(LCGETCPPSTRINGNE(1, "Variable"))));
+LLFUNC(Exists, 1, LuaUtilPushVar(lS, cCVars->VarExists(AgNeString{lS,1})))
 /* ========================================================================= */
 // $ Variable.GetInt
 // > Id:integer=The engine cvar index.
@@ -115,8 +129,8 @@ LLFUNCEX(Exists, 1,
 // ? Retrieves the value of the specified cvar given at the specified id. The
 // ? id's are populated as key/value pairs in the 'Variable.Internal' table.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetInt, 1, LCPUSHVAR(cCVars->GetStrInternal(
-  LCGETINTLGE(CVarEnums, 1, CVAR_FIRST, CVAR_MAX, "Id"))));
+LLFUNC(GetInt, 1,
+  LuaUtilPushVar(lS, cCVars->GetStrInternal(AgCVarId{lS, 1})))
 /* ========================================================================= */
 // $ Variable.SetInt
 // > Id:integer=The engine cvar index.
@@ -125,23 +139,23 @@ LLFUNCEX(GetInt, 1, LCPUSHVAR(cCVars->GetStrInternal(
 // ? raised if any error occurds. See Variable.Result to see the possible
 // ? results.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(SetInt, 1, LCPUSHVAR(cCVars->SetInternal(
-  LCGETINTLGE(CVarEnums, 1, CVAR_FIRST, CVAR_MAX, "Id"),
-  LCGETCPPSTRING(2, "Value"))));
+LLFUNC(SetInt, 1,
+  const AgCVarId aCVarId{lS, 1};
+  const AgString aValue{lS, 2};
+  LuaUtilPushVar(lS, cCVars->SetInternal(aCVarId, aValue())))
 /* ========================================================================= */
 // $ Variable.ResetInt
 // > Id:integer=The engine cvar index.
 // ? Resets the specified cvar to its default variable.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(ResetInt, 1, LCPUSHVAR(cCVars->Reset(LCGETINTLGE(CVarEnums,
-  1, CVAR_FIRST, CVAR_MAX, "Id"))));
+LLFUNC(ResetInt, 1, LuaUtilPushVar(lS, cCVars->Reset(AgCVarId{lS, 1})))
 /* ========================================================================= */
 // $ Variable.Save
 // < Count:number=Number of items saved
 // ? Commits all modified variables to database. Returns number of items
 // ? written.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Save, 1, LCPUSHVAR(cCVars->Save()));
+LLFUNC(Save, 1, LuaUtilPushVar(lS, cCVars->Save()))
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Variable.* namespace functions structure                            ## **
@@ -191,7 +205,7 @@ LLRSKTEND                              // End of cvar result flags
 ** ######################################################################### **
 ** ========================================================================= */
 LLRSCONSTBEGIN                         // Variable.* namespace consts begin
-  LLRSCONST(Flags),       LLRSCONST(Result),
+  LLRSCONST(Flags),                    LLRSCONST(Result),
 LLRSCONSTEND                           // Variable.* namespace consts end
 /* ========================================================================= */
 }                                      // End of Console namespace

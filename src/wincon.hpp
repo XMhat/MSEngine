@@ -104,12 +104,12 @@ class SysCon :                         // Members initially private
           "application after five seconds of this message. Trying to save as "
           "much as possible to disk...");
         // Send logout event
-        cEvtMain->Add(EMC_QUIT);
+        cEvtMain->RequestQuit();
         // Wait for main thread to clean up so we can exit
         cvExit.wait(ulExit);
       }
     } // Send normal exit event
-    else cEvtMain->Add(EMC_QUIT);
+    else cEvtMain->RequestQuit();
     // Block default event
     return TRUE;
   }

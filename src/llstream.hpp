@@ -29,13 +29,41 @@
 namespace LLStream {                   // Stream namespace
 /* -- Dependencies --------------------------------------------------------- */
 using namespace IAsset::P;             using namespace IStd::P;
-using namespace IStream::P;            using namespace Lib::Ogg;
-using namespace Lib::OpenAL;
+using namespace IStream::P;            using namespace Common;
+using namespace Lib::Ogg;
+/* ========================================================================= **
+** ######################################################################### **
+** ## Stream common helper classes                                        ## **
+** ######################################################################### **
+** -- Read Stream class argument ------------------------------------------- */
+struct AgStream : public ArClass<Stream> {
+  explicit AgStream(lua_State*const lS, const int iArg) :
+    ArClass{*LuaUtilGetPtr<Stream>(lS, iArg, *cStreams)}{} };
+/* -- Create Stream class argument ----------------------------------------- */
+struct AcStream : public ArClass<Stream> {
+  explicit AcStream(lua_State*const lS) :
+    ArClass{*LuaUtilClassCreate<Stream>(lS, *cStreams)}{} };
+/* -- Read duration value -------------------------------------------------- */
+using Lib::OpenAL::ALdouble;
+struct AgDuration : public AgNumberLG<ALdouble> {
+  explicit AgDuration(lua_State*const lS, const int iArg, Stream &sCref):
+    AgNumberLG{lS, iArg, 0, sCref.GetDurationSafe()}{} };
+/* -- Read sample value ---------------------------------------------------- */
+struct AgSample : public AgIntegerLG<ogg_int64_t> {
+  explicit AgSample(lua_State*const lS, const int iArg, Stream &sCref) :
+    AgIntegerLG{lS, iArg, 0, sCref.GetSamplesSafe()}{}};
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Stream:* member functions                                           ## **
 ** ######################################################################### **
 ** ========================================================================= */
+// $ Stream:Destroy
+// ? Stops and destroys the stream object and frees all the memory associated
+// ? with it. The object will no longer be useable after this call and an
+// ? error will be generated if accessed.
+/* ------------------------------------------------------------------------- */
+LLFUNC(Destroy, 0, LuaUtilClassDestroy<Stream>(lS, 1, *cStreams))
+/* ========================================================================= */
 // $ Stream:OnEvent
 // > Func:function=The callback function to call when an event occurs.
 // ? This function is called when the stream stops, starts or loops. The
@@ -47,7 +75,7 @@ using namespace Lib::OpenAL;
 // ? garbage collector if the reference on the function is not properly
 // ? unreferenced so be careful how you use this!
 /* ------------------------------------------------------------------------- */
-LLFUNC(OnEvent, LCGETPTR(1, Stream)->LuaEvtInit(lS));
+LLFUNC(OnEvent, 0, AgStream{lS, 1}().LuaEvtInit(lS))
 /* ========================================================================= */
 // $ Stream:Play
 // > Loops:integer=Number of loops.
@@ -55,122 +83,116 @@ LLFUNC(OnEvent, LCGETPTR(1, Stream)->LuaEvtInit(lS));
 // > Position:integer=Sample position.
 // ? Plays the specified stream at the specified sample position.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Play, LCGETPTR(1, Stream)->PlaySafe());
+LLFUNC(Play, 0, AgStream{lS, 1}().PlaySafe())
 /* ========================================================================= */
 // $ Stream:GetDuration
 // < Duration:number=Duration in seconds
 // ? Returns the duration of the specified stream in seconds.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetDuration, 1, LCPUSHVAR(LCGETPTR(1, Stream)->GetDurationSafe()));
+LLFUNC(GetDuration, 1,
+  LuaUtilPushVar(lS, AgStream{lS, 1}().GetDurationSafe()))
 /* ========================================================================= */
 // $ Stream:GetElapsed
 // < Duration:number=Elapsed time in seconds
 // ? Returns the time elapsed of the stream. This is the position of the codec
 // ? and not the actual playback position.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetElapsed, 1, LCPUSHVAR(LCGETPTR(1, Stream)->GetElapsedSafe()));
+LLFUNC(GetElapsed, 1, LuaUtilPushVar(lS, AgStream{lS, 1}().GetElapsedSafe()))
 /* ========================================================================= */
 // $ Stream:SetElapsed
 // > Duration:number=Duration in seconds
 // ? Sets the specified time index of the stream. This is not a precise time
 // ? index and is optimised for speed. Use Stream.SetElapsedP() for precision.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(SetElapsed)
-  Stream &sCref = *LCGETPTR(1, Stream);
-  sCref.SetElapsedSafe(LCGETNUMLG(ALdouble,
-    2, 0, sCref.GetDurationSafe(), "Time"));
-LLFUNCEND
+LLFUNC(SetElapsed, 0,
+  const AgStream aStream{lS, 1};
+  const AgDuration aDuration{lS, 2, aStream};
+  aStream().SetElapsedSafe(aDuration))
 /* ========================================================================= */
 // $ Stream:SetElapsedPage
 // > Duration:number=Duration in seconds
 // ? Sets the precise specified time index of the stream.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(SetElapsedPage)
-  Stream &sCref = *LCGETPTR(1, Stream);
-  sCref.SetElapsedFastSafe(
-    LCGETNUMLG(ALdouble, 2, 0, sCref.GetDurationSafe(), "Time"));
-LLFUNCEND
+LLFUNC(SetElapsedPage, 0,
+  const AgStream aStream{lS, 1};
+  const AgDuration aDuration{lS, 2, aStream};
+  aStream().SetElapsedFastSafe(aDuration))
 /* ========================================================================= */
 // $ Stream:GetPosition
 // < Position:integer=Sample position
 // ? Returns the sample position elapsed of the stream.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetPosition, 1,
-  LCPUSHVAR(static_cast<lua_Integer>(LCGETPTR(1, Stream)->GetPositionSafe())));
+LLFUNC(GetPosition, 1,
+  LuaUtilPushVar(lS, AgStream{lS, 1}().GetPositionSafe()))
 /* ========================================================================= */
 // $ Stream:SetPosition
 // > Position:integer=Sample position.
 // ? Sets the precise specified sample position index of the stream.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(SetPosition)
-  Stream &sCref = *LCGETPTR(1, Stream);
-  sCref.SetPositionSafe(
-    LCGETINTLG(ogg_int64_t, 2, 0, sCref.GetSamplesSafe(), "Index"));
-LLFUNCEND
+LLFUNC(SetPosition, 0,
+  const AgStream aStream{lS, 1};
+  const AgSample aSample{lS, 2, aStream};
+  aStream().SetPositionSafe(aSample))
 /* ========================================================================= */
 // $ Stream:SetPositionPage
 // > Position:integer=Sample position
 // ? Sets the current sample position of playback. This is not a precise
 // ? position is optimised for speed. Use Stream.SetPosition() for precision.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(SetPositionPage)
-  Stream &sCref = *LCGETPTR(1, Stream);
-  sCref.SetPositionFastSafe(
-    LCGETINTLG(ogg_int64_t, 2, 0, sCref.GetSamplesSafe(), "Index"));
-LLFUNCEND
+LLFUNC(SetPositionPage, 0,
+  const AgStream aStream{lS, 1};
+  const AgSample aSample{lS, 2, aStream};
+  aStream().SetPositionFastSafe(aSample))
 /* ========================================================================= */
 // $ Stream:Stop
 // ? Stops playback of the specified stream. This will not modify the position
 // ? or any other stream property.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Stop, LCGETPTR(1, Stream)->StopSafe(SR_LUA));
+LLFUNC(Stop, 0, AgStream{lS, 1}().StopSafe(SR_LUA))
 /* ========================================================================= */
 // $ Stream:IsPlaying
 // < State:boolean=Stream is playing?
 // ? Returns true if the stream is playing or false if the stream is stopped.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(IsPlaying, 1, LCPUSHVAR(LCGETPTR(1, Stream)->IsPlaying()));
+LLFUNC(IsPlaying, 1, LuaUtilPushVar(lS, AgStream{lS, 1}().IsPlaying()))
 /* ========================================================================= */
 // $ Stream:GetLoop
 // < Count:integer=Number of loops left.
 // ? Returns the number of loops remaining of playback.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetLoop, 1,
-  LCPUSHVAR(static_cast<lua_Integer>(LCGETPTR(1, Stream)->GetLoopSafe())));
+LLFUNC(GetLoop, 1, LuaUtilPushVar(lS, AgStream{lS, 1}().GetLoopSafe()))
 /* ========================================================================= */
 // $ Stream:GetId
 // < Id:integer=The id number of the Stream object.
 // ? Returns the unique id of the Stream object.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetId, 1, LCPUSHVAR(LCGETPTR(1, Stream)->CtrGet()));
+LLFUNC(GetId, 1, LuaUtilPushVar(lS, AgStream{lS, 1}().CtrGet()))
 /* ========================================================================= */
 // $ Stream:GetName
 // < Name:string=Filename of stream
 // ? Returns the stream indentifier or filename
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetName, 1, LCPUSHVAR(LCGETPTR(1, Stream)->IdentGet()));
+LLFUNC(GetName, 1, LuaUtilPushVar(lS, AgStream{lS, 1}().IdentGet()))
 /* ========================================================================= */
 // $ Stream:GetLoopBegin
 // < Count:integer=Smaple position begin point
 // ? Gets the current loop begin sample.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetLoopBegin, 1, LCPUSHVAR(static_cast<lua_Integer>
-  (LCGETPTR(1, Stream)->GetLoopBeginSafe())));
+LLFUNC(GetLoopBegin, 1,
+  LuaUtilPushVar(lS, AgStream{lS, 1}().GetLoopBeginSafe()))
 /* ========================================================================= */
 // $ Stream:GetLoopEnd
 // < Count:integer=Sample position end point
 // ? Gets the current loop end sample.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetLoopEnd, 1, LCPUSHVAR(static_cast<lua_Integer>
-  (LCGETPTR(1, Stream)->GetLoopEndSafe())));
+LLFUNC(GetLoopEnd, 1, LuaUtilPushVar(lS, AgStream{lS, 1}().GetLoopEndSafe()))
 /* ========================================================================= */
 // $ Stream:SetLoop
 // > Count:integer=New playback loop count.
 // ? Sets the new playback loop count.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetLoop, LCGETPTR(1, Stream)->
-  SetLoopSafe(LCGETINTLGE(ogg_int64_t, 2, -1,
-    numeric_limits<ogg_int64_t>::max(), "Count")));
+LLFUNC(SetLoop, 0, AgStream{lS, 1}().SetLoopSafe(
+  AgIntegerLGE<ogg_int64_t>{lS, 2, -1, numeric_limits<ogg_int64_t>::max() }))
 /* ========================================================================= */
 // $ Stream:SetLoopRange
 // > Begin:integer=New beginning sample playback position of loop.
@@ -178,70 +200,63 @@ LLFUNC(SetLoop, LCGETPTR(1, Stream)->
 // ? Sets the new playback beginning sample position after stream loops and
 // ? the ending sample position.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(SetLoopRange)
-  Stream &sCref = *LCGETPTR(1, Stream);
-  sCref.SetLoopRangeSafe(
-    LCGETINTLGE(ogg_int64_t, 2, 0, sCref.GetLoopEndSafe(), "BeginPos"),
-    LCGETINTLGE(ogg_int64_t, 3, sCref.GetLoopBeginSafe(),
-      sCref.GetSamplesSafe(), "EndPos"));
-LLFUNCEND
+LLFUNC(SetLoopRange, 0,
+  const AgStream aStream{lS, 1};
+  const AgSample aSample{lS, 2, aStream};
+  const AgIntegerLGE<ogg_int64_t>
+    aEnd{ lS, 3, aSample, aStream().GetSamplesSafe() };
+  aStream().SetLoopRangeSafe(aSample, aEnd))
 /* ========================================================================= */
 // $ Stream:SetLoopBegin
 // > Begin:integer=New beginning sample playback position of loop.
 // ? Sets the new playback beginning sample position after stream loops.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(SetLoopBegin)
-  Stream &sCref = *LCGETPTR(1, Stream);
-  sCref.SetLoopBeginSafe(LCGETINTLGE(ogg_int64_t,
-    2, 0, sCref.GetLoopEndSafe(), "pcmpos"));
-LLFUNCEND
+LLFUNC(SetLoopBegin, 0, const AgStream aStream{lS, 1};
+  aStream().SetLoopBeginSafe(AgSample{lS, 2, aStream}))
 /* ========================================================================= */
 // $ Stream:SetLoopEnd
 // > End:integer=New ending sample playback position of loop.
 // ? Sets the new playback ending sample position before stream loops.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(SetLoopEnd)
-  Stream &sCref = *LCGETPTR(1, Stream);
-  sCref.SetLoopEndSafe(LCGETINTLGE(ogg_int64_t, 2, sCref.GetLoopBeginSafe(),
-    sCref.GetSamplesSafe(), "pcmpos"));
-LLFUNCEND
+LLFUNC(SetLoopEnd, 0, const AgStream aStream{lS, 1};
+  aStream().SetLoopEndSafe(AgIntegerLGE<ogg_int64_t>
+    { lS, 2, aStream().GetLoopBeginSafe(), aStream().GetSamplesSafe() }))
 /* ========================================================================= */
 // $ Stream:SetVolume
 // > Volume:number=New stream volume (0 to 1).
 // ? Sets the volume of the stream class even if it is playing.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetVolume, LCGETPTR(1, Stream)->
-  SetVolume(LCGETNUMLG(ALfloat, 2, 0.0f, 1.0f, "Volume")));
+LLFUNC(SetVolume, 0, AgStream{lS, 1}().SetVolume(AgVolume{lS, 2}))
 /* ========================================================================= */
 // $ Stream:GetVolume
 // < Volume:number=Current stream volume (0 to 1).
 // ? Returns the volume of the stream class.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetVolume, 1, LCPUSHVAR(LCGETPTR(1, Stream)->GetVolume()));
+LLFUNC(GetVolume, 1, LuaUtilPushVar(lS, AgStream{lS, 1}().GetVolume()))
 /* ========================================================================= */
 // $ Stream:GetBytes
 // < Total:integer=Current stream total bytes.
 // ? Returns the size of the file that is streaming.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetBytes, 1, LCPUSHVAR(LCGETPTR(1, Stream)->GetOggBytes()));
+LLFUNC(GetBytes, 1, LuaUtilPushVar(lS, AgStream{lS, 1}().GetOggBytes()))
 /* ========================================================================= */
 // $ Stream:GetSamples
 // < Total:integer=Current stream total samples.
 // ? Returns the duration of the stream in samples.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetSamples, 1, LCPUSHVAR(LCGETPTR(1, Stream)->GetSamplesSafe()));
+LLFUNC(GetSamples, 1, LuaUtilPushVar(lS, AgStream{lS, 1}().GetSamplesSafe()))
 /* ========================================================================= */
 // $ Stream:GetMetaData
 // < Data:table=Stream metadata key/value table.
 // ? Returns all the metadata that was stored inside the audio file.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetMetaData, 1, LCTOTABLE(LCGETPTR(1, Stream)->GetMetaData()));
+LLFUNC(GetMetaData, 1, LuaUtilToTable(lS, AgStream{lS, 1}().GetMetaData()))
 /* ========================================================================= */
 // $ Stream:GetRate
 // < Rate:integer=The sample rate
 // ? Returns the sample rate per second in samples.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetRate, 1, LCPUSHVAR(LCGETPTR(1, Stream)->GetRate()));
+LLFUNC(GetRate, 1, LuaUtilPushVar(lS, AgStream{lS, 1}().GetRate()))
 /* ========================================================================= */
 // $ Stream:GetBitRate
 // < Upper:integer=The upper bitrate
@@ -250,30 +265,22 @@ LLFUNCEX(GetRate, 1, LCPUSHVAR(LCGETPTR(1, Stream)->GetRate()));
 // < Window:integer=The window bitrate
 // ? Returns bitrate information for the audio file.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(GetBitRate)
-  const Stream &sCref = *LCGETPTR(1, Stream);
-  LCPUSHVAR(sCref.GetBitRateUpper(), sCref.GetBitRateNominal(),
-            sCref.GetBitRateLower(), sCref.GetBitRateWindow());
-LLFUNCENDEX(4)
+LLFUNC(GetBitRate, 0, const AgStream aStream{lS, 1};
+  LuaUtilPushVar(lS, aStream().GetBitRateUpper(),
+    aStream().GetBitRateNominal(), aStream().GetBitRateLower(),
+    aStream().GetBitRateWindow()))
 /* ========================================================================= */
 // $ Stream:GetVersion
 // < Version:integer=The ogg version
 // ? Returns the version of the ogg file
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetVersion, 1, LCPUSHVAR(LCGETPTR(1, Stream)->GetVersion()));
+LLFUNC(GetVersion, 1, LuaUtilPushVar(lS, AgStream{lS, 1}().GetVersion()))
 /* ========================================================================= */
 // $ Stream:GetChannels
 // < Rate:integer=The number of channels
 // ? Returns the number of channels in the audio file.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetChannels, 1, LCPUSHVAR(LCGETPTR(1, Stream)->GetChannels()));
-/* ========================================================================= */
-// $ Stream:Destroy
-// ? Stops and destroys the stream object and frees all the memory associated
-// ? with it. The object will no longer be useable after this call and an
-// ? error will be generated if accessed.
-/* ------------------------------------------------------------------------- */
-LLFUNC(Destroy, LCCLASSDESTROY(1, Stream));
+LLFUNC(GetChannels, 1, LuaUtilPushVar(lS, AgStream{lS, 1}().GetChannels()))
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Stream:* member functions structure                                 ## **
@@ -292,26 +299,19 @@ LLRSMFBEGIN                            // Stream:* member functions begin
   LLRSFUNC(SetLoopRange),   LLRSFUNC(SetVolume),    LLRSFUNC(Stop),
 LLRSEND                                // Stream:* member functions end
 /* ========================================================================= */
-// $ Stream.FileAsync
-// > Filename:string=The filename of the ogg to load
-// > ErrorFunc:function=The function to call when there is an error
-// > ProgressFunc:function=The function to call during initial IO loading.
-// > SuccessFunc:function=The function to call when the file is laoded
-// ? Loads a streamable ogg file off the main thread. The callback functions
-// ? send an argument to the stream object that was created.
+// $ Stream.Asset
+// > Id:String=The identifier of the string
+// > Data:Asset=The file data of the ogg file to load
+// < Handle:Ogg=The ogg object
+// ? Loads an ogg file to stream on the main thread from the specified array
+// ? object.
 /* ------------------------------------------------------------------------- */
-LLFUNC(FileAsync, LCCLASSCREATE(Stream)->InitAsyncFile(lS));
+LLFUNC(Asset, 1,
+  const AgNeString aIdentifier{lS, 1};
+  const AgAsset aAsset{lS, 2};
+  AcStream{lS}().SyncInitArray(aIdentifier, aAsset))
 /* ========================================================================= */
-// $ Stream.File
-// > Filename:string=The filename of the ogg file to load
-// < Handle:Stream=The stream object
-// ? Loads a stream sample on the main thread from the specified file on disk.
-// ? Returns the stream object.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(File, 1,
-  LCCLASSCREATE(Stream)->SyncInitFileSafe(LCGETCPPFILE(1, "File")));
-/* ========================================================================= */
-// $ Stream.ArrayAsync
+// $ Stream.AssetAsync
 // > Id:String=The identifier of the string
 // > Data:array=The data of the ogg file to load
 // > ErrorFunc:function=The function to call when there is an error
@@ -321,22 +321,12 @@ LLFUNCEX(File, 1,
 // ? The callback functions send an argument to the Stream object that was
 // ? created.
 /* ------------------------------------------------------------------------- */
-LLFUNC(ArrayAsync, LCCLASSCREATE(Stream)->InitAsyncArray(lS));
-/* ========================================================================= */
-// $ Stream.Asset
-// > Id:String=The identifier of the string
-// > Data:Asset=The file data of the ogg file to load
-// < Handle:Ogg=The ogg object
-// ? Loads an ogg file to stream on the main thread from the specified array
-// ? object.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(Asset, 1, LCCLASSCREATE(Stream)->SyncInitArray(
-  LCGETCPPSTRINGNE(1, "Identifier"), StdMove(*LCGETPTR(2, Asset))));
-/* ========================================================================= */
-// $ Stream.WaitAsync
-// ? Halts main-thread execution until all async stream mevents have completed
-/* ------------------------------------------------------------------------- */
-LLFUNC(WaitAsync, cStreams->WaitAsync());
+LLFUNC(AssetAsync, 0,
+  LuaUtilCheckParams(lS, 5);
+  const AgNeString aIdentifier{lS, 1};
+  const AgAsset aAsset{lS, 2};
+  LuaUtilCheckFunc(lS, 3, 4, 5);
+  AcStream{lS}().AsyncInitArray(lS, aIdentifier, "streamarray", aAsset))
 /* ========================================================================= */
 // $ Stream.ClearEvents
 // ? Clear the OnEvent callback on all Stream objects. This might be useful for
@@ -344,14 +334,42 @@ LLFUNC(WaitAsync, cStreams->WaitAsync());
 // ? referenced and no longer accessable by your code in which the result is
 // ? that the Stream object does not get garbage collected.
 /* ------------------------------------------------------------------------- */
-LLFUNC(ClearEvents, StreamClearEvents());
+LLFUNC(ClearEvents, 0, StreamClearEvents())
+/* ========================================================================= */
+// $ Stream.File
+// > Filename:string=The filename of the ogg file to load
+// < Handle:Stream=The stream object
+// ? Loads a stream sample on the main thread from the specified file on disk.
+// ? Returns the stream object.
+/* ------------------------------------------------------------------------- */
+LLFUNC(File, 1, const AgFilename aFilename{lS, 1};
+  AcStream{lS}().SyncInitFileSafe(aFilename))
+/* ========================================================================= */
+// $ Stream.FileAsync
+// > Filename:string=The filename of the ogg to load
+// > ErrorFunc:function=The function to call when there is an error
+// > ProgressFunc:function=The function to call during initial IO loading.
+// > SuccessFunc:function=The function to call when the file is laoded
+// ? Loads a streamable ogg file off the main thread. The callback functions
+// ? send an argument to the stream object that was created.
+/* ------------------------------------------------------------------------- */
+LLFUNC(FileAsync, 0,
+  LuaUtilCheckParams(lS, 4);
+  const AgFilename aFilename{lS, 1};
+  LuaUtilCheckFunc(lS, 2, 3, 4);
+  AcStream{lS}().AsyncInitFile(lS, aFilename, "streamfile"))
+/* ========================================================================= */
+// $ Stream.WaitAsync
+// ? Halts main-thread execution until all async stream mevents have completed
+/* ------------------------------------------------------------------------- */
+LLFUNC(WaitAsync, 0, cStreams->WaitAsync())
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Stream.* namespace functions structure                              ## **
 ** ######################################################################### **
 ** ------------------------------------------------------------------------- */
 LLRSBEGIN                              // Stream.* namespace functions begin
-  LLRSFUNC(Asset), LLRSFUNC(ArrayAsync), LLRSFUNC(ClearEvents),
+  LLRSFUNC(Asset), LLRSFUNC(AssetAsync), LLRSFUNC(ClearEvents),
   LLRSFUNC(File),  LLRSFUNC(FileAsync),  LLRSFUNC(WaitAsync),
 LLRSEND                                // Stream.* namespace functions end
 /* ========================================================================= **

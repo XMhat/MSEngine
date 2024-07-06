@@ -33,6 +33,7 @@ namespace E {                          // Start of engine namespace
 #include "sysutil.hpp"                 // System utilities header
 #include "cvardef.hpp"                 // CVar definitions header
 #include "clock.hpp"                   // Clock utilities header
+#include "timer.hpp"                   // Timing utilities header
 #include "args.hpp"                    // Arguments handling header
 #include "cmdline.hpp"                 // Command-line class header
 #include "memory.hpp"                  // Memory management utilities header
@@ -43,14 +44,17 @@ namespace E {                          // Start of engine namespace
 #include "thread.hpp"                  // Thread helper class header
 #include "evtcore.hpp"                 // Thread-safe event system core header
 #include "evtmain.hpp"                 // Main engine events system header
-#include "condef.hpp"                  // Console definitions header
 #include "glfwutil.hpp"                // GLFW utility class header
+#include "evtwin.hpp"                  // Window thread events system header
 #include "glfwcrsr.hpp"                // GLFW cursor class header
 #include "glfwwin.hpp"                 // GLFW window class header
 #include "glfw.hpp"                    // GLFW utilities header
 #include "dim.hpp"                     // Data grouping classes header
+#include "glfwmon.hpp"                 // GLFW monitor class header
+#include "condef.hpp"                  // Console definitions header
 #include "syscore.hpp"                 // Operating system interface header
 #include "filemap.hpp"                 // Virtual file IO interface
+#include "luadef.hpp"                  // Lua definitions header
 #include "luautil.hpp"                 // Lua utility functions header
 #include "luaref.hpp"                  // Lua reference helper class header
 #include "luaevent.hpp"                // Lua event helper class header
@@ -62,13 +66,11 @@ namespace E {                          // Start of engine namespace
 #include "credits.hpp"                 // Credits handling class header
 #include "archive.hpp"                 // Archive handling class header
 #include "asset.hpp"                   // Asset handling class header
-#include "cert.hpp"                    // X509 certificate store class header
-#include "timer.hpp"                   // Timing utilities header
 #include "sql.hpp"                     // SQL database management header
+#include "cert.hpp"                    // X509 certificate store class header
 #include "cvar.hpp"                    // CVar item header
-#include "cvars.hpp"                   // CVars management class header
 #include "luacode.hpp"                 // Lua code subsystem header
-#include "luadef.hpp"                  // Lua definitions header
+#include "cvars.hpp"                   // CVars management class header
 #include "lua.hpp"                     // Lua core subsystem header
 #include "socket.hpp"                  // Socket handling class header
 #include "console.hpp"                 // Console handling header
@@ -78,7 +80,6 @@ namespace E {                          // Start of engine namespace
 #include "pcmfmt.hpp"                  // Pcm format support plugins header
 #include "pcm.hpp"                     // Pcm loader class header
 #include "fbodef.hpp"                  // Frambuffer object definitions header
-#include "evtwin.hpp"                  // Window thread events system header
 #include "texdef.hpp"                  // Texture data definitions header
 #include "ogl.hpp"                     // OpenGL graphics management header
 #include "imagedef.hpp"                // Image data definitions header
@@ -100,6 +101,8 @@ namespace E {                          // Start of engine namespace
 #include "file.hpp"                    // FStream+FileMap class header
 #include "clip.hpp"                    // Clipboard class header
 #include "congraph.hpp"                // Console rendering class header
+#include "input.hpp"                   // Input handling class header
+#include "display.hpp"                 // Window handling class header
 #include "mask.hpp"                    // BitMask system header
 #include "source.hpp"                  // Audio source class header
 #include "stream.hpp"                  // Audio stream class header
@@ -107,9 +110,6 @@ namespace E {                          // Start of engine namespace
 #include "video.hpp"                   // Theora video playback class header
 #include "audio.hpp"                   // Audio base management class header
 #include "json.hpp"                    // Json handling class header
-#include "input.hpp"                   // Input handling class header
-#include "glfwmon.hpp"                 // GLFW monitor class header
-#include "display.hpp"                 // Window handling class header
 #include "luavar.hpp"                  // Lua variable class
 #include "luacmd.hpp"                  // Lua console command class
 #include "core.hpp"                    // Core class header

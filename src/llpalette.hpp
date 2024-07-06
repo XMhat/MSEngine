@@ -21,7 +21,25 @@ namespace LLPalette {                  // Palette namespace
 /* -- Dependencies --------------------------------------------------------- */
 using namespace IFboDef::P;            using namespace IImage::P;
 using namespace IPalette::P;           using namespace IStd::P;
-using namespace ITexture::P;           using namespace Lib::OS::GlFW;
+using namespace ITexture::P;           using namespace Common;
+/* ========================================================================= **
+** ######################################################################### **
+** ## Palette common helper classes                                       ## **
+** ######################################################################### **
+** -- Read Palette class argument ------------------------------------------ */
+struct AgPalette : public ArClass<Palette> {
+  explicit AgPalette(lua_State*const lS, const int iArg) :
+    ArClass{*LuaUtilGetPtr<Palette>(lS, iArg, *cPalettes)}{} };
+/* -- Create Palette class argument ---------------------------------------- */
+struct AcPalette : public ArClass<Palette> {
+  explicit AcPalette(lua_State*const lS) :
+    ArClass{*LuaUtilClassCreate<Palette>(lS, *cPalettes)}{} };
+/* -- Read a valid Palette position index ---------------------------------- */
+struct AgPosition : public AgSizeTLGE {
+  explicit AgPosition(lua_State*const lS, const int iArg) :
+    AgSizeTLGE{lS, iArg, 0, cPalettes->palDefault.size()}{} };
+/* -- Other types ---------------------------------------------------------- */
+typedef AgIntegerLEG<ssize_t> AgSSizeTLEG;
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Palette:* member functions                                          ## **
@@ -30,7 +48,7 @@ using namespace ITexture::P;           using namespace Lib::OS::GlFW;
 // $ Palette:Commit
 // ? Use this function to commit the new palette to the shader.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Commit, LCGETPTR(1, Palette)->Commit());
+LLFUNC(Commit, 0, AgPalette{lS, 1}().Commit())
 /* ========================================================================= */
 // $ Palette:Fill
 // > Id:integer=Palette entry to modify from (0-255).
@@ -41,17 +59,15 @@ LLFUNC(Commit, LCGETPTR(1, Palette)->Commit());
 // < Alpha:number=The alpha intensity number (0.0-1.0).
 // ? Use this function to fill the palette with the specified values.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(Fill)
-  Palette &pDstRef = *LCGETPTR(1, Palette);
-  const size_t stIndex =
-    LCGETINTLGE(size_t, 2, 0, cPalettes->palDefault.size(), "Index");
-  pDstRef.Fill(stIndex,
-    LCGETINTLG(size_t, 3, 0, cPalettes->palDefault.size()-stIndex, "Count"),
-    LCGETNUMLG(GLfloat, 4, 0.0f, 1.0f, "Red"),
-    LCGETNUMLG(GLfloat, 5, 0.0f, 1.0f, "Green"),
-    LCGETNUMLG(GLfloat, 6, 0.0f, 1.0f, "Blue"),
-    LCGETNUMLG(GLfloat, 7, 0.0f, 1.0f, "Alpha"));
-LLFUNCEND
+LLFUNC(Fill, 0,
+  const AgPalette aPalette{lS, 1};
+  const AgPosition aColourId{lS, 2};
+  const AgSizeTLG aCount{lS, 3, 0, cPalettes->palDefault.size() - aColourId};
+  const AgGLfloat aRed{lS, 4},
+                  aGreen{lS, 5},
+                  aBlue{lS, 6},
+                  aAlpha{lS, 7};
+  aPalette().Fill(aColourId, aCount, aRed, aGreen, aBlue, aAlpha))
 /* ========================================================================= */
 // $ Palette:Copy
 // > Count:integer=The number of values to copy.
@@ -60,46 +76,50 @@ LLFUNCEND
 // > SrcId:integer=Index offset to copy the values from.
 // ? Use this function to copy palette data from another palette.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(Copy)
-  Palette &pDstRef = *LCGETPTR(1, Palette);
-  const size_t stCount =
-    LCGETINTLG(size_t, 2, 0, cPalettes->palDefault.size(), "Count");
-  const size_t stMaxEnd = cPalettes->palDefault.size()-stCount;
-  const size_t stDstIndex = LCGETINTLG(size_t, 3, 0, stMaxEnd, "DestIndex");
-  const Palette &pSrcRef = *LCGETPTR(4, Palette);
-  const size_t stSrcIndex = LCGETINTLG(size_t, 5, 0, stMaxEnd, "SrcIndex");
-  pDstRef.Copy(stDstIndex, pSrcRef, stSrcIndex, stCount);
-LLFUNCEND
+LLFUNC(Copy, 0,
+  const AgPalette aPaletteDestination{lS, 1};
+  const AgPosition aCount{lS, 2};
+  const size_t stMaxEnd = cPalettes->palDefault.size() - aCount;
+  const AgSizeTLG aDstIndex{lS, 3, 0, stMaxEnd};
+  const AgPalette aPaletteSource{lS, 4};
+  const AgSizeTLG aSrcIndex{lS, 5, 0, stMaxEnd};
+  aPaletteDestination().Copy(aDstIndex, aPaletteSource, aSrcIndex, aCount))
 /* ========================================================================= */
 // $ Palette:Destroy
 // ? Destroys the palette and frees the memory associated with it. This does
 // ? not affect the active palette as this is stored on the GPU.
 /* ------------------------------------------------------------------------- */
-LLFUNC(Destroy, LCCLASSDESTROY(1, Palette));
+LLFUNC(Destroy, 0, LuaUtilClassDestroy<Palette>(lS, 1, *cPalettes))
 /* ========================================================================= */
 // $ Palette:GetA
 // > Id:integer=Palette entry to modify (0-255).
-// < Red:number=The red intensity number (0.0-1.0).
+// < Alpha:number=The alpha intensity number (0.0-1.0).
 // ? Use this function to get the alpha palette entry.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetA, 1, LCPUSHVAR(LCGETPTR(1, Palette)->
-  GetAlpha(LCGETINTLGE(size_t, 2, 0, cPalettes->palDefault.size(), "Id"))));
+LLFUNC(GetA, 1,
+  const AgPalette aPalette{lS, 1};
+  const AgPosition aColourId{lS, 2};
+  LuaUtilPushVar(lS, aPalette().GetAlpha(aColourId)))
 /* ========================================================================= */
 // $ Palette:GetB
 // > Id:integer=Palette entry to modify (0-255).
 // < Red:number=The red intensity number (0.0-1.0).
 // ? Use this function to get the blue palette entry.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetB, 1, LCPUSHVAR(LCGETPTR(1, Palette)->
-  GetBlue(LCGETINTLGE(size_t, 2, 0, cPalettes->palDefault.size(), "Id"))));
+LLFUNC(GetB, 1,
+  const AgPalette aPalette{lS, 1};
+  const AgPosition aColourId{lS, 2};
+  LuaUtilPushVar(lS, aPalette().GetBlue(aColourId)))
 /* ========================================================================= */
 // $ Palette:GetG
 // > Id:integer=Palette entry to modify (0-255).
-// < Red:number=The red intensity number (0.0-1.0).
+// < Green:number=The green intensity number (0.0-1.0).
 // ? Use this function to get the green palette entry.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetG, 1, LCPUSHVAR(LCGETPTR(1, Palette)->
-  GetGreen(LCGETINTLGE(size_t, 2, 0, cPalettes->palDefault.size(), "Id"))));
+LLFUNC(GetG, 1,
+  const AgPalette aPalette{lS, 1};
+  const AgPosition aColourId{lS, 2};
+  LuaUtilPushVar(lS, aPalette().GetGreen(aColourId)))
 /* ========================================================================= */
 // $ Palette:GetAI
 // > Id:integer=Palette entry to modify (0-255).
@@ -109,8 +129,10 @@ LLFUNCEX(GetG, 1, LCPUSHVAR(LCGETPTR(1, Palette)->
 // ? the palette values have to be stored as GLfloats in the GPU and thus extra
 // ? calculations are required as a result.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetAI, 1, LCPUSHVAR(LCGETPTR(1, Palette)->
-  GetAlphaInt(LCGETINTLGE(size_t, 2, 0, cPalettes->palDefault.size(), "Id"))));
+LLFUNC(GetAI, 1,
+  const AgPalette aPalette{lS, 1};
+  const AgPosition aColourId{lS, 2};
+  LuaUtilPushVar(lS, aPalette().GetAlphaInt(aColourId)))
 /* ========================================================================= */
 // $ Palette:GetBI
 // > Id:integer=Palette entry to modify (0-255).
@@ -120,8 +142,10 @@ LLFUNCEX(GetAI, 1, LCPUSHVAR(LCGETPTR(1, Palette)->
 // ? the palette values have to be stored as GLfloats in the GPU and thus extra
 // ? calculations are required as a result.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetBI, 1, LCPUSHVAR(LCGETPTR(1, Palette)->
-  GetBlueInt(LCGETINTLGE(size_t, 2, 0, cPalettes->palDefault.size(), "Id"))));
+LLFUNC(GetBI, 1,
+  const AgPalette aPalette{lS, 1};
+  const AgPosition aColourId{lS, 2};
+  LuaUtilPushVar(lS, aPalette().GetBlueInt(aColourId)));
 /* ========================================================================= */
 // $ Palette:GetGI
 // > Id:integer=Palette entry to modify (0-255).
@@ -131,8 +155,10 @@ LLFUNCEX(GetBI, 1, LCPUSHVAR(LCGETPTR(1, Palette)->
 // ? the palette values have to be stored as GLfloats in the GPU and thus extra
 // ? calculations are required as a result.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetGI, 1, LCPUSHVAR(LCGETPTR(1, Palette)->
-  GetGreenInt(LCGETINTLGE(size_t, 2, 0, cPalettes->palDefault.size(), "Id"))));
+LLFUNC(GetGI, 1,
+  const AgPalette aPalette{lS, 1};
+  const AgPosition aColourId{lS, 2};
+  LuaUtilPushVar(lS, aPalette().GetGreenInt(aColourId)))
 /* ========================================================================= */
 // $ Palette:GetRI
 // > Id:integer=Palette entry to modify (0-255).
@@ -142,8 +168,10 @@ LLFUNCEX(GetGI, 1, LCPUSHVAR(LCGETPTR(1, Palette)->
 // ? the palette values have to be stored as GLfloats in the GPU and thus extra
 // ? calculations are required as a result.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetRI, 1, LCPUSHVAR(LCGETPTR(1, Palette)->
-  GetRedInt(LCGETINTLGE(size_t, 2, 0, cPalettes->palDefault.size(), "Id"))));
+LLFUNC(GetRI, 1,
+  const AgPalette aPalette{lS, 1};
+  const AgPosition aColourId{lS, 2};
+  LuaUtilPushVar(lS, aPalette().GetRedInt(aColourId)))
 /* ========================================================================= */
 // $ Palette:GetRGBAI
 // > Id:integer=Palette entry to modify (0-255).
@@ -153,20 +181,22 @@ LLFUNCEX(GetRI, 1, LCPUSHVAR(LCGETPTR(1, Palette)->
 // < Alpha:integer=The alpha intensity integer (0-255).
 // ? Use this function to get the palette entry.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(GetRGBAI)
-  const auto &fbocData = LCGETPTR(1, Palette)->GetSlotConst(
-    LCGETINTLGE(size_t, 2, 0, cPalettes->palDefault.size(), "Id")).
-    Cast<lua_Integer>();
-  LCPUSHVAR(fbocData[0], fbocData[1], fbocData[2], fbocData[3]);
-LLFUNCENDEX(4)
+LLFUNC(GetRGBAI, 4,
+  const AgPalette aPalette{lS, 1};
+  const AgPosition aColourId{lS, 2};
+  const auto &fbocData =
+    aPalette().GetSlotConst(aColourId).Cast<lua_Integer>();
+  LuaUtilPushVar(lS, fbocData[0], fbocData[1], fbocData[2], fbocData[3]))
 /* ========================================================================= */
 // $ Palette:GetR
 // > Id:integer=Palette entry to modify (0-255).
 // < Red:number=The red intensity number (0.0-1.0).
 // ? Use this function to get the red palette entry.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetR, 1, LCPUSHVAR(LCGETPTR(1, Palette)->
-  GetRed(LCGETINTLGE(size_t, 2, 0, cPalettes->palDefault.size(), "Id"))));
+LLFUNC(GetR, 1,
+  const AgPalette aPalette{lS, 1};
+  const AgPosition aColourId{lS, 2};
+  LuaUtilPushVar(lS, aPalette().GetRed(aColourId)))
 /* ========================================================================= */
 // $ Palette:GetRGBA
 // > Id:integer=Palette entry to modify (0-255).
@@ -176,87 +206,101 @@ LLFUNCEX(GetR, 1, LCPUSHVAR(LCGETPTR(1, Palette)->
 // < Alpha:number=The alpha intensity number (0.0-1.0).
 // ? Use this function to get the palette entry.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(GetRGBA)
-  const FboColour &fbocData = LCGETPTR(1, Palette)->GetSlotConst(
-    LCGETINTLGE(size_t, 2, 0, cPalettes->palDefault.size(), "Id"));
-  LCPUSHVAR(fbocData.GetColourRed(), fbocData.GetColourGreen(),
-            fbocData.GetColourBlue(), fbocData.GetColourAlpha());
-LLFUNCENDEX(4)
+LLFUNC(GetRGBA, 4,
+  const AgPalette aPalette{lS, 1};
+  const AgPosition aColourId{lS, 2};
+  const FboColour &fbocData = aPalette().GetSlotConst(aColourId);
+  LuaUtilPushVar(lS, fbocData.GetColourRed(), fbocData.GetColourGreen(),
+            fbocData.GetColourBlue(), fbocData.GetColourAlpha()))
 /* ========================================================================= */
 // $ Palette:GetId
 // < Id:integer=The id number of the Palette object.
 // ? Returns the unique id of the Palette object.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetId, 1, LCPUSHVAR(LCGETPTR(1, Palette)->CtrGet()));
+LLFUNC(GetId, 1, LuaUtilPushVar(lS, AgPalette{lS, 1}().CtrGet()))
 /* ========================================================================= */
 // $ Palette:GetName
 // < Name:string=The identifier of the palette.
 // ? Returns the palette identifier
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(GetName, 1, LCPUSHVAR(LCGETPTR(1, Palette)->IdentGet()));
+LLFUNC(GetName, 1, LuaUtilPushVar(lS, AgPalette{lS, 1}().IdentGet()))
 /* ========================================================================= */
 // $ Palette:SetA
 // > Id:integer=Palette entry to modify (0-255).
 // > Alpha:number=The alpha intensity number (0.0-1.0).
 // ? Use this function to set the alpha palette entry.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetA, LCGETPTR(1, Palette)->SetAlpha(
-  LCGETINTLGE(size_t,  2,    0, cPalettes->palDefault.size(), "Id"),
-  LCGETNUMLG (GLfloat, 3, 0.0f, 1.0f, "Alpha")));
+LLFUNC(SetA, 0,
+  const AgPalette aPalette{lS, 1};
+  const AgPosition aColourId{lS, 2};
+  const AgGLfloat aColour{lS, 3};
+  aPalette().SetAlpha(aColourId, aColour))
 /* ========================================================================= */
 // $ Palette:SetB
 // > Id:integer=Palette entry to modify (0-255).
 // > Blue:number=The blue intensity number (0.0-1.0).
 // ? Use this function to set the blue palette entry.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetB, LCGETPTR(1, Palette)->SetBlue(
-  LCGETINTLGE(size_t,  2,    0, cPalettes->palDefault.size(), "Id"),
-  LCGETNUMLG (GLfloat, 3, 0.0f, 1.0f, "Blue")));
+LLFUNC(SetB, 0,
+  const AgPalette aPalette{lS, 1};
+  const AgPosition aColourId{lS, 2};
+  const AgGLfloat aColour{lS, 3};
+  aPalette().SetBlue(aColourId, aColour))
 /* ========================================================================= */
 // $ Palette:SetG
 // > Id:integer=Palette entry to modify (0-255).
 // > Green:number=The green intensity number (0.0-1.0).
 // ? Use this function to set the green palette entry.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetG, LCGETPTR(1, Palette)->SetGreen(
-  LCGETINTLGE(size_t,  2,    0, cPalettes->palDefault.size(), "Id"),
-  LCGETNUMLG (GLfloat, 3, 0.0f, 1.0f, "Green")));
+LLFUNC(SetG, 0,
+  const AgPalette aPalette{lS, 1};
+  const AgPosition aColourId{lS, 2};
+  const AgGLfloat aColour{lS, 3};
+  aPalette().SetGreen(aColourId, aColour))
 /* ========================================================================= */
 // $ Palette:SetAI
 // > Id:integer=Palette entry to modify (0-255).
 // > Alpha:integer=The alpha intensity integer (0-255).
 // ? Use this function to set the alpha palette entry.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetAI, LCGETPTR(1, Palette)->SetAlphaInt(
-  LCGETINTLGE(size_t,       2, 0, cPalettes->palDefault.size(), "Id"),
-  LCGETINTLG (unsigned int, 3, 0, 255, "Alpha")));
+LLFUNC(SetAI, 0,
+  const AgPalette aPalette{lS, 1};
+  const AgPosition aColourId{lS, 2};
+  const AgUIntLG aColour{lS, 3, 0, 255};
+  aPalette().SetAlphaInt(aColourId, aColour))
 /* ========================================================================= */
 // $ Palette:SetBI
 // > Id:integer=Palette entry to modify (0-255).
 // > Blue:integer=The blue intensity integer (0-255).
 // ? Use this function to set the blue palette entry.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetBI, LCGETPTR(1, Palette)->SetBlueInt(
-  LCGETINTLGE(size_t,       2, 0, cPalettes->palDefault.size(), "Id"),
-  LCGETINTLG (unsigned int, 3, 0, 255, "Blue")));
+LLFUNC(SetBI, 0,
+  const AgPalette aPalette{lS, 1};
+  const AgPosition aColourId{lS, 2};
+  const AgUIntLG aColour{lS, 3, 0, 255};
+  aPalette().SetBlueInt(aColourId, aColour))
 /* ========================================================================= */
 // $ Palette:SetGI
 // > Id:integer=Palette entry to modify (0-255).
 // > Green:integer=The green intensity integer (0-255).
 // ? Use this function to set the green palette entry.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetGI, LCGETPTR(1, Palette)->SetGreenInt(
-  LCGETINTLGE(size_t,       2, 0, cPalettes->palDefault.size(), "Id"),
-  LCGETINTLG (unsigned int, 3, 0, 255, "Green")));
+LLFUNC(SetGI, 0,
+  const AgPalette aPalette{lS, 1};
+  const AgPosition aColourId{lS, 2};
+  const AgUIntLG aColour{lS, 3, 0, 255};
+  aPalette().SetGreenInt(aColourId, aColour))
 /* ========================================================================= */
 // $ Palette:SetRI
 // > Id:integer=Palette entry to modify (0-255).
 // > Red:integer=The red intensity integer (0-255).
 // ? Use this function to set the red palette entry.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetRI, LCGETPTR(1, Palette)->SetRedInt(
-  LCGETINTLGE(size_t,       2, 0, cPalettes->palDefault.size(), "Id"),
-  LCGETINTLG (unsigned int, 3, 0, 255, "Red")));
+LLFUNC(SetRI, 0,
+  const AgPalette aPalette{lS, 1};
+  const AgPosition aColourId{lS, 2};
+  const AgUIntLG aColour{lS, 3, 0, 255};
+  aPalette().SetRedInt(aColourId, aColour))
 /* ========================================================================= */
 // $ Palette:SetRGBAI
 // > Id:integer=Palette entry to modify (0-255).
@@ -269,21 +313,25 @@ LLFUNC(SetRI, LCGETPTR(1, Palette)->SetRedInt(
 // ? :Set() as the palette values have to be stored as GLfloats in the GPU and
 // ? thus extra calculations are required as a result.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetRGBAI, LCGETPTR(1, Palette)->SetRGBAInt(
-  LCGETINTLGE(size_t,       2, 0, cPalettes->palDefault.size(), "Id"),
-  LCGETINTLG (unsigned int, 3, 0, 255, "Red"),
-  LCGETINTLG (unsigned int, 4, 0, 255, "Green"),
-  LCGETINTLG (unsigned int, 5, 0, 255, "Blue"),
-  LCGETINTLG (unsigned int, 6, 0, 255, "Alpha")));
+LLFUNC(SetRGBAI, 0,
+  const AgPalette aPalette{lS, 1};
+  const AgPosition aColourId{lS, 2};
+  const AgUIntLG aRed{lS, 3, 0, 255},
+                 aGreen{lS, 4, 0, 255},
+                 aBlue{lS, 5, 0, 255},
+                 aAlpha{lS, 6, 0, 255};
+  aPalette().SetRGBAInt(aColourId, aRed, aGreen, aBlue, aAlpha))
 /* ========================================================================= */
 // $ Palette:SetR
 // > Id:integer=Palette entry to modify (0-255).
 // > Red:number=The red intensity number (0.0-1.0).
 // ? Use this function to set the red palette entry.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetR, LCGETPTR(1, Palette)->SetRed(
-  LCGETINTLGE(size_t,  2,    0, cPalettes->palDefault.size(), "Id"),
-  LCGETNUMLG (GLfloat, 3, 0.0f, 1.0f, "Red")));
+LLFUNC(SetR, 0,
+  const AgPalette aPalette{lS, 1};
+  const AgPosition aColourId{lS, 2};
+  const AgGLfloat aColour{lS, 3};
+  aPalette().SetRed(aColourId, aColour))
 /* ========================================================================= */
 // $ Palette:SetRGBA
 // > Id:integer=Palette entry to modify (0-255).
@@ -293,12 +341,14 @@ LLFUNC(SetR, LCGETPTR(1, Palette)->SetRed(
 // > Alpha:number=The alpha intensity number (0.0-1.0).
 // ? Use this function to set the palette entry.
 /* ------------------------------------------------------------------------- */
-LLFUNC(SetRGBA, LCGETPTR(1, Palette)->SetRGBA(
-  LCGETINTLGE(size_t,  2,    0, cPalettes->palDefault.size(), "Id"),
-  LCGETNUMLG (GLfloat, 3, 0.0f, 1.0f, "Red"),
-  LCGETNUMLG (GLfloat, 4, 0.0f, 1.0f, "Green"),
-  LCGETNUMLG (GLfloat, 5, 0.0f, 1.0f, "Blue"),
-  LCGETNUMLG (GLfloat, 6, 0.0f, 1.0f, "Alpha")));
+LLFUNC(SetRGBA, 0,
+  const AgPalette aPalette{lS, 1};
+  const AgPosition aColourId{lS, 2};
+  const AgGLfloat aRed{lS, 3},
+                  aGreen{lS, 4},
+                  aBlue{lS, 5},
+                  aAlpha{lS, 6};
+  aPalette().SetRGBA(aColourId, aRed, aGreen, aBlue, aAlpha))
 /* ========================================================================= */
 // $ Palette:Shift
 // > Begin:integer=The starting palette index to shift up to.
@@ -307,12 +357,12 @@ LLFUNC(SetRGBA, LCGETPTR(1, Palette)->SetRGBA(
 // ? Shifts all palette entries backwards or forwards this amount from the
 // ? specified palette index and limited to the specified number of indexes.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(Shift)
-  Palette &pRef = *LCGETPTR(1, Palette);
-  const ssize_t stBegin = LCGETINTLG(ssize_t, 2, 0, pRef.Size(), "Begin");
-  pRef.Shift(stBegin, LCGETINTLGE(ssize_t, 3, 0, pRef.Size() - stBegin, "End"),
-    LCGETINTLEG(ssize_t, 4, pRef.SizeN(), pRef.Size(), "Amount"));
-LLFUNCEND
+LLFUNC(Shift, 0,
+  const AgPalette aPalette{lS, 1};
+  const AgSSizeTLG aBegin{lS, 2, 0, aPalette().Size()};
+  const AgSSizeTLGE aEnd{lS, 3, 0, aPalette().Size() - aBegin};
+  const AgSSizeTLEG aAmount{lS, 4, aPalette().SizeN(), aPalette().Size()};
+  aPalette().Shift(aBegin, aEnd, aAmount))
 /* ========================================================================= */
 // $ Palette:ShiftB
 // > Begin:integer=The starting palette index to shift up to.
@@ -321,12 +371,12 @@ LLFUNCEND
 // ? Shifts all palette entries backwards this amount from the specified
 // ? palette index and limited to the specified number of indexes.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(ShiftB)
-  Palette &pRef = *LCGETPTR(1, Palette);
-  const ssize_t stBegin = LCGETINTLGE(ssize_t, 2, 0, pRef.Size(), "Begin");
-  pRef.ShiftBck(stBegin, LCGETINTLGE(ssize_t, 3, stBegin, pRef.Size(), "End"),
-    LCGETINTLG(ssize_t, 4, 0, pRef.Size() - stBegin, "Amount"));
-LLFUNCEND
+LLFUNC(ShiftB, 0,
+  const AgPalette aPalette{lS, 1};
+  const AgSSizeTLGE aBegin{lS, 2, 0, aPalette().Size()},
+                    aEnd{lS, 3, aBegin, aPalette().Size()};
+  const AgSSizeTLG aAmount{lS, 4, 0, aPalette().Size() - aBegin};
+  aPalette().ShiftBck(aBegin, aEnd, aAmount))
 /* ========================================================================= */
 // $ Palette:ShiftF
 // > Begin:integer=The starting palette index to shift up to.
@@ -335,12 +385,12 @@ LLFUNCEND
 // ? Shifts all palette entries forwards this amount from the specified
 // ? palette index and limited to the specified number of indexes.
 /* ------------------------------------------------------------------------- */
-LLFUNCBEGIN(ShiftF)
-  Palette &pRef = *LCGETPTR(1, Palette);
-  const ssize_t stBegin = LCGETINTLGE(ssize_t, 2, 0, pRef.Size(), "Start");
-  pRef.ShiftFwd(stBegin, LCGETINTLGE(ssize_t, 3,stBegin, pRef.Size(), "Limit"),
-    LCGETINTLG(ssize_t, 4, 0, pRef.Size() - stBegin, "Amount"));
-LLFUNCEND
+LLFUNC(ShiftF, 0,
+  const AgPalette aPalette{lS, 1};
+  const AgSSizeTLGE aBegin{lS, 2, 0, aPalette().Size()},
+                    aEnd{lS, 3, aBegin, aPalette().Size()};
+  const AgSSizeTLG aAmount{lS, 4, 0, aPalette().Size() - aBegin};
+  aPalette().ShiftFwd(aBegin, aEnd, aAmount))
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Palette:* member functions structure                                ## **
@@ -362,40 +412,49 @@ LLRSEND                                // Palette:* member functions end
 // < Handle:Palette=A handle to the newly created palette object.
 // ? Creates a new empty palette with the specified name
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Create, 1,
-  LCCLASSCREATE(Palette)->Init(LCGETCPPSTRINGNE(1, "Identifier")));
-/* ========================================================================= */
-// $ Palette.Image
-// > Identifier:string=Reference only user-defined identifier.
-// > Handle:Image=Handle to image to grab palette from.
-// ? Creates a new palette from the specified image.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(Image, 1, LCCLASSCREATE(Palette)->Init(
-  LCGETCPPSTRINGNE(1, "Identifier"), *LCGETPTR(2, Image)))
-/* ========================================================================= */
-// $ Palette.Texture
-// > Identifier:string=Reference only user-defined identifier.
-// > Handle:Texture=Handle to texture to grab palette from.
-// ? Creates a new palette from the specified texture.
-/* ------------------------------------------------------------------------- */
-LLFUNCEX(Texture, 1, LCCLASSCREATE(Palette)->Init(
-  LCGETCPPSTRINGNE(1, "Identifier"), *LCGETPTR(2, Texture)))
+LLFUNC(Create, 1,
+  const AgNeString aIdentifier{lS, 1};
+  AcPalette{lS}().Init(aIdentifier))
 /* ========================================================================= */
 // $ Palette.Default
 // > Identifier:string=Reference only user-defined identifier.
 // < Handle:Palette=A handle to the newly created palette object.
 // ? Creates a new palette with the default VGA palette.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Default, 1, LCCLASSCREATE(Palette)->Init(
-  LCGETCPPSTRINGNE(1, "Identifier"), cPalettes->palDefault));
+LLFUNC(Default, 1,
+  const AgNeString aIdentifier{lS, 1};
+  AcPalette{lS}().Init(aIdentifier, cPalettes->palDefault))
+/* ========================================================================= */
+// $ Palette.Image
+// > Identifier:string=Reference only user-defined identifier.
+// > Handle:Image=Handle to image to grab palette from.
+// ? Creates a new palette from the specified image.
+/* ------------------------------------------------------------------------- */
+LLFUNC(Image, 1,
+  const AgNeString aIdentifier{lS, 1};
+  const AgImage aImage{lS,2};
+  AcPalette{lS}().Init(aIdentifier, aImage))
 /* ========================================================================= */
 // $ Palette.Palette
 // > Identifier:string=Reference only user-defined identifier.
+// > Handle:Palette=A handle to the palette object to copy.
 // < Handle:Palette=A handle to the newly created palette object.
 // ? Creates a new palette from another essentially copying it.
 /* ------------------------------------------------------------------------- */
-LLFUNCEX(Palette, 1, LCCLASSCREATE(Palette)->Init(
-  LCGETCPPSTRINGNE(1, "Identifier"), *LCGETPTR(2, Palette)));
+LLFUNC(Palette, 1,
+  const AgNeString aIdentifier{lS, 1};
+  const AgPalette aSourcePalette{lS, 2};
+  AcPalette{lS}().Init(aIdentifier, aSourcePalette))
+/* ========================================================================= */
+// $ Palette.Texture
+// > Identifier:string=Reference only user-defined identifier.
+// > Handle:Texture=Handle to texture to grab palette from.
+// ? Creates a new palette from the specified texture.
+/* ------------------------------------------------------------------------- */
+LLFUNC(Texture, 1,
+  const AgNeString aIdentifier{lS, 1};
+  const AgTexture aTexture{lS, 2};
+  AcPalette{lS}().Init(aIdentifier, aTexture))
 /* ========================================================================= **
 ** ######################################################################### **
 ** ## Palette.* namespace functions structure                             ## **

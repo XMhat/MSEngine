@@ -292,7 +292,7 @@ CTOR_MEM_BEGIN_CSLAVE(Sockets, Socket, ICHelperUnsafe),
          "Address", strAddr, "Port", uiPort);
     // Get first top packet and move data to memblock supplied by caller
     Packet &pData = plData.front();
-    mDest.MemSwap(StdMove(pData.mData));
+    mDest.MemSwap(pData.mData);
     // Copy record timestamp
     const ClkTimePoint ctpEnd{ StdMove(pData.ctpStart) };
     // Subtract total bytes counter
@@ -1132,14 +1132,14 @@ CTOR_MEM_BEGIN_CSLAVE(Sockets, Socket, ICHelperUnsafe),
   /* -- Set a new callback ------------------------------------------------- */
   void SetNewCallback(lua_State*const lS) { LuaEvtInitEx(lS, 1); }
   /* -- Async thread event callback (called by LuaEvtMaster) ------------- */
-  void LuaEvtCallbackAsync(const EvtMain::Cell &epData) try
+  void LuaEvtCallbackAsync(const EvtMainEvent &emeEvent) try
   { // Get reference to string vector and we need three parameters
     // [0]=Pointer to socket class, [1]=Event list id, [2]=Status
-    const EvtMain::Params &eParams = epData.vParams;
+    const EvtMainArgs &emaArgs = emeEvent.aArgs;
     // Remove iterator from our events dispatched list if we can
-    if(LuaEvtsCheckParams<3>(eParams))
+    if(LuaEvtsCheckParams<3>(emaArgs))
     { // Get the status and warn if we have incorrect number of parameters
-      const unsigned int uiStatus = eParams[2].ui;
+      const unsigned int uiStatus = emaArgs[2].ui;
       // Lua is not paused?
       if(!uiLuaPaused)
       { // Push function callback onto stack
@@ -1148,7 +1148,7 @@ CTOR_MEM_BEGIN_CSLAVE(Sockets, Socket, ICHelperUnsafe),
           if(LuaRefGetUData())
           { // Push the status code that was fired and if valid?
             LuaUtilPushInt(lsState, uiStatus);
-            if(lua_isinteger(lsState, -1))
+            if(LuaUtilIsInteger(lsState, -1))
             { // Call callback
               LuaUtilCallFuncEx(lsState, 2);
               // Clear references and state if this is the last event
@@ -1166,10 +1166,10 @@ CTOR_MEM_BEGIN_CSLAVE(Sockets, Socket, ICHelperUnsafe),
           "Invalid callback\n$", LuaUtilGetVarStack(lsState));
       } // Lua is paused? Log this just to know this event was ignored
       else SocketLogSafe(LH_WARNING,
-        "Ignoring event $=$$!", epData.evtCommand, hex, uiStatus);
+        "Ignoring event $=$$!", emeEvent.cCmd, hex, uiStatus);
     } // Not enough parameters so log error
     else SocketLogSafe(LH_ERROR,
-      "Not enough event params ($)", eParams.size());
+      "Not enough event params ($)", emaArgs.size());
     // Done
     return EventError();
   } // Exception occured? Cleanup and rethrow exception
@@ -1332,11 +1332,10 @@ CTOR_MEM_BEGIN_CSLAVE(Sockets, Socket, ICHelperUnsafe),
   { // Need 5 parameters
     LuaUtilCheckParams(lS, 5);
     // Get and check parameters
-    const string strA{ LuaUtilGetCppStrNE(lS, 1, "Address") };
-    const unsigned int uiP =
-      LuaUtilGetIntLG<unsigned int>(lS, 2, 1, 65535, "Port");
-    const string strC{ LuaUtilGetCppStr(lS, 3, "Cipher") };
-    LuaUtilCheckFunc(lS, 4, "Callback");
+    const string strA{ LuaUtilGetCppStrNE(lS, 1) };
+    const unsigned int uiP = LuaUtilGetIntLG<unsigned int>(lS, 2, 1, 65535);
+    const string strC{ LuaUtilGetCppStr(lS, 3) };
+    LuaUtilCheckFunc(lS, 4);
     // Set address and port and TLS cipher
     SetAddress(strA, uiP);
     SetupCipher(strC);
@@ -1352,15 +1351,15 @@ CTOR_MEM_BEGIN_CSLAVE(Sockets, Socket, ICHelperUnsafe),
   { // Need 9 parameters
     LuaUtilCheckParams(lS, 9);
     // Get and check parameters
-    const string strC{ LuaUtilGetCppStr(lS, 1, "Cipher") },
-                 strA{ LuaUtilGetCppStrNE(lS, 2, "Address") };
+    const string strC{ LuaUtilGetCppStr(lS, 1) },
+                 strA{ LuaUtilGetCppStrNE(lS, 2) };
     const unsigned int uiP =
-      LuaUtilGetIntLG<unsigned int>(lS, 3, 1, 65535, "Port");
-    const string strR{ LuaUtilGetCppStrNE(lS, 4, "Request") },
-                 strS{ LuaUtilGetCppStrUpper(lS, 5, "Scheme") },
-                 strH{ LuaUtilGetCppStr(lS, 6, "Headers") },
-                 strB{ LuaUtilGetCppStr(lS, 7, "Body") };
-    LuaUtilCheckFunc(lS, 8, "EventFunc");
+      LuaUtilGetIntLG<unsigned int>(lS, 3, 1, 65535);
+    const string strR{ LuaUtilGetCppStrNE(lS, 4) },
+                 strS{ LuaUtilGetCppStrUpper(lS, 5) },
+                 strH{ LuaUtilGetCppStr(lS, 6) },
+                 strB{ LuaUtilGetCppStr(lS, 7) };
+    LuaUtilCheckFunc(lS, 8);
     // Request must begin with a forward slash
     if(strR.front() != '/') XC("Resource is invalid!", "Resource", strR);
     // Set address and TLS cipher
@@ -1457,7 +1456,7 @@ static void InitSockets(void)
   BIO_sock_init();
 }
 /* ------------------------------------------------------------------------- */
-CTOR_END(Sockets, InitSockets(), DeInitSockets(),,
+CTOR_END(Sockets, Socket, InitSockets(), DeInitSockets(),,
   /* -- Initialisers ------------------------------------------------------- */
   LuaEvtMaster{ EMC_MP_SOCKET },       // Setup async socket event
   strRegVarREQ{ "\001" },              // Init reg key name for request data

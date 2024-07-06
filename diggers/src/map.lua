@@ -10,23 +10,25 @@
 -- Copyr. (c) MS-Design, 2024   Copyr. (c) Millennium Interactive Ltd., 1994 --
 -- ========================================================================= --
 -- Core function aliases --------------------------------------------------- --
-local insert<const>, pairs<const> = table.insert, pairs;
+local pairs<const> = pairs;
 -- M-Engine function aliases ----------------------------------------------- --
 local UtilClamp<const>, InfoTicks<const> = Util.Clamp, Info.Ticks;
 -- Diggers function and data aliases --------------------------------------- --
-local LoadResources, Fade, SetCallbacks, IsButtonReleased, IsMouseInBounds,
-  IsMouseNotInBounds, aCursorIdData, SetCursor, PlayStaticSound,
-  aSfxData, InitCon, aZoneData, IsMouseXGreaterEqualThan,
-  IsMouseYGreaterEqualThan, GetMouseX, GetMouseY, IsButtonPressed,
-  IsMouseXLessThan, IsMouseYLessThan, InitLobby, SetBottomRightTipAndShadow,
-  aLevelData, RegisterFBUCallback, aGlobalData;
+local Fade, GetMouseX, GetMouseY, InitCon, InitLobby, IsButtonPressed,
+  IsButtonReleased, IsMouseInBounds, IsMouseNotInBounds,
+  IsMouseXGreaterEqualThan, IsMouseXLessThan,  IsMouseYGreaterEqualThan,
+  IsMouseYLessThan, LoadResources, PlayStaticSound, RegisterFBUCallback,
+  SetBottomRightTipAndShadow, SetCallbacks, SetCursor, aCursorIdData,
+  aGlobalData, aLevelsData, aSfxData, aZoneData;
+-- Assets required --------------------------------------------------------- --
+local aAssets<const> = { { T = 2, F = "map", P = { 0 } } };
 -- Init zone selection screen function ------------------------------------- --
 local function InitMap()
   -- Reset tip
   local sTip = "";
   -- On loaded
-  local function OnLoaded(aRes)
-    -- Register framebuffer update
+  local function OnLoaded(aResources)
+    -- Register frame buffer update
     local iStageL, iStageT;
     local function OnFrameBufferUpdate(...)
       local _ _, _, iStageL, iStageT, _, _ = ...;
@@ -45,7 +47,7 @@ local function InitMap()
       for iZoneId = 1, #aZoneData do
         -- Get map data;
         local aZoneItem<const> = aZoneData[iZoneId];
-        -- Mouse cursor inside zone boundry?
+        -- Mouse cursor inside zone boundary?
         if iX >= aZoneItem[1] and iY >= aZoneItem[2] and
            iX <  aZoneItem[3] and iY <  aZoneItem[4] then
           -- Return cache'd info of zone
@@ -54,13 +56,14 @@ local function InitMap()
       end
     end
     -- Set texture handles
-    local texZone = aRes[1].H;
+    local texZone = aResources[1].H;
+    texZone:TileSTC(1);
     texZone:TileS(0, 0, 0, 672, 350);
     local iTileFlagTexId<const> = texZone:TileA(640, 0, 672, 32);
     -- Render the map
     local function RenderMap()
       -- Draw main chunk of map
-      texZone:BlitLT(-iZonePosX+iStageL, -iZonePosY+iStageT);
+      texZone:BlitLT(-iZonePosX + iStageL, -iZonePosY + iStageT);
       -- For each flag data in flag cache
       for iFlagId = 1, #aFlagCache do
         -- Get flag data
@@ -76,7 +79,7 @@ local function InitMap()
     for iZoneId in pairs(aGlobalData.gLevelsCompleted) do
       local aZoneItem<const> = aZoneData[iZoneId];
       local iFlagX<const>, iFlagY<const> = aZoneItem[5], aZoneItem[6];
-      insert(aFlagCache, { iFlagX, iFlagY, iFlagX+32, iFlagY+32 });
+      aFlagCache[1 + #aFlagCache] = { iFlagX, iFlagY, iFlagX+32, iFlagY+32 };
     end
     -- Rebuild zone data cache
     for iZoneId = 1, #aZoneData do
@@ -94,7 +97,7 @@ local function InitMap()
           end
         else iZoneCompleted = iZoneId end;
       end
-      insert(aZoneCache, iZoneCompleted or false);
+      aZoneCache[1 + #aZoneCache] = iZoneCompleted or false;
     end
     -- On map faded in
     local function OnFadeIn()
@@ -132,7 +135,7 @@ local function InitMap()
               local function OnFadeOut()
                 -- Remove FBO update callback
                 RegisterFBUCallback("map");
-                -- Unreference assets to garbage collector
+                -- Dereference assets to garbage collector
                 texZone = nil;
                 -- Init controller screen
                 InitCon();
@@ -141,14 +144,14 @@ local function InitMap()
               Fade(0, 1, 0.04, RenderMap, OnFadeOut);
             end
             -- Get information about selected zone
-            local aLevel<const> = aLevelData[iZone];
+            local aLevel<const> = aLevelsData[iZone];
             -- Get current time (rotated every 60 frames/1 second)
             local iTicks<const> = InfoTicks() % 180;
             -- Show name of zone at 0 to 1 seconds
             if     iTicks <  60 then sTip = aLevel.n;
             -- Show terrain type at 1 to 2 seconds
             elseif iTicks < 120 then sTip = aLevel.t.n;
-            -- Show zogs needed to win at 2 to 3 seconds
+            -- Show Zogs needed to win at 2 to 3 seconds
             else sTip = aLevel.w.." TO WIN" end;
             -- Done
             return;
@@ -161,28 +164,29 @@ local function InitMap()
       -- Set map callbacks
       SetCallbacks(nil, RenderMap, InputMap);
     end
-    -- Change render procs
+    -- Change render procedures
     Fade(1, 0, 0.04, RenderMap, OnFadeIn);
   end
   -- Load texture resource
-  LoadResources("Map Select", {{T=2,F="map",P={0}}}, OnLoaded);
+  LoadResources("Map Select", aAssets, OnLoaded);
 end
 -- Exports and imports ----------------------------------------------------- --
 return { A = { InitMap = InitMap }, F = function(GetAPI)
   -- Imports --------------------------------------------------------------- --
-  LoadResources, SetCallbacks, SetCursor, IsMouseInBounds, IsButtonReleased,
-  PlayStaticSound, Fade, InitLobby, IsMouseNotInBounds, aCursorIdData,
-  aSfxData, InitCon, aZoneData, IsMouseXGreaterEqualThan,
-  IsMouseYGreaterEqualThan, GetMouseX, GetMouseY, IsButtonPressed,
-  IsMouseXLessThan, IsMouseYLessThan, SetBottomRightTipAndShadow, aLevelData,
-  RegisterFBUCallback, aGlobalData
+  Fade, GetMouseX, GetMouseY, InitCon, InitLobby, IsButtonPressed,
+  IsButtonReleased, IsMouseInBounds, IsMouseNotInBounds,
+  IsMouseXGreaterEqualThan, IsMouseXLessThan, IsMouseYGreaterEqualThan,
+  IsMouseYLessThan, LoadResources, PlayStaticSound, RegisterFBUCallback,
+  SetBottomRightTipAndShadow, SetCallbacks, SetCursor, aCursorIdData,
+  aGlobalData, aLevelsData, aSfxData, aZoneData
   = -- --------------------------------------------------------------------- --
-  GetAPI("LoadResources", "SetCallbacks", "SetCursor", "IsMouseInBounds",
-    "IsButtonReleased", "PlayStaticSound", "Fade", "InitLobby",
-    "IsMouseNotInBounds", "aCursorIdData", "aSfxData", "InitCon", "aZoneData",
-    "IsMouseXGreaterEqualThan", "IsMouseYGreaterEqualThan", "GetMouseX",
-    "GetMouseY", "IsButtonPressed", "IsMouseXLessThan", "IsMouseYLessThan", "SetBottomRightTipAndShadow", "aLevelData",
-    "RegisterFBUCallback", "aGlobalData");
+  GetAPI("Fade", "GetMouseX", "GetMouseY", "InitCon", "InitLobby",
+    "IsButtonPressed", "IsButtonReleased", "IsMouseInBounds",
+    "IsMouseNotInBounds", "IsMouseXGreaterEqualThan", "IsMouseXLessThan",
+    "IsMouseYGreaterEqualThan", "IsMouseYLessThan", "LoadResources",
+    "PlayStaticSound", "RegisterFBUCallback", "SetBottomRightTipAndShadow",
+    "SetCallbacks", "SetCursor", "aCursorIdData", "aGlobalData", "aLevelsData",
+    "aSfxData", "aZoneData");
   -- ----------------------------------------------------------------------- --
 end };
 -- End-of-File ============================================================= --

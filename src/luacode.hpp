@@ -101,13 +101,13 @@ static void LuaCodeCompileFunction(lua_State*const lS)
 { // Must have two parameters
   LuaUtilCheckParams(lS, 2);
   // Debug parameter
-  const bool bDebug = LuaUtilGetBool(lS, 1, "Debug");
+  const bool bDebug = LuaUtilGetBool(lS, 1);
   // Second parameter must be function
-  LuaUtilCheckFunc(lS, 2, "Function");
+  LuaUtilCheckFunc(lS, 2);
   // Compile the function
   Memory mbData{ LuaCodeCompileFunction(lS, bDebug) };
   // Return a newly created asset
-  LuaUtilClassCreate<Asset>(lS, "Asset")->MemSwap(StdMove(mbData));
+  LuaUtilClassCreate<Asset>(lS, *cAssets)->MemSwap(mbData);
 }
 /* -- Compile a buffer ----------------------------------------------------- */
 static void LuaCodeDoCompileBuffer(lua_State*const lS, const char *cpBuf,

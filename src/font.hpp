@@ -328,8 +328,8 @@ CTOR_MEM_BEGIN(Fonts, Font, ICHelperUnsafe, /* n/a */),
     // cause display artifacts
     Memory mPixels{ DimGetWidth() * DimGetHeight() * 2 };
     mPixels.MemFill<uint16_t>(0x00FF);
-    InitRaw(ftfData.IdentGet(), StdMove(mPixels), DimGetWidth(),
-      DimGetHeight(), BD_GRAYALPHA);
+    InitRaw(ftfData.IdentGet(), mPixels, DimGetWidth(), DimGetHeight(),
+      BD_GRAYALPHA);
     // Initialise image in GL. This class is responsible for updating the
     // texture tile co-ords set.
     InitImage(*this, duiTile.DimGetWidth(), duiTile.DimGetHeight(),
@@ -473,7 +473,7 @@ CTOR_MEM_BEGIN(Fonts, Font, ICHelperUnsafe, /* n/a */),
   /* ----------------------------------------------------------------------- */
   DELETECOPYCTORS(Font)                // Omit copy constructor for safety
 };/* ----------------------------------------------------------------------- */
-CTOR_END_NOINITS(Fonts)                // End of collector class
+CTOR_END_NOINITS(Fonts, Font)          // End of collector class
 /* -- DeInit Font Textures ------------------------------------------------- */
 static void FontDeInitTextures(void)
 { // Ignore if no fonts
